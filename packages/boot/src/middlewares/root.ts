@@ -57,7 +57,7 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
     }
 
     if (request.providers) {
-        providers.parse(isArray(request.providers) ? request.providers : [request.providers]);
+        providers.inject(isArray(request.providers) ? request.providers : [request.providers]);
     }
 
     if (request.restful) {

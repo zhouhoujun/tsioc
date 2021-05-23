@@ -147,17 +147,23 @@ export class Provider implements IProvider {
      * @returns {this}
      */
     register(types: Type[]): this;
-    register(target: Type | Type[] | RegisterOption): this {
-        if (isArray(target)) {
-            target.forEach(t => this.regType(t));
-        } else if (isFunction(target)) {
-            this.regType(target);
-        } else {
-            if ((target as TypeOption).type) {
-                this.registerIn(this, (target as TypeOption).type, target as TypeOption);
+    register(...types: Type[]): this;
+    register(...args: any[]): this {
+        if (args.length === 1) {
+            const target = args[0];
+            if (isArray(target)) {
+                target.forEach(t => this.regType(t));
+            } else if (isFunction(target)) {
+                this.regType(target);
             } else {
-                this.factories.set(target.provide, generateRecord(this, target as ProviderOption));
+                if ((target as TypeOption).type) {
+                    this.registerIn(this, (target as TypeOption).type, target as TypeOption);
+                } else {
+                    this.factories.set(target.provide, generateRecord(this, target as ProviderOption));
+                }
             }
+        } else {
+            args.forEach(t => this.regType(t));
         }
 
         return this;
@@ -210,15 +216,6 @@ export class Provider implements IProvider {
         this.registerIn(this, type);
     }
 
-    /**
-     * inject providers.
-     *
-     * @param {...ProviderType[]} providers
-     * @returns {this}
-     */
-    inject(...providers: ProviderType[]): this {
-        return this.parse(providers);
-    }
 
     /**
      * inject providers.
@@ -226,21 +223,28 @@ export class Provider implements IProvider {
      * @param {...ProviderType[]} providers
      * @returns {this}
      */
-    parse(providers: ProviderType[]): this {
-        providers.length && providers.forEach(p => {
-            if (isUndefined(p) || isNull(p)) {
+    inject(providers: ProviderType[]): this;
+    /**
+     * inject providers.
+     *
+     * @param {...ProviderType[]} providers
+     * @returns {this}
+     */
+    inject(...providers: ProviderType[]): this;
+    inject(...args: any[]): this {
+        const providers = (args.length === 1 && isArray(args[0])) ? args[0] : args;
+        providers?.length && providers.forEach(p => {
+            if (!p) {
                 return;
             }
-            if (isArray(p)) {
-                this.use(p);
-            } else if (p instanceof Provider) {
-                this.copy(p);
-            } else if (isFunction(p)) {
+            if (isFunction(p)) {
                 this.regType(p);
             } else if (p instanceof KeyValueProvider) {
                 p.each((k, useValue) => {
                     this.factories.set(k, { value: useValue });
                 });
+            } else if (p instanceof Provider) {
+                this.copy(p);
             } else if (isPlainObject(p) && (p as StaticProviders).provide) {
                 this.factories.set((p as StaticProviders).provide, generateRecord(this, p as StaticProviders));
             }
@@ -551,7 +555,7 @@ export function isProvider(target: any): target is Provider {
  */
 export function createProvider(parent: IProvider, providers?: ProviderType[], strategy?: Strategy) {
     const pdr = new Provider(parent, strategy);
-    if (providers && providers.length) pdr.parse(providers);
+    if (providers && providers.length) pdr.inject(providers);
     return pdr;
 }
 
@@ -563,7 +567,7 @@ export function createProvider(parent: IProvider, providers?: ProviderType[], st
  */
 export function createInvokedProvider(parent: IProvider, providers: ProviderType[]) {
     if (!providers || !providers.length) return null;
-    return new InvokedProvider(parent).parse(providers);
+    return new InvokedProvider(parent).inject(providers);
 }
 
 

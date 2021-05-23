@@ -82,7 +82,7 @@ export class DefaultInjector extends Injector {
  */
 export function createInjector(parent: IInjector, providers?: ProviderType[], strategy?: Strategy) {
     const inj = new DefaultInjector(parent, strategy);
-    if (providers && providers.length) inj.parse(providers);
+    if (providers && providers.length) inj.inject(providers);
     return inj;
 }
 
@@ -207,10 +207,10 @@ class RegisteredStateImpl implements RegisteredState {
     setTypeProvider(type: ClassType | TypeReflect, ...providers: ProviderType[]) {
         if (isFunction(type)) {
             get(type)?.extProviders.push(...providers);
-            this.states.get(type)?.providers.parse(providers)
+            this.states.get(type)?.providers.inject(providers)
         } else {
             type.extProviders.push(...providers);
-            this.states.get(type.type)?.providers.parse(providers);
+            this.states.get(type.type)?.providers.inject(providers);
         }
     }
 

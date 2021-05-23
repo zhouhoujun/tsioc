@@ -251,20 +251,7 @@ see @tsdi/core interface [IContainer](https://github.com/zhouhoujun/tsioc/blob/m
 // 1. register a class
 container.register(Person);
 
-// 2. register a factory;
-container.register(Person, (container)=> {
-    ...
-    return new Person(...);
-});
 
-// 3. register with keyword
-container.register('keyword', Perosn);
-
-// 4. register with alais
-container.register(new Registration(Person, aliasname));
-
-// register singleton
-container.registerSingleton(Person)
 
 
 ```

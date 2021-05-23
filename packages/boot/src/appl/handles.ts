@@ -67,7 +67,7 @@ export const BootConfigureLoadHandle = async function (ctx: ApplicationContext, 
     }
 
     if (config.providers && config.providers.length) {
-        injector.parse(config.providers);
+        injector.inject(config.providers);
     }
 
     if (!baseURL && config.baseURL) {
@@ -94,8 +94,7 @@ export const BootConfigureRegisterHandle = async function (ctx: ApplicationConte
     }
     if (config.debug) {
         // make sure log module registered.
-        injector.register(LogModule)
-            .register(DebugLogAspect);
+        injector.register(LogModule, DebugLogAspect);
     }
 
     const regs = injector.getServices(ConfigureRegister);

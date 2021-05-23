@@ -147,7 +147,7 @@ export class DefaultModuleFactory extends ModuleFactory {
         }
         if (inj.reflect.components) inj.register(inj.reflect.components);
         if (inj.reflect.annotation.providers) {
-            inj.exports.parse(inj.reflect.annotation.providers);
+            inj.exports.inject(inj.reflect.annotation.providers);
         }
 
         inj.reflect.exports?.forEach(ty => inj.exports.export(ty));
@@ -161,7 +161,7 @@ export class DefaultModuleFactory extends ModuleFactory {
         parent = parent || option.injector;
         const inj = this.createInstance(refl.get(option.type), parent, root, regIn || option.regIn);
         if (option.providers) {
-            inj.parse(option.providers);
+            inj.inject(option.providers);
         }
         if (option.deps) {
             inj.use(option.deps);

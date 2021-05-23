@@ -33,7 +33,7 @@ export class VComponentRef<T> extends ComponentRef<T> {
       this._injector = new DefaultInjector(tyInj);
       const providers = refl.get<ComponentReflect>(this.componentType).extProviders;
       if (providers && providers.length) {
-        this._injector.parse(providers);
+        this._injector.inject(providers);
       }
     }
     return this._injector;

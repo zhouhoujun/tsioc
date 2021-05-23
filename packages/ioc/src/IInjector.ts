@@ -12,7 +12,7 @@ import { ClassProvider, ExistingProvider, FactoryProvider, StaticProvider, Value
 /**
  * providers.
  */
-export type ProviderType = IProvider | StaticProvider | Modules[];
+export type ProviderType = IProvider | StaticProvider;
 
 /**
  * providers types
@@ -235,11 +235,6 @@ export interface IProvider extends Destroyable {
      */
     setValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
     /**
-     * parse
-     * @param providers 
-     */
-    parse(providers: ProviderType[]): this;
-    /**
      * reate provider or get provider.
      * only one provider with type IProvider with return the provider.
      * to provider. no providers, will return null
@@ -289,6 +284,11 @@ export interface IProvider extends Destroyable {
      */
     cache<T>(token: Token<T>, instance: T, expires: number): this;
     /**
+     * parse
+     * @param providers
+     */
+    inject(providers: ProviderType[]): this;
+    /**
      * inject providers.
      *
      * @param {...ProviderType[]} providers
@@ -316,7 +316,12 @@ export interface IProvider extends Destroyable {
      */
     register<T>(option: RegisterOption<T>): this;
     /**
-     * register with option.
+     * register types.
+     * @param types
+     */
+    register(...types: Type[]): this;
+    /**
+     * register types.
      * @param options
      */
     register(types: Type[]): this;
