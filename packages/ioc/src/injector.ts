@@ -239,14 +239,14 @@ export class Provider implements IProvider {
             }
             if (isFunction(p)) {
                 this.regType(p);
+            } else if (isPlainObject(p) && (p as StaticProviders).provide) {
+                this.factories.set((p as StaticProviders).provide, generateRecord(this, p as StaticProviders));
             } else if (p instanceof KeyValueProvider) {
                 p.each((k, useValue) => {
                     this.factories.set(k, { value: useValue });
                 });
             } else if (p instanceof Provider) {
                 this.copy(p);
-            } else if (isPlainObject(p) && (p as StaticProviders).provide) {
-                this.factories.set((p as StaticProviders).provide, generateRecord(this, p as StaticProviders));
             }
         });
 
