@@ -7,7 +7,7 @@ import {
     RegisteredState, RegisterOption, ResolveOption, ServiceOption, ServicesOption, ProviderOption
 } from './IInjector';
 import { isToken, Token, tokenRef } from './tokens';
-import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass, isDefined, isTypeObject } from './utils/chk';
+import { isArray, isPlainObject, isClass, isNil, isFunction, isString, getClass, isDefined, isTypeObject } from './utils/chk';
 import { IContainer } from './IContainer';
 import { cleanObj, getTypes, remove } from './utils/lang';
 import { INJECTOR, TARGET } from './utils/tk';
