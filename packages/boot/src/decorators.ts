@@ -9,7 +9,7 @@ import { ROOT_QUEUE } from './middlewares/root';
 import { FactoryRoute, Route } from './middlewares/route';
 import { RootRouter, Router } from './middlewares/router';
 import { MappingReflect, MappingRoute, RouteMapingMetadata } from './middlewares/mapping';
-import { ApplicationContext, ModuleFactory, ModuleInjector, ModuleRegistered } from './Context';
+import { ModuleFactory, ModuleInjector, ModuleRegistered } from './Context';
 import { BOOT_TYPES } from './tk';
 
 

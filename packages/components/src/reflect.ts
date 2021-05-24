@@ -45,7 +45,7 @@ export function getDirectiveDef<T>(type: Type): DirectiveDef<T> {
  * @interface IBindingTypeReflect
  * @extends {ITypeReflect}
  */
-export interface ComponentReflect extends AnnotationReflect {
+export interface ComponentReflect<T = any> extends AnnotationReflect<T> {
     /**
      * component defined.
      * Runtime link information for Components.
@@ -74,5 +74,5 @@ export interface ComponentReflect extends AnnotationReflect {
 }
 
 export function getComponentDef<T>(type: Type): ComponentDef<T> {
-    return refl.get<ComponentReflect>(type)?.def ?? null;
+    return refl.get<ComponentReflect<T>>(type)?.def ?? null;
 }

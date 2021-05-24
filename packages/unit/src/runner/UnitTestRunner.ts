@@ -12,7 +12,7 @@ import { UnitTestConfigure } from '../UnitTestConfigure';
 export class UnitTestRunner extends Runnable {
 
     async configureService(ctx: BootContext): Promise<void> {
-        const appCtx = ctx.app;
+        const appCtx = ctx.getRoot();
         const config = appCtx.getConfiguration() as UnitTestConfigure;
         const src = config.src;
         const injector = ctx.injector;

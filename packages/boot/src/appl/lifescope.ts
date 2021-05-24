@@ -12,12 +12,9 @@ export class BootLifeScope extends BuildHandles<ApplicationContext> implements I
     setup() {
         this.use(
             BootConfigureLoadHandle,
-            // RegisterModuleScope,
             BootConfigureRegisterHandle,
-            // ResolveTypeHandle,
             StartupGlobalService,
             BootstrapScope
-            // ResolveBootHandle
         );
     }
 }

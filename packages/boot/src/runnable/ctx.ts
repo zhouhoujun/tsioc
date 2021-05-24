@@ -18,7 +18,7 @@ export class DefaultBootContext<T> extends BootContext<T> {
         return this.reflect.type;
     }
 
-    get app(): ApplicationContext {
+    getRoot(): ApplicationContext {
         return this.injector.get(ApplicationContext);
     }
 
@@ -78,7 +78,7 @@ export class RunnableBootFactory extends BootFactory {
             await startup.configureService(ctx);
             ctx.runnable = startup;
         }
-        const app = ctx.app;
+        const app = ctx.getRoot();
         ctx.onDestroy(() => {
             lang.remove(app.bootstraps, ctx);
         });

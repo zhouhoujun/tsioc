@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import {
     AnnotationReflect, BootFactory, MappingReflect, MessageQueue, Middlewares,
-    MiddlewareType, RouteMapingMetadata, Router, Runnable
+    MiddlewareType, RouteMapingMetadata, Router
 } from '@tsdi/boot';
 import {
     BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
@@ -16,6 +16,7 @@ import { CompilerFacade, Identifiers } from './compile/facade';
 import { ComponentType, DirectiveType } from './type';
 import { ComponentRunnable } from './runnable';
 import { HostMappingRoot, HostMappingRoute } from './router';
+import { ComponentFactory } from './refs/component';
 
 
 /**
@@ -75,10 +76,7 @@ export const Directive: IDirectiveDecorator = createDecorator<DirectiveMetadata>
 
             next();
         }
-    },
-    providers:[
-        {provide: BootFactory, useClass: }
-    ]
+    }
 });
 
 
@@ -141,8 +139,7 @@ export const Component: IComponentDecorator = createDecorator<ComponentMetadata>
         }
     },
     providers: [
-        { provide: BootFactory, useClass: ComponentRunnable },
-        { provide: Identifiers, useFactory: (container) => new Identifiers(container), deps: [CONTAINER], singleton: true }
+        { provide: BootFactory, useExisting: ComponentFactory }
     ]
 });
 

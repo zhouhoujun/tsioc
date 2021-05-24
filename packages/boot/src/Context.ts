@@ -64,9 +64,9 @@ export interface IRunnable<T = any> extends Destroyable {
 export abstract class BootContext<T = any> {
 
     /**
-     * boot injector
+     * get root context.
      */
-    abstract get app(): ApplicationContext;
+    abstract getRoot(): ApplicationContext;
     /**
      * boot injector
      */
@@ -76,17 +76,17 @@ export abstract class BootContext<T = any> {
      */
     abstract get type(): Type<T>;
 
+    /**
+    * get target reflect.
+    */
+    abstract get reflect(): AnnotationReflect<T>;
+
     abstract get instance(): T;
 
     /**
      * bootstrap runnable.
      */
     runnable?: IRunnable;
-
-    /**
-    * get target reflect.
-    */
-    abstract get reflect(): AnnotationReflect<T>;
 
     /**
      * Destroys the component instance and all of the data structures associated with it.
@@ -107,14 +107,24 @@ export abstract class BootContext<T = any> {
  * boot factory option.
  */
 export interface BootFactoryOption extends BootstrapOption {
+    /**
+     * injector.
+     */
     injector: IInjector;
 }
 
+/**
+ * boot factory.
+ */
 @Abstract()
 export abstract class BootFactory {
+    /**
+     * create boot context.
+     * @param type 
+     * @param option 
+     */
     abstract create<T>(type: Type<T> | AnnotationReflect<T>, option: BootFactoryOption): BootContext<T> | Promise<BootContext<T>>;
 }
-
 
 
 /**
@@ -132,6 +142,9 @@ export interface IModuleExports extends IProvider {
     export?(type: Type, noRef?: boolean);
 }
 
+/**
+ * module injector.
+ */
 @Abstract()
 export abstract class ModuleInjector<T = any> extends DefaultInjector {
 

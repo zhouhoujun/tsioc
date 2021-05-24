@@ -1,7 +1,9 @@
 import { Abstract, IInjector, Type } from '@tsdi/ioc';
+import { ApplicationContext, BootContext, BootFactory, BootFactoryOption } from '@tsdi/boot';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ElementRef } from './element';
 import { ViewRef } from './view';
+import { ComponentReflect } from '../reflect';
 
 /**
  * Represents a component created by a `ComponentFactory`.
@@ -11,8 +13,19 @@ import { ViewRef } from './view';
  * @publicApi
  */
 @Abstract()
-export abstract class ComponentRef<C = any> {
-
+export abstract class ComponentRef<C = any> implements BootContext<C> {
+    /**
+     * get root context.
+     */
+    abstract getRoot(): ApplicationContext;
+    /**
+     * boot type.
+     */
+    abstract get type(): Type<C>;
+    /**
+    * get target reflect.
+    */
+    abstract get reflect(): ComponentReflect<C>;
     /**
      * The host or anchor element for this component instance.
      */
@@ -54,4 +67,18 @@ export abstract class ComponentRef<C = any> {
      * @param callback destory callback
      */
     abstract onDestroy(callback: () => void): void;
+}
+
+/**
+ * component factory.
+ */
+@Abstract()
+export abstract class ComponentFactory extends BootFactory {
+
+    /**
+     * create boot context.
+     * @param type 
+     * @param option 
+     */
+     abstract create<T>(type: Type<T> | ComponentReflect<T>, option: BootFactoryOption): ComponentRef<T>;
 }
