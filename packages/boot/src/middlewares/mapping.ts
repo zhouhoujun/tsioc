@@ -120,7 +120,7 @@ export class MappingRoute extends Route {
                     return await result.sendValue(ctx);
                 }
 
-                const strategy = injector.getService({ token: ResultStrategy, target: result });
+                const strategy = injector.resolve({ token: ResultStrategy, target: result });
                 if (strategy) {
                     return await strategy.send(ctx, result);
                 }
@@ -226,7 +226,7 @@ export class MappingRoute extends Route {
                                 if (rkey) {
                                     val = body[rkey];
                                 } else {
-                                    let mdparser = injector.getService({ token: ModelParser, target: ptype, defaultToken: DefaultModelParserToken });
+                                    let mdparser = injector.resolve({ token: ModelParser, target: ptype, defaultToken: DefaultModelParserToken });
                                     if (mdparser) {
                                         val = mdparser.parseModel(ptype, body);
                                     } else {

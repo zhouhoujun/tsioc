@@ -218,6 +218,15 @@ export interface IProvider extends Destroyable {
      * @param {...ProviderType[]} providers
      * @returns {T}
      */
+    resolve<T>(option: ResolveOption<T>, providers: ProviderType[]): T;
+    /**
+     * resolve token instance with token and param provider.
+     *
+     * @template T
+     * @param {ResolveOption<T>} option  resolve option
+     * @param {...ProviderType[]} providers
+     * @returns {T}
+     */
     resolve<T>(option: ResolveOption<T>, ...providers: ProviderType[]): T;
     /**
      * resolve token instance with token and param provider.
@@ -402,13 +411,13 @@ export interface ResolveOption<T = any> {
 
 
 /**
- * service context option.
+ * services context options
  *
  * @export
- * @interface ServiceOption
- * @extends {ResovleActionOption}
+ * @interface ServicesOption
+ * @extends {ServiceOption}
  */
-export interface ServiceOption<T> extends ResolveOption<T> {
+export interface ServicesOption<T> extends ResolveOption<T> {
     /**
      * token provider service type.
      *
@@ -421,16 +430,6 @@ export interface ServiceOption<T> extends ResolveOption<T> {
      * @type {boolean}
      */
     extend?: boolean;
-}
-
-/**
- * services context options
- *
- * @export
- * @interface ServicesOption
- * @extends {ServiceOption}
- */
-export interface ServicesOption<T> extends ServiceOption<T> {
     /**
      * get services both in container and target private refrence service.
      *
@@ -507,7 +506,7 @@ export interface IInjector extends IProvider {
      * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    getService<T>(target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T;
+    getService<T>(target: Token<T> | ResolveOption<T>, ...providers: ProviderType[]): T;
     /**
      * get all service extends type.
      *

@@ -5,17 +5,18 @@ import { Handler } from './utils/hdl';
 import { cleanObj, isBaseOf } from './utils/lang';
 import {
     IActionProvider, IInjector, IModuleLoader, IProvider, RegisteredState,
-    ResolveOption, ServiceOption, ServicesOption, ProviderType
+    ServicesOption, ProviderType
 } from './IInjector';
-import { IContainer, IServiceProvider } from './IContainer';
+import { IContainer } from './IContainer';
 import { MethodType } from './Invoker';
 import { Token } from './tokens';
-import { CONTAINER, INVOKER, MODULE_LOADER, SERVICE_PROVIDER } from './utils/tk';
+import { CONTAINER, INVOKER, MODULE_LOADER } from './utils/tk';
 import { Action, IActionSetup } from './action';
 import { get } from './decor/refl';
 import { Strategy } from './strategy';
 import { Provider, Injector, resolveRecord } from './injector';
 import { registerCores } from './utils/regs';
+import { Abstract } from './decor/decorators';
 
 /**
  * default injector implantment.
@@ -56,10 +57,6 @@ export class DefaultInjector extends Injector {
         return await this.getLoader()?.register(this, modules) ?? [];
     }
 
-    getService<T>(target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T {
-        return this.getSvrPdr().getService(this, target, ...providers);
-    }
-
     getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[] {
         return this.getSvrPdr().getServices(this, target, ...providers) ?? [];
     }
@@ -69,7 +66,7 @@ export class DefaultInjector extends Injector {
     }
 
     protected getSvrPdr() {
-        return this.getContainer().get(SERVICE_PROVIDER) ?? SERVICE;
+        return this.getContainer().get(ServicesProvider) ?? SERVICE;
     }
 
 }
@@ -148,11 +145,34 @@ export class Container extends DefaultInjector implements IContainer {
 export const IocContainer = Container;
 
 
-const SERVICE: IServiceProvider = {
+/**
+ * service provider.
+ */
+ @Abstract()
+ export abstract class ServicesProvider {
+     /**
+      * get all service extends type.
+      *
+      * @template T
+      * @param {(Token<T> | ServicesOption<T>)} target servive token or express match token.
+      * @param {...ProviderType[]} providers
+      * @returns {T[]} all service instance type of token type.
+      */
+     abstract getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[];
+     /**
+      * get all provider service in the injector.
+      *
+      * @template T
+      * @param {(Token<T> | ServicesOption<T>)} target
+      * @returns {IProvider}
+      */
+      abstract getServiceProviders<T>(injector: IInjector, target: Token<T> | ServicesOption<T>): IProvider;
+ }
+ 
 
-    getService<T>(injector: IInjector, target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T {
-        return injector.resolve(target as ResolveOption<T>, ...providers);
-    },
+
+const SERVICE: ServicesProvider = {
+
     getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[] {
         const tokens = isPlainObject(target) ?
             ((target as ServicesOption<T>).tokens ?? [(target as ServicesOption<T>).token])

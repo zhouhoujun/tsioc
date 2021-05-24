@@ -69,8 +69,8 @@ export class RunnableBootFactory extends BootFactory {
         if (ctx.instance instanceof Runnable) {
             startup = ctx.instance;
         } else {
-            startup = injector.getService(
-                { tokens: [Runnable], target: ctx.instance },
+            startup = injector.resolve(
+                { token: Runnable, target: ctx.instance },
                 { provide: BootContext, useValue: ctx }
             );
         }

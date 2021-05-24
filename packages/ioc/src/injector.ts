@@ -4,7 +4,7 @@ import { MethodType } from './Invoker';
 import { ClassProvider, ExistingProvider, FactoryProvider, KeyValueProvider, StaticProviders, ValueProvider } from './providers';
 import {
     TypeOption, Factory, IActionProvider, IInjector, IModuleLoader, FacRecord, IProvider, ProviderType,
-    RegisteredState, RegisterOption, ResolveOption, ServiceOption, ServicesOption, ProviderOption
+    RegisteredState, RegisterOption, ResolveOption, ServicesOption, ProviderOption
 } from './IInjector';
 import { isToken, Token, tokenRef } from './tokens';
 import { isArray, isPlainObject, isClass, isNil, isFunction, isString, getClass, isDefined, isTypeObject } from './utils/chk';
@@ -319,6 +319,7 @@ export class Provider implements IProvider {
     }
 
 
+
     /**
      * resolve instance with token and param provider via resolve scope.
      *
@@ -328,9 +329,21 @@ export class Provider implements IProvider {
      * @returns {T}
      * @memberof IocContainer
      */
-    resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: ProviderType[]): T {
+    resolve<T>(token: Token<T> | ResolveOption<T>, providers: ProviderType[]): T;
+    /**
+     * resolve instance with token and param provider via resolve scope.
+     *
+     * @template T
+     * @param {(Token<T> | ResolveOption<T>)} token
+     * @param {...ProviderType[]} providers
+     * @returns {T}
+     * @memberof IocContainer
+     */
+    resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: ProviderType[]): T;
+    resolve<T>(token: Token<T> | ResolveOption<T>, ...args: any[]) {
         let inst: T;
         let destroy: Function;
+        let providers: ProviderType[] = (args.length === 1 && isArray(args[0]))? args[0] : args;
         if (isPlainObject(token)) {
             let option = token as ResolveOption;
             if (option.providers) {
@@ -625,11 +638,13 @@ export abstract class Injector extends Provider implements IInjector {
      * get service or target reference service in the injector.
      *
      * @template T
-     * @param {(Token<T> | ServiceOption<T>)} target servive token.
+     * @param {(Token<T> | ResolveOption<T>)} target servive token.
      * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    abstract getService<T>(target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T;
+    getService<T>(target: Token<T> | ResolveOption<T>, ...providers: ProviderType[]): T {
+        return this.resolve(target, providers);
+    }
 
     /**
      * get all service extends type.

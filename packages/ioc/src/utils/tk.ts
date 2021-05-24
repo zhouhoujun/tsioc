@@ -1,7 +1,7 @@
 import { Token, tokenId } from '../tokens';
 import { Invoker } from '../Invoker';
 import { IInjector, IModuleLoader } from '../IInjector';
-import { IContainer, IServiceProvider } from '../IContainer';
+import { IContainer } from '../IContainer';
 
 /**
  * injector instance token of self.
@@ -43,11 +43,6 @@ export const IOC_CONTAINER = CONTAINER;
  * module loader.
  */
 export const MODULE_LOADER = tokenId<IModuleLoader>('MODULE_LOADER');
-
-/**
- * service provider.
- */
-export const SERVICE_PROVIDER = tokenId<IServiceProvider>('SERVICE_PROVIDER');
 
 /**
  * resolve target token.

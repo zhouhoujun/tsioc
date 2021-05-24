@@ -1,61 +1,19 @@
 import {
     IInjector, Token, ProviderType, IProvider, isArray, IContainer,
-    ServiceOption, ServicesOption, isPlainObject, lang, IServiceProvider, TARGET, resolveRecord
+    ServicesOption, isPlainObject, lang, ServicesProvider, TARGET, resolveRecord
 } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from '../resolves/context';
-import { ResolveServiceScope, ResolveServicesScope } from '../resolves/actions';
+import { ResolveServicesScope } from '../resolves/actions';
 
 /**
  * service provider.
  */
-export class ServiceProvider implements IServiceProvider {
+export class Services implements ServicesProvider {
 
     static ρNPT = true;
-    private serviceScope: ResolveServiceScope;
     private servicesScope: ResolveServicesScope;
 
     constructor(private readonly container: IContainer) { }
-
-    /**
-     *  get service or target reference service.
-     *
-     * @template T
-     * @param {(Token<T> | ServiceOption<T>)} target
-     * @param {...ProviderType[]} providers
-     * @returns {T}
-     */
-    getService<T>(injector: IInjector, target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T {
-        let option: ServiceOption<T>;
-        if (isPlainObject(target)) {
-            option = target as ServiceOption<T>;
-            if (option.target) {
-                providers.push({ provide: TARGET, useValue: option.target });
-            }
-            if (option.providers) providers.unshift(...option.providers);
-        } else {
-            option = { token: target };
-        }
-
-        const pdr = injector.toProvider(providers, true);
-
-        const context = {
-            injector: injector,
-            ...option,
-            providers: pdr
-        } as ServiceContext;
-
-        this.initTargetRef(context);
-
-        if (!this.serviceScope) {
-            this.serviceScope = this.container.action().get(ResolveServiceScope);
-        }
-
-        this.serviceScope.execute(context);
-        const instance = context.instance;
-        // clean obj.
-        lang.cleanObj(context);
-        return instance || null;
-    }
 
     /**
      * get all service extends type.

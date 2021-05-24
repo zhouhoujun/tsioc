@@ -1,7 +1,7 @@
-import { CONTAINER, IContainer, Inject, IocExt, MODULE_LOADER, SERVICE_PROVIDER } from '@tsdi/ioc';
+import { CONTAINER, IContainer, Inject, IocExt, MODULE_LOADER, ServicesProvider } from '@tsdi/ioc';
 import { ModuleLoader } from './services/loader';
-import { ServiceProvider } from './services/providers';
-import { ResolveServiceScope, ResolveServicesScope } from './resolves/actions';
+import { Services } from './services/providers';
+import { ResolveServicesScope } from './resolves/actions';
 
 @IocExt()
 export class CoreModule {
@@ -13,9 +13,9 @@ export class CoreModule {
         if (!container.has(MODULE_LOADER)) {
             container.setValue(MODULE_LOADER, new ModuleLoader(), ModuleLoader);
         }
-        container.setValue(SERVICE_PROVIDER, new ServiceProvider(container));
+        container.setValue(ServicesProvider, new Services(container));
 
         // register action
-        container.action().regAction(ResolveServiceScope, ResolveServicesScope);
+        container.action().regAction(ResolveServicesScope);
     }
 }
