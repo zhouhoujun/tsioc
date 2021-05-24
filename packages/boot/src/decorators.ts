@@ -224,72 +224,14 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                     if ((injector as ModuleInjector).type === type) {
                         mdinj = injector as ModuleInjector;
                     } else {
-                        mdinj = injector.get(ModuleFactory).create(ctx.reflect, injector, regIn);
+                        mdinj = injector.resolve({token: ModuleFactory, target: type}).create(ctx.reflect, injector, regIn);
                         ctx.injector = mdinj;
                         ctx.state.injector = ctx.injector;
                     }
                     (ctx.state as ModuleRegistered).moduleRef = mdinj;
                 }
                 next();
-            },
-            // annoation: [
-            //     (ctx: ModuleDesignContext, next) => {
-            //         if (ctx.moduleRef && ctx.reflect.annoType === 'module' && ctx.reflect.annotation) {
-
-            //             next()
-            //         }
-            //     },
-            //     (ctx: ModuleDesignContext, next) => {
-            //         if (ctx.reflect.annotation.imports) {
-            //             const types = ctx.moduleRef.injector.use(ctx.reflect.annotation.imports);
-            //             (ctx.moduleRef as DefaultModuleRef).imports = types;
-            //             const state = ctx.injector.state();
-            //             types.forEach(ty => {
-            //                 const importRef = state.getRegistered<ModuleRegistered>(ty)?.moduleRef;
-            //                 if (importRef) {
-            //                     ctx.moduleRef.injector.addRef(importRef, true);
-            //                 }
-            //             });
-            //         }
-            //         next();
-            //     },
-            //     (ctx: ModuleDesignContext, next: () => void) => {
-            //         const mdRef = ctx.moduleRef;
-            //         const { exports: map, injector } = mdRef;
-            //         const annotation = ctx.reflect.annotation;
-            //         let components = annotation.components ? injector.use(annotation.components) : null;
-
-            //         if (mdRef.regIn === 'root') {
-            //             mdRef.imports?.forEach(ty => map.export(ty));
-            //         }
-            //         // inject module providers
-            //         if (annotation.providers?.length) {
-            //             map.parse(annotation.providers);
-            //         }
-
-            //         if (map.size) {
-            //             injector.copy(map, k => !injector.has(k));
-            //         }
-
-            //         if (components && components.length) {
-            //             ctx.reflect.components = components;
-            //         }
-
-            //         lang.getTypes(annotation.exports).forEach(ty => {
-            //             map.export(ty);
-            //         });
-
-            //         next();
-            //     },
-            //     (ctx: ModuleDesignContext, next: () => void) => {
-            //         if (ctx.moduleRef.exports.size) {
-            //             if (ctx.moduleRef.parent?.isRoot()) {
-            //                 ctx.moduleRef.parent.addRef(ctx.moduleRef);
-            //             }
-            //         }
-            //         next();
-            //     }
-            // ]
+            }
         },
         appendProps: (meta) => {
             if (append) {
