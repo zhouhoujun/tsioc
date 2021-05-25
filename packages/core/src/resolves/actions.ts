@@ -48,11 +48,12 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
     if (ctx.targetRefs && ctx.targetRefs.length) {
         const { injector, services, types, match } = ctx;
         const state = injector.state();
+        let maps: IProvider, type;
         ctx.targetRefs.forEach(tk => {
-            const maps = state.getTypeProvider(tk);
+            maps = state.getTypeProvider(tk);
             if (maps && maps.size) {
                 maps.iterator((pdr, t1) => {
-                    const type = pdr.type || t1;
+                    type = pdr.type || t1;
                     if (isFunction(type) && !services.has(type) && types.some(ty => match(type, ty))) {
                         services.set(type, pdr);
                     }
@@ -68,14 +69,11 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
 
 export const RsvServicesAction = function (ctx: ServicesContext, next: () => void): void {
     const { services, types, match } = ctx;
+    let type;
     ctx.injector.iterator((pdr, tk) => {
-        if (!services.has(tk)
-            && (
-                (isFunction(tk) && types.some(ty => match(tk, ty)))
-                || (pdr.type && types.some(ty => match(pdr.type, ty)))
-            )
-        ) {
-            services.set(tk, pdr);
+        type = pdr.type || tk;
+        if (isFunction(type) && !services.has(type) && types.some(ty => match(type, ty))){
+            services.set(type, pdr);
         }
     }, true);
 
