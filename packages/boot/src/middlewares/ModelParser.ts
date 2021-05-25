@@ -3,7 +3,7 @@ import {
     Abstract, Singleton, isNil, isFunction, Token, tokenId, Injector
 } from '@tsdi/ioc';
 import { IModelParser } from './IModelParser';
-import { TYPE_PARSER } from '../tk';
+import { TYPE_PARSER } from '../metadata/tk';
 
 
 /**

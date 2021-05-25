@@ -11,10 +11,12 @@ export * from './configure/register';
 // runnables
 export * from './runnable/Runnable';
 
-// decorators
-export * from './decorators';
+// metadata
+export * from './metadata/meta';
+export * from './metadata/decor';
+export * from './metadata/ref';
+export * from './metadata/tk';
 
-export * from './reflect';
 export * from './Context';
 
 // modules
@@ -28,7 +30,6 @@ export * from './appl/lifescope';
 
 export * from './IBootApplication';
 export * from './BootApplication';
-export * from './tk';
 
 // middlewares
 export * from './middlewares';

@@ -1,5 +1,5 @@
 import { Abstract, Inject, ProviderType, Singleton } from '@tsdi/ioc';
-import { CONTEXT } from '../tk';
+import { CONTEXT } from '../metadata/tk';
 import { IRouteVaildator, MessageContext } from './ctx';
 import { Middleware, ROUTE_URL, ROUTE_PREFIX } from './handle';
 

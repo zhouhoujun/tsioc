@@ -1,6 +1,6 @@
 import {
     Type, MethodMetadata, ClassMetadata, IProvider, tokenId, Token,
-    isNil, IocContext, IInjector, ParameterMetadata, Injectable
+    isNil, IocContext, IInjector, ParameterMetadata
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advices } from '../advices/Advices';

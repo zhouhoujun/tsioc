@@ -1,7 +1,7 @@
 import { IInjector, isBoolean, isFunction, isString, isTypeReflect, Provider, refl, ROOT_INJECTOR, Type } from '@tsdi/ioc';
 import { IModuleExports, ModuleFactory, ModuleInjector, ModuleOption, ModuleRegistered } from '../Context';
-import { ModuleReflect } from '../reflect';
-import { CTX_ARGS, PROCESS_ROOT } from '../tk';
+import { ModuleReflect } from '../metadata/ref';
+import { CTX_ARGS, PROCESS_ROOT } from '../metadata/tk';
 import { ModuleStrategy } from './strategy';
 
 

@@ -2,7 +2,7 @@ import {
     Abstract, AsyncHandler, DecorDefine, lang, ParameterMetadata, ProviderType, Type, TypeReflect, IInjector,
     isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, isPlainObject, tokenId, RegisteredState
 } from '@tsdi/ioc';
-import { CONTEXT, TYPE_PARSER } from '../tk';
+import { CONTEXT, TYPE_PARSER } from '../metadata/tk';
 import { MessageContext } from './ctx';
 import { IRouter, Middleware, MiddlewareType } from './handle';
 import { DefaultModelParserToken, ModelParser } from './ModelParser';

@@ -4,9 +4,9 @@ export * from './runnable';
 
 export * from './router';
 
-// decorators
-export * from './metadata';
-export * from './decorators';
+// metadata
+export * from './metadata/meta';
+export * from './metadata/decor';
 
 // change ref.
 export * from './chage/detector';
@@ -15,7 +15,6 @@ export * from './chage/strategy';
 
 // compile
 export * from './compile/facade';
-export * from './compile/actions';
 
 // directivies
 export * from './directivies/each';

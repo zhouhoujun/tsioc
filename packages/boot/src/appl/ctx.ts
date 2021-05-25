@@ -1,12 +1,12 @@
 import { Token, ProviderType, IInjector, Type, isFunction } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
-import { BOOT_TYPES, CONFIGURATION, PROCESS_ROOT } from '../tk';
+import { DIModuleMetadata } from '../metadata/meta';
+import { AnnotationReflect } from '../metadata/ref';
+import { BOOT_TYPES, CONFIGURATION, PROCESS_ROOT } from '../metadata/tk';
 import { Configure } from '../configure/config';
 import { ConfigureManager } from '../configure/manager';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootContext, BootFactory, BootstrapOption, ModuleFactory, ModuleInjector } from '../Context';
 import { MessageContext, MessageQueue, RequestOption, ROOT_QUEUE } from '../middlewares';
-import { DIModuleMetadata } from '../decorators';
-import { AnnotationReflect } from '../reflect';
 
 
 /**

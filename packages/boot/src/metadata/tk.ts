@@ -1,9 +1,9 @@
 import { tokenId, Token, Type } from '@tsdi/ioc';
-import { Configure, IConfigureLoader, IConfigureManager, IConfigureMerger } from './configure/config';
-import { IBaseTypeParser } from './services/IBaseTypeParser';
-import { MessageContext } from './middlewares/ctx';
-import { IBootApplication } from './IBootApplication';
-import { IStartupService } from './services/StartupService';
+import { Configure, IConfigureLoader, IConfigureManager, IConfigureMerger } from '../configure/config';
+import { IBaseTypeParser } from '../services/IBaseTypeParser';
+import { MessageContext } from '../middlewares/ctx';
+import { IBootApplication } from '../IBootApplication';
+import { IStartupService } from '../services/StartupService';
 
 
 /**

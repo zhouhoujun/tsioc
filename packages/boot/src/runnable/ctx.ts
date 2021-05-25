@@ -1,6 +1,6 @@
 import { IInjector, refl, Type, createInjector, lang, isTypeReflect } from '@tsdi/ioc';
 import { ApplicationContext, BootContext, BootFactory, BootFactoryOption } from '../Context';
-import { AnnotationReflect } from '../reflect';
+import { AnnotationReflect } from '../metadata/ref';
 import { Runnable } from './Runnable';
 
 

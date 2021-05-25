@@ -1,8 +1,9 @@
-// decorators
-export * from './decorators';
+// metadata
+export * from './metadata/meta';
+export * from './metadata/ref';
+export * from './metadata/tk';
+export * from './metadata/decor';
 
-// metadatas
-export * from './metadatas';
 
 // joinpoints
 export * from './joinpoints/state';
@@ -15,13 +16,11 @@ export * from './advices/Advicer';
 export * from './advices/Advices';
 
 
-export * from './types';
 export * from './IAdvisor';
 export * from './Advisor';
 export * from './AdviceMatcher';
 export * from './AopModule';
 
-export * from './tk';
 
 // actions
 export * from './actions/aop';

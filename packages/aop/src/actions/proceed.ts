@@ -7,12 +7,11 @@ import { Joinpoint } from '../joinpoints/Joinpoint';
 import { JoinpointState } from '../joinpoints/state';
 import { Advices } from '../advices/Advices';
 import { Advicer } from '../advices/Advicer';
-import { aExp } from '../regexps';
-import { ADVISOR } from '../tk';
+import { ADVISOR } from '../metadata/tk';
 
 const proxyFlag = '_proxy';
 const ctor = 'constructor';
-
+const aExp = /^@/;
 /**
  * Proxy method.
  *

@@ -1,44 +1,23 @@
 import {
-    DecoratorOption, isUndefined, ClassType, TypeMetadata, PatternMetadata, createDecorator, ROOT_INJECTOR,
+    DecoratorOption, isUndefined, ClassType, createDecorator, ROOT_INJECTOR,
     lang, Type, isArray, isString, DesignContext, ClassMethodDecorator, ProviderType, IProvider
 } from '@tsdi/ioc';
-import { IStartupService } from './services/StartupService';
-import { ModuleReflect, ModuleConfigure } from './reflect';
-import { Middleware, Middlewares, MiddlewareType, RouteReflect, ROUTE_PREFIX, ROUTE_PROTOCOL, ROUTE_URL } from './middlewares/handle';
-import { ROOT_QUEUE } from './middlewares/root';
-import { FactoryRoute, Route } from './middlewares/route';
-import { RootRouter, Router } from './middlewares/router';
-import { MappingReflect, MappingRoute, RouteMapingMetadata } from './middlewares/mapping';
-import { ModuleFactory, ModuleInjector, ModuleRegistered } from './Context';
+import { IStartupService } from '../services/StartupService';
+import { ModuleReflect, ModuleConfigure } from './ref';
+import { Middleware, Middlewares, MiddlewareType, RouteReflect, ROUTE_PREFIX, ROUTE_PROTOCOL, ROUTE_URL } from '../middlewares/handle';
+import { ROOT_QUEUE } from '../middlewares/root';
+import { FactoryRoute, Route } from '../middlewares/route';
+import { RootRouter, Router } from '../middlewares/router';
+import { MappingReflect, MappingRoute, RouteMapingMetadata } from '../middlewares/mapping';
+import { ModuleFactory, ModuleInjector, ModuleRegistered } from '../Context';
 import { BOOT_TYPES } from './tk';
+import { BootMetadata, DIModuleMetadata, HandleMetadata, HandlesMetadata } from './meta';
 
 
 /**
  * boot decorator.
  */
 export type BootDecorator = <TFunction extends ClassType<IStartupService>>(target: TFunction) => TFunction | void;
-
-/**
- * Boot metadata.
- *
- * @export
- * @interface BootMetadata
- * @extends {ClassMetadata}
- */
-export interface BootMetadata extends TypeMetadata, PatternMetadata {
-    /**
-     * the startup service dependencies.
-     */
-    deps?: Type<IStartupService>[];
-    /**
-     * this service startup before the service, or at first
-     */
-    before?: Type<IStartupService> | 'all';
-    /**
-     * this service startup after the service, or last.
-     */
-    after?: Type<IStartupService> | 'all';
-}
 
 /**
  * Boot decorator, use to define class as statup service when bootstrap application.
@@ -152,16 +131,6 @@ export function createBootDecorator<T extends BootMetadata>(name: string, option
 export const Boot: IBootDecorator = createBootDecorator<BootMetadata>('Boot');
 
 /**
- * DI module metadata.
- *
- * @export
- * @interface DIModuleMetadata
- * @extends {ModuleConfigure}
- * @extends {ClassMetadata}
- */
-export interface DIModuleMetadata extends ModuleConfigure { }
-
-/**
  * DIModule decorator, use to define class as DI Module.
  *
  * @export
@@ -254,51 +223,6 @@ export const DIModule: IDIModuleDecorator<DIModuleMetadata> = createDIModuleDeco
 
 
 export type HandleDecorator = <TFunction extends Type<Middleware>>(target: TFunction) => TFunction | void;
-
-/**
- * Handle metadata. use to define the class as handle handle register in global handle queue.
- *
- * @export
- * @interface RegisterForMetadata
- * @extends {TypeMetadata}
- */
-export interface HandleMetadata extends TypeMetadata, PatternMetadata {
-    /**
-     * handle route
-     */
-    route?: string;
-
-    /**
-     * route protocol
-     */
-    protocol?: string;
-
-    /**
-     * handle parent.
-     * default register in root handle queue.
-     * @type {boolean}
-     */
-    parent?: Type<Middlewares>;
-
-    /**
-     * register this handle handle before this handle.
-     *
-     * @type {Type<Middleware>}
-     */
-    before?: Type<Middleware>;
-
-    /**
-     * register this handle handle after this handle.
-     *
-     * @type {Type<Middleware>}
-     */
-    after?: Type<Middleware>;
-}
-
-export interface HandlesMetadata extends HandleMetadata {
-
-    autorun?: string;
-}
 
 /**
  * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.

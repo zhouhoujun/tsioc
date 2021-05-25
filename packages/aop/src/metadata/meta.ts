@@ -1,6 +1,10 @@
 import { MethodMetadata, ClassType, ClassMetadata, MethodPropMetadata } from '@tsdi/ioc';
-import { AdviceTypes } from './types';
 
+
+/**
+ * Joinpoint state.
+ */
+ export type AdviceTypes = 'Before' | 'Pointcut' | 'After' | 'AfterReturning' | 'AfterThrowing' | 'Advice' | 'Around';
 
 /**
  * pointcut annotation

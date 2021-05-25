@@ -1,7 +1,7 @@
 import { IModuleLoader, IContainer, isFunction, Type } from '@tsdi/ioc';
 import { ContainerBuilder } from '@tsdi/core';
 import { IBootApplication } from './IBootApplication';
-import { APPLICATION, PROCESS_EXIT } from './tk';
+import { APPLICATION, PROCESS_EXIT } from './metadata/tk';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption, ModuleFactory, ModuleInjector } from './Context';
 import { MiddlewareModule } from './middlewares';
 import { BootLifeScope } from './appl/lifescope';

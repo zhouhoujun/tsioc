@@ -1,6 +1,6 @@
 import { tokenId, Token } from '@tsdi/ioc';
-import { IAdviceMatcher } from './IAdviceMatcher';
-import { IAdvisor } from './IAdvisor';
+import { IAdviceMatcher } from '../IAdviceMatcher';
+import { IAdvisor } from '../IAdvisor';
 
 
 /**

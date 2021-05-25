@@ -3,7 +3,7 @@ import { BeforeCtorAdviceAction, AfterCtorAdviceAction, BindMthPointcutAction, M
 import { Advisor } from './Advisor';
 import { AdviceMatcher } from './AdviceMatcher';
 import { ProceedingScope } from './actions/proceed';
-import { ADVISOR, ADVICE_MATCHER } from './tk';
+import { ADVISOR, ADVICE_MATCHER } from './metadata/tk';
 
 
 

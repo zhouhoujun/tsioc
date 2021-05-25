@@ -1,6 +1,6 @@
 import {
     Token, createPropDecorator, PropertyMetadata, Type, refl, lang, isBoolean, isArray, isString, isUndefined,
-    createParamDecorator, createDecorator, InjectableMetadata, CONTAINER, ClassMethodDecorator
+    createParamDecorator, createDecorator, InjectableMetadata, ClassMethodDecorator
 } from '@tsdi/ioc';
 import {
     AnnotationReflect, BootFactory, MappingReflect, MessageQueue, Middlewares,
@@ -9,14 +9,13 @@ import {
 import {
     BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
     HostListenerMetadata, PipeMetadata, QueryMetadata, VaildateMetadata
-} from './metadata';
-import { PipeTransform } from './pipes/pipe';
-import { ComponentReflect, DirectiveReflect } from './reflect';
-import { CompilerFacade, Identifiers } from './compile/facade';
-import { ComponentType, DirectiveType } from './type';
-import { ComponentRunnable } from './runnable';
-import { HostMappingRoot, HostMappingRoute } from './router';
-import { ComponentFactory } from './refs/component';
+} from './meta';
+import { PipeTransform } from '../pipes/pipe';
+import { ComponentReflect, DirectiveReflect } from '../reflect';
+import { CompilerFacade } from '../compile/facade';
+import { ComponentType, DirectiveType } from '../type';
+import { HostMappingRoot, HostMappingRoute } from '../router';
+import { ComponentFactory } from '../refs/component';
 
 
 /**

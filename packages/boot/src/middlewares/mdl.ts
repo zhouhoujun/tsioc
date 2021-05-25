@@ -1,4 +1,4 @@
-import { DIModule } from '../decorators';
+import { DIModule } from '../metadata/decor';
 import { ExtendBaseTypeMap } from './ModelParser';
 import { MessageQueue } from './queue';
 import { RootMessageQueue } from './root';

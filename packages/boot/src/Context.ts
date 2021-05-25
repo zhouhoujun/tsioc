@@ -4,10 +4,10 @@ import {
 } from '@tsdi/ioc';
 import { ILoggerManager } from '@tsdi/logs';
 import { Configure, IConfigureManager } from './configure/config';
-import { AnnotationReflect, ModuleReflect } from './reflect';
+import { AnnotationReflect, ModuleReflect } from './metadata/ref';
 import { MessageQueue } from './middlewares/queue';
 import { MessageContext, RequestOption } from './middlewares';
-import { DIModuleMetadata } from './decorators';
+import { DIModuleMetadata } from './metadata/meta';
 
 
 

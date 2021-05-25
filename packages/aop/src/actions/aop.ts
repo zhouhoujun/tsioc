@@ -2,8 +2,8 @@ import { Type, RuntimeContext, refl, AnnotationType} from '@tsdi/ioc';
 import { ProceedingScope } from './proceed';
 import { Advicer } from '../advices/Advicer';
 import { Advices } from '../advices/Advices';
-import { ADVISOR, ADVICE_MATCHER } from '../tk';
-import { AopReflect } from '../types';
+import { ADVISOR, ADVICE_MATCHER } from '../metadata/tk';
+import { AopReflect } from '../metadata/ref';
 
 
 /**
