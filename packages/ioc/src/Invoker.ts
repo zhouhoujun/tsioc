@@ -1,6 +1,6 @@
 import { Token } from './tokens';
 import { IInjector, ProviderType } from './IInjector';
-import { ParameterMetadata } from './decor/metadatas';
+import { ParameterMetadata } from './metadata/meta';
 import { Type } from './types';
 
 

@@ -6,7 +6,7 @@ import { Handler } from '../utils/hdl';
 import {
     ParameterMetadata, PatternMetadata, PropertyMetadata,
     ProviderMetadata, ProvidersMetadata, RefProvider, RegInMetadata, TypeMetadata
-} from './metadatas';
+} from './meta';
 import { TypeDefine } from './typedef';
 
 /**

@@ -1,5 +1,5 @@
 import { Type } from './types';
-import { Abstract } from './decor/decorators';
+import { Abstract } from './metadata/decor';
 import { FacRecord, IProvider } from './IInjector';
 import { Token } from './tokens';
 import { mapEach } from './utils/lang';

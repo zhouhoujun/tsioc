@@ -1,4 +1,4 @@
-import { Modules, ObjectMap, Type } from './types';
+import { ObjectMap, Type } from './types';
 import { Token } from './tokens';
 
 /**

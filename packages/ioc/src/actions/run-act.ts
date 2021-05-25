@@ -1,6 +1,6 @@
 import { isNil } from '../utils/chk';
 import { chain } from '../utils/hdl';
-import { INVOKER } from '../utils/tk'
+import { INVOKER } from '../metadata/tk'
 import { IActionSetup } from '../action';
 import { RuntimeContext } from './ctx';
 import { IocRegAction, IocRegScope } from './reg';

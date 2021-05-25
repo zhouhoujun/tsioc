@@ -3,8 +3,8 @@ import { isFunction, getClass, isTypeObject } from '../utils/chk';
 import { Token } from '../tokens';
 import { IInjector, IProvider, ProviderType, RegisteredState } from '../IInjector';
 import { Invoker, MethodType } from '../Invoker';
-import { get } from '../decor/refl';
-import { ParameterMetadata } from '../decor/metadatas';
+import { get } from '../metadata/refl';
+import { ParameterMetadata } from '../metadata/meta';
 import { createInvokedProvider } from '../injector';
 
 /**

@@ -1,4 +1,4 @@
-import { TypeReflect } from '../decor/type';
+import { TypeReflect } from '../metadata/type';
 import { InjectToken } from '../tokens';
 import { AbstractType, AnnotationType, ClassType, ObjectMap, Type } from '../types';
 import { clsNameExp, reflFiled } from './exps';

@@ -14,17 +14,17 @@ export * from './utils/chk';
 export * from './utils/hdl';
 export * as lang from './utils/lang';
 export { Defer } from './utils/lang';
-export * from './utils/tk';
 
 
-// decoractors
-export * from './decor/typedef';
-export * from './decor/metadatas';
-export * from './decor/type';
-export * as refl from './decor/refl';
-export { DecoratorOption } from './decor/refl';
-export * from './decor/factory';
-export * from './decor/decorators';
+// metadata
+export * from './metadata/typedef';
+export * from './metadata/meta';
+export * from './metadata/type';
+export * as refl from './metadata/refl';
+export { DecoratorOption } from './metadata/refl';
+export * from './metadata/fac';
+export * from './metadata/decor';
+export * from './metadata/tk';
 
 
 // providers

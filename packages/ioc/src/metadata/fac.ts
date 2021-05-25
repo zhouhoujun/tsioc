@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { isUndefined, isNumber, isMetadataObject } from '../utils/chk';
-import { ClassMetadata, ParameterMetadata, PatternMetadata, PropertyMetadata } from './metadatas';
+import { ClassMetadata, ParameterMetadata, PatternMetadata, PropertyMetadata } from './meta';
 import { Type } from '../types';
 import { Token } from '../tokens';
 import { DecoratorOption } from './refl';

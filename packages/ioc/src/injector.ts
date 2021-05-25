@@ -1,5 +1,4 @@
 import { LoadType, Modules, Type } from './types';
-import { Abstract } from './decor/decorators';
 import { MethodType } from './Invoker';
 import { ClassProvider, ExistingProvider, FactoryProvider, KeyValueProvider, StaticProviders, ValueProvider } from './providers';
 import {
@@ -10,7 +9,8 @@ import { isToken, Token, tokenRef } from './tokens';
 import { isArray, isPlainObject, isClass, isNil, isFunction, isString, getClass, isDefined, isTypeObject } from './utils/chk';
 import { IContainer } from './IContainer';
 import { cleanObj, getTypes, remove } from './utils/lang';
-import { INJECTOR, TARGET } from './utils/tk';
+import { INJECTOR, TARGET } from './metadata/tk';
+import { Abstract } from './metadata/decor';
 import { DefaultStrategy, Strategy } from './strategy';
 import { DesignContext } from './actions/ctx';
 import { DesignLifeScope } from './actions/design';

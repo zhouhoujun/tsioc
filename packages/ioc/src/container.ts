@@ -1,4 +1,4 @@
-import { Registered, TypeReflect } from './decor/type';
+import { Registered, TypeReflect } from './metadata/type';
 import { ClassType, LoadType, Type } from './types';
 import { isArray, isFunction, isPlainObject } from './utils/chk';
 import { Handler } from './utils/hdl';
@@ -10,13 +10,15 @@ import {
 import { IContainer } from './IContainer';
 import { MethodType } from './Invoker';
 import { Token } from './tokens';
-import { CONTAINER, INVOKER, MODULE_LOADER } from './utils/tk';
+import { CONTAINER, INVOKER, MODULE_LOADER } from './metadata/tk';
+import { get } from './metadata/refl';
+import { Abstract } from './metadata/decor';
 import { Action, IActionSetup } from './action';
-import { get } from './decor/refl';
 import { Strategy } from './strategy';
 import { Provider, Injector, resolveRecord } from './injector';
-import { registerCores } from './utils/regs';
-import { Abstract } from './decor/decorators';
+import { InvokerImpl } from './actions/invoker';
+import { DesignLifeScope } from './actions/design';
+import { RuntimeLifeScope } from './actions/runtime';
 
 /**
  * default injector implantment.
@@ -324,5 +326,24 @@ class ActionProvider extends Provider implements IActionProvider {
         this.setValue(type, instance);
         if (isFunction(instance.setup)) instance.setup();
     }
+
+}
+
+/**
+ * register core for container.
+ *
+ * @export
+ * @param {IContainer} container
+ */
+ export function registerCores(container: IContainer) {
+
+    // container.setValue(CONTAINER, container);
+    container.setValue(INVOKER, new InvokerImpl());
+
+    // bing action.
+    container.action().regAction(
+        DesignLifeScope,
+        RuntimeLifeScope
+    );
 
 }

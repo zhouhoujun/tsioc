@@ -5,8 +5,8 @@ import { IContainer } from '../IContainer';
 import {
     ClassMetadata, AutorunMetadata, AutoWiredMetadata, InjectMetadata, TypeMetadata, PatternMetadata,
     InjectableMetadata, ParameterMetadata, ProvidersMetadata, RefMetadata, RefProvider
-} from './metadatas';
-import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './factory';
+} from './meta';
+import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
 import { IInjector, ProviderType } from '../IInjector';
 
 /**

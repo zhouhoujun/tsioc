@@ -1,7 +1,6 @@
 import { isFunction, isClass, isUndefined } from '../utils/chk';
 import { cleanObj } from '../utils/lang';
 import { chain } from '../utils/hdl';
-import { ROOT_INJECTOR } from '../utils/tk';
 import { Type } from '../types';
 import { Token, tokenRef } from '../tokens';
 import { DesignContext, RuntimeContext } from './ctx';
@@ -9,7 +8,8 @@ import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
 import { FacRecord, IInjector, IProvider } from '../IInjector';
-import { PropertyMetadata } from '../decor/metadatas';
+import { PropertyMetadata } from '../metadata/meta';
+import { ROOT_INJECTOR } from '../metadata/tk';
 
 
 

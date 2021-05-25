@@ -2,8 +2,8 @@ import { Type } from '../types';
 import { Handler } from '../utils/hdl';
 import { IocActions } from './act';
 import { Action, IocAction } from '../action';
-import { DecoratorScope } from '../decor/type';
-import { get } from '../decor/refl';
+import { DecoratorScope } from '../metadata/type';
+import { get } from '../metadata/refl';
 import { RegContext } from './ctx';
 
 

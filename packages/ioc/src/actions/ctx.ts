@@ -1,5 +1,5 @@
-import { ParameterMetadata } from '../decor/metadatas';
-import { Registered, TypeReflect } from '../decor/type';
+import { ParameterMetadata } from '../metadata/meta';
+import { Registered, TypeReflect } from '../metadata/type';
 import { IInjector, IProvider } from '../IInjector';
 import { Token } from '../tokens';
 import { Type } from '../types';

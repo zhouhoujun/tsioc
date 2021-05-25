@@ -3,7 +3,7 @@ import { Token } from './tokens';
 import { IContainer } from './IContainer';
 import { Destroyable } from './Destroyable';
 import { MethodType } from './Invoker';
-import { Registered, TypeReflect } from './decor/type';
+import { Registered, TypeReflect } from './metadata/type';
 import { Action } from './action';
 import { Handler } from './utils/hdl';
 import { ClassProvider, ExistingProvider, FactoryProvider, StaticProvider, ValueProvider } from './providers';
