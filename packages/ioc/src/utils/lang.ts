@@ -213,7 +213,7 @@ export function isExtendsClass<T extends ClassType>(target: ClassType, baseClass
  */
 export function getTypes(mds: Modules | Modules[]): Type[] {
     if (!mds) return [];
-    return isArray(mds)? mds.reduce((typs, curr) => typs.concat(getContentTypes(curr)), []) : getContentTypes(mds);
+    return isArray(mds) ? mds.reduce((typs, curr) => typs.concat(getContentTypes(curr)), []) : getContentTypes(mds);
 }
 
 const exportKey = 'exports';
@@ -268,8 +268,8 @@ export class Defer<T> {
      * @param {((val: T) => T | PromiseLike<T>)} [then]
      * @returns {Defer<T>}
      */
-    static create<T>(then?: (val: T) => T | PromiseLike<T>): Defer<T> {
-        const df = new Defer<T>();
+    static create<C>(then?: (val: C) => C | PromiseLike<C>): Defer<C> {
+        const df = new Defer<C>();
         if (then) {
             df.promise = df.promise.then(then);
             return df;

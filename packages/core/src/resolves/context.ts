@@ -12,7 +12,7 @@ import { Token, ClassType, IProvider, IocContext } from '@tsdi/ioc';
      */
     target?: Token | Object | (Token | Object)[];
 
-    targetToken?: Token;
+    targetRefs?: ClassType[];
     /**
      * only for target private or ref token. if has target.
      */
@@ -40,8 +40,6 @@ import { Token, ClassType, IProvider, IocContext } from '@tsdi/ioc';
       * @type {boolean}
       */
      extend?: boolean;
- 
-     targetRefs?: any[];
  
      /**
       * current token.

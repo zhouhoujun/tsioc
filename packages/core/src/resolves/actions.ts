@@ -1,4 +1,4 @@
-import { IActionSetup, lang, refl, isFunction, isTypeObject, tokenRef, IocActions, createProvider, IProvider } from '@tsdi/ioc';
+import { IActionSetup, lang, refl, isFunction, isTypeObject, tokenRef, IocActions, createProvider, IProvider, ClassType } from '@tsdi/ioc';
 import { ServicesContext } from './context';
 
 /**
@@ -16,7 +16,7 @@ export class ResolveServicesScope extends IocActions implements IActionSetup {
             return;
         }
         const injector = ctx.injector;
-        ctx.types = ctx.tokens.map(t => isFunction(t)? t: injector.getTokenProvider(t)).filter(t=> t);
+        ctx.types = ctx.tokens.map(t => isFunction(t) ? t : injector.getTokenProvider(t)).filter(t => t);
 
         if (!ctx.match) {
             ctx.match = typeMatch;
@@ -30,7 +30,6 @@ export class ResolveServicesScope extends IocActions implements IActionSetup {
         if (ctx.services.size < 1) {
             if (ctx.defaultToken) {
                 const key = ctx.defaultToken;
-                const injector = ctx.injector;
                 if (injector.has(key, true)) {
                     ctx.services.set(key, (pdr: IProvider) => injector.get(key, pdr));
                 }
@@ -47,36 +46,24 @@ export class ResolveServicesScope extends IocActions implements IActionSetup {
 
 export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () => void): void {
     if (ctx.targetRefs && ctx.targetRefs.length) {
-        const { injector: injector, services, types, match } = ctx;
+        const { injector, services, types, match } = ctx;
         const state = injector.state();
-        ctx.targetRefs.forEach(t => {
-            const tk = isTypeObject(t) ? lang.getClass(t) : t;
+        ctx.targetRefs.forEach(tk => {
             const maps = state.getTypeProvider(tk);
             if (maps && maps.size) {
                 maps.iterator((pdr, t1) => {
-                    if (!services.has(t1)
-                        && (
-                            (isFunction(t1) && types.some(ty => match(t1, ty)))
-                            || (pdr.type && types.some(ty => match(pdr.type, ty)))
-                        )
-                    ) {
-                        services.set(t1, pdr);
+                    const type = pdr.type || t1;
+                    if (isFunction(type) && !services.has(type) && types.some(ty => match(type, ty))) {
+                        services.set(type, pdr);
                     }
                 });
             }
-
-            ctx.types.forEach(ty => {
-                const reftk = tokenRef(ty, tk);
-                if (injector.has(reftk)) {
-                    services.set(reftk, (pdr: IProvider) => injector.get(reftk, pdr))
-                }
-            });
         });
     }
     if (!ctx.tagOnly) {
         next();
     }
-};
+}
 
 
 export const RsvServicesAction = function (ctx: ServicesContext, next: () => void): void {

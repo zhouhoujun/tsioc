@@ -281,10 +281,10 @@ export interface IProvider extends Destroyable {
      * @template T
      * @param {Token<T>} token
      * @param {Factory<T>} fac
-     * @param {Type<T>} [useClass]
+     * @param {Type<T>} [type] provider type.
      * @returns {this}
      */
-    set<T>(token: Token<T>, fac: Factory<T>, useClass?: Type<T>): this;
+    set<T>(token: Token<T>, fac: Factory<T>, type?: Type<T>): this;
     /**
      * cache instance.
      * @param token 

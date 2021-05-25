@@ -8,9 +8,6 @@ import { IActionProvider } from './IInjector';
  * action interface.
  */
 export abstract class Action {
-
-    constructor() { }
-
     /**
      * pase to handler.
      */

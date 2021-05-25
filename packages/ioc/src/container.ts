@@ -336,10 +336,7 @@ class ActionProvider extends Provider implements IActionProvider {
  * @param {IContainer} container
  */
  export function registerCores(container: IContainer) {
-
-    // container.setValue(CONTAINER, container);
     container.setValue(INVOKER, new InvokerImpl());
-
     // bing action.
     container.action().regAction(
         DesignLifeScope,

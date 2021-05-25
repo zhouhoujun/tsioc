@@ -103,25 +103,24 @@ export class Provider implements IProvider {
      * set provide.
      *
      * @template T
-     * @param {Token<T>} provide
+     * @param {Token<T>} token
      * @param {Factory<T>} fn
      * @param {Type<T>} [providerType]
      * @returns {this}
      */
-    set<T>(provide: Token<T>, fn: Factory<T>, type?: Type<T>): this;
+    set<T>(token: Token<T>, fn: Factory<T>, type?: Type<T>): this;
     set<T>(target: any, fn?: any, type?: Type<T>): this {
-        if (fn) {
-            if (isFunction(fn)) {
-                const old = this.factories.get(target as Token);
-                if (old) {
-                    old.fn = fn;
-                    if (type) old.type = type;
-                } else {
-                    this.factories.set(target as Token, type ? { fn, type } : { fn });
-                }
+        if (isFunction(fn)) {
+            const old = this.factories.get(target);
+            if (old) {
+                old.fn = fn;
+                if (
+                    type) old.type = type;
             } else {
-                this.factories.set(target, fn);
+                this.factories.set(target, type ? { fn, type } : { fn });
             }
+        } else if (fn) {
+            this.factories.set(target, fn);
         } else {
             this.factories.set((target as ProviderOption).provide, generateRecord(this, target));
         }
@@ -343,7 +342,7 @@ export class Provider implements IProvider {
     resolve<T>(token: Token<T> | ResolveOption<T>, ...args: any[]) {
         let inst: T;
         let destroy: Function;
-        let providers: ProviderType[] = (args.length === 1 && isArray(args[0]))? args[0] : args;
+        let providers: ProviderType[] = (args.length === 1 && isArray(args[0])) ? args[0] : args;
         if (isPlainObject(token)) {
             let option = token as ResolveOption;
             if (option.providers) {
@@ -770,11 +769,11 @@ function genCtor(injector: IProvider, ctor: Type, deps: any[]): Factory {
     return (pdr) => {
         let args = [];
         if (isArray(deps) && deps.length) {
-            args = deps.map(d => {
-                if (isToken(d)) {
-                    return injector.get(d, pdr) ?? (isString(d) ? d : null);
+            args = deps.map(p => {
+                if (isToken(p)) {
+                    return injector.get(p, pdr) ?? (isString(p) ? p : null);
                 } else {
-                    return d;
+                    return p;
                 }
             });
         }
