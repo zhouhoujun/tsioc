@@ -1,6 +1,6 @@
 import { createDecorator, DecoratorOption } from '@tsdi/ioc';
 import { AnnotationReflect } from '@tsdi/boot';
-import { SuiteMetadata, TestCaseMetadata, TestMetadata } from './metadata';
+import { SuiteMetadata, TestCaseMetadata, TestMetadata } from './meta';
 
 
 /**

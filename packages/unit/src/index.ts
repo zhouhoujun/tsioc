@@ -1,6 +1,5 @@
-export * from './metadata';
-
-export * from './decorators';
+export * from './metadata/meta';
+export * from './metadata/decor';
 
 export * from './assert/assert';
 export * from './assert/expects';

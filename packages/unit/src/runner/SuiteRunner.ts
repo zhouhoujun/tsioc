@@ -1,7 +1,7 @@
 import { lang, Injectable, Refs } from '@tsdi/ioc';
 import { Runnable, BootContext } from '@tsdi/boot';
-import { Before, BeforeEach, Test, After, AfterEach } from '../decorators';
-import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata';
+import { Before, BeforeEach, Test, After, AfterEach } from '../metadata/decor';
+import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata/meta';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
 import { ISuiteRunner } from './ISuiteRunner';
 import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
