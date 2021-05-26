@@ -12,8 +12,6 @@ import { mapEach } from './utils/lang';
 @Abstract()
 export abstract class Strategy {
 
-    protected constructor() { }
-
     /**
      * vaild parent.
      * @param parent parent provider.
