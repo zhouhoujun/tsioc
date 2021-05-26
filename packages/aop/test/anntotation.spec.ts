@@ -4,7 +4,7 @@ import {
 import { AnnotationAspect } from './aop/AnnotationAspect';
 import { CheckRightAspect } from './aop/CheckRightAspect';
 import { IocLog } from './aop/IocLog';
-import { AopModule } from '../src';
+import { AopModule, BoolExpression } from '../src';
 import expect = require('expect');
 
 
@@ -80,6 +80,18 @@ describe('aop test', () => {
         container = new IocContainer;
         container.inject(AopModule, IocLog);
     });
+
+    it('BoolExpression test', () => {
+
+        const exp = new BoolExpression(('dobj.do(c, f) && (tz || tf)'), exp => exp.startsWith('dobj.do'));
+        // const fns = exp.tokens.map(t => );
+        const argnames = exp.tokens.map((t, i) => 'arg' + i);
+        const body = exp.toString((t, i, tkidx) => 'arg' + tkidx + '()');
+
+        console.log(exp, body, argnames);
+        expect(argnames).toEqual([ 'arg0', 'arg1', 'arg2' ])
+        expect(body).toEqual('arg0() && ( arg1() || arg2() )')
+    })
 
     it('Aop anntotation test', () => {
 
