@@ -28,8 +28,6 @@ export function isChildModule(target: any): target is ChildModule {
  */
 export class ModuleLoader implements IModuleLoader {
 
-    constructor() { }
-
     static ρNPT = true;
 
     private _loader: (modulepath: string) => Promise<Modules[]>;
@@ -54,13 +52,7 @@ export class ModuleLoader implements IModuleLoader {
     load(modules: LoadType[]): Promise<Modules[]> {
         if (modules.length) {
             return Promise.all(modules.map(mdty => this.getMoudle(mdty)))
-                .then(allms => {
-                    let rmodules: Modules[] = [];
-                    allms.forEach(ms => {
-                        rmodules = rmodules.concat(ms);
-                    })
-                    return rmodules;
-                });
+                .then(mds => mds.reduce((prv, m) => prv.concat(m), []));
         } else {
             return Promise.resolve([]);
         }
@@ -84,10 +76,10 @@ export class ModuleLoader implements IModuleLoader {
      * @param {LoadType[]} mdl
      * @returns {Promise<Type[]>}
      */
-     async loadType(mdl: LoadType): Promise<Type[]> {
+    async loadType(mdl: LoadType): Promise<Type[]> {
         const mdls = await this.getMoudle(mdl);
         return lang.getTypes(mdls);
-     }
+    }
 
     /**
      * load types from module.
@@ -109,13 +101,7 @@ export class ModuleLoader implements IModuleLoader {
         let fRes: Promise<Modules[]>;
         if (isArray(files)) {
             fRes = Promise.all(files.map(f => loader(f)))
-                .then(allms => {
-                    let rms = [];
-                    allms.forEach(ms => {
-                        rms = rms.concat(ms);
-                    });
-                    return rms;
-                });
+                .then(mds => mds.reduce((prv, m) => prv.concat(m), []));
         } else {
             fRes = loader(files);
         }
@@ -133,16 +119,7 @@ export class ModuleLoader implements IModuleLoader {
     }
 
     protected async loadPathModule(pmd: PathModules): Promise<Modules[]> {
-        let modules: Modules[] = [];
-        if (pmd.files) {
-            await this.loadFile(pmd.files, pmd.basePath)
-                .then(allmoduls => {
-                    allmoduls.forEach(ms => {
-                        modules = modules.concat(ms);
-                    });
-                    return modules;
-                })
-        }
+        let modules = pmd.files ? await this.loadFile(pmd.files, pmd.basePath) : [];
         if (pmd.modules) {
             await Promise.all(pmd.modules.map(async nmd => {
                 if (isString(nmd)) {

@@ -1,4 +1,4 @@
-import { IActionSetup, lang, refl, isFunction, isTypeObject, tokenRef, IocActions, createProvider, IProvider, ClassType } from '@tsdi/ioc';
+import { IActionSetup, lang, refl, isFunction, IocActions, createProvider, IProvider } from '@tsdi/ioc';
 import { ServicesContext } from './context';
 
 /**

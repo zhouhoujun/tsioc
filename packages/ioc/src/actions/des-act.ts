@@ -142,8 +142,9 @@ export const DesignPropDecorScope = function (ctx: DesignContext, next: () => vo
  */
 export const TypeProviderAction = function (ctx: DesignContext, next: () => void) {
     const { injector: injector, type, state } = ctx;
+    let provide: Token;
     ctx.reflect.providers.forEach(anno => {
-        const provide = anno.provide;
+        provide = anno.provide;
         injector.set({ provide, useClass: type });
         if (state.provides.indexOf(provide) < 0) {
             state.provides.push(provide);
@@ -151,7 +152,7 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
     });
 
     ctx.reflect.refs.forEach(rf => {
-        const provide = tokenRef(rf.provide ?? type, rf.target);
+        provide = tokenRef(rf.provide ?? type, rf.target);
         injector.set({ provide: tokenRef(rf.provide ?? type, rf.target), useClass: type });
         if (state.provides.indexOf(provide) < 0) {
             state.provides.push(provide);

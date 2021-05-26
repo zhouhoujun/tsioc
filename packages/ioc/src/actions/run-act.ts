@@ -4,6 +4,8 @@ import { INVOKER } from '../metadata/tk'
 import { IActionSetup } from '../action';
 import { RuntimeContext } from './ctx';
 import { IocRegAction, IocRegScope } from './reg';
+import { Token } from '../tokens';
+import { PropertyMetadata } from '../metadata/meta';
 
 /**
  * ioc runtime register action.
@@ -49,15 +51,16 @@ export const CreateInstanceAction = function (ctx: RuntimeContext, next: () => v
 export const InjectPropAction = function (ctx: RuntimeContext, next: () => void) {
     if (ctx.reflect.propProviders.size) {
         const { injector: injector, providers, type } = ctx;
+        let meta: PropertyMetadata, key: string, token: Token, val;
         ctx.reflect.propProviders.forEach((metas, propertyKey) => {
-            const key = `${propertyKey}_INJECTED`;
-            let meta = metas.find(m => m.provider);
+            key = `${propertyKey}_INJECTED`;
+            meta = metas.find(m => m.provider);
             if (!meta) {
                 meta = metas.find(m => m.type);
             }
             if (meta && !ctx[key]) {
-                const token = meta.provider || meta.type;
-                const val = injector.resolve({ token, target: type, regify: true }, providers);
+                token = meta.provider || meta.type;
+                val = injector.resolve({ token, target: type, regify: true }, providers);
                 if (!isNil(val)) {
                     ctx.instance[propertyKey] = val;
                     ctx[key] = true;
@@ -153,10 +156,6 @@ export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void
 export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void) {
     if (ctx.reflect.autoruns.length) {
         const { injector: injector, type, instance } = ctx;
-        // refl has sorted.
-        // ctx.reflect.autoruns.sort((au1, au2) => {
-        //     return au1.order - au2.order;
-        // })
         ctx.reflect.autoruns.forEach(aut => {
             injector.invoke(instance || type, aut.autorun, instance);
         });
