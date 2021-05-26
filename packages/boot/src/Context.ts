@@ -287,7 +287,7 @@ export abstract class ApplicationContext<T = any> implements Destroyable {
      */
     abstract get args(): string[];
 
-    abstract getAnnoation<T extends DIModuleMetadata>(): T;
+    abstract getAnnoation<TM extends DIModuleMetadata>(): TM;
 
     /**
      * configuration merge metadata config and all application config.

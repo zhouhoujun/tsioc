@@ -32,8 +32,6 @@ export interface IConfigureRegister<T extends ApplicationContext = ApplicationCo
 @Abstract()
 export abstract class ConfigureRegister<T extends ApplicationContext = ApplicationContext> implements IConfigureRegister<T> {
 
-    constructor() { }
-
     /**
      * register config setting.
      *

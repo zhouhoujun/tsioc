@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { ILogger } from '@tsdi/logs';
 import { Singleton, Type, isString, isArray, IInjector } from '@tsdi/ioc';
-import { IBootContext, IConnectionOptions, Configure, ConnectionStatupService } from '@tsdi/boot';
+import { IConnectionOptions, Configure, ConnectionStatupService, ApplicationContext } from '@tsdi/boot';
 import { getConnection, createConnection, ConnectionOptions, Connection, getMetadataArgsStorage, getCustomRepository, getConnectionManager } from 'typeorm';
 
 
@@ -12,14 +12,14 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
      * default connection options.
      */
     protected options: IConnectionOptions;
-    protected ctx: IBootContext;
+    protected ctx: ApplicationContext;
 
     private logger: ILogger;
     /**
      * configure service.
      * @param ctx context.
      */
-    async configureService(ctx: IBootContext): Promise<void> {
+    async configureService(ctx: ApplicationContext): Promise<void> {
         this.ctx = ctx;
         const logger = this.logger = ctx.getLogManager()?.getLogger();
         logger?.info('startup db connections');
@@ -33,7 +33,7 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
         if (isArray(config.connections)) {
             await Promise.all(config.connections.map((options) => this.statupConnection(injector, options, config)));
         } else if (config.connections) {
-            let options = config.connections as IConnectionOptions;
+            let options = config.connections;
             options.asDefault = true;
             await this.statupConnection(injector, options, config);
         }

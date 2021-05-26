@@ -23,8 +23,6 @@ export const DEFAULTA_FACTORYS: ProviderType[] = [
 @IocExt()
 export class BootModule {
 
-    constructor() { }
-
     /**
      * register aop for container.
      */

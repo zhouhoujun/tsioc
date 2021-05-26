@@ -64,23 +64,23 @@ export class BootApplication<T> implements IBootApplication<T> {
     * run application.
     *
     * @static
-    * @template T
-    * @param {ApplicationOption<T>)} target
-    * @returns {Promise<ApplicationContext<T>>}
+    * @template M
+    * @param {ApplicationOption<M>)} target
+    * @returns {Promise<ApplicationContext<M>>}
     */
-    static run<T>(target: ApplicationOption<T>): Promise<ApplicationContext<T>>
+    static run<M>(target: ApplicationOption<M>): Promise<ApplicationContext<M>>
     /**
      * run application.
      *
      * @static
-     * @template T
+     * @template M
      * @param {Type<T>} target
      * @param {BootstrapOption)} [option]  application run depdences.
      * @returns {Promise<IBootContext>}
      */
-    static run<T>(target: Type<T>, option?: BootstrapOption): Promise<ApplicationContext<T>>;
-    static run<T>(target: Type<T> | ApplicationOption<T>, option?: BootstrapOption): Promise<ApplicationContext<T>> {
-        return new BootApplication(option ? { type: target, ...option } as ApplicationOption<T> : target).run();
+    static run<M>(target: Type<M>, option?: BootstrapOption): Promise<ApplicationContext<M>>;
+    static run<M>(target: Type<M> | ApplicationOption<M>, option?: BootstrapOption): Promise<ApplicationContext<M>> {
+        return new BootApplication(option ? { type: target, ...option } as ApplicationOption<M> : target).run();
     }
 
     /**

@@ -12,8 +12,6 @@ export class TypeOrmHelper {
     @Inject()
     private injector: Injector;
 
-    constructor() { }
-
     getConnection(connectName?: string): Connection {
         if (!this.service) {
             this.service = this.injector.get(TypeormConnectionStatupService);

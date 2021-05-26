@@ -10,8 +10,6 @@ import { BrowserModuleLoader } from './BrowserModuleLoader';
 @IocExt()
 export class BrowserModule {
 
-    constructor() { }
-
     /**
      * register aop for container.
      */

@@ -61,7 +61,6 @@ export class OldTestRunner extends Runnable implements ISuiteRunner {
     }
 
     registerGlobalScope() {
-        // isUndefined(window) ? global : window;
         testkeys.forEach(k => {
             gls[k] = globals[k];
         });

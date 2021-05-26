@@ -135,10 +135,6 @@ class ConsoleLog implements ILogger {
 
     level: string;
 
-    constructor() {
-
-    }
-
     log(...args: any[]): void {
         console.log(...args);
     }

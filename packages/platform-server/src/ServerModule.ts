@@ -8,8 +8,6 @@ import { NodeModuleLoader } from './NodeModuleLoader';
 @IocExt()
 export class ServerModule {
 
-    constructor() { }
-
     /**
      * register aop for container.
      */

@@ -49,6 +49,6 @@ export abstract class ConnectionStatupService<T extends ApplicationContext = App
     /**
      * default do nothing.
      */
-    protected destroying() { }
+    protected abstract destroying();
 
 }

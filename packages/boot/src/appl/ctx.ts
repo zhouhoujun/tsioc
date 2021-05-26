@@ -38,7 +38,7 @@ export class DefaultApplicationContext<T = any> extends ApplicationContext<T> {
      * @param type 
      * @param opts 
      */
-    bootstrap<T>(type: Type<T>| AnnotationReflect<T>, opts?: BootstrapOption): any {
+    bootstrap(type: Type | AnnotationReflect, opts?: BootstrapOption): any {
         return this.injector.resolve({ token: BootFactory, target: type }).create(type, { injector: this.injector, ...opts });
     }
 
@@ -81,8 +81,8 @@ export class DefaultApplicationContext<T = any> extends ApplicationContext<T> {
         return this.injector.get(PROCESS_ROOT);
     }
 
-    getAnnoation<T extends DIModuleMetadata>(): T {
-        return this.injector.reflect?.annotation as T;
+    getAnnoation<TM extends DIModuleMetadata>(): TM {
+        return this.injector.reflect?.annotation as TM;
     }
 
     /**
@@ -106,7 +106,7 @@ export class DefaultApplicationContext<T = any> extends ApplicationContext<T> {
     */
     destroy(): void {
         if (!this.destroyed) {
-            (this as {destroyed:boolean}).destroyed = true;
+            (this as { destroyed: boolean }).destroyed = true;
             this._dsryCbs.forEach(cb => cb());
             this._dsryCbs = null;
             this.destroying();
