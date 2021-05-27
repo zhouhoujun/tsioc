@@ -68,7 +68,9 @@ export abstract class Runnable<T = any> implements IRunnable {
     /**
      * destorying. default do nothing.
      */
-    protected destroying() { }
+    protected destroying() {
+        this.instance = null;
+    }
 
 }
 

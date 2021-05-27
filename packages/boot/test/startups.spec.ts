@@ -1,4 +1,4 @@
-import { BootApplication, DIModule, BootContext, StartupService, Boot, ApplicationContext } from '../src';
+import { BootApplication, DIModule, StartupService, Boot, ApplicationContext } from '../src';
 import expect = require('expect');
 import { IInjector, lang, Singleton } from '@tsdi/ioc';
 
@@ -30,7 +30,6 @@ export class DeviceConnectionService extends StartupService {
 
     connention: any;
     async configureService(ctx: ApplicationContext): Promise<void> {
-        const cfg = ctx.getConfiguration();
         let defer = lang.defer<void>();
         setTimeout(() => {
             this.connention = { name: 'device_connect' };
@@ -49,7 +48,6 @@ export class DeviceInitService extends StartupService {
     connid: string;
     id = 0;
     async configureService(ctx: ApplicationContext): Promise<void> {
-        const cfg = ctx.getConfiguration();
         let connention = ctx.injector.get(DeviceConnectionService).connention;
         this.connid = connention.name + this.id++;
     }
@@ -63,7 +61,6 @@ export class DeviceAService extends StartupService {
 
     data: any;
     async configureService(ctx: ApplicationContext): Promise<void> {
-        const cfg = ctx.getConfiguration();
         let connid = ctx.injector.get(DeviceInitService).connid;
         this.data = { connid };
     }

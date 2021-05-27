@@ -67,6 +67,8 @@ export abstract class StartupService<T extends ApplicationContext = ApplicationC
     /**
      * default do nothing.
      */
-    protected destroying() { }
+    protected destroying() {
+        // destory.
+    }
 
 }
