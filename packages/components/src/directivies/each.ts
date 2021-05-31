@@ -1,6 +1,6 @@
 import { lang } from '@tsdi/ioc';
 import { IterableType, IterableDiffers, TrackByFunction, IterableDiffer, IterableChanges, IterableChangeRecord } from '../chage/iterable';
-import { Directive, Input } from '../decorators';
+import { Directive, Input } from '../metadata/decor';
 import { DoCheck } from '../lifecycle';
 import { ViewContainerRef } from '../refs/container';
 import { TemplateRef } from '../refs/template';

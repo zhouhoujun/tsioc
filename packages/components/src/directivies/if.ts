@@ -1,4 +1,4 @@
-import { Directive, Input } from '../decorators';
+import { Directive, Input } from '../metadata/decor';
 import { stringify } from '../util/stringify';
 import { ViewContainerRef } from '../refs/container';
 import { TemplateRef } from '../refs/template';

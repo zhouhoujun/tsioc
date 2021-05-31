@@ -1,6 +1,6 @@
 import { IInjector, Type } from '@tsdi/ioc';
 import { ModuleRef } from '@tsdi/boot';
-import { Directive, Input } from '../decorators';
+import { Directive, Input } from '../metadata/decor';
 import { Change, Changes, OnChanges, OnDestroy } from '../lifecycle';
 import { ComponentRef } from '../refs/component';
 import { ViewContainerRef } from '../refs/container';

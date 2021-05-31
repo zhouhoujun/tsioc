@@ -1,4 +1,4 @@
-import { Directive, Host, Input } from '../decorators';
+import { Directive, Host, Input } from '../metadata/decor';
 import { DoCheck } from '../lifecycle';
 import { ViewContainerRef } from '../refs/container';
 import { TemplateRef } from '../refs/template';
