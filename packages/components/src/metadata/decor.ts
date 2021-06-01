@@ -3,7 +3,7 @@ import {
     createParamDecorator, createDecorator, InjectableMetadata, ClassMethodDecorator
 } from '@tsdi/ioc';
 import {
-    AnnotationReflect, BootFactory, MappingReflect, MessageQueue, Middlewares,
+    AnnotationReflect, ServiceFactory, MappingReflect, MessageQueue, Middlewares,
     MiddlewareType, RouteMapingMetadata, Router
 } from '@tsdi/boot';
 import {
@@ -138,7 +138,7 @@ export const Component: IComponentDecorator = createDecorator<ComponentMetadata>
         }
     },
     providers: [
-        { provide: BootFactory, useExisting: ComponentFactory }
+        { provide: ServiceFactory, useExisting: ComponentFactory }
     ]
 });
 

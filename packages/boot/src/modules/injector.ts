@@ -1,4 +1,4 @@
-import { IInjector, isBoolean, isFunction, isString, isTypeReflect, Provider, refl, ROOT_INJECTOR, Type } from '@tsdi/ioc';
+import { IInjector, isFunction, Provider, refl, ROOT_INJECTOR, Type } from '@tsdi/ioc';
 import { IModuleExports, ModuleFactory, ModuleInjector, ModuleOption, ModuleRegistered } from '../Context';
 import { ModuleReflect } from '../metadata/ref';
 import { CTX_ARGS, PROCESS_ROOT } from '../metadata/tk';
@@ -108,24 +108,21 @@ export class ModuleProvider extends Provider implements IModuleExports {
 
 
 
-export class DefaultModuleFactory extends ModuleFactory {
+export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
 
-    constructor() {
+    private _modelRefl: ModuleReflect<T>;
+    constructor(modelRefl: ModuleReflect<T> | Type<T>) {
         super();
+        this._modelRefl = isFunction(modelRefl)? refl.get(modelRefl) : modelRefl;
     }
 
-    create<T>(type: Type<T> | ModuleReflect<T> | ModuleOption<T>, parent?: IInjector, root?: boolean): ModuleInjector<T>;
-    create<T>(type: Type<T> | ModuleReflect<T> | ModuleOption<T>, parent?: IInjector, regIn?: string, root?: boolean): ModuleInjector<T>;
-    create<T>(type: Type<T> | ModuleReflect<T> | ModuleOption<T>, parent?: IInjector, arg?: any, root?: boolean): ModuleInjector<T> {
-        let regIn: string;
-        if(isString(arg)){
-            regIn = arg;
-        } else if(isBoolean(arg)){
-            root = arg;
-        }
+    get moduleType() {
+        return this._modelRefl?.type;
+    }
 
-        let inj = isFunction(type) ? this.createInstance(refl.get(type), parent, root, regIn)
-            : (isTypeReflect(type) ? this.createInstance(type, parent, root, regIn) : this.createByOption(type, parent, root, regIn));
+    create(parent: IInjector, option?: ModuleOption): ModuleInjector<T> {
+        if((parent as ModuleInjector)?.type === this._modelRefl.type) return parent as ModuleInjector;
+        let inj = option ? this.createByOption(parent, option) : this.createInstance(parent);
         this.regModule(inj);
         return inj;
     }
@@ -146,7 +143,7 @@ export class DefaultModuleFactory extends ModuleFactory {
             })
         }
         if (inj.reflect.components) inj.register(inj.reflect.components);
-        if (inj.reflect.annotation.providers) {
+        if (inj.reflect.annotation?.providers) {
             inj.exports.inject(inj.reflect.annotation.providers);
         }
 
@@ -157,9 +154,9 @@ export class DefaultModuleFactory extends ModuleFactory {
     }
 
 
-    protected createByOption(option: ModuleOption, parent?: IInjector, root?: boolean, regIn?: string) {
+    protected createByOption(parent: IInjector, option: ModuleOption) {
         parent = parent || option.injector;
-        const inj = this.createInstance(refl.get(option.type), parent, root, regIn || option.regIn);
+        const inj = this.createInstance(parent, option.regIn, option.root);
         if (option.providers) {
             inj.inject(option.providers);
         }
@@ -175,8 +172,8 @@ export class DefaultModuleFactory extends ModuleFactory {
         return inj;
     }
 
-    protected createInstance(type: ModuleReflect, parent: IInjector, root?: boolean, regIn?: string) {
-        regIn = regIn || type.regIn;
-        return new DefaultModuleInjector(type, (regIn && !root) ? parent.get(ROOT_INJECTOR) : parent, regIn, root);
+    protected createInstance(parent: IInjector, regIn?: string, root?: boolean) {
+        regIn = regIn || this._modelRefl.regIn;
+        return new DefaultModuleInjector(this._modelRefl, (regIn && !root) ? parent.get(ROOT_INJECTOR) : parent, regIn, root);
     }
 }

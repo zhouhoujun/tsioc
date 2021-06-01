@@ -104,28 +104,26 @@ export abstract class BootContext<T = any> {
 }
 
 /**
- * boot factory option.
- */
-export interface BootFactoryOption extends BootstrapOption {
-    /**
-     * injector.
-     */
-    injector: IInjector;
-}
-
-/**
  * boot factory.
  */
 @Abstract()
-export abstract class BootFactory {
+export abstract class ServiceFactory<T> {
+    /**
+     * service type.
+     */
+    abstract get type(): Type<T>
     /**
      * create boot context.
      * @param type 
      * @param option 
      */
-    abstract create<T>(type: Type<T> | AnnotationReflect<T>, option: BootFactoryOption): BootContext<T> | Promise<BootContext<T>>;
+    abstract create(option: BootstrapOption): BootContext<T> | Promise<BootContext<T>>;
 }
 
+@Abstract()
+export abstract class ServiceFactoryResolver {
+    abstract resolve<T>(type: Type<T>): ServiceFactory<T>;
+}
 
 /**
  * module exports provider.
@@ -184,12 +182,6 @@ export interface ModuleRegistered extends Registered {
  */
 export interface ModuleOption<T = any> extends RegInMetadata {
     /**
-     * target module type.
-     *
-     * @type {ClassType}
-     */
-    type: Type<T>;
-    /**
      * boot base url.
      *
      * @type {string}
@@ -215,36 +207,43 @@ export interface ModuleOption<T = any> extends RegInMetadata {
      * dependence types.
      */
     deps?: Modules[];
+
+    root?: boolean;
 }
 
 @Abstract()
-export abstract class ModuleFactory {
-    abstract create<T>(type: Type<T> | ModuleReflect<T> | ModuleOption<T>, parent?: IInjector, root?: boolean): ModuleInjector<T>;
-    abstract create<T>(type: Type<T> | ModuleReflect<T> | ModuleOption<T>, parent?: IInjector, regIn?: string, root?: boolean): ModuleInjector<T>;
+export abstract class ModuleFactory<T = any> {
+    abstract get moduleType(): Type<T>;
+    abstract create(parent: IInjector, option?: ModuleOption): ModuleInjector<T>;
+}
+
+@Abstract()
+export abstract class ModuleFactoryResolver {
+    abstract resolve<T>(type: Type<T>): ModuleFactory<T>;
 }
 
 /**
  * boot context.
  */
 @Abstract()
-export abstract class ApplicationContext<T = any> implements Destroyable {
+export abstract class ApplicationContext implements Destroyable {
 
     /**
      * application injector.
      */
-    abstract get injector(): ModuleInjector<T>;
+    abstract get injector(): ModuleInjector;
 
     /**
      * module instance.
      */
-    abstract get instance(): T;
+     abstract get instance();
 
     /**
      * bootstrap type
      * @param type 
      * @param opts 
      */
-    abstract bootstrap(type: Type | AnnotationReflect<T>, opts?: BootstrapOption): any;
+    abstract bootstrap<C>(type: Type<C> | ServiceFactory<C>, opts?: BootstrapOption): BootContext<C> | Promise<BootContext<C>>;
 
     /**
      * get message queue.
@@ -336,6 +335,12 @@ export abstract class ApplicationContext<T = any> implements Destroyable {
  */
 export interface ApplicationOption<T = any> extends ModuleOption<T> {
     /**
+     * target module type.
+     *
+     * @type {ClassType}
+     */
+    type: Type<T>;
+    /**
      * module loader
      *
      * @type {IModuleLoader}
@@ -364,7 +369,5 @@ export interface ApplicationOption<T = any> extends ModuleOption<T> {
  */
 @Abstract()
 export abstract class ApplicationFactory {
-    abstract create<T>(type: ApplicationOption<T>): ApplicationContext<T>;
-    abstract create<T>(type: ModuleInjector<T>, option: ApplicationOption<T>): ApplicationContext<T>;
-    abstract create<T>(type: Type<T> | ApplicationOption<T>, parent?: IInjector): ApplicationContext<T>;
+    abstract create<T>(root: ModuleInjector<T>, option?: ApplicationOption<T>): ApplicationContext;
 }

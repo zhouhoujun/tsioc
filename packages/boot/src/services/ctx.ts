@@ -1,14 +1,13 @@
-import { IInjector, refl, Type, createInjector, lang, isTypeReflect } from '@tsdi/ioc';
-import { ApplicationContext, BootContext, BootFactory, BootFactoryOption } from '../Context';
+import { IInjector, Type } from '@tsdi/ioc';
+import { ApplicationContext, BootContext, IRunnable } from '../Context';
 import { AnnotationReflect } from '../metadata/ref';
-import { Runnable } from './Runnable';
 
 
 export class DefaultBootContext<T> extends BootContext<T> {
 
     private _destroyed = false;
     private _dsryCbs: (() => void)[] = [];
-    runnable: Runnable;
+    runnable: IRunnable;
     private _instance: T;
     constructor(readonly reflect: AnnotationReflect<T>, readonly injector: IInjector) {
         super();
@@ -54,35 +53,5 @@ export class DefaultBootContext<T> extends BootContext<T> {
         this.injector.destroy();
         this.runnable?.destroy();
         this._instance = null;
-    }
-}
-
-/**
- * runable boot factory.
- */
-export class RunnableBootFactory extends BootFactory {
-
-    async create<T>(type: Type<T> | AnnotationReflect<T>, option: BootFactoryOption) {
-        const injector = createInjector(option.injector, option.providers);
-        const ctx = new DefaultBootContext(isTypeReflect(type) ? type : refl.get(type), injector);
-        let startup: Runnable;
-        if (ctx.instance instanceof Runnable) {
-            startup = ctx.instance;
-        } else {
-            startup = injector.resolve(
-                { token: Runnable, target: ctx.instance },
-                { provide: BootContext, useValue: ctx }
-            );
-        }
-        if (startup) {
-            await startup.configureService(ctx);
-            ctx.runnable = startup;
-        }
-        const app = ctx.getRoot();
-        ctx.onDestroy(() => {
-            lang.remove(app.bootstraps, ctx);
-        });
-        app.bootstraps.push(ctx);
-        return ctx;
     }
 }

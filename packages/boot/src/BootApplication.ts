@@ -14,33 +14,35 @@ import { BootModule, DEFAULTA_FACTORYS } from './BootModule';
  * @export
  * @class BootApplication
  */
-export class BootApplication<T> implements IBootApplication<T> {
+export class BootApplication implements IBootApplication {
 
     private _destroyed = false;
     private destroyCbs: (() => void)[] = [];
     protected container: IContainer;
     private _newCt: boolean;
-    readonly root: ModuleInjector<T>;
+    readonly root: ModuleInjector;
     /**
      * application context.
      *
      * @type {T}
      * @memberof BootApplication
      */
-    protected context: ApplicationContext<T>;
+    protected context: ApplicationContext;
 
-    constructor(public target?: Type<T> | ApplicationOption<T>, protected loader?: IModuleLoader) {
+    constructor(protected target?: Type | ApplicationOption, protected loader?: IModuleLoader) {
         if (!isFunction(target)) {
             if (!this.loader) this.loader = target.loader;
             const parent = target.injector ?? this.createContainer();
             const prds = (target.providers && target.providers.length) ? [...DEFAULTA_FACTORYS, ...target.providers] : DEFAULTA_FACTORYS;
             target.providers = prds;
             target.deps = [BootModule, MiddlewareModule, ...target.deps || []];
-            this.root = parent.resolve({ token: ModuleFactory, target: target.type, providers: prds }).create(target, parent, true);
+            target.root = true;
+            this.root = parent.resolve({ token: ModuleFactory, target: target.type, providers: prds }).create(parent, target);
             this.container = this.root.getContainer();
         } else {
             this.container = this.createContainer();
-            this.root = this.container.resolve({ token: ModuleFactory, target, providers: DEFAULTA_FACTORYS }).create({ type: target, deps: [BootModule, MiddlewareModule], providers: DEFAULTA_FACTORYS }, this.container, true);
+            const option = { type: target, root: true, deps: [BootModule, MiddlewareModule], providers: DEFAULTA_FACTORYS };
+            this.root = this.container.resolve({ token: ModuleFactory, target, providers: DEFAULTA_FACTORYS }).create(this.container, option);
         }
         this.initRoot();
     }
@@ -53,10 +55,10 @@ export class BootApplication<T> implements IBootApplication<T> {
     /**
      * get boot application context.
      *
-     * @returns {ApplicationContext<T>}
+     * @returns {ApplicationContext}
      * @memberof BootApplication
      */
-    getContext(): ApplicationContext<T> {
+    getContext(): ApplicationContext {
         return this.context;
     }
 
@@ -64,23 +66,21 @@ export class BootApplication<T> implements IBootApplication<T> {
     * run application.
     *
     * @static
-    * @template M
     * @param {ApplicationOption<M>)} target
     * @returns {Promise<ApplicationContext<M>>}
     */
-    static run<M>(target: ApplicationOption<M>): Promise<ApplicationContext<M>>
+    static run(target: ApplicationOption): Promise<ApplicationContext>
     /**
      * run application.
      *
      * @static
-     * @template M
      * @param {Type<T>} target
      * @param {BootstrapOption)} [option]  application run depdences.
      * @returns {Promise<IBootContext>}
      */
-    static run<M>(target: Type<M>, option?: BootstrapOption): Promise<ApplicationContext<M>>;
-    static run<M>(target: Type<M> | ApplicationOption<M>, option?: BootstrapOption): Promise<ApplicationContext<M>> {
-        return new BootApplication(option ? { type: target, ...option } as ApplicationOption<M> : target).run();
+    static run(target: Type, option?: BootstrapOption): Promise<ApplicationContext>;
+    static run(target: Type | ApplicationOption, option?: BootstrapOption): Promise<ApplicationContext> {
+        return new BootApplication(option ? { type: target, ...option } as ApplicationOption : target).run();
     }
 
     /**
@@ -89,7 +89,7 @@ export class BootApplication<T> implements IBootApplication<T> {
      * @param {...string[]} args
      * @returns {Promise<T>}
      */
-    async run(): Promise<ApplicationContext<T>> {
+    async run(): Promise<ApplicationContext> {
         const ctx = await this.setup();
         await ctx.injector.action().get(BootLifeScope).execute(ctx);
         ctx.onDestroy(() => this.destroy());

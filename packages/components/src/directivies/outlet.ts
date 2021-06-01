@@ -1,10 +1,9 @@
 import { IInjector, Type } from '@tsdi/ioc';
-import { ModuleRef } from '@tsdi/boot';
+import { ModuleFactory, ModuleRef } from '@tsdi/boot';
 import { Directive, Input } from '../metadata/decor';
 import { Change, Changes, OnChanges, OnDestroy } from '../lifecycle';
 import { ComponentRef } from '../refs/component';
 import { ViewContainerRef } from '../refs/container';
-import { ModuleFactory } from '../refs/module';
 import { TemplateRef } from '../refs/template';
 import { EmbeddedViewRef } from '../refs/view';
 
@@ -155,7 +154,7 @@ export class DirComponentOutlet implements OnChanges, OnDestroy {
   @Input() componentOutlet: Type<any>;
   @Input() componentOutletInjector: IInjector;
   @Input() componentOutletContent: any[][];
-  @Input() componentOutletModuleFactory: ModuleFactory<any>;
+  @Input() componentOutletModuleFactory: ModuleFactory;
 
   private _componentRef: ComponentRef<any> | null = null;
   private _moduleRef: ModuleRef<any> | null = null;

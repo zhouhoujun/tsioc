@@ -1,5 +1,7 @@
-import { lang, Type, Abstract, Inject, TARGET } from '@tsdi/ioc';
-import { BootContext, IRunnable } from '../Context';
+import { lang, Type, Abstract, Inject, TARGET, createInjector, refl } from '@tsdi/ioc';
+import { BootContext, BootstrapOption, IRunnable, ServiceFactory, ServiceFactoryResolver } from '../Context';
+import { AnnotationReflect } from '../metadata/ref';
+import { DefaultBootContext } from './ctx';
 
 
 
@@ -86,4 +88,50 @@ export function isRunnable(target: any): target is Runnable {
         return true;
     }
     return false;
+}
+
+
+/**
+ * runable boot factory.
+ */
+export class RunableServiceFactory<T = any> extends ServiceFactory<T> {
+
+    constructor(private refl: AnnotationReflect<T>) {
+        super();
+    }
+
+    get type() {
+        return this.refl.type;
+    }
+
+    async create(option: BootstrapOption) {
+        const injector = createInjector(option.injector, option.providers);
+        const ctx = new DefaultBootContext(this.refl, injector);
+        let startup: Runnable;
+        if (ctx.instance instanceof Runnable) {
+            startup = ctx.instance;
+        } else {
+            startup = injector.resolve(
+                { token: Runnable, target: ctx.instance },
+                { provide: BootContext, useValue: ctx }
+            );
+        }
+        if (startup) {
+            await startup.configureService(ctx);
+            ctx.runnable = startup;
+        }
+        const app = ctx.getRoot();
+        ctx.onDestroy(() => {
+            lang.remove(app.bootstraps, ctx);
+        });
+        app.bootstraps.push(ctx);
+        return ctx;
+    }
+}
+
+export class RunnableFactoryResolver extends ServiceFactoryResolver {
+
+    resolve<T>(type: Type<T>) {
+        return new RunableServiceFactory(refl.get(type));
+    }
 }

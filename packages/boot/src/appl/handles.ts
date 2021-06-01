@@ -1,4 +1,4 @@
-import { lang, IActionSetup, ClassType, isFunction, resolveRecord, Type, IocAction, ActionType, AsyncHandler, Actions } from '@tsdi/ioc';
+import { lang, IActionSetup, ClassType, isFunction, resolveRecord, Type, IocAction, ActionType, AsyncHandler, Actions, refl } from '@tsdi/ioc';
 import { LogConfigureToken, DebugLogAspect, LogModule } from '@tsdi/logs';
 import { ApplicationContext } from '../Context';
 import { CONFIGURATION, PROCESS_ROOT } from '../metadata/tk';

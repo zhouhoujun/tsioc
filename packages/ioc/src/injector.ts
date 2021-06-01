@@ -6,7 +6,7 @@ import {
     RegisteredState, RegisterOption, ResolveOption, ServicesOption, ProviderOption
 } from './IInjector';
 import { isToken, Token, tokenRef } from './tokens';
-import { isArray, isPlainObject, isClass, isNil, isFunction, isString, getClass, isDefined, isTypeObject } from './utils/chk';
+import { isArray, isPlainObject, isClass, isNil, isFunction, isString, getClass, isDefined, isTypeObject, isTypeReflect } from './utils/chk';
 import { IContainer } from './IContainer';
 import { cleanObj, getTypes, remove } from './utils/lang';
 import { INJECTOR, TARGET } from './metadata/tk';
@@ -370,7 +370,7 @@ export class Provider implements IProvider {
     }
 
     protected resolveStrategy<T>(option: ResolveOption<T>, pdr: IProvider) {
-        const targetToken = isTypeObject(option.target) ? getClass(option.target) : option.target as Type;
+        const targetToken = isTypeReflect(option.target) ? option.target.type as Type : (isTypeObject(option.target) ? getClass(option.target) : option.target as Type);
 
         let inst: T;
         const state = this.state();
@@ -746,7 +746,7 @@ function genFactory(injector: IProvider, option: FactoryProvider): Factory {
     return (pdr) => {
         let args = deps?.map(d => {
             if (isToken(d)) {
-                return injector.get(d, pdr) ?? (isString(d) ? d : null);
+                return pdr?.get(d) ?? injector.get(d, pdr) ?? (isString(d) ? d : null);
             } else {
                 return d;
             }
@@ -771,7 +771,7 @@ function genCtor(injector: IProvider, ctor: Type, deps: any[]): Factory {
         if (isArray(deps) && deps.length) {
             args = deps.map(p => {
                 if (isToken(p)) {
-                    return injector.get(p, pdr) ?? (isString(p) ? p : null);
+                    return pdr?.get(p) ?? injector.get(p, pdr) ?? (isString(p) ? p : null);
                 } else {
                     return p;
                 }

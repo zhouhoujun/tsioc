@@ -1,11 +1,10 @@
-import { Token, ProviderType, IInjector, Type, isFunction } from '@tsdi/ioc';
+import { Token, ProviderType, Type, isFunction } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { DIModuleMetadata } from '../metadata/meta';
-import { AnnotationReflect } from '../metadata/ref';
 import { BOOT_TYPES, CONFIGURATION, PROCESS_ROOT } from '../metadata/tk';
 import { Configure } from '../configure/config';
 import { ConfigureManager } from '../configure/manager';
-import { ApplicationContext, ApplicationFactory, ApplicationOption, BootContext, BootFactory, BootstrapOption, ModuleFactory, ModuleInjector } from '../Context';
+import { ApplicationContext, ApplicationFactory, ApplicationOption, BootContext, ServiceFactory, BootstrapOption, ModuleInjector, ServiceFactoryResolver } from '../Context';
 import { MessageContext, MessageQueue, RequestOption, ROOT_QUEUE } from '../middlewares';
 
 
@@ -16,7 +15,7 @@ import { MessageContext, MessageQueue, RequestOption, ROOT_QUEUE } from '../midd
  * @class BootContext
  * @extends {HandleContext}
  */
-export class DefaultApplicationContext<T = any> extends ApplicationContext<T> {
+export class DefaultApplicationContext extends ApplicationContext {
 
     readonly destroyed = false;
     private _dsryCbs: (() => void)[] = [];
@@ -24,7 +23,7 @@ export class DefaultApplicationContext<T = any> extends ApplicationContext<T> {
     readonly args: string[] = [];
     readonly startups: Token[] = [];
 
-    constructor(readonly injector: ModuleInjector<T>) {
+    constructor(readonly injector: ModuleInjector) {
         super();
         injector.setValue(ApplicationContext, this);
     }
@@ -38,11 +37,12 @@ export class DefaultApplicationContext<T = any> extends ApplicationContext<T> {
      * @param type 
      * @param opts 
      */
-    bootstrap(type: Type | AnnotationReflect, opts?: BootstrapOption): any {
-        return this.injector.resolve({ token: BootFactory, target: type }).create(type, { injector: this.injector, ...opts });
+    bootstrap<C>(type: Type<C> | ServiceFactory<C>, opts?: BootstrapOption): BootContext<C> | Promise<BootContext<C>> {
+        const factory = isFunction(type) ? this.injector.resolve({ token: ServiceFactoryResolver, target: type }).resolve(type) : type;
+        return factory.create({ injector: this.injector, ...opts });
     }
 
-    get instance(): T {
+    get instance() {
         return this.injector.instance;
     }
 
@@ -132,30 +132,13 @@ export class DefaultApplicationContext<T = any> extends ApplicationContext<T> {
 
 export class DefaultApplicationFactory extends ApplicationFactory {
 
-    create<T>(type: ApplicationOption<T>): ApplicationContext<T>;
-    create<T>(type: ModuleInjector<T>, option?: ApplicationOption<T>): ApplicationContext<T>;
-    create<T>(type: Type<T>, parent?: IInjector): ApplicationContext<T>;
-    create<T>(arg1: any, arg2?: any): ApplicationContext<T> {
-        let ctx: ApplicationContext<T>;
-        if (isFunction(arg1)) {
-            const parent = arg2 as IInjector;
-            return this.createInstance(parent.get(ModuleFactory).create(arg1));
-        } else {
-            let option: ApplicationOption<T>;
-            if (arg1 instanceof ModuleInjector) {
-                ctx = this.createInstance(arg1);
-                option = arg2;
-            } else {
-                option = arg1;
-                const parent: IInjector = option.injector || arg2;
-                ctx = this.createInstance(parent.get(ModuleFactory).create(option, parent));
-            }
-            this.initOption(ctx, option);
-            return ctx;
-        }
+    create<T>(root: ModuleInjector<T>, option?: ApplicationOption<T>): ApplicationContext {
+        const ctx = this.createInstance(root);
+        this.initOption(ctx, option);
+        return ctx;
     }
 
-    initOption<T>(ctx: ApplicationContext<T>, option: ApplicationOption<T>) {
+    initOption<T>(ctx: ApplicationContext, option: ApplicationOption<T>) {
         if (!option) return;
 
         if (option.args) ctx.args.push(...option.args);

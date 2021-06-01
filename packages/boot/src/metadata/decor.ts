@@ -193,7 +193,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                     if ((injector as ModuleInjector).type === type) {
                         mdinj = injector as ModuleInjector;
                     } else {
-                        mdinj = injector.resolve({token: ModuleFactory, target: type}).create(ctx.reflect, injector, regIn);
+                        mdinj = injector.resolve({ token: ModuleFactory, target: ctx.reflect }).create(injector, { regIn });
                         ctx.injector = mdinj;
                         ctx.state.injector = ctx.injector;
                     }

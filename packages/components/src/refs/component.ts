@@ -1,5 +1,5 @@
 import { Abstract, IInjector, Type } from '@tsdi/ioc';
-import { ApplicationContext, BootContext, BootFactory, BootFactoryOption } from '@tsdi/boot';
+import { ApplicationContext, BootContext, ServiceFactory, ServiceFactoryOption } from '@tsdi/boot';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ElementRef } from './element';
 import { ViewRef } from './view';
@@ -73,12 +73,11 @@ export abstract class ComponentRef<C = any> implements BootContext<C> {
  * component factory.
  */
 @Abstract()
-export abstract class ComponentFactory extends BootFactory {
-
+export abstract class ComponentFactory<T> extends ServiceFactory<T> {
     /**
-     * create boot context.
+     * create compontent ref.
      * @param type 
      * @param option 
      */
-     abstract create<T>(type: Type<T> | ComponentReflect<T>, option: BootFactoryOption): ComponentRef<T>;
+     abstract create(option: ServiceFactoryOption): ComponentRef<T>;
 }
