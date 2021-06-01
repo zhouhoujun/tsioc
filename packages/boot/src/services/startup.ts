@@ -1,19 +1,7 @@
-import { Abstract, Destroyable } from '@tsdi/ioc';
+import { Abstract } from '@tsdi/ioc';
 import { ApplicationContext } from '../Context';
+import { IStartupService } from './intf';
 
-
-/**
- * startup and configure services for application.
- */
-export interface IStartupService<T extends ApplicationContext = ApplicationContext> extends Destroyable {
-    /**
-     * config service of application.
-     *
-     * @param {T} [ctx]
-     * @returns {Promise<void>} startup service token
-     */
-    configureService(ctx: T): Promise<void>;
-}
 
 /**
  * startup and configure services of application.

@@ -1,4 +1,4 @@
-import { DIModule, Runnable, Message, MessageQueue, BootContext, StartupService, ApplicationContext } from '../src';
+import { DIModule, Service, Message, MessageQueue, BootContext, StartupService, ApplicationContext } from '../src';
 import { Injectable, Inject, Singleton } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
@@ -39,7 +39,7 @@ export class ModuleA {
 }
 
 @Injectable()
-export class ClassSevice extends Runnable {
+export class ClassSevice extends Service {
     async configureService(ctx: BootContext): Promise<void> {
         await this.startup();
     }

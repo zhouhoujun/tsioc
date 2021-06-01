@@ -14,7 +14,7 @@ describe('di module', () => {
         // expect(md.container).to.not.undefined;
         // expect(md.container.has('mark')).to.true;
         console.log(ctx.bootstraps[0].runnable);
-        expect(ctx.bootstraps[0].runnable.getInstance().mark).toEqual('marked');
+        expect(ctx.bootstraps[0].instance.mark).toEqual('marked');
         // expect(md.state).eq('started');
     });
 
@@ -45,7 +45,7 @@ describe('di module', () => {
             ]
         });
 
-        expect(ctx.bootstraps[0].runnable.getInstance()).toBeInstanceOf(ClassSevice);
+        expect(ctx.bootstraps[0].instance).toBeInstanceOf(ClassSevice);
         expect(ctx.injector.get('ttk')).toEqual('ccc');
     });
 

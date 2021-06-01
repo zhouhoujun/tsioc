@@ -1,5 +1,5 @@
 import { lang, Singleton, isFunction, IInjector, Inject, TARGET } from '@tsdi/ioc';
-import { BootContext, Runnable } from '@tsdi/boot';
+import { BootContext, Service } from '@tsdi/boot';
 import { ISuiteRunner } from './ISuiteRunner';
 import { Assert } from '../assert/assert';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
@@ -32,7 +32,7 @@ const globals = typeof window !== 'undefined' ? window : global;
  * @implements {IRunner<any>}
  */
 @Singleton()
-export class OldTestRunner extends Runnable implements ISuiteRunner {
+export class OldTestRunner extends Service implements ISuiteRunner {
 
     private injector: IInjector;
 
@@ -41,13 +41,13 @@ export class OldTestRunner extends Runnable implements ISuiteRunner {
 
     suites: ISuiteDescribe[];
 
-    constructor(@Inject(TARGET) instance, timeout?: number) {
-        super(instance)
+    constructor(timeout?: number) {
+        super()
         this.suites = [];
         this.timeout = timeout || (3 * 60 * 60 * 1000);
     }
 
-    getBootType() {
+    getInstanceType() {
         return null;
     }
 

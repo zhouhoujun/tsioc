@@ -27,14 +27,14 @@ export interface BootstrapOption {
 }
 
 /**
- * IRunnable interface. define the type as a runnable.
+ * service interface. define the type as a service.
  *
  * @export
- * @interface IRunnable
+ * @interface IService
  * @template T
  * @template TCtx default IBootContext
  */
-export interface IRunnable<T = any> extends Destroyable {
+export interface IService<T = any> extends Destroyable {
 
     /**
      * configure and startup this service.
@@ -44,17 +44,12 @@ export interface IRunnable<T = any> extends Destroyable {
      */
     configureService?(ctx: BootContext<T>): Promise<void>;
 
-    /**
-     * get runable instance.
-     */
-    getInstance(): T;
-
-    /**
-     * get runable instance type.
-     */
-    getInstanceType(): Type<T>;
-
 }
+
+/**
+ * @deprecated use IService instead.
+ */
+export type IRunnable<T> = IService<T>;
 
 
 /**
@@ -86,7 +81,7 @@ export abstract class BootContext<T = any> {
     /**
      * bootstrap runnable.
      */
-    runnable?: IRunnable;
+    runnable?: IService;
 
     /**
      * Destroys the component instance and all of the data structures associated with it.

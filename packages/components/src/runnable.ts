@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { BootContext, Runnable } from '@tsdi/boot';
+import { BootContext, Service } from '@tsdi/boot';
 import { ComponentRef } from './refs/component';
 import { ApplicationRef } from './refs/app';
 
@@ -7,7 +7,7 @@ import { ApplicationRef } from './refs/app';
  * component runnable.  for application boot.
  */
 @Injectable()
-export class ComponentRunnable extends Runnable {
+export class ComponentRunnable extends Service {
 
     componentRef: ComponentRef;
 

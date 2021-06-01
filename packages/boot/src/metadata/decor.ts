@@ -2,7 +2,7 @@ import {
     DecoratorOption, isUndefined, ClassType, createDecorator, ROOT_INJECTOR,
     lang, Type, isArray, isString, DesignContext, ClassMethodDecorator, ProviderType, IProvider
 } from '@tsdi/ioc';
-import { IStartupService } from '../services/StartupService';
+import { IStartupService } from '../services/intf';
 import { ModuleReflect, ModuleConfigure } from './ref';
 import { Middleware, Middlewares, MiddlewareType, RouteReflect, ROUTE_PREFIX, ROUTE_PROTOCOL, ROUTE_URL } from '../middlewares/handle';
 import { ROOT_QUEUE } from '../middlewares/root';

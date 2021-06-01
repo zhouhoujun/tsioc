@@ -1,5 +1,5 @@
 import { lang, Injectable, Refs } from '@tsdi/ioc';
-import { Runnable, BootContext } from '@tsdi/boot';
+import { Service, BootContext } from '@tsdi/boot';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata/decor';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata/meta';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
@@ -14,13 +14,17 @@ import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
  * @implements {IRunner<any>}
  */
 @Injectable()
-@Refs('@Suite', Runnable)
-export class SuiteRunner extends Runnable implements ISuiteRunner {
+@Refs('@Suite', Service)
+export class SuiteRunner extends Service implements ISuiteRunner {
 
     timeout: number;
     describe: string;
 
     private ctx: BootContext;
+
+    getInstanceType() {
+        return this.ctx.type;
+    }
 
     async configureService(ctx: BootContext): Promise<void> {
         this.ctx = ctx;
@@ -55,7 +59,7 @@ export class SuiteRunner extends Runnable implements ISuiteRunner {
     }
 
     runTimeout(key: string, describe: string, timeout: number): Promise<any> {
-        let instance = this.getInstance();
+        let instance = this.ctx.instance;
         let defer = lang.defer();
         let injector = this.ctx.injector;
         let timer = setTimeout(() => {

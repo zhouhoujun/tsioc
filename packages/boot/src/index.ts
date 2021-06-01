@@ -1,9 +1,10 @@
 // services
-export * from './services/IBaseTypeParser';
-export * from './services/BaseTypeParser';
-export * from './services/StartupService';
-export * from './services/Runnable';
+export * from './services/intf';
+export * from './services/parser';
+export * from './services/startup';
+export * from './services/service';
 export * from './services/ctx';
+export * from './services/fac';
 
 // annotations
 export * from './configure/config';

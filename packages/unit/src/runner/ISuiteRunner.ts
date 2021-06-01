@@ -1,4 +1,5 @@
-import { IRunnable } from '@tsdi/boot';
+import { IService } from '@tsdi/boot';
+import { Type } from '@tsdi/ioc';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
 
 /**
@@ -8,7 +9,9 @@ import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
  * @interface ISuiteRunner
  * @extends {IRunner<any>}
  */
-export interface ISuiteRunner extends IRunnable {
+export interface ISuiteRunner extends IService {
+
+    getInstanceType(): Type;
     /**
      * run suite.
      *

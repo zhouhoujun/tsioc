@@ -1,7 +1,7 @@
 import { PatternMetadata, Type, TypeMetadata } from '@tsdi/ioc';
 import { ModuleConfigure } from './ref';
 import { Middleware, Middlewares } from '../middlewares/handle';
-import { IStartupService } from '../services/StartupService';
+import { IStartupService } from '../services/intf';
 
 /**
  * Boot metadata.
