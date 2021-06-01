@@ -3,8 +3,8 @@ import {
     createParamDecorator, createDecorator, InjectableMetadata, ClassMethodDecorator
 } from '@tsdi/ioc';
 import {
-    AnnotationReflect, ServiceFactory, MappingReflect, MessageQueue, Middlewares,
-    MiddlewareType, RouteMapingMetadata, Router
+    AnnotationReflect, MappingReflect, MessageQueue, Middlewares,
+    MiddlewareType, RouteMapingMetadata, Router, ServiceFactoryResolver
 } from '@tsdi/boot';
 import {
     BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
@@ -15,7 +15,7 @@ import { ComponentReflect, DirectiveReflect } from '../reflect';
 import { CompilerFacade } from '../compile/facade';
 import { ComponentType, DirectiveType } from '../type';
 import { HostMappingRoot, HostMappingRoute } from '../router';
-import { ComponentFactory } from '../refs/component';
+import { ComponentFactory, ComponentFactoryResolver } from '../refs/component';
 
 
 /**
@@ -138,7 +138,7 @@ export const Component: IComponentDecorator = createDecorator<ComponentMetadata>
         }
     },
     providers: [
-        { provide: ServiceFactory, useExisting: ComponentFactory }
+        { provide: ServiceFactoryResolver, useExisting: ComponentFactoryResolver }
     ]
 });
 

@@ -1,6 +1,6 @@
 import { refl, Type } from '@tsdi/ioc';
 import { AnnotationReflect } from '@tsdi/boot';
-import { ComponentMetadata, DirectiveMetadata } from './metadata';
+import { ComponentMetadata, DirectiveMetadata } from './metadata/meta';
 import { ComponentDef, DirectiveDef } from './type';
 
 
