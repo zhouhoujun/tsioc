@@ -79,11 +79,6 @@ export abstract class BootContext<T = any> {
     abstract get instance(): T;
 
     /**
-     * bootstrap runnable.
-     */
-    runnable?: IService;
-
-    /**
      * Destroys the component instance and all of the data structures associated with it.
      */
     abstract destroy(): void;

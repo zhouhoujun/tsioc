@@ -13,7 +13,7 @@ describe('di module', () => {
         // expect(md.bootstrap).to.eq(ClassSevice);
         // expect(md.container).to.not.undefined;
         // expect(md.container.has('mark')).to.true;
-        console.log(ctx.bootstraps[0].runnable);
+        console.log(ctx.bootstraps[0].instance);
         expect(ctx.bootstraps[0].instance.mark).toEqual('marked');
         // expect(md.state).eq('started');
     });

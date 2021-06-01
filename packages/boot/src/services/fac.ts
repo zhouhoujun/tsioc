@@ -23,7 +23,6 @@ import { Service } from './service';
         const startup = ctx.instance;
         if (startup instanceof Service) {
             await startup.configureService(ctx);
-            ctx.runnable = startup;
         }
         const app = ctx.getRoot();
         ctx.onDestroy(() => {

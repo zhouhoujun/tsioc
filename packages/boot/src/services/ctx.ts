@@ -1,5 +1,5 @@
 import { IInjector, Type } from '@tsdi/ioc';
-import { ApplicationContext, BootContext, IService } from '../Context';
+import { ApplicationContext, BootContext } from '../Context';
 import { AnnotationReflect } from '../metadata/ref';
 
 
@@ -7,7 +7,6 @@ export class DefaultBootContext<T> extends BootContext<T> {
 
     private _destroyed = false;
     private _dsryCbs: (() => void)[] = [];
-    runnable: IService;
     private _instance: T;
     constructor(readonly reflect: AnnotationReflect<T>, readonly injector: IInjector) {
         super();
@@ -51,7 +50,6 @@ export class DefaultBootContext<T> extends BootContext<T> {
 
     protected destroying() {
         this.injector.destroy();
-        this.runnable?.destroy();
         this._instance = null;
     }
 }
