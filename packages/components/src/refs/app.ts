@@ -1,11 +1,14 @@
 import { Injectable, lang, Type } from '@tsdi/ioc';
+import { ApplicationContext } from 'packages/boot/src/Context';
 import { OnDestroy } from '../lifecycle';
-import { ComponentRef } from './component';
+import { ComponentFactory, ComponentRef } from './component';
 import { InternalViewRef } from './inter';
 import { ViewRef } from './view';
 
 @Injectable()
 export class ApplicationRef implements OnDestroy {
+
+  constructor(public context: ApplicationContext) { }
 
   private _runningTick = false;
   private _views: InternalViewRef[] = [];
@@ -24,7 +27,8 @@ export class ApplicationRef implements OnDestroy {
    * bootstrap component ref.
    * @param compRef 
    */
-  bootstrap(compRef: ComponentRef) {
+  bootstrap<C>(component: ComponentFactory<C> | Type<C>) {
+    const compRef = this.context.bootstrap(component) as ComponentRef<C>;
     this.componentTypes.push(compRef.componentType);
     compRef.onDestroy(() => {
       this.detachView(compRef.hostView);
