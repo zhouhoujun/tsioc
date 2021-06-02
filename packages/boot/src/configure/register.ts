@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { Configure } from './config';
+import { Configuration } from './config';
 import { ApplicationContext } from '../Context';
 
 /**
@@ -9,15 +9,15 @@ import { ApplicationContext } from '../Context';
  * @interface IConfigureRegister
  * @template T
  */
-export interface IConfigureRegister<T extends ApplicationContext = ApplicationContext> {
+export interface IConfigureRegister {
     /**
      * register config setting.
      *
-     * @param {Configure} config
-     * @param {T} [ctx]
+     * @param {Configuration} config
+     * @param {ApplicationContext} [ctx]
      * @returns {Promise<void>}
      */
-    register(config: Configure, ctx?: T): Promise<void>;
+    register(config: Configuration, ctx?: ApplicationContext): Promise<void>;
 }
 
 /**
@@ -30,15 +30,15 @@ export interface IConfigureRegister<T extends ApplicationContext = ApplicationCo
  * @template T
  */
 @Abstract()
-export abstract class ConfigureRegister<T extends ApplicationContext = ApplicationContext> implements IConfigureRegister<T> {
+export abstract class ConfigureRegister implements IConfigureRegister {
 
     /**
      * register config setting.
      *
      * @abstract
-     * @param {Configure} config
-     * @param {T} [ctx]
+     * @param {Configuration} config
+     * @param {ApplicationContext} [ctx]
      * @returns {Promise<void>}
      */
-    abstract register(config: Configure, ctx?: T): Promise<void>;
+    abstract register(config: Configuration, ctx?: ApplicationContext): Promise<void>;
 }

@@ -1,5 +1,5 @@
 import { Inject, CONTAINER, IContainer, isUndefined, Singleton, isString, isMetadataObject, isPlainObject, lang } from '@tsdi/ioc';
-import { Configure, IConfigureManager, IConfigureMerger } from './config';
+import { Configuration, IConfigureManager, IConfigureMerger } from './config';
 import { CONFIG_MANAGER, CONFIG_LOADER, DEFAULT_CONFIG, CONFIG_MERGER, PROCESS_ROOT } from '../metadata/tk';
 
 
@@ -10,7 +10,7 @@ import { CONFIG_MANAGER, CONFIG_LOADER, DEFAULT_CONFIG, CONFIG_MERGER, PROCESS_R
  * @class ConfigureManager
  */
 @Singleton(CONFIG_MANAGER)
-export class ConfigureManager<T extends Configure = Configure> implements IConfigureManager<T> {
+export class ConfigureManager<T extends Configuration = Configuration> implements IConfigureManager<T> {
 
     @Inject(CONTAINER) container: IContainer;
     private config: T;
@@ -94,7 +94,7 @@ export class ConfigureManager<T extends Configure = Configure> implements IConfi
             return await loader.load(src) as T;
         } else if (src) {
             let cfg = await this.container.getLoader().load([src])
-            return cfg.length ? cfg[0] as Configure as T : null;
+            return cfg.length ? cfg[0] as Configuration as T : null;
         } else {
             return null;
         }
@@ -118,7 +118,7 @@ export class ConfigureManager<T extends Configure = Configure> implements IConfi
 
 @Singleton(CONFIG_MERGER)
 export class ConfigureMerger implements IConfigureMerger {
-    merge(config1: Configure, config2: Configure): Configure {
+    merge(config1: Configuration, config2: Configuration): Configuration {
         let setting = { ...config1?.setting, ...config2?.setting };
         let deps = [...config1?.deps || [], ...config2?.deps || []];
         let providers = [...config1?.providers || [], ...config2?.providers || []];

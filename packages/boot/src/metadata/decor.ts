@@ -1,6 +1,6 @@
 import {
     DecoratorOption, isUndefined, ClassType, createDecorator, ROOT_INJECTOR,
-    lang, Type, isArray, isString, DesignContext, ClassMethodDecorator, ProviderType, IProvider
+    lang, Type, isArray, isString, DesignContext, ClassMethodDecorator, ProviderType, IProvider, TypeMetadata
 } from '@tsdi/ioc';
 import { IStartupService } from '../services/intf';
 import { ModuleReflect, ModuleConfigure } from './ref';
@@ -10,14 +10,15 @@ import { FactoryRoute, Route } from '../middlewares/route';
 import { RootRouter, Router } from '../middlewares/router';
 import { MappingReflect, MappingRoute, RouteMapingMetadata } from '../middlewares/mapping';
 import { ModuleFactory, ModuleInjector, ModuleRegistered } from '../Context';
-import { BOOT_TYPES } from './tk';
+import { BOOT_TYPES, CONFIGURES } from './tk';
 import { BootMetadata, DIModuleMetadata, HandleMetadata, HandlesMetadata } from './meta';
+import { IConfigureRegister } from '../configure/register';
 
 
 /**
  * boot decorator.
  */
-export type BootDecorator = <TFunction extends ClassType<IStartupService>>(target: TFunction) => TFunction | void;
+export type BootDecorator = <TFunction extends Type<IStartupService>>(target: TFunction) => TFunction | void;
 
 /**
  * Boot decorator, use to define class as statup service when bootstrap application.
@@ -38,97 +39,118 @@ export interface IBootDecorator {
 }
 
 /**
- * create type builder decorator
- *
- * @export
- * @template T
- * @param {string} name
- * @param {DecoratorOption<T>} [options]
- * @returns {IBootDecorator}
- */
-export function createBootDecorator<T extends BootMetadata>(name: string, options?: DecoratorOption<T>): IBootDecorator {
-    options = options || {};
-    const hd = options.reflect?.class;
-    const append = options.appendProps;
-    return createDecorator<T>(name, {
-        actionType: 'annoation',
-        ...options,
-        reflect: {
-            ...options.reflect,
-            class: [
-                (ctx, next) => {
-                    (ctx.reflect as ModuleReflect).singleton = true;
-                    (ctx.reflect as ModuleReflect).annoType = 'boot';
-                    (ctx.reflect as ModuleReflect).annoDecor = ctx.decor;
-                    (ctx.reflect as ModuleReflect).annotation = ctx.metadata;
-                    return next();
-                },
-                ...hd ? (isArray(hd) ? hd : [hd]) : []
-            ]
-        },
-        design: {
-            afterAnnoation: (ctx, next) => {
-                let boots = ctx.injector.get(BOOT_TYPES);
-                if (!boots) {
-                    boots = [];
-                    ctx.injector.get(ROOT_INJECTOR).setValue(BOOT_TYPES, boots);
-                }
-                const meta = ctx.reflect.class.getMetadata<BootMetadata>(ctx.currDecor) || {};
-
-                let idx = -1;
-                if (meta.before) {
-                    idx = isString(meta.before) ? 0 : boots.indexOf(meta.before);
-                } else if (meta.after) {
-                    idx = isString(meta.after) ? -1 : boots.indexOf(meta.after) + 1;
-                }
-                if (idx >= 0) {
-                    if (meta.deps) {
-                        const news = [];
-                        const moved = [];
-                        meta.deps.forEach(d => {
-                            const depidx = boots.indexOf(d);
-                            if (depidx < 0) {
-                                news.push(d);
-                            } else if (depidx >= idx) {
-                                moved.push(d);
-                                boots.splice(depidx, 1);
-                            }
-                        });
-                        boots.splice(idx, 0, ...news, ...moved, ctx.type);
-                    } else {
-                        boots.splice(idx, 0, ctx.type);
-                    }
-                } else {
-                    if (meta.deps) {
-                        meta.deps.forEach(d => {
-                            if (boots.indexOf(d) < 0) {
-                                boots.push(d);
-                            }
-                        });
-                    }
-                    boots.push(ctx.type);
-                }
-                return next();
-            }
-        },
-        appendProps: (meta) => {
-            if (append) {
-                append(meta);
-            }
-            if (isUndefined(meta.singleton)) {
-                meta.singleton = true;
-            }
-            return meta;
-        }
-    }) as IBootDecorator;
-}
-
-/**
  * Boot decorator, use to define class as statup service when bootstrap application.
  *
  * @Boot()
  */
-export const Boot: IBootDecorator = createBootDecorator<BootMetadata>('Boot');
+export const Boot: IBootDecorator = createDecorator<BootMetadata>('Boot', {
+    actionType: 'annoation',
+    reflect: {
+        class: [
+            (ctx, next) => {
+                (ctx.reflect as ModuleReflect).singleton = true;
+                (ctx.reflect as ModuleReflect).annoType = 'boot';
+                (ctx.reflect as ModuleReflect).annoDecor = ctx.decor;
+                (ctx.reflect as ModuleReflect).annotation = ctx.metadata;
+                return next();
+            }
+        ]
+    },
+    design: {
+        afterAnnoation: (ctx, next) => {
+            const root = ctx.injector.get(ROOT_INJECTOR);
+            if (!root) return next();
+            let boots = root.get(BOOT_TYPES);
+            if (!boots) {
+                boots = [];
+                root.setValue(BOOT_TYPES, boots);
+            }
+            const meta = ctx.reflect.class.getMetadata<BootMetadata>(ctx.currDecor) || {};
+
+            let idx = -1;
+            if (meta.before) {
+                idx = isString(meta.before) ? 0 : boots.indexOf(meta.before);
+            } else if (meta.after) {
+                idx = isString(meta.after) ? -1 : boots.indexOf(meta.after) + 1;
+            }
+            if (idx >= 0) {
+                if (meta.deps) {
+                    const news = [];
+                    const moved = [];
+                    meta.deps.forEach(d => {
+                        const depidx = boots.indexOf(d);
+                        if (depidx < 0) {
+                            news.push(d);
+                        } else if (depidx >= idx) {
+                            moved.push(d);
+                            boots.splice(depidx, 1);
+                        }
+                    });
+                    boots.splice(idx, 0, ...news, ...moved, ctx.type);
+                } else {
+                    boots.splice(idx, 0, ctx.type);
+                }
+            } else {
+                if (meta.deps) {
+                    meta.deps.forEach(d => {
+                        if (boots.indexOf(d) < 0) {
+                            boots.push(d);
+                        }
+                    });
+                }
+                boots.push(ctx.type);
+            }
+            return next();
+        }
+    },
+    appendProps: (meta) => {
+        if (isUndefined(meta.singleton)) {
+            meta.singleton = true;
+        }
+        return meta;
+    }
+});
+
+/**
+ * configure register decorator.
+ */
+export type ConfigDecorator = <TFunction extends Type<IConfigureRegister>>(target: TFunction) => TFunction | void;
+
+
+
+/**
+ * Configure decorator, define this class as configure register when bootstrap application.
+ *
+ * @export
+ * @interface IConfigureDecorator
+ * @template T
+ */
+export interface IConfigureDecorator {
+    /**
+     * Configure decorator, define this class as configure register when bootstrap application.
+     *
+     * @Configure()
+     */
+    (): ConfigDecorator;
+}
+
+export const Configure: IConfigureDecorator = createDecorator<TypeMetadata>('Configure', {
+    design: {
+        afterAnnoation: (ctx, next) => {
+            const { type, injector } = ctx;
+            const root = injector.get(ROOT_INJECTOR);
+            if (!root) return next();
+            let configs = root.get(CONFIGURES);
+            if (!configs) {
+                configs = [type];
+                root.setValue(CONFIGURES, configs);
+            } else {
+                configs.push(type);
+            }
+            return next();
+        }
+    },
+})
 
 /**
  * DIModule decorator, use to define class as DI Module.
@@ -164,7 +186,7 @@ interface ModuleDesignContext extends DesignContext {
  */
 export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string, options?: DecoratorOption<T>): IDIModuleDecorator<T> {
     options = options || {};
-    const hd = options.reflect?.class;
+    let hd = options.reflect?.class ?? [];
     const append = options.appendProps;
     return createDecorator<DIModuleMetadata>(name, {
         ...options,
@@ -182,7 +204,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                     if (annotation.bootstrap) reflect.bootstrap = lang.getTypes(annotation.bootstrap);
                     return next();
                 },
-                ...hd ? (isArray(hd) ? hd : [hd]) : []
+                ...isArray(hd) ? hd : [hd]
             ]
         },
         design: {

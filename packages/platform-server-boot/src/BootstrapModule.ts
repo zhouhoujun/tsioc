@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { IConfigureLoader, CONFIG_LOADER, DIModule, PROCESS_ROOT, Configure, PROCESS_EXIT, IBootApplication } from '@tsdi/boot';
+import { IConfigureLoader, CONFIG_LOADER, DIModule, PROCESS_ROOT, Configuration, PROCESS_EXIT, IBootApplication } from '@tsdi/boot';
 import { ServerModule, runMainPath, syncRequire } from '@tsdi/platform-server';
 import * as path from 'path';
 
@@ -23,28 +23,28 @@ Date.prototype.toJSON = function () {
  *
  * @export
  * @class ConfigureFileLoader
- * @implements {IConfigureLoader<Configure>}
+ * @implements {IConfigureLoader<Configuration>}
  */
 @Injectable(CONFIG_LOADER)
-export class ConfigureFileLoader implements IConfigureLoader<Configure> {
+export class ConfigureFileLoader implements IConfigureLoader<Configuration> {
 
     constructor(private baseURL: string) {
         this.baseURL = this.baseURL || runMainPath();
     }
 
-    async load(uri?: string): Promise<Configure> {
+    async load(uri?: string): Promise<Configuration> {
         const fs = syncRequire('fs');
         if (uri) {
             if (fs.existsSync(uri)) {
-                return syncRequire(uri) as Configure;
+                return syncRequire(uri) as Configuration;
             } else if (fs.existsSync(path.join(this.baseURL, uri))) {
-                return syncRequire(path.join(this.baseURL, uri)) as Configure;
+                return syncRequire(path.join(this.baseURL, uri)) as Configuration;
             } else {
                 console.log(`config file: ${uri} not exists.`)
                 return null;
             }
         } else {
-            let cfgmodeles: Configure;
+            let cfgmodeles: Configuration;
             let cfgpath = path.join(this.baseURL, './config');
             ['.js', '.ts', '.json'].some(ext => {
                 if (fs.existsSync(cfgpath + ext)) {

@@ -1,5 +1,5 @@
-import { Singleton, isArray } from '@tsdi/ioc';
-import { ConfigureRegister, ApplicationContext } from '@tsdi/boot';
+import { isArray } from '@tsdi/ioc';
+import { ConfigureRegister, ApplicationContext, Configure } from '@tsdi/boot';
 import { UnitTestConfigure } from './UnitTestConfigure';
 import { Assert } from './assert/assert';
 import * as assert from 'assert';
@@ -13,7 +13,7 @@ import { ExpectToken } from './assert/expects';
  * @class UnitTestConfigureRegister
  * @extends {ConfigureRegister}
  */
-@Singleton()
+@Configure()
 export class UnitTestConfigureRegister extends ConfigureRegister {
 
     async register(config: UnitTestConfigure, ctx: ApplicationContext): Promise<void> {

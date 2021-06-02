@@ -21,12 +21,12 @@ export interface IBaseTypeParser {
 /**
  * startup and configure services for application.
  */
- export interface IStartupService<T extends ApplicationContext = ApplicationContext> extends Destroyable {
+ export interface IStartupService extends Destroyable {
     /**
      * config service of application.
      *
-     * @param {T} [ctx]
+     * @param {ApplicationContext} [ctx]
      * @returns {Promise<void>} startup service token
      */
-    configureService(ctx: T): Promise<void>;
+    configureService(ctx: ApplicationContext): Promise<void>;
 }

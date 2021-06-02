@@ -1,8 +1,9 @@
 import { tokenId, Token, Type } from '@tsdi/ioc';
-import { Configure, IConfigureLoader, IConfigureManager, IConfigureMerger } from '../configure/config';
+import { Configuration, IConfigureLoader, IConfigureManager, IConfigureMerger } from '../configure/config';
 import { IBaseTypeParser, IStartupService } from '../services/intf';
 import { MessageContext } from '../middlewares/ctx';
 import { IBootApplication } from '../IBootApplication';
+import { IConfigureRegister } from '../configure/register';
 
 
 /**
@@ -13,7 +14,12 @@ export const APPLICATION: Token<IBootApplication> = tokenId<IBootApplication>('A
 /**
  * boot types.
  */
-export const BOOT_TYPES = tokenId<Type<IStartupService>[]>('BOOT_TYPES')
+export const BOOT_TYPES = tokenId<Type<IStartupService>[]>('BOOT_TYPES');
+
+/**
+ * configure registers.
+ */
+export const CONFIGURES = tokenId<Type<IConfigureRegister>[]>('CONFIGURES');
 
 
 /**
@@ -25,7 +31,7 @@ export const CTX_ARGS = tokenId<string[]>('CTX_ARGS');
 /**
  * config token.
  */
-export const CONFIGURATION = tokenId<Configure>('CONFIGURATION');
+export const CONFIGURATION = tokenId<Configuration>('CONFIGURATION');
 
 /**
  * configure manager token.
@@ -35,7 +41,7 @@ export const CONFIG_MANAGER: Token<IConfigureManager> = tokenId<IConfigureManage
 /**
  * default configuration token.
  */
-export const DEFAULT_CONFIG: Token<Configure> = tokenId<Configure>('DEFAULT_CONFIG');
+export const DEFAULT_CONFIG: Token<Configuration> = tokenId<Configuration>('DEFAULT_CONFIG');
 
 /**
  * configure loader token.

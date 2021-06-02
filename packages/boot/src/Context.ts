@@ -3,7 +3,7 @@ import {
     Token, Type, IModuleLoader, Registered, DefaultInjector, Destroyable, Modules
 } from '@tsdi/ioc';
 import { ILoggerManager } from '@tsdi/logs';
-import { Configure, IConfigureManager } from './configure/config';
+import { Configuration, IConfigureManager } from './configure/config';
 import { AnnotationReflect, ModuleReflect } from './metadata/ref';
 import { MessageQueue } from './middlewares/queue';
 import { MessageContext, RequestOption } from './middlewares';
@@ -283,14 +283,14 @@ export abstract class ApplicationContext implements Destroyable {
      *
      * @type {T}
      */
-    abstract getConfiguration(): Configure;
+    abstract getConfiguration(): Configuration;
 
     /**
      * get configure manager.
      *
-     * @returns {IConfigureManager<Configure>}
+     * @returns {IConfigureManager<Configuration>}
      */
-    abstract getConfigureManager(): IConfigureManager<Configure>;
+    abstract getConfigureManager(): IConfigureManager<Configuration>;
     /**
      * get statup service tokens.
      */
@@ -339,9 +339,9 @@ export interface ApplicationOption<T = any> extends ModuleOption<T> {
     /**
      * custom configures
      *
-     * @type {((string | Configure)[])}
+     * @type {((string | Configuration)[])}
      */
-    configures?: (string | Configure)[];
+    configures?: (string | Configuration)[];
     /**
      * custom set first startups services.
      */

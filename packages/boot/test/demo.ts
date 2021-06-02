@@ -1,4 +1,4 @@
-import { DIModule, Service, Message, MessageQueue, BootContext, StartupService, ApplicationContext } from '../src';
+import { DIModule, Service, Message, MessageQueue, BootContext, StartupService, ApplicationContext, Boot } from '../src';
 import { Injectable, Inject, Singleton } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
@@ -88,19 +88,11 @@ export class SubMessageQueue extends MessageQueue {
     ],
     bootstrap: ClassSevice
 })
-export class ModuleB {
-    constructor() {
+export class ModuleB {}
 
-    }
 
-}
-
-export abstract class MyStart extends StartupService<ApplicationContext> {
-
-}
-
-@Singleton()
-export class SocketService extends MyStart {
+@Boot()
+export class SocketService extends StartupService {
 
     public tcpServer: net.Server;
     private context: ApplicationContext;
@@ -128,6 +120,4 @@ export class SocketService extends MyStart {
         SocketService
     ]
 })
-export class StatupModule {
-    constructor() { }
-}
+export class StatupModule { }

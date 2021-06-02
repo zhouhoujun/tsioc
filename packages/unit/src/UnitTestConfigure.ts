@@ -1,5 +1,5 @@
 import { Type } from '@tsdi/ioc';
-import { AnnotationMetadata, Configure } from '@tsdi/boot';
+import { AnnotationMetadata, Configuration } from '@tsdi/boot';
 import { ITestReport } from './reports/ITestReport';
 
 /**
@@ -20,7 +20,7 @@ export interface UnitTestOptions extends AnnotationMetadata {
  * @interface UnitTestConfigure
  * @extends {AppConfigure}
  */
-export interface UnitTestConfigure extends Configure {
+export interface UnitTestConfigure extends Configuration {
     /**
      * test source
      *

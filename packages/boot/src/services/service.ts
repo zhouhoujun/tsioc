@@ -58,9 +58,7 @@ export abstract class Service<T = any> implements IService {
     /**
      * destorying. default do nothing.
      */
-    protected destroying() {
-
-    }
+    protected destroying() { }
 
 }
 

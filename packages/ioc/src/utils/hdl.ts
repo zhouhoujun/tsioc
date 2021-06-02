@@ -38,11 +38,7 @@ export function chain<T, TR = void>(handlers: Handler<T, TR>[], ctx: T, next?: (
         if (!handle) {
             return;
         }
-        try {
-            return handle(ctx, dispatch.bind(null, idx + 1));
-        } catch (err) {
-            throw err;
-        }
+        return handle(ctx, dispatch.bind(null, idx + 1));
     }
     return dispatch(0);
 }

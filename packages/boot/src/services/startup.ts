@@ -12,7 +12,7 @@ import { IStartupService } from './intf';
  * @template T
  */
 @Abstract()
-export abstract class StartupService<T extends ApplicationContext = ApplicationContext> implements IStartupService<T> {
+export abstract class StartupService implements IStartupService {
 
     private _destroyed = false;
     private destroyCbs: (() => void)[] = [];
@@ -21,9 +21,9 @@ export abstract class StartupService<T extends ApplicationContext = ApplicationC
      * config service of application.
      *
      * @abstract
-     * @param {T} [ctx]
+     * @param {ApplicationContext} [ctx]
      */
-    abstract configureService(ctx: T): Promise<void>;
+    abstract configureService(ctx: ApplicationContext): Promise<void>;
 
     /**
      * has destoryed or not.

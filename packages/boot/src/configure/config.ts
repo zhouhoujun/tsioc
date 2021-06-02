@@ -20,13 +20,13 @@ export interface IConnectionOptions extends ObjectMap<any> {
 }
 
 /**
- * boot configure.
+ * application Configuration.
  *
  * @export
- * @interface Configure
+ * @interface Configuration
  * @extends {ProvidersMetadata}
  */
-export interface Configure extends ProvidersMetadata {
+export interface Configuration extends ProvidersMetadata {
     /**
      * module base url.
      *
@@ -84,12 +84,6 @@ export interface Configure extends ProvidersMetadata {
     repositories?: (string | Type)[];
 }
 
-/**
- * boot configure.
- * @deprecated use Configure instead.
- */
-export type RunnableConfigure = Configure;
-
 
 /**
  * configure loader.
@@ -97,7 +91,7 @@ export type RunnableConfigure = Configure;
  * @export
  * @interface IConfigureLoader
  */
-export interface IConfigureLoader<T extends Configure = Configure> {
+export interface IConfigureLoader<T extends Configuration = Configuration> {
     /**
      * load config.
      *
@@ -118,7 +112,7 @@ export interface IConfigureMerger {
      * @param config2 coniig 2
      * @returns merged config.
      */
-    merge(config1: Configure, config2: Configure): Configure;
+    merge(config1: Configuration, config2: Configuration): Configuration;
 }
 
 /**
@@ -128,7 +122,7 @@ export interface IConfigureMerger {
  * @interface IConfigureManager
  * @template T
  */
-export interface IConfigureManager<T extends Configure = Configure> {
+export interface IConfigureManager<T extends Configuration = Configuration> {
     /**
      * use configuration.
      *

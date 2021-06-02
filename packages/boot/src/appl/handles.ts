@@ -1,9 +1,8 @@
-import { lang, IActionSetup, ClassType, isFunction, resolveRecord, Type, IocAction, ActionType, AsyncHandler, Actions } from '@tsdi/ioc';
+import { lang, IActionSetup, ClassType, isFunction, Type, IocAction, ActionType, AsyncHandler, Actions } from '@tsdi/ioc';
 import { LogConfigureToken, DebugLogAspect, LogModule } from '@tsdi/logs';
 import { ApplicationContext } from '../Context';
-import { CONFIGURATION, PROCESS_ROOT } from '../metadata/tk';
+import { CONFIGURATION, CONFIGURES, PROCESS_ROOT } from '../metadata/tk';
 import { ConfigureRegister } from '../configure/register';
-import { StartupService } from '../services/startup';
 import { IStartupService } from '../services/intf';
 
 
@@ -98,9 +97,10 @@ export const BootConfigureRegisterHandle = async function (ctx: ApplicationConte
         injector.register(LogModule, DebugLogAspect);
     }
 
-    const regs = injector.getServices(ConfigureRegister);
-    if (regs && regs.length) {
-        await Promise.all(regs.map(reg => reg.register(config, ctx)));
+    const configs = injector.get(CONFIGURES);
+    if (configs && configs.length) {
+        const state = injector.state();
+        await Promise.all(configs.map(cfg => state.getInstance(cfg)?.register(config, ctx)));
     }
     await next();
 };
@@ -137,7 +137,7 @@ export const ConfigureServiceHandle = async function (ctx: ApplicationContext, n
             if (isFunction(tyser) && !regedState.isRegistered(tyser)) {
                 root.register(tyser as Type);
             }
-            ser = root.get(tyser) ?? regedState.getInstance(tyser as ClassType);
+            ser = regedState.getInstance(tyser as ClassType);
             ctx.onDestroy(() => ser?.destroy());
             return ser?.configureService(ctx);
         }));
@@ -146,24 +146,9 @@ export const ConfigureServiceHandle = async function (ctx: ApplicationContext, n
     const boots = ctx.boots;
     if (boots?.length) {
         await lang.step(boots.map(tyser => () => {
-            const ser = root.get(tyser) ?? regedState.getInstance(tyser);
+            const ser = regedState.getInstance(tyser);
             ctx.onDestroy(() => ser?.destroy());
             startups.push(tyser);
-            return ser.configureService(ctx);
-        }));
-    }
-
-    const sers: StartupService[] = [];
-    const prds = root.getServiceProviders(StartupService);
-    prds.iterator((pdr, tk, pdrs) => {
-        if (startups.indexOf(tk) < 0) {
-            sers.push(resolveRecord(pdr, root));
-        }
-    });
-    if (sers && sers.length) {
-        await Promise.all(sers.map(ser => {
-            ctx.onDestroy(() => ser?.destroy());
-            startups.push(lang.getClass(ser));
             return ser.configureService(ctx);
         }));
     }
