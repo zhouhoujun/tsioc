@@ -44,7 +44,7 @@ export class DefaultBootContext<T> extends BootContext<T> {
      */
     onDestroy(callback: () => void): void {
         if (this._dsryCbs) {
-            this._dsryCbs.push(callback);
+            this._dsryCbs.unshift(callback);
         }
     }
 

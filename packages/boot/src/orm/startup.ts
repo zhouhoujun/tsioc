@@ -42,7 +42,7 @@ export abstract class ConnectionStatupService<T extends ApplicationContext = App
      */
     onDestroy(callback: () => void): void {
         if (this.destroyCbs) {
-            this.destroyCbs.push(callback);
+            this.destroyCbs.unshift(callback);
         }
     }
 

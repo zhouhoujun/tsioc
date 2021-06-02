@@ -51,7 +51,7 @@ export abstract class Service<T = any> implements IService {
      */
     onDestroy(callback: () => void): void {
         if (this.destroyCbs) {
-            this.destroyCbs.push(callback);
+            this.destroyCbs.unshift(callback);
         }
     }
 
