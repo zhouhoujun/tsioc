@@ -15,7 +15,7 @@ import { ComponentReflect, DirectiveReflect } from '../reflect';
 import { CompilerFacade } from '../compile/facade';
 import { ComponentType, DirectiveType } from '../type';
 import { HostMappingRoot, HostMappingRoute } from '../router';
-import { ComponentFactory, ComponentFactoryResolver } from '../refs/component';
+import { ComponentFactoryResolver } from '../refs/component';
 
 
 /**
