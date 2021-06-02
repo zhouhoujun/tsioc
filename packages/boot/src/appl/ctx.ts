@@ -118,7 +118,7 @@ export class DefaultApplicationContext extends ApplicationContext {
      */
     onDestroy(callback: () => void): void {
         if (this._dsryCbs) {
-            this._dsryCbs.push(callback);
+            this._dsryCbs.unshift(callback);
         }
     }
 

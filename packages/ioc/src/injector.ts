@@ -501,7 +501,7 @@ export class Provider implements IProvider {
      */
     onDestroy(callback: () => void): void {
         if (this._dsryCbs) {
-            this._dsryCbs.push(callback);
+            this._dsryCbs.unshift(callback);
         }
     }
 

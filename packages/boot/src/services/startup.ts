@@ -49,7 +49,7 @@ export abstract class StartupService implements IStartupService {
      */
     onDestroy(callback: () => void): void {
         if (this.destroyCbs) {
-            this.destroyCbs.push(callback);
+            this.destroyCbs.unshift(callback);
         }
     }
     /**
