@@ -1,4 +1,4 @@
-import { Pipe } from '../decorators';
+import { Pipe } from '../metadata/decor';
 import { PipeTransform } from './pipe';
 
 @Pipe('json', false)

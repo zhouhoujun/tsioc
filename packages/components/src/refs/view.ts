@@ -2,7 +2,6 @@ import { Abstract, Destroyable } from '@tsdi/ioc';
 import { ChangeDetectorRef } from '../chage/detector';
 
 
-
 /**
  * Represents an virtual view.
  *
@@ -50,7 +49,7 @@ export abstract class ViewRef extends ChangeDetectorRef implements Destroyable {
  * ```
  * Count: {{items.length}}
  * <ul>
- *   <li *ngFor="let  item of items">{{item}}</li>
+ *   <li *each="let  item of items">{{item}}</li>
  * </ul>
  * ```
  *
@@ -59,7 +58,7 @@ export abstract class ViewRef extends ChangeDetectorRef implements Destroyable {
  * ```
  * Count: {{items.length}}
  * <ul>
- *   <v-template ngFor let-item [ngForOf]="items"></v-template>
+ *   <v-template each let-item [eachOf]="items"></v-template>
  * </ul>
  * ```
  *

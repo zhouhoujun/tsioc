@@ -1,5 +1,5 @@
 import { isString } from '@tsdi/ioc';
-import { Pipe } from '../decorators';
+import { Pipe } from '../metadata/decor';
 import { invalidPipeArgumentError } from './err';
 import { PipeTransform } from './pipe';
 
