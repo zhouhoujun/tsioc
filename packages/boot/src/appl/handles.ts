@@ -2,7 +2,6 @@ import { lang, IActionSetup, ClassType, isFunction, Type, IocAction, ActionType,
 import { LogConfigureToken, DebugLogAspect, LogModule } from '@tsdi/logs';
 import { ApplicationContext } from '../Context';
 import { CONFIGURATION, CONFIGURES, PROCESS_ROOT } from '../metadata/tk';
-import { ConfigureRegister } from '../configure/register';
 import { IStartupService } from '../services/intf';
 
 
