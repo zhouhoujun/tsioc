@@ -1,5 +1,5 @@
 import { Injectable, isString, isClass, isArray, lang, refl } from '@tsdi/ioc';
-import { Service, AnnotationReflect, BootContext } from '@tsdi/boot';
+import { Service, AnnotationReflect, BootContext, ApplicationContext } from '@tsdi/boot';
 import { OldTestRunner } from './OldTestRunner';
 import { TestReport } from '../reports/TestReport';
 import { UnitTestConfigure } from '../UnitTestConfigure';
@@ -12,7 +12,7 @@ import { UnitTestConfigure } from '../UnitTestConfigure';
 export class UnitTestRunner extends Service {
 
     async configureService(ctx: BootContext): Promise<void> {
-        const appCtx = ctx.getRoot();
+        const appCtx = ctx.injector.get(ApplicationContext);
         const config = appCtx.getConfiguration() as UnitTestConfigure;
         const src = config.src;
         const injector = ctx.injector;
