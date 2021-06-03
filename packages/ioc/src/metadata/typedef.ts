@@ -23,6 +23,8 @@ export class TypeDefine {
     methodDecors: DecorDefine[];
     paramDecors: DecorDefine[];
 
+    private params: Map<string, any[]>;
+
     constructor(public readonly type: ClassType, private parent?: TypeDefine) {
         this.className = getClassAnnotation(type)?.name || type.name;
         this.classDecors = [];
@@ -72,7 +74,7 @@ export class TypeDefine {
     hasMetadata(decor: string | Function, type?: DecoratorType, propertyKey?: string): boolean {
         type = type || 'class';
         decor = getDectorId(decor);
-        const filter = (propertyKey &&  type !=='class') ? (d: DecorDefine) => d.decor === decor && d.propertyKey === propertyKey : (d: DecorDefine) => d.decor === decor;
+        const filter = (propertyKey && type !== 'class') ? (d: DecorDefine) => d.decor === decor && d.propertyKey === propertyKey : (d: DecorDefine) => d.decor === decor;
         switch (type) {
             case 'class':
                 return this.classDecors.some(filter);
@@ -92,7 +94,7 @@ export class TypeDefine {
     getDecorDefine(decor: string | Function, type?: DecoratorType, propertyKey?: string): DecorDefine {
         type = type || 'class';
         decor = getDectorId(decor);
-        const filter = (propertyKey &&  type !=='class') ? (d: DecorDefine) => d.decor === decor && d.propertyKey === propertyKey : (d: DecorDefine) => d.decor === decor;
+        const filter = (propertyKey && type !== 'class') ? (d: DecorDefine) => d.decor === decor && d.propertyKey === propertyKey : (d: DecorDefine) => d.decor === decor;
         switch (type) {
             case 'class':
                 return this.classDecors.find(filter);
@@ -176,7 +178,7 @@ export class TypeDefine {
                 this._extends = this.parent.extendTypes.slice(0);
                 this._extends.unshift(this.type);
             } else {
-                this._extends = getClassChain(this.type);
+                this._extends = [this.type];
             }
         }
         return this._extends;
@@ -191,62 +193,35 @@ export class TypeDefine {
     }
 
     getParamNames(method: string): string[] {
-        if (!method || method === 'constructor') {
-            method = ctorBK;
-        }
-        return this.getParams()[method] || [];
+        const prop = method ?? 'constructor';
+        return this.getParams().get(prop) || [];
     }
 
-    private params: ObjectMap<string[]>;
-
-
-    getParams(): ObjectMap<string[]> {
+    getParams(): Map<string, any[]> {
         if (!this.params) {
-            let meta = {};
-            if (this.parent) {
-                meta = { ...this.parent.getParams() };
-                this.setParam(meta, this.type);
-            } else {
-                this.extendTypes.forEach(ty => {
-                    this.setParam(meta, ty);
-                });
-            }
-
-            this.params = meta;
+            this.params = this.parent ? new Map(this.parent.getParams()) : new Map();
+            this.setParam(this.params, this.type);
         }
         return this.params;
     }
 
-    protected setParam(meta: any, ty: ClassType) {
-
-        let isUglify = clsUglifyExp.test(ty.name);
-        let anName = '';
+    protected setParam(params: Map<string, any[]>, ty: ClassType) {
         let classAnnations = getClassAnnotation(ty);
         if (classAnnations && classAnnations.params) {
-            anName = classAnnations.name;
-            meta = {
-                ...classAnnations.params,
-                __ctor: classAnnations.params['constructor'],
-                ...meta
-            };
-        }
-        if (!isUglify && ty.name !== anName) {
+            forIn(classAnnations.params, (p, n) => {
+                params.set(n, p);
+            });
+        } else {
             let descriptors = Object.getOwnPropertyDescriptors(ty.prototype);
             forIn(descriptors, (item, n) => {
-                if (n !== 'constructor') {
-                    if (item.value) {
-                        meta[n] = getParamNames(item.value)
-                    }
-                    if (item.set) {
-                        meta[n] = getParamNames(item.set);
-                    }
+                if (item.value) {
+                    params.set(n, getParamNames(item.value));
+                }
+                if (item.set) {
+                    params.set(n, getParamNames(item.value));
                 }
             });
-            if (!meta[ctorBK] || meta[ctorBK].length < 1) {
-                meta[ctorBK] = getParamNames(ty.prototype.constructor);
-            }
         }
-
     }
 
     getPropertyName(descriptor: TypedPropertyDescriptor<any>) {
@@ -269,34 +244,11 @@ export class TypeDefine {
     private descriptos: ObjectMap<TypedPropertyDescriptor<any>>;
     getPropertyDescriptors(): ObjectMap<TypedPropertyDescriptor<any>> {
         if (!this.descriptos) {
-            let descriptos;
-            if (this.parent) {
-                descriptos = { ...this.parent.getPropertyDescriptors() };
-                let cdrs = Object.getOwnPropertyDescriptors(this.type.prototype);
-                forIn(cdrs, (d, n) => {
-                    d[name] = n;
-                    descriptos[n] = d;
-                });
-            } else {
-                this.extendTypes.forEach(ty => {
-                    let cdrs = Object.getOwnPropertyDescriptors(ty.prototype);
-                    if (!descriptos) {
-                        descriptos = cdrs;
-                        descriptos = {};
-                        forIn(cdrs, (d, n) => {
-                            d[name] = n;
-                            descriptos[n] = d;
-                        });
-                    } else {
-                        forIn(cdrs, (d, n) => {
-                            if (!descriptos[n]) {
-                                d[name] = n;
-                                descriptos[n] = d;
-                            }
-                        });
-                    }
-                });
-            }
+            const descriptos = this.parent ? { ...this.parent.getPropertyDescriptors() } : {};
+            forIn(Object.getOwnPropertyDescriptors(this.type.prototype), (d, n) => {
+                d[name] = n;
+                descriptos[n] = d;
+            });
             this.descriptos = descriptos;
         }
         return this.descriptos;
