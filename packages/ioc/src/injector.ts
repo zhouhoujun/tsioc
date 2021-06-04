@@ -392,7 +392,7 @@ export class Provider implements IProvider {
     }
 
     protected resolveToken<T>(token: Token<T>, pdr: IProvider): T {
-        return pdr?.get(token, pdr) ?? this.get(token, pdr);
+        return pdr?.get(token, pdr) ?? this.get(token, pdr) ?? (this.strategy? null : this.parent?.get(token, pdr));
     }
 
     protected resolveFailed<T>(state: RegisteredState, token: Token<T>, pdr: IProvider, regify?: boolean, defaultToken?: Token): T {
@@ -726,13 +726,12 @@ function makeRecord(value: any, fn: Factory, type: Type): FacRecord {
 
 function generateFactory(injector: IProvider, option: StaticProviders): Factory {
     const { provide, useClass, deps, singleton, useFactory, useExisting } = option;
-    const parent = (injector as Provider).strategy ? null : injector.parent;
     let fac: Factory;
     if (useFactory) {
         fac = (pdr) => {
             let args = deps?.map(d => {
                 if (isToken(d)) {
-                    return pdr?.get(d) ?? injector.get(d, pdr) ?? parent?.get(d, pdr) ?? (isString(d) ? d : null);
+                    return injector.resolve(d, pdr)  ?? (isString(d) ? d : null);
                 } else {
                     return d;
                 }
@@ -740,13 +739,13 @@ function generateFactory(injector: IProvider, option: StaticProviders): Factory 
             return useFactory(...args.concat(pdr));
         };
     } else if (useExisting) {
-        fac = (pdr: IProvider) => injector.get(useExisting, pdr) ?? parent?.get(useExisting, pdr);
+        fac = (pdr: IProvider) => injector.resolve(useExisting, pdr);
     } else if (useClass) {
         fac = (pdr) => {
             if (!injector.state().isRegistered(useClass) && !injector.has(useClass, true)) {
-                (parent || injector).register({ type: useClass, singleton, deps });
+                injector.register({ type: useClass, singleton, deps });
             }
-            return injector.get(useClass, pdr) ?? parent?.get(useClass, pdr);
+            return injector.resolve(useClass, pdr);
         };
     } else {
         fac = (pdr) => {
@@ -754,7 +753,7 @@ function generateFactory(injector: IProvider, option: StaticProviders): Factory 
             if (isArray(deps) && deps.length) {
                 args = deps.map(p => {
                     if (isToken(p)) {
-                        return pdr?.get(p) ?? injector.get(p, pdr) ?? parent?.get(p, pdr) ?? (isString(p) ? p : null);
+                        return injector.resolve(p, pdr) ?? (isString(p) ? p : null);
                     } else {
                         return p;
                     }
