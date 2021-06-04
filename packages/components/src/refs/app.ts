@@ -29,7 +29,7 @@ export class ApplicationRef implements OnDestroy {
    */
   bootstrap<C>(component: ComponentFactory<C> | Type<C>) {
     const compRef = this.context.bootstrap(component) as ComponentRef<C>;
-    this.componentTypes.push(compRef.componentType);
+    this.componentTypes.push(compRef.type);
     compRef.onDestroy(() => {
       this.detachView(compRef.hostView);
       lang.remove(this.components, compRef);

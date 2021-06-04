@@ -57,11 +57,6 @@ export type IRunnable<T> = IService<T>;
  */
 @Abstract()
 export abstract class BootContext<T = any> {
-
-    /**
-     * get root context.
-     */
-    abstract getRoot(): ApplicationContext;
     /**
      * boot injector
      */

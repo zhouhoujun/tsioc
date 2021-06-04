@@ -1,5 +1,5 @@
 import { Abstract, IInjector, Type } from '@tsdi/ioc';
-import { ApplicationContext, BootContext, ServiceFactory, BootstrapOption, ServiceFactoryResolver } from '@tsdi/boot';
+import { BootContext, ServiceFactory, BootstrapOption, ServiceFactoryResolver } from '@tsdi/boot';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ElementRef } from './element';
 import { ViewRef } from './view';
@@ -13,13 +13,9 @@ import { ComponentReflect } from '../reflect';
  * @publicApi
  */
 @Abstract()
-export abstract class ComponentRef<C = any> implements BootContext<C> {
+export abstract class ComponentRef<C = any> extends BootContext<C> {
     /**
-     * get root context.
-     */
-    abstract getRoot(): ApplicationContext;
-    /**
-     * boot type.
+     * component type.
      */
     abstract get type(): Type<C>;
     /**
@@ -51,11 +47,6 @@ export abstract class ComponentRef<C = any> implements BootContext<C> {
      * The change detector for this component instance.
      */
     abstract get changeDetectorRef(): ChangeDetectorRef;
-
-    /**
-     * The type of this component (as created by a `ComponentFactory` class).
-     */
-    abstract get componentType(): Type<any>;
 
     /**
     * destory this.
