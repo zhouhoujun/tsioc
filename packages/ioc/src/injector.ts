@@ -1,14 +1,14 @@
-import { LoadType, Modules, Type } from './types';
+import { ClassType, LoadType, Modules, Type } from './types';
 import { MethodType } from './Invoker';
 import { KeyValueProvider, StaticProviders } from './providers';
 import {
     TypeOption, Factory, IActionProvider, IInjector, IModuleLoader, FacRecord, IProvider, ProviderType,
     RegisteredState, RegisterOption, ResolveOption, ServicesOption, ProviderOption
 } from './IInjector';
-import { isToken, Token, tokenRef } from './tokens';
+import { isToken, Token } from './tokens';
 import { isArray, isPlainObject, isClass, isNil, isFunction, isString, getClass, isDefined, isTypeObject, isTypeReflect } from './utils/chk';
 import { IContainer } from './IContainer';
-import { cleanObj, getTypes, remove } from './utils/lang';
+import { cleanObj, getTypes, mapEach, remove } from './utils/lang';
 import { INJECTOR, TARGET } from './metadata/tk';
 import { Abstract } from './metadata/decor';
 import { DefaultStrategy, Strategy } from './strategy';
@@ -16,10 +16,6 @@ import { DesignContext } from './actions/ctx';
 import { DesignLifeScope } from './actions/design';
 
 
-/**
- * provider default startegy.
- */
-export const providerStrategy = new DefaultStrategy();
 
 /**
  * provider container.
@@ -47,7 +43,7 @@ export class Provider implements IProvider {
     protected factories: Map<Token, FacRecord>;
     protected destCb: () => void;
 
-    constructor(public parent: IProvider, protected strategy: Strategy = providerStrategy) {
+    constructor(public parent: IProvider, public readonly strategy?: Strategy) {
         this.factories = new Map();
         parent && this.init(parent);
     }
@@ -55,7 +51,7 @@ export class Provider implements IProvider {
     protected init(parent: IProvider) {
         this.destCb = () => this.destroy();
         this._container = parent.getContainer();
-        if (this.strategy.vaildParent(parent)) {
+        if (!this.strategy || this.strategy.vaildParent(parent)) {
             parent.onDestroy(this.destCb);
         } else {
             this._container.onDestroy(this.destCb);
@@ -287,11 +283,11 @@ export class Provider implements IProvider {
      * @returns {boolean}
      */
     has<T>(token: Token<T>, deep?: boolean): boolean {
-        return this.factories.has(token) || (this.strategy.hasToken(token, this, deep) ?? false);
+        return this.factories.has(token) ?? this.strategy?.hasToken(token, this, deep) ?? false;
     }
 
     hasValue<T>(token: Token<T>): boolean {
-        return !isNil(this.factories.get(token)?.value) || (this.strategy.hasValue(token, this) ?? false);
+        return !isNil(this.factories.get(token)?.value) ?? this.strategy?.hasValue(token, this) ?? false;
     }
 
     setValue<T>(token: Token<T>, value: T, type?: Type<T>): this {
@@ -314,7 +310,7 @@ export class Provider implements IProvider {
      * @returns {T}
      */
     get<T>(key: Token<T>, providers?: IProvider): T {
-        return resolveRecord(this.factories.get(key), providers) ?? this.strategy.getInstance(key, this, providers) ?? null;
+        return resolveRecord(this.factories.get(key), providers) ?? this.strategy?.getInstance(key, this, providers) ?? null;
     }
 
 
@@ -370,11 +366,19 @@ export class Provider implements IProvider {
     }
 
     protected resolveStrategy<T>(option: ResolveOption<T>, pdr: IProvider) {
-        const targetToken = isTypeReflect(option.target) ? option.target.type as Type : (isTypeObject(option.target) ? getClass(option.target) : option.target as Type);
-
+        let targetToken: ClassType;
+        if (option.target) {
+            if (isFunction(option.target)) {
+                targetToken = option.target;
+            } else if (isTypeReflect(option.target)) {
+                targetToken = option.target.type;
+            } else {
+                targetToken = isTypeObject(option.target) ? getClass(option.target) : null;
+            }
+        }
         let inst: T;
         const state = this.state();
-        if (isFunction(targetToken)) {
+        if (targetToken) {
             inst = this.resolveWithTarget(state, option.token, targetToken, pdr);
         }
 
@@ -383,12 +387,13 @@ export class Provider implements IProvider {
         return this.resolveToken(option.token, pdr) ?? this.resolveFailed(state, option.token, pdr, option.regify, option.defaultToken) ?? null;
     }
 
-    protected resolveWithTarget<T>(state: RegisteredState, token: Token<T>, targetToken: Type, pdr: IProvider): T {
-        return state?.getTypeProvider(targetToken)?.get(token, pdr) ?? this.get(tokenRef(token, targetToken), pdr);
+    protected resolveWithTarget<T>(state: RegisteredState, token: Token<T>, targetToken: ClassType, pdr: IProvider): T {
+        return state?.getTypeProvider(targetToken)?.get(token, pdr);
     }
 
     protected resolveToken<T>(token: Token<T>, pdr: IProvider): T {
-        return pdr?.get(token, pdr) ?? this.get(token, pdr) ?? this.parent?.get(token, pdr);
+        if (token['name'] === 'TestService') console.log(token, pdr?.size);
+        return pdr?.get(token, pdr) ?? this.get(token, pdr);
     }
 
     protected resolveFailed<T>(state: RegisteredState, token: Token<T>, pdr: IProvider, regify?: boolean, defaultToken?: Token): T {
@@ -448,7 +453,10 @@ export class Provider implements IProvider {
     }
 
     iterator(callbackfn: (fac: FacRecord, key: Token, resolvor?: IProvider) => void | boolean, deep?: boolean): void | boolean {
-        return this.strategy.iterator(this.factories, callbackfn, this, deep);
+        if (mapEach(this.factories, callbackfn, this) === false) {
+            return false;
+        }
+        return this.strategy?.iterator(callbackfn, this, deep);
     }
 
     /**
@@ -533,7 +541,7 @@ export class Provider implements IProvider {
         this.destCb = null;
         this._container = null;
         this.parent = null;
-        this.strategy = null;
+        (this as any).strategy = null;
     }
 }
 
@@ -719,12 +727,13 @@ function makeRecord(value: any, fn: Factory, type: Type): FacRecord {
 
 function generateFactory(injector: IProvider, option: StaticProviders): Factory {
     const { provide, useClass, deps, singleton, useFactory, useExisting } = option;
+    const parent = (injector as Provider).strategy ? null : injector.parent;
     let fac: Factory;
     if (useFactory) {
         fac = (pdr) => {
             let args = deps?.map(d => {
                 if (isToken(d)) {
-                    return pdr?.get(d) ?? injector.get(d, pdr) ?? (isString(d) ? d : null);
+                    return pdr?.get(d) ?? injector.get(d, pdr) ?? parent?.get(d, pdr) ?? (isString(d) ? d : null);
                 } else {
                     return d;
                 }
@@ -732,13 +741,13 @@ function generateFactory(injector: IProvider, option: StaticProviders): Factory 
             return useFactory(...args.concat(pdr));
         };
     } else if (useExisting) {
-        fac = (pdr: IProvider) => injector.get(useExisting, pdr);
+        fac = (pdr: IProvider) => injector.get(useExisting, pdr) ?? parent?.get(useExisting, pdr);
     } else if (useClass) {
         fac = (pdr) => {
-            if (!injector.state().isRegistered(useClass) && !injector.has(useClass, true)) {
-                injector.register({ type: useClass, singleton, deps });
+            if (!injector.state().isRegistered(useClass) && !injector.has(useClass, true) && (parent ? parent.has(useClass, true) : true)) {
+                (parent || injector).register({ type: useClass, singleton, deps });
             }
-            return injector.get(useClass, pdr);
+            return injector.get(useClass, pdr) ?? parent?.get(useClass, pdr);
         };
     } else {
         fac = (pdr) => {
@@ -746,7 +755,7 @@ function generateFactory(injector: IProvider, option: StaticProviders): Factory 
             if (isArray(deps) && deps.length) {
                 args = deps.map(p => {
                     if (isToken(p)) {
-                        return pdr?.get(p) ?? injector.get(p, pdr) ?? (isString(p) ? p : null);
+                        return pdr?.get(p) ?? injector.get(p, pdr) ?? parent?.get(p, pdr) ?? (isString(p) ? p : null);
                     } else {
                         return p;
                     }

@@ -2,7 +2,7 @@ import { isFunction, isClass, isUndefined } from '../utils/chk';
 import { cleanObj } from '../utils/lang';
 import { chain } from '../utils/hdl';
 import { Type } from '../types';
-import { Token, tokenRef } from '../tokens';
+import { Token } from '../tokens';
 import { DesignContext, RuntimeContext } from './ctx';
 import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
@@ -146,14 +146,6 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
     ctx.reflect.providers.forEach(anno => {
         provide = anno.provide;
         injector.set({ provide, useClass: type });
-        if (state.provides.indexOf(provide) < 0) {
-            state.provides.push(provide);
-        }
-    });
-
-    ctx.reflect.refs.forEach(rf => {
-        provide = tokenRef(rf.provide ?? type, rf.target);
-        injector.set({ provide: tokenRef(rf.provide ?? type, rf.target), useClass: type });
         if (state.provides.indexOf(provide) < 0) {
             state.provides.push(provide);
         }

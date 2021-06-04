@@ -150,27 +150,27 @@ export const IocContainer = Container;
 /**
  * service provider.
  */
- @Abstract()
- export abstract class ServicesProvider {
-     /**
-      * get all service extends type.
-      *
-      * @template T
-      * @param {(Token<T> | ServicesOption<T>)} target servive token or express match token.
-      * @param {...ProviderType[]} providers
-      * @returns {T[]} all service instance type of token type.
-      */
-     abstract getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[];
-     /**
-      * get all provider service in the injector.
-      *
-      * @template T
-      * @param {(Token<T> | ServicesOption<T>)} target
-      * @returns {IProvider}
-      */
-      abstract getServiceProviders<T>(injector: IInjector, target: Token<T> | ServicesOption<T>): IProvider;
- }
- 
+@Abstract()
+export abstract class ServicesProvider {
+    /**
+     * get all service extends type.
+     *
+     * @template T
+     * @param {(Token<T> | ServicesOption<T>)} target servive token or express match token.
+     * @param {...ProviderType[]} providers
+     * @returns {T[]} all service instance type of token type.
+     */
+    abstract getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[];
+    /**
+     * get all provider service in the injector.
+     *
+     * @template T
+     * @param {(Token<T> | ServicesOption<T>)} target
+     * @returns {IProvider}
+     */
+    abstract getServiceProviders<T>(injector: IInjector, target: Token<T> | ServicesOption<T>): IProvider;
+}
+
 
 
 const SERVICE: ServicesProvider = {
@@ -227,12 +227,15 @@ class RegisteredStateImpl implements RegisteredState {
     }
 
     setTypeProvider(type: ClassType | TypeReflect, ...providers: ProviderType[]) {
-        if (isFunction(type)) {
-            get(type)?.extProviders.push(...providers);
-            this.states.get(type)?.providers.inject(providers)
-        } else {
-            type.extProviders.push(...providers);
-            this.states.get(type.type)?.providers.inject(providers);
+        const trefl = isFunction(type) ? get(type) : type;
+        trefl.extProviders.push(...providers);
+        const state = this.states.get(trefl.type);
+        if (state) {
+            if (!state.providers) {
+                state.providers = state.injector.toProvider(providers, true);
+            } else {
+                state.providers.inject(providers);
+            }
         }
     }
 
@@ -335,7 +338,7 @@ class ActionProvider extends Provider implements IActionProvider {
  * @export
  * @param {IContainer} container
  */
- export function registerCores(container: IContainer) {
+export function registerCores(container: IContainer) {
     container.setValue(INVOKER, new InvokerImpl());
     // bing action.
     container.action().regAction(

@@ -6,7 +6,7 @@ import { DefaultBootContext } from './ctx';
 /**
  * runable boot factory.
  */
- export class RunableServiceFactory<T = any> extends ServiceFactory<T> {
+ export class DefaultServiceFactory<T = any> extends ServiceFactory<T> {
 
     constructor(private _refl: AnnotationReflect<T>) {
         super();
@@ -36,6 +36,6 @@ import { DefaultBootContext } from './ctx';
 export class DefaultServiceFactoryResolver extends ServiceFactoryResolver {
 
     resolve<T>(type: Type<T>) {
-        return new RunableServiceFactory(refl.get(type));
+        return new DefaultServiceFactory(refl.get(type));
     }
 }

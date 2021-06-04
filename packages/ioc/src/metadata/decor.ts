@@ -1,13 +1,14 @@
-import { Type } from '../types';
+import { ClassType, Type } from '../types';
 import { isString, isArray } from '../utils/chk';
 import { Token, getToken } from '../tokens';
 import { IContainer } from '../IContainer';
 import {
     ClassMetadata, AutorunMetadata, AutoWiredMetadata, InjectMetadata, TypeMetadata, PatternMetadata,
-    InjectableMetadata, ParameterMetadata, ProvidersMetadata, RefMetadata, RefProvider
+    InjectableMetadata, ParameterMetadata, ProvidersMetadata, ProviderInMetadata
 } from './meta';
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
 import { IInjector, ProviderType } from '../IInjector';
+
 
 /**
  * Abstract decorator. define the class as abstract class.
@@ -234,43 +235,43 @@ export const Providers: IProvidersDecorator = createDecorator<ProvidersMetadata>
 
 
 /**
- * Refs decorator, for class. use to define the class as service of target.
+ * ProviderIn decorator, for class. use to define the class as service of target.
  *
  * @Refs
  *
  * @export
- * @interface IRefToDecorator
- * @extends {IClassDecorator<RefMetadata>}
+ * @interface IProviderInDecorator
+ * @extends {IClassDecorator<ProviderInMetadata>}
  */
-export interface IRefsDecorator {
+export interface IProviderInDecorator {
     /**
      * Refs decorator, for class. use to define the class as service of target.
      *
      * @Refs
      *
-     * @param {Token} target reference to target token.
+     * @param {ClassType} target reference to target token.
      */
-    (target: Token): ClassDecorator;
+    (target: ClassType): ClassDecorator;
 
     /**
      * Refs decorator, for class. use to define the class as service of target.
      *
      * @Refs
      *
-     * @param {Token} target reference to target token.
+     * @param {ClassType} target reference to target token.
      * @param {Token} provide define this class ref provider for provide.
      * @param {string} [alias] define this class ref provider with alias for provide.
     */
-    (target: Token, provide: Token, alias?: string): ClassDecorator;
+    (target: ClassType, provide: Token, alias?: string): ClassDecorator;
 
     /**
      * Refs decorator, for class. use to define the class as service of target.
      *
      * @Refs
      *
-     * @param {RefMetadata} [metadata] metadata map.
+     * @param {ProviderInMetadata} [metadata] metadata map.
      */
-    (metadata: RefMetadata): ClassDecorator;
+    (metadata: ProviderInMetadata): ClassDecorator;
 }
 
 /**
@@ -278,13 +279,20 @@ export interface IRefsDecorator {
  *
  * @Refs
  */
-export const Refs: IRefsDecorator = createDecorator<RefMetadata>('Refs', {
-    props: (target: Token, provide?: Token, alias?: string) => {
-        const refs = { target, provide: getToken(provide, alias) } as RefProvider;
-        return { refs };
+export const ProviderIn: IProviderInDecorator = createDecorator<ProviderInMetadata>('ProviderIn', {
+    props: (target: ClassType, provide?: Token, alias?: string) => ({ target, provide: getToken(provide, alias) }),
+    design: {
+        afterAnnoation: (ctx, next) => {
+            let meta = ctx.reflect.class.getMetadata<ProviderInMetadata>(ctx.currDecor);
+            const type = ctx.type;
+            ctx.injector.state().setTypeProvider(meta.target, { provide: meta.provide || type, useClass: type })
+            return next();
+        }
     }
-}) as IRefsDecorator;
+}) as IProviderInDecorator;
 
+
+export const Refs = ProviderIn;
 
 /**
  * Singleton decorator, for class. use to define the class is singleton.
@@ -343,7 +351,7 @@ export const Singleton: ISingletonDecorator = createDecorator<ClassMetadata>('Si
  *  ioc extend inteface.
  */
 export interface IocExtentd {
-    setup(container: IContainer|IInjector);
+    setup(container: IContainer | IInjector);
 }
 
 /**

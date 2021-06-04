@@ -281,7 +281,7 @@ export const InitCtorDesignParams = (ctx: DecorContext, next: () => void) => {
     return next();
 }
 
-export const typeAnnoDecors = ['@Injectable', '@Singleton', '@Abstract', '@Refs'];
+export const typeAnnoDecors = ['@Injectable', '@Singleton', '@Abstract'];
 export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
     if (typeAnnoDecors.indexOf(ctx.decor) >= 0) {
         const reflect = ctx.reflect;
@@ -303,10 +303,6 @@ export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
 
         if(ctx.providers){
             reflect.extProviders.push(...ctx.providers);
-        }
-
-        if (meta.refs) {
-            reflect.refs.push(meta.refs);
         }
 
         if (meta.regIn) {

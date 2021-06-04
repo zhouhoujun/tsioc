@@ -78,7 +78,7 @@ export interface RefProvider {
      *
      * @type {Token}
      */
-    target: Token;
+    target: ClassType;
 
     /**
      * ref provide
@@ -89,19 +89,26 @@ export interface RefProvider {
 }
 
 /**
- * reference metadata.
+ * provider in metadata.
  *
  * @export
- * @interface RefMetadata
- * @extends {TypeMetadata}
+ * @interface ProviderInMetadata
  */
-export interface RefMetadata {
+export interface ProviderInMetadata {
+    
     /**
-     * define the class as service reference to target.
+     * int tagert.
      *
-     * @type {RefProvider}
+     * @type {Token}
      */
-    refs?: RefProvider
+     target: ClassType;
+
+     /**
+      * ref provide
+      *
+      * @type {Token}
+      */
+     provide?: Token;
 }
 
 /**
@@ -266,7 +273,7 @@ export interface PatternMetadata {
  * @export
  * @interface ClassMetadata
  */
-export interface ClassMetadata extends PatternMetadata, ProviderMetadata, RefMetadata, TypeMetadata { }
+export interface ClassMetadata extends PatternMetadata, ProviderMetadata, TypeMetadata { }
 
 /**
  * Injectable decorator metadata.

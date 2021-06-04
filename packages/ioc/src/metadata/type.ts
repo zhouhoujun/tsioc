@@ -5,7 +5,7 @@ import { ClassType } from '../types';
 import { Handler } from '../utils/hdl';
 import {
     ParameterMetadata, PatternMetadata, PropertyMetadata,
-    ProviderMetadata, ProvidersMetadata, RefProvider, RegInMetadata, TypeMetadata
+    ProviderMetadata, ProvidersMetadata, RegInMetadata, TypeMetadata
 } from './meta';
 import { TypeDefine } from './typedef';
 
@@ -122,10 +122,6 @@ export interface TypeReflect<T = any> extends TypeMetadata, PatternMetadata, Reg
      * class providers.
      */
     providers: ProviderMetadata[];
-    /**
-     * refs
-     */
-    refs: RefProvider[];
     /**
      * class extends providers.
      */

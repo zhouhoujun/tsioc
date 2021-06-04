@@ -14,7 +14,7 @@ import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
  * @implements {IRunner<any>}
  */
 @Injectable()
-@Refs('@Suite', Service)
+// @Refs('@Suite', Service)
 export class SuiteRunner extends Service implements ISuiteRunner {
 
     timeout: number;
