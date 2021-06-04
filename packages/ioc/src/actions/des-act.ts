@@ -10,6 +10,7 @@ import { RuntimeLifeScope } from './runtime';
 import { FacRecord, IInjector, IProvider } from '../IInjector';
 import { PropertyMetadata } from '../metadata/meta';
 import { ROOT_INJECTOR } from '../metadata/tk';
+import { createProvider } from '../injector';
 
 
 
@@ -156,7 +157,7 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
         if (state.providers) {
             state.providers.inject(ctx.reflect.extProviders);
         } else {
-            const pdrs = injector.toProvider(ctx.reflect.extProviders, true);
+            const pdrs = createProvider(injector, ctx.reflect.extProviders);
             state.providers = pdrs;
         }
     }

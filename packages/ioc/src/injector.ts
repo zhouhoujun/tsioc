@@ -392,7 +392,6 @@ export class Provider implements IProvider {
     }
 
     protected resolveToken<T>(token: Token<T>, pdr: IProvider): T {
-        if (token['name'] === 'TestService') console.log(token, pdr?.size);
         return pdr?.get(token, pdr) ?? this.get(token, pdr);
     }
 
@@ -744,7 +743,7 @@ function generateFactory(injector: IProvider, option: StaticProviders): Factory 
         fac = (pdr: IProvider) => injector.get(useExisting, pdr) ?? parent?.get(useExisting, pdr);
     } else if (useClass) {
         fac = (pdr) => {
-            if (!injector.state().isRegistered(useClass) && !injector.has(useClass, true) && (parent ? parent.has(useClass, true) : true)) {
+            if (!injector.state().isRegistered(useClass) && !injector.has(useClass, true)) {
                 (parent || injector).register({ type: useClass, singleton, deps });
             }
             return injector.get(useClass, pdr) ?? parent?.get(useClass, pdr);

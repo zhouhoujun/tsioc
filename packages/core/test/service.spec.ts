@@ -67,13 +67,13 @@ describe('getService', () => {
 
     it('get service with providers', () => {
         let tsr = container.getService({ token: TestService }, { provide: DataProvider, useClass: CustomDataProvider });
-        expect(tsr).toBeInstanceOf(CustomDataProvider);
+        expect(tsr).toBeInstanceOf(TestService);
         expect(tsr.flash()).toEqual('hi custom');
     })
 
     it('get service with providers in option', () => {
         let tsr = container.getService({ token: TestService, providers: [{ provide: DataProvider, useClass: CustomDataProvider }] });
-        expect(tsr).toBeInstanceOf(CustomDataProvider);
+        expect(tsr).toBeInstanceOf(TestService);
         expect(tsr.flash()).toEqual('hi custom');
     })
 

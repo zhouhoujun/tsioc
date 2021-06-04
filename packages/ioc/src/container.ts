@@ -15,7 +15,7 @@ import { get } from './metadata/refl';
 import { Abstract } from './metadata/decor';
 import { Action, IActionSetup } from './action';
 import { Strategy } from './strategy';
-import { Provider, Injector, resolveRecord } from './injector';
+import { Provider, Injector, resolveRecord, createProvider } from './injector';
 import { InvokerImpl } from './actions/invoker';
 import { DesignLifeScope } from './actions/design';
 import { RuntimeLifeScope } from './actions/runtime';
@@ -232,7 +232,7 @@ class RegisteredStateImpl implements RegisteredState {
         const state = this.states.get(trefl.type);
         if (state) {
             if (!state.providers) {
-                state.providers = state.injector.toProvider(providers, true);
+                state.providers = createProvider(state.injector, providers);
             } else {
                 state.providers.inject(providers);
             }
@@ -329,7 +329,6 @@ class ActionProvider extends Provider implements IActionProvider {
         this.setValue(type, instance);
         if (isFunction(instance.setup)) instance.setup();
     }
-
 }
 
 /**
