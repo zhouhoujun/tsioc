@@ -283,11 +283,11 @@ export class Provider implements IProvider {
      * @returns {boolean}
      */
     has<T>(token: Token<T>, deep?: boolean): boolean {
-        return this.factories.has(token) ?? this.strategy?.hasToken(token, this, deep) ?? false;
+        return this.factories.has(token) || this.strategy?.hasToken(token, this, deep) || false;
     }
 
     hasValue<T>(token: Token<T>): boolean {
-        return !isNil(this.factories.get(token)?.value) ?? this.strategy?.hasValue(token, this) ?? false;
+        return !isNil(this.factories.get(token)?.value) || this.strategy?.hasValue(token, this) || false;
     }
 
     setValue<T>(token: Token<T>, value: T, type?: Type<T>): this {
@@ -392,7 +392,7 @@ export class Provider implements IProvider {
     }
 
     protected resolveToken<T>(token: Token<T>, pdr: IProvider): T {
-        return pdr?.get(token, pdr) ?? this.get(token, pdr) ?? (this.strategy? null : this.parent?.get(token, pdr));
+        return pdr?.get(token, pdr) ?? this.get(token, pdr) ?? (this.strategy ? null : this.parent?.get(token, pdr));
     }
 
     protected resolveFailed<T>(state: RegisteredState, token: Token<T>, pdr: IProvider, regify?: boolean, defaultToken?: Token): T {
@@ -731,7 +731,7 @@ function generateFactory(injector: IProvider, option: StaticProviders): Factory 
         fac = (pdr) => {
             let args = deps?.map(d => {
                 if (isToken(d)) {
-                    return injector.resolve(d, pdr)  ?? (isString(d) ? d : null);
+                    return injector.resolve(d, pdr) ?? (isString(d) ? d : null);
                 } else {
                     return d;
                 }

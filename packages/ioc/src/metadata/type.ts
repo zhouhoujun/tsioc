@@ -119,9 +119,9 @@ export interface TypeReflect<T = any> extends TypeMetadata, PatternMetadata, Reg
      */
     class: TypeDefine;
     /**
-     * class providers.
+     * class provides.
      */
-    providers: ProviderMetadata[];
+    provides: Token[];
     /**
      * class extends providers.
      */

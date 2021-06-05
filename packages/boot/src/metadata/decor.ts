@@ -1,5 +1,5 @@
 import {
-    DecoratorOption, isUndefined, ClassType, createDecorator, ROOT_INJECTOR,
+    DecoratorOption, isUndefined, createDecorator, ROOT_INJECTOR,
     lang, Type, isArray, isString, DesignContext, ClassMethodDecorator, ProviderType, IProvider, TypeMetadata
 } from '@tsdi/ioc';
 import { IStartupService } from '../services/intf';

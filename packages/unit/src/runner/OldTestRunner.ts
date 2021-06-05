@@ -1,6 +1,6 @@
-import { lang, Singleton, isFunction, IInjector, Inject, TARGET } from '@tsdi/ioc';
-import { BootContext, Service } from '@tsdi/boot';
-import { ISuiteRunner } from './ISuiteRunner';
+import { lang, Singleton, isFunction, IInjector } from '@tsdi/ioc';
+import { BootContext } from '@tsdi/boot';
+import { Runner } from './Runner';
 import { Assert } from '../assert/assert';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
 
@@ -32,7 +32,7 @@ const globals = typeof window !== 'undefined' ? window : global;
  * @implements {IRunner<any>}
  */
 @Singleton()
-export class OldTestRunner extends Service implements ISuiteRunner {
+export class OldTestRunner extends Runner {
 
     private injector: IInjector;
 

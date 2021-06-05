@@ -2,7 +2,7 @@ import { Aspect, Around, Joinpoint, JoinpointState, AfterThrowing } from '@tsdi/
 import { LoggerAspect } from '@tsdi/logs';
 import { TestReport } from '../reports/TestReport';
 import { ITestReport, ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
-import { ISuiteRunner } from '../runner/ISuiteRunner';
+import { Runner } from '../runner/Runner';
 import { SuiteRunner } from '../runner/SuiteRunner';
 import { OldTestRunner } from '../runner/OldTestRunner';
 
@@ -42,7 +42,7 @@ export class RunAspect extends LoggerAspect {
 
     @Around('execution(*.runSuite)')
     logSuite(joinPoint: Joinpoint) {
-        let runner = joinPoint.target as ISuiteRunner;
+        let runner = joinPoint.target as Runner;
         let desc = joinPoint.args[0] as ISuiteDescribe;
         switch (joinPoint.state) {
             case JoinpointState.Before:

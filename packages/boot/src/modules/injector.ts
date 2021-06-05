@@ -1,4 +1,4 @@
-import { IInjector, isFunction, Provider, refl, ROOT_INJECTOR, Type } from '@tsdi/ioc';
+import { generateRecord, IInjector, isArray, isFunction, isPlainObject, KeyValueProvider, Provider, ProviderType, refl, ROOT_INJECTOR, StaticProviders, Type } from '@tsdi/ioc';
 import { IModuleExports, ModuleFactory, ModuleInjector, ModuleOption, ModuleRegistered } from '../Context';
 import { ModuleReflect } from '../metadata/ref';
 import { CTX_ARGS, PROCESS_ROOT } from '../metadata/tk';
@@ -98,6 +98,47 @@ export class ModuleProvider extends Provider implements IModuleExports {
         }
     }
 
+    /**
+     * inject providers.
+     *
+     * @param {...ProviderType[]} providers
+     * @returns {this}
+     */
+    inject(providers: ProviderType[]): this;
+    /**
+     * inject providers.
+     *
+     * @param {...ProviderType[]} providers
+     * @returns {this}
+     */
+    inject(...providers: ProviderType[]): this;
+    inject(...args: any[]): this {
+        const providers = (args.length === 1 && isArray(args[0])) ? args[0] : args;
+        providers?.length && providers.forEach(p => {
+            if (!p) {
+                return;
+            }
+            if (isFunction(p)) {
+                this.regType(p);
+            } else if (isPlainObject(p) && (p as StaticProviders).provide) {
+                const rd = generateRecord(this, p as StaticProviders);
+                this.factories.set((p as StaticProviders).provide, rd);
+                this.moduleRef.set((p as StaticProviders).provide, rd);
+            } else if (p instanceof KeyValueProvider) {
+                p.each((k, useValue) => {
+                    const data = { value: useValue };
+                    this.factories.set(k, data);
+                    this.moduleRef.set(k, data)
+                });
+            } else if (p instanceof Provider) {
+                this.copy(p);
+                this.moduleRef.copy(p);
+            }
+        });
+
+        return this;
+    }
+
     protected destroying() {
         super.destroying();
         this.exports.forEach(e => e.destroy());
@@ -113,7 +154,7 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
     private _modelRefl: ModuleReflect<T>;
     constructor(modelRefl: ModuleReflect<T> | Type<T>) {
         super();
-        this._modelRefl = isFunction(modelRefl)? refl.get(modelRefl) : modelRefl;
+        this._modelRefl = isFunction(modelRefl) ? refl.get(modelRefl) : modelRefl;
     }
 
     get moduleType() {
@@ -121,7 +162,7 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
     }
 
     create(parent: IInjector, option?: ModuleOption): ModuleInjector<T> {
-        if((parent as ModuleInjector)?.type === this._modelRefl.type) return parent as ModuleInjector;
+        if ((parent as ModuleInjector)?.type === this._modelRefl.type) return parent as ModuleInjector;
         let inj = option ? this.createByOption(parent, option) : this.createInstance(parent);
         this.regModule(inj);
         return inj;

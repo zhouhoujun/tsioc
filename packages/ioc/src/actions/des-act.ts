@@ -143,9 +143,7 @@ export const DesignPropDecorScope = function (ctx: DesignContext, next: () => vo
  */
 export const TypeProviderAction = function (ctx: DesignContext, next: () => void) {
     const { injector: injector, type, state } = ctx;
-    let provide: Token;
-    ctx.reflect.providers.forEach(anno => {
-        provide = anno.provide;
+    ctx.reflect.provides.forEach(provide => {
         injector.set({ provide, useClass: type });
         if (state.provides.indexOf(provide) < 0) {
             state.provides.push(provide);

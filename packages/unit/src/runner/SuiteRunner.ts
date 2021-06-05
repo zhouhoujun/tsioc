@@ -1,9 +1,9 @@
-import { lang, Injectable, Refs } from '@tsdi/ioc';
-import { Service, BootContext } from '@tsdi/boot';
+import { lang, Injectable } from '@tsdi/ioc';
+import { BootContext } from '@tsdi/boot';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata/decor';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata/meta';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
-import { ISuiteRunner } from './ISuiteRunner';
+import { Runner } from './Runner';
 import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
 
 /**
@@ -14,8 +14,7 @@ import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
  * @implements {IRunner<any>}
  */
 @Injectable()
-// @Refs('@Suite', Service)
-export class SuiteRunner extends Service implements ISuiteRunner {
+export class SuiteRunner extends Runner {
 
     timeout: number;
     describe: string;

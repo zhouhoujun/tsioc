@@ -295,7 +295,7 @@ export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
             reflect.singleton = true;
         }
         if (meta.provide) {
-            reflect.providers.push({ provide: meta.provide });
+            reflect.provides.push(meta.provide);
         }
         if (meta.expires) {
             reflect.expires = meta.expires;
@@ -465,7 +465,7 @@ export function get<T extends TypeReflect>(type: ClassType, ify?: boolean): T {
         tagRefl = {
             type,
             class: new TypeDefine(type, prRef?.class),
-            providers: [],
+            provides: [],
             extProviders: [],
             refs: [],
             autoruns: prRef ? prRef.autoruns.filter(a => a.decorType !== 'class') : [],

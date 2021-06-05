@@ -3,6 +3,9 @@ import { Service, AnnotationReflect, BootContext, ApplicationContext } from '@ts
 import { OldTestRunner } from './OldTestRunner';
 import { TestReport } from '../reports/TestReport';
 import { UnitTestConfigure } from '../UnitTestConfigure';
+import { Runner } from './Runner';
+import { SuiteRunner } from './SuiteRunner';
+
 
 
 /**

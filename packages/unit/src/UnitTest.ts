@@ -6,6 +6,7 @@ import { UnitTestConfigureRegister } from './UnitTestConfigureRegister';
 import { UnitTestConfigure } from './UnitTestConfigure';
 import { UnitTestRunner } from './runner/UnitTestRunner';
 import { RunAspect } from './aop/RunAspect';
+import { Runner } from './runner/Runner';
 import { OldTestRunner } from './runner/OldTestRunner';
 import { SuiteRunner } from './runner/SuiteRunner';
 import { TestReport } from './reports/TestReport';
@@ -20,7 +21,7 @@ import { TestReport } from './reports/TestReport';
       UnitTestConfigureRegister,
       RunAspect,
       OldTestRunner,
-      SuiteRunner,
+      { provide: Runner, useClass: SuiteRunner },
       UnitTestRunner,
       TestReport
    ],

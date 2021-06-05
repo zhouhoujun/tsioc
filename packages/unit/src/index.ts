@@ -5,7 +5,7 @@ export * from './assert/assert';
 export * from './assert/expects';
 
 
-export * from './runner/ISuiteRunner';
+export * from './runner/Runner';
 export * from './runner/SuiteRunner';
 export * from './runner/OldTestRunner';
 export * from './runner/UnitTestRunner';

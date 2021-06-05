@@ -1,6 +1,7 @@
 import { createDecorator, DecoratorOption } from '@tsdi/ioc';
-import { AnnotationReflect } from '@tsdi/boot';
+import { AnnotationReflect, Service } from '@tsdi/boot';
 import { SuiteMetadata, TestCaseMetadata, TestMetadata } from './meta';
+import { Runner } from '../runner/Runner';
 
 
 /**
@@ -29,6 +30,7 @@ export interface ISuiteDecorator {
     (metadata?: SuiteMetadata): ClassDecorator;
 }
 
+
 /**
  * @Suite decorator.
  */
@@ -46,8 +48,12 @@ export const Suite: ISuiteDecorator = createDecorator<SuiteMetadata>('Suite', {
     appendProps: (metadata) => {
         metadata.singleton = true;
         return metadata;
-    }
+    },
+    providers: [
+        { provide: Service, useExisting: Runner }
+    ]
 });
+
 
 /**
  * define the method of class as unit test case.

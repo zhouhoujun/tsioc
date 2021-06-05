@@ -1,5 +1,5 @@
-import { IService } from '@tsdi/boot';
-import { Type } from '@tsdi/ioc';
+import { Abstract, Type } from '@tsdi/ioc';
+import { Service } from '@tsdi/boot';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
 
 /**
@@ -9,21 +9,23 @@ import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
  * @interface ISuiteRunner
  * @extends {IRunner<any>}
  */
-export interface ISuiteRunner extends IService {
+@Abstract()
+export abstract class Runner extends Service {
 
-    getInstanceType(): Type;
+    abstract getInstanceType(): Type;
     /**
      * run suite.
      *
      * @param {ISuiteDescribe} desc
      * @returns {Promise<void>}
      */
-    runSuite(desc: ISuiteDescribe): Promise<void>;
+    abstract runSuite(desc: ISuiteDescribe): Promise<void>;
     /**
      * run case.
      *
      * @param {ICaseDescribe} caseDesc
      * @returns {Promise<ICaseDescribe>}
      */
-    runCase(caseDesc: ICaseDescribe): Promise<ICaseDescribe>;
+    abstract runCase(caseDesc: ICaseDescribe): Promise<ICaseDescribe>;
 }
+
