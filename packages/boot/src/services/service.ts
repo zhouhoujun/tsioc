@@ -13,7 +13,7 @@ import { IService } from '../Context';
  * @template T
  */
 @Abstract()
-export abstract class Service<T = any> implements IService {
+export abstract class Service<T = any> implements IService<T> {
 
     private _destroyed = false;
     private destroyCbs: (() => void)[] = [];
