@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import {
     AnnotationReflect, MappingReflect, MessageQueue, Middlewares,
-    MiddlewareType, RouteMapingMetadata, Router, ServiceFactoryResolver
+    MiddlewareType, RouteMapingMetadata, Router, Service, ServiceFactoryResolver
 } from '@tsdi/boot';
 import {
     BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
@@ -16,6 +16,7 @@ import { CompilerFacade } from '../compile/facade';
 import { ComponentType, DirectiveType } from '../type';
 import { HostMappingRoot, HostMappingRoute } from '../router';
 import { ComponentFactoryResolver } from '../refs/component';
+import { Renderer } from '../renderer';
 
 
 /**
@@ -138,7 +139,8 @@ export const Component: IComponentDecorator = createDecorator<ComponentMetadata>
         }
     },
     providers: [
-        { provide: ServiceFactoryResolver, useExisting: ComponentFactoryResolver }
+        { provide: ServiceFactoryResolver, useExisting: ComponentFactoryResolver },
+        { provide: Service, useExisting: Renderer }
     ]
 });
 

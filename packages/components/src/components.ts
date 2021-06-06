@@ -1,4 +1,5 @@
-import { Inject, IocExt, IContainer, CONTAINER } from '@tsdi/ioc';
+import { Inject, IocExt, Injector, ROOT_INJECTOR } from '@tsdi/ioc';
+import { ComponentFactoryResolver } from './refs/component';
 import { HostMappingRoot } from './router';
 
 
@@ -11,8 +12,9 @@ import { HostMappingRoot } from './router';
 @IocExt()
 export class ComponentsModule {
 
-    setup(@Inject(CONTAINER) container: IContainer) {
-        container.register(HostMappingRoot);
+    setup(@Inject(ROOT_INJECTOR) injector: Injector) {
+        injector.register(HostMappingRoot);
+        injector.setValue(ComponentFactoryResolver,  );
     }
 
 }

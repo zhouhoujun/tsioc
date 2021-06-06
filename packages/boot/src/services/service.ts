@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { BootContext, IService } from '../Context';
+import { IService } from '../Context';
 
 
 
@@ -17,15 +17,6 @@ export abstract class Service<T = any> implements IService {
 
     private _destroyed = false;
     private destroyCbs: (() => void)[] = [];
-
-
-    /**
-     * configure startup service.
-     *
-     * @param {BootContext<T>} [ctx]
-     * @returns {(Promise<void>)}
-     */
-    abstract configureService(ctx: BootContext<T>): Promise<void>;
 
     /**
      * has destoryed or not.

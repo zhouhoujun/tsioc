@@ -42,14 +42,10 @@ export interface IService<T = any> extends Destroyable {
      * @param {IBootContext} [ctx]
      * @returns {(Promise<void>)}
      */
-    configureService?(ctx: BootContext<T>): Promise<void>;
+    configureService?(ctx: BootContext<T>): void | Promise<void>;
 
 }
 
-/**
- * @deprecated use IService instead.
- */
-export type IRunnable<T> = IService<T>;
 
 
 /**

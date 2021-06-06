@@ -10,7 +10,7 @@
 
 export * from './EventEmitter';
 export * from './type';
-export * from './runnable';
+export * from './renderer';
 
 export * from './router';
 

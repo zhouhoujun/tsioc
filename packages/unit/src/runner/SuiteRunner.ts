@@ -167,4 +167,11 @@ export class SuiteRunner extends Runner {
         }
         return caseDesc;
     }
+
+    protected destroying() {
+        this.ctx = null;
+        this.timeout = null;
+        this.describe = null;
+    }
+
 }
