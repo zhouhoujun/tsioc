@@ -16,8 +16,6 @@ import { createInvokedProvider } from '../injector';
  */
 export class InvokerImpl implements Invoker {
 
-    constructor() { }
-
     /**
      * try to async invoke the method of intance, if no instance will create by type.
      *
@@ -55,8 +53,8 @@ export class InvokerImpl implements Invoker {
             throw new Error(`type: ${targetClass} has no method ${(key || '').toString()}.`);
         }
 
-        if (tgRefl.methodExtProviders.has(key)) {
-            providers = providers.concat(tgRefl.methodExtProviders.get(key));
+        if (tgRefl.methodProviders.has(key)) {
+            providers = providers.concat(tgRefl.methodProviders.get(key));
         }
 
         const proxy = instance[key]['_proxy'];

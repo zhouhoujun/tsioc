@@ -302,7 +302,7 @@ export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
         }
 
         if(ctx.providers){
-            reflect.extProviders.push(...ctx.providers);
+            reflect.providers.push(...ctx.providers);
         }
 
         if (meta.regIn) {
@@ -329,7 +329,7 @@ export const typeProvidersDecors = ['@Injectable', '@Providers'];
 export const TypeProvidersAction = (ctx: DecorContext, next: () => void) => {
     if (typeProvidersDecors.indexOf(ctx.decor) >= 0) {
         if ((ctx.metadata as ProvidersMetadata).providers) {
-            ctx.reflect.extProviders.push(...(ctx.metadata as ProvidersMetadata).providers);
+            ctx.reflect.providers.push(...(ctx.metadata as ProvidersMetadata).providers);
         }
     }
     return next();
@@ -349,10 +349,10 @@ export const InitMethodDesignParams = (ctx: DecorContext, next: () => void) => {
 export const methodProvidersDecors = ['@Providers', '@AutoWired'];
 export const MethodProvidersAction = (ctx: DecorContext, next: () => void) => {
     if (methodProvidersDecors.indexOf(ctx.decor) >= 0) {
-        let pdrs = ctx.reflect.methodExtProviders.get(ctx.propertyKey);
+        let pdrs = ctx.reflect.methodProviders.get(ctx.propertyKey);
         if (!pdrs) {
             pdrs = []
-            ctx.reflect.methodExtProviders.set(ctx.propertyKey, pdrs);
+            ctx.reflect.methodProviders.set(ctx.propertyKey, pdrs);
         }
         pdrs.push(...(ctx.metadata as ProvidersMetadata).providers);
     }
@@ -451,7 +451,7 @@ export function dispatchParamDecor(type: any, define: DecorDefine) {
  * @param ify if not has own reflect will create new reflect.
  */
 export function get<T extends TypeReflect>(type: ClassType, ify?: boolean): T {
-    let tagRefl = type[reflFiled]?.();
+    let tagRefl = type[reflFiled]?.() as TypeReflect;
     if (tagRefl?.type !== type) {
         if (!ify) return null;
 
@@ -466,12 +466,11 @@ export function get<T extends TypeReflect>(type: ClassType, ify?: boolean): T {
             type,
             class: new TypeDefine(type, prRef?.class),
             provides: [],
-            extProviders: [],
-            refs: [],
+            providers: [],
             autoruns: prRef ? prRef.autoruns.filter(a => a.decorType !== 'class') : [],
             propProviders: prRef ? new Map(prRef.propProviders) : new Map(),
             methodParams: prRef ? new Map(prRef.methodParams) : new Map(),
-            methodExtProviders: prRef ? new Map(prRef.methodParams) : new Map()
+            methodProviders: prRef ? new Map(prRef.methodParams) : new Map()
         };
         type[reflFiled] = () => tagRefl;
     }

@@ -228,7 +228,7 @@ class RegisteredStateImpl implements RegisteredState {
 
     setTypeProvider(type: ClassType | TypeReflect, ...providers: ProviderType[]) {
         const trefl = isFunction(type) ? get(type) : type;
-        trefl.extProviders.push(...providers);
+        trefl.providers.push(...providers);
         const state = this.states.get(trefl.type);
         if (state) {
             if (!state.providers) {

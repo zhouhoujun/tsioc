@@ -8,7 +8,7 @@ import { AnnotationType } from '../types';
  * @returns
  */
 export function getClassAnnotation(target: AnnotationType) {
-    let annf: Function = target.ρAnn || target.d0Ann || target.getClassAnnations;
+    let annf: Function = target.ρAnn || target.getClassAnnations;
     return typeof annf === 'function' ? annf.call(target) : null;
 }
 
@@ -20,5 +20,5 @@ export function getClassAnnotation(target: AnnotationType) {
  * @returns {boolean}
  */
 export function hasClassAnnotation(target: AnnotationType): boolean {
-    return typeof (target.ρAnn || target.d0Ann || target.getClassAnnations) === 'function';
+    return typeof (target.ρAnn || target.getClassAnnations) === 'function';
 }

@@ -151,11 +151,11 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
     });
 
     // class private provider.
-    if (ctx.reflect.extProviders && ctx.reflect.extProviders.length) {
+    if (ctx.reflect.providers && ctx.reflect.providers.length) {
         if (state.providers) {
-            state.providers.inject(ctx.reflect.extProviders);
+            state.providers.inject(ctx.reflect.providers);
         } else {
-            const pdrs = createProvider(injector, ctx.reflect.extProviders);
+            const pdrs = createProvider(injector, ctx.reflect.providers);
             state.providers = pdrs;
         }
     }

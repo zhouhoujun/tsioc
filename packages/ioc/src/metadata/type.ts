@@ -5,7 +5,7 @@ import { ClassType } from '../types';
 import { Handler } from '../utils/hdl';
 import {
     ParameterMetadata, PatternMetadata, PropertyMetadata,
-    ProviderMetadata, ProvidersMetadata, RegInMetadata, TypeMetadata
+    ProvidersMetadata, RegInMetadata, TypeMetadata
 } from './meta';
 import { TypeDefine } from './typedef';
 
@@ -125,7 +125,7 @@ export interface TypeReflect<T = any> extends TypeMetadata, PatternMetadata, Reg
     /**
      * class extends providers.
      */
-    extProviders: ProviderType[];
+    providers: ProviderType[];
     /**
      * props.
      *
@@ -143,7 +143,7 @@ export interface TypeReflect<T = any> extends TypeMetadata, PatternMetadata, Reg
      *
      * @type {ObjectMap<ProviderType[]>}
      */
-    methodExtProviders: Map<string, ProviderType[]>;
+    methodProviders: Map<string, ProviderType[]>;
     /**
      * auto run defines.
      */
