@@ -1,5 +1,5 @@
 import { AnnotationReflect, BootContext } from '@tsdi/boot';
-import { lang, ClassType, createDecorator } from '@tsdi/ioc';
+import { ClassType, createDecorator } from '@tsdi/ioc';
 import { ActivityMetadata } from './core/ActivityMetadata';
 import { WorkflowContext } from './core/WorkflowContext';
 
@@ -52,7 +52,7 @@ export const Task: ITaskDecorator = createDecorator<ActivityMetadata>('Task', {
             reflect.annoDecor = ctx.decor;
             const metadata = ctx.metadata as ActivityMetadata;
             if (!metadata.name) {
-                metadata.name = lang.getClassName(ctx.reflect.type);
+                metadata.name = ctx.reflect.class.className;
             }
             reflect.annotation = ctx.metadata;
             return next();

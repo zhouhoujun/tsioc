@@ -22,10 +22,12 @@ export class TypeDefine {
     methodDecors: DecorDefine[];
     paramDecors: DecorDefine[];
 
+    readonly annotation;
     private params: Map<string, any[]>;
 
     constructor(public readonly type: ClassType, private parent?: TypeDefine) {
-        this.className = getClassAnnotation(type)?.name || type.name;
+        this.annotation = getClassAnnotation(type)
+        this.className = this.annotation?.name || type.name;
         this.classDecors = [];
         if (parent) {
             this.decors = parent.decors.filter(d => d.decorType !== 'class');
@@ -199,19 +201,19 @@ export class TypeDefine {
     getParams(): Map<string, any[]> {
         if (!this.params) {
             this.params = this.parent ? new Map(this.parent.getParams()) : new Map();
-            this.setParam(this.params, this.type);
+            this.setParam(this.params);
         }
         return this.params;
     }
 
-    protected setParam(params: Map<string, any[]>, ty: ClassType) {
-        let classAnnations = getClassAnnotation(ty);
+    protected setParam(params: Map<string, any[]>) {
+        let classAnnations = this.annotation;
         if (classAnnations && classAnnations.params) {
             forIn(classAnnations.params, (p, n) => {
                 params.set(n, p);
             });
         } else {
-            let descriptors = Object.getOwnPropertyDescriptors(ty.prototype);
+            let descriptors = Object.getOwnPropertyDescriptors(this.type.prototype);
             forIn(descriptors, (item, n) => {
                 if (item.value) {
                     params.set(n, getParamNames(item.value));

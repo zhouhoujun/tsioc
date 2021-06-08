@@ -5,7 +5,7 @@ import { clsUglifyExp } from './exps';
 import { getClassAnnotation } from './util';
 
 export { getClass } from './chk';
-export { getClassAnnotation as getDesignAnno, hasClassAnnotation as hasDesignAnno } from './util';
+export { getClassAnnotation, hasClassAnnotation } from './util';
 
 /**
  * create an new object from target object omit some field.
@@ -122,8 +122,7 @@ export function getClassName(target: any): string {
         return '';
     }
     if (clsUglifyExp.test(classType.name)) {
-        let classAnnations = getClassAnnotation(classType);
-        return classAnnations ? classAnnations.name : classType.name;
+        return getClassAnnotation(classType)?.name ?? classType.name;
     }
     return classType.name;
 }

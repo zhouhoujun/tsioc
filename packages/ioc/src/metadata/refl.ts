@@ -8,7 +8,6 @@ import { DecoratorType, DecorContext, DecorDefine, TypeReflect } from './type';
 import { TypeDefine } from './typedef';
 import { chain, Handler } from '../utils/hdl';
 import { cleanObj, getParentClass } from '../utils/lang';
-import { getClassAnnotation } from '../utils/util';
 import { IActionProvider } from '../IInjector';
 
 
@@ -289,7 +288,7 @@ export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
         if (meta.abstract) {
             reflect.abstract = true;
         } else {
-            reflect.abstract = getClassAnnotation(reflect.type)?.abstract === true;
+            reflect.abstract = reflect.class.annotation?.abstract === true;
         }
         if (meta.singleton) {
             reflect.singleton = true;

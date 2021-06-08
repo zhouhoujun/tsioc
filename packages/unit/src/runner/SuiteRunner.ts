@@ -43,7 +43,7 @@ export class SuiteRunner extends Runner {
     getSuiteDescribe(): ISuiteDescribe {
         let meta = this.ctx.reflect.annotation as SuiteMetadata;
         this.timeout = (meta && meta.timeout) ? meta.timeout : (3 * 60 * 60 * 1000);
-        this.describe = meta.describe || lang.getClassName(this.ctx.type);
+        this.describe = meta.describe || this.ctx.reflect.class.className;
         return {
             timeout: this.timeout,
             describe: this.describe,
