@@ -35,25 +35,6 @@
     "chalk": "^4.0.0",
     "log4js": "^6.3.0"
   },
-  "peerDependencies": {
-    "@tsdi/ioc": "~6.0.31",
-    "@tsdi/core": "~6.0.31",
-    "@tsdi/aop": "~6.0.31",
-    "@tsdi/logs": "~6.0.31",
-    "@tsdi/boot": "~6.0.31",
-    "@tsdi/platform-server": "~6.0.31",
-    "globby": "^11.0.0",
-    "interpret": "^2.0.0",
-    "time-stamp": "^2.2.0",
-    "minimatch": "^3.0.4",
-    "minimist": "^1.2.5",
-    "pretty-hrtime": "^1.0.3",
-    "bluebird": "^3.7.2",
-    "tslib": "^2.0.1",
-    "ts-node": "^8.10.1",
-    "tsconfig-paths": "^3.9.0",
-    "zone.js": "^0.10.3"
-  },
   "directories": {
     "lib": "lib",
     "test": "test"

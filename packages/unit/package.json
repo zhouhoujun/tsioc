@@ -35,15 +35,6 @@
     "expect": "^26.0.1",
     "@types/mocha": "^7.0.2"
   },
-  "peerDependencies": {
-    "@types/jasmine": "^3.5.10",
-    "@tsdi/ioc": "~6.0.31",
-    "@tsdi/core": "~6.0.31",
-    "@tsdi/aop": "~6.0.31",
-    "@tsdi/boot": "~6.0.31",
-    "@tsdi/logs": "~6.0.31",
-    "tslib": "^2.0.1"
-  },
   "directories": {
     "lib": "lib",
     "test": "test"

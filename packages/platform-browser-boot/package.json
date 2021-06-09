@@ -36,13 +36,6 @@
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
   },
-  "peerDependencies": {
-    "tslib": "^2.0.1",
-    "@tsdi/ioc": "~6.0.31",
-    "@tsdi/core": "~6.0.31",
-    "@tsdi/boot": "~6.0.31",
-    "@tsdi/platform-browser": "~6.0.31"
-  },
   "directories": {
     "lib": "lib"
   }

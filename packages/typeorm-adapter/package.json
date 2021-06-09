@@ -40,14 +40,5 @@
   "dependencies": {
     "typeorm": "~0.2.25"
   },
-  "peerDependencies": {
-    "reflect-metadata": "^0.1.13",
-    "@tsdi/annotations": "~6.0.31",
-    "@tsdi/ioc": "~6.0.31",
-    "@tsdi/boot": "~6.0.31",
-    "@tsdi/core": "~6.0.31",
-    "@tsdi/logs": "~6.0.31",
-    "tslib": "^2.0.1"
-  },
   "homepage": "https://github.com/zhouhoujun/tsioc/tree/master/packages/typeorm-adapter#readme#readme"
 }
