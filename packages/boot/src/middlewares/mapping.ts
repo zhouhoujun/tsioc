@@ -105,7 +105,7 @@ export class MappingRoute extends Route {
             }
             const providers = await this.createProvider(ctx, ctrl, meta.metadata, this.reflect.methodParams.get(meta.propertyKey));
 
-            let result = await injector.invoke(ctrl, meta.propertyKey, ctx.providers, ...providers);
+            let result = injector.invoke(ctrl, meta.propertyKey, ctx.providers, ...providers);
             if (isPromise(result)) {
                 result = await result;
             }

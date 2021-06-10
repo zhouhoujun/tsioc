@@ -29,8 +29,7 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
         if (config.repositories && config.repositories.some(r => isString(r))) {
             let loader = this.ctx.injector.getLoader();
             // preload repositories for typeorm.
-            const repos = await loader.loadType({ files: config.repositories.filter(r => isString(r)), basePath: this.ctx.baseURL });
-            console.log(config.repositories, repos,  loader, this.ctx.baseURL);
+            await loader.loadType({ files: config.repositories.filter(r => isString(r)), basePath: this.ctx.baseURL });
         }
         if (isArray(config.connections)) {
             await Promise.all(config.connections.map((options) => this.statupConnection(injector, options, config)));
