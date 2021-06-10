@@ -1,5 +1,5 @@
 import * as expect from 'expect';
-import { IBootContext, BootApplication } from '@tsdi/boot';
+import { BootContext, BootApplication, ApplicationContext } from '@tsdi/boot';
 import { TypeOrmHelper } from '../src';
 import { Suite, Before, Test, After } from '@tsdi/unit';
 import { User, Role } from './models/models';
@@ -13,7 +13,7 @@ import { MockBootTest, connectOption } from './test';
 @Suite('Repository test')
 export class ReposTest {
 
-    private ctx: IBootContext;
+    private ctx: ApplicationContext;
 
     @Before()
     async beforeInit() {

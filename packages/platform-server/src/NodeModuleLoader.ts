@@ -23,10 +23,11 @@ export class NodeModuleLoader extends ModuleLoader implements IModuleLoader {
             files = files.map(f => this.normalize(f));
         }
         basePath = basePath || runMainPath();
+
         return globby(files, { cwd: basePath }).then(mflies => {
-            return mflies.map(fp => {
-                return require(toAbsolutePath(basePath, fp));
-            });
+            return Promise.all(mflies.map(fp => {
+                return import(toAbsolutePath(basePath, fp));
+            }));
         });
     }
 

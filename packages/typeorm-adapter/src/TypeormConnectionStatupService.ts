@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { ILogger } from '@tsdi/logs';
 import { Singleton, Type, isString, isArray, IInjector } from '@tsdi/ioc';
-import { IConnectionOptions, Configure, ConnectionStatupService, ApplicationContext } from '@tsdi/boot';
+import { IConnectionOptions, Configuration, ConnectionStatupService, ApplicationContext } from '@tsdi/boot';
 import { getConnection, createConnection, ConnectionOptions, Connection, getMetadataArgsStorage, getCustomRepository, getConnectionManager } from 'typeorm';
 
 
@@ -25,10 +25,12 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
         logger?.info('startup db connections');
         const config = this.ctx.getConfiguration();
         const injector = ctx.injector;
-        if (config?.repositories.some(r => isString(r))) {
+
+        if (config.repositories && config.repositories.some(r => isString(r))) {
             let loader = this.ctx.injector.getLoader();
             // preload repositories for typeorm.
-            await loader.loadType({ files: config.repositories.filter(r => isString(r)), basePath: this.ctx.baseURL });
+            const repos = await loader.loadType({ files: config.repositories.filter(r => isString(r)), basePath: this.ctx.baseURL });
+            console.log(config.repositories, repos,  loader, this.ctx.baseURL);
         }
         if (isArray(config.connections)) {
             await Promise.all(config.connections.map((options) => this.statupConnection(injector, options, config)));
@@ -39,7 +41,7 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
         }
     }
 
-    async statupConnection(injector: IInjector, options: IConnectionOptions, config: Configure) {
+    async statupConnection(injector: IInjector, options: IConnectionOptions, config: Configuration) {
         const connection = await this.createConnection(options, config);
         options.entities.forEach(e => {
             injector.register(e);
@@ -59,7 +61,7 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
      * @param options connenction options.
      * @param config config
      */
-    async createConnection(options: IConnectionOptions, config: Configure) {
+    async createConnection(options: IConnectionOptions, config: Configuration) {
         if (options.asDefault && !options.entities) {
             let entities: Type[] = [];
             if (config?.models.some(m => isString(m))) {

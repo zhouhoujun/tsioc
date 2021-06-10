@@ -1,4 +1,4 @@
-import { IBootContext, BootApplication, ROOT_QUEUE } from '@tsdi/boot';
+import { ApplicationContext, BootApplication, ROOT_QUEUE } from '@tsdi/boot';
 
 import { User } from './models/models';
 import { Suite, Before, Test, After } from '@tsdi/unit';
@@ -13,7 +13,7 @@ import { UserController } from './mapping/UserController';
 @Suite('load Repository test')
 export class LoadReposTest {
 
-    private ctx: IBootContext;
+    private ctx: ApplicationContext;
 
     @Before()
     async beforeInit() {
@@ -57,7 +57,7 @@ export class LoadReposTest {
 
     @Test()
     async getUser0() {
-        const usrRep = this.ctx.injector.getInstance(UserRepository);
+        const usrRep = this.ctx.injector.get(UserRepository);
         expect(usrRep).toBeInstanceOf(UserRepository);
         const rep = await this.ctx.send('/users/admin----test', { method: 'get' }, { provide: UserRepository, useValue: usrRep });
         expect(rep.status).toEqual(200);

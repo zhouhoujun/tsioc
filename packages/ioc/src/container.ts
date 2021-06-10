@@ -302,6 +302,21 @@ class ActionProvider extends Provider implements IActionProvider {
         parent.onFinally(() => this.destroy());
     }
 
+    /**
+     * get token factory resolve instace in current BaseInjector.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {IProvider} providers
+     * @returns {T}
+     */
+    get<T>(key: Token<T>, providers?: IProvider): T {
+        if(isFunction(key) && !this.has(key)){
+            this.registerAction(key as Type);
+        }
+        return super.get(key, providers);
+    }
+
     regAction(...types: Type<Action>[]): this {
         types.forEach(type => {
             if (this.has(type)) return;
