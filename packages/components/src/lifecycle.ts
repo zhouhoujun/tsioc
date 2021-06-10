@@ -84,7 +84,7 @@ export interface AfterContentChecked {
  * bound-property values by reference across change detection runs. You can use this
  * hook to check for and respond to changes by some other means.
  *
- * When the default change detector detects changes, it invokes `ngOnChanges()` if supplied,
+ * When the default change detector detects changes, it invokes `onChanges()` if supplied,
  * regardless of whether you perform additional change detection.
  * Typically, you should not use both `DoCheck` and `OnChanges` to respond to
  * changes on the same input.
