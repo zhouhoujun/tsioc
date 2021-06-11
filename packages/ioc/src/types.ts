@@ -35,6 +35,10 @@ export interface DesignAnnotation {
      * @memberof DesignAnnotation
      */
     params: ObjectMap<string[]>;
+    /**
+     * type Def.
+     */
+    def?: any;
 }
 
 

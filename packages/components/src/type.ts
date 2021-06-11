@@ -3,34 +3,6 @@ import { View } from './vdom/interfaces/view';
 import { CssSelectorList, VAttributes, VConstantsOrFactory } from './vdom/interfaces/vnode';
 
 /**
- * component type.
- */
-export interface ComponentType<T = any> extends Type<T> {
-    /**
-     * get component def.
-     */
-    ρcmp: never;
-}
-
-/**
- * directive type.
- */
-export interface DirectiveType<T = any> extends Type<T> {
-    /**
-     * get directive def.
-     */
-    ρdir: never;
-}
-
-
-/**
- * A subclass of `Type`.
- */
-export interface PipeType<T> extends Type<T> {
-    ρpipe: never;
-}
-
-/**
  * Flags passed into template functions to determine which blocks (i.e. creation, update)
  * should be executed.
  *
@@ -320,4 +292,4 @@ export type PipeTypesOrFactory = (() => PipeTypeList) | PipeTypeList;
 
 export type PipeDefList = PipeDef<any>[];
 
-export type PipeTypeList = PipeType<any> | Type<any>;
+export type PipeTypeList = Type<any>;

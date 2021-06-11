@@ -13,7 +13,6 @@ import {
 import { PipeTransform } from '../pipes/pipe';
 import { ComponentReflect, DirectiveReflect } from '../reflect';
 import { CompilerFacade } from '../compile/facade';
-import { ComponentType, DirectiveType } from '../type';
 import { HostMappingRoot, HostMappingRoute } from '../router';
 import { ComponentFactoryResolver } from '../refs/component';
 import { Renderer } from '../renderer';
@@ -66,8 +65,8 @@ export const Directive: IDirectiveDecorator = createDecorator<DirectiveMetadata>
                 return next();
             }
 
-            if ((ctx.type as DirectiveType).ρdir && ((ctx.type as DirectiveType).ρdir as any).type === ctx.type) {
-                (ctx.reflect as DirectiveReflect).def = (ctx.type as DirectiveType).ρdir;
+            if (ctx.reflect.class.annotation?.def) {
+                (ctx.reflect as DirectiveReflect).def = ctx.reflect.class.annotation?.def;
                 return next();
             }
 
@@ -128,8 +127,9 @@ export const Component: IComponentDecorator = createDecorator<ComponentMetadata>
             if (compRefl.annoType !== 'component') {
                 return next();
             }
-            if ((ctx.type as ComponentType).ρcmp && ((ctx.type as ComponentType).ρcmp as any).type === ctx.type) {
-                compRefl.def = (ctx.type as ComponentType).ρcmp;
+            
+            if (ctx.reflect.class.annotation?.def) {
+                (ctx.reflect as ComponentReflect).def = ctx.reflect.class.annotation?.def;
                 return next();
             }
 

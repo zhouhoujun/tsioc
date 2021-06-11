@@ -1,4 +1,4 @@
-import { ClassType, ObjectMap } from '../types';
+import { ClassType, DesignAnnotation, ObjectMap } from '../types';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { isFunction, isString } from '../utils/chk';
 import { getClassAnnotation } from '../utils/util';
@@ -22,7 +22,7 @@ export class TypeDefine {
     methodDecors: DecorDefine[];
     paramDecors: DecorDefine[];
 
-    readonly annotation;
+    readonly annotation: DesignAnnotation;
     private params: Map<string, any[]>;
 
     constructor(public readonly type: ClassType, private parent?: TypeDefine) {
@@ -50,7 +50,7 @@ export class TypeDefine {
                 this.classDecors.unshift(define);
                 break;
             case 'method':
-                if(this.currprop === define.propertyKey){
+                if (this.currprop === define.propertyKey) {
                     this.methodDecors.splice(this.currpropidx, 0, define);
                 } else {
                     this.currpropidx = this.methodDecors.length;
@@ -59,7 +59,7 @@ export class TypeDefine {
                 }
                 break;
             case 'property':
-                if(this.currprop === define.propertyKey){
+                if (this.currprop === define.propertyKey) {
                     this.propDecors.splice(this.currpropidx, 0, define);
                 } else {
                     this.currpropidx = this.propDecors.length;

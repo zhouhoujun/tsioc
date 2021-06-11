@@ -14,7 +14,8 @@ export class ComponentsModule {
 
     setup(@Inject(ROOT_INJECTOR) injector: Injector) {
         injector.register(HostMappingRoot);
-        injector.setValue(ComponentFactoryResolver,  );
+        // todo register default factory resolver.
+        // injector.setValue(ComponentFactoryResolver,  );
     }
 
 }
