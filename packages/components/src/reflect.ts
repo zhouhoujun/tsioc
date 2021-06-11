@@ -11,7 +11,7 @@ import { ComponentDef, DirectiveDef } from './type';
  * @interface IBindingTypeReflect
  * @extends {ITypeReflect}
  */
-export interface DirectiveReflect extends AnnotationReflect {
+export interface DirectiveReflect<T = any> extends AnnotationReflect<T> {
     /**
      * directive defined.
      * Runtime link information for Directives.
@@ -23,11 +23,7 @@ export interface DirectiveReflect extends AnnotationReflect {
      * never create the object directly since the shape of this object
      * can change between versions.
      */
-    def?: DirectiveDef<any>;
-    /**
-     * directive selector.
-     */
-    selector?: string;
+    def?: DirectiveDef<T>;
     /**
      * annoation metadata.
      */
@@ -57,11 +53,7 @@ export interface ComponentReflect<T = any> extends AnnotationReflect<T> {
      * never create the object directly since the shape of this object
      * can change between versions.
      */
-    def?: ComponentDef<any>;
-    /**
-     * component selector.
-     */
-    selector?: string;
+    def?: ComponentDef<T>;
     /**
      * component annoation metadata.
      */
