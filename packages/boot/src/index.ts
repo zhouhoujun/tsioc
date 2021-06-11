@@ -36,6 +36,3 @@ export * from './BootApplication';
 // middlewares
 export * from './middlewares';
 
-
-// orm core
-export * from './orm';

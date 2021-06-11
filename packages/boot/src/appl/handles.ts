@@ -3,6 +3,7 @@ import { LogConfigureToken, DebugLogAspect, LogModule } from '@tsdi/logs';
 import { ApplicationContext } from '../Context';
 import { CONFIGURATION, CONFIGURES, PROCESS_ROOT } from '../metadata/tk';
 import { IStartupService } from '../services/intf';
+import { ConnectionStatupService } from '../services/startup';
 
 
 
@@ -104,6 +105,7 @@ export const BootConfigureRegisterHandle = async function (ctx: ApplicationConte
     await next();
 };
 
+
 /**
  * configure startup service scope.
  */
@@ -117,9 +119,24 @@ export class StartupGlobalService extends BuildHandles<ApplicationContext> imple
     }
 
     setup() {
-        this.use(ConfigureServiceHandle);
+        this.use(ConnectionsHandle, ConfigureServiceHandle);
     }
 }
+
+/**
+ * connection handle.
+ * @param ctx context.
+ * @param next next dispatch
+ */
+export const ConnectionsHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
+    const startup = ctx.injector.resolve({ token: ConnectionStatupService, target: ctx.injector.type });
+    if (startup) {
+        ctx.onDestroy(() => startup?.destroy());
+        await startup.configureService(ctx)
+    }
+    await next();
+};
+
 
 /**
  * statup application deps service and configure service.

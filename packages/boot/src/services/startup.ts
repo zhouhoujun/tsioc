@@ -58,5 +58,14 @@ export abstract class StartupService implements IStartupService {
     protected destroying() {
         // destory.
     }
-
 }
+
+
+/**
+ * startup db connections of application.
+ */
+ @Abstract()
+ export abstract class ConnectionStatupService extends StartupService {
+ 
+ }
+ 
