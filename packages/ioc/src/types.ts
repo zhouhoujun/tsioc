@@ -35,6 +35,11 @@ export interface DesignAnnotation {
      * @memberof DesignAnnotation
      */
     params: ObjectMap<string[]>;
+
+    /**
+     * abstract or not.
+     */
+    abstract?: boolean;
     /**
      * type Def.
      */
