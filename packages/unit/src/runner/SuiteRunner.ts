@@ -137,7 +137,7 @@ export class SuiteRunner extends Runner {
     async runTest(desc: ISuiteDescribe) {
         let tests = this.ctx.reflect.class.getDecorDefines<TestCaseMetadata>(Test.toString(), 'method');
         await lang.step(
-            tests.reverse().map(df => {
+            tests.map(df => {
                 return {
                     key: df.propertyKey,
                     order: df.metadata.setp,

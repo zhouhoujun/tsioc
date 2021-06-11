@@ -42,16 +42,30 @@ export class TypeDefine {
         }
     }
 
+    private currprop;
+    private currpropidx;
     addDefine(define: DecorDefine) {
         switch (define.decorType) {
             case 'class':
                 this.classDecors.unshift(define);
                 break;
             case 'method':
-                this.methodDecors.unshift(define);
+                if(this.currprop === define.propertyKey){
+                    this.methodDecors.splice(this.currpropidx, 0, define);
+                } else {
+                    this.currpropidx = this.methodDecors.length;
+                    this.currprop = define.propertyKey;
+                    this.methodDecors.push(define);
+                }
                 break;
             case 'property':
-                this.propDecors.unshift(define);
+                if(this.currprop === define.propertyKey){
+                    this.propDecors.splice(this.currpropidx, 0, define);
+                } else {
+                    this.currpropidx = this.propDecors.length;
+                    this.currprop = define.propertyKey;
+                    this.propDecors.push(define);
+                }
                 break;
             case 'parameter':
                 this.paramDecors.unshift(define);
