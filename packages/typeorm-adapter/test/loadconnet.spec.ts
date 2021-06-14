@@ -1,13 +1,11 @@
-import { ApplicationContext, BootApplication, ROOT_QUEUE } from '@tsdi/boot';
+import { ApplicationContext, BootApplication } from '@tsdi/boot';
 
 import { User } from './models/models';
 import { Suite, Before, Test, After } from '@tsdi/unit';
 import { TypeOrmHelper } from '../src';
 import * as expect from 'expect';
 import { UserRepository } from './repositories/UserRepository';
-import { connectOption, MockBootTest } from './test';
-import { UserController } from './mapping/UserController';
-
+import { option, MockBootTest } from './app';
 
 
 @Suite('load Repository test')
@@ -23,7 +21,7 @@ export class LoadReposTest {
                 {
                     models: ['./models/**/*.ts'],
                     repositories: ['./repositories/**/*.ts'],
-                    connections: connectOption
+                    connections: option
                 }
             ]
         });

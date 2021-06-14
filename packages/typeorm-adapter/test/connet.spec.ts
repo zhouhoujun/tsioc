@@ -4,7 +4,7 @@ import { TypeOrmHelper } from '../src';
 import { Suite, Before, Test, After } from '@tsdi/unit';
 import { User, Role } from './models/models';
 import { UserRepository } from './repositories/UserRepository';
-import { MockBootTest, connectOption } from './test';
+import { option, MockBootTest } from './app';
 
 
 
@@ -22,7 +22,7 @@ export class ReposTest {
             configures: [
                 {
                     connections: {
-                        ...connectOption,
+                        ...option,
                         entities: [
                             Role,
                             User
