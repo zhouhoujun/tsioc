@@ -1,7 +1,7 @@
 import { Singleton, Injectable } from '@tsdi/ioc';
 import { NonePointcut } from '@tsdi/aop';
 import { ILoggerManager, ILogger, LoggerManagerToken } from '@tsdi/logs';
-import { syncRequire } from '@tsdi/platform-server';
+import * as log4js from 'log4js';
 
 /**
  * log4js logger manager adapter.
@@ -14,7 +14,7 @@ export class Log4jsAdapter implements ILoggerManager {
 
     getLog4js() {
         if (!this._log4js) {
-            this._log4js = syncRequire('log4js');
+            this._log4js = log4js;
         }
         return this._log4js;
     }

@@ -1,18 +1,6 @@
 import * as path from 'path';
 import { existsSync } from 'fs';
 
-
-/**
- * sync require.
- *
- * @export
- * @param {string} filename
- * @returns {*}
- */
-export function syncRequire(filename: string): any {
-    return require(filename);
-}
-
 /**
  * convert path to absolute path.
  *

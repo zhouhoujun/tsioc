@@ -1,7 +1,8 @@
 import { Injectable } from '@tsdi/ioc';
 import { IConfigureLoader, CONFIG_LOADER, DIModule, PROCESS_ROOT, Configuration, PROCESS_EXIT, IBootApplication } from '@tsdi/boot';
-import { ServerModule, runMainPath, syncRequire } from '@tsdi/platform-server';
+import { ServerModule, runMainPath } from '@tsdi/platform-server';
 import * as path from 'path';
+import * as fs from 'fs';
 
 
 // to fix nodejs Date toJson bug.
@@ -33,26 +34,19 @@ export class ConfigureFileLoader implements IConfigureLoader<Configuration> {
     }
 
     async load(uri?: string): Promise<Configuration> {
-        const fs = syncRequire('fs');
         if (uri) {
             if (fs.existsSync(uri)) {
-                return syncRequire(uri) as Configuration;
+                return await import(uri) as Configuration;
             } else if (fs.existsSync(path.join(this.baseURL, uri))) {
-                return syncRequire(path.join(this.baseURL, uri)) as Configuration;
+                return await import(path.join(this.baseURL, uri)) as Configuration;
             } else {
                 console.log(`config file: ${uri} not exists.`)
                 return null;
             }
         } else {
-            let cfgmodeles: Configuration;
-            let cfgpath = path.join(this.baseURL, './config');
-            ['.js', '.ts', '.json'].some(ext => {
-                if (fs.existsSync(cfgpath + ext)) {
-                    cfgmodeles = syncRequire(cfgpath + ext);
-                }
-                return !!cfgmodeles;
-            });
-            return cfgmodeles;
+            const cfgpath = path.join(this.baseURL, './config');
+            const file = ['.js', '.ts', '.json'].map(ext=> cfgpath + ext).find(f => fs.existsSync(f));
+            return await import(file) as Configuration;
         }
     }
 }
@@ -68,10 +62,10 @@ export class ConfigureFileLoader implements IConfigureLoader<Configuration> {
     ],
     providers: [
         ConfigureFileLoader,
-        {
-            provide: PROCESS_ROOT,
-            useValue: runMainPath()
-        },
+        // {
+        //     provide: PROCESS_ROOT,
+        //     useValue: runMainPath()
+        // },
         {
             provide: PROCESS_EXIT,
             useValue: (app: IBootApplication) => {

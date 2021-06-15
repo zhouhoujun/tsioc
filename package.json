@@ -32,6 +32,10 @@
     "url": "git+https://github.com/zhouhoujun/tsioc.git"
   },
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^18.0.0",
+    "@rollup/plugin-inject": "^4.0.2",
+    "@rollup/plugin-node-resolve": "^11.2.1",
+    "@rollup/pluginutils": "~4.1.0",
     "@types/execa": "^2.0.0",
     "@types/mocha": "^7.0.2",
     "@types/shelljs": "^0.8.0",
@@ -67,10 +71,6 @@
     "pretty-hrtime": "^1.0.3",
     "reflect-metadata": "^0.1.13",
     "rollup": "~2.46.0",
-    "@rollup/pluginutils": "~4.1.0",
-    "@rollup/plugin-commonjs": "^18.0.0",
-    "@rollup/plugin-inject": "^4.0.2",
-    "@rollup/plugin-node-resolve": "^11.2.1",
     "rxjs": "^6.3.3",
     "shelljs": "^0.8.3",
     "through2": "^3.0.0",
@@ -85,5 +85,8 @@
     "vinyl-fs": "^3.0.3",
     "zone.js": "^0.10.3"
   },
-  "homepage": "https://github.com/zhouhoujun/tsioc#readme"
+  "homepage": "https://github.com/zhouhoujun/tsioc#readme",
+  "dependencies": {
+    "log4js": "^6.3.0"
+  }
 }
