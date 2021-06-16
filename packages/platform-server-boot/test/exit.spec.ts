@@ -5,7 +5,7 @@ import expect = require('expect');
 
 
 @DIModule({
-    baseURL: __dirname,
+    // baseURL: __dirname,
     imports: [
         ServerBootstrapModule
     ]
@@ -26,7 +26,7 @@ export class ProcessExitTest {
 
     @Test()
     baseurl() {
-        expect(this.ctx.baseURL).toEqual(__dirname)
+        expect(this.ctx.baseURL).toEqual(__dirname.slice(0, __dirname.lastIndexOf('/')))
     }
 
     @Test()

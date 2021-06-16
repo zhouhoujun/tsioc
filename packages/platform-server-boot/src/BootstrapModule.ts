@@ -62,10 +62,10 @@ export class ConfigureFileLoader implements IConfigureLoader<Configuration> {
     ],
     providers: [
         ConfigureFileLoader,
-        // {
-        //     provide: PROCESS_ROOT,
-        //     useValue: runMainPath()
-        // },
+        {
+            provide: PROCESS_ROOT,
+            useValue: runMainPath()
+        },
         {
             provide: PROCESS_EXIT,
             useValue: (app: IBootApplication) => {
