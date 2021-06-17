@@ -1,5 +1,5 @@
 import { DIModule } from '@tsdi/boot';
-import { Component, Directive, EventEmitter, Input, OnInit, Output, ViewChild } from '@tsdi/components';
+import { Component, Directive, EventEmitter, Input, OnInit, Output, ViewChild, ViewChildren, ViewRef } from '@tsdi/components';
 
 
 @Directive('Text, [Text]')
@@ -15,6 +15,11 @@ export class InputDirective {
     @Input() name: string;
     @Input() value: string;
     @Output() valueChange: EventEmitter<string> = new EventEmitter();
+}
+
+@Directive('Container')
+export class ContainerDirective {
+    @ViewChildren() contents: ViewRef[]
 }
 
 @Component({
@@ -54,6 +59,7 @@ export class AppComponent implements OnInit {
 @DIModule({
     declarations: [
         Text,
+        ContainerDirective,
         FieldComponent,
         AppComponent
     ],
