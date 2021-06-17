@@ -20,7 +20,7 @@ import * as pipes from './pipes';
         NodeActivityContext,
         PlatformService
     ],
-    components: [
+    declarations: [
         tasks,
         rollups,
         transforms,

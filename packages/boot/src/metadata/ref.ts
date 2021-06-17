@@ -92,9 +92,9 @@ export interface AnnotationReflect<T = any> extends TypeReflect {
      */
     exports?: Modules[];
     /**
-     * components the module providers.
+     * declaration the set of components, directives, pipes, and etc. of this module.
      */
-    components?: Modules[];
+    declarations?: Modules[];
 }
 
 /**

@@ -1,4 +1,4 @@
-import { DIModule, BootApplication, BootContext, IBootContext, BUILDER } from '@tsdi/boot';
+import { DIModule, BootApplication, BootContext, ApplicationContext } from '@tsdi/boot';
 import { Suite, Test, Before } from '@tsdi/unit';
 import { Component, Input, ComponentsModule, RefChild, NonSerialize, CompilerFacade, ElementRef, ViewChild, ContentChild, ViewChildren, ComponentRef, HostMapping } from '../src';
 import expect = require('expect');
@@ -80,7 +80,7 @@ class CustomeService {
 
     createComponent3() {
         // console.log(this.container.resolve(BuildHandleRegisterer));
-        return this.injector.getInstance(CompilerFacade).compileTemplate({ template: { element: 'selector3', name: 'test3', address: 'address3', phone: '+86177000000010' }, injector: this.injector })
+        return this.injector.get(CompilerFacade).compileTemplate({ template: { element: 'selector3', name: 'test3', address: 'address3', phone: '+86177000000010' }, injector: this.injector })
     }
 }
 
@@ -88,7 +88,7 @@ class CustomeService {
     providers: [
         CustomeService
     ],
-    components: [
+    declarations: [
         Components,
         Component3
     ]
@@ -168,7 +168,7 @@ class ComponentTestMd {
         ComponentsModule,
         SubModule
     ],
-    components: [
+    declarations: [
         Component1,
         Component2,
         Component3
@@ -254,7 +254,7 @@ class ListModule {
 @Suite('component test')
 export class CTest {
 
-    ctx: IBootContext;
+    ctx: ApplicationContext;
 
     @Before()
     async init() {

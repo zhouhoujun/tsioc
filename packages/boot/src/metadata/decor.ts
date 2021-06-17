@@ -200,7 +200,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                     const annotation: ModuleConfigure = reflect.annotation = ctx.metadata;
                     if (annotation.imports) reflect.imports = lang.getTypes(annotation.imports);
                     if (annotation.exports) reflect.exports = lang.getTypes(annotation.exports);
-                    if (annotation.components) reflect.components = lang.getTypes(annotation.components);
+                    if (annotation.declarations) reflect.components = lang.getTypes(annotation.declarations);
                     if (annotation.bootstrap) reflect.bootstrap = lang.getTypes(annotation.bootstrap);
                     return next();
                 },
