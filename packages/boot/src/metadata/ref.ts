@@ -92,7 +92,7 @@ export interface AnnotationReflect<T = any> extends TypeReflect {
      */
     exports?: Modules[];
     /**
-     * declaration the set of components, directives, pipes, and etc. of this module.
+     * declaration the set of components, directives, pipes ... of this module.
      */
     declarations?: Modules[];
 }
@@ -117,17 +117,13 @@ export interface ModuleConfigure<T = any> extends IModuleMetadata<T> {
     imports: Type[];
     exports: Type[];
     /**
-     *  components of current module.
+     *  components, directives, pipes ... of current module.
      */
-    components?: Type[];
+    declarations?: Type[];
     /**
      * the module bootstraps.
      */
     bootstrap?: Type[];
-    /**
-     * dectors of components.
-     */
-    componentDectors?: string[];
     /**
      * module decorator.
      */
