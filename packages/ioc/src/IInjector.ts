@@ -12,7 +12,7 @@ import { ClassProvider, ExistingProvider, FactoryProvider, StaticProvider, Value
 /**
  * providers.
  */
-export type ProviderType = IProvider | StaticProvider;
+export type ProviderType =  Modules[] | IProvider | StaticProvider;
 
 /**
  * providers types
@@ -24,11 +24,6 @@ export type ProviderTypes = ProviderType;
  * @deprecated use `ProviderType` instead.
  */
 export type ParamProviders = ProviderType;
-/**
- * inject types
- * @deprecated use `ProviderType` instead.
- */
-export type InjectTypes = ProviderType;
 
 /**
  * instance factory.
