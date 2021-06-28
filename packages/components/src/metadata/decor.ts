@@ -384,7 +384,7 @@ export const HostMapping: IHostMappingDecorator = createDecorator<RouteMapingMet
 
 
 /**
- * Binding decorator.
+ * Property Binding decorator.
  *
  * @export
  * @interface BindingPropertyDecorator
@@ -415,9 +415,9 @@ export interface BindingPropertyDecorator {
 }
 
 /**
- * Binding decorator.
+ * Property Binding decorator.
  */
-export const Binding: InputPropertyDecorator = createPropDecorator<BindingMetadata>('Binding', {
+export const Binding: BindingPropertyDecorator = createPropDecorator<BindingMetadata>('Binding', {
     props: (bindingPropertyName: string, defaultValue?: any) => ({ bindingPropertyName, defaultValue })
 });
 

@@ -1,12 +1,16 @@
 import { DIModule } from '@tsdi/boot';
-import { Component, Directive, EventEmitter, Input, OnInit, Output, ViewChild, ViewChildren, ViewRef } from '@tsdi/components';
+import { Binding, CompilerFacade, Component, Directive, ElementRef, EventEmitter, HostMapping, Input, OnInit, Output, ViewChild, ViewChildren, ViewRef } from '@tsdi/components';
+import { Inject, Injectable, Injector } from '@tsdi/ioc';
 
 
 @Directive('Text, [Text]')
 export class TextDirective {
     @Input() name: string;
-    @Input() text: string;
-    @Output() valueChange: EventEmitter<string> = new EventEmitter();
+
+    // @Input() text: string;
+    // @Output() textChange: EventEmitter<string> = new EventEmitter();
+
+    @Binding() text: string;
 }
 
 
@@ -19,7 +23,10 @@ export class InputDirective {
 
 @Directive('Container')
 export class ContainerDirective {
-    @ViewChildren() contents: ViewRef[]
+
+    @Binding() name: string;
+
+    @ViewChildren() contents: ViewRef[];
 }
 
 @Component({
@@ -35,13 +42,16 @@ export class FieldComponent {
 }
 
 
+
 @Component({
     selector: 'app-comp',
     template: `
         <Text [text]="'Well come'"></Text>
         <Field #fie [label]="label" [(value)]="value"></Field>
+        <comp></comp>
     `
 })
+@HostMapping()
 export class AppComponent implements OnInit {
 
     label: string;
@@ -54,9 +64,86 @@ export class AppComponent implements OnInit {
         this.value = '';
     }
 
+    @HostMapping('/getData', 'post')
+    message(lable: string, vaule: string) {
+        this.label = lable;
+        this.value = vaule;
+    }
+}
+
+
+@Directive('selector1, [selector1]')
+export class Selector1 {
+    @Binding() id: string;
+    @Binding() name: string;
+}
+
+@Directive('selector3, [selector3]')
+export class Selector3 extends Selector1 {
+    @Binding() address: string;
+    @Binding() phone: string;
+}
+
+@Injectable()
+class CustomeService {
+
+    @Inject()
+    injector: Injector;
+
+    createComponent3() {
+        // console.log(this.container.resolve(BuildHandleRegisterer));
+        return this.injector.get(CompilerFacade).compileTemplate({ template: { element: 'selector3', name: 'test3', address: 'address3', phone: '+86177000000010' }, injector: this.injector })
+    }
+}
+
+
+@HostMapping()
+@Component({
+    selector: 'comp',
+    template: `
+        <selector1 #se1 [(name)]="name"></selector1>
+        <selector3 #se3 [(name)]="name" [address]="address"></selector3>
+    `
+})
+export class Components {
+    name: string;
+    address: string;
+
+    @ViewChild('se1') se1: ElementRef<Selector1>;
+    @ViewChild('se3') se3: ElementRef<Selector1>;
+
+    @HostMapping('/address', 'post')
+    updateAddress(name: string, address: string) {
+        this.name = name;
+        this.address = address;
+    }
+
+}
+
+
+@DIModule({
+    providers: [
+        CustomeService
+    ],
+    declarations: [
+        Selector1,
+        Selector3,
+        Components
+    ],
+    exports: [
+        Selector1,
+        Selector3,
+        Components
+    ]
+})
+export class SubModule {
+
 }
 
 @DIModule({
+    imports:[
+        SubModule
+    ],
     declarations: [
         Text,
         ContainerDirective,

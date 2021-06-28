@@ -183,7 +183,12 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
                 }
             })
         }
-        if (inj.reflect.declarations) inj.register(inj.reflect.declarations);
+        if (inj.reflect.declarations) {
+            inj.register(inj.reflect.declarations);
+            if(isRoot){
+                inj.reflect.declarations.forEach(d=>inj.exports.export(d, true));
+            }
+        }
         if (inj.reflect.annotation?.providers) {
             inj.exports.inject(inj.reflect.annotation.providers);
         }
