@@ -15,8 +15,7 @@ import { syncRequire } from '@tsdi/platform-server';
 @Injectable(LoggerManagerToken, 'log4js')
 export class Log4jsAdapter implements ILoggerManager {
     private _log4js: any;
-    constructor() {
-    }
+
     getLog4js() {
         if (!this._log4js) {
             this._log4js = syncRequire('log4js');

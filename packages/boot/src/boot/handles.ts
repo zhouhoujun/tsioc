@@ -193,9 +193,12 @@ export const RegisterAnnoationHandle = async function (ctx: IBootContext, next: 
  */
 export const BootConfigureRegisterHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     let config = ctx.getConfiguration();
-    let container = ctx.getContainer();
-    if (config.logConfig && !container.has(LogConfigureToken)) {
-        container.setValue(LogConfigureToken, config.logConfig);
+    if (config.logConfig) {
+        let container = ctx.getContainer();
+        if (!container.has(LogConfigureToken)) {
+            container.setValue(LogConfigureToken, config.logConfig);
+        }
+        ctx.injector.setValue(LogConfigureToken, config.logConfig);
     }
     if (config.debug) {
         ctx.injector.register(DebugLogAspect);

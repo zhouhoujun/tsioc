@@ -9,10 +9,6 @@ import * as chalk from 'chalk';
 @Refs(LoggerAspect, LogFormaterToken)
 export class ServerLogFormater implements ILogFormater {
 
-    constructor() {
-
-    }
-
     timestamp(time: Date): any {
         return '[' + chalk.gray(`${time.getHours()}:${time.getMinutes()}:${time.getSeconds()} ${time.getMilliseconds()}`) + ']'
     }
