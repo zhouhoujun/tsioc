@@ -89,8 +89,11 @@ export const BootConfigureRegisterHandle = async function (ctx: ApplicationConte
     const config = ctx.getConfiguration();
     const injector = ctx.injector;
     const container = injector.getContainer();
-    if (config.logConfig && !container.has(LogConfigureToken)) {
-        container.setValue(LogConfigureToken, config.logConfig);
+    if (config.logConfig) {
+        if (!container.has(LogConfigureToken)) {
+            container.setValue(LogConfigureToken, config.logConfig);
+        }
+        injector.setValue(LogConfigureToken, config.logConfig);
     }
     if (config.debug) {
         // make sure log module registered.
