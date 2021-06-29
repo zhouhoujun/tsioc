@@ -1,4 +1,4 @@
-import { Inject, IocExt, IContainer, CONTAINER } from '@tsdi/ioc';
+import { Inject, IocExt, Injector } from '@tsdi/ioc';
 import { RunAspect } from './aop/RunAspect';
 import * as activites from './activities';
 import { ActivityContext } from './core/ActivityContext';
@@ -15,18 +15,16 @@ import { WorkflowInstance, WorkflowContext } from './core/WorkflowContext';
  */
 @IocExt()
 export class ActivityModule {
-    constructor() {
-    }
 
-    setup(@Inject(CONTAINER) container: IContainer) {
+    setup(@Inject() injector: Injector) {
 
-        let actInjector = container.action();
+        let actInjector = injector.action();
 
         // actInjector.regAction(ComponentSelectorHandle);
         // actInjector.getInstance(StartupDecoratorRegisterer)
         //     .register(Task, 'TranslateTemplate', ComponentSelectorHandle);
 
-        container.inject(WorkflowContext, ActivityContext, ActivityExecutor, WorkflowInstance, RunAspect);
+        injector.inject(WorkflowContext, ActivityContext, ActivityExecutor, WorkflowInstance, RunAspect);
 
         // actInjector.getValue(DefaultComponets).push('@Task');
 
@@ -51,6 +49,6 @@ export class ActivityModule {
         //     );
 
 
-        container.use(activites);
+        injector.use(activites);
     }
 }

@@ -70,6 +70,7 @@ export class ConfigureLoggerManager implements IConfigureLoggerManager {
                 token = adapter;
             }
             this._logManger = this.injector.get<ILoggerManager>(token);
+            console.log(this.injector);
             if (cfg.config) {
                 this._logManger.configure(cfg.config);
             }

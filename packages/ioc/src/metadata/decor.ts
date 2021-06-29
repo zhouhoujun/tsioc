@@ -351,7 +351,7 @@ export const Singleton: ISingletonDecorator = createDecorator<ClassMetadata>('Si
  *  ioc extend inteface.
  */
 export interface IocExtentd {
-    setup(container: IContainer | IInjector);
+    setup(container: IInjector);
 }
 
 /**
