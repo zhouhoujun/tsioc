@@ -142,13 +142,20 @@ export const DesignPropDecorScope = function (ctx: DesignContext, next: () => vo
  * @extends {ActionComposite}
  */
 export const TypeProviderAction = function (ctx: DesignContext, next: () => void) {
-    const { injector: injector, type, state } = ctx;
-    ctx.reflect.provides.forEach(provide => {
-        injector.set({ provide, useClass: type });
-        if (state.provides.indexOf(provide) < 0) {
+    const { injector: injector, type, provide: regpdr, state } = ctx;
+    if (regpdr && regpdr !== type) {
+        ctx.reflect.provides.forEach(provide => {
+            if (provide != regpdr) {
+                injector.set({ provide, useExisting: regpdr });
+            }
             state.provides.push(provide);
-        }
-    });
+        });
+    } else {
+        ctx.reflect.provides.forEach(provide => {
+            injector.set({ provide, useClass: type });
+            state.provides.push(provide);
+        });
+    }
 
     // class private provider.
     if (ctx.reflect.providers && ctx.reflect.providers.length) {

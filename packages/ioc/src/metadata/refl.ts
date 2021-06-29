@@ -141,7 +141,7 @@ export interface DecoratorOption<T> extends MetadataFactory<T>, DecorRegisterOpt
  * @param parameterIndex 
  * @returns decorator define
  */
-export function toDefine<T>(name: string, decor: string, metadata: T, decorType: DecoratorType, options: DecoratorOption<any>, propertyKey?: string, parameterIndex?:number): DecorDefine<T> {
+export function toDefine<T>(name: string, decor: string, metadata: T, decorType: DecoratorType, options: DecoratorOption<any>, propertyKey?: string, parameterIndex?: number): DecorDefine<T> {
     if (options.actionType) {
         isArray(options.actionType) ?
             options.actionType.forEach(a => regActionType(decor, a))
@@ -293,14 +293,14 @@ export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
         if (meta.singleton) {
             reflect.singleton = true;
         }
-        if (meta.provide) {
+        if (meta.provide && reflect.provides.indexOf(meta.provide) < 0) {
             reflect.provides.push(meta.provide);
         }
         if (meta.expires) {
             reflect.expires = meta.expires;
         }
 
-        if(ctx.providers){
+        if (ctx.providers) {
             reflect.providers.push(...ctx.providers);
         }
 
