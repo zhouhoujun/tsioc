@@ -1,4 +1,4 @@
-import { Singleton, Injectable } from '@tsdi/ioc';
+import { Injectable } from '@tsdi/ioc';
 import { NonePointcut } from '@tsdi/aop';
 import { ILoggerManager, ILogger, LoggerManagerToken } from '@tsdi/logs';
 import * as log4js from 'log4js';
@@ -7,8 +7,7 @@ import * as log4js from 'log4js';
  * log4js logger manager adapter.
  */
 @NonePointcut()
-@Singleton()
-@Injectable(LoggerManagerToken, 'log4js')
+@Injectable(LoggerManagerToken, 'log4js', { singleton: true })
 export class Log4jsAdapter implements ILoggerManager {
     private _log4js: any;
 

@@ -79,12 +79,13 @@ export class ModuleProvider extends Provider implements IModuleExports {
 
     protected regType<T>(type: Type<T>) {
         this.registerIn(this.moduleRef, type);
-        this.export(type);
+        this.export(type, true, true);
     }
 
-    export(type: Type, noRef?: boolean) {
+    export(type: Type, noRef?: boolean, hasReged?: boolean) {
         const state = this.state();
-        if (!state.isRegistered(type)) {
+
+        if (!hasReged && !state.isRegistered(type)) {
             this.moduleRef.register(type);
         }
 
@@ -185,8 +186,8 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
         }
         if (inj.reflect.declarations) {
             inj.register(inj.reflect.declarations);
-            if(isRoot){
-                inj.reflect.declarations.forEach(d=>inj.exports.export(d, true));
+            if (isRoot) {
+                inj.reflect.declarations.forEach(d => inj.exports.export(d, true, true));
             }
         }
         if (inj.reflect.annotation?.providers) {

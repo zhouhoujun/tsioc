@@ -1,8 +1,10 @@
-import { DIModule, Service, Message, MessageQueue, BootContext, StartupService, ApplicationContext, Boot } from '../src';
+import { DIModule, Service, Message, MessageQueue, BootContext, StartupService, ApplicationContext, Boot, Configuration } from '../src';
 import { Injectable, Inject, Singleton } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
-import { LogModule } from '@tsdi/logs';
+import { LogConfigure, LogModule } from '@tsdi/logs';
 import * as net from 'net';
+import { ServerBootstrapModule } from '@tsdi/platform-server-boot';
+import { ServerLogsModule } from '@tsdi/platform-server-logs';
 
 export class TestService {
     testFiled = 'test';
@@ -88,7 +90,7 @@ export class SubMessageQueue extends MessageQueue {
     ],
     bootstrap: ClassSevice
 })
-export class ModuleB {}
+export class ModuleB { }
 
 
 @Boot()
@@ -121,3 +123,53 @@ export class SocketService extends StartupService {
     ]
 })
 export class StatupModule { }
+
+
+@DIModule({
+    imports: [
+        AopModule,
+        LogModule,
+        Logger,
+        ServerBootstrapModule,
+        ServerLogsModule,
+        ClassSevice,
+        StatupModule,
+        SubMessageQueue
+    ],
+    bootstrap: ClassSevice
+})
+export class ServerMainModule { }
+
+export const configurtion = {
+    logConfig: <LogConfigure>{
+        // adapter: 'console',
+        // config: {
+        //     level: 'trace'
+        // },
+        adapter: 'log4js',
+        config: {
+            appenders: <any>{
+                focas: {
+                    type: 'dateFile',
+                    pattern: '-yyyyMMdd.log',
+                    filename: 'logs/focas',
+                    backups: 3,
+                    alwaysIncludePattern: true,
+                    category: 'focas'
+                },
+                console: { type: 'console' }
+            },
+            categories: {
+                default: {
+                    appenders: ['focas', 'console'],
+                    level: 'info'
+                },
+                focas: {
+                    appenders: ['focas', 'console'],
+                    level: 'info'
+                }
+            },
+            pm2: true
+        }
+    }
+} as Configuration;

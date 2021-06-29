@@ -118,7 +118,7 @@ export interface IModuleExports extends IProvider {
      * export type.
      * @param type 
      */
-    export?(type: Type, noRef?: boolean);
+    export?(type: Type, noRef?: boolean, hasReged?: boolean);
 }
 
 /**
