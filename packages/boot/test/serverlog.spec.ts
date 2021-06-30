@@ -63,7 +63,7 @@ export class ServerBootTest {
             // console.log(content);
             expect(content.indexOf(msg)).toBeGreaterThan(0);
             defer.resolve();
-        }, 50);
+        }, 10);
         await defer.promise;
     }
 
