@@ -42,10 +42,9 @@ export class ServerBootTest {
         this.ctx.getLogManager().getLogger().info(msg);
         let defer = lang.defer();
         setTimeout(() => {
-        expect(fs.existsSync(this.logfile)).toBeTruthy();
+            expect(fs.existsSync(this.logfile)).toBeTruthy();
             const content = fs.readFileSync(this.logfile, 'utf-8');
             expect(isString(content)).toBeTruthy();
-            // console.log(content);
             expect(content.indexOf(msg)).toBeGreaterThan(0);
             defer.resolve();
         }, 10);
