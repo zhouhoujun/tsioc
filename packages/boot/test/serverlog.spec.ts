@@ -18,7 +18,7 @@ export class ServerBootTest {
     private logfile: string;
     @Before()
     async init() {
-        // await del(logdir);
+        await del(logdir);
         this.ctx = await BootApplication.run({ type: ServerMainModule, configures: [configurtion] });
         const now = new Date();
         this.logfile = path.join(this.ctx.baseURL, `/log-caches/focas.-${formatDate(now).replace(/(-|\/)/g, '')}.log`);
@@ -40,22 +40,23 @@ export class ServerBootTest {
     async canWriteLogFile() {
         const msg = 'log file test';
         this.ctx.getLogManager().getLogger().info(msg);
-        expect(fs.existsSync(this.logfile)).toBeTruthy();
         let defer = lang.defer();
         setTimeout(() => {
+        expect(fs.existsSync(this.logfile)).toBeTruthy();
             const content = fs.readFileSync(this.logfile, 'utf-8');
             expect(isString(content)).toBeTruthy();
-            console.log(content);
+            // console.log(content);
             expect(content.indexOf(msg)).toBeGreaterThan(0);
             defer.resolve();
-        }, 100);
+        }, 10);
         await defer.promise;
     }
 
 
 
     @After()
-    after() {
+    async after() {
         this.ctx.destroy();
+        await del(logdir);
     }
 }
