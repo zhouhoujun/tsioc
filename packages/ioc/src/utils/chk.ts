@@ -377,7 +377,6 @@ export function isClassType(target: any, abstract?: boolean): target is ClassTyp
     if (isPrimitive(target)) return false;
     const pkeys = Object.getOwnPropertyNames(target);
     if (pkeys.includes('caller')) return false;
-    if (pkeys.length > 3) return true;
     return !anon.test(target.toString());
 }
 
