@@ -1,8 +1,10 @@
-import { DIModule, Startup, Message, MessageQueue, IBootContext, StartupService } from '../src';
+import { DIModule, Startup, Message, MessageQueue, IBootContext, StartupService, Configure } from '../src';
 import { Injectable, Inject, TypeReflectsToken, Singleton } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
-import { LogModule } from '@tsdi/logs';
+import { LogConfigure, LogModule } from '@tsdi/logs';
 import * as net from 'net';
+import { ServerBootstrapModule } from '@tsdi/platform-server-boot';
+import { ServerLogsModule } from '@tsdi/platform-server-logs';
 
 export class TestService {
     testFiled = 'test';
@@ -125,3 +127,57 @@ export class SocketService extends StartupService<IBootContext> {
 export class StatupModule {
     constructor() { }
 }
+
+
+
+
+@DIModule({
+    imports: [
+        AopModule,
+        LogModule,
+        Logger,
+        ServerBootstrapModule,
+        ServerLogsModule,
+        ClassSevice,
+        StatupModule,
+        SubMessageQueue
+    ],
+    bootstrap: ClassSevice
+})
+export class ServerMainModule { }
+
+export const configurtion = {
+    logConfig: <LogConfigure>{
+        // adapter: 'console',
+        // config: {
+        //     level: 'trace'
+        // },
+        adapter: 'log4js',
+        config: {
+            appenders: <any>{
+                focas: {
+                    type: 'dateFile',
+                    pattern: '-yyyyMMdd.log',
+                    filename: 'log-caches/focas',
+                    backups: 3,
+                    alwaysIncludePattern: true,
+                    category: 'focas'
+                },
+                console: { type: 'console' }
+            },
+            categories: {
+                default: {
+                    appenders: ['focas', 'console'],
+                    level: 'info'
+                },
+                focas: {
+                    appenders: ['focas', 'console'],
+                    level: 'info'
+                }
+            },
+            pm2: true
+        }
+    }
+} as Configure;
+
+
