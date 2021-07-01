@@ -341,11 +341,10 @@ export function isClass(target: any): target is Type {
     return isClassType(target, false);
 }
 
-
-/**
- * anonyous or array func
- */
-const anon = /^function\s+\(|^function\s+anonymous\(|^\(?(\w+,)*\w+\)?\s*\=\>|^\(\s*\)\s*\=\>/;
+// /**
+//  * anonyous or array func
+//  */
+// const anon = /^function\s+\(|^function\s+anonymous\(|^\(?(\w+,)*\w+\)?\s*\=\>|^\(\s*\)\s*\=\>/;
 
 export function isAnnotation(target: any): target is AnnotationType {
     if (!isFunction(target)) return false;
@@ -374,10 +373,11 @@ export function isClassType(target: any, abstract?: boolean): target is ClassTyp
     if (ann) return isBoolean(abstract) ? (abstract ? ann.abstract : !ann.abstract) : true;
 
     if (!clsNameExp.test(target.name)) return false;
-    if (isPrimitive(target)) return false;
+
     const pkeys = Object.getOwnPropertyNames(target);
-    if (pkeys.includes('caller')) return false;
-    return !anon.test(target.toString());
+    if (pkeys.length < 3) return false;
+    if (pkeys.indexOf('caller') >= 0 && Object.getOwnPropertyNames(target.prototype).length < 2) return false;
+    return !isPrimitive(target); // !anon.test(target.toString());
 }
 
 /**
