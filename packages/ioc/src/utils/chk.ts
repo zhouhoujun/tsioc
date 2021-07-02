@@ -373,7 +373,7 @@ export function isClassType(target: any, abstract?: boolean): target is ClassTyp
     // anonymous function
     if (pkeys.length < 3) return false;
     // not es5 prototype class define.
-    if (pkeys.indexOf('caller') >= 0 && Object.keys(target.prototype).length < 1) return false;
+    if (pkeys.indexOf('caller') > 0 && Object.getOwnPropertyNames(target.prototype).length < 2) return false;
     return !isPrimitive(target);
 }
 
