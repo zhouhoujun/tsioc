@@ -361,11 +361,17 @@ export function isClassType(target: any, abstract?: boolean): target is ClassTyp
     if (!target.name || !target.prototype) return false;
     if (target.prototype.constructor !== target) return false;
 
-    const rf: TypeReflect = target[reflFiled]?.();
-    if (rf) return isBoolean(abstract) ? (abstract && rf.type === target ? rf.abstract : !rf.abstract) : true;
-
     const ann = getClassAnnotation(target);
-    if (ann) return isBoolean(abstract) ? (abstract ? ann.abstract : !ann.abstract) : true;
+    if (ann) {
+        if (isBoolean(abstract)) return abstract ? ann.abstract : !ann.abstract;
+        return true;
+    }
+
+    const rf: TypeReflect = target[reflFiled]?.();
+    if (rf) {
+        if (isBoolean(abstract) && rf.type === target) return abstract ? rf.abstract : !rf.abstract;
+        return true;
+    }
 
     if (!clsNameExp.test(target.name)) return false;
 
@@ -373,7 +379,7 @@ export function isClassType(target: any, abstract?: boolean): target is ClassTyp
     // anonymous function
     if (pkeys.length < 3) return false;
     // not es5 prototype class define.
-    if (pkeys.indexOf('caller') > 0 && Object.getOwnPropertyNames(target.prototype).length < 2) return false;
+    if (pkeys.indexOf('caller') >= 0 && Object.getOwnPropertyNames(target.prototype).length < 2) return false;
     return !isPrimitive(target);
 }
 
