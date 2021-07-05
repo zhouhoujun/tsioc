@@ -1,5 +1,5 @@
 import { isString } from '@tsdi/ioc';
-import { Input, Binding } from '@tsdi/components';
+import { Input, Attribute } from '@tsdi/components';
 import { Src, Task, TemplateOption, ActivityType, Activities } from '@tsdi/activities';
 import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
 import { ITransform } from '../ITransform';

@@ -7,7 +7,7 @@ import {
     MiddlewareType, RouteMapingMetadata, Router, Service, ServiceFactoryResolver
 } from '@tsdi/boot';
 import {
-    BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
+    AttributeMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
     HostListenerMetadata, PipeMetadata, QueryMetadata, VaildateMetadata
 } from './meta';
 import { PipeTransform } from '../pipes/pipe';
@@ -384,21 +384,21 @@ export const HostMapping: IHostMappingDecorator = createDecorator<RouteMapingMet
 
 
 /**
- * Property Binding decorator.
+ * Property Attribute decorator. define property binding in template.
  *
  * @export
  * @interface BindingPropertyDecorator
  */
-export interface BindingPropertyDecorator {
+export interface AttributePropertyDecorator {
     /**
-     * define binding property decorator with binding property name.
+     * Property Attribute decorator. define property of component or directive binding in template.
      *
      * @param {string} [bindingPropertyName] binding property name
      */
     (bindingPropertyName?: string): PropertyDecorator;
 
     /**
-     * define binding property decorator with binding property name and provider.
+     * Property Attribute decorator. define property of component or directive binding in template.
      *
      * @param {string} bindingPropertyName binding property name
      * @param {*} defaultVal default value.
@@ -406,18 +406,17 @@ export interface BindingPropertyDecorator {
     (bindingPropertyName: string, defaultVal: any): PropertyDecorator;
 
     /**
-     * define binding property decorator with binding metadata.
+     * Property Attribute decorator. define property of component or directive binding in template.
      *
      * @param {string} bindingName binding property name
      */
-    (metadata: BindingMetadata): PropertyDecorator;
-
+    (metadata: AttributeMetadata): PropertyDecorator;
 }
 
 /**
- * Property Binding decorator.
+ * Property attribute decorator.  define property binding in template.
  */
-export const Binding: BindingPropertyDecorator = createPropDecorator<BindingMetadata>('Binding', {
+export const Attribute: AttributePropertyDecorator = createPropDecorator<AttributeMetadata>('Attribute', {
     props: (bindingPropertyName: string, defaultValue?: any) => ({ bindingPropertyName, defaultValue })
 });
 
@@ -450,14 +449,14 @@ export interface InputPropertyDecorator {
      *
      * @param {string} bindingName binding property name
      */
-    (metadata: BindingMetadata): PropertyDecorator;
+    (metadata: AttributeMetadata): PropertyDecorator;
 
 }
 
 /**
  * Input decorator.
  */
-export const Input: InputPropertyDecorator = createPropDecorator<BindingMetadata>('Input', {
+export const Input: InputPropertyDecorator = createPropDecorator<AttributeMetadata>('Input', {
     props: (bindingPropertyName: string, defaultValue?: any) => ({ bindingPropertyName, defaultValue })
 });
 
@@ -483,13 +482,13 @@ export interface OutputPropertyDecorator {
      *
      * @param {string} bindingName binding property name
      */
-    (metadata: BindingMetadata): PropertyDecorator;
+    (metadata: AttributeMetadata): PropertyDecorator;
 }
 
 /**
  * output property decorator.
  */
-export const Output: OutputPropertyDecorator = createPropDecorator<BindingMetadata>('Output', {
+export const Output: OutputPropertyDecorator = createPropDecorator<AttributeMetadata>('Output', {
     props: (bindingPropertyName?: string) => ({ bindingPropertyName })
 });
 

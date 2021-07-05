@@ -1,4 +1,4 @@
-import { Input, Binding } from '@tsdi/components';
+import { Input } from '@tsdi/components';
 import { Expression, Src, Task, TemplateOption } from '@tsdi/activities';
 import { NodeActivityContext, NodeExpression } from '../NodeActivityContext';
 import { NodeActivity } from '../NodeActivity';

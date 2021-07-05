@@ -1,5 +1,5 @@
 import { isArray, isNil, isString } from '@tsdi/ioc';
-import { Input, Binding } from '@tsdi/components';
+import { Input, Attribute } from '@tsdi/components';
 import { TemplateOption, Task, Src } from '@tsdi/activities';
 import {
     rollup, WatcherOptions, RollupCache, ExternalOption, GlobalsOption, RollupOptions, OutputOptions

@@ -1,4 +1,4 @@
-import { Input, Binding } from '@tsdi/components';
+import { Input, Attribute } from '@tsdi/components';
 import { Task, Src, TemplateOption } from '@tsdi/activities';
 import { SrcOptions, src } from 'vinyl-fs';
 import { TransformActivity } from './TransformActivity';

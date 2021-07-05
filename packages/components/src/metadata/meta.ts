@@ -53,7 +53,7 @@ export interface ComponentMetadata extends DirectiveMetadata {
  * @interface BindingMetadata
  * @extends {ParamPropMetadata}
  */
-export interface BindingMetadata extends Metadata {
+export interface AttributeMetadata extends Metadata {
     /**
      * binding name.
      *
