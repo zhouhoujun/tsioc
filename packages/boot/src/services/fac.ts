@@ -1,5 +1,5 @@
 import { lang, Type, createInjector, refl, isFunction } from '@tsdi/ioc';
-import { BootContext, BootstrapOption, ServiceFactory, ServiceFactoryResolver } from '../Context';
+import { BootContext, BootstrapOption, IService, Runnable, ServiceFactory, ServiceFactoryResolver, Configurable } from '../Context';
 import { AnnotationReflect } from '../metadata/ref';
 import { DefaultBootContext } from './ctx';
 import { Service } from './service';
@@ -27,7 +27,7 @@ export class DefaultServiceFactory<T = any> extends ServiceFactory<T> {
     async create(option: BootstrapOption) {
         const injector = createInjector(option.injector, option.providers);
         const ctx = new DefaultBootContext(this._refl, injector);
-        const serv = this.createService(ctx);
+        const serv = this.createService(ctx) as IService & Configurable<T> & Runnable<T>;
         if (isFunction(serv.configureService)) {
             await serv.configureService(ctx);
         }
@@ -37,6 +37,9 @@ export class DefaultServiceFactory<T = any> extends ServiceFactory<T> {
             lang.remove(app.bootstraps, ctx);
         });
         app.bootstraps.push(ctx);
+        if(isFunction(serv.run)){
+            await serv.run(ctx);
+        }
         return ctx;
     }
 }

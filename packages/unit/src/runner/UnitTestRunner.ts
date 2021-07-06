@@ -1,20 +1,17 @@
 import { Injectable, isString, isClass, isArray, lang, refl } from '@tsdi/ioc';
-import { Service, AnnotationReflect, BootContext, ApplicationContext } from '@tsdi/boot';
+import { Service, AnnotationReflect, BootContext, ApplicationContext, Runnable } from '@tsdi/boot';
 import { OldTestRunner } from './OldTestRunner';
 import { TestReport } from '../reports/TestReport';
 import { UnitTestConfigure } from '../UnitTestConfigure';
-import { Runner } from './Runner';
-import { SuiteRunner } from './SuiteRunner';
-
 
 
 /**
  * Suite runner.
  */
 @Injectable()
-export class UnitTestRunner extends Service {
+export class UnitTestRunner extends Service implements Runnable {
 
-    async configureService(ctx: BootContext): Promise<void> {
+    async run(ctx: BootContext): Promise<void> {
         const appCtx = ctx.injector.get(ApplicationContext);
         const config = appCtx.getConfiguration() as UnitTestConfigure;
         const src = config.src;
@@ -35,7 +32,7 @@ export class UnitTestRunner extends Service {
             }
         }
         oldRunner.unregisterGlobalScope();
-        await oldRunner.configureService(ctx);
+        await oldRunner.run(ctx);
         await lang.step(suites.filter(v => v && refl.get<AnnotationReflect>(v)?.annoType === 'suite').map(s => () => appCtx.bootstrap(s)));
         await injector.resolve(TestReport).report();
     }

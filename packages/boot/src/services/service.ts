@@ -1,9 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { IService } from '../Context';
 
-
-
-
 /**
  * boot.
  *
@@ -13,7 +10,7 @@ import { IService } from '../Context';
  * @template T
  */
 @Abstract()
-export abstract class Service<T = any> implements IService<T> {
+export abstract class Service implements IService {
 
     private _destroyed = false;
     private destroyCbs: (() => void)[] = [];
@@ -53,7 +50,3 @@ export abstract class Service<T = any> implements IService<T> {
 
 }
 
-/**
- * @deprecated use Service instead.
- */
-export const Runnable = Service;

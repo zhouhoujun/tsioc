@@ -51,7 +51,7 @@ export class OldTestRunner extends Runner {
         return null;
     }
 
-    async configureService(ctx: BootContext): Promise<void> {
+    async run(ctx: BootContext): Promise<void> {
         this.injector = ctx.injector;
         try {
             await lang.step(this.suites.map(desc => desc.cases.length ? () => this.runSuite(desc) : () => Promise.resolve()));

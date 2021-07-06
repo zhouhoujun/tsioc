@@ -25,7 +25,7 @@ export class SuiteRunner extends Runner {
         return this.ctx.type;
     }
 
-    async configureService(ctx: BootContext): Promise<void> {
+    async run(ctx: BootContext): Promise<void> {
         this.ctx = ctx;
         try {
             let desc = this.getSuiteDescribe();

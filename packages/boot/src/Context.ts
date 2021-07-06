@@ -27,6 +27,30 @@ export interface BootstrapOption {
 }
 
 /**
+ * service config hook.
+ */
+export interface Configurable<T = any, R = Promise<void>> {
+    /**
+     * config the service with context.
+     *
+     * @param {ApplicationContext} [ctx]
+     * @returns {R} startup service token
+     */
+    configureService(ctx: BootContext<T>): R;
+}
+
+/**
+ * service run hook.
+ */
+export interface Runnable<T = any, R = Promise<void>> {
+    /**
+     * run service.
+     * @param ctx 
+     */
+    run(ctx?: BootContext<T>): R;
+}
+
+/**
  * service interface. define the type as a service.
  *
  * @export
@@ -34,19 +58,9 @@ export interface BootstrapOption {
  * @template T
  * @template TCtx default IBootContext
  */
-export interface IService<T = any> extends Destroyable {
-
-    /**
-     * configure and startup this service.
-     *
-     * @param {IBootContext} [ctx]
-     * @returns {(Promise<void>)}
-     */
-    configureService?(ctx: BootContext<T>): void | Promise<void>;
+export interface IService extends Destroyable {
 
 }
-
-
 
 /**
  * boot context.
@@ -217,7 +231,7 @@ export abstract class ApplicationContext implements Destroyable {
     /**
      * module instance.
      */
-     abstract get instance();
+    abstract get instance();
 
     /**
      * bootstrap type
