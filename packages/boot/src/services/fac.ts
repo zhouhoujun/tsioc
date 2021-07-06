@@ -37,7 +37,7 @@ export class DefaultServiceFactory<T = any> extends ServiceFactory<T> {
             lang.remove(app.bootstraps, ctx);
         });
         app.bootstraps.push(ctx);
-        if(isFunction(serv.run)){
+        if (isFunction(serv.run)) {
             await serv.run(ctx);
         }
         return ctx;
