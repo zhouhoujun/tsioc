@@ -8,7 +8,7 @@ export class DefaultBootContext<T> extends BootContext<T> {
     private _destroyed = false;
     private _dsryCbs: (() => void)[] = [];
     private _instance: T;
-    constructor(readonly reflect: AnnotationReflect<T>, readonly injector: IInjector) {
+    constructor(readonly reflect: AnnotationReflect<T>, readonly injector: IInjector, private _rootCtx?: ApplicationContext) {
         super();
     }
 
@@ -17,7 +17,10 @@ export class DefaultBootContext<T> extends BootContext<T> {
     }
 
     getRoot(): ApplicationContext {
-        return this.injector.get(ApplicationContext);
+        if (!this._rootCtx) {
+            this._rootCtx = this.injector.get(ApplicationContext);
+        }
+        return this._rootCtx;
     }
 
     get instance(): T {
@@ -50,6 +53,7 @@ export class DefaultBootContext<T> extends BootContext<T> {
 
     protected destroying() {
         this.injector.destroy();
+        this._rootCtx = null;
         this._instance = null;
     }
 }
