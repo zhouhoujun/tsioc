@@ -81,6 +81,9 @@ export abstract class BootContext<T = any> {
     */
     abstract get reflect(): AnnotationReflect<T>;
 
+    /**
+     * get instance.
+     */
     abstract get instance(): T;
 
     /**
@@ -95,7 +98,6 @@ export abstract class BootContext<T = any> {
      * associated with this component. Called when the `destroy()` method is invoked.
      */
     abstract onDestroy(callback: Function): void;
-
 }
 
 /**

@@ -15,7 +15,7 @@ import { IStartupService } from './intf';
 export abstract class StartupService implements IStartupService {
 
     private _destroyed = false;
-    private destroyCbs: (() => void)[] = [];
+    private _dsryCbs: (() => void)[] = [];
 
     /**
      * config service of application.
@@ -37,8 +37,8 @@ export abstract class StartupService implements IStartupService {
     destroy(): void {
         if (!this._destroyed) {
             this._destroyed = true;
-            this.destroyCbs.forEach(cb => cb());
-            this.destroyCbs = null;
+            this._dsryCbs.forEach(cb => cb());
+            this._dsryCbs = null;
             this.destroying();
         }
     }
@@ -48,9 +48,7 @@ export abstract class StartupService implements IStartupService {
      * @param callback destory callback
      */
     onDestroy(callback: () => void): void {
-        if (this.destroyCbs) {
-            this.destroyCbs.unshift(callback);
-        }
+        this._dsryCbs?.unshift(callback);
     }
     /**
      * default do nothing.
@@ -64,8 +62,7 @@ export abstract class StartupService implements IStartupService {
 /**
  * startup db connections of application.
  */
- @Abstract()
- export abstract class ConnectionStatupService extends StartupService {
- 
- }
- 
+@Abstract()
+export abstract class ConnectionStatupService extends StartupService {
+
+}

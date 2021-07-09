@@ -26,8 +26,8 @@ export class DefaultBootContext<T> extends BootContext<T> {
     * destory this.
     */
     destroy(): void {
-        this._instance = null;
         this.injector.destroy();
+        this._instance = null;
     }
     /**
      * register callback on destory.

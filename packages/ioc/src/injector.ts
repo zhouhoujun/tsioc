@@ -517,9 +517,7 @@ export class Provider implements IProvider {
      * @param callback destory callback
      */
     onDestroy(callback: () => void): void {
-        if (this._dsryCbs) {
-            this._dsryCbs.unshift(callback);
-        }
+        this._dsryCbs?.unshift(callback);
     }
 
     offDestory(callback: () => void) {

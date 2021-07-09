@@ -17,7 +17,7 @@ import { BootModule, DEFAULTA_FACTORYS } from './BootModule';
 export class BootApplication implements IBootApplication {
 
     private _destroyed = false;
-    private destroyCbs: (() => void)[] = [];
+    private _dsryCbs: (() => void)[] = [];
     protected container: IContainer;
     private _newCt: boolean;
     readonly root: ModuleInjector;
@@ -133,8 +133,8 @@ export class BootApplication implements IBootApplication {
     destroy(): void {
         if (!this._destroyed) {
             this._destroyed = true;
-            this.destroyCbs.forEach(cb => cb());
-            this.destroyCbs = null;
+            this._dsryCbs.forEach(cb => cb());
+            this._dsryCbs = null;
             this.destroying();
         }
     }
@@ -144,9 +144,7 @@ export class BootApplication implements IBootApplication {
      * @param callback destory callback
      */
     onDestroy(callback: () => void): void {
-        if (this.destroyCbs) {
-            this.destroyCbs.unshift(callback);
-        }
+        this._dsryCbs?.unshift(callback);
     }
 
     protected destroying() {

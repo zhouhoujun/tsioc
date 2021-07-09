@@ -13,7 +13,7 @@ import { IService } from '../Context';
 export abstract class Service implements IService {
 
     private _destroyed = false;
-    private destroyCbs: (() => void)[] = [];
+    private _dsryCbs: (() => void)[] = [];
 
     /**
      * has destoryed or not.
@@ -27,8 +27,8 @@ export abstract class Service implements IService {
     destroy(): void {
         if (!this._destroyed) {
             this._destroyed = true;
-            this.destroyCbs.forEach(cb => cb());
-            this.destroyCbs = null;
+            this._dsryCbs.forEach(cb => cb());
+            this._dsryCbs = null;
             this.destroying();
         }
     }
@@ -38,9 +38,7 @@ export abstract class Service implements IService {
      * @param callback destory callback
      */
     onDestroy(callback: () => void): void {
-        if (this.destroyCbs) {
-            this.destroyCbs.unshift(callback);
-        }
+        this._dsryCbs && this._dsryCbs.unshift(callback);
     }
 
     /**

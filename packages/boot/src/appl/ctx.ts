@@ -117,9 +117,7 @@ export class DefaultApplicationContext extends ApplicationContext {
      * @param callback destory callback
      */
     onDestroy(callback: () => void): void {
-        if (this._dsryCbs) {
-            this._dsryCbs.unshift(callback);
-        }
+        this._dsryCbs?.unshift(callback);
     }
 
     protected destroying() {
@@ -133,7 +131,7 @@ export class DefaultApplicationContext extends ApplicationContext {
 export class DefaultApplicationFactory extends ApplicationFactory {
 
     create<T>(root: ModuleInjector<T>, option?: ApplicationOption<T>): ApplicationContext {
-        if(root.reflect.annotation?.baseURL){
+        if (root.reflect.annotation?.baseURL) {
             root.setValue(PROCESS_ROOT, root.reflect.annotation.baseURL);
         }
         const ctx = this.createInstance(root);
