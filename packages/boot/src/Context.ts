@@ -114,7 +114,7 @@ export abstract class ServiceFactory<T> {
      * @param type 
      * @param option 
      */
-    abstract create(option: BootstrapOption, appContext?: ApplicationContext): BootContext<T> | Promise<BootContext<T>>;
+    abstract create(option: BootstrapOption, context?: ApplicationContext): BootContext<T> | Promise<BootContext<T>>;
 }
 
 @Abstract()

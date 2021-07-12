@@ -24,21 +24,20 @@ export class DefaultServiceFactory<T = any> extends ServiceFactory<T> {
         return ctx.injector.resolve({ token: Service, target: ctx.instance }) ?? ctx.instance;
     }
 
-    async create(option: BootstrapOption, appContext?: ApplicationContext) {
+    async create(option: BootstrapOption, context?: ApplicationContext) {
         const injector = createInjector(option.injector, option.providers);
         const ctx = new DefaultBootContext(this._refl, injector);
         const serv = this.createService(ctx) as IService & Configurable<T> & Runnable<T>;
         if (isFunction(serv.configureService)) {
             await serv.configureService(ctx);
         }
-        if (!appContext) {
-            appContext = injector.get(ApplicationContext);
-        }
+
         ctx.onDestroy(() => {
             serv.destroy?.()
-            lang.remove(appContext.bootstraps, ctx);
+            context && lang.remove(context.bootstraps, ctx);
         });
-        appContext.bootstraps.push(ctx);
+        context && context.bootstraps.push(ctx);
+
         if (isFunction(serv.run)) {
             await serv.run(ctx);
         }
