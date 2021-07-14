@@ -449,7 +449,7 @@ export function dispatchParamDecor(type: any, define: DecorDefine) {
  * @param ify if not has own reflect will create new reflect.
  */
 export function get<T extends TypeReflect>(type: ClassType, ify?: boolean): T {
-    let tagRefl = (type as AnnotationType)._ρrefl?.() as TypeReflect;
+    let tagRefl = (type as AnnotationType).ρRfl?.() as TypeReflect;
     if (tagRefl?.type !== type) {
         if (!ify) return null;
 
@@ -470,7 +470,7 @@ export function get<T extends TypeReflect>(type: ClassType, ify?: boolean): T {
             methodParams: prRef ? new Map(prRef.methodParams) : new Map(),
             methodProviders: prRef ? new Map(prRef.methodParams) : new Map()
         };
-        (type as AnnotationType)._ρrefl = () => tagRefl;
+        (type as AnnotationType).ρRfl = () => tagRefl;
     }
     return tagRefl as T;
 }

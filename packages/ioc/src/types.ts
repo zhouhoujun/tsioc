@@ -91,7 +91,10 @@ export interface AnnotationType<T = any> extends Function {
      */
     ρNPT?: boolean;
 
-    _ρrefl?: ()=> any;
+    /**
+     * type reflect of this class.
+     */
+    ρRfl?: ()=> any;
 }
 
 /**
