@@ -90,6 +90,8 @@ export interface AnnotationType<T = any> extends Function {
      * class flag. none poincut for aop.
      */
     ρNPT?: boolean;
+
+    _ρrefl?: ()=> any;
 }
 
 /**

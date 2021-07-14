@@ -1,7 +1,7 @@
 import { TypeReflect } from '../metadata/type';
 import { InjectToken } from '../tokens';
 import { AbstractType, AnnotationType, ClassType, ObjectMap, Type } from '../types';
-import { clsNameExp, reflFiled } from './exps';
+import { clsNameExp } from './exps';
 import { getClassAnnotation } from './util';
 
 
@@ -346,7 +346,7 @@ export function isAnnotation(target: any): target is AnnotationType {
     if (!target.name || !target.prototype) return false;
     if (target.prototype.constructor !== target) return false;
 
-    return target[reflFiled]?.()?.type === target;
+    return (target as AnnotationType)._ρrefl?.()?.type === target;
 }
 
 /**
@@ -367,19 +367,19 @@ export function isClassType(target: any, abstract?: boolean): target is ClassTyp
         return true;
     }
 
-    const rf: TypeReflect = target[reflFiled]?.();
+    const rf: TypeReflect = (target as AnnotationType)._ρrefl?.();
     if (rf) {
         if (isBoolean(abstract) && rf.type === target) return abstract ? rf.abstract : !rf.abstract;
         return true;
     }
-
-    if (!clsNameExp.test(target.name)) return false;
 
     const pkeys = Object.getOwnPropertyNames(target);
     // anonymous function
     if (pkeys.length < 3) return false;
     // not es5 prototype class define.
     if (pkeys.indexOf('caller') >= 0 && Object.getOwnPropertyNames(target.prototype).length < 2) return false;
+
+    if (!clsNameExp.test(target.name)) return false;
     return !isPrimitive(target);
 }
 

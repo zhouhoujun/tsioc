@@ -1,7 +1,6 @@
 import { Action, Actions } from '../action';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
-import { ClassType, ObjectMap, Type } from '../types';
-import { reflFiled } from '../utils/exps';
+import { AnnotationType, ClassType, ObjectMap, Type } from '../types';
 import { isArray, isFunction } from '../utils/chk';
 import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, AutorunMetadata, InjectableMetadata } from './meta';
 import { DecoratorType, DecorContext, DecorDefine, TypeReflect } from './type';
@@ -450,7 +449,7 @@ export function dispatchParamDecor(type: any, define: DecorDefine) {
  * @param ify if not has own reflect will create new reflect.
  */
 export function get<T extends TypeReflect>(type: ClassType, ify?: boolean): T {
-    let tagRefl = type[reflFiled]?.() as TypeReflect;
+    let tagRefl = (type as AnnotationType)._ρrefl?.() as TypeReflect;
     if (tagRefl?.type !== type) {
         if (!ify) return null;
 
@@ -471,7 +470,7 @@ export function get<T extends TypeReflect>(type: ClassType, ify?: boolean): T {
             methodParams: prRef ? new Map(prRef.methodParams) : new Map(),
             methodProviders: prRef ? new Map(prRef.methodParams) : new Map()
         };
-        type[reflFiled] = () => tagRefl;
+        (type as AnnotationType)._ρrefl = () => tagRefl;
     }
     return tagRefl as T;
 }
