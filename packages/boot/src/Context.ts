@@ -26,8 +26,18 @@ export interface BootstrapOption {
     args?: string[];
 }
 
+/**
+ * runnable interface.
+ */
+export interface IRunnable<T = any> {
+    run(...args: any[]): T;
+}
+
+/**
+ * runnable
+ */
 @Abstract()
-export abstract class Runnable<T = any> {
+export abstract class Runnable<T = any> implements IRunnable<T> {
     abstract run(...args: any[]): T;
 }
 

@@ -18,8 +18,7 @@ export class DefaultServiceFactory<T = any> extends ServiceFactory<T> {
 
     create(option: BootstrapOption) {
         const injector = createInjector(option.injector, option.providers);
-        const ctx = new DefaultRunner(this._refl, injector);
-        return ctx;
+        return new DefaultRunner(this._refl, injector);
     }
 }
 

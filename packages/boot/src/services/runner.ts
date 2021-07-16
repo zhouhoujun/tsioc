@@ -1,5 +1,5 @@
-import { Destroyable, IInjector, lang, Type } from '@tsdi/ioc';
-import { ApplicationContext, Runnable, Runner } from '../Context';
+import { Destroyable, IInjector, isFunction, lang, Type } from '@tsdi/ioc';
+import { ApplicationContext, IRunnable, Runnable, Runner } from '../Context';
 import { AnnotationReflect } from '../metadata/ref';
 
 /**
@@ -24,23 +24,25 @@ export class DefaultRunner<T> extends Runner<T> {
         return this._instance;
     }
 
-    private _runnable: Runnable;
+    private _runnable: IRunnable;
     protected getRunnable() {
         if (!this._runnable) {
-            if (this.instance instanceof Runnable) {
-                this._runnable = this.instance;
+            if (isFunction((this.instance as T & IRunnable).run)) {
+                this._runnable = this.instance as T & IRunnable;
             }
-            this._runnable = this.injector.resolve({ token: Runnable, target: this.instance }, { provide: Runner, useValue: this }) ?? this.instance as T & Runnable;
+            this._runnable = this.injector.resolve({ token: Runnable, target: this.instance }, { provide: Runner, useValue: this }) ?? this.instance as T & IRunnable;
         }
         return this._runnable;
     }
 
     run(context?: ApplicationContext) {
         const runable = this.getRunnable() as Runnable;
-        this.onDestroy(() => {
-            context && lang.remove(context.bootstraps, this);
-        });
-        context && context.bootstraps.push(this);
+        if (context) {
+            this.onDestroy(() => {
+                lang.remove(context.bootstraps, this);
+            });
+            context.bootstraps.push(this);
+        }
         return runable.run(...context.args);
     }
 
