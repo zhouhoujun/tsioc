@@ -1,5 +1,5 @@
 import { Abstract, IInjector, Type } from '@tsdi/ioc';
-import { Runner, ServiceFactory, BootstrapOption, ServiceFactoryResolver } from '@tsdi/boot';
+import { Runner, RunnableFactory, BootstrapOption, RunnableFactoryResolver } from '@tsdi/boot';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ElementRef } from './element';
 import { ViewRef } from './view';
@@ -64,7 +64,7 @@ export abstract class ComponentRef<C = any> extends Runner<C> {
  * component factory.
  */
 @Abstract()
-export abstract class ComponentFactory<T> extends ServiceFactory<T> {
+export abstract class ComponentFactory<T> extends RunnableFactory<T> {
     /**
      * create compontent ref.
      * @param type
@@ -74,7 +74,7 @@ export abstract class ComponentFactory<T> extends ServiceFactory<T> {
 }
 
 @Abstract()
-export abstract class ComponentFactoryResolver extends ServiceFactoryResolver {
+export abstract class ComponentFactoryResolver extends RunnableFactoryResolver {
 
     abstract resolve<T>(type: Type<T>): ComponentFactory<T>;
 }

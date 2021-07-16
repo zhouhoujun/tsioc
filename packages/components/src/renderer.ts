@@ -5,7 +5,7 @@ import { ComponentRef } from './refs/component';
  * component renderer.  for application boot.
  */
 @Abstract()
-export abstract class Renderer<T = any> extends Service {
+export abstract class Renderer<T = any> {
 
     abstract get componentRef(): ComponentRef<T>;
 

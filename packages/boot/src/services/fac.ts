@@ -1,12 +1,12 @@
 import { Type, createInjector, refl } from '@tsdi/ioc';
-import { BootstrapOption, ServiceFactory, ServiceFactoryResolver } from '../Context';
+import { BootstrapOption, RunnableFactory, RunnableFactoryResolver } from '../Context';
 import { AnnotationReflect } from '../metadata/ref';
 import { DefaultRunner } from './runner';
 
 /**
  * runable boot factory.
  */
-export class DefaultServiceFactory<T = any> extends ServiceFactory<T> {
+export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
 
     constructor(private _refl: AnnotationReflect<T>) {
         super();
@@ -22,9 +22,9 @@ export class DefaultServiceFactory<T = any> extends ServiceFactory<T> {
     }
 }
 
-export class DefaultServiceFactoryResolver extends ServiceFactoryResolver {
+export class DefaultServiceFactoryResolver extends RunnableFactoryResolver {
 
     resolve<T>(type: Type<T>) {
-        return new DefaultServiceFactory(refl.get(type));
+        return new DefaultRunnableFactory(refl.get(type));
     }
 }

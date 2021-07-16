@@ -89,22 +89,21 @@ export abstract class Runner<T = any, R = any> implements Destroyable {
  * boot factory.
  */
 @Abstract()
-export abstract class ServiceFactory<T> {
+export abstract class RunnableFactory<T> {
     /**
      * service type.
      */
-    abstract get type(): Type<T>
+    abstract get type(): Type<T>;
     /**
      * create boot context.
-     * @param type 
      * @param option 
      */
-    abstract create(option: BootstrapOption, context?: ApplicationContext): Runner<T>;
+    abstract create(option: BootstrapOption): Runner<T>;
 }
 
 @Abstract()
-export abstract class ServiceFactoryResolver {
-    abstract resolve<T>(type: Type<T>): ServiceFactory<T>;
+export abstract class RunnableFactoryResolver {
+    abstract resolve<T>(type: Type<T>): RunnableFactory<T>;
 }
 
 /**
@@ -225,7 +224,7 @@ export abstract class ApplicationContext implements Destroyable {
      * @param type 
      * @param opts 
      */
-    abstract bootstrap<C>(type: Type<C> | ServiceFactory<C>, opts?: BootstrapOption): Runner<C> | Promise<Runner<C>>;
+    abstract bootstrap<C>(type: Type<C> | RunnableFactory<C>, opts?: BootstrapOption): any;
 
     /**
      * get message queue.

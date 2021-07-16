@@ -4,7 +4,7 @@ import { DIModuleMetadata } from '../metadata/meta';
 import { BOOT_TYPES, CONFIGURATION, PROCESS_ROOT } from '../metadata/tk';
 import { Configuration } from '../configure/config';
 import { ConfigureManager } from '../configure/manager';
-import { ApplicationContext, ApplicationFactory, ApplicationOption, Runner, ServiceFactory, BootstrapOption, ModuleInjector, ServiceFactoryResolver } from '../Context';
+import { ApplicationContext, ApplicationFactory, ApplicationOption, Runner, RunnableFactory, BootstrapOption, ModuleInjector, RunnableFactoryResolver } from '../Context';
 import { MessageContext, MessageQueue, RequestOption, ROOT_QUEUE } from '../middlewares';
 
 
@@ -37,8 +37,8 @@ export class DefaultApplicationContext extends ApplicationContext {
      * @param type 
      * @param opts 
      */
-    bootstrap<C>(type: Type<C> | ServiceFactory<C>, opts?: BootstrapOption): Runner<C> | Promise<Runner<C>> {
-        const factory = isFunction(type) ? this.injector.resolve({ token: ServiceFactoryResolver, target: type }).resolve(type) : type;
+    bootstrap<C>(type: Type<C> | RunnableFactory<C>, opts?: BootstrapOption): any {
+        const factory = isFunction(type) ? this.injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type) : type;
         return factory.create({ injector: this.injector, ...opts })?.run(this);
     }
 
