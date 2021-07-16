@@ -1,5 +1,5 @@
 import { Abstract, IInjector, Type } from '@tsdi/ioc';
-import { BootContext, ServiceFactory, BootstrapOption, ServiceFactoryResolver } from '@tsdi/boot';
+import { Runner, ServiceFactory, BootstrapOption, ServiceFactoryResolver } from '@tsdi/boot';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ElementRef } from './element';
 import { ViewRef } from './view';
@@ -13,7 +13,7 @@ import { ComponentReflect } from '../reflect';
  * @publicApi
  */
 @Abstract()
-export abstract class ComponentRef<C = any> extends BootContext<C> {
+export abstract class ComponentRef<C = any> extends Runner<C> {
     /**
      * component type.
      */

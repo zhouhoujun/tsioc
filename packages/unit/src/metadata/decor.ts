@@ -1,7 +1,7 @@
 import { createDecorator, DecoratorOption } from '@tsdi/ioc';
-import { AnnotationReflect, Service } from '@tsdi/boot';
+import { AnnotationReflect, Runnable } from '@tsdi/boot';
 import { SuiteMetadata, TestCaseMetadata, TestMetadata } from './meta';
-import { Runner } from '../runner/Runner';
+import { UnitRunner } from '../runner/Runner';
 
 
 /**
@@ -50,7 +50,7 @@ export const Suite: ISuiteDecorator = createDecorator<SuiteMetadata>('Suite', {
         return metadata;
     },
     providers: [
-        { provide: Service, useExisting: Runner }
+        { provide: Runnable, useExisting: UnitRunner }
     ]
 });
 

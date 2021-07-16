@@ -1,4 +1,4 @@
-import { ApplicationContext, Boot, BootContext, RouteMapping, StartupService } from '@tsdi/boot';
+import { ApplicationContext, Boot, RouteMapping, StartupService } from '@tsdi/boot';
 import { Inject, Injector, lang } from '@tsdi/ioc';
 import { User } from '../models/models';
 import { UserRepository } from '../repositories/UserRepository';

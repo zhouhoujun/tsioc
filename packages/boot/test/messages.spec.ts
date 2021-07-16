@@ -1,4 +1,4 @@
-import { BootApplication, DIModule, Message, MessageQueue, MessageContext, Middleware, BootContext, MappingRoute, RouteMapping, CONTEXT, ApplicationContext } from '../src';
+import { BootApplication, DIModule, Message, MessageQueue, MessageContext, Middleware, Runner, MappingRoute, RouteMapping, CONTEXT, ApplicationContext } from '../src';
 import expect = require('expect');
 import { IInjector, Inject, Injectable, lang, refl } from '@tsdi/ioc';
 

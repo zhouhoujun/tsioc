@@ -1,4 +1,4 @@
-import { DIModule, Service, Message, MessageQueue, BootContext, StartupService, ApplicationContext, Boot, Configuration } from '../src';
+import { DIModule, Message, MessageQueue, Runner, StartupService, ApplicationContext, Boot, Configuration, Runnable } from '../src';
 import { Injectable, Inject, Singleton } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
 import { LogConfigure, LogModule } from '@tsdi/logs';
@@ -41,17 +41,14 @@ export class ModuleA {
 }
 
 @Injectable()
-export class ClassSevice extends Service {
-    async configureService(ctx: BootContext): Promise<void> {
-        await this.startup();
-    }
+export class ClassSevice extends Runnable {
 
     @Inject('mark')
     mark: string;
 
     state: string;
 
-    async startup(): Promise<any> {
+    async run(): Promise<any> {
         console.log('ClassSevice running.....');
         // console.log(refs.get(ClassSevice));
 

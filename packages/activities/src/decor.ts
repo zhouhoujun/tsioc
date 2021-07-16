@@ -1,4 +1,4 @@
-import { AnnotationReflect, BootContext } from '@tsdi/boot';
+import { AnnotationReflect, Runner } from '@tsdi/boot';
 import { ClassType, createDecorator } from '@tsdi/ioc';
 import { ActivityMetadata } from './core/ActivityMetadata';
 import { WorkflowContext } from './core/WorkflowContext';
@@ -69,7 +69,7 @@ export const Task: ITaskDecorator = createDecorator<ActivityMetadata>('Task', {
         }
     },
     providers: [
-        { provide: BootContext, useClass: WorkflowContext }
+        { provide: Runner, useClass: WorkflowContext }
     ]
 }) as ITaskDecorator;
 

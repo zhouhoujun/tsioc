@@ -26,47 +26,16 @@ export interface BootstrapOption {
     args?: string[];
 }
 
-/**
- * service config hook.
- */
-export interface Configurable<T = any, R = Promise<void>> {
-    /**
-     * config the service with context.
-     *
-     * @param {ApplicationContext} [ctx]
-     * @returns {R} startup service token
-     */
-    configureService(ctx: BootContext<T>): R;
+@Abstract()
+export abstract class Runnable<T = any> {
+    abstract run(...args: any[]): T;
 }
 
 /**
- * service run hook.
- */
-export interface Runnable<T = any, R = Promise<void>> {
-    /**
-     * run service.
-     * @param ctx 
-     */
-    run(ctx?: BootContext<T>): R;
-}
-
-/**
- * service interface. define the type as a service.
- *
- * @export
- * @interface IService
- * @template T
- * @template TCtx default IBootContext
- */
-export interface IService extends Destroyable {
-
-}
-
-/**
- * boot context.
+ * application runner.
  */
 @Abstract()
-export abstract class BootContext<T = any> {
+export abstract class Runner<T = any, R = any> implements Destroyable {
     /**
      * boot injector
      */
@@ -85,6 +54,12 @@ export abstract class BootContext<T = any> {
      * get instance.
      */
     abstract get instance(): T;
+
+    /**
+     * run service.
+     * @param context 
+     */
+    abstract run(context?: ApplicationContext): R;
 
     /**
      * Destroys the component instance and all of the data structures associated with it.
@@ -114,7 +89,7 @@ export abstract class ServiceFactory<T> {
      * @param type 
      * @param option 
      */
-    abstract create(option: BootstrapOption, context?: ApplicationContext): BootContext<T> | Promise<BootContext<T>>;
+    abstract create(option: BootstrapOption, context?: ApplicationContext): Runner<T>;
 }
 
 @Abstract()
@@ -240,7 +215,7 @@ export abstract class ApplicationContext implements Destroyable {
      * @param type 
      * @param opts 
      */
-    abstract bootstrap<C>(type: Type<C> | ServiceFactory<C>, opts?: BootstrapOption): BootContext<C> | Promise<BootContext<C>>;
+    abstract bootstrap<C>(type: Type<C> | ServiceFactory<C>, opts?: BootstrapOption): Runner<C> | Promise<Runner<C>>;
 
     /**
      * get message queue.
@@ -310,7 +285,7 @@ export abstract class ApplicationContext implements Destroyable {
     /**
      * application bootstraps.
      */
-    abstract get bootstraps(): BootContext[];
+    abstract get bootstraps(): Runner[];
 
     abstract get destroyed(): boolean;
     /**
@@ -326,6 +301,11 @@ export abstract class ApplicationContext implements Destroyable {
      */
     abstract onDestroy(callback: Function): void;
 }
+
+/**
+ * boot context.
+ */
+export const BootContext = ApplicationContext;
 
 /**
  * application option.

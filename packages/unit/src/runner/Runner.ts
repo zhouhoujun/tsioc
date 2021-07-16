@@ -1,5 +1,5 @@
 import { Abstract, Type } from '@tsdi/ioc';
-import { BootContext, Service, Runnable } from '@tsdi/boot';
+import { Runnable } from '@tsdi/boot';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
 
 /**
@@ -10,11 +10,9 @@ import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
  * @extends {IRunner<any>}
  */
 @Abstract()
-export abstract class Runner extends Service implements Runnable {
+export abstract class UnitRunner extends Runnable {
 
     abstract getInstanceType(): Type;
-
-    abstract run(ctx: BootContext): Promise<void>;
 
     /**
      * run suite.

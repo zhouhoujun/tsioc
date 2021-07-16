@@ -1,9 +1,9 @@
 import { lang, Injectable } from '@tsdi/ioc';
-import { BootContext } from '@tsdi/boot';
+import { Runner } from '@tsdi/boot';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata/decor';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata/meta';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
-import { Runner } from './Runner';
+import { UnitRunner } from './Runner';
 import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
 
 /**
@@ -14,19 +14,20 @@ import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
  * @implements {IRunner<any>}
  */
 @Injectable()
-export class SuiteRunner extends Runner {
+export class SuiteRunner extends UnitRunner {
 
     timeout: number;
     describe: string;
 
-    private ctx: BootContext;
-
-    getInstanceType() {
-        return this.ctx.type;
+    constructor(private runner: Runner) {
+        super()
     }
 
-    async run(ctx: BootContext): Promise<void> {
-        this.ctx = ctx;
+    getInstanceType() {
+        return this.runner.type;
+    }
+
+    async run(): Promise<void> {
         try {
             let desc = this.getSuiteDescribe();
             await this.runSuite(desc);
@@ -41,9 +42,9 @@ export class SuiteRunner extends Runner {
      * @returns {ISuiteDescribe}
      */
     getSuiteDescribe(): ISuiteDescribe {
-        let meta = this.ctx.reflect.annotation as SuiteMetadata;
+        let meta = this.runner.reflect.annotation as SuiteMetadata;
         this.timeout = (meta && meta.timeout) ? meta.timeout : (3 * 60 * 60 * 1000);
-        this.describe = meta.describe || this.ctx.reflect.class.className;
+        this.describe = meta.describe || this.runner.reflect.class.className;
         return {
             timeout: this.timeout,
             describe: this.describe,
@@ -58,9 +59,9 @@ export class SuiteRunner extends Runner {
     }
 
     runTimeout(key: string, describe: string, timeout: number): Promise<any> {
-        let instance = this.ctx.instance;
+        let instance = this.runner.instance;
         let defer = lang.defer();
-        let injector = this.ctx.injector;
+        let injector = this.runner.injector;
         let timer = setTimeout(() => {
             if (timer) {
                 clearTimeout(timer);
@@ -92,7 +93,7 @@ export class SuiteRunner extends Runner {
     }
 
     async runBefore(describe: ISuiteDescribe) {
-        let befores = this.ctx.reflect.class.getDecorDefines<BeforeTestMetadata>(Before.toString(), 'method');
+        let befores = this.runner.reflect.class.getDecorDefines<BeforeTestMetadata>(Before.toString(), 'method');
         await lang.step(
             befores.map(df => () => {
                 return this.runTimeout(
@@ -103,7 +104,7 @@ export class SuiteRunner extends Runner {
     }
 
     async runBeforeEach() {
-        let befores = this.ctx.reflect.class.getDecorDefines<BeforeEachTestMetadata>(BeforeEach.toString(), 'method');
+        let befores = this.runner.reflect.class.getDecorDefines<BeforeEachTestMetadata>(BeforeEach.toString(), 'method');
         await lang.step(
             befores.map(df => () => {
                 return this.runTimeout(
@@ -114,7 +115,7 @@ export class SuiteRunner extends Runner {
     }
 
     async runAfterEach() {
-        let afters = this.ctx.reflect.class.getDecorDefines<BeforeEachTestMetadata>(AfterEach.toString(), 'method');
+        let afters = this.runner.reflect.class.getDecorDefines<BeforeEachTestMetadata>(AfterEach.toString(), 'method');
         await lang.step(afters.map(df => () => {
             return this.runTimeout(
                 df.propertyKey,
@@ -124,7 +125,7 @@ export class SuiteRunner extends Runner {
     }
 
     async runAfter(describe: ISuiteDescribe) {
-        let afters = this.ctx.reflect.class.getDecorDefines<BeforeTestMetadata>(After.toString(), 'method');
+        let afters = this.runner.reflect.class.getDecorDefines<BeforeTestMetadata>(After.toString(), 'method');
         await lang.step(
             afters.map(df => () => {
                 return this.runTimeout(
@@ -135,7 +136,7 @@ export class SuiteRunner extends Runner {
     }
 
     async runTest(desc: ISuiteDescribe) {
-        let tests = this.ctx.reflect.class.getDecorDefines<TestCaseMetadata>(Test.toString(), 'method');
+        let tests = this.runner.reflect.class.getDecorDefines<TestCaseMetadata>(Test.toString(), 'method');
         await lang.step(
             tests.map(df => {
                 return {
@@ -169,7 +170,7 @@ export class SuiteRunner extends Runner {
     }
 
     protected destroying() {
-        this.ctx = null;
+        this.runner = null;
         this.timeout = null;
         this.describe = null;
     }

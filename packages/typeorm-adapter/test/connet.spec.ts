@@ -1,5 +1,5 @@
 import * as expect from 'expect';
-import { BootContext, BootApplication, ApplicationContext } from '@tsdi/boot';
+import { BootApplication, ApplicationContext } from '@tsdi/boot';
 import { TypeOrmHelper } from '../src';
 import { Suite, Before, Test, After } from '@tsdi/unit';
 import { User, Role } from './models/models';

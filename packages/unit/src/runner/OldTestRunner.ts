@@ -1,8 +1,7 @@
-import { lang, Singleton, isFunction, IInjector } from '@tsdi/ioc';
-import { BootContext } from '@tsdi/boot';
-import { Runner } from './Runner';
+import { lang, Singleton, isFunction, IInjector, Injector } from '@tsdi/ioc';
 import { Assert } from '../assert/assert';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
+import { UnitRunner } from './Runner';
 
 
 declare let window: any;
@@ -32,16 +31,14 @@ const globals = typeof window !== 'undefined' ? window : global;
  * @implements {IRunner<any>}
  */
 @Singleton()
-export class OldTestRunner extends Runner {
-
-    private injector: IInjector;
+export class OldTestRunner extends UnitRunner {
 
     timeout: number;
     describe: string;
 
     suites: ISuiteDescribe[];
 
-    constructor(timeout?: number) {
+    constructor(private injector: Injector, timeout?: number) {
         super()
         this.suites = [];
         this.timeout = timeout || (3 * 60 * 60 * 1000);
@@ -51,8 +48,7 @@ export class OldTestRunner extends Runner {
         return null;
     }
 
-    async run(ctx: BootContext): Promise<void> {
-        this.injector = ctx.injector;
+    async run(): Promise<void> {
         try {
             await lang.step(this.suites.map(desc => desc.cases.length ? () => this.runSuite(desc) : () => Promise.resolve()));
         } catch (err) {
