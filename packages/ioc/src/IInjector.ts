@@ -213,7 +213,7 @@ export interface IProvider extends Destroyable {
      * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    resolve<T>(option: ResolveOption<T>, providers: ProviderType[]): T;
+    resolve<T>(option: ResolveOption<T>, ...providers: ProviderType[]): T;
     /**
      * resolve token instance with token and param provider.
      *
@@ -222,7 +222,7 @@ export interface IProvider extends Destroyable {
      * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    resolve<T>(option: ResolveOption<T>, ...providers: ProviderType[]): T;
+    resolve<T>(option: ResolveOption<T>, providers: ProviderType[]): T;
     /**
      * resolve token instance with token and param provider.
      *

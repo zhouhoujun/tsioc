@@ -26,63 +26,103 @@ export interface BootstrapOption {
     args?: string[];
 }
 
-/**
- * runnable interface.
- */
-export interface IRunnable<T = any> {
-    run(...args: any[]): T;
-}
+
 
 /**
  * runnable
  */
 @Abstract()
-export abstract class Runnable<T = any> implements IRunnable<T> {
-    abstract run(...args: any[]): T;
+export abstract class Runnable<T = any> {
+    /**
+     * run this service.
+     * @param context 
+     */
+    abstract run(context?: ApplicationContext): T;
 }
 
 /**
- * application runner.
+ * runner with target ref.
  */
 @Abstract()
-export abstract class Runner<T = any, R = any> implements Destroyable {
+export abstract class Runner<T = any> extends Runnable<T> {
     /**
-     * boot injector
-     */
-    abstract get injector(): IInjector;
-    /**
-     * boot type.
-     */
-    abstract get type(): Type<T>;
-
-    /**
-    * get target reflect.
-    */
-    abstract get reflect(): AnnotationReflect<T>;
-
-    /**
-     * get instance.
+     * instance of target
+     *
+     * @readonly
+     * @abstract
+     * @type {T}
+     * @memberof Executor
      */
     abstract get instance(): T;
 
     /**
-     * run service.
-     * @param context 
+     * runnable target ref.
+     *
+     * @readonly
+     * @abstract
+     * @type {TargetRef<T>}
+     * @memberof Runner
      */
-    abstract run(context?: ApplicationContext): R;
+    abstract get targetRef(): TargetRef<T>;
+}
+
+/**
+ * target ref.
+ */
+@Abstract()
+export abstract class TargetRef<T = any> implements Destroyable {
+
+    /**
+     * injector of current target.
+     *
+     * @readonly
+     * @abstract
+     * @type {IInjector}
+     * @memberof TargetRef
+     */
+    abstract get injector(): IInjector;
+
+    /**
+     * instance of target
+     *
+     * @readonly
+     * @abstract
+     * @type {T}
+     * @memberof Executor
+     */
+    abstract get instance(): T;
+
+    /**
+     * target reflect.
+     *
+     * @readonly
+     * @abstract
+     * @type {AnnotationReflect<T>}
+     * @memberof Executor
+     */
+    abstract get reflect(): AnnotationReflect<T>;
+
+    /**
+     * execute target type.
+     *
+     * @readonly
+     * @abstract
+     * @type {Type<T>}
+     * @memberof Executor
+     */
+    abstract get type(): Type<T>;
 
     /**
      * Destroys the component instance and all of the data structures associated with it.
      */
     abstract destroy(): void;
-
     /**
      * A lifecycle hook that provides additional developer-defined cleanup
      * functionality for the component.
      * @param callback A handler function that cleans up developer-defined data
      * associated with this component. Called when the `destroy()` method is invoked.
      */
-    abstract onDestroy(callback: Function): void;
+    abstract onDestroy(callback: () => void): void;
 }
 
 /**
@@ -98,7 +138,7 @@ export abstract class RunnableFactory<T> {
      * create boot context.
      * @param option 
      */
-    abstract create(option: BootstrapOption): Runner<T>;
+    abstract create(option: BootstrapOption, context?: ApplicationContext): Runnable<T>;
 }
 
 @Abstract()
@@ -294,7 +334,7 @@ export abstract class ApplicationContext implements Destroyable {
     /**
      * application bootstraps.
      */
-    abstract get bootstraps(): Runner[];
+    abstract get bootstraps(): Runnable[];
 
     abstract get destroyed(): boolean;
     /**

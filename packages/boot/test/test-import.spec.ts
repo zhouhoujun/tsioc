@@ -1,5 +1,5 @@
 import { ModuleA, ModuleB, ClassSevice, SubMessageQueue, SocketService, StatupModule, TestService } from './demo';
-import { BootApplication, RootMessageQueue, ROOT_QUEUE } from '../src';
+import { BootApplication, RootMessageQueue, ROOT_QUEUE, Runner,  } from '../src';
 import expect = require('expect');
 import * as net from 'net';
 
@@ -13,8 +13,9 @@ describe('di module', () => {
         // expect(md.bootstrap).to.eq(ClassSevice);
         // expect(md.container).to.not.undefined;
         // expect(md.container.has('mark')).to.true;
-        console.log(ctx.bootstraps[0].instance);
-        expect(ctx.bootstraps[0].instance.mark).toEqual('marked');
+        const runner = ctx.bootstraps[0] as Runner;
+        console.log(runner.instance);
+        expect(runner.instance.mark).toEqual('marked');
         // expect(md.state).eq('started');
     });
 
@@ -45,7 +46,7 @@ describe('di module', () => {
             ]
         });
 
-        expect(ctx.bootstraps[0].instance).toBeInstanceOf(ClassSevice);
+        expect((ctx.bootstraps[0] as Runner).instance).toBeInstanceOf(ClassSevice);
         expect(ctx.injector.get('ttk')).toEqual('ccc');
     });
 

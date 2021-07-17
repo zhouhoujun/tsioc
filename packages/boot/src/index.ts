@@ -2,7 +2,6 @@
 export * from './services/intf';
 export * from './services/parser';
 export * from './services/startup';
-export * from './services/runner';
 export * from './services/fac';
 
 // annotations

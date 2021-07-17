@@ -324,7 +324,6 @@ export class Provider implements IProvider {
     }
 
 
-
     /**
      * resolve instance with token and param provider via resolve scope.
      *
@@ -334,17 +333,16 @@ export class Provider implements IProvider {
      * @returns {T}
      * @memberof IocContainer
      */
+    resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: ProviderType[]): T;/**
+    * resolve instance with token and param provider via resolve scope.
+    *
+    * @template T
+    * @param {(Token<T> | ResolveOption<T>)} token
+    * @param {...ProviderType[]} providers
+    * @returns {T}
+    * @memberof IocContainer
+    */
     resolve<T>(token: Token<T> | ResolveOption<T>, providers: ProviderType[]): T;
-    /**
-     * resolve instance with token and param provider via resolve scope.
-     *
-     * @template T
-     * @param {(Token<T> | ResolveOption<T>)} token
-     * @param {...ProviderType[]} providers
-     * @returns {T}
-     * @memberof IocContainer
-     */
-    resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: ProviderType[]): T;
     resolve<T>(token: Token<T> | ResolveOption<T>, ...args: any[]) {
         let inst: T;
         let destroy: Function;

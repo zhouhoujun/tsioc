@@ -1,5 +1,5 @@
 import { lang, Injectable } from '@tsdi/ioc';
-import { Runner } from '@tsdi/boot';
+import { TargetRef } from '@tsdi/boot';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata/decor';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata/meta';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
@@ -19,12 +19,12 @@ export class SuiteRunner extends UnitRunner {
     timeout: number;
     describe: string;
 
-    constructor(private runner: Runner) {
+    constructor(private tgRef: TargetRef) {
         super()
     }
 
     getInstanceType() {
-        return this.runner.type;
+        return this.tgRef.type;
     }
 
     async run(): Promise<void> {
@@ -42,9 +42,9 @@ export class SuiteRunner extends UnitRunner {
      * @returns {ISuiteDescribe}
      */
     getSuiteDescribe(): ISuiteDescribe {
-        let meta = this.runner.reflect.annotation as SuiteMetadata;
+        let meta = this.tgRef.reflect.annotation as SuiteMetadata;
         this.timeout = (meta && meta.timeout) ? meta.timeout : (3 * 60 * 60 * 1000);
-        this.describe = meta.describe || this.runner.reflect.class.className;
+        this.describe = meta.describe || this.tgRef.reflect.class.className;
         return {
             timeout: this.timeout,
             describe: this.describe,
@@ -59,9 +59,9 @@ export class SuiteRunner extends UnitRunner {
     }
 
     runTimeout(key: string, describe: string, timeout: number): Promise<any> {
-        let instance = this.runner.instance;
+        let instance = this.tgRef.instance;
         let defer = lang.defer();
-        let injector = this.runner.injector;
+        let injector = this.tgRef.injector;
         let timer = setTimeout(() => {
             if (timer) {
                 clearTimeout(timer);
@@ -93,7 +93,7 @@ export class SuiteRunner extends UnitRunner {
     }
 
     async runBefore(describe: ISuiteDescribe) {
-        let befores = this.runner.reflect.class.getDecorDefines<BeforeTestMetadata>(Before.toString(), 'method');
+        let befores = this.tgRef.reflect.class.getDecorDefines<BeforeTestMetadata>(Before.toString(), 'method');
         await lang.step(
             befores.map(df => () => {
                 return this.runTimeout(
@@ -104,7 +104,7 @@ export class SuiteRunner extends UnitRunner {
     }
 
     async runBeforeEach() {
-        let befores = this.runner.reflect.class.getDecorDefines<BeforeEachTestMetadata>(BeforeEach.toString(), 'method');
+        let befores = this.tgRef.reflect.class.getDecorDefines<BeforeEachTestMetadata>(BeforeEach.toString(), 'method');
         await lang.step(
             befores.map(df => () => {
                 return this.runTimeout(
@@ -115,7 +115,7 @@ export class SuiteRunner extends UnitRunner {
     }
 
     async runAfterEach() {
-        let afters = this.runner.reflect.class.getDecorDefines<BeforeEachTestMetadata>(AfterEach.toString(), 'method');
+        let afters = this.tgRef.reflect.class.getDecorDefines<BeforeEachTestMetadata>(AfterEach.toString(), 'method');
         await lang.step(afters.map(df => () => {
             return this.runTimeout(
                 df.propertyKey,
@@ -125,7 +125,7 @@ export class SuiteRunner extends UnitRunner {
     }
 
     async runAfter(describe: ISuiteDescribe) {
-        let afters = this.runner.reflect.class.getDecorDefines<BeforeTestMetadata>(After.toString(), 'method');
+        let afters = this.tgRef.reflect.class.getDecorDefines<BeforeTestMetadata>(After.toString(), 'method');
         await lang.step(
             afters.map(df => () => {
                 return this.runTimeout(
@@ -136,7 +136,7 @@ export class SuiteRunner extends UnitRunner {
     }
 
     async runTest(desc: ISuiteDescribe) {
-        let tests = this.runner.reflect.class.getDecorDefines<TestCaseMetadata>(Test.toString(), 'method');
+        let tests = this.tgRef.reflect.class.getDecorDefines<TestCaseMetadata>(Test.toString(), 'method');
         await lang.step(
             tests.map(df => {
                 return {
@@ -170,7 +170,7 @@ export class SuiteRunner extends UnitRunner {
     }
 
     protected destroying() {
-        this.runner = null;
+        this.tgRef = null;
         this.timeout = null;
         this.describe = null;
     }

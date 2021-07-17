@@ -4,7 +4,7 @@ import { DIModuleMetadata } from '../metadata/meta';
 import { BOOT_TYPES, CONFIGURATION, PROCESS_ROOT } from '../metadata/tk';
 import { Configuration } from '../configure/config';
 import { ConfigureManager } from '../configure/manager';
-import { ApplicationContext, ApplicationFactory, ApplicationOption, Runner, RunnableFactory, BootstrapOption, ModuleInjector, RunnableFactoryResolver } from '../Context';
+import { ApplicationContext, ApplicationFactory, ApplicationOption, Runnable, RunnableFactory, BootstrapOption, ModuleInjector, RunnableFactoryResolver } from '../Context';
 import { MessageContext, MessageQueue, RequestOption, ROOT_QUEUE } from '../middlewares';
 
 
@@ -19,7 +19,7 @@ export class DefaultApplicationContext extends ApplicationContext {
 
     readonly destroyed = false;
     private _dsryCbs: (() => void)[] = [];
-    readonly bootstraps: Runner[] = [];
+    readonly bootstraps: Runnable[] = [];
     readonly args: string[] = [];
     readonly startups: Token[] = [];
 
@@ -39,7 +39,7 @@ export class DefaultApplicationContext extends ApplicationContext {
      */
     bootstrap<C>(type: Type<C> | RunnableFactory<C>, opts?: BootstrapOption): any {
         const factory = isFunction(type) ? this.injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type) : type;
-        return factory.create({ injector: this.injector, ...opts })?.run(this);
+        return factory.create({ injector: this.injector, ...opts }, this)?.run(this);
     }
 
     get instance() {
