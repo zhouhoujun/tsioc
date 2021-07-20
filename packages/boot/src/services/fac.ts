@@ -37,7 +37,7 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
             });
         }
 
-        return runable as Runnable<T>;
+        return runable;
     }
 }
 

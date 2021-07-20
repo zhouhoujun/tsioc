@@ -32,19 +32,19 @@ export interface BootstrapOption {
  * runnable
  */
 @Abstract()
-export abstract class Runnable<T = any> {
+export abstract class Runnable {
     /**
      * run this service.
      * @param context 
      */
-    abstract run(context?: ApplicationContext): T;
+    abstract run(context?: ApplicationContext): any;
 }
 
 /**
  * runner with target ref.
  */
 @Abstract()
-export abstract class Runner<T = any> extends Runnable<T> {
+export abstract class Runner<T = any> extends Runnable {
     /**
      * instance of target
      *
@@ -138,9 +138,12 @@ export abstract class RunnableFactory<T> {
      * create boot context.
      * @param option 
      */
-    abstract create(option: BootstrapOption, context?: ApplicationContext): Runnable<T>;
+    abstract create(option: BootstrapOption, context?: ApplicationContext): Runnable;
 }
 
+/**
+ * runnable factory resolver.
+ */
 @Abstract()
 export abstract class RunnableFactoryResolver {
     abstract resolve<T>(type: Type<T>): RunnableFactory<T>;

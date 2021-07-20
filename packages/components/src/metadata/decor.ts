@@ -126,7 +126,7 @@ export const Component: IComponentDecorator = createDecorator<ComponentMetadata>
             if (compRefl.annoType !== 'component') {
                 return next();
             }
-            
+
             if (ctx.reflect.class.annotation?.def) {
                 (ctx.reflect as ComponentReflect).def = ctx.reflect.class.annotation?.def;
                 return next();
