@@ -1,6 +1,6 @@
 import {
-    Abstract, AsyncHandler, DecorDefine, lang, ParameterMetadata, ProviderType, Type, TypeReflect, IInjector,
-    isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, isPlainObject, tokenId, RegisteredState
+    Abstract, AsyncHandler, DecorDefine, lang, ParameterMetadata, ProviderType, Type, TypeReflect, IInjector, tokenId,
+    isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, isPlainObject, RegisteredState
 } from '@tsdi/ioc';
 import { CONTEXT, TYPE_PARSER } from '../metadata/tk';
 import { MessageContext } from './ctx';
@@ -95,7 +95,7 @@ export class MappingRoute extends Route {
         return await next();
     }
 
-    
+
     async invoke(ctx: MessageContext, meta: DecorDefine) {
         const injector = this.injector;
         if (meta && meta.propertyKey) {

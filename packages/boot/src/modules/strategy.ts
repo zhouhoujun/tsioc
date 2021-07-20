@@ -17,7 +17,6 @@ import { ModuleInjector } from '../Context';
         return this.vaild(parent);
     }
 
-
     hasToken<T>(key: Token<T>, curr: TI, deep?: boolean) {
         return this.getMDRef(curr).some(r => r.exports.has(key)) || (deep && curr.parent?.has(key));
     }

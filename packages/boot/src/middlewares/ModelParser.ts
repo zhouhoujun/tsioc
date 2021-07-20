@@ -1,6 +1,6 @@
 import {
-    Type, PropertyMetadata, Inject, ObjectMap, isClass, isUndefined, isPrimitiveType, isArray,
-    Abstract, Singleton, isNil, isFunction, Token, tokenId, Injector
+    Type, Inject, ObjectMap, isClass, isUndefined, isPrimitiveType, isArray,
+    Abstract, Singleton, isNil, isFunction, Token, tokenId, Injector, PropertyMetadata
 } from '@tsdi/ioc';
 import { IModelParser } from './IModelParser';
 import { TYPE_PARSER } from '../metadata/tk';
@@ -62,7 +62,7 @@ export class ExtendBaseTypeMap {
 export abstract class ModelParser implements IModelParser {
 
     static ρNPT = true;
-    
+
     @Inject() protected injector: Injector;
 
     /**
@@ -85,7 +85,7 @@ export abstract class ModelParser implements IModelParser {
             const propmeta = meta[n];
             if (propmeta) {
                 if (!isUndefined(objMap[n])) {
-                    let ptype = propmeta.isProviderType ? propmeta.provider  : propmeta.type;
+                    let ptype = propmeta.isProviderType ? propmeta.provider : propmeta.type;
                     let reqval = objMap[n];
                     if (!isFunction(ptype) || isNil(reqval)) {
                         continue;

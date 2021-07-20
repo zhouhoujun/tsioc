@@ -1,6 +1,6 @@
 import {
-    Type, isFunction, lang, IProvider, ParameterMetadata, IContainer, IActionProvider, InvokedProvider,
-    IocActions, IActionSetup, isArray, isNil, isPromise, refl
+    Type, isFunction, lang, IProvider, IContainer, IActionProvider, InvokedProvider,
+    ParameterMetadata, IocActions, IActionSetup, isArray, isNil, isPromise, refl
 } from '@tsdi/ioc';
 import { IPointcut } from '../joinpoints/IPointcut';
 import { Joinpoint } from '../joinpoints/Joinpoint';
@@ -123,7 +123,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
         const self = this;
         const container = this.container;
         return (...args: any[]) => {
-            if(container.destroyed){
+            if (container.destroyed) {
                 return propertyMethod.call(target, ...args);
             }
             const larg = lang.last(args);

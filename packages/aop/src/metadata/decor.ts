@@ -1,6 +1,6 @@
 import { isString, ClassType, ClassMetadata, DecoratorOption, createDecorator } from '@tsdi/ioc';
-import { AopReflect } from './ref';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AspectMetadata, AroundMetadata, PointcutAnnotation, AdviceTypes } from './meta';
+import { AopReflect } from './ref';
 import { ADVISOR } from './tk';
 
 

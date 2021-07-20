@@ -12,7 +12,9 @@ import { ModuleStrategy } from './strategy';
 export const mdInjStrategy = new ModuleStrategy<ModuleInjector>(p => p instanceof ModuleInjector, cu => cu.imports);
 
 
-
+/**
+ * default module injector.
+ */
 export class DefaultModuleInjector<T> extends ModuleInjector<T> {
 
     imports: ModuleInjector[] = [];

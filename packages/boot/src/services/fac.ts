@@ -1,4 +1,4 @@
-import { Type, createInjector, refl, Destroyable, lang, IInjector, isFunction } from '@tsdi/ioc';
+import { Type, createInjector, refl, Destroyable, lang, IInjector } from '@tsdi/ioc';
 import { ApplicationContext, BootstrapOption, Runnable, RunnableFactory, RunnableFactoryResolver, TargetRef } from '../Context';
 import { AnnotationReflect } from '../metadata/ref';
 
@@ -27,11 +27,13 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
             targetRef.onDestroy(() => {
                 runable.destroy?.();
                 lang.remove(context.bootstraps, runable);
+                lang.cleanObj(runable);
             });
             context.bootstraps.push(runable);
-        } else if (isFunction(runable.destroy)) {
+        } else {
             targetRef.onDestroy(() => {
-                runable.destroy();
+                runable.destroy?.();
+                lang.cleanObj(runable);
             });
         }
 
