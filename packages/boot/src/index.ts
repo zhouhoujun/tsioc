@@ -1,4 +1,5 @@
 // services
+export * from './services/exit';
 export * from './services/intf';
 export * from './services/parser';
 export * from './services/startup';

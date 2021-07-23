@@ -66,11 +66,6 @@ export const PROCESS_ROOT: Token<string> = tokenId<string>('PROCESS_ROOT');
 export const ProcessRunRootToken = PROCESS_ROOT;
 
 /**
- *  appliaction boot process root path.
- */
-export const PROCESS_EXIT = tokenId<(app: IBootApplication) => void>('PROCESS_ROOT');
-
-/**
  * type parser token.
  */
 export const TYPE_PARSER: Token<IBaseTypeParser> = tokenId<IBaseTypeParser>('TYPE_PARSER');

@@ -1,11 +1,12 @@
 import { IModuleLoader, IContainer, isFunction, Type } from '@tsdi/ioc';
 import { ContainerBuilder } from '@tsdi/core';
 import { IBootApplication } from './IBootApplication';
-import { APPLICATION, PROCESS_EXIT } from './metadata/tk';
+import { APPLICATION } from './metadata/tk';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption, ModuleFactory, ModuleInjector } from './Context';
 import { MiddlewareModule } from './middlewares';
 import { BootLifeScope } from './appl/lifescope';
 import { BootModule, DEFAULTA_FACTORYS } from './BootModule';
+import { ApplicationExit } from './services/exit';
 
 
 /**
@@ -91,10 +92,20 @@ export class BootApplication implements IBootApplication {
      */
     async run(): Promise<ApplicationContext> {
         const ctx = await this.setup();
-        await ctx.injector.action().get(BootLifeScope).execute(ctx);
-        ctx.onDestroy(() => this.destroy());
-        ctx.injector.get(PROCESS_EXIT)?.(this);
-        return ctx;
+        let appExit: ApplicationExit;
+        try {
+            await ctx.injector.action().get(BootLifeScope).execute(ctx);
+            ctx.onDestroy(() => this.destroy());
+            appExit = ctx.injector.get(ApplicationExit);
+            appExit?.register(ctx);
+            return ctx;
+        } catch (err) {
+            ctx.getLogManager()?.getLogger()?.error(err);
+            if (appExit) {
+                appExit.exit(ctx);
+            }
+            throw err;
+        }
     }
 
     async setup() {

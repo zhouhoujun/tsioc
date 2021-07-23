@@ -94,6 +94,10 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
 
     protected destroying() {
         this.logger?.info('close db connections');
-        getConnectionManager().connections?.forEach(c => c?.close());
+        getConnectionManager().connections?.forEach(c => {
+            if (c && c.isConnected) {
+                c.close()
+            }
+        });
     }
 }
