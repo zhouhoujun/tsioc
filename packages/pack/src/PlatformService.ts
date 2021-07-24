@@ -119,7 +119,7 @@ export class PlatformService {
             mapping = filter;
             options = {};
         }
-        let filePaths: string[] = await globby(this.normalizeSrc(express), options);
+        let filePaths: any[] = await globby(this.normalizeSrc(express), options);
         if (filter) {
             filePaths = filePaths.filter(filter);
         }

@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
-import { IConfigureLoader, ConfigureLoaderToken, DIModule, ProcessRunRootToken, Configure } from '@tsdi/boot';
+import { IConfigureLoader, ConfigureLoaderToken, DIModule, ProcessRunRootToken, Configure, BootContext, ApplicationExit } from '@tsdi/boot';
 import { ServerModule, runMainPath, syncRequire } from '@tsdi/platform-server';
 import * as path from 'path';
 
@@ -43,6 +43,33 @@ export class ConfigureFileLoader implements IConfigureLoader<Configure> {
 }
 
 
+class ServerApplicationExit extends ApplicationExit {
+
+    enable = true;
+
+    register(context: BootContext): void {
+        process.on('SIGINT', () => {
+            this.exit(context);
+        });
+    }
+
+    exit(context: BootContext, err?: Error): void {
+        const logger = context.getLogManager()?.getLogger();
+        if (err) {
+            logger ? logger.error(err) : console.error(err);
+        }
+        context.destroy();
+        if (logger) {
+            logger.log('SIGINT: app destoryed.');
+        } else {
+            console.log('SIGINT: app destoryed.');
+        }
+        process.exit(err ? 1 : 0);
+    }
+
+}
+
+
 /**
  * server boot module
  *
@@ -56,7 +83,8 @@ export class ConfigureFileLoader implements IConfigureLoader<Configure> {
     ],
     providers: [
         ConfigureFileLoader,
-        { provide: ProcessRunRootToken, useValue: runMainPath() }
+        { provide: ProcessRunRootToken, useValue: runMainPath() },
+        { provide: ApplicationExit, useValue: new ServerApplicationExit() }
     ]
 })
 export class ServerBootstrapModule {

@@ -1,4 +1,4 @@
-import { isArray, isString, isInjector, ClassType, isClassType, Destoryable } from '@tsdi/ioc';
+import { isArray, isString, isInjector, ClassType, isClassType, Destoryable, isDefined } from '@tsdi/ioc';
 import { LoadType, IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer, ICoreInjector } from '@tsdi/core';
 import { BootContext } from './boot/ctx';
 import { IBootApplication, ContextInit } from './IBootApplication';
@@ -6,6 +6,7 @@ import { BootModule } from './BootModule';
 import { BOOTCONTEXT, BuilderServiceToken, ROOT_INJECTOR } from './tk';
 import { ModuleInjector } from './modules/injector';
 import { BootOption } from './Context';
+import { ApplicationExit } from './services/exit';
 
 
 /**
@@ -104,10 +105,20 @@ export class BootApplication<T extends BootContext = BootContext> extends Destor
      * @memberof BootApplication
      */
     async run(...args: string[]): Promise<T> {
-        const root = this.getRootInjector();
-        await root.load(...this.getBootDeps());
-        let ctx = await root.getInstance(BuilderServiceToken).bootApp(this, ...args);
-        return ctx as T;
+        try {
+            const root = this.getRootInjector();
+            await root.load(...this.getBootDeps());
+            let ctx = await root.getInstance(BuilderServiceToken).bootApp(this, ...args);
+            this.context.injector.get(ApplicationExit)?.register(this.context);
+            return ctx as T;
+        } catch (err) {
+            let appExit = this.context.injector.get(ApplicationExit);
+            if (appExit && appExit.enable) {
+                appExit.exit(this.context, err);
+            }
+            throw err;
+        }
+
     }
 
     getRootInjector(): ICoreInjector {

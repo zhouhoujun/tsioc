@@ -1,5 +1,5 @@
 import { Injectable, isString, isClass, isArray, PromiseUtil } from '@tsdi/ioc';
-import { Runnable, BuilderService } from '@tsdi/boot';
+import { Runnable, BuilderService, ApplicationExit } from '@tsdi/boot';
 import { OldTestRunner } from './OldTestRunner';
 import { Suite } from '../decorators';
 import { TestReport } from '../reports/TestReport';
@@ -29,6 +29,10 @@ export class UnitTestRunner extends Runnable<any> {
         let config = await context.getConfiguration();
         let src = config.src;
         let injector = context.injector;
+        const exit = injector.get(ApplicationExit);
+        if(exit){
+            exit.enable = false;
+        }
         let suites: any[] = [];
         let oldRunner = injector.resolve(OldTestRunner);
         await oldRunner.configureService(context);
