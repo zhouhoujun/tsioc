@@ -9,7 +9,7 @@ import * as path from 'path';
 const del = require('del');
 import { Defer, isString, lang } from "@tsdi/ioc";
 
-const logdir = path.join(__dirname, '../log-caches')
+const logdir = path.join(__dirname, '../logcaches')
 export function formatDate(date: Date, fmt: string = 'yyyy-MM-dd'){
     var o = {
         "M+": date.getMonth() + 1, //月份
@@ -36,7 +36,7 @@ export class ServerBootTest {
         await del(logdir);
         this.ctx = await BootApplication.run({ type: ServerMainModule, configures: [configurtion] });
         const now = new Date();
-        this.logfile = path.join(this.ctx.baseURL, `/log-caches/focas.-${formatDate(now).replace(/(-|\/)/g, '')}.log`);
+        this.logfile = path.join(this.ctx.baseURL, `/logcaches/focas.-${formatDate(now).replace(/(-|\/)/g, '')}.log`);
     }
 
     @Test()
