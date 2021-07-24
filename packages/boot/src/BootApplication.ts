@@ -108,11 +108,10 @@ export class BootApplication<T extends BootContext = BootContext> extends Destor
         try {
             const root = this.getRootInjector();
             await root.load(...this.getBootDeps());
-            let ctx = await root.getInstance(BuilderServiceToken).bootApp(this, ...args);
-            this.context.injector.get(ApplicationExit)?.register(this.context);
+            const ctx = await root.getInstance(BuilderServiceToken).bootApp(this, ...args);
             return ctx as T;
         } catch (err) {
-            let appExit = this.context.injector.get(ApplicationExit);
+            const appExit = this.context.injector.get(ApplicationExit);
             if (appExit && appExit.enable) {
                 appExit.exit(this.context, err);
             }

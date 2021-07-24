@@ -47,12 +47,6 @@ class ServerApplicationExit extends ApplicationExit {
 
     enable = true;
 
-    register(context: BootContext): void {
-        process.on('SIGINT', () => {
-            this.exit(context);
-        });
-    }
-
     exit(context: BootContext, err?: Error): void {
         const logger = context.getLogManager()?.getLogger();
         if (err) {
