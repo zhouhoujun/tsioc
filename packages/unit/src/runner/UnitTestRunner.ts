@@ -1,5 +1,5 @@
 import { Injectable, isString, isClass, isArray, lang, refl, Injector } from '@tsdi/ioc';
-import { AnnotationReflect, ApplicationContext, Runnable } from '@tsdi/boot';
+import { AnnotationReflect, ApplicationContext, ApplicationExit, Runnable } from '@tsdi/boot';
 import { OldTestRunner } from './OldTestRunner';
 import { TestReport } from '../reports/TestReport';
 import { UnitTestConfigure } from '../UnitTestConfigure';
@@ -17,6 +17,11 @@ export class UnitTestRunner extends Runnable {
 
     async run(ctx: ApplicationContext): Promise<void> {
         const injector = this.injector;
+        const appex = ctx.injector.get(ApplicationExit);
+        console.log("appex:", appex);
+        if(appex){
+            appex.enable = false;
+        }
         const config = ctx.getConfiguration() as UnitTestConfigure;
         const src = config.src;
         let suites: any[] = [];

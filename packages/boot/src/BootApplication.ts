@@ -91,18 +91,18 @@ export class BootApplication implements IBootApplication {
      * @returns {Promise<T>}
      */
     async run(): Promise<ApplicationContext> {
-        const ctx = await this.setup();
-        let appExit: ApplicationExit;
         try {
+            const ctx = await this.setup();
             await ctx.injector.action().get(BootLifeScope).execute(ctx);
             ctx.onDestroy(() => this.destroy());
-            appExit = ctx.injector.get(ApplicationExit);
-            appExit?.register(ctx);
             return ctx;
         } catch (err) {
-            ctx.getLogManager()?.getLogger()?.error(err);
-            if (appExit) {
-                appExit.exit(ctx);
+            const appExit = this.context.injector.get(ApplicationExit);
+            console.log("appExit:", appExit);
+            if (appExit && appExit.enable) {
+                appExit.exit(err);
+            } else {
+                this.context.getLogManager()?.getLogger()?.error(err);
             }
             throw err;
         }
@@ -113,7 +113,7 @@ export class BootApplication implements IBootApplication {
             const target = this.target;
             const root = this.root;
             if (isFunction(target)) {
-                this.context = root.resolve({ token: ApplicationFactory, target: target }).create(this.root);
+                this.context = root.resolve({ token: ApplicationFactory, target: target }).create(root);
             } else {
                 if (target.loads) await this.root.load(target.loads);
                 this.context = root.resolve({ token: ApplicationFactory, target: target.type }).create(root, target);

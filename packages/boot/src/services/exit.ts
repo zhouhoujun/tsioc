@@ -4,8 +4,14 @@ import { ApplicationContext } from '../Context';
 @Abstract()
 export abstract class ApplicationExit {
 
-    abstract register(context: ApplicationContext): void;
+    abstract get enable(): boolean;
 
-    abstract exit(context: ApplicationContext);
+    abstract set enable(enable: boolean);
+
+    abstract get context(): ApplicationContext;
+
+    abstract register(): void;
+
+    abstract exit(error?: Error);
 }
 

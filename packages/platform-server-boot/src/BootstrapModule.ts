@@ -1,4 +1,4 @@
-import { Injectable } from '@tsdi/ioc';
+import { Injectable, Singleton } from '@tsdi/ioc';
 import { IConfigureLoader, CONFIG_LOADER, DIModule, PROCESS_ROOT, Configuration, ApplicationExit, ApplicationContext } from '@tsdi/boot';
 import { ServerModule, runMainPath } from '@tsdi/platform-server';
 import * as path from 'path';
@@ -51,18 +51,43 @@ export class ConfigureFileLoader implements IConfigureLoader<Configuration> {
     }
 }
 
+@Singleton()
+export class ServerApplicationExit extends ApplicationExit {
 
-class ServerApplicationExit extends ApplicationExit {
+    private hdl: () => void;
 
-    register(context: ApplicationContext): void {
+    enable = true;
+
+    constructor(readonly context: ApplicationContext) {
+        super();
+    }
+
+    register(): void {
+        if (!this.hdl) {
+            this.hdl = () => {
+                const logger = this.context.getLogManager()?.getLogger();
+                if (logger) {
+                    logger.log('SIGINT: app destoryed.');
+                } else {
+                    console.log('SIGINT: app destoryed.');
+                }
+                this.exit();
+            };
+        }
         process.on('SIGINT', () => {
-            this.exit(context);
+            this.exit();
+        });
+        this.context.onDestroy(() => {
+            process.removeListener('SIGINT', this.hdl)
         });
     }
 
-    exit(context: ApplicationContext) {
-        context.destroy();
-        console.log('SIGINT: app destoryed.')
+    exit(err?: Error) {
+        const logger = this.context.getLogManager()?.getLogger();
+        if (err) {
+            logger ? logger.error(err) : console.error(err);
+        }
+        this.context.destroy();
         process.exit();
     }
 
@@ -79,13 +104,14 @@ class ServerApplicationExit extends ApplicationExit {
     ],
     providers: [
         ConfigureFileLoader,
+        ServerApplicationExit,
         {
             provide: PROCESS_ROOT,
             useValue: runMainPath()
         },
         {
             provide: ApplicationExit,
-            useValue: new ServerApplicationExit()
+            useExisting: ServerApplicationExit
         }
     ]
 })
