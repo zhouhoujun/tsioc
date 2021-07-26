@@ -71,6 +71,10 @@ export class Provider implements IProvider {
         return this._container?.state();
     }
 
+    tokens() {
+        return Array.from(this.factories.keys());
+    }
+
     /**
      * action provider.
      */
@@ -115,9 +119,13 @@ export class Provider implements IProvider {
         } else if (fn) {
             this.factories.set(target, fn);
         } else {
-            this.factories.set((target as ProviderOption).provide, generateRecord(this, target));
+            this.factories.set((target as ProviderOption).provide, this.generateRecord(target));
         }
         return this;
+    }
+
+    protected generateRecord(target: StaticProviders) {
+        return generateRecord(this, target);
     }
 
     /**
@@ -151,7 +159,7 @@ export class Provider implements IProvider {
                 if ((target as TypeOption).type) {
                     this.registerIn(this, (target as TypeOption).type, target as TypeOption);
                 } else {
-                    this.factories.set(target.provide, generateRecord(this, target));
+                    this.factories.set(target.provide, this.generateRecord(target));
                 }
             }
         } else {
@@ -203,11 +211,9 @@ export class Provider implements IProvider {
         cleanObj(ctx);
     }
 
-
     protected regType(type: Type) {
         this.registerIn(this, type);
     }
-
 
     /**
      * inject providers.
@@ -239,7 +245,7 @@ export class Provider implements IProvider {
 
             if (isPlainObject(p)) {
                 if ((p as StaticProviders).provide) {
-                    this.factories.set((p as StaticProviders).provide, generateRecord(this, p as StaticProviders));
+                    this.factories.set((p as StaticProviders).provide, this.generateRecord(p as StaticProviders));
                 } else {
                     this.use(p);
                 }

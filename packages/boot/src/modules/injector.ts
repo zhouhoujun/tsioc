@@ -1,5 +1,5 @@
-import { generateRecord, IInjector, isArray, isFunction, isPlainObject, KeyValueProvider, Provider, ProviderType, refl, ROOT_INJECTOR, StaticProviders, Type } from '@tsdi/ioc';
-import { IModuleExports, ModuleFactory, ModuleInjector, ModuleOption, ModuleRegistered } from '../Context';
+import { FacRecord, IInjector, isArray, isFunction, isPlainObject, KeyValueProvider, Provider, ProviderType, refl, ROOT_INJECTOR, StaticProviders, Type } from '@tsdi/ioc';
+import { IModuleProvider, ModuleFactory, ModuleInjector, ModuleOption, ModuleRegistered } from '../Context';
 import { ModuleReflect } from '../metadata/ref';
 import { CTX_ARGS, PROCESS_ROOT } from '../metadata/tk';
 import { ModuleStrategy } from './strategy';
@@ -18,16 +18,19 @@ export const mdInjStrategy = new ModuleStrategy<ModuleInjector>(p => p instanceo
 export class DefaultModuleInjector<T> extends ModuleInjector<T> {
 
     imports: ModuleInjector[] = [];
-    exports: IModuleExports;
+    exports: ModuleInjector[] = [];
+
     readonly regIn: string;
     private _instance: T;
+    private _providers: ModuleProvider;
+
     constructor(readonly reflect: ModuleReflect<T>, parent?: IInjector, regIn?: string, protected _root = false, strategy: ModuleStrategy = mdInjStrategy) {
         super(parent, strategy)
 
         const recd = { value: this };
         this.factories.set(ModuleInjector, recd);
         this.regIn = regIn || this.reflect.regIn;
-        this.exports = new ModuleProvider(this);
+        this._providers = new ModuleProvider(this);
         if (_root) {
             this.factories.set(ROOT_INJECTOR, recd);
         }
@@ -48,12 +51,80 @@ export class DefaultModuleInjector<T> extends ModuleInjector<T> {
         return this._instance;
     }
 
+    get providers() {
+        return this._providers;
+    }
+
+    export(type: Type, noRef?: boolean, hasReged?: boolean): void {
+        const state = this.state();
+
+        if (!hasReged && !state.isRegistered(type)) {
+            this.register(type);
+        }
+        this._providers.set(type, (pdr) => this.get(type, pdr));
+        const reged = state.getRegistered<ModuleRegistered>(type);
+        reged.provides?.forEach(p => {
+            this._providers.set(p, (pdr) => this.get(type, pdr));
+        });
+        if (!noRef && reged.moduleRef) {
+            this.exports.push(reged.moduleRef);
+        }
+    }
+
+    registerProviders(providers: ProviderType[]) {
+        providers.forEach(p => {
+            if (!p) {
+                return;
+            }
+            if (isFunction(p)) {
+                return this.export(p);
+            }
+
+            if (isArray(p)) {
+                const types = this.use(p);
+                types.forEach(ty => this.export(ty, true, true));
+                return;
+            }
+
+            if (isPlainObject(p)) {
+                if ((p as StaticProviders).provide) {
+                    const provide = (p as StaticProviders).provide;
+                    this.factories.set(provide, this.generateRecord(p as StaticProviders));
+                    this._providers.set(provide, (pdr) => this.get(provide, pdr));
+
+                } else {
+                    const types = this.use(p as any);
+                    types.forEach(ty => this.export(ty, true, true));
+                    return;
+                }
+            }
+
+            if (p instanceof Provider) {
+                this.copy(p);
+                p.tokens().forEach(k => {
+                    this._providers.set(k, (pdr) => this.get(k, pdr));
+                });
+                return;
+            }
+
+            if (p instanceof KeyValueProvider) {
+                p.each((k, useValue) => {
+                    this.factories.set(k, { value: useValue });
+                    this._providers.set(k, () => this.get(k));
+                });
+                return;
+            }
+        });
+        return this;
+    }
+
     protected destroying() {
         super.destroying();
         this.imports.forEach(e => e.destroy());
         this._instance = null;
         this.imports = [];
-        this.exports = null;
+        this.exports = [];
+        this._providers = null;
         (this as any).reflect = null;
     }
 }
@@ -62,91 +133,25 @@ export class DefaultModuleInjector<T> extends ModuleInjector<T> {
 /**
  * default module provider strategy.
  */
-const mdPdrStrategy = new ModuleStrategy<IModuleExports>(p => false, cu => cu.exports);
+const mdPdrStrategy = new ModuleStrategy<IModuleProvider>(p => false, cu => cu.moduleRef.exports);
 
 /**
  * module providers.
  */
-export class ModuleProvider extends Provider implements IModuleExports {
+export class ModuleProvider extends Provider implements IModuleProvider {
 
     constructor(public moduleRef: ModuleInjector, strategy = mdPdrStrategy) {
         super(moduleRef, strategy);
-        this.export(moduleRef.type, true);
     }
-
-    /**
-     * module injector.
-     */
-    exports: ModuleInjector[] = [];
 
     protected regType<T>(type: Type<T>) {
-        this.registerIn(this.moduleRef, type);
-        this.export(type, true, true);
+        this.moduleRef.export(type);
     }
 
-    export(type: Type, noRef?: boolean, hasReged?: boolean) {
-        const state = this.state();
-
-        if (!hasReged && !state.isRegistered(type)) {
-            this.moduleRef.register(type);
-        }
-
-        this.set(type, (pdr) => this.moduleRef.get(type, pdr));
-        const reged = state.getRegistered<ModuleRegistered>(type);
-        reged.provides?.forEach(p => {
-            this.set({ provide: p, useClass: type });
-        });
-        if (!noRef && reged.moduleRef) {
-            this.exports.push(reged.moduleRef);
-        }
-    }
-
-    /**
-     * inject providers.
-     *
-     * @param {...ProviderType[]} providers
-     * @returns {this}
-     */
-    inject(providers: ProviderType[]): this;
-    /**
-     * inject providers.
-     *
-     * @param {...ProviderType[]} providers
-     * @returns {this}
-     */
-    inject(...providers: ProviderType[]): this;
-    inject(...args: any[]): this {
-        const providers = (args.length === 1 && isArray(args[0])) ? args[0] : args;
-        providers?.length && providers.forEach(p => {
-            if (!p) {
-                return;
-            }
-            if (isFunction(p)) {
-                this.regType(p);
-            } else if (isPlainObject(p) && (p as StaticProviders).provide) {
-                const rd = generateRecord(this, p as StaticProviders);
-                this.factories.set((p as StaticProviders).provide, rd);
-                this.moduleRef.set((p as StaticProviders).provide, rd);
-            } else if (p instanceof KeyValueProvider) {
-                p.each((k, useValue) => {
-                    const data = { value: useValue };
-                    this.factories.set(k, data);
-                    this.moduleRef.set(k, data)
-                });
-            } else if (p instanceof Provider) {
-                this.copy(p);
-                this.moduleRef.copy(p);
-            }
-        });
-
-        return this;
-    }
 
     protected destroying() {
         super.destroying();
-        this.exports.forEach(e => e.destroy());
         this.moduleRef = null;
-        this.exports = null;
     }
 }
 
@@ -182,22 +187,22 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
                     inj.imports.unshift(importRef);
                 }
                 if (isRoot) {
-                    inj.exports.export(ty);
+                    inj.export(ty);
                 }
             })
         }
         if (inj.reflect.declarations) {
             inj.register(inj.reflect.declarations);
             if (isRoot) {
-                inj.reflect.declarations.forEach(d => inj.exports.export(d, true, true));
+                inj.reflect.declarations.forEach(d => inj.export(d, true, true));
             }
         }
         if (inj.reflect.annotation?.providers) {
-            inj.exports.inject(inj.reflect.annotation.providers);
+            inj.inject(inj.reflect.annotation.providers);
         }
 
-        inj.reflect.exports?.forEach(ty => inj.exports.export(ty));
-        if (inj.exports.size && inj.parent instanceof ModuleInjector && inj.parent.isRoot) {
+        inj.reflect.exports?.forEach(ty => inj.export(ty));
+        if (inj.providers.size && inj.parent instanceof ModuleInjector && inj.parent.isRoot) {
             inj.parent.imports.push(inj);
         }
     }

@@ -180,6 +180,8 @@ export interface IProvider extends Destroyable, WithParent {
      */
     action(): IActionProvider;
 
+    tokens(): Token[];
+
     /**
      * resolver size.
      *

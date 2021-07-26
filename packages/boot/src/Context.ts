@@ -152,17 +152,10 @@ export abstract class RunnableFactoryResolver {
 /**
  * module exports provider.
  */
-export interface IModuleExports extends IProvider {
-    /**
-     * export moduleRefs.
-     */
-    exports: ModuleInjector[]
-    /**
-     * export type.
-     * @param type 
-     */
-    export?(type: Type, noRef?: boolean, hasReged?: boolean);
+export interface IModuleProvider extends IProvider {
+    readonly moduleRef: ModuleInjector;
 }
+
 
 /**
  * module injector.
@@ -184,8 +177,13 @@ export abstract class ModuleInjector<T = any> extends DefaultInjector {
     abstract get regIn(): string;
 
     abstract get imports(): ModuleInjector[];
-    abstract get exports(): IModuleExports;
+    abstract get exports(): ModuleInjector[];
 
+    abstract export(type: Type, noRef?: boolean, hasReged?: boolean): void;
+
+    abstract get providers(): IProvider;
+
+    abstract registerProviders(providers: ProviderType[]): this;
 
     /**
     * get target reflect.
