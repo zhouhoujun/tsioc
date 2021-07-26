@@ -98,7 +98,6 @@ export class BootApplication implements IBootApplication {
             return ctx;
         } catch (err) {
             const appExit = this.context.injector.get(ApplicationExit);
-            console.log("appExit:", appExit);
             if (appExit && appExit.enable) {
                 appExit.exit(err);
             } else {

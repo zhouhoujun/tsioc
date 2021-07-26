@@ -104,14 +104,13 @@ export class ServerApplicationExit extends ApplicationExit {
     ],
     providers: [
         ConfigureFileLoader,
-        ServerApplicationExit,
         {
             provide: PROCESS_ROOT,
             useValue: runMainPath()
         },
         {
             provide: ApplicationExit,
-            useExisting: ServerApplicationExit
+            useClass: ServerApplicationExit
         }
     ]
 })
