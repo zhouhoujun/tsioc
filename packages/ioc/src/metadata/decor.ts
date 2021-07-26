@@ -1,13 +1,12 @@
 import { ClassType, Type } from '../types';
 import { isString, isArray } from '../utils/chk';
 import { Token, getToken } from '../tokens';
-import { IContainer } from '../IContainer';
 import {
     ClassMetadata, AutorunMetadata, AutoWiredMetadata, InjectMetadata, TypeMetadata, PatternMetadata,
     InjectableMetadata, ParameterMetadata, ProvidersMetadata, ProviderInMetadata
 } from './meta';
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
-import { IInjector, ProviderType } from '../IInjector';
+import { IInjector, ProviderType } from '../interface';
 
 
 /**

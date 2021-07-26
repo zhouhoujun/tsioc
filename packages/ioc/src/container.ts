@@ -5,17 +5,16 @@ import { Handler } from './utils/hdl';
 import { cleanObj, isBaseOf } from './utils/lang';
 import {
     IActionProvider, IInjector, IModuleLoader, IProvider, RegisteredState,
-    ServicesOption, ProviderType
-} from './IInjector';
-import { IContainer } from './IContainer';
-import { MethodType } from './Invoker';
+    ServicesOption, ProviderType, WithParent, IContainer, MethodType
+} from './interface';
 import { Token } from './tokens';
 import { CONTAINER, INVOKER, MODULE_LOADER } from './metadata/tk';
 import { get } from './metadata/refl';
 import { Abstract } from './metadata/decor';
 import { Action, IActionSetup } from './action';
 import { Strategy } from './strategy';
-import { Provider, Injector, resolveRecord, createProvider } from './injector';
+import { Provider, resolveRecord, createProvider } from './provider';
+import { Injector } from './injector';
 import { InvokerImpl } from './actions/invoker';
 import { DesignLifeScope } from './actions/design';
 import { RuntimeLifeScope } from './actions/runtime';
@@ -298,7 +297,7 @@ class ActionProvider extends Provider implements IActionProvider {
 
     protected init(parent: Container) {
         this._container = parent;
-        this.parent = null;
+        (this as WithParent).parent = null;
         parent.onFinally(() => this.destroy());
     }
 

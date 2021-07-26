@@ -7,7 +7,7 @@ import { DecoratorType, DecorContext, DecorDefine, TypeReflect } from './type';
 import { TypeDefine } from './typedef';
 import { chain, Handler } from '../utils/hdl';
 import { cleanObj, getParentClass } from '../utils/lang';
-import { IActionProvider } from '../IInjector';
+import { IActionProvider } from '../interface';
 
 
 

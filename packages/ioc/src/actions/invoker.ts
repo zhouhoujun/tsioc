@@ -1,11 +1,10 @@
 import { Type } from '../types';
 import { isFunction, getClass, isTypeObject } from '../utils/chk';
 import { Token } from '../tokens';
-import { IInjector, IProvider, ProviderType, RegisteredState } from '../IInjector';
-import { Invoker, MethodType } from '../Invoker';
+import { IInjector, IProvider, ProviderType, RegisteredState, Invoker, MethodType } from '../interface';
 import { get } from '../metadata/refl';
 import { ParameterMetadata } from '../metadata/meta';
-import { createInvokedProvider } from '../injector';
+import { createInvokedProvider } from '../provider';
 
 /**
  * method accessor

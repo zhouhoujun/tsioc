@@ -7,10 +7,10 @@ import { DesignContext, RuntimeContext } from './ctx';
 import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
-import { FacRecord, IInjector, IProvider } from '../IInjector';
+import { FacRecord, IInjector, IProvider } from '../interface';
 import { PropertyMetadata } from '../metadata/meta';
 import { ROOT_INJECTOR } from '../metadata/tk';
-import { createProvider } from '../injector';
+import { createProvider } from '../provider';
 
 
 

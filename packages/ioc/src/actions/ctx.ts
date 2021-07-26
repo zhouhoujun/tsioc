@@ -1,6 +1,6 @@
 import { ParameterMetadata } from '../metadata/meta';
 import { Registered, TypeReflect } from '../metadata/type';
-import { IInjector, IProvider } from '../IInjector';
+import { IInjector, IProvider } from '../interface';
 import { Token } from '../tokens';
 import { Type } from '../types';
 

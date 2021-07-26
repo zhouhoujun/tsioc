@@ -1,6 +1,6 @@
 import { Type } from './types';
 import { Abstract } from './metadata/decor';
-import { FacRecord, IProvider } from './IInjector';
+import { FacRecord, IProvider } from './interface';
 import { Token } from './tokens';
 
 

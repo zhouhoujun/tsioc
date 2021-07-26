@@ -1,12 +1,11 @@
 import { Type, Modules, LoadType, ClassType } from './types';
 import { Token } from './tokens';
-import { IContainer } from './IContainer';
 import { Destroyable } from './Destroyable';
-import { MethodType } from './Invoker';
 import { Registered, TypeReflect } from './metadata/type';
 import { Action } from './action';
 import { Handler } from './utils/hdl';
 import { ClassProvider, ExistingProvider, FactoryProvider, StaticProvider, ValueProvider } from './providers';
+import { ParameterMetadata } from './metadata/meta';
 
 
 /**
@@ -153,11 +152,20 @@ export interface RegisteredState {
 
 }
 
+/**
+ * provider interface.
+ */
+ export interface WithParent {
+    /**
+     * parent provider.
+     */
+    parent?: IProvider;
+ }
 
 /**
  * provider interface.
  */
-export interface IProvider extends Destroyable {
+export interface IProvider extends Destroyable, WithParent {
     /**
      * parent provider.
      */
@@ -569,3 +577,54 @@ export interface IModuleLoader {
      */
     loadTypes(modules: LoadType[]): Promise<Type[][]>;
 }
+
+
+/**
+ * method type.
+ */
+ export type MethodType<T> = string | ((tag: T) => Function);
+
+ /**
+  * execution, invoke some type method.
+  */
+ export interface Invoker {
+     /**
+      * try to async invoke the method of intance, if no instance will create by type.
+      *
+      * @template T
+      * @param { IInjector } injector
+      * @param {(Token<T> | T)} target
+      * @param {MethodType} propertyKey
+      * @param {...ProviderType[]} providers
+      * @returns {TR}
+      */
+     invoke<T, TR = any>(injector: IInjector, target: Token<T> | T, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
+     /**
+      * create params instances with IParameter and provider of target type.
+      *
+      * @param { IInjector } injector
+      * @param {Type} target target type.
+      * @param {ParameterMetadata[]} params
+      * @param {...AsyncParamProvider[]} providers
+      * @returns {any[]}
+      */
+     createParams(injector: IInjector, target: Type, params: ParameterMetadata[],  ...providers: ProviderType[]): any[];
+ }
+ 
+ /**
+  * @deprecated use `Invoker` instead.
+  */
+ export type IMethodAccessor = Invoker;
+
+ /**
+ * root container interface.
+ *
+ * @export
+ * @interface IContainer
+ */
+export interface IContainer extends IInjector {
+    readonly id: string;
+}
+
+export type IIocContainer = IContainer;
+

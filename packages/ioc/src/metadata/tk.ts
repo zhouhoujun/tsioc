@@ -1,7 +1,5 @@
 import { Token, tokenId } from '../tokens';
-import { Invoker } from '../Invoker';
-import { IInjector, IModuleLoader } from '../IInjector';
-import { IContainer } from '../IContainer';
+import { Invoker, IInjector, IModuleLoader, IContainer } from '../interface';
 
 /**
  * injector instance token of self.

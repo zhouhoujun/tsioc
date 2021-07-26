@@ -1,5 +1,5 @@
 import { DesignContext, RuntimeContext } from '../actions/ctx';
-import { IInjector, IProvider, ProviderType } from '../IInjector';
+import { IInjector, IProvider, ProviderType } from '../interface';
 import { Token } from '../tokens';
 import { ClassType } from '../types';
 import { Handler } from '../utils/hdl';

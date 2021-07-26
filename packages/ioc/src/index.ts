@@ -2,10 +2,9 @@ export * from './types';
 export * from './tokens';
 export * from './action';
 export * from './Destroyable';
-export * from './IInjector';
-export * from './IContainer';
-export * from './Invoker';
+export * from './interface';
 export * from './strategy';
+export * from './provider';
 export * from './injector';
 export * from './container';
 
