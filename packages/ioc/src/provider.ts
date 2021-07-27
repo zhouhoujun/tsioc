@@ -158,7 +158,7 @@ export class Provider implements IProvider {
             } else {
                 if ((target as TypeOption).type) {
                     this.registerIn(this, (target as TypeOption).type, target as TypeOption);
-                } else {
+                } else if(target.provide) {
                     this.factories.set(target.provide, this.generateRecord(target));
                 }
             }
@@ -336,7 +336,8 @@ export class Provider implements IProvider {
      * @returns {T}
      * @memberof IocContainer
      */
-    resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: ProviderType[]): T;/**
+    resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: ProviderType[]): T;
+    /**
     * resolve instance with token and param provider via resolve scope.
     *
     * @template T
@@ -652,12 +653,10 @@ function generateFactory(injector: IProvider, option: StaticProviders): Factory 
     } else if (useExisting) {
         fac = (pdr: IProvider) => injector.resolve(useExisting, pdr);
     } else if (useClass) {
-        fac = (pdr) => {
-            if (!injector.state().isRegistered(useClass) && !injector.has(useClass, true)) {
-                injector.register({ type: useClass, singleton, deps });
-            }
-            return injector.resolve(useClass, pdr);
-        };
+        if (!injector.state().isRegistered(useClass) && !injector.has(useClass, true)) {
+            injector.register({ type: useClass, singleton, deps });
+        }
+        fac = (pdr) => injector.resolve(useClass, pdr);
     } else {
         fac = (pdr) => {
             let args = [];

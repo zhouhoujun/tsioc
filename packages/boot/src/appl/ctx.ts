@@ -39,7 +39,7 @@ export class DefaultApplicationContext extends ApplicationContext {
      */
     bootstrap<C>(type: Type<C> | RunnableFactory<C>, opts?: BootstrapOption): any {
         const factory = isFunction(type) ? this.injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type) : type;
-        return factory.create({ injector: this.injector, ...opts }, this)?.run(this);
+        return factory.create({ injector: this.injector, ...opts }, this).run(this);
     }
 
     get instance() {

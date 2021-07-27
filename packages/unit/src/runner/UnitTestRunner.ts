@@ -18,7 +18,6 @@ export class UnitTestRunner extends Runnable {
     async run(ctx: ApplicationContext): Promise<void> {
         const injector = this.injector;
         const appex = ctx.injector.get(ApplicationExit);
-        console.log("appex:", appex);
         if(appex){
             appex.enable = false;
         }

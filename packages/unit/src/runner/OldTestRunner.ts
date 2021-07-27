@@ -1,4 +1,4 @@
-import { lang, Singleton, isFunction, IInjector, Injector } from '@tsdi/ioc';
+import { lang, Singleton, isFunction, Injector } from '@tsdi/ioc';
 import { Assert } from '../assert/assert';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
 import { UnitRunner } from './Runner';

@@ -77,7 +77,7 @@ export const BootConfigureLoadHandle = async function (ctx: ApplicationContext, 
     config = { ...config, ...injector.reflect.annotation };
     injector.setValue(CONFIGURATION, config);
 
-    await next();
+    return await next();
 };
 
 /**
@@ -105,7 +105,7 @@ export const BootConfigureRegisterHandle = async function (ctx: ApplicationConte
         const state = injector.state();
         await Promise.all(configs.map(cfg => state.getInstance(cfg)?.register(config, ctx)));
     }
-    await next();
+    return await next();
 };
 
 
@@ -113,13 +113,6 @@ export const BootConfigureRegisterHandle = async function (ctx: ApplicationConte
  * configure startup service scope.
  */
 export class StartupGlobalService extends BuildHandles<ApplicationContext> implements IActionSetup {
-
-    async execute(ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
-        await super.execute(ctx);
-        if (next) {
-            await next();
-        }
-    }
 
     setup() {
         this.use(ConnectionsHandle, ConfigureServiceHandle);
@@ -137,7 +130,7 @@ export const ConnectionsHandle = async function (ctx: ApplicationContext, next: 
         ctx.onDestroy(() => startup?.destroy());
         await startup.configureService(ctx)
     }
-    await next();
+    return await next();
 };
 
 
@@ -171,7 +164,7 @@ export const ConfigureServiceHandle = async function (ctx: ApplicationContext, n
             return ser.configureService(ctx);
         }));
     }
-    await next();
+    return await next();
 };
 
 
@@ -190,5 +183,5 @@ export const ModuleBootstrap = async function (ctx: ApplicationContext, next: ()
     if (injector.reflect.bootstrap && injector.reflect.bootstrap.length) {
         await Promise.all(injector.reflect.bootstrap.map(b => ctx.bootstrap(b)));
     }
-    await next();
+    return await next();
 };

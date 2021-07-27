@@ -12,8 +12,15 @@ import { ISuiteDescribe, ICaseDescribe } from './ITestReport';
 @Abstract()
 export abstract class Reporter {
 
+    /**
+     * reporter render.
+     * @param suites 
+     */
     abstract render(suites: Map<Token, ISuiteDescribe>): Promise<void>;
-
+    /**
+     * reporter track.
+     * @param error 
+     */
     abstract track(error: Error): void;
 }
 
