@@ -30,9 +30,11 @@ export interface IScopeAction<TAction extends Function = Handler> {
 
 
 export const InitReflectAction = function (ctx: RegContext, next?: () => void): void {
-    const tgref = ctx.reflect = get(ctx.type, true);
-    if (tgref.singleton) {
-        ctx.singleton = tgref.singleton;
+    if(!ctx.reflect){
+        ctx.reflect = get(ctx.type, true);
+    }
+    if (ctx.reflect.singleton) {
+        ctx.singleton = ctx.reflect.singleton;
     }
 
     if (next) {

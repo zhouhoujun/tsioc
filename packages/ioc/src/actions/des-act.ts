@@ -11,6 +11,7 @@ import { FacRecord, IInjector, IProvider } from '../interface';
 import { PropertyMetadata } from '../metadata/meta';
 import { ROOT_INJECTOR } from '../metadata/tk';
 import { createProvider } from '../provider';
+import { TypeReflect } from '../metadata/type';
 
 
 
@@ -63,7 +64,6 @@ function regInstf(injector: IInjector, type: Type, provide: Token, singleton: bo
             if (singleton && injector.hasValue(type)) {
                 return injector.get(type);
             }
-
             const ctx = {
                 injector,
                 provide,

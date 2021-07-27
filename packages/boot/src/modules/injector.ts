@@ -19,14 +19,14 @@ export class DefaultModuleInjector<T> extends ModuleInjector<T> {
 
     imports: ModuleInjector[] = [];
     exports: IModuleExports;
-    readonly regIn: string;
+    private _regIn: string;
     private _instance: T;
     constructor(readonly reflect: ModuleReflect<T>, parent?: IInjector, regIn?: string, protected _root = false, strategy: ModuleStrategy = mdInjStrategy) {
         super(parent, strategy)
 
         const recd = { value: this };
         this.factories.set(ModuleInjector, recd);
-        this.regIn = regIn || this.reflect.regIn;
+        this._regIn = regIn;
         this.exports = new ModuleExports(this);
         if (_root) {
             this.factories.set(ROOT_INJECTOR, recd);
@@ -39,6 +39,10 @@ export class DefaultModuleInjector<T> extends ModuleInjector<T> {
 
     get isRoot() {
         return this._root;
+    }
+
+    get regIn(): string {
+        return this._regIn ?? this.reflect.regIn ?? this.reflect.annotation?.regIn;
     }
 
     get instance(): T {
@@ -184,7 +188,7 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
 
     protected regModule(inj: ModuleInjector) {
         const state = inj.state();
-        const isRoot = inj.regIn === 'root';
+        const regInRoot = inj.regIn === 'root';
         if (inj.reflect.imports) {
             inj.register(inj.reflect.imports);
             inj.reflect.imports.forEach(ty => {
@@ -192,14 +196,14 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
                 if (importRef) {
                     inj.imports.unshift(importRef);
                 }
-                if (isRoot) {
+                if (regInRoot) {
                     inj.exports.export(ty);
                 }
             })
         }
         if (inj.reflect.declarations) {
             inj.register(inj.reflect.declarations);
-            if (isRoot) {
+            if (regInRoot) {
                 inj.reflect.declarations.forEach(d => inj.exports.export(d, true, true));
             }
         }

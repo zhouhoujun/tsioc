@@ -656,7 +656,9 @@ function generateFactory(injector: IProvider, option: StaticProviders): Factory 
         if (!injector.state().isRegistered(useClass) && !injector.has(useClass, true)) {
             injector.register({ type: useClass, singleton, deps });
         }
-        fac = (pdr) => injector.resolve(useClass, pdr);
+        fac = (pdr) => {
+            return injector.get(useClass, pdr);
+        }
     } else {
         fac = (pdr) => {
             let args = [];
