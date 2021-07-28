@@ -89,8 +89,10 @@ export class ModuleExports extends Provider implements IModuleExports {
     }
 
     export(type: Type, noRef?: boolean, hasReged?: boolean) {
+        if(this.factories.has(type)){
+            return;
+        }
         const state = this.state();
-
         if (!hasReged && !state.isRegistered(type)) {
             this.moduleRef.register(type);
         }
@@ -197,7 +199,7 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
                     inj.imports.unshift(importRef);
                 }
                 if (regInRoot) {
-                    inj.exports.export(ty);
+                    inj.exports.export(ty, false, true);
                 }
             })
         }
