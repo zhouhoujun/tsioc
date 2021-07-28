@@ -11,7 +11,6 @@ import { FacRecord, IInjector, IProvider } from '../interface';
 import { PropertyMetadata } from '../metadata/meta';
 import { ROOT_INJECTOR } from '../metadata/tk';
 import { createProvider } from '../provider';
-import { TypeReflect } from '../metadata/type';
 
 
 

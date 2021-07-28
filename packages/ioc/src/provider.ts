@@ -158,7 +158,7 @@ export class Provider implements IProvider {
             } else {
                 if ((target as TypeOption).type) {
                     this.registerIn(this, (target as TypeOption).type, target as TypeOption);
-                } else if(target.provide) {
+                } else if (target.provide) {
                     this.factories.set(target.provide, this.generateRecord(target));
                 }
             }
@@ -656,9 +656,7 @@ function generateFactory(injector: IProvider, option: StaticProviders): Factory 
         if (!injector.state().isRegistered(useClass) && !injector.has(useClass, true)) {
             injector.register({ type: useClass, singleton, deps });
         }
-        fac = (pdr) => {
-            return injector.get(useClass, pdr);
-        }
+        fac = (pdr) => injector.resolve(useClass, pdr);
     } else {
         fac = (pdr) => {
             let args = [];

@@ -26,13 +26,13 @@ export class NodeModuleLoader extends ModuleLoader implements IModuleLoader {
 
         return globby(files, { cwd: basePath }).then(mflies => {
             return Promise.all(mflies.map(fp => {
-                return import(toAbsolutePath(basePath, fp));
+                return import(toAbsolutePath(basePath, isString(fp) ? fp : (fp as { path: string }).path));
             }));
         });
     }
 
     protected createLoader(): (modulepath: string) => Promise<Modules[]> {
-        return (modulepath: string) => Promise.resolve(require(modulepath));
+        return (modulepath: string) => import(modulepath);
     }
 
 }
