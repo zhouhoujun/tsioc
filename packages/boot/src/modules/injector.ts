@@ -84,12 +84,13 @@ export class ModuleExports extends Provider implements IModuleExports {
     exports: ModuleInjector[] = [];
 
     protected regType<T>(type: Type<T>) {
-        this.registerIn(this.moduleRef, type);
-        this.export(type, true, true);
+        if (this.registerIn(this.moduleRef, type)) {
+            this.export(type, true, true);
+        }
     }
 
     export(type: Type, noRef?: boolean, hasReged?: boolean) {
-        if(this.factories.has(type)){
+        if (this.has(type)) {
             return;
         }
         const state = this.state();

@@ -199,7 +199,7 @@ export class Provider implements IProvider {
         const state = injector.state();
         // make sure class register once.
         if (state.isRegistered(type) || injector.has(type, true)) {
-            return this;
+            return false;
         }
 
         const ctx = {
@@ -209,6 +209,7 @@ export class Provider implements IProvider {
         } as DesignContext;
         injector.action().get(DesignLifeScope).register(ctx);
         cleanObj(ctx);
+        return true;
     }
 
     protected regType(type: Type) {
