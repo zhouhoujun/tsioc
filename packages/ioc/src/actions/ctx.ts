@@ -1,6 +1,6 @@
 import { ParameterMetadata } from '../metadata/meta';
 import { Registered, TypeReflect } from '../metadata/type';
-import { IInjector, IProvider } from '../interface';
+import { IInjector } from '../interface';
 import { Token } from '../tokens';
 import { Type } from '../types';
 
@@ -13,11 +13,6 @@ export interface IocContext {
      * current injector.
      */
     injector: IInjector;
-
-    /**
-     *  providers.
-     */
-    providers?: IProvider;
 }
 
 
@@ -96,9 +91,4 @@ export interface RuntimeContext extends RegContext {
      * args of the propertyKey method.
      */
     args?: any[];
-
-    /**
-     * params of the propertyKey method.
-     */
-    params?: ParameterMetadata[];
 }

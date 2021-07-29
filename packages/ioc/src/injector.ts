@@ -165,7 +165,7 @@ export abstract class Injector implements IInjector {
      * @param providers 
      * @param parent 
      */
-    static create(providers: ProviderType[], parent?: Injector): Injector;
+    static create(providers: ProviderType[], parent?: IInjector): Injector;
     /**
      * create injector with option.
      * @param options 
@@ -794,7 +794,7 @@ export function generateRecord<T>(injector: Injector, option: StaticProviders): 
     return { value, fn, isCtor, deps, type };
 }
 
-const EMPTY = [];
+export const EMPTY = [];
 
 function computeDeps(provider: StaticProviders) {
     let deps: any[];

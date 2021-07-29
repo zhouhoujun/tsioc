@@ -1,5 +1,5 @@
 import {
-    Type, isFunction, lang, IProvider, IContainer, IActionProvider, InvokedProvider,
+    Type, isFunction, lang, IContainer, IActionProvider, InvokedProvider,
     ParameterMetadata, IocActions, IActionSetup, isArray, isNil, isPromise, refl
 } from '@tsdi/ioc';
 import { IPointcut } from '../joinpoints/IPointcut';

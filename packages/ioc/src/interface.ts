@@ -558,11 +558,11 @@ export interface Invoker {
      *
      * @param { IInjector } injector
      * @param {Type} target target type.
-     * @param {ParameterMetadata[]} params
-     * @param {...AsyncParamProvider[]} providers
+     * @param {string} propertyKey
+     * @param {...ProviderType[]} providers
      * @returns {any[]}
      */
-    createParams(injector: IInjector, target: Type, params: ParameterMetadata[], ...providers: ProviderType[]): any[];
+    createParams(injector: IInjector, target: Type, propertyKey: string, ...providers: ProviderType[]): any[];
 }
 
 /**

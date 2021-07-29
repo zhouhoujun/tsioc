@@ -1,5 +1,5 @@
 import {
-    IInjector, Token, ProviderType, IProvider, isArray, IContainer,
+    IInjector, Token, ProviderType, isArray, IContainer,
     ServicesOption, isPlainObject, lang, ServicesProvider, TARGET, resolveToken, isFunction
 } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from '../resolves/context';

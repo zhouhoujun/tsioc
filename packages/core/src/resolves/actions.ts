@@ -1,4 +1,4 @@
-import { IActionSetup, lang, refl, isFunction, IocActions, createProvider, IProvider } from '@tsdi/ioc';
+import { IActionSetup, lang, refl, isFunction, IocActions } from '@tsdi/ioc';
 import { ServicesContext } from './context';
 
 /**
@@ -22,7 +22,7 @@ export class ResolveServicesScope extends IocActions implements IActionSetup {
             ctx.match = typeMatch;
         }
 
-        ctx.services = createProvider(injector.getContainer());
+        ctx.services = new Map();
         super.execute(ctx);
 
         next && next();
@@ -31,7 +31,7 @@ export class ResolveServicesScope extends IocActions implements IActionSetup {
             if (ctx.defaultToken) {
                 const key = ctx.defaultToken;
                 if (injector.has(key, true)) {
-                    ctx.services.set(key, (pdr: IProvider) => injector.get(key, pdr));
+                    ctx.services.set(key, injector.get(key));
                 }
             }
         }
@@ -72,7 +72,7 @@ export const RsvServicesAction = function (ctx: ServicesContext, next: () => voi
     let type;
     ctx.injector.iterator((pdr, tk) => {
         type = pdr.type || tk;
-        if (isFunction(type) && !services.has(type) && types.some(ty => match(type, ty))){
+        if (isFunction(type) && !services.has(type) && types.some(ty => match(type, ty))) {
             services.set(type, pdr);
         }
     }, true);
