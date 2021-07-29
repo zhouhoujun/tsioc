@@ -1,5 +1,5 @@
 import { DesignContext, RuntimeContext } from '../actions/ctx';
-import { IInjector, IProvider, ProviderType } from '../interface';
+import { IInjector, ProviderType } from '../interface';
 import { Token } from '../tokens';
 import { ClassType } from '../types';
 import { Handler } from '../utils/hdl';
@@ -46,7 +46,7 @@ export interface Registered {
     /**
      * type private providers.
      */
-    providers?: IProvider;
+    providers?: IInjector;
 }
 
 /**

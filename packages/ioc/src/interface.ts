@@ -11,7 +11,7 @@ import { ParameterMetadata } from './metadata/meta';
 /**
  * providers.
  */
-export type ProviderType =  Modules[] | IProvider | StaticProvider;
+export type ProviderType = Modules[] | StaticProvider;
 
 /**
  * providers types
@@ -27,7 +27,7 @@ export type ParamProviders = ProviderType;
 /**
  * instance factory.
  */
-export type Factory<T = any> = (provider: IProvider) => T;
+export type Factory<T = any> = (...args) => T;
 
 
 /**
@@ -46,7 +46,7 @@ export interface TypeOption<T = any> {
     regIn?: 'root';
 }
 
-export type ProviderOption<T = any> =  ClassProvider | ValueProvider | ExistingProvider | FactoryProvider;
+export type ProviderOption<T = any> = ClassProvider | ValueProvider | ExistingProvider | FactoryProvider;
 
 /**
  * register option.
@@ -68,7 +68,11 @@ export interface FacRecord<T = any> {
     /**
      * factory.
      */
-    fn?: Factory<T>;
+    fn?: Function;
+
+    isCtor?: boolean;
+
+    deps?: any[];
 
     /**
      * token provider type.
@@ -114,7 +118,7 @@ export interface RegisteredState {
      * get the type private providers.
      * @param type
      */
-    getTypeProvider(type: ClassType): IProvider;
+    getTypeProvider(type: ClassType): IInjector;
     /**
      * set type providers.
      * @param type
@@ -125,7 +129,7 @@ export interface RegisteredState {
      * get instance.
      * @param type class type.
      */
-    getInstance<T>(type: ClassType<T>, providers?: IProvider): T;
+    getInstance<T>(type: ClassType<T>): T;
     /**
      * get instance.
      * @param type class type.
@@ -153,23 +157,78 @@ export interface RegisteredState {
 }
 
 /**
- * provider interface.
+ * resovle action option.
  */
- export interface WithParent {
+export interface ResolveOption<T = any> {
     /**
-     * parent provider.
+     * token.
      */
-    parent?: IProvider;
- }
+    token?: Token<T>;
+    /**
+     * resolve token in target context.
+     */
+    target?: Token | TypeReflect | Object | (Token | Object)[];
+    /**
+     * only for target private or ref token. if has target.
+     */
+    tagOnly?: boolean;
+    /**
+     * all faild use the default token to get instance.
+     */
+    defaultToken?: Token<T>;
+    /**
+     * register token if has not register.
+     */
+    regify?: boolean;
+
+    /**
+     * resolve providers.
+     */
+    providers?: ProviderType[];
+}
+
 
 /**
- * provider interface.
+ * services context options
+ *
+ * @export
+ * @interface ServicesOption
+ * @extends {ServiceOption}
  */
-export interface IProvider extends Destroyable, WithParent {
+export interface ServicesOption<T> extends ResolveOption<T> {
     /**
-     * parent provider.
+     * token provider service type.
+     *
+     * @type {Type}
      */
-    readonly parent?: IProvider;
+    tokens?: Token<T>[];
+    /**
+     * get extend servie or not.
+     *
+     * @type {boolean}
+     */
+    extend?: boolean;
+    /**
+     * get services both in container and target private refrence service.
+     *
+     * @type {boolean}
+     */
+    both?: boolean;
+}
+
+
+
+/**
+ * injector interface.
+ *
+ * @export
+ * @interface IInjector
+ */
+export interface IInjector extends Destroyable {
+    /**
+     * parent injector.
+     */
+    readonly parent?: IInjector;
 
     /**
      * registered state.
@@ -211,52 +270,31 @@ export interface IProvider extends Destroyable, WithParent {
      *
      * @template T
      * @param {Token<T>} key
-     * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    get<T>(key: Token<T>, providers?: IProvider): T;
+    get<T>(key: Token<T>, notFoundValue?: T): T;
     /**
      * resolve token instance with token and param provider.
      *
      * @template T
      * @param {ResolveOption<T>} option  resolve option
-     * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    resolve<T>(option: ResolveOption<T>, ...providers: ProviderType[]): T;
-    /**
-     * resolve token instance with token and param provider.
-     *
-     * @template T
-     * @param {ResolveOption<T>} option  resolve option
-     * @param {...ProviderType[]} providers
-     * @returns {T}
-     */
-    resolve<T>(option: ResolveOption<T>, providers: ProviderType[]): T;
+    resolve<T>(option: ResolveOption<T>): T;
     /**
      * resolve token instance with token and param provider.
      *
      * @template T
      * @param {Token<T>} token the token to resolve.
-     * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    resolve<T>(token: Token<T>, ...providers: ProviderType[]): T;
+    resolve<T>(token: Token<T>): T;
     /**
      * set value.
      * @param token provide key
      * @param value vaule
      */
     setValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
-    /**
-     * reate provider or get provider.
-     * only one provider with type IProvider with return the provider.
-     * to provider. no providers, will return null
-     * @param providers
-     * @param force  no providers, return new provider or not.
-     * @param newIfy init or do sth when create new provider.
-     */
-    toProvider(providers: ProviderType[], force?: boolean, newIfy?: (p: IProvider) => IProvider): IProvider;
     /**
     * get token implement class type.
     *
@@ -357,122 +395,30 @@ export interface IProvider extends Destroyable, WithParent {
     /**
      * iterator current resolver.
      *
-     * @param {((pdr: FacRecord, key: Token, resolvor?: IProvider) => void|boolean)} callbackfn
+     * @param {((pdr: FacRecord, key: Token, resolvor?: IInjector) => void|boolean)} callbackfn
      * @param {boolean} [deep] deep iterator all register in parent or not.
      * @returns {(void|boolean)}
      */
-    iterator(callbackfn: (pdr: FacRecord, key: Token, resolvor?: IProvider) => void | boolean, deep?: boolean): void | boolean;
+    iterator(callbackfn: (pdr: FacRecord, key: Token, resolvor?: IInjector) => void | boolean, deep?: boolean): void | boolean;
     /**
      * copy injector to current injector.
      *
-     * @param {IProvider} target copy from
+     * @param {IInjector} target copy from
      * @param {(key: Token) => boolean} filter token key filter
      * @returns {this} current injector.
      */
-    copy(from: IProvider, filter?: (key: Token) => boolean): this;
+    copy(from: IInjector, filter?: (key: Token) => boolean): this;
     /**
      * clone this injector to.
      * @param to
      */
-    clone(to?: IProvider): IProvider;
+    clone(to?: IInjector): IInjector;
     /**
      * clone this injector to.
      * @param {(key: Token) => boolean} filter token key filter
      * @param to
      */
-    clone(filter: (key: Token) => boolean, to?: IProvider): IProvider;
-}
-
-/**
- * resovle action option.
- */
-export interface ResolveOption<T = any> {
-    /**
-     * token.
-     */
-    token?: Token<T>;
-    /**
-     * resolve token in target context.
-     */
-    target?: Token | TypeReflect | Object | (Token | Object)[];
-    /**
-     * only for target private or ref token. if has target.
-     */
-    tagOnly?: boolean;
-    /**
-     * all faild use the default token to get instance.
-     */
-    defaultToken?: Token<T>;
-    /**
-     * register token if has not register.
-     */
-    regify?: boolean;
-
-    /**
-     * resolve providers.
-     */
-    providers?: ProviderType[];
-}
-
-
-/**
- * services context options
- *
- * @export
- * @interface ServicesOption
- * @extends {ServiceOption}
- */
-export interface ServicesOption<T> extends ResolveOption<T> {
-    /**
-     * token provider service type.
-     *
-     * @type {Type}
-     */
-    tokens?: Token<T>[];
-    /**
-     * get extend servie or not.
-     *
-     * @type {boolean}
-     */
-    extend?: boolean;
-    /**
-     * get services both in container and target private refrence service.
-     *
-     * @type {boolean}
-     */
-    both?: boolean;
-}
-
-
-/**
- * action injector.
- */
-export interface IActionProvider extends IProvider {
-    /**
-     * register action, simple create instance via `new type(this)`.
-     * @param types
-     */
-    regAction(...types: Type<Action>[]): this;
-    /**
-     * get action via target.
-     * @param target target.
-     */
-    getAction<T extends Handler>(target: Token<Action>): T;
-}
-
-
-
-/**
- * injector interface.
- *
- * @export
- * @interface IInjector
- */
-export interface IInjector extends IProvider {
-    /**
-     * parent injector.
-     */
-    readonly parent?: IInjector;
+    clone(filter: (key: Token) => boolean, to?: IInjector): IInjector;
     /**
      * try to invoke the method of intance, if is token will create instance to invoke.
      *
@@ -508,29 +454,35 @@ export interface IInjector extends IProvider {
      *
      * @template T
      * @param {(Token<T> | ServiceOption<T>)} target servive token.
-     * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    getService<T>(target: Token<T> | ResolveOption<T>, ...providers: ProviderType[]): T;
+    getService<T>(target: Token<T> | ResolveOption<T>): T;
     /**
      * get all service extends type.
      *
      * @template T
      * @param {(Token<T> | ServicesOption<T>)} target servive token or express match token.
-     * @param {...ProviderType[]} providers
      * @returns {T[]} all service instance type of token type.
      */
-    getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[];
-    /**
-     * get all provider service in the injector.
-     *
-     * @template T
-     * @param {(Token<T> | ServicesOption<T>)} target
-     * @returns {IProvider}
-     */
-    getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider;
+    getServices<T>(target: Token<T> | ServicesOption<T>): T[];
+
 }
 
+/**
+ * action injector.
+ */
+export interface IActionProvider extends IInjector {
+    /**
+     * register action, simple create instance via `new type(this)`.
+     * @param types
+     */
+    regAction(...types: Type<Action>[]): this;
+    /**
+     * get action via target.
+     * @param target target.
+     */
+    getAction<T extends Handler>(target: Token<Action>): T;
+}
 
 /**
  * module loader interface for ioc.
@@ -584,46 +536,46 @@ export interface IModuleLoader {
 /**
  * method type.
  */
- export type MethodType<T> = string | ((tag: T) => Function);
+export type MethodType<T> = string | ((tag: T) => Function);
 
- /**
-  * execution, invoke some type method.
-  */
- export interface Invoker {
-     /**
-      * try to async invoke the method of intance, if no instance will create by type.
-      *
-      * @template T
-      * @param { IInjector } injector
-      * @param {(Token<T> | T)} target
-      * @param {MethodType} propertyKey
-      * @param {...ProviderType[]} providers
-      * @returns {TR}
-      */
-     invoke<T, TR = any>(injector: IInjector, target: Token<T> | T, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
-     /**
-      * create params instances with IParameter and provider of target type.
-      *
-      * @param { IInjector } injector
-      * @param {Type} target target type.
-      * @param {ParameterMetadata[]} params
-      * @param {...AsyncParamProvider[]} providers
-      * @returns {any[]}
-      */
-     createParams(injector: IInjector, target: Type, params: ParameterMetadata[],  ...providers: ProviderType[]): any[];
- }
- 
- /**
-  * @deprecated use `Invoker` instead.
-  */
- export type IMethodAccessor = Invoker;
-
- /**
- * root container interface.
- *
- * @export
- * @interface IContainer
+/**
+ * execution, invoke some type method.
  */
+export interface Invoker {
+    /**
+     * try to async invoke the method of intance, if no instance will create by type.
+     *
+     * @template T
+     * @param { IInjector } injector
+     * @param {(Token<T> | T)} target
+     * @param {MethodType} propertyKey
+     * @param {...ProviderType[]} providers
+     * @returns {TR}
+     */
+    invoke<T, TR = any>(injector: IInjector, target: Token<T> | T, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
+    /**
+     * create params instances with IParameter and provider of target type.
+     *
+     * @param { IInjector } injector
+     * @param {Type} target target type.
+     * @param {ParameterMetadata[]} params
+     * @param {...AsyncParamProvider[]} providers
+     * @returns {any[]}
+     */
+    createParams(injector: IInjector, target: Type, params: ParameterMetadata[], ...providers: ProviderType[]): any[];
+}
+
+/**
+ * @deprecated use `Invoker` instead.
+ */
+export type IMethodAccessor = Invoker;
+
+/**
+* root container interface.
+*
+* @export
+* @interface IContainer
+*/
 export interface IContainer extends IInjector {
     readonly id: string;
 }

@@ -1,6 +1,6 @@
 import { Type } from './types';
 import { Abstract } from './metadata/decor';
-import { FacRecord, IProvider } from './interface';
+import { FacRecord, IInjector } from './interface';
 import { Token } from './tokens';
 
 
@@ -15,40 +15,39 @@ export abstract class Strategy {
      * vaild parent.
      * @param parent parent provider.
      */
-    abstract vaildParent(parent: IProvider): boolean;
+    abstract vaildParent(parent: IInjector): boolean;
     /**
      * has token or not.
      * @param key token key.
      * @param curr current provider.
      * @param deep deep or not.
      */
-    abstract hasToken<T>(key: Token<T>, curr: IProvider, deep?: boolean): boolean;
+    abstract hasToken<T>(key: Token<T>, curr: IInjector, deep?: boolean): boolean;
     /**
      * has value
      * @param key token key.
      * @param curr current provider.
      */
-    abstract hasValue<T>(key: Token<T>, curr: IProvider): boolean;
+    abstract hasValue<T>(key: Token<T>, curr: IInjector): boolean;
     /**
      * get instance.
      * @param key token key.
      * @param curr current provider.
-     * @param providers providers
      */
-    abstract getInstance<T>(key: Token<T>, curr: IProvider, providers: IProvider): T;
+    abstract getInstance<T>(key: Token<T>, curr: IInjector): T;
     /**
      * get token provider.
      * @param key token key.
      * @param curr current provider.
      */
-    abstract getTokenProvider<T>(key: Token<T>, curr: IProvider): Type<T>;
+    abstract getTokenProvider<T>(key: Token<T>, curr: IInjector): Type<T>;
     /**
      * iterator.
      * @param callbackfn call back func.
      * @param curr current provider.
      * @param deep deep iterator or not.
      */
-    abstract iterator(callbackfn: (fac: FacRecord, key: Token, resolvor?: IProvider) => void | boolean, curr: IProvider, deep?: boolean): void | boolean;
+    abstract iterator(callbackfn: (fac: FacRecord, key: Token, resolvor?: IInjector) => void | boolean, curr: IInjector, deep?: boolean): void | boolean;
 
 }
 
@@ -57,31 +56,31 @@ export abstract class Strategy {
  * default strategy.
  */
 export class DefaultStrategy extends Strategy {
-    constructor(private vaild?: (parent: IProvider) => boolean) {
+    constructor(private vaild?: (parent: IInjector) => boolean) {
         super();
     }
 
-    vaildParent(parent: IProvider) {
+    vaildParent(parent: IInjector) {
         return this.vaild ? this.vaild(parent) : true;
     }
 
-    hasToken<T>(key: Token<T>, curr: IProvider, deep?: boolean) {
+    hasToken<T>(key: Token<T>, curr: IInjector, deep?: boolean) {
         return deep && curr.parent?.has(key);
     }
 
-    hasValue<T>(key: Token<T>, curr: IProvider) {
+    hasValue<T>(key: Token<T>, curr: IInjector) {
         return curr.parent?.hasValue(key) ?? false;
     }
 
-    getInstance<T>(key: Token<T>, curr: IProvider, providers: IProvider) {
-        return curr.parent?.get(key, providers);
+    getInstance<T>(key: Token<T>, curr: IInjector) {
+        return curr.parent?.get(key);
     }
 
-    getTokenProvider<T>(key: Token<T>, curr: IProvider) {
+    getTokenProvider<T>(key: Token<T>, curr: IInjector) {
         return curr.parent?.getTokenProvider(key);
     }
 
-    iterator(callbackfn: (fac: FacRecord, key: Token, resolvor?: IProvider) => void | boolean, curr: IProvider, deep?: boolean) {
+    iterator(callbackfn: (fac: FacRecord, key: Token, resolvor?: IInjector) => void | boolean, curr: IInjector, deep?: boolean) {
         if (deep) {
             return curr.parent?.iterator(callbackfn, deep);
         }

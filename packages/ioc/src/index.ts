@@ -3,8 +3,6 @@ export * from './tokens';
 export * from './action';
 export * from './Destroyable';
 export * from './interface';
-export * from './strategy';
-export * from './provider';
 export * from './injector';
 export * from './container';
 

@@ -1,90 +1,19 @@
 import { Registered, TypeReflect } from './metadata/type';
-import { ClassType, LoadType, Type } from './types';
-import { isArray, isFunction, isPlainObject } from './utils/chk';
+import { ClassType, Type } from './types';
+import { isFunction } from './utils/chk';
 import { Handler } from './utils/hdl';
 import { cleanObj, isBaseOf } from './utils/lang';
 import {
-    IActionProvider, IInjector, IModuleLoader, IProvider, RegisteredState,
-    ServicesOption, ProviderType, WithParent, IContainer, MethodType
+    IActionProvider, IInjector, RegisteredState, ProviderType, IContainer
 } from './interface';
 import { Token } from './tokens';
-import { CONTAINER, INVOKER, MODULE_LOADER } from './metadata/tk';
+import { CONTAINER, INVOKER } from './metadata/tk';
 import { get } from './metadata/refl';
-import { Abstract } from './metadata/decor';
 import { Action, IActionSetup } from './action';
-import { Strategy } from './strategy';
-import { Provider, resolveRecord, createProvider } from './provider';
-import { Injector } from './injector';
+import { DefaultInjector, Injector } from './injector';
 import { InvokerImpl } from './actions/invoker';
 import { DesignLifeScope } from './actions/design';
 import { RuntimeLifeScope } from './actions/runtime';
-
-/**
- * default injector implantment.
- */
-export class DefaultInjector extends Injector {
-    /**
-     * invoke method.
-     *
-     * @template T
-     * @param {(T | Type<T>)} target type of class or instance
-     * @param {MethodType} propertyKey
-     * @param {T} [instance] instance of target type.
-     * @param {...ProviderType[]} providers
-     * @returns {TR}
-     */
-    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR {
-        return this.get(INVOKER).invoke(this, target, propertyKey, ...providers);
-    }
-
-    /**
-     * get module loader.
-     *
-     * @returns {IModuleLoader}
-     */
-    getLoader(): IModuleLoader {
-        return this.get(MODULE_LOADER);
-    }
-
-    load(modules: LoadType[]): Promise<Type[]>;
-    load(...modules: LoadType[]): Promise<Type[]>;
-    async load(...args: any[]): Promise<Type[]> {
-        let modules: LoadType[];
-        if (args.length === 1 && isArray(args[0])) {
-            modules = args[0];
-        } else {
-            modules = args;
-        }
-        return await this.getLoader()?.register(this, modules) ?? [];
-    }
-
-    getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[] {
-        return this.getSvrPdr().getServices(this, target, ...providers) ?? [];
-    }
-
-    getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider {
-        return this.getSvrPdr().getServiceProviders(this, target) ?? NULL_PROVIDER;
-    }
-
-    protected getSvrPdr() {
-        return this.getContainer().get(ServicesProvider) ?? SERVICE;
-    }
-
-}
-
-/**
- * create new injector.
- * @param parent
- * @param strategy
- * @returns
- */
-export function createInjector(parent: IInjector, providers?: ProviderType[], strategy?: Strategy) {
-    const inj = new DefaultInjector(parent, strategy);
-    if (providers && providers.length) inj.inject(providers);
-    return inj;
-}
-
-export const NULL_PROVIDER = new Provider(null);
 
 
 /**
@@ -101,13 +30,13 @@ export class Container extends DefaultInjector implements IContainer {
     readonly id: string;
     private _finals = [];
 
-    constructor(strategy?: Strategy) {
-        super(null, strategy);
+    constructor(providers: ProviderType[] = []) {
+        super(providers);
         const red = { value: this };
         this.factories.set(CONTAINER, red);
         this.factories.set(Container, red);
         this._state = new RegisteredStateImpl(this);
-        this._action = new ActionProvider(this);
+        this._action = new ActionProvider([], this);
         registerCores(this);
     }
 
@@ -146,53 +75,6 @@ export class Container extends DefaultInjector implements IContainer {
 export const IocContainer = Container;
 
 
-/**
- * service provider.
- */
-@Abstract()
-export abstract class ServicesProvider {
-    /**
-     * get all service extends type.
-     *
-     * @template T
-     * @param {(Token<T> | ServicesOption<T>)} target servive token or express match token.
-     * @param {...ProviderType[]} providers
-     * @returns {T[]} all service instance type of token type.
-     */
-    abstract getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[];
-    /**
-     * get all provider service in the injector.
-     *
-     * @template T
-     * @param {(Token<T> | ServicesOption<T>)} target
-     * @returns {IProvider}
-     */
-    abstract getServiceProviders<T>(injector: IInjector, target: Token<T> | ServicesOption<T>): IProvider;
-}
-
-
-
-const SERVICE: ServicesProvider = {
-
-    getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[] {
-        const tokens = isPlainObject(target) ?
-            ((target as ServicesOption<T>).tokens ?? [(target as ServicesOption<T>).token])
-            : [target];
-        const services: T[] = [];
-        const pdr = this.toProvider(providers);
-        injector.iterator((fac, key) => {
-            if (tokens.indexOf(key)) {
-                services.push(resolveRecord(fac, pdr));
-            }
-        });
-        return services;
-    },
-    getServiceProviders<T>(injector: IInjector, target: Token<T> | ServicesOption<T>): IProvider {
-        return NULL_PROVIDER;
-    }
-};
-
-
 class RegisteredStateImpl implements RegisteredState {
 
     private states: Map<ClassType, Registered>;
@@ -221,7 +103,7 @@ class RegisteredStateImpl implements RegisteredState {
      * get injector
      * @param type
      */
-    getTypeProvider(type: ClassType): IProvider {
+    getTypeProvider(type: ClassType): IInjector {
         return this.states.get(type)?.providers;
     }
 
@@ -231,20 +113,20 @@ class RegisteredStateImpl implements RegisteredState {
         const state = this.states.get(trefl.type);
         if (state) {
             if (!state.providers) {
-                state.providers = createProvider(state.injector, providers);
+                state.providers = Injector.create(providers, state.injector as Injector);
             } else {
                 state.providers.inject(providers);
             }
         }
     }
 
-    getInstance<T>(type: ClassType<T>, providers?: IProvider): T {
+    getInstance<T>(type: ClassType<T>): T {
         const state = this.states.get(type);
-        return (state.providers?.has(type)) ? state.providers.get(type, providers) : state?.injector.get(type, providers) ?? null;
+        return (state.providers?.has(type)) ? state.providers.get(type) : state?.injector.get(type) ?? null;
     }
 
-    resolve<T>(type: ClassType<T>, ...providers: ProviderType[]): T {
-        return this.states.get(type)?.injector.resolve(type, ...providers) ?? null;
+    resolve<T>(type: ClassType<T>): T {
+        return this.states.get(type)?.injector.resolve(type) ?? null;
     }
 
     getRegistered<T extends Registered>(type: ClassType): T {
@@ -293,11 +175,9 @@ export function isContainer(target: any): target is Container {
 /**
  * action injector.
  */
-class ActionProvider extends Provider implements IActionProvider {
+class ActionProvider extends DefaultInjector implements IActionProvider {
 
     protected init(parent: Container) {
-        this._container = parent;
-        (this as WithParent).parent = null;
         parent.onFinally(() => this.destroy());
     }
 
@@ -309,11 +189,11 @@ class ActionProvider extends Provider implements IActionProvider {
      * @param {IProvider} providers
      * @returns {T}
      */
-    get<T>(key: Token<T>, providers?: IProvider): T {
-        if(isFunction(key) && !this.has(key)){
+    get<T>(key: Token<T>, notFoundValue?: T): T {
+        if (isFunction(key) && !this.has(key)) {
             this.registerAction(key as Type);
         }
-        return super.get(key, providers);
+        return super.get(key, notFoundValue);
     }
 
     regAction(...types: Type<Action>[]): this {
