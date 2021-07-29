@@ -629,19 +629,14 @@ export function resolveRecord<T>(rd: FacRecord<T>, provider?: IProvider): T {
  * @returns 
  */
 export function generateRecord<T>(injector: IProvider, option: StaticProviders): FacRecord<T> {
-    return isDefined(option.useValue) ? makeRecord(option.useValue, null, option.useClass)
-        : makeRecord(null, generateFactory(injector, option), option.useClass);
-}
-
-function makeRecord(value: any, fn: Factory, type: Type): FacRecord {
-    return { value, fn, type };
-}
-
-function generateFactory(injector: IProvider, option: StaticProviders): Factory {
-    const { provide, useClass, deps, singleton, useFactory, useExisting } = option;
-    let fac: Factory;
-    if (useFactory) {
-        fac = (pdr) => {
+    let fn: Factory;
+    let value: T;
+    let type = option.useClass;
+    if (isDefined(option.useValue)) {
+        value = option.useValue;
+    } else if (option.useFactory) {
+        const { useFactory, deps } = option;
+        fn = (pdr) => {
             let args = deps?.map(d => {
                 if (isToken(d)) {
                     return injector.resolve(d, pdr) ?? (isString(d) ? d : null);
@@ -651,15 +646,20 @@ function generateFactory(injector: IProvider, option: StaticProviders): Factory 
             }) ?? [];
             return useFactory(...args.concat(pdr));
         };
-    } else if (useExisting) {
-        fac = (pdr: IProvider) => injector.resolve(useExisting, pdr);
-    } else if (useClass) {
-        if (!injector.state().isRegistered(useClass) && !injector.has(useClass, true)) {
-            injector.register({ type: useClass, singleton, deps });
-        }
-        fac = (pdr) => injector.resolve(useClass, pdr);
-    } else {
-        fac = (pdr) => {
+    } else if (option.useExisting) {
+        const useExisting = option.useExisting;
+        fn = (pdr) => injector.resolve(useExisting, pdr);
+    } else if (option.useClass) {
+        const { deps, singleton } = option;
+        fn = (pdr) => {
+            if (!injector.state().isRegistered(type) && !injector.has(type, true)) {
+                injector.register({ type, singleton, deps });
+            }
+            return injector.get(type, pdr);
+        };
+    } else if (isFunction(option.provide)) {
+        const { provide, deps } = option;
+        fn = (pdr) => {
             let args = [];
             if (isArray(deps) && deps.length) {
                 args = deps.map(p => {
@@ -673,6 +673,5 @@ function generateFactory(injector: IProvider, option: StaticProviders): Factory 
             return new provide(...args);
         };
     }
-
-    return fac;
+    return { value, fn, type };
 }
