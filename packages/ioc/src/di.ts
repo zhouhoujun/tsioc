@@ -10,8 +10,7 @@ import { KeyValueProvider, StaticProviders } from './providers';
 import { isArray, isClass, isDefined, isFunction, isNil, isPlainObject, isString, isTypeObject, isTypeReflect } from './utils/chk';
 import { DesignContext } from './actions/ctx';
 import { DesignLifeScope } from './actions/design';
-import { DefaultStrategy, Strategy } from './strategy';
-import { ActionProvider, Container, CONTAINER_IMPL, EMPTY, Injector, INJ_IMPL, isInjector, ModuleLoader, Registered, RegisteredState } from './injector';
+import { ActionProvider, Container, CONTAINER_IMPL, EMPTY, Injector, INJ_IMPL, ModuleLoader, Registered, RegisteredState } from './injector';
 import { Action, IActionSetup } from './action';
 import { Handler } from './utils/hdl';
 import { InvokerImpl } from './actions/invoker';
@@ -21,12 +20,17 @@ import { get } from './metadata/refl';
 import { Invoker } from './invoker';
 
 
-INJ_IMPL.create = (providers: ProviderType[], parent?: Injector, strategy?: Strategy, name?: string) => new DefaultInjector(providers, parent, strategy, name);
-CONTAINER_IMPL.create = (providers: ProviderType[], parent?: Injector, strategy?: Strategy, name?: string) => new DefaultContainer(providers, parent, strategy, name);
-/**
- * injector default startegy.
- */
-export const injectorStrategy = new DefaultStrategy(p => isInjector(p));
+INJ_IMPL.create = (providers: ProviderType[], parent?: Injector, name?: string) => new DefaultInjector(providers, parent, name);
+CONTAINER_IMPL.create = (providers: ProviderType[], parent?: Injector, name?: string) => new DefaultContainer(providers, parent, name);
+
+
+export interface ExtStrategy {
+    has?(injector: Injector, token: Token): boolean;
+    hasValue?(injector: Injector, token: Token): boolean;
+    resolve?<T>(injector: Injector, token: Token<T>, records: Map<Token, FacRecord>): T;
+    getProvider?<T>(injector: Injector, token: Token<T>): Type<T>;
+    iterator?(injector: Injector, callbackfn: (fac: FacRecord, key: Token, resolvor?: Injector) => void | boolean): void | boolean
+}
 
 /**
  * provider container.
@@ -48,24 +52,21 @@ export class DefaultInjector extends Injector {
     protected destCb: () => void;
     protected _container: Container;
 
-    constructor(providers: ProviderType[], readonly parent?: Injector, readonly strategy: Strategy = injectorStrategy, readonly source?: string) {
+    constructor(providers: ProviderType[], readonly parent?: Injector, readonly source?: string, private strategy: ExtStrategy = {}) {
         super();
         this.factories = new Map();
-        parent && this.init(parent);
+        if (parent) {
+            this.destCb = () => this.destroy();
+            this.initParent(parent);
+        }
         this.setValue(INJECTOR, this);
         this.setValue(Injector, this);
         this.inject(providers);
     }
 
-    protected init(parent: Injector) {
-        this.destCb = () => this.destroy();
+    protected initParent(parent: Injector) {
         this._container = parent.getContainer();
-        if (!this.strategy || this.strategy.vaildParent(parent)) {
-            parent.onDestroy(this.destCb);
-        } else {
-            this._container.onDestroy(this.destCb);
-            (this as any).parent = null;
-        }
+        parent.onDestroy(this.destCb);
     }
 
     get size(): number {
@@ -307,11 +308,11 @@ export class DefaultInjector extends Injector {
      * @returns {boolean}
      */
     has<T>(token: Token<T>, deep?: boolean): boolean {
-        return this.factories.has(token) || this.strategy?.hasToken(token, this, deep) || false;
+        return this.factories.has(token) || this.strategy.has?.(this, token) || deep && this.parent?.has(token, deep) || false;
     }
 
     hasValue<T>(token: Token<T>): boolean {
-        return !isNil(this.factories.get(token)?.value) || this.strategy?.hasValue(token, this) || false;
+        return !isNil(this.factories.get(token)?.value) || this.strategy.hasValue?.(this, token) || this.parent?.hasValue(token) || false;
     }
 
     setValue<T>(token: Token<T>, value: T, type?: Type<T>): this {
@@ -334,9 +335,8 @@ export class DefaultInjector extends Injector {
      * @returns {T}
      */
     get<T>(key: Token<T>, notFoundValue?: T): T {
-        return resolveToken(this, this.factories.get(key)) ?? this.strategy?.getInstance(key, this) ?? notFoundValue ?? null;
+        return resolveToken(key, this.factories.get(key), this.factories, this.parent, notFoundValue, this.strategy.resolve);
     }
-
 
     /**
      * resolve instance with token and param provider via resolve scope.
@@ -361,9 +361,10 @@ export class DefaultInjector extends Injector {
         let inst: T;
         if (isPlainObject(token)) {
             let option = token as ResolveOption;
-            const injector = Injector.create([...option.providers || [], { provide: TARGET, useValue: option.target }], this);
+            const isNew = option.providers && option.providers.length || option.target;
+            const injector = isNew ? Injector.create([...option.providers || EMPTY, { provide: TARGET, useValue: option.target }], this) : this;
             inst = this.resolveStrategy(injector, option);
-            injector.destroy();
+            isNew && injector.destroy();
             cleanObj(option);
         } else {
             inst = this.get(token);
@@ -382,19 +383,12 @@ export class DefaultInjector extends Injector {
                 targetToken = isTypeObject(option.target) ? getClass(option.target) : null;
             }
         }
-        let inst: T;
         const state = this.state();
         if (targetToken) {
-            inst = this.resolveWithTarget(state, option.token, targetToken);
+            injector.inject(get(targetToken).providers);
         }
 
-        if (option.tagOnly || isDefined(inst)) return inst ?? null;
-
         return injector.get(option.token) ?? this.resolveFailed(injector, state, option.token, option.regify, option.defaultToken) ?? null;
-    }
-
-    protected resolveWithTarget<T>(state: RegisteredState, token: Token<T>, targetToken: ClassType): T {
-        return state?.getTypeProvider(targetToken)?.get(token);
     }
 
 
@@ -419,7 +413,7 @@ export class DefaultInjector extends Injector {
      */
     getTokenProvider<T>(token: Token<T>): Type<T> {
         const frd = this.factories.get(token);
-        return frd?.type ?? (frd?.value ? getClass(frd.value) : null) ?? (frd && isClass(token) ? token : null) ?? this.strategy?.getTokenProvider(token, this);
+        return frd?.type ?? (frd?.value ? getClass(frd.value) : null) ?? (frd && isClass(token) ? token : null) ?? this.strategy.getProvider?.(this, token) ?? this.parent?.getTokenProvider(token);
     }
 
     /**
@@ -444,7 +438,10 @@ export class DefaultInjector extends Injector {
         if (mapEach(this.factories, callbackfn, this) === false) {
             return false;
         }
-        return this.strategy?.iterator(callbackfn, this, deep);
+        if(this.strategy.iterator && this.strategy.iterator(this, callbackfn)=== false){
+            return false;
+        }
+        return deep && this.parent?.iterator(callbackfn, deep);
     }
 
     /**
@@ -485,7 +482,7 @@ export class DefaultInjector extends Injector {
     * @returns {TR}
     */
     invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR {
-        return this.getContainer().get(Invoker).invoke(this, target, propertyKey, ...providers);
+        return this.get(Invoker).invoke(this, target, propertyKey, ...providers);
     }
 
 
@@ -555,34 +552,43 @@ export class DefaultInjector extends Injector {
     }
 }
 
-
 /**
  * resolve token.
  * @param rd 
  * @param provider 
  * @returns 
  */
-export function resolveToken<T>(injector: Injector, rd: FacRecord<T>): T {
-    if (!rd) return null;
-    if (!isNil(rd.value)) return rd.value;
-    if (rd.expires) {
-        if ((rd.expires + rd.ltop) < Date.now()) {
-            rd.ltop = Date.now();
-            return rd.cache;
+export function resolveToken<T>(token: Token, rd: FacRecord<T>, records: Map<Token, FacRecord>, parent: Injector, notFoundValue?: any, extResolve?: (token: Token, records: Map<Token, FacRecord>) => T): T {
+    let value: T;
+    if (rd) {
+        if (!isNil(rd.value)) return rd.value;
+        if (rd.expires) {
+            if ((rd.expires + rd.ltop) < Date.now()) {
+                rd.ltop = Date.now();
+                return rd.cache;
+            }
+            rd.expires = null;
+            rd.cache = null;
+            rd.ltop = null;
         }
-        rd.expires = null;
-        rd.cache = null;
-        rd.ltop = null;
-    }
 
-    let args = rd.deps?.map(d => {
-        if (isToken(d)) {
-            return injector.get(d) ?? (isString(d) ? d : null);
-        } else {
-            return d;
+        let args = rd.deps?.map(d => {
+            if (isToken(d)) {
+                return resolveToken(d, records.get(d), records, parent, undefined, extResolve) ?? (isString(d) ? d : undefined);
+            } else {
+                return d;
+            }
+        }) ?? [];
+        value = rd.isCtor ? new (rd.fn as Type)(...args) : rd.fn(...args) ?? null;
+    } else {
+        if (extResolve) {
+            value = extResolve(token, records);
         }
-    }) ?? [];
-    return rd.isCtor ? new (rd.fn as Type)(...args) : rd.fn(...args) ?? null;
+        if (isNil(value) && parent) {
+            value = parent.get(token, notFoundValue);
+        }
+    }
+    return value;
 }
 
 const IDENT = function <T>(value: T): T {
@@ -628,7 +634,7 @@ export function generateRecord<T>(injector: Injector, option: StaticProviders): 
 function computeDeps(provider: StaticProviders) {
     let deps: any[];
     if (provider.deps && provider.deps.length) {
-        deps = provider.deps.slice(0);
+        deps = provider.deps;
     } else if (provider.useExisting) {
         deps = [provider.useExisting];
     }
@@ -664,7 +670,7 @@ const SERVICE: ServicesProvider = {
         const services: T[] = [];
         injector.iterator((fac, key) => {
             if (tokens.indexOf(key)) {
-                services.push(resolveToken(injector, fac));
+                services.push(injector.get(key));
             }
         });
         return services;
@@ -687,8 +693,8 @@ export class DefaultContainer extends DefaultInjector implements Container {
     readonly id: string;
     private _finals = [];
 
-    constructor(providers: ProviderType[] = [], parent?: Injector, strategy?: Strategy, source?: string) {
-        super(providers, parent, strategy, source);
+    constructor(providers: ProviderType[] = [], parent?: Injector, source?: string) {
+        super(providers, parent, source);
         const red = { value: this };
         this.factories.set(CONTAINER, red);
         this.factories.set(Container, red);
@@ -835,7 +841,7 @@ export function isContainer(target: any): target is Container {
  */
 class ActionProviderImpl extends DefaultInjector implements ActionProvider {
 
-    protected init(parent: Container) {
+    protected initParent(parent: Container) {
         parent.onFinally(() => this.destroy());
     }
 
@@ -896,5 +902,4 @@ export function registerCores(container: Container) {
         DesignLifeScope,
         RuntimeLifeScope
     );
-
 }

@@ -109,10 +109,6 @@ export interface ResolveOption<T = any> {
      */
     target?: Token | TypeReflect | Object | (Token | Object)[];
     /**
-     * only for target private or ref token. if has target.
-     */
-    tagOnly?: boolean;
-    /**
      * all faild use the default token to get instance.
      */
     defaultToken?: Token<T>;

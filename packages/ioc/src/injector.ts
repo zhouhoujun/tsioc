@@ -7,7 +7,6 @@ import { Token } from './tokens';
 import { Abstract } from './metadata/fac';
 import { remove } from './utils/lang';
 import { isArray } from './utils/chk';
-import { Strategy } from './strategy';
 import { Action } from './action';
 import { Handler } from './utils/hdl';
 import { TypeReflect } from './metadata/type';
@@ -307,15 +306,15 @@ export abstract class Injector implements Destroyable {
      * create injector with option.
      * @param options 
      */
-    static create(options: { providers: ProviderType[], parent?: Injector, name?: string, strategy?: Strategy }): Injector;
+    static create(options: { providers: ProviderType[], parent?: Injector, name?: string }): Injector;
     static create(
-        options: ProviderType[] | { providers: ProviderType[], parent?: Injector, name?: string, strategy?: Strategy },
+        options: ProviderType[] | { providers: ProviderType[], parent?: Injector, name?: string },
         parent?: Injector): Injector {
         if (!options) {
             options = EMPTY;
         }
         return isArray(options) ? INJ_IMPL.create(options, parent) :
-            INJ_IMPL.create(options.providers, options.parent, options.strategy, options.name);
+            INJ_IMPL.create(options.providers, options.parent, options.name);
     }
 }
 
@@ -467,7 +466,7 @@ export const EMPTY = [];
 
 
 export const INJ_IMPL = {
-    create(providers: ProviderType[], parent?: Injector, strategy?: Strategy, name?: string): Injector {
+    create(providers: ProviderType[], parent?: Injector, name?: string): Injector {
         throw new Error('not implemented.');
     }
 }
@@ -502,20 +501,20 @@ export abstract class Container extends Injector {
      * create injector with option.
      * @param options 
      */
-    static create(options: { providers: ProviderType[], parent?: Injector, name?: string, strategy?: Strategy }): Container;
+    static create(options: { providers: ProviderType[], parent?: Injector, name?: string }): Container;
     static create(
-        options?: ProviderType[] | { providers: ProviderType[], parent?: Injector, name?: string, strategy?: Strategy },
+        options?: ProviderType[] | { providers: ProviderType[], parent?: Injector, name?: string },
         parent?: Injector): Container {
         if (!options) {
             options = EMPTY;
         }
         return isArray(options) ? CONTAINER_IMPL.create(options, parent) :
-            CONTAINER_IMPL.create(options.providers, options.parent, options.strategy, options.name);
+            CONTAINER_IMPL.create(options.providers, options.parent, options.name);
     }
 }
 
 export const CONTAINER_IMPL = {
-    create(providers: ProviderType[], parent?: Injector, strategy?: Strategy, name?: string): Container {
+    create(providers: ProviderType[], parent?: Injector, name?: string): Container {
         throw new Error('not implemented.');
     }
 }

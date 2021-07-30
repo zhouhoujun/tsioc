@@ -9,7 +9,7 @@ import { ModuleStrategy } from './strategy';
 /**
  * default module injector strategy.
  */
-export const mdInjStrategy = new ModuleStrategy<ModuleInjector>(p => p instanceof ModuleInjector, cu => cu.imports);
+export const mdInjStrategy = new ModuleStrategy<ModuleInjector>(cu => cu.imports);
 
 
 /**
@@ -21,8 +21,8 @@ export class DefaultModuleInjector<T> extends ModuleInjector<T> {
     exports: IModuleExports;
     private _regIn: string;
     private _instance: T;
-    constructor(readonly reflect: ModuleReflect<T>, parent?: Injector, regIn?: string, protected _root = false, strategy: ModuleStrategy = mdInjStrategy) {
-        super(EMPTY, parent, strategy)
+    constructor(readonly reflect: ModuleReflect<T>, parent?: Injector, regIn?: string, protected _root = false, source?: string, strategy: ModuleStrategy = mdInjStrategy) {
+        super(EMPTY, parent, source, strategy)
 
         const recd = { value: this };
         this.factories.set(ModuleInjector, recd);
@@ -66,15 +66,15 @@ export class DefaultModuleInjector<T> extends ModuleInjector<T> {
 /**
  * default module provider strategy.
  */
-const mdPdrStrategy = new ModuleStrategy<IModuleExports>(p => false, cu => cu.exports);
+const mdPdrStrategy = new ModuleStrategy<IModuleExports>(cu => cu.exports);
 
 /**
  * module exports.
  */
 export class ModuleExports extends DefaultInjector implements IModuleExports {
 
-    constructor(public moduleRef: ModuleInjector, strategy = mdPdrStrategy) {
-        super(EMPTY, moduleRef, strategy);
+    constructor(public moduleRef: ModuleInjector, source?: string, strategy = mdPdrStrategy) {
+        super(EMPTY, moduleRef, source, strategy);
         this.export(moduleRef.type, true);
     }
 

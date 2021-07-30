@@ -10,7 +10,7 @@ import { DefaultServiceFactoryResolver } from './services/fac';
 
 export const DEFAULTA_FACTORYS: ProviderType[] = [
     { provide: RunnableFactoryResolver, useValue: new DefaultServiceFactoryResolver() },
-    { provide: ModuleFactory, useFactory: (type) => new DefaultModuleFactory(type), deps: [TARGET] },
+    { provide: ModuleFactory, useClass: DefaultModuleFactory, deps: [TARGET] },
     { provide: ApplicationFactory, useValue: new DefaultApplicationFactory() }
 ]
 
