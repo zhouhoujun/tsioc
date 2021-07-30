@@ -1,4 +1,4 @@
-import { Type, createInjector, refl, Destroyable, lang, IInjector } from '@tsdi/ioc';
+import { Type, refl, Destroyable, lang, Injector } from '@tsdi/ioc';
 import { ApplicationContext, BootstrapOption, Runnable, RunnableFactory, RunnableFactoryResolver, TargetRef } from '../Context';
 import { AnnotationReflect } from '../metadata/ref';
 
@@ -17,11 +17,11 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
     }
 
     create(option: BootstrapOption, context?: ApplicationContext) {
-        const injector = createInjector(option.injector, option.providers);
+        const injector = Injector.create(option.providers, option.injector);
         const targetRef = new RunnableTargetRef(this._refl, injector);
         injector.inject({ provide: TargetRef, useValue: targetRef })
         const target = targetRef.instance;
-        const runable = ((target instanceof Runnable) ? target : injector.resolve({ token: Runnable, target }, { provide: TargetRef, useValue: targetRef })) as Runnable & Destroyable;
+        const runable = ((target instanceof Runnable) ? target : injector.resolve({ token: Runnable, target, providers: [{ provide: TargetRef, useValue: targetRef }] })) as Runnable & Destroyable;
 
         if (context) {
             targetRef.onDestroy(() => {
@@ -47,13 +47,13 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
  * target ref.
  */
 export class RunnableTargetRef<T = any> extends TargetRef<T>  {
-    constructor(readonly reflect: AnnotationReflect<T>, readonly injector: IInjector, private _instance?: T) {
+    constructor(readonly reflect: AnnotationReflect<T>, readonly injector: Injector, private _instance?: T) {
         super();
     }
 
     get instance(): T {
         if (!this._instance) {
-            this._instance = this.injector.resolve({ token: this.type, regify: true }, { provide: TargetRef, useValue: this });
+            this._instance = this.injector.resolve({ token: this.type, regify: true, providers: [{ provide: TargetRef, useValue: this }] });
         }
         return this._instance;
     }

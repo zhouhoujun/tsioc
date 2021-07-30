@@ -1,6 +1,6 @@
 import {
-    Abstract, AsyncHandler, DecorDefine, lang, ParameterMetadata, ProviderType, Type, TypeReflect, IInjector, tokenId,
-    isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, isPlainObject, RegisteredState
+    Abstract, AsyncHandler, DecorDefine, lang, ParameterMetadata, ProviderType, Type, TypeReflect, Injector, tokenId,
+    isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, isPlainObject, RegisteredState, EMPTY
 } from '@tsdi/ioc';
 import { CONTEXT, TYPE_PARSER } from '../metadata/tk';
 import { MessageContext } from './ctx';
@@ -77,7 +77,7 @@ export const REQUEST_BODY = tokenId('REQUEST_BODY');
  */
 export class MappingRoute extends Route {
 
-    constructor(url: string, prefix: string, protected reflect: MappingReflect, protected injector: IInjector, protected middlewares: MiddlewareType[]) {
+    constructor(url: string, prefix: string, protected reflect: MappingReflect, protected injector: Injector, protected middlewares: MiddlewareType[]) {
         super(url, prefix);
     }
 
@@ -103,9 +103,8 @@ export class MappingRoute extends Route {
             if (!ctrl) {
                 return;
             }
-            const providers = await this.createProvider(ctx, ctrl, meta.metadata, this.reflect.methodParams.get(meta.propertyKey));
 
-            let result = injector.invoke(ctrl, meta.propertyKey, ctx.providers, ...providers);
+            let result = injector.invoke(ctrl, meta.propertyKey);
             if (isPromise(result)) {
                 result = await result;
             }
@@ -132,8 +131,10 @@ export class MappingRoute extends Route {
     }
 
     protected getInstance(ctx: MessageContext) {
-        return this.injector.resolve(this.reflect.type, ctx.providers, { provide: CONTEXT, useValue: ctx })
-            ?? this.injector.state().resolve(this.reflect.type, ctx.providers, { provide: CONTEXT, useValue: ctx });
+        const token = this.reflect.type;
+        const providers = [{ provide: CONTEXT, useValue: ctx }];
+        return this.injector.resolve({ token, providers })
+            ?? this.injector.state().resolve(token, providers);
     }
 
     protected getRouteMiddleware(ctx: MessageContext, meta: DecorDefine) {

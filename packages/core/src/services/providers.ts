@@ -1,6 +1,6 @@
 import {
-    IInjector, Token, ProviderType, isArray, IContainer,
-    ServicesOption, isPlainObject, lang, ServicesProvider, TARGET, resolveToken, isFunction
+    Injector, Token, ProviderType, isArray, Container,
+    ServicesOption, isPlainObject, lang, ServicesProvider, TARGET, isFunction
 } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from '../resolves/context';
 import { ResolveServicesScope } from '../resolves/actions';
@@ -13,7 +13,7 @@ export class Services implements ServicesProvider {
     static ρNPT = true;
     private servicesScope: ResolveServicesScope;
 
-    constructor(private readonly container: IContainer) { }
+    constructor(private readonly container: Container) { }
 
     /**
      * get all service extends type.
@@ -23,53 +23,38 @@ export class Services implements ServicesProvider {
      * @param {...ProviderType[]} providers
      * @returns {T[]} all service instance type of token type.
      */
-    getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[] {
-        const maps = this.getServiceProviders(injector, target);
-        const services = [];
-        if (!maps.size) return services;
+    getServices<T>(injector: Injector, target: Token<T> | ServicesOption<T>): T[] {
 
+        let providers: ProviderType[];
         if (isPlainObject(target)) {
+            providers = (target as ServicesOption<T>).providers || [];
             if ((target as ServicesOption<T>).target) {
                 providers.push({ provide: TARGET, useValue: (target as ServicesOption<T>).target });
             }
-            providers.unshift(...(target as ServicesOption<T>).providers || []);
         }
-        const pdr = injector.toProvider(providers, true);
-
-        maps.iterator(p => {
-            services.push(resolveToken(p, pdr));
-        });
-        return services;
-    }
-
-    /**
-     * get service providers.
-     *
-     * @template T
-     * @param {IInjector} injector
-     * @param {Token<T> | ServicesOption<T>} target
-     * @returns {IProvider}
-     */
-    getServiceProviders<T>(injector: IInjector, target: Token<T> | ServicesOption<T>): IProvider {
         let context = {
             injector: injector,
             ...isPlainObject(target) ? target : { token: target },
-            providers: null,
         } as ServicesContext;
 
         this.initTargetRef(context);
         if (!this.servicesScope) {
             this.servicesScope = this.container.action().get(ResolveServicesScope);
         }
+
+        const services = [];
         this.servicesScope.execute(context);
-        const services = context.services;
+        context.services.forEach(fn => {
+            services.push(fn(providers));
+        });
+        context.services.clear();
         // clean obj.
         lang.cleanObj(context);
         return services;
     }
 
     private initTargetRef(ctx: ServiceContext) {
-        let targets = (isArray(ctx.target) ? ctx.target : [ctx.target]).filter(t => t).map(tr=> isFunction(tr) ? tr : lang.getClass(tr));
+        let targets = (isArray(ctx.target) ? ctx.target : [ctx.target]).filter(t => t).map(tr => isFunction(tr) ? tr : lang.getClass(tr));
         if (targets.length) {
             ctx.targetRefs = targets;
         }

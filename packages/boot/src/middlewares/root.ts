@@ -1,4 +1,4 @@
-import { Autorun, createProvider, isArray, lang, Singleton, Token, tokenId } from '@tsdi/ioc';
+import { Autorun, Injector, lang, Singleton, Token, tokenId } from '@tsdi/ioc';
 import { ApplicationContext } from '../Context';
 import { MessageContext } from './ctx';
 import { MessageQueue } from './queue';
@@ -34,11 +34,11 @@ export class RootMessageQueue extends MessageQueue {
 
 
 function getValue<T>(this: MessageContext, token: Token<T>): T {
-    return this.providers.get(token);
+    return this.injector.get(token);
 }
 
 function setValue(this: MessageContext, token: Token, value: any): void {
-    this.providers.setValue(token, value);
+    this.injector.setValue(token, value);
 }
 
 const protocolReg = /^\w+:\/\//;
@@ -48,16 +48,15 @@ const protocolReg = /^\w+:\/\//;
  * @param next 
  */
 export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) => {
+    const isNewInj = ctx.request.providers && ctx.request.providers.length;
+    if (isNewInj) {
+        ctx.injector = Injector.create(ctx.request.providers, ctx.injector);
+    }
     const { injector, request } = ctx;
     ctx.vaild = injector.get(RouteVaildator);
-    const providers = createProvider(injector);
 
     if (!ctx.vaild) {
         ctx.vaild = ctx.injector.get(RouteVaildator);
-    }
-
-    if (request.providers) {
-        providers.inject(isArray(request.providers) ? request.providers : [request.providers]);
     }
 
     if (request.restful) {
@@ -87,10 +86,6 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
         },
         protocol: {
             get: () => request.protocol,
-            enumerable: false
-        },
-        providers: {
-            get: () => providers,
             enumerable: false
         },
         event: {
@@ -127,6 +122,7 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
         throw err;
     } finally {
         logger?.debug(ctx.method, ctx.url, `- ${Date.now() - start}ms`);
+        if (isNewInj) ctx.injector.destroy();
         // console.debug(ctx.method, ctx.url, `- ${Date.now() - start}ms`);
     }
 };

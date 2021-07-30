@@ -1,4 +1,4 @@
-import { IInjector, IProvider, ObjectMap, ProviderType, Token } from '@tsdi/ioc';
+import { Injector, ObjectMap, ProviderType, Token } from '@tsdi/ioc';
 
 /**
  * Request
@@ -88,12 +88,7 @@ export interface MessageContext {
     /**
      * injector of message queue.
      */
-    injector?: IInjector;
-
-    /**
-     * the context providers.
-     */
-    readonly providers?: IProvider;
+    injector?: Injector;
 
     /**
      * route vaildator.

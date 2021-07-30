@@ -1,4 +1,4 @@
-import { Inject, CONTAINER, IContainer, isUndefined, Singleton, isString, isMetadataObject, isPlainObject, lang } from '@tsdi/ioc';
+import { Inject, isUndefined, Singleton, isString, isMetadataObject, isPlainObject, lang, Injector, ROOT_INJECTOR } from '@tsdi/ioc';
 import { Configuration, IConfigureManager, IConfigureMerger } from './config';
 import { CONFIG_MANAGER, CONFIG_LOADER, DEFAULT_CONFIG, CONFIG_MERGER, PROCESS_ROOT } from '../metadata/tk';
 
@@ -12,7 +12,7 @@ import { CONFIG_MANAGER, CONFIG_LOADER, DEFAULT_CONFIG, CONFIG_MERGER, PROCESS_R
 @Singleton(CONFIG_MANAGER)
 export class ConfigureManager<T extends Configuration = Configuration> implements IConfigureManager<T> {
 
-    @Inject(CONTAINER) container: IContainer;
+    @Inject(ROOT_INJECTOR) injector: Injector;
     private config: T;
     protected configs: (string | T)[];
 
@@ -71,7 +71,7 @@ export class ConfigureManager<T extends Configuration = Configuration> implement
                 return cfg;
             }
         }));
-        const merger = this.container.get(CONFIG_MERGER);
+        const merger = this.injector.get(CONFIG_MERGER);
         exts.forEach(exCfg => {
             if (exCfg) {
                 exCfg = isMetadataObject(exCfg['default']) ? exCfg['default'] : exCfg;
@@ -89,11 +89,11 @@ export class ConfigureManager<T extends Configuration = Configuration> implement
      * @returns {Promise<T>}
      */
     protected async loadConfig(src: string): Promise<T> {
-        if (this.container.has(CONFIG_LOADER)) {
-            let loader = this.container.resolve(CONFIG_LOADER, { provide: 'baseURL', useValue: this.baseURL }, { provide: 'container', useValue: this.container });
+        if (this.injector.has(CONFIG_LOADER)) {
+            let loader = this.injector.get(CONFIG_LOADER);
             return await loader.load(src) as T;
         } else if (src) {
-            let cfg = await this.container.getLoader().load([src])
+            let cfg = await this.injector.getLoader().load([src])
             return cfg.length ? cfg[0] as Configuration as T : null;
         } else {
             return null;
@@ -107,8 +107,8 @@ export class ConfigureManager<T extends Configuration = Configuration> implement
      * @returns {Promise<T>}
      */
     protected async getDefaultConfig(): Promise<T> {
-        if (this.container.has(DEFAULT_CONFIG)) {
-            return this.container.resolve(DEFAULT_CONFIG) as T;
+        if (this.injector.has(DEFAULT_CONFIG)) {
+            return this.injector.resolve(DEFAULT_CONFIG) as T;
         } else {
             return {} as T;
         }

@@ -7,7 +7,7 @@ import { DesignContext, RuntimeContext } from './ctx';
 import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
-import { FacRecord, IInjector } from '../interface';
+import { FacRecord } from '../interface';
 import { PropertyMetadata } from '../metadata/meta';
 import { ROOT_INJECTOR } from '../metadata/tk';
 import { Injector } from '../injector';
@@ -48,14 +48,14 @@ export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): 
     next();
 };
 
-function genReged(injector: IInjector, provide?: Token) {
+function genReged(injector: Injector, provide?: Token) {
     return {
         provides: provide ? [provide] : [],
         injector
     }
 }
 
-function regInstf(injector: IInjector, type: Type, provide: Token, singleton: boolean) {
+function regInstf(injector: Injector, type: Type, provide: Token, singleton: boolean) {
     const insf = {
         type,
         fn: () => {

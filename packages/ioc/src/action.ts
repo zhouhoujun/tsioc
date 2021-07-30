@@ -1,8 +1,8 @@
+import { ActionProvider } from './injector';
 import { Token } from './tokens';
 import { isBoolean, isFunction } from './utils/chk';
 import { chain, Handler } from './utils/hdl';
 import { isBaseOf } from './utils/lang';
-import { IActionProvider } from './interface';
 
 /**
  * action interface.
@@ -193,14 +193,14 @@ export abstract class Actions<T, TA = ActionType, TH extends Handler = Handler<T
      * get action provider from context.
      * @param ctx the action context.
      */
-    protected abstract getActionProvider(ctx: T): IActionProvider;
+    protected abstract getActionProvider(ctx: T): ActionProvider;
 
     /**
      * parse action to handler.
      * @param provider action provider
      * @param ac action.
      */
-    protected parseHandler(provider: IActionProvider, ac: any): TH {
+    protected parseHandler(provider: ActionProvider, ac: any): TH {
         if (isBaseOf(ac, Action)) {
             if (!provider.has(ac)) {
                 provider.regAction(ac);

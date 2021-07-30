@@ -1,4 +1,4 @@
-import { IActionSetup, lang, refl, isFunction, IocActions } from '@tsdi/ioc';
+import { IActionSetup, lang, refl, isFunction, IocActions, Injector, ClassType, ProviderType } from '@tsdi/ioc';
 import { ServicesContext } from './context';
 
 /**
@@ -29,9 +29,9 @@ export class ResolveServicesScope extends IocActions implements IActionSetup {
         // after all.
         if (ctx.services.size < 1) {
             if (ctx.defaultToken) {
-                const key = ctx.defaultToken;
-                if (injector.has(key, true)) {
-                    ctx.services.set(key, injector.get(key));
+                const token = ctx.defaultToken as ClassType;
+                if (injector.has(token, true)) {
+                    ctx.services.set(token, (providers: ProviderType[]) => injector.resolve({ token, providers }));
                 }
             }
         }
@@ -48,14 +48,14 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
     if (ctx.targetRefs && ctx.targetRefs.length) {
         const { injector, services, types, match } = ctx;
         const state = injector.state();
-        let maps: IProvider, type;
+        let maps: Injector, type;
         ctx.targetRefs.forEach(tk => {
             maps = state.getTypeProvider(tk);
             if (maps && maps.size) {
-                maps.iterator((pdr, t1) => {
-                    type = pdr.type || t1;
+                maps.iterator((pdr, token) => {
+                    type = pdr.type || token;
                     if (isFunction(type) && !services.has(type) && types.some(ty => match(type, ty))) {
-                        services.set(type, pdr);
+                        services.set(type, (providers: ProviderType[]) => maps.resolve({ token, providers }));
                     }
                 });
             }
@@ -68,12 +68,12 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
 
 
 export const RsvServicesAction = function (ctx: ServicesContext, next: () => void): void {
-    const { services, types, match } = ctx;
+    const { injector, services, types, match } = ctx;
     let type;
-    ctx.injector.iterator((pdr, tk) => {
-        type = pdr.type || tk;
+    injector.iterator((pdr, token) => {
+        type = pdr.type || token;
         if (isFunction(type) && !services.has(type) && types.some(ty => match(type, ty))) {
-            services.set(type, pdr);
+            services.set(type, (providers: ProviderType[]) => injector.resolve({ token, providers }));
         }
     }, true);
 

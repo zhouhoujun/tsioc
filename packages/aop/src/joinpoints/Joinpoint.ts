@@ -1,6 +1,6 @@
 import {
-    Type, MethodMetadata, ClassMetadata, IProvider, tokenId, Token,
-    isNil, IocContext, IInjector, ParameterMetadata
+    Type, MethodMetadata, ClassMetadata, tokenId,
+    IocContext, Injector, ParameterMetadata, ProviderType
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advices } from '../advices/Advices';
@@ -21,7 +21,7 @@ export interface JoinpointOption {
     annotations?: (ClassMetadata | MethodMetadata)[];
     target?: any;
     targetType: Type;
-    providers?: IProvider;
+    providers?: ProviderType[];
 }
 
 
@@ -111,13 +111,13 @@ export class Joinpoint implements IocContext {
      * @type {any[]}
      */
     get annotations(): any[] {
-        return this.routeValue(AOP_METHOD_ANNOTATIONS);
+        return this.injector.get(AOP_METHOD_ANNOTATIONS);
     }
     /**
      * set annotations.
      */
     set annotations(meta: any[]) {
-        this.providers.setValue(AOP_METHOD_ANNOTATIONS, meta);
+        this.injector.setValue(AOP_METHOD_ANNOTATIONS, meta);
     }
 
     invokeHandle: (joinPoint: Joinpoint, advicer: Advicer) => any;
@@ -136,52 +136,23 @@ export class Joinpoint implements IocContext {
      */
     targetType: Type;
 
-    private pdr: IProvider;
-    set providers(pdr: IProvider) {
-        this.pdr.inject(pdr);
-        // reset
-        this.pdr.inject({ provide: Joinpoint, useValue: this });
-    }
-    get providers(): IProvider {
-        return this.pdr;
+
+    constructor(public injector: Injector) {
     }
 
-
-    constructor(public injector: IInjector) {
-        this.pdr = injector.toProvider([{ provide: Joinpoint, useValue: this }], true);
-    }
-
-    routeValue<T>(token: Token<T>): T {
-        let value: T;
-        let currj: Joinpoint = this;
-        while (isNil(value) && currj) {
-            value = currj.providers?.get(token);
-            currj = currj.provJoinpoint;
-        }
-        return value;
-    }
-
-    getProvProviders(): IProvider[] {
-        const pdrs: IProvider[] = [];
-        let currj: Joinpoint = this.provJoinpoint;
-        while (currj) {
-            if (currj.providers && currj.providers.size) {
-                pdrs.push(currj.providers);
-            }
-            currj = currj.provJoinpoint;
-        }
-        return pdrs;
-    }
 
     /**
      * create resolve context via options.
      *
      * @static
-     * @param {IInjector} injector
+     * @param {Injector} injector
      * @param {ResolveActionOption} options
      * @returns {ResolveActionContext}
      */
-    static parse<T>(injector: IInjector, options: JoinpointOption): Joinpoint {
+    static parse<T>(injector: Injector, options: JoinpointOption): Joinpoint {
+        if(options.providers && options.providers.length){
+            injector = Injector.create(options.providers, injector);
+        }
         return Object.assign(new Joinpoint(injector), options);
     }
 }

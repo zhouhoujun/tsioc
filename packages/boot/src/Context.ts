@@ -1,6 +1,6 @@
 import {
-    IProvider, ProviderType, RegInMetadata, LoadType, IInjector, Abstract,
-    Token, Type, IModuleLoader, Registered, DefaultInjector, Destroyable, Modules
+    ProviderType, RegInMetadata, LoadType, Injector, Abstract,
+    Token, Type, ModuleLoader, Registered, DefaultInjector, Destroyable, Modules
 } from '@tsdi/ioc';
 import { ILoggerManager } from '@tsdi/logs';
 import { Configuration, IConfigureManager } from './configure/config';
@@ -18,7 +18,7 @@ export interface BootstrapOption {
     /**
      * injector
      */
-    injector?: IInjector;
+    injector?: Injector;
     /**
      * providers.
      */
@@ -77,10 +77,10 @@ export abstract class TargetRef<T = any> implements Destroyable {
      *
      * @readonly
      * @abstract
-     * @type {IInjector}
+     * @type {Injector}
      * @memberof TargetRef
      */
-    abstract get injector(): IInjector;
+    abstract get injector(): Injector;
 
     /**
      * instance of target
@@ -153,7 +153,7 @@ export abstract class RunnableFactoryResolver {
 /**
  * module exports provider.
  */
- export interface IModuleExports extends IProvider {
+ export interface IModuleExports extends Injector {
     /**
      * export moduleRefs.
      */
@@ -228,7 +228,7 @@ export interface ModuleOption<T = any> extends RegInMetadata {
     /**
      * injector.
      */
-    injector?: IInjector;
+    injector?: Injector;
 
     /**
      *  providers.
@@ -246,7 +246,7 @@ export interface ModuleOption<T = any> extends RegInMetadata {
 @Abstract()
 export abstract class ModuleFactory<T = any> {
     abstract get moduleType(): Type<T>;
-    abstract create(parent: IInjector, option?: ModuleOption): ModuleInjector<T>;
+    abstract create(parent: Injector, option?: ModuleOption): ModuleInjector<T>;
 }
 
 @Abstract()
@@ -380,9 +380,9 @@ export interface ApplicationOption<T = any> extends ModuleOption<T> {
     /**
      * module loader
      *
-     * @type {IModuleLoader}
+     * @type {ModuleLoader}
      */
-    loader?: IModuleLoader;
+    loader?: ModuleLoader;
     /**
      * custom configures
      *

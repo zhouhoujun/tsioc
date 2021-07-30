@@ -1,4 +1,4 @@
-import { IProvider, isNil, FacRecord, Strategy, Token } from '@tsdi/ioc';
+import { isNil, FacRecord, Strategy, Token, Injector } from '@tsdi/ioc';
 import { ModuleInjector } from '../Context';
 
 
@@ -7,13 +7,13 @@ import { ModuleInjector } from '../Context';
 /**
  * module injector strategy.
  */
- export class ModuleStrategy<TI extends IProvider = IProvider> extends Strategy {
+ export class ModuleStrategy<TI extends Injector = Injector> extends Strategy {
 
-    constructor(private vaild: (parent: IProvider) => boolean, private getMDRef: (curr: TI) => ModuleInjector[]) {
+    constructor(private vaild: (parent: TI) => boolean, private getMDRef: (curr: TI) => ModuleInjector[]) {
         super();
     }
 
-    vaildParent(parent: IProvider) {
+    vaildParent(parent: TI) {
         return this.vaild(parent);
     }
 
@@ -25,13 +25,13 @@ import { ModuleInjector } from '../Context';
         return this.getMDRef(curr).some(r => r.exports.hasValue(key)) || curr.parent?.hasValue(key);
     }
 
-    getInstance<T>(key: Token<T>, curr: TI, provider: IProvider) {
+    getInstance<T>(key: Token<T>, curr: TI) {
         let inst: T;
         if (this.getMDRef(curr).some(e => {
-            inst = e.exports.get(key, provider);
+            inst = e.exports.get(key);
             return !isNil(inst);
         })) return inst;
-        return curr.parent?.get(key, provider);
+        return curr.parent?.get(key);
     }
 
     getTokenProvider<T>(key: Token<T>, curr: TI) {

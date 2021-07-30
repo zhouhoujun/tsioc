@@ -1,4 +1,4 @@
-import { IModuleLoader, IContainer, isFunction, Type } from '@tsdi/ioc';
+import { ModuleLoader, Container, isFunction, Type } from '@tsdi/ioc';
 import { ContainerBuilder } from '@tsdi/core';
 import { IBootApplication } from './IBootApplication';
 import { APPLICATION } from './metadata/tk';
@@ -19,7 +19,7 @@ export class BootApplication implements IBootApplication {
 
     private _destroyed = false;
     private _dsryCbs: (() => void)[] = [];
-    protected container: IContainer;
+    protected container: Container;
     private _newCt: boolean;
     readonly root: ModuleInjector;
     /**
@@ -30,7 +30,7 @@ export class BootApplication implements IBootApplication {
      */
     protected context: ApplicationContext;
 
-    constructor(protected target?: Type | ApplicationOption, protected loader?: IModuleLoader) {
+    constructor(protected target?: Type | ApplicationOption, protected loader?: ModuleLoader) {
         if (!isFunction(target)) {
             if (!this.loader) this.loader = target.loader;
             const parent = target.injector ?? this.createContainer();
@@ -122,7 +122,7 @@ export class BootApplication implements IBootApplication {
     }
 
 
-    getContainer(): IContainer {
+    getContainer(): Container {
         return this.container;
     }
 

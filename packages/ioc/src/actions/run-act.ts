@@ -1,11 +1,12 @@
 import { isNil } from '../utils/chk';
 import { chain } from '../utils/hdl';
-import { INVOKER } from '../metadata/tk'
 import { IActionSetup } from '../action';
 import { RuntimeContext } from './ctx';
 import { IocRegAction, IocRegScope } from './reg';
 import { Token } from '../tokens';
 import { PropertyMetadata } from '../metadata/meta';
+import { EMPTY } from '../injector';
+import { Invoker } from '../invoker';
 
 /**
  * ioc runtime register action.
@@ -23,7 +24,8 @@ export abstract class IocRuntimeAction extends IocRegAction<RuntimeContext> { }
  */
 export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): void {
     if (!ctx.args) {
-        ctx.args = ctx.injector.get(INVOKER).createParams(ctx.injector, ctx.type, 'constructor');
+        ctx.params = ctx.reflect.methodParams.get('constructor') ?? EMPTY;
+        ctx.args = ctx.injector.getContainer().get(Invoker).createParams(ctx.injector, ctx.type, 'constructor');
     }
     next();
 };

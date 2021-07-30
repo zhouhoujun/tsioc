@@ -1,12 +1,9 @@
 import { DesignContext, RuntimeContext } from '../actions/ctx';
-import { IInjector, ProviderType } from '../interface';
+import { ProviderType } from '../interface';
 import { Token } from '../tokens';
 import { ClassType } from '../types';
 import { Handler } from '../utils/hdl';
-import {
-    ParameterMetadata, PatternMetadata, PropertyMetadata,
-    ProvidersMetadata, RegInMetadata, TypeMetadata
-} from './meta';
+import { ParameterMetadata, PatternMetadata, PropertyMetadata, ProvidersMetadata, RegInMetadata, TypeMetadata } from './meta';
 import { TypeDefine } from './typedef';
 
 /**
@@ -30,24 +27,6 @@ export type DecoratorType = 'class' | DecorMemberType;
 export type DecoratorScope = 'beforeAnnoation' | DecoratorType
     | 'beforeConstructor' | 'afterConstructor' | 'annoation' | 'afterAnnoation';
 
-
-/**
- * registered.
- */
-export interface Registered {
-    /**
-     * provides.
-     */
-    readonly provides: Token[];
-    /**
-     * injector.
-     */
-    injector: IInjector;
-    /**
-     * type private providers.
-     */
-    providers?: IInjector;
-}
 
 /**
  * decorator define.

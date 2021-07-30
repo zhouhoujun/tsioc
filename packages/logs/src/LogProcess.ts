@@ -38,7 +38,7 @@ export abstract class LogProcess {
     }
 
     protected getLoggerManager(): ILoggerManager {
-        return this.injector.resolve(ConfigureLoggerManager, { provide: 'config', useValue: this.config });
+        return this.injector.resolve({ token: ConfigureLoggerManager, providers: [{ provide: 'config', useValue: this.config }] });
     }
 
     protected getLogger(): ILogger {

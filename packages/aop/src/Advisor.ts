@@ -1,4 +1,4 @@
-import { Type, ProviderType, IContainer } from '@tsdi/ioc';
+import { Type, ProviderType, Container } from '@tsdi/ioc';
 import { Advices } from './advices/Advices';
 import { IAdvisor } from './IAdvisor';
 
@@ -18,7 +18,7 @@ export class Advisor implements IAdvisor {
 
     aspects: Type[];
 
-    constructor(private readonly container: IContainer) {
+    constructor(private readonly container: Container) {
         this.advices = new Map();
         this.aspects = [];
     }
@@ -66,7 +66,7 @@ export class Advisor implements IAdvisor {
      * add aspect.
      *
      * @param {Type} aspect
-     * @param {IContainer} raiseContainer
+     * @param {Container} raiseContainer
      */
     add(aspect: Type) {
         this.aspects.push(aspect);
@@ -81,6 +81,6 @@ export class Advisor implements IAdvisor {
      * @returns {T}
      */
     resolve<T>(aspect: Type<T>, ...providers: ProviderType[]): T {
-        return this.container.state().resolve(aspect, ...providers);
+        return this.container.state().resolve(aspect, providers);
     }
 }
