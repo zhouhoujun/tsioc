@@ -1,4 +1,4 @@
-import { Abstract, Inject, CONTAINER, Injectable, IContainer} from '../src';
+import { Abstract, Inject, CONTAINER, Injectable, Container} from '../src';
 
 @Injectable()
 export class Home {
@@ -13,8 +13,8 @@ export abstract class Animal {
     @Inject()
     home: Home;
 
-    @Inject(CONTAINER)
-    container: IContainer;
+    @Inject()
+    container: Container;
 
     back() {
         return 'back ' + this.home.getAddress();

@@ -1,4 +1,4 @@
-import { IContainer } from '@tsdi/ioc';
+import { Container, getToken } from '@tsdi/ioc';
 import { ContainerBuilder } from '@tsdi/core';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, Student, InjCollegeClassRoom, InjMClassRoom, StringIdTest, SymbolIdest } from './debug';
 import { ServerModule } from '../src/ServerModule';
@@ -6,7 +6,7 @@ import expect = require('expect');
 
 describe('auto register with build', () => {
 
-    let container: IContainer;
+    let container: Container;
     before(async () => {
         let builder = new ContainerBuilder();
         container = builder.create();
@@ -72,7 +72,7 @@ describe('auto register with build', () => {
         expect(instance.join instanceof Date).toBeTruthy();
         expect(instance.sayHi()).toEqual('I am a middle school student');
 
-        let instance2 = container.get(Student, 'college');
+        let instance2 = container.get(getToken(Student, 'college'));
         // console.log(instance2);
         expect(instance2).toBeDefined();
         expect(instance2.join instanceof Date).toBeTruthy();

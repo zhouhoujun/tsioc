@@ -1,4 +1,4 @@
-import { Abstract, Inject, Injectable, CONTAINER, IContainer  } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, CONTAINER, Container  } from '@tsdi/ioc';
 
 
 @Injectable()
@@ -15,7 +15,7 @@ export abstract class Animal {
     home: Home;
 
     @Inject(CONTAINER)
-    container: IContainer;
+    container: Container;
 
     back() {
         return 'back ' + this.home.getAddress();

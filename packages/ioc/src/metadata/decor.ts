@@ -263,7 +263,7 @@ export const ProviderIn: IProviderInDecorator = createDecorator<ProviderInMetada
         afterAnnoation: (ctx, next) => {
             let meta = ctx.reflect.class.getMetadata<ProviderInMetadata>(ctx.currDecor);
             const type = ctx.type;
-            ctx.injector.state().setTypeProvider(meta.target, { provide: meta.provide || type, useClass: type })
+            ctx.injector.state().setTypeProvider(meta.target, [{ provide: meta.provide || type, useClass: type }])
             return next();
         }
     }

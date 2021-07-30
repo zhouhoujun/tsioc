@@ -78,6 +78,11 @@ export class ModuleExports extends DefaultInjector implements IModuleExports {
         this.export(moduleRef.type, true);
     }
 
+    protected initParent(parnet: ModuleInjector) {
+        this._container = parnet.getContainer();
+        (this as any).parent = this._container;
+    }
+
     /**
      * module injector.
      */

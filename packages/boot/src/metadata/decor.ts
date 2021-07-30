@@ -326,7 +326,6 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
                 } else if (!(queue instanceof Router)) {
                     throw new Error(lang.getClassName(queue) + 'is not message router!');
                 }
-                !queue && console.log(type, injector);
                 const prefix = (queue as Router).getPath();
                 reflect.route_url = route;
                 reflect.route_prefix = prefix;
@@ -343,7 +342,7 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
                         exts.push({ provide: ROUTE_PROTOCOL, useValue: protocol });
                     }
                     if (exts.length) {
-                        state.setTypeProvider(reflect, ...exts);
+                        state.setTypeProvider(reflect, exts);
                     }
                     middl = type;
                 } else {

@@ -1,4 +1,4 @@
-import { CONTAINER, IContainer, AutoWired, Injectable, Param, Singleton, Inject, Abstract } from '@tsdi/ioc';
+import { CONTAINER, Container, AutoWired, Injectable, Param, Singleton, Inject, Abstract } from '@tsdi/ioc';
 
 export class SimppleAutoWried {
     constructor() {
@@ -33,7 +33,7 @@ export class ClassRoom {
 @Abstract()
 export abstract class Student {
     @Inject(CONTAINER)
-    container: IContainer;
+    container: Container;
     @Inject(Date)
     join: any;
     constructor() {
@@ -163,7 +163,7 @@ export class SymbolIdest {
     public room: IClassRoom
 
     @Inject(CONTAINER)
-    public container: IContainer
+    public container: Container
     constructor(@Inject('StringClassRoom')
     public room2: IClassRoom) {
 

@@ -2,11 +2,11 @@ import { ContainerBuilder } from '../src';
 import * as debuModules from './debug';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, Student, InjCollegeClassRoom, InjMClassRoom, StringIdTest, SymbolIdest } from './debug';
 import expect = require('expect');
-import { getToken, IContainer } from '@tsdi/ioc';
+import { getToken, Container } from '@tsdi/ioc';
 
 describe('auto register with build', () => {
 
-    let container: IContainer;
+    let container: Container;
     before(async () => {
         let builder = new ContainerBuilder();
         container = await builder.build(debuModules);

@@ -68,10 +68,11 @@ export abstract class Injector implements Destroyable {
      *
      * @template T
      * @param {Token<T>} key
+     * @param {Injector} provider origin raise provider
      * @param {T} notFoundValue
      * @returns {T}
      */
-    abstract get<T>(key: Token<T>, notFoundValue?: T): T;
+    abstract get<T>(key: Token<T>, provider?: Injector, notFoundValue?: T): T;
     /**
      * resolve token instance with token and param provider.
      *
@@ -427,7 +428,7 @@ export abstract class RegisteredState {
      * @param type
      * @param providers
      */
-    abstract setTypeProvider(type: ClassType | TypeReflect, ...providers: ProviderType[]);
+    abstract setTypeProvider(type: ClassType | TypeReflect, providers: ProviderType[]);
     /**
      * get instance.
      * @param type class type.

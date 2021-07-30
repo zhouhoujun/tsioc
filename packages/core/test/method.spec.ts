@@ -1,4 +1,4 @@
-import { Inject, AutoWired, Injectable, IContainer, Singleton, ParameterMetadata, Param, isFunction, refl } from '@tsdi/ioc';
+import { Inject, AutoWired, Injectable, Container, Singleton, ParameterMetadata, Param, isFunction, refl } from '@tsdi/ioc';
 import { ContainerBuilder } from '../src';
 import expect = require('expect');
 // import { AnnotationAspect } from './aop/AnnotationAspect';
@@ -70,7 +70,7 @@ describe('method exec test', () => {
         }
     }
 
-    let container: IContainer;
+    let container: Container;
     beforeEach(() => {
         let builder = new ContainerBuilder();
         container = builder.create();

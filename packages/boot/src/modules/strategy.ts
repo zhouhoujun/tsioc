@@ -7,7 +7,7 @@ import { ModuleInjector } from '../Context';
 /**
  * module injector strategy.
  */
- export class ModuleStrategy<TI extends Injector = Injector> implements ExtStrategy {
+export class ModuleStrategy<TI extends Injector = Injector> implements ExtStrategy {
 
     constructor(private getMDRef: (curr: TI) => ModuleInjector[]) {
     }
@@ -22,12 +22,14 @@ import { ModuleInjector } from '../Context';
         return this.getMDRef(injector).some(r => r.exports.hasValue(token));
     }
 
-    resolve?<T>(injector: TI, token: Token<T>, records: Map<Token, FacRecord>): T {
+    resolve?<T>(injector: TI, token: Token<T>, provider: Injector): T {
         let inst: T;
         if (this.getMDRef(injector).some(e => {
-            inst = e.exports.get(token);
+            inst = e.exports.get(token, provider);
             return !isNil(inst);
         })) return inst;
+
+        return injector.parent?.get(token, provider);
     }
 
     getProvider<T>(injector: TI, key: Token<T>) {
@@ -40,7 +42,7 @@ import { ModuleInjector } from '../Context';
     }
 
     iterator(injector: TI, callbackfn: (fac: FacRecord, key: Token, resolvor?: TI) => void | boolean) {
-        retrun this.getMDRef(injector).some(e => e.exports.iterator(callbackfn) === false);
+        return this.getMDRef(injector).some(e => e.exports.iterator(callbackfn) === false);
     }
 
 }
