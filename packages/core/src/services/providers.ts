@@ -1,6 +1,6 @@
 import {
     Injector, Token, ProviderType, isArray, Container,
-    ServicesOption, isPlainObject, lang, ServicesProvider, TARGET, isFunction
+    ServicesOption, isPlainObject, lang, ServicesProvider, TARGET, isFunction, resolveToken
 } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from '../resolves/context';
 import { ResolveServicesScope } from '../resolves/actions';
@@ -19,11 +19,32 @@ export class Services implements ServicesProvider {
      * get all service extends type.
      *
      * @template T
-     * @param {(Token<T> | ServicesOption<T>)} target servive token or express match token.
+     * @param {Injector} injector
+     * @param {Token<T>} token servive token or express match token.
      * @param {...ProviderType[]} providers
      * @returns {T[]} all service instance type of token type.
      */
-    getServices<T>(injector: Injector, target: Token<T> | ServicesOption<T>): T[] {
+    getServices<T>(injector: Injector, token: Token<T>, ...providers: ProviderType[]): T[];
+    /**
+    * get all service extends type.
+    *
+    * @template T
+    * @param {Injector} injector
+    * @param {Token<T>} token servive token or express match token.
+    * @param {ProviderType[]} providers
+    * @returns {T[]} all service instance type of token type.
+    */
+    getServices<T>(injector: Injector, token: Token<T>, providers: ProviderType[]): T[];
+    /**
+     * get all service extends type.
+     *
+     * @template T
+     * @param {Injector} injector
+     * @param {ServicesOption<T>} option servive token or express match token.
+     * @returns {T[]} all service instance type of token type.
+     */
+    getServices<T>(injector: Injector, option: ServicesOption<T>): T[];
+    getServices<T>(injector: Injector, target: Token<T> | ServicesOption<T>, ...args: any[]): T[] {
 
         let providers: ProviderType[];
         if (isPlainObject(target)) {
@@ -31,6 +52,8 @@ export class Services implements ServicesProvider {
             if ((target as ServicesOption<T>).target) {
                 providers.push({ provide: TARGET, useValue: (target as ServicesOption<T>).target });
             }
+        } else {
+            providers = (args.length === 1 && isArray(args[0])) ? args[0] : args;
         }
         let context = {
             injector: injector,
@@ -44,9 +67,11 @@ export class Services implements ServicesProvider {
 
         const services = [];
         this.servicesScope.execute(context);
-        context.services.forEach(fn => {
-            services.push(fn(providers));
+        const pdr = providers.length? Injector.create(providers, injector) : injector;
+        context.services.forEach(rd => {
+            services.push(resolveToken(rd, pdr));
         });
+        providers.length && pdr.destroy();
         context.services.clear();
         // clean obj.
         lang.cleanObj(context);

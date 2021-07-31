@@ -1,4 +1,4 @@
-import { IActionSetup, lang, refl, isFunction, IocActions, Injector, ClassType, ProviderType } from '@tsdi/ioc';
+import { IActionSetup, lang, refl, isFunction, IocActions, Injector, ClassType } from '@tsdi/ioc';
 import { ServicesContext } from './context';
 
 /**
@@ -31,7 +31,7 @@ export class ResolveServicesScope extends IocActions implements IActionSetup {
             if (ctx.defaultToken) {
                 const token = ctx.defaultToken as ClassType;
                 if (injector.has(token, true)) {
-                    ctx.services.set(token, (providers: ProviderType[]) => injector.resolve({ token, providers }));
+                    ctx.services.set(token, { fn: (pdr) => injector.get(token, pdr) });
                 }
             }
         }
@@ -55,7 +55,7 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
                 maps.iterator((pdr, token) => {
                     type = pdr.type || token;
                     if (isFunction(type) && !services.has(type) && types.some(ty => match(type, ty))) {
-                        services.set(type, (providers: ProviderType[]) => maps.resolve({ token, providers }));
+                        services.set(type, pdr);
                     }
                 });
             }
@@ -73,7 +73,7 @@ export const RsvServicesAction = function (ctx: ServicesContext, next: () => voi
     injector.iterator((pdr, token) => {
         type = pdr.type || token;
         if (isFunction(type) && !services.has(type) && types.some(ty => match(type, ty))) {
-            services.set(type, (providers: ProviderType[]) => injector.resolve({ token, providers }));
+            services.set(type, pdr);
         }
     }, true);
 

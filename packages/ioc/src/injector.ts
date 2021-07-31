@@ -1,7 +1,8 @@
 import { Destroyable } from './Destroyable';
 import { ClassType, LoadType, Modules, Type } from './types';
 import {
-    ProviderType, ResolveOption, ServicesOption, FacRecord, Factory, ProviderOption, RegisterOption, MethodType
+    ProviderType, ResolveOption, ServicesOption, FacRecord, Factory,
+    ProviderOption, RegisterOption, MethodType
 } from './interface';
 import { Token } from './tokens';
 import { Abstract } from './metadata/fac';
@@ -252,20 +253,54 @@ export abstract class Injector implements Destroyable {
      * get service or target reference service in the injector.
      *
      * @template T
-     * @param {(Token<T> | ResolveOption<T>)} target servive token.
+     * @param {Token<T> } token servive token.
      * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    abstract getService<T>(target: Token<T> | ResolveOption<T>): T;
+     abstract getService<T>(token: Token<T>, ...providers: ProviderType[]): T;
+     /**
+     * get service or target reference service in the injector.
+     *
+     * @template T
+     * @param {Token<T> } token servive token.
+     * @param {ProviderType[]} providers
+     * @returns {T}
+     */
+      abstract getService<T>(token: Token<T>, providers: ProviderType[]): T;
+    /**
+     * get service or target reference service in the injector.
+     *
+     * @template T
+     * @param {(ResolveOption<T>} option resolve option.
+     * @returns {T}
+     */
+    abstract getService<T>(option: ResolveOption<T>): T;
     /**
      * get all service extends type.
      *
      * @template T
-     * @param {(Token<T> | ServicesOption<T>)} target servive token or express match token.
+     * @param {Token<T>} token servive token or express match token.
      * @param {...ProviderType[]} providers
      * @returns {T[]} all service instance type of token type.
      */
-    abstract getServices<T>(target: Token<T> | ServicesOption<T>): T[];
+     abstract getServices<T>(token: Token<T>, ...providers: ProviderType[]): T[];
+     /**
+     * get all service extends type.
+     *
+     * @template T
+     * @param {Token<T>} token servive token or express match token.
+     * @param {ProviderType[]} providers
+     * @returns {T[]} all service instance type of token type.
+     */
+    abstract getServices<T>(token: Token<T>, providers: ProviderType[]): T[];
+    /**
+     * get all service extends type.
+     *
+     * @template T
+     * @param {ServicesOption<T>} option servives resolve option.
+     * @returns {T[]} all service instance type of token type.
+     */
+    abstract getServices<T>(option: ServicesOption<T>): T[];
     /**
      * has destoryed or not.
      */

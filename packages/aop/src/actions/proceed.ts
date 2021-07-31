@@ -8,10 +8,12 @@ import { JoinpointState } from '../joinpoints/state';
 import { Advices } from '../advices/Advices';
 import { Advicer } from '../advices/Advicer';
 import { ADVISOR } from '../metadata/tk';
+import { CTX_ARGS } from '@tsdi/boot';
 
 const proxyFlag = '_proxy';
 const ctor = 'constructor';
 const aExp = /^@/;
+
 /**
  * Proxy method.
  *
@@ -125,12 +127,12 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
                 return propertyMethod.call(target, ...args);
             }
             const larg = lang.last(args);
-            let injector: Injector;
+            let provider: Injector;
             if (larg instanceof Injector) {
                 args = args.slice(0, args.length - 1);
-                injector = larg;
+                provider = larg;
             }
-            const joinPoint = Joinpoint.parse(injector || container.state().getInjector(targetType), {
+            const joinPoint = Joinpoint.parse(container.state().getInjector(targetType), {
                 name,
                 fullName,
                 params: refl.getParameters(targetType, name),

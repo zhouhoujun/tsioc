@@ -1,4 +1,4 @@
-import { isNil, FacRecord, ExtStrategy, Token, Injector } from '@tsdi/ioc';
+import { isNil, FacRecord, Strategy, Token, Injector } from '@tsdi/ioc';
 import { ModuleInjector } from '../Context';
 
 
@@ -7,7 +7,7 @@ import { ModuleInjector } from '../Context';
 /**
  * module injector strategy.
  */
-export class ModuleStrategy<TI extends Injector = Injector> implements ExtStrategy {
+export class ModuleStrategy<TI extends Injector = Injector> implements Strategy {
 
     constructor(private getMDRef: (curr: TI) => ModuleInjector[]) {
     }

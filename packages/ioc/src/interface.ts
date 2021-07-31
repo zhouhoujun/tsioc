@@ -50,6 +50,8 @@ export type ProviderOption<T = any> = ClassProvider | ValueProvider | ExistingPr
 export type RegisterOption<T = any> = TypeOption<T> | ProviderOption<T>;
 
 
+export type FnType = 'cotr' | 'inj' | 'fac';
+
 /**
  * instance provider.
  */
@@ -66,7 +68,7 @@ export interface FacRecord<T = any> {
      */
     fn?: Function;
 
-    isCtor?: boolean;
+    fnType?: FnType;
 
     deps?: any[];
 

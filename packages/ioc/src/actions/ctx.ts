@@ -13,6 +13,11 @@ export interface IocContext {
      * current injector.
      */
     injector: Injector;
+
+    /**
+     * raise provider.
+     */
+    provider?: Injector;
 }
 
 

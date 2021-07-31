@@ -58,7 +58,7 @@ function genReged(injector: Injector, provide?: Token) {
 function regInstf(injector: Injector, type: Type, provide: Token, singleton: boolean) {
     const insf = {
         type,
-        fn: () => {
+        fn: (provider: Injector) => {
             // make sure has value.
             if (singleton && injector.hasValue(type)) {
                 return injector.get(type);
@@ -68,6 +68,7 @@ function regInstf(injector: Injector, type: Type, provide: Token, singleton: boo
                 provide,
                 type,
                 singleton,
+                provider
             } as RuntimeContext;
 
             injector.action().get(RuntimeLifeScope).register(ctx);
