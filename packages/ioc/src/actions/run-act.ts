@@ -25,7 +25,7 @@ export abstract class IocRuntimeAction extends IocRegAction<RuntimeContext> { }
 export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): void {
     if (!ctx.args) {
         ctx.params = ctx.reflect.methodParams.get('constructor') ?? EMPTY;
-        ctx.args = ctx.injector.get(Invoker).createParams(ctx.injector, ctx.type, 'constructor');
+        ctx.args = ctx.injector.get(Invoker).createParams(ctx.injector, ctx.type, 'constructor', ctx.provider);
     }
     next();
 };
@@ -61,7 +61,7 @@ export const InjectPropAction = function (ctx: RuntimeContext, next: () => void)
             }
             if (meta && !ctx[key]) {
                 token = meta.provider || meta.type;
-                val = injector.resolve({ token, target: type, regify: true });
+                val = injector.resolve({ token, target: type, regify: true, providers: [ctx.provider] });
                 if (!isNil(val)) {
                     ctx.instance[propertyKey] = val;
                     ctx[key] = true;
@@ -158,7 +158,7 @@ export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void)
     if (ctx.reflect.autoruns.length) {
         const { injector: injector, type, instance } = ctx;
         ctx.reflect.autoruns.forEach(aut => {
-            injector.invoke(instance || type, aut.autorun, instance);
+            injector.invoke(instance || type, aut.autorun, instance, ctx.provider);
         });
     }
 

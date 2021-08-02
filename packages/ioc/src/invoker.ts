@@ -1,5 +1,4 @@
-import { Injector } from './injector';
-import { MethodType, ProviderType } from './interface';
+import { Injector, MethodType, ProviderType } from './injector';
 import { Abstract } from './metadata/fac';
 import { Token } from './tokens';
 import { Type } from './types';

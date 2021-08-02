@@ -7,10 +7,9 @@ import { DesignContext, RuntimeContext } from './ctx';
 import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
-import { FacRecord } from '../interface';
 import { PropertyMetadata } from '../metadata/meta';
 import { ROOT_INJECTOR } from '../metadata/tk';
-import { Injector } from '../injector';
+import { Injector, FnRecord } from '../injector';
 
 
 
@@ -78,7 +77,7 @@ function regInstf(injector: Injector, type: Type, provide: Token, singleton: boo
             return instance;
         },
         unreg: () => injector.state().deleteType(type)
-    } as FacRecord;
+    } as FnRecord;
 
     injector.set(provide, insf);
 }

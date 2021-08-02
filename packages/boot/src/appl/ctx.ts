@@ -4,7 +4,10 @@ import { DIModuleMetadata } from '../metadata/meta';
 import { BOOT_TYPES, CONFIGURATION, PROCESS_ROOT } from '../metadata/tk';
 import { Configuration } from '../configure/config';
 import { ConfigureManager } from '../configure/manager';
-import { ApplicationContext, ApplicationFactory, ApplicationOption, Runnable, RunnableFactory, BootstrapOption, ModuleInjector, RunnableFactoryResolver } from '../Context';
+import {
+    ApplicationContext, ApplicationFactory, ApplicationOption, Runnable, RunnableFactory,
+    BootstrapOption, ModuleInjector, RunnableFactoryResolver
+} from '../Context';
 import { MessageContext, MessageQueue, RequestOption, ROOT_QUEUE } from '../middlewares';
 
 
@@ -127,7 +130,9 @@ export class DefaultApplicationContext extends ApplicationContext {
 }
 
 
-
+/**
+ * default application factory.
+ */
 export class DefaultApplicationFactory extends ApplicationFactory {
 
     create<T>(root: ModuleInjector<T>, option?: ApplicationOption<T>): ApplicationContext {

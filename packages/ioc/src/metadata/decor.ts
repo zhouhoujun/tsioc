@@ -6,8 +6,7 @@ import {
     InjectableMetadata, ParameterMetadata, ProvidersMetadata, ProviderInMetadata
 } from './meta';
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
-import { ProviderType } from '../interface';
-import { Injector } from '../injector';
+import { Injector, ProviderType } from '../injector';
 
 
 

@@ -1,10 +1,9 @@
 import { Type } from '../types';
 import { isFunction, getClass, isTypeObject } from '../utils/chk';
 import { Token } from '../tokens';
-import { ProviderType, MethodType } from '../interface';
 import { get } from '../metadata/refl';
 import { ParameterMetadata } from '../metadata/meta';
-import { EMPTY, Injector, RegisteredState } from '../injector';
+import { EMPTY, Injector, RegisteredState, ProviderType, MethodType  } from '../injector';
 import { Invoker } from '../invoker';
 
 

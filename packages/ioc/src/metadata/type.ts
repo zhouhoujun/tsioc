@@ -1,5 +1,5 @@
 import { DesignContext, RuntimeContext } from '../actions/ctx';
-import { ProviderType } from '../interface';
+import { ProviderType } from '../injector';
 import { Token } from '../tokens';
 import { ClassType } from '../types';
 import { Handler } from '../utils/hdl';

@@ -1,9 +1,5 @@
 import { Destroyable } from './Destroyable';
 import { ClassType, LoadType, Modules, Type } from './types';
-import {
-    ProviderType, ResolveOption, ServicesOption, FacRecord, Factory,
-    ProviderOption, RegisterOption, MethodType
-} from './interface';
 import { Token } from './tokens';
 import { Abstract } from './metadata/fac';
 import { remove } from './utils/lang';
@@ -11,6 +7,7 @@ import { isArray } from './utils/chk';
 import { Action } from './action';
 import { Handler } from './utils/hdl';
 import { TypeReflect } from './metadata/type';
+import { ClassProvider, ExistingProvider, FactoryProvider, StaticProvider, ValueProvider } from './providers';
 
 
 /**
@@ -25,6 +22,8 @@ export abstract class Injector implements Destroyable {
 
     private _destroyed = false;
     protected _dsryCbs: (() => void)[] = [];
+
+    readonly source?: string;
 
     /**
      * parent injector.
@@ -63,7 +62,7 @@ export abstract class Injector implements Destroyable {
      * has value or not.
      * @param key
      */
-    abstract hasValue<T>(key: Token<T>): boolean;
+    abstract hasValue<T>(key: Token<T>, deep?: boolean): boolean;
     /**
      * get token instance in current injector or root container.
      *
@@ -118,7 +117,7 @@ export abstract class Injector implements Destroyable {
      * @param token token.
      * @param option factory option.
      */
-    abstract set<T>(token: Token<T>, option: FacRecord<T>): this;
+    abstract set<T>(token: Token<T>, option: FnRecord<T>): this;
     /**
      * set provide.
      *
@@ -193,11 +192,11 @@ export abstract class Injector implements Destroyable {
     /**
      * iterator current resolver.
      *
-     * @param {((pdr: FacRecord, key: Token, resolvor?: Injector) => void|boolean)} callbackfn
+     * @param {((pdr: FnRecord, key: Token, resolvor?: Injector) => void|boolean)} callbackfn
      * @param {boolean} [deep] deep iterator all register in parent or not.
      * @returns {(void|boolean)}
      */
-    abstract iterator(callbackfn: (pdr: FacRecord<any>, key: Token<any>, resolvor?: Injector) => boolean | void, deep?: boolean): boolean | void;
+    abstract iterator(callbackfn: (pdr: FnRecord<any>, key: Token<any>, resolvor?: Injector) => boolean | void, deep?: boolean): boolean | void;
     /**
      * copy injector to current injector.
      *
@@ -337,7 +336,7 @@ export abstract class Injector implements Destroyable {
      * @param providers 
      * @param parent 
      */
-    static create(providers?: ProviderType[], parent?: Injector): Injector;
+    static create(providers?: ProviderType[], parent?: Injector, name?: string): Injector;
     /**
      * create injector with option.
      * @param options 
@@ -345,11 +344,11 @@ export abstract class Injector implements Destroyable {
     static create(options: { providers: ProviderType[], parent?: Injector, name?: string }): Injector;
     static create(
         options: ProviderType[] | { providers: ProviderType[], parent?: Injector, name?: string },
-        parent?: Injector): Injector {
+        parent?: Injector, name?: string): Injector {
         if (!options) {
             options = EMPTY;
         }
-        return isArray(options) ? INJ_IMPL.create(options, parent) :
+        return isArray(options) ? INJ_IMPL.create(options, parent, name) :
             INJ_IMPL.create(options.providers, options.parent, options.name);
     }
 }
@@ -556,3 +555,150 @@ export const CONTAINER_IMPL = {
 }
 
 export type IocContainer = Container;
+
+
+/**
+ * providers.
+ */
+ export type ProviderType = Modules[] | Injector | StaticProvider;
+
+
+ /**
+  * instance factory.
+  */
+ export type Factory<T = any> = (...args) => T;
+ 
+ 
+ /**
+  * Factory of Token
+  */
+ export type FactoryLike<T> = Type<T> | Factory<T>;
+ 
+ 
+ /**
+  * type register option.
+  */
+ export interface TypeOption<T = any> {
+     provide?: Token<T>;
+     type: Type<T>;
+     singleton?: boolean;
+     regIn?: 'root';
+ }
+ 
+ export type ProviderOption<T = any> = ClassProvider | ValueProvider | ExistingProvider | FactoryProvider;
+ 
+ /**
+  * register option.
+  */
+ export type RegisterOption<T = any> = TypeOption<T> | ProviderOption<T>;
+ 
+ 
+ export type FnType = 'cotr' | 'inj' | 'fac';
+ 
+ /**
+  * factory record.
+  */
+ export interface FnRecord<T = any> {
+     /**
+      * use value for provide.
+      *
+      * @type {*}
+      */
+     value?: any;
+ 
+     /**
+      * factory.
+      */
+     fn?: Function;
+ 
+     fnType?: FnType;
+ 
+     deps?: any[];
+ 
+     /**
+      * token provider type.
+      */
+     type?: Type<T>;
+ 
+     /**
+      * cache value.
+      */
+     cache?: T;
+     /**
+      * last timer use the cache.
+      */
+     ltop?: number;
+     /**
+      * cache expires.
+      */
+     expires?: number;
+ 
+     /**
+      * unregister callback.
+      */
+     unreg?: () => void;
+ }
+ 
+ 
+ 
+ /**
+  * resovle action option.
+  */
+ export interface ResolveOption<T = any> {
+     /**
+      * token.
+      */
+     token?: Token<T>;
+     /**
+      * resolve token in target context.
+      */
+     target?: Token | TypeReflect | Object | (Token | Object)[];
+     /**
+      * all faild use the default token to get instance.
+      */
+     defaultToken?: Token<T>;
+     /**
+      * register token if has not register.
+      */
+     regify?: boolean;
+ 
+     /**
+      * resolve providers.
+      */
+     providers?: ProviderType[];
+ }
+ 
+ 
+ /**
+  * services context options
+  *
+  * @export
+  * @interface ServicesOption
+  * @extends {ServiceOption}
+  */
+ export interface ServicesOption<T> extends ResolveOption<T> {
+     /**
+      * token provider service type.
+      *
+      * @type {Type}
+      */
+     tokens?: Token<T>[];
+     /**
+      * get extend servie or not.
+      *
+      * @type {boolean}
+      */
+     extend?: boolean;
+     /**
+      * get services both in container and target private refrence service.
+      *
+      * @type {boolean}
+      */
+     both?: boolean;
+ }
+ 
+ /**
+  * method type.
+  */
+ export type MethodType<T> = string | ((tag: T) => Function);
+ 

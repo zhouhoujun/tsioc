@@ -30,7 +30,7 @@ export class ResolveServicesScope extends IocActions implements IActionSetup {
         if (ctx.services.size < 1) {
             if (ctx.defaultToken) {
                 const token = ctx.defaultToken as ClassType;
-                if (injector.has(token, true)) {
+                if (injector.has(token)) {
                     ctx.services.set(token, { fn: (pdr) => injector.get(token, pdr) });
                 }
             }
