@@ -85,6 +85,24 @@ export abstract class Injector implements Destroyable {
      * resolve token instance with token and param provider.
      *
      * @template T
+     * @param {Token<T>} token the token to resolve.
+     * @param {...ProviderType[]} providers
+     * @returns {T}
+     */
+     abstract resolve<T>(token: Token<T>, ...providers: ProviderType[]): T;
+     /**
+     * resolve token instance with token and param provider.
+     *
+     * @template T
+     * @param {Token<T>} token the token to resolve.
+     * @param {ProviderType[]} providers
+     * @returns {T}
+     */
+    abstract resolve<T>(token: Token<T>, providers: ProviderType[]): T;
+    /**
+     * resolve token instance with token and param provider.
+     *
+     * @template T
      * @param {ResolveOption<T>} option  resolve option
      * @returns {T}
      */

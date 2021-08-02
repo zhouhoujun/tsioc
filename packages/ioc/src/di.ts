@@ -275,6 +275,7 @@ export class DefaultInjector extends Injector {
             if (!p) {
                 return;
             }
+            
             if (isFunction(p)) {
                 return this.regType(p);
             }
@@ -775,18 +776,22 @@ export function resolveToken<T>(rd: FnRecord<T>, provider: Injector): T {
 
     switch (rd.fnType) {
         case 'cotr':
+            return new (rd.fn as Type)(...createArgs(rd.deps, provider));
         case 'fac':
-            let args = rd.deps?.map(d => {
-                if (isToken(d)) {
-                    return provider.get(d) ?? (isString(d) ? d : undefined);
-                } else {
-                    return d;
-                }
-            }) ?? [];
-            return rd.fnType == 'cotr' ? new (rd.fn as Type)(...args) : rd.fn(...args);
+            return rd.fn(...createArgs(rd.deps, provider));
         case 'inj':
             return rd.fn(provider);
     }
+}
+
+function createArgs(deps: any[], provider: Injector): any[] {
+    return deps?.map(d => {
+        if (isToken(d)) {
+            return provider.get(d) ?? (isString(d) ? d : undefined);
+        } else {
+            return d;
+        }
+    }) ?? EMPTY;
 }
 
 
@@ -822,7 +827,7 @@ export function generateRecord<T>(injector: Injector, option: StaticProviders): 
         } else {
             fnType = 'inj';
             fn = (provider) => {
-                if (!injector.state().isRegistered(type) && !injector.has(type)) {
+                if (!injector.state().isRegistered(type) && !injector.has(type, true)) {
                     injector.register({ type, deps });
                 }
                 return injector.get(type, provider);
@@ -911,13 +916,14 @@ class RegisteredStateImpl extends RegisteredState {
         }
     }
 
-    getInstance<T>(type: ClassType<T>): T {
+    getInstance<T>(type: ClassType<T>, provider?: Injector): T {
         const state = this.states.get(type);
-        return state.providers ? state.providers.get(type) : state.injector.get(type);
+        return state.providers ? state.providers.get(type, provider) : state.injector.get(type, provider);
     }
 
     resolve<T>(token: ClassType<T>, providers?: ProviderType[]): T {
-        return this.states.get(token)?.injector.resolve({ token, providers }) ?? null;
+        const state = this.states.get(token);
+        return state.providers ? state.providers.resolve(token, providers) : state.injector.resolve(token, providers);
     }
 
     getRegistered<T extends Registered>(type: ClassType): T {
