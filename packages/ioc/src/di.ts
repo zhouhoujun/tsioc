@@ -237,7 +237,7 @@ export class DefaultInjector extends Injector {
     protected registerIn<T>(injector: Injector, type: Type<T>, option?: TypeOption<T>) {
         const state = injector.state();
         // make sure class register once.
-        if (state.isRegistered(type) || injector.has(type)) {
+        if (state.isRegistered(type) || injector.has(type, true)) {
             return false;
         }
 

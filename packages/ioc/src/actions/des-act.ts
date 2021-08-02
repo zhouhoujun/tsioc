@@ -76,6 +76,7 @@ function regInstf(injector: Injector, type: Type, provide: Token, singleton: boo
             cleanObj(ctx);
             return instance;
         },
+        fnType: 'inj',
         unreg: () => injector.state().deleteType(type)
     } as FnRecord;
 
