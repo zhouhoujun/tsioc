@@ -50,7 +50,7 @@ const protocolReg = /^\w+:\/\//;
 export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) => {
     const isNewInj = ctx.request.providers && ctx.request.providers.length;
     if (isNewInj) {
-        ctx.injector = Injector.create(ctx.request.providers, ctx.injector);
+        ctx.injector = Injector.create(ctx.request.providers, ctx.injector, 'provider');
     }
     const { injector, request } = ctx;
     ctx.vaild = injector.get(RouteVaildator);

@@ -854,7 +854,7 @@ const SERVICE: ServicesProvider = {
         const providers = isPlainObject(target) ? (target as ServicesOption<T>).providers
             : (args.length === 1 && isArray(args[0])) ? args[0] : args;
         const services: T[] = [];
-        const pdr = providers.length ? Injector.create(providers, injector) : undefined;
+        const pdr = providers.length ? Injector.create(providers, injector, 'provider') : undefined;
         injector.iterator((fac, key) => {
             if (tokens.indexOf(key)) {
                 services.push(injector.get(key, pdr));
@@ -903,7 +903,7 @@ class RegisteredStateImpl implements RegisteredState {
         const state = this.states.get(trefl.type);
         if (state) {
             if (!state.providers) {
-                state.providers = Injector.create(providers, state.injector as Injector);
+                state.providers = Injector.create(providers, state.injector as Injector, 'provider');
             } else {
                 state.providers.inject(providers);
             }

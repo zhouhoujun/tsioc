@@ -148,7 +148,7 @@ export class Joinpoint implements IocContext {
 
 
     constructor(injector: Injector) {
-        this.injector = Injector.create([{ provide: Joinpoint, useValue: this }], injector)
+        this.injector = Injector.create([{ provide: Joinpoint, useValue: this }], injector, 'provider')
     }
 
 

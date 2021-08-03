@@ -67,7 +67,7 @@ export class Services implements ServicesProvider {
 
         const services = [];
         this.servicesScope.execute(context);
-        const pdr = providers.length? Injector.create(providers, injector, ) : injector;
+        const pdr = providers.length? Injector.create(providers, injector, 'provider') : injector;
         context.services.forEach(rd => {
             services.push(resolveToken(rd, pdr));
         });

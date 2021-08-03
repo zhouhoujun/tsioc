@@ -105,7 +105,7 @@ export class InvokerImpl implements Invoker {
             ...tgRefl?.providers || EMPTY,
             ...tgRefl.methodProviders.get(propertyKey) || EMPTY];
         if (providers.length) {
-            injector = Injector.create(providers, injector);
+            injector = Injector.create(providers, injector, 'provider');
         }
         const args = this.resolveParams(injector, tgRefl.methodParams.get(propertyKey) || EMPTY);
         if (providers.length) {

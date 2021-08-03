@@ -161,7 +161,7 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
         if (state.providers) {
             state.providers.inject(ctx.reflect.providers);
         } else {
-            state.providers = Injector.create(ctx.reflect.providers, injector);
+            state.providers = Injector.create(ctx.reflect.providers, injector, 'provider');
         }
     }
 
