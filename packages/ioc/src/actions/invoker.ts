@@ -27,15 +27,12 @@ export class InvokerImpl implements Invoker {
      * @returns {T}
      */
     invoke<T, TR = any>(injector: Injector, target: Token<T> | T, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR {
-        if (providers.length) {
-            injector = Injector.create(providers, injector);
-        }
         let targetClass: Type, instance: T, key: string;
         if (isTypeObject(target)) {
             targetClass = getClass(target);
             instance = target as T;
         } else {
-            instance = injector.resolve(target as Token);
+            instance = injector.resolve(target as Token, providers);
             targetClass = getClass(instance);
             if (!targetClass) {
                 throw new Error(target.toString() + ' is not implements by any class.')
@@ -53,18 +50,18 @@ export class InvokerImpl implements Invoker {
             throw new Error(`type: ${targetClass} has no method ${(key || '').toString()}.`);
         }
 
-        const mpdrs = tgRefl.methodProviders.get(key) || EMPTY;
-        let isNewInj = providers.length || tgRefl.providers.length || mpdrs.length;
+        const mpdrs = tgRefl.methodProviders.get(key);
+        providers = [...providers||EMPTY, ...tgRefl.providers||EMPTY, ...mpdrs||EMPTY];
 
-        if (isNewInj) {
-            injector = Injector.create([...providers, ...tgRefl.providers, ...mpdrs], injector);
+        if (providers.length) {
+            injector = Injector.create(providers, injector);
         }
 
         const proxy = instance[key]['_proxy'];
         const paramInstances = this.resolveParams(injector, tgRefl.methodParams.get(key) || EMPTY);
         if (proxy) {
             paramInstances.push(injector);
-        } else if (isNewInj) {
+        } else if (providers.length) {
             injector.destroy();
         }
         return instance[key](...paramInstances) as TR;
@@ -80,14 +77,12 @@ export class InvokerImpl implements Invoker {
      */
     createParams(injector: Injector, target: Type, propertyKey: string, ...providers: ProviderType[]): any[] {
         const tgRefl = get(target);
-        const typdrs = tgRefl?.providers || EMPTY;
-        const mthpdrs = tgRefl.methodProviders.get(propertyKey) || EMPTY;
-        const isNew = providers.length || typdrs.length || mthpdrs.length;
-        if (isNew) {
-            injector = Injector.create([...providers, ...typdrs, ...mthpdrs], injector);
+        providers = [...providers, ...tgRefl?.providers || EMPTY, ...tgRefl.methodProviders.get(propertyKey) || EMPTY];
+        if (providers.length) {
+            injector = Injector.create(providers, injector);
         }
         const args = this.resolveParams(injector, tgRefl.methodParams.get(propertyKey) || EMPTY);
-        if (isNew) {
+        if (providers.length) {
             injector.destroy();
         }
         return args;

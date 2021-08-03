@@ -275,7 +275,7 @@ export class DefaultInjector extends Injector {
             if (!p) {
                 return;
             }
-            
+
             if (isFunction(p)) {
                 return this.regType(p);
             }
@@ -510,7 +510,7 @@ export class DefaultInjector extends Injector {
         if (!from) {
             return this;
         }
-        this.merge(from as DefaultInjector, this, filter);
+        this.merge(from as DefaultInjector, this, false, filter);
         return this;
     }
 
@@ -522,7 +522,7 @@ export class DefaultInjector extends Injector {
             filter = undefined;
         }
         to = to || new (getClass(this))(this.parent);
-        this.merge(this, to as DefaultInjector, filter);
+        this.merge(this, to as DefaultInjector, true, filter);
         return to;
     }
 
@@ -622,12 +622,12 @@ export class DefaultInjector extends Injector {
     }
 
 
-    protected merge(from: DefaultInjector, to: DefaultInjector, filter?: (key: Token) => boolean) {
+    protected merge(from: DefaultInjector, to: DefaultInjector, clone?: boolean, filter?: (key: Token) => boolean) {
         from.factories.forEach((pdr, key) => {
             if (filter && !filter(key)) {
                 return;
             }
-            to.factories.set(key, { ...pdr });
+            to.factories.set(key, clone ? { ...pdr } : pdr);
         });
     }
 
