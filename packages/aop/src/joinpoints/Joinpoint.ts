@@ -21,7 +21,7 @@ export interface JoinpointOption {
     annotations?: (ClassMetadata | MethodMetadata)[];
     target?: any;
     targetType: Type;
-    providers?: ProviderType[];
+    providers?: Injector;
 }
 
 
@@ -36,6 +36,8 @@ export const AOP_METHOD_ANNOTATIONS = tokenId<any[]>('AOP_METHOD_ANNOTATIONS');
  * @implements {IJoinpoint}
  */
 export class Joinpoint implements IocContext {
+
+    injector: Injector;
     /**
      * method name
      *
@@ -137,7 +139,16 @@ export class Joinpoint implements IocContext {
     targetType: Type;
 
 
-    constructor(public injector: Injector) {
+    set providers(pdr: Injector) {
+        this.injector.inject(pdr);
+    }
+    get providers(): Injector {
+        return this.injector;
+    }
+
+
+    constructor(injector: Injector) {
+        this.injector = Injector.create([{ provide: Joinpoint, useValue: this }], injector)
     }
 
 
@@ -150,9 +161,6 @@ export class Joinpoint implements IocContext {
      * @returns {ResolveActionContext}
      */
     static parse<T>(injector: Injector, options: JoinpointOption): Joinpoint {
-        if(options.providers && options.providers.length){
-            injector = Injector.create(options.providers, injector);
-        }
         return Object.assign(new Joinpoint(injector), options);
     }
 }

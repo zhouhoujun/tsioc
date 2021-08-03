@@ -56,7 +56,7 @@ export class Services implements ServicesProvider {
             providers = (args.length === 1 && isArray(args[0])) ? args[0] : args;
         }
         let context = {
-            injector: injector,
+            injector,
             ...isPlainObject(target) ? target : { token: target },
         } as ServicesContext;
 
@@ -67,7 +67,7 @@ export class Services implements ServicesProvider {
 
         const services = [];
         this.servicesScope.execute(context);
-        const pdr = providers.length? Injector.create(providers, injector) : injector;
+        const pdr = providers.length? Injector.create(providers, injector, ) : injector;
         context.services.forEach(rd => {
             services.push(resolveToken(rd, pdr));
         });

@@ -23,7 +23,7 @@ export abstract class Injector implements Destroyable {
     private _destroyed = false;
     protected _dsryCbs: (() => void)[] = [];
 
-    readonly source?: string;
+    readonly scope?: InjectorScope;
 
     /**
      * parent injector.
@@ -89,15 +89,15 @@ export abstract class Injector implements Destroyable {
      * @param {...ProviderType[]} providers
      * @returns {T}
      */
-     abstract resolve<T>(token: Token<T>, ...providers: ProviderType[]): T;
-     /**
-     * resolve token instance with token and param provider.
-     *
-     * @template T
-     * @param {Token<T>} token the token to resolve.
-     * @param {ProviderType[]} providers
-     * @returns {T}
-     */
+    abstract resolve<T>(token: Token<T>, ...providers: ProviderType[]): T;
+    /**
+    * resolve token instance with token and param provider.
+    *
+    * @template T
+    * @param {Token<T>} token the token to resolve.
+    * @param {ProviderType[]} providers
+    * @returns {T}
+    */
     abstract resolve<T>(token: Token<T>, providers: ProviderType[]): T;
     /**
      * resolve token instance with token and param provider.
@@ -274,16 +274,16 @@ export abstract class Injector implements Destroyable {
      * @param {...ProviderType[]} providers
      * @returns {T}
      */
-     abstract getService<T>(token: Token<T>, ...providers: ProviderType[]): T;
-     /**
-     * get service or target reference service in the injector.
-     *
-     * @template T
-     * @param {Token<T> } token servive token.
-     * @param {ProviderType[]} providers
-     * @returns {T}
-     */
-      abstract getService<T>(token: Token<T>, providers: ProviderType[]): T;
+    abstract getService<T>(token: Token<T>, ...providers: ProviderType[]): T;
+    /**
+    * get service or target reference service in the injector.
+    *
+    * @template T
+    * @param {Token<T> } token servive token.
+    * @param {ProviderType[]} providers
+    * @returns {T}
+    */
+    abstract getService<T>(token: Token<T>, providers: ProviderType[]): T;
     /**
      * get service or target reference service in the injector.
      *
@@ -300,15 +300,15 @@ export abstract class Injector implements Destroyable {
      * @param {...ProviderType[]} providers
      * @returns {T[]} all service instance type of token type.
      */
-     abstract getServices<T>(token: Token<T>, ...providers: ProviderType[]): T[];
-     /**
-     * get all service extends type.
-     *
-     * @template T
-     * @param {Token<T>} token servive token or express match token.
-     * @param {ProviderType[]} providers
-     * @returns {T[]} all service instance type of token type.
-     */
+    abstract getServices<T>(token: Token<T>, ...providers: ProviderType[]): T[];
+    /**
+    * get all service extends type.
+    *
+    * @template T
+    * @param {Token<T>} token servive token or express match token.
+    * @param {ProviderType[]} providers
+    * @returns {T[]} all service instance type of token type.
+    */
     abstract getServices<T>(token: Token<T>, providers: ProviderType[]): T[];
     /**
      * get all service extends type.
@@ -354,20 +354,20 @@ export abstract class Injector implements Destroyable {
      * @param providers 
      * @param parent 
      */
-    static create(providers?: ProviderType[], parent?: Injector, name?: string): Injector;
+    static create(providers?: ProviderType[], parent?: Injector, scope?: InjectorScope): Injector;
     /**
      * create injector with option.
      * @param options 
      */
-    static create(options: { providers: ProviderType[], parent?: Injector, name?: string }): Injector;
+    static create(options: { providers: ProviderType[], parent?: Injector, scope?: InjectorScope }): Injector;
     static create(
-        options: ProviderType[] | { providers: ProviderType[], parent?: Injector, name?: string },
-        parent?: Injector, name?: string): Injector {
+        options: ProviderType[] | { providers: ProviderType[], parent?: Injector, scope?: InjectorScope },
+        parent?: Injector, scope?: InjectorScope): Injector {
         if (!options) {
             options = EMPTY;
         }
-        return isArray(options) ? INJ_IMPL.create(options, parent, name) :
-            INJ_IMPL.create(options.providers, options.parent, options.name);
+        return isArray(options) ? INJ_IMPL.create(options, parent, scope) :
+            INJ_IMPL.create(options.providers, options.parent, options.scope);
     }
 }
 
@@ -554,20 +554,20 @@ export abstract class Container extends Injector {
      * create injector with option.
      * @param options 
      */
-    static create(options: { providers: ProviderType[], parent?: Injector, name?: string }): Container;
+    static create(options: { providers: ProviderType[], parent?: Injector }): Container;
     static create(
-        options?: ProviderType[] | { providers: ProviderType[], parent?: Injector, name?: string },
+        options?: ProviderType[] | { providers: ProviderType[], parent?: Injector},
         parent?: Injector): Container {
         if (!options) {
             options = EMPTY;
         }
         return isArray(options) ? CONTAINER_IMPL.create(options, parent) :
-            CONTAINER_IMPL.create(options.providers, options.parent, options.name);
+            CONTAINER_IMPL.create(options.providers, options.parent);
     }
 }
 
 export const CONTAINER_IMPL = {
-    create(providers: ProviderType[], parent?: Injector, name?: string): Container {
+    create(providers: ProviderType[], parent?: Injector): Container {
         throw new Error('not implemented.');
     }
 }
@@ -578,145 +578,147 @@ export type IocContainer = Container;
 /**
  * providers.
  */
- export type ProviderType = Modules[] | Injector | StaticProvider;
+export type ProviderType = Modules[] | Injector | StaticProvider;
 
 
- /**
-  * instance factory.
-  */
- export type Factory<T = any> = (...args) => T;
- 
- 
- /**
-  * Factory of Token
-  */
- export type FactoryLike<T> = Type<T> | Factory<T>;
- 
- 
- /**
-  * type register option.
-  */
- export interface TypeOption<T = any> {
-     provide?: Token<T>;
-     type: Type<T>;
-     singleton?: boolean;
-     regIn?: 'root';
- }
- 
- export type ProviderOption<T = any> = ClassProvider | ValueProvider | ExistingProvider | FactoryProvider;
- 
- /**
-  * register option.
-  */
- export type RegisterOption<T = any> = TypeOption<T> | ProviderOption<T>;
- 
- 
- export type FnType = 'cotr' | 'inj' | 'fac';
- 
- /**
-  * factory record.
-  */
- export interface FnRecord<T = any> {
-     /**
-      * use value for provide.
-      *
-      * @type {*}
-      */
-     value?: any;
- 
-     /**
-      * factory.
-      */
-     fn?: Function;
- 
-     fnType?: FnType;
- 
-     deps?: any[];
- 
-     /**
-      * token provider type.
-      */
-     type?: Type<T>;
- 
-     /**
-      * cache value.
-      */
-     cache?: T;
-     /**
-      * last timer use the cache.
-      */
-     ltop?: number;
-     /**
-      * cache expires.
-      */
-     expires?: number;
- 
-     /**
-      * unregister callback.
-      */
-     unreg?: () => void;
- }
- 
- 
- 
- /**
-  * resovle action option.
-  */
- export interface ResolveOption<T = any> {
-     /**
-      * token.
-      */
-     token?: Token<T>;
-     /**
-      * resolve token in target context.
-      */
-     target?: Token | TypeReflect | Object | (Token | Object)[];
-     /**
-      * all faild use the default token to get instance.
-      */
-     defaultToken?: Token<T>;
-     /**
-      * register token if has not register.
-      */
-     regify?: boolean;
- 
-     /**
-      * resolve providers.
-      */
-     providers?: ProviderType[];
- }
- 
- 
- /**
-  * services context options
-  *
-  * @export
-  * @interface ServicesOption
-  * @extends {ServiceOption}
-  */
- export interface ServicesOption<T> extends ResolveOption<T> {
-     /**
-      * token provider service type.
-      *
-      * @type {Type}
-      */
-     tokens?: Token<T>[];
-     /**
-      * get extend servie or not.
-      *
-      * @type {boolean}
-      */
-     extend?: boolean;
-     /**
-      * get services both in container and target private refrence service.
-      *
-      * @type {boolean}
-      */
-     both?: boolean;
- }
- 
- /**
-  * method type.
-  */
- export type MethodType<T> = string | ((tag: T) => Function);
- 
+/**
+ * instance factory.
+ */
+export type Factory<T = any> = (...args) => T;
+
+
+/**
+ * Factory of Token
+ */
+export type FactoryLike<T> = Type<T> | Factory<T>;
+
+
+/**
+ * type register option.
+ */
+export interface TypeOption<T = any> {
+    provide?: Token<T>;
+    type: Type<T>;
+    singleton?: boolean;
+    regIn?: 'root';
+}
+
+export type ProviderOption<T = any> = ClassProvider | ValueProvider | ExistingProvider | FactoryProvider;
+
+/**
+ * register option.
+ */
+export type RegisterOption<T = any> = TypeOption<T> | ProviderOption<T>;
+
+
+export type FnType = 'cotr' | 'inj' | 'fac';
+
+
+export type InjectorScope = 'root' | 'provider' | 'container';
+
+/**
+ * factory record.
+ */
+export interface FnRecord<T = any> {
+    /**
+     * use value for provide.
+     *
+     * @type {*}
+     */
+    value?: any;
+
+    /**
+     * factory.
+     */
+    fn?: Function;
+
+    fnType?: FnType;
+
+    deps?: any[];
+
+    /**
+     * token provider type.
+     */
+    type?: Type<T>;
+
+    /**
+     * cache value.
+     */
+    cache?: T;
+    /**
+     * last timer use the cache.
+     */
+    ltop?: number;
+    /**
+     * cache expires.
+     */
+    expires?: number;
+
+    /**
+     * unregister callback.
+     */
+    unreg?: () => void;
+}
+
+
+
+/**
+ * resovle action option.
+ */
+export interface ResolveOption<T = any> {
+    /**
+     * token.
+     */
+    token?: Token<T>;
+    /**
+     * resolve token in target context.
+     */
+    target?: Token | TypeReflect | Object | (Token | Object)[];
+    /**
+     * all faild use the default token to get instance.
+     */
+    defaultToken?: Token<T>;
+    /**
+     * register token if has not register.
+     */
+    regify?: boolean;
+
+    /**
+     * resolve providers.
+     */
+    providers?: ProviderType[];
+}
+
+
+/**
+ * services context options
+ *
+ * @export
+ * @interface ServicesOption
+ * @extends {ServiceOption}
+ */
+export interface ServicesOption<T> extends ResolveOption<T> {
+    /**
+     * token provider service type.
+     *
+     * @type {Type}
+     */
+    tokens?: Token<T>[];
+    /**
+     * get extend servie or not.
+     *
+     * @type {boolean}
+     */
+    extend?: boolean;
+    /**
+     * get services both in container and target private refrence service.
+     *
+     * @type {boolean}
+     */
+    both?: boolean;
+}
+
+/**
+ * method type.
+ */
+export type MethodType<T> = string | ((tag: T) => Function);

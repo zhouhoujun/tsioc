@@ -1,4 +1,4 @@
-import { DefaultInjector, EMPTY, Injector, isArray, isFunction, isPlainObject, KeyValueProvider, ProviderType, refl, ROOT_INJECTOR, StaticProviders, Type } from '@tsdi/ioc';
+import { DefaultInjector, EMPTY, Injector, InjectorScope, isArray, isFunction, isPlainObject, KeyValueProvider, ProviderType, refl, ROOT_INJECTOR, StaticProviders, Type } from '@tsdi/ioc';
 import { IModuleExports, ModuleFactory, ModuleInjector, ModuleOption, ModuleRegistered } from '../Context';
 import { ModuleReflect } from '../metadata/ref';
 import { CTX_ARGS, PROCESS_ROOT } from '../metadata/tk';
@@ -21,8 +21,8 @@ export class DefaultModuleInjector<T> extends ModuleInjector<T> {
     exports: IModuleExports;
     private _regIn: string;
     private _instance: T;
-    constructor(readonly reflect: ModuleReflect<T>, parent?: Injector, regIn?: string, protected _root = false, source?: string, strategy: ModuleStrategy = mdInjStrategy) {
-        super(EMPTY, parent, source, strategy)
+    constructor(readonly reflect: ModuleReflect<T>, parent?: Injector, regIn?: string, protected _root = false, scope?: InjectorScope, strategy: ModuleStrategy = mdInjStrategy) {
+        super(EMPTY, parent, scope, strategy)
 
         const recd = { value: this };
         this.factories.set(ModuleInjector, recd);
@@ -73,8 +73,8 @@ const mdPdrStrategy = new ModuleStrategy<IModuleExports>(cu => cu.exports);
  */
 export class ModuleExports extends DefaultInjector implements IModuleExports {
 
-    constructor(public moduleRef: ModuleInjector, source?: string, strategy = mdPdrStrategy) {
-        super(EMPTY, moduleRef, source, strategy);
+    constructor(public moduleRef: ModuleInjector, scope?: InjectorScope, strategy = mdPdrStrategy) {
+        super(EMPTY, moduleRef, scope, strategy);
         this.export(moduleRef.type, true);
     }
 

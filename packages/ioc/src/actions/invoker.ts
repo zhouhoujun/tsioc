@@ -1,9 +1,9 @@
 import { Type } from '../types';
-import { isFunction, getClass, isTypeObject } from '../utils/chk';
+import { isFunction, getClass, isTypeObject, isArray } from '../utils/chk';
 import { Token } from '../tokens';
 import { get } from '../metadata/refl';
 import { ParameterMetadata } from '../metadata/meta';
-import { EMPTY, Injector, RegisteredState, ProviderType, MethodType  } from '../injector';
+import { EMPTY, Injector, RegisteredState, ProviderType, MethodType } from '../injector';
 import { Invoker } from '../invoker';
 
 
@@ -23,10 +23,23 @@ export class InvokerImpl implements Invoker {
      * @param {Injector} injector
      * @param {*} target
      * @param {(string | ((tag: T) => Function))} propertyKey
+     * @param {ProviderType[]} providers
+     * @returns {T}
+     */
+    invoke<T, TR = any>(injector: Injector, target: Token<T> | T, propertyKey: MethodType<T>, providers: ProviderType[]): TR;
+    /**
+     * try to async invoke the method of intance, if no instance will create by type.
+     *
+     * @template T
+     * @param {Injector} injector
+     * @param {*} target
+     * @param {(string | ((tag: T) => Function))} propertyKey
      * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    invoke<T, TR = any>(injector: Injector, target: Token<T> | T, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR {
+    invoke<T, TR = any>(injector: Injector, target: Token<T> | T, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
+    invoke<T, TR = any>(injector: Injector, target: Token<T> | T, propertyKey: MethodType<T>, ...args: any[]): TR {
+        let providers: ProviderType[] = (args.length === 1 && isArray(args[0])) ? args[0] : args;
         let targetClass: Type, instance: T, key: string;
         if (isTypeObject(target)) {
             targetClass = getClass(target);
@@ -51,7 +64,7 @@ export class InvokerImpl implements Invoker {
         }
 
         const mpdrs = tgRefl.methodProviders.get(key);
-        providers = [...providers||EMPTY, ...tgRefl.providers||EMPTY, ...mpdrs||EMPTY];
+        providers = [...providers || EMPTY, ...tgRefl.providers || EMPTY, ...mpdrs || EMPTY];
 
         if (providers.length) {
             injector = Injector.create(providers, injector);
@@ -75,9 +88,22 @@ export class InvokerImpl implements Invoker {
      * @param providers 
      * @returns 
      */
-    createParams(injector: Injector, target: Type, propertyKey: string, ...providers: ProviderType[]): any[] {
+    createParams(injector: Injector, target: Type, propertyKey: string, providers: ProviderType[]): any[];
+    /**
+     * create params instance.
+     * @param injector 
+     * @param target 
+     * @param propertyKey 
+     * @param providers 
+     * @returns 
+     */
+    createParams(injector: Injector, target: Type, propertyKey: string, ...providers: ProviderType[]): any[];
+    createParams(injector: Injector, target: Type, propertyKey: string, ...prds: any[]): any[] {
         const tgRefl = get(target);
-        providers = [...providers, ...tgRefl?.providers || EMPTY, ...tgRefl.methodProviders.get(propertyKey) || EMPTY];
+        let providers: ProviderType[] = [
+            ...(prds.length === 1 && isArray(prds[0])) ? prds[0] : prds,
+            ...tgRefl?.providers || EMPTY,
+            ...tgRefl.methodProviders.get(propertyKey) || EMPTY];
         if (providers.length) {
             injector = Injector.create(providers, injector);
         }

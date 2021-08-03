@@ -13,11 +13,6 @@ export interface IocContext {
      * current injector.
      */
     injector: Injector;
-
-    /**
-     * raise provider.
-     */
-    provider?: Injector;
 }
 
 
@@ -86,6 +81,11 @@ export interface RuntimeContext extends RegContext {
      * @memberof RuntimeActionContext
      */
     instance?: any;
+
+    /**
+     * raise provider.
+     */
+    providers?: Injector;
 
     /**
      * property key

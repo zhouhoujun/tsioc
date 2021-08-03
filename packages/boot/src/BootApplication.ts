@@ -34,11 +34,11 @@ export class BootApplication implements IBootApplication {
         if (!isFunction(target)) {
             if (!this.loader) this.loader = target.loader;
             const parent = target.injector ?? this.createContainer();
-            const prds = (target.providers && target.providers.length) ? [...DEFAULTA_FACTORYS, ...target.providers] : DEFAULTA_FACTORYS;
-            target.providers = prds;
+            const providers = (target.providers && target.providers.length) ? [...DEFAULTA_FACTORYS, ...target.providers] : DEFAULTA_FACTORYS;
+            target.providers = providers;
             target.deps = [BootModule, MiddlewareModule, ...target.deps || []];
             target.root = true;
-            this.root = parent.resolve({ token: ModuleFactory, target: target.type, providers: prds }).create(parent, target);
+            this.root = parent.resolve({ token: ModuleFactory, target: target.type, providers }).create(parent, target);
             this.container = this.root.getContainer();
         } else {
             this.container = this.createContainer();

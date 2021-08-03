@@ -57,7 +57,7 @@ export const BeforeCtorAdviceAction = function (ctx: RuntimeContext, next: () =>
 
     ctx.injector.action()
         .get(ProceedingScope)
-        .beforeConstr(ctx.type, ctx.params, ctx.args, ctx.provider);
+        .beforeConstr(ctx.type, ctx.params, ctx.args, ctx.providers);
 
     next();
 };
@@ -76,7 +76,7 @@ export const AfterCtorAdviceAction = function (ctx: RuntimeContext, next: () => 
 
     ctx.injector.action()
         .get(ProceedingScope)
-        .afterConstr(ctx.instance, ctx.type, ctx.params, ctx.args, ctx.provider);
+        .afterConstr(ctx.instance, ctx.type, ctx.params, ctx.args, ctx.providers);
 
     next();
 };
