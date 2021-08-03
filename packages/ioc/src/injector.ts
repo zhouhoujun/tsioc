@@ -371,7 +371,6 @@ export abstract class Injector implements Destroyable {
     }
 }
 
-
 /**
  * action injector.
  */
@@ -614,7 +613,7 @@ export type RegisterOption<T = any> = TypeOption<T> | ProviderOption<T>;
 export type FnType = 'cotr' | 'inj' | 'fac';
 
 
-export type InjectorScope = 'root' | 'provider' | 'container';
+export type InjectorScope = 'root' | 'provider' | 'invoked' | 'container';
 
 /**
  * factory record.

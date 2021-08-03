@@ -83,7 +83,7 @@ export class DefaultInjector extends Injector {
             this.destCb = () => this.destroy();
             this.initParent(parent);
         }
-        if (scope !== 'provider') {
+        if (scope !== 'provider' && scope !== 'invoked') {
             this.setValue(INJECTOR, this);
             this.setValue(Injector, this);
         }
@@ -436,9 +436,9 @@ export class DefaultInjector extends Injector {
             }
         }
         const state = this.state();
-        return targetToken ? state.getTypeProvider(targetToken)?.get(option.token, injector) : null
+        return (targetToken ? state.getTypeProvider(targetToken)?.get(option.token, injector) : null)
             ?? injector.get(option.token)
-            ?? this.resolveFailed(injector, state, option.token, option.regify, option.defaultToken) ?? null;
+            ?? this.resolveFailed(injector, state, option.token, option.regify, option.defaultToken);
     }
 
 
@@ -504,7 +504,7 @@ export class DefaultInjector extends Injector {
         if (!from) {
             return this;
         }
-        this.merge(from as DefaultInjector, this, false, filter);
+        this.merge(from as DefaultInjector, this, filter);
         return this;
     }
 
@@ -516,7 +516,7 @@ export class DefaultInjector extends Injector {
             filter = undefined;
         }
         to = to || new (getClass(this))(this.parent);
-        this.merge(this, to as DefaultInjector, true, filter);
+        this.merge(this, to as DefaultInjector, filter);
         return to;
     }
 
@@ -616,11 +616,11 @@ export class DefaultInjector extends Injector {
     }
 
 
-    protected merge(from: DefaultInjector, to: DefaultInjector, clone?: boolean, filter?: (key: Token) => boolean) {
-        from.factories.forEach((pdr, key) => {
+    protected merge(from: DefaultInjector, to: DefaultInjector, filter?: (key: Token) => boolean) {
+        from.factories.forEach((rd, key) => {
             if (key === Injector || key === INJECTOR) return;
             if (filter && !filter(key)) return;
-            to.factories.set(key, clone ? { ...pdr } : { fn: (pdr) => from.get(key.toString, pdr) });
+            to.factories.set(key, rd.fnType === 'inj' ? { fn: (pdr) => from.get(key, pdr) } : { ...rd });
         });
     }
 

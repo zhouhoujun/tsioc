@@ -66,11 +66,11 @@ export class InvokerImpl implements Invoker {
         const mpdrs = tgRefl.methodProviders.get(key);
         providers = [...providers || EMPTY, ...tgRefl.providers || EMPTY, ...mpdrs || EMPTY];
 
+        const proxy = instance[key]['_proxy'];
         if (providers.length) {
-            injector = Injector.create(providers, injector);
+            injector = Injector.create(providers, injector, proxy ? 'invoked' : 'provider');
         }
 
-        const proxy = instance[key]['_proxy'];
         const paramInstances = this.resolveParams(injector, tgRefl.methodParams.get(key) || EMPTY);
         if (proxy) {
             paramInstances.push(injector);

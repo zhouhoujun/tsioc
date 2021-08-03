@@ -129,7 +129,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
             }
             const larg = lang.last(args);
             let providers: Injector;
-            if (larg instanceof Injector) {
+            if (larg instanceof Injector && larg.scope === 'invoked') {
                 args = args.slice(0, args.length - 1);
                 providers = larg;
             }
