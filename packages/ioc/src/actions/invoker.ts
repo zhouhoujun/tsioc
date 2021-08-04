@@ -63,15 +63,15 @@ export class InvokerImpl implements Invoker {
             throw new Error(`type: ${targetClass} has no method ${(key || '').toString()}.`);
         }
 
-        const mpdrs = tgRefl.methodProviders.get(key);
-        providers = [...providers || EMPTY, ...tgRefl.providers || EMPTY, ...mpdrs || EMPTY];
+        const state = injector.state();
+        providers = [...providers || EMPTY, state.getTypeProvider(targetClass), ...tgRefl.methodProviders.get(key) || EMPTY];
 
         const proxy = instance[key]['_proxy'];
         if (providers.length) {
             injector = Injector.create(providers, injector, proxy ? 'invoked' : 'provider');
         }
 
-        const paramInstances = this.resolveParams(injector, tgRefl.methodParams.get(key) || EMPTY);
+        const paramInstances = this.resolveParams(injector, state, tgRefl.methodParams.get(key) || EMPTY);
         if (proxy) {
             paramInstances.push(injector);
         } else if (providers.length) {
@@ -100,22 +100,22 @@ export class InvokerImpl implements Invoker {
     createParams(injector: Injector, target: Type, propertyKey: string, ...providers: ProviderType[]): any[];
     createParams(injector: Injector, target: Type, propertyKey: string, ...prds: any[]): any[] {
         const tgRefl = get(target);
+        const state = injector.state();
         let providers: ProviderType[] = [
             ...(prds.length === 1 && isArray(prds[0])) ? prds[0] : prds,
-            ...tgRefl?.providers || EMPTY,
+            state.getTypeProvider(target),
             ...tgRefl.methodProviders.get(propertyKey) || EMPTY];
         if (providers.length) {
             injector = Injector.create(providers, injector, 'provider');
         }
-        const args = this.resolveParams(injector, tgRefl.methodParams.get(propertyKey) || EMPTY);
+        const args = this.resolveParams(injector, state, tgRefl.methodParams.get(propertyKey) || EMPTY);
         if (providers.length) {
             injector.destroy();
         }
         return args;
     }
 
-    protected resolveParams(injector: Injector, params: ParameterMetadata[]): any[] {
-        const state = injector.state();
+    protected resolveParams(injector: Injector, state: RegisteredState, params: ParameterMetadata[]): any[] {
         return params.map(param => this.tryGetPdrParamer(injector, state, param.provider, param.isProviderType)
             ?? this.tryGetNameParamer(injector, param.paramName)
             ?? this.tryGetPdrParamer(injector, state, param.type, param.isType)

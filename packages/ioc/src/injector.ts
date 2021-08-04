@@ -388,7 +388,6 @@ export abstract class ActionProvider extends Injector {
     abstract getAction<T extends Handler>(target: Token<Action>): T;
 }
 
-
 /**
  * module loader for ioc.
  *
