@@ -1,4 +1,4 @@
-import { Autorun, Injector, lang, Singleton, Token, tokenId } from '@tsdi/ioc';
+import { Autorun, Injector, isArray, lang, Singleton, Token, tokenId } from '@tsdi/ioc';
 import { ApplicationContext } from '../Context';
 import { MessageContext } from './ctx';
 import { MessageQueue } from './queue';
@@ -48,16 +48,14 @@ const protocolReg = /^\w+:\/\//;
  * @param next 
  */
 export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) => {
-    const isNewInj = ctx.request.providers && ctx.request.providers.length;
-    if (isNewInj) {
-        ctx.injector = Injector.create(ctx.request.providers, ctx.injector, 'provider');
-    }
     const { injector, request } = ctx;
     ctx.vaild = injector.get(RouteVaildator);
 
     if (!ctx.vaild) {
         ctx.vaild = ctx.injector.get(RouteVaildator);
     }
+
+    const providers = Injector.create(isArray(request.providers) ? request.providers : [request.providers], injector);
 
     if (request.restful) {
         let matchs = request.url.match(/\/:\w+/gi);
@@ -86,6 +84,10 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
         },
         protocol: {
             get: () => request.protocol,
+            enumerable: false
+        },
+        providers: {
+            get: () => providers,
             enumerable: false
         },
         event: {
@@ -122,7 +124,6 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
         throw err;
     } finally {
         logger?.debug(ctx.method, ctx.url, `- ${Date.now() - start}ms`);
-        if (isNewInj) ctx.injector.destroy();
         // console.debug(ctx.method, ctx.url, `- ${Date.now() - start}ms`);
     }
 };

@@ -22,14 +22,11 @@ export const DEFAULTA_FACTORYS: ProviderType[] = [
  */
 @IocExt()
 export class BootModule {
-
     /**
      * register aop for container.
      */
     setup(@Inject() injector: Injector) {
-
         injector.action().regAction(BootLifeScope);
         injector.register(ConfigureMerger, ConfigureManager, BaseTypeParser);
-
     }
 }

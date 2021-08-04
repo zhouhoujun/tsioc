@@ -139,16 +139,16 @@ export class Joinpoint implements IocContext {
     targetType: Type;
 
 
-    set providers(pdr: Injector) {
-        this.injector.inject(pdr);
-    }
+    // set providers(pdr: Injector) {
+    //     this.injector.inject(pdr);
+    // }
     get providers(): Injector {
         return this.injector;
     }
 
 
-    constructor(injector: Injector) {
-        this.injector = Injector.create([{ provide: Joinpoint, useValue: this }], injector, 'provider')
+    constructor(injector: Injector, ...providers: ProviderType[]) {
+        this.injector = Injector.create([...providers, { provide: Joinpoint, useValue: this }], injector, 'provider')
     }
 
 
@@ -161,6 +161,6 @@ export class Joinpoint implements IocContext {
      * @returns {ResolveActionContext}
      */
     static parse<T>(injector: Injector, options: JoinpointOption): Joinpoint {
-        return Object.assign(new Joinpoint(injector), options);
+        return Object.assign(new Joinpoint(injector, options.providers, options.provJoinpoint?.providers), options);
     }
 }

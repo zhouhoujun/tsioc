@@ -11,7 +11,6 @@ import { AopReflect } from './metadata/ref';
 export type MatchExpress = (method?: string, fullName?: string, targetType?: ClassType, target?: any, pointcut?: IPointcut) => boolean;
 
 
-
 /**
  * advice matcher, use to match advice when a registered create instance.
  *

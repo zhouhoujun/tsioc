@@ -241,6 +241,18 @@ export abstract class Injector implements Destroyable {
      * @param {(T | Type<T>)} target type of class or instance.
      * @param {MethodType} propertyKey
      * @param {T} [instance] instance of target type.
+     * @param {ProviderType[]} providers
+     * @returns {TR}
+     * @memberof Injector
+     */
+     abstract invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, providers: ProviderType[]): TR
+    /**
+     * invoke method.
+     *
+     * @template T
+     * @param {(T | Type<T>)} target type of class or instance.
+     * @param {MethodType} propertyKey
+     * @param {T} [instance] instance of target type.
      * @param {...ProviderType[]} providers
      * @returns {TR}
      * @memberof Injector
@@ -366,8 +378,8 @@ export abstract class Injector implements Destroyable {
         if (!options) {
             options = EMPTY;
         }
-        return isArray(options) ? INJ_IMPL.create(options, parent, scope) :
-            INJ_IMPL.create(options.providers, options.parent, options.scope);
+        return isArray(options) ? INJECT_IMPL.create(options, parent, scope) :
+            INJECT_IMPL.create(options.providers, options.parent, options.scope);
     }
 }
 
@@ -516,7 +528,7 @@ export abstract class RegisteredState {
 export const EMPTY = [];
 
 
-export const INJ_IMPL = {
+export const INJECT_IMPL = {
     create(providers: ProviderType[], parent?: Injector, name?: string): Injector {
         throw new Error('not implemented.');
     }

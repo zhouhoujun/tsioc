@@ -23,6 +23,9 @@ export interface BootstrapOption {
      * providers.
      */
     providers?: ProviderType[];
+    /**
+     * args.
+     */
     args?: string[];
 }
 

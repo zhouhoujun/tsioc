@@ -84,7 +84,7 @@ export abstract class Route extends Middleware {
  */
 export class FactoryRoute extends Route {
 
-    constructor(url: string, prefix: string, private factory: (...args) => Middleware) {
+    constructor(url: string, prefix: string, private factory: (...pdrs: ProviderType[]) => Middleware) {
         super(url, prefix);
     }
 

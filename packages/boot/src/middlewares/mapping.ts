@@ -104,7 +104,9 @@ export class MappingRoute extends Route {
                 return;
             }
 
-            let result = injector.invoke(ctrl, meta.propertyKey);
+            const providers = await this.createProvider(ctx, ctrl, meta.metadata, this.reflect.methodParams.get(meta.propertyKey));
+            providers.unshift(ctx.providers);
+            let result = injector.invoke(ctrl, meta.propertyKey, providers);
             if (isPromise(result)) {
                 result = await result;
             }
@@ -131,10 +133,9 @@ export class MappingRoute extends Route {
     }
 
     protected getInstance(ctx: MessageContext) {
-        const token = this.reflect.type;
-        const providers = [{ provide: CONTEXT, useValue: ctx }];
-        return this.injector.resolve({ token, providers })
-            ?? this.injector.state().resolve(token, providers);
+        const providers = [ctx.providers, { provide: CONTEXT, useValue: ctx }];
+        return this.injector.resolve(this.reflect.type, providers)
+            ?? this.injector.state().resolve(this.reflect.type, providers);
     }
 
     protected getRouteMiddleware(ctx: MessageContext, meta: DecorDefine) {

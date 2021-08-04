@@ -91,6 +91,11 @@ export interface MessageContext {
     injector?: Injector;
 
     /**
+     * the context providers.
+     */
+    readonly providers?: Injector;
+
+    /**
      * route vaildator.
      */
     vaild?: IRouteVaildator;

@@ -2,7 +2,7 @@ import { ClassType, LoadType, Modules, Type } from './types';
 import {
     ProviderType, ResolveOption, ServicesOption, MethodType, FnRecord, Factory,
     ProviderOption, RegisterOption, TypeOption, FnType, ActionProvider, Container,
-    CONTAINER_IMPL, EMPTY, Injector, INJ_IMPL, ModuleLoader, Registered, RegisteredState, InjectorScope
+    CONTAINER_IMPL, EMPTY, Injector, INJECT_IMPL, ModuleLoader, Registered, RegisteredState, InjectorScope
 } from './injector';
 import { isToken, Token } from './tokens';
 import { CONTAINER, INJECTOR, TARGET } from './metadata/tk';
@@ -527,11 +527,23 @@ export class DefaultInjector extends Injector {
     * @param {(T | Type<T>)} target type of class or instance
     * @param {MethodType} propertyKey
     * @param {T} [instance] instance of target type.
+    * @param {ProviderType[]} providers
+    * @returns {TR}
+    */
+    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, providers: ProviderType[]): TR;
+    /**
+    * invoke method.
+    *
+    * @template T
+    * @param {(T | Type<T>)} target type of class or instance
+    * @param {MethodType} propertyKey
+    * @param {T} [instance] instance of target type.
     * @param {...ProviderType[]} providers
     * @returns {TR}
     */
-    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR {
-        return this.get(Invoker).invoke(this, target, propertyKey, providers);
+    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
+    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
+        return this.get(Invoker).invoke(this, target, propertyKey, args);
     }
 
 
@@ -625,6 +637,7 @@ export class DefaultInjector extends Injector {
     }
 
     protected destroying() {
+        console.log(this.scope, this.size, this.parent?.destroyed, Array.from(this.factories.values()))
         Array.from(this.factories.keys())
             .forEach(k => {
                 this.unregister(k);
@@ -757,15 +770,6 @@ export function resolveToken<T>(rd: FnRecord<T>, provider: Injector): T {
     if (!rd) return null;
 
     if (!isNil(rd.value)) return rd.value;
-    if (rd.expires) {
-        if ((rd.expires + rd.ltop) < Date.now()) {
-            rd.ltop = Date.now();
-            return rd.cache;
-        }
-        rd.expires = null;
-        rd.cache = null;
-        rd.ltop = null;
-    }
 
     switch (rd.fnType) {
         case 'cotr':
@@ -774,6 +778,15 @@ export function resolveToken<T>(rd: FnRecord<T>, provider: Injector): T {
             return rd.fn(...createArgs(rd.deps, provider));
         case 'inj':
         default:
+            if (rd.expires) {
+                if ((rd.expires + rd.ltop) < Date.now()) {
+                    rd.ltop = Date.now();
+                    return rd.cache;
+                }
+                rd.expires = null;
+                rd.cache = null;
+                rd.ltop = null;
+            }
             return rd.fn(provider);
 
     }
@@ -790,7 +803,7 @@ function createArgs(deps: any[], provider: Injector): any[] {
 }
 
 
-INJ_IMPL.create = (providers: ProviderType[], parent?: Injector, scope?: InjectorScope) => new DefaultInjector(providers, parent, scope);
+INJECT_IMPL.create = (providers: ProviderType[], parent?: Injector, scope?: InjectorScope) => new DefaultInjector(providers, parent, scope);
 CONTAINER_IMPL.create = (providers: ProviderType[], parent?: Injector) => new DefaultContainer(providers, parent);
 
 

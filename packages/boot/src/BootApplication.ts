@@ -1,4 +1,4 @@
-import { ModuleLoader, Container, isFunction, Type } from '@tsdi/ioc';
+import { ModuleLoader, Container, isFunction, Type, EMPTY } from '@tsdi/ioc';
 import { ContainerBuilder } from '@tsdi/core';
 import { IBootApplication } from './IBootApplication';
 import { APPLICATION } from './metadata/tk';
@@ -36,7 +36,7 @@ export class BootApplication implements IBootApplication {
             const parent = target.injector ?? this.createContainer();
             const providers = (target.providers && target.providers.length) ? [...DEFAULTA_FACTORYS, ...target.providers] : DEFAULTA_FACTORYS;
             target.providers = providers;
-            target.deps = [BootModule, MiddlewareModule, ...target.deps || []];
+            target.deps = [BootModule, MiddlewareModule, ...target.deps || EMPTY];
             target.root = true;
             this.root = parent.resolve({ token: ModuleFactory, target: target.type, providers }).create(parent, target);
             this.container = this.root.getContainer();
