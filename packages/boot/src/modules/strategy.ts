@@ -40,7 +40,7 @@ export class ModuleStrategy<TI extends Injector = Injector> implements Strategy 
     }
 
     iterator(injector: TI, callbackfn: (fac: FnRecord, key: Token, resolvor?: TI) => void | boolean, deep?: boolean) {
-        if (this.getMDRef(injector).some(e => e.exports.iterator(callbackfn) === false) === false) return false;
+        if (this.getMDRef(injector).some(e => e.exports.iterator(callbackfn) === false)) return false;
         return deep && injector.parent?.iterator(callbackfn, deep)
     }
 
