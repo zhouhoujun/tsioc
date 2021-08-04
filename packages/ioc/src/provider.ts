@@ -655,7 +655,7 @@ export function generateRecord<T>(injector: IProvider, option: StaticProviders):
             if (!injector.state().isRegistered(type) && !injector.has(type, true)) {
                 injector.register({ type, singleton, deps });
             }
-            return injector.get(type, pdr);
+            return injector.resolve(type, pdr);
         };
     } else if (isFunction(option.provide)) {
         const { provide, deps } = option;
