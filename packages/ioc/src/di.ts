@@ -76,7 +76,7 @@ export class DefaultInjector extends Injector {
     protected destCb: () => void;
     protected _container: Container;
 
-    constructor(providers: ProviderType[], readonly parent: Injector, readonly scope?: InjectorScope, private strategy: Strategy = INJECT_STRATEGY) {
+    constructor(providers: ProviderType[] = EMPTY, readonly parent: Injector, readonly scope?: InjectorScope, private strategy: Strategy = INJECT_STRATEGY) {
         super();
         this.factories = new Map();
         if (parent) {
@@ -637,7 +637,6 @@ export class DefaultInjector extends Injector {
     }
 
     protected destroying() {
-        console.log(this.scope, this.size, this.parent?.destroyed, Array.from(this.factories.values()))
         Array.from(this.factories.keys())
             .forEach(k => {
                 this.unregister(k);
@@ -974,6 +973,7 @@ class ActionProviderImpl extends DefaultInjector implements ActionProvider {
         super(providers, parent, 'provider');
     }
     protected initParent(parent: Container) {
+        this._container = parent.getContainer();
         parent.onFinally(() => this.destroy());
     }
 

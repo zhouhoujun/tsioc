@@ -1,6 +1,6 @@
 import {
     Type, MethodMetadata, ClassMetadata, tokenId,
-    IocContext, Injector, ParameterMetadata, ProviderType
+    IocContext, Injector, ParameterMetadata, ProviderType, lang
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advices } from '../advices/Advices';
@@ -138,10 +138,6 @@ export class Joinpoint implements IocContext {
      */
     targetType: Type;
 
-
-    // set providers(pdr: Injector) {
-    //     this.injector.inject(pdr);
-    // }
     get providers(): Injector {
         return this.injector;
     }
@@ -161,6 +157,6 @@ export class Joinpoint implements IocContext {
      * @returns {ResolveActionContext}
      */
     static parse<T>(injector: Injector, options: JoinpointOption): Joinpoint {
-        return Object.assign(new Joinpoint(injector, options.providers, options.provJoinpoint?.providers), options);
+        return lang.assign(new Joinpoint(injector, options.providers, options.provJoinpoint?.providers), options, 'providers', 'injector');
     }
 }

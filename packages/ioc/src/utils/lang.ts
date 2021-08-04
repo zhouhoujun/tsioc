@@ -30,6 +30,23 @@ export function omit(target: ObjectMap, ...fields: string[]): any {
 }
 
 /**
+ * assign key values to target.
+ * @param target target object
+ * @param values key values map.
+ * @param omits omit fileds.
+ * @returns 
+ */
+export function assign(target: Object, values: ObjectMap, ...omits: string[]): any {
+    if (!values) return target;
+    for (let key in values) {
+        if (omits.indexOf(key) < 0) {
+            target[key] = values[key];
+        }
+    }
+    return target;
+}
+
+/**
  * for in opter for object or array.
  *
  * @export

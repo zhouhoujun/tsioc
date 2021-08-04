@@ -114,7 +114,7 @@ export class AdviceMatcher implements IAdviceMatcher {
 
         matchedPointcut = matchedPointcut || [];
         return matchedPointcut.map(p => {
-            return Object.assign({}, p, { advice: metadata });
+            return { ...p, advice: metadata };
         });
     }
 
