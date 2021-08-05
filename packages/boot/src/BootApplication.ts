@@ -102,7 +102,7 @@ export class BootApplication implements IBootApplication {
                 appExit.exit(err);
             } else {
                 const logger = this.context.getLogManager()?.getLogger();
-                logger? logger.error(err) : console.error(err);
+                logger ? logger.error(err) : console.error(err);
             }
             throw err;
         }
