@@ -1,7 +1,7 @@
 import { ObjectMap, Type, LoadType, ProvidersMetadata } from '@tsdi/ioc';
 
 /**
- * connection
+ * connection options
  */
 export interface ConnectionOptions extends ObjectMap<any> {
     asDefault?: boolean;
@@ -18,6 +18,10 @@ export interface ConnectionOptions extends ObjectMap<any> {
     entities?: Type[];
     initDb?(connect: any): Promise<void>;
 }
+/**
+ * connection options
+ */
+export type IConnectionOptions = ConnectionOptions;
 
 /**
  * application Configuration.
