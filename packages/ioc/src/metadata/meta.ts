@@ -1,6 +1,6 @@
 import { ClassType } from '../types';
 import { Token } from '../tokens';
-import { ProviderType } from '../interface';
+import { ProviderType } from '../injector';
 
 /**
  * metadata

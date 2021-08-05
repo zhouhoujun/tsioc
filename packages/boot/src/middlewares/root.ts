@@ -1,4 +1,4 @@
-import { Autorun, createProvider, isArray, lang, Singleton, Token, tokenId } from '@tsdi/ioc';
+import { Autorun, Injector, isArray, lang, Singleton, Token, tokenId } from '@tsdi/ioc';
 import { ApplicationContext } from '../Context';
 import { MessageContext } from './ctx';
 import { MessageQueue } from './queue';
@@ -34,11 +34,11 @@ export class RootMessageQueue extends MessageQueue {
 
 
 function getValue<T>(this: MessageContext, token: Token<T>): T {
-    return this.providers.get(token);
+    return this.injector.get(token);
 }
 
 function setValue(this: MessageContext, token: Token, value: any): void {
-    this.providers.setValue(token, value);
+    this.injector.setValue(token, value);
 }
 
 const protocolReg = /^\w+:\/\//;
@@ -50,15 +50,12 @@ const protocolReg = /^\w+:\/\//;
 export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) => {
     const { injector, request } = ctx;
     ctx.vaild = injector.get(RouteVaildator);
-    const providers = createProvider(injector);
 
     if (!ctx.vaild) {
         ctx.vaild = ctx.injector.get(RouteVaildator);
     }
 
-    if (request.providers) {
-        providers.inject(isArray(request.providers) ? request.providers : [request.providers]);
-    }
+    const providers = Injector.create(isArray(request.providers) ? request.providers : [request.providers], injector);
 
     if (request.restful) {
         let matchs = request.url.match(/\/:\w+/gi);
@@ -116,7 +113,6 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
     const logger = injector.get(ApplicationContext).getLogManager()?.getLogger();
     const start = Date.now();
     logger?.debug(ctx.method, ctx.url);
-    // console.debug(ctx.method, ctx.url);
     try {
         await next();
     } catch (err) {
@@ -127,6 +123,5 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
         throw err;
     } finally {
         logger?.debug(ctx.method, ctx.url, `- ${Date.now() - start}ms`);
-        // console.debug(ctx.method, ctx.url, `- ${Date.now() - start}ms`);
     }
 };

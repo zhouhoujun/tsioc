@@ -1,4 +1,4 @@
-import { IInjector, isArray, isFunction, isPlainObject, KeyValueProvider, Provider, ProviderType, refl, ROOT_INJECTOR, StaticProviders, Type } from '@tsdi/ioc';
+import { DefaultInjector, EMPTY, Injector, InjectorScope, isArray, isFunction, isPlainObject, KeyValueProvider, ProviderType, refl, ROOT_INJECTOR, StaticProviders, Type } from '@tsdi/ioc';
 import { IModuleExports, ModuleFactory, ModuleInjector, ModuleOption, ModuleRegistered } from '../Context';
 import { ModuleReflect } from '../metadata/ref';
 import { CTX_ARGS, PROCESS_ROOT } from '../metadata/tk';
@@ -9,7 +9,7 @@ import { ModuleStrategy } from './strategy';
 /**
  * default module injector strategy.
  */
-export const mdInjStrategy = new ModuleStrategy<ModuleInjector>(p => p instanceof ModuleInjector, cu => cu.imports);
+export const mdInjStrategy = new ModuleStrategy<ModuleInjector>(cu => cu.imports);
 
 
 /**
@@ -21,8 +21,8 @@ export class DefaultModuleInjector<T> extends ModuleInjector<T> {
     exports: IModuleExports;
     private _regIn: string;
     private _instance: T;
-    constructor(readonly reflect: ModuleReflect<T>, parent?: IInjector, regIn?: string, protected _root = false, strategy: ModuleStrategy = mdInjStrategy) {
-        super(parent, strategy)
+    constructor(readonly reflect: ModuleReflect<T>, parent?: Injector, regIn?: string, protected _root = false, scope?: InjectorScope, strategy: ModuleStrategy = mdInjStrategy) {
+        super(EMPTY, parent, scope, strategy)
 
         const recd = { value: this };
         this.factories.set(ModuleInjector, recd);
@@ -66,16 +66,21 @@ export class DefaultModuleInjector<T> extends ModuleInjector<T> {
 /**
  * default module provider strategy.
  */
-const mdPdrStrategy = new ModuleStrategy<IModuleExports>(p => false, cu => cu.exports);
+const mdPdrStrategy = new ModuleStrategy<IModuleExports>(cu => cu.exports);
 
 /**
  * module exports.
  */
-export class ModuleExports extends Provider implements IModuleExports {
+export class ModuleExports extends DefaultInjector implements IModuleExports {
 
-    constructor(public moduleRef: ModuleInjector, strategy = mdPdrStrategy) {
-        super(moduleRef, strategy);
+    constructor(public moduleRef: ModuleInjector, scope?: InjectorScope, strategy = mdPdrStrategy) {
+        super(EMPTY, moduleRef, scope, strategy);
         this.export(moduleRef.type, true);
+    }
+
+    protected initParent(parnet: ModuleInjector) {
+        this._container = parnet.getContainer();
+        (this as any).parent = this._container;
     }
 
     /**
@@ -150,11 +155,6 @@ export class ModuleExports extends Provider implements IModuleExports {
                     this.moduleRef.setValue(k, useValue);
                     this.set(k, () => this.moduleRef.get(k));
                 });
-            } else if (p instanceof Provider) {
-                this.moduleRef.copy(p);
-                p.tokens().forEach(tk => {
-                    this.set(tk, (pdr) => this.moduleRef.get(tk, pdr));
-                })
             }
         });
         return this;
@@ -182,7 +182,7 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
         return this._modelRefl?.type;
     }
 
-    create(parent: IInjector, option?: ModuleOption): ModuleInjector<T> {
+    create(parent: Injector, option?: ModuleOption): ModuleInjector<T> {
         if ((parent as ModuleInjector)?.type === this._modelRefl.type) return parent as ModuleInjector;
         let inj = option ? this.createByOption(parent, option) : this.createInstance(parent);
         this.regModule(inj);
@@ -221,7 +221,7 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
     }
 
 
-    protected createByOption(parent: IInjector, option: ModuleOption) {
+    protected createByOption(parent: Injector, option: ModuleOption) {
         parent = parent || option.injector;
         const inj = this.createInstance(parent, option.regIn, option.root);
         if (option.providers) {
@@ -239,7 +239,7 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
         return inj;
     }
 
-    protected createInstance(parent: IInjector, regIn?: string, root?: boolean) {
+    protected createInstance(parent: Injector, regIn?: string, root?: boolean) {
         regIn = regIn || this._modelRefl.regIn;
         return new DefaultModuleInjector(this._modelRefl, (regIn && !root) ? parent.get(ROOT_INJECTOR) : parent, regIn, root);
     }

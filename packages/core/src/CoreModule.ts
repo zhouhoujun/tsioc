@@ -1,5 +1,5 @@
-import { CONTAINER, IContainer, Inject, IocExt, MODULE_LOADER, ServicesProvider } from '@tsdi/ioc';
-import { ModuleLoader } from './services/loader';
+import { Container, Inject, IocExt, ModuleLoader, ServicesProvider } from '@tsdi/ioc';
+import { ModuleLoaderImpl } from './services/loader';
 import { Services } from './services/providers';
 import { ResolveServicesScope } from './resolves/actions';
 
@@ -9,9 +9,9 @@ export class CoreModule {
     /**
      * register aop for container.
      */
-    setup(@Inject(CONTAINER) container: IContainer) {
-        if (!container.has(MODULE_LOADER)) {
-            container.setValue(MODULE_LOADER, new ModuleLoader(), ModuleLoader);
+    setup(@Inject() container: Container) {
+        if (!container.has(ModuleLoader)) {
+            container.setValue(ModuleLoader, new ModuleLoaderImpl(), ModuleLoaderImpl);
         }
         container.setValue(ServicesProvider, new Services(container));
 

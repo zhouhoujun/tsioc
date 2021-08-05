@@ -1,10 +1,11 @@
 import { Type } from '../types';
-import { isFunction, getClass, isTypeObject } from '../utils/chk';
+import { isFunction, getClass, isTypeObject, isArray } from '../utils/chk';
 import { Token } from '../tokens';
-import { IInjector, IProvider, ProviderType, RegisteredState, Invoker, MethodType } from '../interface';
 import { get } from '../metadata/refl';
 import { ParameterMetadata } from '../metadata/meta';
-import { createInvokedProvider } from '../provider';
+import { EMPTY, Injector, RegisteredState, ProviderType, MethodType } from '../injector';
+import { Invoker } from '../invoker';
+
 
 /**
  * method accessor
@@ -19,23 +20,20 @@ export class InvokerImpl implements Invoker {
      * try to async invoke the method of intance, if no instance will create by type.
      *
      * @template T
-     * @param {IInjector} injector
+     * @param {Injector} injector
      * @param {*} target
      * @param {(string | ((tag: T) => Function))} propertyKey
-     * @param {...ProviderType[]} providers
+     * @param {ProviderType[]} providers
      * @returns {T}
      */
-    invoke<T, TR = any>(injector: IInjector, target: Token<T> | T, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR {
+    invoke<T, TR = any>(injector: Injector, target: Token<T> | T, propertyKey: MethodType<T>, providers?: ProviderType[]): TR {
         let targetClass: Type, instance: T, key: string;
-        let typepdr: IProvider;
         if (isTypeObject(target)) {
             targetClass = getClass(target);
-            typepdr = injector.state().getTypeProvider(targetClass);
             instance = target as T;
         } else {
-            instance = injector.resolve(target as Token, ...providers);
+            instance = injector.resolve(target as Token, providers);
             targetClass = getClass(instance);
-            typepdr = injector.state().getTypeProvider(targetClass);
             if (!targetClass) {
                 throw new Error(target.toString() + ' is not implements by any class.')
             }
@@ -52,53 +50,63 @@ export class InvokerImpl implements Invoker {
             throw new Error(`type: ${targetClass} has no method ${(key || '').toString()}.`);
         }
 
-        if (tgRefl.methodProviders.has(key)) {
-            providers = providers.concat(tgRefl.methodProviders.get(key));
-        }
-
+        const state = injector.state();
+        providers = [...providers || EMPTY, state.getTypeProvider(targetClass), ...tgRefl.methodProviders.get(key) || EMPTY];
         const proxy = instance[key]['_proxy'];
-        const pdr = proxy ? createInvokedProvider(injector, providers) : injector.toProvider(providers);
-        const paramInstances = this.resolveParams(injector, tgRefl.methodParams.get(key) || [], pdr, typepdr);
-        if (proxy && pdr) {
-            paramInstances.push(pdr);
+        if (providers.length) {
+            injector = Injector.create(providers, injector, proxy ? 'invoked' : 'provider');
+        }
+        const paramInstances = this.resolveParams(injector, state, tgRefl.methodParams.get(key) || EMPTY);
+        if (proxy) {
+            paramInstances.push(injector);
+        } else if (providers.length) {
+            injector.destroy();
         }
         return instance[key](...paramInstances) as TR;
     }
 
     /**
      * create params instance.
-     *
-     * @param {IInjector} injector
-     * @param {IParameter[]} params
-     * @param {...ProviderType[]} providers
-     * @returns {any[]}
+     * @param injector 
+     * @param target 
+     * @param propertyKey 
+     * @param providers 
+     * @returns 
      */
-    createParams(injector: IInjector, target: Type, params: ParameterMetadata[], ...providers: ProviderType[]): any[] {
-        return this.resolveParams(injector, params, injector.toProvider(providers), injector.state().getTypeProvider(target));
+    createParams(injector: Injector, target: Type, propertyKey: string, providers?: ProviderType[]): any[] {
+        const tgRefl = get(target);
+        const state = injector.state();
+        providers = [
+            ...providers || EMPTY,
+            state.getTypeProvider(target),
+            ...tgRefl.methodProviders.get(propertyKey) || EMPTY];
+        if (providers.length) {
+            injector = Injector.create(providers, injector, 'provider');
+        }
+        const args = this.resolveParams(injector, state, tgRefl.methodParams.get(propertyKey) || EMPTY);
+        if (providers.length) {
+            injector.destroy();
+        }
+        return args;
     }
 
-    protected resolveParams(injector: IInjector, params: ParameterMetadata[], providers: IProvider, typepdrs?: IProvider): any[] {
-        const state = injector.state();
-        return params.map(param => this.tryGetPdrParamer(injector, state, param.provider, param.isProviderType, providers, typepdrs)
-            ?? this.tryGetNameParamer(param.paramName, providers, typepdrs)
-            ?? this.tryGetPdrParamer(injector, state, param.type, param.isType, providers, typepdrs)
+    protected resolveParams(injector: Injector, state: RegisteredState, params: ParameterMetadata[]): any[] {
+        return params.map(param => this.tryGetPdrParamer(injector, state, param.provider, param.isProviderType)
+            ?? this.tryGetNameParamer(injector, param.paramName)
+            ?? this.tryGetPdrParamer(injector, state, param.type, param.isType)
             ?? param.defaultValue);
     }
 
-    protected tryGetPdrParamer(injector: IInjector, state: RegisteredState, provider: Token, isType: boolean, providers?: IProvider, typepdrs?: IProvider) {
-        if (!provider) return null;
-        if (typepdrs && typepdrs.has(provider)) return typepdrs.get(provider, providers);
-        if (providers?.has(provider)) return providers.get(provider, providers);
+    protected tryGetPdrParamer(injector: Injector, state: RegisteredState, provider: Token, isType: boolean) {
+        if (!provider) return undefined;
         if (isType && !state.isRegistered(provider as Type) && !injector.has(provider, true)) {
             injector.register(provider as Type);
         }
-        return injector.get(provider, providers);
+        return injector.get(provider) ?? undefined;
     }
 
-    protected tryGetNameParamer(paramName: string, providers?: IProvider, typepdrs?: IProvider) {
-        if (typepdrs && typepdrs.has(paramName)) return typepdrs.get(paramName, providers);
-        if (providers && providers.has(paramName)) return providers.get(paramName, providers);
-        return null;
+    protected tryGetNameParamer(injector: Injector, paramName: string) {
+        return injector.has(paramName) ? injector.get(paramName) : undefined;
     }
 
 }

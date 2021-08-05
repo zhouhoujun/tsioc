@@ -1,4 +1,4 @@
-import { IProvider, isNil, FacRecord, Strategy, Token } from '@tsdi/ioc';
+import { isNil, FnRecord, Strategy, Token, Injector } from '@tsdi/ioc';
 import { ModuleInjector } from '../Context';
 
 
@@ -7,48 +7,41 @@ import { ModuleInjector } from '../Context';
 /**
  * module injector strategy.
  */
- export class ModuleStrategy<TI extends IProvider = IProvider> extends Strategy {
+export class ModuleStrategy<TI extends Injector = Injector> implements Strategy {
 
-    constructor(private vaild: (parent: IProvider) => boolean, private getMDRef: (curr: TI) => ModuleInjector[]) {
-        super();
+    constructor(private getMDRef: (curr: TI) => ModuleInjector[]) {
     }
 
-    vaildParent(parent: IProvider) {
-        return this.vaild(parent);
+    has(injector: TI, token: Token, deep?: boolean): boolean {
+        return this.getMDRef(injector).some(r => r.exports.has(token)) || deep && injector.parent?.has(token, deep);
     }
 
-    hasToken<T>(key: Token<T>, curr: TI, deep?: boolean) {
-        return this.getMDRef(curr).some(r => r.exports.has(key)) || (deep && curr.parent?.has(key));
+    hasValue<T>(injector: TI, token: Token, deep?: boolean) {
+        return this.getMDRef(injector).some(r => r.exports.hasValue(token, deep)) || deep && injector.parent?.hasValue(token, deep);
     }
 
-    hasValue<T>(key: Token<T>, curr: TI) {
-        return this.getMDRef(curr).some(r => r.exports.hasValue(key)) || curr.parent?.hasValue(key);
-    }
-
-    getInstance<T>(key: Token<T>, curr: TI, provider: IProvider) {
+    resolve?<T>(injector: TI, token: Token<T>, provider: Injector): T {
         let inst: T;
-        if (this.getMDRef(curr).some(e => {
-            inst = e.exports.get(key, provider);
+        if (this.getMDRef(injector).some(e => {
+            inst = e.exports.get(token, provider);
             return !isNil(inst);
         })) return inst;
-        return curr.parent?.get(key, provider);
+
+        return injector.parent?.get(token, provider);
     }
 
-    getTokenProvider<T>(key: Token<T>, curr: TI) {
+    getProvider<T>(injector: TI, key: Token<T>) {
         let type;
-        this.getMDRef(curr).some(r => {
+        this.getMDRef(injector).some(r => {
             type = r.exports.getTokenProvider(key);
             return type;
         });
-        return type ?? curr.parent?.getTokenProvider(key);
+        return type ?? injector.parent?.getTokenProvider(key);
     }
 
-    iterator(callbackfn: (fac: FacRecord, key: Token, resolvor?: TI) => void | boolean, curr: TI, deep?: boolean) {
-        if (this.getMDRef(curr).some(e => e.exports.iterator(callbackfn) === false)) {
-            return false;
-        }
-        if (deep) {
-            return curr.parent?.iterator(callbackfn, deep);
-        }
+    iterator(injector: TI, callbackfn: (fac: FnRecord, key: Token, resolvor?: TI) => void | boolean, deep?: boolean) {
+        if (this.getMDRef(injector).some(e => e.exports.iterator(callbackfn) === false)) return false;
+        return deep && injector.parent?.iterator(callbackfn, deep)
     }
+
 }

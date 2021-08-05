@@ -1,5 +1,5 @@
 import {
-    Type, isFunction, lang, IProvider, IContainer, IActionProvider, InvokedProvider,
+    Type, isFunction, lang, Container, ActionProvider, Injector, ProviderType,
     ParameterMetadata, IocActions, IActionSetup, isArray, isNil, isPromise, refl
 } from '@tsdi/ioc';
 import { IPointcut } from '../joinpoints/IPointcut';
@@ -12,6 +12,7 @@ import { ADVISOR } from '../metadata/tk';
 const proxyFlag = '_proxy';
 const ctor = 'constructor';
 const aExp = /^@/;
+
 /**
  * Proxy method.
  *
@@ -21,9 +22,9 @@ const aExp = /^@/;
  */
 export class ProceedingScope extends IocActions<Joinpoint> implements IActionSetup {
 
-    private container: IContainer;
+    private container: Container;
 
-    constructor(private provider: IActionProvider) {
+    constructor(private provider: ActionProvider) {
         super();
         this.container = provider.getContainer();
     }
@@ -34,7 +35,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
     }
 
 
-    beforeConstr(targetType: Type, params: ParameterMetadata[], args: any[], providers: IProvider) {
+    beforeConstr(targetType: Type, params: ParameterMetadata[], args: any[], providers: Injector) {
         const advices = this.provider.get(ADVISOR).getAdvices(targetType, ctor);
         if (!advices) {
             return;
@@ -49,12 +50,12 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
             args,
             params,
             targetType,
-            providers: providers
+            providers
         });
         this.execute(joinPoint);
     }
 
-    afterConstr(target: any, targetType: Type, params: ParameterMetadata[], args: any[], providers: IProvider) {
+    afterConstr(target: any, targetType: Type, params: ParameterMetadata[], args: any[], providers: Injector) {
         const advices = this.provider.get(ADVISOR).getAdvices(targetType, ctor);
         if (!advices) {
             return;
@@ -127,8 +128,8 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
                 return propertyMethod.call(target, ...args);
             }
             const larg = lang.last(args);
-            let providers: IProvider;
-            if (larg instanceof InvokedProvider) {
+            let providers: Injector;
+            if (larg instanceof Injector && larg.scope === 'invoked') {
                 args = args.slice(0, args.length - 1);
                 providers = larg;
             }
@@ -158,13 +159,13 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
 
     protected invokeAdvice(joinPoint: Joinpoint, advicer: Advicer) {
         let metadata: any = advicer.advice;
-        let providers = joinPoint.providers;
+        let providers: ProviderType[] = [];
         if (!isNil(joinPoint.args) && metadata.args) {
-            providers.inject({ provide: metadata.args, useValue: joinPoint.args })
+            providers.push({ provide: metadata.args, useValue: joinPoint.args })
         }
 
         if (metadata.annotationArgName) {
-            providers.inject({
+            providers.push({
                 provide: metadata.annotationArgName,
                 useFactory: () => {
                     let curj = joinPoint;
@@ -185,14 +186,16 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
         }
 
         if (!isNil(joinPoint.returning) && metadata.returning) {
-            providers.inject({ provide: metadata.returning, useValue: joinPoint.returning })
+            providers.push({ provide: metadata.returning, useValue: joinPoint.returning })
         }
 
         if (joinPoint.throwing && metadata.throwing) {
-            providers.inject({ provide: metadata.throwing, useValue: joinPoint.throwing });
+            providers.push({ provide: metadata.throwing, useValue: joinPoint.throwing });
         }
 
-        return this.container.state().getInjector(advicer.aspectType).invoke(advicer.aspectType, advicer.advice.propertyKey, providers);
+        joinPoint.providers.inject(providers);
+
+        return this.container.state().getInjector(advicer.aspectType).invoke(advicer.aspectType, advicer.advice.propertyKey, joinPoint.providers);
     }
 
 }
@@ -247,10 +250,6 @@ export const CtorAfterAdviceAction = function (ctx: Joinpoint, next: () => void)
 
 export class MethodAdvicesScope extends IocActions<Joinpoint> implements IActionSetup {
 
-    execute(ctx: Joinpoint, next?: () => void) {
-        ctx.providers.inject(ctx.getProvProviders());
-        super.execute(ctx, next);
-    }
     setup() {
         this.use(
             BeforeAdvicesAction,

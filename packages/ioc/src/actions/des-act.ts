@@ -7,10 +7,9 @@ import { DesignContext, RuntimeContext } from './ctx';
 import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
-import { FacRecord, IInjector, IProvider } from '../interface';
 import { PropertyMetadata } from '../metadata/meta';
 import { ROOT_INJECTOR } from '../metadata/tk';
-import { createProvider } from '../provider';
+import { Injector, FnRecord } from '../injector';
 
 
 
@@ -48,17 +47,17 @@ export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): 
     next();
 };
 
-function genReged(injector: IInjector, provide?: Token) {
+function genReged(injector: Injector, provide?: Token) {
     return {
         provides: provide ? [provide] : [],
         injector
     }
 }
 
-function regInstf(injector: IInjector, type: Type, provide: Token, singleton: boolean) {
+function regInstf(injector: Injector, type: Type, provide: Token, singleton: boolean) {
     const insf = {
         type,
-        fn: (providers: IProvider) => {
+        fn: (providers: Injector) => {
             // make sure has value.
             if (singleton && injector.hasValue(type)) {
                 return injector.get(type);
@@ -77,8 +76,9 @@ function regInstf(injector: IInjector, type: Type, provide: Token, singleton: bo
             cleanObj(ctx);
             return instance;
         },
+        fnType: 'inj',
         unreg: () => injector.state().deleteType(type)
-    } as FacRecord;
+    } as FnRecord;
 
     injector.set(provide, insf);
 }
@@ -161,8 +161,7 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
         if (state.providers) {
             state.providers.inject(ctx.reflect.providers);
         } else {
-            const pdrs = createProvider(injector, ctx.reflect.providers);
-            state.providers = pdrs;
+            state.providers = Injector.create(ctx.reflect.providers, injector, 'provider');
         }
     }
 

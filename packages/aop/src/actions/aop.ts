@@ -1,4 +1,4 @@
-import { Type, RuntimeContext, refl, AnnotationType} from '@tsdi/ioc';
+import { Type, RuntimeContext, refl, AnnotationType } from '@tsdi/ioc';
 import { ProceedingScope } from './proceed';
 import { Advicer } from '../advices/Advicer';
 import { Advices } from '../advices/Advices';
@@ -117,9 +117,10 @@ export const MatchPointcutAction = function (ctx: RuntimeContext, next: () => vo
                 } as Advices;
                 advisor.setAdvices(targetType, name, advices);
             }
-            let advicer = Object.assign(mpt, {
+            let advicer = {
+                ...mpt,
                 aspectType: type
-            }) as Advicer;
+            } as Advicer;
 
             if (advice.adviceName === 'Before') {
                 if (!advices.Before.some(a => equals(a, advicer))) {

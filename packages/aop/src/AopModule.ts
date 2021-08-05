@@ -1,4 +1,4 @@
-import { Inject, CONTAINER, IContainer, runtimes, RuntimeLifeScope, IocExt } from '@tsdi/ioc';
+import { Inject, Container, runtimes, RuntimeLifeScope, IocExt } from '@tsdi/ioc';
 import { BeforeCtorAdviceAction, AfterCtorAdviceAction, BindMthPointcutAction, MatchPointcutAction } from './actions/aop';
 import { Advisor } from './Advisor';
 import { AdviceMatcher } from './AdviceMatcher';
@@ -20,7 +20,7 @@ export class AopModule {
     /**
      * register aop for container.
      */
-    setup(@Inject(CONTAINER) container: IContainer) {
+    setup(@Inject() container: Container) {
 
         const prdr = container.action();
 

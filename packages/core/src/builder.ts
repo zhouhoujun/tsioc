@@ -1,4 +1,4 @@
-import { Container, IContainer, IModuleLoader, LoadType, Modules, MODULE_LOADER } from '@tsdi/ioc';
+import { Container, ModuleLoader, LoadType, Modules } from '@tsdi/ioc';
 import { IContainerBuilder } from './IBuilder';
 import { CONTAINER_BUILDER } from './tk';
 import { CoreModule } from './CoreModule';
@@ -12,16 +12,16 @@ import { CoreModule } from './CoreModule';
  */
 export class ContainerBuilder implements IContainerBuilder {
 
-    private _loader?: IModuleLoader
-    constructor(loader?: IModuleLoader) {
+    private _loader?: ModuleLoader
+    constructor(loader?: ModuleLoader) {
         this._loader = loader;
     }
 
-    create(): IContainer {
-        let container = new Container();
+    create(): Container {
+        let container = Container.create();
         container.setValue(CONTAINER_BUILDER, this);
         if (this._loader) {
-            container.setValue(MODULE_LOADER, this._loader);
+            container.setValue(ModuleLoader, this._loader);
         }
         container.register(CoreModule);
         return container;
@@ -34,23 +34,23 @@ export class ContainerBuilder implements IContainerBuilder {
      * @returns
      */
     async build(...modules: LoadType[]) {
-        let container: IContainer = this.create();
+        let container: Container = this.create();
         if (modules.length) {
             await container.load(modules);
         }
         return container;
     }
 
-    syncBuild(...modules: Modules[]): IContainer {
-        let container: IContainer = this.create();
+    syncBuild(...modules: Modules[]): Container {
+        let container: Container = this.create();
         if (modules.length) {
             container.use(modules);
         }
         return container;
     }
 
-    protected getLoader(container: IContainer): IModuleLoader {
-        return container.get(MODULE_LOADER) || this._loader;
+    protected getLoader(container: Container): ModuleLoader {
+        return container.get(ModuleLoader) || this._loader;
     }
 
 }

@@ -1,12 +1,12 @@
-import { AutoWired, Injectable, IContainer, ParameterMetadata, Param, Inject, Singleton, Container, refl, getToken } from '../src';
+import { AutoWired, Injectable, ParameterMetadata, Param, Inject, Singleton, Container, refl, getToken } from '../src';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, MiddleSchoolStudent, CollegeStudent, Student, InjMClassRoom, InjCollegeClassRoom, InjCollegeAliasClassRoom, StingMClassRoom, StringIdTest, SymbolIdest, SymbolCollegeClassRoom } from './debug';
 import expect = require('expect');
 
 describe('custom register test', () => {
 
-    let container: IContainer;
+    let container: Container;
     beforeEach(async () => {
-        container = new Container();
+        container = Container.create();
         container.setValue(Date, new Date());
     });
 

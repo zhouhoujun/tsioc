@@ -10,4 +10,4 @@ export * from './resolves/actions';
 export * from './IBuilder';
 export * from './builder';
 
-export { IInjector as ICoreInjector, IContainer, LoadType, CONTAINER, ContainerToken, Container, DefaultInjector as CoreInjector } from '@tsdi/ioc';
+export { Injector as ICoreInjector, LoadType, CONTAINER, CONTAINER as ContainerToken, Container, DefaultInjector as CoreInjector } from '@tsdi/ioc';

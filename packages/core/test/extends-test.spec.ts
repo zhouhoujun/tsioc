@@ -1,13 +1,13 @@
 import { ContainerBuilder } from '../src';
 // import { AnnotationAspect } from './aop/AnnotationAspect';
 // import { CheckRightAspect } from './aop/CheckRightAspect';
-import { IContainer } from '@tsdi/ioc';
+import { Container } from '@tsdi/ioc';
 import * as testModules from './extends-test';
 import { Person, Home } from './extends-test';
 import expect = require('expect');
 
 describe('extends test', () => {
-    let container: IContainer;
+    let container: Container;
     before(async () => {
         let builder = new ContainerBuilder();
         container = await builder.build(testModules);

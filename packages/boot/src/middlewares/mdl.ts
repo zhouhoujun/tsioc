@@ -1,5 +1,5 @@
 import { DIModule } from '../metadata/decor';
-import { ExtendBaseTypeMap } from './ModelParser';
+import { ExtendBaseTypeMap } from './parser';
 import { MessageQueue } from './queue';
 import { RootMessageQueue } from './root';
 import { RouteVaildator } from './route';

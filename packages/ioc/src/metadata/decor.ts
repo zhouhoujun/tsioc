@@ -2,35 +2,13 @@ import { ClassType, Type } from '../types';
 import { isString, isArray } from '../utils/chk';
 import { Token, getToken } from '../tokens';
 import {
-    ClassMetadata, AutorunMetadata, AutoWiredMetadata, InjectMetadata, TypeMetadata, PatternMetadata,
+    ClassMetadata, AutorunMetadata, AutoWiredMetadata, InjectMetadata, PatternMetadata,
     InjectableMetadata, ParameterMetadata, ProvidersMetadata, ProviderInMetadata
 } from './meta';
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
-import { IInjector, ProviderType } from '../interface';
+import { Injector, ProviderType } from '../injector';
 
 
-/**
- * Abstract decorator. define the class as abstract class.
- */
-export interface IAbstractDecorator {
-    /**
-     * define class is abstract class.
-     *
-     * @param {T} [metadata] metadata map.
-     */
-    (metadata?: TypeMetadata): ClassDecorator;
-}
-
-/**
- * Abstract decorator. define for class.
- *
- * @Abstract
- */
-export const Abstract: IAbstractDecorator = createDecorator<TypeMetadata>('Abstract', {
-    appendProps: (meta) => {
-        meta.abstract = true;
-    }
-});
 
 /**
  * AutoWired decoator.
@@ -284,7 +262,7 @@ export const ProviderIn: IProviderInDecorator = createDecorator<ProviderInMetada
         afterAnnoation: (ctx, next) => {
             let meta = ctx.reflect.class.getMetadata<ProviderInMetadata>(ctx.currDecor);
             const type = ctx.type;
-            ctx.injector.state().setTypeProvider(meta.target, { provide: meta.provide || type, useClass: type })
+            ctx.injector.state().setTypeProvider(meta.target, [{ provide: meta.provide || type, useClass: type }])
             return next();
         }
     }
@@ -350,7 +328,7 @@ export const Singleton: ISingletonDecorator = createDecorator<ClassMetadata>('Si
  *  ioc extend inteface.
  */
 export interface IocExtentd {
-    setup(container: IInjector);
+    setup(Injector: Injector);
 }
 
 /**

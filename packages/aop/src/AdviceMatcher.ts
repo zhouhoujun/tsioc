@@ -1,4 +1,4 @@
-import { isString, isRegExp, Type, lang, isArray, isFunction, refl, ClassType, IContainer } from '@tsdi/ioc';
+import { isString, isRegExp, Type, lang, isArray, isFunction, refl, ClassType, Container } from '@tsdi/ioc';
 import { IAdviceMatcher } from './IAdviceMatcher';
 import { AdviceMetadata } from './metadata/meta';
 import { IPointcut } from './joinpoints/IPointcut';
@@ -11,7 +11,6 @@ import { AopReflect } from './metadata/ref';
 export type MatchExpress = (method?: string, fullName?: string, targetType?: ClassType, target?: any, pointcut?: IPointcut) => boolean;
 
 
-
 /**
  * advice matcher, use to match advice when a registered create instance.
  *
@@ -21,7 +20,7 @@ export type MatchExpress = (method?: string, fullName?: string, targetType?: Cla
  */
 export class AdviceMatcher implements IAdviceMatcher {
 
-    constructor(private container: IContainer) { }
+    constructor(private container: Container) { }
 
     match(aspectType: Type, targetType: Type, adviceMetas?: AdviceMetadata[], target?: any): MatchPointcut[] {
         const aspref = refl.get<AopReflect>(aspectType);
@@ -115,7 +114,7 @@ export class AdviceMatcher implements IAdviceMatcher {
 
         matchedPointcut = matchedPointcut || [];
         return matchedPointcut.map(p => {
-            return Object.assign({}, p, { advice: metadata });
+            return { ...p, advice: metadata };
         });
     }
 

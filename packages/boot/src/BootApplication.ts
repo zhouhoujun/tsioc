@@ -1,4 +1,4 @@
-import { IModuleLoader, IContainer, isFunction, Type } from '@tsdi/ioc';
+import { ModuleLoader, Container, isFunction, Type, EMPTY } from '@tsdi/ioc';
 import { ContainerBuilder } from '@tsdi/core';
 import { IBootApplication } from './IBootApplication';
 import { APPLICATION } from './metadata/tk';
@@ -19,7 +19,7 @@ export class BootApplication implements IBootApplication {
 
     private _destroyed = false;
     private _dsryCbs: (() => void)[] = [];
-    protected container: IContainer;
+    protected container: Container;
     private _newCt: boolean;
     readonly root: ModuleInjector;
     /**
@@ -30,15 +30,15 @@ export class BootApplication implements IBootApplication {
      */
     protected context: ApplicationContext;
 
-    constructor(protected target?: Type | ApplicationOption, protected loader?: IModuleLoader) {
+    constructor(protected target?: Type | ApplicationOption, protected loader?: ModuleLoader) {
         if (!isFunction(target)) {
             if (!this.loader) this.loader = target.loader;
             const parent = target.injector ?? this.createContainer();
-            const prds = (target.providers && target.providers.length) ? [...DEFAULTA_FACTORYS, ...target.providers] : DEFAULTA_FACTORYS;
-            target.providers = prds;
-            target.deps = [BootModule, MiddlewareModule, ...target.deps || []];
+            const providers = (target.providers && target.providers.length) ? [...DEFAULTA_FACTORYS, ...target.providers] : DEFAULTA_FACTORYS;
+            target.providers = providers;
+            target.deps = [BootModule, MiddlewareModule, ...target.deps || EMPTY];
             target.root = true;
-            this.root = parent.resolve({ token: ModuleFactory, target: target.type, providers: prds }).create(parent, target);
+            this.root = parent.resolve({ token: ModuleFactory, target: target.type, providers }).create(parent, target);
             this.container = this.root.getContainer();
         } else {
             this.container = this.createContainer();
@@ -101,7 +101,8 @@ export class BootApplication implements IBootApplication {
             if (appExit && appExit.enable) {
                 appExit.exit(err);
             } else {
-                this.context.getLogManager()?.getLogger()?.error(err);
+                const logger = this.context.getLogManager()?.getLogger();
+                logger ? logger.error(err) : console.error(err);
             }
             throw err;
         }
@@ -122,7 +123,7 @@ export class BootApplication implements IBootApplication {
     }
 
 
-    getContainer(): IContainer {
+    getContainer(): Container {
         return this.container;
     }
 

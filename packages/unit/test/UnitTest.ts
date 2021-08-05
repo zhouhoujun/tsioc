@@ -1,4 +1,4 @@
-import { lang, Inject, IContainer, CONTAINER } from '@tsdi/ioc';
+import { lang, Inject, Container, CONTAINER } from '@tsdi/ioc';
 import { Suite, BeforeEach, Test, Assert, Expect, ExpectToken, BeforeAll, Before } from '../src';
 
 
@@ -46,7 +46,7 @@ export class SuiteTest {
     }
 
     @Test()
-    async testEqural(@Inject(ExpectToken) expect: Expect, @Inject(CONTAINER) conatiner: IContainer) {
+    async testEqural(@Inject(ExpectToken) expect: Expect, @Inject() conatiner: Container) {
         await expect('true').not.toBe(true);
     }
 }

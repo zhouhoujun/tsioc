@@ -1,5 +1,5 @@
-import { Modules, isString, IModuleLoader } from '@tsdi/ioc';
-import { ModuleLoader } from '@tsdi/core';
+import { Modules, isString, ModuleLoader } from '@tsdi/ioc';
+import { ModuleLoaderImpl } from '@tsdi/core';
 import { runMainPath, toAbsolutePath } from './toAbsolute';
 import * as globby from 'globby';
 
@@ -9,9 +9,9 @@ import * as globby from 'globby';
  *
  * @export
  * @class NodeModuleLoader
- * @implements {IModuleLoader}
+ * @implements {ModuleLoader}
  */
-export class NodeModuleLoader extends ModuleLoader implements IModuleLoader {
+export class NodeModuleLoader extends ModuleLoaderImpl implements ModuleLoader {
 
     protected normalize(pth: string) {
         return pth ? pth.split('\\').join('/') : pth;

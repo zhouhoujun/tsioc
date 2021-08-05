@@ -1,4 +1,4 @@
-import { IContainer, Destroyable } from '@tsdi/ioc';
+import { Container, Destroyable } from '@tsdi/ioc';
 import { ApplicationContext } from './Context';
 
 
@@ -31,6 +31,6 @@ export interface IBootApplication extends Destroyable {
      *
      * @returns {IContainerPool}
      */
-    getContainer(): IContainer;
+    getContainer(): Container;
 
 }

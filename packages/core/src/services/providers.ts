@@ -1,6 +1,6 @@
 import {
-    IInjector, Token, ProviderType, IProvider, isArray, IContainer,
-    ServicesOption, isPlainObject, lang, ServicesProvider, TARGET, resolveRecord, isFunction
+    Injector, Token, ProviderType, isArray, Container,
+    ServicesOption, isPlainObject, lang, ServicesProvider, TARGET, isFunction, resolveToken, EMPTY
 } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from '../resolves/context';
 import { ResolveServicesScope } from '../resolves/actions';
@@ -13,63 +13,61 @@ export class Services implements ServicesProvider {
     static ρNPT = true;
     private servicesScope: ResolveServicesScope;
 
-    constructor(private readonly container: IContainer) { }
-
+    constructor(private readonly container: Container) { }
+    /**
+    * get all service extends type.
+    *
+    * @template T
+    * @param {Injector} injector
+    * @param {Token<T>} token servive token or express match token.
+    * @param {ProviderType[]} providers
+    * @returns {T[]} all service instance type of token type.
+    */
+    getServices<T>(injector: Injector, token: Token<T>, providers: ProviderType[]): T[];
     /**
      * get all service extends type.
      *
      * @template T
-     * @param {(Token<T> | ServicesOption<T>)} target servive token or express match token.
-     * @param {...ProviderType[]} providers
+     * @param {Injector} injector
+     * @param {ServicesOption<T>} option servive token or express match token.
      * @returns {T[]} all service instance type of token type.
      */
-    getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[] {
-        const maps = this.getServiceProviders(injector, target);
-        const services = [];
-        if (!maps.size) return services;
-
+    getServices<T>(injector: Injector, option: ServicesOption<T>): T[];
+    getServices<T>(injector: Injector, target: Token<T> | ServicesOption<T>, args?: ProviderType[]): T[] {
+        let providers: ProviderType[];
         if (isPlainObject(target)) {
+            providers = (target as ServicesOption<T>).providers || [];
             if ((target as ServicesOption<T>).target) {
                 providers.push({ provide: TARGET, useValue: (target as ServicesOption<T>).target });
             }
-            providers.unshift(...(target as ServicesOption<T>).providers || []);
+        } else {
+            providers = args || EMPTY;
         }
-        const pdr = injector.toProvider(providers, true);
-
-        maps.iterator(p => {
-            services.push(resolveRecord(p, pdr));
-        });
-        return services;
-    }
-
-    /**
-     * get service providers.
-     *
-     * @template T
-     * @param {IInjector} injector
-     * @param {Token<T> | ServicesOption<T>} target
-     * @returns {IProvider}
-     */
-    getServiceProviders<T>(injector: IInjector, target: Token<T> | ServicesOption<T>): IProvider {
         let context = {
-            injector: injector,
+            injector,
             ...isPlainObject(target) ? target : { token: target },
-            providers: null,
         } as ServicesContext;
 
         this.initTargetRef(context);
         if (!this.servicesScope) {
             this.servicesScope = this.container.action().get(ResolveServicesScope);
         }
+
+        const services = [];
         this.servicesScope.execute(context);
-        const services = context.services;
+        const pdr = providers.length? Injector.create(providers, injector, 'provider') : injector;
+        context.services.forEach(rd => {
+            services.push(resolveToken(rd, pdr));
+        });
+        providers.length && pdr.destroy();
+        context.services.clear();
         // clean obj.
         lang.cleanObj(context);
         return services;
     }
 
     private initTargetRef(ctx: ServiceContext) {
-        let targets = (isArray(ctx.target) ? ctx.target : [ctx.target]).filter(t => t).map(tr=> isFunction(tr) ? tr : lang.getClass(tr));
+        let targets = (isArray(ctx.target) ? ctx.target : [ctx.target]).filter(t => t).map(tr => isFunction(tr) ? tr : lang.getClass(tr));
         if (targets.length) {
             ctx.targetRefs = targets;
         }

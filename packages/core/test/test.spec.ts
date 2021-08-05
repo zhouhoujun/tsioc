@@ -1,11 +1,11 @@
-import { AutoWired, Injectable, ParameterMetadata, Param, Inject, Singleton, IContainer, getToken } from '@tsdi/ioc';
+import { AutoWired, Injectable, ParameterMetadata, Param, Inject, Singleton, Container, getToken } from '@tsdi/ioc';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, MiddleSchoolStudent, CollegeStudent, Student, InjMClassRoom, InjCollegeClassRoom, InjCollegeAliasClassRoom, StingMClassRoom, StringIdTest, SymbolIdest, SymbolCollegeClassRoom } from './debug';
 import expect = require('expect');
 import { ContainerBuilder } from '../src';
 
 describe('custom register test', () => {
 
-    let container: IContainer;
+    let container: Container;
     beforeEach(async () => {
         let builder = new ContainerBuilder();
         container = await builder.build();

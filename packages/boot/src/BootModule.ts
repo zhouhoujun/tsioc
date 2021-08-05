@@ -10,7 +10,7 @@ import { DefaultServiceFactoryResolver } from './services/fac';
 
 export const DEFAULTA_FACTORYS: ProviderType[] = [
     { provide: RunnableFactoryResolver, useValue: new DefaultServiceFactoryResolver() },
-    { provide: ModuleFactory, useFactory: (type) => new DefaultModuleFactory(type), deps: [TARGET] },
+    { provide: ModuleFactory, useClass: DefaultModuleFactory, deps: [TARGET] },
     { provide: ApplicationFactory, useValue: new DefaultApplicationFactory() }
 ]
 
@@ -22,14 +22,11 @@ export const DEFAULTA_FACTORYS: ProviderType[] = [
  */
 @IocExt()
 export class BootModule {
-
     /**
      * register aop for container.
      */
     setup(@Inject() injector: Injector) {
-
         injector.action().regAction(BootLifeScope);
         injector.register(ConfigureMerger, ConfigureManager, BaseTypeParser);
-
     }
 }

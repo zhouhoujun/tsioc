@@ -1,11 +1,11 @@
 import {
-    Abstract, AsyncHandler, DecorDefine, lang, ParameterMetadata, ProviderType, Type, TypeReflect, IInjector, tokenId,
-    isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, isPlainObject, RegisteredState
+    Abstract, AsyncHandler, DecorDefine, lang, ParameterMetadata, ProviderType, Type, TypeReflect, Injector, tokenId,
+    isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, isPlainObject, RegisteredState, isDefined
 } from '@tsdi/ioc';
 import { CONTEXT, TYPE_PARSER } from '../metadata/tk';
 import { MessageContext } from './ctx';
 import { IRouter, Middleware, MiddlewareType } from './handle';
-import { DefaultModelParserToken, ModelParser } from './ModelParser';
+import { MODEL_PARSER, ModelParser } from './parser';
 import { ResultValue } from './result';
 import { Route } from './route';
 import { ResultStrategy } from './strategy';
@@ -77,7 +77,7 @@ export const REQUEST_BODY = tokenId('REQUEST_BODY');
  */
 export class MappingRoute extends Route {
 
-    constructor(url: string, prefix: string, protected reflect: MappingReflect, protected injector: IInjector, protected middlewares: MiddlewareType[]) {
+    constructor(url: string, prefix: string, protected reflect: MappingReflect, protected injector: Injector, protected middlewares: MiddlewareType[]) {
         super(url, prefix);
     }
 
@@ -103,9 +103,10 @@ export class MappingRoute extends Route {
             if (!ctrl) {
                 return;
             }
-            const providers = await this.createProvider(ctx, ctrl, meta.metadata, this.reflect.methodParams.get(meta.propertyKey));
 
-            let result = injector.invoke(ctrl, meta.propertyKey, ctx.providers, ...providers);
+            const providers = await this.createProvider(ctx, ctrl, meta.metadata, this.reflect.methodParams.get(meta.propertyKey));
+            providers.unshift(ctx.providers);
+            let result = injector.invoke(ctrl, meta.propertyKey, providers);
             if (isPromise(result)) {
                 result = await result;
             }
@@ -132,8 +133,9 @@ export class MappingRoute extends Route {
     }
 
     protected getInstance(ctx: MessageContext) {
-        return this.injector.resolve(this.reflect.type, ctx.providers, { provide: CONTEXT, useValue: ctx })
-            ?? this.injector.state().resolve(this.reflect.type, ctx.providers, { provide: CONTEXT, useValue: ctx });
+        const providers = [ctx.providers, { provide: CONTEXT, useValue: ctx }];
+        return this.injector.resolve(this.reflect.type, providers)
+            ?? this.injector.state().resolve(this.reflect.type, providers);
     }
 
     protected getRouteMiddleware(ctx: MessageContext, meta: DecorDefine) {
@@ -200,6 +202,7 @@ export class MappingRoute extends Route {
             let ppds: ProviderType[] = await Promise.all(params.map(async (param) => {
                 let ptype = param.isProviderType ? param.provider : param.type;
                 let val;
+                let provide = ptype;
                 if (isFunction(ptype)) {
                     if (isPrimitiveType(ptype)) {
                         let paramVal = restParams[param.paramName];
@@ -208,33 +211,38 @@ export class MappingRoute extends Route {
                         }
                         val = parser.parse(ptype, paramVal);
                     }
-                    const keys = Object.keys(body);
-                    if (isNil(val) && keys.length) {
-                        if (isArray(ptype) && isArray(body)) {
-                            val = body;
-                        } else if (isPrimitiveType(ptype)) {
-                            val = parser.parse(ptype, body[param.paramName]);
-                        } else if (isClass(ptype)) {
-                            if (body instanceof ptype) {
+                    if (isNil(val)) {
+                        const keys = Object.keys(body);
+                        if (keys.length) {
+                            if (isArray(ptype) && isArray(body)) {
                                 val = body;
-                            } else {
-                                let rkey: string;
-                                if (isPlainObject(body)) {
-                                    rkey = keys.find(k => body[k] instanceof (ptype as Type));
-                                }
-
-                                if (rkey) {
-                                    val = body[rkey];
+                            } else if (isPrimitiveType(ptype)) {
+                                provide = param.paramName;
+                                val = parser.parse(ptype, body[param.paramName]);
+                            } else if (isClass(ptype)) {
+                                if (body instanceof ptype) {
+                                    val = body;
                                 } else {
-                                    let mdparser = injector.resolve({ token: ModelParser, target: ptype, defaultToken: DefaultModelParserToken });
-                                    if (mdparser) {
-                                        val = mdparser.parseModel(ptype, body);
+                                    let rkey: string;
+                                    if (isPlainObject(body)) {
+                                        rkey = keys.find(k => body[k] instanceof (ptype as Type));
+                                    }
+
+                                    if (rkey) {
+                                        val = body[rkey];
                                     } else {
-                                        // val = await injector.getInstance(BUILDER).build({ type: ptype, template: body })
+                                        let mdparser = injector.resolve({ token: ModelParser, target: ptype, defaultToken: MODEL_PARSER });
+                                        if (mdparser) {
+                                            val = mdparser.parseModel(ptype, body);
+                                        } else {
+                                            // val = await injector.getInstance(BUILDER).build({ type: ptype, template: body })
+                                        }
                                     }
                                 }
                             }
                         }
+                    } else {
+                        provide = param.paramName
                     }
                 } else if (ptype === REQUEST) {
                     val = ctx.request;
@@ -247,7 +255,7 @@ export class MappingRoute extends Route {
                 if (isNil(val)) {
                     return null;
                 }
-                return { provide: param.paramName || ptype, useValue: val };
+                return { provide, useValue: val };
             }))
             providers = providers.concat(ppds.filter(p => p !== null));
         }

@@ -1,6 +1,6 @@
 import { BootApplication, DIModule, Message, MessageQueue, MessageContext, Middleware,  RouteMapping, ApplicationContext } from '../src';
 import expect = require('expect');
-import { IInjector, Injectable, lang } from '@tsdi/ioc';
+import { Injector, Injectable, lang } from '@tsdi/ioc';
 
 @RouteMapping('/device')
 class DeviceController {
@@ -128,7 +128,7 @@ class MainApp {
 
 describe('app message queue', () => {
     let ctx: ApplicationContext;
-    let injector: IInjector;
+    let injector: Injector;
 
     before(async () => {
         ctx = await BootApplication.run(MainApp);

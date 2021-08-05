@@ -7,7 +7,7 @@ import { DecoratorType, DecorContext, DecorDefine, TypeReflect } from './type';
 import { TypeDefine } from './typedef';
 import { chain, Handler } from '../utils/hdl';
 import { cleanObj, getParentClass } from '../utils/lang';
-import { IActionProvider } from '../interface';
+import { ActionProvider } from '../injector';
 
 
 
@@ -367,8 +367,8 @@ export const ExecuteDecorHandle = (ctx: DecorContext, next: () => void) => {
 
 
 class DecorActions extends Actions<DecorContext, Handler | Action> {
-    protected getActionProvider(ctx: DecorContext): IActionProvider { return null; }
-    protected parseHandler(provider: IActionProvider, ac: any): Handler {
+    protected getActionProvider(ctx: DecorContext): ActionProvider { return null; }
+    protected parseHandler(provider: ActionProvider, ac: any): Handler {
         if (isFunction(ac)) {
             return ac;
         } else if (ac instanceof Action) {

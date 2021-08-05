@@ -1,5 +1,5 @@
 import {
-    Inject, Injectable, IocContainer, IIocContainer, AutoWired
+    Inject, Injectable, AutoWired, Container
 } from '@tsdi/ioc';
 import { AnnotationAspect } from './aop/AnnotationAspect';
 import { CheckRightAspect } from './aop/CheckRightAspect';
@@ -75,9 +75,9 @@ describe('aop test', () => {
         }
     }
 
-    let container: IIocContainer;
+    let container: Container;
     beforeEach(async () => {
-        container = new IocContainer;
+        container = Container.create();
         container.inject(AopModule, IocLog);
     });
 

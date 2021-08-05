@@ -1,11 +1,12 @@
 import { isNil } from '../utils/chk';
 import { chain } from '../utils/hdl';
-import { INVOKER } from '../metadata/tk'
 import { IActionSetup } from '../action';
 import { RuntimeContext } from './ctx';
 import { IocRegAction, IocRegScope } from './reg';
 import { Token } from '../tokens';
 import { PropertyMetadata } from '../metadata/meta';
+import { EMPTY } from '../injector';
+import { Invoker } from '../invoker';
 
 /**
  * ioc runtime register action.
@@ -23,8 +24,8 @@ export abstract class IocRuntimeAction extends IocRegAction<RuntimeContext> { }
  */
 export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): void {
     if (!ctx.args) {
-        ctx.params = ctx.reflect.methodParams.get('constructor') ?? [];
-        ctx.args = ctx.injector.getContainer().get(INVOKER).createParams(ctx.injector, ctx.type, ctx.params, ctx.providers);
+        ctx.params = ctx.reflect.methodParams.get('constructor') ?? EMPTY;
+        ctx.args = ctx.injector.get(Invoker).createParams(ctx.injector, ctx.type, 'constructor', [ctx.providers]);
     }
     next();
 };
@@ -50,7 +51,7 @@ export const CreateInstanceAction = function (ctx: RuntimeContext, next: () => v
  */
 export const InjectPropAction = function (ctx: RuntimeContext, next: () => void) {
     if (ctx.reflect.propProviders.size) {
-        const { injector: injector, providers, type } = ctx;
+        const { injector, type } = ctx;
         let meta: PropertyMetadata, key: string, token: Token, val;
         ctx.reflect.propProviders.forEach((metas, propertyKey) => {
             key = `${propertyKey}_INJECTED`;
@@ -60,7 +61,7 @@ export const InjectPropAction = function (ctx: RuntimeContext, next: () => void)
             }
             if (meta && !ctx[key]) {
                 token = meta.provider || meta.type;
-                val = injector.resolve({ token, target: type, regify: true }, providers);
+                val = injector.resolve({ token, target: type, regify: true, providers: [ctx.providers] });
                 if (!isNil(val)) {
                     ctx.instance[propertyKey] = val;
                     ctx[key] = true;
@@ -157,7 +158,7 @@ export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void)
     if (ctx.reflect.autoruns.length) {
         const { injector: injector, type, instance } = ctx;
         ctx.reflect.autoruns.forEach(aut => {
-            injector.invoke(instance || type, aut.autorun, instance);
+            injector.invoke(instance || type, aut.autorun, instance, ctx.providers);
         });
     }
 

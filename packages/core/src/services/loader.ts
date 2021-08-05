@@ -1,6 +1,6 @@
 import {
-    IModuleLoader, ChildModule, LoadType, PathModules, Modules, Type, lang,
-    isString, isArray, isMetadataObject, isFunction, IInjector
+    ModuleLoader, ChildModule, LoadType, PathModules, Modules, Type, lang,
+    isString, isArray, isMetadataObject, isFunction, Injector
 } from '@tsdi/ioc';
 
 
@@ -24,9 +24,9 @@ export function isChildModule(target: any): target is ChildModule {
  *
  * @export
  * @class DefaultModuleLoader
- * @implements {IModuleLoader}
+ * @implements {ModuleLoader}
  */
-export class ModuleLoader implements IModuleLoader {
+export class ModuleLoaderImpl implements ModuleLoader {
 
     static ρNPT = true;
 
@@ -38,7 +38,7 @@ export class ModuleLoader implements IModuleLoader {
         return this._loader;
     }
 
-    async register(injecor: IInjector, modules: LoadType[]): Promise<Type[]> {
+    async register(injecor: Injector, modules: LoadType[]): Promise<Type[]> {
         const mdls = await this.load(modules);
         return injecor.use(mdls);
     }

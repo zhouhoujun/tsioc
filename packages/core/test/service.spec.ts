@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { ContainerBuilder } from '../src';
-import { Injectable, Inject, IContainer, getToken, ProviderIn, refl } from '@tsdi/ioc';
+import { Injectable, Inject, Container, getToken, ProviderIn, refl } from '@tsdi/ioc';
 
 
 @Injectable()
@@ -44,7 +44,7 @@ export class TestServiceProvider extends DataProvider {
 
 describe('getService', () => {
 
-    let container: IContainer;
+    let container: Container;
     before(() => {
         let builder = new ContainerBuilder();
         container = builder.create();
@@ -66,7 +66,7 @@ describe('getService', () => {
 
 
     it('get service with providers', () => {
-        let tsr = container.getService({ token: TestService }, { provide: DataProvider, useClass: CustomDataProvider });
+        let tsr = container.getService(TestService, { provide: DataProvider, useClass: CustomDataProvider });
         expect(tsr).toBeInstanceOf(TestService);
         expect(tsr.flash()).toEqual('hi custom');
     })

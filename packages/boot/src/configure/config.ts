@@ -1,9 +1,9 @@
 import { ObjectMap, Type, LoadType, ProvidersMetadata } from '@tsdi/ioc';
 
 /**
- * connection
+ * connection options
  */
-export interface IConnectionOptions extends ObjectMap<any> {
+export interface ConnectionOptions extends ObjectMap<any> {
     asDefault?: boolean;
     name?: string;
     /**
@@ -18,6 +18,10 @@ export interface IConnectionOptions extends ObjectMap<any> {
     entities?: Type[];
     initDb?(connect: any): Promise<void>;
 }
+/**
+ * connection options
+ */
+export type IConnectionOptions = ConnectionOptions;
 
 /**
  * application Configuration.
@@ -51,33 +55,28 @@ export interface Configuration extends ProvidersMetadata {
      * @type {boolean}
      */
     debug?: boolean;
-
     /**
      * log config.
      *
      * @type {*}
      */
     logConfig?: any;
-
     /**
      * custom config key value setting.
      *
      * @type {ObjectMap}
      */
     setting?: ObjectMap;
-
     /**
      * custom config connections.
      *
      * @type {any}
      */
-    connections?: IConnectionOptions | IConnectionOptions[];
-
+    connections?: ConnectionOptions | ConnectionOptions[];
     /**
      * models of boot application.
      */
     models?: (string | Type)[];
-
     /**
      * repositories of orm.
      */
