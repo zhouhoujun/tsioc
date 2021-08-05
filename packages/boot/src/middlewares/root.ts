@@ -113,7 +113,6 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
     const logger = injector.get(ApplicationContext).getLogManager()?.getLogger();
     const start = Date.now();
     logger?.debug(ctx.method, ctx.url);
-    // console.debug(ctx.method, ctx.url);
     try {
         await next();
     } catch (err) {
@@ -124,6 +123,5 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
         throw err;
     } finally {
         logger?.debug(ctx.method, ctx.url, `- ${Date.now() - start}ms`);
-        // console.debug(ctx.method, ctx.url, `- ${Date.now() - start}ms`);
     }
 };

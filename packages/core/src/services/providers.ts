@@ -1,6 +1,6 @@
 import {
     Injector, Token, ProviderType, isArray, Container,
-    ServicesOption, isPlainObject, lang, ServicesProvider, TARGET, isFunction, resolveToken
+    ServicesOption, isPlainObject, lang, ServicesProvider, TARGET, isFunction, resolveToken, EMPTY
 } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from '../resolves/context';
 import { ResolveServicesScope } from '../resolves/actions';
@@ -14,17 +14,6 @@ export class Services implements ServicesProvider {
     private servicesScope: ResolveServicesScope;
 
     constructor(private readonly container: Container) { }
-
-    /**
-     * get all service extends type.
-     *
-     * @template T
-     * @param {Injector} injector
-     * @param {Token<T>} token servive token or express match token.
-     * @param {...ProviderType[]} providers
-     * @returns {T[]} all service instance type of token type.
-     */
-    getServices<T>(injector: Injector, token: Token<T>, ...providers: ProviderType[]): T[];
     /**
     * get all service extends type.
     *
@@ -44,8 +33,7 @@ export class Services implements ServicesProvider {
      * @returns {T[]} all service instance type of token type.
      */
     getServices<T>(injector: Injector, option: ServicesOption<T>): T[];
-    getServices<T>(injector: Injector, target: Token<T> | ServicesOption<T>, ...args: any[]): T[] {
-
+    getServices<T>(injector: Injector, target: Token<T> | ServicesOption<T>, args?: ProviderType[]): T[] {
         let providers: ProviderType[];
         if (isPlainObject(target)) {
             providers = (target as ServicesOption<T>).providers || [];
@@ -53,7 +41,7 @@ export class Services implements ServicesProvider {
                 providers.push({ provide: TARGET, useValue: (target as ServicesOption<T>).target });
             }
         } else {
-            providers = (args.length === 1 && isArray(args[0])) ? args[0] : args;
+            providers = args || EMPTY;
         }
         let context = {
             injector,

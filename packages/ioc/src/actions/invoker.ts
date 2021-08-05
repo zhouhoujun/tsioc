@@ -26,20 +26,7 @@ export class InvokerImpl implements Invoker {
      * @param {ProviderType[]} providers
      * @returns {T}
      */
-    invoke<T, TR = any>(injector: Injector, target: Token<T> | T, propertyKey: MethodType<T>, providers: ProviderType[]): TR;
-    /**
-     * try to async invoke the method of intance, if no instance will create by type.
-     *
-     * @template T
-     * @param {Injector} injector
-     * @param {*} target
-     * @param {(string | ((tag: T) => Function))} propertyKey
-     * @param {...ProviderType[]} providers
-     * @returns {T}
-     */
-    invoke<T, TR = any>(injector: Injector, target: Token<T> | T, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
-    invoke<T, TR = any>(injector: Injector, target: Token<T> | T, propertyKey: MethodType<T>, ...args: any[]): TR {
-        let providers: ProviderType[] = (args.length === 1 && isArray(args[0])) ? args[0] : args;
+    invoke<T, TR = any>(injector: Injector, target: Token<T> | T, propertyKey: MethodType<T>, providers?: ProviderType[]): TR {
         let targetClass: Type, instance: T, key: string;
         if (isTypeObject(target)) {
             targetClass = getClass(target);
@@ -65,12 +52,10 @@ export class InvokerImpl implements Invoker {
 
         const state = injector.state();
         providers = [...providers || EMPTY, state.getTypeProvider(targetClass), ...tgRefl.methodProviders.get(key) || EMPTY];
-
         const proxy = instance[key]['_proxy'];
         if (providers.length) {
             injector = Injector.create(providers, injector, proxy ? 'invoked' : 'provider');
         }
-
         const paramInstances = this.resolveParams(injector, state, tgRefl.methodParams.get(key) || EMPTY);
         if (proxy) {
             paramInstances.push(injector);
@@ -88,21 +73,11 @@ export class InvokerImpl implements Invoker {
      * @param providers 
      * @returns 
      */
-    createParams(injector: Injector, target: Type, propertyKey: string, providers: ProviderType[]): any[];
-    /**
-     * create params instance.
-     * @param injector 
-     * @param target 
-     * @param propertyKey 
-     * @param providers 
-     * @returns 
-     */
-    createParams(injector: Injector, target: Type, propertyKey: string, ...providers: ProviderType[]): any[];
-    createParams(injector: Injector, target: Type, propertyKey: string, ...prds: any[]): any[] {
+    createParams(injector: Injector, target: Type, propertyKey: string, providers?: ProviderType[]): any[] {
         const tgRefl = get(target);
         const state = injector.state();
-        let providers: ProviderType[] = [
-            ...(prds.length === 1 && isArray(prds[0])) ? prds[0] : prds,
+        providers = [
+            ...providers || EMPTY,
             state.getTypeProvider(target),
             ...tgRefl.methodProviders.get(propertyKey) || EMPTY];
         if (providers.length) {

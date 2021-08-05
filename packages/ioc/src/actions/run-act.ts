@@ -25,7 +25,7 @@ export abstract class IocRuntimeAction extends IocRegAction<RuntimeContext> { }
 export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): void {
     if (!ctx.args) {
         ctx.params = ctx.reflect.methodParams.get('constructor') ?? EMPTY;
-        ctx.args = ctx.injector.get(Invoker).createParams(ctx.injector, ctx.type, 'constructor', ctx.providers);
+        ctx.args = ctx.injector.get(Invoker).createParams(ctx.injector, ctx.type, 'constructor', [ctx.providers]);
     }
     next();
 };

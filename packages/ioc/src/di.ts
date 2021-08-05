@@ -436,7 +436,7 @@ export class DefaultInjector extends Injector {
             }
         }
         const state = this.state();
-        return (targetToken ? state.getTypeProvider(targetToken)?.get(option.token, injector) : null)
+        return (targetToken ? state.getTypeProvider(targetToken)?.resolve(option.token, injector) : null)
             ?? injector.get(option.token)
             ?? this.resolveFailed(injector, state, option.token, option.regify, option.defaultToken);
     }
@@ -530,7 +530,7 @@ export class DefaultInjector extends Injector {
     * @param {ProviderType[]} providers
     * @returns {TR}
     */
-    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, providers: ProviderType[]): TR;
+    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, providers?: ProviderType[]): TR;
     /**
     * invoke method.
     *
@@ -543,7 +543,7 @@ export class DefaultInjector extends Injector {
     */
     invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
     invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
-        return this.get(Invoker).invoke(this, target, propertyKey, args);
+        return this.get(Invoker).invoke(this, target, propertyKey, (args.length === 1 && isArray(args[0])) ? args[0] : args);
     }
 
 
@@ -595,7 +595,7 @@ export class DefaultInjector extends Injector {
      */
     getService<T>(option: ResolveOption<T>): T;
     getService<T>(target: Token<T> | ResolveOption<T>, ...args: any[]): T {
-        return this.resolve<T>(target as any, args);
+        return this.resolve<T>(target as any, ...args);
     }
 
     /**
@@ -624,7 +624,8 @@ export class DefaultInjector extends Injector {
      */
     getServices<T>(option: ServicesOption<T>): T[];
     getServices<T>(target: any, ...args: any[]): T[] {
-        return this.get(ServicesProvider, undefined, SERVICE).getServices(this, target, args) ?? [];
+        return this.get(ServicesProvider, undefined, SERVICE).getServices(this, target,
+            (args.length === 1 && isArray(args[0])) ? args[0] : args) ?? EMPTY;
     }
 
 
@@ -660,16 +661,6 @@ export class DefaultInjector extends Injector {
  */
 @Abstract()
 export abstract class ServicesProvider {
-    /**
-     * get all service extends type.
-     *
-     * @template T
-     * @param {Injector} injector
-     * @param {Token<T>} token servive token or express match token.
-     * @param {...ProviderType[]} providers
-     * @returns {T[]} all service instance type of token type.
-     */
-    abstract getServices<T>(injector: Injector, token: Token<T>, ...providers: ProviderType[]): T[];
     /**
     * get all service extends type.
     *

@@ -1,6 +1,6 @@
 import {
     Abstract, AsyncHandler, DecorDefine, lang, ParameterMetadata, ProviderType, Type, TypeReflect, Injector, tokenId,
-    isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, isPlainObject, RegisteredState, EMPTY
+    isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, isPlainObject, RegisteredState, isDefined
 } from '@tsdi/ioc';
 import { CONTEXT, TYPE_PARSER } from '../metadata/tk';
 import { MessageContext } from './ctx';
@@ -202,6 +202,7 @@ export class MappingRoute extends Route {
             let ppds: ProviderType[] = await Promise.all(params.map(async (param) => {
                 let ptype = param.isProviderType ? param.provider : param.type;
                 let val;
+                let provide = ptype;
                 if (isFunction(ptype)) {
                     if (isPrimitiveType(ptype)) {
                         let paramVal = restParams[param.paramName];
@@ -210,33 +211,38 @@ export class MappingRoute extends Route {
                         }
                         val = parser.parse(ptype, paramVal);
                     }
-                    const keys = Object.keys(body);
-                    if (isNil(val) && keys.length) {
-                        if (isArray(ptype) && isArray(body)) {
-                            val = body;
-                        } else if (isPrimitiveType(ptype)) {
-                            val = parser.parse(ptype, body[param.paramName]);
-                        } else if (isClass(ptype)) {
-                            if (body instanceof ptype) {
+                    if (isNil(val)) {
+                        const keys = Object.keys(body);
+                        if (keys.length) {
+                            if (isArray(ptype) && isArray(body)) {
                                 val = body;
-                            } else {
-                                let rkey: string;
-                                if (isPlainObject(body)) {
-                                    rkey = keys.find(k => body[k] instanceof (ptype as Type));
-                                }
-
-                                if (rkey) {
-                                    val = body[rkey];
+                            } else if (isPrimitiveType(ptype)) {
+                                provide = param.paramName;
+                                val = parser.parse(ptype, body[param.paramName]);
+                            } else if (isClass(ptype)) {
+                                if (body instanceof ptype) {
+                                    val = body;
                                 } else {
-                                    let mdparser = injector.resolve({ token: ModelParser, target: ptype, defaultToken: DefaultModelParserToken });
-                                    if (mdparser) {
-                                        val = mdparser.parseModel(ptype, body);
+                                    let rkey: string;
+                                    if (isPlainObject(body)) {
+                                        rkey = keys.find(k => body[k] instanceof (ptype as Type));
+                                    }
+
+                                    if (rkey) {
+                                        val = body[rkey];
                                     } else {
-                                        // val = await injector.getInstance(BUILDER).build({ type: ptype, template: body })
+                                        let mdparser = injector.resolve({ token: ModelParser, target: ptype, defaultToken: DefaultModelParserToken });
+                                        if (mdparser) {
+                                            val = mdparser.parseModel(ptype, body);
+                                        } else {
+                                            // val = await injector.getInstance(BUILDER).build({ type: ptype, template: body })
+                                        }
                                     }
                                 }
                             }
                         }
+                    } else {
+                        provide = param.paramName
                     }
                 } else if (ptype === REQUEST) {
                     val = ctx.request;
@@ -249,7 +255,7 @@ export class MappingRoute extends Route {
                 if (isNil(val)) {
                     return null;
                 }
-                return { provide: param.paramName || ptype, useValue: val };
+                return { provide, useValue: val };
             }))
             providers = providers.concat(ppds.filter(p => p !== null));
         }
