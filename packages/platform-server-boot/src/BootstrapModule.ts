@@ -56,8 +56,6 @@ export class ServerApplicationExit extends ApplicationExit {
 
     private hdl: () => void;
 
-    enable = true;
-
     constructor(readonly context: ApplicationContext) {
         super();
     }
