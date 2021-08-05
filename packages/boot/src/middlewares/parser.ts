@@ -2,14 +2,9 @@ import {
     Type, Inject, ObjectMap, isClass, isUndefined, isPrimitiveType, isArray,
     Abstract, Singleton, isNil, isFunction, Token, tokenId, Injector, PropertyMetadata
 } from '@tsdi/ioc';
-import { IModelParser } from './IModelParser';
 import { TYPE_PARSER } from '../metadata/tk';
 
 
-/**
- * default module parser token.
- */
-export const DefaultModelParserToken: Token<IModelParser> = tokenId<IModelParser>('DefaultModelParser')
 
 /**
  * db property metadata.
@@ -51,6 +46,10 @@ export class ExtendBaseTypeMap {
     }
 }
 
+/**
+ * default module parser token.
+ */
+ export const MODEL_PARSER: Token<ModelParser> = tokenId<ModelParser>('DefaultModelParser')
 
 /**
  * modle parser.
@@ -59,7 +58,7 @@ export class ExtendBaseTypeMap {
  * @class ModelParser
  */
 @Abstract()
-export abstract class ModelParser implements IModelParser {
+export abstract class ModelParser {
 
     static ρNPT = true;
 

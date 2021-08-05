@@ -1,5 +1,5 @@
 import { Singleton, Type, ObjectMap, Autorun, Token, isFunction, isString, tokenId, Inject } from '@tsdi/ioc';
-import { ModelParser, DefaultModelParserToken, DBPropertyMetadata } from '@tsdi/boot';
+import { ModelParser, MODEL_PARSER, DBPropertyMetadata } from '@tsdi/boot';
 import { getMetadataArgsStorage } from 'typeorm';
 import { ColumnMetadataArgs } from 'typeorm/metadata-args/ColumnMetadataArgs';
 
@@ -13,7 +13,7 @@ const timeExp = /(time|date)/;
 const arrayExp = /array/;
 const bytesExp = /(bytes|bytea)/;
 
-@Singleton(DefaultModelParserToken)
+@Singleton(MODEL_PARSER)
 @Autorun('setup')
 export class TypeOrmModelParser extends ModelParser {
 

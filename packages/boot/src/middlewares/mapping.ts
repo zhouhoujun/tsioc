@@ -5,7 +5,7 @@ import {
 import { CONTEXT, TYPE_PARSER } from '../metadata/tk';
 import { MessageContext } from './ctx';
 import { IRouter, Middleware, MiddlewareType } from './handle';
-import { DefaultModelParserToken, ModelParser } from './ModelParser';
+import { MODEL_PARSER, ModelParser } from './parser';
 import { ResultValue } from './result';
 import { Route } from './route';
 import { ResultStrategy } from './strategy';
@@ -231,7 +231,7 @@ export class MappingRoute extends Route {
                                     if (rkey) {
                                         val = body[rkey];
                                     } else {
-                                        let mdparser = injector.resolve({ token: ModelParser, target: ptype, defaultToken: DefaultModelParserToken });
+                                        let mdparser = injector.resolve({ token: ModelParser, target: ptype, defaultToken: MODEL_PARSER });
                                         if (mdparser) {
                                             val = mdparser.parseModel(ptype, body);
                                         } else {
