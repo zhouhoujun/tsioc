@@ -1,8 +1,11 @@
 import 'reflect-metadata';
 import { ILogger } from '@tsdi/logs';
-import { Singleton, Type, isString, isArray, IInjector } from '@tsdi/ioc';
-import { IConnectionOptions, Configuration, ConnectionStatupService, ApplicationContext } from '@tsdi/boot';
-import { getConnection, createConnection, ConnectionOptions, Connection, getMetadataArgsStorage, getCustomRepository, getConnectionManager } from 'typeorm';
+import { Singleton, Type, isString, isArray, Injector } from '@tsdi/ioc';
+import { ConnectionOptions, Configuration, ConnectionStatupService, ApplicationContext } from '@tsdi/boot';
+import {
+    getConnection, createConnection, ConnectionOptions as OrmConnOptions, Connection,
+    getMetadataArgsStorage, getCustomRepository, getConnectionManager
+} from 'typeorm';
 
 
 
@@ -11,7 +14,7 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
     /**
      * default connection options.
      */
-    protected options: IConnectionOptions;
+    protected options: ConnectionOptions;
     protected ctx: ApplicationContext;
 
     private logger: ILogger;
@@ -40,7 +43,7 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
         }
     }
 
-    async statupConnection(injector: IInjector, options: IConnectionOptions, config: Configuration) {
+    async statupConnection(injector: Injector, options: ConnectionOptions, config: Configuration) {
         const connection = await this.createConnection(options, config);
         options.entities.forEach(e => {
             injector.register(e);
@@ -60,7 +63,7 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
      * @param options connenction options.
      * @param config config
      */
-    async createConnection(options: IConnectionOptions, config: Configuration) {
+    async createConnection(options: ConnectionOptions, config: Configuration) {
         if (options.asDefault && !options.entities) {
             let entities: Type[] = [];
             if (config?.models.some(m => isString(m))) {
@@ -79,7 +82,7 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
         if (options.asDefault) {
             this.options = options;
         }
-        return await createConnection(options as ConnectionOptions);
+        return await createConnection(options as OrmConnOptions);
     }
 
     /**

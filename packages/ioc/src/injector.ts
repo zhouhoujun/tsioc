@@ -623,7 +623,9 @@ export type RegisterOption<T = any> = TypeOption<T> | ProviderOption<T>;
 
 export type FnType = 'cotr' | 'inj' | 'fac';
 
-
+/**
+ * injector scope.
+ */
 export type InjectorScope = 'root' | 'provider' | 'invoked' | 'container';
 
 /**
@@ -669,7 +671,6 @@ export interface FnRecord<T = any> {
      */
     unreg?: () => void;
 }
-
 
 
 /**

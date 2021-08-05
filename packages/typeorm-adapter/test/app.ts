@@ -1,4 +1,4 @@
-import { DIModule, IConnectionOptions } from '@tsdi/boot';
+import { DIModule, ConnectionOptions } from '@tsdi/boot';
 import { ServerBootstrapModule } from '@tsdi/platform-server-boot';
 import { TypeOrmModule } from '../src';
 import { Connection } from 'typeorm';
@@ -6,7 +6,7 @@ import { User } from './models/models';
 import { UserController } from './mapping/UserController';
 
 
-export const option = <IConnectionOptions>{
+export const option = <ConnectionOptions>{
     async initDb(connection: Connection) {
         console.log('init db connection', connection.options);
         let userRep = connection.getRepository(User);
