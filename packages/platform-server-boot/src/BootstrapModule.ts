@@ -88,7 +88,11 @@ export class ServerApplicationExit extends ApplicationExit {
             logger ? logger.error(err) : console.error(err);
         }
         this.context.destroy();
-        process.exit();
+        if (this.context.exit) {
+            process.exit(err ? 1 : 0);
+        } else if (err) {
+            throw err;
+        }
     }
 
 }

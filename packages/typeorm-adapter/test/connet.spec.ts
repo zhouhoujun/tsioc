@@ -19,6 +19,7 @@ export class ReposTest {
     async beforeInit() {
         this.ctx = await BootApplication.run({
             type: MockBootTest,
+            exit: false,
             configures: [
                 {
                     connections: {

@@ -2,11 +2,10 @@ import { ModuleLoader, Container, isFunction, Type, EMPTY } from '@tsdi/ioc';
 import { ContainerBuilder } from '@tsdi/core';
 import { IBootApplication } from './IBootApplication';
 import { APPLICATION } from './metadata/tk';
-import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption, ModuleFactory, ModuleInjector } from './Context';
+import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption, ModuleFactory, ModuleInjector, ApplicationExit } from './Context';
 import { MiddlewareModule } from './middlewares';
 import { BootLifeScope } from './appl/lifescope';
 import { BootModule, DEFAULTA_FACTORYS } from './BootModule';
-import { ApplicationExit } from './services/exit';
 
 
 /**
@@ -97,9 +96,9 @@ export class BootApplication implements IBootApplication {
             ctx.onDestroy(() => this.destroy());
             return ctx;
         } catch (err) {
-            const appExit = this.context.injector.get(ApplicationExit);
-            if (appExit && appExit.enable) {
-                appExit.exit(err);
+            const appex = this.context.injector.get(ApplicationExit);
+            if (appex) {
+                appex.exit(err);
             } else {
                 const logger = this.context.getLogManager()?.getLogger();
                 logger ? logger.error(err) : console.error(err);

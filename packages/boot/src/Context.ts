@@ -1,6 +1,6 @@
 import {
-    ProviderType, RegInMetadata, LoadType, Injector, Abstract,
-    Token, Type, ModuleLoader, Registered, DefaultInjector, Destroyable, Modules
+    ProviderType, RegInMetadata, LoadType, Injector, Abstract, Token, Type,
+    ModuleLoader, Registered, DefaultInjector, Destroyable, Modules
 } from '@tsdi/ioc';
 import { ILoggerManager } from '@tsdi/logs';
 import { Configuration, IConfigureManager } from './configure/config';
@@ -29,8 +29,6 @@ export interface BootstrapOption {
     args?: string[];
 }
 
-
-
 /**
  * runnable
  */
@@ -57,7 +55,6 @@ export abstract class Runner<T = any> extends Runnable {
      * @memberof Executor
      */
     abstract get instance(): T;
-
     /**
      * runnable target ref.
      *
@@ -74,7 +71,6 @@ export abstract class Runner<T = any> extends Runnable {
  */
 @Abstract()
 export abstract class TargetRef<T = any> implements Destroyable {
-
     /**
      * injector of current target.
      *
@@ -84,7 +80,6 @@ export abstract class TargetRef<T = any> implements Destroyable {
      * @memberof TargetRef
      */
     abstract get injector(): Injector;
-
     /**
      * instance of target
      *
@@ -94,7 +89,6 @@ export abstract class TargetRef<T = any> implements Destroyable {
      * @memberof Executor
      */
     abstract get instance(): T;
-
     /**
      * target reflect.
      *
@@ -104,7 +98,6 @@ export abstract class TargetRef<T = any> implements Destroyable {
      * @memberof Executor
      */
     abstract get reflect(): AnnotationReflect<T>;
-
     /**
      * execute target type.
      *
@@ -114,7 +107,6 @@ export abstract class TargetRef<T = any> implements Destroyable {
      * @memberof Executor
      */
     abstract get type(): Type<T>;
-
     /**
      * Destroys the component instance and all of the data structures associated with it.
      */
@@ -156,7 +148,7 @@ export abstract class RunnableFactoryResolver {
 /**
  * module exports provider.
  */
- export interface IModuleExports extends Injector {
+export interface IModuleExports extends Injector {
     /**
      * export moduleRefs.
      */
@@ -269,6 +261,10 @@ export abstract class ApplicationContext implements Destroyable {
     abstract get injector(): ModuleInjector;
 
     /**
+     * exit application or not, when throw error.
+     */
+    abstract get exit(): boolean;
+    /**
      * module instance.
      */
     abstract get instance();
@@ -370,10 +366,25 @@ export abstract class ApplicationContext implements Destroyable {
  */
 export const BootContext = ApplicationContext;
 
+
+@Abstract()
+export abstract class ApplicationExit {
+
+    abstract get context(): ApplicationContext;
+
+    abstract register(): void;
+
+    abstract exit(error?: Error);
+}
+
 /**
  * application option.
  */
 export interface ApplicationOption<T = any> extends ModuleOption<T> {
+    /**
+     * exit application or not, when throw error.
+     */
+    exit?: boolean;
     /**
      * target module type.
      *

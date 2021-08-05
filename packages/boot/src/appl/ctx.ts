@@ -1,4 +1,4 @@
-import { Token, ProviderType, Type, isFunction } from '@tsdi/ioc';
+import { Token, ProviderType, Type, isFunction, isBoolean } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { DIModuleMetadata } from '../metadata/meta';
 import { BOOT_TYPES, CONFIGURATION, PROCESS_ROOT } from '../metadata/tk';
@@ -25,6 +25,8 @@ export class DefaultApplicationContext extends ApplicationContext {
     readonly bootstraps: Runnable[] = [];
     readonly args: string[] = [];
     readonly startups: Token[] = [];
+
+    exit = true;
 
     constructor(readonly injector: ModuleInjector) {
         super();
@@ -149,6 +151,9 @@ export class DefaultApplicationFactory extends ApplicationFactory {
 
         if (option.args) ctx.args.push(...option.args);
         if (option.startups) ctx.startups.push(...option.startups);
+        if (isBoolean(option.exit)) {
+            (ctx as DefaultApplicationContext).exit = option.exit;
+        }
         const mgr = ctx.getConfigureManager();
         if (option.configures && option.configures.length) {
             option.configures.forEach(cfg => {

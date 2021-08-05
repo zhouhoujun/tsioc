@@ -1,8 +1,8 @@
 import { ClassType, LoadType, Modules, Type } from './types';
 import {
-    ProviderType, ResolveOption, ServicesOption, MethodType, FnRecord, Factory,
-    ProviderOption, RegisterOption, TypeOption, FnType, ActionProvider, Container,
-    CONTAINER_IMPL, EMPTY, Injector, INJECT_IMPL, ModuleLoader, Registered, RegisteredState, InjectorScope
+    ProviderType, ResolveOption, ServicesOption, MethodType, InjectorScope, Factory,
+    ProviderOption, RegisterOption, TypeOption, FnType, FnRecord, ActionProvider, Container,
+    CONTAINER_IMPL, EMPTY, Injector, INJECT_IMPL, ModuleLoader, Registered, RegisteredState
 } from './injector';
 import { isToken, Token } from './tokens';
 import { CONTAINER, INJECTOR, TARGET } from './metadata/tk';
