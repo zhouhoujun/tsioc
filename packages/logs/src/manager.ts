@@ -1,4 +1,4 @@
-import { getToken, Inject, Injectable, Injector, isFunction, isString, Singleton, Token, Type } from '@tsdi/ioc';
+import { EMPTY_OBJ, getToken, Inject, Injectable, Injector, isFunction, isString, Singleton, Token, Type } from '@tsdi/ioc';
 import { NonePointcut } from '@tsdi/aop';
 import { LogConfigure } from './LogConfigure';
 import { ILoggerManager, LoggerConfig, IConfigureLoggerManager } from './ILoggerManager';
@@ -61,7 +61,7 @@ export class ConfigureLoggerManager implements IConfigureLoggerManager {
 
     protected get logManger(): ILoggerManager {
         if (!this._logManger) {
-            let cfg: LogConfigure = this.config || <LogConfigure>{};
+            let cfg: LogConfigure = this.config || <LogConfigure>EMPTY_OBJ;
             let adapter = cfg.adapter || 'console';
             let token: Token;
             if (isString(adapter)) {

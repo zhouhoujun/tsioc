@@ -3,11 +3,11 @@ import {
     ModuleLoader, Registered, DefaultInjector, Destroyable, Modules
 } from '@tsdi/ioc';
 import { ILoggerManager } from '@tsdi/logs';
-import { Configuration, IConfigureManager } from './configure/config';
+import { Configuration, ConfigureManager } from './configure/config';
 import { AnnotationReflect, ModuleReflect } from './metadata/ref';
 import { MessageQueue } from './middlewares/queue';
 import { MessageContext, RequestOption } from './middlewares';
-import { DIModuleMetadata } from './metadata/meta';
+
 
 
 
@@ -321,9 +321,9 @@ export abstract class ApplicationContext implements Destroyable {
     /**
      * get configure manager.
      *
-     * @returns {IConfigureManager<Configuration>}
+     * @returns {ConfigureManager}
      */
-    abstract getConfigureManager(): IConfigureManager<Configuration>;
+    abstract getConfigureManager(): ConfigureManager;
     /**
      * get statup service tokens.
      */

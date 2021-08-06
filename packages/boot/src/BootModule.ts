@@ -1,5 +1,5 @@
 import { Inject, IocExt, Injector, ProviderType, TARGET } from '@tsdi/ioc';
-import { ConfigureManager, ConfigureMerger } from './configure/manager';
+import { ConfigureManagerImpl, ConfigureMergerImpl } from './configure/manager';
 import { BaseTypeParser } from './services/parser';
 import { BootLifeScope } from './appl/lifescope';
 import { ApplicationFactory, ModuleFactory, RunnableFactoryResolver } from './Context';
@@ -27,6 +27,6 @@ export class BootModule {
      */
     setup(@Inject() injector: Injector) {
         injector.action().regAction(BootLifeScope);
-        injector.register(ConfigureMerger, ConfigureManager, BaseTypeParser);
+        injector.register(ConfigureManagerImpl, ConfigureMergerImpl, BaseTypeParser);
     }
 }

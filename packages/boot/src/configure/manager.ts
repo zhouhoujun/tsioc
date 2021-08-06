@@ -1,6 +1,6 @@
-import { Inject, isUndefined, Singleton, isString, isMetadataObject, isPlainObject, lang, Injector, ROOT_INJECTOR } from '@tsdi/ioc';
-import { Configuration, IConfigureManager, IConfigureMerger } from './config';
-import { CONFIG_MANAGER, CONFIG_LOADER, DEFAULT_CONFIG, CONFIG_MERGER, PROCESS_ROOT } from '../metadata/tk';
+import { Inject, isUndefined, Singleton, isString, isMetadataObject, isPlainObject, lang, Injector, ROOT_INJECTOR, EMPTY_OBJ } from '@tsdi/ioc';
+import { Configuration, ConfigureLoader, ConfigureManager, ConfigureMerger } from './config';
+import { DEFAULT_CONFIG, PROCESS_ROOT } from '../metadata/tk';
 
 
 /**
@@ -9,12 +9,12 @@ import { CONFIG_MANAGER, CONFIG_LOADER, DEFAULT_CONFIG, CONFIG_MERGER, PROCESS_R
  * @export
  * @class ConfigureManager
  */
-@Singleton(CONFIG_MANAGER)
-export class ConfigureManager<T extends Configuration = Configuration> implements IConfigureManager<T> {
+@Singleton(ConfigureManager)
+export class ConfigureManagerImpl implements ConfigureManager {
 
     @Inject(ROOT_INJECTOR) injector: Injector;
-    private config: T;
-    protected configs: (string | T)[];
+    private config: Configuration;
+    protected configs: (string | Configuration)[];
 
     /**
      * Creates an instance of ConfigureManager.
@@ -29,7 +29,7 @@ export class ConfigureManager<T extends Configuration = Configuration> implement
      * @param {(string | AppConfigure)} [config]
      * @returns {this} this configure manager.
      */
-    useConfiguration(config?: string | T): this {
+    useConfiguration(config?: string | Configuration): this {
         if (isUndefined(config)) {
             config = '';
         }
@@ -49,11 +49,11 @@ export class ConfigureManager<T extends Configuration = Configuration> implement
      *
      * @returns {Promise<T>}
      */
-    async getConfig(): Promise<T> {
+    async getConfig<T extends Configuration>(): Promise<T> {
         if (!this.config) {
             this.config = await this.initConfig();
         }
-        return this.config || {} as T;
+        return (this.config || EMPTY_OBJ) as T;
     }
 
     /**
@@ -71,11 +71,11 @@ export class ConfigureManager<T extends Configuration = Configuration> implement
                 return cfg;
             }
         }));
-        const merger = this.injector.get(CONFIG_MERGER);
+        const merger = this.injector.get(ConfigureMerger);
         exts.forEach(exCfg => {
             if (exCfg) {
                 exCfg = isMetadataObject(exCfg['default']) ? exCfg['default'] : exCfg;
-                config = (merger ? merger.merge(config, exCfg) : { ...config, ...exCfg }) as T;
+                config = (merger ? merger.merge(config, exCfg) : { ...config, ...exCfg });
             }
         });
         return config;
@@ -88,13 +88,13 @@ export class ConfigureManager<T extends Configuration = Configuration> implement
      * @param {string} src
      * @returns {Promise<T>}
      */
-    protected async loadConfig(src: string): Promise<T> {
-        if (this.injector.has(CONFIG_LOADER)) {
-            let loader = this.injector.get(CONFIG_LOADER);
-            return await loader.load(src) as T;
+    protected async loadConfig(src: string): Promise<Configuration> {
+        if (this.injector.has(ConfigureLoader)) {
+            let loader = this.injector.get(ConfigureLoader);
+            return await loader.load(src);
         } else if (src) {
             let cfg = await this.injector.getLoader().load([src])
-            return cfg.length ? cfg[0] as Configuration as T : null;
+            return cfg.length ? cfg[0] as Configuration : null;
         } else {
             return null;
         }
@@ -106,18 +106,18 @@ export class ConfigureManager<T extends Configuration = Configuration> implement
      * @protected
      * @returns {Promise<T>}
      */
-    protected async getDefaultConfig(): Promise<T> {
+    protected async getDefaultConfig(): Promise<Configuration> {
         if (this.injector.has(DEFAULT_CONFIG)) {
-            return this.injector.resolve(DEFAULT_CONFIG) as T;
+            return this.injector.resolve(DEFAULT_CONFIG);
         } else {
-            return {} as T;
+            return {};
         }
     }
 }
 
 
-@Singleton(CONFIG_MERGER)
-export class ConfigureMerger implements IConfigureMerger {
+@Singleton(ConfigureMerger)
+export class ConfigureMergerImpl implements ConfigureMerger {
     merge(config1: Configuration, config2: Configuration): Configuration {
         let setting = { ...config1?.setting, ...config2?.setting };
         let deps = [...config1?.deps || [], ...config2?.deps || []];

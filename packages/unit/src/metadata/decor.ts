@@ -1,4 +1,4 @@
-import { createDecorator, DecoratorOption } from '@tsdi/ioc';
+import { createDecorator, DecoratorOption, EMPTY_OBJ } from '@tsdi/ioc';
 import { AnnotationReflect, Runnable } from '@tsdi/boot';
 import { SuiteMetadata, TestCaseMetadata, TestMetadata } from './meta';
 import { UnitRunner } from '../runner/Runner';
@@ -83,7 +83,7 @@ export interface TestDecorOption<T> extends DecoratorOption<T> {
  * @returns {ITestDecorator<T>}
  */
 export function createTestDecorator<T extends TestMetadata>(name: string, options?: TestDecorOption<T>): ITestDecorator<T> {
-    options = options || {};
+    options = options || EMPTY_OBJ;
     return createDecorator<TestMetadata>(name, {
         props: (timeout: number, setp?: number) => ({ timeout, setp }),
         ...options,

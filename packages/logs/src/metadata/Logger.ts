@@ -1,4 +1,4 @@
-import { TypeMetadata, ClassMethodDecorator, isFunction, createDecorator } from '@tsdi/ioc';
+import { TypeMetadata, ClassMethodDecorator, isFunction, createDecorator, EMPTY_OBJ } from '@tsdi/ioc';
 import { isLevel, Level } from '../Level';
 
 
@@ -108,6 +108,6 @@ export const Logger: ILoggerDecorator<LoggerMetadata> = createDecorator<LoggerMe
             }
 
         }
-        return {};
+        return EMPTY_OBJ;
     }
 }) as ILoggerDecorator<LoggerMetadata>;

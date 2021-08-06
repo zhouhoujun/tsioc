@@ -1,4 +1,4 @@
-import { isString, ClassType, ClassMetadata, DecoratorOption, createDecorator } from '@tsdi/ioc';
+import { isString, ClassType, ClassMetadata, DecoratorOption, createDecorator, EMPTY_OBJ } from '@tsdi/ioc';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AspectMetadata, AroundMetadata, PointcutAnnotation, AdviceTypes } from './meta';
 import { AopReflect } from './ref';
 import { ADVISOR } from './tk';
@@ -175,7 +175,7 @@ export interface IAdviceDecorator {
 }
 
 export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: string, options?: DecoratorOption<T>) {
-    options = options || {};
+    options = options || EMPTY_OBJ;
     const append = options.appendProps;
     return createDecorator<T>(adviceName, {
         props: (pointcut?: string | RegExp, annotation?: string | PointcutAnnotation) => {

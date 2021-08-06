@@ -523,10 +523,14 @@ export abstract class RegisteredState {
 }
 
 /**
- * empty.
+ * empty array.
  */
 export const EMPTY = [];
 
+/**
+ * empty object.
+ */
+export const EMPTY_OBJ = {};
 
 export const INJECT_IMPL = {
     create(providers: ProviderType[], parent?: Injector, name?: string): Injector {

@@ -5,6 +5,7 @@ import { ITestReport, ISuiteDescribe, ICaseDescribe } from '../reports/ITestRepo
 import { UnitRunner } from '../runner/Runner';
 import { SuiteRunner } from '../runner/SuiteRunner';
 import { OldTestRunner } from '../runner/OldTestRunner';
+import { EMPTY_OBJ } from '@tsdi/ioc';
 
 @Aspect({
     within: [SuiteRunner, OldTestRunner],
@@ -58,7 +59,7 @@ export class RunAspect extends LoggerAspect {
     @Around('execution(*.runCase)')
     logTestCase(joinPoint: Joinpoint) {
         let desc = joinPoint.args[0] as ICaseDescribe;
-        let suiteDesc = joinPoint.args.length > 1 ? joinPoint.args[1] : {};
+        let suiteDesc = joinPoint.args.length > 1 ? joinPoint.args[1] : EMPTY_OBJ;
         let runner = joinPoint.target as SuiteRunner;
         switch (joinPoint.state) {
             case JoinpointState.Before:

@@ -1,6 +1,6 @@
 import {
     DecoratorOption, isUndefined, createDecorator, ROOT_INJECTOR, isArray, isString,
-    lang, Type, DesignContext, ClassMethodDecorator, ProviderType, TypeMetadata
+    lang, Type, DesignContext, ClassMethodDecorator, ProviderType, TypeMetadata, EMPTY_OBJ
 } from '@tsdi/ioc';
 import { IStartupService } from '../services/intf';
 import { ModuleReflect, ModuleConfigure } from './ref';
@@ -12,7 +12,7 @@ import { MappingReflect, MappingRoute, RouteMapingMetadata } from '../middleware
 import { ModuleFactory, ModuleInjector, ModuleRegistered } from '../Context';
 import { BOOT_TYPES, CONFIGURES } from './tk';
 import { BootMetadata, DIModuleMetadata, HandleMetadata, HandlesMetadata } from './meta';
-import { IConfigureRegister } from '../configure/register';
+import { ConfigureRegister } from '../configure/register';
 
 
 /**
@@ -65,7 +65,7 @@ export const Boot: IBootDecorator = createDecorator<BootMetadata>('Boot', {
                 boots = [];
                 root.setValue(BOOT_TYPES, boots);
             }
-            const meta = ctx.reflect.class.getMetadata<BootMetadata>(ctx.currDecor) || {};
+            const meta = ctx.reflect.class.getMetadata<BootMetadata>(ctx.currDecor) || EMPTY_OBJ as BootMetadata;
 
             let idx = -1;
             if (meta.before) {
@@ -114,7 +114,7 @@ export const Boot: IBootDecorator = createDecorator<BootMetadata>('Boot', {
 /**
  * configure register decorator.
  */
-export type ConfigDecorator = <TFunction extends Type<IConfigureRegister>>(target: TFunction) => TFunction | void;
+export type ConfigDecorator = <TFunction extends Type<ConfigureRegister>>(target: TFunction) => TFunction | void;
 
 
 
@@ -185,7 +185,7 @@ interface ModuleDesignContext extends DesignContext {
  * @returns {IDIModuleDecorator<T>}
  */
 export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string, options?: DecoratorOption<T>): IDIModuleDecorator<T> {
-    options = options || {};
+    options = options || EMPTY_OBJ;
     let hd = options.reflect?.class ?? [];
     const append = options.appendProps;
     return createDecorator<DIModuleMetadata>(name, {

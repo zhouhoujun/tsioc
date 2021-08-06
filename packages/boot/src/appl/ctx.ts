@@ -2,8 +2,7 @@ import { Token, ProviderType, Type, isFunction, isBoolean } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { DIModuleMetadata } from '../metadata/meta';
 import { BOOT_TYPES, CONFIGURATION, PROCESS_ROOT } from '../metadata/tk';
-import { Configuration } from '../configure/config';
-import { ConfigureManager } from '../configure/manager';
+import { Configuration, ConfigureManager } from '../configure/config';
 import {
     ApplicationContext, ApplicationFactory, ApplicationOption, Runnable, RunnableFactory,
     BootstrapOption, ModuleInjector, RunnableFactoryResolver
@@ -100,9 +99,9 @@ export class DefaultApplicationContext extends ApplicationContext {
     /**
      * get configure manager.
      *
-     * @returns {ConfigureManager<Configuration>}
+     * @returns {ConfigureManager}
      */
-    getConfigureManager(): ConfigureManager<Configuration> {
+    getConfigureManager(): ConfigureManager {
         return this.injector.get(ConfigureManager);
     }
 

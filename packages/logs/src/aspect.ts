@@ -1,4 +1,4 @@
-import { Abstract, isFunction, isToken, isObject, isArray, Singleton, isNil } from '@tsdi/ioc';
+import { Abstract, isFunction, isToken, isObject, isArray, Singleton, isNil, EMPTY_OBJ } from '@tsdi/ioc';
 import { Aspect, Joinpoint, JoinpointState, Pointcut } from '@tsdi/aop';
 import { LoggerMetadata } from './metadata/Logger';
 import { isLevel, Level } from './Level';
@@ -87,7 +87,7 @@ export abstract class LoggerAspect extends LogProcess {
     _formater: ILogFormater;
     getFormater() {
         if (!this._formater) {
-            let config = (this.logManger as IConfigureLoggerManager).config || ({} as LogConfigure);
+            let config = (this.logManger as IConfigureLoggerManager).config || (EMPTY_OBJ as LogConfigure);
             let formater: ILogFormater;
             config.format = config.format || LogFormaterToken;
             if (isToken(config.format)) {

@@ -1,4 +1,4 @@
-import { ObjectMap, Type, LoadType, ProvidersMetadata } from '@tsdi/ioc';
+import { ObjectMap, Type, LoadType, ProvidersMetadata, Abstract } from '@tsdi/ioc';
 
 /**
  * connection options
@@ -86,54 +86,50 @@ export interface Configuration extends ProvidersMetadata {
 
 /**
  * configure loader.
- *
- * @export
- * @interface IConfigureLoader
  */
-export interface IConfigureLoader<T extends Configuration = Configuration> {
+ @Abstract()
+export abstract class ConfigureLoader {
     /**
      * load config.
      *
      * @param {string} [uri]
      * @returns {Promise<T>}
      */
-    load(uri?: string): Promise<T>;
+     abstract load<T extends Configuration>(uri?: string): Promise<T>;
 }
 
 
 /**
  * configure merge provider
  */
-export interface IConfigureMerger {
+@Abstract()
+export abstract class ConfigureMerger {
     /**
      * merge configure
      * @param config1 config 1
      * @param config2 coniig 2
      * @returns merged config.
      */
-    merge(config1: Configuration, config2: Configuration): Configuration;
+    abstract merge(config1: Configuration, config2: Configuration): Configuration;
 }
 
 /**
  * configure manager.
- *
- * @export
- * @interface IConfigureManager
- * @template T
  */
-export interface IConfigureManager<T extends Configuration = Configuration> {
+@Abstract()
+export abstract class ConfigureManager {
     /**
      * use configuration.
-     *
-     * @param {(string | AppConfigure)} [config]
+     *abstract 
+     * @param {(string | Configuration)} [config]
      * @returns {this} this configure manager.
      */
-    useConfiguration(config?: string | T): this;
+    abstract useConfiguration(config?: string | Configuration): this;
 
     /**
      * get config.
      *
      * @returns {Promise<T>}
      */
-    getConfig(): Promise<T>;
+    abstract getConfig<T extends Configuration>(): Promise<T>;
 }
