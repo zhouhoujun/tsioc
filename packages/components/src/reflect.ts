@@ -62,7 +62,6 @@ export interface ComponentReflect<T = any> extends AnnotationReflect<T> {
      * none serializes.
      */
     nonSerialize?: string[];
-
 }
 
 export function getComponentDef<T>(type: Type): ComponentDef<T> {

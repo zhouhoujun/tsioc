@@ -259,7 +259,6 @@ export abstract class ApplicationContext implements Destroyable {
      * application injector.
      */
     abstract get injector(): ModuleInjector;
-
     /**
      * exit application or not, when throw error.
      */
@@ -268,14 +267,12 @@ export abstract class ApplicationContext implements Destroyable {
      * module instance.
      */
     abstract get instance();
-
     /**
      * bootstrap type
      * @param type 
      * @param opts 
      */
     abstract bootstrap<C>(type: Type<C> | RunnableFactory<C>, opts?: BootstrapOption): any;
-
     /**
      * get message queue.
      */
@@ -296,19 +293,16 @@ export abstract class ApplicationContext implements Destroyable {
      * @returns {Promise<MessageContext>}
      */
     abstract send(url: string, request: RequestOption, ...providers: ProviderType[]): Promise<MessageContext>
-
     /**
      * get log manager.
      */
     abstract getLogManager(): ILoggerManager;
-
     /**
      * boot base url.
      *
      * @type {string}
      */
     abstract get baseURL(): string;
-
     /**
      * boot run env args.
      *
@@ -316,8 +310,6 @@ export abstract class ApplicationContext implements Destroyable {
      * @memberof BootOptions
      */
     abstract get args(): string[];
-
-    abstract getAnnoation<TM extends DIModuleMetadata>(): TM;
 
     /**
      * configuration merge metadata config and all application config.

@@ -22,8 +22,7 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
         ]
     }
 })
-export class AopBuilder {
-}
+export class AopBuilder { }
 
 if (process.cwd() === __dirname) {
     Workflow.run(AopBuilder);

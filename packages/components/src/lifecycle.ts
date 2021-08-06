@@ -107,7 +107,6 @@ export interface DoCheck {
     onDoCheck(): void;
 }
 
-
 /**
  * after view init.
  *
@@ -115,6 +114,9 @@ export interface DoCheck {
  * @interface AfterViewInit
  */
 export interface AfterViewInit {
+    /**
+     * A callback method that is invoked immediately afater view initialization.
+     */
     onAfterViewInit(): void;
 }
 
@@ -151,8 +153,6 @@ export interface AfterViewChecked {
 export interface OnDestroy {
     /**
      * component destroy hooks. invoke on component destory.
-     *
-     * @memberof AfterInit
      */
     onDestroy(): void;
 }

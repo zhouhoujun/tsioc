@@ -1,7 +1,6 @@
 import { Workflow, Task } from '@tsdi/activities';
 import { PackModule, LibPackBuilderOption } from '@tsdi/pack';
 import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
-import { AfterInit } from '@tsdi/components';
 
 @Task({
     deps: [
@@ -22,10 +21,7 @@ import { AfterInit } from '@tsdi/components';
         ]
     }
 })
-export class PfServerBootBuilder implements AfterInit {
-    onAfterInit(): void | Promise<void> {
-    }
-}
+export class PfServerBootBuilder {}
 
 if (process.cwd() === __dirname) {
     Workflow.run(PfServerBootBuilder);
