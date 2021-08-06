@@ -1,4 +1,4 @@
-import { Abstract, IInjector, Type } from '@tsdi/ioc';
+import { Abstract, Injector, Type } from '@tsdi/ioc';
 import { ComponentRef } from './component';
 import { ElementRef } from './element';
 import { TemplateRef } from './template';
@@ -40,7 +40,7 @@ export abstract class ViewContainerRef {
     /**
      * The [dependency injector] for this view container.
      */
-    abstract get injector(): IInjector;
+    abstract get injector(): Injector;
 
     /**
      * Destroys all views in this container.
@@ -85,7 +85,7 @@ export abstract class ViewContainerRef {
      *
      */
     abstract createComponent<C>(
-        type: Type<C>, index?: number, injector?: IInjector,
+        type: Type<C>, index?: number, injector?: Injector,
         projectableNodes?: any[][]): ComponentRef<C>;
 
     /**

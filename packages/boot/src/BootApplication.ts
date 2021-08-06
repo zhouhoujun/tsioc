@@ -2,7 +2,10 @@ import { ModuleLoader, Container, isFunction, Type, EMPTY } from '@tsdi/ioc';
 import { ContainerBuilder } from '@tsdi/core';
 import { IBootApplication } from './IBootApplication';
 import { APPLICATION } from './metadata/tk';
-import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption, ModuleFactory, ModuleInjector, ApplicationExit } from './Context';
+import {
+    ApplicationContext, ApplicationFactory, ModuleFactory,
+    ModuleInjector, ApplicationExit, ApplicationOption, BootstrapOption
+} from './Context';
 import { MiddlewareModule } from './middlewares';
 import { BootLifeScope } from './appl/lifescope';
 import { BootModule, DEFAULTA_FACTORYS } from './BootModule';

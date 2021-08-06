@@ -1,4 +1,4 @@
-import { Abstract, IInjector, lang, Type } from '@tsdi/ioc';
+import { Abstract, Injector, lang, Type } from '@tsdi/ioc';
 import { Runnable, RunnableFactory, BootstrapOption, RunnableFactoryResolver, ApplicationContext } from '@tsdi/boot';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ElementRef } from './element';
@@ -30,7 +30,7 @@ export abstract class ComponentRef<C = any> extends Runnable {
     /**
      * The dependency injector for this component instance.
      */
-    abstract get injector(): IInjector;
+    abstract get injector(): Injector;
 
     /**
      * This component instance.

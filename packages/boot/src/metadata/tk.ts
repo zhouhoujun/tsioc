@@ -59,13 +59,6 @@ export const CONFIG_MERGER = tokenId<IConfigureMerger>('CONFIG_MERGER');
 export const PROCESS_ROOT: Token<string> = tokenId<string>('PROCESS_ROOT');
 
 /**
- * appliaction boot process root path.
- *
- * @deprecated use `PROCESS_ROOT` instead.
- */
-export const ProcessRunRootToken = PROCESS_ROOT;
-
-/**
  * type parser token.
  */
 export const TYPE_PARSER: Token<IBaseTypeParser> = tokenId<IBaseTypeParser>('TYPE_PARSER');
@@ -81,7 +74,6 @@ export const BaseTypeParserToken = TYPE_PARSER;
  * context options.
  */
 export const CTX_OPTIONS = tokenId<any>('CTX_OPTIONS');
-
 
 /**
  * middleware context.

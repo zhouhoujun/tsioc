@@ -1,6 +1,6 @@
 import {
-    DecoratorOption, isUndefined, createDecorator, ROOT_INJECTOR,
-    lang, Type, isArray, isString, DesignContext, ClassMethodDecorator, ProviderType, TypeMetadata
+    DecoratorOption, isUndefined, createDecorator, ROOT_INJECTOR, isArray, isString,
+    lang, Type, DesignContext, ClassMethodDecorator, ProviderType, TypeMetadata
 } from '@tsdi/ioc';
 import { IStartupService } from '../services/intf';
 import { ModuleReflect, ModuleConfigure } from './ref';

@@ -1,4 +1,4 @@
-import { IInjector, Type } from '@tsdi/ioc';
+import { Injector, Type } from '@tsdi/ioc';
 import { ModuleFactory, ModuleInjector } from '@tsdi/boot';
 import { Directive, Input } from '../metadata/decor';
 import { Change, Changes, OnChanges, OnDestroy } from '../lifecycle';
@@ -152,7 +152,7 @@ export class DirTemplateOutlet implements OnChanges {
 @Directive({ selector: '[componentOutlet]' })
 export class DirComponentOutlet implements OnChanges, OnDestroy {
   @Input() componentOutlet: Type<any>;
-  @Input() componentOutletInjector: IInjector;
+  @Input() componentOutletInjector: Injector;
   @Input() componentOutletContent: any[][];
   @Input() componentOutletModuleFactory: ModuleFactory;
 

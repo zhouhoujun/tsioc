@@ -1,11 +1,11 @@
-import { Abstract, Provider } from '@tsdi/ioc';
+import { Abstract, DefaultInjector } from '@tsdi/ioc';
 import { ComponentReflect, DirectiveReflect } from '../reflect';
 
 
 /**
  * compiler identifiers providers.
  */
-export class Identifiers extends Provider { }
+export class Identifiers extends DefaultInjector { }
 
 /**
  * compiler facade.
