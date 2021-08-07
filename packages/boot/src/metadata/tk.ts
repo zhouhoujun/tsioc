@@ -21,18 +21,15 @@ export const BOOT_TYPES = tokenId<Type<IStartupService>[]>('BOOT_TYPES');
  */
 export const CONFIGURES = tokenId<Type<ConfigureRegister>[]>('CONFIGURES');
 
-
 /**
 * context options.
 */
 export const CTX_ARGS = tokenId<string[]>('CTX_ARGS');
 
-
 /**
  * config token.
  */
 export const CONFIGURATION = tokenId<Configuration>('CONFIGURATION');
-
 
 /**
  * default configuration token.

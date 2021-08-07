@@ -4,8 +4,8 @@ import { DIModuleMetadata } from '../metadata/meta';
 import { BOOT_TYPES, CONFIGURATION, PROCESS_ROOT } from '../metadata/tk';
 import { Configuration, ConfigureManager } from '../configure/config';
 import {
-    ApplicationContext, ApplicationFactory, ApplicationOption, Runnable, RunnableFactory,
-    BootstrapOption, ModuleInjector, RunnableFactoryResolver
+    ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption,
+    ModuleInjector, Runnable, RunnableFactory, RunnableFactoryResolver
 } from '../Context';
 import { MessageContext, MessageQueue, RequestOption, ROOT_QUEUE } from '../middlewares';
 

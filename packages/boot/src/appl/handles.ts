@@ -21,8 +21,6 @@ export interface IBuildHandle<T extends ApplicationContext = ApplicationContext>
  */
 export type HandleType<T extends ApplicationContext = ApplicationContext> = ActionType<IBuildHandle<T>, AsyncHandler<T>>;
 
-
-
 /**
  * build handle.
  *

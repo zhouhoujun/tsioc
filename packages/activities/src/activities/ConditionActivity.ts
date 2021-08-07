@@ -1,6 +1,6 @@
 import { Input } from '@tsdi/components';
 import { Expression } from '../core/ActivityMetadata';
-import { Task } from '../decor';
+import { Task } from '../metadata/decor';
 import { ExpressionActivity } from './ExpressionActivity';
 
 

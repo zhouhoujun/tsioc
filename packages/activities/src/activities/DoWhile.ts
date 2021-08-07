@@ -1,6 +1,6 @@
 import { AsyncHandler } from '@tsdi/ioc';
 import { Input } from '@tsdi/components';
-import { Task } from '../decor';
+import { Task } from '../metadata/decor';
 import { ControlActivity } from '../core/ControlActivity';
 import { IActivityContext } from '../core/IActivityContext';
 import { ConditionActivity } from './ConditionActivity';

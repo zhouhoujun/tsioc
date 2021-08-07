@@ -18,7 +18,7 @@ import { WorkflowContextToken } from './core/IWorkflowContext';
  * @class Workflow
  * @extends {BootApplication}
  */
-export class Workflow<T extends WorkflowContext = WorkflowContext> extends BootApplication<T> implements ContextInit {
+export class Workflow<T extends WorkflowContext = WorkflowContext> extends BootApplication implements ContextInit {
 
     protected onInit(target: Type | ActivityOption<T> | T) {
         if (!isClass(target)) {

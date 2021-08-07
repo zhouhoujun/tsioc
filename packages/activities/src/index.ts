@@ -1,6 +1,6 @@
 export * from './Workflow';
 export * from './ActivityModule';
-export * from './decor';
+export * from './metadata/decor';
 
 export * from './utils/types';
 // core

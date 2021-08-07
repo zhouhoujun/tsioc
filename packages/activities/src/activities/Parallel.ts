@@ -1,5 +1,5 @@
 import { Input } from '@tsdi/components';
-import { Task } from '../decor';
+import { Task } from '../metadata/decor';
 import { ActivityType } from '../core/ActivityMetadata';
 import { IActivityContext } from '../core/IActivityContext';
 import { ParallelExecutor } from '../core/ParallelExecutor';

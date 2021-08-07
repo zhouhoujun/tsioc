@@ -1,6 +1,6 @@
 import { isClass, Type, Abstract } from '@tsdi/ioc';
 import { Input } from '@tsdi/components';
-import { Task } from '../decor';
+import { Task } from '../metadata/decor';
 import { IActivityContext } from './IActivityContext';
 import { ActivityMetadata } from './ActivityMetadata';
 

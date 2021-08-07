@@ -1,4 +1,4 @@
-import { Injector, Type } from '@tsdi/ioc';
+import { EMPTY_OBJ, Injector, Type } from '@tsdi/ioc';
 import { ModuleFactory, ModuleInjector } from '@tsdi/boot';
 import { Directive, Input } from '../metadata/decor';
 import { Change, Changes, OnChanges, OnDestroy } from '../lifecycle';
@@ -81,8 +81,8 @@ export class DirTemplateOutlet implements OnChanges {
   }
 
   private _hasContextShapeChanged(ctxChange: Change): boolean {
-    const prevCtxKeys = Object.keys(ctxChange.previousValue || {});
-    const currCtxKeys = Object.keys(ctxChange.currentValue || {});
+    const prevCtxKeys = Object.keys(ctxChange.previousValue || EMPTY_OBJ);
+    const currCtxKeys = Object.keys(ctxChange.currentValue || EMPTY_OBJ);
 
     if (prevCtxKeys.length === currCtxKeys.length) {
       for (let propName of currCtxKeys) {

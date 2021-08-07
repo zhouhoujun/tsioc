@@ -1,6 +1,6 @@
 import { lang, Type } from '@tsdi/ioc';
 import { Input } from '@tsdi/components';
-import { Task } from '../decor';
+import { Task } from '../metadata/decor';
 import { IActivityContext } from '../core/IActivityContext';
 import { ControlActivity } from '../core/ControlActivity';
 import { ActivityType } from '../core/ActivityMetadata';
