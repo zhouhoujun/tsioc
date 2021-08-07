@@ -20,7 +20,7 @@ export class ModuleStrategy<TI extends Injector = Injector> implements Strategy 
         return this.getMDRef(injector).some(r => r.exports.hasValue(token, deep)) || deep && injector.parent?.hasValue(token, deep);
     }
 
-    resolve?<T>(injector: TI, token: Token<T>, provider: Injector): T {
+    resolve?<T>(injector: TI, token: Token<T>, provider?: Injector): T {
         let inst: T;
         if (this.getMDRef(injector).some(e => {
             inst = e.exports.get(token, provider);

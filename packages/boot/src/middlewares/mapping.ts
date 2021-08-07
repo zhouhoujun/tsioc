@@ -2,7 +2,8 @@ import {
     Abstract, AsyncHandler, DecorDefine, lang, ParameterMetadata, ProviderType, Type, TypeReflect, Injector, tokenId,
     isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, isPlainObject, RegisteredState, isDefined, EMPTY_OBJ
 } from '@tsdi/ioc';
-import { CONTEXT, TYPE_PARSER } from '../metadata/tk';
+import { CONTEXT } from '../metadata/tk';
+import { TypeParser } from '../services/intf';
 import { MessageContext } from './ctx';
 import { IRouter, Middleware, MiddlewareType } from './handle';
 import { MODEL_PARSER, ModelParser } from './parser';
@@ -198,7 +199,7 @@ export class MappingRoute extends Route {
                 });
             }
             let body = ctx.request?.body || EMPTY_OBJ;
-            let parser = injector.get(TYPE_PARSER);
+            let parser = injector.get(TypeParser);
             let ppds: ProviderType[] = await Promise.all(params.map(async (param) => {
                 let ptype = param.isProviderType ? param.provider : param.type;
                 let val;

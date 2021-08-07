@@ -1,12 +1,11 @@
 import { Token, Singleton, isNumber, isBoolean, isString, isDate, isNil } from '@tsdi/ioc';
-import { TYPE_PARSER } from '../metadata/tk';
-import { IBaseTypeParser } from './intf';
+import { TypeParser } from './intf';
 
 /**
  * base type parser.
  */
-@Singleton(TYPE_PARSER)
-export class BaseTypeParser implements IBaseTypeParser {
+@Singleton(TypeParser)
+export class BaseTypeParser implements TypeParser {
     /**
      * parse param.
      *

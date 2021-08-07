@@ -1,12 +1,12 @@
-import { Destroyable, Token } from '@tsdi/ioc';
+import { Abstract, Destroyable, Token } from '@tsdi/ioc';
 import { ApplicationContext } from '../Context';
 /**
- * base type parser.
+ * type parser.
  *
  * @export
- * @interface IBaseTypeParser
  */
-export interface IBaseTypeParser {
+@Abstract()
+export abstract class TypeParser {
     /**
      * parse val.
      *
@@ -14,7 +14,7 @@ export interface IBaseTypeParser {
      * @param {*} paramVal
      * @returns {T}
      */
-    parse<T>(type: Token<T>, paramVal): T;
+    abstract parse<T>(type: Token<T>, paramVal): T;
 }
 
 
@@ -28,5 +28,5 @@ export interface IStartupService<R = Promise<void>> extends Destroyable {
      * @param {ApplicationContext} [ctx]
      * @returns {R} startup service token
      */
-     configureService(ctx: ApplicationContext): R;
+    configureService(ctx: ApplicationContext): R;
 }

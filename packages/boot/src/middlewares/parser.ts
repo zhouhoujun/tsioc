@@ -2,7 +2,7 @@ import {
     Type, Inject, ObjectMap, isClass, isUndefined, isPrimitiveType, isArray,
     Abstract, Singleton, isNil, isFunction, Token, tokenId, Injector, PropertyMetadata
 } from '@tsdi/ioc';
-import { TYPE_PARSER } from '../metadata/tk';
+import { TypeParser } from '../services/intf';
 
 
 
@@ -74,7 +74,7 @@ export abstract class ModelParser {
             return objMap.map(o => this.parseModel(type, o));
         }
 
-        let parser = this.injector.get(TYPE_PARSER);
+        const parser = this.injector.get(TypeParser);
         if (isPrimitiveType(type)) {
             return parser.parse(type, objMap);
         }

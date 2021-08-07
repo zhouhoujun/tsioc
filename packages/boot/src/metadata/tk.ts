@@ -1,6 +1,6 @@
 import { tokenId, Token, Type } from '@tsdi/ioc';
 import { Configuration } from '../configure/config';
-import { IBaseTypeParser, IStartupService } from '../services/intf';
+import { IStartupService } from '../services/intf';
 import { MessageContext } from '../middlewares/ctx';
 import { IBootApplication } from '../IBootApplication';
 import { ConfigureRegister } from '../configure/register';
@@ -43,18 +43,6 @@ export const DEFAULT_CONFIG: Token<Configuration> = tokenId<Configuration>('DEFA
  *  appliaction boot process root path.
  */
 export const PROCESS_ROOT: Token<string> = tokenId<string>('PROCESS_ROOT');
-
-/**
- * type parser token.
- */
-export const TYPE_PARSER: Token<IBaseTypeParser> = tokenId<IBaseTypeParser>('TYPE_PARSER');
-
-/**
- * type parser token.
- *
- * @deprecated use `TYPE_PARSER` instead.
- */
-export const BaseTypeParserToken = TYPE_PARSER;
 
 /**
  * context options.
