@@ -9,7 +9,7 @@ import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
 import { PropertyMetadata } from '../metadata/meta';
 import { ROOT_INJECTOR } from '../metadata/tk';
-import { Injector, FnRecord } from '../injector';
+import { Injector } from '../injector';
 
 
 
@@ -42,12 +42,12 @@ export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): 
         ctx.regIn = ctx.reflect.regIn;
         ctx.injector = container.get(ROOT_INJECTOR) ?? container;
     }
-    const state = ctx.state = genReged(ctx.injector, ctx.provide);
+    const state = ctx.state = genState(ctx.injector, ctx.provide);
     container.state().regType(ctx.type, state);
     next();
 };
 
-function genReged(injector: Injector, provide?: Token) {
+function genState(injector: Injector, provide?: Token) {
     return {
         provides: provide ? [provide] : [],
         injector
@@ -55,7 +55,7 @@ function genReged(injector: Injector, provide?: Token) {
 }
 
 function regInstf(injector: Injector, type: Type, provide: Token, singleton: boolean) {
-    const insf = {
+    injector.set(provide, {
         type,
         fn: (providers: Injector) => {
             // make sure has value.
@@ -78,9 +78,7 @@ function regInstf(injector: Injector, type: Type, provide: Token, singleton: boo
         },
         fnType: 'inj',
         unreg: () => injector.state().deleteType(type)
-    } as FnRecord;
-
-    injector.set(provide, insf);
+    });
 }
 
 
