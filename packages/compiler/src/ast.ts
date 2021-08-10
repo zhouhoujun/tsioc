@@ -85,7 +85,6 @@ export class BoundEvent implements Node {
     }
 }
 
-
 export class Element implements Node {
     constructor(
         public name: string, public attributes: TextAttribute[], public inputs: BoundAttribute[],
