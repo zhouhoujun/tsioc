@@ -1,39 +1,30 @@
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
 import { AST, BindingType, ParsedEventType } from './exp_parser/ast';
-import { SecurityContext } from './parser';
-import { ParseSourceSpan } from './util';
+import { ParseSourceSpan, SecurityContext } from './util';
 
 export interface Node {
     sourceSpan: ParseSourceSpan;
     visit<T>(visitor: Visitor<T>): T;
 }
 
-
 export class Comment implements Node {
-    constructor(
-        public value: string | null,
-        public sourceSpan: ParseSourceSpan) { }
+    constructor(public value: string, public sourceSpan: ParseSourceSpan) { }
 
     visit<T>(visitor: Visitor<T>): T {
-        return visitor.visitComment(this);
-    }
-}
-
-export class Attribute implements Node {
-    constructor(
-        public name: string,
-        public value: string,
-        public sourceSpan: ParseSourceSpan,
-        readonly keySpan: ParseSourceSpan | undefined,
-        public valueSpan?: ParseSourceSpan) {
-    }
-    visit<T>(visitor: Visitor<T>): T {
-        return visitor.visitAttribute(this);
+        throw new Error('visit() not implemented for Comment');
     }
 }
 
 
 export class Text implements Node {
-    constructor(public sourceSpan: ParseSourceSpan) { }
+    constructor(public value: string, public sourceSpan: ParseSourceSpan) { }
     visit<T>(visitor: Visitor<T>): T {
         return visitor.visitText(this);
     }
@@ -61,7 +52,6 @@ export class TextAttribute implements Node {
         return visitor.visitTextAttribute(this);
     }
 }
-
 
 export class BoundAttribute implements Node {
     constructor(
@@ -97,9 +87,6 @@ export class Element implements Node {
     }
 }
 
-
-
-
 export class Template implements Node {
     constructor(
         public tagName: string, public attributes: TextAttribute[], public inputs: BoundAttribute[],
@@ -112,7 +99,6 @@ export class Template implements Node {
         return visitor.visitTemplate(this);
     }
 }
-
 
 export class Content implements Node {
     readonly name = 'v-content';
@@ -146,20 +132,12 @@ export class Reference implements Node {
 }
 
 
-
-
 export interface Visitor<T = any> {
     // Returning a truthy value from `visit()` will prevent `visitAll()` from the call to the typed
     // method and result returned will become the result included in `visitAll()`s result array.
     visit?(node: Node): T;
 
     visitElement(element: Element): T;
-    visitAttribute(attribute: Attribute): T;
-    visitText(text: Text): T;
-    visitComment(comment: Comment): T;
-
-
-    visitBoundText(text: BoundText): T;
     visitTemplate(template: Template): T;
     visitTextAttribute(attribute: TextAttribute): T;
     visitBoundAttribute(attribute: BoundAttribute): T;
@@ -167,21 +145,137 @@ export interface Visitor<T = any> {
     visitContent(content: Content): T;
     visitVariable(variable: Variable): T;
     visitReference(reference: Reference): T;
+    visitText(text: Text): T;
+    visitBoundText(text: BoundText): T;
 }
 
 
+export class NullVisitor implements Visitor<void> {
+    visitElement(element: Element): void { }
+    visitTemplate(template: Template): void { }
+    visitContent(content: Content): void { }
+    visitVariable(variable: Variable): void { }
+    visitReference(reference: Reference): void { }
+    visitTextAttribute(attribute: TextAttribute): void { }
+    visitBoundAttribute(attribute: BoundAttribute): void { }
+    visitBoundEvent(attribute: BoundEvent): void { }
+    visitText(text: Text): void { }
+    visitBoundText(text: BoundText): void { }
+}
 
-export function visitAll(visitor: Visitor, nodes: Node[]): any[] {
-    const result: any[] = [];
+export class RecursiveVisitor implements Visitor<void> {
+    visitElement(element: Element): void {
+        visitAll(this, element.attributes);
+        visitAll(this, element.children);
+        visitAll(this, element.references);
+    }
+    visitTemplate(template: Template): void {
+        visitAll(this, template.attributes);
+        visitAll(this, template.children);
+        visitAll(this, template.references);
+        visitAll(this, template.variables);
+    }
+    visitContent(content: Content): void { }
+    visitVariable(variable: Variable): void { }
+    visitReference(reference: Reference): void { }
+    visitTextAttribute(attribute: TextAttribute): void { }
+    visitBoundAttribute(attribute: BoundAttribute): void { }
+    visitBoundEvent(attribute: BoundEvent): void { }
+    visitText(text: Text): void { }
+    visitBoundText(text: BoundText): void { }
+}
 
-    const visit = visitor.visit ?
-        (ast: Node) => visitor.visit!(ast) || ast.visit(visitor) :
-        (ast: Node) => ast.visit(visitor);
-    nodes.forEach(ast => {
-        const astResult = visit(ast);
-        if (astResult) {
-            result.push(astResult);
+export class TransformVisitor implements Visitor<Node> {
+    visitElement(element: Element): Node {
+        const newAttributes = transformAll(this, element.attributes);
+        const newInputs = transformAll(this, element.inputs);
+        const newOutputs = transformAll(this, element.outputs);
+        const newChildren = transformAll(this, element.children);
+        const newReferences = transformAll(this, element.references);
+        if (newAttributes != element.attributes || newInputs != element.inputs ||
+            newOutputs != element.outputs || newChildren != element.children ||
+            newReferences != element.references) {
+            return new Element(
+                element.name, newAttributes, newInputs, newOutputs, newChildren, newReferences,
+                element.sourceSpan, element.startSourceSpan, element.endSourceSpan);
         }
-    });
+        return element;
+    }
+
+    visitTemplate(template: Template): Node {
+        const newAttributes = transformAll(this, template.attributes);
+        const newInputs = transformAll(this, template.inputs);
+        const newOutputs = transformAll(this, template.outputs);
+        const newTemplateAttrs = transformAll(this, template.templateAttrs);
+        const newChildren = transformAll(this, template.children);
+        const newReferences = transformAll(this, template.references);
+        const newVariables = transformAll(this, template.variables);
+        if (newAttributes != template.attributes || newInputs != template.inputs ||
+            newOutputs != template.outputs || newTemplateAttrs != template.templateAttrs ||
+            newChildren != template.children || newReferences != template.references ||
+            newVariables != template.variables) {
+            return new Template(
+                template.tagName, newAttributes, newInputs, newOutputs, newTemplateAttrs, newChildren,
+                newReferences, newVariables, template.sourceSpan, template.startSourceSpan,
+                template.endSourceSpan);
+        }
+        return template;
+    }
+
+    visitContent(content: Content): Node {
+        return content;
+    }
+
+    visitVariable(variable: Variable): Node {
+        return variable;
+    }
+    visitReference(reference: Reference): Node {
+        return reference;
+    }
+    visitTextAttribute(attribute: TextAttribute): Node {
+        return attribute;
+    }
+    visitBoundAttribute(attribute: BoundAttribute): Node {
+        return attribute;
+    }
+    visitBoundEvent(attribute: BoundEvent): Node {
+        return attribute;
+    }
+    visitText(text: Text): Node {
+        return text;
+    }
+    visitBoundText(text: BoundText): Node {
+        return text;
+    }
+}
+
+export function visitAll<T>(visitor: Visitor<T>, nodes: Node[]): T[] {
+    const result: T[] = [];
+    if (visitor.visit) {
+        for (const node of nodes) {
+            visitor.visit(node) || node.visit(visitor);
+        }
+    } else {
+        for (const node of nodes) {
+            const newNode = node.visit(visitor);
+            if (newNode) {
+                result.push(newNode);
+            }
+        }
+    }
     return result;
+}
+
+export function transformAll<T extends Node>(
+    visitor: Visitor<Node>, nodes: T[]): T[] {
+    const result: T[] = [];
+    let changed = false;
+    for (const node of nodes) {
+        const newNode = node.visit(visitor);
+        if (newNode) {
+            result.push(newNode as T);
+        }
+        changed = changed || newNode != node;
+    }
+    return changed ? result : nodes;
 }
