@@ -1,4 +1,4 @@
-import { BootApplication, DIModule, Message, MessageQueue, MessageContext, Middleware,  RouteMapping, ApplicationContext } from '../src';
+import { BootApplication, DIModule, Message, MessageQueue, MessageContext, Middleware,  RouteMapping, ApplicationContext, Handle } from '../src';
 import expect = require('expect');
 import { Injector, Injectable, lang } from '@tsdi/ioc';
 
@@ -39,7 +39,7 @@ class DeviceController {
 
 // }
 
-@Message('/hdevice')
+@Handle('/hdevice')
 class DeviceQueue extends MessageQueue {
     async execute(ctx: MessageContext, next?: () => Promise<void>): Promise<void> {
         console.log('device msg start.');
@@ -51,14 +51,14 @@ class DeviceQueue extends MessageQueue {
     }
 }
 
-@Message({
+@Handle({
     parent: DeviceQueue
 })
 class DeviceStartQueue extends MessageQueue {
 
 }
 
-@Message(DeviceStartQueue)
+@Handle(DeviceStartQueue)
 class DeviceStartupHandle extends Middleware {
 
     async execute(ctx: MessageContext, next: () => Promise<void>): Promise<void> {
@@ -71,7 +71,7 @@ class DeviceStartupHandle extends Middleware {
     }
 }
 
-@Message(DeviceStartQueue)
+@Handle(DeviceStartQueue)
 class DeviceAStartupHandle extends Middleware {
 
     async execute(ctx: MessageContext, next: () => Promise<void>): Promise<void> {

@@ -55,7 +55,7 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
         ctx.vaild = ctx.injector.get(RouteVaildator);
     }
 
-    const providers = Injector.create(isArray(request.providers) ? request.providers : [request.providers], injector);
+    const providers = Injector.create(request.providers, injector);
 
     if (request.restful) {
         let matchs = request.url.match(/\/:\w+/gi);

@@ -64,8 +64,6 @@ container.use(AopModule);
 container.register(AopModule);
 // or
 container.inject(AopModule)
-//or
-container.injectModule(AopModule)
 
 ```
 
