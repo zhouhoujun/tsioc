@@ -29,7 +29,7 @@ import { EmbeddedViewRef } from '../refs/view';
  * @publicApi
  */
 @Directive({ selector: '[templateOutlet]' })
-export class DirTemplateOutlet implements OnChanges {
+export class TemplateOutletDirective implements OnChanges {
   private _viewRef: EmbeddedViewRef<any> | null = null;
 
   /**

@@ -7,11 +7,11 @@ import { TemplateRef } from '../refs/template';
 import { EmbeddedViewRef } from '../refs/view';
 
 /**
- * each context.
+ * for context.
  * @publicApi
  */
 export class DirEachContext<T, U extends IterableType<T> = IterableType<T>> {
-    constructor(public $implicit: T, public eachOf: U, public index: number, public count: number) { }
+    constructor(public $implicit: T, public forOf: U, public index: number, public count: number) { }
 
     get first(): boolean {
         return this.index === 0;
@@ -32,23 +32,23 @@ export class DirEachContext<T, U extends IterableType<T> = IterableType<T>> {
 
 /**
  * A [structural directive] that renders
- * a template for each item in a collection.
+ * a template for for item in a collection.
  * The directive is placed on an element, which becomes the parent
  * of the cloned templates.
  *
- * The `eachOf` directive is generally used in the
- * [shorthand form] `[each]`.
- * In this form, the template to be rendered for each iteration is the content
+ * The `forOf` directive is generally used in the
+ * [shorthand form] `[for]`.
+ * In this form, the template to be rendered for for iteration is the content
  * of an anchor element containing the directive.
  *
  * The following example shows the shorthand syntax with some options,
  * contained in an `<li>` element.
  *
  * ```
- * <li *each="let item of items; index as i; trackBy: trackByFn">...</li>
+ * <li *for="let item of items; index as i; trackBy: trackByFn">...</li>
  * ```
  *
- * The shorthand form expands into a long form that uses the `eachOf` selector
+ * The shorthand form expands into a long form that uses the `forOf` selector
  * on an `<v-template>` element.
  * The content of the `<v-template>` element is the `<li>` element that held the
  * short-form directive.
@@ -56,7 +56,7 @@ export class DirEachContext<T, U extends IterableType<T> = IterableType<T>> {
  * Here is the expanded version of the short-form example.
  *
  * ```
- * <v-template each let-item [eachOf]="items" let-i="index" [eachTrackBy]="trackByFn">
+ * <v-template for let-item [forOf]="items" let-i="index" [forTrackBy]="trackByFn">
  *   <li>...</li>
  * </v-template>
  * ```
@@ -69,15 +69,15 @@ export class DirEachContext<T, U extends IterableType<T> = IterableType<T>> {
  * For example:
  *
  *  ```
- * <li *each="let user of users; index as i; first as isFirst">
- *    {{i}}/{{users.length}}. {{user}} <span *ngIf="isFirst">default</span>
+ * <li *for="let user of users; index as i; first as isFirst">
+ *    {{i}}/{{users.length}}. {{user}} <span *if="isFirst">default</span>
  * </li>
  * ```
  *
  * The following exported values can be aliased to local variables:
  *
- * - `$implicit: T`: The value of the individual items in the iterable (`eachOf`).
- * - `eachOf: ItemIterable<T>`: The value of the iterable expression. Useful when the expression is
+ * - `$implicit: T`: The value of the individual items in the iterable (`forOf`).
+ * - `forOf: ItemIterable<T>`: The value of the iterable expression. Useful when the expression is
  * more complex then a property access, for example when using the async pipe (`userStreams |
  * async`).
  * - `index: number`: The index of the current item in the iterable.
@@ -108,20 +108,20 @@ export class DirEachContext<T, U extends IterableType<T> = IterableType<T>> {
  * elements were deleted and all new elements inserted).
  *
  * To avoid this expensive operation, you can customize the default tracking algorithm.
- * by supplying the `eachTrackBy` option to `DirEach`.
- * `eachTrackBy` takes a function that has two arguments: `index` and `item`.
- * If `eachTrackBy` is given, Components tracks changes by the return value of the function.
+ * by supplying the `forTrackBy` option to `DirEach`.
+ * `forTrackBy` takes a function that has two arguments: `index` and `item`.
+ * If `forTrackBy` is given, Components tracks changes by the return value of the function.
  *
  * @publicApi
  */
-@Directive({ selector: '[each][forEach]' })
-export class DirEach<T, U extends IterableType<T> = IterableType<T>> implements DoCheck {
+@Directive({ selector: '[for][forOf]' })
+export class ForDirective<T, U extends IterableType<T> = IterableType<T>> implements DoCheck {
     /**
      * The value of the iterable expression, which can be used as a
      * template input variable.
      */
     @Input()
-    set each(iterate: U & IterableType<T> | undefined | null) {
+    set for(iterate: U & IterableType<T> | undefined | null) {
         this._iter = iterate;
         this._iterDirty = true;
     }
@@ -143,11 +143,11 @@ export class DirEach<T, U extends IterableType<T> = IterableType<T>> implements 
      * the iteration index and the associated node data.
      */
     @Input()
-    set eachTrackBy(fn: TrackByFunction<T>) {
+    set forTrackBy(fn: TrackByFunction<T>) {
         this._trackByFn = fn;
     }
 
-    get eachTrackBy(): TrackByFunction<T> {
+    get forTrackBy(): TrackByFunction<T> {
         return this._trackByFn;
     }
 
@@ -161,10 +161,10 @@ export class DirEach<T, U extends IterableType<T> = IterableType<T>> implements 
         private _template: TemplateRef<DirEachContext<T, U>>, private _differs: IterableDiffers) { }
 
     /**
-     * A reference to the template that is stamped out for each item in the iterable.
+     * A reference to the template that is stamped out for for item in the iterable.
      */
     @Input()
-    set eachTemplate(value: TemplateRef<DirEachContext<T, U>>) {
+    set forTemplate(value: TemplateRef<DirEachContext<T, U>>) {
         if (value) {
             this._template = value;
         }
@@ -179,7 +179,7 @@ export class DirEach<T, U extends IterableType<T> = IterableType<T>> implements 
             const value = this._iter;
             if (!this._differ && value) {
                 try {
-                    this._differ = this._differs.find(value).create(this.eachTrackBy);
+                    this._differ = this._differs.find(value).create(this.forTrackBy);
                 } catch {
                     throw new Error(`Cannot find a differ supporting object '${value}' of type '${getTypeName(value)}'. DirEach only supports binding to Iterables such as Arrays.`);
                 }
@@ -221,7 +221,7 @@ export class DirEach<T, U extends IterableType<T> = IterableType<T>> implements 
             const viewRef = <EmbeddedViewRef<DirEachContext<T, U>>>this._viewContainer.get(i);
             viewRef.context.index = i;
             viewRef.context.count = ilen;
-            viewRef.context.eachOf = this._iter!;
+            viewRef.context.forOf = this._iter!;
         }
 
         changes.forEachIdentityChange((record: any) => {

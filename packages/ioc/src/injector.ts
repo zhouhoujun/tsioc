@@ -2,11 +2,11 @@ import { Destroyable } from './Destroyable';
 import { ClassType, LoadType, Modules, Type } from './types';
 import { Token } from './tokens';
 import { Abstract } from './metadata/fac';
+import { TypeReflect } from './metadata/type';
 import { remove } from './utils/lang';
 import { isArray } from './utils/chk';
-import { Action } from './action';
 import { Handler } from './utils/hdl';
-import { TypeReflect } from './metadata/type';
+import { Action } from './action';
 import { ClassProvider, ExistingProvider, FactoryProvider, StaticProvider, ValueProvider } from './providers';
 
 

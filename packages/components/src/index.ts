@@ -27,7 +27,7 @@ export * from './chage/strategy';
 export * from './compile/facade';
 
 // directivies
-export * from './directivies/each';
+export * from './directivies/for';
 export * from './directivies/if';
 export * from './directivies/outlet';
 export * from './directivies/switch';
