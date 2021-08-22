@@ -388,3 +388,25 @@ class _TreeBuilder {
 function lastOnStack(stack: any[], element: any): boolean {
   return stack.length > 0 && stack[stack.length - 1] === element;
 }
+
+export function getNsPrefix(fullName: string) {
+  return fullName === null ? null : splitNsName(fullName)[0];
+}
+
+export function splitNsName(elementName: string): [string|null, string] {
+  if (elementName[0] != ':') {
+    return [null, elementName];
+  }
+
+  const colonIndex = elementName.indexOf(':', 1);
+
+  if (colonIndex == -1) {
+    throw new Error(`Unsupported format "${elementName}" expecting ":namespace:name"`);
+  }
+
+  return [elementName.slice(1, colonIndex), elementName.slice(colonIndex + 1)];
+}
+
+export function mergeNsAndName(prefix: string, localName: string): string {
+  return prefix ? `:${prefix}:${localName}` : localName;
+}
