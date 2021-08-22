@@ -1,5 +1,5 @@
-import { ParseSourceSpan, ParseError, ParseSourceFile, ParseLocation } from './util';
-import * as chars from './chars';
+import { ParseSourceSpan, ParseError, ParseSourceFile, ParseLocation } from '../util';
+import * as chars from '../chars';
 
 export enum TokenType {
     TAG_OPEN_START,
