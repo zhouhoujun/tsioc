@@ -12,7 +12,7 @@ import * as ra from './run-act';
  */
 export class RuntimeLifeScope extends RegisterLifeScope<RuntimeContext> {
 
-    execute(ctx: RuntimeContext, next?: () => void): void {
+    override execute(ctx: RuntimeContext, next?: () => void): void {
         if (!ctx.instance) {
             super.execute(ctx, next);
         }

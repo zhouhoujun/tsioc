@@ -16,7 +16,7 @@ import { ExpectToken } from './assert/expects';
 @Configure()
 export class UnitTestConfigureRegister extends ConfigureRegister {
 
-    async register(config: UnitTestConfigure, ctx: ApplicationContext): Promise<void> {
+    override async register(config: UnitTestConfigure, ctx: ApplicationContext): Promise<void> {
         const inj = ctx.injector;
         if (!inj.has(Assert)) {
             inj.setValue(Assert, assert);

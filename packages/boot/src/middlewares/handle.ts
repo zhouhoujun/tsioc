@@ -128,7 +128,7 @@ export abstract class Middlewares extends Middleware {
         return this;
     }
 
-    async execute(ctx: MessageContext, next?: () => Promise<void>): Promise<void> {
+    override async execute(ctx: MessageContext, next?: () => Promise<void>): Promise<void> {
         if (!this.funcs) {
             const state = ctx.injector.state(); 
             this.funcs = this.handles.map(ac => this.parseHandle(state, ac)).filter(f => f);

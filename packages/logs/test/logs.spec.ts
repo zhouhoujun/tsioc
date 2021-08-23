@@ -20,7 +20,7 @@ class Child extends Person {
     constructor() {
         super();
     }
-    say() {
+    override say() {
         return 'Mama';
     }
 }

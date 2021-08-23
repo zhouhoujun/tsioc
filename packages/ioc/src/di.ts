@@ -706,7 +706,7 @@ export class DefaultContainer extends DefaultInjector implements Container {
         registerCores(this);
     }
 
-    getContainer(): this {
+    override getContainer(): this {
         return this;
     }
 
@@ -728,7 +728,7 @@ export class DefaultContainer extends DefaultInjector implements Container {
         this._finals.push(callback);
     }
 
-    protected destroying() {
+    protected override destroying() {
         super.destroying();
         this._finals.forEach(c => c());
         this._finals = null;
@@ -963,7 +963,8 @@ class ActionProviderImpl extends DefaultInjector implements ActionProvider {
     constructor(providers: ProviderType[], parent: Injector) {
         super(providers, parent, 'provider');
     }
-    protected initParent(parent: Container) {
+
+    protected override initParent(parent: Container) {
         this._container = parent.getContainer();
         parent.onFinally(() => this.destroy());
     }
@@ -976,7 +977,7 @@ class ActionProviderImpl extends DefaultInjector implements ActionProvider {
      * @param {Injector} provider
      * @returns {T}
      */
-    get<T>(key: Token<T>, prvoider?: Injector, notFoundValue?: T): T {
+     override get<T>(key: Token<T>, prvoider?: Injector, notFoundValue?: T): T {
         if (isFunction(key) && !this.has(key)) {
             this.registerAction(key as Type);
         }
@@ -991,7 +992,7 @@ class ActionProviderImpl extends DefaultInjector implements ActionProvider {
         return this;
     }
 
-    protected regType<T>(target: Type<T>) {
+    protected override regType<T>(target: Type<T>) {
         if (isBaseOf(target, Action)) {
             this.registerAction(target);
             return;

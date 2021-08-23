@@ -294,5 +294,3 @@ export const AfterAnnoDecorScope = function (ctx: DesignContext, next: () => voi
 
     return next();
 }
-
-

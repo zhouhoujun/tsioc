@@ -16,20 +16,20 @@ import * as chalk from 'chalk';
 })
 export class ConsoleReporter extends RealtimeReporter {
 
-    track(error: Error): void {
+    override track(error: Error): void {
         console.log(chalk.red(error.stack || error.message));
         throw error;
     }
 
-    renderSuite(desc: ISuiteDescribe): void {
+    override renderSuite(desc: ISuiteDescribe): void {
         console.log('\n  ', desc.describe, '\n');
     }
 
-    renderCase(desc: ICaseDescribe): void {
+    override renderCase(desc: ICaseDescribe): void {
         console.log('    ', desc.error ? chalk.red('x') : chalk.green('√'),  chalk.gray(desc.title));
     }
 
-    async render(suites: Map<Token, ISuiteDescribe>): Promise<void> {
+    override async render(suites: Map<Token, ISuiteDescribe>): Promise<void> {
         let reportStr = '';
         let first: ISuiteDescribe, last: ISuiteDescribe;
         let sus = Array.from(suites.values());

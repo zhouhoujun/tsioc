@@ -8,7 +8,7 @@ export class ServerParallelExecutor extends ParallelExecutor {
         super();
     }
 
-    run<T>(func: (item: T) => any, items: T[], ...args: any[]) {
+    override run<T>(func: (item: T) => any, items: T[], ...args: any[]) {
         let napa;
         try {
             napa = syncRequire('napajs');

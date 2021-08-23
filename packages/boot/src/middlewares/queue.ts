@@ -26,7 +26,7 @@ export class MessageQueue extends Middlewares {
 
     private completed: ((ctx: MessageContext) => void)[];
 
-    async execute(ctx: MessageContext, next?: () => Promise<void>): Promise<void> {
+    override async execute(ctx: MessageContext, next?: () => Promise<void>): Promise<void> {
         if (!ctx.injector) {
             ctx.injector = this.injector;
         }
@@ -147,7 +147,7 @@ export class MessageQueue extends Middlewares {
         this.unuse(haddle);
     }
 
-    protected parseHandle(state: RegisteredState, mdty: MiddlewareType): AsyncHandler<MessageContext> {
+    protected override parseHandle(state: RegisteredState, mdty: MiddlewareType): AsyncHandler<MessageContext> {
         if (mdty instanceof Middleware) {
             return mdty.toHandle();
         } else if (lang.isBaseOf(mdty, Middleware)) {

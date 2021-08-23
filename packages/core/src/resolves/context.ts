@@ -1,4 +1,4 @@
-import { Token, ClassType, IocContext, ProviderType, FnRecord } from '@tsdi/ioc';
+import { Token, ClassType, IocContext, FnRecord } from '@tsdi/ioc';
 
 
 /**

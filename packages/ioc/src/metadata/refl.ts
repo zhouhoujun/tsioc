@@ -367,8 +367,8 @@ export const ExecuteDecorHandle = (ctx: DecorContext, next: () => void) => {
 
 
 class DecorActions extends Actions<DecorContext, Handler | Action> {
-    protected getActionProvider(ctx: DecorContext): ActionProvider { return null; }
-    protected parseHandler(provider: ActionProvider, ac: any): Handler {
+    protected override getActionProvider(ctx: DecorContext): ActionProvider { return null; }
+    protected override parseHandler(provider: ActionProvider, ac: any): Handler {
         if (isFunction(ac)) {
             return ac;
         } else if (ac instanceof Action) {

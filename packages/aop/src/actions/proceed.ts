@@ -29,7 +29,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
         this.container = provider.getContainer();
     }
 
-    execute(ctx: Joinpoint, next?: () => void) {
+    override execute(ctx: Joinpoint, next?: () => void) {
         ctx.invokeHandle = (j, a) => this.invokeAdvice(j, a);
         super.execute(ctx, next);
     }
@@ -202,13 +202,15 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
 
 
 export class CtorAdvicesScope extends IocActions<Joinpoint> implements IActionSetup {
-    execute(ctx: Joinpoint, next?: () => void) {
+
+    override execute(ctx: Joinpoint, next?: () => void) {
         if (ctx.name === ctor) {
             super.execute(ctx);
         } else {
             next();
         }
     }
+    
     setup() {
         this.use(CtorBeforeAdviceAction, CtorAfterAdviceAction);
     }

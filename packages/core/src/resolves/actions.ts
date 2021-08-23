@@ -11,7 +11,7 @@ const typeMatch = (tag, base) => lang.getParentClass(base) ? refl.get(tag)?.clas
 // services actions
 export class ResolveServicesScope extends IocActions implements IActionSetup {
 
-    execute(ctx: ServicesContext, next?: () => void): void {
+    override execute(ctx: ServicesContext, next?: () => void): void {
         if (!ctx.tokens || !ctx.tokens.length) {
             return;
         }

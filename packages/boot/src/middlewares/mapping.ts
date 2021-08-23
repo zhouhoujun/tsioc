@@ -82,7 +82,7 @@ export class MappingRoute extends Route {
         super(url, prefix);
     }
 
-    protected async navigate(ctx: MessageContext, next: () => Promise<void>): Promise<void> {
+    protected override async navigate(ctx: MessageContext, next: () => Promise<void>): Promise<void> {
         let meta = this.getRouteMetaData(ctx);
         if (!meta) {
             return await next();

@@ -56,7 +56,7 @@ export class ClassSevice extends Runner {
 
     state: string;
 
-    async run(): Promise<any> {
+    override async run(): Promise<any> {
         console.log('ClassSevice running.....');
         // console.log(refs.get(ClassSevice));
 
@@ -105,7 +105,7 @@ export class SocketService extends StartupService {
     private context: ApplicationContext;
     private init_times = 0;
 
-    async configureService(ctx: ApplicationContext): Promise<void> {
+    override async configureService(ctx: ApplicationContext): Promise<void> {
         console.log('SocketService init...')
         this.context = ctx;
         const tcpServer = this.tcpServer = new net.Server();
@@ -114,7 +114,7 @@ export class SocketService extends StartupService {
         console.log('destroyed state', this.destroyed, 'init', this.init_times);
     }
 
-    protected destroying() {
+    protected override destroying() {
         console.log('SocketService destroying...');
         this.tcpServer.removeAllListeners();
         this.tcpServer.close();

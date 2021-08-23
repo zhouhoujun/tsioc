@@ -13,10 +13,7 @@ import * as globby from 'globby';
  */
 export class NodeModuleLoader extends ModuleLoaderImpl implements ModuleLoader {
 
-    protected normalize(pth: string) {
-        return pth ? pth.split('\\').join('/') : pth;
-    }
-    protected loadFile(files: string | string[], basePath?: string): Promise<Modules[]> {
+    protected override loadFile(files: string | string[], basePath?: string): Promise<Modules[]> {
         if (isString(files)) {
             files = this.normalize(files);
         } else {
@@ -31,8 +28,12 @@ export class NodeModuleLoader extends ModuleLoaderImpl implements ModuleLoader {
         });
     }
 
-    protected createLoader(): (modulepath: string) => Promise<Modules[]> {
+    protected override createLoader(): (modulepath: string) => Promise<Modules[]> {
         return (modulepath: string) => import(modulepath);
+    }
+    
+    protected normalize(pth: string) {
+        return pth ? pth.split('\\').join('/') : pth;
     }
 
 }

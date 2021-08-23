@@ -45,7 +45,7 @@ export class MiddleSchoolStudent extends Student {
     constructor() {
         super();
     }
-    sayHi() {
+    override sayHi() {
         return 'I am a middle school student';
     }
 }
@@ -65,7 +65,7 @@ export class CollegeStudent extends Student {
     constructor() {
         super();
     }
-    sayHi() {
+    override sayHi() {
         return 'I am a college student';
     }
 }

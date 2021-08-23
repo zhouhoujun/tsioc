@@ -21,14 +21,14 @@ export class Router extends MessageQueue implements IRouter {
     }
 
     private sorted = false;
-    protected canExecute(ctx: MessageContext) {
+    protected override canExecute(ctx: MessageContext) {
         if (!ctx.vaild) {
             ctx.vaild = this.injector.get(RouteVaildator);
         }
         return this.match(ctx);
     }
 
-    protected beforeExec(ctx: MessageContext) {
+    protected override beforeExec(ctx: MessageContext) {
         if (!this.sorted) {
             this.handles.sort((a, b) => this.getUrlFrom(b).length - this.getUrlFrom(a).length);
             this.resetHandler();
@@ -51,7 +51,7 @@ export class Router extends MessageQueue implements IRouter {
         return (!ctx.status || ctx.status === 404) && this.protocol === ctx.protocol && ctx.vaild.isActiveRoute(ctx, this.url, this.prefix);
     }
 
-    protected resetHandler() {
+    protected override resetHandler() {
         super.resetHandler();
         this.sorted = false;
     }

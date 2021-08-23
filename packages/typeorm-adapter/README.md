@@ -32,7 +32,7 @@ export class MyService extends Service {
     @Inject()
     dbhelper: TypeOrmHelper;
 
-    async configureService(ctx: IBootContext): Promise<void> {
+    override async configureService(ctx: IBootContext): Promise<void> {
         const resp = this.dbhelper.getRepository(Production);
         // todo configuer service.
     }

@@ -41,7 +41,7 @@ export class UserController {
 @Boot()
 export class RouteStartup extends StartupService {
    
-    async configureService(ctx: ApplicationContext): Promise<void> {
+    override async configureService(ctx: ApplicationContext): Promise<void> {
         ctx.injector.register(UserController);
     }
 

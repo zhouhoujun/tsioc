@@ -1,5 +1,5 @@
 import { Injectable, isString, isClass, isArray, lang, refl, Injector } from '@tsdi/ioc';
-import { AnnotationReflect, ApplicationContext, ApplicationExit, Runnable } from '@tsdi/boot';
+import { AnnotationReflect, ApplicationContext, Runnable } from '@tsdi/boot';
 import { OldTestRunner } from './OldTestRunner';
 import { TestReport } from '../reports/TestReport';
 import { UnitTestConfigure } from '../UnitTestConfigure';
@@ -15,7 +15,7 @@ export class UnitTestRunner extends Runnable {
         super()
     }
 
-    async run(ctx: ApplicationContext): Promise<void> {
+    override async run(ctx: ApplicationContext): Promise<void> {
         const injector = this.injector;
         const config = ctx.getConfiguration() as UnitTestConfigure;
         const src = config.src;

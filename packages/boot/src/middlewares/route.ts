@@ -64,7 +64,7 @@ export abstract class Route extends Middleware {
         return this._url;
     }
 
-    async execute(ctx: MessageContext, next: () => Promise<void>): Promise<void> {
+    override async execute(ctx: MessageContext, next: () => Promise<void>): Promise<void> {
         if (this.match(ctx)) {
             await this.navigate(ctx, next);
         } else {
@@ -88,7 +88,7 @@ export class FactoryRoute extends Route {
         super(url, prefix);
     }
 
-    protected navigate(ctx: MessageContext, next: () => Promise<void>): Promise<void> {
+    protected override navigate(ctx: MessageContext, next: () => Promise<void>): Promise<void> {
         return this.factory({ provide: CONTEXT, useValue: ctx })?.execute(ctx, next);
     }
 

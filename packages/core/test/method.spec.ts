@@ -22,7 +22,8 @@ describe('method exec test', () => {
         constructor() {
             super();
         }
-        say() {
+        
+        override say() {
             return 'Mama';
         }
     }

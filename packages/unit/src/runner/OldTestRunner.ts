@@ -44,11 +44,11 @@ export class OldTestRunner extends UnitRunner {
         this.timeout = timeout || (3 * 60 * 60 * 1000);
     }
 
-    getInstanceType() {
+    override getInstanceType() {
         return null;
     }
 
-    async run(): Promise<void> {
+    override async run(): Promise<void> {
         try {
             await lang.step(this.suites.map(desc => desc.cases.length ? () => this.runSuite(desc) : () => Promise.resolve()));
         } catch (err) {
@@ -173,7 +173,7 @@ export class OldTestRunner extends UnitRunner {
         });
     }
 
-    async runSuite(desc: ISuiteDescribe): Promise<void> {
+    override async runSuite(desc: ISuiteDescribe): Promise<void> {
         await this.runBefore(desc);
         await this.runTest(desc);
         await this.runAfter(desc);
@@ -238,7 +238,7 @@ export class OldTestRunner extends UnitRunner {
         await lang.step(desc.cases.map(caseDesc => () => this.runCase(caseDesc, desc)));
     }
 
-    async runCase(caseDesc: ICaseDescribe, suiteDesc?: ISuiteDescribe): Promise<ICaseDescribe> {
+    override async runCase(caseDesc: ICaseDescribe, suiteDesc?: ISuiteDescribe): Promise<ICaseDescribe> {
         try {
             await this.runBeforeEach(suiteDesc);
             await this.runTimeout(

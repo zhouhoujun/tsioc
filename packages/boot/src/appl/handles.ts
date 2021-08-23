@@ -42,7 +42,7 @@ export abstract class BuildHandle<T extends ApplicationContext> extends IocActio
  */
 export class BuildHandles<T extends ApplicationContext = ApplicationContext> extends Actions<T, HandleType<T>, AsyncHandler<T>, Promise<void>> {
 
-    protected getActionProvider(ctx: T) {
+    protected override getActionProvider(ctx: T) {
         return ctx.injector.action();
     }
 }

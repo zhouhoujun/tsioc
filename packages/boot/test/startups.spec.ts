@@ -4,7 +4,7 @@ import { Injector, lang } from '@tsdi/ioc';
 
 @Boot()
 export class MyStartupService extends StartupService {
-    async configureService(ctx: ApplicationContext): Promise<void> {
+    override async configureService(ctx: ApplicationContext): Promise<void> {
         let defer = lang.defer<void>();
         setTimeout(() => {
             ctx.injector.setValue('MyStartup', 'start');
@@ -19,7 +19,7 @@ export class MyStartupService extends StartupService {
     before: 'all'
 })
 export class MyStartupService1 extends StartupService {
-    async configureService(ctx: ApplicationContext): Promise<void> {
+    override async configureService(ctx: ApplicationContext): Promise<void> {
         ctx.injector.setValue('MyStartup1', 'start');
     }
 }
@@ -29,7 +29,7 @@ export class MyStartupService1 extends StartupService {
 export class DeviceConnectionService extends StartupService {
 
     connention: any;
-    async configureService(ctx: ApplicationContext): Promise<void> {
+    override async configureService(ctx: ApplicationContext): Promise<void> {
         let defer = lang.defer<void>();
         setTimeout(() => {
             this.connention = { name: 'device_connect' };
@@ -47,7 +47,7 @@ export class DeviceInitService extends StartupService {
 
     connid: string;
     id = 0;
-    async configureService(ctx: ApplicationContext): Promise<void> {
+    override async configureService(ctx: ApplicationContext): Promise<void> {
         let connention = ctx.injector.get(DeviceConnectionService).connention;
         this.connid = connention.name + this.id++;
     }
@@ -60,7 +60,7 @@ export class DeviceInitService extends StartupService {
 export class DeviceAService extends StartupService {
 
     data: any;
-    async configureService(ctx: ApplicationContext): Promise<void> {
+    override async configureService(ctx: ApplicationContext): Promise<void> {
         let connid = ctx.injector.get(DeviceInitService).connid;
         this.data = { connid };
     }

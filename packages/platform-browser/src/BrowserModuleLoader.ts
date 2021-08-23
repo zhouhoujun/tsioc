@@ -5,7 +5,7 @@ declare let System: any;
 declare let window: any;
 export class BrowserModuleLoader extends ModuleLoaderImpl implements ModuleLoader {
 
-    protected createLoader() {
+    protected override createLoader() {
         if (typeof System !== 'undefined') {
             return (modulepath: string) => {
                 return System.import(modulepath);

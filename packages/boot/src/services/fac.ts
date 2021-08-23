@@ -12,11 +12,11 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
         super();
     }
 
-    get type() {
+    override get type() {
         return this._refl.type;
     }
 
-    create(option: BootstrapOption, context?: ApplicationContext) {
+    override create(option: BootstrapOption, context?: ApplicationContext) {
         const injector = Injector.create(option.providers, option.injector);
         const targetRef = new RunnableTargetRef(this._refl, injector);
         injector.inject({ provide: TargetRef, useValue: targetRef })
@@ -84,7 +84,7 @@ export class RunnableTargetRef<T = any> extends TargetRef<T>  {
 
 export class DefaultServiceFactoryResolver extends RunnableFactoryResolver {
 
-    resolve<T>(type: Type<T>) {
+    override resolve<T>(type: Type<T>) {
         return new DefaultRunnableFactory(refl.get(type));
     }
 }

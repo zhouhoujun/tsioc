@@ -23,11 +23,11 @@ export class SuiteRunner extends UnitRunner {
         super()
     }
 
-    getInstanceType() {
+    override getInstanceType() {
         return this.tgRef.type;
     }
 
-    async run(): Promise<void> {
+    override async run(): Promise<void> {
         try {
             let desc = this.getSuiteDescribe();
             await this.runSuite(desc);
@@ -52,7 +52,7 @@ export class SuiteRunner extends UnitRunner {
         }
     }
 
-    async runSuite(desc: ISuiteDescribe): Promise<void> {
+    override async runSuite(desc: ISuiteDescribe): Promise<void> {
         await this.runBefore(desc);
         await this.runTest(desc);
         await this.runAfter(desc);
@@ -154,7 +154,7 @@ export class SuiteRunner extends UnitRunner {
                 }));
     }
 
-    async runCase(caseDesc: ICaseDescribe): Promise<ICaseDescribe> {
+    override async runCase(caseDesc: ICaseDescribe): Promise<ICaseDescribe> {
         try {
             await this.runBeforeEach();
             await this.runTimeout(

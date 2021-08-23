@@ -41,7 +41,7 @@ class DeviceController {
 
 @Handle('/hdevice')
 class DeviceQueue extends MessageQueue {
-    async execute(ctx: MessageContext, next?: () => Promise<void>): Promise<void> {
+    override async execute(ctx: MessageContext, next?: () => Promise<void>): Promise<void> {
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
         await super.execute(ctx, async () => {
@@ -61,7 +61,7 @@ class DeviceStartQueue extends MessageQueue {
 @Handle(DeviceStartQueue)
 class DeviceStartupHandle extends Middleware {
 
-    async execute(ctx: MessageContext, next: () => Promise<void>): Promise<void> {
+    override async execute(ctx: MessageContext, next: () => Promise<void>): Promise<void> {
         console.log('DeviceStartupHandle.')
         if (ctx.event === 'startup') {
             // todo sth.
@@ -74,7 +74,7 @@ class DeviceStartupHandle extends Middleware {
 @Handle(DeviceStartQueue)
 class DeviceAStartupHandle extends Middleware {
 
-    async execute(ctx: MessageContext, next: () => Promise<void>): Promise<void> {
+    override async execute(ctx: MessageContext, next: () => Promise<void>): Promise<void> {
         console.log('DeviceAStartupHandle.')
         if (ctx.event === 'startup') {
             // todo sth.

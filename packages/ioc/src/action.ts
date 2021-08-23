@@ -62,7 +62,7 @@ export abstract class IocAction<T, TH extends Handler = Handler<T>, TR = void> e
      * parse to handler.
      * @returns 
      */
-    toHandler(): TH {
+    override toHandler(): TH {
         if (!this._hdr) {
             this._hdr = ((ctx: T, next?: () => TR) => this.execute(ctx, next)) as TH;
         }
@@ -181,7 +181,7 @@ export abstract class Actions<T, TA = ActionType, TH extends Handler = Handler<T
         return this;
     }
 
-    execute(ctx: T, next?: () => TR): TR {
+    override execute(ctx: T, next?: () => TR): TR {
         if (!this._hdlrs) {
             const pdr = this.getActionProvider(ctx);
             this._hdlrs = [...this._befs, ...this._acts, ...this._afts].map(ac => this.parseHandler(pdr, ac)).filter(f => f);

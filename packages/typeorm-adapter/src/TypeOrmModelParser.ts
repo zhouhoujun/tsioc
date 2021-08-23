@@ -32,7 +32,7 @@ export class TypeOrmModelParser extends ModelParser {
         }
     }
 
-    protected getPropertyMeta(type: Type): ObjectMap<DBPropertyMetadata> {
+    protected override getPropertyMeta(type: Type): ObjectMap<DBPropertyMetadata> {
         let metas = {};
         getMetadataArgsStorage().columns.filter(col => col.target === type)
             .forEach(col => {
@@ -56,7 +56,7 @@ export class TypeOrmModelParser extends ModelParser {
         return metas;
     }
 
-    protected isExtendBaseType(type: Token, propmeta?: DBPropertyMetadata): boolean {
+    protected override isExtendBaseType(type: Token, propmeta?: DBPropertyMetadata): boolean {
         if (propmeta.dbtype) {
             if (intExp.test(propmeta.dbtype)) {
                 return true;
@@ -68,7 +68,7 @@ export class TypeOrmModelParser extends ModelParser {
         return super.isExtendBaseType(type, propmeta);
     }
 
-    protected resolveExtendType(type: Token, value: any, propmeta?: DBPropertyMetadata): any {
+    protected override resolveExtendType(type: Token, value: any, propmeta?: DBPropertyMetadata): any {
         if (propmeta.dbtype) {
             if (intExp.test(propmeta.dbtype)) {
                 return parseInt(value);

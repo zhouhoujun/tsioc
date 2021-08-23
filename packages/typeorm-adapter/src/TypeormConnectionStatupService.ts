@@ -22,7 +22,7 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
      * configure service.
      * @param ctx context.
      */
-    async configureService(ctx: ApplicationContext): Promise<void> {
+    override async configureService(ctx: ApplicationContext): Promise<void> {
         this.ctx = ctx;
         const logger = this.logger = ctx.getLogManager()?.getLogger();
         logger?.info('startup db connections');
@@ -95,7 +95,7 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
         return getConnection(connectName ?? this.options?.name);
     }
 
-    protected destroying() {
+    protected override destroying() {
         this.logger?.info('close db connections');
         getConnectionManager().connections?.forEach(c => {
             if (c && c.isConnected) {

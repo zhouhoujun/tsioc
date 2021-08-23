@@ -1,5 +1,5 @@
 import { Type } from '../types';
-import { isFunction, getClass, isTypeObject, isArray } from '../utils/chk';
+import { isFunction, getClass, isTypeObject } from '../utils/chk';
 import { Token } from '../tokens';
 import { get } from '../metadata/refl';
 import { ParameterMetadata } from '../metadata/meta';

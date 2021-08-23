@@ -14,7 +14,7 @@ export class DataProvider {
 }
 @Injectable()
 export class CustomDataProvider extends DataProvider {
-    fetch(): any {
+    override fetch(): any {
         return 'hi custom';
     }
 }
@@ -36,7 +36,7 @@ export class TestService {
 
 @ProviderIn(TestService, DataProvider, 'tt')
 export class TestServiceProvider extends DataProvider {
-    fetch(): any {
+    override fetch(): any {
         return 'tt';
     }
 }

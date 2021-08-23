@@ -59,7 +59,7 @@ export class ServerApplicationExit extends ApplicationExit {
         super();
     }
 
-    register(): void {
+    override register(): void {
         if (!this.hdl) {
             this.hdl = () => {
                 const logger = this.context.getLogManager()?.getLogger();
@@ -79,7 +79,7 @@ export class ServerApplicationExit extends ApplicationExit {
         });
     }
 
-    exit(err?: Error) {
+    override exit(err?: Error) {
         const logger = this.context.getLogManager()?.getLogger();
         if (err) {
             logger ? logger.error(err) : console.error(err);

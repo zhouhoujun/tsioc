@@ -52,7 +52,7 @@ export class DefaultModuleInjector<T> extends ModuleInjector<T> {
         return this._instance;
     }
 
-    protected destroying() {
+    protected override destroying() {
         super.destroying();
         this.imports.forEach(e => e.destroy());
         this._instance = null;
@@ -78,7 +78,7 @@ export class ModuleExports extends DefaultInjector implements IModuleExports {
         this.export(moduleRef.type, true);
     }
 
-    protected initParent(parnet: ModuleInjector) {
+    protected override initParent(parnet: ModuleInjector) {
         this._container = parnet.getContainer();
         (this as any).parent = this._container;
     }
@@ -88,7 +88,7 @@ export class ModuleExports extends DefaultInjector implements IModuleExports {
      */
     exports: ModuleInjector[] = [];
 
-    protected regType<T>(type: Type<T>) {
+    protected override regType<T>(type: Type<T>) {
         if (this.registerIn(this.moduleRef, type)) {
             this.export(type, true, true);
         }
@@ -120,15 +120,15 @@ export class ModuleExports extends DefaultInjector implements IModuleExports {
      * @param {...ProviderType[]} providers
      * @returns {this}
      */
-    inject(providers: ProviderType[]): this;
+    override inject(providers: ProviderType[]): this;
     /**
      * inject providers.
      *
      * @param {...ProviderType[]} providers
      * @returns {this}
      */
-    inject(...providers: ProviderType[]): this;
-    inject(...args: any[]): this {
+    override inject(...providers: ProviderType[]): this;
+    override inject(...args: any[]): this {
         const providers = (args.length === 1 && isArray(args[0])) ? args[0] : args;
         providers?.length && providers.forEach(p => {
             if (!p) {
@@ -160,7 +160,7 @@ export class ModuleExports extends DefaultInjector implements IModuleExports {
         return this;
     }
 
-    protected destroying() {
+    protected override destroying() {
         super.destroying();
         this.exports.forEach(e => e.destroy());
         this.moduleRef = null;
@@ -178,11 +178,11 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
         this._modelRefl = isFunction(modelRefl) ? refl.get(modelRefl) : modelRefl;
     }
 
-    get moduleType() {
+    override get moduleType() {
         return this._modelRefl?.type;
     }
 
-    create(parent: Injector, option?: ModuleOption): ModuleInjector<T> {
+    override create(parent: Injector, option?: ModuleOption): ModuleInjector<T> {
         if ((parent as ModuleInjector)?.type === this._modelRefl.type) return parent as ModuleInjector;
         let inj = option ? this.createByOption(parent, option) : this.createInstance(parent);
         this.regModule(inj);
