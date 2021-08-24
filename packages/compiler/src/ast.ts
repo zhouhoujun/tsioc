@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import { AST, BindingType, ParsedEventType } from './exp_parser/ast';
+import { AST, BindingType, BoundElementProperty, ParsedEvent, ParsedEventType } from './exp_parser/ast';
 import { ParseSourceSpan, SecurityContext } from './util';
 
 export interface Node {
@@ -62,6 +62,17 @@ export class BoundAttribute implements Node {
     visit<T>(visitor: Visitor<T>): T {
         return visitor.visitBoundAttribute(this);
     }
+
+    static fromBoundElementProperty(prop: BoundElementProperty): BoundAttribute {
+        if (prop.keySpan === undefined) {
+          throw new Error(
+              `Unexpected state: keySpan must be defined for bound attributes but was not for ${
+                  prop.name}: ${prop.sourceSpan}`);
+        }
+        return new BoundAttribute(
+            prop.name, prop.type, prop.securityContext, prop.value, prop.unit, prop.sourceSpan,
+            prop.keySpan, prop.valueSpan);
+      }
 }
 
 export class BoundEvent implements Node {
@@ -73,6 +84,19 @@ export class BoundEvent implements Node {
     visit<T>(visitor: Visitor<T>): T {
         return visitor.visitBoundEvent(this);
     }
+
+    static fromParsedEvent(event: ParsedEvent) {
+        const target: string|null = event.type === ParsedEventType.Regular ? event.targetOrPhase : null;
+        const phase: string|null =
+            event.type === ParsedEventType.Animation ? event.targetOrPhase : null;
+        if (event.keySpan === undefined) {
+          throw new Error(`Unexpected state: keySpan must be defined for bound event but was not for ${
+              event.name}: ${event.sourceSpan}`);
+        }
+        return new BoundEvent(
+            event.name, event.type, event.handler, target, phase, event.sourceSpan, event.handlerSpan,
+            event.keySpan);
+      }
 }
 
 export class Element implements Node {
