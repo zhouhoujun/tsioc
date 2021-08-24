@@ -563,13 +563,13 @@ export abstract class Container extends Injector {
      * @param providers 
      * @param parent 
      */
-    static create(providers?: ProviderType[], parent?: Injector): Container;
+    static override create(providers?: ProviderType[], parent?: Injector): Container;
     /**
      * create injector with option.
      * @param options 
      */
-    static create(options: { providers: ProviderType[], parent?: Injector }): Container;
-    static create(
+    static override create(options: { providers: ProviderType[], parent?: Injector }): Container;
+    static override create(
         options?: ProviderType[] | { providers: ProviderType[], parent?: Injector},
         parent?: Injector): Container {
         if (!options) {
