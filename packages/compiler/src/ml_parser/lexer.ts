@@ -1,5 +1,15 @@
-import { ParseSourceSpan, ParseError, ParseSourceFile, ParseLocation } from '../util';
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
 import * as chars from '../chars';
+import { DEFAULT_MARKERS, Markers, ParseError, ParseLocation, ParseSourceFile, ParseSourceSpan } from '../util';
+import { NAMED_ENTITIES } from './entities';
+import { TagContentType, TagDefinition } from './tags';
 
 export enum TokenType {
     TAG_OPEN_START,
@@ -26,14 +36,7 @@ export enum TokenType {
     EOF
 }
 
-export interface LexerRange {
-    startPos: number;
-    startLine: number;
-    startCol: number;
-    endPos: number;
-}
-
-export class Tokenize {
+export class Token {
     constructor(
         public type: TokenType | null, public parts: string[], public sourceSpan: ParseSourceSpan) { }
 }
@@ -46,29 +49,16 @@ export class TokenError extends ParseError {
 
 export class TokenizeResult {
     constructor(
-        public tokens: Tokenize[], public errors: TokenError[],
-        public nonNormalizedIcuExpressions: Tokenize[]) { }
+        public tokens: Token[], public errors: TokenError[],
+        public nonNormalizedIcuExpressions: Token[]) { }
 }
 
-
-export enum TagContentType {
-    RAW_TEXT,
-    ESCAPABLE_RAW_TEXT,
-    PARSABLE_DATA
+export interface LexerRange {
+    startPos: number;
+    startLine: number;
+    startCol: number;
+    endPos: number;
 }
-
-export interface TagDefinition {
-    closedByParent: boolean;
-    implicitNamespacePrefix: string | null;
-    isVoid: boolean;
-    ignoreFirstLf: boolean;
-    canSelfClose: boolean;
-    preventNamespaceInheritance: boolean;
-
-    isClosedByChild(name: string): boolean;
-    getContentType(prefix?: string): TagContentType;
-}
-
 
 /**
  * Options that modify how the text is tokenized.
@@ -77,7 +67,7 @@ export interface TokenizeOptions {
     /** Whether to tokenize ICU messages (considered as text nodes when false). */
     tokenizeExpansionForms?: boolean;
     /** How to tokenize interpolation markers. */
-    markers?: string[];
+    markers?: Markers;
     /**
      * The start and end point of the text to parse within the `source` string.
      * The entire `source` string is parsed if this is not provided.
@@ -137,37 +127,35 @@ export function tokenize(
         mergeTextTokens(tokenizer.tokens), tokenizer.errors, tokenizer.nonNormalizedIcuExpressions);
 }
 
-export const DEFAULT_MARKERS = ['{{', '}}'];
+const _CR_OR_CRLF_REGEXP = /\r\n?/g;
 
-/**
- * The _Tokenizer uses objects of this type to move through the input text,
- * extracting "parsed characters". These could be more than one actual character
- * if the text contains escape sequences.
- */
-interface CharacterCursor {
-    /** Initialize the cursor. */
-    init(): void;
-    /** The parsed character at the current cursor position. */
-    peek(): number;
-    /** Advance the cursor by one parsed character. */
-    advance(): void;
-    /** Get a span from the marked start point to the current point. */
-    getSpan(start?: this, leadingTriviaCodePoints?: number[]): ParseSourceSpan;
-    /** Get the parsed characters from the marked start point to the current point. */
-    getChars(start: this): string;
-    /** The number of characters left before the end of the cursor. */
-    charsLeft(): number;
-    /** The number of characters between `this` cursor and `other` cursor. */
-    diff(other: this): number;
-    /** Make a copy of this cursor */
-    clone(): CharacterCursor;
+function _unexpectedCharacterErrorMsg(charCode: number): string {
+    const char = charCode === chars.$EOF ? 'EOF' : String.fromCharCode(charCode);
+    return `Unexpected character "${char}"`;
+}
+
+function _unknownEntityErrorMsg(entitySrc: string): string {
+    return `Unknown entity "${entitySrc}" - use the "&#<decimal>;" or  "&#x<hex>;" syntax`;
+}
+
+function _unparsableEntityErrorMsg(type: CharacterReferenceType, entityStr: string): string {
+    return `Unable to parse entity "${entityStr}" - ${type} character reference entities must end with ";"`;
+}
+
+enum CharacterReferenceType {
+    HEX = 'hexadecimal',
+    DEC = 'decimal',
+}
+
+class _ControlFlowError {
+    constructor(public error: TokenError) { }
 }
 
 // See https://www.w3.org/TR/html51/syntax.html#writing-html-documents
 class _Tokenizer {
     private _cursor: CharacterCursor;
     private _tokenizeIcu: boolean;
-    private _markers: string[];
+    private _markers: Markers;
     private _leadingTriviaCodePoints: number[] | undefined;
     private _currentTokenStart: CharacterCursor | null = null;
     private _currentTokenType: TokenType | null = null;
@@ -176,9 +164,9 @@ class _Tokenizer {
     private readonly _preserveLineEndings: boolean;
     private readonly _escapedString: boolean;
     private readonly _i18nNormalizeLineEndingsInICUs: boolean;
-    tokens: Tokenize[] = [];
+    tokens: Token[] = [];
     errors: TokenError[] = [];
-    nonNormalizedIcuExpressions: Tokenize[] = [];
+    nonNormalizedIcuExpressions: Token[] = [];
 
     /**
      * @param _file The html source file being tokenized.
@@ -281,7 +269,7 @@ class _Tokenizer {
         this._currentTokenType = type;
     }
 
-    private _endToken(parts: string[], end?: CharacterCursor): Tokenize {
+    private _endToken(parts: string[], end?: CharacterCursor): Token {
         if (this._currentTokenStart === null) {
             throw new TokenError(
                 'Programming error - attempted to end a token when there was no start to the token',
@@ -292,7 +280,7 @@ class _Tokenizer {
                 'Programming error - attempted to end a token which has no token type', null,
                 this._cursor.getSpan(this._currentTokenStart));
         }
-        const token = new Tokenize(
+        const token = new Token(
             this._currentTokenType, parts,
             this._cursor.getSpan(this._currentTokenStart, this._leadingTriviaCodePoints));
         this.tokens.push(token);
@@ -455,7 +443,7 @@ class _Tokenizer {
         }
     }
 
-    private _consumeRawText(decodeEntities: boolean, endMarkerPredicate: () => boolean): Tokenize {
+    private _consumeRawText(decodeEntities: boolean, endMarkerPredicate: () => boolean): Token {
         this._beginToken(decodeEntities ? TokenType.ESCAPABLE_RAW_TEXT : TokenType.RAW_TEXT);
         const parts: string[] = [];
         while (true) {
@@ -521,7 +509,7 @@ class _Tokenizer {
     private _consumeTagOpen(start: CharacterCursor) {
         let tagName: string;
         let prefix: string;
-        let openTagToken: Tokenize | undefined;
+        let openTagToken: Token | undefined;
         try {
             if (!chars.isAsciiLetter(this._cursor.peek())) {
                 throw this._createError(
@@ -710,13 +698,13 @@ class _Tokenizer {
         const parts: string[] = [];
 
         do {
-            if (this._markers && this._attemptStr(this._markers[0])) {
-                parts.push(this._markers[0]);
+            if (this._markers && this._attemptStr(this._markers.start)) {
+                parts.push(this._markers.start);
                 this._inInterpolation = true;
             } else if (
                 this._markers && this._inInterpolation &&
-                this._attemptStr(this._markers[1])) {
-                parts.push(this._markers[1]);
+                this._attemptStr(this._markers.end)) {
+                parts.push(this._markers.end);
                 this._inInterpolation = false;
             } else {
                 parts.push(this._readChar(true));
@@ -793,7 +781,7 @@ class _Tokenizer {
         }
         if (this._markers) {
             const start = this._cursor.clone();
-            const isInterpolation = this._attemptStr(this._markers[0]);
+            const isInterpolation = this._attemptStr(this._markers.start);
             this._cursor = start;
             return !isInterpolation;
         }
@@ -817,11 +805,11 @@ function isPrefixEnd(code: number): boolean {
 }
 
 function isDigitEntityEnd(code: number): boolean {
-    return code == chars.$SEMICOLON || code == chars.$EOF || !chars.isAsciiHexDigit(code);
+    return code === chars.$SEMICOLON || code === chars.$EOF || !chars.isAsciiHexDigit(code);
 }
 
 function isNamedEntityEnd(code: number): boolean {
-    return code == chars.$SEMICOLON || code == chars.$EOF || !chars.isAsciiLetter(code);
+    return code === chars.$SEMICOLON || code === chars.$EOF || !chars.isAsciiLetter(code);
 }
 
 function isExpansionCaseStart(peek: number): boolean {
@@ -829,35 +817,19 @@ function isExpansionCaseStart(peek: number): boolean {
 }
 
 function compareCharCodeCaseInsensitive(code1: number, code2: number): boolean {
-    return toUpperCaseCharCode(code1) == toUpperCaseCharCode(code2);
+    return toUpperCaseCharCode(code1) === toUpperCaseCharCode(code2);
 }
 
 function toUpperCaseCharCode(code: number): number {
     return code >= chars.$a && code <= chars.$z ? code - chars.$a + chars.$A : code;
 }
 
-const _CR_OR_CRLF_REGEXP = /\r\n?/g;
-
-function _unexpectedCharacterErrorMsg(charCode: number): string {
-  const char = charCode === chars.$EOF ? 'EOF' : String.fromCharCode(charCode);
-  return `Unexpected character "${char}"`;
-}
-
-function _unknownEntityErrorMsg(entitySrc: string): string {
-  return `Unknown entity "${entitySrc}" - use the "&#<decimal>;" or  "&#x<hex>;" syntax`;
-}
-
-function _unparsableEntityErrorMsg(type: CharacterReferenceType, entityStr: string): string {
-  return `Unable to parse entity "${entityStr}" - ${
-      type} character reference entities must end with ";"`;
-}
-
-function mergeTextTokens(srcTokens: Tokenize[]): Tokenize[] {
-    const dstTokens: Tokenize[] = [];
-    let lastDstToken: Tokenize;
+function mergeTextTokens(srcTokens: Token[]): Token[] {
+    const dstTokens: Token[] = [];
+    let lastDstToken: Token | undefined = undefined;
     for (let i = 0; i < srcTokens.length; i++) {
         const token = srcTokens[i];
-        if (lastDstToken && lastDstToken.type == TokenType.TEXT && token.type == TokenType.TEXT) {
+        if (lastDstToken && lastDstToken.type === TokenType.TEXT && token.type === TokenType.TEXT) {
             lastDstToken.parts[0]! += token.parts[0];
             lastDstToken.sourceSpan.end = token.sourceSpan.end;
         } else {
@@ -869,6 +841,30 @@ function mergeTextTokens(srcTokens: Tokenize[]): Tokenize[] {
     return dstTokens;
 }
 
+
+/**
+ * The _Tokenizer uses objects of this type to move through the input text,
+ * extracting "parsed characters". These could be more than one actual character
+ * if the text contains escape sequences.
+ */
+interface CharacterCursor {
+    /** Initialize the cursor. */
+    init(): void;
+    /** The parsed character at the current cursor position. */
+    peek(): number;
+    /** Advance the cursor by one parsed character. */
+    advance(): void;
+    /** Get a span from the marked start point to the current point. */
+    getSpan(start?: this, leadingTriviaCodePoints?: number[]): ParseSourceSpan;
+    /** Get the parsed characters from the marked start point to the current point. */
+    getChars(start: this): string;
+    /** The number of characters left before the end of the cursor. */
+    charsLeft(): number;
+    /** The number of characters between `this` cursor and `other` cursor. */
+    diff(other: this): number;
+    /** Make a copy of this cursor */
+    clone(): CharacterCursor;
+}
 
 interface CursorState {
     peek: number;
@@ -1008,22 +1004,22 @@ class EscapedCharacterCursor extends PlainCharacterCursor {
         }
     }
 
-    advance(): void {
+    override advance(): void {
         this.state = this.internalState;
         super.advance();
         this.processEscapeSequence();
     }
 
-    init(): void {
+    override init(): void {
         super.init();
         this.processEscapeSequence();
     }
 
-    clone(): EscapedCharacterCursor {
+    override clone(): EscapedCharacterCursor {
         return new EscapedCharacterCursor(this);
     }
 
-    getChars(start: this): string {
+    override getChars(start: this): string {
         const cursor = start.clone();
         let chars = '';
         while (cursor.internalState.offset < this.internalState.offset) {
@@ -1142,273 +1138,3 @@ class EscapedCharacterCursor extends PlainCharacterCursor {
 export class CursorError {
     constructor(public msg: string, public cursor: CharacterCursor) { }
 }
-
-
-enum CharacterReferenceType {
-    HEX = 'hexadecimal',
-    DEC = 'decimal',
-}
-
-class _ControlFlowError {
-    constructor(public error: TokenError) { }
-}
-
-// see https://www.w3.org/TR/html51/syntax.html#named-character-references
-// see https://html.spec.whatwg.org/multipage/entities.json
-// This list is not exhaustive to keep the compiler footprint low.
-// The `&#123;` / `&#x1ab;` syntax should be used when the named character reference does not
-// exist.
-export const NAMED_ENTITIES: {[k: string]: string} = {
-    'Aacute': '\u00C1',
-    'aacute': '\u00E1',
-    'Acirc': '\u00C2',
-    'acirc': '\u00E2',
-    'acute': '\u00B4',
-    'AElig': '\u00C6',
-    'aelig': '\u00E6',
-    'Agrave': '\u00C0',
-    'agrave': '\u00E0',
-    'alefsym': '\u2135',
-    'Alpha': '\u0391',
-    'alpha': '\u03B1',
-    'amp': '&',
-    'and': '\u2227',
-    'ang': '\u2220',
-    'apos': '\u0027',
-    'Aring': '\u00C5',
-    'aring': '\u00E5',
-    'asymp': '\u2248',
-    'Atilde': '\u00C3',
-    'atilde': '\u00E3',
-    'Auml': '\u00C4',
-    'auml': '\u00E4',
-    'bdquo': '\u201E',
-    'Beta': '\u0392',
-    'beta': '\u03B2',
-    'brvbar': '\u00A6',
-    'bull': '\u2022',
-    'cap': '\u2229',
-    'Ccedil': '\u00C7',
-    'ccedil': '\u00E7',
-    'cedil': '\u00B8',
-    'cent': '\u00A2',
-    'Chi': '\u03A7',
-    'chi': '\u03C7',
-    'circ': '\u02C6',
-    'clubs': '\u2663',
-    'cong': '\u2245',
-    'copy': '\u00A9',
-    'crarr': '\u21B5',
-    'cup': '\u222A',
-    'curren': '\u00A4',
-    'dagger': '\u2020',
-    'Dagger': '\u2021',
-    'darr': '\u2193',
-    'dArr': '\u21D3',
-    'deg': '\u00B0',
-    'Delta': '\u0394',
-    'delta': '\u03B4',
-    'diams': '\u2666',
-    'divide': '\u00F7',
-    'Eacute': '\u00C9',
-    'eacute': '\u00E9',
-    'Ecirc': '\u00CA',
-    'ecirc': '\u00EA',
-    'Egrave': '\u00C8',
-    'egrave': '\u00E8',
-    'empty': '\u2205',
-    'emsp': '\u2003',
-    'ensp': '\u2002',
-    'Epsilon': '\u0395',
-    'epsilon': '\u03B5',
-    'equiv': '\u2261',
-    'Eta': '\u0397',
-    'eta': '\u03B7',
-    'ETH': '\u00D0',
-    'eth': '\u00F0',
-    'Euml': '\u00CB',
-    'euml': '\u00EB',
-    'euro': '\u20AC',
-    'exist': '\u2203',
-    'fnof': '\u0192',
-    'forall': '\u2200',
-    'frac12': '\u00BD',
-    'frac14': '\u00BC',
-    'frac34': '\u00BE',
-    'frasl': '\u2044',
-    'Gamma': '\u0393',
-    'gamma': '\u03B3',
-    'ge': '\u2265',
-    'gt': '>',
-    'harr': '\u2194',
-    'hArr': '\u21D4',
-    'hearts': '\u2665',
-    'hellip': '\u2026',
-    'Iacute': '\u00CD',
-    'iacute': '\u00ED',
-    'Icirc': '\u00CE',
-    'icirc': '\u00EE',
-    'iexcl': '\u00A1',
-    'Igrave': '\u00CC',
-    'igrave': '\u00EC',
-    'image': '\u2111',
-    'infin': '\u221E',
-    'int': '\u222B',
-    'Iota': '\u0399',
-    'iota': '\u03B9',
-    'iquest': '\u00BF',
-    'isin': '\u2208',
-    'Iuml': '\u00CF',
-    'iuml': '\u00EF',
-    'Kappa': '\u039A',
-    'kappa': '\u03BA',
-    'Lambda': '\u039B',
-    'lambda': '\u03BB',
-    'lang': '\u27E8',
-    'laquo': '\u00AB',
-    'larr': '\u2190',
-    'lArr': '\u21D0',
-    'lceil': '\u2308',
-    'ldquo': '\u201C',
-    'le': '\u2264',
-    'lfloor': '\u230A',
-    'lowast': '\u2217',
-    'loz': '\u25CA',
-    'lrm': '\u200E',
-    'lsaquo': '\u2039',
-    'lsquo': '\u2018',
-    'lt': '<',
-    'macr': '\u00AF',
-    'mdash': '\u2014',
-    'micro': '\u00B5',
-    'middot': '\u00B7',
-    'minus': '\u2212',
-    'Mu': '\u039C',
-    'mu': '\u03BC',
-    'nabla': '\u2207',
-    'nbsp': '\u00A0',
-    'ndash': '\u2013',
-    'ne': '\u2260',
-    'ni': '\u220B',
-    'not': '\u00AC',
-    'notin': '\u2209',
-    'nsub': '\u2284',
-    'Ntilde': '\u00D1',
-    'ntilde': '\u00F1',
-    'Nu': '\u039D',
-    'nu': '\u03BD',
-    'Oacute': '\u00D3',
-    'oacute': '\u00F3',
-    'Ocirc': '\u00D4',
-    'ocirc': '\u00F4',
-    'OElig': '\u0152',
-    'oelig': '\u0153',
-    'Ograve': '\u00D2',
-    'ograve': '\u00F2',
-    'oline': '\u203E',
-    'Omega': '\u03A9',
-    'omega': '\u03C9',
-    'Omicron': '\u039F',
-    'omicron': '\u03BF',
-    'oplus': '\u2295',
-    'or': '\u2228',
-    'ordf': '\u00AA',
-    'ordm': '\u00BA',
-    'Oslash': '\u00D8',
-    'oslash': '\u00F8',
-    'Otilde': '\u00D5',
-    'otilde': '\u00F5',
-    'otimes': '\u2297',
-    'Ouml': '\u00D6',
-    'ouml': '\u00F6',
-    'para': '\u00B6',
-    'permil': '\u2030',
-    'perp': '\u22A5',
-    'Phi': '\u03A6',
-    'phi': '\u03C6',
-    'Pi': '\u03A0',
-    'pi': '\u03C0',
-    'piv': '\u03D6',
-    'plusmn': '\u00B1',
-    'pound': '\u00A3',
-    'prime': '\u2032',
-    'Prime': '\u2033',
-    'prod': '\u220F',
-    'prop': '\u221D',
-    'Psi': '\u03A8',
-    'psi': '\u03C8',
-    'quot': '\u0022',
-    'radic': '\u221A',
-    'rang': '\u27E9',
-    'raquo': '\u00BB',
-    'rarr': '\u2192',
-    'rArr': '\u21D2',
-    'rceil': '\u2309',
-    'rdquo': '\u201D',
-    'real': '\u211C',
-    'reg': '\u00AE',
-    'rfloor': '\u230B',
-    'Rho': '\u03A1',
-    'rho': '\u03C1',
-    'rlm': '\u200F',
-    'rsaquo': '\u203A',
-    'rsquo': '\u2019',
-    'sbquo': '\u201A',
-    'Scaron': '\u0160',
-    'scaron': '\u0161',
-    'sdot': '\u22C5',
-    'sect': '\u00A7',
-    'shy': '\u00AD',
-    'Sigma': '\u03A3',
-    'sigma': '\u03C3',
-    'sigmaf': '\u03C2',
-    'sim': '\u223C',
-    'spades': '\u2660',
-    'sub': '\u2282',
-    'sube': '\u2286',
-    'sum': '\u2211',
-    'sup': '\u2283',
-    'sup1': '\u00B9',
-    'sup2': '\u00B2',
-    'sup3': '\u00B3',
-    'supe': '\u2287',
-    'szlig': '\u00DF',
-    'Tau': '\u03A4',
-    'tau': '\u03C4',
-    'there4': '\u2234',
-    'Theta': '\u0398',
-    'theta': '\u03B8',
-    'thetasym': '\u03D1',
-    'thinsp': '\u2009',
-    'THORN': '\u00DE',
-    'thorn': '\u00FE',
-    'tilde': '\u02DC',
-    'times': '\u00D7',
-    'trade': '\u2122',
-    'Uacute': '\u00DA',
-    'uacute': '\u00FA',
-    'uarr': '\u2191',
-    'uArr': '\u21D1',
-    'Ucirc': '\u00DB',
-    'ucirc': '\u00FB',
-    'Ugrave': '\u00D9',
-    'ugrave': '\u00F9',
-    'uml': '\u00A8',
-    'upsih': '\u03D2',
-    'Upsilon': '\u03A5',
-    'upsilon': '\u03C5',
-    'Uuml': '\u00DC',
-    'uuml': '\u00FC',
-    'weierp': '\u2118',
-    'Xi': '\u039E',
-    'xi': '\u03BE',
-    'Yacute': '\u00DD',
-    'yacute': '\u00FD',
-    'yen': '\u00A5',
-    'yuml': '\u00FF',
-    'Yuml': '\u0178',
-    'Zeta': '\u0396',
-    'zeta': '\u03B6',
-    'zwj': '\u200D',
-    'zwnj': '\u200C',
-  };

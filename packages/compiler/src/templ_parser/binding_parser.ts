@@ -7,10 +7,9 @@
  */
 
  import {CompileDirectiveSummary, CompilePipeSummary} from '../metadata';
- import {SecurityContext} from '../util';
+ import {Markers, SecurityContext} from '../util';
  import {AbsoluteSourceSpan, ASTWithSource, BindingPipe, BindingType, BoundElementProperty, EmptyExpr, ParsedEvent, ParsedEventType, ParsedProperty, ParsedPropertyType, ParsedVariable, ParserError, RecursiveAstVisitor, TemplateBinding, VariableBinding} from '../expression_parser/ast';
  import {Parser} from '../exp_parser/parser';
- import {InterpolationConfig} from '../ml_parser/interpolation_config';
  import {mergeNsAndName} from '../ml_parser/tags';
  import {ParseError, ParseErrorLevel, ParseLocation, ParseSourceSpan} from '../util';
  import {ElementSchemaRegistry} from '../schema/element_schema_registry';
@@ -33,7 +32,7 @@
    private _usedPipes: Map<string, CompilePipeSummary> = new Map();
  
    constructor(
-       private _exprParser: Parser, private _interpolationConfig: InterpolationConfig,
+       private _exprParser: Parser, private _markers: Markers,
        private _schemaRegistry: ElementSchemaRegistry, pipes: CompilePipeSummary[]|null,
        public errors: ParseError[]) {
      // When the `pipes` parameter is `null`, do not check for used pipes
@@ -45,8 +44,8 @@
      }
    }
  
-   get interpolationConfig(): InterpolationConfig {
-     return this._interpolationConfig;
+   get markers(): Markers {
+     return this._markers;
    }
  
    getUsedPipes(): CompilePipeSummary[] {
@@ -124,7 +123,7 @@
  
      try {
        const ast = this._exprParser.parseInterpolation(
-           value, sourceInfo, absoluteOffset, this._interpolationConfig)!;
+           value, sourceInfo, absoluteOffset, this._markers)!;
        if (ast) this._reportExpressionParserErrors(ast.errors, sourceSpan);
        this._checkPipes(ast, sourceSpan);
        return ast;
@@ -356,9 +355,9 @@
      try {
        const ast = isHostBinding ?
            this._exprParser.parseSimpleBinding(
-               value, sourceInfo, absoluteOffset, this._interpolationConfig) :
+               value, sourceInfo, absoluteOffset, this._markers) :
            this._exprParser.parseBinding(
-               value, sourceInfo, absoluteOffset, this._interpolationConfig);
+               value, sourceInfo, absoluteOffset, this._markers);
        if (ast) this._reportExpressionParserErrors(ast.errors, sourceSpan);
        this._checkPipes(ast, sourceSpan);
        return ast;
@@ -504,7 +503,7 @@
  
      try {
        const ast = this._exprParser.parseAction(
-           value, sourceInfo, absoluteOffset, this._interpolationConfig);
+           value, sourceInfo, absoluteOffset, this._markers);
        if (ast) {
          this._reportExpressionParserErrors(ast.errors, sourceSpan);
        }

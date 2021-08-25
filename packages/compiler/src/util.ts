@@ -1,5 +1,18 @@
 import * as chars from './chars';
 
+
+
+export interface Markers {
+  start: string;
+  end: string;
+}
+
+export const DEFAULT_MARKERS = {
+  start: '{{',
+  end: '}}'
+}
+
+
 export class ParseLocation {
     constructor(
         public file: ParseSourceFile, public offset: number, public line: number,
@@ -146,15 +159,6 @@ export class ParseError {
     }
 }
 
-
-export class ParserError {
-    public message: string;
-    constructor(
-        message: string, public input: string, public errLocation: string, public ctxLocation?: any) {
-        this.message = `Parser Error: ${message} ${errLocation} [${input}] in ${ctxLocation}`;
-    }
-}
-
 export enum SecurityContext {
     NONE = 0,
     HTML = 1,
@@ -169,4 +173,135 @@ export interface LexerRange {
     startLine: number;
     startCol: number;
     endPos: number;
+}
+
+
+export type Byte = number;
+
+export function utf8Encode(str: string): Byte[] {
+  let encoded: Byte[] = [];
+  for (let index = 0; index < str.length; index++) {
+    let codePoint = str.charCodeAt(index);
+
+    // decode surrogate
+    // see https://mathiasbynens.be/notes/javascript-encoding#surrogate-formulae
+    if (codePoint >= 0xd800 && codePoint <= 0xdbff && str.length > (index + 1)) {
+      const low = str.charCodeAt(index + 1);
+      if (low >= 0xdc00 && low <= 0xdfff) {
+        index++;
+        codePoint = ((codePoint - 0xd800) << 10) + low - 0xdc00 + 0x10000;
+      }
+    }
+
+    if (codePoint <= 0x7f) {
+      encoded.push(codePoint);
+    } else if (codePoint <= 0x7ff) {
+      encoded.push(((codePoint >> 6) & 0x1F) | 0xc0, (codePoint & 0x3f) | 0x80);
+    } else if (codePoint <= 0xffff) {
+      encoded.push(
+          (codePoint >> 12) | 0xe0, ((codePoint >> 6) & 0x3f) | 0x80, (codePoint & 0x3f) | 0x80);
+    } else if (codePoint <= 0x1fffff) {
+      encoded.push(
+          ((codePoint >> 18) & 0x07) | 0xf0, ((codePoint >> 12) & 0x3f) | 0x80,
+          ((codePoint >> 6) & 0x3f) | 0x80, (codePoint & 0x3f) | 0x80);
+    }
+  }
+
+  return encoded;
+}
+
+export function stringify(token: any): string {
+  if (typeof token === 'string') {
+    return token;
+  }
+
+  if (Array.isArray(token)) {
+    return '[' + token.map(stringify).join(', ') + ']';
+  }
+
+  if (token == null) {
+    return '' + token;
+  }
+
+  if (token.overriddenName) {
+    return `${token.overriddenName}`;
+  }
+
+  if (token.name) {
+    return `${token.name}`;
+  }
+
+  if (!token.toString) {
+    return 'object';
+  }
+
+  // WARNING: do not try to `JSON.stringify(token)` here
+  // see https://github.com/angular/angular/issues/23440
+  const res = token.toString();
+
+  if (res == null) {
+    return '' + res;
+  }
+
+  const newLineIndex = res.indexOf('\n');
+  return newLineIndex === -1 ? res : res.substring(0, newLineIndex);
+}
+
+
+let _anonymousTypeIndex = 0;
+
+export function identifierName(compileIdentifier: CompileIdentifierMetadata|null|undefined): string|
+    null {
+  if (!compileIdentifier || !compileIdentifier.reference) {
+    return null;
+  }
+  const ref = compileIdentifier.reference;
+  if (ref instanceof StaticSymbol) {
+    return ref.name;
+  }
+  if (ref['__anonymousType']) {
+    return ref['__anonymousType'];
+  }
+  if (ref['__forward_ref__']) {
+    // We do not want to try to stringify a `forwardRef()` function because that would cause the
+    // inner function to be evaluated too early, defeating the whole point of the `forwardRef`.
+    return '__forward_ref__';
+  }
+  let identifier = stringify(ref);
+  if (identifier.indexOf('(') >= 0) {
+    // case: anonymous functions!
+    identifier = `anonymous_${_anonymousTypeIndex++}`;
+    ref['__anonymousType'] = identifier;
+  } else {
+    identifier = sanitizeIdentifier(identifier);
+  }
+  return identifier;
+}
+
+export function identifierModuleUrl(compileIdentifier: CompileIdentifierMetadata): string {
+  const ref = compileIdentifier.reference;
+  if (ref instanceof StaticSymbol) {
+    return ref.filePath;
+  }
+  // Runtime type
+  return `./${stringify(ref)}`;
+}
+
+export interface CompileIdentifierMetadata {
+  reference: any;
+}
+
+export function sanitizeIdentifier(name: string): string {
+  return name.replace(/\W/g, '_');
+}
+
+export class StaticSymbol {
+  constructor(public filePath: string, public name: string, public members: string[]) {}
+
+  assertNoMembers() {
+    if (this.members.length) {
+      throw new Error(
+          `Illegal state: symbol without members expected, but got ${JSON.stringify(this)}.`);
+    }
+  }
 }

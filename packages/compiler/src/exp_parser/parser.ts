@@ -7,8 +7,7 @@
  */
 
 import * as chars from '../chars';
-import { DEFAULT_INTERPOLATION_CONFIG, InterpolationConfig } from '../ml_parser/interpolation_config';
-
+import { DEFAULT_MARKERS, Markers } from '../util';
 import { AbsoluteSourceSpan, AST, AstVisitor, ASTWithSource, Binary, BindingPipe, Chain, Conditional, EmptyExpr, ExpressionBinding, FunctionCall, ImplicitReceiver, Interpolation, KeyedRead, KeyedWrite, LiteralArray, LiteralMap, LiteralMapKey, LiteralPrimitive, MethodCall, NonNullAssert, ParserError, ParseSpan, PrefixNot, PropertyRead, PropertyWrite, Quote, RecursiveAstVisitor, SafeKeyedRead, SafeMethodCall, SafePropertyRead, TemplateBinding, TemplateBindingIdentifier, ThisReceiver, Unary, VariableBinding } from './ast';
 import { EOF, isIdentifier, Lexer, Token, TokenType } from './lexer';
 
@@ -38,8 +37,8 @@ export class Parser {
 
   parseAction(
     input: string, location: string, absoluteOffset: number,
-    interpolationConfig: InterpolationConfig = DEFAULT_INTERPOLATION_CONFIG): ASTWithSource {
-    this._checkNoInterpolation(input, location, interpolationConfig);
+    markers: Markers = DEFAULT_MARKERS): ASTWithSource {
+    this._checkNoInterpolation(input, location, markers);
     const sourceToLex = this._stripComments(input);
     const tokens = this._lexer.tokenize(this._stripComments(input));
     const ast = new _ParseAST(
@@ -51,8 +50,8 @@ export class Parser {
 
   parseBinding(
     input: string, location: string, absoluteOffset: number,
-    interpolationConfig: InterpolationConfig = DEFAULT_INTERPOLATION_CONFIG): ASTWithSource {
-    const ast = this._parseBindingAst(input, location, absoluteOffset, interpolationConfig);
+    markers: Markers = DEFAULT_MARKERS): ASTWithSource {
+    const ast = this._parseBindingAst(input, location, absoluteOffset, markers);
     return new ASTWithSource(ast, input, location, absoluteOffset, this.errors);
   }
 
@@ -64,8 +63,8 @@ export class Parser {
 
   parseSimpleBinding(
     input: string, location: string, absoluteOffset: number,
-    interpolationConfig: InterpolationConfig = DEFAULT_INTERPOLATION_CONFIG): ASTWithSource {
-    const ast = this._parseBindingAst(input, location, absoluteOffset, interpolationConfig);
+    markers: Markers = DEFAULT_MARKERS): ASTWithSource {
+    const ast = this._parseBindingAst(input, location, absoluteOffset, markers);
     const errors = this.checkSimpleExpression(ast);
     if (errors.length > 0) {
       this._reportError(
@@ -80,7 +79,7 @@ export class Parser {
 
   private _parseBindingAst(
     input: string, location: string, absoluteOffset: number,
-    interpolationConfig: InterpolationConfig): AST {
+    markers: Markers): AST {
     // Quotes expressions use 3rd-party expression language. We don't want to use
     // our lexer or parser for that, so we check for that ahead of time.
     const quote = this._parseQuote(input, location, absoluteOffset);
@@ -89,7 +88,7 @@ export class Parser {
       return quote;
     }
 
-    this._checkNoInterpolation(input, location, interpolationConfig);
+    this._checkNoInterpolation(input, location, markers);
     const sourceToLex = this._stripComments(input);
     const tokens = this._lexer.tokenize(sourceToLex);
     return new _ParseAST(
@@ -151,9 +150,9 @@ export class Parser {
 
   parseInterpolation(
     input: string, location: string, absoluteOffset: number,
-    interpolationConfig: InterpolationConfig = DEFAULT_INTERPOLATION_CONFIG): ASTWithSource | null {
+    markers: Markers = DEFAULT_MARKERS): ASTWithSource | null {
     const { strings, expressions, offsets } =
-      this.splitInterpolation(input, location, interpolationConfig);
+      this.splitInterpolation(input, location, markers);
     if (expressions.length === 0) return null;
 
     const expressionNodes: AST[] = [];
@@ -208,14 +207,14 @@ export class Parser {
    */
   splitInterpolation(
     input: string, location: string,
-    interpolationConfig: InterpolationConfig = DEFAULT_INTERPOLATION_CONFIG): SplitInterpolation {
+    markers: Markers = DEFAULT_MARKERS): SplitInterpolation {
     const strings: InterpolationPiece[] = [];
     const expressions: InterpolationPiece[] = [];
     const offsets: number[] = [];
     let i = 0;
     let atInterpolation = false;
     let extendLastString = false;
-    let { start: interpStart, end: interpEnd } = interpolationConfig;
+    let { start: interpStart, end: interpEnd } = markers;
     while (i < input.length) {
       if (!atInterpolation) {
         // parse until starting {{
@@ -298,7 +297,7 @@ export class Parser {
     return null;
   }
 
-  private _checkNoInterpolation(input: string, location: string, { start, end }: InterpolationConfig):
+  private _checkNoInterpolation(input: string, location: string, { start, end }: Markers):
     void {
     let startIndex = -1;
     let endIndex = -1;

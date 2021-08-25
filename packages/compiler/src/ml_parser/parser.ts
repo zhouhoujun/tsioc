@@ -43,14 +43,14 @@
  class _TreeBuilder {
    private _index: number = -1;
    // `_peek` will be initialized by the call to `advance()` in the constructor.
-   private _peek!: lex.Tokenize;
+   private _peek!: lex.Token;
    private _elementStack: html.Element[] = [];
  
    rootNodes: html.Node[] = [];
    errors: TreeError[] = [];
  
    constructor(
-       private tokens: lex.Tokenize[], private getTagDefinition: (tagName: string) => TagDefinition) {
+       private tokens: lex.Token[], private getTagDefinition: (tagName: string) => TagDefinition) {
      this._advance();
    }
  
@@ -81,7 +81,7 @@
      }
    }
  
-   private _advance(): lex.Tokenize {
+   private _advance(): lex.Token {
      const prev = this._peek;
      if (this._index < this.tokens.length - 1) {
        // Note: there is always an EOF token at the end
@@ -91,26 +91,26 @@
      return prev;
    }
  
-   private _advanceIf(type: lex.TokenType): lex.Tokenize|null {
+   private _advanceIf(type: lex.TokenType): lex.Token|null {
      if (this._peek.type === type) {
        return this._advance();
      }
      return null;
    }
  
-   private _consumeCdata(_startToken: lex.Tokenize) {
+   private _consumeCdata(_startToken: lex.Token) {
      this._consumeText(this._advance());
      this._advanceIf(lex.TokenType.CDATA_END);
    }
  
-   private _consumeComment(token: lex.Tokenize) {
+   private _consumeComment(token: lex.Token) {
      const text = this._advanceIf(lex.TokenType.RAW_TEXT);
      this._advanceIf(lex.TokenType.COMMENT_END);
      const value = text != null ? text.parts[0].trim() : null;
      this._addToParent(new html.Comment(value, token.sourceSpan));
    }
  
-   private _consumeExpansion(token: lex.Tokenize) {
+   private _consumeExpansion(token: lex.Token) {
      const switchValue = this._advance();
  
      const type = this._advance();
@@ -154,7 +154,7 @@
      if (!exp) return null;
  
      const end = this._advance();
-     exp.push(new lex.Tokenize(lex.TokenType.EOF, [], end.sourceSpan));
+     exp.push(new lex.Token(lex.TokenType.EOF, [], end.sourceSpan));
  
      // parse everything in between { and }
      const expansionCaseParser = new _TreeBuilder(exp, this.getTagDefinition);
@@ -172,8 +172,8 @@
          value.parts[0], expansionCaseParser.rootNodes, sourceSpan, value.sourceSpan, expSourceSpan);
    }
  
-   private _collectExpansionExpTokens(start: lex.Tokenize): lex.Tokenize[]|null {
-     const exp: lex.Tokenize[] = [];
+   private _collectExpansionExpTokens(start: lex.Token): lex.Token[]|null {
+     const exp: lex.Token[] = [];
      const expansionFormStack = [lex.TokenType.EXPANSION_CASE_EXP_START];
  
      while (true) {
@@ -214,7 +214,7 @@
      }
    }
  
-   private _consumeText(token: lex.Tokenize) {
+   private _consumeText(token: lex.Token) {
      let text = token.parts[0];
      if (text.length > 0 && text[0] === '\n') {
        const parent = this._getParentElement();
@@ -236,7 +236,7 @@
      }
    }
  
-   private _consumeStartTag(startTagToken: lex.Tokenize) {
+   private _consumeStartTag(startTagToken: lex.Token) {
      const [prefix, name] = startTagToken.parts;
      const attrs: html.Attribute[] = [];
      while (this._peek.type === lex.TokenType.ATTR_NAME) {
@@ -291,7 +291,7 @@
      this._elementStack.push(el);
    }
  
-   private _consumeEndTag(endTagToken: lex.Tokenize) {
+   private _consumeEndTag(endTagToken: lex.Token) {
      const fullName = this._getElementFullName(
          endTagToken.parts[0], endTagToken.parts[1], this._getParentElement());
  
@@ -337,7 +337,7 @@
      return false;
    }
  
-   private _consumeAttr(attrName: lex.Tokenize): html.Attribute {
+   private _consumeAttr(attrName: lex.Token): html.Attribute {
      const fullName = mergeNsAndName(attrName.parts[0], attrName.parts[1]);
      let end = attrName.sourceSpan.end;
      let value = '';

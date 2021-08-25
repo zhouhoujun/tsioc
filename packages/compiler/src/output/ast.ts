@@ -565,80 +565,7 @@
  export class LiteralPiece extends MessagePiece {}
  export class PlaceholderPiece extends MessagePiece {}
  
- export class LocalizedString extends Expression {
-   constructor(
-       readonly messageParts: LiteralPiece[],
-       readonly placeHolderNames: PlaceholderPiece[], readonly expressions: Expression[],
-       sourceSpan?: ParseSourceSpan|null) {
-     super(STRING_TYPE, sourceSpan);
-   }
- 
-   override isEquivalent(e: Expression): boolean {
-     // return e instanceof LocalizedString && this.message === e.message;
-     return false;
-   }
- 
-   override isConstant() {
-     return false;
-   }
- 
-   override visitExpression(visitor: ExpressionVisitor, context: any): any {
-     return visitor.visitLocalizedString(this, context);
-   }
- 
-   /**
-    * Serialize the given `meta` and `messagePart` into "cooked" and "raw" strings that can be used
-    * in a `$localize` tagged string. The format of the metadata is the same as that parsed by
-    * `parseI18nMeta()`.
-    *
-    * @param meta The metadata to serialize
-    * @param messagePart The first part of the tagged string
-    */
-   serializeI18nHead(): CookedRawString {
-     const MEANING_SEPARATOR = '|';
-     const ID_SEPARATOR = '@@';
-     const LEGACY_ID_INDICATOR = '␟';
- 
-     let metaBlock = this.metaBlock.description || '';
-     if (this.metaBlock.meaning) {
-       metaBlock = `${this.metaBlock.meaning}${MEANING_SEPARATOR}${metaBlock}`;
-     }
-     if (this.metaBlock.customId) {
-       metaBlock = `${metaBlock}${ID_SEPARATOR}${this.metaBlock.customId}`;
-     }
-     if (this.metaBlock.legacyIds) {
-       this.metaBlock.legacyIds.forEach(legacyId => {
-         metaBlock = `${metaBlock}${LEGACY_ID_INDICATOR}${legacyId}`;
-       });
-     }
-     return createCookedRawString(
-         metaBlock, this.messageParts[0].text, this.getMessagePartSourceSpan(0));
-   }
- 
-   getMessagePartSourceSpan(i: number): ParseSourceSpan|null {
-     return this.messageParts[i]?.sourceSpan ?? this.sourceSpan;
-   }
- 
-   getPlaceholderSourceSpan(i: number): ParseSourceSpan {
-     return this.placeHolderNames[i]?.sourceSpan ?? this.expressions[i]?.sourceSpan ??
-         this.sourceSpan;
-   }
- 
-   /**
-    * Serialize the given `placeholderName` and `messagePart` into "cooked" and "raw" strings that
-    * can be used in a `$localize` tagged string.
-    *
-    * @param placeholderName The placeholder name to serialize
-    * @param messagePart The following message string after this placeholder
-    */
-   serializeI18nTemplatePart(partIndex: number): CookedRawString {
-     const placeholderName = this.placeHolderNames[partIndex - 1].text;
-     const messagePart = this.messageParts[partIndex];
-     return createCookedRawString(
-         placeholderName, messagePart.text, this.getMessagePartSourceSpan(partIndex));
-   }
- }
- 
+
  /**
   * A structure to hold the cooked and raw strings of a template literal element, along with its
   * source-span range.
@@ -1005,7 +932,6 @@
    visitTaggedTemplateExpr(ast: TaggedTemplateExpr, context: any): any;
    visitInstantiateExpr(ast: InstantiateExpr, context: any): any;
    visitLiteralExpr(ast: LiteralExpr, context: any): any;
-   visitLocalizedString(ast: LocalizedString, context: any): any;
    visitExternalExpr(ast: ExternalExpr, context: any): any;
    visitConditionalExpr(ast: ConditionalExpr, context: any): any;
    visitNotExpr(ast: NotExpr, context: any): any;
@@ -1348,14 +1274,6 @@
      return this.transformExpr(ast, context);
    }
  
-   visitLocalizedString(ast: LocalizedString, context: any): any {
-     return this.transformExpr(
-         new LocalizedString(
-             ast.metaBlock, ast.messageParts, ast.placeHolderNames,
-             this.visitAllExpressions(ast.expressions, context), ast.sourceSpan),
-         context);
-   }
- 
    visitExternalExpr(ast: ExternalExpr, context: any): any {
      return this.transformExpr(ast, context);
    }
@@ -1596,9 +1514,6 @@
      return this.visitExpression(ast, context);
    }
    visitLiteralExpr(ast: LiteralExpr, context: any): any {
-     return this.visitExpression(ast, context);
-   }
-   visitLocalizedString(ast: LocalizedString, context: any): any {
      return this.visitExpression(ast, context);
    }
    visitExternalExpr(ast: ExternalExpr, context: any): any {
@@ -1883,12 +1798,6 @@
  export function literal(
      value: any, type?: Type|null, sourceSpan?: ParseSourceSpan|null): LiteralExpr {
    return new LiteralExpr(value, type, sourceSpan);
- }
- 
- export function localizedString(
-     metaBlock: I18nMeta, messageParts: LiteralPiece[], placeholderNames: PlaceholderPiece[],
-     expressions: Expression[], sourceSpan?: ParseSourceSpan|null): LocalizedString {
-   return new LocalizedString(metaBlock, messageParts, placeholderNames, expressions, sourceSpan);
  }
  
  export function isNull(exp: Expression): boolean {
