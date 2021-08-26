@@ -1,5 +1,5 @@
 import { PromiseUtil } from '@tsdi/ioc';
-import { Input, Attribute } from '@tsdi/components';
+import { Input, Binding } from '@tsdi/components';
 import { Task, Src, BodyTemplate, ActivityType } from '@tsdi/activities';
 import { fromEventPattern } from 'rxjs';
 import { bufferTime, filter } from 'rxjs/operators';

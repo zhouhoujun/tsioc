@@ -1,6 +1,6 @@
 import { isBoolean } from '@tsdi/ioc';
 import { syncRequire } from '@tsdi/platform-server';
-import { Attribute, Input } from '@tsdi/components';
+import { Binding, Input } from '@tsdi/components';
 import { Task } from '@tsdi/activities';
 import { Plugin, RollupOptions } from 'rollup';
 import { CompilerOptions, nodeModuleNameResolver, sys } from 'typescript';

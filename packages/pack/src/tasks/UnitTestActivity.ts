@@ -1,4 +1,4 @@
-import { Input, Attribute } from '@tsdi/components';
+import { Input, Binding } from '@tsdi/components';
 import { Task, Src, TemplateOption } from '@tsdi/activities';
 import { runTest, UnitTestConfigure } from '@tsdi/unit';
 import { ConsoleReporter } from '@tsdi/unit-console';

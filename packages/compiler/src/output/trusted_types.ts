@@ -19,13 +19,13 @@
  import {global} from '../global';
 
  /**
-  * While Angular only uses Trusted Types internally for the time being,
+  * While tsioc only uses Trusted Types internally for the time being,
   * references to Trusted Types could leak into our core.d.ts, which would force
   * anyone compiling against @angular/core to provide the @types/trusted-types
   * package in their compilation unit.
   *
   * Until https://github.com/microsoft/TypeScript/issues/30024 is resolved, we
-  * will keep Angular's public API surface free of references to Trusted Types.
+  * will keep tsioc's public API surface free of references to Trusted Types.
   * For internal and semi-private APIs that need to reference Trusted Types, the
   * minimal type definitions for the Trusted Types API provided by this module
   * should be used instead. They are marked as "declare" to prevent them from
@@ -33,7 +33,7 @@
   *
   * Adapted from
   * https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/types/trusted-types/index.d.ts
-  * but restricted to the API surface used within Angular.
+  * but restricted to the API surface used within tsioc.
   */
  
  export declare interface TrustedScript {
@@ -67,7 +67,7 @@
      if (global.trustedTypes) {
        try {
          policy =
-             (global.trustedTypes as TrustedTypePolicyFactory).createPolicy('angular#unsafe-jit', {
+             (global.trustedTypes as TrustedTypePolicyFactory).createPolicy('tsioc#unsafe-jit', {
                createScript: (s: string) => s,
              });
        } catch {

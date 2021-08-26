@@ -38,19 +38,19 @@
     return [elementName.slice(1, colonIndex), elementName.slice(colonIndex + 1)];
   }
   
-  // `<ng-container>` tags work the same regardless the namespace
-  export function isNgContainer(tagName: string): boolean {
-    return splitNsName(tagName)[1] === 'ng-container';
+  // `<v-container>` tags work the same regardless the namespace
+  export function isContainer(tagName: string): boolean {
+    return splitNsName(tagName)[1] === 'v-container';
   }
   
-  // `<ng-content>` tags work the same regardless the namespace
-  export function isNgContent(tagName: string): boolean {
-    return splitNsName(tagName)[1] === 'ng-content';
+  // `<v-content>` tags work the same regardless the namespace
+  export function isContent(tagName: string): boolean {
+    return splitNsName(tagName)[1] === 'v-content';
   }
   
-  // `<ng-template>` tags work the same regardless the namespace
-  export function isNgTemplate(tagName: string): boolean {
-    return splitNsName(tagName)[1] === 'ng-template';
+  // `<v-template>` tags work the same regardless the namespace
+  export function isTemplate(tagName: string): boolean {
+    return splitNsName(tagName)[1] === 'v-template';
   }
   
   export function getNsPrefix(fullName: string): string;

@@ -1,4 +1,4 @@
-import { Input, Attribute } from '@tsdi/components';
+import { Input, Binding } from '@tsdi/components';
 import { Task, TemplateOption } from '@tsdi/activities';
 import { DestOptions, dest } from 'vinyl-fs';
 import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';

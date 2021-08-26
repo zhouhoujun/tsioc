@@ -7,7 +7,7 @@ import {
     MiddlewareType, RouteMapingMetadata, Router, RunnableFactoryResolver
 } from '@tsdi/boot';
 import {
-    AttributeMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
+    BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
     HostListenerMetadata, PipeMetadata, QueryMetadata, VaildateMetadata
 } from './meta';
 import { PipeTransform } from '../pipes/pipe';
@@ -201,6 +201,58 @@ export const Host: HostDecorator = createParamDecorator('Host');
 
 
 /**
+ * Type of the Attribute decorator / constructor function.
+ *
+ * @publicApi
+ */
+export interface AttributeDecorator {
+    /**
+     * Parameter decorator for a directive constructor that designates
+     * a host-element attribute whose value is injected as a constant string literal.
+     *
+     * @usageNotes
+     *
+     * Suppose we have an `<input>` element and want to know its `type`.
+     *
+     * ```html
+     * <input type="text">
+     * ```
+     *
+     * The following example uses the decorator to inject the string literal `text` in a directive.
+     *
+     * {@example core/ts/metadata/metadata.ts region='attributeMetadata'}
+     *
+     * The following example uses the decorator in a component constructor.
+     *
+     * {@example core/ts/metadata/metadata.ts region='attributeFactory'}
+     *
+     */
+    (name: string): any;
+    new(name: string): Attribute;
+}
+
+/**
+ * Type of the Attribute metadata.
+ *
+ * @publicApi
+ */
+export interface Attribute {
+    /**
+     * The name of the attribute whose value can be injected.
+     */
+    attributeName: string;
+}
+
+/**
+ * Host decorator and metadata.
+ *
+ * @Annotation
+ * @publicApi
+ */
+export const Attribute: AttributeDecorator = createParamDecorator('Attribute');
+
+
+/**
  * HostBinding decorator.
  *
  * @export
@@ -382,21 +434,21 @@ export const HostMapping: IHostMappingDecorator = createDecorator<RouteMapingMet
 
 
 /**
- * Property Attribute decorator. define property binding in template.
+ * Property Binding decorator. define property binding in template.
  *
  * @export
  * @interface BindingPropertyDecorator
  */
-export interface AttributePropertyDecorator {
+export interface BindingPropertyDecorator {
     /**
-     * Property Attribute decorator. define property of component or directive binding in template.
+     * Property Binding decorator. define property of component or directive binding in template.
      *
      * @param {string} [bindingPropertyName] binding property name
      */
     (bindingPropertyName?: string): PropertyDecorator;
 
     /**
-     * Property Attribute decorator. define property of component or directive binding in template.
+     * Property Binding decorator. define property of component or directive binding in template.
      *
      * @param {string} bindingPropertyName binding property name
      * @param {*} defaultVal default value.
@@ -404,17 +456,17 @@ export interface AttributePropertyDecorator {
     (bindingPropertyName: string, defaultVal: any): PropertyDecorator;
 
     /**
-     * Property Attribute decorator. define property of component or directive binding in template.
+     * Property Binding decorator. define property of component or directive binding in template.
      *
      * @param {string} bindingName binding property name
      */
-    (metadata: AttributeMetadata): PropertyDecorator;
+    (metadata: BindingMetadata): PropertyDecorator;
 }
 
 /**
  * Property attribute decorator.  define property binding in template.
  */
-export const Attribute: AttributePropertyDecorator = createPropDecorator<AttributeMetadata>('Attribute', {
+export const Binding: BindingPropertyDecorator = createPropDecorator<BindingMetadata>('Binding', {
     props: (bindingPropertyName: string, defaultValue?: any) => ({ bindingPropertyName, defaultValue })
 });
 
@@ -447,14 +499,14 @@ export interface InputPropertyDecorator {
      *
      * @param {string} bindingName binding property name
      */
-    (metadata: AttributeMetadata): PropertyDecorator;
+    (metadata: BindingMetadata): PropertyDecorator;
 
 }
 
 /**
  * Input decorator.
  */
-export const Input: InputPropertyDecorator = createPropDecorator<AttributeMetadata>('Input', {
+export const Input: InputPropertyDecorator = createPropDecorator<BindingMetadata>('Input', {
     props: (bindingPropertyName: string, defaultValue?: any) => ({ bindingPropertyName, defaultValue })
 });
 
@@ -480,13 +532,13 @@ export interface OutputPropertyDecorator {
      *
      * @param {string} bindingName binding property name
      */
-    (metadata: AttributeMetadata): PropertyDecorator;
+    (metadata: BindingMetadata): PropertyDecorator;
 }
 
 /**
  * output property decorator.
  */
-export const Output: OutputPropertyDecorator = createPropDecorator<AttributeMetadata>('Output', {
+export const Output: OutputPropertyDecorator = createPropDecorator<BindingMetadata>('Output', {
     props: (bindingPropertyName?: string) => ({ bindingPropertyName })
 });
 

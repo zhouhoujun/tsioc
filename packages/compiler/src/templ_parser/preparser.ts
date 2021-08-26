@@ -7,7 +7,7 @@
  */
 
  import * as html from '../ml_parser/ast';
- import {isNgContent} from '../ml_parser/tags';
+ import {isContent} from '../ml_parser/tags';
  
  const NG_CONTENT_SELECT_ATTR = 'select';
  const LINK_ELEMENT = 'link';
@@ -16,8 +16,8 @@
  const LINK_STYLE_REL_VALUE = 'stylesheet';
  const STYLE_ELEMENT = 'style';
  const SCRIPT_ELEMENT = 'script';
- const NG_NON_BINDABLE_ATTR = 'ngNonBindable';
- const NG_PROJECT_AS = 'ngProjectAs';
+ const NON_BINDABLE_ATTR = 'nonBindable';
+ const PROJECT_AS = 'projectAs';
  
  export function preparseElement(ast: html.Element): PreparsedElement {
    let selectAttr: string = null!;
@@ -33,9 +33,9 @@
        hrefAttr = attr.value;
      } else if (lcAttrName == LINK_STYLE_REL_ATTR) {
        relAttr = attr.value;
-     } else if (attr.name == NG_NON_BINDABLE_ATTR) {
+     } else if (attr.name == NON_BINDABLE_ATTR) {
        nonBindable = true;
-     } else if (attr.name == NG_PROJECT_AS) {
+     } else if (attr.name == PROJECT_AS) {
        if (attr.value.length > 0) {
          projectAs = attr.value;
        }
@@ -44,7 +44,7 @@
    selectAttr = normalizeNgContentSelect(selectAttr);
    const nodeName = ast.name.toLowerCase();
    let type = PreparsedElementType.OTHER;
-   if (isNgContent(nodeName)) {
+   if (isContent(nodeName)) {
      type = PreparsedElementType.NG_CONTENT;
    } else if (nodeName == STYLE_ELEMENT) {
      type = PreparsedElementType.STYLE;

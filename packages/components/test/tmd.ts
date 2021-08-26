@@ -1,5 +1,5 @@
 import { DIModule } from '@tsdi/boot';
-import { Attribute, CompilerFacade, Component, Directive, ElementRef, EventEmitter, HostMapping, Input, OnInit, Output, ViewChild, ViewChildren, ViewRef } from '@tsdi/components';
+import { Binding, CompilerFacade, Component, Directive, ElementRef, EventEmitter, HostMapping, Input, OnInit, Output, ViewChild, ViewChildren, ViewRef } from '@tsdi/components';
 import { Inject, Injectable, Injector } from '@tsdi/ioc';
 
 
@@ -10,7 +10,7 @@ export class TextDirective {
     // @Input() text: string;
     // @Output() textChange: EventEmitter<string> = new EventEmitter();
 
-    @Attribute() text: string;
+    @Binding() text: string;
 }
 
 
@@ -24,7 +24,7 @@ export class InputDirective {
 @Directive('Container')
 export class ContainerDirective {
 
-    @Attribute() name: string;
+    @Binding() name: string;
 
     @ViewChildren() contents: ViewRef[];
 }
@@ -74,14 +74,14 @@ export class AppComponent implements OnInit {
 
 @Directive('selector1, [selector1]')
 export class Selector1 {
-    @Attribute() id: string;
-    @Attribute() name: string;
+    @Binding() id: string;
+    @Binding() name: string;
 }
 
 @Directive('selector3, [selector3]')
 export class Selector3 extends Selector1 {
-    @Attribute() address: string;
-    @Attribute() phone: string;
+    @Binding() address: string;
+    @Binding() phone: string;
 }
 
 @Injectable()

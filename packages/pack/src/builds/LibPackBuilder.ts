@@ -1,5 +1,5 @@
 import { isBoolean, isArray, lang, Inject } from '@tsdi/ioc';
-import { Input, AfterInit, Attribute } from '@tsdi/components';
+import { Input, AfterInit, Binding } from '@tsdi/components';
 import { Task, TemplateOption, Src, Activities, ActivityTemplate, IActivityContext, Expression } from '@tsdi/activities';
 import { TsBuildOption, AssetActivityOption, JsonEditActivityOption } from '../transforms';
 import { CompilerOptions } from 'typescript';

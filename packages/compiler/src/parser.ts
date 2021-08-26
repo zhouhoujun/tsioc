@@ -9,7 +9,7 @@
 import { ParsedEvent, ParsedProperty, ParsedVariable } from './exp_parser/ast';
 import * as html from './ml_parser/ast';
 import { replaceNgsp } from './ml_parser/html_whitespaces';
-import { isNgTemplate } from './ml_parser/tags';
+import { isTemplate } from './ml_parser/tags';
 import { ParseError, ParseErrorLevel, ParseSourceSpan } from './util';
 import { isStyleUrlResolvable } from './style_url_resolver';
 import { BindingParser } from './templ_parser/binding_parser';
@@ -109,7 +109,7 @@ class HtmlAstToIvyAst implements html.Visitor {
     }
 
     // Whether the element is a `<ng-template>`
-    const isTemplateElement = isNgTemplate(element.name);
+    const isTemplateElement = isTemplate(element.name);
 
     const parsedProperties: ParsedProperty[] = [];
     const boundEvents: t.BoundEvent[] = [];
@@ -199,11 +199,11 @@ class HtmlAstToIvyAst implements html.Visitor {
     }
 
     if (elementHasInlineTemplate) {
-      // If this node is an inline-template (e.g. has *ngFor) then we need to create a template
+      // If this node is an inline-template (e.g. has *for) then we need to create a template
       // node that contains this node.
       // Moreover, if the node is an element, then we need to hoist its attributes to the template
       // node for matching against content projection selectors.
-      const attrs = this.extractAttributes('ng-template', templateParsedProperties);
+      const attrs = this.extractAttributes('v-template', templateParsedProperties);
       const templateAttrs: (t.TextAttribute | t.BoundAttribute)[] = [];
       attrs.literal.forEach(attr => templateAttrs.push(attr));
       attrs.bound.forEach(attr => templateAttrs.push(attr));

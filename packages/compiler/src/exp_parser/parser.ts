@@ -115,21 +115,21 @@ export class Parser {
    *
    * For example,
    * ```
-   *   <div *ngFor="let item of items">
+   *   <div *for="let item of items">
    *         ^      ^ absoluteValueOffset for `templateValue`
    *         absoluteKeyOffset for `templateKey`
    * ```
    * contains three bindings:
-   * 1. ngFor -> null
-   * 2. item -> NgForOfContext.$implicit
-   * 3. ngForOf -> items
+   * 1. for -> null
+   * 2. item -> ForOfContext.$implicit
+   * 3. forOf -> items
    *
    * This is apparent from the de-sugared template:
    * ```
-   *   <ng-template ngFor let-item [ngForOf]="items">
+   *   <ng-template for let-item [forOf]="items">
    * ```
    *
-   * @param templateKey name of directive, without the * prefix. For example: ngIf, ngFor
+   * @param templateKey name of directive, without the * prefix. For example: if, for
    * @param templateValue RHS of the microsyntax attribute
    * @param templateUrl template filename if it's external, component filename if it's inline
    * @param absoluteKeyOffset start of the `templateKey`
@@ -1040,27 +1040,27 @@ export class _ParseAST {
    *
    * For example,
    * ```
-   *   <div *ngFor="let item of items; index as i; trackBy: func">
+   *   <div *for="let item of items; index as i; trackBy: func">
    * ```
    * contains five bindings:
-   * 1. ngFor -> null
-   * 2. item -> NgForOfContext.$implicit
-   * 3. ngForOf -> items
-   * 4. i -> NgForOfContext.index
-   * 5. ngForTrackBy -> func
+   * 1. for -> null
+   * 2. item -> ForOfContext.$implicit
+   * 3. forOf -> items
+   * 4. i -> ForOfContext.index
+   * 5. forTrackBy -> func
    *
    * For a full description of the microsyntax grammar, see
    * https://gist.github.com/mhevery/d3530294cff2e4a1b3fe15ff75d08855
    *
-   * @param templateKey name of the microsyntax directive, like ngIf, ngFor,
+   * @param templateKey name of the microsyntax directive, like if, for,
    * without the *, along with its absolute span.
    */
   parseTemplateBindings(templateKey: TemplateBindingIdentifier): TemplateBindingParseResult {
     const bindings: TemplateBinding[] = [];
 
     // The first binding is for the template key itself
-    // In *ngFor="let item of items", key = "ngFor", value = null
-    // In *ngIf="cond | pipe", key = "ngIf", value = "cond | pipe"
+    // In *for="let item of items", key = "for", value = null
+    // In *if="cond | pipe", key = "if", value = "cond | pipe"
     bindings.push(...this.parseDirectiveKeywordBindings(templateKey));
 
     while (this.index < this.tokens.length) {
@@ -1081,7 +1081,7 @@ export class _ParseAST {
           bindings.push(binding);
         } else {
           // Otherwise the key must be a directive keyword, like "of". Transform
-          // the key to actual key. Eg. of -> ngForOf, trackBy -> ngForTrackBy
+          // the key to actual key. Eg. of -> forOf, trackBy -> forTrackBy
           key.source =
             templateKey.source + key.source.charAt(0).toUpperCase() + key.source.substring(1);
           bindings.push(...this.parseDirectiveKeywordBindings(key));
@@ -1121,16 +1121,16 @@ export class _ParseAST {
   /**
    * Parse a directive keyword, followed by a mandatory expression.
    * For example, "of items", "trackBy: func".
-   * The bindings are: ngForOf -> items, ngForTrackBy -> func
+   * The bindings are: forOf -> items, forTrackBy -> func
    * There could be an optional "as" binding that follows the expression.
    * For example,
    * ```
-   *   *ngFor="let item of items | slice:0:1 as collection".
+   *   *for="let item of items | slice:0:1 as collection".
    *                    ^^ ^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^
    *               keyword    bound target   optional 'as' binding
    * ```
    *
-   * @param key binding key, for example, ngFor, ngIf, ngForOf, along with its
+   * @param key binding key, for example, for, if, forOf, along with its
    * absolute span.
    */
   private parseDirectiveKeywordBindings(key: TemplateBindingIdentifier): TemplateBinding[] {
@@ -1139,8 +1139,8 @@ export class _ParseAST {
     const value = this.getDirectiveBoundTarget();
     let spanEnd = this.currentAbsoluteOffset;
     // The binding could optionally be followed by "as". For example,
-    // *ngIf="cond | pipe as x". In this case, the key in the "as" binding
-    // is "x" and the value is the template key itself ("ngIf"). Note that the
+    // *if="cond | pipe as x". In this case, the key in the "as" binding
+    // is "x" and the value is the template key itself ("if"). Note that the
     // 'key' in the current context now becomes the "value" in the next binding.
     const asBinding = this.parseAsBinding(key);
     if (!asBinding) {
@@ -1159,10 +1159,10 @@ export class _ParseAST {
    * Return the expression AST for the bound target of a directive keyword
    * binding. For example,
    * ```
-   *   *ngIf="condition | pipe"
-   *          ^^^^^^^^^^^^^^^^ bound target for "ngIf"
-   *   *ngFor="let item of items"
-   *                       ^^^^^ bound target for "ngForOf"
+   *   *if="condition | pipe"
+   *          ^^^^^^^^^^^^^^^^ bound target for "if"
+   *   *for="let item of items"
+   *                       ^^^^^ bound target for "forOf"
    * ```
    */
   private getDirectiveBoundTarget(): ASTWithSource | null {
@@ -1179,12 +1179,12 @@ export class _ParseAST {
    * Return the binding for a variable declared using `as`. Note that the order
    * of the key-value pair in this declaration is reversed. For example,
    * ```
-   *   *ngFor="let item of items; index as i"
+   *   *for="let item of items; index as i"
    *                              ^^^^^    ^
    *                              value    key
    * ```
    *
-   * @param value name of the value in the declaration, "ngIf" in the example
+   * @param value name of the value in the declaration, "if" in the example
    * above, along with its absolute span.
    */
   private parseAsBinding(value: TemplateBindingIdentifier): TemplateBinding | null {
@@ -1201,11 +1201,11 @@ export class _ParseAST {
   /**
    * Return the binding for a variable declared using `let`. For example,
    * ```
-   *   *ngFor="let item of items; let i=index;"
+   *   *for="let item of items; let i=index;"
    *           ^^^^^^^^           ^^^^^^^^^^^
    * ```
-   * In the first binding, `item` is bound to `NgForOfContext.$implicit`.
-   * In the second binding, `i` is bound to `NgForOfContext.index`.
+   * In the first binding, `item` is bound to `ForOfContext.$implicit`.
+   * In the second binding, `i` is bound to `ForOfContext.index`.
    */
   private parseLetBinding(): TemplateBinding | null {
     if (!this.peekKeywordLet()) {

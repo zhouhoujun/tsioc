@@ -1,6 +1,6 @@
 import { ExecOptions, exec } from 'child_process';
 import { isBoolean, isArray, lang, ObjectMap, isNil, PromiseUtil } from '@tsdi/ioc';
-import { Input, Attribute } from '@tsdi/components';
+import { Input, Binding } from '@tsdi/components';
 import { Src, Task, TemplateOption } from '@tsdi/activities';
 import { NodeActivityContext, NodeExpression } from '../NodeActivityContext';
 import { NodeActivity } from '../NodeActivity';

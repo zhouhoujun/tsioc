@@ -386,11 +386,11 @@
   *   |     expression      |     key      |  value  | binding type |
   *   |---------------------|--------------|---------|--------------|
   *   | 1. let item         |    item      |  null   |   variable   |
-  *   | 2. of items         |   ngForOf    |  items  |  expression  |
+  *   | 2. of items         |     forOf    |  items  |  expression  |
   *   | 3. let x = y        |      x       |    y    |   variable   |
   *   | 4. index as i       |      i       |  index  |   variable   |
-  *   | 5. trackBy: func    | ngForTrackBy |   func  |  expression  |
-  *   | 6. *ngIf="cond"     |     ngIf     |   cond  |  expression  |
+  *   | 5. trackBy: func    |   forTrackBy |   func  |  expression  |
+  *   | 6. *if="cond"       |     if       |   cond  |  expression  |
   *   |---------------------|--------------|---------|--------------|
   *
   * (6) is a notable exception because it is a binding from the template key in
@@ -414,12 +414,12 @@
  export class ExpressionBinding {
    /**
     * @param sourceSpan entire span of the binding.
-    * @param key binding name, like ngForOf, ngForTrackBy, ngIf, along with its
+    * @param key binding name, like forOf, forTrackBy, ngIf, along with its
     * span. Note that the length of the span may not be the same as
     * `key.source.length`. For example,
-    * 1. key.source = ngFor, key.span is for "ngFor"
-    * 2. key.source = ngForOf, key.span is for "of"
-    * 3. key.source = ngForTrackBy, key.span is for "trackBy"
+    * 1. key.source = for, key.span is for "for"
+    * 2. key.source = forOf, key.span is for "of"
+    * 3. key.source = forTrackBy, key.span is for "trackBy"
     * @param value optional expression for the RHS.
     */
    constructor(

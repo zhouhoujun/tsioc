@@ -17,7 +17,7 @@ import * as html from '../ml_parser/ast';
 import { HtmlParser, ParseTreeResult } from '../ml_parser/html_parser';
 import { removeWhitespaces, replaceNgsp } from '../ml_parser/html_whitespaces';
 import { expandNodes } from '../ml_parser/icu_ast_expander';
-import { isNgTemplate, splitNsName } from '../ml_parser/tags';
+import { isTemplate, splitNsName } from '../ml_parser/tags';
 import { DEFAULT_MARKERS, identifierName, Markers, ParseError, ParseErrorLevel, ParseSourceSpan, syntaxError } from '../util';
 import { ProviderElementContext, ProviderViewContext } from '../provider_analyzer';
 import { ElementSchemaRegistry } from '../schema/element_schema_registry';
@@ -286,7 +286,7 @@ class TemplateParseVisitor implements html.Visitor {
 
     let hasInlineTemplates = false;
     const attrs: t.AttrAst[] = [];
-    const isTemplateElement = isNgTemplate(element.name);
+    const isTemplateElement = isTemplate(element.name);
 
     element.attrs.forEach(attr => {
       const parsedVariables: ParsedVariable[] = [];

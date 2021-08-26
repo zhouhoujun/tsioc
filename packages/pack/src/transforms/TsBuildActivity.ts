@@ -1,5 +1,5 @@
 import { ObjectMap, isString } from '@tsdi/ioc';
-import { Input, Attribute } from '@tsdi/components';
+import { Input, Binding } from '@tsdi/components';
 import { Task, Src, Activities, ActivityType } from '@tsdi/activities';
 import { CompilerOptions } from 'typescript';
 import { AssetActivityOption, AssetActivity } from './AssetActivity';
