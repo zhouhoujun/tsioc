@@ -48,7 +48,7 @@ export interface Render3ParseResult {
   errors: ParseError[];
   styles: string[];
   styleUrls: string[];
-  ngContentSelectors: string[];
+  contentSelectors: string[];
   // Will be defined if `Render3ParseOptions['collectCommentNodes']` is true
   commentNodes?: t.Comment[];
 }
@@ -71,7 +71,7 @@ export function htmlAstToRender3Ast(
     errors: allErrors,
     styleUrls: transformer.styleUrls,
     styles: transformer.styles,
-    ngContentSelectors: transformer.ngContentSelectors
+    contentSelectors: transformer.contentSelectors
   };
   if (options.collectCommentNodes) {
     result.commentNodes = transformer.commentNodes;
@@ -83,7 +83,7 @@ class HtmlAstToIvyAst implements html.Visitor {
   errors: ParseError[] = [];
   styles: string[] = [];
   styleUrls: string[] = [];
-  ngContentSelectors: string[] = [];
+  contentSelectors: string[] = [];
   // This array will be populated if `Render3ParseOptions['collectCommentNodes']` is true
   commentNodes: t.Comment[] = [];
   private inI18nBlock: boolean = false;
@@ -108,7 +108,7 @@ class HtmlAstToIvyAst implements html.Visitor {
       return null;
     }
 
-    // Whether the element is a `<ng-template>`
+    // Whether the element is a `<v-template>`
     const isTemplateElement = isTemplate(element.name);
 
     const parsedProperties: ParsedProperty[] = [];
@@ -172,19 +172,19 @@ class HtmlAstToIvyAst implements html.Visitor {
 
     let parsedElement: t.Node | undefined;
     if (preparsedElement.type === PreparsedElementType.NG_CONTENT) {
-      // `<ng-content>`
+      // `<v-content>`
       if (element.children &&
         !element.children.every(
           (node: html.Node) => isEmptyTextNode(node) || isCommentNode(node))) {
-        this.reportError(`<ng-content> element cannot have content.`, element.sourceSpan);
+        this.reportError(`<v-content> element cannot have content.`, element.sourceSpan);
       }
       const selector = preparsedElement.selectAttr;
       const attrs: t.TextAttribute[] = element.attrs.map(attr => this.visitAttribute(attr));
       parsedElement = new t.Content(selector, attrs, element.sourceSpan);
 
-      this.ngContentSelectors.push(selector);
+      this.contentSelectors.push(selector);
     } else if (isTemplateElement) {
-      // `<ng-template>`
+      // `<v-template>`
       const attrs = this.extractAttributes(element.name, parsedProperties);
 
       parsedElement = new t.Template(
@@ -309,7 +309,7 @@ class HtmlAstToIvyAst implements html.Visitor {
           const keySpan = createKeySpan(srcSpan, bindParts[KW_LET_IDX], identifier);
           this.parseVariable(identifier, value, srcSpan, keySpan, attribute.valueSpan, variables);
         } else {
-          this.reportError(`"let-" is only supported on ng-template elements.`, srcSpan);
+          this.reportError(`"let-" is only supported on v-template elements.`, srcSpan);
         }
 
       } else if (bindParts[KW_REF_IDX]) {

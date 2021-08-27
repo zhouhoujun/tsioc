@@ -22,7 +22,6 @@ export class Comment implements Node {
     }
 }
 
-
 export class Text implements Node {
     constructor(public value: string, public sourceSpan: ParseSourceSpan) { }
     visit<T>(visitor: Visitor<T>): T {

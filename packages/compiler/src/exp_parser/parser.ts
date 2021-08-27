@@ -126,7 +126,7 @@ export class Parser {
    *
    * This is apparent from the de-sugared template:
    * ```
-   *   <ng-template for let-item [forOf]="items">
+   *   <v-template for let-item [forOf]="items">
    * ```
    *
    * @param templateKey name of directive, without the * prefix. For example: if, for

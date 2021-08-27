@@ -214,7 +214,7 @@ export class TemplateParser {
 class TemplateParseVisitor implements html.Visitor {
   selectorMatcher = new SelectorMatcher();
   directivesIndex = new Map<CompileDirectiveSummary, number>();
-  ngContentCount = 0;
+  contentCount = 0;
   contentQueryStartId: number;
 
   constructor(
@@ -356,15 +356,15 @@ class TemplateParseVisitor implements html.Visitor {
     let parsedElement: t.TemplateAst;
 
     if (preparsedElement.type === PreparsedElementType.NG_CONTENT) {
-      // `<ng-content>` element
+      // `<v-content>` element
       if (element.children && !element.children.every(_isEmptyTextNode)) {
-        this._reportError(`<ng-content> element cannot have content.`, element.sourceSpan);
+        this._reportError(`<v-content> element cannot have content.`, element.sourceSpan);
       }
 
       parsedElement = new t.NgContentAst(
-        this.ngContentCount++, hasInlineTemplates ? null! : ngContentIndex, element.sourceSpan);
+        this.contentCount++, hasInlineTemplates ? null! : ngContentIndex, element.sourceSpan);
     } else if (isTemplateElement) {
-      // `<ng-template>` element
+      // `<v-template>` element
       this._assertAllEventsPublishedByDirectives(directiveAsts, events);
       this._assertNoComponentsNorElementBindingsOnTemplate(
         directiveAsts, elementProps, element.sourceSpan);
@@ -375,7 +375,7 @@ class TemplateParseVisitor implements html.Visitor {
         providerContext.queryMatches, children, hasInlineTemplates ? null! : ngContentIndex,
         element.sourceSpan);
     } else {
-      // element other than `<ng-content>` and `<ng-template>`
+      // element other than `<v-content>` and `<v-template>`
       this._assertElementExists(matchElement, element);
       this._assertOnlyOneComponent(directiveAsts, element.sourceSpan);
 
@@ -391,7 +391,7 @@ class TemplateParseVisitor implements html.Visitor {
     if (hasInlineTemplates) {
       // The element as a *-attribute
       const templateQueryStartIndex = this.contentQueryStartId;
-      const templateSelector = createElementCssSelector('ng-template', templateMatchableAttrs);
+      const templateSelector = createElementCssSelector('v-template', templateMatchableAttrs);
       const { directives } = this._parseDirectives(this.selectorMatcher, templateSelector);
       const templateBoundDirectivePropNames = new Set<string>();
       const templateDirectiveAsts = this._createDirectiveAsts(
@@ -441,7 +441,7 @@ class TemplateParseVisitor implements html.Visitor {
           const identifier = bindParts[IDENT_KW_IDX];
           this._parseVariable(identifier, value, srcSpan, targetVars);
         } else {
-          this._reportError(`"let-" is only supported on ng-template elements.`, srcSpan);
+          this._reportError(`"let-" is only supported on v-template elements.`, srcSpan);
         }
 
       } else if (bindParts[KW_REF_IDX]) {
@@ -750,7 +750,7 @@ class TemplateParseVisitor implements html.Visitor {
       if (boundProp.type === t.PropertyBindingType.Property &&
         !this._schemaRegistry.hasProperty(elementName, boundProp.name, this._schemas)) {
         let errorMsg = `Can't bind to '${boundProp.name}' since it isn't a known property of '${elementName}'.`;
-        if (elementName.startsWith('ng-')) {
+        if (elementName.startsWith('v-')) {
           errorMsg +=
             `\n1. If '${boundProp
               .name}' is an Angular directive, then add 'CommonModule' to the '@NgModule.imports' of this component.` +

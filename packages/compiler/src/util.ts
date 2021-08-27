@@ -14,91 +14,91 @@ export const DEFAULT_MARKERS = {
 
 
 export class ParseLocation {
-    constructor(
-        public file: ParseSourceFile, public offset: number, public line: number,
-        public col: number) {}
-  
-    toString(): string {
-      return this.offset != null ? `${this.file.url}@${this.line}:${this.col}` : this.file.url;
-    }
-  
-    moveBy(delta: number): ParseLocation {
-      const source = this.file.content;
-      const len = source.length;
-      let offset = this.offset;
-      let line = this.line;
-      let col = this.col;
-      while (offset > 0 && delta < 0) {
-        offset--;
-        delta++;
-        const ch = source.charCodeAt(offset);
-        if (ch == chars.$LF) {
-          line--;
-          const priorLine = source.substr(0, offset - 1).lastIndexOf(String.fromCharCode(chars.$LF));
-          col = priorLine > 0 ? offset - priorLine : offset;
-        } else {
-          col--;
-        }
-      }
-      while (offset < len && delta > 0) {
-        const ch = source.charCodeAt(offset);
-        offset++;
-        delta--;
-        if (ch == chars.$LF) {
-          line++;
-          col = 0;
-        } else {
-          col++;
-        }
-      }
-      return new ParseLocation(this.file, offset, line, col);
-    }
-  
-    // Return the source around the location
-    // Up to `maxChars` or `maxLines` on each side of the location
-    getContext(maxChars: number, maxLines: number): {before: string, after: string}|null {
-      const content = this.file.content;
-      let startOffset = this.offset;
-  
-      if (startOffset != null) {
-        if (startOffset > content.length - 1) {
-          startOffset = content.length - 1;
-        }
-        let endOffset = startOffset;
-        let ctxChars = 0;
-        let ctxLines = 0;
-  
-        while (ctxChars < maxChars && startOffset > 0) {
-          startOffset--;
-          ctxChars++;
-          if (content[startOffset] == '\n') {
-            if (++ctxLines == maxLines) {
-              break;
-            }
-          }
-        }
-  
-        ctxChars = 0;
-        ctxLines = 0;
-        while (ctxChars < maxChars && endOffset < content.length - 1) {
-          endOffset++;
-          ctxChars++;
-          if (content[endOffset] == '\n') {
-            if (++ctxLines == maxLines) {
-              break;
-            }
-          }
-        }
-  
-        return {
-          before: content.substring(startOffset, this.offset),
-          after: content.substring(this.offset, endOffset + 1),
-        };
-      }
-  
-      return null;
-    }
+  constructor(
+    public file: ParseSourceFile, public offset: number, public line: number,
+    public col: number) { }
+
+  toString(): string {
+    return this.offset != null ? `${this.file.url}@${this.line}:${this.col}` : this.file.url;
   }
+
+  moveBy(delta: number): ParseLocation {
+    const source = this.file.content;
+    const len = source.length;
+    let offset = this.offset;
+    let line = this.line;
+    let col = this.col;
+    while (offset > 0 && delta < 0) {
+      offset--;
+      delta++;
+      const ch = source.charCodeAt(offset);
+      if (ch == chars.$LF) {
+        line--;
+        const priorLine = source.substr(0, offset - 1).lastIndexOf(String.fromCharCode(chars.$LF));
+        col = priorLine > 0 ? offset - priorLine : offset;
+      } else {
+        col--;
+      }
+    }
+    while (offset < len && delta > 0) {
+      const ch = source.charCodeAt(offset);
+      offset++;
+      delta--;
+      if (ch == chars.$LF) {
+        line++;
+        col = 0;
+      } else {
+        col++;
+      }
+    }
+    return new ParseLocation(this.file, offset, line, col);
+  }
+
+  // Return the source around the location
+  // Up to `maxChars` or `maxLines` on each side of the location
+  getContext(maxChars: number, maxLines: number): { before: string, after: string } | null {
+    const content = this.file.content;
+    let startOffset = this.offset;
+
+    if (startOffset != null) {
+      if (startOffset > content.length - 1) {
+        startOffset = content.length - 1;
+      }
+      let endOffset = startOffset;
+      let ctxChars = 0;
+      let ctxLines = 0;
+
+      while (ctxChars < maxChars && startOffset > 0) {
+        startOffset--;
+        ctxChars++;
+        if (content[startOffset] == '\n') {
+          if (++ctxLines == maxLines) {
+            break;
+          }
+        }
+      }
+
+      ctxChars = 0;
+      ctxLines = 0;
+      while (ctxChars < maxChars && endOffset < content.length - 1) {
+        endOffset++;
+        ctxChars++;
+        if (content[endOffset] == '\n') {
+          if (++ctxLines == maxLines) {
+            break;
+          }
+        }
+      }
+
+      return {
+        before: content.substring(startOffset, this.offset),
+        after: content.substring(this.offset, endOffset + 1),
+      };
+    }
+
+    return null;
+  }
+}
 
 export class ParseSourceSpan {
   /**
@@ -125,38 +125,38 @@ export class ParseSourceSpan {
    * Additional information (such as identifier names) that should be associated with the span.
    */
   constructor(
-      public start: ParseLocation, public end: ParseLocation,
-      public fullStart: ParseLocation = start, public details: string|null = null) {}
+    public start: ParseLocation, public end: ParseLocation,
+    public fullStart: ParseLocation = start, public details: string | null = null) { }
 
   toString(): string {
     return this.start.file.content.substring(this.start.offset, this.end.offset);
   }
 }
 export class ParseSourceFile {
-    constructor(public content: string, public url: string) { }
+  constructor(public content: string, public url: string) { }
 }
 
 
 export enum ParseErrorLevel {
-    WARNING,
-    ERROR,
+  WARNING,
+  ERROR,
 }
 
 export class ParseError {
-    constructor(
-        public span: ParseSourceSpan, public msg: string,
-        public level: ParseErrorLevel = ParseErrorLevel.ERROR) { }
+  constructor(
+    public span: ParseSourceSpan, public msg: string,
+    public level: ParseErrorLevel = ParseErrorLevel.ERROR) { }
 
-    contextualMessage(): string {
-        const ctx = this.span.start.getContext(100, 3);
-        return ctx ? `${this.msg} ("${ctx.before}[${ParseErrorLevel[this.level]} ->]${ctx.after}")` :
-            this.msg;
-    }
+  contextualMessage(): string {
+    const ctx = this.span.start.getContext(100, 3);
+    return ctx ? `${this.msg} ("${ctx.before}[${ParseErrorLevel[this.level]} ->]${ctx.after}")` :
+      this.msg;
+  }
 
-    toString(): string {
-        const details = this.span.details ? `, ${this.span.details}` : '';
-        return `${this.contextualMessage()}: ${this.span.start}${details}`;
-    }
+  toString(): string {
+    const details = this.span.details ? `, ${this.span.details}` : '';
+    return `${this.contextualMessage()}: ${this.span.start}${details}`;
+  }
 }
 
 const ERROR_SYNTAX_ERROR = 'syntaxError';
@@ -171,19 +171,19 @@ export function syntaxError(msg: string, parseErrors?: ParseError[]): Error {
 
 
 export enum SecurityContext {
-    NONE = 0,
-    HTML = 1,
-    STYLE = 2,
-    SCRIPT = 3,
-    URL = 4,
-    RESOURCE_URL = 5,
+  NONE = 0,
+  HTML = 1,
+  STYLE = 2,
+  SCRIPT = 3,
+  URL = 4,
+  RESOURCE_URL = 5,
 }
 
 export interface LexerRange {
-    startPos: number;
-    startLine: number;
-    startCol: number;
-    endPos: number;
+  startPos: number;
+  startLine: number;
+  startCol: number;
+  endPos: number;
 }
 
 
@@ -210,11 +210,11 @@ export function utf8Encode(str: string): Byte[] {
       encoded.push(((codePoint >> 6) & 0x1F) | 0xc0, (codePoint & 0x3f) | 0x80);
     } else if (codePoint <= 0xffff) {
       encoded.push(
-          (codePoint >> 12) | 0xe0, ((codePoint >> 6) & 0x3f) | 0x80, (codePoint & 0x3f) | 0x80);
+        (codePoint >> 12) | 0xe0, ((codePoint >> 6) & 0x3f) | 0x80, (codePoint & 0x3f) | 0x80);
     } else if (codePoint <= 0x1fffff) {
       encoded.push(
-          ((codePoint >> 18) & 0x07) | 0xf0, ((codePoint >> 12) & 0x3f) | 0x80,
-          ((codePoint >> 6) & 0x3f) | 0x80, (codePoint & 0x3f) | 0x80);
+        ((codePoint >> 18) & 0x07) | 0xf0, ((codePoint >> 12) & 0x3f) | 0x80,
+        ((codePoint >> 6) & 0x3f) | 0x80, (codePoint & 0x3f) | 0x80);
     }
   }
 
@@ -261,8 +261,8 @@ export function stringify(token: any): string {
 
 let _anonymousTypeIndex = 0;
 
-export function identifierName(compileIdentifier: CompileIdentifierMetadata|null|undefined): string|
-    null {
+export function identifierName(compileIdentifier: CompileIdentifierMetadata | null | undefined): string |
+  null {
   if (!compileIdentifier || !compileIdentifier.reference) {
     return null;
   }
@@ -307,12 +307,12 @@ export function sanitizeIdentifier(name: string): string {
 }
 
 export class StaticSymbol {
-  constructor(public filePath: string, public name: string, public members: string[]) {}
+  constructor(public filePath: string, public name: string, public members: string[]) { }
 
   assertNoMembers() {
     if (this.members.length) {
       throw new Error(
-          `Illegal state: symbol without members expected, but got ${JSON.stringify(this)}.`);
+        `Illegal state: symbol without members expected, but got ${JSON.stringify(this)}.`);
     }
   }
 }
