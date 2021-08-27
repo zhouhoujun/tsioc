@@ -18,6 +18,8 @@ export * from './metadata/ref';
 export * from './metadata/tk';
 
 export * from './Context';
+export * from './global';
+
 
 // modules
 export * from './modules/strategy';

@@ -16,14 +16,13 @@ import { createTokenForExternalReference, createTokenForReference, Identifiers }
 import * as html from '../ml_parser/ast';
 import { HtmlParser, ParseTreeResult } from '../ml_parser/html_parser';
 import { removeWhitespaces, replaceNgsp } from '../ml_parser/html_whitespaces';
-import { expandNodes } from '../ml_parser/icu_ast_expander';
+import { expandNodes } from '../ml_parser/expander';
 import { isTemplate, splitNsName } from '../ml_parser/tags';
-import { DEFAULT_MARKERS, identifierName, Markers, ParseError, ParseErrorLevel, ParseSourceSpan, syntaxError } from '../util';
+import { DEFAULT_MARKERS, identifierName, Markers, ParseError, ParseErrorLevel, ParseSourceSpan, syntaxError, newArray } from '../util';
 import { ProviderElementContext, ProviderViewContext } from '../provider_analyzer';
 import { ElementSchemaRegistry } from '../schema/element_schema_registry';
 import { CssSelector, SelectorMatcher } from '../selector';
 import { isStyleUrlResolvable } from '../style_url_resolver';
-import { Console, newArray } from '../util';
 
 import { BindingParser } from './binding_parser';
 import * as t from './ast';

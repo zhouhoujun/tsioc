@@ -159,6 +159,17 @@ export class ParseError {
     }
 }
 
+const ERROR_SYNTAX_ERROR = 'syntaxError';
+const ERROR_PARSE_ERRORS = 'parseErrors';
+
+export function syntaxError(msg: string, parseErrors?: ParseError[]): Error {
+  const error = Error(msg);
+  (error as any)[ERROR_SYNTAX_ERROR] = true;
+  if (parseErrors) (error as any)[ERROR_PARSE_ERRORS] = parseErrors;
+  return error;
+}
+
+
 export enum SecurityContext {
     NONE = 0,
     HTML = 1,
@@ -304,4 +315,29 @@ export class StaticSymbol {
           `Illegal state: symbol without members expected, but got ${JSON.stringify(this)}.`);
     }
   }
+}
+
+
+export function splitAtColon(input: string, defaultValues: string[]): string[] {
+  return _splitAt(input, ':', defaultValues);
+}
+
+export function splitAtPeriod(input: string, defaultValues: string[]): string[] {
+  return _splitAt(input, '.', defaultValues);
+}
+
+function _splitAt(input: string, character: string, defaultValues: string[]): string[] {
+  const characterIndex = input.indexOf(character);
+  if (characterIndex == -1) return defaultValues;
+  return [input.slice(0, characterIndex).trim(), input.slice(characterIndex + 1).trim()];
+}
+
+export function newArray<T = any>(size: number): T[];
+export function newArray<T>(size: number, value: T): T[];
+export function newArray<T>(size: number, value?: T): T[] {
+  const list: T[] = [];
+  for (let i = 0; i < size; i++) {
+    list.push(value!);
+  }
+  return list;
 }
