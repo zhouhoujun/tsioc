@@ -6,10 +6,44 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import { AbsoluteSourceSpan, ASTWithSource, BindingPipe, EmptyExpr, Interpolation, IvyParser, Lexer, MethodCall, Parser, ParserError, SplitInterpolation, TemplateBinding, VariableBinding } from '@tsdi/compiler';
+import { AbsoluteSourceSpan, AST, ASTWithSource, BindingPipe, EmptyExpr, ImplicitReceiver, Interpolation, IvyParser, Lexer, MethodCall, Parser, ParserError, PropertyRead, RecursiveAstVisitor, SplitInterpolation, TemplateBinding, VariableBinding } from '@tsdi/compiler';
 import expect = require('expect');
 import { unparse, unparseWithSpan } from './utils/unparser';
 import { validate } from './utils/vaildator';
+
+describe('RecursiveAstVisitor', () => {
+  it('should visit every node', () => {
+    const parser = new Parser(new Lexer());
+    const ast = parser.parseBinding('x.y()', '', 0 /* absoluteOffset */);
+    const visitor = new Visitor();
+    const path: AST[] = [];
+    visitor.visit(ast.ast, path);
+    // If the visitor method of RecursiveAstVisitor is implemented correctly,
+    // then we should have collected the full path from root to leaf.
+    expect(path.length).toBe(3);
+    const [methodCall, propertyRead, implicitReceiver] = path;
+    expectType(methodCall, MethodCall);
+    expectType(propertyRead, PropertyRead);
+    expectType(implicitReceiver, ImplicitReceiver);
+    expect(methodCall.name).toBe('y');
+    expect(methodCall.args).toEqual([]);
+    expect(propertyRead.name).toBe('x');
+  });
+});
+
+class Visitor extends RecursiveAstVisitor {
+  override visit(node: AST, path: AST[]) {
+    path.push(node);
+    node.visit(this, path);
+  }
+}
+
+type Newable = new (...args: any) => any;
+function expectType<T extends Newable>(val: any, t: T): asserts val is InstanceType<T> {
+  expect(val instanceof t).toBe(true) //, `expect ${val.constructor.name} to be ${t.name}`);
+}
+
+
 
 describe('parser', () => {
     describe('parseAction', () => {
@@ -449,7 +483,7 @@ describe('parser', () => {
         expectSpan('(((foo) && bar) || baz) === true');
   
         function expectSpan(input: string) {
-          expect(unparseWithSpan(parseBinding(input))).toContainEqual(["foo && bar", input]);
+          expect(unparseWithSpan(parseBinding(input))[0][1]).toEqual(input);
         }
       });
     });
@@ -692,48 +726,48 @@ describe('parser', () => {
         expect((bindings[0].value as ASTWithSource).location).toEqual('/foo/bar.html');
       });
   
-      it('should support common usage of ngIf', () => {
-        const bindings = parseTemplateBindings('*ngIf="cond | pipe as foo, let x; ngIf as y"');
+      it('should support common usage of if', () => {
+        const bindings = parseTemplateBindings('*if="cond | pipe as foo, let x; if as y"');
         expect(humanize(bindings)).toEqual([
           // [ key, value, VariableBinding ]
-          ['ngIf', 'cond | pipe', false],
-          ['foo', 'ngIf', true],
+          ['if', 'cond | pipe', false],
+          ['foo', 'if', true],
           ['x', null, true],
-          ['y', 'ngIf', true],
+          ['y', 'if', true],
         ]);
       });
   
-      it('should support common usage of ngFor', () => {
+      it('should support common usage of for', () => {
         let bindings: TemplateBinding[];
-        bindings = parseTemplateBindings('*ngFor="let person of people"');
+        bindings = parseTemplateBindings('*for="let person of people"');
         expect(humanize(bindings)).toEqual([
           // [ key, value, VariableBinding ]
-          ['ngFor', null, false],
+          ['for', null, false],
           ['person', null, true],
-          ['ngForOf', 'people', false],
+          ['forOf', 'people', false],
         ]);
   
   
         bindings = parseTemplateBindings(
-            '*ngFor="let item; of items | slice:0:1 as collection, trackBy: func; index as i"');
+            '*for="let item; of items | slice:0:1 as collection, trackBy: func; index as i"');
         expect(humanize(bindings)).toEqual([
           // [ key, value, VariableBinding ]
-          ['ngFor', null, false],
+          ['for', null, false],
           ['item', null, true],
-          ['ngForOf', 'items | slice:0:1', false],
-          ['collection', 'ngForOf', true],
-          ['ngForTrackBy', 'func', false],
+          ['forOf', 'items | slice:0:1', false],
+          ['collection', 'forOf', true],
+          ['forTrackBy', 'func', false],
           ['i', 'index', true],
         ]);
   
         bindings = parseTemplateBindings(
-            '*ngFor="let item, of: [1,2,3] | pipe as items; let i=index, count as len"');
+            '*for="let item, of: [1,2,3] | pipe as items; let i=index, count as len"');
         expect(humanize(bindings)).toEqual([
           // [ key, value, VariableBinding ]
-          ['ngFor', null, false],
+          ['for', null, false],
           ['item', null, true],
-          ['ngForOf', '[1,2,3] | pipe', false],
-          ['items', 'ngForOf', true],
+          ['forOf', '[1,2,3] | pipe', false],
+          ['items', 'forOf', true],
           ['i', 'index', true],
           ['len', 'count', true],
         ]);
@@ -813,22 +847,22 @@ describe('parser', () => {
   
       describe('"as" binding', () => {
         it('should support single declaration', () => {
-          const bindings = parseTemplateBindings('*ngIf="exp as local"');
+          const bindings = parseTemplateBindings('*if="exp as local"');
           expect(humanize(bindings)).toEqual([
             // [ key, value, VariableBinding ]
-            ['ngIf', 'exp', false],
-            ['local', 'ngIf', true],
+            ['if', 'exp', false],
+            ['local', 'if', true],
           ]);
         });
   
         it('should support declaration after an expression', () => {
-          const bindings = parseTemplateBindings('*ngFor="let item of items as iter; index as i"');
+          const bindings = parseTemplateBindings('*for="let item of items as iter; index as i"');
           expect(humanize(bindings)).toEqual([
             // [ key, value, VariableBinding ]
-            ['ngFor', null, false],
+            ['for', null, false],
             ['item', null, true],
-            ['ngForOf', 'items', false],
-            ['iter', 'ngForOf', true],
+            ['forOf', 'items', false],
+            ['iter', 'forOf', true],
             ['i', 'index', true],
           ]);
         });
@@ -845,11 +879,11 @@ describe('parser', () => {
   
       describe('source, key, value spans', () => {
         it('should map empty expression', () => {
-          const attr = '*ngIf=""';
+          const attr = '*if=""';
           const bindings = parseTemplateBindings(attr);
           expect(humanizeSpans(bindings, attr)).toEqual([
             // source span, key span, value span
-            ['ngIf="', 'ngIf', null],
+            ['if="', 'if', null],
           ]);
         });
   
@@ -876,19 +910,19 @@ describe('parser', () => {
         });
   
         it('shoud map expression with pipe', () => {
-          const attr = '*ngIf="cond | pipe as foo, let x; ngIf as y"';
+          const attr = '*if="cond | pipe as foo, let x; if as y"';
           const bindings = parseTemplateBindings(attr);
           expect(humanizeSpans(bindings, attr)).toEqual([
             // source span, key span, value span
-            ['ngIf="cond | pipe ', 'ngIf', 'cond | pipe'],
-            ['ngIf="cond | pipe as foo, ', 'foo', 'ngIf'],
+            ['if="cond | pipe ', 'if', 'cond | pipe'],
+            ['if="cond | pipe as foo, ', 'foo', 'if'],
             ['let x; ', 'x', null],
-            ['ngIf as y', 'y', 'ngIf'],
+            ['if as y', 'y', 'if'],
           ]);
         });
   
         it('should report unexpected token when encountering interpolation', () => {
-          const attr = '*ngIf="name && {{name}}"';
+          const attr = '*if="name && {{name}}"';
   
           expectParseTemplateBindingsError(
               attr,
@@ -897,11 +931,11 @@ describe('parser', () => {
   
         it('should map variable declaration via "as"', () => {
           const attr =
-              '*ngFor="let item; of items | slice:0:1 as collection, trackBy: func; index as i"';
+              '*for="let item; of items | slice:0:1 as collection, trackBy: func; index as i"';
           const bindings = parseTemplateBindings(attr);
           expect(humanizeSpans(bindings, attr)).toEqual([
             // source span, key span, value span
-            ['ngFor="', 'ngFor', null],
+            ['for="', 'for', null],
             ['let item; ', 'item', null],
             ['of items | slice:0:1 ', 'of', 'items | slice:0:1'],
             ['of items | slice:0:1 as collection, ', 'collection', 'of'],
@@ -911,11 +945,11 @@ describe('parser', () => {
         });
   
         it('should map literal array', () => {
-          const attr = '*ngFor="let item, of: [1,2,3] | pipe as items; let i=index, count as len, "';
+          const attr = '*for="let item, of: [1,2,3] | pipe as items; let i=index, count as len, "';
           const bindings = parseTemplateBindings(attr);
           expect(humanizeSpans(bindings, attr)).toEqual([
             // source span, key span, value span
-            ['ngFor="', 'ngFor', null],
+            ['for="', 'for', null],
             ['let item, ', 'item', null],
             ['of: [1,2,3] | pipe ', 'of', '[1,2,3] | pipe'],
             ['of: [1,2,3] | pipe as items; ', 'items', 'of'],
@@ -1203,7 +1237,7 @@ describe('parser', () => {
   
   function _parseTemplateBindings(attribute: string, templateUrl: string) {
     const match = attribute.match(/^\*(.+)="(.*)"$/);
-    expect(match).toEqual(`failed to extract key and value from ${attribute}`);
+    // expect(match).toBeTruthy(`failed to extract key and value from ${attribute}`);
     const [_, key, value] = match!;
     const absKeyOffset = 1;  // skip the * prefix
     const absValueOffset = attribute.indexOf('=') + '="'.length;
