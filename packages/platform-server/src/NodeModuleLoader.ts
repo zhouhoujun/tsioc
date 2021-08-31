@@ -1,5 +1,4 @@
-import { Modules, isString, ModuleLoader } from '@tsdi/ioc';
-import { ModuleLoaderImpl } from '@tsdi/core';
+import { Modules, isString, ModuleLoader, ModuleLoaderImpl } from '@tsdi/ioc';
 import { runMainPath, toAbsolutePath } from './toAbsolute';
 import * as globby from 'globby';
 
@@ -28,12 +27,8 @@ export class NodeModuleLoader extends ModuleLoaderImpl implements ModuleLoader {
         });
     }
 
-    protected override createLoader(): (modulepath: string) => Promise<Modules[]> {
+    protected override createLoader(): (modulepath: string) => Promise<Modules> {
         return (modulepath: string) => import(modulepath);
-    }
-    
-    protected normalize(pth: string) {
-        return pth ? pth.split('\\').join('/') : pth;
     }
 
 }

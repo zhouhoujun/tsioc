@@ -4,10 +4,13 @@ import { ContainerBuilder } from '../src';
 
 describe('Singleton test', () => {
 
-    it('should has one instance',  () => {
+    it('should has one instance',  async () => {
         let builder = new ContainerBuilder();
-        let container = builder.create();
-        container.register(Person);
+        let container = await builder.build({
+            basePath: __dirname,
+            files: 'debug.ts'
+        });
+        // container.register(Person);
         let instance = container.get(Person);
         expect(instance).toBeDefined();
         expect(instance.name).toEqual('testor');

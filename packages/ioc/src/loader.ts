@@ -1,13 +1,7 @@
-import {
-    ModuleLoader, ChildModule, LoadType, PathModules, Modules, Type, lang,
-    isString, isArray, isMetadataObject, isFunction, Injector
-} from '@tsdi/ioc';
-
-
-
-
-
-declare let require: any;
+import { Injector, ModuleLoader } from './injector';
+import { ChildModule, LoadType, Modules, PathModules, Type } from './types';
+import { isArray, isFunction, isMetadataObject, isString } from './utils/chk';
+import { first, getTypes } from './utils/lang';
 
 const fileChkExp = /\/((\w|%|\.))+\.\w+$/;
 
@@ -30,7 +24,7 @@ export class ModuleLoaderImpl implements ModuleLoader {
 
     static ρNPT = true;
 
-    private _loader: (modulepath: string) => Promise<Modules[]>;
+    private _loader: (modulepath: string) => Promise<Modules>;
     getLoader() {
         if (!this._loader) {
             this._loader = this.createLoader();
@@ -60,7 +54,7 @@ export class ModuleLoaderImpl implements ModuleLoader {
 
     getMoudle(mdty: LoadType): Promise<Modules[]> {
         if (isString(mdty)) {
-            return this.isFile(mdty) ? this.loadFile(mdty) : this.loadModule(mdty);
+            return this.isFile(mdty) ? this.loadFile(mdty) : this.loadModule(mdty).then(m => m ? [m] : []);
         } else if (isPathModules(mdty)) {
             return this.loadPathModule(mdty);
         } else if (isChildModule(mdty)) {
@@ -78,7 +72,7 @@ export class ModuleLoaderImpl implements ModuleLoader {
      */
     async loadType(mdl: LoadType): Promise<Type[]> {
         const mdls = await this.getMoudle(mdl);
-        return lang.getTypes(mdls);
+        return getTypes(mdls);
     }
 
     /**
@@ -89,23 +83,34 @@ export class ModuleLoaderImpl implements ModuleLoader {
      */
     async loadTypes(modules: LoadType[]): Promise<Type[][]> {
         let mdls = await this.load(modules);
-        return mdls.map(md => lang.getTypes(md));
+        return mdls.map(md => getTypes(md));
     }
 
     async require(fileName: string): Promise<any> {
-        return lang.first(await this.loadFile(fileName));
+        return first(await this.loadFile(fileName));
     }
 
     protected loadFile(files: string | string[], basePath?: string): Promise<Modules[]> {
         let loader = this.getLoader();
         let fRes: Promise<Modules[]>;
+        basePath = basePath ? this.normalize(basePath) : '';
         if (isArray(files)) {
-            fRes = Promise.all(files.map(f => loader(f)))
-                .then(mds => mds.reduce((prv, m) => prv.concat(m), []));
+            fRes = Promise.all(files.map(f => loader(this.resolveFilename(this.normalize(f), basePath))))
+                .then(mds => mds.reduce((prv, m) => prv.concat(m), []).filter(it => !!it));
         } else {
-            fRes = loader(files);
+            fRes = loader(this.resolveFilename(this.normalize(files), basePath)).then(m => m ? [m] : []);
         }
-        return fRes.then(ms => ms.filter(it => !!it));
+        return fRes;
+    }
+
+    protected resolveFilename(filename: string, basePath?: string) {
+        if (basePath) {
+            if (filename.startsWith(basePath)) {
+                return filename;
+            }
+            return /\/$/.test(basePath) ? basePath + filename : basePath + '/' + filename;
+        }
+        return filename;
     }
 
     protected isFile(str: string) {
@@ -113,9 +118,9 @@ export class ModuleLoaderImpl implements ModuleLoader {
     }
 
 
-    protected loadModule(moduleName: string): Promise<Modules[]> {
+    protected loadModule(moduleName: string): Promise<Modules> {
         let loader = this.getLoader();
-        return loader(moduleName).then(ms => ms.filter(it => !!it));
+        return loader(moduleName);
     }
 
     protected async loadPathModule(pmd: PathModules): Promise<Modules[]> {
@@ -123,7 +128,7 @@ export class ModuleLoaderImpl implements ModuleLoader {
         if (pmd.modules) {
             await Promise.all(pmd.modules.map(async nmd => {
                 if (isString(nmd)) {
-                    modules.push(...await this.loadModule(nmd));
+                    modules.push(await this.loadModule(nmd));
                 } else {
                     modules.push(nmd);
                 }
@@ -133,20 +138,12 @@ export class ModuleLoaderImpl implements ModuleLoader {
         return modules;
     }
 
-    protected createLoader(): (modulepath: string) => Promise<Modules[]> {
-        if (typeof require !== 'undefined') {
-            return (modulepath: string) => {
-                return new Promise<Modules[]>((resolve, reject) => {
-                    require(modulepath, (mud) => {
-                        resolve(mud);
-                    }, err => {
-                        reject(err);
-                    })
-                });
-            }
-        } else {
-            throw new Error('has not module loader');
-        }
+    protected createLoader(): (modulepath: string) => Promise<Modules> {
+        return (pth: string) => import(pth);
+    }
+
+    protected normalize(pth: string) {
+        return pth ? pth.split('\\').join('/') : pth;
     }
 
 }

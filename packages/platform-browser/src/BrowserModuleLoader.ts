@@ -1,5 +1,4 @@
-import { ModuleLoader } from '@tsdi/ioc';
-import { ModuleLoaderImpl } from '@tsdi/core';
+import { ModuleLoader, ModuleLoaderImpl } from '@tsdi/ioc';
 
 declare let System: any;
 declare let window: any;

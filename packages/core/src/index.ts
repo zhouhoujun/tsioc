@@ -1,6 +1,4 @@
 export * from './tk'
-
-export * from './services/loader';
 export * from './services/providers';
 
 // service

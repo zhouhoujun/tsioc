@@ -1,9 +1,11 @@
+export * from './global';
 export * from './types';
 export * from './tokens';
 export * from './action';
 export * from './Destroyable';
 export * from './injector';
 export * from './di';
+export * from './loader';
 
 // utils
 export * from './utils/chk';

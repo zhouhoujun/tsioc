@@ -22,6 +22,7 @@ import { RuntimeLifeScope } from './actions/runtime';
 import { TypeReflect } from './metadata/type';
 import { get } from './metadata/refl';
 import { Invoker } from './invoker';
+import { ModuleLoaderImpl } from './loader';
 
 
 
@@ -1021,6 +1022,7 @@ class ActionProviderImpl extends DefaultInjector implements ActionProvider {
  */
 export function registerCores(container: Container) {
     container.setValue(Invoker, new InvokerImpl());
+    container.setValue(ModuleLoader, new ModuleLoaderImpl());
     // bing action.
     container.action().regAction(
         DesignLifeScope,
