@@ -22,7 +22,7 @@ import { RuntimeLifeScope } from './actions/runtime';
 import { TypeReflect } from './metadata/type';
 import { get } from './metadata/refl';
 import { Invoker } from './invoker';
-import { ModuleLoaderImpl } from './loader';
+import { DefaultModuleLoader } from './loader';
 
 
 
@@ -794,7 +794,12 @@ function createArgs(deps: any[], provider: Injector): any[] {
 }
 
 
-INJECT_IMPL.create = (providers: ProviderType[], parent?: Injector, scope?: InjectorScope) => new DefaultInjector(providers, parent, scope);
+INJECT_IMPL.create = (providers: ProviderType[], parent?: Injector, scope?: InjectorScope) => {
+    if (!parent) {
+        parent = new DefaultContainer();
+    }
+    return new DefaultInjector(providers, parent, scope);
+}
 CONTAINER_IMPL.create = (providers: ProviderType[], parent?: Injector) => new DefaultContainer(providers, parent);
 
 
@@ -978,7 +983,7 @@ class ActionProviderImpl extends DefaultInjector implements ActionProvider {
      * @param {Injector} provider
      * @returns {T}
      */
-     override get<T>(key: Token<T>, prvoider?: Injector, notFoundValue?: T): T {
+    override get<T>(key: Token<T>, prvoider?: Injector, notFoundValue?: T): T {
         if (isFunction(key) && !this.has(key)) {
             this.registerAction(key as Type);
         }
@@ -1022,7 +1027,7 @@ class ActionProviderImpl extends DefaultInjector implements ActionProvider {
  */
 export function registerCores(container: Container) {
     container.setValue(Invoker, new InvokerImpl());
-    container.setValue(ModuleLoader, new ModuleLoaderImpl());
+    container.setValue(ModuleLoader, new DefaultModuleLoader());
     // bing action.
     container.action().regAction(
         DesignLifeScope,

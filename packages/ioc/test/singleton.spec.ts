@@ -24,7 +24,7 @@ describe('Singleton test', () => {
         let container =  Container.create();
         await container.load({
             basePath: __dirname,
-            files: __dirname + '/debug.ts'
+            files: 'debug.ts'
         });
 
         expect(container.has(Person)).toBeTruthy();

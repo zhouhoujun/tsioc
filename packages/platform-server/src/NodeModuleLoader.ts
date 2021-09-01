@@ -1,4 +1,4 @@
-import { Modules, isString, ModuleLoader, ModuleLoaderImpl } from '@tsdi/ioc';
+import { Modules, isString, ModuleLoader, DefaultModuleLoader } from '@tsdi/ioc';
 import { runMainPath, toAbsolutePath } from './toAbsolute';
 import * as globby from 'globby';
 
@@ -10,7 +10,7 @@ import * as globby from 'globby';
  * @class NodeModuleLoader
  * @implements {ModuleLoader}
  */
-export class NodeModuleLoader extends ModuleLoaderImpl implements ModuleLoader {
+export class NodeModuleLoader extends DefaultModuleLoader implements ModuleLoader {
 
     protected override loadFile(files: string | string[], basePath?: string): Promise<Modules[]> {
         if (isString(files)) {
