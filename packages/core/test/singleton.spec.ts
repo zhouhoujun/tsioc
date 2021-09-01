@@ -4,7 +4,7 @@ import { ContainerBuilder } from '../src';
 
 describe('Singleton test', () => {
 
-    it('should has one instance',  async () => {
+    it('should has one instance via build container',  async () => {
         let builder = new ContainerBuilder();
         let container = await builder.build({
             basePath: __dirname,

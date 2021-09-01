@@ -20,7 +20,7 @@ describe('Singleton test', () => {
         expect(instance).toEqual(instanceB);
     });
 
-    it('should has one instance',  async () => {
+    it('should has one instance via load module',  async () => {
         let container =  Container.create();
         await container.load({
             basePath: __dirname,

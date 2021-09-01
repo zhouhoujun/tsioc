@@ -111,7 +111,7 @@ describe('di module', () => {
         expect(ctx.injector.get('mark')).toEqual('marked');
         let tsr = ctx.injector.get(TestService);
         expect(tsr).toBeInstanceOf(TestService);
-        expect(ser.tcpServer).toBeInstanceOf(net.Server)
+        expect(ser.tcpServer).toBeInstanceOf(net.Server);
         ctx.destroy();
         expect(ser.destroyed).toEqual(true);
     })
