@@ -119,4 +119,8 @@ describe('custom register test', () => {
 
     });
 
+    after(()=>{
+        container.destroy();
+    });
+    
 });

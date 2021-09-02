@@ -128,4 +128,8 @@ describe('method exec test', () => {
     //     expect(container.invoke('Test3', 'sayHello')).toEqual('Mama, I love you.');
 
     // });
+
+    after(()=>{
+        container.destroy();
+    });
 });

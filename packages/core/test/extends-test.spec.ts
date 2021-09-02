@@ -23,5 +23,9 @@ describe('extends test', () => {
         expect(instance.back()).toEqual('back home');
     });
 
+    after(()=>{
+        container.destroy();
+    });
+
 });
 

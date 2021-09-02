@@ -81,5 +81,9 @@ describe('Injector test', () => {
         const data =  inj.invoke(device.service, plc=> plc.read);
         expect(isNumber(data)).toBeTruthy();
     });
+
+    after(()=>{
+        inj.destroy();
+    })
 });
 

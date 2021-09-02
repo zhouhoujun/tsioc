@@ -18,6 +18,7 @@ describe('Singleton test', () => {
         let instanceB = container.get(Person);
         expect(instanceB.name).toEqual('testor B');
         expect(instance).toEqual(instanceB);
+        container.destroy();
     });
 
     it('should has one instance via load module',  async () => {
@@ -37,6 +38,8 @@ describe('Singleton test', () => {
         let instanceB = container.get(Person);
         expect(instanceB.name).toEqual('testor B');
         expect(instance).toEqual(instanceB);
+        container.destroy();
     });
+
 });
 

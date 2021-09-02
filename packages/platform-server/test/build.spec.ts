@@ -104,4 +104,8 @@ describe('auto register with build', () => {
 
     });
 
+    after(() => {
+        container.destroy();
+    })
+
 });

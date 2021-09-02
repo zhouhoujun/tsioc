@@ -94,6 +94,9 @@ describe('logging test', () => {
 
     });
 
+    after(() => {
+        container.destroy();
+    });
 
 });
 

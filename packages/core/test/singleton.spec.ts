@@ -20,6 +20,8 @@ describe('Singleton test', () => {
         let instanceB = container.get(Person);
         expect(instanceB.name).toEqual('testor B');
         expect(instance).toEqual(instanceB);
+
+        container.destroy();
     });
 
 });

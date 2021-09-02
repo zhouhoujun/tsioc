@@ -83,4 +83,8 @@ describe('getService', () => {
         expect(tsr.fetch()).toEqual('tt');
     })
 
+    after(()=>{
+        container.destroy();
+    });
+
 });

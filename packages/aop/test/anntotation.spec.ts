@@ -89,7 +89,7 @@ describe('aop test', () => {
         const body = exp.toString((t, i, tkidx) => 'arg' + tkidx + '()');
 
         console.log(exp, body, argnames);
-        expect(argnames).toEqual([ 'arg0', 'arg1', 'arg2' ])
+        expect(argnames).toEqual(['arg0', 'arg1', 'arg2'])
         expect(body).toEqual('arg0() && ( arg1() || arg2() )')
     })
 
@@ -113,5 +113,9 @@ describe('aop test', () => {
         container.register(MethodTest2);
         expect(container.invoke(MethodTest2, 'sayHello')).toEqual('Mama')
 
-    })
+    });
+
+    after(() => {
+        container.destroy();
+    });
 });

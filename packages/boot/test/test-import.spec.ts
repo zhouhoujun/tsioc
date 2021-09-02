@@ -17,6 +17,7 @@ describe('di module', () => {
         console.log(runner.instance);
         expect(runner.instance.mark).toEqual('marked');
         // expect(md.state).eq('started');
+        ctx.destroy();
     });
 
 
@@ -33,6 +34,7 @@ describe('di module', () => {
         expect(q === qb).toBeTruthy();
         expect(qb['handles'].length).toEqual(1);
         ctx.getMessager().send('test', { query: 'hello' });
+        ctx.destroy();
     });
 
     it('options test.', async () => {
@@ -48,6 +50,7 @@ describe('di module', () => {
 
         expect((ctx.bootstraps[0] as Runner).instance).toBeInstanceOf(ClassSevice);
         expect(ctx.injector.get('ttk')).toEqual('ccc');
+        ctx.destroy();
     });
 
 
