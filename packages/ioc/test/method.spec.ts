@@ -79,7 +79,7 @@ describe('method exec test', () => {
     it('show has prop metadata', () => {
         let refs = refl.get(MethodTest2);
         expect(refs.class.hasMetadata(Inject, 'property')).toBeTruthy();
-        expect(refs.class.hasMetadata(Inject, 'property',  'testAt')).toBeTruthy();
+        expect(refs.class.hasMetadata(Inject, 'property', 'testAt')).toBeTruthy();
         expect(refs.class.hasMetadata(Inject, 'property', 'tester')).toBeFalsy();
         expect(refs.class.hasMetadata(Inject, 'method')).toBeFalsy();
     });
@@ -129,7 +129,7 @@ describe('method exec test', () => {
 
     // });
 
-    after(()=>{
+    after(() => {
         container.destroy();
     });
 });
