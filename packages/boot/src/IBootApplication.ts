@@ -1,4 +1,4 @@
-import { Container, Destroyable } from '@tsdi/ioc';
+import { Destroyable } from '@tsdi/ioc';
 import { ApplicationContext } from './Context';
 
 
@@ -25,12 +25,5 @@ export interface IBootApplication extends Destroyable {
      * @returns {Promise<T>}
      */
     run(): Promise<ApplicationContext>;
-
-    /**
-     * get container of application.
-     *
-     * @returns {IContainerPool}
-     */
-    getContainer(): Container;
 
 }

@@ -1,5 +1,4 @@
-import { ModuleLoader, Container, isFunction, Type, EMPTY } from '@tsdi/ioc';
-import { ContainerBuilder } from '@tsdi/core';
+import { ModuleLoader, isFunction, Type, EMPTY, Injector } from '@tsdi/ioc';
 import { IBootApplication } from './IBootApplication';
 import { APPLICATION } from './metadata/tk';
 import {
@@ -21,7 +20,6 @@ export class BootApplication implements IBootApplication {
 
     private _destroyed = false;
     private _dsryCbs: (() => void)[] = [];
-    protected container: Container;
     private _newCt: boolean;
     readonly root: ModuleInjector;
     /**
@@ -35,15 +33,13 @@ export class BootApplication implements IBootApplication {
     constructor(protected target?: Type | ApplicationOption, protected loader?: ModuleLoader) {
         if (!isFunction(target)) {
             if (!this.loader) this.loader = target.loader;
-            const parent = target.injector ?? this.createContainer();
+            const parent = target.injector ?? this.createInjector();
             const providers = (target.providers && target.providers.length) ? [...DEFAULTA_FACTORYS, ...target.providers] : DEFAULTA_FACTORYS;
             target.providers = providers;
             target.deps = [BootModule, MiddlewareModule, ...target.deps || EMPTY];
             target.root = true;
             this.root = parent.resolve({ token: ModuleFactory, target: target.type, providers }).create(parent, target);
-            this.container = this.root.getContainer();
         } else {
-            this.container = this.createContainer();
             const option = { type: target, root: true, deps: [BootModule, MiddlewareModule], providers: DEFAULTA_FACTORYS };
             this.root = this.container.resolve({ token: ModuleFactory, target, providers: DEFAULTA_FACTORYS }).create(this.container, option);
         }
@@ -124,14 +120,12 @@ export class BootApplication implements IBootApplication {
         return this.context;
     }
 
-
-    getContainer(): Container {
-        return this.container;
-    }
-
-    protected createContainer() {
-        this._newCt = true;
-        return new ContainerBuilder(this.loader).create();
+    protected createInjector() {
+        const root = Injector.create();
+        if (this.loader) {
+            root.setValue(ModuleLoader, this.loader);
+        }
+        return root;
     }
 
     /**

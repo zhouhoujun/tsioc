@@ -37,13 +37,12 @@ export class DesignClassScope extends IocRegScope<DesignContext> implements IAct
 }
 
 export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): void {
-    const container = ctx.injector.getContainer();
     if (ctx.reflect.regIn === 'root') {
         ctx.regIn = ctx.reflect.regIn;
-        ctx.injector = container.get(ROOT_INJECTOR) ?? container;
+        ctx.injector = ctx.injector.get(ROOT_INJECTOR);
     }
     const state = ctx.state = genState(ctx.injector, ctx.provide);
-    container.state().regType(ctx.type, state);
+    ctx.injector.state().regType(ctx.type, state);
     next();
 };
 

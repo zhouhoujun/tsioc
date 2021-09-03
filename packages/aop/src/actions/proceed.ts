@@ -22,11 +22,9 @@ const aExp = /^@/;
  */
 export class ProceedingScope extends IocActions<Joinpoint> implements IActionSetup {
 
-    private container: Container;
 
     constructor(private provider: ActionProvider) {
         super();
-        this.container = provider.getContainer();
     }
 
     override execute(ctx: Joinpoint, next?: () => void) {
@@ -42,7 +40,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
         }
 
         const fullName = lang.getClassName(targetType) + '.' + ctor;
-        const joinPoint = Joinpoint.parse(this.container.state().getInjector(targetType), {
+        const joinPoint = Joinpoint.parse(this.provider.state().getInjector(targetType), {
             name: ctor,
             state: JoinpointState.Before,
             advices,
@@ -62,7 +60,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
         }
 
         const fullName = lang.getClassName(targetType) + '.' + ctor;
-        const joinPoint = Joinpoint.parse(this.container.state().getInjector(targetType), {
+        const joinPoint = Joinpoint.parse(this.provider.state().getInjector(targetType), {
             name: ctor,
             state: JoinpointState.After,
             advices,
@@ -122,9 +120,9 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
         const fullName = pointcut.fullName;
         const name = pointcut.name;
         const self = this;
-        const container = this.container;
+        const root = this.provider.parent;
         return (...args: any[]) => {
-            if (container.destroyed) {
+            if (root.destroyed) {
                 return propertyMethod.call(target, ...args);
             }
             const larg = lang.last(args);
@@ -133,7 +131,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
                 args = args.slice(0, args.length - 1);
                 providers = larg;
             }
-            const joinPoint = Joinpoint.parse(container.state().getInjector(targetType), {
+            const joinPoint = Joinpoint.parse(root.state().getInjector(targetType), {
                 name,
                 fullName,
                 params: refl.getParameters(targetType, name),
@@ -195,7 +193,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
 
         joinPoint.providers.inject(providers);
 
-        return this.container.state().getInjector(advicer.aspectType).invoke(advicer.aspectType, advicer.advice.propertyKey, joinPoint.providers);
+        return this.provider.state().getInjector(advicer.aspectType).invoke(advicer.aspectType, advicer.advice.propertyKey, joinPoint.providers);
     }
 
 }

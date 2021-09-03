@@ -21,16 +21,12 @@ export class DefaultModuleInjector<T> extends ModuleInjector<T> {
     exports: IModuleExports;
     private _regIn: string;
     private _instance: T;
-    constructor(readonly reflect: ModuleReflect<T>, parent?: Injector, regIn?: string, protected _root = false, scope?: InjectorScope, strategy: ModuleStrategy = mdInjStrategy) {
+    constructor(readonly reflect: ModuleReflect<T>, parent?: Injector, scope?: InjectorScope, strategy: ModuleStrategy = mdInjStrategy) {
         super(EMPTY, parent, scope, strategy)
 
-        const recd = { value: this };
-        this.factories.set(ModuleInjector, recd);
-        this._regIn = regIn;
+        this.setValue(ModuleInjector, this);
         this.exports = new ModuleExports(this);
-        if (_root) {
-            this.factories.set(ROOT_INJECTOR, recd);
-        }
+
     }
 
     get type(): Type<T> {
@@ -38,7 +34,7 @@ export class DefaultModuleInjector<T> extends ModuleInjector<T> {
     }
 
     get isRoot() {
-        return this._root;
+        return this.scope === 'root';
     }
 
     get regIn(): string {
@@ -79,8 +75,8 @@ export class ModuleExports extends DefaultInjector implements IModuleExports {
     }
 
     protected override initParent(parnet: ModuleInjector) {
-        this._container = parnet.getContainer();
-        (this as any).parent = this._container;
+        parnet.onDestroy(this.destCb);
+        (this as any).parent = parnet.get(ROOT_INJECTOR);
     }
 
     /**

@@ -46,10 +46,6 @@ export abstract class Injector implements Destroyable {
      */
     abstract get size(): number;
     /**
-     * get application container.
-     */
-    abstract getContainer(): Container;
-    /**
      * has register.
      *
      * @template T
@@ -520,6 +516,8 @@ export abstract class RegisteredState {
      * @param type
      */
     abstract deleteType(type: ClassType);
+
+    abstract destroy();
 }
 
 /**
@@ -545,35 +543,11 @@ export function isInjector(target: any): target is Injector {
 
 /**
 * root container interface.
-*
-* @export
-* @interface IContainer
+* @deprecated use `Injector` instead.
 */
 @Abstract()
-export abstract class Container extends Injector {
+export abstract class Container extends Injector {};
 
-    abstract onFinally(callback: () => void);
-    /**
-     * create injector.
-     * @param providers 
-     * @param parent 
-     */
-    static override create(providers?: ProviderType[], parent?: Injector): Container;
-    /**
-     * create injector with option.
-     * @param options 
-     */
-    static override create(options: { providers: ProviderType[], parent?: Injector }): Container;
-    static override create(
-        options?: ProviderType[] | { providers: ProviderType[], parent?: Injector },
-        parent?: Injector): Container {
-        if (!options) {
-            options = EMPTY;
-        }
-        return isArray(options) ? CONTAINER_IMPL.create(options, parent) :
-            CONTAINER_IMPL.create(options.providers, options.parent);
-    }
-}
 
 
 export const INJECT_IMPL = {
@@ -582,13 +556,6 @@ export const INJECT_IMPL = {
     }
 };
 
-export const CONTAINER_IMPL = {
-    create(providers: ProviderType[], parent?: Injector): Container {
-        throw new Error('not implemented.');
-    }
-}
-
-export type IocContainer = Container;
 
 
 /**
@@ -632,7 +599,7 @@ export type FnType = 'cotr' | 'inj' | 'fac';
 /**
  * injector scope.
  */
-export type InjectorScope = 'root' | 'provider' | 'invoked' | 'container';
+export type InjectorScope = 'root' | 'provider' | 'invoked';
 
 /**
  * factory record.

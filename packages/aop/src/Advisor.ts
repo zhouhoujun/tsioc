@@ -1,4 +1,4 @@
-import { Type, ProviderType, Container } from '@tsdi/ioc';
+import { Type, ProviderType, Injector } from '@tsdi/ioc';
 import { Advices } from './advices/Advices';
 import { IAdvisor } from './IAdvisor';
 
@@ -18,7 +18,7 @@ export class Advisor implements IAdvisor {
 
     aspects: Type[];
 
-    constructor(private readonly container: Container) {
+    constructor(private readonly injector: Injector) {
         this.advices = new Map();
         this.aspects = [];
     }
@@ -81,6 +81,6 @@ export class Advisor implements IAdvisor {
      * @returns {T}
      */
     resolve<T>(aspect: Type<T>, ...providers: ProviderType[]): T {
-        return this.container.state().resolve(aspect, providers);
+        return this.injector.state().resolve(aspect, providers);
     }
 }

@@ -2,10 +2,10 @@ import { ClassType, LoadType, Modules, Type } from './types';
 import {
     ProviderType, ResolveOption, ServicesOption, MethodType, InjectorScope, Factory,
     ProviderOption, RegisterOption, TypeOption, FnType, FnRecord, ActionProvider, Container,
-    CONTAINER_IMPL, EMPTY, Injector, INJECT_IMPL, ModuleLoader, Registered, RegisteredState
+    EMPTY, Injector, INJECT_IMPL, ModuleLoader, Registered, RegisteredState
 } from './injector';
 import { isToken, Token } from './tokens';
-import { CONTAINER, INJECTOR, TARGET } from './metadata/tk';
+import { CONTAINER, INJECTOR, ROOT_INJECTOR, TARGET } from './metadata/tk';
 import { Abstract } from './metadata/fac';
 import { cleanObj, getClass, getTypes, isBaseOf, mapEach } from './utils/lang';
 import { KeyValueProvider, StaticProviders } from './providers';
@@ -66,6 +66,8 @@ export const INJECT_STRATEGY: Strategy = {
  */
 export class DefaultInjector extends Injector {
 
+    private _state: RegisteredState;
+    private _action: ActionProvider;
     /**
      * factories.
      *
@@ -75,7 +77,6 @@ export class DefaultInjector extends Injector {
      */
     protected factories: Map<Token, FnRecord>;
     protected destCb: () => void;
-    protected _container: Container;
 
     constructor(providers: ProviderType[] = EMPTY, readonly parent: Injector, readonly scope?: InjectorScope, private strategy: Strategy = INJECT_STRATEGY) {
         super();
@@ -83,6 +84,15 @@ export class DefaultInjector extends Injector {
         if (parent) {
             this.destCb = () => this.destroy();
             this.initParent(parent);
+        } else {
+            this.scope = 'root';
+            this._state = new RegisteredStateImpl();
+            this._action = new ActionProviderImpl([], this);
+            registerCores(this);
+        }
+        if (scope === 'root') {
+            this.setValue(CONTAINER, this);
+            this.setValue(ROOT_INJECTOR, this);
         }
         if (scope !== 'provider' && scope !== 'invoked') {
             this.setValue(INJECTOR, this);
@@ -92,7 +102,6 @@ export class DefaultInjector extends Injector {
     }
 
     protected initParent(parent: Injector) {
-        this._container = parent.getContainer();
         parent.onDestroy(this.destCb);
     }
 
@@ -100,15 +109,11 @@ export class DefaultInjector extends Injector {
         return this.factories.size;
     }
 
-    getContainer(): Container {
-        return this._container;
-    }
-
     /**
      * registered state.
      */
     state(): RegisteredState {
-        return this._container?.state();
+        return this._state ?? this.parent.state();
     }
 
     tokens() {
@@ -119,7 +124,7 @@ export class DefaultInjector extends Injector {
      * action provider.
      */
     action(): ActionProvider {
-        return this._container?.action();
+        return this._action ?? this.parent.action();
     }
 
     /**
@@ -647,11 +652,14 @@ export class DefaultInjector extends Injector {
         this.factories = null;
         if (this.parent) {
             !this.parent.destroyed && this.parent.offDestory(this.destCb);
-        } else if (this._container) {
-            !this._container.destroyed && this._container.offDestory(this.destCb);
+        }
+        if (this.scope === 'root') {
+            this._action.destroy();
+            this._state.destroy();
+            this._action = null;
+            this._state = null;
         }
         this.destCb = null;
-        this._container = null;
         (this as any).parent = null;
         (this as any).strategy = null;
     }
@@ -681,73 +689,6 @@ export abstract class ServicesProvider {
      * @returns {T[]} all service instance type of token type.
      */
     abstract getServices<T>(injector: Injector, option: ServicesOption<T>): T[];
-}
-
-/**
- * Container
- *
- * @export
- * @class Container
- * @implements {IContainer}
- */
-export class DefaultContainer extends DefaultInjector implements Container {
-
-    private _state: RegisteredState;
-    private _action: ActionProvider;
-    readonly id: string;
-    private _finals = [];
-
-    constructor(providers: ProviderType[] = [], parent?: Injector) {
-        super(providers, parent, 'container');
-        const red = { value: this };
-        this.factories.set(CONTAINER, red);
-        this.factories.set(Container, red);
-        this._state = new RegisteredStateImpl(this);
-        this._action = new ActionProviderImpl([], this);
-        registerCores(this);
-    }
-
-    override getContainer(): this {
-        return this;
-    }
-
-    /**
-     * registered state.
-     */
-    state(): RegisteredState {
-        return this._state;
-    }
-
-    /**
-     * action provider.
-     */
-    action(): ActionProvider {
-        return this._action;
-    }
-
-    onFinally(callback: () => void) {
-        this._finals.push(callback);
-    }
-
-    protected override destroying() {
-        super.destroying();
-        this._finals.forEach(c => c());
-        this._finals = null;
-        this._state = null;
-        this._action = null;
-    }
-
-}
-
-/**
- * is container or not.
- *
- * @export
- * @param {*} target
- * @returns {target is Container}
- */
-export function isContainer(target: any): target is Container {
-    return target && target instanceof Container;
 }
 
 
@@ -795,12 +736,8 @@ function createArgs(deps: any[], provider: Injector): any[] {
 
 
 INJECT_IMPL.create = (providers: ProviderType[], parent?: Injector, scope?: InjectorScope) => {
-    if (!parent) {
-        parent = new DefaultContainer();
-    }
     return new DefaultInjector(providers, parent, scope);
 }
-CONTAINER_IMPL.create = (providers: ProviderType[], parent?: Injector) => new DefaultContainer(providers, parent);
 
 
 const IDENT = function <T>(value: T): T {
@@ -877,17 +814,8 @@ const SERVICE: ServicesProvider = {
 class RegisteredStateImpl implements RegisteredState {
 
     private states: Map<ClassType, Registered>;
-    constructor(private readonly container: Container) {
+    constructor() {
         this.states = new Map();
-        this.container.onFinally(() => {
-            this.states.forEach(v => {
-                if (!v) return;
-                v.providers?.destroy();
-                v.injector?.destroy();
-                cleanObj(v);
-            });
-            this.states.clear();
-        });
     }
 
     /**
@@ -959,6 +887,16 @@ class RegisteredStateImpl implements RegisteredState {
         return this.states.has(type);
     }
 
+    destroy() {
+        this.states.forEach(v => {
+            if (!v) return;
+            v.providers?.destroy();
+            v.injector?.destroy();
+            cleanObj(v);
+        });
+        this.states.clear();
+    }
+
 }
 
 /**
@@ -970,9 +908,8 @@ class ActionProviderImpl extends DefaultInjector implements ActionProvider {
         super(providers, parent, 'provider');
     }
 
-    protected override initParent(parent: Container) {
-        this._container = parent.getContainer();
-        parent.onFinally(() => this.destroy());
+    protected override initParent(parent: Injector) {
+
     }
 
     /**
@@ -1020,16 +957,16 @@ class ActionProviderImpl extends DefaultInjector implements ActionProvider {
 }
 
 /**
- * register core for container.
+ * register core for root.
  *
  * @export
- * @param {IContainer} container
+ * @param {IContainer} root
  */
-export function registerCores(container: Container) {
-    container.setValue(Invoker, new InvokerImpl());
-    container.setValue(ModuleLoader, new DefaultModuleLoader());
+export function registerCores(root: Injector) {
+    root.setValue(Invoker, new InvokerImpl());
+    root.setValue(ModuleLoader, new DefaultModuleLoader());
     // bing action.
-    container.action().regAction(
+    root.action().regAction(
         DesignLifeScope,
         RuntimeLifeScope
     );
