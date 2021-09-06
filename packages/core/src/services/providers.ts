@@ -1,5 +1,5 @@
 import {
-    Injector, Token, ProviderType, isArray, Container, TARGET, EMPTY,
+    Injector, Token, ProviderType, isArray, TARGET, EMPTY,
     ServicesOption, isPlainObject, lang, ServicesProvider, isFunction, resolveToken
 } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from '../resolves/context';
@@ -13,7 +13,7 @@ export class Services implements ServicesProvider {
     static ρNPT = true;
     private servicesScope: ResolveServicesScope;
 
-    constructor(private readonly container: Container) { }
+    constructor(private readonly injector: Injector) { }
     /**
     * get all service extends type.
     *
@@ -50,7 +50,7 @@ export class Services implements ServicesProvider {
 
         this.initTargetRef(context);
         if (!this.servicesScope) {
-            this.servicesScope = this.container.action().get(ResolveServicesScope);
+            this.servicesScope = this.injector.action().get(ResolveServicesScope);
         }
 
         const services = [];

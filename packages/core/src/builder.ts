@@ -1,4 +1,4 @@
-import { Container, ModuleLoader, LoadType, Modules } from '@tsdi/ioc';
+import { ModuleLoader, LoadType, Modules, Injector } from '@tsdi/ioc';
 import { IContainerBuilder } from './IBuilder';
 import { CONTAINER_BUILDER } from './tk';
 import { CoreModule } from './CoreModule';
@@ -17,8 +17,8 @@ export class ContainerBuilder implements IContainerBuilder {
         this._loader = loader;
     }
 
-    create(): Container {
-        let container = Container.create();
+    create(): Injector {
+        let container = Injector.create();
         container.setValue(CONTAINER_BUILDER, this);
         if (this._loader) {
             container.setValue(ModuleLoader, this._loader);
@@ -34,22 +34,22 @@ export class ContainerBuilder implements IContainerBuilder {
      * @returns
      */
     async build(...modules: LoadType[]) {
-        let container: Container = this.create();
+        let container: Injector = this.create();
         if (modules.length) {
             await container.load(modules);
         }
         return container;
     }
 
-    syncBuild(...modules: Modules[]): Container {
-        let container: Container = this.create();
+    syncBuild(...modules: Modules[]): Injector {
+        let container: Injector = this.create();
         if (modules.length) {
             container.use(modules);
         }
         return container;
     }
 
-    protected getLoader(container: Container): ModuleLoader {
+    protected getLoader(container: Injector): ModuleLoader {
         return container.get(ModuleLoader) || this._loader;
     }
 

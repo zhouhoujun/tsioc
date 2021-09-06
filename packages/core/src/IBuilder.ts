@@ -1,4 +1,4 @@
-import { Container, LoadType, Modules } from '@tsdi/ioc';
+import { Injector, LoadType, Modules } from '@tsdi/ioc';
 
 
 /**
@@ -12,25 +12,25 @@ export interface IContainerBuilder {
     /**
      * create a new container.
      *
-     * @returns {Container}
+     * @returns {Injector}
      */
-    create(): Container;
+    create(): Injector;
 
     /**
      * create a new container and load module via options.
      *
      * @param {...LoadType[]} modules
      * @param {string} [basePath]
-     * @returns {Promise<Container>}
+     * @returns {Promise<Injector>}
      */
-    build(...modules: LoadType[]): Promise<Container>;
+    build(...modules: LoadType[]): Promise<Injector>;
 
     /**
      * build container in sync.
      *
      * @param {LoadOptions} options
-     * @returns {Container}
+     * @returns {Injector}
      */
-    syncBuild(...modules: Modules[]): Container;
+    syncBuild(...modules: Modules[]): Injector;
 
 }

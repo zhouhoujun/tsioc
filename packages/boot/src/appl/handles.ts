@@ -86,10 +86,9 @@ export const BootConfigureLoadHandle = async function (ctx: ApplicationContext, 
 export const BootConfigureRegisterHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
     const config = ctx.getConfiguration();
     const injector = ctx.injector;
-    const container = injector.getContainer();
     if (config.logConfig) {
-        if (!container.has(LogConfigureToken)) {
-            container.setValue(LogConfigureToken, config.logConfig);
+        if (!injector.has(LogConfigureToken)) {
+            injector.setValue(LogConfigureToken, config.logConfig);
         }
         injector.setValue(LogConfigureToken, config.logConfig);
     }

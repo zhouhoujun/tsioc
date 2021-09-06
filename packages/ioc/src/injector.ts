@@ -23,7 +23,7 @@ export abstract class Injector implements Destroyable {
     private _destroyed = false;
     protected _dsryCbs: (() => void)[] = [];
 
-    readonly scope?: InjectorScope;
+    readonly scope?: InjectorScope | string;
 
     /**
      * parent injector.
@@ -546,7 +546,7 @@ export function isInjector(target: any): target is Injector {
 * @deprecated use `Injector` instead.
 */
 @Abstract()
-export abstract class Container extends Injector {};
+export abstract class Container extends Injector { };
 
 
 

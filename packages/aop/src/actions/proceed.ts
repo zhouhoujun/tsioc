@@ -1,5 +1,5 @@
 import {
-    Type, isFunction, lang, Container, ActionProvider, Injector, ProviderType,
+    Type, isFunction, lang, ActionProvider, Injector, ProviderType,
     ParameterMetadata, IocActions, IActionSetup, isArray, isNil, isPromise, refl
 } from '@tsdi/ioc';
 import { IPointcut } from '../joinpoints/IPointcut';

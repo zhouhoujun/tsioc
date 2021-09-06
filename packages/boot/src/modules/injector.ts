@@ -1,4 +1,4 @@
-import { DefaultInjector, EMPTY, Injector, InjectorScope, isArray, isFunction, isPlainObject, KeyValueProvider, ProviderType, refl, ROOT_INJECTOR, StaticProviders, Type } from '@tsdi/ioc';
+import { DefaultInjector, EMPTY, Injector, InjectorScope, isArray, isFunction, isPlainObject, KeyValueProvider, Modules, ProviderType, refl, ROOT_INJECTOR, StaticProviders, Type } from '@tsdi/ioc';
 import { IModuleExports, ModuleFactory, ModuleInjector, ModuleOption, ModuleRegistered } from '../Context';
 import { ModuleReflect } from '../metadata/ref';
 import { CTX_ARGS, PROCESS_ROOT } from '../metadata/tk';
@@ -19,14 +19,13 @@ export class DefaultModuleInjector<T> extends ModuleInjector<T> {
 
     imports: ModuleInjector[] = [];
     exports: IModuleExports;
-    private _regIn: string;
     private _instance: T;
-    constructor(readonly reflect: ModuleReflect<T>, parent?: Injector, scope?: InjectorScope, strategy: ModuleStrategy = mdInjStrategy) {
-        super(EMPTY, parent, scope, strategy)
+
+    constructor(readonly reflect: ModuleReflect<T>, providers?: ProviderType[], parent?: Injector, private _regIn?: string, scope?: InjectorScope | string, strategy: ModuleStrategy = mdInjStrategy) {
+        super(providers || EMPTY, parent, scope, strategy);
 
         this.setValue(ModuleInjector, this);
         this.exports = new ModuleExports(this);
-
     }
 
     get type(): Type<T> {
@@ -74,9 +73,11 @@ export class ModuleExports extends DefaultInjector implements IModuleExports {
         this.export(moduleRef.type, true);
     }
 
-    protected override initParent(parnet: ModuleInjector) {
-        parnet.onDestroy(this.destCb);
-        (this as any).parent = parnet.get(ROOT_INJECTOR);
+    protected override initParent(parent: ModuleInjector) {
+        parent.onDestroy(this.destCb);
+        this._action = parent.action();
+        this._state = parent.state();
+        (this as any).parent = null;
     }
 
     /**
@@ -179,8 +180,12 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
     }
 
     override create(parent: Injector, option?: ModuleOption): ModuleInjector<T> {
-        if ((parent as ModuleInjector)?.type === this._modelRefl.type) return parent as ModuleInjector;
-        let inj = option ? this.createByOption(parent, option) : this.createInstance(parent);
+        let inj: ModuleInjector;
+        if ((parent as ModuleInjector)?.type === this._modelRefl.type) {
+            inj = parent as ModuleInjector;
+        } else {
+            inj = createModuleInjector(this._modelRefl, option.providers, parent || option.injector, option);
+        }
         this.regModule(inj);
         return inj;
     }
@@ -216,27 +221,26 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
         }
     }
 
+}
 
-    protected createByOption(parent: Injector, option: ModuleOption) {
-        parent = parent || option.injector;
-        const inj = this.createInstance(parent, option.regIn, option.root);
-        if (option.providers) {
-            inj.inject(option.providers);
-        }
-        if (option.deps) {
-            inj.use(option.deps);
-        }
-        if (option.args) {
-            inj.setValue(CTX_ARGS, option.args);
-        }
-        if (option.baseURL) {
-            inj.setValue(PROCESS_ROOT, option.baseURL);
-        }
-        return inj;
-    }
+export function createModuleInjector(type: ModuleReflect | Type, providers: ProviderType[], parent?: Injector,
+    option: {
+        scope?: string | InjectorScope;
+        regIn?: string;
+        deps?: Modules[];
+        args?: any[];
+        baseURL?: string;
+    } = {}) {
 
-    protected createInstance(parent: Injector, regIn?: string, root?: boolean) {
-        regIn = regIn || this._modelRefl.regIn;
-        return new DefaultModuleInjector(this._modelRefl, (regIn && !root) ? parent.get(ROOT_INJECTOR) : parent, regIn, root);
+    let inj = new DefaultModuleInjector(isFunction(type) ? refl.get<ModuleReflect>(type) : type, providers, parent, option.regIn, option.scope);
+    if (option.deps) {
+        inj.use(option.deps);
     }
+    if (option.args) {
+        inj.setValue(CTX_ARGS, option.args);
+    }
+    if (option.baseURL) {
+        inj.setValue(PROCESS_ROOT, option.baseURL);
+    }
+    return inj;
 }

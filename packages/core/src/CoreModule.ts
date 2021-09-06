@@ -1,4 +1,4 @@
-import { Container, Inject, IocExt, ServicesProvider } from '@tsdi/ioc';
+import { Inject, Injector, IocExt, ROOT_INJECTOR, ServicesProvider } from '@tsdi/ioc';
 import { Services } from './services/providers';
 import { ResolveServicesScope } from './resolves/actions';
 
@@ -6,11 +6,11 @@ import { ResolveServicesScope } from './resolves/actions';
 export class CoreModule {
 
     /**
-     * register aop for container.
+     * register aop in root injector.
      */
-    setup(@Inject() container: Container) {
-        container.setValue(ServicesProvider, new Services(container));
+    setup(@Inject(ROOT_INJECTOR) injector: Injector) {
+        injector.setValue(ServicesProvider, new Services(injector));
         // register action
-        container.action().regAction(ResolveServicesScope);
+        injector.action().regAction(ResolveServicesScope);
     }
 }

@@ -1,5 +1,5 @@
 import 'core-js';
-import { IocExt, Inject, CONTAINER, Container, ModuleLoader } from '@tsdi/ioc';
+import { IocExt, Inject, ModuleLoader, ROOT_INJECTOR, Injector } from '@tsdi/ioc';
 import { BrowserModuleLoader } from './BrowserModuleLoader';
 
 
@@ -13,7 +13,7 @@ export class BrowserModule {
     /**
      * register aop for container.
      */
-    setup(@Inject(CONTAINER) container: Container) {
-        container.setValue(ModuleLoader, new BrowserModuleLoader(), BrowserModuleLoader);
+    setup(@Inject(ROOT_INJECTOR) injector: Injector) {
+        injector.setValue(ModuleLoader, new BrowserModuleLoader(), BrowserModuleLoader);
     }
 }

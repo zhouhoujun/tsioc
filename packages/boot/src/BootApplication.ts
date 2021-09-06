@@ -1,4 +1,4 @@
-import { ModuleLoader, isFunction, Type, EMPTY, Injector } from '@tsdi/ioc';
+import { ModuleLoader, isFunction, Type, EMPTY, Injector, ProviderType, Modules } from '@tsdi/ioc';
 import { IBootApplication } from './IBootApplication';
 import { APPLICATION } from './metadata/tk';
 import {
@@ -8,6 +8,7 @@ import {
 import { MiddlewareModule } from './middlewares';
 import { BootLifeScope } from './appl/lifescope';
 import { BootModule, DEFAULTA_FACTORYS } from './BootModule';
+import { createModuleInjector } from '.';
 
 
 /**
@@ -20,7 +21,6 @@ export class BootApplication implements IBootApplication {
 
     private _destroyed = false;
     private _dsryCbs: (() => void)[] = [];
-    private _newCt: boolean;
     readonly root: ModuleInjector;
     /**
      * application context.
@@ -33,15 +33,12 @@ export class BootApplication implements IBootApplication {
     constructor(protected target?: Type | ApplicationOption, protected loader?: ModuleLoader) {
         if (!isFunction(target)) {
             if (!this.loader) this.loader = target.loader;
-            const parent = target.injector ?? this.createInjector();
             const providers = (target.providers && target.providers.length) ? [...DEFAULTA_FACTORYS, ...target.providers] : DEFAULTA_FACTORYS;
-            target.providers = providers;
             target.deps = [BootModule, MiddlewareModule, ...target.deps || EMPTY];
-            target.root = true;
-            this.root = parent.resolve({ token: ModuleFactory, target: target.type, providers }).create(parent, target);
+            this.root = this.createInjector(providers, target);
         } else {
-            const option = { type: target, root: true, deps: [BootModule, MiddlewareModule], providers: DEFAULTA_FACTORYS };
-            this.root = this.container.resolve({ token: ModuleFactory, target, providers: DEFAULTA_FACTORYS }).create(this.container, option);
+            const option = { type: target, deps: [BootModule, MiddlewareModule] };
+            this.root = this.createInjector(DEFAULTA_FACTORYS, option);
         }
         this.initRoot();
     }
@@ -120,12 +117,13 @@ export class BootApplication implements IBootApplication {
         return this.context;
     }
 
-    protected createInjector() {
-        const root = Injector.create();
+    protected createInjector(providers: ProviderType[], option: ApplicationOption) {
+        const root = createModuleInjector(option.type, providers, option.injector, option);
         if (this.loader) {
             root.setValue(ModuleLoader, this.loader);
         }
-        return root;
+
+        return root.resolve({ token: ModuleFactory, target: option.type }).create(root, option);
     }
 
     /**
@@ -158,9 +156,7 @@ export class BootApplication implements IBootApplication {
         if (!this.context || !this.context.destroyed) return;
 
         this.context.destroy();
-        if (this._newCt) {
-            this.container.destroy();
-        }
+        this.root.destroy();
     }
 }
 

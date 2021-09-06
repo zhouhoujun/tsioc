@@ -1,8 +1,8 @@
-import { ModuleLoader, ModuleLoaderImpl } from '@tsdi/ioc';
+import { ModuleLoader, DefaultModuleLoader } from '@tsdi/ioc';
 
 declare let System: any;
 declare let window: any;
-export class BrowserModuleLoader extends ModuleLoaderImpl implements ModuleLoader {
+export class BrowserModuleLoader extends DefaultModuleLoader implements ModuleLoader {
 
     protected override createLoader() {
         if (typeof System !== 'undefined') {
