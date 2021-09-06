@@ -23,6 +23,7 @@ import { TypeReflect } from './metadata/type';
 import { get } from './metadata/refl';
 import { Invoker } from './invoker';
 import { DefaultModuleLoader } from './loader';
+import { ResolveServicesScope, ServicesContext } from './actions/serv';
 
 
 
@@ -632,7 +633,7 @@ export class DefaultInjector extends Injector {
      */
     getServices<T>(option: ServicesOption<T>): T[];
     getServices<T>(target: any, ...args: any[]): T[] {
-        return this.get(ServicesProvider, undefined, SERVICE).getServices(this, target,
+        return this.get(ServicesProvider).getServices(this, target,
             (args.length === 1 && isArray(args[0])) ? args[0] : args) ?? EMPTY;
     }
 
@@ -793,25 +794,84 @@ function computeDeps(provider: StaticProviders) {
     return deps ?? EMPTY;
 }
 
-const SERVICE: ServicesProvider = {
 
-    getServices<T>(injector: Injector, target: Token<T> | ServicesOption<T>, ...args: any[]): T[] {
-        const tokens = isPlainObject(target) ?
-            ((target as ServicesOption<T>).tokens ?? [(target as ServicesOption<T>).token])
-            : [target];
-        const providers = isPlainObject(target) ? (target as ServicesOption<T>).providers
-            : (args.length === 1 && isArray(args[0])) ? args[0] : args;
-        const services: T[] = [];
-        const pdr = providers.length ? Injector.create(providers, injector, 'provider') : undefined;
-        injector.iterator((fac, key) => {
-            if (tokens.indexOf(key)) {
-                services.push(injector.get(key, pdr));
+/**
+ * service provider.
+ */
+ export class Services implements ServicesProvider {
+
+    static ρNPT = true;
+    private servicesScope: ResolveServicesScope;
+
+    constructor(private readonly injector: Injector) { }
+    /**
+    * get all service extends type.
+    *
+    * @template T
+    * @param {Injector} injector
+    * @param {Token<T>} token servive token or express match token.
+    * @param {ProviderType[]} providers
+    * @returns {T[]} all service instance type of token type.
+    */
+    getServices<T>(injector: Injector, token: Token<T>, providers: ProviderType[]): T[];
+    /**
+     * get all service extends type.
+     *
+     * @template T
+     * @param {Injector} injector
+     * @param {ServicesOption<T>} option servive token or express match token.
+     * @returns {T[]} all service instance type of token type.
+     */
+    getServices<T>(injector: Injector, option: ServicesOption<T>): T[];
+    getServices<T>(injector: Injector, target: Token<T> | ServicesOption<T>, args?: ProviderType[]): T[] {
+        let providers: ProviderType[];
+        if (isPlainObject(target)) {
+            providers = (target as ServicesOption<T>).providers || [];
+            if ((target as ServicesOption<T>).target) {
+                providers.push({ provide: TARGET, useValue: (target as ServicesOption<T>).target });
             }
+        } else {
+            providers = args || EMPTY;
+        }
+        let context = {
+            injector,
+            ...isPlainObject(target) ? target : { token: target },
+        } as ServicesContext;
+
+        this.initTargetRef(context);
+        if (!this.servicesScope) {
+            this.servicesScope = this.injector.action().get(ResolveServicesScope);
+        }
+
+        const services = [];
+        this.servicesScope.execute(context);
+        const pdr = providers.length ? Injector.create(providers, injector, 'provider') : injector;
+        context.services.forEach(rd => {
+            services.push(resolveToken(rd, pdr));
         });
-        if (pdr) pdr.destroy();
+        providers.length && pdr.destroy();
+        context.services.clear();
+        // clean obj.
+        cleanObj(context);
         return services;
     }
-};
+
+    private initTargetRef(ctx: ServicesContext) {
+        let targets = (isArray(ctx.target) ? ctx.target : [ctx.target]).filter(t => t).map(tr => isFunction(tr) ? tr : getClass(tr));
+        if (targets.length) {
+            ctx.targetRefs = targets;
+        }
+        let tokens = ctx.tokens || [];
+        if (tokens.length) {
+            tokens = tokens.filter(t => t)
+        }
+        if (ctx.token) {
+            tokens.unshift(ctx.token);
+        }
+        ctx.tokens = tokens;
+    }
+}
+
 
 class RegisteredStateImpl implements RegisteredState {
 
@@ -967,9 +1027,11 @@ class ActionProviderImpl extends DefaultInjector implements ActionProvider {
 export function registerCores(root: Injector) {
     root.setValue(Invoker, new InvokerImpl());
     root.setValue(ModuleLoader, new DefaultModuleLoader());
+    root.setValue(ServicesProvider, new Services(root));
     // bing action.
     root.action().regAction(
         DesignLifeScope,
-        RuntimeLifeScope
+        RuntimeLifeScope,
+        ResolveServicesScope
     );
 }
