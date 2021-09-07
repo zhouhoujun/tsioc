@@ -549,8 +549,16 @@ export function isInjector(target: any): target is Injector {
 export abstract class Container extends Injector { };
 
 
-
+/**
+ * injector factory implement.
+ */
 export const INJECT_IMPL = {
+    /**
+     * create injector
+     * @param providers 
+     * @param parent 
+     * @param name 
+     */
     create(providers: ProviderType[], parent?: Injector, name?: string): Injector {
         throw new Error('not implemented.');
     }

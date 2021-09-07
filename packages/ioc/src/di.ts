@@ -874,6 +874,9 @@ class Services implements ServicesProvider {
     }
 }
 
+/**
+ * registered state.
+ */
 class RegisteredStateImpl implements RegisteredState {
 
     private states: Map<ClassType, Registered>;
