@@ -1,7 +1,6 @@
-import { ModuleLoader, LoadType, Modules, Injector } from '@tsdi/ioc';
+import { ModuleLoader, LoadType, Modules, Injector, Container } from '@tsdi/ioc';
 import { IContainerBuilder } from './IBuilder';
 import { CONTAINER_BUILDER } from './tk';
-import { CoreModule } from './CoreModule';
 
 /**
  * default container builder.
@@ -17,13 +16,12 @@ export class ContainerBuilder implements IContainerBuilder {
         this._loader = loader;
     }
 
-    create(): Injector {
+    create(): Container {
         let container = Injector.create();
         container.setValue(CONTAINER_BUILDER, this);
         if (this._loader) {
             container.setValue(ModuleLoader, this._loader);
         }
-        container.register(CoreModule);
         return container;
     }
 
@@ -41,7 +39,7 @@ export class ContainerBuilder implements IContainerBuilder {
         return container;
     }
 
-    syncBuild(...modules: Modules[]): Injector {
+    syncBuild(...modules: Modules[]): Container {
         let container: Injector = this.create();
         if (modules.length) {
             container.use(modules);

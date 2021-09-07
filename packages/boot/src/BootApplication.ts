@@ -1,4 +1,4 @@
-import { ModuleLoader, isFunction, Type, EMPTY, Injector, ProviderType, Modules } from '@tsdi/ioc';
+import { ModuleLoader, isFunction, Type, EMPTY, ProviderType } from '@tsdi/ioc';
 import { IBootApplication } from './IBootApplication';
 import { APPLICATION, CTX_ARGS, PROCESS_ROOT } from './metadata/tk';
 import {

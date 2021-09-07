@@ -19,7 +19,7 @@ export class ServerBootTest {
     @Before()
     async init() {
         await del(logdir);
-        this.ctx = await BootApplication.run({ type: ServerMainModule, configures: [configurtion] });
+        this.ctx = await BootApplication.run({ type: ServerMainModule, configures: [configurtion] }); //{debug: true},
         const now = new Date();
         this.logfile = path.join(this.ctx.baseURL, `/log-caches/focas.-${formatDate(now).replace(/(-|\/)/g, '')}.log`);
     }

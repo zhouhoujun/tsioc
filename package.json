@@ -75,7 +75,7 @@
     "shelljs": "^0.8.3",
     "through2": "^3.0.0",
     "time-stamp": "^2.2.0",
-    "ts-node": "^8.10.1",
+    "ts-node": "^10.2.1",
     "tsconfig-paths": "^3.9.0",
     "tslib": "^2.3.1",
     "tslint": "^6.1.2",
