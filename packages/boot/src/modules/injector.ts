@@ -74,8 +74,6 @@ export class ModuleExports extends DefaultInjector implements IModuleExports {
 
     protected override initParent(parent: ModuleInjector) {
         parent.onDestroy(this.destCb);
-        // this._action = parent.action();
-        // this._state = parent.state();
         (this as any).parent = null;
     }
 

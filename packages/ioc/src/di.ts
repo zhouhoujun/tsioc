@@ -800,7 +800,7 @@ function computeDeps(provider: StaticProviders) {
 /**
  * service provider.
  */
-export class Services implements ServicesProvider {
+class Services implements ServicesProvider {
 
     static ρNPT = true;
     private servicesScope: ResolveServicesScope;
@@ -873,7 +873,6 @@ export class Services implements ServicesProvider {
         ctx.tokens = tokens;
     }
 }
-
 
 class RegisteredStateImpl implements RegisteredState {
 
@@ -1026,7 +1025,7 @@ class ActionProviderImpl extends DefaultInjector implements ActionProvider {
  * @export
  * @param {IContainer} root
  */
-export function registerCores(root: Injector) {
+function registerCores(root: Injector) {
     root.setValue(Invoker, new InvokerImpl());
     root.setValue(ModuleLoader, new DefaultModuleLoader());
     root.setValue(ServicesProvider, new Services(root));
