@@ -240,11 +240,11 @@ class TemplateParseVisitor implements html.Visitor {
   }
 
   visitText(text: html.Text, parent: ElementContext): any {
-    const ngContentIndex = parent.findNgContentIndex(TEXT_CSS_SELECTOR())!;
+    const contentIndex = parent.findNgContentIndex(TEXT_CSS_SELECTOR())!;
     const valueNoNgsp = replaceNgsp(text.value);
     const expr = this._bindingParser.parseInterpolation(valueNoNgsp, text.sourceSpan);
-    return expr ? new t.BoundTextAst(expr, ngContentIndex, text.sourceSpan) :
-      new t.TextAst(valueNoNgsp, ngContentIndex, text.sourceSpan);
+    return expr ? new t.BoundTextAst(expr, contentIndex, text.sourceSpan) :
+      new t.TextAst(valueNoNgsp, contentIndex, text.sourceSpan);
   }
 
   visitAttribute(attribute: html.Attribute, context: any): any {
@@ -348,11 +348,11 @@ class TemplateParseVisitor implements html.Visitor {
         isTemplateElement, directiveAsts,
         isTemplateElement ? parent.providerContext! : providerContext));
     providerContext.afterElement();
-    // Override the actual selector when the `ngProjectAs` attribute is provided
+    // Override the actual selector when the `projectAs` attribute is provided
     const projectionSelector = preparsedElement.projectAs != '' ?
       CssSelector.parse(preparsedElement.projectAs)[0] :
       elementCssSelector;
-    const ngContentIndex = parent.findNgContentIndex(projectionSelector)!;
+    const contentIndex = parent.findNgContentIndex(projectionSelector)!;
     let parsedElement: t.TemplateAst;
 
     if (preparsedElement.type === PreparsedElementType.NG_CONTENT) {
@@ -361,8 +361,8 @@ class TemplateParseVisitor implements html.Visitor {
         this._reportError(`<v-content> element cannot have content.`, element.sourceSpan);
       }
 
-      parsedElement = new t.NgContentAst(
-        this.contentCount++, hasInlineTemplates ? null! : ngContentIndex, element.sourceSpan);
+      parsedElement = new t.ContentAst(
+        this.contentCount++, hasInlineTemplates ? null! : contentIndex, element.sourceSpan);
     } else if (isTemplateElement) {
       // `<v-template>` element
       this._assertAllEventsPublishedByDirectives(directiveAsts, events);
@@ -372,19 +372,19 @@ class TemplateParseVisitor implements html.Visitor {
       parsedElement = new t.EmbeddedTemplateAst(
         attrs, events, references, elementVars, providerContext.transformedDirectiveAsts,
         providerContext.transformProviders, providerContext.transformedHasViewContainer,
-        providerContext.queryMatches, children, hasInlineTemplates ? null! : ngContentIndex,
+        providerContext.queryMatches, children, hasInlineTemplates ? null! : contentIndex,
         element.sourceSpan);
     } else {
       // element other than `<v-content>` and `<v-template>`
       this._assertElementExists(matchElement, element);
       this._assertOnlyOneComponent(directiveAsts, element.sourceSpan);
 
-      const ngContentIndex =
+      const contentIndex =
         hasInlineTemplates ? null : parent.findNgContentIndex(projectionSelector);
       parsedElement = new t.ElementAst(
         elName, attrs, elementProps, events, references, providerContext.transformedDirectiveAsts,
         providerContext.transformProviders, providerContext.transformedHasViewContainer,
-        providerContext.queryMatches, children, hasInlineTemplates ? null : ngContentIndex,
+        providerContext.queryMatches, children, hasInlineTemplates ? null : contentIndex,
         element.sourceSpan, element.endSourceSpan || null);
     }
 
@@ -410,7 +410,7 @@ class TemplateParseVisitor implements html.Visitor {
         [], [], [], templateElementVars, templateProviderContext.transformedDirectiveAsts,
         templateProviderContext.transformProviders,
         templateProviderContext.transformedHasViewContainer, templateProviderContext.queryMatches,
-        [parsedElement], ngContentIndex, element.sourceSpan);
+        [parsedElement], contentIndex, element.sourceSpan);
     }
 
     return parsedElement;
@@ -862,13 +862,13 @@ class ElementContext {
     return new ElementContext(isTemplateElement, matcher, wildcardNgContentIndex, providerContext);
   }
   constructor(
-    public isTemplateElement: boolean, private _ngContentIndexMatcher: SelectorMatcher,
+    public isTemplateElement: boolean, private _contentIndexMatcher: SelectorMatcher,
     private _wildcardNgContentIndex: number | null,
     public providerContext: ProviderElementContext | null) { }
 
   findNgContentIndex(selector: CssSelector): number | null {
     const ngContentIndices: number[] = [];
-    this._ngContentIndexMatcher.match(selector, (selector, ngContentIndex) => {
+    this._contentIndexMatcher.match(selector, (selector, ngContentIndex) => {
       ngContentIndices.push(ngContentIndex);
     });
     ngContentIndices.sort();

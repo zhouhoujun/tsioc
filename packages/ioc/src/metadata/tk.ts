@@ -13,7 +13,6 @@ export const ROOT_INJECTOR: Token<Injector> = tokenId<Injector>('ROOT_INJECTOR')
 
 /**
  * root container token.
- * it is a symbol id, you can use  `@Inject()`, `@AutoWired()` or `@Param()` to get container instance in yourself class.
  * @deprecated use `ROOT_INJECTOR` instead.
  */
 export const CONTAINER: Token<Container> = tokenId<Container>('DI_CONTAINER');

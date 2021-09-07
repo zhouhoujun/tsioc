@@ -262,11 +262,11 @@ export enum ProviderAstType {
 /**
  * Position where content is to be projected (instance of `<v-content>` in a template).
  */
-export class NgContentAst implements TemplateAst {
+export class ContentAst implements TemplateAst {
   constructor(
     public index: number, public contentIndex: number, public sourceSpan: ParseSourceSpan) { }
   visit(visitor: TemplateAstVisitor, context: any): any {
-    return visitor.visitNgContent(this, context);
+    return visitor.visitContent(this, context);
   }
 }
 
@@ -284,7 +284,7 @@ export interface TemplateAstVisitor {
   // result array.
   visit?(ast: TemplateAst, context: any): any;
 
-  visitNgContent(ast: NgContentAst, context: any): any;
+  visitContent(ast: ContentAst, context: any): any;
   visitEmbeddedTemplate(ast: EmbeddedTemplateAst, context: any): any;
   visitElement(ast: ElementAst, context: any): any;
   visitReference(ast: ReferenceAst, context: any): any;
@@ -303,7 +303,7 @@ export interface TemplateAstVisitor {
  * as the base class for a visitor that is only interested in a subset of the node types.
  */
 export class NullTemplateVisitor implements TemplateAstVisitor {
-  visitNgContent(ast: NgContentAst, context: any): void { }
+  visitContent(ast: ContentAst, context: any): void { }
   visitEmbeddedTemplate(ast: EmbeddedTemplateAst, context: any): void { }
   visitElement(ast: ElementAst, context: any): void { }
   visitReference(ast: ReferenceAst, context: any): void { }
