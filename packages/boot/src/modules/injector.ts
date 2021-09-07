@@ -1,7 +1,6 @@
-import { DefaultInjector, EMPTY, Injector, InjectorScope, isArray, isFunction, isPlainObject, KeyValueProvider, Modules, ProviderType, refl, ROOT_INJECTOR, StaticProviders, Type } from '@tsdi/ioc';
+import { ActionProvider, DefaultInjector, EMPTY, Injector, InjectorScope, isArray, isFunction, isPlainObject, KeyValueProvider, Modules, ProviderType, refl, RegisteredState, StaticProviders, Type } from '@tsdi/ioc';
 import { IModuleExports, ModuleFactory, ModuleInjector, ModuleOption, ModuleRegistered } from '../Context';
 import { ModuleReflect } from '../metadata/ref';
-import { CTX_ARGS, PROCESS_ROOT } from '../metadata/tk';
 import { ModuleStrategy } from './strategy';
 
 
@@ -9,7 +8,7 @@ import { ModuleStrategy } from './strategy';
 /**
  * default module injector strategy.
  */
-export const mdInjStrategy = new ModuleStrategy<ModuleInjector>(cu => cu.imports);
+export const mdInjStrategy = new ModuleStrategy<ModuleInjector>(cu => cu.imports || EMPTY);
 
 
 /**
@@ -61,7 +60,7 @@ export class DefaultModuleInjector<T> extends ModuleInjector<T> {
 /**
  * default module provider strategy.
  */
-const mdPdrStrategy = new ModuleStrategy<IModuleExports>(cu => cu.exports);
+const mdPdrStrategy = new ModuleStrategy<IModuleExports>(cu => cu.exports || EMPTY);
 
 /**
  * module exports.
@@ -75,9 +74,24 @@ export class ModuleExports extends DefaultInjector implements IModuleExports {
 
     protected override initParent(parent: ModuleInjector) {
         parent.onDestroy(this.destCb);
-        this._action = parent.action();
-        this._state = parent.state();
+        // this._action = parent.action();
+        // this._state = parent.state();
         (this as any).parent = null;
+    }
+
+    /**
+     * registered state.
+     */
+    override state(): RegisteredState {
+        return this.moduleRef.state();
+    }
+
+
+    /**
+     * action provider.
+     */
+    override action(): ActionProvider {
+        return this.moduleRef.action();
     }
 
     /**
@@ -235,12 +249,6 @@ export function createModuleInjector(type: ModuleReflect | Type, providers: Prov
     let inj = new DefaultModuleInjector(isFunction(type) ? refl.get<ModuleReflect>(type) : type, providers, parent, option.regIn, option.scope);
     if (option.deps) {
         inj.use(option.deps);
-    }
-    if (option.args) {
-        inj.setValue(CTX_ARGS, option.args);
-    }
-    if (option.baseURL) {
-        inj.setValue(PROCESS_ROOT, option.baseURL);
     }
     return inj;
 }

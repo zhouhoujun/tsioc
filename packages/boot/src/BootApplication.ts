@@ -1,6 +1,6 @@
 import { ModuleLoader, isFunction, Type, EMPTY, Injector, ProviderType, Modules } from '@tsdi/ioc';
 import { IBootApplication } from './IBootApplication';
-import { APPLICATION } from './metadata/tk';
+import { APPLICATION, CTX_ARGS, PROCESS_ROOT } from './metadata/tk';
 import {
     ApplicationContext, ApplicationFactory, ModuleFactory,
     ModuleInjector, ApplicationExit, ApplicationOption, BootstrapOption
@@ -121,6 +121,12 @@ export class BootApplication implements IBootApplication {
         const root = createModuleInjector(option.type, providers, option.injector, option);
         if (this.loader) {
             root.setValue(ModuleLoader, this.loader);
+        }
+        if (option.args) {
+            root.setValue(CTX_ARGS, option.args);
+        }
+        if (option.baseURL) {
+            root.setValue(PROCESS_ROOT, option.baseURL);
         }
 
         return root.resolve({ token: ModuleFactory, target: option.type }).create(root, option);

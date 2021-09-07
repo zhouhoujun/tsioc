@@ -92,6 +92,7 @@ export class DefaultInjector extends Injector {
             this._action = new ActionProviderImpl([], this);
             registerCores(this);
         }
+
         if (scope === 'root') {
             this.factories.set(Container, val);
             this.factories.set(CONTAINER, val);
@@ -112,22 +113,23 @@ export class DefaultInjector extends Injector {
         return this.factories.size;
     }
 
-    /**
-     * registered state.
-     */
-    state(): RegisteredState {
-        return this._state ?? this.parent.state();
-    }
-
     tokens() {
         return Array.from(this.factories.keys());
     }
 
     /**
+     * registered state.
+     */
+    state(): RegisteredState {
+        return this._state ?? this.parent?.state();
+    }
+
+
+    /**
      * action provider.
      */
     action(): ActionProvider {
-        return this._action ?? this.parent.action();
+        return this._action ?? this.parent?.action();
     }
 
     /**
@@ -659,9 +661,9 @@ export class DefaultInjector extends Injector {
         if (this.scope === 'root') {
             this._action.destroy();
             this._state.destroy();
-            this._action = null;
-            this._state = null;
         }
+        this._action = null;
+        this._state = null;
         this.destCb = null;
         (this as any).parent = null;
         (this as any).strategy = null;
@@ -798,7 +800,7 @@ function computeDeps(provider: StaticProviders) {
 /**
  * service provider.
  */
- export class Services implements ServicesProvider {
+export class Services implements ServicesProvider {
 
     static ρNPT = true;
     private servicesScope: ResolveServicesScope;
