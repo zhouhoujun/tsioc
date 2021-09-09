@@ -33,7 +33,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
     }
 
 
-    beforeConstr(targetType: Type, params: ParameterMetadata[], args: any[], providers: Injector) {
+    beforeConstr(targetType: Type, params: ParameterMetadata[] | undefined, args: any[] | undefined, providers: Injector | undefined) {
         const advices = this.provider.get(ADVISOR).getAdvices(targetType, ctor);
         if (!advices) {
             return;
@@ -53,7 +53,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
         this.execute(joinPoint);
     }
 
-    afterConstr(target: any, targetType: Type, params: ParameterMetadata[], args: any[], providers: Injector) {
+    afterConstr(target: any, targetType: Type, params: ParameterMetadata[] | undefined, args: any[] | undefined, providers: Injector | undefined) {
         const advices = this.provider.get(ADVISOR).getAdvices(targetType, ctor);
         if (!advices) {
             return;
@@ -89,22 +89,22 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
                 if (pointcut.descriptor.get && pointcut.descriptor.set) {
                     Object.defineProperty(target, methodName, {
                         get: () => {
-                            return this.proxy(pointcut.descriptor.get.bind(target), advices, target, targetType, pointcut, provJoinpoint)();
+                            return this.proxy(pointcut.descriptor?.get?.bind(target) as Function, advices, target, targetType, pointcut, provJoinpoint)();
                         },
                         set: () => {
-                            this.proxy(pointcut.descriptor.set.bind(target), advices, target, targetType, pointcut, provJoinpoint)();
+                            this.proxy(pointcut.descriptor?.set?.bind(target) as Function, advices, target, targetType, pointcut, provJoinpoint)();
                         }
                     });
                 } else if (pointcut.descriptor.get) {
                     Object.defineProperty(target, methodName, {
                         get: () => {
-                            return this.proxy(pointcut.descriptor.get.bind(target), advices, target, targetType, pointcut, provJoinpoint)();
+                            return this.proxy(pointcut.descriptor?.get?.bind(target) as Function, advices, target, targetType, pointcut, provJoinpoint)();
                         }
                     });
                 } else if (pointcut.descriptor.set) {
                     Object.defineProperty(target, methodName, {
                         set: () => {
-                            this.proxy(pointcut.descriptor.set.bind(target), advices, target, targetType, pointcut, provJoinpoint)();
+                            this.proxy(pointcut.descriptor?.set?.bind(target) as Function, advices, target, targetType, pointcut, provJoinpoint)();
                         }
                     });
                 }
@@ -126,7 +126,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
                 return propertyMethod.call(target, ...args);
             }
             const larg = lang.last(args);
-            let providers: Injector;
+            let providers: Injector | undefined;
             if (larg instanceof Injector && larg.scope === 'invoked') {
                 args = args.slice(0, args.length - 1);
                 providers = larg;
@@ -193,7 +193,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
 
         joinPoint.providers.inject(providers);
 
-        return this.provider.state().getInjector(advicer.aspectType).invoke(advicer.aspectType, advicer.advice.propertyKey, joinPoint.providers);
+        return this.provider.state().getInjector(advicer.aspectType).invoke(advicer.aspectType, advicer.advice.propertyKey!, joinPoint.providers);
     }
 
 }
@@ -205,10 +205,10 @@ export class CtorAdvicesScope extends IocActions<Joinpoint> implements IActionSe
         if (ctx.name === ctor) {
             super.execute(ctx);
         } else {
-            next();
+            next?.();
         }
     }
-    
+
     setup() {
         this.use(CtorBeforeAdviceAction, CtorAfterAdviceAction);
     }
@@ -301,7 +301,7 @@ export const ExecuteOriginMethodAction = function (ctx: Joinpoint, next: () => v
         const val = ctx.originMethod(...ctx.args);
         ctx.returning = val;
     } catch (err) {
-        ctx.throwing = err;
+        ctx.throwing = err as Error;
     }
     next();
 }
@@ -328,7 +328,7 @@ export const AfterAsyncReturningAdvicesAction = function (ctx: Joinpoint, next: 
 
     ctx.state = JoinpointState.AfterReturning;
     const invoker = ctx.invokeHandle;
-    let val;
+    let val: any;
     ctx.returning = lang.step([
         ctx.returning.then(v => { val = v; }),
         ...ctx.advices.Around.map(a => () => invoker(ctx, a)),

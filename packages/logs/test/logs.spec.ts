@@ -38,10 +38,10 @@ class MethodTest {
 
 class MethodTest2 {
 
-    tester: string;
+    tester!: string;
 
     @Inject()
-    testAt: Date;
+    testAt!: Date;
     constructor() {
 
     }

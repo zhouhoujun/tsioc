@@ -44,7 +44,7 @@ export const RunCaseToken = tokenId<Function>('runCase');
  */
 @Abstract()
 export abstract class Assert {
-    AssertionError: Type<IAssertionError>;
+    AssertionError!: Type<IAssertionError>;
     abstract fail(message: string): never;
     /** @deprecated since v10.0.0 */
     abstract fail(actual: any, expected: any, message?: string, operator?: string): never;

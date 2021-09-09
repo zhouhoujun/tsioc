@@ -39,10 +39,10 @@ describe('method exec test', () => {
 
     class MethodTest2 {
 
-        tester: string;
+        tester!: string;
 
         @Inject()
-        testAt: Date;
+        testAt!: Date;
         constructor() {
 
         }

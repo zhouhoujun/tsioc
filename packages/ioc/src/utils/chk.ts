@@ -5,11 +5,23 @@ import { clsNameExp } from './exps';
 import { getClassAnnotation } from './util';
 
 
+ 
 declare let process: any;
 const toString = Object.prototype.toString;
 
 const funKey = 'function';
 const undefKey = 'undefined';
+
+/**
+ * empty array.
+ */
+ export const EMPTY: any[] = [];
+
+ /**
+  * empty object.
+  */
+ export const EMPTY_OBJ = {};
+
 /**
  * check target is function or not.
  *
@@ -131,7 +143,7 @@ export function isNull(target: any): target is null {
  * @param {*} target
  * @returns {boolean}
  */
-export function isNil(target): boolean {
+export function isNil(target: any): boolean {
     return isNull(target) || isUndefined(target);
 }
 
@@ -294,7 +306,7 @@ export function isNative(target: any): boolean {
  * @param {*} target
  * @returns {boolean}
  */
-export function isPrimitiveType(target): boolean {
+export function isPrimitiveType(target: any): boolean {
     return isFunction(target) && isPrimitive(target);
 }
 
@@ -363,13 +375,13 @@ export function isClassType(target: any, abstract?: boolean): target is ClassTyp
 
     const ann = getClassAnnotation(target);
     if (ann) {
-        if (isBoolean(abstract)) return abstract ? ann.abstract : !ann.abstract;
+        if (isBoolean(abstract)) return abstract ? ann.abstract === true : !ann.abstract;
         return true;
     }
 
     const rf: TypeReflect = (target as AnnotationType).ρRfl?.();
     if (rf) {
-        if (isBoolean(abstract) && rf.type === target) return abstract ? rf.abstract : !rf.abstract;
+        if (isBoolean(abstract) && rf.type === target) return abstract ? rf.abstract === true : !rf.abstract;
         return true;
     }
 
@@ -392,7 +404,7 @@ export function isClassType(target: any, abstract?: boolean): target is ClassTyp
  */
 export function getClass(target: any): Type {
     if (!target) {
-        return null;
+        return null!;
     }
     if (isClassType(target)) {
         return target as Type;

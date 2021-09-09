@@ -1,7 +1,7 @@
 import { LoadType, Type } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
-import { BootApplication, DIModule } from '@tsdi/boot';
+import { ApplicationOption, BootApplication, DIModule } from '@tsdi/boot';
 import { UnitTestConfigureRegister } from './UnitTestConfigureRegister';
 import { UnitTestConfigure } from './UnitTestConfigure';
 import { UnitTestRunner } from './runner/UnitTestRunner';
@@ -39,5 +39,5 @@ export class UnitTest { }
  * @returns {Promise<any>}
  */
 export async function runTest(src: string | Type | (string | Type)[], config?: string | UnitTestConfigure, ...loads: LoadType[]): Promise<any> {
-   await BootApplication.run({ type: UnitTest, loads, configures: [config, { src: src }] })
+   await BootApplication.run({ type: UnitTest, loads, configures: [config, { src: src }] } as ApplicationOption)
 }

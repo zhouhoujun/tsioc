@@ -157,7 +157,7 @@ export interface IModuleExports extends Injector {
      * export type.
      * @param type 
      */
-    export?(type: Type, noRef?: boolean, hasReged?: boolean);
+    export(type: Type, noRef?: boolean, hasReged?: boolean): void;
 }
 
 /**
@@ -266,7 +266,7 @@ export abstract class ApplicationContext implements Destroyable {
     /**
      * module instance.
      */
-    abstract get instance();
+    abstract get instance(): any;
     /**
      * bootstrap type
      * @param type 
@@ -366,7 +366,7 @@ export abstract class ApplicationExit {
 
     abstract register(): void;
 
-    abstract exit(error?: Error);
+    abstract exit(error?: Error): void;
 }
 
 /**

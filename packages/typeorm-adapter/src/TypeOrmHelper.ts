@@ -7,10 +7,10 @@ import { TypeormConnectionStatupService } from './TypeormConnectionStatupService
 @Singleton()
 export class TypeOrmHelper {
 
-    private service: TypeormConnectionStatupService;
+    private service!: TypeormConnectionStatupService;
 
     @Inject()
-    private injector: Injector;
+    private injector!: Injector;
 
     getConnection(connectName?: string): Connection {
         if (!this.service) {

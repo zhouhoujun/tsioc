@@ -56,6 +56,6 @@ export interface IConfigureLoggerManager extends ILoggerManager {
      *
      * @param {(LogConfigure | Type<LogConfigure>)} config
      */
-    setLogConfigure(config: LogConfigure | Type<LogConfigure>);
+    setLogConfigure(config: LogConfigure | Type<LogConfigure>): void;
 
 }

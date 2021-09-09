@@ -14,7 +14,7 @@ export class BaseTypeParser implements TypeParser {
      * @param {*} paramVal
      * @returns {T}
      */
-    parse<T>(type: Token<T>, paramVal: any): T {
+    parse<T>(type: Token<T> | Function, paramVal: any): T {
         if (isNil(paramVal)) {
             return paramVal;
         }
@@ -50,7 +50,7 @@ export class BaseTypeParser implements TypeParser {
     }
 }
 
-export function formatDate(date: Date, fmt: string = 'yyyy-MM-dd'){
+export function formatDate(date: Date, fmt: string = 'yyyy-MM-dd') {
     var o = {
         "M+": date.getMonth() + 1, //月份
         "d+": date.getDate(), //日
@@ -59,7 +59,7 @@ export function formatDate(date: Date, fmt: string = 'yyyy-MM-dd'){
         "s+": date.getSeconds(), //秒
         "q+": Math.floor((date.getMonth() + 3) / 3), //季度
         "S": date.getMilliseconds() //毫秒
-    };
+    } as any;
     if (/(y+)/.test(fmt)) fmt = fmt.replace(RegExp.$1, (date.getFullYear() + "").substr(4 - RegExp.$1.length));
     for (var k in o)
         if (new RegExp("(" + k + ")").test(fmt)) fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));

@@ -18,11 +18,11 @@ export const ReportsToken: Token<Type<Reporter>[]> = tokenId<Type<Reporter>[]>('
 export class TestReport implements ITestReport {
 
     @Inject()
-    injector: Injector;
+    injector!: Injector;
 
     suites: Map<Token, ISuiteDescribe>;
 
-    reports: Reporter[];
+    reports!: Reporter[];
     getReports() {
         if (!this.reports) {
             this.reports = this.injector.getServices(Reporter);
@@ -34,13 +34,13 @@ export class TestReport implements ITestReport {
         this.suites = new Map();
     }
 
-    track(error: Error) {
+    track(error: Error): void {
         this.reports.forEach(rep=> {
             rep.track(error);
         });
     }
 
-    addSuite(suit: Token, describe: ISuiteDescribe) {
+    addSuite(suit: Token, describe: ISuiteDescribe): void {
         if (!this.suites.has(suit)) {
             describe.start = new Date().getTime();
             // init suite must has no completed cases.
@@ -60,33 +60,33 @@ export class TestReport implements ITestReport {
     }
 
     getSuite(suit: Token): ISuiteDescribe {
-        return this.suites.has(suit) ? this.suites.get(suit) : null;
+        return this.suites.get(suit)!;
     }
 
-    setSuiteCompleted(suit: Token) {
+    setSuiteCompleted(suit: Token): void {
         let suite = this.getSuite(suit);
         if (suite) {
             suite.end = new Date().getTime();
         }
     }
 
-    addCase(suit: Token, testCase: ICaseDescribe) {
+    addCase(suit: Token, testCase: ICaseDescribe): void {
         if (this.suites.has(suit)) {
             testCase.start = new Date().getTime();
-            this.suites.get(suit).cases.push(testCase);
+            this.suites.get(suit)?.cases.push(testCase);
         }
     }
 
     getCase(suit: Token, test: string): ICaseDescribe {
         let suite = this.getSuite(suit);
         if (suite) {
-            let tCase = suite.cases.find(c => c.key === test);
+            let tCase = suite.cases.find(c => c.key === test)!;
             if (!tCase) {
-                tCase = suite.cases.find(c => c.title === test);
+                tCase = suite.cases.find(c => c.title === test)!;
             }
             return tCase;
         }
-        return null;
+        return null!;
     }
 
     setCaseCompleted(testCase: ICaseDescribe) {

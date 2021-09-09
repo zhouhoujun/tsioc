@@ -45,7 +45,7 @@ export class DeviceConnectionService extends StartupService {
 })
 export class DeviceInitService extends StartupService {
 
-    connid: string;
+    connid!: string;
     id = 0;
     override async configureService(ctx: ApplicationContext): Promise<void> {
         let connention = ctx.injector.get(DeviceConnectionService).connention;

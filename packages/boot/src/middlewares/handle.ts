@@ -23,13 +23,13 @@ export abstract class Middleware {
      */
     abstract execute(ctx: MessageContext, next: () => Promise<void>): Promise<void>;
 
-    private _hdl: AsyncHandler<MessageContext>;
+    private _hdl!: AsyncHandler<MessageContext>;
     /**
      * parse this middleware to handler.
      */
     toHandle(): AsyncHandler<MessageContext> {
         if (!this._hdl) {
-            this._hdl = (ctx: MessageContext, next?: () => Promise<void>) => this.execute(ctx, next);
+            this._hdl = (ctx: MessageContext, next: () => Promise<void>) => this.execute(ctx, next);
         }
         return this._hdl;
     }
@@ -42,7 +42,7 @@ export abstract class Middleware {
      * @returns 
      */
     protected execHandler(ctx: MessageContext, handles: AsyncHandler<MessageContext>[], next?: () => Promise<void>): Promise<void> {
-        return chain(handles, ctx, next);
+        return chain(handles, ctx, next)!;
     }
 }
 
@@ -57,7 +57,7 @@ export type MiddlewareType = AsyncHandler<MessageContext> | Middleware | Type<Mi
 @Abstract()
 export abstract class Middlewares extends Middleware {
     protected handles: MiddlewareType[] = [];
-    private funcs: AsyncHandler<MessageContext>[];
+    private funcs!: AsyncHandler<MessageContext>[];
 
     /**
      * use handle.
@@ -137,7 +137,7 @@ export abstract class Middlewares extends Middleware {
     }
 
     protected resetHandler() {
-        this.funcs = null;
+        this.funcs = null!;
     }
 
     /**

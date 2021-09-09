@@ -1,3 +1,4 @@
+import { EMPTY_OBJ } from '@tsdi/ioc';
 import { Aspect, Around, Joinpoint, JoinpointState, AfterThrowing } from '@tsdi/aop';
 import { LoggerAspect } from '@tsdi/logs';
 import { TestReport } from '../reports/TestReport';
@@ -5,7 +6,6 @@ import { ITestReport, ISuiteDescribe, ICaseDescribe } from '../reports/ITestRepo
 import { UnitRunner } from '../runner/Runner';
 import { SuiteRunner } from '../runner/SuiteRunner';
 import { OldTestRunner } from '../runner/OldTestRunner';
-import { EMPTY_OBJ } from '@tsdi/ioc';
 
 @Aspect({
     within: [SuiteRunner, OldTestRunner],
@@ -13,7 +13,7 @@ import { EMPTY_OBJ } from '@tsdi/ioc';
 })
 export class RunAspect extends LoggerAspect {
 
-    report: ITestReport;
+    report!: ITestReport;
     getReport(): ITestReport {
         if (!this.report) {
             this.report = this.injector.resolve(TestReport);

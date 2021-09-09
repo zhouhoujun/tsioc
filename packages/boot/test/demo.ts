@@ -52,9 +52,9 @@ export class ClassSevice extends Runner {
     }
 
     @Inject('mark')
-    mark: string;
+    mark!: string;
 
-    state: string;
+    state!: string;
 
     override async run(): Promise<any> {
         console.log('ClassSevice running.....');
@@ -101,8 +101,8 @@ export class ModuleB { }
 @Boot()
 export class SocketService extends StartupService {
 
-    public tcpServer: net.Server;
-    private context: ApplicationContext;
+    public tcpServer!: net.Server;
+    private context!: ApplicationContext;
     private init_times = 0;
 
     override async configureService(ctx: ApplicationContext): Promise<void> {

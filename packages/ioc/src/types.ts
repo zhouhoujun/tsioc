@@ -58,6 +58,7 @@ export interface DesignAnnotation {
  */
 export interface AbstractType<T = any> extends Function {
     new?(...args: any[]): T;
+    prototype: T;
 }
 
 

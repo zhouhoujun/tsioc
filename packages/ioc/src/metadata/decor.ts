@@ -257,10 +257,10 @@ export interface IProviderInDecorator {
  * @Refs
  */
 export const ProviderIn: IProviderInDecorator = createDecorator<ProviderInMetadata>('ProviderIn', {
-    props: (target: ClassType, provide?: Token, alias?: string) => ({ target, provide: getToken(provide, alias) }),
+    props: (target: ClassType, provide?: Token, alias?: string) => ({ target, provide: getToken(provide!, alias) }),
     design: {
         afterAnnoation: (ctx, next) => {
-            let meta = ctx.reflect.class.getMetadata<ProviderInMetadata>(ctx.currDecor);
+            let meta = ctx.reflect.class.getMetadata<ProviderInMetadata>(ctx.currDecor!);
             const type = ctx.type;
             ctx.injector.state().setTypeProvider(meta.target, [{ provide: meta.provide || type, useClass: type }])
             return next();
@@ -328,7 +328,7 @@ export const Singleton: ISingletonDecorator = createDecorator<ClassMetadata>('Si
  *  ioc extend inteface.
  */
 export interface IocExtentd {
-    setup(Injector: Injector);
+    setup(Injector: Injector): void;
 }
 
 /**

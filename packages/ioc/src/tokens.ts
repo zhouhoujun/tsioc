@@ -51,7 +51,7 @@ function format(token: Token) {
  * @param token token
  * @param alias the alias of token.
  */
-export function getToken<T>(token: Token<T>, alias: string): Token<T> {
+export function getToken<T>(token: Token<T>, alias?: string): Token<T> {
     return alias ? `${format(token)}_${alias}` : token;
 }
 

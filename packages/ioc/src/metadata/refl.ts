@@ -1,7 +1,7 @@
 import { Action, Actions } from '../action';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { AnnotationType, ClassType, ObjectMap, Type } from '../types';
-import { isArray, isFunction } from '../utils/chk';
+import { EMPTY, isArray, isFunction } from '../utils/chk';
 import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, AutorunMetadata, InjectableMetadata } from './meta';
 import { DecoratorType, DecorContext, DecorDefine, TypeReflect } from './type';
 import { TypeDefine } from './typedef';
@@ -152,7 +152,7 @@ export function toDefine<T>(name: string, decor: string, metadata: T, decorType:
     return {
         name,
         decor,
-        propertyKey,
+        propertyKey: propertyKey!,
         parameterIndex,
         decorType,
         metadata,
@@ -164,10 +164,10 @@ export function toDefine<T>(name: string, decor: string, metadata: T, decorType:
 }
 
 
-const emptyArr = [];
-const emptyHd = (type) => emptyArr;
 
-function mapToFac(maps: ObjectMap<Handler | Handler[]>): (type) => Handler[] {
+const emptyHd = (type: any) => EMPTY;
+
+function mapToFac(maps: ObjectMap<Handler | Handler[]>): (type: DecoratorType) => Handler[] {
     const mapHd = new Map();
     for (let type in maps) {
         let rged: Handler[] = mapHd.get(type);
@@ -178,7 +178,7 @@ function mapToFac(maps: ObjectMap<Handler | Handler[]>): (type) => Handler[] {
         const handle = maps[type];
         isArray(handle) ? rged.push(...handle) : rged.push(handle);
     }
-    return (type: ClassType) => mapHd.get(type) ?? emptyArr;
+    return (type: DecoratorType) => mapHd.get(type) ?? EMPTY;
 }
 
 function regActionType(decor: string, type: DecorActionType) {
@@ -211,23 +211,24 @@ export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
     if (paramInjectDecors.indexOf(ctx.decor) >= 0) {
         const reflect = ctx.reflect;
         let meta = ctx.metadata as ParameterMetadata;
-        let params = reflect.methodParams.get(ctx.propertyKey);
+        const propertyKey  = ctx.propertyKey;
+        let params = reflect.methodParams.get(propertyKey);
         if (!params) {
-            const names = reflect.class.getParamNames(ctx.propertyKey);
+            const names = reflect.class.getParamNames(propertyKey);
             let paramTypes: any[];
-            if (ctx.propertyKey === 'constructor') {
+            if (propertyKey === 'constructor') {
                 paramTypes = Reflect.getMetadata('design:paramtypes', reflect.type);
             } else {
-                paramTypes = Reflect.getMetadata('design:paramtypes', ctx.target, ctx.propertyKey);
+                paramTypes = Reflect.getMetadata('design:paramtypes', ctx.target, propertyKey);
             }
             if (paramTypes) {
                 params = paramTypes.map((type, idx) => ({ type, paramName: names[idx] }));
-                reflect.methodParams.set(ctx.propertyKey, params);
+                reflect.methodParams.set(propertyKey, params);
             }
         }
         if (params) {
-            meta = { ...meta, ...params[ctx.parameterIndex] };
-            params.splice(ctx.parameterIndex, 1, meta);
+            meta = { ...meta, ...params[ctx.parameterIndex!] };
+            params.splice(ctx.parameterIndex!, 1, meta);
         }
     }
     return next();
@@ -315,10 +316,10 @@ export const AutorunAction = (ctx: DecorContext, next: () => void) => {
     if (autorunDecors.indexOf(ctx.decor) >= 0) {
         ctx.reflect.autoruns.push({
             decorType: ctx.decorType,
-            autorun: (ctx.metadata as AutorunMetadata).autorun,
+            autorun: (ctx.metadata as AutorunMetadata).autorun!,
             order: ctx.decorType === 'class' ? 0 : (ctx.metadata as AutorunMetadata).order
         });
-        ctx.reflect.autoruns.sort((au1, au2) => au1.order - au2.order);
+        ctx.reflect.autoruns.sort((au1, au2) => au1.order! - au2.order!);
     }
     return next();
 }
@@ -327,7 +328,7 @@ export const typeProvidersDecors = ['@Injectable', '@Providers'];
 export const TypeProvidersAction = (ctx: DecorContext, next: () => void) => {
     if (typeProvidersDecors.indexOf(ctx.decor) >= 0) {
         if ((ctx.metadata as ProvidersMetadata).providers) {
-            ctx.reflect.providers.push(...(ctx.metadata as ProvidersMetadata).providers);
+            ctx.reflect.providers.push(...(ctx.metadata as ProvidersMetadata).providers!);
         }
     }
     return next();
@@ -338,7 +339,7 @@ export const InitMethodDesignParams = (ctx: DecorContext, next: () => void) => {
         const names = ctx.reflect.class.getParamNames(ctx.propertyKey);
         ctx.reflect.methodParams.set(
             ctx.propertyKey,
-            Reflect.getMetadata('design:paramtypes', ctx.target, ctx.propertyKey).map((type, idx) => ({ type, paramName: names[idx] }))
+            (Reflect.getMetadata('design:paramtypes', ctx.target, ctx.propertyKey) as Type[]).map((type, idx) => ({ type, paramName: names[idx] }))
         );
     }
     return next();
@@ -352,7 +353,7 @@ export const MethodProvidersAction = (ctx: DecorContext, next: () => void) => {
             pdrs = []
             ctx.reflect.methodProviders.set(ctx.propertyKey, pdrs);
         }
-        pdrs.push(...(ctx.metadata as ProvidersMetadata).providers);
+        pdrs.push(...(ctx.metadata as ProvidersMetadata).providers!);
     }
     return next();
 }
@@ -367,14 +368,14 @@ export const ExecuteDecorHandle = (ctx: DecorContext, next: () => void) => {
 
 
 class DecorActions extends Actions<DecorContext, Handler | Action> {
-    protected override getActionProvider(ctx: DecorContext): ActionProvider { return null; }
+    protected override getActionProvider(ctx: DecorContext): ActionProvider { return null!; }
     protected override parseHandler(provider: ActionProvider, ac: any): Handler {
         if (isFunction(ac)) {
             return ac;
         } else if (ac instanceof Action) {
             return ac.toHandler();
         }
-        return null;
+        return null!;
     }
 }
 
@@ -451,7 +452,7 @@ export function dispatchParamDecor(type: any, define: DecorDefine) {
 export function get<T extends TypeReflect>(type: ClassType, ify?: boolean): T {
     let tagRefl = (type as AnnotationType).ρRfl?.() as TypeReflect;
     if (tagRefl?.type !== type) {
-        if (!ify) return null;
+        if (!ify) return null!;
 
         let prRef = tagRefl;
         if (!prRef) {
@@ -494,6 +495,6 @@ export function getParameters<T>(type: Type<T>): ParameterMetadata[];
 export function getParameters<T>(type: Type<T>, propertyKey: string): ParameterMetadata[];
 export function getParameters<T>(type: Type<T>, propertyKey?: string): ParameterMetadata[] {
     propertyKey = propertyKey || 'constructor';
-    return get(type)?.methodParams.get(propertyKey) || emptyArr;
+    return get(type)?.methodParams.get(propertyKey) || EMPTY;
 }
 

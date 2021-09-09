@@ -8,7 +8,7 @@ import { AnnotationType } from '../types';
  * @returns
  */
 export function getClassAnnotation(target: AnnotationType) {
-    let annf: Function = target.ρAnn || target.getClassAnnations;
+    const annf = target.ρAnn || target.getClassAnnations;
     return typeof annf === 'function' ? annf.call(target) : null;
 }
 

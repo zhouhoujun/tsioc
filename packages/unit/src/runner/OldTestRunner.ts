@@ -1,6 +1,6 @@
 import { lang, Singleton, isFunction, Injector } from '@tsdi/ioc';
 import { Assert } from '../assert/assert';
-import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
+import { ISuiteDescribe, ICaseDescribe, ISuiteHook } from '../reports/ITestReport';
 import { UnitRunner } from './Runner';
 
 
@@ -18,7 +18,7 @@ const gls = {
     after: undefined,
     afterAll: undefined,
     afterEach: undefined
-};
+} as any;
 const testkeys = Object.keys(gls);
 
 const globals = typeof window !== 'undefined' ? window : global;
@@ -34,7 +34,7 @@ const globals = typeof window !== 'undefined' ? window : global;
 export class OldTestRunner extends UnitRunner {
 
     timeout: number;
-    describe: string;
+    describe!: string;
 
     suites: ISuiteDescribe[];
 
@@ -45,7 +45,7 @@ export class OldTestRunner extends UnitRunner {
     }
 
     override getInstanceType() {
-        return null;
+        return null!;
     }
 
     override async run(): Promise<void> {
@@ -179,7 +179,7 @@ export class OldTestRunner extends UnitRunner {
         await this.runAfter(desc);
     }
 
-    runTimeout(fn: Function, describe: string, timeout: number): Promise<any> {
+    runTimeout(fn: Function | undefined, describe: string, timeout?: number): Promise<any> {
         let defer = lang.defer();
         let timer = setTimeout(() => {
             if (timer) {
@@ -194,15 +194,15 @@ export class OldTestRunner extends UnitRunner {
             }
         }, timeout || this.timeout);
 
-        Promise.resolve(fn(() => defer.resolve()))
+        Promise.resolve(fn?.(() => defer.resolve()))
             .then(r => {
                 clearTimeout(timer);
-                timer = null;
+                timer = null!;
                 defer.resolve(r);
             })
             .catch(err => {
                 clearTimeout(timer);
-                timer = null;
+                timer = null!;
                 defer.reject(err);
             })
 
@@ -211,8 +211,8 @@ export class OldTestRunner extends UnitRunner {
 
     async runHook(describe: ISuiteDescribe, action: string, desc: string) {
         await lang.step(
-            (describe[action] || [])
-                .map(hk => () => this.runTimeout(
+            ((describe as any)[action] || [])
+                .map((hk: ICaseDescribe) => () => this.runTimeout(
                     hk.fn,
                     desc,
                     hk.timeout || describe.timeout)));
@@ -240,16 +240,16 @@ export class OldTestRunner extends UnitRunner {
 
     override async runCase(caseDesc: ICaseDescribe, suiteDesc?: ISuiteDescribe): Promise<ICaseDescribe> {
         try {
-            await this.runBeforeEach(suiteDesc);
+            await this.runBeforeEach(suiteDesc!);
             await this.runTimeout(
                 caseDesc.fn,
                 caseDesc.title,
                 caseDesc.timeout);
 
-            await this.runAfterEach(suiteDesc);
+            await this.runAfterEach(suiteDesc!);
 
         } catch (err) {
-            caseDesc.error = err;
+            caseDesc.error = err as Error;
         }
         return caseDesc;
     }

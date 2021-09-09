@@ -78,7 +78,7 @@ export const REQUEST_BODY = tokenId('REQUEST_BODY');
  */
 export class MappingRoute extends Route {
 
-    constructor(url: string, prefix: string, protected reflect: MappingReflect, protected injector: Injector, protected middlewares: MiddlewareType[]) {
+    constructor(url: string, prefix: string, protected reflect: MappingReflect, protected injector: Injector, protected middlewares?: MiddlewareType[]) {
         super(url, prefix);
     }
 
@@ -148,13 +148,13 @@ export class MappingRoute extends Route {
                 .concat(vailds.map(a => a.getMiddlewares(ctx, this.reflect, meta.propertyKey)).reduce((p, c) => p.concat(c), []));
         }
         if ((meta.metadata as RouteMapingMetadata).middlewares) {
-            middlewares = middlewares.concat((meta.metadata as RouteMapingMetadata).middlewares);
+            middlewares = middlewares.concat((meta.metadata as RouteMapingMetadata).middlewares!);
         }
         return middlewares;
     }
 
     protected getRouteMetaData(ctx: MessageContext) {
-        const vaild = ctx.vaild;
+        const vaild = ctx.vaild!;
         let subRoute = vaild.vaildify(vaild.getReqRoute(ctx, this.prefix).replace(this.url, ''), true);
         if (!this.reflect.sortRoutes) {
             this.reflect.sortRoutes = this.reflect.class.methodDecors
@@ -182,13 +182,13 @@ export class MappingRoute extends Route {
         return meta;
     }
 
-    protected async createProvider(ctx: MessageContext, ctrl: any, meta: RouteMapingMetadata, params: ParameterMetadata[]): Promise<ProviderType[]> {
-        const vaild = ctx.vaild;
+    protected async createProvider(ctx: MessageContext, ctrl: any, meta: RouteMapingMetadata, params?: ParameterMetadata[]): Promise<ProviderType[]> {
+        const vaild = ctx.vaild!;
         const injector = this.injector;
         let providers: ProviderType[] = [{ provide: CONTEXT, useValue: ctx }];
         if (params && params.length) {
             let restParams: any = {};
-            if (isRest.test(meta.route)) {
+            if (meta.route && isRest.test(meta.route)) {
                 let routes = meta.route.split('/').map(r => r.trim());
                 let restParamNames = routes.filter(d => restParms.test(d));
                 let baseURL = vaild.vaildify(this.url, true);
@@ -200,15 +200,15 @@ export class MappingRoute extends Route {
             }
             let body = ctx.request?.body || EMPTY_OBJ;
             let parser = injector.get(TypeParser);
-            let ppds: ProviderType[] = await Promise.all(params.map(async (param) => {
+            let ppds: (ProviderType|null)[] = await Promise.all(params.map(async (param) => {
                 let ptype = param.isProviderType ? param.provider : param.type;
                 let val;
-                let provide = ptype;
+                let provide = ptype!;
                 if (isFunction(ptype)) {
                     if (isPrimitiveType(ptype)) {
-                        let paramVal = restParams[param.paramName];
+                        let paramVal = restParams[param.paramName!];
                         if (isUndefined(paramVal)) {
-                            paramVal = ctx.request.query[param.paramName];
+                            paramVal = ctx.request?.query[param.paramName!];
                         }
                         val = parser.parse(ptype, paramVal);
                     }
@@ -218,15 +218,15 @@ export class MappingRoute extends Route {
                             if (isArray(ptype) && isArray(body)) {
                                 val = body;
                             } else if (isPrimitiveType(ptype)) {
-                                provide = param.paramName;
-                                val = parser.parse(ptype, body[param.paramName]);
+                                provide = param.paramName!;
+                                val = parser.parse(ptype, body[provide]);
                             } else if (isClass(ptype)) {
                                 if (body instanceof ptype) {
                                     val = body;
                                 } else {
-                                    let rkey: string;
+                                    let rkey: string = '';
                                     if (isPlainObject(body)) {
-                                        rkey = keys.find(k => body[k] instanceof (ptype as Type));
+                                        rkey = keys.find(k => body[k] instanceof (ptype as Type))!;
                                     }
 
                                     if (rkey) {
@@ -243,12 +243,12 @@ export class MappingRoute extends Route {
                             }
                         }
                     } else {
-                        provide = param.paramName
+                        provide = param.paramName!
                     }
                 } else if (ptype === REQUEST) {
                     val = ctx.request;
                 } else if (ptype === REQUEST_PARAMS) {
-                    val = ctx.request.query ?? {};
+                    val = ctx.request?.query ?? {};
                 } else if (ptype === REQUEST_BODY) {
                     val = body;
                 }
@@ -257,8 +257,8 @@ export class MappingRoute extends Route {
                     return null;
                 }
                 return { provide, useValue: val };
-            }))
-            providers = providers.concat(ppds.filter(p => p !== null));
+            }));
+            providers = providers.concat(ppds.filter(p => p !== null) as ProviderType[]);
         }
 
         return providers;
@@ -276,7 +276,7 @@ export class MappingRoute extends Route {
         } else if (isFunction(mdty)) {
             return mdty;
         }
-        return null;
+        return null!;
     }
 
 }

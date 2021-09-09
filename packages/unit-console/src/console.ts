@@ -26,12 +26,13 @@ export class ConsoleReporter extends RealtimeReporter {
     }
 
     override renderCase(desc: ICaseDescribe): void {
-        console.log('    ', desc.error ? chalk.red('x') : chalk.green('√'),  chalk.gray(desc.title));
+        console.log('    ', desc.error ? chalk.red('x') : chalk.green('√'), chalk.gray(desc.title));
     }
 
     override async render(suites: Map<Token, ISuiteDescribe>): Promise<void> {
         let reportStr = '';
-        let first: ISuiteDescribe, last: ISuiteDescribe;
+        let first: ISuiteDescribe | undefined;
+        let last: ISuiteDescribe | undefined;
         let sus = Array.from(suites.values());
         let fails: ObjectMap<string[]> = {};
         let successed = 0, failed = 0;
@@ -62,7 +63,7 @@ export class ConsoleReporter extends RealtimeReporter {
             reportStr = reportStr + ' ' + chalk.red(failed.toString() + ' failed');
         }
         if (sus.length) {
-            reportStr = reportStr + chalk.gray(` (${last.end - first.start}ms)`);
+            reportStr = reportStr + chalk.gray(` (${last?.end! - first?.start!}ms)`);
         }
 
         reportStr += '\n';

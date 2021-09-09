@@ -1,9 +1,9 @@
 import { Type } from '../types';
-import { isFunction, getClass, isTypeObject } from '../utils/chk';
+import { isFunction, getClass, isTypeObject, EMPTY } from '../utils/chk';
 import { Token } from '../tokens';
 import { get } from '../metadata/refl';
 import { ParameterMetadata } from '../metadata/meta';
-import { EMPTY, Injector, RegisteredState, ProviderType, MethodType } from '../injector';
+import { Injector, RegisteredState, ProviderType, MethodType } from '../injector';
 import { Invoker } from '../invoker';
 
 
@@ -27,7 +27,7 @@ export class InvokerImpl implements Invoker {
      * @returns {T}
      */
     invoke<T, TR = any>(injector: Injector, target: Token<T> | T, propertyKey: MethodType<T>, providers?: ProviderType[]): TR {
-        let targetClass: Type, instance: T, key: string;
+        let targetClass: Type, instance: any, key: string;
         if (isTypeObject(target)) {
             targetClass = getClass(target);
             instance = target as T;
@@ -35,7 +35,7 @@ export class InvokerImpl implements Invoker {
             instance = injector.resolve(target as Token, providers);
             targetClass = getClass(instance);
             if (!targetClass) {
-                throw new Error(target.toString() + ' is not implements by any class.')
+                throw new Error((target as Token).toString() + ' is not implements by any class.')
             }
         }
 
@@ -97,7 +97,7 @@ export class InvokerImpl implements Invoker {
             ?? param.defaultValue);
     }
 
-    protected tryGetPdrParamer(injector: Injector, state: RegisteredState, provider: Token, isType: boolean) {
+    protected tryGetPdrParamer(injector: Injector, state: RegisteredState, provider: Token | undefined, isType: boolean | undefined) {
         if (!provider) return undefined;
         if (isType && !state.isRegistered(provider as Type) && !injector.has(provider, true)) {
             injector.register(provider as Type);
@@ -105,8 +105,8 @@ export class InvokerImpl implements Invoker {
         return injector.get(provider) ?? undefined;
     }
 
-    protected tryGetNameParamer(injector: Injector, paramName: string) {
-        return injector.has(paramName) ? injector.get(paramName) : undefined;
+    protected tryGetNameParamer(injector: Injector, paramName: string | undefined) {
+        return paramName && injector.has(paramName) ? injector.get(paramName) : undefined;
     }
 
 }

@@ -26,7 +26,7 @@ export interface IAdvisor {
      * @param {string} key
      * @param {Advices} advices
      */
-    setAdvices(type: Type, key: string, advices: Advices);
+    setAdvices(type: Type, key: string, advices: Advices): void;
 
     /**
      * the type has advices or not.
@@ -54,7 +54,7 @@ export interface IAdvisor {
      *
      * @param {Type} aspect
      */
-    add(aspect: Type);
+    add(aspect: Type): void;
 
     /**
      * resolve aspect.

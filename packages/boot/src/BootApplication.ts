@@ -28,9 +28,9 @@ export class BootApplication implements IBootApplication {
      * @type {T}
      * @memberof BootApplication
      */
-    protected context: ApplicationContext;
+    protected context!: ApplicationContext;
 
-    constructor(protected target?: Type | ApplicationOption, protected loader?: ModuleLoader) {
+    constructor(protected target: Type | ApplicationOption, protected loader?: ModuleLoader) {
         if (!isFunction(target)) {
             if (!this.loader) this.loader = target.loader;
             const providers = (target.providers && target.providers.length) ? [...DEFAULTA_FACTORYS, ...target.providers] : DEFAULTA_FACTORYS;
@@ -75,7 +75,7 @@ export class BootApplication implements IBootApplication {
      * @returns {Promise<IBootContext>}
      */
     static run(target: Type, option?: BootstrapOption): Promise<ApplicationContext>;
-    static run(target: Type | ApplicationOption, option?: BootstrapOption): Promise<ApplicationContext> {
+    static run(target: any, option?: BootstrapOption): Promise<ApplicationContext> {
         return new BootApplication(option ? { type: target, ...option } as ApplicationOption : target).run();
     }
 
@@ -94,7 +94,7 @@ export class BootApplication implements IBootApplication {
         } catch (err) {
             const appex = this.context.injector.get(ApplicationExit);
             if (appex) {
-                appex.exit(err);
+                appex.exit(err as Error);
             } else {
                 const logger = this.context.getLogManager()?.getLogger();
                 logger ? logger.error(err) : console.error(err);
@@ -145,7 +145,7 @@ export class BootApplication implements IBootApplication {
         if (!this._destroyed) {
             this._destroyed = true;
             this._dsryCbs.forEach(cb => cb());
-            this._dsryCbs = null;
+            this._dsryCbs = null!;
             this.destroying();
         }
     }

@@ -14,8 +14,8 @@ const logdir = path.join(__dirname, '../log-caches')
 @Suite()
 export class ServerBootTest {
 
-    private ctx: ApplicationContext;
-    private logfile: string;
+    private ctx!: ApplicationContext;
+    private logfile!: string;
     @Before()
     async init() {
         await del(logdir);

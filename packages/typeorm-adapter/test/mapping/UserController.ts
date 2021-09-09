@@ -6,7 +6,7 @@ import { UserRepository } from '../repositories/UserRepository';
 @RouteMapping('/users')
 export class UserController {
 
-    @Inject() injector: Injector;
+    @Inject() injector!: Injector;
 
     constructor(public usrRep: UserRepository) {
 

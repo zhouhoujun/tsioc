@@ -18,7 +18,7 @@ const bytesExp = /(bytes|bytea)/;
 export class TypeOrmModelParser extends ModelParser {
 
     @Inject(ObjectIDToken)
-    private _ObjectID: Type;
+    private _ObjectID!: Type;
 
     isObjectId(type: Token) {
         return this._ObjectID && this._ObjectID === type;
@@ -33,7 +33,7 @@ export class TypeOrmModelParser extends ModelParser {
     }
 
     protected override getPropertyMeta(type: Type): ObjectMap<DBPropertyMetadata> {
-        let metas = {};
+        let metas = {} as any;
         getMetadataArgsStorage().columns.filter(col => col.target === type)
             .forEach(col => {
                 metas[col.propertyName] = {
@@ -57,7 +57,7 @@ export class TypeOrmModelParser extends ModelParser {
     }
 
     protected override isExtendBaseType(type: Token, propmeta?: DBPropertyMetadata): boolean {
-        if (propmeta.dbtype) {
+        if (propmeta?.dbtype) {
             if (intExp.test(propmeta.dbtype)) {
                 return true;
             }
@@ -69,7 +69,7 @@ export class TypeOrmModelParser extends ModelParser {
     }
 
     protected override resolveExtendType(type: Token, value: any, propmeta?: DBPropertyMetadata): any {
-        if (propmeta.dbtype) {
+        if (propmeta?.dbtype) {
             if (intExp.test(propmeta.dbtype)) {
                 return parseInt(value);
             }
@@ -81,7 +81,7 @@ export class TypeOrmModelParser extends ModelParser {
     }
 
     protected getModeType(col: ColumnMetadataArgs): Token {
-        let type: Token = col.options.type;
+        let type: Token = col.options.type!;
         if (type) {
             if (isString(type)) {
                 if (type === 'uuid') {

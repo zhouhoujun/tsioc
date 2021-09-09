@@ -21,7 +21,7 @@ export class DebugLogAspect extends LoggerAspect {
 
     @Around('execution(*.*)')
     logging(joinPoint: Joinpoint) {
-        let level: Level;
+        let level: Level = 'info';
         switch (joinPoint.state) {
             case JoinpointState.AfterThrowing:
                 level = 'error';

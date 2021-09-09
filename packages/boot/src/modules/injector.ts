@@ -18,7 +18,7 @@ export class DefaultModuleInjector<T> extends ModuleInjector<T> {
 
     imports: ModuleInjector[] = [];
     exports: IModuleExports;
-    private _instance: T;
+    private _instance!: T;
 
     constructor(readonly reflect: ModuleReflect<T>, providers?: ProviderType[], parent?: Injector, private _regIn?: string, scope?: InjectorScope | string, strategy: ModuleStrategy = mdInjStrategy) {
         super(providers || EMPTY, parent, scope, strategy);
@@ -36,7 +36,7 @@ export class DefaultModuleInjector<T> extends ModuleInjector<T> {
     }
 
     get regIn(): string {
-        return this._regIn ?? this.reflect.regIn ?? this.reflect.annotation?.regIn;
+        return this._regIn ?? this.reflect.regIn ?? this.reflect.annotation?.regIn!;
     }
 
     get instance(): T {
@@ -49,10 +49,10 @@ export class DefaultModuleInjector<T> extends ModuleInjector<T> {
     protected override destroying() {
         super.destroying();
         this.imports.forEach(e => e.destroy());
-        this._instance = null;
-        this.imports = [];
-        this.exports = null;
-        (this as any).reflect = null;
+        this._instance = null!;
+        this.imports = null!;
+        this.exports = null!;
+        (this as any).reflect = null!;
     }
 }
 
@@ -112,7 +112,7 @@ export class ModuleExports extends DefaultInjector implements IModuleExports {
             this.moduleRef.register(type);
         }
 
-        const fn = (pdr) => this.moduleRef.get(type, pdr);
+        const fn = (pdr: Injector) => this.moduleRef.get(type, pdr);
         this.set(type, fn);
         const reged = state.getRegistered<ModuleRegistered>(type);
         reged.provides?.forEach(p => {
@@ -172,8 +172,8 @@ export class ModuleExports extends DefaultInjector implements IModuleExports {
     protected override destroying() {
         super.destroying();
         this.exports.forEach(e => e.destroy());
-        this.moduleRef = null;
-        this.exports = null;
+        this.moduleRef = null!;
+        this.exports = null!;
     }
 }
 
@@ -196,7 +196,7 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
         if ((parent as ModuleInjector)?.type === this._modelRefl.type) {
             inj = parent as ModuleInjector;
         } else {
-            inj = createModuleInjector(this._modelRefl, option.providers, parent || option.injector, option);
+            inj = createModuleInjector(this._modelRefl, option?.providers, parent || option?.injector, option);
         }
         this.regModule(inj);
         return inj;
@@ -235,7 +235,7 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
 
 }
 
-export function createModuleInjector(type: ModuleReflect | Type, providers: ProviderType[], parent?: Injector,
+export function createModuleInjector(type: ModuleReflect | Type, providers?: ProviderType[], parent?: Injector,
     option: {
         scope?: string | InjectorScope;
         regIn?: string;

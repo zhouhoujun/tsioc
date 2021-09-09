@@ -1,11 +1,10 @@
-import { isNil } from '../utils/chk';
+import { EMPTY, isNil } from '../utils/chk';
 import { chain } from '../utils/hdl';
 import { IActionSetup } from '../action';
 import { RuntimeContext } from './ctx';
 import { IocRegAction, IocRegScope } from './reg';
 import { Token } from '../tokens';
 import { PropertyMetadata } from '../metadata/meta';
-import { EMPTY } from '../injector';
 import { Invoker } from '../invoker';
 
 /**
@@ -25,7 +24,7 @@ export abstract class IocRuntimeAction extends IocRegAction<RuntimeContext> { }
 export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): void {
     if (!ctx.args) {
         ctx.params = ctx.reflect.methodParams.get('constructor') ?? EMPTY;
-        ctx.args = ctx.injector.get(Invoker).createParams(ctx.injector, ctx.type, 'constructor', [ctx.providers]);
+        ctx.args = ctx.injector.get(Invoker).createParams(ctx.injector, ctx.type, 'constructor', ctx.providers ? [ctx.providers] : []);
     }
     next();
 };
@@ -40,7 +39,7 @@ export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): 
  */
 export const CreateInstanceAction = function (ctx: RuntimeContext, next: () => void): void {
     if (!ctx.instance) {
-        ctx.instance = new ctx.type(...ctx.args);
+        ctx.instance = new ctx.type(...ctx.args || EMPTY);
     }
     next();
 };
@@ -55,16 +54,16 @@ export const InjectPropAction = function (ctx: RuntimeContext, next: () => void)
         let meta: PropertyMetadata, key: string, token: Token, val;
         ctx.reflect.propProviders.forEach((metas, propertyKey) => {
             key = `${propertyKey}_INJECTED`;
-            meta = metas.find(m => m.provider);
+            meta = metas.find(m => m.provider)!;
             if (!meta) {
-                meta = metas.find(m => m.type);
+                meta = metas.find(m => m.type)!;
             }
-            if (meta && !ctx[key]) {
-                token = meta.provider || meta.type;
-                val = injector.resolve({ token, target: type, regify: true, providers: [ctx.providers] });
+            if (meta && !(ctx as any)[key]) {
+                token = meta.provider! || meta.type!;
+                val = injector.resolve({ token, target: type, regify: true, providers: ctx.providers ? [ctx.providers] : [] });
                 if (!isNil(val)) {
                     ctx.instance[propertyKey] = val;
-                    ctx[key] = true;
+                    (ctx as any)[key] = true;
                 }
             }
         });

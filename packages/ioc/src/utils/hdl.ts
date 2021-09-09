@@ -1,7 +1,7 @@
 /**
 *  action handle.
 */
-export type Handler<T = any, TR = any> = (ctx: T, next?: () => TR) => TR;
+export type Handler<T = any, TR = any> = (ctx: T, next: () => TR) => TR;
 
 /**
  * sync action.
@@ -33,10 +33,10 @@ export function chain<T, TR = void>(handlers: Handler<T, TR>[], ctx: T, next?: (
         index = idx;
         let handle = idx < handlers.length ? handlers[idx] : null;
         if (idx === handlers.length) {
-            handle = next;
+            handle = next!;
         }
         if (!handle) {
-            return;
+            return null!;
         }
         return handle(ctx, dispatch.bind(null, idx + 1));
     }

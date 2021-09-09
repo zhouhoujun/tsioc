@@ -43,7 +43,7 @@ export class LogFormater implements ILogFormater {
         return `[${time.getHours()}:${time.getMinutes()}:${time.getSeconds()} ${time.getMilliseconds()}]`;
     }
 
-    format(joinPoint?: Joinpoint, ...messages: any[]): any[] {
+    format(joinPoint: Joinpoint, ...messages: any[]): any[] {
         // let pointMsg: string;
         switch (joinPoint.state) {
             case JoinpointState.Before:

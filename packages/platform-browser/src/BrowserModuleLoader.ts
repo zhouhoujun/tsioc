@@ -15,9 +15,9 @@ export class BrowserModuleLoader extends DefaultModuleLoader implements ModuleLo
             }
             return (modulepath: string) => {
                 return new Promise((resolve, reject) => {
-                    window.require([modulepath], (mud) => {
+                    window.require([modulepath], (mud: string) => {
                         resolve(mud);
-                    }, err => {
+                    }, (err: any) => {
                         reject(err);
                     })
                 });

@@ -19,7 +19,7 @@ import * as refl from './refl';
 export function createDecorator<T>(name: string, option: DecoratorOption<T>): any {
     const decor = `@${name}`;
     const factory = (...args: any[]) => {
-        let metadata: T = null;
+        let metadata: T;
         if (args.length) {
             if (args.length === 1 && isMetadataObject(args[0])) {
                 metadata = args[0];

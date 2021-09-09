@@ -11,10 +11,10 @@ export class Home {
 export abstract class Animal {
 
     @Inject()
-    home: Home;
+    home!: Home;
 
     @Inject()
-    container: Container;
+    container!: Container;
 
     back() {
         return 'back ' + this.home.getAddress();

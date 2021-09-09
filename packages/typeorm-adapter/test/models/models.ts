@@ -5,13 +5,13 @@ import { Entity, Column, ManyToOne, PrimaryGeneratedColumn, OneToMany, EntityRep
 @Entity()
 export class Role {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column()
-    name: string;
+    name!: string;
 
     @OneToMany(type => User, user => user.role)
-    users: User[]
+    users!: User[]
 }
 
 
@@ -21,33 +21,33 @@ export class User {
     }
 
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
 
     @Column()
-    name: string;
+    name!: string;
 
     @Column({
         unique: true
     })
-    account: string;
+    account!: string;
 
     @Column()
-    password: string;
+    password!: string;
 
     @Column({ nullable: true, length: 50 })
-    email: string;
+    email!: string;
 
     @Column({ nullable: true, length: 50 })
-    phone: string;
+    phone!: string;
 
     @Column({ type: 'boolean', nullable: true })
-    gender: boolean;
+    gender!: boolean;
 
     @Column({ type: 'int', nullable: true })
-    age: number;
+    age!: number;
 
     @ManyToOne(type => Role, role => role.users, { nullable: true })
-    role: Role;
+    role!: Role;
 
 }

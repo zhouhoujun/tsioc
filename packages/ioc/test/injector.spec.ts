@@ -27,7 +27,7 @@ describe('Injector test', () => {
             PlcService,
             { provide: Student, useClass: CollegeStudent },
             { provide: 'hi', useValue: 'hello world.' },
-            { provide: Person, useFactory: (name, arg) => new Person(name, arg), deps: ['name', 'age'] },
+            { provide: Person, useFactory: (name:string, arg: number) => new Person(name, arg), deps: ['name', 'age'] },
             { provide: 'Hanke', useValue: new Person('Hanke', 2) },
             { provide: DeviceA, deps: [PlcService] }
         ]);

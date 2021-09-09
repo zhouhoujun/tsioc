@@ -40,11 +40,11 @@ export class ConfigureFileLoader implements ConfigureLoader {
                 return await import(path.join(this.baseURL, uri)) as T;
             } else {
                 console.log(`config file: ${uri} not exists.`)
-                return null;
+                return null!;
             }
         } else {
             const cfgpath = path.join(this.baseURL, './config');
-            const file = ['.js', '.ts', '.json'].map(ext => cfgpath + ext).find(f => fs.existsSync(f));
+            const file = ['.js', '.ts', '.json'].map(ext => cfgpath + ext).find(f => fs.existsSync(f))!;
             return await import(file) as T;
         }
     }
@@ -53,7 +53,7 @@ export class ConfigureFileLoader implements ConfigureLoader {
 @Singleton()
 export class ServerApplicationExit extends ApplicationExit {
 
-    private hdl: () => void;
+    private hdl!: () => void;
 
     constructor(readonly context: ApplicationContext) {
         super();

@@ -112,7 +112,7 @@ export class DefaultApplicationContext extends ApplicationContext {
         if (!this.destroyed) {
             (this as { destroyed: boolean }).destroyed = true;
             this._dsryCbs.forEach(cb => cb());
-            this._dsryCbs = null;
+            this._dsryCbs = null!;
             this.destroying();
         }
     }
@@ -145,7 +145,7 @@ export class DefaultApplicationFactory extends ApplicationFactory {
         return ctx;
     }
 
-    initOption<T>(ctx: ApplicationContext, option: ApplicationOption<T>) {
+    initOption<T>(ctx: ApplicationContext, option?: ApplicationOption<T>) {
         if (!option) return;
 
         if (option.args) ctx.args.push(...option.args);

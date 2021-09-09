@@ -5,7 +5,7 @@ export class SimppleAutoWried {
     }
 
     @AutoWired()
-    dateProperty: Date;
+    dateProperty!: Date;
 }
 
 @Singleton()
@@ -20,7 +20,7 @@ export class RoomService {
 
     }
     @AutoWired()
-    current: Date;
+    current!: Date;
 }
 
 @Injectable()
@@ -33,7 +33,7 @@ export class ClassRoom {
 // @Abstract()
 export abstract class Student {
     @Inject(CONTAINER)
-    container: Container;
+    container!: Container;
     @Inject(Date)
     join: any;
     constructor() {
@@ -54,7 +54,7 @@ export class MiddleSchoolStudent extends Student {
 
 @Injectable()
 export class MClassRoom {
-    private stu: Student;
+    private stu!: Student;
 
     @AutoWired(MiddleSchoolStudent)
     set leader(stu: Student) {
@@ -97,7 +97,7 @@ export class CollegeClassRoom {
 @Injectable()
 export class InjMClassRoom {
     // @Inject(MiddleSchoolStudent)
-    private stu: Student;
+    private stu!: Student;
 
     @Inject()
     // @Inject({ type: MiddleSchoolStudent })
@@ -156,7 +156,7 @@ export class StingMClassRoom {
     // @Inject(MiddleSchoolStudent)
     @Inject()
     // @Inject({ type: MiddleSchoolStudent })
-    leader: Student;
+    leader!: Student;
     constructor() {
 
     }
@@ -174,7 +174,7 @@ export const CollClassRoom = Symbol('CollegeClassRoom');
 export class SymbolCollegeClassRoom {
 
     @Inject(CollegeStudent)
-    leader: Student;
+    leader!: Student;
     constructor() {
 
     }
@@ -182,10 +182,10 @@ export class SymbolCollegeClassRoom {
 
 export class SymbolIdest {
     @Inject(CollClassRoom)
-    public room: IClassRoom
+    public room!: IClassRoom
 
     @Inject(CONTAINER)
-    public container: Container
+    public container!: Container
     constructor(@Param('StringClassRoom')
     public room2: IClassRoom) {
 

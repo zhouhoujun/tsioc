@@ -1,4 +1,4 @@
-import { Autorun, Injector, isArray, lang, Singleton, Token, tokenId } from '@tsdi/ioc';
+import { Autorun, Injector, lang, Singleton, Token, tokenId } from '@tsdi/ioc';
 import { ApplicationContext } from '../Context';
 import { MessageContext } from './ctx';
 import { MessageQueue } from './queue';
@@ -58,19 +58,19 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
     const providers = Injector.create(request.providers, injector);
 
     if (request.restful) {
-        let matchs = request.url.match(/\/:\w+/gi);
+        let matchs = request.url?.match(/\/:\w+/gi);
         if (matchs) {
             matchs.forEach(m => {
                 const pn = m.slice(2);
-                if (request.restful[pn]) {
-                    request.url = request.url.replace(m, `/${request.restful[pn]}`);
+                if (request.restful?.[pn]) {
+                    request.url = request.url?.replace(m, `/${request.restful[pn]}`);
                 }
             });
         }
     }
 
     if (!request.protocol) {
-        const match = lang.first(request.url.match(protocolReg));
+        const match = lang.first(request.url?.match(protocolReg));
         const protocol = match ? match.toString().replace('//', '').trim() : '';
         Object.defineProperty(request, 'protocol', {
             get: () => protocol
@@ -115,7 +115,8 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
     logger?.debug(ctx.method, ctx.url);
     try {
         await next();
-    } catch (err) {
+    } catch (error) {
+        const err = error as any; 
         logger.error(err);
         console.error(err);
         ctx.status = err.status ?? 500;

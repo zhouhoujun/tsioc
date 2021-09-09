@@ -14,7 +14,7 @@ export abstract class TypeParser {
      * @param {*} paramVal
      * @returns {T}
      */
-    abstract parse<T>(type: Token<T>, paramVal): T;
+    abstract parse<T>(type: Token<T> | Function, paramVal: any): T;
 }
 
 

@@ -29,7 +29,7 @@ export class Advisor implements IAdvisor {
      * @param {string} key
      * @param {Advices} advices
      */
-    setAdvices(type: Type, key: string, advices: Advices) {
+    setAdvices(type: Type, key: string, advices: Advices): void {
         let map = this.advices.get(type);
         if (!map) {
             map = new Map();
@@ -48,8 +48,8 @@ export class Advisor implements IAdvisor {
      * @param {string} key
      * @returns
      */
-    getAdvices(type: Type, key: string) {
-        return this.advices.get(type)?.get(key) || null;
+    getAdvices(type: Type, key: string): Advices {
+        return this.advices.get(type)?.get(key) || null!;
     }
 
     /**
@@ -59,7 +59,7 @@ export class Advisor implements IAdvisor {
      * @returns {Advices}
      */
     getAdviceMap(type: Type): Map<string, Advices> {
-        return this.advices.get(type);
+        return this.advices.get(type)!;
     }
 
     /**
@@ -68,7 +68,7 @@ export class Advisor implements IAdvisor {
      * @param {Type} aspect
      * @param {Container} raiseContainer
      */
-    add(aspect: Type) {
+    add(aspect: Type): void {
         this.aspects.push(aspect);
     }
 

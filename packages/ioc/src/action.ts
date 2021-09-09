@@ -21,7 +21,7 @@ export interface IActionSetup {
     /**
      * setup action.
      */
-    setup();
+    setup(): void;
 }
 
 /**
@@ -57,7 +57,7 @@ export abstract class IocAction<T, TH extends Handler = Handler<T>, TR = void> e
         return chain(actions, ctx, next);
     }
 
-    private _hdr: TH;
+    private _hdr!: TH;
     /**
      * parse to handler.
      * @returns 
@@ -85,7 +85,7 @@ export abstract class Actions<T, TA = ActionType, TH extends Handler = Handler<T
     private _acts: TA[];
     private _befs: TA[];
     private _afts: TA[];
-    private _hdlrs: TH[];
+    private _hdlrs: TH[] = null!;
 
     constructor() {
         super();
@@ -209,11 +209,11 @@ export abstract class Actions<T, TA = ActionType, TH extends Handler = Handler<T
         } else if (isFunction(ac)) {
             return ac as TH;
         }
-        return ac instanceof Action ? ac.toHandler() as TH : null;
+        return ac instanceof Action ? ac.toHandler() as TH : null!;
     }
 
     protected resetHandler() {
-        this._hdlrs = null;
+        this._hdlrs = null!;
     }
 
 }

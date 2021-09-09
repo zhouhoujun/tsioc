@@ -13,9 +13,9 @@ export interface JoinpointOption {
     provJoinpoint?: Joinpoint;
     name: string;
     fullName: string;
-    params: ParameterMetadata[];
+    params?: ParameterMetadata[];
     originMethod?: Function;
-    args: any[];
+    args?: any[];
     state?: JoinpointState;
     advices: Advices;
     annotations?: (ClassMetadata | MethodMetadata)[];
@@ -43,44 +43,44 @@ export class Joinpoint implements IocContext {
      *
      * @type {string}
      */
-    name: string;
+    name!: string;
 
     /**
      * prov joinpoint.
      *
      * @type {IJoinpoint}
      */
-    provJoinpoint: Joinpoint;
+    provJoinpoint!: Joinpoint;
 
     /**
      * full name.
      *
      * @type {string}
      */
-    fullName: string;
+    fullName!: string;
 
-    originMethod: Function;
+    originMethod!: Function;
 
     /**
      * join point state.
      *
      * @type {JoinpointState}
      */
-    state: JoinpointState;
+    state!: JoinpointState;
 
     /**
      * params of pointcut.
      *
      * @type {ParameterMetadata[]}
      */
-    params: ParameterMetadata[];
+    params!: ParameterMetadata[];
 
     /**
      * args of pointcut.
      *
      * @type {any[]}
      */
-    args: any[];
+    args!: any[];
     /**
      * pointcut origin returing
      *
@@ -98,14 +98,14 @@ export class Joinpoint implements IocContext {
      *
      * @type {*}
      */
-    throwing: Error;
+    throwing!: Error;
 
     /**
      * advicer of joinpoint
      *
      * @type {Advicer}
      */
-    advices: Advices;
+    advices!: Advices;
 
     /**
      * orgin pointcut method metadatas.
@@ -122,7 +122,7 @@ export class Joinpoint implements IocContext {
         this.injector.setValue(AOP_METHOD_ANNOTATIONS, meta);
     }
 
-    invokeHandle: (joinPoint: Joinpoint, advicer: Advicer) => any;
+    invokeHandle!: (joinPoint: Joinpoint, advicer: Advicer) => any;
 
     /**
      * pointcut target instance
@@ -136,7 +136,7 @@ export class Joinpoint implements IocContext {
      *
      * @type {Type}
      */
-    targetType: Type;
+    targetType!: Type;
 
     get providers(): Injector {
         return this.injector;

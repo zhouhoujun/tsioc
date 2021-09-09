@@ -74,8 +74,8 @@ export abstract class Route extends Middleware {
 
     protected abstract navigate(ctx: MessageContext, next: () => Promise<void>): Promise<void>;
 
-    protected match(ctx: MessageContext) {
-        return (!ctx.status || ctx.status === 404) && ctx.vaild.isActiveRoute(ctx, this.url, this.prefix);
+    protected match(ctx: MessageContext): boolean {
+        return (!ctx.status || ctx.status === 404) && ctx.vaild?.isActiveRoute(ctx, this.url, this.prefix) === true;
     }
 }
 

@@ -17,19 +17,19 @@ import { LogConfigure } from './LogConfigure';
 @Abstract()
 export abstract class LoggerAspect extends LogProcess {
 
-    processLog(joinPoint: Joinpoint, ...messages: any[]);
-    processLog(joinPoint: Joinpoint, level: Level, ...messages: any[]);
-    processLog(joinPoint: Joinpoint, level: Level, ...messages: any[]);
-    processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], ...messages: any[]);
-    processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], level: Level, ...messages: any[])
-    processLog(joinPoint: Joinpoint, annotation: any, level: any, ...messages: any[]) {
+    processLog(joinPoint: Joinpoint, ...messages: any[]): void;
+    processLog(joinPoint: Joinpoint, level: Level, ...messages: any[]): void;
+    processLog(joinPoint: Joinpoint, level: Level, ...messages: any[]): void;
+    processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], ...messages: any[]): void;
+    processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], level: Level, ...messages: any[]): void
+    processLog(joinPoint: Joinpoint, annotation: any, level: any, ...messages: any[]): void {
         if (isArray(annotation)) {
             if (!isLevel(level)) {
                 !isNil(level) && messages.unshift(level);
             }
             annotation.forEach((logmeta: LoggerMetadata) => {
                 let canlog = false;
-                if (logmeta?.express(joinPoint)) {
+                if (logmeta?.express?.(joinPoint)) {
                     canlog = true;
                 }
                 if (canlog && logmeta.message) {
@@ -84,11 +84,11 @@ export abstract class LoggerAspect extends LogProcess {
         return (formater && formater.timestamp) ? formater.timestamp(now) : `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()} ${now.getMilliseconds()}`;
     }
 
-    _formater: ILogFormater;
+    private _formater!: ILogFormater;
     getFormater() {
         if (!this._formater) {
             let config = (this.logManger as IConfigureLoggerManager).config || (EMPTY_OBJ as LogConfigure);
-            let formater: ILogFormater;
+            let formater: ILogFormater = null!;
             config.format = config.format || LogFormaterToken;
             if (isToken(config.format)) {
                 formater = this.injector.resolve({ token: config.format, target: this, defaultToken: LogFormaterToken });

@@ -3,7 +3,7 @@ import { NonePointcut } from '@tsdi/aop';
 import { LogConfigure } from './LogConfigure';
 import { ILoggerManager, LoggerConfig, IConfigureLoggerManager } from './ILoggerManager';
 import { ILogger } from './ILogger';
-import { Levels } from './Level';
+import { Level, Levels } from './Level';
 import { LogConfigureToken, LoggerManagerToken } from './tk';
 
 
@@ -19,8 +19,8 @@ import { LogConfigureToken, LoggerManagerToken } from './tk';
 @Injectable()
 export class ConfigureLoggerManager implements IConfigureLoggerManager {
 
-    private _config: LogConfigure;
-    private _logManger: ILoggerManager;
+    private _config!: LogConfigure;
+    private _logManger!: ILoggerManager;
 
     constructor(
         @Inject() protected injector: Injector,
@@ -39,7 +39,7 @@ export class ConfigureLoggerManager implements IConfigureLoggerManager {
         return this._config;
     }
 
-    setLogConfigure(config: LogConfigure | Type<LogConfigure>) {
+    setLogConfigure(config?: LogConfigure | Type<LogConfigure>) {
         if (!config) {
             return;
         }
@@ -54,7 +54,7 @@ export class ConfigureLoggerManager implements IConfigureLoggerManager {
         } else {
             this._config = config;
         }
-        this._logManger = null;
+        this._logManger = null!;
 
     }
 
@@ -133,40 +133,44 @@ export class ConsoleLogManager implements ILoggerManager {
  */
 class ConsoleLog implements ILogger {
 
-    level: string;
+    level: Level = 'info';
+
+    protected machLevel(level: Levels): boolean {
+        return (Levels as any)[this.level] <= level;
+    }
 
     log(...args: any[]): void {
         console.log(...args);
     }
 
     trace(...args: any[]): void {
-        if (!this.level || Levels[this.level] === 0) {
+        if (this.machLevel(Levels.trace)) {
             console.debug(...args);
         }
     }
     debug(...args: any[]): void {
         // console.debug in nuix will not console.
-        if (!this.level || Levels[this.level] <= 1) {
+        if (this.machLevel(Levels.debug)) {
             console.debug(...args);
         }
     }
     info(...args: any[]): void {
-        if (!this.level || Levels[this.level] <= 2) {
+        if (this.machLevel(Levels.info)) {
             console.info(...args);
         }
     }
     warn(...args: any[]): void {
-        if (!this.level || Levels[this.level] <= 3) {
+        if (this.machLevel(Levels.warn)) {
             console.warn(...args);
         }
     }
     error(...args: any[]): void {
-        if (!this.level || Levels[this.level] <= 4) {
+        if (this.machLevel(Levels.error)) {
             console.error(...args);
         }
     }
     fatal(...args: any[]): void {
-        if (!this.level || Levels[this.level] <= 5) {
+        if (this.machLevel(Levels.fatal)) {
             console.error(...args);
         }
     }

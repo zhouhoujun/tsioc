@@ -150,7 +150,7 @@ export class KeyValueProvider {
         return this;
     }
 
-    each(callback: (key, value) => boolean | void) {
+    each(callback: (key: string, value: any) => boolean | void) {
         for (let n in this.maps) {
             if (callback(n, this.maps[n]) === false) {
                 break;

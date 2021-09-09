@@ -6,7 +6,7 @@ import { Middleware, Middlewares, MiddlewareType } from './handle';
  * message subscripted.
  */
 export interface Subscripted {
-    unsubscribe();
+    unsubscribe(): void;
 }
 
 /**
@@ -22,9 +22,9 @@ export interface Subscripted {
 export class MessageQueue extends Middlewares {
 
     @Inject()
-    protected injector: Injector;
+    protected injector!: Injector;
 
-    private completed: ((ctx: MessageContext) => void)[];
+    private completed!: ((ctx: MessageContext) => void)[];
 
     override async execute(ctx: MessageContext, next?: () => Promise<void>): Promise<void> {
         if (!ctx.injector) {
@@ -40,7 +40,7 @@ export class MessageQueue extends Middlewares {
                 await next();
             }
         } catch (err) {
-            this.onFailed(ctx, err)
+            this.onFailed(ctx, err as Error)
         } finally {
             this.onCompleted(ctx);
         }
@@ -94,7 +94,7 @@ export class MessageQueue extends Middlewares {
      */
     send(url: string, request: RequestOption, ...providers: ProviderType[]): Promise<MessageContext>;
     async send(url: any, request?: any, ...providers: ProviderType[]): Promise<MessageContext> {
-        const ctx = isString(url) ? { request: { ...request, url, providers } } : { request: { ...url, providers } };
+        const ctx = isString(url) ? { request: { ...request, url, providers } } as MessageContext : { request: { ...url, providers } } as MessageContext;
         await this.execute(ctx);
         return ctx;
     }
@@ -130,20 +130,20 @@ export class MessageQueue extends Middlewares {
      * @param {(ctx: MessageContext, next: () => Promise<void>) => Promise<void>} subscriber
      * @memberof IMessageQueue
      */
-    unsubscribe(subscriber: (ctx: MessageContext, next: () => Promise<void>) => Promise<void>);
+    unsubscribe(subscriber: (ctx: MessageContext, next: () => Promise<void>) => Promise<void>): void;
     /**
      * subscribe message by handle instance;
      *
      * @param {Middleware} handle
      */
-    unsubscribe(handle: Middleware);
+    unsubscribe(handle: Middleware): void;
     /**
      * subscribe message by handle type or token.
      *
      * @param {Type<Middleware>} handle
      */
-    unsubscribe(handle: Type<Middleware>);
-    unsubscribe(haddle: MiddlewareType) {
+    unsubscribe(handle: Type<Middleware>): void;
+    unsubscribe(haddle: MiddlewareType): void {
         this.unuse(haddle);
     }
 
@@ -159,7 +159,7 @@ export class MessageQueue extends Middlewares {
         } else if (isFunction(mdty)) {
             return mdty;
         }
-        return null;
+        return null!;
     }
 
 }

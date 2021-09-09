@@ -14,10 +14,10 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
     /**
      * default connection options.
      */
-    protected options: ConnectionOptions;
-    protected ctx: ApplicationContext;
+    protected options!: ConnectionOptions;
+    protected ctx!: ApplicationContext;
 
-    private logger: ILogger;
+    private logger!: ILogger;
     /**
      * configure service.
      * @param ctx context.
@@ -45,14 +45,17 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
 
     async statupConnection(injector: Injector, options: ConnectionOptions, config: Configuration) {
         const connection = await this.createConnection(options, config);
-        options.entities.forEach(e => {
+
+        options.entities?.forEach(e => {
             injector.register(e);
         });
+
         getMetadataArgsStorage().entityRepositories?.forEach(meta => {
-            if (options.entities.indexOf(meta.entity as Type) >= 0) {
+            if (options.entities?.some(e => e === meta.entity)) {
                 injector.set(meta.target, () => getCustomRepository(meta.target, options.name));
             }
         });
+
         if (options.initDb) {
             await options.initDb(connection);
         }
@@ -66,7 +69,7 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
     async createConnection(options: ConnectionOptions, config: Configuration) {
         if (options.asDefault && !options.entities) {
             let entities: Type[] = [];
-            if (config?.models.some(m => isString(m))) {
+            if (config?.models?.some(m => isString(m))) {
                 let loader = this.ctx.injector.getLoader();
                 let models = await loader.loadType({ files: config.models.filter(m => isString(m)), basePath: this.ctx.baseURL });
                 models.forEach(mdl => {

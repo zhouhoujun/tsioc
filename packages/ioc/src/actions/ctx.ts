@@ -38,13 +38,13 @@ export interface RegContext extends IocContext {
     /**
      * current decoractor.
      */
-    currDecor?: string;
+    currDecor: string;
 
     /**
      * custom set singleton or not.
      *
      */
-    singleton?: boolean;
+    singleton: boolean;
 
     /**
      * target reflect.
@@ -60,12 +60,12 @@ export interface DesignContext extends RegContext {
     /**
      * type register in.
      */
-    regIn?: string;
+    regIn: string;
 
     /**
      * registered state.
      */
-    state?: Registered;
+    state: Registered;
 }
 
 /**

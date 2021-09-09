@@ -15,8 +15,8 @@ import { ILoggerManager } from './ILoggerManager';
 @Abstract()
 export abstract class LogProcess {
 
-    private _logger: ILogger;
-    private _logManger: ILoggerManager;
+    private _logger!: ILogger;
+    private _logManger!: ILoggerManager;
 
     constructor(
         @Inject() protected injector: Injector,
@@ -44,8 +44,8 @@ export abstract class LogProcess {
     protected getLogger(): ILogger {
         return this.logManger.getLogger();
     }
-    abstract processLog(joinPoint: Joinpoint, ...messages: any[]);
-    abstract processLog(joinPoint: Joinpoint, level: Level, ...messages: any[]);
-    abstract processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], ...messages: any[]);
-    abstract processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], level: Level, ...messages: any[]);
+    abstract processLog(joinPoint: Joinpoint, ...messages: any[]): void;
+    abstract processLog(joinPoint: Joinpoint, level: Level, ...messages: any[]): void;
+    abstract processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], ...messages: any[]): void;
+    abstract processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], level: Level, ...messages: any[]): void;
 }

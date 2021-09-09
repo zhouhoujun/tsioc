@@ -62,7 +62,7 @@ export interface DecorDefine<T = any> extends ProvidersMetadata {
     /**
      * property key.
      */
-    propertyKey?: string;
+    propertyKey: string;
     /**
      * paramter index.
      */
@@ -70,7 +70,7 @@ export interface DecorDefine<T = any> extends ProvidersMetadata {
     /**
      * decorator metadata.
      */
-    metadata?: T;
+    metadata: T;
 }
 
 /**

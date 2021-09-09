@@ -26,7 +26,7 @@ export class TestService {
     }
 
     @Inject()
-    private provider: DataProvider;
+    private provider!: DataProvider;
 
     flash() {
         return this.provider.fetch();

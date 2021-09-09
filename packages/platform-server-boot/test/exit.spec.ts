@@ -16,7 +16,7 @@ class MainModule { }
 @Suite()
 export class ProcessExitTest {
 
-    private ctx: ApplicationContext;
+    private ctx!: ApplicationContext;
 
     @Before()
     async init() {

@@ -120,7 +120,7 @@ export class AdviceMatcher implements IAdviceMatcher {
 
     protected matchTypeFactory(relfect: AopReflect, metadata: AdviceMetadata): MatchExpress {
         const checks = this.genChecks(relfect, metadata);
-        return (method: string, fullName: string, targetType?: ClassType, target?: any, pointcut?: IPointcut) => checks.every(chk => chk(method, fullName, targetType, target, pointcut));
+        return (method?: string, fullName?: string, targetType?: ClassType, target?: any, pointcut?: IPointcut) => checks.every(chk => chk(method, fullName, targetType, target, pointcut));
     }
 
     protected genChecks(relfect: AopReflect, metadata: AdviceMetadata): MatchExpress[] {
@@ -130,7 +130,7 @@ export class AdviceMatcher implements IAdviceMatcher {
                 if (isArray(metadata.within)) {
                     return metadata.within.some(t => relfect.class.isExtends(t));
                 } else {
-                    return relfect.class.isExtends(metadata.within);
+                    return relfect.class.isExtends(metadata.within!);
                 }
             });
         }
@@ -141,7 +141,7 @@ export class AdviceMatcher implements IAdviceMatcher {
         }
 
         if (metadata.annotation) {
-            checks.push((method) => relfect.class.hasMetadata(metadata.annotation, (!method || method === 'constructor') ? 'class' : 'method', method));
+            checks.push((method) => relfect.class.hasMetadata(metadata.annotation!, (!method || method === 'constructor') ? 'class' : 'method', method));
         }
 
         if (isString(metadata.pointcut)) {
@@ -152,14 +152,14 @@ export class AdviceMatcher implements IAdviceMatcher {
             if (annPreChkExp.test(reg.source)) {
                 checks.push(() => relfect.class.decors.some(n => reg.test(n.decor)));
             } else {
-                checks.push((name, fullName) => reg.test(fullName));
+                checks.push((name, fullName) => reg.test(fullName!));
             }
         }
 
         return checks;
     }
 
-    protected spiltBrace(strExp: string) {
+    protected spiltBrace(strExp: string): string {
         strExp = strExp.trim();
 
         if (preParam.test(strExp) && endParam.test(strExp)) {
@@ -185,26 +185,26 @@ export class AdviceMatcher implements IAdviceMatcher {
 
         if (withInChkExp.test(strExp)) {
             let classnames = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).split(',').map(n => n.trim());
-            return (name: string, fullName: string, targetType?: Type) => classnames.indexOf(lang.getClassName(targetType)) >= 0;
+            return (name?: string, fullName?: string, targetType?: ClassType) => targetType ? classnames.indexOf(lang.getClassName(targetType)) >= 0 : false;
         }
 
         if (targetChkExp.test(strExp)) {
             let torken = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).trim();
             const state = this.container.state();
-            return (name: string, fullName: string, targetType?: Type) => state.getInjector(reflect.type).getTokenProvider(torken) === targetType;
+            return (name?: string, fullName?: string, targetType?: ClassType) => targetType ? state.getInjector(reflect.type).getTokenProvider(torken) === targetType : false;
         }
 
         return fasleFn;
     }
 
-    protected toAnnExpress(reflect: AopReflect, exp: string) {
+    protected toAnnExpress(reflect: AopReflect, exp: string): MatchExpress {
         let annotation = aExp.test(exp) ? exp : ('@' + exp);
-        return (name: string, fullName: string) => reflect.class.hasMetadata(annotation, (!name || name === 'constructor') ? 'class' : 'method', name);
+        return (name?: string, fullName?: string) => reflect.class.hasMetadata(annotation, (!name || name === 'constructor') ? 'class' : 'method', name);
     }
 
-    protected toExecExpress(reflect: AopReflect, exp: string) {
+    protected toExecExpress(reflect: AopReflect, exp: string): MatchExpress {
         if (exp === '*' || exp === '*.*') {
-            return (name: string, fullName: string) => !!name && !reflect.aspect;
+            return (name?: string, fullName?: string) => !!name && !reflect.aspect;
         }
 
         if (mthNameExp.test(exp)) {
@@ -219,7 +219,7 @@ export class AdviceMatcher implements IAdviceMatcher {
                 .replace(replNav, '\\\/');
 
             let matcher = new RegExp(exp + '$');
-            return (name: string, fullName: string) => matcher.test(fullName);
+            return (name?: string, fullName?: string) => fullName ? matcher.test(fullName) : false;
         }
         return fasleFn;
     }
@@ -230,7 +230,7 @@ export class AdviceMatcher implements IAdviceMatcher {
         const fns = exp.tokens.map(t => this.expressToFunc(reflect, t));
         const argnames = exp.tokens.map((t, i) => 'arg' + i);
         const boolexp = new Function(...argnames, `return ${exp.toString((t, i, tkidx) => 'arg' + tkidx + '()')}`);
-        return (method: string, fullName: string, targetType?: ClassType, target?: any, pointcut?: IPointcut) => {
+        return (method?: string, fullName?: string, targetType?: ClassType, target?: any, pointcut?: IPointcut) => {
             let args = fns.map(fn => () => fn(method, fullName, targetType, target, pointcut));
             return boolexp(...args);
         }
@@ -241,7 +241,7 @@ export class BoolExpression {
     private _parsed: { type: string, value: any }[];
     constructor(express: string, isToken?: (exp: string) => boolean) {
         const parts = express.split(boolOper);
-        const keys = [];
+        const keys: string[] = [];
         parts.forEach(exp => {
             exp = exp.trim();
             if (isToken && isToken(exp)) {
@@ -257,7 +257,7 @@ export class BoolExpression {
         this._parsed = keys.filter(Boolean).reduce(rewrite, []);
     }
 
-    private _tokens: any[];
+    private _tokens!: any[];
     get tokens() {
         if (!this._tokens) {
             this._tokens = this._parsed
@@ -279,8 +279,8 @@ export class BoolExpression {
 const boolOper = /(!|&&| AND | OR | NOT |\|\|)/g;
 const allOperators = /(,|!|&&| AND | OR | NOT |\|\||\(|\)| )/g;
 const nativeOperators = /^(,|!|&&|\|\||\(|\))$/
-const operatorMap = { OR: '||', AND: '&&', NOT: '!' }
-function rewrite(ex, el) {
+const operatorMap: any = { OR: '||', AND: '&&', NOT: '!' }
+function rewrite(ex: any[], el: string) {
     let t = el.trim()
     if (!t) return ex
     if (operatorMap[t]) t = operatorMap[t]
@@ -289,7 +289,7 @@ function rewrite(ex, el) {
     return ex;
 }
 
-const isBoolToken = exp => annContentExp.test(exp) || execContentExp.test(exp) || withInChkExp.test(exp) || targetChkExp.test(exp);
+const isBoolToken = (exp: string) => annContentExp.test(exp) || execContentExp.test(exp) || withInChkExp.test(exp) || targetChkExp.test(exp);
 
 const fasleFn = () => false;
 const aExp = /^@/;

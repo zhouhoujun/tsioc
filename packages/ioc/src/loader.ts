@@ -24,7 +24,7 @@ export class DefaultModuleLoader implements ModuleLoader {
 
     static ρNPT = true;
 
-    private _loader: (modulepath: string) => Promise<Modules>;
+    private _loader!: (modulepath: string) => Promise<Modules>;
     getLoader() {
         if (!this._loader) {
             this._loader = this.createLoader();
@@ -96,7 +96,7 @@ export class DefaultModuleLoader implements ModuleLoader {
         basePath = basePath ? this.normalize(basePath) : '';
         if (isArray(files)) {
             fRes = Promise.all(files.map(f => loader(this.resolveFilename(this.normalize(f), basePath))))
-                .then(mds => mds.reduce((prv, m) => prv.concat(m), []).filter(it => !!it));
+                .then(mds => mds.reduce((prv, m) => prv.concat(m), [] as Modules[]).filter(it => !!it));
         } else {
             fRes = loader(this.resolveFilename(this.normalize(files), basePath)).then(m => m ? [m] : []);
         }

@@ -1,4 +1,4 @@
-import { Inject, isUndefined, Singleton, isString, isMetadataObject, isPlainObject, lang, Injector, ROOT_INJECTOR, EMPTY_OBJ } from '@tsdi/ioc';
+import { Inject, isUndefined, Singleton, isString, isPlainObject, lang, Injector, ROOT_INJECTOR, EMPTY_OBJ, isMetadataObject } from '@tsdi/ioc';
 import { Configuration, ConfigureLoader, ConfigureManager, ConfigureMerger } from './config';
 import { DEFAULT_CONFIG, PROCESS_ROOT } from '../metadata/tk';
 
@@ -12,8 +12,8 @@ import { DEFAULT_CONFIG, PROCESS_ROOT } from '../metadata/tk';
 @Singleton(ConfigureManager)
 export class ConfigureManagerImpl implements ConfigureManager {
 
-    @Inject(ROOT_INJECTOR) injector: Injector;
-    private config: Configuration;
+    @Inject(ROOT_INJECTOR) injector!: Injector;
+    private config!: Configuration;
     protected configs: (string | Configuration)[];
 
     /**
@@ -34,7 +34,7 @@ export class ConfigureManagerImpl implements ConfigureManager {
             config = '';
         }
         // clean cached config.
-        this.config = null;
+        this.config = null!;
         lang.remove(this.configs, config);
         if (!this.baseURL && isPlainObject(config)) {
             this.baseURL = config.baseURL;
@@ -74,7 +74,7 @@ export class ConfigureManagerImpl implements ConfigureManager {
         const merger = this.injector.get(ConfigureMerger);
         exts.forEach(exCfg => {
             if (exCfg) {
-                exCfg = isMetadataObject(exCfg['default']) ? exCfg['default'] : exCfg;
+                exCfg = isMetadataObject((exCfg as any)['default']) ? (exCfg as any)['default'] : exCfg;
                 config = (merger ? merger.merge(config, exCfg) : { ...config, ...exCfg });
             }
         });
@@ -94,9 +94,9 @@ export class ConfigureManagerImpl implements ConfigureManager {
             return await loader.load(src);
         } else if (src) {
             let cfg = await this.injector.getLoader().load([src])
-            return cfg.length ? cfg[0] as Configuration : null;
+            return lang.first(cfg);
         } else {
-            return null;
+            return null!;
         }
     }
 

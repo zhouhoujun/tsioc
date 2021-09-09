@@ -75,8 +75,8 @@ export const Boot: IBootDecorator = createDecorator<BootMetadata>('Boot', {
             }
             if (idx >= 0) {
                 if (meta.deps) {
-                    const news = [];
-                    const moved = [];
+                    const news: Type<IStartupService>[] = [];
+                    const moved: Type<IStartupService>[] = [];
                     meta.deps.forEach(d => {
                         const depidx = boots.indexOf(d);
                         if (depidx < 0) {
@@ -208,7 +208,8 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
             ]
         },
         design: {
-            beforeAnnoation: (ctx: ModuleDesignContext, next) => {
+            beforeAnnoation: (context: DesignContext, next) => {
+                const ctx = context as ModuleDesignContext;
                 if (ctx.reflect.annoType === 'module') {
                     const { injector, type, regIn } = ctx;
                     let mdinj: ModuleInjector;
@@ -259,6 +260,14 @@ export interface IHandleDecorator {
      */
     (): HandleDecorator;
     /**
+     * RegisterFor decorator, for class. use to define the class as handle register in global handle queue or parent.
+     *
+     * @RegisterFor
+     *
+     * @param {ClassMetadata} [metadata] metadata map.
+     */
+    (metadata: HandleMetadata): HandleDecorator;
+    /**
      * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
      *
      * @RegisterFor
@@ -276,15 +285,6 @@ export interface IHandleDecorator {
      * @param {Type<Middleware>} [before] register this handle handle before this handle.
      */
     (parent: Type<Middlewares>, before?: Type<Middleware>): HandleDecorator;
-
-    /**
-     * RegisterFor decorator, for class. use to define the class as handle register in global handle queue or parent.
-     *
-     * @RegisterFor
-     *
-     * @param {ClassMetadata} [metadata] metadata map.
-     */
-    (metadata: HandleMetadata): HandleDecorator;
 }
 
 /**
@@ -311,7 +311,7 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
             }
 
             const state = injector.state();
-            let queue: Middlewares;
+            let queue: Middlewares= null!;
             if (parent) {
                 queue = state.getInstance(parent);
                 if (!queue) {
@@ -346,7 +346,7 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
                     }
                     middl = type;
                 } else {
-                    middl = new FactoryRoute(route, prefix, () => injector.get(type));
+                    middl = new FactoryRoute(route!, prefix, () => injector.get(type));
                 }
                 queue.use(middl);
                 injector.onDestroy(() => queue.unuse(middl));
@@ -467,7 +467,7 @@ export const RouteMapping: IRouteMappingDecorator = createDecorator<RouteMapingM
             if (!queue) throw new Error(lang.getClassName(parent) + 'has not registered!');
             if (!(queue instanceof Router)) throw new Error(lang.getClassName(queue) + 'is not message router!');
 
-            const mapping = new MappingRoute(route, queue.getPath(), ctx.reflect as MappingReflect, injector, middlewares);
+            const mapping = new MappingRoute(route!, queue.getPath(), ctx.reflect as MappingReflect, injector, middlewares);
             injector.onDestroy(() => queue.unuse(mapping));
             queue.use(mapping);
 

@@ -15,8 +15,8 @@ export { getClassAnnotation, hasClassAnnotation } from './util';
  * @param {...string[]} fields
  * @returns {*}
  */
-export function omit(target: ObjectMap, ...fields: string[]): any {
-    if (isObject(target)) {
+export function omit(target: any, ...fields: string[]): any {
+    if (target) {
         let result: any = {};
         for (let key in target) {
             if (fields.indexOf(key) < 0) {
@@ -36,7 +36,7 @@ export function omit(target: ObjectMap, ...fields: string[]): any {
  * @param omits omit fileds.
  * @returns 
  */
-export function assign(target: Object, values: ObjectMap, ...omits: string[]): any {
+export function assign(target: any, values: ObjectMap, ...omits: string[]): any {
     if (!values) return target;
     for (let key in values) {
         if (omits.indexOf(key) < 0) {
@@ -54,9 +54,9 @@ export function assign(target: Object, values: ObjectMap, ...omits: string[]): a
  * @param {(ObjectMap<T> | T[])} target
  * @param {(item: T, idx?: number|string) => void|boolean} iterator
  */
-export function forIn<T = any>(target: ObjectMap<T>, iterator: (item: T, idx?: string) => void | boolean)
-export function forIn<T = any>(target: T[], iterator: (item: T, idx?: number) => void | boolean);
-export function forIn(target: any, iterator: (item: any, idx?: any) => void | boolean) {
+export function forIn<T = any>(target: ObjectMap<T>, iterator: (item: T, idx: string) => void | boolean): void
+export function forIn<T = any>(target: T[], iterator: (item: T, idx: number) => void | boolean): void;
+export function forIn(target: any, iterator: (item: any, idx?: any) => void | boolean): void {
     if (isArray(target)) {
         for (let i = 0, len = target.length; i < len; i++) {
             if (iterator(it, i) === false) {
@@ -88,11 +88,11 @@ export function mapEach<TKey, TVal, TC = any>(map: Map<TKey, TVal>, callbackfn: 
  * @param {T[]} list
  * @returns {T}
  */
-export function first<T>(list: T[]): T {
+export function first<T>(list: T[] | null | undefined): T {
     if (isArray(list) && list.length) {
         return list[0];
     }
-    return null;
+    return null!;
 }
 
 /**
@@ -100,7 +100,7 @@ export function first<T>(list: T[]): T {
  * @param list list
  * @param el remove item.
  */
-export function remove<T>(list: T[], el: T) {
+export function remove<T>(list: T[] | null | undefined, el: T) {
     if (!isArray(list) || !list.length || isNil(el)) {
         return null;
     }
@@ -121,7 +121,7 @@ export function last<T>(list: T[]): T {
     if (isArray(list) && list.length) {
         return list[list.length - 1];
     }
-    return null;
+    return null!;
 }
 
 
@@ -229,7 +229,7 @@ export function isExtendsClass<T extends ClassType>(target: ClassType, baseClass
  */
 export function getTypes(mds: Modules | Modules[]): Type[] {
     if (!mds) return [];
-    return isArray(mds) ? mds.reduce((typs, curr) => typs.concat(getContentTypes(curr)), []) : getContentTypes(mds);
+    return isArray(mds) ? mds.reduce((typs, curr) => typs.concat(getContentTypes(curr)), [] as Type[]) : getContentTypes(mds);
 }
 
 const exportKey = 'exports';
@@ -259,7 +259,7 @@ function getContentTypes(regModule: Modules): Type[] {
  * clean object.
  * @param obj.
  */
-export function cleanObj(obj: Object) {
+export function cleanObj(obj: any) {
     if (!obj) return;
     for (let k in obj) {
         obj[k] = null;
@@ -302,15 +302,15 @@ export class Defer<T> {
     /**
      * resolve.
      */
-    resolve: (value?: T | PromiseLike<T>) => void;
+    resolve!: (value?: T | PromiseLike<T>) => void;
     /**
      * reject.
      */
-    reject: (reason?: any) => void;
+    reject!: (reason?: any) => void;
 
     constructor() {
         this.promise = new Promise<T>((resolve, reject) => {
-            this.resolve = resolve;
+            this.resolve = resolve as (value?: T | PromiseLike<T>) => void;
             this.reject = reject;
         });
     }
@@ -338,7 +338,7 @@ export function defer<T>(then?: (val: T) => T | PromiseLike<T>): Defer<T> {
  * @returns
  */
 export function step<T>(promises: (T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[]) {
-    let result = Promise.resolve<T>(null);
+    let result = Promise.resolve<T>(null!);
     promises.forEach(p => {
         result = result.then(v => isFunction(p) ? p(v) : p);
     });

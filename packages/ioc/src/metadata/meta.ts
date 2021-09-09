@@ -145,12 +145,16 @@ export interface PropertyMetadata extends ProvideMetadata, Metadata {
     /**
      * the type is Type or not.
      */
-    isType?: boolean;
+    readonly isType?: boolean;
 
     /**
      * the provider is Type or not.
      */
-    isProviderType?: boolean;
+    readonly isProviderType?: boolean;
+
+    _isType?: boolean;
+
+    _isPdrType?: boolean;
 }
 
 /**

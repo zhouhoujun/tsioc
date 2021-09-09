@@ -4,7 +4,7 @@ import { Token } from './tokens';
 import { Abstract } from './metadata/fac';
 import { TypeReflect } from './metadata/type';
 import { remove } from './utils/lang';
-import { isArray } from './utils/chk';
+import { EMPTY, isArray } from './utils/chk';
 import { Handler } from './utils/hdl';
 import { Action } from './action';
 import { ClassProvider, ExistingProvider, FactoryProvider, StaticProvider, ValueProvider } from './providers';
@@ -29,6 +29,7 @@ export abstract class Injector implements Destroyable {
      * parent injector.
      */
     readonly parent?: Injector;
+
     /**
      * registered state.
      */
@@ -94,7 +95,7 @@ export abstract class Injector implements Destroyable {
     * @param {ProviderType[]} providers
     * @returns {T}
     */
-    abstract resolve<T>(token: Token<T>, providers: ProviderType[]): T;
+    abstract resolve<T>(token: Token<T>, providers?: ProviderType[]): T;
     /**
      * resolve token instance with token and param provider.
      *
@@ -241,7 +242,7 @@ export abstract class Injector implements Destroyable {
      * @returns {TR}
      * @memberof Injector
      */
-    abstract invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, providers: ProviderType[]): TR
+    abstract invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, providers?: ProviderType[]): TR
     /**
      * invoke method.
      *
@@ -339,7 +340,7 @@ export abstract class Injector implements Destroyable {
         if (!this._destroyed) {
             this._destroyed = true;
             this._dsryCbs.forEach(cb => cb());
-            this._dsryCbs = null;
+            this._dsryCbs = null!;
             this.destroying();
         }
     }
@@ -355,7 +356,7 @@ export abstract class Injector implements Destroyable {
         remove(this._dsryCbs, callback);
     }
 
-    protected abstract destroying();
+    protected abstract destroying(): void;
 
     /**
      * create injector.
@@ -369,7 +370,7 @@ export abstract class Injector implements Destroyable {
      */
     static create(options: { providers: ProviderType[], parent?: Injector, scope?: InjectorScope }): Injector;
     static create(
-        options: ProviderType[] | { providers: ProviderType[], parent?: Injector, scope?: InjectorScope },
+        options: ProviderType[] | { providers: ProviderType[], parent?: Injector, scope?: InjectorScope } | undefined,
         parent?: Injector, scope?: InjectorScope): Injector {
         if (!options) {
             options = EMPTY;
@@ -486,7 +487,7 @@ export abstract class RegisteredState {
      * @param type
      * @param providers
      */
-    abstract setTypeProvider(type: ClassType | TypeReflect, providers: ProviderType[]);
+    abstract setTypeProvider(type: ClassType | TypeReflect, providers: ProviderType[]): void;
     /**
      * get instance.
      * @param type class type.
@@ -509,26 +510,17 @@ export abstract class RegisteredState {
      * @param type class type
      * @param data registered data.
      */
-    abstract regType<T extends Registered>(type: ClassType, data: T);
+    abstract regType<T extends Registered>(type: ClassType, data: T): void;
 
     /**
      * delete registered.
      * @param type
      */
-    abstract deleteType(type: ClassType);
+    abstract deleteType(type: ClassType): void;
 
-    abstract destroy();
+    abstract destroy(): void;
 }
 
-/**
- * empty array.
- */
-export const EMPTY = [];
-
-/**
- * empty object.
- */
-export const EMPTY_OBJ = {};
 
 /**
  * object is provider map or not.
@@ -569,13 +561,13 @@ export const INJECT_IMPL = {
 /**
  * providers.
  */
-export type ProviderType = Modules[] | Injector | StaticProvider;
+export type ProviderType = Modules[] | Injector | StaticProvider | undefined;
 
 
 /**
  * instance factory.
  */
-export type Factory<T = any> = (...args) => T;
+export type Factory<T = any> = (...args: any[]) => T;
 
 
 /**

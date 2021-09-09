@@ -11,7 +11,7 @@ import { option, MockBootTest } from './app';
 @Suite('load Repository test')
 export class LoadReposTest {
 
-    private ctx: ApplicationContext;
+    private ctx!: ApplicationContext;
 
     @Before()
     async beforeInit() {
@@ -51,7 +51,7 @@ export class LoadReposTest {
         let svu = await rep.findByAccount('admin----test')
         // console.log(svu);
         expect(svu).toBeInstanceOf(User);
-        expect(svu.id).toBeDefined();
+        expect(svu?.id).toBeDefined();
     }
 
     @Test()
@@ -68,7 +68,7 @@ export class LoadReposTest {
     async deleteUser() {
         const rep = this.ctx.injector.get(UserRepository);
         let svu = await rep.findByAccount('admin----test');
-        await rep.remove(svu);
+        await rep.remove(svu!);
     }
 
     @Test()

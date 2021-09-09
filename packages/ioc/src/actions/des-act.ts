@@ -82,7 +82,7 @@ function regInstf(injector: Injector, type: Type, provide: Token, singleton: boo
 
 
 export const RegClassAction = function (ctx: DesignContext, next: () => void): void {
-    regInstf(ctx.injector, ctx.type, ctx.provide || ctx.type, ctx.singleton || ctx.reflect.singleton);
+    regInstf(ctx.injector, ctx.type, ctx.provide || ctx.type, ctx.singleton || ctx.reflect.singleton === true);
     next();
 };
 
@@ -165,20 +165,18 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
     next();
 };
 
-const typfd = '_isType';
 function isDesType(this: PropertyMetadata) {
-    if (isUndefined(this[typfd])) {
-        this[typfd] = isClass(this.type);
+    if (isUndefined(this._isType)) {
+        this._isType = isClass(this.type);
     }
-    return this[typfd];
+    return this._isType;
 }
 
-const pdrfd = '_isPdrType';
 function isPdrType(this: PropertyMetadata) {
-    if (isUndefined(this[pdrfd])) {
-        this[pdrfd] = isClass(this.provider);
+    if (isUndefined(this._isPdrType)) {
+        this._isPdrType = isClass(this.provider);
     }
-    return this[pdrfd];
+    return this._isPdrType;
 }
 
 /**

@@ -157,7 +157,7 @@ export interface ITestReport {
      * @param {Token} suit
      * @param {ISuiteDescribe} describe
      */
-    addSuite(suit: Token, describe: ISuiteDescribe);
+    addSuite(suit: Token, describe: ISuiteDescribe): void;
     /**
      * get suite.
      *
@@ -170,14 +170,14 @@ export interface ITestReport {
      *
      * @param {Token} suit
      */
-    setSuiteCompleted(suit: Token);
+    setSuiteCompleted(suit: Token): void;
     /**
      * add case.
      *
      * @param {Token} suit
      * @param {ICaseDescribe} testCase
      */
-    addCase(suit: Token, testCase: ICaseDescribe);
+    addCase(suit: Token, testCase: ICaseDescribe): void;
     /**
      * get case.
      *
@@ -191,12 +191,12 @@ export interface ITestReport {
      *
      * @param {ICaseDescribe} testCase
      */
-    setCaseCompleted(testCase: ICaseDescribe);
+    setCaseCompleted(testCase: ICaseDescribe): void;
     /**
      * track error.
      * @param error 
      */
-    track(error: Error);
+    track(error: Error): void;
     /**
      * report.
      *

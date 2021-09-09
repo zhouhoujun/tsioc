@@ -16,8 +16,8 @@ import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
 @Injectable()
 export class SuiteRunner extends UnitRunner {
 
-    timeout: number;
-    describe: string;
+    timeout!: number;
+    describe!: string;
 
     constructor(private tgRef: TargetRef) {
         super()
@@ -58,7 +58,7 @@ export class SuiteRunner extends UnitRunner {
         await this.runAfter(desc);
     }
 
-    runTimeout(key: string, describe: string, timeout: number): Promise<any> {
+    runTimeout(key: string, describe: string, timeout?: number): Promise<any> {
         let instance = this.tgRef.instance;
         let defer = lang.defer();
         let injector = this.tgRef.injector;
@@ -80,12 +80,12 @@ export class SuiteRunner extends UnitRunner {
             { provide: RunSuiteToken, useValue: instance }))
             .then(r => {
                 clearTimeout(timer);
-                timer = null;
+                timer = null!;
                 defer.resolve(r);
             })
             .catch(err => {
                 clearTimeout(timer);
-                timer = null;
+                timer = null!;
                 defer.reject(err);
             })
 
@@ -147,7 +147,7 @@ export class SuiteRunner extends UnitRunner {
                 } as ICaseDescribe;
             })
                 .sort((a, b) => {
-                    return b.order - a.order;
+                    return b.order! - a.order!;
                 })
                 .map(caseDesc => {
                     return () => this.runCase(caseDesc)
@@ -164,15 +164,15 @@ export class SuiteRunner extends UnitRunner {
             await this.runAfterEach();
 
         } catch (err) {
-            caseDesc.error = err;
+            caseDesc.error = err as Error;
         }
         return caseDesc;
     }
 
     protected destroying() {
-        this.tgRef = null;
-        this.timeout = null;
-        this.describe = null;
+        this.tgRef = null!;
+        this.timeout = null!;
+        this.describe = null!;
     }
 
 }

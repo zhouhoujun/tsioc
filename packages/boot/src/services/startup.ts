@@ -38,7 +38,7 @@ export abstract class StartupService implements IStartupService {
         if (!this._destroyed) {
             this._destroyed = true;
             this._dsryCbs.forEach(cb => cb());
-            this._dsryCbs = null;
+            this._dsryCbs = null!;
             this.destroying();
         }
     }

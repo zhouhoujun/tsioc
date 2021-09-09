@@ -22,7 +22,7 @@ export class NodeModuleLoader extends DefaultModuleLoader implements ModuleLoade
 
         return globby(files, { cwd: basePath }).then(mflies => {
             return Promise.all(mflies.map(fp => {
-                return import(toAbsolutePath(basePath, isString(fp) ? fp : (fp as { path: string }).path));
+                return import(toAbsolutePath(basePath!, isString(fp) ? fp : (fp as { path: string }).path));
             }));
         });
     }

@@ -40,9 +40,9 @@ export class ExtendBaseTypeMap {
 
     resolve<T>(type: Token<T>, ...params: any[]): T {
         if (this.maps.has(type)) {
-            return this.maps.get(type)(...params);
+            return this.maps.get(type)?.(...params);
         }
-        return null;
+        return null!;
     }
 }
 
@@ -62,7 +62,7 @@ export abstract class ModelParser {
 
     static ρNPT = true;
 
-    @Inject() protected injector: Injector;
+    @Inject() protected injector!: Injector;
 
     /**
      * parse model.
@@ -104,7 +104,7 @@ export abstract class ModelParser {
         return result;
     }
 
-    private typeMap: ExtendBaseTypeMap;
+    private typeMap!: ExtendBaseTypeMap;
     getTypeMap(): ExtendBaseTypeMap {
         if (!this.typeMap) {
             this.typeMap = this.injector.get(ExtendBaseTypeMap);

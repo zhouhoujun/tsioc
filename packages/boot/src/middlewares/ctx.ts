@@ -50,7 +50,7 @@ export interface MessageContext {
     /**
      * navigate message
      */
-    readonly url?: string;
+    readonly url: string;
 
     readonly protocol?: string;
     readonly host?: string;
@@ -61,7 +61,7 @@ export interface MessageContext {
     /**
      * request.
      */
-    readonly request?: RequestOption;
+    readonly request: RequestOption;
 
     /**
      * reuqest method
@@ -88,7 +88,7 @@ export interface MessageContext {
     /**
      * injector of message queue.
      */
-    injector?: Injector;
+    injector: Injector;
 
     /**
      * the context providers.
@@ -104,13 +104,13 @@ export interface MessageContext {
      * get value to context
      * @param token
      */
-    getValue?<T>(token: Token<T>): T;
+    getValue<T>(token: Token<T>): T;
     /**
      * set value
      * @param token
      * @param value 
      */
-    setValue?(token: Token, value: any): void;
+    setValue(token: Token, value: any): void;
 }
 
 /**
@@ -134,7 +134,7 @@ export interface IRouteVaildator {
      * @param route route.
      * @param routePrefix route prefix.
      */
-    isActiveRoute(ctx: MessageContext, route: string, routePrefix: string);
+    isActiveRoute(ctx: MessageContext, route: string, routePrefix: string): boolean;
     /**
      * get request route.
      * @param ctx context.

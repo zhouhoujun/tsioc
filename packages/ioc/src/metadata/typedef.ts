@@ -1,14 +1,14 @@
 import { ClassType, DesignAnnotation, ObjectMap } from '../types';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
-import { isFunction, isString } from '../utils/chk';
+import { EMPTY, isFunction, isString } from '../utils/chk';
 import { getClassAnnotation } from '../utils/util';
 import { forIn } from '../utils/lang';
 import { DecoratorType, DecorDefine, DecorMemberType } from './type';
 
 
-const name = '__name';
-const emptyArr = [];
-
+interface DefineDescriptor<T = any> extends TypedPropertyDescriptor<T> {
+    __name: string;
+}
 
 /**
  * type define.
@@ -23,10 +23,10 @@ export class TypeDefine {
     paramDecors: DecorDefine[];
 
     readonly annotation: DesignAnnotation;
-    private params: Map<string, any[]>;
+    private params!: Map<string, any[]>;
 
     constructor(public readonly type: ClassType, private parent?: TypeDefine) {
-        this.annotation = getClassAnnotation(type)
+        this.annotation = getClassAnnotation(type)!;
         this.className = this.annotation?.name || type.name;
         this.classDecors = [];
         if (parent) {
@@ -42,8 +42,8 @@ export class TypeDefine {
         }
     }
 
-    private currprop;
-    private currpropidx;
+    private currprop: string | undefined;
+    private currpropidx!: number;
     addDefine(define: DecorDefine) {
         switch (define.decorType) {
             case 'class':
@@ -104,9 +104,9 @@ export class TypeDefine {
         }
     }
 
-    getDecorDefine<T = any>(decor: string | Function): DecorDefine<T>;
-    getDecorDefine<T = any>(decor: string | Function, propertyKey: string, type: DecorMemberType): DecorDefine<T>;
-    getDecorDefine(decor: string | Function, type?: DecoratorType, propertyKey?: string): DecorDefine {
+    getDecorDefine<T = any>(decor: string | Function): DecorDefine<T> | undefined;
+    getDecorDefine<T = any>(decor: string | Function, propertyKey: string, type: DecorMemberType): DecorDefine<T> | undefined;
+    getDecorDefine(decor: string | Function, type?: DecoratorType | string, propertyKey?: string | DecorMemberType): DecorDefine | undefined {
         type = type || 'class';
         decor = getDectorId(decor);
         const filter = (propertyKey && type !== 'class') ? (d: DecorDefine) => d.decor === decor && d.propertyKey === propertyKey : (d: DecorDefine) => d.decor === decor;
@@ -120,7 +120,7 @@ export class TypeDefine {
             case 'parameter':
                 return this.paramDecors.find(filter);
             default:
-                return null;
+                return;
         }
     }
 
@@ -140,7 +140,7 @@ export class TypeDefine {
         if (!type) {
             type = 'class';
         }
-        const filter = d => d.decor === decor;
+        const filter = (d: DecorDefine) => d.decor === decor;
         switch (type) {
             case 'class':
                 return this.classDecors.filter(filter);
@@ -151,7 +151,7 @@ export class TypeDefine {
             case 'parameter':
                 return this.paramDecors.filter(filter);
             default:
-                return emptyArr;
+                return EMPTY;
         }
     }
 
@@ -168,7 +168,7 @@ export class TypeDefine {
      */
     getMetadata<T = any>(decor: string | Function, propertyKey: string, type: DecorMemberType): T;
     getMetadata<T = any>(decor: string | Function, propertyKey?: string, type?: DecorMemberType): T {
-        return this.getDecorDefine(decor, propertyKey, type)?.metadata;
+        return this.getDecorDefine(decor, propertyKey!, type!)?.metadata;
     }
 
     /**
@@ -183,10 +183,10 @@ export class TypeDefine {
      */
     getMetadatas<T = any>(decor: string | Function, type: DecorMemberType): T[];
     getMetadatas<T = any>(decor: string | Function, type?: DecorMemberType): T[] {
-        return this.getDecorDefines(decor, type).map(d => d.metadata).filter(d => d);
+        return this.getDecorDefines(decor, type!).map(d => d.metadata).filter(d => d);
     }
 
-    private _extends: ClassType[];
+    private _extends!: ClassType[];
     get extendTypes(): ClassType[] {
         if (!this._extends) {
             if (this.parent) {
@@ -243,7 +243,7 @@ export class TypeDefine {
         if (!descriptor) {
             return '';
         }
-        let pty = descriptor[name];
+        let pty = (descriptor as DefineDescriptor).__name;
         if (!pty) {
             let decs = this.getPropertyDescriptors();
             forIn(decs, (dec, n) => {
@@ -256,12 +256,12 @@ export class TypeDefine {
         return pty;
     }
 
-    private descriptos: ObjectMap<TypedPropertyDescriptor<any>>;
+    private descriptos!: ObjectMap<TypedPropertyDescriptor<any>>;
     getPropertyDescriptors(): ObjectMap<TypedPropertyDescriptor<any>> {
         if (!this.descriptos) {
             const descriptos = this.parent ? { ...this.parent.getPropertyDescriptors() } : {};
             forIn(Object.getOwnPropertyDescriptors(this.type.prototype), (d, n) => {
-                d[name] = n;
+                (d as DefineDescriptor).__name = n;
                 descriptos[n] = d;
             });
             this.descriptos = descriptos;

@@ -12,7 +12,7 @@ export class Router extends MessageQueue implements IRouter {
         super();
     }
 
-    private urlpath: string;
+    private urlpath!: string;
     getPath() {
         if (!this.urlpath) {
             this.urlpath = this.prefix ? `${this.prefix}/${this.url}` : (this.protocol ? `${this.protocol}//${this.url}` : this.url);
@@ -21,7 +21,7 @@ export class Router extends MessageQueue implements IRouter {
     }
 
     private sorted = false;
-    protected override canExecute(ctx: MessageContext) {
+    protected override canExecute(ctx: MessageContext): boolean {
         if (!ctx.vaild) {
             ctx.vaild = this.injector.get(RouteVaildator);
         }
@@ -47,8 +47,8 @@ export class Router extends MessageQueue implements IRouter {
         return '';
     }
 
-    protected match(ctx: MessageContext) {
-        return (!ctx.status || ctx.status === 404) && this.protocol === ctx.protocol && ctx.vaild.isActiveRoute(ctx, this.url, this.prefix);
+    protected match(ctx: MessageContext): boolean {
+        return (!ctx.status || ctx.status === 404) && this.protocol === ctx.protocol && ctx.vaild?.isActiveRoute(ctx, this.url, this.prefix) === true;
     }
 
     protected override resetHandler() {
