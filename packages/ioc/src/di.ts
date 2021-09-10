@@ -395,9 +395,9 @@ export class DefaultInjector extends Injector {
         let notFoundValue: T | undefined;
         if (arg1 instanceof Injector) {
             provider = arg1;
-            notFoundValue = arg2;
+            notFoundValue = arg2 ?? null!;
         } else {
-            notFoundValue = arg1;
+            notFoundValue = arg1 ?? null!;
         }
         return resolveToken(this.factories.get(key)!, provider || this)
             ?? this.strategy.resolve?.(this, key, provider || this)
