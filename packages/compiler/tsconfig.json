@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "downlevelIteration":true
+    "downlevelIteration":true,
+    "strictPropertyInitialization": false
   }
 }

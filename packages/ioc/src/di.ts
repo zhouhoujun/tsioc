@@ -82,7 +82,7 @@ export class DefaultInjector extends Injector {
     constructor(providers: ProviderType[] = EMPTY, readonly parent?: Injector, readonly scope?: string | InjectorScope, private strategy: Strategy = INJECT_STRATEGY) {
         super();
         this.factories = new Map();
-        const val = { value: this }
+        const val = { value: this };
         if (parent) {
             this.destCb = () => this.destroy();
             this.initParent(parent);
