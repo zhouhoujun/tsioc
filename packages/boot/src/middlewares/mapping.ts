@@ -1,6 +1,6 @@
 import {
-    Abstract, AsyncHandler, DecorDefine, lang, ParameterMetadata, ProviderType, Type, TypeReflect, Injector, tokenId,
-    isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, isPlainObject, RegisteredState, isDefined, EMPTY_OBJ
+    Abstract, AsyncHandler, DecorDefine, lang, ParameterMetadata, ProviderType, Type, TypeReflect, Injector, Token, tokenId,
+    isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, isPlainObject, RegisteredState, EMPTY_OBJ
 } from '@tsdi/ioc';
 import { CONTEXT } from '../metadata/tk';
 import { TypeParser } from '../services/intf';
@@ -200,10 +200,10 @@ export class MappingRoute extends Route {
             }
             let body = ctx.request?.body || EMPTY_OBJ;
             let parser = injector.get(TypeParser);
-            let ppds: (ProviderType|null)[] = await Promise.all(params.map(async (param) => {
-                let ptype = param.isProviderType ? param.provider : param.type;
+            let ppds: (ProviderType | null)[] = await Promise.all(params.map(async (param) => {
+                let ptype = isFunction(param.provider) ? param.provider : param.type;
                 let val;
-                let provide = ptype!;
+                let provide: Token = ptype!;
                 if (isFunction(ptype)) {
                     if (isPrimitiveType(ptype)) {
                         let paramVal = restParams[param.paramName!];
@@ -218,8 +218,10 @@ export class MappingRoute extends Route {
                             if (isArray(ptype) && isArray(body)) {
                                 val = body;
                             } else if (isPrimitiveType(ptype)) {
-                                provide = param.paramName!;
-                                val = parser.parse(ptype, body[provide]);
+                                if (param.paramName) {
+                                    provide = param.paramName;
+                                    val = parser.parse(ptype, body[param.paramName]);
+                                }
                             } else if (isClass(ptype)) {
                                 if (body instanceof ptype) {
                                     val = body;
@@ -253,7 +255,7 @@ export class MappingRoute extends Route {
                     val = body;
                 }
 
-                if (isNil(val)) {
+                if (!provide || isNil(val)) {
                     return null;
                 }
                 return { provide, useValue: val };

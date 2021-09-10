@@ -5,7 +5,7 @@ import { clsNameExp } from './exps';
 import { getClassAnnotation } from './util';
 
 
- 
+
 declare let process: any;
 const toString = Object.prototype.toString;
 
@@ -15,12 +15,12 @@ const undefKey = 'undefined';
 /**
  * empty array.
  */
- export const EMPTY: any[] = [];
+export const EMPTY: any[] = [];
 
- /**
-  * empty object.
-  */
- export const EMPTY_OBJ = {};
+/**
+ * empty object.
+ */
+export const EMPTY_OBJ = {};
 
 /**
  * check target is function or not.
@@ -320,6 +320,15 @@ function isPrimitive(target: Function): boolean {
         || target === Date
         || target === Symbol
         || target === Promise;
+}
+
+/**
+ * is custom type.
+ * @param target 
+ * @returns 
+ */
+export function isCustomType(target: any): boolean {
+    return isFunction(target) && !isPrimitive(target);
 }
 
 /**

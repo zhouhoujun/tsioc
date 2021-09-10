@@ -1,4 +1,4 @@
-import { isFunction, isClass, isUndefined } from '../utils/chk';
+import { isFunction } from '../utils/chk';
 import { cleanObj } from '../utils/lang';
 import { chain } from '../utils/hdl';
 import { Type } from '../types';
@@ -7,7 +7,6 @@ import { DesignContext, RuntimeContext } from './ctx';
 import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
-import { PropertyMetadata } from '../metadata/meta';
 import { ROOT_INJECTOR } from '../metadata/tk';
 import { Injector } from '../injector';
 
@@ -113,7 +112,6 @@ export class DesignPropScope extends IocRegScope<DesignContext> implements IActi
 
     setup() {
         this.use(
-            PropProviderAction,
             DesignPropDecorScope
         );
     }
@@ -165,69 +163,13 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
     next();
 };
 
-function isDesType(this: PropertyMetadata) {
-    if (isUndefined(this._isType)) {
-        this._isType = isClass(this.type);
-    }
-    return this._isType;
-}
-
-function isPdrType(this: PropertyMetadata) {
-    if (isUndefined(this._isPdrType)) {
-        this._isPdrType = isClass(this.provider);
-    }
-    return this._isPdrType;
-}
-
-/**
- * register bind property provider action. to get the property autowride token of Type calss.
- *
- * @export
- */
-export const PropProviderAction = function (ctx: DesignContext, next: () => void) {
-    ctx.reflect.propProviders.forEach((propMetas, name) => {
-        propMetas.forEach(prop => {
-            Object.defineProperties(prop, {
-                isType: {
-                    get: isDesType,
-                    enumerable: false
-                },
-                isProviderType: {
-                    get: isPdrType,
-                    enumerable: false
-                }
-            });
-        });
-    });
-
-    next();
-};
 
 export class DesignMthScope extends IocRegScope<DesignContext> implements IActionSetup {
     setup() {
         this.use(
-            RegMethodParamsType,
             DesignMthDecorScope
         );
     }
-}
-
-export const RegMethodParamsType = function (ctx: DesignContext, next: () => void) {
-    ctx.reflect.methodParams.forEach(pms => {
-        pms.forEach(pm => {
-            Object.defineProperties(pm, {
-                isType: {
-                    get: isDesType,
-                    enumerable: false
-                },
-                isProviderType: {
-                    get: isPdrType,
-                    enumerable: false
-                }
-            });
-        });
-    });
-    return next();
 }
 
 

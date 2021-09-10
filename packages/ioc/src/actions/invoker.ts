@@ -1,5 +1,5 @@
 import { Type } from '../types';
-import { isFunction, getClass, isTypeObject, EMPTY } from '../utils/chk';
+import { isFunction, getClass, isTypeObject, EMPTY, isCustomType } from '../utils/chk';
 import { Token } from '../tokens';
 import { get } from '../metadata/refl';
 import { ParameterMetadata } from '../metadata/meta';
@@ -91,15 +91,15 @@ export class InvokerImpl implements Invoker {
     }
 
     protected resolveParams(injector: Injector, state: RegisteredState, params: ParameterMetadata[]): any[] {
-        return params.map(param => this.tryGetPdrParamer(injector, state, param.provider, param.isProviderType)
+        return params.map(param => this.tryGetPdrParamer(injector, state, param.provider)
             ?? this.tryGetNameParamer(injector, param.paramName)
-            ?? this.tryGetPdrParamer(injector, state, param.type, param.isType)
+            ?? this.tryGetPdrParamer(injector, state, param.type)
             ?? param.defaultValue);
     }
 
-    protected tryGetPdrParamer(injector: Injector, state: RegisteredState, provider: Token | undefined, isType: boolean | undefined) {
+    protected tryGetPdrParamer(injector: Injector, state: RegisteredState, provider: Token | undefined) {
         if (!provider) return undefined;
-        if (isType && !state.isRegistered(provider as Type) && !injector.has(provider, true)) {
+        if (isCustomType(provider) && !state.isRegistered(provider as Type) && !injector.has(provider, true)) {
             injector.register(provider as Type);
         }
         return injector.get(provider) ?? undefined;
@@ -110,3 +110,4 @@ export class InvokerImpl implements Invoker {
     }
 
 }
+
