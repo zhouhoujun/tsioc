@@ -1,5 +1,5 @@
 import { Type } from '../types';
-import { isFunction, getClass, isTypeObject, EMPTY, isCustomType } from '../utils/chk';
+import { isFunction, getClass, isTypeObject, EMPTY, isClass } from '../utils/chk';
 import { Token } from '../tokens';
 import { get } from '../metadata/refl';
 import { ParameterMetadata } from '../metadata/meta';
@@ -99,10 +99,10 @@ export class InvokerImpl implements Invoker {
 
     protected tryGetPdrParamer(injector: Injector, state: RegisteredState, provider: Token | undefined) {
         if (!provider) return undefined;
-        if (isCustomType(provider) && !state.isRegistered(provider as Type) && !injector.has(provider, true)) {
-            injector.register(provider as Type);
+        if (isClass(provider) && !state.isRegistered(provider) && !injector.has(provider, true)) {
+            injector.register(provider);
         }
-        return injector.get(provider) ?? undefined;
+        return injector.get(provider);
     }
 
     protected tryGetNameParamer(injector: Injector, paramName: string | undefined) {

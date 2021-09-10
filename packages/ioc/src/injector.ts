@@ -65,6 +65,15 @@ export abstract class Injector implements Destroyable {
      *
      * @template T
      * @param {Token<T>} key
+     * @param {T} notFoundValue
+     * @returns {T}
+     */
+     abstract get<T>(key: Token<T>, notFoundValue?: T): T;
+    /**
+     * get token instance in current injector or root container.
+     *
+     * @template T
+     * @param {Token<T>} key
      * @param {Injector} provider origin raise provider
      * @param {T} notFoundValue
      * @returns {T}

@@ -323,15 +323,6 @@ function isPrimitive(target: Function): boolean {
 }
 
 /**
- * is custom type.
- * @param target 
- * @returns 
- */
-export function isCustomType(target: any): boolean {
-    return isFunction(target) && !isPrimitive(target);
-}
-
-/**
  * is base type or not.
  *
  * @deprecated use `isPrimitiveType` instead.

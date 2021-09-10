@@ -380,7 +380,25 @@ export class DefaultInjector extends Injector {
      * @param {Injector} provider
      * @returns {T}
      */
-    get<T>(key: Token<T>, provider?: Injector, notFoundValue: T = null!): T {
+    get<T>(key: Token<T>, notFoundValue?: T): T;
+    /**
+     * get token factory resolve instace in current BaseInjector.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {Injector} provider
+     * @returns {T}
+     */
+    get<T>(key: Token<T>, provider?: Injector, notFoundValue?: T): T;
+    get<T>(key: Token<T>, arg1?: Injector | T, arg2?: T): T {
+        let provider: Injector | undefined;
+        let notFoundValue: T | undefined;
+        if (arg1 instanceof Injector) {
+            provider = arg1;
+            notFoundValue = arg2;
+        } else {
+            notFoundValue = arg1;
+        }
         return resolveToken(this.factories.get(key)!, provider || this)
             ?? this.strategy.resolve?.(this, key, provider || this)
             ?? notFoundValue;
