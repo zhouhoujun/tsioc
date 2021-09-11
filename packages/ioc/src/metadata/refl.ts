@@ -211,7 +211,7 @@ export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
     if (paramInjectDecors.indexOf(ctx.decor) >= 0) {
         const reflect = ctx.reflect;
         let meta = ctx.metadata as ParameterMetadata;
-        const propertyKey  = ctx.propertyKey;
+        const propertyKey = ctx.propertyKey;
         let params = reflect.methodParams.get(propertyKey);
         if (!params) {
             const names = reflect.class.getParamNames(propertyKey);
@@ -353,7 +353,10 @@ export const MethodProvidersAction = (ctx: DecorContext, next: () => void) => {
             pdrs = []
             ctx.reflect.methodProviders.set(ctx.propertyKey, pdrs);
         }
-        pdrs.push(...(ctx.metadata as ProvidersMetadata).providers!);
+        const mpdrs = (ctx.metadata as ProvidersMetadata).providers;
+        if (mpdrs) {
+            pdrs.push(...mpdrs);
+        }
     }
     return next();
 }
