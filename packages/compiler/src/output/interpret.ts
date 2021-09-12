@@ -235,7 +235,7 @@ class StatementInterpreter implements o.StatementVisitor, o.ExpressionVisitor {
     } catch (e) {
       const childCtx = ctx.createChildWihtLocalVars();
       childCtx.vars.set(CATCH_ERROR_VAR, e);
-      childCtx.vars.set(CATCH_STACK_VAR, e.stack);
+      childCtx.vars.set(CATCH_STACK_VAR, (e as Error).stack);
       return this.visitAllStatements(stmt.catchStmts, childCtx);
     }
   }
