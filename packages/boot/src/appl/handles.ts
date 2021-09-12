@@ -142,11 +142,10 @@ export const ConfigureServiceHandle = async function (ctx: ApplicationContext, n
     const regedState = root.state();
     if (startups.length) {
         await lang.step(startups.map(tyser => () => {
-            let ser: IStartupService;
             if (isFunction(tyser) && !regedState.isRegistered(tyser)) {
                 root.register(tyser as Type);
             }
-            ser = regedState.getInstance(tyser as ClassType);
+            const ser = regedState.getInstance(tyser as ClassType) as IStartupService;
             ctx.onDestroy(() => ser?.destroy());
             return ser?.configureService(ctx);
         }));
@@ -155,7 +154,7 @@ export const ConfigureServiceHandle = async function (ctx: ApplicationContext, n
     const boots = ctx.boots;
     if (boots?.length) {
         await lang.step(boots.map(tyser => () => {
-            const ser = regedState.getInstance(tyser);
+            const ser = regedState.getInstance(tyser) as IStartupService;
             ctx.onDestroy(() => ser?.destroy());
             startups.push(tyser);
             return ser.configureService(ctx);
