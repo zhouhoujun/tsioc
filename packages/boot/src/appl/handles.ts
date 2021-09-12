@@ -157,7 +157,7 @@ export const ConfigureServiceHandle = async function (ctx: ApplicationContext, n
             const ser = regedState.getInstance(tyser) as IStartupService;
             ctx.onDestroy(() => ser?.destroy());
             startups.push(tyser);
-            return ser.configureService(ctx);
+            return ser?.configureService(ctx);
         }));
     }
     return await next();

@@ -96,7 +96,6 @@ export class MappingRoute extends Route {
         return await next();
     }
 
-
     async invoke(ctx: MessageContext, meta: DecorDefine) {
         const injector = this.injector;
         if (meta && meta.propertyKey) {
