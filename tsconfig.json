@@ -45,16 +45,16 @@
         "packages/platform-browser/src"
       ],
       "@tsdi/platform-browser-boot": [
-        "packages/platform-browser-boot/src"
+        "packages/platform-browser/src"
       ],
       "@tsdi/platform-server": [
         "packages/platform-server/src"
       ],
       "@tsdi/platform-server-logs": [
-        "packages/platform-server-logs/src"
+        "packages/platform-server/src"
       ],
       "@tsdi/platform-server-boot": [
-        "packages/platform-server-boot/src"
+        "packages/platform-server/src"
       ],
       "@tsdi/unit": [
         "packages/unit/src"

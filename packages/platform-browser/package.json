@@ -1,12 +1,16 @@
 {
-  "name": "@tsdi/platform-browser",
+  "name": "@tsdi/platform-browser-boot",
   "version": "6.0.31",
-  "description": "@tsdi/platform-browser is platform of @tsdi framework for browser.",
+  "description": "tsioc is AOP, Ioc container, via typescript decorator",
+  "typings": "./lib/index.d.ts",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
   "keywords": [
-    "platform",
+    "boot",
+    "Application",
+    "frameworks",
+    "plarform",
     "browser",
     "AOP",
     "aop",
@@ -31,7 +35,6 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
-    "core-js": "^3.6.5"
   },
   "directories": {
     "lib": "lib"

@@ -1,31 +1,33 @@
-import { Container, getToken } from '@tsdi/ioc';
-import { ContainerBuilder } from '@tsdi/core';
+import { getToken, Injector } from '@tsdi/ioc';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, Student, InjCollegeClassRoom, InjMClassRoom, StringIdTest, SymbolIdest } from './debug';
-import { ServerModule } from '../src/ServerModule';
+
 import expect = require('expect');
+import { ServerModule } from '../src';
+
+
 
 describe('auto register with build', () => {
 
-    let container: Container;
+    let injector: Injector;
+
     before(async () => {
-        let builder = new ContainerBuilder();
-        container = builder.create();
-        container.use(ServerModule);
-        await container.load({
+        injector = Injector.create([ServerModule]);
+
+        await injector.load({
             files: __dirname + '/debug.ts'
         });
         // container.register(IocLog);
     });
 
     it('should auto wried property', () => {
-        let instance = container.get(SimppleAutoWried);
+        let instance = injector.get(SimppleAutoWried);
         expect(instance).toBeDefined();
         expect(instance.dateProperty).toBeDefined();
         expect(instance.dateProperty instanceof Date).toBeTruthy();
     });
 
     it('should auto create constructor params', () => {
-        let instance = container.get(ClassRoom);
+        let instance = injector.get(ClassRoom);
         // console.log(instance);
         expect(instance).toBeDefined();
         expect(instance.service).toBeDefined();
@@ -33,7 +35,7 @@ describe('auto register with build', () => {
     });
 
     it('should auto create prop with spec @Param() class.', () => {
-        let instance = container.get(MClassRoom);
+        let instance = injector.get(MClassRoom);
         expect(instance).toBeDefined();
         expect(instance.leader).toBeDefined();
         expect(instance.leader.join instanceof Date).toBeTruthy();
@@ -41,7 +43,7 @@ describe('auto register with build', () => {
     });
 
     it('should auto create constructor params with spec @Param() class.', () => {
-        let instance = container.get(CollegeClassRoom);
+        let instance = injector.get(CollegeClassRoom);
         expect(instance).toBeDefined();
         expect(instance.leader).toBeDefined();
         expect(instance.leader.join instanceof Date).toBeTruthy();
@@ -49,7 +51,7 @@ describe('auto register with build', () => {
     });
 
     it('should auto create prop with spec @Inject() class.', () => {
-        let instance = container.get(InjMClassRoom);
+        let instance = injector.get(InjMClassRoom);
         expect(instance).toBeDefined();
         expect(instance.leader).toBeDefined();
         expect(instance.leader.join instanceof Date).toBeTruthy();
@@ -57,7 +59,7 @@ describe('auto register with build', () => {
     });
 
     it('should auto create constructor params with spec @Inject() class.', () => {
-        let instance = container.get(InjCollegeClassRoom);
+        let instance = injector.get(InjCollegeClassRoom);
         expect(instance).toBeDefined();
         expect(instance.leader).toBeDefined();
         expect(instance.leader.join instanceof Date).toBeTruthy();
@@ -66,13 +68,13 @@ describe('auto register with build', () => {
 
     it('should provider implement sub class to abstract class', () => {
 
-        let instance = container.get(Student);
+        let instance = injector.get(Student);
         expect(instance).toBeDefined();
         // console.log(instance.sayHi());
         expect(instance.join instanceof Date).toBeTruthy();
         expect(instance.sayHi()).toEqual('I am a middle school student');
 
-        let instance2 = container.get(getToken(Student, 'college'));
+        let instance2 = injector.get(getToken(Student, 'college'));
         // console.log(instance2);
         expect(instance2).toBeDefined();
         expect(instance2.join instanceof Date).toBeTruthy();
@@ -82,7 +84,7 @@ describe('auto register with build', () => {
 
     it('should work with sting id to get class', () => {
 
-        let instance = container.get(StringIdTest);
+        let instance = injector.get(StringIdTest);
         expect(instance).toBeDefined();
         expect(instance.room).toBeDefined();
         expect(instance.room.leader).toBeDefined();
@@ -93,7 +95,7 @@ describe('auto register with build', () => {
 
     it('should work with Symbol id to get class', () => {
 
-        let instance = container.get(SymbolIdest);
+        let instance = injector.get(SymbolIdest);
         expect(instance).toBeDefined();
         expect(instance.container).toBeDefined();
         expect(instance.room).toBeDefined();
@@ -105,7 +107,7 @@ describe('auto register with build', () => {
     });
 
     after(() => {
-        container.destroy();
+        injector.destroy();
     })
 
 });

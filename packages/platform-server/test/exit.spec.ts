@@ -1,5 +1,5 @@
 import { ApplicationContext, BootApplication, DIModule } from '@tsdi/boot';
-import { ServerBootstrapModule } from '@tsdi/platform-server-boot';
+import { ServerBootstrapModule } from '../src';
 import { Before, Suite, Test } from '@tsdi/unit';
 import expect = require('expect');
 

@@ -1,2 +1,1 @@
-export * from './BrowserModuleLoader';
-export * from './BrowserModule';
+export * from './BootstrapModule';

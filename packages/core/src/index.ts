@@ -1,4 +1,3 @@
-export * from './global';
 export * from './tk'
 export * from './IBuilder';
 export * from './builder';

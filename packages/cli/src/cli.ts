@@ -10,7 +10,7 @@ const packageConf = require(cliRoot + '/package.json');
 const processRoot = path.join(path.dirname(process.cwd()), path.basename(process.cwd()));
 process.env.INIT_CWD = processRoot;
 
-let cwdPackageConf = path.join(processRoot, '/package.json');
+let cwdPackageConf:string|undefined = path.join(processRoot, '/package.json');
 if (!fs.existsSync(cwdPackageConf)) {
     cwdPackageConf = undefined;
 }
@@ -81,7 +81,6 @@ program
                     '@tsdi/logs',
                     '@tsdi/boot',
                     '@tsdi/platform-server',
-                    '@tsdi/platform-server-boot',
                     '@tsdi/activities',
                     '@tsdi/platform-server-activities',
                     '@tsdi/pack',
@@ -104,10 +103,8 @@ program
                 ];
                 if (options.browser) {
                     cmds.push('@tsdi/platform-browser');
-                    cmds.push('@tsdi/platform-browser-boot');
                 } else {
                     cmds.push('@tsdi/platform-server');
-                    cmds.push('@tsdi/platform-server-boot');
                 }
                 initcmds = `npm install ${initcmds} ${cmds.join(version) + version} --save${options.dev ? '-dev' : ''}`;
                 console.log(initcmds);
@@ -122,11 +119,6 @@ program
                     '@tsdi/aop',
                     '@tsdi/logs'
                 ];
-                if (options.browser) {
-                    cmds.push('@tsdi/platform-browser');
-                } else {
-                    cmds.push('@tsdi/platform-server');
-                }
                 initcmds = `npm install ${initcmds} ${cmds.join(version) + version} --save${options.dev ? '-dev' : ''}`;
                 console.log(initcmds);
                 execSync(initcmds, { cwd: processRoot });
@@ -139,7 +131,7 @@ function requireRegisters() {
     requireCwd('tsconfig-paths').register();
 }
 
-function runActivity(fileName, options) {
+function runActivity(fileName: string, options: any) {
     const wf = requireCwd('@tsdi/activities');
 
     let config;
@@ -158,7 +150,7 @@ function runActivity(fileName, options) {
     }
 }
 
-function vaildifyFile(fileName, defaultFile = 'taskfile'): string {
+function vaildifyFile(fileName: string, defaultFile = 'taskfile'): string {
     if (!fileName) {
         defaultFile = defaultFile.trim().replace(/(\.ts|\.js)$/, '');
         ['.ts', '.js'].some(ext => {

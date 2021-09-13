@@ -10,7 +10,6 @@ export * from './configure/manager';
 export * from './configure/register';
 
 
-
 // metadata
 export * from './metadata/meta';
 export * from './metadata/decor';
@@ -18,7 +17,7 @@ export * from './metadata/ref';
 export * from './metadata/tk';
 
 export * from './Context';
-
+export * from './global';
 
 // modules
 export * from './modules/strategy';
