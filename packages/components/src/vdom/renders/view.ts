@@ -1,5 +1,5 @@
 import { Inject } from '@tsdi/ioc';
-import { REQUEST_BODY, RouteMapping } from '@tsdi/boot';
+import { REQUEST_BODY, RouteMapping } from '@tsdi/core';
 import { LView, RootContext, View } from '../interfaces/view';
 
 /**

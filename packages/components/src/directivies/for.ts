@@ -148,7 +148,7 @@ export class ForDirective<T, U extends IterableType<T> = IterableType<T>> implem
     }
 
     get forTrackBy(): TrackByFunction<T> {
-        return this._trackByFn;
+        return this._trackByFn!;
     }
 
     private _iter: U | undefined | null = null;

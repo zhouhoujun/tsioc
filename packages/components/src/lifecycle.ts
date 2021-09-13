@@ -18,7 +18,7 @@ export interface Changes {
  * on changes.
  */
 export interface OnChanges {
-    onChanges(changs: Changes);
+    onChanges(changs: Changes): void;
 }
 
 

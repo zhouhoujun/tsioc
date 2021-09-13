@@ -1,5 +1,5 @@
 import { refl, Type } from '@tsdi/ioc';
-import { AnnotationReflect } from '@tsdi/boot';
+import { AnnotationReflect } from '@tsdi/core';
 import { ComponentMetadata, DirectiveMetadata } from './metadata/meta';
 import { ComponentDef, DirectiveDef } from './type';
 
@@ -31,7 +31,7 @@ export interface DirectiveReflect<T = any> extends AnnotationReflect<T> {
 }
 
 export function getDirectiveDef<T>(type: Type): DirectiveDef<T> {
-    return refl.get<DirectiveReflect>(type)?.def ?? null;
+    return refl.get<DirectiveReflect>(type)?.def ?? null!;
 }
 
 /**
@@ -65,5 +65,5 @@ export interface ComponentReflect<T = any> extends AnnotationReflect<T> {
 }
 
 export function getComponentDef<T>(type: Type): ComponentDef<T> {
-    return refl.get<ComponentReflect<T>>(type)?.def ?? null;
+    return refl.get<ComponentReflect<T>>(type)?.def ?? null!;
 }

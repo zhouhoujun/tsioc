@@ -32,17 +32,17 @@ export class EventEmitter<T extends any> extends Subject<T> {
         if (next && typeof next === 'object') {
             const genOrNext = next as PartialObserver<T>;
             schedulerFn = this.async ? (value: any) => {
-                setTimeout(() => genOrNext.next(value));
-            } : (value: any) => { genOrNext.next(value); };
+                setTimeout(() => genOrNext.next?.(value));
+            } : (value: any) => { genOrNext.next?.(value); };
 
             if (genOrNext.error) {
-                errorFn = this.async ? (err) => { setTimeout(() => genOrNext.error(err)); } :
-                    (err) => { genOrNext.error(err); };
+                errorFn = this.async ? (err) => { setTimeout(() => genOrNext.error?.(err)); } :
+                    (err) => { genOrNext.error?.(err); };
             }
 
             if (genOrNext.complete) {
-                completeFn = this.async ? () => { setTimeout(() => genOrNext.complete()); } :
-                    () => { genOrNext.complete(); };
+                completeFn = this.async ? () => { setTimeout(() => genOrNext.complete?.()); } :
+                    () => { genOrNext.complete?.(); };
             }
         } else {
             schedulerFn = this.async ? (value: any) => { setTimeout(() => next(value)); } :

@@ -18,5 +18,5 @@ export abstract class Renderer<T = any> {
     //     appRef.bootstrap(compRef);
     // }
 
-    abstract render();
+    abstract render(): void;
 }

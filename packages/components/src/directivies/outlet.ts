@@ -1,5 +1,5 @@
 import { EMPTY_OBJ, Injector, Type } from '@tsdi/ioc';
-import { ModuleFactory, ModuleInjector } from '@tsdi/boot';
+import { ModuleFactory, ModuleInjector } from '@tsdi/core';
 import { Directive, Input } from '../metadata/decor';
 import { Change, Changes, OnChanges, OnDestroy } from '../lifecycle';
 import { ComponentRef } from '../refs/component';
@@ -151,10 +151,10 @@ export class TemplateOutletDirective implements OnChanges {
  */
 @Directive({ selector: '[componentOutlet]' })
 export class DirComponentOutlet implements OnChanges, OnDestroy {
-  @Input() componentOutlet: Type<any>;
-  @Input() componentOutletInjector: Injector;
-  @Input() componentOutletContent: any[][];
-  @Input() componentOutletModuleFactory: ModuleFactory;
+  @Input() componentOutlet!: Type<any>;
+  @Input() componentOutletInjector!: Injector;
+  @Input() componentOutletContent!: any[][];
+  @Input() componentOutletModuleFactory!: ModuleFactory;
 
   private _componentRef: ComponentRef<any> | null = null;
   private _moduleRef: ModuleInjector<any> | null = null;

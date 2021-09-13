@@ -1,4 +1,4 @@
-import { MappingRoute, MessageContext } from '@tsdi/boot';
+import { MappingRoute, MessageContext } from '@tsdi/core';
 import { Type } from '@tsdi/ioc';
 import { ApplicationRef } from '../refs/app';
 

@@ -1,4 +1,4 @@
-import { Handle, Router } from '@tsdi/boot';
+import { Handle, Router } from '@tsdi/core';
 
 /**
  * component renderer router.

@@ -201,8 +201,8 @@ export class IfDirective<T> {
  * if context
  */
 export class DirIfContext<T> {
-    public $implicit: T = null;
-    public dirIf: T = null;
+    public $implicit: T = null!;
+    public dirIf: T = null!;
 }
 
 function assertTemplate(property: string, templateRef: TemplateRef<any> | null): void {

@@ -5,7 +5,7 @@ import {
 import {
     AnnotationReflect, MappingReflect, MessageQueue, Middlewares,
     MiddlewareType, RouteMapingMetadata, Router, RunnableFactoryResolver
-} from '@tsdi/boot';
+} from '@tsdi/core';
 import {
     BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
     HostListenerMetadata, PipeMetadata, QueryMetadata, VaildateMetadata
@@ -424,7 +424,7 @@ export const HostMapping: IHostMappingDecorator = createDecorator<RouteMapingMet
             if (!queue) throw new Error(lang.getClassName(parent) + 'has not registered!');
             if (!(queue instanceof Router)) throw new Error(lang.getClassName(queue) + 'is not message router!');
 
-            const mapping = new HostMappingRoute(route, queue.getPath(), ctx.reflect as MappingReflect, injector, middlewares);
+            const mapping = new HostMappingRoute(route || '', queue.getPath(), ctx.reflect as MappingReflect, injector, middlewares);
             injector.onDestroy(() => queue.unuse(mapping));
             queue.use(mapping);
             next();
@@ -898,7 +898,7 @@ export const NonSerialize = createPropDecorator<PropertyMetadata>('NonSerialize'
             if (!(ctx.reflect as ComponentReflect).nonSerialize) {
                 (ctx.reflect as ComponentReflect).nonSerialize = [];
             }
-            (ctx.reflect as ComponentReflect).nonSerialize.push(ctx.propertyKey);
+            (ctx.reflect as ComponentReflect).nonSerialize?.push(ctx.propertyKey);
             return next();
         }
     }

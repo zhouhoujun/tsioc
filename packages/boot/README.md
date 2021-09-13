@@ -3,7 +3,7 @@
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
-`@tsdi/boot`： DI Module manager, application bootstrap. base on AOP, Ioc container, via `@tsdi/core`.
+`@tsdi/boot`： application bootstrap, via `@tsdi/core`.
 
 old packages:
 [`@ts-ioc/core`](https://www.npmjs.com/package/@ts-ioc/core) 
@@ -40,7 +40,8 @@ DI Module manager, application bootstrap. base on AOP.
 
 
 ```ts
-import { DIModule, BootApplication } from '@tsdi/boot';
+import { DIModule } from '@tsdi/core';
+import { BootApplication } from '@tsdi/boot';
 
 
 

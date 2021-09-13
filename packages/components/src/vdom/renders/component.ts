@@ -1,5 +1,5 @@
 import { Inject, Type } from '@tsdi/ioc';
-import { REQUEST_BODY, RouteMapping } from '@tsdi/boot';
+import { REQUEST_BODY, RouteMapping } from '@tsdi/core';
 import { RendererFactory } from './renderer';
 import { IElement } from '../interfaces/node';
 import { getComponentDef } from '../../reflect';
@@ -8,7 +8,7 @@ import { getComponentDef } from '../../reflect';
 export class RenderComponent {
 
     @Inject()
-    renderFac: RendererFactory;
+    renderFac!: RendererFactory;
 
     @RouteMapping('/:type', 'create')
     render(type: string, @Inject(REQUEST_BODY) body: { componentType: Type, hostElement?: IElement }) {
