@@ -1,4 +1,4 @@
-import { AnnotationMetadata } from '@tsdi/boot';
+import { AnnotationMetadata } from '@tsdi/core';
 
 /**
  * Test metadata.

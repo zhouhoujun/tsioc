@@ -1,5 +1,5 @@
 import { lang, Injectable } from '@tsdi/ioc';
-import { TargetRef } from '@tsdi/boot';
+import { TargetRef } from '@tsdi/core';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata/decor';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata/meta';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';

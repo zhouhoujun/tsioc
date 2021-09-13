@@ -1,5 +1,5 @@
 import { Abstract, Type } from '@tsdi/ioc';
-import { Runnable } from '@tsdi/boot';
+import { Runnable } from '@tsdi/core';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
 
 /**

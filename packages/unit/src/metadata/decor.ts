@@ -1,5 +1,5 @@
 import { createDecorator, DecoratorOption, EMPTY_OBJ } from '@tsdi/ioc';
-import { AnnotationReflect, Runnable } from '@tsdi/boot';
+import { AnnotationReflect, Runnable } from '@tsdi/core';
 import { SuiteMetadata, TestCaseMetadata, TestMetadata } from './meta';
 import { UnitRunner } from '../runner/Runner';
 

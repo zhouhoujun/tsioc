@@ -1,5 +1,5 @@
 import * as expect from 'expect';
-import { BootApplication, ApplicationContext } from '@tsdi/boot';
+import { Application, ApplicationContext } from '@tsdi/core';
 import { TypeOrmHelper } from '../src';
 import { Suite, Before, Test, After } from '@tsdi/unit';
 import { User, Role } from './models/models';
@@ -17,7 +17,7 @@ export class ReposTest {
 
     @Before()
     async beforeInit() {
-        this.ctx = await BootApplication.run({
+        this.ctx = await Application.run({
             type: MockBootTest,
             exit: false,
             configures: [

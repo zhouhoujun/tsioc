@@ -1,21 +1,19 @@
-import { ContainerBuilder } from '../src';
-// import { AnnotationAspect } from './aop/AnnotationAspect';
-// import { CheckRightAspect } from './aop/CheckRightAspect';
-import { Container } from '@tsdi/ioc';
+import { Injector } from '../src';
 import * as testModules from './extends-test';
 import { Person, Home } from './extends-test';
 import expect = require('expect');
 
 describe('extends test', () => {
-    let container: Container;
+    let injector: Injector;
+    
     before(async () => {
-        let builder = new ContainerBuilder();
-        container = await builder.build(testModules);
+        injector = Injector.create();
+        await injector.load(testModules);
     });
 
     it('should auto wried base class property', () => {
-        expect(container.has(Person)).toBeTruthy();
-        let instance = container.get(Person);
+        expect(injector.has(Person)).toBeTruthy();
+        let instance = injector.get(Person);
         expect(instance.home).not.toBeUndefined();
         expect(instance.container).not.toBeUndefined();
         expect(instance.container.has(Home)).toEqual(true);
@@ -24,7 +22,7 @@ describe('extends test', () => {
     });
 
     after(()=>{
-        container.destroy();
+        injector.destroy();
     });
 
 });

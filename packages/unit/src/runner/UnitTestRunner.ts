@@ -1,5 +1,5 @@
 import { Injectable, isString, isClass, isArray, lang, refl, Injector } from '@tsdi/ioc';
-import { AnnotationReflect, ApplicationContext, Runnable } from '@tsdi/boot';
+import { AnnotationReflect, ApplicationContext, Runnable } from '@tsdi/core';
 import { OldTestRunner } from './OldTestRunner';
 import { TestReport } from '../reports/TestReport';
 import { UnitTestConfigure } from '../UnitTestConfigure';

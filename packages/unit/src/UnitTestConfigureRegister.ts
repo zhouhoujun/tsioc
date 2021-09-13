@@ -1,5 +1,5 @@
 import { isArray } from '@tsdi/ioc';
-import { ConfigureRegister, ApplicationContext, Configure } from '@tsdi/boot';
+import { ConfigureRegister, ApplicationContext, Configure } from '@tsdi/core';
 import { UnitTestConfigure } from './UnitTestConfigure';
 import { Assert } from './assert/assert';
 import * as assert from 'assert';

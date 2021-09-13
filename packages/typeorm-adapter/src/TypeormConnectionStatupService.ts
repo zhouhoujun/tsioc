@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { ILogger } from '@tsdi/logs';
 import { Singleton, Type, isString, isArray, Injector } from '@tsdi/ioc';
-import { ConnectionOptions, Configuration, ConnectionStatupService, ApplicationContext } from '@tsdi/boot';
+import { ConnectionOptions, Configuration, ConnectionStatupService, ApplicationContext } from '@tsdi/core';
 import {
     getConnection, createConnection, ConnectionOptions as OrmConnOptions, Connection,
     getMetadataArgsStorage, getCustomRepository, getConnectionManager

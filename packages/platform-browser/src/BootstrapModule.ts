@@ -1,4 +1,4 @@
-import { DIModule, global, PROCESS_ROOT } from '@tsdi/boot';
+import { DIModule, global, PROCESS_ROOT } from '@tsdi/core';
 
 let processRoot = global.baseURL || '.';
 

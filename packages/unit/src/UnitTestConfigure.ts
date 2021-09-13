@@ -1,5 +1,5 @@
 import { Type } from '@tsdi/ioc';
-import { AnnotationMetadata, Configuration } from '@tsdi/boot';
+import { AnnotationMetadata, Configuration } from '@tsdi/core';
 import { ITestReport } from './reports/ITestReport';
 
 /**

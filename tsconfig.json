@@ -26,9 +26,7 @@
       "@tsdi/aop": [
         "packages/aop/src"
       ],
-      "@tsdi/boot": [
-        "packages/boot/src"
-      ],
+
       "@tsdi/components": [
         "packages/components/src"
       ],

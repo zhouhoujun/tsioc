@@ -1,7 +1,7 @@
 import { Type, isClass, isArray, LoadType } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
-import { BootApplication, checkBootArgs } from '@tsdi/boot';
+import { Application, checkBootArgs } from '@tsdi/boot';
 import { ComponentsModule } from '@tsdi/components';
 import { ActivityModule } from './ActivityModule';
 import { SequenceActivity } from './activities';
@@ -16,9 +16,9 @@ import { WorkflowContextToken } from './core/IWorkflowContext';
  *
  * @export
  * @class Workflow
- * @extends {BootApplication}
+ * @extends {Application}
  */
-export class Workflow<T extends WorkflowContext = WorkflowContext> extends BootApplication implements ContextInit {
+export class Workflow<T extends WorkflowContext = WorkflowContext> extends Application implements ContextInit {
 
     protected onInit(target: Type | ActivityOption<T> | T) {
         if (!isClass(target)) {

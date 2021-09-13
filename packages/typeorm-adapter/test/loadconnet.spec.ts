@@ -1,4 +1,4 @@
-import { ApplicationContext, BootApplication } from '@tsdi/boot';
+import { ApplicationContext, Application } from '@tsdi/core';
 
 import { User } from './models/models';
 import { Suite, Before, Test, After } from '@tsdi/unit';
@@ -15,7 +15,7 @@ export class LoadReposTest {
 
     @Before()
     async beforeInit() {
-        this.ctx = await BootApplication.run({
+        this.ctx = await Application.run({
             type: MockBootTest,
             exit: false,
             configures: [

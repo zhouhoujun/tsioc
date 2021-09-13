@@ -1,5 +1,5 @@
 import { Singleton, Type, ObjectMap, Autorun, Token, isFunction, isString, tokenId, Inject } from '@tsdi/ioc';
-import { ModelParser, MODEL_PARSER, DBPropertyMetadata } from '@tsdi/boot';
+import { ModelParser, MODEL_PARSER, DBPropertyMetadata } from '@tsdi/core';
 import { getMetadataArgsStorage } from 'typeorm';
 import { ColumnMetadataArgs } from 'typeorm/metadata-args/ColumnMetadataArgs';
 

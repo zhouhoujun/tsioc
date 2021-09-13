@@ -1,4 +1,4 @@
-import { DIModule } from '@tsdi/boot';
+import { DIModule } from '@tsdi/core';
 import { ServerLogFormater } from './ServerLogFormater';
 import { Log4jsAdapter } from './Log4jsAdapter';
 

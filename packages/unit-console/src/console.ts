@@ -1,5 +1,5 @@
 import { Token, ObjectMap, lang } from '@tsdi/ioc';
-import { DIModule } from '@tsdi/boot';
+import { DIModule } from '@tsdi/core';
 import { ISuiteDescribe, RealtimeReporter, ICaseDescribe } from '@tsdi/unit';
 import { ServerBootstrapModule, ServerLogsModule } from '@tsdi/platform-server';
 import * as chalk from 'chalk';

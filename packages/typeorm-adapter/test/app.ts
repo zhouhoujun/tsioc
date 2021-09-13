@@ -1,5 +1,5 @@
-import { DIModule, ConnectionOptions } from '@tsdi/boot';
-import { ServerBootstrapModule } from '@tsdi/platform-server-boot';
+import { DIModule, ConnectionOptions } from '@tsdi/core';
+import { ServerBootstrapModule } from '@tsdi/platform-server';
 import { TypeOrmModule } from '../src';
 import { Connection } from 'typeorm';
 import { User } from './models/models';

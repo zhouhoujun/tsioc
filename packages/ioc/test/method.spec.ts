@@ -62,6 +62,7 @@ describe('method exec test', () => {
 
         }
 
+        @AutoWired()
         sayHello(@Inject(Child) personA: Person, personB: Person) {
             return personA.say() + ', ' + personB.say();
         }
@@ -84,11 +85,12 @@ describe('method exec test', () => {
         expect(refs.class.hasMetadata(Inject, 'method')).toBeFalsy();
     });
 
-    // it('show has method metadata', () => {
-    //     expect(hasOwnMethodMetadata(Method, MethodTest3)).toBeTruthy();
-    //     expect(hasOwnMethodMetadata(Method, MethodTest3, 'sayHello')).toBeTruthy();
-    //     expect(hasOwnMethodMetadata(Method, MethodTest3, 'sayHello2')).toBeFalsy();
-    // });
+    it('show has method metadata', () => {
+        let refs = refl.get(MethodTest3);
+        expect(refs.class.hasMetadata(AutoWired, 'method')).toBeTruthy();
+        expect(refs.class.hasMetadata(AutoWired, 'method', 'sayHello')).toBeTruthy();
+        expect(refs.class.hasMetadata(AutoWired, 'method', 'sayHello2')).toBeFalsy();
+    });
 
     it('show exec with type and instance', async () => {
         // container.register(Person);
