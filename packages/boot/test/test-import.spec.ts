@@ -1,7 +1,8 @@
 import { ModuleA, ModuleB, ClassSevice, SubMessageQueue, SocketService, StatupModule, TestService } from './demo';
-import { BootApplication, RootMessageQueue, ROOT_QUEUE, Runner,  } from '../src';
+import { RootMessageQueue, ROOT_QUEUE, Runner  } from '@tsdi/core';
 import expect = require('expect');
 import * as net from 'net';
+import { BootApplication } from '../src';
 
 
 describe('di module', () => {

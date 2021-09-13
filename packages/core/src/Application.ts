@@ -34,16 +34,16 @@ export class Application implements IApplication {
         if (!isFunction(target)) {
             if (!this.loader) this.loader = target.loader;
             const providers = (target.providers && target.providers.length) ? [...DEFAULTA_FACTORYS, ...target.providers] : DEFAULTA_FACTORYS;
-            target.deps = [CoreModule, MiddlewareModule, ...target.deps || EMPTY];
+            target.deps = [...this.getDeps(), ...target.deps || EMPTY];
             this.root = this.createInjector(providers, target);
         } else {
-            const option = { type: target, deps: [CoreModule, MiddlewareModule] };
+            const option = { type: target, deps: this.getDeps() };
             this.root = this.createInjector(DEFAULTA_FACTORYS, option);
         }
         this.initRoot();
     }
 
-    initRoot() {
+    protected initRoot() {
         this.root.setValue(Application, this);
         this.root.setValue(APPLICATION, this);
     }
@@ -115,6 +115,10 @@ export class Application implements IApplication {
             }
         }
         return this.context;
+    }
+
+    protected getDeps() {
+        return [CoreModule, MiddlewareModule];
     }
 
     protected createInjector(providers: ProviderType[], option: ApplicationOption) {

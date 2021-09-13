@@ -1,5 +1,4 @@
-import { Destroyable } from '@tsdi/ioc';
-import { ApplicationContext } from './Context';
+import { IApplication } from '@tsdi/core';
 
 
 /**
@@ -10,20 +9,7 @@ import { ApplicationContext } from './Context';
  * @extends {ContextInit<T>}
  * @template T
  */
-export interface IBootApplication extends Destroyable {
+export interface IBootApplication extends IApplication {
 
-    /**
-     * get boot application context.
-     *
-     * @returns {T}
-     */
-    getContext(): ApplicationContext;
-
-    /**
-     * run application
-     *
-     * @returns {Promise<T>}
-     */
-    run(): Promise<ApplicationContext>;
 
 }

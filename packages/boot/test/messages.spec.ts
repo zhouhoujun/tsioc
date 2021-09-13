@@ -1,6 +1,7 @@
-import { BootApplication, DIModule, Message, MessageQueue, MessageContext, Middleware,  RouteMapping, ApplicationContext, Handle } from '../src';
+import { DIModule, Message, MessageQueue, MessageContext, Middleware,  RouteMapping, ApplicationContext, Handle } from '@tsdi/core';
 import expect = require('expect');
 import { Injector, Injectable, lang } from '@tsdi/ioc';
+import { BootApplication } from '../src';
 
 @RouteMapping('/device')
 class DeviceController {

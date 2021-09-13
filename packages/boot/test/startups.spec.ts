@@ -1,6 +1,7 @@
-import { BootApplication, DIModule, StartupService, Boot, ApplicationContext } from '../src';
+import { DIModule, StartupService, Boot, ApplicationContext } from '@tsdi/core';
 import expect = require('expect');
 import { Injector, lang } from '@tsdi/ioc';
+import { BootApplication } from '../src';
 
 @Boot()
 export class MyStartupService extends StartupService {

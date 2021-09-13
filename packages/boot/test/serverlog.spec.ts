@@ -1,4 +1,4 @@
-import { ApplicationContext, BootApplication, formatDate } from "@tsdi/boot";
+import { ApplicationContext, formatDate } from "@tsdi/core";
 import { After, Before, Suite, Test } from "@tsdi/unit";
 import expect = require("expect");
 import { ServerMainModule, configurtion } from "./demo";
@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 const del = require('del');
 import { isString, lang } from "@tsdi/ioc";
+import { BootApplication } from "../src";
 
 const logdir = path.join(__dirname, '../log-caches')
 

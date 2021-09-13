@@ -26,12 +26,11 @@
       "@tsdi/aop": [
         "packages/aop/src"
       ],
-
+      "@tsdi/boot": [
+        "packages/boot/src"
+      ],
       "@tsdi/components": [
         "packages/components/src"
-      ],
-      "@tsdi/component": [
-        "packages/component/src"
       ],
       "@tsdi/compiler": [
         "packages/compiler/src"
@@ -42,16 +41,7 @@
       "@tsdi/platform-browser": [
         "packages/platform-browser/src"
       ],
-      "@tsdi/platform-browser-boot": [
-        "packages/platform-browser/src"
-      ],
       "@tsdi/platform-server": [
-        "packages/platform-server/src"
-      ],
-      "@tsdi/platform-server-logs": [
-        "packages/platform-server/src"
-      ],
-      "@tsdi/platform-server-boot": [
         "packages/platform-server/src"
       ],
       "@tsdi/unit": [

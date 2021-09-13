@@ -1,10 +1,9 @@
-import { DIModule, Message, MessageQueue, StartupService, ApplicationContext, Boot, Configuration, Runnable, TargetRef, Runner } from '../src';
+import { DIModule, Message, MessageQueue, StartupService, ApplicationContext, Boot, Configuration, Runnable, TargetRef, Runner } from '@tsdi/core';
 import { Injectable, Inject, Singleton } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
 import { LogConfigure, LogModule } from '@tsdi/logs';
 import * as net from 'net';
-import { ServerBootstrapModule } from '@tsdi/platform-server-boot';
-import { ServerLogsModule } from '@tsdi/platform-server-logs';
+import { ServerBootstrapModule, ServerLogsModule } from '@tsdi/platform-server';
 
 export class TestService {
     testFiled = 'test';

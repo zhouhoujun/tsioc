@@ -1,18 +1,17 @@
-# packaged @tsdi/boot
+# packaged @tsdi/core
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
-`@tsdi/boot`： DI Module manager, application bootstrap. base on AOP, Ioc container, via `@tsdi/core`.
+`@tsdi/core`： DI Module manager, application core. base on AOP, Ioc container, via `@tsdi/ioc`.
 
 old packages:
-[`@ts-ioc/core`](https://www.npmjs.com/package/@ts-ioc/core) 
 [`tsioc`](https://www.npmjs.com/package/tsioc)
 # Install
 
 ```shell
 
-npm install @tsdi/boot
+npm install @tsdi/core
 
 // in browser
 npm install @tsdi/platform-browser
@@ -40,7 +39,7 @@ DI Module manager, application bootstrap. base on AOP.
 
 
 ```ts
-import { DIModule, BootApplication } from '@tsdi/boot';
+import { DIModule, Application } from '@tsdi/core';
 
 
 
@@ -220,7 +219,7 @@ export const configurtion = {
 } as Configuration;
 
 
-BootApplication.run(ServerMainModule)
+Application.run(ServerMainModule)
 
 
 ```
@@ -244,7 +243,7 @@ class MvcApi {
     static main() {
         console.log('run mvc api...');
         // use your builder
-        BootApplication.run(MvcApi);
+        Application.run(MvcApi);
     }
 }
 
@@ -255,7 +254,7 @@ class MvcApi {
 
 ```ts
 
-import { BootApplication, DIModule, Message, MessageQueue, MessageContext, Middleware,  RouteMapping, ApplicationContext, Handle } from '../src';
+import { Application, DIModule, Message, MessageQueue, MessageContext, Middleware,  RouteMapping, ApplicationContext, Handle } from '../src';
 import expect = require('expect');
 import { Injector, Injectable, lang } from '@tsdi/ioc';
 
@@ -388,7 +387,7 @@ describe('app message queue', () => {
     let injector: Injector;
 
     before(async () => {
-        ctx = await BootApplication.run(MainApp);
+        ctx = await Application.run(MainApp);
         injector = ctx.injector;
     });
 
