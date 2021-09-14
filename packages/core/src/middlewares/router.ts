@@ -1,5 +1,5 @@
 import { Inject, Injectable, isFunction, refl, Singleton } from '@tsdi/ioc';
-import { MessageContext } from './ctx';
+import { Context } from './ctx';
 import { IRouter, ROUTE_URL, ROUTE_PREFIX, MiddlewareType, RouteReflect, ROUTE_PROTOCOL } from './handle';
 import { MessageQueue } from './queue';
 import { Route, RouteVaildator } from './route';
@@ -21,14 +21,14 @@ export class Router extends MessageQueue implements IRouter {
     }
 
     private sorted = false;
-    protected override canExecute(ctx: MessageContext): boolean {
+    protected override canExecute(ctx: Context): boolean {
         if (!ctx.vaild) {
             ctx.vaild = this.injector.get(RouteVaildator);
         }
         return this.match(ctx);
     }
 
-    protected override beforeExec(ctx: MessageContext) {
+    protected override beforeExec(ctx: Context) {
         if (!this.sorted) {
             this.handles.sort((a, b) => this.getUrlFrom(b).length - this.getUrlFrom(a).length);
             this.resetHandler();
@@ -47,7 +47,7 @@ export class Router extends MessageQueue implements IRouter {
         return '';
     }
 
-    protected match(ctx: MessageContext): boolean {
+    protected match(ctx: Context): boolean {
         return (!ctx.status || ctx.status === 404) && this.protocol === ctx.protocol && ctx.vaild?.isActiveRoute(ctx, this.url, this.prefix) === true;
     }
 

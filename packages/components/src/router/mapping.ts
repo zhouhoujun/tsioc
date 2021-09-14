@@ -1,4 +1,4 @@
-import { MappingRoute, MessageContext } from '@tsdi/core';
+import { MappingRoute, Context } from '@tsdi/core';
 import { Type } from '@tsdi/ioc';
 import { ApplicationRef } from '../refs/app';
 
@@ -8,7 +8,7 @@ import { ApplicationRef } from '../refs/app';
  */
 export class HostMappingRoute extends MappingRoute {
 
-    protected getInstance(ctx: MessageContext) {
+    protected getInstance(ctx: Context) {
         // todo get host lived component.
         const appRef = this.injector.get(ApplicationRef);
         let component = appRef.components.find(c => c instanceof this.reflect.type)?.instance;

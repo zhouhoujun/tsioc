@@ -1,6 +1,6 @@
 import { Autorun, Injector, lang, Singleton, Token, tokenId } from '@tsdi/ioc';
 import { ApplicationContext } from '../Context';
-import { MessageContext } from './ctx';
+import { Context } from './ctx';
 import { MessageQueue } from './queue';
 import { RouteVaildator } from './route';
 import { RootRouter } from './router';
@@ -33,11 +33,11 @@ export class RootMessageQueue extends MessageQueue {
 }
 
 
-function getValue<T>(this: MessageContext, token: Token<T>): T {
+function getValue<T>(this: Context, token: Token<T>): T {
     return this.injector.get(token);
 }
 
-function setValue(this: MessageContext, token: Token, value: any): void {
+function setValue(this: Context, token: Token, value: any): void {
     this.injector.setValue(token, value);
 }
 
@@ -47,7 +47,7 @@ const protocolReg = /^\w+:\/\//;
  * @param ctx 
  * @param next 
  */
-export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) => {
+export const initQueue = async (ctx: Context, next: () => Promise<void>) => {
     const { injector, request } = ctx;
     ctx.vaild = injector.get(RouteVaildator);
 
@@ -55,7 +55,7 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
         ctx.vaild = ctx.injector.get(RouteVaildator);
     }
 
-    const providers = Injector.create(request.providers, injector);
+    const providers = request.providers || [];
 
     if (request.restful) {
         let matchs = request.url?.match(/\/:\w+/gi);

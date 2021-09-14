@@ -1,7 +1,7 @@
 import { tokenId, Token, Type } from '@tsdi/ioc';
 import { Configuration } from '../configure/config';
 import { IStartupService } from '../services/intf';
-import { MessageContext } from '../middlewares/ctx';
+import { Context } from '../middlewares/ctx';
 import { IApplication } from '../IApplication';
 import { ConfigureRegister } from '../configure/register';
 
@@ -49,4 +49,4 @@ export const CTX_OPTIONS = tokenId<any>('CTX_OPTIONS');
 /**
  * middleware context.
  */
-export const CONTEXT: Token<MessageContext> = tokenId<MessageContext>('MIDDLE_CONTEXT');
+export const CONTEXT: Token<Context> = tokenId<Context>('MIDDLE_CONTEXT');

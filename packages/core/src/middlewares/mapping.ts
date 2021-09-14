@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { CONTEXT } from '../metadata/tk';
 import { TypeParser } from '../services/intf';
-import { MessageContext } from './ctx';
+import { Context } from './ctx';
 import { IRouter, Middleware, MiddlewareType } from './handle';
 import { MODEL_PARSER, ModelParser } from './parser';
 import { ResultValue } from './result';
@@ -52,7 +52,7 @@ const emptyNext = async () => { };
 
 @Abstract()
 export abstract class RouteMappingVaildator {
-    abstract getMiddlewares(ctx: MessageContext, reflect: MappingReflect, propertyKey?: string): MiddlewareType[];
+    abstract getMiddlewares(ctx: Context, reflect: MappingReflect, propertyKey?: string): MiddlewareType[];
 }
 
 
@@ -82,7 +82,7 @@ export class MappingRoute extends Route {
         super(url, prefix);
     }
 
-    protected override async navigate(ctx: MessageContext, next: () => Promise<void>): Promise<void> {
+    protected override async navigate(ctx: Context, next: () => Promise<void>): Promise<void> {
         let meta = this.getRouteMetaData(ctx);
         if (!meta) {
             return await next();
@@ -96,7 +96,7 @@ export class MappingRoute extends Route {
         return await next();
     }
 
-    async invoke(ctx: MessageContext, meta: DecorDefine) {
+    async invoke(ctx: Context, meta: DecorDefine) {
         const injector = this.injector;
         if (meta && meta.propertyKey) {
             const ctrl = this.getInstance(ctx);
@@ -105,7 +105,7 @@ export class MappingRoute extends Route {
             }
 
             const providers = await this.createProvider(ctx, ctrl, meta.metadata, this.reflect.methodParams.get(meta.propertyKey));
-            providers.unshift(ctx.providers);
+            ctx.providers && providers.unshift(...ctx.providers);
             let result = injector.invoke(ctrl, meta.propertyKey, providers);
             if (isPromise(result)) {
                 result = await result;
@@ -132,13 +132,13 @@ export class MappingRoute extends Route {
         }
     }
 
-    protected getInstance(ctx: MessageContext) {
-        const providers = [ctx.providers, { provide: CONTEXT, useValue: ctx }];
+    protected getInstance(ctx: Context) {
+        const providers = [...ctx.providers||[], { provide: CONTEXT, useValue: ctx }];
         return this.injector.resolve(this.reflect.type, providers)
             ?? this.injector.state().resolve(this.reflect.type, providers);
     }
 
-    protected getRouteMiddleware(ctx: MessageContext, meta: DecorDefine) {
+    protected getRouteMiddleware(ctx: Context, meta: DecorDefine) {
         let vailds = this.injector.getServices(RouteMappingVaildator);
         let middlewares = this.middlewares || [];
         if (vailds && vailds.length) {
@@ -152,7 +152,7 @@ export class MappingRoute extends Route {
         return middlewares;
     }
 
-    protected getRouteMetaData(ctx: MessageContext) {
+    protected getRouteMetaData(ctx: Context) {
         const vaild = ctx.vaild!;
         let subRoute = vaild.vaildify(vaild.getReqRoute(ctx, this.prefix).replace(this.url, ''), true);
         if (!this.reflect.sortRoutes) {
@@ -181,7 +181,7 @@ export class MappingRoute extends Route {
         return meta;
     }
 
-    protected async createProvider(ctx: MessageContext, ctrl: any, meta: RouteMapingMetadata, params?: ParameterMetadata[]): Promise<ProviderType[]> {
+    protected async createProvider(ctx: Context, ctrl: any, meta: RouteMapingMetadata, params?: ParameterMetadata[]): Promise<ProviderType[]> {
         const vaild = ctx.vaild!;
         const injector = this.injector;
         let providers: ProviderType[] = [{ provide: CONTEXT, useValue: ctx }];
@@ -265,7 +265,7 @@ export class MappingRoute extends Route {
         return providers;
     }
 
-    protected parseHandle(state: RegisteredState, mdty: MiddlewareType): AsyncHandler<MessageContext> {
+    protected parseHandle(state: RegisteredState, mdty: MiddlewareType): AsyncHandler<Context> {
         if (mdty instanceof Middleware) {
             return mdty.toHandle();
         } else if (lang.isBaseOf(mdty, Middleware)) {

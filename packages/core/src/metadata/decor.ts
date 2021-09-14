@@ -467,7 +467,7 @@ export const RouteMapping: IRouteMappingDecorator = createDecorator<RouteMapingM
             if (!queue) throw new Error(lang.getClassName(parent) + 'has not registered!');
             if (!(queue instanceof Router)) throw new Error(lang.getClassName(queue) + 'is not message router!');
 
-            const mapping = new MappingRoute(route!, queue.getPath(), ctx.reflect as MappingReflect, injector, middlewares);
+            const mapping = new MappingRoute(route || '', queue.getPath(), ctx.reflect as MappingReflect, injector, middlewares);
             injector.onDestroy(() => queue.unuse(mapping));
             queue.use(mapping);
 

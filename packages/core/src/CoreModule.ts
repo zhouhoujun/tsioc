@@ -18,12 +18,12 @@ export const DEFAULTA_FACTORYS: ProviderType[] = [
  * Bootstrap ext for ioc. auto run setup after registered.
  * with @IocExt('setup') decorator.
  * @export
- * @class BootModule
+ * @class CoreModule
  */
 @IocExt()
 export class CoreModule {
     /**
-     * register aop for container.
+     * register core module.
      */
     setup(@Inject() injector: Injector) {
         injector.action().regAction(BootLifeScope);

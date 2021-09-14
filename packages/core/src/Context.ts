@@ -6,7 +6,7 @@ import { ILoggerManager } from '@tsdi/logs';
 import { Configuration, ConfigureManager } from './configure/config';
 import { AnnotationReflect, ModuleReflect } from './metadata/ref';
 import { MessageQueue } from './middlewares/queue';
-import { MessageContext, RequestOption } from './middlewares';
+import { Context, RequestOption } from './middlewares';
 
 
 
@@ -284,15 +284,15 @@ export abstract class ApplicationContext implements Destroyable {
      * @param {() => Promise<void>} [next]
      * @returns {Promise<void>}
      */
-    abstract send(request: RequestOption, ...providers: ProviderType[]): Promise<MessageContext>;
+    abstract send(request: RequestOption, ...providers: ProviderType[]): Promise<Context>;
     /**
      * send message
      *
      * @param {string} url route url
      * @param {RequestOption} request request options data.
-     * @returns {Promise<MessageContext>}
+     * @returns {Promise<Context>}
      */
-    abstract send(url: string, request: RequestOption, ...providers: ProviderType[]): Promise<MessageContext>
+    abstract send(url: string, request: RequestOption, ...providers: ProviderType[]): Promise<Context>
     /**
      * get log manager.
      */

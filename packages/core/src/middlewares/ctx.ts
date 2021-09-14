@@ -1,4 +1,4 @@
-import { Injector, ObjectMap, ProviderType, Token } from '@tsdi/ioc';
+import { Abstract, Injector, ObjectMap, ProviderType, Token } from '@tsdi/ioc';
 
 /**
  * Request
@@ -11,7 +11,7 @@ export interface RequestOption {
     /**
      * restful params.
      */
-    readonly restful?: ObjectMap<string|number>;
+    readonly restful?: ObjectMap<string | number>;
     /**
      * protocol.
      */
@@ -36,17 +36,74 @@ export interface RequestOption {
      * the target raise request.
      */
     readonly target?: any;
-    
+
     /**
      * providers.
      */
-     providers?: ProviderType[];
+    providers?: ProviderType[];
+}
+
+
+@Abstract()
+export abstract class Context1 {
+
+    abstract get request(): Request;
+    abstract get response(): Response;
+    abstract get url(): string;
+    abstract get pathname(): string;
+
+    /**
+     * injector of.
+     */
+    abstract get injector(): Injector;
+
+    /**
+     * Get response body.
+     */
+    abstract get body(): any;
+    /**
+     * Set response body.
+     */
+    abstract set body(body: any);
+
+    get method() {
+        return this.request.method;
+    }
+
+    get status(): number {
+        return this.response.status;
+    }
+
+    abstract get message(): string;
+    abstract set message(msg: string);
+
+    /**
+     * get value to context
+     * @param token
+     */
+    getValue<T>(token: Token<T>): T {
+        return this.injector.get(token);
+    }
+    /**
+     * set value
+     * @param token
+     * @param value 
+     */
+    setValue(token: Token, value: any): void {
+        this.injector.setValue(token, value);
+    }
+
+}
+
+@Abstract()
+export abstract class ContextFactory {
+    abstract create(request: Request, injector: Injector, providers: ProviderType[]): Context;
 }
 
 /**
- * message context for middlewares.
+ * context for middlewares.
  */
-export interface MessageContext {
+export interface Context {
     /**
      * navigate message
      */
@@ -93,7 +150,7 @@ export interface MessageContext {
     /**
      * the context providers.
      */
-    readonly providers?: Injector;
+    readonly providers?: ProviderType[];
 
     /**
      * route vaildator.
@@ -134,11 +191,11 @@ export interface IRouteVaildator {
      * @param route route.
      * @param routePrefix route prefix.
      */
-    isActiveRoute(ctx: MessageContext, route: string, routePrefix: string): boolean;
+    isActiveRoute(ctx: Context, route: string, routePrefix: string): boolean;
     /**
      * get request route.
      * @param ctx context.
      * @param routePrefix route prefix.
      */
-    getReqRoute(ctx: MessageContext, routePrefix: string): string;
+    getReqRoute(ctx: Context, routePrefix: string): string;
 }

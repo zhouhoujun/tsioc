@@ -1,6 +1,6 @@
 import { Abstract, Inject, ProviderType, Singleton } from '@tsdi/ioc';
 import { CONTEXT } from '../metadata/tk';
-import { IRouteVaildator, MessageContext } from './ctx';
+import { IRouteVaildator, Context } from './ctx';
 import { Middleware, ROUTE_URL, ROUTE_PREFIX } from './handle';
 
 const urlReg = /\/((\w|%|\.))+\.\w+$/;
@@ -31,7 +31,7 @@ export class RouteVaildator implements IRouteVaildator {
         return routePath;
     }
 
-    isActiveRoute(ctx: MessageContext, route: string, routePrefix: string) {
+    isActiveRoute(ctx: Context, route: string, routePrefix: string) {
         let routeUrl = this.getReqRoute(ctx, routePrefix);
         if (route === '' || route === routeUrl) {
             return true;
@@ -39,7 +39,7 @@ export class RouteVaildator implements IRouteVaildator {
         return routeUrl.startsWith(route) && subStart.test(routeUrl.substring(route.length));
     }
 
-    getReqRoute(ctx: MessageContext, routePrefix: string): string {
+    getReqRoute(ctx: Context, routePrefix: string): string {
         let reqUrl = this.vaildify(ctx.url, true);
 
         if (routePrefix) {
@@ -64,7 +64,7 @@ export abstract class Route extends Middleware {
         return this._url;
     }
 
-    override async execute(ctx: MessageContext, next: () => Promise<void>): Promise<void> {
+    override async execute(ctx: Context, next: () => Promise<void>): Promise<void> {
         if (this.match(ctx)) {
             await this.navigate(ctx, next);
         } else {
@@ -72,9 +72,9 @@ export abstract class Route extends Middleware {
         }
     }
 
-    protected abstract navigate(ctx: MessageContext, next: () => Promise<void>): Promise<void>;
+    protected abstract navigate(ctx: Context, next: () => Promise<void>): Promise<void>;
 
-    protected match(ctx: MessageContext): boolean {
+    protected match(ctx: Context): boolean {
         return (!ctx.status || ctx.status === 404) && ctx.vaild?.isActiveRoute(ctx, this.url, this.prefix) === true;
     }
 }
@@ -88,7 +88,7 @@ export class FactoryRoute extends Route {
         super(url, prefix);
     }
 
-    protected override navigate(ctx: MessageContext, next: () => Promise<void>): Promise<void> {
+    protected override navigate(ctx: Context, next: () => Promise<void>): Promise<void> {
         return this.factory({ provide: CONTEXT, useValue: ctx })?.execute(ctx, next);
     }
 

@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { MessageContext } from './ctx';
+import { Context } from './ctx';
 
 
 /**
@@ -12,5 +12,5 @@ export abstract class ResultStrategy {
      * @param ctx 
      * @param value 
      */
-    abstract send(ctx: MessageContext, value: any): Promise<void>;
+    abstract send(ctx: Context, value: any): Promise<void>;
 }

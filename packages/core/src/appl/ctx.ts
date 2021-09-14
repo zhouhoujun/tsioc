@@ -7,7 +7,7 @@ import {
     ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption,
     ModuleInjector, Runnable, RunnableFactory, RunnableFactoryResolver
 } from '../Context';
-import { MessageContext, MessageQueue, RequestOption, ROOT_QUEUE } from '../middlewares';
+import { Context, MessageQueue, RequestOption, ROOT_QUEUE } from '../middlewares';
 
 
 /**
@@ -61,16 +61,16 @@ export class DefaultApplicationContext extends ApplicationContext {
      * @param {() => Promise<void>} [next]
      * @returns {Promise<void>}
      */
-    send(request: RequestOption, ...providers: ProviderType[]): Promise<MessageContext>;
+    send(request: RequestOption, ...providers: ProviderType[]): Promise<Context>;
     /**
      * send message
      *
      * @param {string} url route url
      * @param {RequestOption} request request options data.
-     * @returns {Promise<MessageContext>}
+     * @returns {Promise<Context>}
      */
-    send(url: string, request: RequestOption, ...providers: ProviderType[]): Promise<MessageContext>;
-    async send(url: any, request?: any, ...providers: ProviderType[]): Promise<MessageContext> {
+    send(url: string, request: RequestOption, ...providers: ProviderType[]): Promise<Context>;
+    async send(url: any, request?: any, ...providers: ProviderType[]): Promise<Context> {
         return this.getMessager().send(url, request, ...providers);
     }
 

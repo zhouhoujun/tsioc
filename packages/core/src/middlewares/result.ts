@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { MessageContext } from './ctx';
+import { Context } from './ctx';
 
 /**
  * controller method return result type.
@@ -17,10 +17,10 @@ export abstract class ResultValue {
      * send value.
      *
      * @abstract
-     * @param {MessageContext} ctx
+     * @param {Context} ctx
 
      * @returns {Promise<any>}
      * @memberof ResultValue
      */
-    abstract sendValue(ctx: MessageContext): Promise<any>;
+    abstract sendValue(ctx: Context): Promise<any>;
 }
