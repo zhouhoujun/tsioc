@@ -12,6 +12,10 @@ export interface ProvideProvider {
      * @memberof Provider
      */
     provide: Token;
+    /**
+     * provide multi or not.
+     */
+    multi?: boolean;
 }
 
 /**
