@@ -1,8 +1,7 @@
-import { Autorun, Injector, lang, Singleton, Token, tokenId } from '@tsdi/ioc';
+import { Autorun, Singleton, Token, tokenId } from '@tsdi/ioc';
 import { ApplicationContext } from '../Context';
 import { Context } from './ctx';
 import { MessageQueue } from './queue';
-import { RouteVaildator } from './route';
 import { RootRouter } from './router';
 
 /**
@@ -42,6 +41,8 @@ export class RootMessageQueue extends MessageQueue {
 // }
 
 // const protocolReg = /^\w+:\/\//;
+
+
 
 /**
  * init queue.

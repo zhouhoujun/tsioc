@@ -1,4 +1,4 @@
-import { Abstract, Injector, ObjectMap, ProviderType, Token } from '@tsdi/ioc';
+import { Abstract, Injector, ProviderType, Token } from '@tsdi/ioc';
 
 /**
  * Request
@@ -8,10 +8,6 @@ export interface RequestOption {
      * request url.
      */
     url?: string;
-    /**
-     * restful params.
-     */
-    readonly restful?: ObjectMap<string | number>;
     /**
      * protocol.
      */
@@ -158,7 +154,6 @@ export abstract class Request {
      * @api public
      */
     abstract set query(obj: any);
-
     /**
      * Get parsed request data to body.
      *
@@ -489,7 +484,14 @@ export abstract class Response {
  */
 @Abstract()
 export abstract class Context {
-    vaild: any;
+
+    private _vaild!: RouteVaildator
+    get vaild(): RouteVaildator {
+        if (!this._vaild) {
+            this._vaild = this.injector.get(RouteVaildator);
+        }
+        return this._vaild;
+    }
 
     abstract set error(err: Error);
 
@@ -544,7 +546,6 @@ export abstract class Context {
     set accept(val: Object) {
         this.request.accept = val;
     }
-
 
     get origin(): string {
         return this.request.origin;
@@ -673,107 +674,42 @@ export abstract class Context {
 
 }
 
+/**
+ * middleware context factory.
+ */
 @Abstract()
 export abstract class ContextFactory {
-    abstract create(request: Request, injector: Injector, providers: ProviderType[]): Context;
+    abstract create(request: Request | RequestOption, injector: Injector): Context;
 }
 
-// /**
-//  * context for middlewares.
-//  */
-// export interface Context {
-//     /**
-//      * navigate message
-//      */
-//     readonly url: string;
-
-//     readonly protocol?: string;
-//     readonly host?: string;
-//     readonly port?: number;
-//     readonly pathname?: string;
-
-
-//     /**
-//      * request.
-//      */
-//     readonly request: RequestOption;
-
-//     /**
-//      * reuqest method
-//      */
-//     readonly method?: string;
-
-//     readonly event?: string;
-//     /**
-//      * response status
-//      */
-//     status?: number;
-//     /**
-//      * response error message.
-//      */
-//     message?: string;
-
-//     error?: Error;
-
-//     /**
-//      * response body data.
-//      */
-//     body?: any;
-
-//     /**
-//      * injector of message queue.
-//      */
-//     injector: Injector;
-
-//     /**
-//      * the context providers.
-//      */
-//     readonly providers?: ProviderType[];
-
-//     /**
-//      * route vaildator.
-//      */
-//     vaild?: IRouteVaildator;
-
-//     /**
-//      * get value to context
-//      * @param token
-//      */
-//     getValue<T>(token: Token<T>): T;
-//     /**
-//      * set value
-//      * @param token
-//      * @param value 
-//      */
-//     setValue(token: Token, value: any): void;
-// }
 
 /**
  * route vaildator.
  */
-export interface IRouteVaildator {
+@Abstract()
+export abstract class RouteVaildator {
     /**
      * is route url or not.
      * @param url 
      */
-    isRoute(url: string): boolean;
+    abstract isRoute(url: string): boolean;
     /**
      * vaildify
      * @param routePath route path. 
      * @param foreNull fore null.
      */
-    vaildify(routePath: string, foreNull?: boolean): string;
+    abstract vaildify(routePath: string, foreNull?: boolean): string;
     /**
      * is active route or not.
      * @param ctx context.
      * @param route route.
      * @param routePrefix route prefix.
      */
-    isActiveRoute(ctx: Context, route: string, routePrefix: string): boolean;
+    abstract isActiveRoute(ctx: Context, route: string, routePrefix: string): boolean;
     /**
      * get request route.
      * @param ctx context.
      * @param routePrefix route prefix.
      */
-    getReqRoute(ctx: Context, routePrefix: string): string;
+    abstract getReqRoute(ctx: Context, routePrefix: string): string;
 }

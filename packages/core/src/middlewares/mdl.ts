@@ -1,8 +1,9 @@
+import { ContextFactory, RouteVaildator } from './ctx';
 import { DIModule } from '../metadata/decor';
 import { ExtendBaseTypeMap } from './parser';
 import { MessageQueue } from './queue';
 import { RootMessageQueue } from './root';
-import { RouteVaildator } from './route';
+import { MsgRouteVaildator, MSG_CONTEXT_FACTORY_IMPL } from './default';
 import { RootRouter, Router } from './router';
 
 
@@ -12,12 +13,20 @@ import { RootRouter, Router } from './router';
 @DIModule({
     regIn: 'root',
     providers: [
-        RouteVaildator,
+        MsgRouteVaildator,
+        {
+            provide: RouteVaildator,
+            useExisting: MsgRouteVaildator
+        },
         ExtendBaseTypeMap,
         MessageQueue,
         Router,
         RootRouter,
-        RootMessageQueue
+        RootMessageQueue,
+        {
+            provide: ContextFactory,
+            useValue: MSG_CONTEXT_FACTORY_IMPL
+        }
     ]
 })
 export class MiddlewareModule {

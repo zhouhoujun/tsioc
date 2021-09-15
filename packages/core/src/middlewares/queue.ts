@@ -1,4 +1,5 @@
 import { Injectable, Type, isString, ProviderType, lang, AsyncHandler, isFunction, Inject, Injector, RegisteredState } from '@tsdi/ioc';
+import { ContextFactory } from '.';
 import { Context, RequestOption } from './ctx';
 import { Middleware, Middlewares, MiddlewareType } from './handle';
 
@@ -77,6 +78,14 @@ export class MessageQueue<T extends Context = Context> extends Middlewares<T> {
     /**
      * send message
      *
+     * @param {Request} request request
+     * @param {() => Promise<void>} [next]
+     * @returns {Promise<void>}
+     */
+    send(request: Request, ...providers: ProviderType[]): Promise<T>
+    /**
+     * send message
+     *
      * @param {RequestOption} request request option
      * @param {() => Promise<void>} [next]
      * @returns {Promise<void>}
@@ -91,7 +100,8 @@ export class MessageQueue<T extends Context = Context> extends Middlewares<T> {
      */
     send(url: string, request: RequestOption, ...providers: ProviderType[]): Promise<T>;
     async send(url: any, request?: any, ...providers: ProviderType[]): Promise<T> {
-        const ctx = isString(url) ? { request: { ...request, url, providers } } as T : { request: { ...url, providers } } as T;
+        const injector = Injector.create(providers, this.injector, 'provider');
+        const ctx = injector.resolve({ token: ContextFactory, target: this }).create(isString(url) ? { ...request, url } : url, injector) as T;
         await this.execute(ctx);
         return ctx;
     }

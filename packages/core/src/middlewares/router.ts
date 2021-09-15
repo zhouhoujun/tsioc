@@ -2,7 +2,7 @@ import { Inject, Injectable, isFunction, refl, Singleton } from '@tsdi/ioc';
 import { Context } from './ctx';
 import { IRouter, ROUTE_URL, ROUTE_PREFIX, MiddlewareType, RouteReflect, ROUTE_PROTOCOL } from './handle';
 import { MessageQueue } from './queue';
-import { Route, RouteVaildator } from './route';
+import { Route } from './route';
 
 
 @Injectable()
@@ -22,9 +22,6 @@ export class Router<T extends Context = Context> extends MessageQueue<T> impleme
 
     private sorted = false;
     protected override canExecute(ctx: T): boolean {
-        if (!ctx.vaild) {
-            ctx.vaild = this.injector.get(RouteVaildator);
-        }
         return this.match(ctx);
     }
 

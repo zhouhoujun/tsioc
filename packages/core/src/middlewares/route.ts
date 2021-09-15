@@ -1,53 +1,6 @@
-import { Abstract, Inject, Injector, ProviderType, Singleton } from '@tsdi/ioc';
-import { CONTEXT } from '../metadata/tk';
-import { IRouteVaildator, Context } from './ctx';
+import { Abstract, Inject, Injector } from '@tsdi/ioc';
+import { Context } from './ctx';
 import { Middleware, ROUTE_URL, ROUTE_PREFIX } from './handle';
-
-const urlReg = /\/((\w|%|\.))+\.\w+$/;
-const noParms = /\/\s*$/;
-const hasParms = /\?\S*$/;
-const subStart = /^\s*\/|\?/;
-
-/**
- * route vaildator.
- */
-@Singleton()
-export class RouteVaildator implements IRouteVaildator {
-
-    isRoute(url: string): boolean {
-        return !urlReg.test(url);
-    }
-
-    vaildify(routePath: string, foreNull = false): string {
-        if (foreNull && routePath === '/') {
-            routePath = '';
-        }
-        if (noParms.test(routePath)) {
-            routePath = routePath.substring(0, routePath.lastIndexOf('/'));
-        }
-        if (hasParms.test(routePath)) {
-            routePath = routePath.substring(0, routePath.lastIndexOf('?'));
-        }
-        return routePath;
-    }
-
-    isActiveRoute(ctx: Context, route: string, routePrefix: string) {
-        let routeUrl = this.getReqRoute(ctx, routePrefix);
-        if (route === '' || route === routeUrl) {
-            return true;
-        }
-        return routeUrl.startsWith(route) && subStart.test(routeUrl.substring(route.length));
-    }
-
-    getReqRoute(ctx: Context, routePrefix: string): string {
-        let reqUrl = this.vaildify(ctx.url, true);
-
-        if (routePrefix) {
-            return reqUrl.replace(routePrefix, '');
-        }
-        return reqUrl;
-    }
-}
 
 
 /**

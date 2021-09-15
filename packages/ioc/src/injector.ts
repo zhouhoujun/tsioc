@@ -68,7 +68,7 @@ export abstract class Injector implements Destroyable {
      * @param {T} notFoundValue
      * @returns {T}
      */
-     abstract get<T>(key: Token<T>, notFoundValue?: T): T;
+    abstract get<T>(key: Token<T>, notFoundValue?: T): T;
     /**
      * get token instance in current injector or root container.
      *
@@ -79,6 +79,14 @@ export abstract class Injector implements Destroyable {
      * @returns {T}
      */
     abstract get<T>(key: Token<T>, provider?: Injector, notFoundValue?: T): T;
+    /**
+     * resolve token instance with token and param provider.
+     *
+     * @template T
+     * @param {ResolveOption<T>} option  resolve option
+     * @returns {T}
+     */
+    abstract resolve<T>(option: ResolveOption<T>): T;
     /**
      * resolve token instance with token and param provider.
      *
@@ -105,14 +113,6 @@ export abstract class Injector implements Destroyable {
     * @returns {T}
     */
     abstract resolve<T>(token: Token<T>, providers?: ProviderType[]): T;
-    /**
-     * resolve token instance with token and param provider.
-     *
-     * @template T
-     * @param {ResolveOption<T>} option  resolve option
-     * @returns {T}
-     */
-    abstract resolve<T>(option: ResolveOption<T>): T;
     /**
      * set value.
      * @param token provide key
@@ -288,6 +288,14 @@ export abstract class Injector implements Destroyable {
      * get service or target reference service in the injector.
      *
      * @template T
+     * @param {(ResolveOption<T>} option resolve option.
+     * @returns {T}
+     */
+    abstract getService<T>(option: ResolveOption<T>): T;
+    /**
+     * get service or target reference service in the injector.
+     *
+     * @template T
      * @param {Token<T> } token servive token.
      * @param {...ProviderType[]} providers
      * @returns {T}
@@ -303,13 +311,13 @@ export abstract class Injector implements Destroyable {
     */
     abstract getService<T>(token: Token<T>, providers: ProviderType[]): T;
     /**
-     * get service or target reference service in the injector.
+     * get all service extends type.
      *
      * @template T
-     * @param {(ResolveOption<T>} option resolve option.
-     * @returns {T}
+     * @param {ServicesOption<T>} option servives resolve option.
+     * @returns {T[]} all service instance type of token type.
      */
-    abstract getService<T>(option: ResolveOption<T>): T;
+    abstract getServices<T>(option: ServicesOption<T>): T[];
     /**
      * get all service extends type.
      *
@@ -328,14 +336,6 @@ export abstract class Injector implements Destroyable {
     * @returns {T[]} all service instance type of token type.
     */
     abstract getServices<T>(token: Token<T>, providers: ProviderType[]): T[];
-    /**
-     * get all service extends type.
-     *
-     * @template T
-     * @param {ServicesOption<T>} option servives resolve option.
-     * @returns {T[]} all service instance type of token type.
-     */
-    abstract getServices<T>(option: ServicesOption<T>): T[];
     /**
      * has destoryed or not.
      */
@@ -662,7 +662,7 @@ export interface ResolveOption<T = any> {
     /**
      * token.
      */
-    token?: Token<T>;
+    token: Token<T>;
     /**
      * resolve token in target context.
      */
@@ -691,12 +691,6 @@ export interface ResolveOption<T = any> {
  * @extends {ServiceOption}
  */
 export interface ServicesOption<T> extends ResolveOption<T> {
-    /**
-     * token provider service type.
-     *
-     * @type {Type}
-     */
-    tokens?: Token<T>[];
     /**
      * get extend servie or not.
      *

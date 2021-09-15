@@ -881,14 +881,6 @@ class Services implements ServicesProvider {
         if (targets.length) {
             ctx.targetRefs = targets;
         }
-        let tokens = ctx.tokens || [];
-        if (tokens.length) {
-            tokens = tokens.filter(t => t)
-        }
-        if (ctx.token) {
-            tokens.unshift(ctx.token);
-        }
-        ctx.tokens = tokens;
     }
 }
 

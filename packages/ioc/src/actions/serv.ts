@@ -19,9 +19,7 @@ export interface ServicesContext extends IocContext {
     * @type {Type}
     * @memberof ResolveServiceContext
     */
-    tokens?: Token[];
-
-    token?: Token;
+    token: Token;
     /**
      * resolve token in target context.
      */
@@ -32,7 +30,7 @@ export interface ServicesContext extends IocContext {
     /**
      * types.
      */
-    types: ClassType[];
+    type: ClassType;
 
     /**
      * types matchs.
@@ -69,11 +67,11 @@ const typeMatch = (tag: ClassType, base: ClassType) => getParentClass(base) ? ge
 export class ResolveServicesScope extends IocActions implements IActionSetup {
 
     override execute(ctx: ServicesContext, next?: () => void): void {
-        if (!ctx.tokens || !ctx.tokens.length) {
+        if (!ctx.token) {
             return;
         }
         const injector = ctx.injector;
-        ctx.types = ctx.tokens.map(t => isFunction(t) ? t : injector.getTokenProvider(t)).filter(t => t);
+        ctx.type = isFunction(ctx.token) ? ctx.token : injector.getTokenProvider(ctx.token);
 
         if (!ctx.match) {
             ctx.match = typeMatch;
@@ -99,20 +97,18 @@ export class ResolveServicesScope extends IocActions implements IActionSetup {
     }
 }
 
-
-
 export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () => void): void {
     if (ctx.targetRefs && ctx.targetRefs.length) {
-        const { injector, services, types, match } = ctx;
+        const { injector, services, type, match } = ctx;
         const state = injector.state();
-        let maps: Injector, type: Type;
+        let maps: Injector, dtype: Type;
         ctx.targetRefs.forEach(tk => {
             maps = state.getTypeProvider(tk);
             if (maps && maps.size) {
                 maps.iterator((pdr, token) => {
-                    type = pdr.type || token as Type;
-                    if (isFunction(type) && !services.has(type) && types.some(ty => match(type, ty))) {
-                        services.set(type, pdr);
+                    dtype = pdr.type || token as Type;
+                    if (isFunction(dtype) && !services.has(dtype) && match(type, dtype)) {
+                        services.set(dtype, pdr);
                     }
                 });
             }
@@ -123,14 +119,13 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
     }
 }
 
-
 export const RsvServicesAction = function (ctx: ServicesContext, next: () => void): void {
-    const { injector, services, types, match } = ctx;
-    let type: Type;
+    const { injector, services, type, match } = ctx;
+    let dtype: Type;
     injector.iterator((pdr, token) => {
-        type = pdr.type || token as Type;
-        if (isFunction(type) && !services.has(type) && types.some(ty => match(type, ty))) {
-            services.set(type, pdr);
+        dtype = pdr.type || token as Type;
+        if (isFunction(dtype) && !services.has(dtype) && match(type, dtype)) {
+            services.set(dtype, pdr);
         }
     }, true);
 
