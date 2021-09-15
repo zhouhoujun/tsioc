@@ -63,7 +63,7 @@ class DeviceStartupHandle extends Middleware {
 
     override async execute(ctx: Context, next: () => Promise<void>): Promise<void> {
         console.log('DeviceStartupHandle.')
-        if (ctx.event === 'startup') {
+        if (ctx.type === 'startup') {
             // todo sth.
             let ret = ctx.injector.get(MyService).dosth();
             ctx.setValue('deviceB_state', ret);
@@ -76,7 +76,7 @@ class DeviceAStartupHandle extends Middleware {
 
     override async execute(ctx: Context, next: () => Promise<void>): Promise<void> {
         console.log('DeviceAStartupHandle.')
-        if (ctx.event === 'startup') {
+        if (ctx.type === 'startup') {
             // todo sth.
             let ret = ctx.injector.get(MyService).dosth();
             ctx.setValue('deviceA_state', ret);
@@ -159,7 +159,7 @@ describe('app message queue', () => {
             aState = ctx.getValue('deviceA_state');
             bState = ctx.getValue('deviceB_state');
         })
-        await ctx.getMessager().send('/hdevice', { event: 'startup' });
+        await ctx.getMessager().send('/hdevice', { type: 'startup' });
         expect(device).toBe('device next');
         expect(aState).toBe('startuped');
         expect(bState).toBe('startuped');

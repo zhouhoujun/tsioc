@@ -1,4 +1,4 @@
-import { Abstract, Injector, ProviderType, Token } from '@tsdi/ioc';
+import { Abstract, Injector, ObjectMap, Token } from '@tsdi/ioc';
 
 /**
  * Request
@@ -13,6 +13,10 @@ export interface RequestOption {
      */
     readonly protocol?: string;
     /**
+     * restful params.
+     */
+    readonly restful?: ObjectMap<string | number | boolean>;
+    /**
      * request body.
      */
     readonly body?: any;
@@ -25,18 +29,13 @@ export interface RequestOption {
      */
     readonly method?: string;
     /**
-     * event
+     * event, request type
      */
-    readonly event?: string;
+    readonly type?: string;
     /**
      * the target raise request.
      */
     readonly target?: any;
-
-    /**
-     * providers.
-     */
-    providers?: ProviderType[];
 }
 
 interface Headers {
@@ -640,6 +639,7 @@ export abstract class Context {
     /**
      * Set Content-Type response header with `type` through `mime.lookup()`
      * when it does not contain a charset.
+     * or event type.
      *
      * Examples:
      *

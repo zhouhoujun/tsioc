@@ -101,7 +101,8 @@ export class MessageQueue<T extends Context = Context> extends Middlewares<T> {
     send(url: string, request: RequestOption, ...providers: ProviderType[]): Promise<T>;
     async send(url: any, request?: any, ...providers: ProviderType[]): Promise<T> {
         const injector = Injector.create(providers, this.injector, 'provider');
-        const ctx = injector.resolve({ token: ContextFactory, target: this }).create(isString(url) ? { ...request, url } : url, injector) as T;
+        const req: RequestOption | Request = isString(url) ? { ...request, url } : url;
+        const ctx = injector.resolve({ token: ContextFactory, target: req instanceof Request ? req : req.target || this }).create(req, injector) as T;
         await this.execute(ctx);
         return ctx;
     }
