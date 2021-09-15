@@ -19,17 +19,14 @@ export interface Subscripted {
  * @template T
  */
 @Injectable()
-export class MessageQueue extends Middlewares {
+export class MessageQueue<T extends Context = Context> extends Middlewares<T> {
 
     @Inject()
     protected injector!: Injector;
 
-    private completed!: ((ctx: Context) => void)[];
+    private completed!: ((ctx: T) => void)[];
 
-    override async execute(ctx: Context, next?: () => Promise<void>): Promise<void> {
-        if (!ctx.injector) {
-            ctx.injector = this.injector;
-        }
+    override async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
         try {
             if (this.canExecute(ctx)) {
                 this.beforeExec(ctx);
@@ -46,21 +43,21 @@ export class MessageQueue extends Middlewares {
         }
     }
 
-    protected canExecute(ctx: Context): boolean {
+    protected canExecute(ctx: T): boolean {
         return !!ctx.request;
     }
 
-    protected beforeExec(ctx: Context): void { }
+    protected beforeExec(ctx: T): void { }
 
-    protected afterExec(ctx: Context): void { }
+    protected afterExec(ctx: T): void { }
 
-    protected onCompleted(ctx: Context): void {
+    protected onCompleted(ctx: T): void {
         this.completed?.forEach(cb => {
             cb(ctx);
         });
     }
 
-    protected onFailed(ctx: Context, err: Error): void {
+    protected onFailed(ctx: T, err: Error): void {
         ctx.status = 500;
         ctx.message = err.stack;
         ctx.error = err;
@@ -70,7 +67,7 @@ export class MessageQueue extends Middlewares {
      * register completed callbacks.
      * @param callback callback.T
      */
-    done(callback: (ctx: Context) => void) {
+    done(callback: (ctx: T) => void) {
         if (!this.completed) {
             this.completed = [];
         }
@@ -84,17 +81,17 @@ export class MessageQueue extends Middlewares {
      * @param {() => Promise<void>} [next]
      * @returns {Promise<void>}
      */
-    send(request: RequestOption, ...providers: ProviderType[]): Promise<Context>;
+    send(request: RequestOption, ...providers: ProviderType[]): Promise<T>;
     /**
      * send message
      *
      * @param {string} url route url
      * @param {RequestOption} request request options data.
-     * @returns {Promise<Context>}
+     * @returns {Promise<T>}
      */
-    send(url: string, request: RequestOption, ...providers: ProviderType[]): Promise<Context>;
-    async send(url: any, request?: any, ...providers: ProviderType[]): Promise<Context> {
-        const ctx = isString(url) ? { request: { ...request, url, providers } } as Context : { request: { ...url, providers } } as Context;
+    send(url: string, request: RequestOption, ...providers: ProviderType[]): Promise<T>;
+    async send(url: any, request?: any, ...providers: ProviderType[]): Promise<T> {
+        const ctx = isString(url) ? { request: { ...request, url, providers } } as T : { request: { ...url, providers } } as T;
         await this.execute(ctx);
         return ctx;
     }
@@ -102,7 +99,7 @@ export class MessageQueue extends Middlewares {
     /**
      * subescribe message.
      *
-     * @param {(ctx: Context, next: () => Promise<void>) => Promise<void>} subscriber
+     * @param {(ctx: T, next: () => Promise<void>) => Promise<void>} subscriber
      */
     subscribe(subscriber: (ctx: Context, next: () => Promise<void>) => Promise<void>): Subscripted;
     /**
@@ -147,7 +144,7 @@ export class MessageQueue extends Middlewares {
         this.unuse(haddle);
     }
 
-    protected override parseHandle(state: RegisteredState, mdty: MiddlewareType): AsyncHandler<Context> {
+    protected override parseHandle(state: RegisteredState, mdty: MiddlewareType): AsyncHandler<T> {
         if (mdty instanceof Middleware) {
             return mdty.toHandle();
         } else if (lang.isBaseOf(mdty, Middleware)) {

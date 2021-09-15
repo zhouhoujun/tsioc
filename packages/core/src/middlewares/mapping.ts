@@ -99,14 +99,14 @@ export class MappingRoute extends Route {
     async invoke(ctx: Context, meta: DecorDefine) {
         const injector = this.injector;
         if (meta && meta.propertyKey) {
+
             const ctrl = this.getInstance(ctx);
             if (!ctrl) {
                 return;
             }
 
             const providers = await this.createProvider(ctx, ctrl, meta.metadata, this.reflect.methodParams.get(meta.propertyKey));
-            ctx.providers && providers.unshift(...ctx.providers);
-            let result = injector.invoke(ctrl, meta.propertyKey, providers);
+            let result = injector.invoke(ctrl, meta.propertyKey, providers.length > 0 ? Injector.create(providers, ctx.injector) : ctx.injector);
             if (isPromise(result)) {
                 result = await result;
             }
@@ -133,9 +133,8 @@ export class MappingRoute extends Route {
     }
 
     protected getInstance(ctx: Context) {
-        const providers = [...ctx.providers||[], { provide: CONTEXT, useValue: ctx }];
-        return this.injector.resolve(this.reflect.type, providers)
-            ?? this.injector.state().resolve(this.reflect.type, providers);
+        return this.injector.resolve(this.reflect.type, ctx.injector)
+            ?? this.injector.state().resolve(this.reflect.type, [ctx.injector]);
     }
 
     protected getRouteMiddleware(ctx: Context, meta: DecorDefine) {
@@ -197,7 +196,7 @@ export class MappingRoute extends Route {
                     restParams[pname.substring(1)] = val;
                 });
             }
-            let body = ctx.request?.body || EMPTY_OBJ;
+            let body: any = ctx.request.body || EMPTY_OBJ;
             let parser = injector.get(TypeParser);
             let ppds: (ProviderType | null)[] = await Promise.all(params.map(async (param) => {
                 let ptype = isFunction(param.provider) ? param.provider : param.type;
@@ -207,7 +206,7 @@ export class MappingRoute extends Route {
                     if (isPrimitiveType(ptype)) {
                         let paramVal = restParams[param.paramName!];
                         if (isUndefined(paramVal)) {
-                            paramVal = ctx.request?.query[param.paramName!];
+                            paramVal = ctx.request.query[param.paramName!];
                         }
                         val = parser.parse(ptype, paramVal);
                     }
@@ -249,7 +248,7 @@ export class MappingRoute extends Route {
                 } else if (ptype === REQUEST) {
                     val = ctx.request;
                 } else if (ptype === REQUEST_PARAMS) {
-                    val = ctx.request?.query ?? {};
+                    val = ctx.request.query ?? {};
                 } else if (ptype === REQUEST_BODY) {
                     val = body;
                 }

@@ -1,12 +1,12 @@
 import {
     DecoratorOption, isUndefined, createDecorator, ROOT_INJECTOR, isArray, isString,
-    lang, Type, DesignContext, ClassMethodDecorator, ProviderType, TypeMetadata, EMPTY_OBJ
+    lang, Type, DesignContext, ClassMethodDecorator, ProviderType, TypeMetadata, EMPTY_OBJ, Injector
 } from '@tsdi/ioc';
 import { IStartupService } from '../services/intf';
 import { ModuleReflect, ModuleConfigure } from './ref';
 import { Middleware, Middlewares, MiddlewareType, RouteReflect, ROUTE_PREFIX, ROUTE_PROTOCOL, ROUTE_URL } from '../middlewares/handle';
 import { ROOT_QUEUE } from '../middlewares/root';
-import { FactoryRoute, Route } from '../middlewares/route';
+import { RouteResolver, Route } from '../middlewares/route';
 import { RootRouter, Router } from '../middlewares/router';
 import { MappingReflect, MappingRoute, RouteMapingMetadata } from '../middlewares/mapping';
 import { ModuleFactory, ModuleInjector, ModuleRegistered } from '../Context';
@@ -346,7 +346,7 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
                     }
                     middl = type;
                 } else {
-                    middl = new FactoryRoute(route!, prefix, () => injector.get(type));
+                    middl = new RouteResolver(route || '', prefix, (inj: Injector) => injector.get(type, inj));
                 }
                 queue.use(middl);
                 injector.onDestroy(() => queue.unuse(middl));
@@ -362,7 +362,6 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
                     queue.use(type);
                 }
                 injector.onDestroy(() => queue.unuse(type));
-
             }
             next();
         }

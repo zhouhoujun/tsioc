@@ -1,4 +1,4 @@
-import { Abstract, Inject, ProviderType, Singleton } from '@tsdi/ioc';
+import { Abstract, Inject, Injector, ProviderType, Singleton } from '@tsdi/ioc';
 import { CONTEXT } from '../metadata/tk';
 import { IRouteVaildator, Context } from './ctx';
 import { Middleware, ROUTE_URL, ROUTE_PREFIX } from './handle';
@@ -54,7 +54,7 @@ export class RouteVaildator implements IRouteVaildator {
  * route
  */
 @Abstract()
-export abstract class Route extends Middleware {
+export abstract class Route<T extends Context = Context> extends Middleware<T> {
 
     constructor(@Inject(ROUTE_URL) private _url: string, @Inject(ROUTE_PREFIX) protected prefix: string) {
         super();
@@ -64,7 +64,7 @@ export abstract class Route extends Middleware {
         return this._url;
     }
 
-    override async execute(ctx: Context, next: () => Promise<void>): Promise<void> {
+    override async execute(ctx: T, next: () => Promise<void>): Promise<void> {
         if (this.match(ctx)) {
             await this.navigate(ctx, next);
         } else {
@@ -72,24 +72,24 @@ export abstract class Route extends Middleware {
         }
     }
 
-    protected abstract navigate(ctx: Context, next: () => Promise<void>): Promise<void>;
+    protected abstract navigate(ctx: T, next: () => Promise<void>): Promise<void>;
 
-    protected match(ctx: Context): boolean {
+    protected match(ctx: T): boolean {
         return (!ctx.status || ctx.status === 404) && ctx.vaild?.isActiveRoute(ctx, this.url, this.prefix) === true;
     }
 }
 
 /**
- * custom route factory.
+ * custom route resolver.
  */
-export class FactoryRoute extends Route {
+export class RouteResolver extends Route {
 
-    constructor(url: string, prefix: string, private factory: (...pdrs: ProviderType[]) => Middleware) {
+    constructor(url: string, prefix: string, private factory: (pdr: Injector) => Middleware) {
         super(url, prefix);
     }
 
     protected override navigate(ctx: Context, next: () => Promise<void>): Promise<void> {
-        return this.factory({ provide: CONTEXT, useValue: ctx })?.execute(ctx, next);
+        return this.factory(ctx.injector)?.execute(ctx, next);
     }
 
 }

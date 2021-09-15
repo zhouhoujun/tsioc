@@ -12,24 +12,24 @@ import { Context } from './ctx';
  * @extends {Middleware<Context>}
  */
 @Abstract()
-export abstract class Middleware {
+export abstract class Middleware<T extends Context = Context> {
     /**
      * execute middleware.
      *
      * @abstract
-     * @param {Context} ctx
+     * @param {T} ctx
      * @param {() => Promise<void>} next
      * @returns {Promise<void>}
      */
-    abstract execute(ctx: Context, next: () => Promise<void>): Promise<void>;
+    abstract execute(ctx: T, next: () => Promise<void>): Promise<void>;
 
-    private _hdl!: AsyncHandler<Context>;
+    private _hdl!: AsyncHandler<T>;
     /**
      * parse this middleware to handler.
      */
-    toHandle(): AsyncHandler<Context> {
+    toHandle(): AsyncHandler<T> {
         if (!this._hdl) {
-            this._hdl = (ctx: Context, next: () => Promise<void>) => this.execute(ctx, next);
+            this._hdl = (ctx: T, next: () => Promise<void>) => this.execute(ctx, next);
         }
         return this._hdl;
     }
@@ -41,8 +41,8 @@ export abstract class Middleware {
      * @param next 
      * @returns 
      */
-    protected execHandler(ctx: Context, handles: AsyncHandler<Context>[], next?: () => Promise<void>): Promise<void> {
-        return chain(handles, ctx, next)!;
+    protected async execHandler(ctx: T, handles: AsyncHandler<T>[], next?: () => Promise<void>): Promise<void> {
+        return await chain(handles, ctx, next);
     }
 }
 
@@ -55,9 +55,9 @@ export type MiddlewareType = AsyncHandler<Context> | Middleware | Type<Middlewar
  * middlewares.
  */
 @Abstract()
-export abstract class Middlewares extends Middleware {
+export abstract class Middlewares<T extends Context = Context> extends Middleware<T> {
     protected handles: MiddlewareType[] = [];
-    private funcs!: AsyncHandler<Context>[];
+    private funcs!: AsyncHandler<T>[];
 
     /**
      * use handle.
@@ -128,7 +128,7 @@ export abstract class Middlewares extends Middleware {
         return this;
     }
 
-    override async execute(ctx: Context, next?: () => Promise<void>): Promise<void> {
+    override async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
         if (!this.funcs) {
             const state = ctx.injector.state(); 
             this.funcs = this.handles.map(ac => this.parseHandle(state, ac)).filter(f => f);
@@ -145,14 +145,14 @@ export abstract class Middlewares extends Middleware {
      * @param state global registered state.
      * @param mdty mdiddleware type.
      */
-    protected abstract parseHandle(state: RegisteredState, mdty: MiddlewareType): AsyncHandler<Context>;
+    protected abstract parseHandle(state: RegisteredState, mdty: MiddlewareType): AsyncHandler<T>;
 }
 
 
 /**
  * router interface
  */
-export interface IRouter extends Middlewares {
+export interface IRouter<T extends Context = Context> extends Middlewares<T> {
     readonly url: string;
     getPath(): string;
 }

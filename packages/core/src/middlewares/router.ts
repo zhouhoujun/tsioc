@@ -6,7 +6,7 @@ import { Route, RouteVaildator } from './route';
 
 
 @Injectable()
-export class Router extends MessageQueue implements IRouter {
+export class Router<T extends Context = Context> extends MessageQueue<T> implements IRouter<T> {
 
     constructor(@Inject(ROUTE_URL) public url: string, @Inject(ROUTE_PREFIX) private prefix = '', @Inject(ROUTE_PROTOCOL) public protocol = '') {
         super();
@@ -21,14 +21,14 @@ export class Router extends MessageQueue implements IRouter {
     }
 
     private sorted = false;
-    protected override canExecute(ctx: Context): boolean {
+    protected override canExecute(ctx: T): boolean {
         if (!ctx.vaild) {
             ctx.vaild = this.injector.get(RouteVaildator);
         }
         return this.match(ctx);
     }
 
-    protected override beforeExec(ctx: Context) {
+    protected override beforeExec(ctx: T) {
         if (!this.sorted) {
             this.handles.sort((a, b) => this.getUrlFrom(b).length - this.getUrlFrom(a).length);
             this.resetHandler();
@@ -47,7 +47,7 @@ export class Router extends MessageQueue implements IRouter {
         return '';
     }
 
-    protected match(ctx: Context): boolean {
+    protected match(ctx: T): boolean {
         return (!ctx.status || ctx.status === 404) && this.protocol === ctx.protocol && ctx.vaild?.isActiveRoute(ctx, this.url, this.prefix) === true;
     }
 
