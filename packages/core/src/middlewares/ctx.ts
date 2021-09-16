@@ -38,13 +38,15 @@ export interface RequestOption {
     readonly target?: any;
 }
 
-interface Headers {
-    append(name: string, value: string): void;
-    delete(name: string): void;
-    get(name: string): string | null;
-    has(name: string): boolean;
-    set(name: string, value: string): void;
-    forEach(callbackfn: (value: string, key: string, parent: Headers) => void, thisArg?: any): void;
+
+@Abstract()
+export abstract class Headers {
+    abstract append(name: string, value: string | string[]): void;
+    abstract delete(name: string): void;
+    abstract get(name: string): string | null;
+    abstract has(name: string): boolean;
+    abstract set(name: string, value: string | string[]): void;
+    abstract forEach(callbackfn: (value: string[], key: string, parent: Headers) => void, thisArg?: any): void;
 }
 
 @Abstract()
@@ -56,13 +58,6 @@ export abstract class Request {
      * @api public
      */
     abstract get headers(): Headers;
-    /**
-     * Set request header, alias as request.header.
-     * 
-     * @api public
-     */
-    abstract set headers(headers: Headers);
-
     /**
      * Get request originalUrl.
      *
@@ -390,6 +385,13 @@ export abstract class Request {
 @Abstract()
 export abstract class Response {
     /**
+     * Return response header.
+     *
+     * @return {Object}
+     * @api public
+     */
+    abstract get headers(): Headers;
+    /**
      * Get response status code.
      *
      * @return {Number}
@@ -419,7 +421,6 @@ export abstract class Response {
      */
 
     abstract set message(msg: string | undefined);
-
 
     /**
      * Get response body.

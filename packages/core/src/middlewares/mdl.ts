@@ -3,7 +3,7 @@ import { DIModule } from '../metadata/decor';
 import { ExtendBaseTypeMap } from './parser';
 import { MessageQueue } from './queue';
 import { RootMessageQueue } from './root';
-import { MsgRouteVaildator, MSG_CONTEXT_FACTORY_IMPL } from './default';
+import { MsgRouteVaildator, BASE_CONTEXT_FACTORY_IMPL } from './base';
 import { RootRouter, Router } from './router';
 
 
@@ -25,7 +25,7 @@ import { RootRouter, Router } from './router';
         RootMessageQueue,
         {
             provide: ContextFactory,
-            useValue: MSG_CONTEXT_FACTORY_IMPL
+            useValue: BASE_CONTEXT_FACTORY_IMPL
         }
     ]
 })
