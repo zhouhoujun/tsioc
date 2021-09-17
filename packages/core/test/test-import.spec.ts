@@ -25,15 +25,23 @@ describe('di module', () => {
         let ctx = await Application.run(ModuleB);
         let q = ctx.injector.get(SubMessageQueue);
         q.subscribe((ctx, next) => {
-            if (ctx.event === 'test') {
+            console.log('ctx.url:', ctx.url);
+            if (ctx.url === '/test') {
                 console.log('message queue test: ' + ctx.request.body);
+                ctx.body = ctx.request.query.hi;
+                console.log(ctx.body, ctx.request.query);
             }
             return next()
         });
         let qb = ctx.injector.get(SubMessageQueue);
         expect(q === qb).toBeTruthy();
         expect(qb['handles'].length).toEqual(1);
-        ctx.getMessager().send('test', { query: 'hello' });
+        // has no parent.
+        expect(ctx.getMessager().has(SubMessageQueue)).toBeFalsy();
+        const context = await qb.send('test', { query: {hi: 'hello'} });
+        expect(context.body).toEqual('hello');
+        expect(context.status).toEqual(200);
+
         ctx.destroy();
     });
 

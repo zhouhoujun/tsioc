@@ -171,11 +171,13 @@ export class RequestBase extends Request {
     protected init(init: RequestOption | Request) {
         if (init instanceof Request) {
             this._originalUrl = init.originalUrl;
+            this._URL = init.URL;
             this._url = init.url;
             this._body = init.body;
             this._method = init.method;
+            this.query = init.query;
         } else {
-            const { url: originalUrl, body, method, restful } = init;
+            const { url: originalUrl, body, method, restful, query } = init;
             let url = originalUrl || '';
             if (restful) {
                 let matchs = url.match(/\/:\w+/gi);
@@ -188,10 +190,14 @@ export class RequestBase extends Request {
                     });
                 }
             }
+            const uri = this.parseURL(url);
+            this._URL = uri;
+            url = uri.pathname + uri.search;
             this._originalUrl = url;
             this._url = String(url);
             this._body = body;
             this._method = method || 'GET';
+            if(query) this.query = query;
         }
     }
 
@@ -211,7 +217,8 @@ export class RequestBase extends Request {
         return this._url;
     }
     set url(url: string) {
-        this._url = url;
+        const uri = this._URL = this.parseURL(url);
+        this._url = uri.pathname + uri.search;
     }
 
     private _method!: string;
@@ -222,21 +229,6 @@ export class RequestBase extends Request {
         this._method = val;
     }
 
-
-    get path(): string {
-        return this.url;
-    }
-    set path(val: string) {
-        // this._path = val;
-    }
-
-    get query(): any {
-        throw new Error('Method not implemented.');
-    }
-    set query(val: any) {
-        throw new Error('Method not implemented.');
-    }
-
     private _body: any;
     get body(): any {
         return this._body;
@@ -245,51 +237,6 @@ export class RequestBase extends Request {
         this._body = val;
     }
 
-    get querystring(): string {
-        throw new Error('Method not implemented.');
-    }
-    set querystring(str: string) {
-        throw new Error('Method not implemented.');
-    }
-
-    get host(): string {
-        let host = this.headers.get('X-Forwarded-Host')
-            ?? this.headers.get(':authority')
-            ?? this.headers.get('Host');
-        if (!host) return '';
-        return host.split(/\s*,\s*/, 1)[0];
-    }
-    get hostname(): string {
-        const host = this.host;
-        if (!host) return '';
-        if ('[' === host[0]) return this.URL.hostname || ''; // IPv6
-        return host.split(':', 1)[0];
-    }
-
-    private _URL!: URL;
-    /**
-     * Get WHATWG parsed URL.
-     * Lazily memoized.
-     *
-     * @return {URL|Object}
-     * @api public
-     */
-    get URL(): URL {
-        if (!this._URL) {
-            try {
-                this._URL = new URL(`${this.origin}${this.originalUrl}`);
-            } catch (err) {
-                this._URL = null!;
-            }
-        }
-        return this._URL;
-    }
-
-    get length(): number {
-        const len = this.getHeader('Content-Length') || '';
-        if (len === '') return 0;
-        return ~~len;
-    }
     get protocol(): string {
         const proto = this.getHeader('X-Forwarded-Proto');
         return proto ? proto.split(/\s*,\s*/, 1)[0] : 'http';
@@ -297,11 +244,6 @@ export class RequestBase extends Request {
 
     get subdomains(): string[] {
         throw new Error('Method not implemented.');
-    }
-    get type(): string {
-        const type = this.getHeader('Content-Type');
-        if (!type) return '';
-        return type.split(';')[0];
     }
 
 
@@ -388,7 +330,8 @@ export class ResponseBase extends Response {
             if (!empty[this.status]) this.status = 204;
             return;
         }
-        if (empty[this.status]) this.status = 200;
+        
+        this.status = 200;
         // set the content-type only if not yet set
         const setType = !this.hasHeader('Content-Type');
 

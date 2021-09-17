@@ -88,8 +88,10 @@ export class SubMessageQueue extends MessageQueue {
         AopModule,
         LogModule,
         Logger,
+        ModuleA
+    ],
+    providers: [
         ClassSevice,
-        ModuleA,
         SubMessageQueue
     ],
     bootstrap: ClassSevice
@@ -137,7 +139,7 @@ export class StatupModule { }
         ServerBootstrapModule,
         ServerLogsModule
     ],
-    providers:[
+    providers: [
         ClassSevice,
         StatupModule,
         SubMessageQueue

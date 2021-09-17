@@ -26,7 +26,6 @@ export class TestReport implements ITestReport {
     getReports() {
         if (!this.reports) {
             this.reports = this.injector.getServices(Reporter);
-            console.log('reports:', this.reports);
         }
         return this.reports || [];
     }

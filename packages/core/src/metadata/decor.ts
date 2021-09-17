@@ -306,6 +306,7 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
             }
             const { route, protocol, parent, before, after } = metadata;
             const injector = ctx.injector;
+            
             if (!isString(route) && !parent) {
                 return next();
             }

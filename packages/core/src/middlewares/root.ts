@@ -31,85 +31,12 @@ export class RootMessageQueue extends MessageQueue {
     }
 }
 
-
-// function getValue<T>(this: Context, token: Token<T>): T {
-//     return this.injector.get(token);
-// }
-
-// function setValue(this: Context, token: Token, value: any): void {
-//     this.injector.setValue(token, value);
-// }
-
-// const protocolReg = /^\w+:\/\//;
-
-
-
 /**
  * init queue.
  * @param ctx 
  * @param next 
  */
 export const initQueue = async (ctx: Context, next: () => Promise<void>) => {
-    // const { injector, request } = ctx;
-    // ctx.vaild = injector.get(RouteVaildator);
-
-    // if (!ctx.vaild) {
-    //     ctx.vaild = ctx.injector.get(RouteVaildator);
-    // }
-
-
-    // if (request.restful) {
-    //     let matchs = request.url?.match(/\/:\w+/gi);
-    //     if (matchs) {
-    //         matchs.forEach(m => {
-    //             const pn = m.slice(2);
-    //             if (request.restful?.[pn]) {
-    //                 request.url = request.url?.replace(m, `/${request.restful[pn]}`);
-    //             }
-    //         });
-    //     }
-    // }
-
-    // if (!request.protocol) {
-    //     const match = lang.first(request.url?.match(protocolReg));
-    //     const protocol = match ? match.toString().replace('//', '').trim() : '';
-    //     Object.defineProperty(request, 'protocol', {
-    //         get: () => protocol
-    //     });
-    // }
-
-    // Object.defineProperties(ctx, {
-    //     url: {
-    //         get: () => request.url,
-    //         enumerable: false
-    //     },
-    //     protocol: {
-    //         get: () => request.protocol,
-    //         enumerable: false
-    //     },
-    //     providers: {
-    //         get: () => providers,
-    //         enumerable: false
-    //     },
-    //     event: {
-    //         get: () => request.event,
-    //         enumerable: false
-    //     },
-    //     method: {
-    //         get: () => request.method,
-    //         enumerable: false
-    //     },
-    //     getValue: {
-    //         value: getValue,
-    //         writable: false,
-    //         enumerable: false
-    //     },
-    //     setValue: {
-    //         value: setValue,
-    //         writable: false,
-    //         enumerable: false
-    //     }
-    // });
 
     const logger = ctx.injector.get(ApplicationContext).getLogManager()?.getLogger();
     const start = Date.now();

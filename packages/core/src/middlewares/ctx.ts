@@ -4,15 +4,8 @@ import { Abstract, Injector, Token } from '@tsdi/ioc';
 
 export type HeadersOption = string[][] | Record<string, string> | Headers | string;
 
-/**
- * Request
- */
-export interface RequestOption {
+export interface RequestInit {
     headers?: HeadersOption;
-    /**
-     * request url.
-     */
-    url: string;
     /**
      * protocol.
      */
@@ -28,7 +21,7 @@ export interface RequestOption {
     /**
      * request query params
      */
-    readonly query?: any;
+    readonly query?: Record<string, any>;
     /**
      * reuqest method
      */
@@ -45,7 +38,18 @@ export interface RequestOption {
     /**
      * A string whose value is a same-origin URL, "about:client", or the empty string, to set request's referrer.
      */
-     referrer?: string;
+    referrer?: string;
+}
+
+/**
+ * Request
+ */
+export interface RequestOption extends RequestInit {
+
+    /**
+     * request url.
+     */
+    url: string;
 }
 
 
@@ -104,7 +108,7 @@ export abstract class Request {
      * @api public
      */
     get origin() {
-        return `${this.protocol}://${this.host}`;
+        return this.URL.origin;
     }
 
     /**
@@ -114,9 +118,7 @@ export abstract class Request {
      * @api public
      */
     get href() {
-        // support: `GET http://example.com/foo`
-        if (/^https?:\/\//i.test(this.originalUrl)) return this.originalUrl;
-        return this.origin + this.originalUrl;
+        return this.URL.href;
     }
 
     /**
@@ -135,37 +137,46 @@ export abstract class Request {
      */
     abstract set method(val: string);
 
-
     /**
      * Get request pathname.
      *
      * @return {String}
      * @api public
      */
-    abstract get path(): string;
+    get path(): string {
+        return this.URL.pathname;
+    }
 
-    /**
-     * Set pathname, retaining the query-string when present.
-     *
-     * @param {String} path
-     * @api public
-     */
-    abstract set path(path: string);
-
+    private _querycache!: Record<string, any>;
     /**
      * Get parsed query-string.
      *
      * @return {any}
      * @api public
      */
-    abstract get query(): any;
+    get query(): Record<string, any> {
+        let qur = this._querycache;
+        if (!qur) {
+            qur = {};
+            this.URL.searchParams.forEach((v, k) => {
+                qur[k] = v;
+            });
+        }
+        return qur;
+    }
     /**
      * Set query-string as an object.
      *
      * @param {any} obj
      * @api public
      */
-    abstract set query(obj: any);
+    set query(val: Record<string, any>) {
+        for (let n in val) {
+            this.URL.searchParams.set(n, String(val[n]));
+        }
+        this._querycache = val;
+    }
+
     /**
      * Get parsed request data to body.
      *
@@ -187,14 +198,9 @@ export abstract class Request {
      * @return {String}
      * @api public
      */
-    abstract get querystring(): string;
-    /**
-     * Set querystring.
-     *
-     * @param {String} str
-     * @api public
-     */
-    abstract set querystring(str);
+    get querystring(): string {
+        return this.URL.searchParams.toString();
+    }
 
     /**
    * Get the search string. Same as the querystring
@@ -204,19 +210,7 @@ export abstract class Request {
    * @api public
    */
     get search() {
-        if (!this.querystring) return '';
-        return `?${this.querystring}`;
-    }
-
-    /**
-     * Set the search string. Same as
-     * request.querystring= but included for ubiquity.
-     *
-     * @param {String} str
-     * @api public
-     */
-    set search(str: string) {
-        this.querystring = str;
+        return this.URL.search;
     }
 
     /**
@@ -227,7 +221,9 @@ export abstract class Request {
      * @return {String} hostname:port
      * @api public
      */
-    abstract get host(): string;
+    get host(): string {
+        return this.URL.host;
+    }
 
     /**
      * Parse the "Host" header field hostname
@@ -237,7 +233,46 @@ export abstract class Request {
      * @return {String} hostname
      * @api public
      */
-    abstract get hostname(): string;
+    get hostname(): string {
+        return this.URL.hostname;
+    }
+
+    protected _URL!: URL;
+    /**
+     * Get WHATWG parsed URL.
+     * Lazily memoized.
+     *
+     * @return {URL|Object}
+     * @api public
+     */
+    get URL(): URL {
+        if (!this._URL) {
+            this._URL = this.parseURL(this.url);
+        }
+        return this._URL;
+    }
+
+    protected parseURL(url: string) {
+        let uri: URL;
+        try {
+            if (!/^\w+:\/\//.test(url)) {
+                url = this.parseOrigin() + (/^\//.test(url) ? '' : '/') + url;
+            }
+            uri = new URL(url);
+        } catch (err) {
+            console.log(url, 'parseURL:', err);
+            uri = null!;
+        }
+        return uri;
+    }
+
+    protected parseOrigin() {
+        const proto = this.getHeader('X-Forwarded-Proto');
+        let protocol = proto ? proto.split(/\s*,\s*/, 1)[0] : 'msg'
+        let host = this.getHeader('X-Forwarded-Host') ??
+            this.getHeader(':authority') ?? this.getHeader('Host') ?? '0.0.0.0';
+        return `${protocol}://${host}`
+    }
 
     /**
      * Return parsed Content-Length when present.
@@ -245,7 +280,11 @@ export abstract class Request {
      * @return {Number}
      * @api public
      */
-    abstract get length(): number;
+    get length(): number {
+        const len = this.getHeader('Content-Length') || '';
+        if (len === '') return 0;
+        return ~~len;
+    }
 
     /**
      * Return the protocol string "http" or "https"
@@ -258,7 +297,9 @@ export abstract class Request {
      * @return {String}
      * @api public
      */
-    abstract get protocol(): string;
+    get protocol(): string {
+        return this.URL.protocol;
+    }
 
     /**
      * Short-hand for:
@@ -296,7 +337,11 @@ export abstract class Request {
      * @return {String}
      * @api public
      */
-    abstract get type(): string;
+    get type(): string {
+        const type = this.getHeader('Content-Type');
+        if (!type) return '';
+        return type.split(';')[0];
+    }
 
     abstract getHeader(name: string): string | null;
     abstract hasHeader(name: string): boolean;
@@ -429,16 +474,16 @@ export abstract class Context {
     get querystring(): string {
         return this.request.querystring;
     }
-    set querystring(val: string) {
-        this.request.querystring = val;
-    }
+    // set querystring(val: string) {
+    //     this.request.querystring = val;
+    // }
 
     get search(): string {
         return this.request.search;
     }
-    set search(val: string) {
-        this.request.search = val;
-    }
+    // set search(val: string) {
+    //     this.request.search = val;
+    // }
 
     get method(): string {
         return this.request.method;
@@ -457,9 +502,9 @@ export abstract class Context {
     get path(): string {
         return this.request.path;
     }
-    set path(path: string) {
-        this.request.path = path;
-    }
+    // set path(path: string) {
+    //     this.request.path = path;
+    // }
 
     get url(): string {
         return this.request.url;
