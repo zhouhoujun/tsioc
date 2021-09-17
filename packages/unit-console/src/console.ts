@@ -1,4 +1,4 @@
-import { Token, ObjectMap, lang } from '@tsdi/ioc';
+import { Token, lang } from '@tsdi/ioc';
 import { DIModule } from '@tsdi/core';
 import { ISuiteDescribe, RealtimeReporter, ICaseDescribe } from '@tsdi/unit';
 import { ServerBootstrapModule, ServerLogsModule } from '@tsdi/platform-server';
@@ -31,7 +31,7 @@ export class ConsoleReporter extends RealtimeReporter {
         let first: ISuiteDescribe | undefined;
         let last: ISuiteDescribe | undefined;
         let sus = Array.from(suites.values());
-        let fails: ObjectMap<string[]> = {};
+        let fails: Record<string, string[]> = {};
         let successed = 0, failed = 0;
         sus.forEach((d, i) => {
             if (i === 0) {

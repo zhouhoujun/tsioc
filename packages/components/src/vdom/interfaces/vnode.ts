@@ -1,4 +1,3 @@
-import { ObjectMap } from '@tsdi/ioc';
 import { KeyValueArray } from '../../util/array';
 import { INode } from './node';
 import { View } from './view';
@@ -771,7 +770,7 @@ export interface VNode {
      * This is used by `insertTStylingBinding` to know where the next styling binding should be
      * inserted so that they can be sorted in priority order.
      */
-    classBindings?: ObjectMap<any>;
+    classBindings?: Record<string, any>;
 
     /**
      * Stores the head/tail index of the class bindings.
@@ -784,7 +783,7 @@ export interface VNode {
      * This is used by `insertTStylingBinding` to know where the next styling binding should be
      * inserted so that they can be sorted in priority order.
      */
-    styleBindings?: ObjectMap<any>;
+    styleBindings?: Record<string, any>;
 }
 
 /**

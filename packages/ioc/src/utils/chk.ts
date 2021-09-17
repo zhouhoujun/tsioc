@@ -1,6 +1,6 @@
 import { TypeReflect } from '../metadata/type';
 import { InjectToken } from '../tokens';
-import { AbstractType, AnnotationType, ClassType, ObjectMap, Type } from '../types';
+import { AbstractType, AnnotationType, ClassType, Type } from '../types';
 import { clsNameExp } from './exps';
 import { getClassAnnotation } from './util';
 
@@ -214,7 +214,7 @@ export function isTypeObject(target: any): boolean {
  * @param {*} target
  * @returns {target is Promise<any>}
  */
-export function isPlainObject<T = ObjectMap>(target: any): target is T {
+export function isPlainObject(target: any): target is Record<string, any> {
     return toString.call(target) === objTag && target.constructor.name === objName;
 }
 

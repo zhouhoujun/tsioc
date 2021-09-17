@@ -2,18 +2,13 @@
 /**
  * module types.
  */
-export type Modules = Type | ObjectMap<Type | Modules | Object>;
+export type Modules = Type | Record<string, Type | Object>;
 
 /**
  * object map.
  *
- * @export
- * @interface ObjectMap
- * @template T
  */
-export interface ObjectMap<T = any> {
-    [index: string]: T;
-}
+export type ObjectMap<T = any> = Record<string, T>;
 
 /**
  * class design annotation
@@ -31,10 +26,10 @@ export interface DesignAnnotation {
     /**
      * class params declaration.
      *
-     * @type {ObjectMap<string[]>}
+     * @type {Record<string, string[]>}
      * @memberof DesignAnnotation
      */
-    params: ObjectMap<string[]>;
+    params: Record<string, string[]>;
 
     /**
      * abstract or not.
@@ -95,7 +90,7 @@ export interface AnnotationType<T = any> extends Function {
     /**
      * type reflect of this class.
      */
-    ρRfl?: ()=> any;
+    ρRfl?: () => any;
 }
 
 /**

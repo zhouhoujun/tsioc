@@ -1,5 +1,5 @@
 // use core-js in browser.
-import { ObjectMap, Type, Modules, ClassType } from '../types';
+import { Type, Modules, ClassType } from '../types';
 import { getClass, isArray, isClass, isClassType, isFunction, isNil, isObject, isPlainObject } from './chk';
 import { clsUglifyExp } from './exps';
 import { getClassAnnotation } from './util';
@@ -11,7 +11,7 @@ export { getClassAnnotation, hasClassAnnotation } from './util';
  * create an new object from target object omit some field.
  *
  * @export
- * @param {ObjectMap} target
+ * @param {any} target
  * @param {...string[]} fields
  * @returns {*}
  */
@@ -36,7 +36,7 @@ export function omit(target: any, ...fields: string[]): any {
  * @param omits omit fileds.
  * @returns 
  */
-export function assign(target: any, values: ObjectMap, ...omits: string[]): any {
+export function assign(target: any, values: any, ...omits: string[]): any {
     if (!values) return target;
     for (let key in values) {
         if (omits.indexOf(key) < 0) {
@@ -51,10 +51,10 @@ export function assign(target: any, values: ObjectMap, ...omits: string[]): any 
  *
  * @export
  * @template T
- * @param {(ObjectMap<T> | T[])} target
+ * @param {(Record<string, T> | T[])} target
  * @param {(item: T, idx?: number|string) => void|boolean} iterator
  */
-export function forIn<T = any>(target: ObjectMap<T>, iterator: (item: T, idx: string) => void | boolean): void
+export function forIn<T = any>(target: Record<string, T>, iterator: (item: T, idx: string) => void | boolean): void
 export function forIn<T = any>(target: T[], iterator: (item: T, idx: number) => void | boolean): void;
 export function forIn(target: any, iterator: (item: any, idx?: any) => void | boolean): void {
     if (isArray(target)) {

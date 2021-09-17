@@ -1,4 +1,4 @@
-import { ObjectMap, Type } from './types';
+import { Type } from './types';
 import { Token } from './tokens';
 
 /**
@@ -138,16 +138,14 @@ export interface ExistingProvider extends ProvideProvider {
  * keyvalues map provider.
  * use provider value for param by param name.
  *
- * @export
- * @class ObjectMapProvider
  */
 export class KeyValueProvider {
-    protected maps: ObjectMap;
+    protected maps: Record<string, any>;
     constructor() {
         this.maps = {};
     }
 
-    set(options: ObjectMap): this {
+    set(options: Record<string, any>): this {
         if (options) {
             this.maps = { ... this.maps, ...options };
         }
@@ -166,21 +164,15 @@ export class KeyValueProvider {
      * parse  provider.
      *
      * @static
-     * @param {ObjectMap} options
+     * @param {Record<string, any>} options
      * @returns
-     * @memberof ObjectMapProvider
      */
-    static parse(options: ObjectMap) {
+    static parse(options: Record<string, any>) {
         let pdr = new KeyValueProvider();
         pdr.set(options);
         return pdr;
     }
 }
-
-/**
- * @deprecated use `KeyValueProvider` instead.
- */
-export const ObjectMapProvider = KeyValueProvider;
 
 /**
  * type provider.

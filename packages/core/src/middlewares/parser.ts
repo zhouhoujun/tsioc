@@ -1,5 +1,5 @@
 import {
-    Type, Inject, ObjectMap, isClass, isUndefined, isPrimitiveType, isArray,
+    Type, Inject, isClass, isUndefined, isPrimitiveType, isArray,
     Abstract, Singleton, isNil, isFunction, Token, tokenId, Injector, PropertyMetadata
 } from '@tsdi/ioc';
 import { TypeParser } from '../services/intf';
@@ -120,6 +120,6 @@ export abstract class ModelParser {
         return this.getTypeMap().resolve(type, value);
     }
 
-    protected abstract getPropertyMeta(type: Type): ObjectMap<DBPropertyMetadata>;
+    protected abstract getPropertyMeta(type: Type): Record<string, DBPropertyMetadata>;
 
 }

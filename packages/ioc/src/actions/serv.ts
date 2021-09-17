@@ -107,7 +107,7 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
             if (maps && maps.size) {
                 maps.iterator((pdr, token) => {
                     dtype = pdr.type || token as Type;
-                    if (isFunction(dtype) && !services.has(dtype) && match(type, dtype)) {
+                    if (isFunction(dtype) && !services.has(dtype) && match(dtype, type)) {
                         services.set(dtype, pdr);
                     }
                 });
@@ -124,7 +124,7 @@ export const RsvServicesAction = function (ctx: ServicesContext, next: () => voi
     let dtype: Type;
     injector.iterator((pdr, token) => {
         dtype = pdr.type || token as Type;
-        if (isFunction(dtype) && !services.has(dtype) && match(type, dtype)) {
+        if (isFunction(dtype) && !services.has(dtype) && match(dtype, type)) {
             services.set(dtype, pdr);
         }
     }, true);

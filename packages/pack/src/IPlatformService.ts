@@ -1,18 +1,18 @@
-import { ObjectMap, tokenId, Token, IContainer } from '@tsdi/ioc';
+import { tokenId, Token, Injector } from '@tsdi/ioc';
 import { CompilerOptions } from 'typescript';
 import { Src } from '@tsdi/activities';
 import { GlobbyOptions } from 'globby';
 
 export interface IPlatformService {
-    container: IContainer;
+    container: Injector;
     packageFile: string;
     /**
      * get evn args.
      *
-     * @returns {ObjectMap}
+     * @returns {Record<string, any>}
      * @memberof NodeContext
      */
-    getEnvArgs(): ObjectMap;
+    getEnvArgs(): Record<string, any>;
     hasArg(arg: any): boolean;
     /**
      * get root folders.

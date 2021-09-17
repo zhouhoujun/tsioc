@@ -1,4 +1,4 @@
-import { Injectable, IInjector, isArray, Type, isClass, isFunction, isPromise, ObjectMap, isNil, AsyncHandler, chain, isString } from '@tsdi/ioc';
+import { Injectable, IInjector, isArray, Type, isClass, isFunction, isPromise, isNil, AsyncHandler, chain, isString } from '@tsdi/ioc';
 import { BUILDER } from '@tsdi/boot';
 import { ActivityType, Expression } from './ActivityMetadata';
 import { IActivityRef, ACTIVITY_INPUT, ACTIVITY_DATA } from './IActivityRef';
@@ -72,7 +72,7 @@ export class ActivityExecutor implements IActivityExecutor {
         }
     }
 
-    eval(expression: string, envOptions?: ObjectMap) {
+    eval(expression: string, envOptions?: Record<string, any>) {
         if (!expression) {
             return expression;
         }

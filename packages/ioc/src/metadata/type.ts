@@ -114,13 +114,13 @@ export interface TypeReflect<T = any> extends TypeMetadata, PatternMetadata, Reg
     /**
      * method params.
      *
-     * @type {ObjectMap<IParameter[]>}
+     * @type {Map<IParameter[]>}
      */
     methodParams: Map<string, ParameterMetadata[]>;
     /**
      * method providers.
      *
-     * @type {ObjectMap<ProviderType[]>}
+     * @type {Map<ProviderType[]>}
      */
     methodProviders: Map<string, ProviderType[]>;
     /**

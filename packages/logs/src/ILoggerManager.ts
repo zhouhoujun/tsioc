@@ -1,4 +1,4 @@
-import { ObjectMap, Type } from '@tsdi/ioc';
+import { Type } from '@tsdi/ioc';
 import { ILogger } from './ILogger';
 import { LogConfigure } from './LogConfigure';
 
@@ -7,9 +7,9 @@ import { LogConfigure } from './LogConfigure';
  *
  * @export
  * @interface LoggerConfig
- * @extends {ObjectMap}
+ * @extends {Record<string, any>}
  */
-export interface LoggerConfig extends ObjectMap { }
+export interface LoggerConfig extends Record<string, any> { }
 
 /**
  * logger manager.

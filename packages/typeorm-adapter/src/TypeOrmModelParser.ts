@@ -1,4 +1,4 @@
-import { Singleton, Type, ObjectMap, Autorun, Token, isFunction, isString, tokenId, Inject } from '@tsdi/ioc';
+import { Singleton, Type, Autorun, Token, isFunction, isString, tokenId, Inject } from '@tsdi/ioc';
 import { ModelParser, MODEL_PARSER, DBPropertyMetadata } from '@tsdi/core';
 import { getMetadataArgsStorage } from 'typeorm';
 import { ColumnMetadataArgs } from 'typeorm/metadata-args/ColumnMetadataArgs';
@@ -32,7 +32,7 @@ export class TypeOrmModelParser extends ModelParser {
         }
     }
 
-    protected override getPropertyMeta(type: Type): ObjectMap<DBPropertyMetadata> {
+    protected override getPropertyMeta(type: Type): Record<string, DBPropertyMetadata> {
         let metas = {} as any;
         getMetadataArgsStorage().columns.filter(col => col.target === type)
             .forEach(col => {

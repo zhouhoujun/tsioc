@@ -1,4 +1,4 @@
-import { ClassType, DesignAnnotation, ObjectMap } from '../types';
+import { ClassType, DesignAnnotation } from '../types';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { EMPTY, isFunction, isString } from '../utils/chk';
 import { getClassAnnotation } from '../utils/util';
@@ -256,8 +256,8 @@ export class TypeDefine {
         return pty;
     }
 
-    private descriptos!: ObjectMap<TypedPropertyDescriptor<any>>;
-    getPropertyDescriptors(): ObjectMap<TypedPropertyDescriptor<any>> {
+    private descriptos!: Record<string, TypedPropertyDescriptor<any>>;
+    getPropertyDescriptors(): Record<string, TypedPropertyDescriptor<any>> {
         if (!this.descriptos) {
             const descriptos = this.parent ? { ...this.parent.getPropertyDescriptors() } : {};
             forIn(Object.getOwnPropertyDescriptors(this.type.prototype), (d, n) => {

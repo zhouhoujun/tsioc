@@ -1,13 +1,18 @@
-import { Abstract, Injector, ObjectMap, Token } from '@tsdi/ioc';
+import { Abstract, Injector, Token } from '@tsdi/ioc';
+
+
+
+export type HeadersOption = string[][] | Record<string, string> | Headers | string;
 
 /**
  * Request
  */
 export interface RequestOption {
+    headers?: HeadersOption;
     /**
      * request url.
      */
-    url?: string;
+    url: string;
     /**
      * protocol.
      */
@@ -15,7 +20,7 @@ export interface RequestOption {
     /**
      * restful params.
      */
-    readonly restful?: ObjectMap<string | number | boolean>;
+    readonly restful?: Record<string, string | number | boolean>;
     /**
      * request body.
      */
@@ -36,11 +41,24 @@ export interface RequestOption {
      * the target raise request.
      */
     readonly target?: any;
+
+    /**
+     * A string whose value is a same-origin URL, "about:client", or the empty string, to set request's referrer.
+     */
+     referrer?: string;
+}
+
+
+export interface ResponseOption {
+    headers?: HeadersOption;
+    status?: number;
+    statusText?: string;
 }
 
 
 @Abstract()
 export abstract class Headers {
+    abstract get referrer(): string;
     abstract append(name: string, value: string | string[]): void;
     abstract delete(name: string): void;
     abstract get(name: string): string | null;
@@ -271,7 +289,6 @@ export abstract class Request {
      */
     abstract get subdomains(): string[];
 
-
     /**
      * Return the request mime type void of
      * parameters such as "charset".
@@ -281,104 +298,10 @@ export abstract class Request {
      */
     abstract get type(): string;
 
-    /**
-     * Get accept object.
-     * Lazily memoized.
-     *
-     * @return {Object}
-     * @api private
-     */
-    abstract get accept(): Object;
-    /**
-     * Set accept object.
-     *
-     * @param {Object}
-     * @api private
-     */
-    abstract set accept(obj: Object);
-
-    /**
-     * Check if the given `type(s)` is acceptable, returning
-     * the best match when true, otherwise `false`, in which
-     * case you should respond with 406 "Not Acceptable".
-     *
-     * The `type` value may be a single mime type string
-     * such as "application/json", the extension name
-     * such as "json" or an array `["json", "html", "text/plain"]`. When a list
-     * or array is given the _best_ match, if any is returned.
-     *
-     * Examples:
-     *
-     *     // Accept: text/html
-     *     this.accepts('html');
-     *     // => "html"
-     *
-     *     // Accept: text/*, application/json
-     *     this.accepts('html');
-     *     // => "html"
-     *     this.accepts('text/html');
-     *     // => "text/html"
-     *     this.accepts('json', 'text');
-     *     // => "json"
-     *     this.accepts('application/json');
-     *     // => "application/json"
-     *
-     *     // Accept: text/*, application/json
-     *     this.accepts('image/png');
-     *     this.accepts('png');
-     *     // => false
-     *
-     *     // Accept: text/*;q=.5, application/json
-     *     this.accepts(['html', 'json']);
-     *     this.accepts('html', 'json');
-     *     // => "json"
-     *
-     * @param {String|Array} type(s)...
-     * @return {String|Array|false}
-     * @api public
-     */
-    abstract accepts(type: string[]): string | string[] | boolean;
-    /**
-     * Check if the given `type(s)` is acceptable, returning
-     * the best match when true, otherwise `false`, in which
-     * case you should respond with 406 "Not Acceptable".
-     *
-     * The `type` value may be a single mime type string
-     * such as "application/json", the extension name
-     * such as "json" or an array `["json", "html", "text/plain"]`. When a list
-     * or array is given the _best_ match, if any is returned.
-     *
-     * Examples:
-     *
-     *     // Accept: text/html
-     *     this.accepts('html');
-     *     // => "html"
-     *
-     *     // Accept: text/*, application/json
-     *     this.accepts('html');
-     *     // => "html"
-     *     this.accepts('text/html');
-     *     // => "text/html"
-     *     this.accepts('json', 'text');
-     *     // => "json"
-     *     this.accepts('application/json');
-     *     // => "application/json"
-     *
-     *     // Accept: text/*, application/json
-     *     this.accepts('image/png');
-     *     this.accepts('png');
-     *     // => false
-     *
-     *     // Accept: text/*;q=.5, application/json
-     *     this.accepts(['html', 'json']);
-     *     this.accepts('html', 'json');
-     *     // => "json"
-     *
-     * @param {...ObjectMapstring[]} type(s)...
-     * @return {String|Array|false}
-     * @api public
-     */
-    abstract accepts(types: string[]): string | string[] | boolean;
+    abstract getHeader(name: string): string | null;
+    abstract hasHeader(name: string): boolean;
+    abstract setHeader(name: string, value: string | string[]): void;
+    abstract removeHeader(name: string): void;
 
 }
 
@@ -477,6 +400,11 @@ export abstract class Response {
      */
     abstract set type(type: string);
 
+    abstract getHeader(name: string): string | null;
+    abstract hasHeader(name: string): boolean;
+    abstract setHeader(name: string, value: string | string[]): void;
+    abstract removeHeader(name: string): void;
+
 }
 
 /**
@@ -540,12 +468,12 @@ export abstract class Context {
         this.request.url = val;
     }
 
-    get accept(): Object {
-        return this.request.accept;
-    }
-    set accept(val: Object) {
-        this.request.accept = val;
-    }
+    // get accept(): Object {
+    //     return this.request.accept;
+    // }
+    // set accept(val: Object) {
+    //     this.request.accept = val;
+    // }
 
     get origin(): string {
         return this.request.origin;

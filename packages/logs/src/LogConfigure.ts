@@ -1,4 +1,4 @@
-import { Token, ObjectMap } from '@tsdi/ioc';
+import { Token } from '@tsdi/ioc';
 import { ILoggerManager } from './ILoggerManager';
 import { LOGFormater } from './formater';
 
@@ -19,9 +19,9 @@ export interface LogConfigure {
     /**
      * logger config options.
      *
-     * @type {ObjectMap}
+     * @type {Record<string, any>}
      */
-    config?: ObjectMap;
+    config?: Record<string, any>;
 
     /**
      * format

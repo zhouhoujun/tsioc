@@ -229,7 +229,7 @@ export class TsBuildActivity {
     @Input() annotation: boolean;
     @Input('annotationFramework') annotationFramework: NodeExpression<ITransform>;
     @Input('beforePipes') beforePipes: ActivityType<ITransform>[];
-    @Input('tsconfig', './tsconfig.json') tsconfig: string | ObjectMap;
+    @Input('tsconfig', './tsconfig.json') tsconfig: string | Record<string, any>;
     @Input() uglify: NodeExpression<boolean>;
     @Input('uglifyOptions') uglifyOptions: any;
 }

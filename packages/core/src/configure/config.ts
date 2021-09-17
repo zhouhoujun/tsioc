@@ -1,9 +1,9 @@
-import { ObjectMap, Type, LoadType, ProvidersMetadata, Abstract } from '@tsdi/ioc';
+import { Type, LoadType, ProvidersMetadata, Abstract } from '@tsdi/ioc';
 
 /**
  * connection options
  */
-export interface ConnectionOptions extends ObjectMap<any> {
+export interface ConnectionOptions extends Record<string, any> {
     asDefault?: boolean;
     name?: string;
     /**
@@ -64,9 +64,9 @@ export interface Configuration extends ProvidersMetadata {
     /**
      * custom config key value setting.
      *
-     * @type {ObjectMap}
+     * @type {Record<string, any>}
      */
-    setting?: ObjectMap;
+    setting?: Record<string, any>;
     /**
      * custom config connections.
      *
@@ -87,7 +87,7 @@ export interface Configuration extends ProvidersMetadata {
 /**
  * configure loader.
  */
- @Abstract()
+@Abstract()
 export abstract class ConfigureLoader {
     /**
      * load config.
@@ -95,7 +95,7 @@ export abstract class ConfigureLoader {
      * @param {string} [uri]
      * @returns {Promise<T>}
      */
-     abstract load<T extends Configuration>(uri?: string): Promise<T>;
+    abstract load<T extends Configuration>(uri?: string): Promise<T>;
 }
 
 

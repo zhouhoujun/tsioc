@@ -1,4 +1,3 @@
-import { ObjectMap } from '@tsdi/ioc';
 import { INode } from './node';
 import { LView } from './view';
 
@@ -42,6 +41,6 @@ import { LView } from './view';
      * The map of local references (local reference name => element or directive instance) that exist
      * on this element.
      */
-    localRefs: ObjectMap<any>;
+    localRefs: Record<string, any>;
   }
   

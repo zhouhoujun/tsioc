@@ -1,5 +1,5 @@
 import { Injectable, Injector, isArray, isString, Singleton } from '@tsdi/ioc';
-import { RouteVaildator, Context, Request, Response, RequestOption, Headers, ContextFactory } from './ctx';
+import { RouteVaildator, Context, Request, Response, Headers, ContextFactory, RequestOption, HeadersOption, ResponseOption } from './ctx';
 
 const urlReg = /\/((\w|%|\.))+\.\w+$/;
 const noParms = /\/\s*$/;
@@ -63,93 +63,12 @@ export class ContextBase extends Context {
     }
 }
 
-export class RequestBase extends Request {
-    get headers(): Headers {
-        throw new Error('Method not implemented.');
-    }
-    set headers(headers: Headers) {
-        throw new Error('Method not implemented.');
-    }
-    get originalUrl(): string {
-        throw new Error('Method not implemented.');
-    }
-    get url(): string {
-        throw new Error('Method not implemented.');
-    }
-    set url(url: string) {
-        throw new Error('Method not implemented.');
-    }
-    get method(): string {
-        throw new Error('Method not implemented.');
-    }
-    set method(val: string) {
-        throw new Error('Method not implemented.');
-    }
-    get path(): string {
-        throw new Error('Method not implemented.');
-    }
-    set path(path: string) {
-        throw new Error('Method not implemented.');
-    }
-    get query(): any {
-        throw new Error('Method not implemented.');
-    }
-    set query(obj: any) {
-        throw new Error('Method not implemented.');
-    }
-    get body(): any {
-        throw new Error('Method not implemented.');
-    }
-    set body(obj: any) {
-        throw new Error('Method not implemented.');
-    }
-    get querystring(): string {
-        throw new Error('Method not implemented.');
-    }
-    set querystring(str: string) {
-        throw new Error('Method not implemented.');
-    }
-    get host(): string {
-        throw new Error('Method not implemented.');
-    }
-    get hostname(): string {
-        throw new Error('Method not implemented.');
-    }
-    get length(): number {
-        throw new Error('Method not implemented.');
-    }
-    get protocol(): string {
-        throw new Error('Method not implemented.');
-    }
-    get subdomains(): string[] {
-        throw new Error('Method not implemented.');
-    }
-    get type(): string {
-        throw new Error('Method not implemented.');
-    }
-    get accept(): Object {
-        throw new Error('Method not implemented.');
-    }
-    set accept(obj: Object) {
-        throw new Error('Method not implemented.');
-    }
-    accepts(type: string[]): string | boolean | string[];
-    accepts(types: string[]): string | boolean | string[];
-    accepts(types: any): string | boolean | string[] {
-        throw new Error('Method not implemented.');
-    }
-    constructor(option: RequestOption | Request) {
-        super();
-    }
-}
-
 const empty: any = {
     204: true,
     205: true,
     304: true
 };
 
-export type HeadersInit = string[][] | Record<string, string> | Headers | string;
 
 export class HeadersBase extends Headers {
     /**
@@ -158,13 +77,13 @@ export class HeadersBase extends Headers {
     private headers!: Map<string, string[]>;
 
 
-    constructor(headers?: HeadersInit) {
+    constructor(headers?: HeadersOption | Headers) {
         super();
         this.headers = new Map();
         if (headers) this.init(headers);
     }
 
-    protected init(headers: HeadersInit) {
+    protected init(headers: HeadersOption | Headers) {
         if (isString(headers)) {
             headers.split('\n').forEach(line => {
                 const index = line.indexOf(':');
@@ -188,7 +107,13 @@ export class HeadersBase extends Headers {
                     this.headers.set(key, isString(value) ? [value] : value);
                 }
             });
+        } else if (headers instanceof Headers) {
+            this._referrer = headers.referrer;
+            headers.forEach((v, k) => {
+                this.set(k, v);
+            });
         } else {
+            this._referrer = headers.referrer;
             Object.keys(headers).forEach(name => {
                 let values: string | string[] = (headers as Record<string, string>)[name];
                 const key = name.toLowerCase();
@@ -196,6 +121,11 @@ export class HeadersBase extends Headers {
 
             })
         }
+    }
+
+    private _referrer: string = '';
+    get referrer(): string {
+        return this._referrer;
     }
 
     append(name: string, value: string | string[]): void {
@@ -225,24 +155,193 @@ export class HeadersBase extends Headers {
 
 }
 
-export interface ResponseInit {
-    headers?: HeadersInit;
-    status?: number;
-    statusText?: string;
+
+export class RequestBase extends Request {
+
+    constructor(init?: RequestOption | Request) {
+        super();
+        this.initHeader(init?.headers)
+        init && this.init(init);
+    }
+
+    protected initHeader(headers?: Headers | HeadersOption) {
+        this._headers = new HeadersBase(headers);
+    }
+
+    protected init(init: RequestOption | Request) {
+        if (init instanceof Request) {
+            this._originalUrl = init.originalUrl;
+            this._url = init.url;
+            this._body = init.body;
+            this._method = init.method;
+        } else {
+            const { url: originalUrl, body, method, restful } = init;
+            let url = originalUrl || '';
+            if (restful) {
+                let matchs = url.match(/\/:\w+/gi);
+                if (matchs) {
+                    matchs.forEach(m => {
+                        const pn = m.slice(2);
+                        if (restful[pn]) {
+                            url = url.replace(m, `/${restful[pn]}`);
+                        }
+                    });
+                }
+            }
+            this._originalUrl = url;
+            this._url = String(url);
+            this._body = body;
+            this._method = method || 'GET';
+        }
+    }
+
+
+    private _headers!: Headers;
+    get headers(): Headers {
+        return this._headers;
+    }
+
+    private _originalUrl!: string;
+    get originalUrl(): string {
+        return this._originalUrl;
+    }
+
+    private _url!: string;
+    get url(): string {
+        return this._url;
+    }
+    set url(url: string) {
+        this._url = url;
+    }
+
+    private _method!: string;
+    get method(): string {
+        return this._method;
+    }
+    set method(val: string) {
+        this._method = val;
+    }
+
+
+    get path(): string {
+        return this.url;
+    }
+    set path(val: string) {
+        // this._path = val;
+    }
+
+    get query(): any {
+        throw new Error('Method not implemented.');
+    }
+    set query(val: any) {
+        throw new Error('Method not implemented.');
+    }
+
+    private _body: any;
+    get body(): any {
+        return this._body;
+    }
+    set body(val: any) {
+        this._body = val;
+    }
+
+    get querystring(): string {
+        throw new Error('Method not implemented.');
+    }
+    set querystring(str: string) {
+        throw new Error('Method not implemented.');
+    }
+
+    get host(): string {
+        let host = this.headers.get('X-Forwarded-Host')
+            ?? this.headers.get(':authority')
+            ?? this.headers.get('Host');
+        if (!host) return '';
+        return host.split(/\s*,\s*/, 1)[0];
+    }
+    get hostname(): string {
+        const host = this.host;
+        if (!host) return '';
+        if ('[' === host[0]) return this.URL.hostname || ''; // IPv6
+        return host.split(':', 1)[0];
+    }
+
+    private _URL!: URL;
+    /**
+     * Get WHATWG parsed URL.
+     * Lazily memoized.
+     *
+     * @return {URL|Object}
+     * @api public
+     */
+    get URL(): URL {
+        if (!this._URL) {
+            try {
+                this._URL = new URL(`${this.origin}${this.originalUrl}`);
+            } catch (err) {
+                this._URL = null!;
+            }
+        }
+        return this._URL;
+    }
+
+    get length(): number {
+        const len = this.getHeader('Content-Length') || '';
+        if (len === '') return 0;
+        return ~~len;
+    }
+    get protocol(): string {
+        const proto = this.getHeader('X-Forwarded-Proto');
+        return proto ? proto.split(/\s*,\s*/, 1)[0] : 'http';
+    }
+
+    get subdomains(): string[] {
+        throw new Error('Method not implemented.');
+    }
+    get type(): string {
+        const type = this.getHeader('Content-Type');
+        if (!type) return '';
+        return type.split(';')[0];
+    }
+
+
+    getHeader(name: string): string | null {
+        switch (name) {
+            case 'REFERRER':
+            case 'Referrer':
+            case 'referrer':
+            case 'referer':
+                return this.headers.referrer || '';
+            default:
+                return this.headers.get(name) || '';
+        }
+    }
+    hasHeader(name: string): boolean {
+        return this.headers.has(name.toLowerCase());
+    }
+    setHeader(name: string, value: string | string[]): void {
+        this.headers.set(name, value);
+    }
+    removeHeader(name: string): void {
+        this.headers.delete(name);
+    }
+
 }
 
 export class ResponseBase extends Response {
 
-    constructor(init?: ResponseInit) {
+    constructor(init?: ResponseOption) {
         super();
-        this.init(init);
+        this.initHeader(init?.headers);
+        init && this.init(init);
     }
 
-    protected init(init?: ResponseInit) {
-        this._headers = new HeadersBase(init?.headers);
-        if(init){
-            if(init.status) this._status = init.status;
-        }
+    protected initHeader(headers?: Headers | HeadersOption) {
+        this._headers = new HeadersBase(headers);
+    }
+
+    protected init(init: ResponseOption) {
+        if (init.status) this._status = init.status;
     }
 
     private _headers!: Headers;
@@ -252,9 +351,9 @@ export class ResponseBase extends Response {
      * @return {Object}
      * @api public
      */
-     get headers(): Headers {
+    get headers(): Headers {
         return this._headers;
-     }
+    }
 
     private _status: number = 404;
     get status(): number {
@@ -280,7 +379,10 @@ export class ResponseBase extends Response {
     set body(val: any) {
         const original = this._body;
         this._body = val;
+        this.onBodyChange(val, original);
+    }
 
+    protected onBodyChange(val: any, original: any) {
         // no content
         if (null == val) {
             if (!empty[this.status]) this.status = 204;
@@ -288,7 +390,7 @@ export class ResponseBase extends Response {
         }
         if (empty[this.status]) this.status = 200;
         // set the content-type only if not yet set
-        const setType = !this.has('Content-Type');
+        const setType = !this.hasHeader('Content-Type');
 
         // string
         if (isString(val)) {
@@ -306,7 +408,6 @@ export class ResponseBase extends Response {
 
         // json
         this.type = 'json';
-
     }
 
     private _length: number = 0;
@@ -317,12 +418,44 @@ export class ResponseBase extends Response {
         this._length = n;
     }
 
-    private _type = '';
     get type(): string {
-        return this._type;
+        const type = this.getHeader('Content-Type');
+        if (!type) return '';
+        return type.split(';', 1)[0];
     }
+
     set type(type: string) {
-        this._type = type;
+        if (type) {
+            this.setHeader('Content-Type', type);
+        } else {
+            this.removeHeader('Content-Type');
+        }
+    }
+
+    getHeader(name: string): string | null {
+        return this.headers.get(name);
+    }
+    hasHeader(name: string): boolean {
+        return this.headers.has(name);
+    }
+    setHeader(name: string, value: string | string[]): void {
+        if (this.headersSent) return;
+        this.headers.set(name, value);
+    }
+    removeHeader(name: string): void {
+        if (this.headersSent) return;
+        this.headers.delete(name);
+    }
+
+    private _headersSent = false;
+    /**
+     * Check if a header has been written to the socket.
+     *
+     * @return {Boolean}
+     * @api public
+     */
+    get headersSent() {
+        return this._headersSent;
     }
 }
 

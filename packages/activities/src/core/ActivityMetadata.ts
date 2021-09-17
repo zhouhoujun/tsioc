@@ -1,4 +1,4 @@
-import { Type, Token, ProviderType, ObjectMap, tokenId, AsyncHandler } from '@tsdi/ioc';
+import { Type, Token, ProviderType, tokenId, AsyncHandler } from '@tsdi/ioc';
 import { Activity } from './Activity';
 import { IActivityContext } from './IActivityContext';
 import { IWorkflowContext } from './IWorkflowContext';
@@ -78,7 +78,7 @@ export enum Activities {
  * @interface TemplateOption
  * @template T
  */
-export interface TemplateOption extends ElementTemplate, ObjectMap {
+export interface TemplateOption extends ElementTemplate, Record<string, any> {
     /**
      * activity selector math the template option tag.
      *

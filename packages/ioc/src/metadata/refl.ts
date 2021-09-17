@@ -1,6 +1,6 @@
 import { Action, Actions } from '../action';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
-import { AnnotationType, ClassType, ObjectMap, Type } from '../types';
+import { AnnotationType, ClassType, Type } from '../types';
 import { EMPTY, isArray, isFunction } from '../utils/chk';
 import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, AutorunMetadata, InjectableMetadata } from './meta';
 import { DecoratorType, DecorContext, DecorDefine, TypeReflect } from './type';
@@ -157,9 +157,9 @@ export function toDefine<T>(name: string, decor: string, metadata: T, decorType:
         decorType,
         metadata,
         providers,
-        getHandle: options.reflect ? mapToFac(options.reflect as ObjectMap) : emptyHd,
-        getDesignHandle: options.design ? mapToFac(options.design as ObjectMap) : emptyHd,
-        getRuntimeHandle: options.runtime ? mapToFac(options.runtime as ObjectMap) : emptyHd
+        getHandle: options.reflect ? mapToFac(options.reflect as Record<string, Handler | Handler[]>) : emptyHd,
+        getDesignHandle: options.design ? mapToFac(options.design as Record<string, Handler | Handler[]>) : emptyHd,
+        getRuntimeHandle: options.runtime ? mapToFac(options.runtime as Record<string, Handler | Handler[]>) : emptyHd
     };
 }
 
@@ -167,7 +167,7 @@ export function toDefine<T>(name: string, decor: string, metadata: T, decorType:
 
 const emptyHd = (type: any) => EMPTY;
 
-function mapToFac(maps: ObjectMap<Handler | Handler[]>): (type: DecoratorType) => Handler[] {
+function mapToFac(maps: Record<string, Handler | Handler[]>): (type: DecoratorType) => Handler[] {
     const mapHd = new Map();
     for (let type in maps) {
         let rged: Handler[] = mapHd.get(type);
