@@ -7,6 +7,7 @@ class DeviceController {
 
     @RouteMapping('/init', 'post')
     req(name: string) {
+        console.log('DeviceController init:', name);
         return { name };
     }
 

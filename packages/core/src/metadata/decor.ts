@@ -306,13 +306,13 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
             }
             const { route, protocol, parent, before, after } = metadata;
             const injector = ctx.injector;
-            
+
             if (!isString(route) && !parent) {
                 return next();
             }
 
             const state = injector.state();
-            let queue: Middlewares= null!;
+            let queue: Middlewares = null!;
             if (parent) {
                 queue = state.getInstance(parent);
                 if (!queue) {
@@ -323,13 +323,15 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
             const type = ctx.type;
             if (isString(route) || reflect.class.isExtends(Route) || reflect.class.isExtends(Router)) {
                 if (!queue) {
-                    queue = injector.get(RootRouter);
+                    let root = injector.get(RootRouter);
+                    queue = reflect.class.isExtends(Router) ? root : root.getRoot(protocol);
                 } else if (!(queue instanceof Router)) {
                     throw new Error(lang.getClassName(queue) + 'is not message router!');
                 }
                 const prefix = (queue as Router).getPath();
                 reflect.route_url = route;
                 reflect.route_prefix = prefix;
+                reflect.protocol = protocol;
                 let middl: MiddlewareType;
                 if (reflect.class.isExtends(Route) || reflect.class.isExtends(Router)) {
                     let exts: ProviderType[] = [];
@@ -410,7 +412,7 @@ export interface IRouteMappingDecorator {
      *  [parent] set parent route.
      *  [middlewares] the middlewares for the route.
      */
-    (route: string, options: { parent?: Type<Router>, middlewares: MiddlewareType[] }): ClassDecorator;
+    (route: string, options: { protocol?: string, parent?: Type<Router>, middlewares: MiddlewareType[] }): ClassDecorator;
     /**
      * route decorator. define the controller method as an route.
      *
@@ -442,7 +444,7 @@ export interface IRouteMappingDecorator {
  * RouteMapping decorator
  */
 export const RouteMapping: IRouteMappingDecorator = createDecorator<RouteMapingMetadata>('RouteMapping', {
-    props: (route: string, arg2?: Type<Router> | MiddlewareType[] | string | { middlewares: MiddlewareType[], contentType?: string, method?: string }) => {
+    props: (route: string, arg2?: Type<Router> | MiddlewareType[] | string | { protocol?: string, middlewares: MiddlewareType[], contentType?: string, method?: string }) => {
         if (isArray(arg2)) {
             return { route, middlewares: arg2 };
         } else if (isString(arg2)) {
@@ -455,13 +457,13 @@ export const RouteMapping: IRouteMappingDecorator = createDecorator<RouteMapingM
     },
     design: {
         afterAnnoation: (ctx, next) => {
-            const { route, parent, middlewares } = ctx.reflect.class.getMetadata<RouteMapingMetadata>(ctx.currDecor);
+            const { route, protocol, parent, middlewares } = ctx.reflect.class.getMetadata<RouteMapingMetadata>(ctx.currDecor);
             const injector = ctx.injector;
             let queue: Middlewares;
             if (parent) {
                 queue = injector.state().getInstance(parent);
             } else {
-                queue = injector.get(RootRouter);
+                queue = injector.get(RootRouter).getRoot(protocol);
             }
 
             if (!queue) throw new Error(lang.getClassName(parent) + 'has not registered!');

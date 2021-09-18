@@ -1,4 +1,4 @@
-import { Inject, Injectable, isFunction, refl, Singleton } from '@tsdi/ioc';
+import { Inject, Injectable, isFunction, isString, refl, Singleton } from '@tsdi/ioc';
 import { Context } from './ctx';
 import { IRouter, ROUTE_URL, ROUTE_PREFIX, MiddlewareType, RouteReflect, ROUTE_PROTOCOL } from './handle';
 import { MessageQueue } from './queue';
@@ -8,14 +8,14 @@ import { Route } from './route';
 @Injectable()
 export class Router<T extends Context = Context> extends MessageQueue<T> implements IRouter<T> {
 
-    constructor(@Inject(ROUTE_URL) public url: string, @Inject(ROUTE_PREFIX) private prefix = '', @Inject(ROUTE_PROTOCOL) public protocol = '') {
+    constructor(@Inject(ROUTE_URL) public url: string = '', @Inject(ROUTE_PREFIX) private prefix = '', @Inject(ROUTE_PROTOCOL) public protocol = '') {
         super();
     }
 
     private urlpath!: string;
     getPath() {
         if (!this.urlpath) {
-            this.urlpath = this.prefix ? `${this.prefix}/${this.url}` : (this.protocol ? `${this.protocol}//${this.url}` : this.url);
+            this.urlpath = this.prefix ? `${this.prefix}/${this.url}` : this.url;
         }
         return this.urlpath;
     }
@@ -45,7 +45,7 @@ export class Router<T extends Context = Context> extends MessageQueue<T> impleme
     }
 
     protected match(ctx: T): boolean {
-        return (!ctx.status || ctx.status === 404) && this.protocol === ctx.protocol && ctx.vaild?.isActiveRoute(ctx, this.url, this.prefix) === true;
+        return (!ctx.status || ctx.status === 404) && this.protocol === ctx.protocol && ctx.vaild.isActiveRoute(ctx, this.url, this.prefix) === true;
     }
 
     protected override resetHandler() {
@@ -66,6 +66,30 @@ export class Router<T extends Context = Context> extends MessageQueue<T> impleme
 @Singleton()
 export class RootRouter extends Router {
     constructor() {
-        super('', '');
+        super();
+    }
+
+    protected match(ctx: Context): boolean {
+        return isString(ctx.url);
+    }
+
+    getRoot(protocol?: string): Router {
+        if (!protocol) {
+            protocol = 'msg';
+        }
+        let router = this.handles.find(r => {
+            if (isFunction(r)) {
+                return refl.get<RouteReflect>(r).protocol === protocol;
+            }
+            if (r instanceof Router) {
+                return r.protocol === protocol;
+            }
+            return false;
+        });
+        if (!router) {
+            router = this.injector.resolve(Router, { provide: ROUTE_PROTOCOL, useValue: protocol });
+            this.use(router);
+        }
+        return isFunction(router) ? this.injector.state().resolve(router) : router;
     }
 }

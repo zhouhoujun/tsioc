@@ -9,13 +9,10 @@ import { Middleware, ROUTE_URL, ROUTE_PREFIX } from './handle';
 @Abstract()
 export abstract class Route<T extends Context = Context> extends Middleware<T> {
 
-    constructor(@Inject(ROUTE_URL) private _url: string, @Inject(ROUTE_PREFIX) protected prefix: string) {
+    constructor(@Inject(ROUTE_URL) readonly url: string = '', @Inject(ROUTE_PREFIX) protected prefix: string = '') {
         super();
     }
 
-    get url() {
-        return this._url;
-    }
 
     override async execute(ctx: T, next: () => Promise<void>): Promise<void> {
         if (this.match(ctx)) {
@@ -28,7 +25,7 @@ export abstract class Route<T extends Context = Context> extends Middleware<T> {
     protected abstract navigate(ctx: T, next: () => Promise<void>): Promise<void>;
 
     protected match(ctx: T): boolean {
-        return (!ctx.status || ctx.status === 404) && ctx.vaild?.isActiveRoute(ctx, this.url, this.prefix) === true;
+        return (!ctx.status || ctx.status === 404) && ctx.vaild.isActiveRoute(ctx, this.url, this.prefix) === true;
     }
 }
 

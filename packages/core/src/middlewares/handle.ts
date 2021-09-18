@@ -163,6 +163,7 @@ export interface IRouter<T extends Context = Context> extends Middlewares<T> {
 export interface RouteReflect extends TypeReflect {
     route_url?: string;
     route_prefix?: string;
+    protocol?: string;
 }
 
 export const ROUTE_PROTOCOL = tokenId<string>('ROUTE_PROTOCOL');

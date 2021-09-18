@@ -27,6 +27,8 @@ export interface RouteMapingMetadata {
 
     method?: string;
 
+    protocol?: string;
+
     /**
      * http content type.
      *

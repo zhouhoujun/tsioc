@@ -254,6 +254,7 @@ export abstract class Request {
 
     protected parseURL(url: string) {
         let uri: URL;
+        url = url.trim();
         try {
             if (!/^\w+:\/\//.test(url)) {
                 url = this.parseOrigin() + (/^\//.test(url) ? '' : '/') + url;
@@ -270,8 +271,8 @@ export abstract class Request {
         const proto = this.getHeader('X-Forwarded-Proto');
         let protocol = proto ? proto.split(/\s*,\s*/, 1)[0] : 'msg'
         let host = this.getHeader('X-Forwarded-Host') ??
-            this.getHeader(':authority') ?? this.getHeader('Host') ?? '0.0.0.0';
-        return `${protocol}://${host}`
+            this.getHeader(':authority') ?? this.getHeader('Host');
+        return `${protocol}://${host || '0.0.0.0'}`
     }
 
     /**
