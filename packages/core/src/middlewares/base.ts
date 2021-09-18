@@ -237,11 +237,6 @@ export class RequestBase extends Request {
         this._body = val;
     }
 
-    get protocol(): string {
-        const proto = this.getHeader('X-Forwarded-Proto');
-        return proto ? proto.split(/\s*,\s*/, 1)[0] : 'http';
-    }
-
     get subdomains(): string[] {
         throw new Error('Method not implemented.');
     }

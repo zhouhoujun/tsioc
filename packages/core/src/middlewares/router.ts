@@ -75,7 +75,9 @@ export class RootRouter extends Router {
 
     getRoot(protocol?: string): Router {
         if (!protocol) {
-            protocol = 'msg';
+            protocol = 'msg:';
+        } else if(!/:$/.test(protocol)){
+            protocol = protocol + ':';
         }
         let router = this.handles.find(r => {
             if (isFunction(r)) {
