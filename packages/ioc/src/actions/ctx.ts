@@ -34,23 +34,19 @@ export interface RegContext extends IocContext {
      *
      */
     type: Type;
-
     /**
      * current decoractor.
      */
     currDecor: string;
-
     /**
      * custom set singleton or not.
      *
      */
     singleton: boolean;
-
     /**
      * target reflect.
      */
     reflect: TypeReflect;
-
 }
 
 /**

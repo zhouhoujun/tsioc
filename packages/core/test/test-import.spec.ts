@@ -38,9 +38,9 @@ describe('di module', () => {
         expect(qb['handles'].length).toEqual(1);
         // has no parent.
         expect(ctx.getMessager().has(SubMessageQueue)).toBeFalsy();
-        const context = await qb.send('test', { query: {hi: 'hello'} });
-        expect(context.body).toEqual('hello');
-        expect(context.status).toEqual(200);
+        const rep = await qb.send('test', { query: {hi: 'hello'} });
+        expect(rep.body).toEqual('hello');
+        expect(rep.status).toEqual(200);
 
         ctx.destroy();
     });

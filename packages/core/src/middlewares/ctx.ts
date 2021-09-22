@@ -1,4 +1,4 @@
-import { Abstract, Injector, Token } from '@tsdi/ioc';
+import { Abstract, Destroyable, Injector, Token } from '@tsdi/ioc';
 
 
 
@@ -457,8 +457,10 @@ export abstract class Response {
  * context for middlewares.
  */
 @Abstract()
-export abstract class Context {
+export abstract class Context implements Destroyable {
 
+    private _destroyed = false;
+    protected _dsryCbs: (() => void)[] = [];
     private _vaild!: RouteVaildator
     get vaild(): RouteVaildator {
         if (!this._vaild) {
@@ -645,6 +647,38 @@ export abstract class Context {
      */
     setValue(token: Token, value: any): void {
         this.injector.setValue(token, value);
+    }
+
+    /**
+     * has destoryed or not.
+     */
+    get destroyed() {
+        return this._destroyed;
+    }
+    /**
+    * destory this.
+    */
+    destroy(): void {
+        if (!this._destroyed) {
+            this._destroyed = true;
+            this._dsryCbs.forEach(cb => cb());
+            this._dsryCbs = null!;
+            this.destroying();
+        }
+    }
+    /**
+     * register callback on destory.
+     * @param callback destory callback
+     */
+    onDestroy(callback: () => void): void {
+        this._dsryCbs?.unshift(callback);
+    }
+
+    protected destroying(): void {
+        (this as { request: Request | null }).request = null;
+        (this as { response: Response | null }).response = null;
+        this.injector.destroy();
+        (this as { injector: Injector | null }).injector = null;
     }
 
 }

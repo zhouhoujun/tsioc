@@ -1,5 +1,5 @@
 import { Injectable, Type, isString, ProviderType, lang, AsyncHandler, isFunction, Inject, Injector, RegisteredState } from '@tsdi/ioc';
-import { Context, Request, RequestInit, RequestOption, ContextFactory } from './ctx';
+import { Context, Response, Request, RequestInit, RequestOption, ContextFactory } from './ctx';
 import { Middleware, Middlewares, MiddlewareType } from './handle';
 
 /**
@@ -81,7 +81,7 @@ export class MessageQueue<T extends Context = Context> extends Middlewares<T> {
      * @param {() => Promise<void>} [next]
      * @returns {Promise<void>}
      */
-    send(request: Request, ...providers: ProviderType[]): Promise<T>;
+    send(request: Request, ...providers: ProviderType[]): Promise<Response>;
     /**
      * send message
      *
@@ -89,21 +89,23 @@ export class MessageQueue<T extends Context = Context> extends Middlewares<T> {
      * @param {() => Promise<void>} [next]
      * @returns {Promise<void>}
      */
-    send(request: RequestOption, ...providers: ProviderType[]): Promise<T>;
+    send(request: RequestOption, ...providers: ProviderType[]): Promise<Response>;
     /**
      * send message
      *
      * @param {string} url route url
      * @param {RequestInit} request request options data.
-     * @returns {Promise<T>}
+     * @returns {Promise<Response>}
      */
-    send(url: string, request: RequestInit, ...providers: ProviderType[]): Promise<T>;
-    async send(url: any, request?: any, ...providers: ProviderType[]): Promise<T> {
+    send(url: string, request: RequestInit, ...providers: ProviderType[]): Promise<Response>;
+    async send(url: any, request?: any, ...providers: ProviderType[]): Promise<Response> {
         const injector = Injector.create(providers, this.injector, 'provider');
         const req: Request | RequestOption = isString(url) ? { ...request, url } : url;
         const ctx = injector.resolve({ token: ContextFactory, target: req instanceof Request ? req : req.target || this }).create(req, injector) as T;
         await this.execute(ctx);
-        return ctx;
+        const resp = ctx.response;
+        ctx.destroy();
+        return resp;
     }
 
     /**

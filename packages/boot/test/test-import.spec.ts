@@ -36,9 +36,9 @@ describe('di module', () => {
         let qb = ctx.injector.get(SubMessageQueue);
         expect(q === qb).toBeTruthy();
         expect(qb['handles'].length).toEqual(1);
-        const context = await qb.send('test', { query: {hi:'hello' }});
-        expect(context.body).toEqual('hello');
-        expect(context.status).toEqual(200);
+        const rep = await qb.send('test', { query: {hi:'hello' }});
+        expect(rep.body).toEqual('hello');
+        expect(rep.status).toEqual(200);
         ctx.destroy();
     });
 
