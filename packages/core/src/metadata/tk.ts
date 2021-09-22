@@ -2,14 +2,8 @@ import { tokenId, Token, Type } from '@tsdi/ioc';
 import { Configuration } from '../configure/config';
 import { IStartupService } from '../services/intf';
 import { Context } from '../middlewares/ctx';
-import { IApplication } from '../IApplication';
 import { ConfigureRegister } from '../configure/register';
 
-
-/**
- *  current application token.
- */
-export const APPLICATION: Token<IApplication> = tokenId<IApplication>('APPLICATION');
 
 /**
  * boot types.
@@ -44,9 +38,9 @@ export const PROCESS_ROOT: Token<string> = tokenId<string>('PROCESS_ROOT');
 /**
  * context options.
  */
-export const CTX_OPTIONS = tokenId<any>('CTX_OPTIONS');
+export const CTX_OPTIONS = tokenId<Record<string, any>>('CTX_OPTIONS');
 
 /**
  * middleware context.
  */
-export const CONTEXT: Token<Context> = tokenId<Context>('MIDDLE_CONTEXT');
+export const CONTEXT = Context;

@@ -1,6 +1,6 @@
 import { ModuleLoader, isFunction, Type, EMPTY, ProviderType } from '@tsdi/ioc';
 import { IApplication } from './IApplication';
-import { APPLICATION, CTX_ARGS, PROCESS_ROOT } from './metadata/tk';
+import { CTX_ARGS, PROCESS_ROOT } from './metadata/tk';
 import {
     ApplicationContext, ApplicationFactory, ModuleFactory,
     ModuleInjector, ApplicationExit, ApplicationOption, BootstrapOption
@@ -45,7 +45,6 @@ export class Application implements IApplication {
 
     protected initRoot() {
         this.root.setValue(Application, this);
-        this.root.setValue(APPLICATION, this);
     }
 
     /**

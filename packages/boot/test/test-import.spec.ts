@@ -15,7 +15,6 @@ describe('di module', () => {
         // expect(md.container).to.not.undefined;
         // expect(md.container.has('mark')).to.true;
         const runner = ctx.bootstraps[0] as Runner;
-        console.log(runner.instance);
         expect(runner.instance.mark).toEqual('marked');
         // expect(md.state).eq('started');
         ctx.destroy();
