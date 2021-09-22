@@ -82,7 +82,6 @@ export class DefaultInjector extends Injector {
     constructor(providers: ProviderType[] = EMPTY, readonly parent?: Injector, readonly scope?: string | InjectorScope, private strategy: Strategy = INJECT_STRATEGY) {
         super();
         this.factories = new Map();
-        const val = { value: this };
         if (parent) {
             this.destCb = () => this.destroy();
             this.initParent(parent);
@@ -92,17 +91,28 @@ export class DefaultInjector extends Injector {
             this._action = new ActionProviderImpl([], this);
             registerCores(this);
         }
-
-        if (scope === 'root') {
-            this.factories.set(Container, val);
-            this.factories.set(CONTAINER, val);
-            this.factories.set(ROOT_INJECTOR, val);
-        }
-        if (scope !== 'provider' && scope !== 'invoked') {
-            this.factories.set(INJECTOR, val);
-            this.factories.set(Injector, val);
-        }
+        this.initScope(scope);
         this.inject(providers);
+    }
+
+    protected initScope(scope?: string) {
+        const val = { value: this };
+        switch (scope) {
+            case 'root':
+                this.factories.set(Container, val);
+                this.factories.set(CONTAINER, val);
+                this.factories.set(ROOT_INJECTOR, val);
+                this.factories.set(INJECTOR, val);
+                this.factories.set(Injector, val);
+                break;
+            case 'provider':
+            case 'invoked':
+                break;
+            default:
+                this.factories.set(INJECTOR, val);
+                this.factories.set(Injector, val);
+                break;
+        }
     }
 
     protected initParent(parent: Injector) {
