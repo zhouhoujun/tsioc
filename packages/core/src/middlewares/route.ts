@@ -1,6 +1,6 @@
-import { Abstract, Inject, Injector } from '@tsdi/ioc';
+import { Abstract, Injector } from '@tsdi/ioc';
 import { Context } from './ctx';
-import { Middleware, ROUTE_URL, ROUTE_PREFIX } from './handle';
+import { Middleware, RouteInfo } from './handle';
 
 
 /**
@@ -9,9 +9,21 @@ import { Middleware, ROUTE_URL, ROUTE_PREFIX } from './handle';
 @Abstract()
 export abstract class Route<T extends Context = Context> extends Middleware<T> {
 
-    constructor(@Inject(ROUTE_URL) readonly url: string = '', @Inject(ROUTE_PREFIX) protected prefix: string = '') {
+    constructor(protected info: RouteInfo) {
         super();
     }
+
+    get url() {
+        return this.info.url;
+    }
+
+    get prefix() {
+        return this.info.prefix;
+    }
+
+    // get protocol() {
+    //     return this.info.protocol;
+    // }
 
 
     override async execute(ctx: T, next: () => Promise<void>): Promise<void> {
@@ -35,7 +47,7 @@ export abstract class Route<T extends Context = Context> extends Middleware<T> {
 export class RouteResolver extends Route {
 
     constructor(url: string, prefix: string, private factory: (pdr: Injector) => Middleware) {
-        super(url, prefix);
+        super(RouteInfo.create(url, prefix));
     }
 
     protected override navigate(ctx: Context, next: () => Promise<void>): Promise<void> {

@@ -1,6 +1,6 @@
 import { Inject, Injectable, isFunction, isString, refl, Singleton } from '@tsdi/ioc';
 import { Context } from './ctx';
-import { IRouter, ROUTE_URL, ROUTE_PREFIX, MiddlewareType, RouteReflect, ROUTE_PROTOCOL } from './handle';
+import { IRouter, MiddlewareType, RouteInfo, RouteReflect } from './handle';
 import { MessageQueue } from './queue';
 import { Route } from './route';
 
@@ -8,8 +8,20 @@ import { Route } from './route';
 @Injectable()
 export class Router<T extends Context = Context> extends MessageQueue<T> implements IRouter<T> {
 
-    constructor(@Inject(ROUTE_URL) public url: string = '', @Inject(ROUTE_PREFIX) private prefix = '', @Inject(ROUTE_PROTOCOL) public protocol = '') {
+    constructor(protected info: RouteInfo) {
         super();
+    }
+
+    get url() {
+        return this.info.url;
+    }
+
+    get prefix() {
+        return this.info.prefix;
+    }
+
+    get protocol() {
+        return this.info.protocol;
     }
 
     private urlpath!: string;
@@ -35,7 +47,7 @@ export class Router<T extends Context = Context> extends MessageQueue<T> impleme
 
     getUrlFrom(mddl: MiddlewareType) {
         if (isFunction(mddl)) {
-            return refl.get<RouteReflect>(mddl)?.route_url ?? '';
+            return refl.get<RouteReflect>(mddl)?.route?.url ?? '';
         } else if (mddl instanceof Router) {
             return mddl.url;
         } else if (mddl instanceof Route) {
@@ -66,7 +78,7 @@ export class Router<T extends Context = Context> extends MessageQueue<T> impleme
 @Singleton()
 export class RootRouter extends Router {
     constructor() {
-        super();
+        super(RouteInfo.create());
     }
 
     protected match(ctx: Context): boolean {
@@ -76,12 +88,12 @@ export class RootRouter extends Router {
     getRoot(protocol?: string): Router {
         if (!protocol) {
             protocol = 'msg:';
-        } else if(!/:$/.test(protocol)){
+        } else if (!/:$/.test(protocol)) {
             protocol = protocol + ':';
         }
         let router = this.handles.find(r => {
             if (isFunction(r)) {
-                return refl.get<RouteReflect>(r).protocol === protocol;
+                return refl.get<RouteReflect>(r).route?.protocol === protocol;
             }
             if (r instanceof Router) {
                 return r.protocol === protocol;
@@ -89,7 +101,7 @@ export class RootRouter extends Router {
             return false;
         });
         if (!router) {
-            router = this.injector.resolve(Router, { provide: ROUTE_PROTOCOL, useValue: protocol });
+            router = this.injector.resolve(Router, { provide: RouteInfo, useValue: RouteInfo.create('', '', protocol) });
             this.use(router);
         }
         return isFunction(router) ? this.injector.state().resolve(router) : router;

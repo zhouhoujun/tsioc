@@ -130,7 +130,7 @@ export abstract class Middlewares<T extends Context = Context> extends Middlewar
 
     override async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
         if (!this.funcs) {
-            const state = ctx.injector.state(); 
+            const state = ctx.injector.state();
             this.funcs = this.handles.map(ac => this.parseHandle(state, ac)).filter(f => f);
         }
         await this.execHandler(ctx, this.funcs, next);
@@ -158,20 +158,21 @@ export interface IRouter<T extends Context = Context> extends Middlewares<T> {
 }
 
 /**
+ * route info.
+ */
+export class RouteInfo {
+    constructor(readonly url: string = '', readonly prefix: string = '', readonly protocol: string = '') {
+
+    }
+
+    static create(url: string = '', prefix: string = '', protocol: string = '') {
+        return new RouteInfo(url, prefix, protocol);
+    }
+}
+
+/**
  * middleware handle route reflect.
  */
 export interface RouteReflect extends TypeReflect {
-    route_url?: string;
-    route_prefix?: string;
-    protocol?: string;
+    route?: RouteInfo;
 }
-
-export const ROUTE_PROTOCOL = tokenId<string>('ROUTE_PROTOCOL');
-/**
- * route url token.
- */
-export const ROUTE_URL = tokenId<string>('ROUTE_URL');
-/**
- * route prefix token.
- */
-export const ROUTE_PREFIX = tokenId<string>('ROUTE_PREFIX');

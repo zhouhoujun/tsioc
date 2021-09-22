@@ -5,7 +5,7 @@ import {
 import { CONTEXT } from '../metadata/tk';
 import { TypeParser } from '../services/intf';
 import { Context } from './ctx';
-import { IRouter, Middleware, MiddlewareType } from './handle';
+import { IRouter, Middleware, MiddlewareType, RouteInfo } from './handle';
 import { MODEL_PARSER, ModelParser } from './parser';
 import { ResultValue } from './result';
 import { Route } from './route';
@@ -80,8 +80,8 @@ export const REQUEST_BODY = tokenId('REQUEST_BODY');
  */
 export class MappingRoute extends Route {
 
-    constructor(url: string, prefix: string, protected reflect: MappingReflect, protected injector: Injector, protected middlewares?: MiddlewareType[]) {
-        super(url, prefix);
+    constructor(info: RouteInfo, protected reflect: MappingReflect, protected injector: Injector, protected middlewares?: MiddlewareType[]) {
+        super(info);
     }
 
     protected override async navigate(ctx: Context, next: () => Promise<void>): Promise<void> {

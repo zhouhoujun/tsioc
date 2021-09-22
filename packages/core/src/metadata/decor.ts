@@ -1,10 +1,10 @@
 import {
     DecoratorOption, isUndefined, createDecorator, ROOT_INJECTOR, isArray, isString,
-    lang, Type, DesignContext, ClassMethodDecorator, ProviderType, TypeMetadata, EMPTY_OBJ, Injector
+    lang, Type, DesignContext, ClassMethodDecorator, TypeMetadata, EMPTY_OBJ, Injector
 } from '@tsdi/ioc';
 import { IStartupService } from '../services/intf';
 import { ModuleReflect, ModuleConfigure } from './ref';
-import { Middleware, Middlewares, MiddlewareType, RouteReflect, ROUTE_PREFIX, ROUTE_PROTOCOL, ROUTE_URL } from '../middlewares/handle';
+import { Middleware, Middlewares, MiddlewareType, RouteInfo, RouteReflect } from '../middlewares/handle';
 import { ROOT_QUEUE } from '../middlewares/root';
 import { RouteResolver, Route } from '../middlewares/route';
 import { RootRouter, Router } from '../middlewares/router';
@@ -329,24 +329,11 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
                     throw new Error(lang.getClassName(queue) + 'is not message router!');
                 }
                 const prefix = (queue as Router).getPath();
-                reflect.route_url = route;
-                reflect.route_prefix = prefix;
-                reflect.protocol = protocol;
+                const info = RouteInfo.create(route || '', prefix, protocol);
+                reflect.route = info;
                 let middl: MiddlewareType;
                 if (reflect.class.isExtends(Route) || reflect.class.isExtends(Router)) {
-                    let exts: ProviderType[] = [];
-                    if (route) {
-                        exts.push({ provide: ROUTE_URL, useValue: route });
-                    }
-                    if (prefix) {
-                        exts.push({ provide: ROUTE_PREFIX, useValue: prefix });
-                    }
-                    if (protocol) {
-                        exts.push({ provide: ROUTE_PROTOCOL, useValue: protocol });
-                    }
-                    if (exts.length) {
-                        state.setTypeProvider(reflect, exts);
-                    }
+                    state.setTypeProvider(reflect, [{ provide: RouteInfo, useValue: info }]);
                     middl = type;
                 } else {
                     middl = new RouteResolver(route || '', prefix, (inj: Injector) => injector.get(type, inj));
@@ -469,7 +456,8 @@ export const RouteMapping: IRouteMappingDecorator = createDecorator<RouteMapingM
             if (!queue) throw new Error(lang.getClassName(parent) + 'has not registered!');
             if (!(queue instanceof Router)) throw new Error(lang.getClassName(queue) + 'is not message router!');
 
-            const mapping = new MappingRoute(route || '', queue.getPath(), ctx.reflect as MappingReflect, injector, middlewares);
+            const info = RouteInfo.create(route, queue.getPath(), protocol);
+            const mapping = new MappingRoute(info, ctx.reflect as MappingReflect, injector, middlewares);
             injector.onDestroy(() => queue.unuse(mapping));
             queue.use(mapping);
 
