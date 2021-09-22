@@ -63,7 +63,7 @@ class DeviceStartQueue extends MessageQueue {
 class DeviceStartupHandle extends Middleware {
 
     override async execute(ctx: Context, next: () => Promise<void>): Promise<void> {
-        console.log('DeviceStartupHandle.')
+        console.log('DeviceStartupHandle.', ctx.type, ctx.request.type)
         if (ctx.type === 'startup') {
             // todo sth.
             let ret = ctx.injector.get(MyService).dosth();
@@ -76,7 +76,7 @@ class DeviceStartupHandle extends Middleware {
 class DeviceAStartupHandle extends Middleware {
 
     override async execute(ctx: Context, next: () => Promise<void>): Promise<void> {
-        console.log('DeviceAStartupHandle.')
+        console.log('DeviceAStartupHandle.', ctx.type, ctx.request.type)
         if (ctx.type === 'startup') {
             // todo sth.
             let ret = ctx.injector.get(MyService).dosth();

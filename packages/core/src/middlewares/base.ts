@@ -135,8 +135,9 @@ export class HeadersBase extends Headers {
     delete(name: string): void {
         this.headers.delete(name);
     }
+
     get(name: string): string | null {
-        const values = this.headers.get(name.toLowerCase());
+        const values = this.headers.get(name);
         return values && values.length > 0 ? values[0] : null;
     }
 
@@ -151,7 +152,6 @@ export class HeadersBase extends Headers {
     forEach(callbackfn: (value: string[], key: string, parent: Headers) => void, thisArg?: any): void {
         this.headers.forEach((v, k) => callbackfn(v, k, this), this);
     }
-
 
 }
 
@@ -197,7 +197,8 @@ export class RequestBase extends Request {
             this._url = String(url);
             this._body = body;
             this._method = method || 'GET';
-            if(query) this.query = query;
+            if (query) this.query = query;
+            init.type && this.setHeader('Content-Type', init.type);
         }
     }
 
@@ -241,7 +242,6 @@ export class RequestBase extends Request {
         throw new Error('Method not implemented.');
     }
 
-
     getHeader(name: string): string | null {
         switch (name) {
             case 'REFERRER':
@@ -253,6 +253,7 @@ export class RequestBase extends Request {
                 return this.headers.get(name) || '';
         }
     }
+
     hasHeader(name: string): boolean {
         return this.headers.has(name.toLowerCase());
     }
@@ -325,7 +326,7 @@ export class ResponseBase extends Response {
             if (!empty[this.status]) this.status = 204;
             return;
         }
-        
+
         this.status = 200;
         // set the content-type only if not yet set
         const setType = !this.hasHeader('Content-Type');
@@ -399,8 +400,9 @@ export class ResponseBase extends Response {
 
 export const BASE_CONTEXT_FACTORY_IMPL: ContextFactory = {
     create(request: Request | RequestOption, injector: Injector): Context {
-        let req: Request = request instanceof Request ? request : new RequestBase(request);
-        let rep = new ResponseBase();
+        const req: Request = request instanceof Request ? request : new RequestBase(request);
+        const headers = req.headers;
+        const rep = new ResponseBase({ headers });
         return new ContextBase(req, rep, injector);
     }
 }
