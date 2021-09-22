@@ -81,7 +81,7 @@ export class MessageQueue<T extends Context = Context> extends Middlewares<T> {
      * @param {() => Promise<void>} [next]
      * @returns {Promise<void>}
      */
-    send(request: Request, ...providers: ProviderType[]): Promise<T>
+    send(request: Request, ...providers: ProviderType[]): Promise<T>;
     /**
      * send message
      *

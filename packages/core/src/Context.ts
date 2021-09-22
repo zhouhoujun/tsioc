@@ -5,8 +5,8 @@ import {
 import { ILoggerManager } from '@tsdi/logs';
 import { Configuration, ConfigureManager } from './configure/config';
 import { AnnotationReflect, ModuleReflect } from './metadata/ref';
+import { Context, Request, RequestInit, RequestOption } from './middlewares/ctx';
 import { MessageQueue } from './middlewares/queue';
-import { Context, RequestOption } from './middlewares';
 
 
 
@@ -280,19 +280,28 @@ export abstract class ApplicationContext implements Destroyable {
     /**
      * send message
      *
+     * @param {string} url route url
+     * @param {RequestInit} request request options data.
+     * @returns {Promise<T>}
+     */
+    abstract send<T extends Context>(url: string, request: RequestInit, ...providers: ProviderType[]): Promise<T>;
+    /**
+     * send message
+     *
+     * @param {Request} request request
+     * @param {() => Promise<void>} [next]
+     * @returns {Promise<void>}
+     */
+    abstract send<T extends Context>(request: Request, ...providers: ProviderType[]): Promise<T>;
+    /**
+     * send message
+     *
      * @param {RequestOption} request request option
      * @param {() => Promise<void>} [next]
      * @returns {Promise<void>}
      */
-    abstract send(request: RequestOption, ...providers: ProviderType[]): Promise<Context>;
-    /**
-     * send message
-     *
-     * @param {string} url route url
-     * @param {RequestOption} request request options data.
-     * @returns {Promise<Context>}
-     */
-    abstract send(url: string, request: RequestOption, ...providers: ProviderType[]): Promise<Context>
+    abstract send<T extends Context>(request: RequestOption, ...providers: ProviderType[]): Promise<T>;
+
     /**
      * get log manager.
      */
