@@ -165,6 +165,14 @@ export class RouteInfo {
 
     }
 
+    private _protocols!: string[];
+    get protocols(): string[] {
+        if (!this._protocols) {
+            this._protocols = this.protocol.split(';');
+        }
+        return this._protocols;
+    }
+
     static create(url: string = '', prefix: string = '', protocol: string = '') {
         return new RouteInfo(url, prefix, protocol);
     }

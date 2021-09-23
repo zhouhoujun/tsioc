@@ -8,7 +8,7 @@ import { Middleware, Middlewares, MiddlewareType, RouteInfo, RouteReflect } from
 import { ROOT_QUEUE } from '../middlewares/root';
 import { RouteResolver, Route } from '../middlewares/route';
 import { RootRouter, Router } from '../middlewares/router';
-import { MappingReflect, MappingRoute, RouteMapingMetadata } from '../middlewares/mapping';
+import { MappingReflect, MappingRoute, ProtocolRouteMapingMetadata } from '../middlewares/mapping';
 import { ModuleFactory, ModuleInjector, ModuleRegistered } from '../Context';
 import { BOOT_TYPES, CONFIGURES } from './tk';
 import { BootMetadata, DIModuleMetadata, HandleMetadata, HandlesMetadata } from './meta';
@@ -424,13 +424,13 @@ export interface IRouteMappingDecorator {
      *
      * @param {RouteMetadata} [metadata] route metadata.
      */
-    (metadata: RouteMapingMetadata): ClassMethodDecorator;
+    (metadata: ProtocolRouteMapingMetadata): ClassMethodDecorator;
 }
 
 /**
  * RouteMapping decorator
  */
-export const RouteMapping: IRouteMappingDecorator = createDecorator<RouteMapingMetadata>('RouteMapping', {
+export const RouteMapping: IRouteMappingDecorator = createDecorator<ProtocolRouteMapingMetadata>('RouteMapping', {
     props: (route: string, arg2?: Type<Router> | MiddlewareType[] | string | { protocol?: string, middlewares: MiddlewareType[], contentType?: string, method?: string }) => {
         if (isArray(arg2)) {
             return { route, middlewares: arg2 };
@@ -444,7 +444,7 @@ export const RouteMapping: IRouteMappingDecorator = createDecorator<RouteMapingM
     },
     design: {
         afterAnnoation: (ctx, next) => {
-            const { route, protocol, parent, middlewares } = ctx.reflect.class.getMetadata<RouteMapingMetadata>(ctx.currDecor);
+            const { route, protocol, parent, middlewares } = ctx.reflect.class.getMetadata<ProtocolRouteMapingMetadata>(ctx.currDecor);
             const injector = ctx.injector;
             let queue: Middlewares;
             if (parent) {

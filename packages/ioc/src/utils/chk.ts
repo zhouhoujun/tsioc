@@ -20,7 +20,7 @@ export const EMPTY: any[] = [];
 /**
  * empty object.
  */
-export const EMPTY_OBJ = {};
+export const EMPTY_OBJ: Record<string, any> = {};
 
 /**
  * check target is function or not.

@@ -5,7 +5,7 @@ import {
 import { ILoggerManager } from '@tsdi/logs';
 import { Configuration, ConfigureManager } from './configure/config';
 import { AnnotationReflect, ModuleReflect } from './metadata/ref';
-import { Response, Request, RequestInit, RequestOption } from './middlewares/ctx';
+import { Response, Request, Context, RequestInit, RequestOption } from './middlewares/ctx';
 import { MessageQueue } from './middlewares/queue';
 
 
@@ -277,6 +277,13 @@ export abstract class ApplicationContext implements Destroyable {
      * get message queue.
      */
     abstract getMessager(): MessageQueue;
+    /**
+     * send message
+     *
+     * @param {Context} context request context
+     * @returns {Promise<Response>}
+     */
+     abstract send(context: Context): Promise<Response>;
     /**
      * send message
      *

@@ -20,8 +20,8 @@ export class Router<T extends Context = Context> extends MessageQueue<T> impleme
         return this.info.prefix;
     }
 
-    get protocol() {
-        return this.info.protocol;
+    get protocols() {
+        return this.info.protocols;
     }
 
     private urlpath!: string;
@@ -57,7 +57,11 @@ export class Router<T extends Context = Context> extends MessageQueue<T> impleme
     }
 
     protected match(ctx: T): boolean {
-        return (!ctx.status || ctx.status === 404) && this.protocol === ctx.protocol && ctx.vaild.isActiveRoute(ctx, this.url, this.prefix) === true;
+        return (!ctx.status || ctx.status === 404) && this.matchProtocol(ctx.protocol) && ctx.vaild.isActiveRoute(ctx, this.url, this.prefix) === true;
+    }
+
+    protected matchProtocol(protocol: string) {
+        return this.protocols.indexOf(protocol) >= 0;
     }
 
     protected override resetHandler() {
@@ -93,10 +97,10 @@ export class RootRouter extends Router {
         }
         let router = this.handles.find(r => {
             if (isFunction(r)) {
-                return refl.get<RouteReflect>(r).route?.protocol === protocol;
+                return refl.get<RouteReflect>(r).route?.protocols.includes(protocol!);
             }
             if (r instanceof Router) {
-                return r.protocol === protocol;
+                return r.protocols.includes(protocol!);
             }
             return false;
         });

@@ -7,7 +7,7 @@ import {
     ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption,
     ModuleInjector, Runnable, RunnableFactory, RunnableFactoryResolver
 } from '../Context';
-import { Response, Request, MessageQueue, RequestInit, RequestOption, ROOT_QUEUE } from '../middlewares';
+import { Response, Request, Context, MessageQueue, RequestInit, RequestOption, ROOT_QUEUE } from '../middlewares';
 
 
 /**
@@ -54,6 +54,13 @@ export class DefaultApplicationContext extends ApplicationContext {
         return this.injector.get(ROOT_QUEUE);
     }
 
+    /**
+     * send message
+     *
+     * @param {Context} context request context
+     * @returns {Promise<Response>}
+     */
+    send(context: Context): Promise<Response>;
     /**
      * send message
      *

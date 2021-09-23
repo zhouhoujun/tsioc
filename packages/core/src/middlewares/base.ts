@@ -1,4 +1,4 @@
-import { Injectable, Injector, isArray, isString, Singleton } from '@tsdi/ioc';
+import { EMPTY_OBJ, Injectable, Injector, isArray, isString, Singleton } from '@tsdi/ioc';
 import { RouteVaildator, Context, Request, Response, Headers, ContextFactory, RequestOption, HeadersOption, ResponseOption } from './ctx';
 
 const urlReg = /\/((\w|%|\.))+\.\w+$/;
@@ -160,15 +160,16 @@ export class RequestBase extends Request {
 
     constructor(init?: RequestOption | Request) {
         super();
-        this.initHeader(init?.headers)
-        init && this.init(init);
+        this.init(init);
     }
 
-    protected initHeader(headers?: Headers | HeadersOption) {
-        this._headers = new HeadersBase(headers);
+    protected createHeader(headers?: Headers | HeadersOption) {
+        return new HeadersBase(headers);
     }
 
-    protected init(init: RequestOption | Request) {
+    protected init(option?: RequestOption | Request) {
+        const init = option || EMPTY_OBJ as RequestOption | Request;
+        this._headers = this.createHeader(init?.headers)
         if (init instanceof Request) {
             this._originalUrl = init.originalUrl;
             this._URL = init.URL;
@@ -238,30 +239,12 @@ export class RequestBase extends Request {
         this._body = val;
     }
 
-    get subdomains(): string[] {
+    get secure(): boolean {
         throw new Error('Method not implemented.');
     }
 
-    getHeader(name: string): string | null {
-        switch (name) {
-            case 'REFERRER':
-            case 'Referrer':
-            case 'referrer':
-            case 'referer':
-                return this.headers.referrer || '';
-            default:
-                return this.headers.get(name) || '';
-        }
-    }
-
-    hasHeader(name: string): boolean {
-        return this.headers.has(name.toLowerCase());
-    }
-    setHeader(name: string, value: string | string[]): void {
-        this.headers.set(name, value);
-    }
-    removeHeader(name: string): void {
-        this.headers.delete(name);
+    get subdomains(): string[] {
+        throw new Error('Method not implemented.');
     }
 
 }
@@ -270,15 +253,16 @@ export class ResponseBase extends Response {
 
     constructor(init?: ResponseOption) {
         super();
-        this.initHeader(init?.headers);
-        init && this.init(init);
+        this.init(init);
     }
 
-    protected initHeader(headers?: Headers | HeadersOption) {
-        this._headers = new HeadersBase(headers);
+    protected createHeader(headers?: Headers | HeadersOption) {
+        return new HeadersBase(headers);
     }
 
-    protected init(init: ResponseOption) {
+    protected init(option?: ResponseOption) {
+        const init = option || EMPTY_OBJ as ResponseOption;
+        this._headers = this.createHeader(init?.headers);
         if (init.status) this._status = init.status;
     }
 
@@ -293,7 +277,7 @@ export class ResponseBase extends Response {
         return this._headers;
     }
 
-    private _status: number = 404;
+    protected _status: number = 404;
     get status(): number {
         return this._status;
     }
@@ -357,34 +341,9 @@ export class ResponseBase extends Response {
         this._length = n;
     }
 
-    get type(): string {
-        const type = this.getHeader('Content-Type');
-        if (!type) return '';
-        return type.split(';', 1)[0];
-    }
 
-    set type(type: string) {
-        if (type) {
-            this.setHeader('Content-Type', type);
-        } else {
-            this.removeHeader('Content-Type');
-        }
-    }
 
-    getHeader(name: string): string | null {
-        return this.headers.get(name);
-    }
-    hasHeader(name: string): boolean {
-        return this.headers.has(name);
-    }
-    setHeader(name: string, value: string | string[]): void {
-        if (this.headersSent) return;
-        this.headers.set(name, value);
-    }
-    removeHeader(name: string): void {
-        if (this.headersSent) return;
-        this.headers.delete(name);
-    }
+
 
     private _headersSent = false;
     /**

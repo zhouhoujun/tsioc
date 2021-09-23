@@ -27,8 +27,6 @@ export interface RouteMapingMetadata {
 
     method?: string;
 
-    protocol?: string;
-
     /**
      * http content type.
      *
@@ -43,6 +41,13 @@ export interface RouteMapingMetadata {
      * @memberof RouteMetadata
      */
     middlewares?: MiddlewareType[]
+}
+
+export interface ProtocolRouteMapingMetadata extends  RouteMapingMetadata {
+    /**
+     * protocol type.
+     */
+    protocol?: string;
 }
 
 export interface MappingReflect extends TypeReflect {

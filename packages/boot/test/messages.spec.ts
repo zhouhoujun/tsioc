@@ -169,11 +169,13 @@ describe('app message queue', () => {
     it('route response', async () => {
         const a = await ctx.getMessager().send('/device/init', { method: 'post', query: { name: 'test' } });
         expect(a.status).toEqual(200);
+        expect(a.ok).toBeTruthy();
         expect(a.body).toBeDefined();
         expect(a.body.name).toEqual('test');
 
         const b = await ctx.getMessager().send('/device/update', { method: 'post', query: { version: '1.0.0' } });
         expect(b.status).toEqual(200);
+        expect(b.ok).toBeTruthy();
         expect(b.body).toEqual('1.0.0');
     });
 

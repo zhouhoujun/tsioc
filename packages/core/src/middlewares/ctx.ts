@@ -303,16 +303,9 @@ export abstract class Request {
     }
 
     /**
-     * Short-hand for:
-     *
-     *    this.protocol == 'https'
-     *
-     * @return {Boolean}
-     * @api public
+     * is the protocol secure or not.
      */
-    get secure() {
-        return 'https' === this.protocol;
-    }
+    abstract get secure(): boolean;
 
     /**
      * Return subdomains as an array.
@@ -344,10 +337,27 @@ export abstract class Request {
         return type.split(';')[0];
     }
 
-    abstract getHeader(name: string): string | null;
-    abstract hasHeader(name: string): boolean;
-    abstract setHeader(name: string, value: string | string[]): void;
-    abstract removeHeader(name: string): void;
+    getHeader(name: string): string | null {
+        switch (name) {
+            case 'REFERRER':
+            case 'Referrer':
+            case 'referrer':
+            case 'referer':
+                return this.headers.referrer || '';
+            default:
+                return this.headers.get(name) || '';
+        }
+    }
+
+    hasHeader(name: string): boolean {
+        return this.headers.has(name.toLowerCase());
+    }
+    setHeader(name: string, value: string | string[]): void {
+        this.headers.set(name, value);
+    }
+    removeHeader(name: string): void {
+        this.headers.delete(name);
+    }
 
 }
 
@@ -374,6 +384,10 @@ export abstract class Response {
      * @api public
      */
     abstract set status(code: number);
+
+    get ok(): boolean {
+        return this.status === 200;
+    }
 
     /**
      * Get response status message
@@ -428,7 +442,11 @@ export abstract class Response {
      * @return {String}
      * @api public
      */
-    abstract get type(): string;
+    get type(): string {
+        const type = this.getHeader('Content-Type');
+        if (!type) return '';
+        return type.split(';', 1)[0];
+    }
     /**
      * Set Content-Type response header with `type` through `mime.lookup()`
      * when it does not contain a charset.
@@ -444,12 +462,30 @@ export abstract class Response {
      * @param {String} type
      * @api public
      */
-    abstract set type(type: string);
+    set type(type: string) {
+        if (type) {
+            this.setHeader('Content-Type', type);
+        } else {
+            this.removeHeader('Content-Type');
+        }
+    };
 
-    abstract getHeader(name: string): string | null;
-    abstract hasHeader(name: string): boolean;
-    abstract setHeader(name: string, value: string | string[]): void;
-    abstract removeHeader(name: string): void;
+    abstract get headersSent(): boolean;
+
+    getHeader(name: string): string | null {
+        return this.headers.get(name);
+    }
+    hasHeader(name: string): boolean {
+        return this.headers.has(name);
+    }
+    setHeader(name: string, value: string | string[]): void {
+        if (this.headersSent) return;
+        this.headers.set(name, value);
+    }
+    removeHeader(name: string): void {
+        if (this.headersSent) return;
+        this.headers.delete(name);
+    }
 
 }
 
@@ -551,16 +587,10 @@ export abstract class Context implements Destroyable {
         return this.request.headers;
     }
 
-    get secure(): boolean {
-        return this.request.secure;
-    }
-
     /**
      * injector of.
      */
     abstract get injector(): Injector;
-
-
 
     get status(): number {
         return this.response.status;

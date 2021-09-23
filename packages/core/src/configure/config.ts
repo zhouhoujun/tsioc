@@ -37,6 +37,8 @@ export interface Configuration extends ProvidersMetadata {
      * @type {string}
      */
     baseURL?: string;
+
+    secure?: boolean;
     /**
      * deps.
      *
