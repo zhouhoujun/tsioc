@@ -1,4 +1,5 @@
 import { EMPTY_OBJ, Injectable, Injector, isArray, isString, Singleton } from '@tsdi/ioc';
+import { InHeaderType } from '.';
 import { RouteVaildator, Context, Request, Response, Headers, ContextFactory, RequestOption, HeadersOption, ResponseOption } from './ctx';
 
 const urlReg = /\/((\w|%|\.))+\.\w+$/;
@@ -70,11 +71,11 @@ const empty: any = {
 };
 
 
-export class HeadersBase extends Headers {
+export class HeadersBase extends Headers<InHeaderType> {
     /**
      * Internal map of lowercase header names to values.
      */
-    private headers!: Map<string, string[]>;
+    private headers!: Map<string, InHeaderType>;
 
 
     constructor(headers?: HeadersOption | Headers) {
@@ -91,11 +92,7 @@ export class HeadersBase extends Headers {
                     const name = line.slice(0, index);
                     const key = name.toLowerCase();
                     const value = line.slice(index + 1).trim();
-                    if (this.headers.has(key)) {
-                        this.headers.get(key)?.push(value);
-                    } else {
-                        this.headers.set(key, [value]);
-                    }
+                    this.set(key, value);
                 }
             });
         } else if (isArray(headers)) {
@@ -104,13 +101,13 @@ export class HeadersBase extends Headers {
                 if (index > 0) {
                     const key = line[0].toLowerCase();
                     const value = line[1].trim();
-                    this.headers.set(key, isString(value) ? [value] : value);
+                    this.headers.set(key, value);
                 }
             });
         } else if (headers instanceof Headers) {
             this._referrer = headers.referrer;
             headers.forEach((v, k) => {
-                this.set(k, v);
+                this.headers.set(k, v);
             });
         } else {
             this._referrer = headers.referrer;
@@ -128,7 +125,7 @@ export class HeadersBase extends Headers {
         return this._referrer;
     }
 
-    append(name: string, value: string | string[]): void {
+    append(name: string, value: InHeaderType): void {
         this.headers.set(name, isString(value) ? [value] : value);
     }
 
@@ -136,20 +133,31 @@ export class HeadersBase extends Headers {
         this.headers.delete(name);
     }
 
-    get(name: string): string | null {
-        const values = this.headers.get(name);
-        return values && values.length > 0 ? values[0] : null;
+    get(name: string): InHeaderType {
+        return this.headers.get(name) ?? '';
     }
 
     has(name: string): boolean {
         return this.headers.has(name);
     }
 
-    set(name: string, value: string | string[]): void {
-        this.headers.set(name, isString(value) ? [value] : value);
+    set(name: string, value: InHeaderType): void {
+        if (this.headers.has(name)) {
+            const val = this.headers.get(name);
+            if (isArray(val)) {
+                isArray(value) ? val.push(...value) : val.push(value);
+            } else {
+                if (val) {
+                    value = isArray(value) ? [...value, val] : [value, val]
+                }
+                this.headers.set(name, value)
+            }
+        } else {
+            this.headers.set(name, value);
+        }
     }
 
-    forEach(callbackfn: (value: string[], key: string, parent: Headers) => void, thisArg?: any): void {
+    forEach(callbackfn: (value: InHeaderType, key: string, parent: Headers) => void, thisArg?: any): void {
         this.headers.forEach((v, k) => callbackfn(v, k, this), this);
     }
 

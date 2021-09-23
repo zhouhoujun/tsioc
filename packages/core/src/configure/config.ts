@@ -38,6 +38,10 @@ export interface Configuration extends ProvidersMetadata {
      */
     baseURL?: string;
 
+    port?: number;
+
+    hostname?: string;
+
     secure?: boolean;
     /**
      * deps.

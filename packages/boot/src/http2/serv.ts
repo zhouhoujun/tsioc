@@ -18,7 +18,9 @@ export class Http2StartupService extends StartupService {
         }
         this._service = createServer((req, res) => {
             ctx.send();
-        })
+        });
+
+        this.service.listen(config.port, config.hostname);
 
     }
 }

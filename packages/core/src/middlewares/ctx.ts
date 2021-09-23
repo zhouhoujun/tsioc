@@ -1,4 +1,4 @@
-import { Abstract, Destroyable, Injector, Token } from '@tsdi/ioc';
+import { Abstract, Destroyable, Injector, isArray, Token } from '@tsdi/ioc';
 
 
 
@@ -59,16 +59,19 @@ export interface ResponseOption {
     statusText?: string;
 }
 
+export type InHeaderType = string | string[];
+
+export type OutHeaderType = InHeaderType | number;
 
 @Abstract()
-export abstract class Headers {
+export abstract class Headers<T = InHeaderType> {
     abstract get referrer(): string;
-    abstract append(name: string, value: string | string[]): void;
+    abstract append(name: string, value: T): void;
     abstract delete(name: string): void;
-    abstract get(name: string): string | null;
+    abstract get(name: string): T;
     abstract has(name: string): boolean;
-    abstract set(name: string, value: string | string[]): void;
-    abstract forEach(callbackfn: (value: string[], key: string, parent: Headers) => void, thisArg?: any): void;
+    abstract set(name: string, value: T): void;
+    abstract forEach(callbackfn: (value: T, key: string, parent: Headers) => void, thisArg?: any): void;
 }
 
 @Abstract()
@@ -332,12 +335,10 @@ export abstract class Request {
      * @api public
      */
     get type(): string {
-        const type = this.getHeader('Content-Type');
-        if (!type) return '';
-        return type.split(';')[0];
+        return this.getHeader('Content-Type');
     }
 
-    getHeader(name: string): string | null {
+    getHeader(name: string): string {
         switch (name) {
             case 'REFERRER':
             case 'Referrer':
@@ -345,7 +346,9 @@ export abstract class Request {
             case 'referer':
                 return this.headers.referrer || '';
             default:
-                return this.headers.get(name) || '';
+                const header = this.headers.get(name);
+                if (!header) return '';
+                return isArray(header) ? header[0] : header;
         }
     }
 
@@ -369,7 +372,7 @@ export abstract class Response {
      * @return {Object}
      * @api public
      */
-    abstract get headers(): Headers;
+    abstract get headers(): Headers<OutHeaderType>;
     /**
      * Get response status code.
      *
@@ -445,7 +448,7 @@ export abstract class Response {
     get type(): string {
         const type = this.getHeader('Content-Type');
         if (!type) return '';
-        return type.split(';', 1)[0];
+        return (type as string).split(';', 1)[0];
     }
     /**
      * Set Content-Type response header with `type` through `mime.lookup()`
@@ -472,8 +475,10 @@ export abstract class Response {
 
     abstract get headersSent(): boolean;
 
-    getHeader(name: string): string | null {
-        return this.headers.get(name);
+    getHeader(name: string): string | number {
+        const header = this.headers.get(name);
+        if (!header) return '';
+        return isArray(header) ? header[0] : header;
     }
     hasHeader(name: string): boolean {
         return this.headers.has(name);

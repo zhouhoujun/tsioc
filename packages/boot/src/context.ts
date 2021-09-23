@@ -1,12 +1,9 @@
-import { Abstract, Injector } from '@tsdi/ioc';
-import { Context, Headers, HeadersBase, HeadersOption, Request, Response } from '@tsdi/core';
+import { Abstract } from '@tsdi/ioc';
+import { Context, Request, Response } from '@tsdi/core';
 import { HttpStatusCode } from './status';
 
 
 
-export class HttpHeaders extends HeadersBase {
-
-}
 
 @Abstract()
 export abstract class HttpRequest extends Request {
