@@ -1,9 +1,9 @@
 import { isString } from '@tsdi/ioc';
+import { ApplicationContext, ResultValue } from '@tsdi/core';
 import { Stream } from 'stream';
 import { existsSync, createReadStream } from 'fs';
 import { join, isAbsolute } from 'path';
 import { Options } from 'content-disposition';
-import { ResultValue } from './ResultValue';
 import { HttpContext } from '../context';
 
 export interface FileResultOption {
@@ -39,7 +39,7 @@ export class FileResult extends ResultValue {
         if (this.options && this.options.filename) {
             ctx.attachment(this.options.filename, this.options.disposition);
         }
-        const baseURL = ctx.app.getContext().baseURL;
+        const baseURL = ctx.injector.get(ApplicationContext).baseURL;
         if (isString(file)) {
             let filepath = (isAbsolute(file) || !baseURL) ? file : join(baseURL, file);
             if (existsSync(filepath)) {

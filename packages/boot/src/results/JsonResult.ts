@@ -1,4 +1,4 @@
-import { ResultValue } from './ResultValue';
+import { ResultValue } from '@tsdi/core';
 import { HttpContext } from '../context';
 
 

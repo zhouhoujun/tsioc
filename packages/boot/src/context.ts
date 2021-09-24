@@ -36,8 +36,6 @@ export abstract class HttpResponse extends Response {
 @Abstract()
 export abstract class HttpContext extends Context {
 
-    abstract get app(): IBootApplication;
-
     abstract get request(): HttpRequest;
     abstract get response(): HttpResponse;
 
@@ -92,6 +90,6 @@ export abstract class HttpContext extends Context {
      */
     abstract attachment(filename: string, options: any): void;
 
-    abstract write(chunk: any, cb?: (error: Error | null | undefined) => void): boolean;
-    abstract write(chunk: any, encoding: BufferEncoding, cb?: (error: Error | null | undefined) => void): boolean;
+    abstract write(chunk: string | Uint8Array, cb?: (error: Error | null | undefined) => void): boolean;
+    abstract write(chunk: string | Uint8Array, encoding: BufferEncoding, cb?: (error: Error | null | undefined) => void): boolean;
 }

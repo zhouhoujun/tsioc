@@ -1,5 +1,5 @@
+import { ResultValue } from '@tsdi/core';
 import { HttpContext } from '../context';
-import { ResultValue } from './ResultValue';
 
 /**
  * redirect url

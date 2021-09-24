@@ -1,6 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
+import { ResultValue } from '@tsdi/core';
 import { HttpContext } from '../context';
-import { ResultValue } from './ResultValue';
 
 @Abstract()
 export abstract class ViewRenderer {
