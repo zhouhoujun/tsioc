@@ -1,4 +1,4 @@
-import { Abstract, Destroyable, Injector, isArray, Token } from '@tsdi/ioc';
+import { Abstract, Destroyable, Injector, isArray, isString, Token } from '@tsdi/ioc';
 
 
 
@@ -59,19 +59,16 @@ export interface ResponseOption {
     statusText?: string;
 }
 
-export type InHeaderType = string | string[];
-
-export type OutHeaderType = InHeaderType | number;
 
 @Abstract()
-export abstract class Headers<T = InHeaderType> {
+export abstract class Headers {
     abstract get referrer(): string;
-    abstract append(name: string, value: T): void;
+    abstract append(name: string, value: string | string[] | number): void;
     abstract delete(name: string): void;
-    abstract get(name: string): T;
+    abstract get(name: string): string | string[] | number;
     abstract has(name: string): boolean;
-    abstract set(name: string, value: T): void;
-    abstract forEach(callbackfn: (value: T, key: string, parent: Headers) => void, thisArg?: any): void;
+    abstract set(name: string, value: string | string[] | number): void;
+    abstract forEach(callbackfn: (value: string | string[] | number, key: string, parent: Headers) => void, thisArg?: any): void;
 }
 
 @Abstract()
@@ -272,7 +269,7 @@ export abstract class Request {
 
     protected parseOrigin() {
         const proto = this.getHeader('X-Forwarded-Proto');
-        let protocol = proto ? proto.split(/\s*,\s*/, 1)[0] : 'msg'
+        let protocol = proto && isString(proto) ? proto.split(/\s*,\s*/, 1)[0] : 'msg'
         let host = this.getHeader('X-Forwarded-Host') ??
             this.getHeader(':authority') ?? this.getHeader('Host');
         return `${protocol}://${host || '0.0.0.0'}`
@@ -287,7 +284,7 @@ export abstract class Request {
     get length(): number {
         const len = this.getHeader('Content-Length') || '';
         if (len === '') return 0;
-        return ~~len;
+        return isString(len) ? ~~len : len;
     }
 
     /**
@@ -335,10 +332,10 @@ export abstract class Request {
      * @api public
      */
     get type(): string {
-        return this.getHeader('Content-Type');
+        return this.getHeader('Content-Type') as string;
     }
 
-    getHeader(name: string): string {
+    getHeader(name: string): string | number {
         switch (name) {
             case 'REFERRER':
             case 'Referrer':
@@ -355,7 +352,7 @@ export abstract class Request {
     hasHeader(name: string): boolean {
         return this.headers.has(name.toLowerCase());
     }
-    setHeader(name: string, value: string | string[]): void {
+    setHeader(name: string, value: number | string | string[]): void {
         this.headers.set(name, value);
     }
     removeHeader(name: string): void {
@@ -372,7 +369,7 @@ export abstract class Response {
      * @return {Object}
      * @api public
      */
-    abstract get headers(): Headers<OutHeaderType>;
+    abstract get headers(): Headers;
     /**
      * Get response status code.
      *
@@ -448,7 +445,7 @@ export abstract class Response {
     get type(): string {
         const type = this.getHeader('Content-Type');
         if (!type) return '';
-        return (type as string).split(';', 1)[0];
+        return type?.toString().split(';', 1)[0];
     }
     /**
      * Set Content-Type response header with `type` through `mime.lookup()`
@@ -483,7 +480,7 @@ export abstract class Response {
     hasHeader(name: string): boolean {
         return this.headers.has(name);
     }
-    setHeader(name: string, value: string | string[]): void {
+    setHeader(name: string, value: number | string | string[]): void {
         if (this.headersSent) return;
         this.headers.set(name, value);
     }

@@ -1,6 +1,7 @@
 import { Abstract } from '@tsdi/ioc';
 import { Context, Request, Response } from '@tsdi/core';
 import { HttpStatusCode } from './status';
+import { IBootApplication } from './IBootApplication';
 
 
 
@@ -35,6 +36,8 @@ export abstract class HttpResponse extends Response {
 @Abstract()
 export abstract class HttpContext extends Context {
 
+    abstract get app(): IBootApplication;
+
     abstract get request(): HttpRequest;
     abstract get response(): HttpResponse;
 
@@ -46,7 +49,7 @@ export abstract class HttpContext extends Context {
         this.response.status = code;
     }
 
-    
+
     get secure(): boolean {
         return this.request.secure;
     }
@@ -59,4 +62,33 @@ export abstract class HttpContext extends Context {
             this.status = 500;
         }
     }
+
+    /**
+     * Perform a 302 redirect to `url`.
+     *
+     * The string "back" is special-cased
+     * to provide Referrer support, when Referrer
+     * is not present `alt` or "/" is used.
+     *
+     * Examples:
+     *
+     *    this.redirect('back');
+     *    this.redirect('back', '/index.html');
+     *    this.redirect('/login');
+     *    this.redirect('http://google.com');
+     *
+     * @param {String} url
+     * @param {String} [alt]
+     * @api public
+     */
+    abstract redirect(url: string, alt?: string): void;
+
+
+    /**
+     * Set Content-Disposition header to "attachment" with optional `filename`.
+     *
+     * @param {String} filename
+     * @api public
+     */
+    abstract attachment(filename: string, options: any): void;
 }

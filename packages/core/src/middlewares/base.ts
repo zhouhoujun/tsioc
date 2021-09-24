@@ -1,5 +1,4 @@
-import { EMPTY_OBJ, Injectable, Injector, isArray, isString, Singleton } from '@tsdi/ioc';
-import { InHeaderType } from '.';
+import { EMPTY_OBJ, Injectable, Injector, isArray, isNumber, isString, Singleton } from '@tsdi/ioc';
 import { RouteVaildator, Context, Request, Response, Headers, ContextFactory, RequestOption, HeadersOption, ResponseOption } from './ctx';
 
 const urlReg = /\/((\w|%|\.))+\.\w+$/;
@@ -71,11 +70,11 @@ const empty: any = {
 };
 
 
-export class HeadersBase extends Headers<InHeaderType> {
+export class HeadersBase extends Headers {
     /**
      * Internal map of lowercase header names to values.
      */
-    private headers!: Map<string, InHeaderType>;
+    private headers!: Map<string, string | string[] | number>;
 
 
     constructor(headers?: HeadersOption | Headers) {
@@ -125,7 +124,7 @@ export class HeadersBase extends Headers<InHeaderType> {
         return this._referrer;
     }
 
-    append(name: string, value: InHeaderType): void {
+    append(name: string, value: string | string[] | number): void {
         this.headers.set(name, isString(value) ? [value] : value);
     }
 
@@ -133,7 +132,7 @@ export class HeadersBase extends Headers<InHeaderType> {
         this.headers.delete(name);
     }
 
-    get(name: string): InHeaderType {
+    get(name: string): string | string[] | number {
         return this.headers.get(name) ?? '';
     }
 
@@ -141,23 +140,24 @@ export class HeadersBase extends Headers<InHeaderType> {
         return this.headers.has(name);
     }
 
-    set(name: string, value: InHeaderType): void {
-        if (this.headers.has(name)) {
+    set(name: string, value: string | string[] | number): void {
+        if (!isNumber(value) && this.headers.has(name)) {
             const val = this.headers.get(name);
             if (isArray(val)) {
                 isArray(value) ? val.push(...value) : val.push(value);
             } else {
-                if (val) {
-                    value = isArray(value) ? [...value, val] : [value, val]
+                let cv: string | string[] = value;
+                if (isString(val)) {
+                    cv = isArray(value) ? [...value, val] : [value, val];
                 }
-                this.headers.set(name, value)
+                this.headers.set(name, cv)
             }
         } else {
             this.headers.set(name, value);
         }
     }
 
-    forEach(callbackfn: (value: InHeaderType, key: string, parent: Headers) => void, thisArg?: any): void {
+    forEach(callbackfn: (value: string | string[] | number, key: string, parent: Headers) => void, thisArg?: any): void {
         this.headers.forEach((v, k) => callbackfn(v, k, this), this);
     }
 
