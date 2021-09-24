@@ -91,4 +91,7 @@ export abstract class HttpContext extends Context {
      * @api public
      */
     abstract attachment(filename: string, options: any): void;
+
+    abstract write(chunk: any, cb?: (error: Error | null | undefined) => void): boolean;
+    abstract write(chunk: any, encoding: BufferEncoding, cb?: (error: Error | null | undefined) => void): boolean;
 }
