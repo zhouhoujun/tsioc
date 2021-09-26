@@ -1,7 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { Context, Request, Response } from '@tsdi/core';
 import { HttpStatusCode } from './status';
-import { IBootApplication } from './IBootApplication';
 
 
 
@@ -57,7 +56,7 @@ export abstract class HttpContext extends Context {
         this._err = err;
         if (err) {
             this.message = err.stack ?? err.message;
-            this.status = 500;
+            this.status = HttpStatusCode.InternalServerError;
         }
     }
 
@@ -88,7 +87,23 @@ export abstract class HttpContext extends Context {
      * @param {String} filename
      * @api public
      */
-    abstract attachment(filename: string, options: any): void;
+    abstract attachment(filename: string, options?: {
+        /**
+        * Specifies the disposition type.
+        * This can also be "inline", or any other value (all values except `inline` are treated like attachment,
+        * but can convey additional information if both parties agree to it).
+        * The `type` is normalized to lower-case.
+        * @default 'attachment'
+        */
+        type?: 'attachment' | 'inline' | string | undefined;
+        /**
+         * If the filename option is outside ISO-8859-1,
+         * then the file name is actually stored in a supplemental field for clients
+         * that support Unicode file names and a ISO-8859-1 version of the file name is automatically generated
+         * @default true
+         */
+        fallback?: string | boolean | undefined;
+    }): void;
 
     abstract write(chunk: string | Uint8Array, cb?: (error: Error | null | undefined) => void): boolean;
     abstract write(chunk: string | Uint8Array, encoding: BufferEncoding, cb?: (error: Error | null | undefined) => void): boolean;

@@ -1,3 +1,4 @@
+import { HttpStatusCode } from '../status';
 import { HttpError } from './HttpError';
 
 /**
@@ -9,6 +10,6 @@ import { HttpError } from './HttpError';
  */
 export class ForbiddenError extends HttpError {
     constructor(message = 'Request Forbidden') {
-        super(403, message);
+        super(HttpStatusCode.Forbidden, message);
     }
 }

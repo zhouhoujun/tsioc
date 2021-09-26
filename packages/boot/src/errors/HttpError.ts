@@ -1,4 +1,5 @@
 import { isArray } from '@tsdi/ioc';
+import { HttpStatusCode } from '../status';
 
 /**
  * http error
@@ -8,7 +9,7 @@ import { isArray } from '@tsdi/ioc';
  * @extends {Error}
  */
 export class HttpError extends Error {
-    constructor(readonly status: number, message?: string | string[]) {
+    constructor(readonly status: HttpStatusCode, message?: string | string[]) {
         super();
         this.message = isArray(message) ? message.join('\n') : message || '';
         Error.captureStackTrace(this);

@@ -1,3 +1,4 @@
+import { HttpStatusCode } from '../status';
 import { HttpError } from './HttpError';
 
 /**
@@ -9,6 +10,6 @@ import { HttpError } from './HttpError';
  */
 export class NotAcceptableError extends HttpError {
     constructor(message = 'Not Acceptable') {
-        super(406, message);
+        super(HttpStatusCode.NotAcceptable, message);
     }
 }
