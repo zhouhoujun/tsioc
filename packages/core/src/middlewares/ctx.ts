@@ -2,7 +2,7 @@ import { Abstract, Destroyable, Injector, isArray, isString, Token } from '@tsdi
 
 
 
-export type HeadersOption = string[][] | Record<string, string> | Headers | string;
+export type HeadersOption = string[][]  | Record<string, string | string[] | number> | Headers | string;
 
 export interface RequestInit {
     headers?: HeadersOption;
@@ -69,17 +69,11 @@ export abstract class Headers {
     abstract has(name: string): boolean;
     abstract set(name: string, value: string | string[] | number): void;
     abstract forEach(callbackfn: (value: string | string[] | number, key: string, parent: Headers) => void, thisArg?: any): void;
+    abstract getAll(): Record<string, string | string[] | number>;
 }
 
 @Abstract()
 export abstract class Request {
-    /**
-     * Return request header, alias as request.header
-     *
-     * @return {Object}
-     * @api public
-     */
-    abstract get headers(): Headers;
     /**
      * Get request originalUrl.
      *
@@ -335,29 +329,15 @@ export abstract class Request {
         return this.getHeader('Content-Type') as string;
     }
 
-    getHeader(name: string): string | number {
-        switch (name) {
-            case 'REFERRER':
-            case 'Referrer':
-            case 'referrer':
-            case 'referer':
-                return this.headers.referrer || '';
-            default:
-                const header = this.headers.get(name);
-                if (!header) return '';
-                return isArray(header) ? header[0] : header;
-        }
-    }
+    abstract getHeaders(): Record<string, string | string[] | number>;
 
-    hasHeader(name: string): boolean {
-        return this.headers.has(name.toLowerCase());
-    }
-    setHeader(name: string, value: number | string | string[]): void {
-        this.headers.set(name, value);
-    }
-    removeHeader(name: string): void {
-        this.headers.delete(name);
-    }
+    abstract getHeader(name: string): string | number;
+
+    abstract hasHeader(name: string): boolean;
+
+    abstract setHeader(name: string, value: number | string | string[]): void;
+
+    abstract removeHeader(name: string): void;
 
 }
 
@@ -472,22 +452,15 @@ export abstract class Response {
 
     abstract get headersSent(): boolean;
 
-    getHeader(name: string): string | number {
-        const header = this.headers.get(name);
-        if (!header) return '';
-        return isArray(header) ? header[0] : header;
-    }
-    hasHeader(name: string): boolean {
-        return this.headers.has(name);
-    }
-    setHeader(name: string, value: number | string | string[]): void {
-        if (this.headersSent) return;
-        this.headers.set(name, value);
-    }
-    removeHeader(name: string): void {
-        if (this.headersSent) return;
-        this.headers.delete(name);
-    }
+    abstract getHeaders(): Record<string, string | string[] | number>;
+
+    abstract getHeader(name: string): string | number;
+
+    abstract hasHeader(name: string): boolean;
+
+    abstract setHeader(name: string, value: number | string | string[]): void;
+
+    abstract removeHeader(name: string): void;
 
 }
 
@@ -583,10 +556,6 @@ export abstract class Context implements Destroyable {
 
     get hostname(): string {
         return this.request.hostname;
-    }
-
-    get headers(): Headers {
-        return this.request.headers;
     }
 
     /**

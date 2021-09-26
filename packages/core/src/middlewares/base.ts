@@ -1,4 +1,4 @@
-import { EMPTY_OBJ, Injectable, Injector, isArray, isNumber, isString, Singleton } from '@tsdi/ioc';
+import { EMPTY_OBJ, Injectable, Injector, isArray, isDefined, isNumber, isString, Singleton } from '@tsdi/ioc';
 import { RouteVaildator, Context, Request, Response, Headers, ContextFactory, RequestOption, HeadersOption, ResponseOption } from './ctx';
 
 const urlReg = /\/((\w|%|\.))+\.\w+$/;
@@ -74,12 +74,11 @@ export class HeadersBase extends Headers {
     /**
      * Internal map of lowercase header names to values.
      */
-    private headers!: Map<string, string | string[] | number>;
+    private headers: Record<string, string | string[] | number> = {};
 
 
     constructor(headers?: HeadersOption | Headers) {
         super();
-        this.headers = new Map();
         if (headers) this.init(headers);
     }
 
@@ -91,7 +90,7 @@ export class HeadersBase extends Headers {
                     const name = line.slice(0, index);
                     const key = name.toLowerCase();
                     const value = line.slice(index + 1).trim();
-                    this.set(key, value);
+                    this.append(key, value);
                 }
             });
         } else if (isArray(headers)) {
@@ -100,21 +99,19 @@ export class HeadersBase extends Headers {
                 if (index > 0) {
                     const key = line[0].toLowerCase();
                     const value = line[1].trim();
-                    this.headers.set(key, value);
+                    this.headers[key] = value;
                 }
             });
         } else if (headers instanceof Headers) {
             this._referrer = headers.referrer;
             headers.forEach((v, k) => {
-                this.headers.set(k, v);
+                this.set(k, v);
             });
         } else {
-            this._referrer = headers.referrer;
-            Object.keys(headers).forEach(name => {
-                let values: string | string[] = (headers as Record<string, string>)[name];
-                const key = name.toLowerCase();
-                this.headers.set(key, isString(values) ? [values] : values);
-
+            this._referrer = headers.referrer as string;
+            Object.keys(headers).forEach(key => {
+                let values: string | string[] = (headers as Record<string, string>)[key];
+                this.set(key, values);
             })
         }
     }
@@ -125,24 +122,8 @@ export class HeadersBase extends Headers {
     }
 
     append(name: string, value: string | string[] | number): void {
-        this.headers.set(name, isString(value) ? [value] : value);
-    }
-
-    delete(name: string): void {
-        this.headers.delete(name);
-    }
-
-    get(name: string): string | string[] | number {
-        return this.headers.get(name) ?? '';
-    }
-
-    has(name: string): boolean {
-        return this.headers.has(name);
-    }
-
-    set(name: string, value: string | string[] | number): void {
-        if (!isNumber(value) && this.headers.has(name)) {
-            const val = this.headers.get(name);
+        if (!isNumber(value) && this.has(name)) {
+            const val = this.get(name);
             if (isArray(val)) {
                 isArray(value) ? val.push(...value) : val.push(value);
             } else {
@@ -150,15 +131,36 @@ export class HeadersBase extends Headers {
                 if (isString(val)) {
                     cv = isArray(value) ? [...value, val] : [value, val];
                 }
-                this.headers.set(name, cv)
+                this.set(name, cv)
             }
         } else {
-            this.headers.set(name, value);
+            this.set(name, value);
         }
+        this.headers[name] = isString(value) ? [value] : value;
+    }
+
+    delete(name: string): void {
+        this.headers[name] = null!;
+    }
+
+    get(name: string): string | string[] | number {
+        return this.headers[name] ?? '';
+    }
+
+    has(name: string): boolean {
+        return isDefined(this.headers[name]);
+    }
+
+    set(name: string, value: string | string[] | number): void {
+        this.headers[name] = value;
     }
 
     forEach(callbackfn: (value: string | string[] | number, key: string, parent: Headers) => void, thisArg?: any): void {
-        this.headers.forEach((v, k) => callbackfn(v, k, this), this);
+        Object.keys(this.headers).forEach(k => callbackfn(this.headers[k], k, this), this);
+    }
+
+    getAll() {
+        return this.headers;
     }
 
 }
@@ -177,8 +179,8 @@ export class RequestBase extends Request {
 
     protected init(option?: RequestOption | Request) {
         const init = option || EMPTY_OBJ as RequestOption | Request;
-        this._headers = this.createHeader(init?.headers)
         if (init instanceof Request) {
+            this._headers = this.createHeader(init.getHeaders())
             this._originalUrl = init.originalUrl;
             this._URL = init.URL;
             this._url = init.url;
@@ -186,6 +188,7 @@ export class RequestBase extends Request {
             this._method = init.method;
             this.query = init.query;
         } else {
+            this._headers = this.createHeader(init?.headers)
             const { url: originalUrl, body, method, restful, query } = init;
             let url = originalUrl || '';
             if (restful) {
@@ -253,6 +256,26 @@ export class RequestBase extends Request {
 
     get subdomains(): string[] {
         throw new Error('Method not implemented.');
+    }
+
+    getHeaders() {
+        return this.headers.getAll();
+    }
+
+    getHeader(name: string): string | number {
+        const header = this.headers.get(name);
+        if (!header) return '';
+        return isArray(header) ? header[0] : header;
+    }
+
+    hasHeader(name: string): boolean {
+        return this.headers.has(name.toLowerCase());
+    }
+    setHeader(name: string, value: number | string | string[]): void {
+        this.headers.set(name, value);
+    }
+    removeHeader(name: string): void {
+        this.headers.delete(name);
     }
 
 }
@@ -350,9 +373,6 @@ export class ResponseBase extends Response {
     }
 
 
-
-
-
     private _headersSent = false;
     /**
      * Check if a header has been written to the socket.
@@ -363,12 +383,33 @@ export class ResponseBase extends Response {
     get headersSent() {
         return this._headersSent;
     }
+
+    getHeaders() {
+        return this.headers.getAll();
+    }
+
+    getHeader(name: string): string | number {
+        const header = this.headers.get(name);
+        if (!header) return '';
+        return isArray(header) ? header[0] : header;
+    }
+    hasHeader(name: string): boolean {
+        return this.headers.has(name);
+    }
+    setHeader(name: string, value: number | string | string[]): void {
+        if (this.headersSent) return;
+        this.headers.set(name, value);
+    }
+    removeHeader(name: string): void {
+        if (this.headersSent) return;
+        this.headers.delete(name);
+    }
 }
 
 export const BASE_CONTEXT_FACTORY_IMPL: ContextFactory = {
     create(request: Request | RequestOption, injector: Injector): Context {
         const req: Request = request instanceof Request ? request : new RequestBase(request);
-        const headers = req.headers;
+        const headers = req.getHeaders();
         const rep = new ResponseBase({ headers });
         return new ContextBase(req, rep, injector);
     }

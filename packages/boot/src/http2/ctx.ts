@@ -1,12 +1,12 @@
 import { ApplicationContext, Boot, Headers, StartupService } from '@tsdi/core';
-import { Server, IncomingMessage, ServerResponse, createServer } from 'http';
+import { Http2Server, Http2ServerRequest, Http2ServerResponse, createServer } from 'http2';
 import { HttpResponse } from '../context';
 import { HttpStatusCode } from '../status';
 
 
-export class Http1Headers extends Headers {
+export class Http2Headers extends Headers {
 
-    constructor(protected resp: ServerResponse) {
+    constructor(protected resp: Http2ServerRequest) {
         super();
     }
 
