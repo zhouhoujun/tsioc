@@ -69,7 +69,6 @@ export abstract class Headers {
     abstract has(name: string): boolean;
     abstract set(name: string, value: string | string[] | number): void;
     abstract forEach(callbackfn: (value: string | string[] | number, key: string, parent: Headers) => void, thisArg?: any): void;
-    abstract getAll(): Record<string, string | string[] | number>;
 }
 
 @Abstract()
@@ -329,7 +328,7 @@ export abstract class Request {
         return this.getHeader('Content-Type') as string;
     }
 
-    abstract getHeaders(): Record<string, string | string[] | number>;
+    abstract getHeaders(): Headers | Record<string, string | string[] | number>;
 
     abstract getHeader(name: string): string | number;
 
@@ -452,7 +451,7 @@ export abstract class Response {
 
     abstract get headersSent(): boolean;
 
-    abstract getHeaders(): Record<string, string | string[] | number>;
+    abstract getHeaders(): Headers | Record<string, string | string[] | number>;
 
     abstract getHeader(name: string): string | number;
 
