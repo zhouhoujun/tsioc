@@ -59,7 +59,7 @@ export class MessageQueue<T extends Context = Context> extends Middlewares<T> {
 
     protected onFailed(ctx: T, err: Error): void {
         ctx.status = 500;
-        ctx.message = err.stack;
+        ctx.message = err.stack || err.toString();
         ctx.error = err;
     }
 
