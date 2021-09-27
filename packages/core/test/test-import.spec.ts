@@ -26,7 +26,7 @@ describe('di module', () => {
         let q = ctx.injector.get(SubMessageQueue);
         q.subscribe((ctx, next) => {
             console.log('ctx.url:', ctx.url);
-            if (ctx.url === '/test') {
+            if (ctx.url.startsWith('/test')) {
                 console.log('message queue test: ' + ctx.request.body);
                 ctx.body = ctx.request.query.hi;
                 console.log(ctx.body, ctx.request.query);

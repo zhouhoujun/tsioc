@@ -1,48 +1,73 @@
 import { ApplicationContext, Boot, Headers, StartupService } from '@tsdi/core';
+import { isArray } from '@tsdi/ioc';
 import { Server, IncomingMessage, ServerResponse, createServer } from 'http';
-import { HttpResponse } from '../context';
+import { Socket } from 'net';
+import { HttpResponse, HttpRequest } from '../context';
 import { HttpStatusCode } from '../status';
 
 
-export class Http1Headers extends Headers {
+export class Http1Request extends HttpRequest {
 
-    constructor(protected resp: ServerResponse) {
+    private _originalUrl: string;
+    constructor(protected req: IncomingMessage) {
         super();
+        const url = this._originalUrl = req.url ?? '';
+        this._URL = new URL(url);
     }
 
-    get referrer(): string {
-        return '';
+    get originalUrl(): string {
+        return this._originalUrl;
     }
-    append(name: string, value: string | string[] | number): void {
-        this.resp.setHeader(name, value);
+
+    get url(): string {
+        return this.req.url ?? '';
     }
-    delete(name: string): void {
-        this.resp.removeHeader(name);
+    set url(url: string) {
+        this.req.url = url;
     }
-    get(name: string): string | string[] | number {
-        return this.resp.getHeader(name) ?? '';
+    get method(): string {
+        return this.req.method ?? '';
     }
-    has(name: string): boolean {
-        return this.resp.hasHeader(name);
+    set method(val: string) {
+        this.req.method = val;
     }
-    set(name: string, value: number | string | string[]): void {
-        this.resp.setHeader(name, value);
+    get body(): any {
+        throw new Error('Method not implemented.');
     }
-    forEach(callbackfn: (value: string | string[] | number, key: string, parent: Headers) => void, thisArg?: any): void {
-        const headers = this.resp.getHeaders();
-        for(let n in headers){
-            callbackfn(headers[n] as string | string[] | number, n, this)
-        }
+    set body(obj: any) {
+        throw new Error('Method not implemented.');
     }
+
+    get socket(): Socket {
+        return this.req.socket;
+    }
+
+    getHeaders(): Record<string, string | number | string[]> {
+        return this.req.headers as Record<string, string | number | string[]>;
+    }
+
+    getHeader(name: string): string | string[] | number {
+        return this.req.headers[name] ?? '';
+    }
+
+    hasHeader(name: string): boolean {
+        throw new Error('Method not implemented.');
+    }
+    setHeader(name: string, value: string | number | string[]): void {
+        throw new Error('Method not implemented.');
+    }
+    removeHeader(name: string): void {
+        throw new Error('Method not implemented.');
+    }
+
 }
 
 export class Http1Response extends HttpResponse {
 
-    private _headers: Http1Headers;
     constructor(protected resp: ServerResponse) {
         super();
-        this._headers = new Http1Headers(resp);
     }
+
     get status(): HttpStatusCode {
         return this.resp.statusCode;
     }
@@ -50,8 +75,8 @@ export class Http1Response extends HttpResponse {
         this.resp.statusCode = code;
     }
 
-    get headers(): Headers {
-        return this._headers;
+    get socket(): Socket {
+        return this.resp.socket!;
     }
 
     get message(): string | undefined {
@@ -74,6 +99,24 @@ export class Http1Response extends HttpResponse {
     }
     get headersSent(): boolean {
         return this.resp.headersSent;
+    }
+
+    getHeaders(): Record<string, string | number | string[]> {
+        return this.resp.getHeaders() as Record<string, string | number | string[]>;
+    }
+
+    getHeader(name: string): string | number {
+        const val = this.resp.getHeader(name);
+        return isArray(val) ? val[0] : val ?? '';
+    }
+    hasHeader(name: string): boolean {
+        return this.resp.hasHeader(name);
+    }
+    setHeader(name: string, value: string | number | string[]): void {
+        this.resp.setHeader(name, value);
+    }
+    removeHeader(name: string): void {
+        this.resp.removeHeader(name)
     }
 
 }

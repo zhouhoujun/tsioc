@@ -90,6 +90,8 @@ export interface Configuration extends ProvidersMetadata {
      * service hostname
      */
     hostname?: string;
+
+    subdomainOffset?: number;
     /**
      * server options
      * 

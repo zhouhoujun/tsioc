@@ -2,7 +2,7 @@ import { Abstract, Destroyable, Injector, isArray, isString, Token } from '@tsdi
 
 
 
-export type HeadersOption = string[][]  | Record<string, string | string[] | number> | Headers | string;
+export type HeadersOption = string[][] | Record<string, string | string[] | number> | Headers | string;
 
 export interface RequestInit {
     headers?: HeadersOption;
@@ -164,9 +164,13 @@ export abstract class Request {
      * @api public
      */
     set query(val: Record<string, any>) {
-        for (let n in val) {
-            this.URL.searchParams.set(n, String(val[n]));
+        let querystring = '';
+        if (val) {
+            Object.keys(val).forEach((n, idx) => {
+                querystring = `${querystring}${idx > 0 ? ';' : ''}${n}=${val[n]}`;
+            });
         }
+        this.querystring = querystring;
         this._querycache = val;
     }
 
@@ -192,7 +196,19 @@ export abstract class Request {
      * @api public
      */
     get querystring(): string {
-        return this.URL.searchParams.toString();
+        return this.URL.search.slice(1);
+    }
+
+    /**
+     * Set querystring.
+     *
+     * @param {String} str
+     * @api public
+     */
+    set querystring(str) {
+        if (this.URL.search === `?${str}`) return;
+        this.URL.search = str;
+        this.url = this.URL.pathname + this.URL.search;
     }
 
     /**
@@ -275,7 +291,7 @@ export abstract class Request {
      * @api public
      */
     get length(): number {
-        const len = this.getHeader('Content-Length') || '';
+        const len = this.getHeaderFirst('Content-Length') || '';
         if (len === '') return 0;
         return isString(len) ? ~~len : len;
     }
@@ -301,23 +317,6 @@ export abstract class Request {
     abstract get secure(): boolean;
 
     /**
-     * Return subdomains as an array.
-     *
-     * Subdomains are the dot-separated parts of the host before the main domain
-     * of the app. By default, the domain of the app is assumed to be the last two
-     * parts of the host. This can be changed by setting `app.subdomainOffset`.
-     *
-     * For example, if the domain is "tobi.ferrets.example.com":
-     * If `app.subdomainOffset` is not set, this.subdomains is
-     * `["ferrets", "tobi"]`.
-     * If `app.subdomainOffset` is 3, this.subdomains is `["tobi"]`.
-     *
-     * @return {Array}
-     * @api public
-     */
-    abstract get subdomains(): string[];
-
-    /**
      * Return the request mime type void of
      * parameters such as "charset".
      *
@@ -325,12 +324,17 @@ export abstract class Request {
      * @api public
      */
     get type(): string {
-        return this.getHeader('Content-Type') as string;
+        return this.getHeaderFirst('Content-Type') as string;
+    }
+
+    getHeaderFirst(name: string): string | number {
+        const vals = this.getHeader(name);
+        return isArray(vals) ? vals[0] : vals;
     }
 
     abstract getHeaders(): Headers | Record<string, string | string[] | number>;
 
-    abstract getHeader(name: string): string | number;
+    abstract getHeader(name: string): string | string[] | number;
 
     abstract hasHeader(name: string): boolean;
 
@@ -342,13 +346,6 @@ export abstract class Request {
 
 @Abstract()
 export abstract class Response {
-    /**
-     * Return response header.
-     *
-     * @return {Object}
-     * @api public
-     */
-    abstract get headers(): Headers;
     /**
      * Get response status code.
      *
@@ -453,7 +450,12 @@ export abstract class Response {
 
     abstract getHeaders(): Headers | Record<string, string | string[] | number>;
 
-    abstract getHeader(name: string): string | number;
+    abstract getHeader(name: string): string | string[] | number;
+
+    getHeaderFirst(name: string): string | number {
+        const vals = this.getHeader(name);
+        return isArray(vals) ? vals[0] : vals;
+    }
 
     abstract hasHeader(name: string): boolean;
 
@@ -541,9 +543,7 @@ export abstract class Context implements Destroyable {
         return this.request.href;
     }
 
-    get subdomains(): string[] {
-        return this.request.subdomains;
-    }
+    abstract get subdomains(): string[];
 
     get protocol(): string {
         return this.request.protocol;

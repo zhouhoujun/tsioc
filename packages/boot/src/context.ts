@@ -1,6 +1,7 @@
 import { Abstract } from '@tsdi/ioc';
-import { Context, Request, Response } from '@tsdi/core';
+import { ApplicationContext, Context, Request, Response } from '@tsdi/core';
 import { HttpStatusCode } from './status';
+import { Socket, isIP } from 'net';
 
 
 
@@ -18,6 +19,10 @@ export abstract class HttpRequest extends Request {
     get secure() {
         return 'https' === this.protocol;
     }
+
+    abstract get socket(): Socket;
+
+    abstract getHeaders(): Record<string, string | string[] | number>;
 }
 
 const empty: any = {
@@ -30,6 +35,10 @@ const empty: any = {
 export abstract class HttpResponse extends Response {
     abstract get status(): HttpStatusCode;
     abstract set status(code: HttpStatusCode);
+
+    abstract get socket(): Socket;
+
+    abstract getHeaders(): Record<string, string | string[] | number>;
 }
 
 @Abstract()
@@ -58,6 +67,16 @@ export abstract class HttpContext extends Context {
             this.message = err.stack ?? err.message;
             this.status = HttpStatusCode.InternalServerError;
         }
+    }
+
+    get subdomains(): string[] {
+        const offset = this.injector.get(ApplicationContext).getConfiguration().subdomainOffset || 2;
+        const hostname = this.hostname;
+        if (isIP(hostname)) return [];
+        return hostname
+            .split('.')
+            .reverse()
+            .slice(offset);
     }
 
     /**
