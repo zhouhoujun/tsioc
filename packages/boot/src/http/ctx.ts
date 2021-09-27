@@ -1,5 +1,5 @@
 import { ApplicationContext, Boot, Headers, StartupService } from '@tsdi/core';
-import { isArray } from '@tsdi/ioc';
+import { isArray, isDefined } from '@tsdi/ioc';
 import { Server, IncomingMessage, ServerResponse, createServer } from 'http';
 import { Socket } from 'net';
 import { HttpResponse, HttpRequest } from '../context';
@@ -51,7 +51,7 @@ export class Http1Request extends HttpRequest {
     }
 
     hasHeader(name: string): boolean {
-        throw new Error('Method not implemented.');
+        return isDefined(this.req.headers[name]);
     }
     setHeader(name: string, value: string | number | string[]): void {
         throw new Error('Method not implemented.');
