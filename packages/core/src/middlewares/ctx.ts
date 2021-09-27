@@ -293,7 +293,7 @@ export abstract class Request {
     get length(): number {
         const len = this.getHeaderFirst('Content-Length') || '';
         if (len === '') return 0;
-        return isString(len) ? ~~len : len;
+        return ~~len;
     }
 
     /**
@@ -327,18 +327,18 @@ export abstract class Request {
         return this.getHeaderFirst('Content-Type') as string;
     }
 
-    getHeaderFirst(name: string): string | number {
+    getHeaderFirst(name: string): string {
         const vals = this.getHeader(name);
         return isArray(vals) ? vals[0] : vals;
     }
 
-    abstract getHeaders(): Headers | Record<string, string | string[] | number>;
+    abstract getHeaders(): Headers | Record<string, string | string[]>;
 
-    abstract getHeader(name: string): string | string[] | number;
+    abstract getHeader(name: string): string | string[];
 
     abstract hasHeader(name: string): boolean;
 
-    abstract setHeader(name: string, value: number | string | string[]): void;
+    abstract setHeader(name: string, value: string | string[]): void;
 
     abstract removeHeader(name: string): void;
 
@@ -371,7 +371,7 @@ export abstract class Response {
      * @return {String}
      * @api public
      */
-    abstract get message(): string | undefined;
+    abstract get message(): string;
     /**
      * Set response status message
      *
@@ -379,7 +379,7 @@ export abstract class Response {
      * @api public
      */
 
-    abstract set message(msg: string | undefined);
+    abstract set message(msg: string);
 
     /**
      * Get response body.
@@ -570,10 +570,10 @@ export abstract class Context implements Destroyable {
         this.response.status = status;
     }
 
-    get message(): string | undefined {
+    get message(): string {
         return this.response.message;
     }
-    set message(msg: string | undefined) {
+    set message(msg: string) {
         this.response.message = msg;
     }
 

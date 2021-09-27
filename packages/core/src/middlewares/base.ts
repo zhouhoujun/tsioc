@@ -253,14 +253,14 @@ export class RequestBase extends Request {
         return this.headers;
     }
 
-    getHeader(name: string): string | string[] | number {
-        return this.headers.get(name) ?? '';
+    getHeader(name: string): string | string[] {
+        return this.headers.get(name) as (string | string[]) ?? '';
     }
 
     hasHeader(name: string): boolean {
         return this.headers.has(name.toLowerCase());
     }
-    setHeader(name: string, value: number | string | string[]): void {
+    setHeader(name: string, value: string | string[]): void {
         this.headers.set(name, value);
     }
     removeHeader(name: string): void {
@@ -306,11 +306,11 @@ export class ResponseBase extends Response {
         if (empty[code]) this.body = null;
     }
 
-    private _msg: string | undefined;
-    get message(): string | undefined {
+    private _msg!: string;
+    get message(): string {
         return this._msg;
     }
-    set message(msg: string | undefined) {
+    set message(msg: string) {
         this._msg = msg;
     }
 

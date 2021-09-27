@@ -42,22 +42,20 @@ export class Http1Request extends HttpRequest {
         return this.req.socket;
     }
 
-    getHeaders(): Record<string, string | number | string[]> {
-        return this.req.headers as Record<string, string | number | string[]>;
+    getHeaders(): Record<string, string | string[]> {
+        return this.req.headers as Record<string, string | string[]>;
     }
-
-    getHeader(name: string): string | string[] | number {
+    getHeader(name: string): string | string[] {
         return this.req.headers[name] ?? '';
     }
-
     hasHeader(name: string): boolean {
         return isDefined(this.req.headers[name]);
     }
-    setHeader(name: string, value: string | number | string[]): void {
-        throw new Error('Method not implemented.');
+    setHeader(name: string, value: string | string[]): void {
+        this.req.headers[name] = value;
     }
     removeHeader(name: string): void {
-        throw new Error('Method not implemented.');
+        delete this.req.headers[name];
     }
 
 }
@@ -79,11 +77,11 @@ export class Http1Response extends HttpResponse {
         return this.resp.socket!;
     }
 
-    get message(): string | undefined {
-        throw new Error('Method not implemented.');
+    get message(): string {
+        return this.resp.statusMessage;
     }
-    set message(msg: string | undefined) {
-        throw new Error('Method not implemented.');
+    set message(msg: string) {
+        this.resp.statusMessage = msg;
     }
     get body(): any {
         throw new Error('Method not implemented.');
@@ -105,17 +103,18 @@ export class Http1Response extends HttpResponse {
         return this.resp.getHeaders() as Record<string, string | number | string[]>;
     }
 
-    getHeader(name: string): string | number {
-        const val = this.resp.getHeader(name);
-        return isArray(val) ? val[0] : val ?? '';
+    getHeader(name: string): string | number | string[] {
+        return this.resp.getHeader(name) ?? '';
     }
     hasHeader(name: string): boolean {
         return this.resp.hasHeader(name);
     }
     setHeader(name: string, value: string | number | string[]): void {
+        if(this.headersSent) return;
         this.resp.setHeader(name, value);
     }
     removeHeader(name: string): void {
+        if(this.headersSent) return;
         this.resp.removeHeader(name)
     }
 

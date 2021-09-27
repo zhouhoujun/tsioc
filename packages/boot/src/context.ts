@@ -22,7 +22,7 @@ export abstract class HttpRequest extends Request {
 
     abstract get socket(): Socket;
 
-    abstract getHeaders(): Record<string, string | string[] | number>;
+    abstract getHeaders(): Record<string, string | string[]>;
 }
 
 const empty: any = {
