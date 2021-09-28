@@ -1,8 +1,8 @@
-import { DIModule } from '@tsdi/core';
+import { Module } from '@tsdi/core';
 import { HttpStartupService } from './serv';
 
 
-@DIModule({
+@Module({
     regIn: 'root',
     providers: [
         HttpStartupService

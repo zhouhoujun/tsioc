@@ -1,4 +1,4 @@
-import { DIModule, StartupService, Boot, ApplicationContext } from '@tsdi/core';
+import { Module, StartupService, Boot, ApplicationContext } from '@tsdi/core';
 import expect = require('expect');
 import { Injector, lang } from '@tsdi/ioc';
 import { BootApplication } from '../src';
@@ -68,7 +68,7 @@ export class DeviceAService extends StartupService {
 
 }
 
-@DIModule({
+@Module({
     providers: [
         DeviceConnectionService
     ]
@@ -77,7 +77,7 @@ class DeviceManageModule {
 
 }
 
-@DIModule({
+@Module({
     providers: [
         DeviceInitService,
         DeviceAService
@@ -87,7 +87,7 @@ class DeviceAModule {
 
 }
 
-@DIModule({
+@Module({
     imports: [
         DeviceManageModule,
         DeviceAModule

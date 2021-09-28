@@ -1,6 +1,6 @@
 import { Token, ProviderType, Type, isFunction, isBoolean } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
-import { DIModuleMetadata } from '../metadata/meta';
+import { ModuleMetadata } from '../metadata/meta';
 import { BOOT_TYPES, CONFIGURATION, PROCESS_ROOT } from '../metadata/tk';
 import { Configuration, ConfigureManager } from '../configure/config';
 import {
@@ -100,7 +100,7 @@ export class DefaultApplicationContext extends ApplicationContext {
         return this.injector.get(PROCESS_ROOT);
     }
 
-    getAnnoation<TM extends DIModuleMetadata>(): TM {
+    getAnnoation<TM extends ModuleMetadata>(): TM {
         return this.injector.reflect?.annotation as TM;
     }
 

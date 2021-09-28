@@ -1,5 +1,5 @@
 import { InjectableMetadata, ProviderMetadata, PropertyMetadata, Metadata, Type } from '@tsdi/ioc';
-import { MessageQueue } from '@tsdi/boot';
+import { MessageQueue } from '@tsdi/core';
 
 /**
  * component metadata.
@@ -123,24 +123,6 @@ export interface HostListenerMetadata extends Metadata {
     queue?: Type<MessageQueue>;
 }
 
-
-/**
- * pipe metadata.
- *
- * @export
- * @interface PipeMetadata
- * @extends {TypeMetadata}
- */
-export interface PipeMetadata extends Metadata, ProviderMetadata {
-    /**
-     * name of pipe.
-     */
-    name: string;
-    /**
-     * If Pipe is pure (its output depends only on its input.)
-     */
-    pure?: boolean;
-}
 
 /**
  * vaildate property metadata.

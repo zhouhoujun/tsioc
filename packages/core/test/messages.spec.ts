@@ -1,4 +1,4 @@
-import { Application, DIModule, Message, MessageQueue, Context, Middleware,  RouteMapping, ApplicationContext, Handle } from '../src';
+import { Application, Module, Message, MessageQueue, Context, Middleware,  RouteMapping, ApplicationContext, Handle } from '../src';
 import expect = require('expect');
 import { Injector, Injectable, lang } from '@tsdi/ioc';
 
@@ -86,7 +86,7 @@ class DeviceAStartupHandle extends Middleware {
     }
 }
 
-@DIModule({
+@Module({
     providers: [
         DeviceQueue,
         DeviceStartQueue
@@ -103,7 +103,7 @@ class MyService {
     }
 }
 
-@DIModule({
+@Module({
     providers: [
         MyService,
         DeviceAStartupHandle
@@ -113,7 +113,7 @@ class DeviceAModule {
 
 }
 
-@DIModule({
+@Module({
     imports: [
         DeviceManageModule,
         DeviceAModule

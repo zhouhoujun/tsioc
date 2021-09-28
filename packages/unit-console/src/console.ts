@@ -1,10 +1,10 @@
 import { Token, lang } from '@tsdi/ioc';
-import { DIModule } from '@tsdi/core';
+import { Module } from '@tsdi/core';
 import { ISuiteDescribe, RealtimeReporter, ICaseDescribe } from '@tsdi/unit';
 import { ServerBootstrapModule, ServerLogsModule } from '@tsdi/platform-server';
 import * as chalk from 'chalk';
 
-@DIModule({
+@Module({
     regIn: 'root',
     imports: [
         ServerBootstrapModule,

@@ -1,5 +1,5 @@
 import { Injectable, Singleton } from '@tsdi/ioc';
-import { ConfigureLoader, DIModule, PROCESS_ROOT, Configuration, ApplicationExit, ApplicationContext } from '@tsdi/core';
+import { ConfigureLoader, Module, PROCESS_ROOT, Configuration, ApplicationExit, ApplicationContext } from '@tsdi/core';
 import * as path from 'path';
 import * as fs from 'fs';
 import { runMainPath } from './toAbsolute';
@@ -99,7 +99,7 @@ export class ServerApplicationExit extends ApplicationExit {
 /**
  * server boot module.
  */
-@DIModule({
+@Module({
     regIn: 'root',
     imports: [ ServerModule ],
     providers: [

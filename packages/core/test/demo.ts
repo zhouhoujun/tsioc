@@ -1,4 +1,4 @@
-import { DIModule, Message, MessageQueue, StartupService, ApplicationContext, Boot, Configuration, Runnable, TargetRef, Runner } from '../src';
+import { Module, Message, MessageQueue, StartupService, ApplicationContext, Boot, Configuration, Runnable, TargetRef, Runner } from '../src';
 import { Injectable, Inject, Singleton } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
 import { LogConfigure, LogModule } from '@tsdi/logs';
@@ -12,7 +12,7 @@ export class TestService {
     }
 }
 
-@DIModule({
+@Module({
     imports: [
         TestService
     ],
@@ -24,7 +24,7 @@ export class ModuleCustom {
 
 }
 
-@DIModule({
+@Module({
     imports: [
         ModuleCustom
     ],
@@ -83,7 +83,7 @@ export class SubMessageQueue extends MessageQueue {
 
 }
 
-@DIModule({
+@Module({
     imports: [
         AopModule,
         LogModule,
@@ -123,7 +123,7 @@ export class SocketService extends StartupService {
 
 }
 
-@DIModule({
+@Module({
     providers: [
         SocketService
     ]
@@ -131,7 +131,7 @@ export class SocketService extends StartupService {
 export class StatupModule { }
 
 
-@DIModule({
+@Module({
     imports: [
         AopModule,
         LogModule,

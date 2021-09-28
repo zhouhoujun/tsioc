@@ -1,7 +1,7 @@
 import { LoadType, Type } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
-import { ApplicationOption, Application, DIModule } from '@tsdi/core';
+import { ApplicationOption, Application, Module } from '@tsdi/core';
 import { UnitTestConfigureRegister } from './UnitTestConfigureRegister';
 import { UnitTestConfigure } from './UnitTestConfigure';
 import { UnitTestRunner } from './runner/UnitTestRunner';
@@ -12,7 +12,7 @@ import { SuiteRunner } from './runner/SuiteRunner';
 import { TestReport } from './reports/TestReport';
 
 
-@DIModule({
+@Module({
    imports: [
       AopModule,
       LogModule

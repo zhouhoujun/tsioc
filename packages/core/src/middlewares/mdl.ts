@@ -1,5 +1,5 @@
 import { ContextFactory, RouteVaildator } from './ctx';
-import { DIModule } from '../metadata/decor';
+import { Module } from '../metadata/decor';
 import { ExtendBaseTypeMap } from './parser';
 import { MessageQueue } from './queue';
 import { RootMessageQueue } from './root';
@@ -10,7 +10,7 @@ import { RootRouter, Router } from './router';
 /**
 * router module.
 */
-@DIModule({
+@Module({
     regIn: 'root',
     providers: [
         MsgRouteVaildator,

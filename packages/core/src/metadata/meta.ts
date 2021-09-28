@@ -1,4 +1,4 @@
-import { PatternMetadata, Type, TypeMetadata } from '@tsdi/ioc';
+import { Metadata, PatternMetadata, ProviderMetadata, Type, TypeMetadata } from '@tsdi/ioc';
 import { ModuleConfigure } from './ref';
 import { Middleware, Middlewares } from '../middlewares/handle';
 import { IStartupService } from '../services/intf';
@@ -27,14 +27,14 @@ import { IStartupService } from '../services/intf';
 
 
 /**
- * DI module metadata.
+ * module metadata.
  *
  * @export
- * @interface DIModuleMetadata
+ * @interface ModuleMetadata
  * @extends {ModuleConfigure}
  * @extends {ClassMetadata}
  */
- export interface DIModuleMetadata extends ModuleConfigure { }
+ export interface ModuleMetadata extends ModuleConfigure { }
 
  
 
@@ -81,4 +81,22 @@ import { IStartupService } from '../services/intf';
 export interface HandlesMetadata extends HandleMetadata {
 
     autorun?: string;
+}
+
+/**
+ * pipe metadata.
+ *
+ * @export
+ * @interface PipeMetadata
+ * @extends {TypeMetadata}
+ */
+ export interface PipeMetadata extends Metadata, ProviderMetadata {
+    /**
+     * name of pipe.
+     */
+    name: string;
+    /**
+     * If Pipe is pure (its output depends only on its input.)
+     */
+    pure?: boolean;
 }

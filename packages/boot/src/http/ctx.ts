@@ -8,6 +8,7 @@ import { HttpStatusCode } from '../status';
 
 export class Http1Request extends HttpRequest {
 
+    body: any;
     private _originalUrl: string;
     constructor(protected req: IncomingMessage) {
         super();
@@ -31,12 +32,6 @@ export class Http1Request extends HttpRequest {
     set method(val: string) {
         this.req.method = val;
     }
-    get body(): any {
-        throw new Error('Method not implemented.');
-    }
-    set body(obj: any) {
-        throw new Error('Method not implemented.');
-    }
 
     get socket(): Socket {
         return this.req.socket;
@@ -46,16 +41,22 @@ export class Http1Request extends HttpRequest {
         return this.req.headers as Record<string, string | string[]>;
     }
     getHeader(name: string): string | string[] {
-        return this.req.headers[name] ?? '';
+        switch (name = name.toLowerCase()) {
+            case 'referer':
+            case 'referrer':
+                return this.req.headers.referer ?? this.req.headers.referrer ?? '';
+            default:
+                return this.req.headers[name] ?? '';
+        }
     }
     hasHeader(name: string): boolean {
-        return isDefined(this.req.headers[name]);
+        return isDefined(this.req.headers[name.toLowerCase()]);
     }
     setHeader(name: string, value: string | string[]): void {
-        this.req.headers[name] = value;
+        this.req.headers[name.toLowerCase()] = value;
     }
     removeHeader(name: string): void {
-        delete this.req.headers[name];
+        delete this.req.headers[name.toLowerCase()];
     }
 
 }
@@ -110,11 +111,11 @@ export class Http1Response extends HttpResponse {
         return this.resp.hasHeader(name);
     }
     setHeader(name: string, value: string | number | string[]): void {
-        if(this.headersSent) return;
+        if (this.headersSent) return;
         this.resp.setHeader(name, value);
     }
     removeHeader(name: string): void {
-        if(this.headersSent) return;
+        if (this.headersSent) return;
         this.resp.removeHeader(name)
     }
 

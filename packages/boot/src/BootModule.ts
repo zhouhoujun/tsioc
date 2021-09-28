@@ -1,7 +1,7 @@
-import { DIModule } from '@tsdi/core';
+import { Module } from '@tsdi/core';
 import { HttpRouter } from './router';
 
-@DIModule({
+@Module({
     regIn: 'root',
     providers:[
         HttpRouter

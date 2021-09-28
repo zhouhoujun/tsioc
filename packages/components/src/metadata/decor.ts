@@ -8,7 +8,7 @@ import {
 } from '@tsdi/core';
 import {
     BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
-    HostListenerMetadata, PipeMetadata, QueryMetadata, VaildateMetadata
+    HostListenerMetadata, QueryMetadata, VaildateMetadata
 } from './meta';
 import { PipeTransform } from '../pipes/pipe';
 import { ComponentReflect, DirectiveReflect } from '../reflect';
@@ -544,62 +544,6 @@ export const Output: OutputPropertyDecorator = createPropDecorator<BindingMetada
 
 
 
-/**
- * pipe decorator.
- */
-export type PipeDecorator = <TFunction extends Type<PipeTransform>>(target: TFunction) => TFunction | void;
-
-
-/**
- * Pipe decorator.
- *
- * @export
- * @interface IInjectableDecorator
- */
-export interface IPipeDecorator {
-
-    /**
-     * Pipe decorator, define the class as pipe.
-     *
-     * @Pipe
-     * @param {string} name  pipe name.
-     * @param {boolean} pure If Pipe is pure (its output depends only on its input.) defaut true.
-     */
-    (name: string, pure?: boolean): PipeDecorator;
-
-    /**
-     * Pipe decorator, define the class as pipe.
-     *
-     * @Pipe
-     *
-     * @param {PipeMetadata} [metadata] metadata map.
-     */
-    (metadata: PipeMetadata): PipeDecorator;
-}
-
-/**
- * Pipe decorator, define for class. use to define the class. it can setting provider to some token, singleton or not. it will execute  [`PipeLifecycle`]
- *
- * @Pipe
- */
-export const Pipe: IPipeDecorator = createDecorator<PipeMetadata>('Pipe', {
-    actionType: ['annoation', 'typeProviders'],
-    reflect: {
-        class: (ctx, next) => {
-            (ctx.reflect as AnnotationReflect).annoType = 'pipe';
-            (ctx.reflect as AnnotationReflect).annoDecor = ctx.decor;
-            (ctx.reflect as AnnotationReflect).annotation = ctx.metadata;
-            return next();
-        }
-    },
-    props: (name: string, pure?: boolean) => ({ name, pure }),
-    appendProps: meta => {
-        if (isUndefined(meta.pure)) {
-            meta.pure = true;
-        }
-    }
-});
-
 export abstract class Query { }
 
 function isDirOrComponent(target: any) {
@@ -757,7 +701,7 @@ export interface ViewChildrenDecorator {
      */
     (selector?: Token | Function, opts?: { read?: any }): PropertyDecorator;
 
-    (metadata: QueryMetadata): PipeDecorator;
+    (metadata: QueryMetadata): PropertyDecorator;
 }
 
 export const ViewChildren: ViewChildrenDecorator = createPropDecorator('ViewChildren', {

@@ -1,11 +1,10 @@
-
 /**
  * pipe transform insterface.
  *
  * @export
  * @interface PipeTransform
  */
-export interface PipeTransform {
+ export interface PipeTransform {
     /**
      * transform
      *

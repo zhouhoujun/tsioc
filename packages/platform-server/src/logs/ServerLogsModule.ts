@@ -1,8 +1,8 @@
-import { DIModule } from '@tsdi/core';
+import { Module } from '@tsdi/core';
 import { ServerLogFormater } from './ServerLogFormater';
 import { Log4jsAdapter } from './Log4jsAdapter';
 
-@DIModule({
+@Module({
     regIn: 'root',
     providers: [
         ServerLogFormater,
