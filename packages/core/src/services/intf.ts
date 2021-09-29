@@ -21,12 +21,12 @@ export abstract class TypeParser {
 /**
  * startup and configure services for application.
  */
-export interface IStartupService<R = Promise<void>> extends Destroyable {
+export interface IStartupService extends Destroyable {
     /**
      * config service of application.
      *
      * @param {ApplicationContext} [ctx]
-     * @returns {R} startup service token
+     * @returns {void} startup service token
      */
-    configureService(ctx: ApplicationContext): R;
+    configureService(ctx: ApplicationContext): void | Promise<void>;
 }

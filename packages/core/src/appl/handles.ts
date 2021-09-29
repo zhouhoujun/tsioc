@@ -137,26 +137,13 @@ export const ConnectionsHandle = async function (ctx: ApplicationContext, next: 
  * @param next next step.
  */
 export const ConfigureServiceHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
-    const startups = ctx.startups;
-    const root = ctx.injector;
-    const regedState = root.state();
-    if (startups.length) {
-        await lang.step(startups.map(tyser => () => {
-            if (isFunction(tyser) && !regedState.isRegistered(tyser)) {
-                root.register(tyser as Type);
-            }
-            const ser = regedState.getInstance(tyser as ClassType) as IStartupService;
-            ctx.onDestroy(() => ser?.destroy());
-            return ser?.configureService(ctx);
-        }));
-    }
-
+    const regedState = ctx.injector.state();
     const boots = ctx.boots;
     if (boots?.length) {
         await lang.step(boots.map(tyser => () => {
             const ser = regedState.getInstance(tyser) as IStartupService;
             ctx.onDestroy(() => ser?.destroy());
-            startups.push(tyser);
+            ctx.startups.push(tyser);
             return ser?.configureService(ctx);
         }));
     }

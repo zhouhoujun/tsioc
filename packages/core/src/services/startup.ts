@@ -23,7 +23,7 @@ export abstract class StartupService implements IStartupService {
      * @abstract
      * @param {ApplicationContext} [ctx]
      */
-    abstract configureService(ctx: ApplicationContext): Promise<void>;
+    abstract configureService(ctx: ApplicationContext): void | Promise<void>;
 
     /**
      * has destoryed or not.

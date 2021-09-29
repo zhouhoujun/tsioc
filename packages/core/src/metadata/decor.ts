@@ -154,15 +154,15 @@ export const Configure: IConfigureDecorator = createDecorator<TypeMetadata>('Con
 })
 
 /**
- * DIModule decorator, use to define class as DI Module.
+ * Module decorator, use to define class as ioc Module.
  *
  * @export
- * @interface IDIModuleDecorator
+ * @interface IModuleDecorator
  * @template T
  */
 export interface IModuleDecorator<T extends ModuleMetadata> {
     /**
-     * Module decorator, use to define class as Module.
+     * Module decorator, use to define class as ioc Module.
      *
      * @Module
      *
@@ -246,6 +246,7 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
 export const Module: IModuleDecorator<ModuleMetadata> = createModuleDecorator<ModuleMetadata>('DIModule');
 /**
  * Module Decorator, definde class as module.
+ * @deprecated use `Module` instead.
  */
 export const DIModule = Module;
 
@@ -372,7 +373,6 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
  * @deprecated use `Handle` instead.
  */
 export const Message = Handle;
-
 
 
 /**

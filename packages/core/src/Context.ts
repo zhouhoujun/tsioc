@@ -411,10 +411,6 @@ export interface ApplicationOption<T = any> extends ModuleOption<T> {
      */
     configures?: (string | Configuration)[];
     /**
-     * custom set first startups services.
-     */
-    startups?: Token[];
-    /**
      * boot dependencies.
      *
      * @type {LoadType[]}

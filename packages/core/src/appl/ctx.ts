@@ -164,7 +164,6 @@ export class DefaultApplicationFactory extends ApplicationFactory {
         if (!option) return;
 
         if (option.args) ctx.args.push(...option.args);
-        if (option.startups) ctx.startups.push(...option.startups);
         if (isBoolean(option.exit)) {
             (ctx as DefaultApplicationContext).exit = option.exit;
         }

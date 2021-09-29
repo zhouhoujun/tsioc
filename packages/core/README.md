@@ -24,9 +24,9 @@ npm install @tsdi/platform-server
 
 
 ## boot
-DI Module manager, application bootstrap. base on AOP.
+Module manager, application bootstrap. base on AOP.
 
-*  `@DIModule` DIModule decorator, use to define class as DI Module.
+*  `@Module` Module decorator, use to define class as ioc Module.
 *  `@Boot` Boot decorator, use to define class as startup service for application.
 *  `@Configure` Configure decorator, define this class as configure register when bootstrap application.
 *  `@Handle`  Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
@@ -39,7 +39,7 @@ DI Module manager, application bootstrap. base on AOP.
 
 
 ```ts
-import { DIModule, Application } from '@tsdi/core';
+import { Module, Application } from '@tsdi/core';
 
 
 
@@ -50,7 +50,7 @@ export class TestService {
     }
 }
 
-@DIModule({
+@Module({
     imports: [
         TestService
     ],
@@ -62,7 +62,7 @@ export class ModuleCustom {
 
 }
 
-@DIModule({
+@Module({
     imports: [
         ModuleCustom
     ],
@@ -121,7 +121,7 @@ export class SubMessageQueue extends MessageQueue {
 
 }
 
-@DIModule({
+@Module({
     imports: [
         AopModule,
         LogModule,
@@ -159,7 +159,7 @@ export class SocketService extends StartupService {
 
 }
 
-@DIModule({
+@Module({
     providers: [
         SocketService
     ]
@@ -167,7 +167,7 @@ export class SocketService extends StartupService {
 export class StatupModule { }
 
 
-@DIModule({
+@Module({
     imports: [
         AopModule,
         LogModule,
@@ -254,7 +254,7 @@ class MvcApi {
 
 ```ts
 
-import { Application, DIModule, Message, MessageQueue, MessageContext, Middleware,  RouteMapping, ApplicationContext, Handle } from '../src';
+import { Application, Module, Message, MessageQueue, MessageContext, Middleware,  RouteMapping, ApplicationContext, Handle } from '../src';
 import expect = require('expect');
 import { Injector, Injectable, lang } from '@tsdi/ioc';
 
@@ -341,7 +341,7 @@ class DeviceAStartupHandle extends Middleware {
     }
 }
 
-@DIModule({
+@Module({
     providers: [
         DeviceQueue,
         DeviceStartQueue
@@ -358,7 +358,7 @@ class MyService {
     }
 }
 
-@DIModule({
+@Module({
     providers: [
         MyService,
         DeviceAStartupHandle
@@ -368,7 +368,7 @@ class DeviceAModule {
 
 }
 
-@DIModule({
+@Module({
     imports: [
         DeviceManageModule,
         DeviceAModule
