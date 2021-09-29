@@ -1,5 +1,4 @@
 import { ModuleLoader, isFunction, Type, EMPTY, ProviderType } from '@tsdi/ioc';
-import { IApplication } from './IApplication';
 import { CTX_ARGS, PROCESS_ROOT } from './metadata/tk';
 import {
     ApplicationContext, ApplicationFactory, ModuleFactory,
@@ -17,7 +16,7 @@ import { createModuleInjector } from './modules/injector';
  * @export
  * @class Application
  */
-export class Application implements IApplication {
+export class Application {
 
     private _destroyed = false;
     private _dsryCbs: (() => void)[] = [];

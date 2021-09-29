@@ -34,7 +34,6 @@ export * from './appl/ctx';
 export * from './appl/handles';
 export * from './appl/lifescope';
 
-export * from './IApplication';
 export * from './Application';
 
 // middlewares
