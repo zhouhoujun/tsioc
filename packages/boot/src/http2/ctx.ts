@@ -109,7 +109,5 @@ export class Http2Response extends HttpResponse {
         if(this.headersSent) return;
         this.resp.removeHeader(name);
     }
-    
-
 }
 

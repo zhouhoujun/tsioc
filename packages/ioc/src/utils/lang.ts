@@ -1,11 +1,9 @@
 // use core-js in browser.
 import { Type, Modules, ClassType } from '../types';
-import { getClass, isArray, isClass, isClassType, isFunction, isNil, isObject, isPlainObject } from './chk';
+import { getClass, isArray, isClass, isClassType, isFunction, isNil, isPlainObject } from './chk';
 import { clsUglifyExp } from './exps';
 import { getClassAnnotation } from './util';
-
 export { getClass } from './chk';
-export { getClassAnnotation, hasClassAnnotation } from './util';
 
 /**
  * create an new object from target object omit some field.
