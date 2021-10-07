@@ -1,5 +1,5 @@
 import { isArray } from '@tsdi/ioc';
-import { ConfigureRegister, ApplicationContext, Configure } from '@tsdi/core';
+import { ApplicationContext, Configure, Boot, IStartupService } from '@tsdi/core';
 import { UnitTestConfigure } from './UnitTestConfigure';
 import { Assert } from './assert/assert';
 import * as assert from 'assert';
@@ -13,10 +13,11 @@ import { ExpectToken } from './assert/expects';
  * @class UnitTestConfigureRegister
  * @extends {ConfigureRegister}
  */
-@Configure()
-export class UnitTestConfigureRegister extends ConfigureRegister {
-
-    override async register(config: UnitTestConfigure, ctx: ApplicationContext): Promise<void> {
+@Boot()
+export class UnitTestStartup implements IStartupService {
+    
+    async configureService(ctx: ApplicationContext): Promise<void> {
+        const config = ctx.getConfiguration() as UnitTestConfigure;
         const inj = ctx.injector;
         if (!inj.has(Assert)) {
             inj.setValue(Assert, assert);
@@ -28,4 +29,9 @@ export class UnitTestConfigureRegister extends ConfigureRegister {
             inj.register(config.reporters);
         }
     }
+
+    destroy(): void {
+
+    }
+
 }

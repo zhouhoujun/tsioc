@@ -2,7 +2,7 @@ import { LoadType, Type } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
 import { ApplicationOption, Application, Module } from '@tsdi/core';
-import { UnitTestConfigureRegister } from './UnitTestConfigureRegister';
+import { UnitTestStartup } from './UnitTestConfigureRegister';
 import { UnitTestConfigure } from './UnitTestConfigure';
 import { UnitTestRunner } from './runner/UnitTestRunner';
 import { RunAspect } from './aop/RunAspect';
@@ -18,7 +18,7 @@ import { TestReport } from './reports/TestReport';
       LogModule
    ],
    providers: [
-      UnitTestConfigureRegister,
+      UnitTestStartup,
       RunAspect,
       OldTestRunner,
       { provide: UnitRunner, useClass: SuiteRunner },

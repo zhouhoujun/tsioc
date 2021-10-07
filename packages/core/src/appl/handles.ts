@@ -1,9 +1,8 @@
-import { lang, IActionSetup, ClassType, isFunction, Type, IocAction, ActionType, AsyncHandler, Actions } from '@tsdi/ioc';
+import { lang, IActionSetup, IocAction, ActionType, AsyncHandler, Actions } from '@tsdi/ioc';
 import { LogConfigureToken, DebugLogAspect, LogModule } from '@tsdi/logs';
 import { ApplicationContext } from '../Context';
-import { CONFIGURATION, CONFIGURES, PROCESS_ROOT } from '../metadata/tk';
+import { CONFIGURATION, PROCESS_ROOT, SERVERS } from '../metadata/tk';
 import { IStartupService } from '../services/intf';
-import { ConnectionStatupService } from '../services/startup';
 
 
 
@@ -75,17 +74,6 @@ export const ConfigureLoadHandle = async function (ctx: ApplicationContext, next
     config = { ...config, ...injector.reflect.annotation };
     injector.setValue(CONFIGURATION, config);
 
-    return await next();
-};
-
-/**
- * configure register handle.
- *
- * @export
- */
-export const ConfigureRegisterHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
-    const config = ctx.getConfiguration();
-    const injector = ctx.injector;
     if (config.logConfig) {
         if (!injector.has(LogConfigureToken)) {
             injector.setValue(LogConfigureToken, config.logConfig);
@@ -97,10 +85,24 @@ export const ConfigureRegisterHandle = async function (ctx: ApplicationContext, 
         injector.register(LogModule, DebugLogAspect);
     }
 
-    const configs = injector.get(CONFIGURES);
-    if (configs && configs.length) {
+    return await next();
+};
+
+/**
+ * configure register handle.
+ *
+ * @export
+ */
+export const ConfigureRegisterHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
+    const injector = ctx.injector;
+    const servers = injector.get(SERVERS);
+    if (servers && servers.length) {
         const state = injector.state();
-        await Promise.all(configs.map(cfg => state.getInstance(cfg)?.register(config, ctx)));
+        await Promise.all(servers.map(type => {
+            const svr = state.getInstance(type);
+            ctx.onDestroy(() => svr?.disconnect());
+            return svr.connect(ctx);
+        }));
     }
     return await next();
 };
@@ -112,23 +114,9 @@ export const ConfigureRegisterHandle = async function (ctx: ApplicationContext, 
 export class StartupGlobalService extends BuildHandles<ApplicationContext> implements IActionSetup {
 
     setup() {
-        this.use(ConnectionsHandle, ConfigureServiceHandle);
+        this.use(ConfigureServiceHandle);
     }
 }
-
-/**
- * connection handle.
- * @param ctx context.
- * @param next next dispatch
- */
-export const ConnectionsHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
-    const startup = ctx.injector.resolve({ token: ConnectionStatupService, target: ctx.injector.type });
-    if (startup) {
-        ctx.onDestroy(() => startup?.destroy());
-        await startup.configureService(ctx)
-    }
-    return await next();
-};
 
 
 /**

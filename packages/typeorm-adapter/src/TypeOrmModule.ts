@@ -1,12 +1,12 @@
-import { ConnectionStatupService, DIModule } from '@tsdi/core';
+import { Module } from '@tsdi/core';
 import { TypeOrmHelper } from './TypeOrmHelper';
 import { TypeOrmModelParser } from './TypeOrmModelParser';
-import { TypeormConnectionStatupService } from './TypeormConnectionStatupService';
+import { TypeormServer } from './TypeormServer';
 
-@DIModule({
+@Module({
     regIn: 'root',
     providers: [
-        { provide: ConnectionStatupService, useClass: TypeormConnectionStatupService },
+        TypeormServer,
         TypeOrmHelper,
         TypeOrmModelParser
     ]

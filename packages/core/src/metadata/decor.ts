@@ -1,8 +1,8 @@
 import {
     DecoratorOption, isUndefined, createDecorator, ROOT_INJECTOR, isArray, isString,
-    lang, Type, DesignContext, ClassMethodDecorator, TypeMetadata, EMPTY_OBJ, Injector
+    lang, Type, DesignContext, ClassMethodDecorator, TypeMetadata, EMPTY_OBJ, Injector, ClassMetadata
 } from '@tsdi/ioc';
-import { IStartupService } from '../services/intf';
+import { IStartupService, Server } from '../services/intf';
 import { ModuleReflect, ModuleConfigure, AnnotationReflect } from './ref';
 import { Middleware, Middlewares, MiddlewareType, RouteInfo, RouteReflect } from '../middlewares/handle';
 import { ROOT_QUEUE } from '../middlewares/root';
@@ -10,9 +10,8 @@ import { RouteResolver, Route } from '../middlewares/route';
 import { RootRouter, Router } from '../middlewares/router';
 import { MappingReflect, MappingRoute, ProtocolRouteMapingMetadata } from '../middlewares/mapping';
 import { ModuleFactory, ModuleInjector, ModuleRegistered } from '../Context';
-import { BOOT_TYPES, CONFIGURES } from './tk';
+import { BOOT_TYPES, SERVERS } from './tk';
 import { BootMetadata, ModuleMetadata, HandleMetadata, HandlesMetadata, PipeMetadata } from './meta';
-import { ConfigureRegister } from '../configure/register';
 import { PipeTransform } from '../pipes/pipe';
 
 
@@ -115,7 +114,7 @@ export const Boot: IBootDecorator = createDecorator<BootMetadata>('Boot', {
 /**
  * configure register decorator.
  */
-export type ConfigDecorator = <TFunction extends Type<ConfigureRegister>>(target: TFunction) => TFunction | void;
+export type ConfigDecorator = <TFunction extends Type<Server>>(target: TFunction) => TFunction | void;
 
 
 
@@ -135,22 +134,27 @@ export interface IConfigureDecorator {
     (): ConfigDecorator;
 }
 
-export const Configure: IConfigureDecorator = createDecorator<TypeMetadata>('Configure', {
+export const Configure: IConfigureDecorator = createDecorator<ClassMetadata>('Configure', {
+    actionType: 'annoation',
     design: {
         afterAnnoation: (ctx, next) => {
             const { type, injector } = ctx;
             const root = injector.get(ROOT_INJECTOR);
             if (!root) return next();
-            let configs = root.get(CONFIGURES);
-            if (!configs) {
-                configs = [type];
-                root.setValue(CONFIGURES, configs);
+            let servs = root.get(SERVERS);
+            if (!servs) {
+                servs = [type];
+                root.setValue(SERVERS, servs);
             } else {
-                configs.push(type);
+                servs.push(type);
             }
             return next();
         }
     },
+    appendProps: (meta) => {
+        meta.singleton = true;
+        return meta;
+    }
 })
 
 /**
@@ -378,58 +382,58 @@ export const Message = Handle;
 /**
  * pipe decorator.
  */
- export type PipeDecorator = <TFunction extends Type<PipeTransform>>(target: TFunction) => TFunction | void;
+export type PipeDecorator = <TFunction extends Type<PipeTransform>>(target: TFunction) => TFunction | void;
 
 
- /**
-  * Pipe decorator.
-  *
-  * @export
-  * @interface IInjectableDecorator
-  */
- export interface IPipeDecorator {
- 
-     /**
-      * Pipe decorator, define the class as pipe.
-      *
-      * @Pipe
-      * @param {string} name  pipe name.
-      * @param {boolean} pure If Pipe is pure (its output depends only on its input.) defaut true.
-      */
-     (name: string, pure?: boolean): PipeDecorator;
- 
-     /**
-      * Pipe decorator, define the class as pipe.
-      *
-      * @Pipe
-      *
-      * @param {PipeMetadata} [metadata] metadata map.
-      */
-     (metadata: PipeMetadata): PipeDecorator;
- }
- 
- /**
-  * Pipe decorator, define for class. use to define the class. it can setting provider to some token, singleton or not. it will execute  [`PipeLifecycle`]
-  *
-  * @Pipe
-  */
- export const Pipe: IPipeDecorator = createDecorator<PipeMetadata>('Pipe', {
-     actionType: ['annoation', 'typeProviders'],
-     reflect: {
-         class: (ctx, next) => {
-             (ctx.reflect as AnnotationReflect).annoType = 'pipe';
-             (ctx.reflect as AnnotationReflect).annoDecor = ctx.decor;
-             (ctx.reflect as AnnotationReflect).annotation = ctx.metadata;
-             return next();
-         }
-     },
-     props: (name: string, pure?: boolean) => ({ name, pure }),
-     appendProps: meta => {
-         if (isUndefined(meta.pure)) {
-             meta.pure = true;
-         }
-     }
- });
+/**
+ * Pipe decorator.
+ *
+ * @export
+ * @interface IInjectableDecorator
+ */
+export interface IPipeDecorator {
+
+    /**
+     * Pipe decorator, define the class as pipe.
+     *
+     * @Pipe
+     * @param {string} name  pipe name.
+     * @param {boolean} pure If Pipe is pure (its output depends only on its input.) defaut true.
+     */
+    (name: string, pure?: boolean): PipeDecorator;
+
+    /**
+     * Pipe decorator, define the class as pipe.
+     *
+     * @Pipe
+     *
+     * @param {PipeMetadata} [metadata] metadata map.
+     */
+    (metadata: PipeMetadata): PipeDecorator;
+}
+
+/**
+ * Pipe decorator, define for class. use to define the class. it can setting provider to some token, singleton or not. it will execute  [`PipeLifecycle`]
+ *
+ * @Pipe
+ */
+export const Pipe: IPipeDecorator = createDecorator<PipeMetadata>('Pipe', {
+    actionType: ['annoation', 'typeProviders'],
+    reflect: {
+        class: (ctx, next) => {
+            (ctx.reflect as AnnotationReflect).annoType = 'pipe';
+            (ctx.reflect as AnnotationReflect).annoDecor = ctx.decor;
+            (ctx.reflect as AnnotationReflect).annotation = ctx.metadata;
+            return next();
+        }
+    },
+    props: (name: string, pure?: boolean) => ({ name, pure }),
+    appendProps: meta => {
+        if (isUndefined(meta.pure)) {
+            meta.pure = true;
+        }
+    }
+});
 
 
 /**

@@ -1,19 +1,18 @@
 import { tokenId, Token, Type } from '@tsdi/ioc';
 import { Configuration } from '../configure/config';
-import { IStartupService } from '../services/intf';
+import { IStartupService, Server } from '../services/intf';
 import { Context } from '../middlewares/ctx';
-import { ConfigureRegister } from '../configure/register';
 
 
 /**
  * boot types.
  */
-export const BOOT_TYPES = tokenId<Type<IStartupService>[]>('BOOT_TYPES');
+ export const SERVERS = tokenId<Type<Server>[]>('SERVERS');
 
 /**
- * configure registers.
+ * boot types.
  */
-export const CONFIGURES = tokenId<Type<ConfigureRegister>[]>('CONFIGURES');
+export const BOOT_TYPES = tokenId<Type<IStartupService>[]>('BOOT_TYPES');
 
 /**
 * context options.

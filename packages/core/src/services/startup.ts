@@ -57,12 +57,3 @@ export abstract class StartupService implements IStartupService {
         // destory.
     }
 }
-
-
-/**
- * startup db connections of application.
- */
-@Abstract()
-export abstract class ConnectionStatupService extends StartupService {
-
-}

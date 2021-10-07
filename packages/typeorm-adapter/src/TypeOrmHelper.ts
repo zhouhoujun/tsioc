@@ -1,20 +1,20 @@
 import { Singleton, Type, Inject, Injector } from '@tsdi/ioc';
 import { Repository, MongoRepository, Connection } from 'typeorm';
-import { TypeormConnectionStatupService } from './TypeormConnectionStatupService';
+import { TypeormServer } from './TypeormServer';
 
 
 
 @Singleton()
 export class TypeOrmHelper {
 
-    private service!: TypeormConnectionStatupService;
+    private service!: TypeormServer;
 
     @Inject()
     private injector!: Injector;
 
     getConnection(connectName?: string): Connection {
         if (!this.service) {
-            this.service = this.injector.get(TypeormConnectionStatupService);
+            this.service = this.injector.get(TypeormServer);
         }
         return this.service.getConnection(connectName);
     }

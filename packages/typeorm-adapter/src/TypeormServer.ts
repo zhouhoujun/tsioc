@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { ILogger } from '@tsdi/logs';
-import { Singleton, Type, isString, isArray, Injector } from '@tsdi/ioc';
-import { ConnectionOptions, Configuration, ConnectionStatupService, ApplicationContext } from '@tsdi/core';
+import { Type, isString, isArray, Injector } from '@tsdi/ioc';
+import { ConnectionOptions, Configuration, ApplicationContext, Configure, Server } from '@tsdi/core';
 import {
     getConnection, createConnection, ConnectionOptions as OrmConnOptions, Connection,
     getMetadataArgsStorage, getCustomRepository, getConnectionManager
@@ -9,8 +9,8 @@ import {
 
 
 
-@Singleton()
-export class TypeormConnectionStatupService extends ConnectionStatupService {
+@Configure()
+export class TypeormServer implements Server {
     /**
      * default connection options.
      */
@@ -22,7 +22,7 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
      * configure service.
      * @param ctx context.
      */
-    override async configureService(ctx: ApplicationContext): Promise<void> {
+    async connect(ctx: ApplicationContext): Promise<void> {
         this.ctx = ctx;
         const logger = this.logger = ctx.getLogManager()?.getLogger();
         logger?.info('startup db connections');
@@ -98,7 +98,7 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
         return getConnection(connectName ?? this.options?.name);
     }
 
-    protected override destroying() {
+    disconnect() {
         this.logger?.info('close db connections');
         getConnectionManager().connections?.forEach(c => {
             if (c && c.isConnected) {

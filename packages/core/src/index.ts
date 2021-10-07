@@ -7,7 +7,6 @@ export * from './services/fac';
 // annotations
 export * from './configure/config';
 export * from './configure/manager';
-export * from './configure/register';
 
 
 // metadata

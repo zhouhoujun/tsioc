@@ -30,3 +30,15 @@ export interface IStartupService extends Destroyable {
      */
     configureService(ctx: ApplicationContext): void | Promise<void>;
 }
+
+/**
+ * server.
+ */
+export interface Server {
+    /**
+     * connect server
+     */
+    connect(ctx: ApplicationContext): void | Promise<void>;
+
+    disconnect(): void| Promise<void>;
+}
