@@ -27,10 +27,10 @@ export class DesignClassScope extends IocRegScope<DesignContext> implements IAct
     setup() {
         this.use(
             AnnoRegInAction,
-            BeforeAnnoDecorScope,
+            BeforeAnnoDecorHandle,
             TypeProviderAction,
             RegClassAction,
-            DesignClassDecorScope
+            DesignClassDecorHandle
         );
     }
 }
@@ -86,7 +86,7 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
 };
 
 
-export const BeforeAnnoDecorScope = function (ctx: DesignContext, next: () => void) {
+export const BeforeAnnoDecorHandle = function (ctx: DesignContext, next: () => void) {
     ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
         chain(d.getDesignHandle('beforeAnnoation'), ctx);
@@ -96,7 +96,7 @@ export const BeforeAnnoDecorScope = function (ctx: DesignContext, next: () => vo
 }
 
 
-export const DesignClassDecorScope = function (ctx: DesignContext, next: () => void) {
+export const DesignClassDecorHandle = function (ctx: DesignContext, next: () => void) {
     ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
         chain(d.getDesignHandle('class'), ctx);

@@ -1,7 +1,7 @@
 import { IActionSetup } from '@tsdi/ioc';
 import { ApplicationContext } from '../Context';
 import {
-    BuildHandles, ConfigureRegisterHandle, StartupGlobalService, BootstrapScope, ConfigureLoadHandle
+    BuildHandles, RegisterHandles, StartupHandles, BootstrapHandles, ConfigureLoadHandle
 } from './handles';
 
 /**
@@ -12,9 +12,9 @@ export class BootLifeScope extends BuildHandles<ApplicationContext> implements I
     setup() {
         this.use(
             ConfigureLoadHandle,
-            ConfigureRegisterHandle,
-            StartupGlobalService,
-            BootstrapScope
+            RegisterHandles,
+            StartupHandles,
+            BootstrapHandles
         );
     }
 }

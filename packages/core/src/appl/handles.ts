@@ -89,11 +89,22 @@ export const ConfigureLoadHandle = async function (ctx: ApplicationContext, next
 };
 
 /**
- * configure register handle.
+ * configure register servers scope.
+ */
+ export class RegisterHandles extends BuildHandles<ApplicationContext> implements IActionSetup {
+
+    setup() {
+        this.use(ConfigureServerHandle);
+    }
+}
+
+
+/**
+ * configure register server handle.
  *
  * @export
  */
-export const ConfigureRegisterHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
+export const ConfigureServerHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
     const injector = ctx.injector;
     const servers = injector.get(SERVERS);
     if (servers && servers.length) {
@@ -109,9 +120,9 @@ export const ConfigureRegisterHandle = async function (ctx: ApplicationContext, 
 
 
 /**
- * configure startup service scope.
+ * configure startup services scope.
  */
-export class StartupGlobalService extends BuildHandles<ApplicationContext> implements IActionSetup {
+export class StartupHandles extends BuildHandles<ApplicationContext> implements IActionSetup {
 
     setup() {
         this.use(ConfigureServiceHandle);
@@ -140,9 +151,9 @@ export const ConfigureServiceHandle = async function (ctx: ApplicationContext, n
 
 
 /**
- * startup service scope.
+ * bootstrap service scope.
  */
-export class BootstrapScope extends BuildHandles<ApplicationContext> implements IActionSetup {
+export class BootstrapHandles extends BuildHandles<ApplicationContext> implements IActionSetup {
     setup() {
         this.use(ModuleBootstrap);
     }
