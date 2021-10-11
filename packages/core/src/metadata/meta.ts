@@ -1,4 +1,4 @@
-import { Metadata, PatternMetadata, ProviderMetadata, Type, TypeMetadata } from '@tsdi/ioc';
+import { Metadata, PatternMetadata, ProviderMetadata, Type, TypeMetadata, DataType } from '@tsdi/ioc';
 import { ModuleConfigure } from './ref';
 import { Middleware, Middlewares } from '../middlewares/handle';
 import { IStartupService } from '../services/intf';
@@ -102,5 +102,5 @@ export interface HandlesMetadata extends HandleMetadata {
     /**
      * the type transform to.
      */
-    toType?: Type;
+    toType?: Type | DataType;
 }

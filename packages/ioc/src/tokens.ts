@@ -88,7 +88,7 @@ export function isInjectToken<T>(target: any): target is InjectToken<T> {
 /**
  * Basic value type.
  */
-export const enum Types {
+export const enum DataType {
     Char,
     Bit,
     Int,

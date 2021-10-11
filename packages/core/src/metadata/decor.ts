@@ -1,6 +1,6 @@
 import {
     DecoratorOption, isUndefined, createDecorator, ROOT_INJECTOR, isArray, isString,
-    lang, Type, DesignContext, ClassMethodDecorator, TypeMetadata, EMPTY_OBJ, Injector, ClassMetadata
+    lang, Type, DesignContext, ClassMethodDecorator, TypeMetadata, EMPTY_OBJ, Injector, ClassMetadata, isBoolean, DataType
 } from '@tsdi/ioc';
 import { IStartupService, Server } from '../services/intf';
 import { ModuleReflect, ModuleConfigure, AnnotationReflect } from './ref';
@@ -400,7 +400,16 @@ export interface IPipeDecorator {
      * @param {string} name  pipe name.
      * @param {boolean} pure If Pipe is pure (its output depends only on its input.) defaut true.
      */
-    (name: string, toType?: Type, pure?: boolean): PipeDecorator;
+    (name: string, toType?: Type | DataType, pure?: boolean): PipeDecorator;
+
+    /**
+     * Pipe decorator, define the class as pipe.
+     *
+     * @Pipe
+     * @param {Type} toType the type transform to.
+     * @param {boolean} pure If Pipe is pure (its output depends only on its input.) defaut true.
+     */
+    (name: string, pure?: boolean): PipeDecorator;
 
     /**
      * Pipe decorator, define the class as pipe.
@@ -427,7 +436,7 @@ export const Pipe: IPipeDecorator = createDecorator<PipeMetadata>('Pipe', {
             return next();
         }
     },
-    props: (name: string, toType?: Type, pure?: boolean) => ({ name, toType, pure }),
+    props: (name: string, toType?: Type | DataType | boolean, pure?: boolean) => isBoolean(toType) ? ({ name, pure: toType }) : ({ name, toType, pure }),
     appendProps: meta => {
         if (isUndefined(meta.pure)) {
             meta.pure = true;
@@ -487,8 +496,8 @@ export interface IRouteMappingDecorator {
     (route: string, options: {
         /**
          * middlewares for the route.
-         */ 
-        middlewares: MiddlewareType[], 
+         */
+        middlewares: MiddlewareType[],
         /**
          * pipes for the route.
          */
@@ -500,7 +509,8 @@ export interface IRouteMappingDecorator {
         /**
          * request method.
          */
-        method?: string }): MethodDecorator;
+        method?: string
+    }): MethodDecorator;
 
     /**
      * route decorator. define the controller method as an route.

@@ -1,10 +1,10 @@
 import { invalidPipeArgumentError } from '@tsdi/core';
-import { isNumber, isString } from '@tsdi/ioc';
+import { DataType, isNumber, isString } from '@tsdi/ioc';
 import { Pipe } from '../../metadata/decor';
 import { PipeTransform } from '../pipe';
 
 
-@Pipe('parse-float')
+@Pipe('parse-float', DataType.Float)
 export class ParseFloatPipe implements PipeTransform<number> {
 
     transform(value: any, ...args: any[]): number {
