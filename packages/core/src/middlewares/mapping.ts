@@ -2,6 +2,7 @@ import {
     Abstract, AsyncHandler, DecorDefine, lang, ParameterMetadata, ProviderType, Type, TypeReflect, Injector, Token, tokenId,
     isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, isPlainObject, RegisteredState, EMPTY_OBJ
 } from '@tsdi/ioc';
+import { PipeTransform } from '..';
 import { CONTEXT } from '../metadata/tk';
 import { TypeParser } from '../services/intf';
 import { Context } from './ctx';
@@ -25,6 +26,9 @@ export interface RouteMapingMetadata {
 
     parent?: Type<IRouter>;
 
+    /**
+     * request method.
+     */
     method?: string;
 
     /**
@@ -35,12 +39,16 @@ export interface RouteMapingMetadata {
      */
     contentType?: string;
     /**
-     * middlewares
+     * middlewares for the route.
      *
      * @type {MiddlewareType[]}
      * @memberof RouteMetadata
      */
-    middlewares?: MiddlewareType[]
+    middlewares?: MiddlewareType[];
+    /**
+     * pipes for the route.
+     */
+    pipes?: Type<PipeTransform>[];
 }
 
 export interface ProtocolRouteMapingMetadata extends  RouteMapingMetadata {

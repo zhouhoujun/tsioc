@@ -58,7 +58,7 @@ export class LoadReposTest {
     async getUser0() {
         const usrRep = this.ctx.injector.get(UserRepository);
         expect(usrRep).toBeInstanceOf(UserRepository);
-        const rep = await this.ctx.send('/users/admin----test', { method: 'get' }, { provide: UserRepository, useValue: usrRep });
+        const rep = await this.ctx.send('/users/admin----test', { method: 'get' });
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeInstanceOf(User);
         expect(rep.body.account).toEqual('admin----test');

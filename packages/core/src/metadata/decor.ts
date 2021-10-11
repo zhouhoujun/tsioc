@@ -392,15 +392,15 @@ export type PipeDecorator = <TFunction extends Type<PipeTransform>>(target: TFun
  * @interface IInjectableDecorator
  */
 export interface IPipeDecorator {
-
     /**
      * Pipe decorator, define the class as pipe.
      *
      * @Pipe
+     * @param {Type} toType the type transform to.
      * @param {string} name  pipe name.
      * @param {boolean} pure If Pipe is pure (its output depends only on its input.) defaut true.
      */
-    (name: string, pure?: boolean): PipeDecorator;
+    (name: string, toType?: Type, pure?: boolean): PipeDecorator;
 
     /**
      * Pipe decorator, define the class as pipe.
@@ -427,7 +427,7 @@ export const Pipe: IPipeDecorator = createDecorator<PipeMetadata>('Pipe', {
             return next();
         }
     },
-    props: (name: string, pure?: boolean) => ({ name, pure }),
+    props: (name: string, toType?: Type, pure?: boolean) => ({ name, toType, pure }),
     appendProps: meta => {
         if (isUndefined(meta.pure)) {
             meta.pure = true;
@@ -484,7 +484,23 @@ export interface IRouteMappingDecorator {
      *  [contentType] set request contentType.
      *  [method] set request method.
      */
-    (route: string, options: { middlewares: MiddlewareType[], contentType?: string, method?: string }): MethodDecorator;
+    (route: string, options: {
+        /**
+         * middlewares for the route.
+         */ 
+        middlewares: MiddlewareType[], 
+        /**
+         * pipes for the route.
+         */
+        pipes?: Type<PipeTransform>[],
+        /**
+         * request contentType
+         */
+        contentType?: string,
+        /**
+         * request method.
+         */
+        method?: string }): MethodDecorator;
 
     /**
      * route decorator. define the controller method as an route.

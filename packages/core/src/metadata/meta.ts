@@ -99,4 +99,8 @@ export interface HandlesMetadata extends HandleMetadata {
      * If Pipe is pure (its output depends only on its input.)
      */
     pure?: boolean;
+    /**
+     * the type transform to.
+     */
+    toType?: Type;
 }

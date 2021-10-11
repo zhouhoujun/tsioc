@@ -84,3 +84,23 @@ export function isToken(target: any): target is Token {
 export function isInjectToken<T>(target: any): target is InjectToken<T> {
     return target instanceof InjectToken;
 }
+
+/**
+ * Basic value type.
+ */
+export const enum Types {
+    Char,
+    Bit,
+    Int,
+    Int32,
+    Int64,
+    BigInt,
+    Float,
+    Double,
+    Date,
+    String,
+    Boolean,
+    Byte,
+    Stream,
+    ByteArray,
+}
