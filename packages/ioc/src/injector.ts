@@ -591,6 +591,7 @@ export type FactoryLike<T> = Type<T> | Factory<T>;
 export interface TypeOption<T = any> {
     provide?: Token<T>;
     type: Type<T>;
+    regProvides?: boolean;
     singleton?: boolean;
     regIn?: 'root';
 }

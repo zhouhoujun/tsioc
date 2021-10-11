@@ -179,13 +179,25 @@ export class DefaultInjector extends Injector {
         } else if (fn) {
             this.factories.set(target, fn);
         } else {
-            this.factories.set((target as ProviderOption).provide, this.generateRecord(target));
+            this.registerProvider((target as ProviderOption).provide, target);
         }
         return this;
     }
 
-    protected generateRecord(target: StaticProviders) {
-        return generateRecord(this, target);
+    protected registerProvider(provide: Token, target: StaticProviders) {
+        if (target.multi) {
+            let multiPdr = this.factories.get(provide);
+            if (!multiPdr) {
+                this.set(provide, multiPdr = {
+                    fnType: 'fac',
+                    fn: MUTIL,
+                    deps: []
+                });
+            }
+            multiPdr.deps?.push(generateRecord(this, target));
+        } else {
+            this.factories.set(provide, generateRecord(this, target));
+        }
     }
 
     /**
@@ -219,7 +231,7 @@ export class DefaultInjector extends Injector {
                 if ((target as TypeOption).type) {
                     this.registerIn(this, (target as TypeOption).type, target as TypeOption);
                 } else if (target.provide) {
-                    this.factories.set(target.provide, this.generateRecord(target));
+                    this.registerProvider(target.provide, target);
                 }
             }
         } else {
@@ -307,7 +319,7 @@ export class DefaultInjector extends Injector {
 
             if (isPlainObject(p)) {
                 if ((p as StaticProviders).provide) {
-                    this.factories.set((p as StaticProviders).provide, this.generateRecord(p as StaticProviders));
+                    this.registerProvider((p as StaticProviders).provide, p as StaticProviders);
                 } else {
                     this.use(p);
                 }
@@ -761,6 +773,8 @@ function createArgs(deps: any[], provider: Injector): any[] {
     return deps?.map(d => {
         if (isToken(d)) {
             return provider.get(d) ?? (isString(d) ? d : undefined);
+        } else if (isFunction(d.fn) && (d.fnType === 'cotr' || d.fnType === 'fac' || d.fnType === 'inj')) {
+            return resolveToken(d, provider);
         } else {
             return d;
         }
@@ -775,6 +789,9 @@ INJECT_IMPL.create = (providers: ProviderType[], parent?: Injector, scope?: Inje
 
 const IDENT = function <T>(value: T): T {
     return value;
+};
+const MUTIL = function <T>(...args: any): T[] {
+    return args;
 };
 /**
  * generate record.
@@ -802,7 +819,7 @@ export function generateRecord<T>(injector: Injector, option: StaticProviders): 
             fnType = 'inj';
             fn = (pdr: Injector) => {
                 if (!injector.state().isRegistered(type) && !injector.has(type, true)) {
-                    injector.register({ type, deps });
+                    injector.register({ type, deps, regProvides: false });
                 }
                 return injector.get(type, pdr);
             };

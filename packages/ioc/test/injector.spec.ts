@@ -1,10 +1,14 @@
-import { Injectable, Injector, isNumber } from '@tsdi/ioc';
+import { Injectable, Injector, isNumber, tokenId } from '@tsdi/ioc';
 import expect = require('expect');
-import { CollegeStudent, Student } from './debug';
+import { CollegeStudent, MiddleSchoolStudent, Student } from './debug';
 
 class Person {
     constructor(public name: string, public age: number) { }
 }
+
+const GROUP1 = tokenId<Person[]>('GROUP1');
+
+const Students = tokenId<Student[]>('Students');
 
 @Injectable()
 class PlcService {
@@ -29,7 +33,11 @@ describe('Injector test', () => {
             { provide: 'hi', useValue: 'hello world.' },
             { provide: Person, useFactory: (name:string, arg: number) => new Person(name, arg), deps: ['name', 'age'] },
             { provide: 'Hanke', useValue: new Person('Hanke', 2) },
-            { provide: DeviceA, deps: [PlcService] }
+            { provide: DeviceA, deps: [PlcService] },
+            { provide: GROUP1, useValue: new Person('zhangsan', 20), multi: true},
+            { provide: GROUP1, useValue: new Person('lisi', 21), multi: true},
+            { provide: Students, useClass: CollegeStudent, multi: true},
+            { provide: Students, useClass: MiddleSchoolStudent, multi: true},
         ]);
     });
 
@@ -80,6 +88,25 @@ describe('Injector test', () => {
         const device = inj.get(DeviceA);
         const data =  inj.invoke(device.service, plc=> plc.read);
         expect(isNumber(data)).toBeTruthy();
+    });
+
+    it('mutil provider values in injector', () => {
+        expect(inj.has(GROUP1)).toBeTruthy();
+        const gp1 = inj.get(GROUP1);
+        expect(Array.isArray(gp1)).toBeTruthy();
+        expect(gp1[0]).toBeInstanceOf(Person);
+        expect(gp1[0].name).toEqual('zhangsan');
+        expect(gp1[1].name).toEqual('lisi');
+    });
+
+    it('mutil provider classes in injector', () => {
+        expect(inj.has(Students)).toBeTruthy();
+        const stus = inj.get(Students);
+        expect(Array.isArray(stus)).toBeTruthy();
+        expect(inj.get(Student)).toBeInstanceOf(CollegeStudent);
+        expect(stus[0]).toBeInstanceOf(CollegeStudent);
+        expect(stus[1]).toBeInstanceOf(MiddleSchoolStudent);
+        expect(inj.get(Student)).toBeInstanceOf(CollegeStudent);
     });
 
     after(()=>{
