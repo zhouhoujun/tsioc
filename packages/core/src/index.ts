@@ -18,11 +18,8 @@ export * from './metadata/tk';
 export * from './Context';
 export * from './global';
 
-export * from './pipes/pipe';
-export * from './pipes/err';
-export * from './pipes/json';
-export * from './pipes/slice';
-export * from './pipes/cases';
+export * from './pipes';
+
 
 // modules
 export * from './modules/strategy';

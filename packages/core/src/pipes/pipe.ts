@@ -4,14 +4,14 @@
  * @export
  * @interface PipeTransform
  */
- export interface PipeTransform {
+export interface PipeTransform<TReturn = any, T = any> {
     /**
      * transform
      *
-     * @param {*} value
+     * @param {T} value
      * @param {...any[]} args
-     * @returns {*}
+     * @returns {TReturn}
      * @memberof IPipeTransform
      */
-    transform(value: any, ...args: any[]): any;
+    transform(value: T, ...args: any[]): TReturn;
 }
