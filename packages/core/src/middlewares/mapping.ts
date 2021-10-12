@@ -1,12 +1,12 @@
 import {
-    Abstract, AsyncHandler, DecorDefine, lang, ParameterMetadata, ProviderType, Type, TypeReflect, Injector, Token, tokenId,
-    isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, isPlainObject, RegisteredState, EMPTY_OBJ
+    AsyncHandler, DecorDefine, ParameterMetadata, ProviderType, Type, TypeReflect, Injector, Token, tokenId,
+    isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, isPlainObject, RegisteredState, EMPTY_OBJ, lang
 } from '@tsdi/ioc';
 import { PipeTransform } from '..';
 import { CONTEXT } from '../metadata/tk';
 import { TypeParser } from '../services/intf';
 import { Context } from './ctx';
-import { IRouter, Middleware, MiddlewareType, RouteInfo } from './handle';
+import { CanActive, IRouter, isMiddlwareType, Middleware, MiddlewareType, RouteInfo } from './handle';
 import { MODEL_PARSER, ModelParser } from './parser';
 import { ResultValue } from './result';
 import { Route } from './route';
@@ -49,9 +49,13 @@ export interface RouteMapingMetadata {
      * pipes for the route.
      */
     pipes?: Type<PipeTransform>[];
+    /**
+     * route guards.
+     */
+    guards?: Type<CanActive>[];
 }
 
-export interface ProtocolRouteMapingMetadata extends  RouteMapingMetadata {
+export interface ProtocolRouteMapingMetadata extends RouteMapingMetadata {
     /**
      * protocol type.
      */
@@ -63,12 +67,6 @@ export interface MappingReflect extends TypeReflect {
 }
 
 const emptyNext = async () => { };
-
-
-@Abstract()
-export abstract class RouteMappingVaildator {
-    abstract getMiddlewares(ctx: Context, reflect: MappingReflect, propertyKey?: string): MiddlewareType[];
-}
 
 
 const isRest = /\/:/;
@@ -98,10 +96,7 @@ export class MappingRoute extends Route {
     }
 
     protected override async navigate(ctx: Context, next: () => Promise<void>): Promise<void> {
-        let meta = this.getRouteMetaData(ctx);
-        if (!meta) {
-            return await next();
-        }
+        const meta = ctx.activeRouteMetadata || this.getRouteMetaData(ctx)!;
         let middlewares = this.getRouteMiddleware(ctx, meta);
         if (middlewares.length) {
             const state = this.injector.state();
@@ -109,6 +104,26 @@ export class MappingRoute extends Route {
         }
         await this.invoke(ctx, meta);
         return await next();
+    }
+
+    protected override async canActive(ctx: Context) {
+        if (!await super.canActive(ctx)) return false;
+        const meta = this.getRouteMetaData(ctx);
+        if (!meta) return false;
+        let rmeta = meta.metadata as RouteMapingMetadata;
+        if (rmeta.guards && rmeta.guards.length) {
+            if (!(await lang.some(
+                rmeta.guards.map(token => () => this.injector.resolve({ token, regify: true })?.canActivate(ctx)),
+                vaild => vaild === false).catch(e => {
+                    ctx.error = e;
+                    throw e;
+                }))) {
+                    ctx.status = 403;
+                    return false;
+                }
+        }
+        ctx.activeRouteMetadata = meta;
+        return true;
     }
 
     async invoke(ctx: Context, meta: DecorDefine) {
@@ -153,21 +168,11 @@ export class MappingRoute extends Route {
     }
 
     protected getRouteMiddleware(ctx: Context, meta: DecorDefine) {
-        let vailds = this.injector.getServices(RouteMappingVaildator);
-        let middlewares = this.middlewares || [];
-        if (vailds && vailds.length) {
-            middlewares = vailds.map(auth => auth.getMiddlewares(ctx, this.reflect)).reduce((p, c) => p.concat(c), [])
-                .concat(middlewares)
-                .concat(vailds.map(a => a.getMiddlewares(ctx, this.reflect, meta.propertyKey)).reduce((p, c) => p.concat(c), []));
-        }
-        if ((meta.metadata as RouteMapingMetadata).middlewares) {
-            middlewares = middlewares.concat((meta.metadata as RouteMapingMetadata).middlewares!);
-        }
-        return middlewares;
+        return [...this.middlewares || [], ...(meta.metadata as RouteMapingMetadata).middlewares || []];
     }
 
     protected getRouteMetaData(ctx: Context) {
-        const vaild = ctx.vaild!;
+        const vaild = ctx.vaild;
         let subRoute = vaild.vaildify(vaild.getReqRoute(ctx, this.prefix).replace(this.url, ''), true);
         if (!this.reflect.sortRoutes) {
             this.reflect.sortRoutes = this.reflect.class.methodDecors
@@ -196,7 +201,7 @@ export class MappingRoute extends Route {
     }
 
     protected async createProvider(ctx: Context, ctrl: any, meta: RouteMapingMetadata, params?: ParameterMetadata[]): Promise<ProviderType[]> {
-        const vaild = ctx.vaild!;
+        const vaild = ctx.vaild;
         const injector = this.injector;
         let providers: ProviderType[] = [{ provide: CONTEXT, useValue: ctx }];
         if (params && params.length) {
@@ -282,7 +287,7 @@ export class MappingRoute extends Route {
     protected parseHandle(state: RegisteredState, mdty: MiddlewareType): AsyncHandler<Context> {
         if (mdty instanceof Middleware) {
             return mdty.toHandle();
-        } else if (lang.isBaseOf(mdty, Middleware)) {
+        } else if (isMiddlwareType(mdty)) {
             if (!state.isRegistered(mdty)) {
                 this.injector.register(mdty);
             }

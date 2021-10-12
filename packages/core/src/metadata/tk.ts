@@ -5,14 +5,14 @@ import { Context } from '../middlewares/ctx';
 
 
 /**
- * boot types.
+ * config servers.
  */
  export const SERVERS = tokenId<Type<Server>[]>('SERVERS');
 
 /**
- * boot types.
+ * boot services.
  */
-export const BOOT_TYPES = tokenId<Type<IStartupService>[]>('BOOT_TYPES');
+export const SERVICES = tokenId<Type<IStartupService>[]>('SERVICES');
 
 /**
 * context options.

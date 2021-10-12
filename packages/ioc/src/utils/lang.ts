@@ -343,3 +343,28 @@ export function step<T>(promises: (T | PromiseLike<T> | ((value: T) => T | Promi
     return result;
 }
 
+/**
+ * promise some.
+ * @param promises 
+ * @param filter 
+ * @returns 
+ */
+export function some<T>(promises: (T | PromiseLike<T> | ((value?: T) => T | PromiseLike<T>))[], filter: (v: T) => boolean) {
+    return new Promise((r, j) => {
+        let val: T, find = false;
+        promises.forEach(p => {
+            if (find) return;
+            Promise.resolve(isFunction(p) ? p(val!) : p).then(value => {
+                if (find) return;
+                val = value;
+                if (filter(value)) {
+                    find = true;
+                    r(value);
+                }
+                return value;
+            }, err => {
+                j(err);
+            });
+        });
+    })
+}

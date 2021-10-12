@@ -1,9 +1,22 @@
-import { Abstract, AsyncHandler, chain, lang, RegisteredState, Type, TypeReflect } from '@tsdi/ioc';
+import { Abstract, AsyncHandler, chain, isFunction, lang, RegisteredState, Type, TypeReflect } from '@tsdi/ioc';
 import { Context } from './ctx';
 
 
 export interface IMiddleware<T extends Context = Context>  {
-    execute(ctx: T, next: () => Promise<void>): Promise<void>
+    /**
+     * execute middleware.
+     * @param ctx 
+     * @param next 
+     */
+    execute(ctx: T, next: () => Promise<void>): Promise<void>;
+    /**
+     * parse this middleware to handler.
+     */
+    toHandle(): AsyncHandler<T>
+}
+
+export function isMiddlwareType(target: any): target is Type<IMiddleware> {
+    return isFunction(target) && ((!!Object.getOwnPropertyDescriptor(target, 'execute') && !!Object.getOwnPropertyDescriptor(target, 'toHandle')) || lang.isBaseOf(target, Middleware));
 }
 
 /**
@@ -52,7 +65,7 @@ export abstract class Middleware<T extends Context = Context> implements IMiddle
 /**
  * message type.
  */
-export type MiddlewareType = AsyncHandler<Context> | Middleware | Type<Middleware>;
+export type MiddlewareType = AsyncHandler<Context> | Middleware | Type<IMiddleware>;
 
 /**
  * middlewares.
@@ -158,6 +171,13 @@ export abstract class Middlewares<T extends Context = Context> extends Middlewar
 export interface IRouter<T extends Context = Context> extends Middlewares<T> {
     readonly url: string;
     getPath(): string;
+}
+
+/**
+ * route Guard.
+ */
+export interface CanActive<T extends Context = Context>  {
+    canActivate(ctx: T): boolean | Promise<boolean>
 }
 
 /**

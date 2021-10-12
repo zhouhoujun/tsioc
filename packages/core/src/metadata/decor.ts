@@ -4,13 +4,13 @@ import {
 } from '@tsdi/ioc';
 import { IStartupService, Server } from '../services/intf';
 import { ModuleReflect, ModuleConfigure, AnnotationReflect } from './ref';
-import { IMiddleware, Middlewares, MiddlewareType, RouteInfo, RouteReflect } from '../middlewares/handle';
+import { CanActive, IMiddleware, Middlewares, MiddlewareType, RouteInfo, RouteReflect } from '../middlewares/handle';
 import { ROOT_QUEUE } from '../middlewares/root';
 import { RouteResolver, Route } from '../middlewares/route';
 import { RootRouter, Router } from '../middlewares/router';
 import { MappingReflect, MappingRoute, ProtocolRouteMapingMetadata } from '../middlewares/mapping';
 import { ModuleFactory, ModuleInjector, ModuleRegistered } from '../Context';
-import { BOOT_TYPES, SERVERS } from './tk';
+import { SERVICES, SERVERS } from './tk';
 import { BootMetadata, ModuleMetadata, HandleMetadata, HandlesMetadata, PipeMetadata } from './meta';
 import { PipeTransform } from '../pipes/pipe';
 
@@ -60,10 +60,10 @@ export const Boot: IBootDecorator = createDecorator<BootMetadata>('Boot', {
         afterAnnoation: (ctx, next) => {
             const root = ctx.injector.get(ROOT_INJECTOR);
             if (!root) return next();
-            let boots = root.get(BOOT_TYPES);
+            let boots = root.get(SERVICES);
             if (!boots) {
                 boots = [];
-                root.setValue(BOOT_TYPES, boots);
+                root.setValue(SERVICES, boots);
             }
             const meta = ctx.reflect.class.getMetadata<BootMetadata>(ctx.currDecor) || EMPTY_OBJ as BootMetadata;
 
@@ -475,7 +475,28 @@ export interface IRouteMappingDecorator {
      *  [parent] set parent route.
      *  [middlewares] the middlewares for the route.
      */
-    (route: string, options: { protocol?: string, parent?: Type<Router>, middlewares: MiddlewareType[] }): ClassDecorator;
+    (route: string, options: {
+        /**
+         * protocol type.
+         */
+        protocol?: string,
+        /**
+         * parent router.
+         */ 
+        parent?: Type<Router>,
+        /**
+         * route guards.
+         */
+        guards?: Type<CanActive>[],
+        /**
+         * middlewares for the route.
+         */
+        middlewares: MiddlewareType[],
+        /**
+        * pipes for the route.
+        */
+        pipes?: Type<PipeTransform>[]
+    }): ClassDecorator;
     /**
      * route decorator. define the controller method as an route.
      *
@@ -494,6 +515,10 @@ export interface IRouteMappingDecorator {
      *  [method] set request method.
      */
     (route: string, options: {
+        /**
+         * route guards.
+         */
+        guards?: Type<CanActive>[],
         /**
          * middlewares for the route.
          */

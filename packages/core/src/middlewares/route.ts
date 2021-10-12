@@ -21,13 +21,9 @@ export abstract class Route<T extends Context = Context> extends Middleware<T> {
         return this.info.prefix;
     }
 
-    // get protocol() {
-    //     return this.info.protocol;
-    // }
-
-
     override async execute(ctx: T, next: () => Promise<void>): Promise<void> {
-        if (this.match(ctx)) {
+        const canactive = await this.canActive(ctx);
+        if (canactive) {
             await this.navigate(ctx, next);
         } else {
             await next();
@@ -36,7 +32,7 @@ export abstract class Route<T extends Context = Context> extends Middleware<T> {
 
     protected abstract navigate(ctx: T, next: () => Promise<void>): Promise<void>;
 
-    protected match(ctx: T): boolean {
+    protected async canActive(ctx: T): Promise<boolean> {
         return (!ctx.status || ctx.status === 404) && ctx.vaild.isActiveRoute(ctx, this.url, this.prefix) === true;
     }
 }

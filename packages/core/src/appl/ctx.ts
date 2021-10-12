@@ -1,7 +1,7 @@
 import { Token, ProviderType, Type, isFunction, isBoolean } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { ModuleMetadata } from '../metadata/meta';
-import { BOOT_TYPES, CONFIGURATION, PROCESS_ROOT } from '../metadata/tk';
+import { SERVICES, CONFIGURATION, PROCESS_ROOT } from '../metadata/tk';
 import { Configuration, ConfigureManager } from '../configure/config';
 import {
     ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption,
@@ -33,7 +33,7 @@ export class DefaultApplicationContext extends ApplicationContext {
     }
 
     get boots() {
-        return this.injector.get(BOOT_TYPES);
+        return this.injector.get(SERVICES);
     }
 
     /**

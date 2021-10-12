@@ -1,4 +1,4 @@
-import { Abstract, Destroyable, Injector, isArray, isString, Token } from '@tsdi/ioc';
+import { Abstract, DecorDefine, Destroyable, Injector, isArray, isString, Token } from '@tsdi/ioc';
 
 
 
@@ -470,7 +470,7 @@ export abstract class Response {
  */
 @Abstract()
 export abstract class Context implements Destroyable {
-
+    activeRouteMetadata?: DecorDefine;
     private _destroyed = false;
     protected _dsryCbs: (() => void)[] = [];
     private _vaild!: RouteVaildator
