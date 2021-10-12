@@ -1,7 +1,10 @@
-import { Abstract, AsyncHandler, chain, lang, RegisteredState, tokenId, Type, TypeReflect } from '@tsdi/ioc';
+import { Abstract, AsyncHandler, chain, lang, RegisteredState, Type, TypeReflect } from '@tsdi/ioc';
 import { Context } from './ctx';
 
 
+export interface IMiddleware<T extends Context = Context>  {
+    execute(ctx: T, next: () => Promise<void>): Promise<void>
+}
 
 /**
  * middleware handle.
@@ -12,7 +15,7 @@ import { Context } from './ctx';
  * @extends {Middleware<Context>}
  */
 @Abstract()
-export abstract class Middleware<T extends Context = Context> {
+export abstract class Middleware<T extends Context = Context> implements IMiddleware<T> {
     /**
      * execute middleware.
      *

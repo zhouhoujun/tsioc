@@ -1,10 +1,10 @@
 import {
     DecoratorOption, isUndefined, createDecorator, ROOT_INJECTOR, isArray, isString,
-    lang, Type, DesignContext, ClassMethodDecorator, TypeMetadata, EMPTY_OBJ, Injector, ClassMetadata
+    lang, Type, DesignContext, ClassMethodDecorator, EMPTY_OBJ, Injector, ClassMetadata
 } from '@tsdi/ioc';
 import { IStartupService, Server } from '../services/intf';
 import { ModuleReflect, ModuleConfigure, AnnotationReflect } from './ref';
-import { Middleware, Middlewares, MiddlewareType, RouteInfo, RouteReflect } from '../middlewares/handle';
+import { IMiddleware, Middlewares, MiddlewareType, RouteInfo, RouteReflect } from '../middlewares/handle';
 import { ROOT_QUEUE } from '../middlewares/root';
 import { RouteResolver, Route } from '../middlewares/route';
 import { RootRouter, Router } from '../middlewares/router';
@@ -255,7 +255,7 @@ export const Module: IModuleDecorator<ModuleMetadata> = createModuleDecorator<Mo
 export const DIModule = Module;
 
 
-export type HandleDecorator = <TFunction extends Type<Middleware>>(target: TFunction) => TFunction | void;
+export type HandleDecorator = <TFunction extends Type<IMiddleware>>(target: TFunction) => TFunction | void;
 
 /**
  * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
@@ -294,7 +294,7 @@ export interface IHandleDecorator {
      * @param {Type<Middlewares>} [parent] the handle reg in the handle queue. default register in root handle queue.
      * @param {Type<Middleware>} [before] register this handle handle before this handle.
      */
-    (parent: Type<Middlewares>, before?: Type<Middleware>): HandleDecorator;
+    (parent: Type<Middlewares>, before?: Type<IMiddleware>): HandleDecorator;
 }
 
 /**
@@ -303,7 +303,7 @@ export interface IHandleDecorator {
  */
 export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle', {
     actionType: ['annoation', 'autorun'],
-    props: (parent?: Type<Middlewares> | string, before?: Type<Middleware>) =>
+    props: (parent?: Type<Middlewares> | string, before?: Type<IMiddleware>) =>
         (isString(parent) ? ({ route: parent, parent: before }) : ({ parent, before })) as HandleMetadata,
     design: {
         afterAnnoation: (ctx, next) => {

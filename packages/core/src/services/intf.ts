@@ -40,5 +40,8 @@ export interface Server {
      */
     connect(ctx: ApplicationContext): void | Promise<void>;
 
+    /**
+     * disconnect server.
+     */
     disconnect(): void| Promise<void>;
 }
