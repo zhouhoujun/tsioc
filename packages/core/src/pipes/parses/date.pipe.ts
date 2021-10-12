@@ -1,4 +1,4 @@
-import { isDate, isNumber, isString } from '@tsdi/ioc';
+import { DataType, isDate, isNumber, isString } from '@tsdi/ioc';
 import { Pipe } from '../../metadata/decor';
 import { invalidPipeArgumentError } from '../err';
 import { PipeTransform } from '../pipe';
@@ -6,7 +6,7 @@ import { PipeTransform } from '../pipe';
 /**
  * date format pipe.
  */
-@Pipe('parse-date')
+@Pipe('parse-date', DataType.Date)
 export class DatePipe implements PipeTransform<Date> {
 
     transform(value: any, ...args: any[]): Date {
