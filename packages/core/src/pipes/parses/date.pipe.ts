@@ -6,7 +6,7 @@ import { PipeTransform } from '../pipe';
 /**
  * date format pipe.
  */
-@Pipe('parse-date', DataType.Date)
+@Pipe('parseDate', DataType.Date)
 export class DatePipe implements PipeTransform<Date> {
 
     transform(value: any, ...args: any[]): Date {

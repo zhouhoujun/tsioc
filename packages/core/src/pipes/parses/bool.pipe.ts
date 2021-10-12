@@ -5,7 +5,7 @@ import { PipeTransform } from '../pipe';
 
 
 
-@Pipe('parse-boolean', DataType.Boolean)
+@Pipe('parseBoolean', DataType.Boolean)
 export class ParseBoolPipe implements PipeTransform<boolean> {
 
     transform(value: any, ...args: any[]): boolean {

@@ -3,7 +3,7 @@ import { Pipe } from '../../metadata/decor';
 import { invalidPipeArgumentError } from '../err';
 import { PipeTransform } from '../pipe';
 
-@Pipe('parse-int', DataType.Int)
+@Pipe('parseInt', DataType.Int)
 export class ParseIntPipe implements PipeTransform<number> {
 
     transform(value: any, ...args: any[]): number {

@@ -3,7 +3,7 @@ import { isString, isUndefined } from '@tsdi/ioc';
 import { Pipe } from '../../metadata/decor';
 import { PipeTransform } from '../pipe';
 
-@Pipe('parse-enum')
+@Pipe('parseEnum')
 export class ParseEnumPipe<T> implements PipeTransform<T> {
 
     transform(value: any, enumType: T): T {
