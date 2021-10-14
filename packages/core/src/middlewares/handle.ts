@@ -2,7 +2,7 @@ import { Abstract, AsyncHandler, chain, isFunction, lang, RegisteredState, Type,
 import { Context } from './ctx';
 
 
-export interface IMiddleware<T extends Context = Context>  {
+export interface IMiddleware<T extends Context = Context> {
     /**
      * execute middleware.
      * @param ctx 
@@ -176,7 +176,7 @@ export interface IRouter<T extends Context = Context> extends Middlewares<T> {
 /**
  * route Guard.
  */
-export interface CanActive<T extends Context = Context>  {
+export interface CanActive<T extends Context = Context> {
     canActivate(ctx: T): boolean | Promise<boolean>
 }
 
@@ -184,7 +184,7 @@ export interface CanActive<T extends Context = Context>  {
  * route info.
  */
 export class RouteInfo {
-    constructor(readonly url: string = '', readonly prefix: string = '', readonly protocol: string = '') {
+    constructor(readonly url: string = '', readonly prefix: string = '', readonly guards?: Type<CanActive>[], readonly protocol: string = '') {
 
     }
 
@@ -196,8 +196,12 @@ export class RouteInfo {
         return this._protocols;
     }
 
-    static create(url: string = '', prefix: string = '', protocol: string = '') {
-        return new RouteInfo(url, prefix, protocol);
+    static create(url: string = '', prefix: string = '', guards?: Type<CanActive>[], protocol: string = '') {
+        return new RouteInfo(url, prefix, guards, protocol);
+    }
+
+    static createProtocol(protocol: string, prefix: string = '', guards?: Type<CanActive>[]) {
+        return new RouteInfo('', prefix, guards, protocol);
     }
 }
 

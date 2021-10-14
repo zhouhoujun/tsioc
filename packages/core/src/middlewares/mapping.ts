@@ -114,13 +114,10 @@ export class MappingRoute extends Route {
         if (rmeta.guards && rmeta.guards.length) {
             if (!(await lang.some(
                 rmeta.guards.map(token => () => this.injector.resolve({ token, regify: true })?.canActivate(ctx)),
-                vaild => vaild === false).catch(e => {
-                    ctx.error = e;
-                    throw e;
-                }))) {
-                    ctx.status = 403;
-                    return false;
-                }
+                vaild => vaild === false))) {
+                ctx.status = 403;
+                return false;
+            }
         }
         ctx.activeRouteMetadata = meta;
         return true;

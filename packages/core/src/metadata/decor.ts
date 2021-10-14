@@ -285,7 +285,12 @@ export interface IHandleDecorator {
      * @param {string} parent the handle reg in the handle queue. default register in root handle queue.
      * @param {Type<Router>} [parent] register this handle handle before this handle.
      */
-    (route: string, parent?: Type<Router>): HandleDecorator;
+    (route: string, parent?: Type<Router>, options?: {
+        /**
+        * route guards.
+        */
+        guards?: Type<CanActive>[],
+    }): HandleDecorator;
     /**
      * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
      *
@@ -303,8 +308,8 @@ export interface IHandleDecorator {
  */
 export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle', {
     actionType: ['annoation', 'autorun'],
-    props: (parent?: Type<Middlewares> | string, before?: Type<IMiddleware>) =>
-        (isString(parent) ? ({ route: parent, parent: before }) : ({ parent, before })) as HandleMetadata,
+    props: (parent?: Type<Middlewares> | string, before?: Type<IMiddleware>, options?: { guards?: Type<CanActive>[] }) =>
+        (isString(parent) ? ({ route: parent, parent: before, ...options }) : ({ parent, before })) as HandleMetadata,
     design: {
         afterAnnoation: (ctx, next) => {
             const reflect = ctx.reflect as RouteReflect;
@@ -314,7 +319,7 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
                     (metadata as HandlesMetadata).autorun = 'setup';
                 }
             }
-            const { route, protocol, parent, before, after } = metadata;
+            const { route, protocol, parent, before, after, guards } = metadata;
             const injector = ctx.injector;
 
             if (!isString(route) && !parent) {
@@ -339,14 +344,14 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
                     throw new Error(lang.getClassName(queue) + 'is not message router!');
                 }
                 const prefix = (queue as Router).getPath();
-                const info = RouteInfo.create(route || '', prefix, protocol);
+                const info = RouteInfo.create(route || '', prefix, guards, protocol);
                 reflect.route = info;
                 let middl: MiddlewareType;
                 if (reflect.class.isExtends(Route) || reflect.class.isExtends(Router)) {
                     state.setTypeProvider(reflect, [{ provide: RouteInfo, useValue: info }]);
                     middl = type;
                 } else {
-                    middl = new RouteResolver(route || '', prefix, (inj: Injector) => injector.get(type, inj));
+                    middl = new RouteResolver(route || '', prefix, (inj: Injector) => injector.get(type, inj), guards);
                 }
                 queue.use(middl);
                 injector.onDestroy(() => queue.unuse(middl));
@@ -482,7 +487,7 @@ export interface IRouteMappingDecorator {
         protocol?: string,
         /**
          * parent router.
-         */ 
+         */
         parent?: Type<Router>,
         /**
          * route guards.
@@ -562,7 +567,7 @@ export const RouteMapping: IRouteMappingDecorator = createDecorator<ProtocolRout
     },
     design: {
         afterAnnoation: (ctx, next) => {
-            const { route, protocol, parent, middlewares } = ctx.reflect.class.getMetadata<ProtocolRouteMapingMetadata>(ctx.currDecor);
+            const { route, protocol, parent, middlewares, guards } = ctx.reflect.class.getMetadata<ProtocolRouteMapingMetadata>(ctx.currDecor);
             const injector = ctx.injector;
             let queue: Middlewares;
             if (parent) {
@@ -574,7 +579,7 @@ export const RouteMapping: IRouteMappingDecorator = createDecorator<ProtocolRout
             if (!queue) throw new Error(lang.getClassName(parent) + 'has not registered!');
             if (!(queue instanceof Router)) throw new Error(lang.getClassName(queue) + 'is not message router!');
 
-            const info = RouteInfo.create(route, queue.getPath(), protocol);
+            const info = RouteInfo.create(route, queue.getPath(), guards, protocol);
             const mapping = new MappingRoute(info, ctx.reflect as MappingReflect, injector, middlewares);
             injector.onDestroy(() => queue.unuse(mapping));
             queue.use(mapping);

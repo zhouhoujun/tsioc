@@ -1,6 +1,6 @@
 import { Metadata, PatternMetadata, ProviderMetadata, Type, TypeMetadata, DataType } from '@tsdi/ioc';
 import { ModuleConfigure } from './ref';
-import { Middleware, Middlewares } from '../middlewares/handle';
+import { CanActive, Middleware, Middlewares } from '../middlewares/handle';
 import { IStartupService } from '../services/intf';
 
 /**
@@ -55,6 +55,11 @@ import { IStartupService } from '../services/intf';
      * route protocol
      */
     protocol?: string;
+
+    /**
+     * route guards.
+     */
+    guards?: Type<CanActive>[],
 
     /**
      * handle parent.

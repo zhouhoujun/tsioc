@@ -105,7 +105,7 @@ export class RootRouter extends Router {
             return false;
         });
         if (!router) {
-            router = this.injector.resolve(Router, { provide: RouteInfo, useValue: RouteInfo.create('', '', protocol) });
+            router = this.injector.resolve(Router, { provide: RouteInfo, useValue: RouteInfo.createProtocol(protocol) });
             this.use(router);
         }
         return isFunction(router) ? this.injector.state().resolve(router) : router;
