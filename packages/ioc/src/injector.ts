@@ -1,4 +1,4 @@
-import { Destroyable } from './Destroyable';
+import { Destroyable } from './destroy';
 import { ClassType, LoadType, Modules, Type } from './types';
 import { Token } from './tokens';
 import { Abstract } from './metadata/fac';

@@ -1,8 +1,8 @@
 import {
-    Type, Inject, isClass, isUndefined, isPrimitiveType, isArray,
-    Abstract, Singleton, isNil, isFunction, Token, tokenId, Injector, PropertyMetadata
+    isClass, isUndefined, isPrimitiveType, isArray, isNil, isFunction,
+    Type, Inject, Abstract, Singleton, Token, tokenId, Injector, PropertyMetadata
 } from '@tsdi/ioc';
-import { TypeParser } from '../services/intf';
+import { TypeParser } from '../services/interface';
 
 
 
@@ -49,7 +49,7 @@ export class ExtendBaseTypeMap {
 /**
  * default module parser token.
  */
- export const MODEL_PARSER: Token<ModelParser> = tokenId<ModelParser>('DefaultModelParser')
+export const MODEL_PARSER: Token<ModelParser> = tokenId<ModelParser>('DefaultModelParser')
 
 /**
  * modle parser.

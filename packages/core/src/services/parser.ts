@@ -1,5 +1,5 @@
 import { Token, Singleton, isNumber, isBoolean, isString, isDate, isNil } from '@tsdi/ioc';
-import { TypeParser } from './intf';
+import { TypeParser } from './interface';
 
 /**
  * base type parser.

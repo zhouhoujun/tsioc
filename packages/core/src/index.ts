@@ -1,8 +1,8 @@
 // services
-export * from './services/intf';
+export * from './services/interface';
 export * from './services/parser';
 export * from './services/startup';
-export * from './services/fac';
+export * from './services/factory';
 
 // annotations
 export * from './configure/config';

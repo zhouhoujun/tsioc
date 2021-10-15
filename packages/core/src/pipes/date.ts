@@ -19,8 +19,6 @@ export function formatDate(date: Date, fmt: string = 'yyyy-MM-dd') {
     return fmt;
 }
 
-
-
 /**
  * date format pipe.
  */
@@ -44,3 +42,4 @@ export function formatDate(date: Date, fmt: string = 'yyyy-MM-dd') {
      }
      
  }
+ 

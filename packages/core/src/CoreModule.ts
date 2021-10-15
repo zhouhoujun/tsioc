@@ -5,7 +5,7 @@ import { BootLifeScope } from './appl/lifescope';
 import { ApplicationFactory, ModuleFactory, RunnableFactoryResolver } from './Context';
 import { DefaultModuleFactory } from './modules/injector';
 import { DefaultApplicationFactory } from './appl/ctx';
-import { DefaultServiceFactoryResolver } from './services/fac';
+import { DefaultServiceFactoryResolver } from './services/factory';
 
 
 export const DEFAULTA_FACTORYS: ProviderType[] = [

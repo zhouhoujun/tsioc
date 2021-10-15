@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { PipeTransform } from '..';
 import { CONTEXT } from '../metadata/tk';
-import { TypeParser } from '../services/intf';
+import { TypeParser } from '../services/interface';
 import { Context } from './context';
 import { CanActive } from './guard';
 import { IRouter, isMiddlwareType, Middleware, MiddlewareType, RouteInfo } from './middleware';

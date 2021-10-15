@@ -1,6 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { ApplicationContext } from '../Context';
-import { IStartupService } from './intf';
+import { IStartupService } from './interface';
 
 
 /**

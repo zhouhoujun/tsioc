@@ -2,7 +2,7 @@ import { lang, IActionSetup, IocAction, ActionType, AsyncHandler, Actions } from
 import { LogConfigureToken, DebugLogAspect, LogModule } from '@tsdi/logs';
 import { ApplicationContext } from '../Context';
 import { CONFIGURATION, PROCESS_ROOT, SERVERS } from '../metadata/tk';
-import { IStartupService } from '../services/intf';
+import { IStartupService } from '../services/interface';
 
 
 
