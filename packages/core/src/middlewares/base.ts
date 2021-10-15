@@ -1,5 +1,8 @@
 import { EMPTY_OBJ, Injectable, Injector, isArray, isNumber, isString, Singleton } from '@tsdi/ioc';
-import { RouteVaildator, Context, Request, Response, Headers, ContextFactory, RequestOption, HeadersOption, ResponseOption } from './ctx';
+import { RouteVaildator, Context, ContextFactory } from './context';
+import { HeadersOption, Headers } from './header';
+import { RequestOption, Request } from './request';
+import { ResponseOption, Response } from './response';
 
 const urlReg = /\/((\w|%|\.))+\.\w+$/;
 const noParms = /\/\s*$/;
@@ -168,12 +171,12 @@ export class RequestBase extends Request {
         this.init(init);
     }
 
-    protected createHeader(headers?: Headers | HeadersOption) {
+    protected createHeader(headers?: Headers | Record<string, string | string[]> | HeadersOption) {
         return new HeadersBase(headers);
     }
 
     protected init(option?: RequestOption | Request) {
-        const init = option || EMPTY_OBJ as RequestOption | Request;
+        const init = (option || EMPTY_OBJ) as RequestOption | Request;
         if (init instanceof Request) {
             this._headers = this.createHeader(init.getHeaders())
             this._originalUrl = init.originalUrl;

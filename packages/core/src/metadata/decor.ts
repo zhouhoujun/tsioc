@@ -1,10 +1,10 @@
 import {
     DecoratorOption, isUndefined, createDecorator, ROOT_INJECTOR, isArray, isString,
-    lang, Type, DesignContext, ClassMethodDecorator, EMPTY_OBJ, Injector, ClassMetadata, isBoolean, DataType
+    lang, Type, DesignContext, ClassMethodDecorator, EMPTY_OBJ, Injector, ClassMetadata, isBoolean, DataType, createParamDecorator
 } from '@tsdi/ioc';
 import { IStartupService, Server } from '../services/intf';
 import { ModuleReflect, ModuleConfigure, AnnotationReflect } from './ref';
-import { CanActive, IMiddleware, Middlewares, MiddlewareType, RouteInfo, RouteReflect } from '../middlewares/handle';
+import { IMiddleware, Middlewares, MiddlewareType, RouteInfo, RouteReflect } from '../middlewares/middleware';
 import { ROOT_QUEUE } from '../middlewares/root';
 import { RouteResolver, Route } from '../middlewares/route';
 import { RootRouter, Router } from '../middlewares/router';
@@ -13,6 +13,7 @@ import { ModuleFactory, ModuleInjector, ModuleRegistered } from '../Context';
 import { SERVICES, SERVERS } from './tk';
 import { BootMetadata, ModuleMetadata, HandleMetadata, HandlesMetadata, PipeMetadata } from './meta';
 import { PipeTransform } from '../pipes/pipe';
+import { CanActive } from '../middlewares/guard';
 
 
 /**
@@ -588,3 +589,7 @@ export const RouteMapping: IRouteMappingDecorator = createDecorator<ProtocolRout
         }
     }
 });
+
+export const RequestParam = createParamDecorator('RequestParam');
+
+export const RequestBody = createParamDecorator('RequestBody');

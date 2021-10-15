@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { Context } from './ctx';
+import { Context } from './context';
 
 /**
  * controller method return result type.

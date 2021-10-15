@@ -5,8 +5,9 @@ import {
 import { PipeTransform } from '..';
 import { CONTEXT } from '../metadata/tk';
 import { TypeParser } from '../services/intf';
-import { Context } from './ctx';
-import { CanActive, IRouter, isMiddlwareType, Middleware, MiddlewareType, RouteInfo } from './handle';
+import { Context } from './context';
+import { CanActive } from './guard';
+import { IRouter, isMiddlwareType, Middleware, MiddlewareType, RouteInfo } from './middleware';
 import { MODEL_PARSER, ModelParser } from './parser';
 import { ResultValue } from './result';
 import { Route } from './route';
@@ -252,8 +253,6 @@ export class MappingRoute extends Route {
                                         let mdparser = injector.resolve({ token: ModelParser, target: ptype, defaultToken: MODEL_PARSER });
                                         if (mdparser) {
                                             val = mdparser.parseModel(ptype, body);
-                                        } else {
-                                            // val = await injector.getInstance(BUILDER).build({ type: ptype, template: body })
                                         }
                                     }
                                 }

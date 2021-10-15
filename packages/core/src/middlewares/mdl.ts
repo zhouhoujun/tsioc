@@ -1,4 +1,4 @@
-import { ContextFactory, RouteVaildator } from './ctx';
+import { ContextFactory, RouteVaildator } from './context';
 import { Module } from '../metadata/decor';
 import { ExtendBaseTypeMap } from './parser';
 import { MessageQueue } from './queue';

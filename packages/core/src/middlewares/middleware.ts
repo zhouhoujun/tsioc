@@ -1,5 +1,6 @@
 import { Abstract, AsyncHandler, chain, isFunction, lang, RegisteredState, Type, TypeReflect } from '@tsdi/ioc';
-import { Context } from './ctx';
+import { Context } from './context';
+import { CanActive } from './guard';
 
 
 export interface IMiddleware<T extends Context = Context> {
@@ -16,7 +17,11 @@ export interface IMiddleware<T extends Context = Context> {
 }
 
 export function isMiddlwareType(target: any): target is Type<IMiddleware> {
-    return isFunction(target) && ((!!Object.getOwnPropertyDescriptor(target, 'execute') && !!Object.getOwnPropertyDescriptor(target, 'toHandle')) || lang.isBaseOf(target, Middleware));
+    return isFunction(target)
+        && (
+            (isFunction(Object.getOwnPropertyDescriptor(target, 'execute')?.value)
+                && isFunction(Object.getOwnPropertyDescriptor(target, 'toHandle')?.value))
+            || lang.isBaseOf(target, Middleware));
 }
 
 /**
@@ -173,12 +178,7 @@ export interface IRouter<T extends Context = Context> extends Middlewares<T> {
     getPath(): string;
 }
 
-/**
- * route Guard.
- */
-export interface CanActive<T extends Context = Context> {
-    canActivate(ctx: T): boolean | Promise<boolean>
-}
+
 
 /**
  * route info.

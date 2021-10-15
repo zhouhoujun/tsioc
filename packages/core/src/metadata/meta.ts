@@ -1,6 +1,7 @@
 import { Metadata, PatternMetadata, ProviderMetadata, Type, TypeMetadata, DataType } from '@tsdi/ioc';
 import { ModuleConfigure } from './ref';
-import { CanActive, Middleware, Middlewares } from '../middlewares/handle';
+import { CanActive } from '../middlewares/guard';
+import { Middleware, Middlewares } from '../middlewares/middleware';
 import { IStartupService } from '../services/intf';
 
 /**
@@ -10,7 +11,7 @@ import { IStartupService } from '../services/intf';
  * @interface BootMetadata
  * @extends {ClassMetadata}
  */
- export interface BootMetadata extends TypeMetadata, PatternMetadata {
+export interface BootMetadata extends TypeMetadata, PatternMetadata {
     /**
      * the startup service dependencies.
      */
@@ -34,9 +35,9 @@ import { IStartupService } from '../services/intf';
  * @extends {ModuleConfigure}
  * @extends {ClassMetadata}
  */
- export interface ModuleMetadata extends ModuleConfigure { }
+export interface ModuleMetadata extends ModuleConfigure { }
 
- 
+
 
 /**
  * Handle metadata. use to define the class as handle handle register in global handle queue.
@@ -45,7 +46,7 @@ import { IStartupService } from '../services/intf';
  * @interface RegisterForMetadata
  * @extends {TypeMetadata}
  */
- export interface HandleMetadata extends TypeMetadata, PatternMetadata {
+export interface HandleMetadata extends TypeMetadata, PatternMetadata {
     /**
      * handle route
      */
@@ -95,7 +96,7 @@ export interface HandlesMetadata extends HandleMetadata {
  * @interface PipeMetadata
  * @extends {TypeMetadata}
  */
- export interface PipeMetadata extends Metadata, ProviderMetadata {
+export interface PipeMetadata extends Metadata, ProviderMetadata {
     /**
      * name of pipe.
      */
