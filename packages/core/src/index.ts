@@ -20,6 +20,8 @@ export * from './global';
 
 export * from './pipes';
 
+export * from './server/server';
+export * from './client/client';
 
 // modules
 export * from './modules/strategy';
