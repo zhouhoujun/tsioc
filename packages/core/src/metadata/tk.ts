@@ -1,6 +1,6 @@
 import { tokenId, Token, Type } from '@tsdi/ioc';
 import { Configuration } from '../configure/config';
-import { IStartupService } from '../services/interface';
+import { Service } from '../services/service';
 import { Context } from '../middlewares/context';
 import { Server } from '../server/server';
 
@@ -13,7 +13,7 @@ import { Server } from '../server/server';
 /**
  * boot services.
  */
-export const SERVICES = tokenId<Type<IStartupService>[]>('SERVICES');
+export const SERVICES = tokenId<Type<Service>[]>('SERVICES');
 
 /**
 * context options.

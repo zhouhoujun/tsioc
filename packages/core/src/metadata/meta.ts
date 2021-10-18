@@ -2,7 +2,7 @@ import { Metadata, PatternMetadata, ProviderMetadata, Type, TypeMetadata, DataTy
 import { ModuleConfigure } from './ref';
 import { CanActive } from '../middlewares/guard';
 import { Middleware, Middlewares } from '../middlewares/middleware';
-import { IStartupService } from '../services/interface';
+import { Service } from '../services/service';
 
 /**
  * Boot metadata.
@@ -15,15 +15,15 @@ export interface BootMetadata extends TypeMetadata, PatternMetadata {
     /**
      * the startup service dependencies.
      */
-    deps?: Type<IStartupService>[];
+    deps?: Type<Service>[];
     /**
      * this service startup before the service, or at first
      */
-    before?: Type<IStartupService> | 'all';
+    before?: Type<Service> | 'all';
     /**
      * this service startup after the service, or last.
      */
-    after?: Type<IStartupService> | 'all';
+    after?: Type<Service> | 'all';
 }
 
 

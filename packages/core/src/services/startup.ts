@@ -1,6 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { ApplicationContext } from '../Context';
-import { IStartupService } from './interface';
+import { Service } from './service';
 
 
 /**
@@ -12,7 +12,7 @@ import { IStartupService } from './interface';
  * @template T
  */
 @Abstract()
-export abstract class StartupService implements IStartupService {
+export abstract class StartupService implements Service {
 
     private _destroyed = false;
     private _dsryCbs: (() => void)[] = [];

@@ -1,5 +1,5 @@
 import { isArray } from '@tsdi/ioc';
-import { ApplicationContext, Configure, Boot, IStartupService } from '@tsdi/core';
+import { ApplicationContext, Boot, Service } from '@tsdi/core';
 import { UnitTestConfigure } from './UnitTestConfigure';
 import { Assert } from './assert/assert';
 import * as assert from 'assert';
@@ -14,7 +14,7 @@ import { ExpectToken } from './assert/expects';
  * @extends {ConfigureRegister}
  */
 @Boot()
-export class UnitTestStartup implements IStartupService {
+export class UnitTestStartup implements Service {
     
     async configureService(ctx: ApplicationContext): Promise<void> {
         const config = ctx.getConfiguration() as UnitTestConfigure;

@@ -1,8 +1,8 @@
 import { lang, IActionSetup, IocAction, ActionType, AsyncHandler, Actions } from '@tsdi/ioc';
 import { LogConfigureToken, DebugLogAspect, LogModule } from '@tsdi/logs';
 import { ApplicationContext } from '../Context';
+import { Service } from '../services/service';
 import { CONFIGURATION, PROCESS_ROOT, SERVERS } from '../metadata/tk';
-import { IStartupService } from '../services/interface';
 
 
 
@@ -140,7 +140,7 @@ export const ConfigureServiceHandle = async function (ctx: ApplicationContext, n
     const boots = ctx.boots;
     if (boots?.length) {
         await lang.step(boots.map(tyser => () => {
-            const ser = regedState.getInstance(tyser) as IStartupService;
+            const ser = regedState.getInstance(tyser) as Service;
             ctx.onDestroy(() => ser?.destroy());
             ctx.startups.push(tyser);
             return ser?.configureService(ctx);

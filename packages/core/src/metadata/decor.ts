@@ -2,7 +2,7 @@ import {
     DecoratorOption, isUndefined, createDecorator, ROOT_INJECTOR, isArray, isString,
     lang, Type, DesignContext, ClassMethodDecorator, EMPTY_OBJ, Injector, ClassMetadata, isBoolean, DataType, createParamDecorator
 } from '@tsdi/ioc';
-import { IStartupService } from '../services/interface';
+import { Service } from '../services/service';
 import { ModuleReflect, ModuleConfigure, AnnotationReflect } from './ref';
 import { IMiddleware, Middlewares, MiddlewareType, RouteInfo, RouteReflect } from '../middlewares/middleware';
 import { ROOT_QUEUE } from '../middlewares/root';
@@ -20,7 +20,7 @@ import { Server } from '../server/server';
 /**
  * boot decorator.
  */
-export type BootDecorator = <TFunction extends Type<IStartupService>>(target: TFunction) => TFunction | void;
+export type BootDecorator = <TFunction extends Type<Service>>(target: TFunction) => TFunction | void;
 
 /**
  * Boot decorator, use to define class as statup service when bootstrap application.
@@ -77,8 +77,8 @@ export const Boot: IBootDecorator = createDecorator<BootMetadata>('Boot', {
             }
             if (idx >= 0) {
                 if (meta.deps) {
-                    const news: Type<IStartupService>[] = [];
-                    const moved: Type<IStartupService>[] = [];
+                    const news: Type<Service>[] = [];
+                    const moved: Type<Service>[] = [];
                     meta.deps.forEach(d => {
                         const depidx = boots.indexOf(d);
                         if (depidx < 0) {
