@@ -1,7 +1,8 @@
 import { tokenId, Token, Type } from '@tsdi/ioc';
 import { Configuration } from '../configure/config';
-import { IStartupService, Server } from '../services/interface';
+import { IStartupService } from '../services/interface';
 import { Context } from '../middlewares/context';
+import { Server } from '../server/server';
 
 
 /**
