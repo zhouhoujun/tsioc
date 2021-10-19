@@ -54,17 +54,6 @@ export abstract class Middleware<T extends Context = Context> implements IMiddle
         }
         return this._hdl;
     }
-
-    /**
-     * exec handlers.
-     * @param ctx exection context.
-     * @param handles 
-     * @param next 
-     * @returns 
-     */
-    protected async execHandler(ctx: T, handles: AsyncHandler<T>[], next?: () => Promise<void>): Promise<void> {
-        return await chain(handles, ctx, next);
-    }
 }
 
 /**
@@ -154,7 +143,7 @@ export abstract class Middlewares<T extends Context = Context> extends Middlewar
             const state = ctx.injector.state();
             this.funcs = this.handles.map(ac => this.parseHandle(state, ac)).filter(f => f);
         }
-        await this.execHandler(ctx, this.funcs, next);
+        await chain( this.funcs, ctx, next);
     }
 
     protected resetHandler() {

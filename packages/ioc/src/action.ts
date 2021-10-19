@@ -46,17 +46,6 @@ export abstract class IocAction<T, TH extends Handler = Handler<T>, TR = void> e
      */
     abstract execute(ctx: T, next?: () => TR): TR;
 
-    /**
-     * execute handler.
-     * @param ctx 
-     * @param actions 
-     * @param next 
-     * @returns 
-     */
-    protected execHandler(ctx: T, actions: TH[], next?: () => TR): TR {
-        return chain(actions, ctx, next);
-    }
-
     private _hdr!: TH;
     /**
      * parse to handler.
@@ -186,7 +175,7 @@ export abstract class Actions<T, TA = ActionType, TH extends Handler = Handler<T
             const pdr = this.getActionProvider(ctx);
             this._hdlrs = [...this._befs, ...this._acts, ...this._afts].map(ac => this.parseHandler(pdr, ac)).filter(f => f);
         }
-        return this.execHandler(ctx, this._hdlrs, next);
+        return chain(this._hdlrs, ctx, next);
     }
 
     /**

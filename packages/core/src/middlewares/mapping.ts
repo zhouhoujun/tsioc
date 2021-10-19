@@ -1,6 +1,6 @@
 import {
-    AsyncHandler, DecorDefine, ParameterMetadata, ProviderType, Type, TypeReflect, Injector, Token, tokenId,
-    isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, isPlainObject, RegisteredState, EMPTY_OBJ, lang
+    AsyncHandler, DecorDefine, ParameterMetadata, ProviderType, Type, TypeReflect, Injector, Token, tokenId,RegisteredState, 
+    isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, isPlainObject, EMPTY_OBJ, lang, chain
 } from '@tsdi/ioc';
 import { PipeTransform } from '..';
 import { CONTEXT } from '../metadata/tk';
@@ -101,7 +101,7 @@ export class MappingRoute extends Route {
         let middlewares = this.getRouteMiddleware(ctx, meta);
         if (middlewares.length) {
             const state = this.injector.state();
-            await this.execHandler(ctx, middlewares.map(m => this.parseHandle(state, m)).filter(f => !!f))
+            await chain(middlewares.map(m => this.parseHandle(state, m)).filter(f => !!f), ctx)
         }
         await this.invoke(ctx, meta);
         return await next();
