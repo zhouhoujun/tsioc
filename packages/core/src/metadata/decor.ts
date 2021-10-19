@@ -1,6 +1,6 @@
 import {
     DecoratorOption, isUndefined, createDecorator, ROOT_INJECTOR, isArray, isString,
-    lang, Type, DesignContext, ClassMethodDecorator, EMPTY_OBJ, Injector, ClassMetadata, isBoolean, DataType, createParamDecorator
+    lang, Type, DesignContext, ClassMethodDecorator, EMPTY_OBJ, Injector, ClassMetadata, isBoolean, DataType, createParamDecorator, ParameterMetadata, Token
 } from '@tsdi/ioc';
 import { Service } from '../services/service';
 import { ModuleReflect, ModuleConfigure, AnnotationReflect } from './ref';
@@ -399,15 +399,6 @@ export type PipeDecorator = <TFunction extends Type<PipeTransform>>(target: TFun
  * @interface IInjectableDecorator
  */
 export interface IPipeDecorator {
-    /**
-     * Pipe decorator, define the class as pipe.
-     *
-     * @Pipe
-     * @param {Type} toType the type transform to.
-     * @param {string} name  pipe name.
-     * @param {boolean} pure If Pipe is pure (its output depends only on its input.) defaut true.
-     */
-    (name: string, toType?: Type | DataType, pure?: boolean): PipeDecorator;
 
     /**
      * Pipe decorator, define the class as pipe.
@@ -443,7 +434,7 @@ export const Pipe: IPipeDecorator = createDecorator<PipeMetadata>('Pipe', {
             return next();
         }
     },
-    props: (name: string, toType?: Type | DataType | boolean, pure?: boolean) => isBoolean(toType) ? ({ name, pure: toType }) : ({ name, toType, pure }),
+    props: (name: string, pure?: boolean) => ({ name, provide: name, pure }),
     appendProps: meta => {
         if (isUndefined(meta.pure)) {
             meta.pure = true;
@@ -591,6 +582,53 @@ export const RouteMapping: IRouteMappingDecorator = createDecorator<ProtocolRout
     }
 });
 
-export const RequestParam = createParamDecorator('RequestParam');
+export interface RequsetParameterMetadata extends ParameterMetadata {
+    /**
+     * field of request query params or body.
+     */
+    filed?: string;
+    /**
+     * pipe
+     */
+    pipe: string | Type<PipeTransform>;
+    /**
+     * pipe args
+     */
+    args?: any[];
+}
 
-export const RequestBody = createParamDecorator('RequestBody');
+export interface RequsetParameterDecorator {
+    /**
+     * Request Parameter decorator
+     *
+     * @param {Type} toType the type transform to.
+     * @param {boolean} pure If Pipe is pure (its output depends only on its input.) defaut true.
+     */
+    (field: string, pipe?: { pipe?: string | Type<PipeTransform>, args?: any[], defaultValue?: any }): ParameterDecorator;
+    /**
+     * Request Parameter decorator
+     * @param {RequsetParameterMetadata} meta.
+     */
+    (meta: RequsetParameterMetadata): ParameterDecorator;
+}
+
+/**
+ * Request path param decorator.
+ */
+export const PathParam: RequsetParameterDecorator = createParamDecorator('PathParam', {
+    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe })
+});
+
+/**
+ * Request query param decorator.
+ */
+export const RequestParam: RequsetParameterDecorator = createParamDecorator('RequestParam', {
+    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe })
+});
+
+/**
+ * Request body param decorator.
+ */
+export const RequestBody: RequsetParameterDecorator = createParamDecorator('RequestBody', {
+    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe })
+});

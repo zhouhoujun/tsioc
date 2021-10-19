@@ -105,8 +105,4 @@ export interface PipeMetadata extends Metadata, ProviderMetadata {
      * If Pipe is pure (its output depends only on its input.)
      */
     pure?: boolean;
-    /**
-     * the type transform to.
-     */
-    toType?: Type | DataType;
 }

@@ -133,7 +133,7 @@ export class MappingRoute extends Route {
                 return;
             }
 
-            const providers = await this.createProvider(ctx, ctrl, meta.metadata, this.reflect.methodParams.get(meta.propertyKey));
+            const providers = this.createProvider(ctx, ctrl, meta.metadata, this.reflect.methodParams.get(meta.propertyKey));
             let result = injector.invoke(ctrl, meta.propertyKey, providers.length > 0 ? Injector.create(providers, ctx.injector) : ctx.injector);
             if (isPromise(result)) {
                 result = await result;
@@ -198,7 +198,7 @@ export class MappingRoute extends Route {
         return meta;
     }
 
-    protected async createProvider(ctx: Context, ctrl: any, meta: RouteMapingMetadata, params?: ParameterMetadata[]): Promise<ProviderType[]> {
+    protected createProvider(ctx: Context, ctrl: any, meta: RouteMapingMetadata, params?: ParameterMetadata[]): ProviderType[] {
         const vaild = ctx.vaild;
         const injector = this.injector;
         let providers: ProviderType[] = [{ provide: CONTEXT, useValue: ctx }];
@@ -216,7 +216,7 @@ export class MappingRoute extends Route {
             }
             let body: any = ctx.request.body || EMPTY_OBJ;
             let parser = injector.get(TypeParser);
-            let ppds: (ProviderType | null)[] = await Promise.all(params.map(async (param) => {
+            let ppds: (ProviderType | null)[] = params.map((param) => {
                 let ptype = isFunction(param.provider) ? param.provider : param.type;
                 let val;
                 let provide: Token = ptype!;
@@ -273,7 +273,7 @@ export class MappingRoute extends Route {
                     return null;
                 }
                 return { provide, useValue: val };
-            }));
+            });
             providers = providers.concat(ppds.filter(p => p !== null) as ProviderType[]);
         }
 

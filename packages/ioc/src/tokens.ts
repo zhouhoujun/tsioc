@@ -88,19 +88,14 @@ export function isInjectToken<T>(target: any): target is InjectToken<T> {
 /**
  * Basic value type.
  */
-export const enum DataType {
-    Char,
-    Bit,
-    Int,
-    Int32,
-    Int64,
-    BigInt,
-    Float,
-    Double,
-    Date,
-    String,
-    Boolean,
-    Byte,
-    Stream,
-    ByteArray,
-}
+export type DataType = 'string'
+    | 'char' | 'varchar' | 'nvarchar' | 'text'
+    | 'bit' | 'byte' | 'bytes' | 'binary'
+    | 'number'
+    | 'int' | 'int2' | 'int4' | 'int8' | 'int32' | 'int64' | 'bigint'
+    | 'float' | 'double' | 'decimal'
+    | 'date' | 'datetime' | 'time' | 'timestamp'
+    | 'boolean' | 'bool'
+    | 'blob'
+    | 'uuid' | 'ObjectID'
+    | 'json';

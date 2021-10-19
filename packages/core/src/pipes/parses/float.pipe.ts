@@ -4,7 +4,7 @@ import { Pipe } from '../../metadata/decor';
 import { PipeTransform } from '../pipe';
 
 
-@Pipe('parseFloat', DataType.Float)
+@Pipe('float')
 export class ParseFloatPipe implements PipeTransform<number> {
 
     transform(value: any, ...args: any[]): number {
