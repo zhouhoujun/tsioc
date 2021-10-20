@@ -1,6 +1,8 @@
-import { Token, lang, Type, Abstract, isFunction } from '@tsdi/ioc';
+import { Token, lang, Type, Abstract, isFunction, tokenId } from '@tsdi/ioc';
 import { ISuiteDescribe, ICaseDescribe } from './ITestReport';
 
+
+export const UNIT_REPORTES = tokenId<Reporter[]>('UNIT_REPORTES');
 
 /**
  * reportor.

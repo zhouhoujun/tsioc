@@ -1,4 +1,4 @@
-import { lang, IActionSetup, IocAction, ActionType, AsyncHandler, Actions } from '@tsdi/ioc';
+import { lang, IActionSetup, IocAction, ActionType, AsyncHandler, Actions, Destroyable } from '@tsdi/ioc';
 import { LogConfigureToken, DebugLogAspect, LogModule } from '@tsdi/logs';
 import { ApplicationContext } from '../Context';
 import { Service } from '../services/service';
@@ -91,7 +91,7 @@ export const ConfigureLoadHandle = async function (ctx: ApplicationContext, next
 /**
  * configure register servers scope.
  */
- export class RegisterHandles extends BuildHandles<ApplicationContext> implements IActionSetup {
+export class RegisterHandles extends BuildHandles<ApplicationContext> implements IActionSetup {
 
     setup() {
         this.use(ConfigureServerHandle);
@@ -141,7 +141,7 @@ export const ConfigureServiceHandle = async function (ctx: ApplicationContext, n
     if (boots?.length) {
         await lang.step(boots.map(tyser => () => {
             const ser = regedState.getInstance(tyser) as Service;
-            ctx.onDestroy(() => ser?.destroy());
+            ctx.onDestroy(() => ser.destroy());
             ctx.startups.push(tyser);
             return ser?.configureService(ctx);
         }));

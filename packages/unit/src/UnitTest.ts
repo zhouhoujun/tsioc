@@ -2,7 +2,7 @@ import { LoadType, Type } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
 import { ApplicationOption, Application, Module } from '@tsdi/core';
-import { UnitTestStartup } from './UnitTestConfigureRegister';
+import { UnitTestStartup } from './RegisterConfigure';
 import { UnitTestConfigure } from './UnitTestConfigure';
 import { UnitTestRunner } from './runner/UnitTestRunner';
 import { RunAspect } from './aop/RunAspect';

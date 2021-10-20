@@ -21,6 +21,7 @@ export class Application {
     private _destroyed = false;
     private _dsryCbs: (() => void)[] = [];
     readonly root: ModuleInjector;
+
     /**
      * application context.
      *
@@ -108,11 +109,19 @@ export class Application {
             if (isFunction(target)) {
                 this.context = root.resolve({ token: ApplicationFactory, target: target }).create(root);
             } else {
-                if (target.loads) await this.root.load(target.loads);
+
+                if (target.loads) {
+                    this._loads = await this.root.load(target.loads);
+                }
                 this.context = root.resolve({ token: ApplicationFactory, target: target.type }).create(root, target);
             }
         }
         return this.context;
+    }
+
+    private _loads?: Type[];
+    get loadTypes(): Type[] {
+        return this._loads ?? EMPTY;
     }
 
     protected getDeps() {

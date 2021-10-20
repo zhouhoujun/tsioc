@@ -16,5 +16,5 @@ export * from './reports/Reporter';
 
 export * from './UnitTest';
 export * from './UnitTestConfigure';
-export * from './UnitTestConfigureRegister';
+export * from './RegisterConfigure';
 

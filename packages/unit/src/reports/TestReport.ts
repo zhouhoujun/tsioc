@@ -1,6 +1,6 @@
 import { Singleton, Inject, Token, Type, lang, tokenId, Injector } from '@tsdi/ioc';;
 import { ITestReport, ISuiteDescribe, ICaseDescribe } from './ITestReport';
-import { Reporter, RealtimeReporter } from './Reporter';
+import { Reporter, RealtimeReporter, UNIT_REPORTES } from './Reporter';
 
 /**
  * report token.
@@ -25,7 +25,7 @@ export class TestReport implements ITestReport {
     reports!: Reporter[];
     getReports() {
         if (!this.reports) {
-            this.reports = this.injector.getServices(Reporter);
+            this.reports = this.injector.get(UNIT_REPORTES);
         }
         return this.reports || [];
     }

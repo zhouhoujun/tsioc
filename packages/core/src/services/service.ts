@@ -5,7 +5,7 @@ import { ApplicationContext } from '../Context';
 /**
  * configure services for application.
  */
- export interface Service extends Destroyable {
+export interface Service extends Destroyable {
     /**
      * config service of application.
      *
