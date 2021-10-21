@@ -107,6 +107,7 @@ export class DefaultInjector extends Injector {
                 break;
             case 'provider':
             case 'invoked':
+            case 'parameter':
                 break;
             default:
                 this.factories.set(INJECTOR, val);
@@ -595,6 +596,48 @@ export class DefaultInjector extends Injector {
     invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
     invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
         return this.get(Invoker).invoke(this, target, propertyKey, (args.length === 1 && isArray(args[0])) ? args[0] : args);
+        // let providers = args.length === 1 && isArray(args[0]) ? args[0] : args;
+        // let targetClass: Type, instance: any, key: string;
+        // if (isTypeObject(target)) {
+        //     targetClass = getClass(target);
+        //     instance = target as T;
+        // } else {
+        //     instance = this.resolve(target as Token, providers);
+        //     targetClass = getClass(instance);
+        //     if (!targetClass) {
+        //         throw new Error((target as Token).toString() + ' is not implements by any class.')
+        //     }
+        // }
+
+        // const tgRefl = get(targetClass);
+        // if (isFunction(propertyKey)) {
+        //     key = tgRefl.class.getPropertyName(propertyKey(tgRefl.class.getPropertyDescriptors() as any) as TypedPropertyDescriptor<any>);
+        // } else {
+        //     key = propertyKey;
+        // }
+
+        // if (!instance || !isFunction(instance[key])) {
+        //     throw new Error(`type: ${targetClass} has no method ${(key || '').toString()}.`);
+        // }
+
+        // const state = this.state();
+        // providers = [...providers || EMPTY, state.getTypeProvider(targetClass), ...tgRefl.methodProviders.get(key) || EMPTY];
+        // const proxy = instance[key]['_proxy'];
+        
+        // const factory = this.resolve({token: ParameterResolverFactory, target: targetClass })
+
+        // const injector = providers.length ? Injector.create(providers, this, proxy ? 'invoked' : 'parameter') : this;
+        
+        // const resolver = injector.get(ParameterResolver);
+        // const paramInstances = (tgRefl.methodParams.get(key) || EMPTY).map(p => resolver.resolve(injector, p));
+        // if (injector !== this) {
+        //     if (proxy) {
+        //         paramInstances.push(injector);
+        //     } else {
+        //         injector.destroy();
+        //     }
+        // }
+        // return instance[key](...paramInstances) as TR;
     }
 
 

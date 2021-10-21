@@ -8,6 +8,7 @@ import { EMPTY, isArray } from './utils/chk';
 import { Handler } from './utils/hdl';
 import { Action } from './action';
 import { ClassProvider, ExistingProvider, FactoryProvider, StaticProvider, ValueProvider } from './providers';
+import { ParameterMetadata } from './metadata/meta';
 
 
 /**
@@ -609,7 +610,7 @@ export type FnType = 'cotr' | 'inj' | 'fac';
 /**
  * injector scope.
  */
-export type InjectorScope = 'root' | 'provider' | 'invoked';
+export type InjectorScope = 'root' | 'provider' | 'invoked' | 'parameter';
 
 /**
  * factory record.

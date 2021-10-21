@@ -54,7 +54,7 @@ export class InvokerImpl implements Invoker {
         providers = [...providers || EMPTY, state.getTypeProvider(targetClass), ...tgRefl.methodProviders.get(key) || EMPTY];
         const proxy = instance[key]['_proxy'];
         if (providers.length) {
-            injector = Injector.create(providers, injector, proxy ? 'invoked' : 'provider');
+            injector = Injector.create(providers, injector, proxy ? 'invoked' : 'parameter');
         }
         const paramInstances = this.resolveParams(injector, state, tgRefl.methodParams.get(key) || EMPTY);
         if (proxy) {
@@ -81,7 +81,7 @@ export class InvokerImpl implements Invoker {
             state.getTypeProvider(target),
             ...tgRefl.methodProviders.get(propertyKey) || EMPTY];
         if (providers.length) {
-            injector = Injector.create(providers, injector, 'provider');
+            injector = Injector.create(providers, injector, 'parameter');
         }
         const args = this.resolveParams(injector, state, tgRefl.methodParams.get(propertyKey) || EMPTY);
         if (providers.length) {

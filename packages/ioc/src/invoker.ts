@@ -19,7 +19,7 @@ export abstract class Invoker {
      * @param {ProviderType[]} providers
      * @returns {TR}
      */
-     abstract invoke<T, TR = any>(injector: Injector, target: Token<T> | T, propertyKey: MethodType<T>, providers?: ProviderType[]): TR;
+    abstract invoke<T, TR = any>(injector: Injector, target: Token<T> | T, propertyKey: MethodType<T>, providers?: ProviderType[]): TR;
     /**
      * create params instances with IParameter and provider of target type.
      *
@@ -29,6 +29,37 @@ export abstract class Invoker {
      * @param {ProviderType[]} providers
      * @returns {any[]}
      */
-     abstract createParams(injector: Injector, target: Type, propertyKey: string, providers?: ProviderType[]): any[];
+    abstract createParams(injector: Injector, target: Type, propertyKey: string, providers?: ProviderType[]): any[];
 
 }
+
+
+
+export interface InvocationContext {
+    // getArguments(): 
+}
+
+export interface OperationInvoker {
+    invoke(ctx: InvocationContext): any;
+}
+
+
+export interface ReflenceInvoker<T> {
+    get type(): Type<T>;
+    invoke<TR>(propertyKey: MethodType<T>, providers?: ProviderType[]): TR;
+}
+
+// @Abstract()
+// export abstract class InvokerFactory<T> {
+//     /**
+//      * service type.
+//      */
+//     abstract get type(): Type<T>;
+//     abstract create<T>(injector: Injector, providers: ProviderType[]): OperationInvoker<T>;
+// }
+
+@Abstract()
+export abstract class InvokerFactoryResolver {
+    abstract resolve<T>(type: Type<T> | T): ReflenceInvoker<T>;
+}
+
