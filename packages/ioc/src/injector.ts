@@ -8,7 +8,6 @@ import { EMPTY, isArray } from './utils/chk';
 import { Handler } from './utils/hdl';
 import { Action } from './action';
 import { ClassProvider, ExistingProvider, FactoryProvider, StaticProvider, ValueProvider } from './providers';
-import { ParameterMetadata } from './metadata/meta';
 
 
 /**

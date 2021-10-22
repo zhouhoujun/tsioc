@@ -21,7 +21,7 @@ import { InvokerImpl } from './actions/invoker';
 import { RuntimeLifeScope } from './actions/runtime';
 import { TypeReflect } from './metadata/type';
 import { get } from './metadata/refl';
-import { Invoker } from './invoker';
+import { Invoker, OperationInvokerFactory } from './invoker';
 import { DefaultModuleLoader } from './loader';
 import { ResolveServicesScope, ServicesContext } from './actions/serv';
 
@@ -597,6 +597,7 @@ export class DefaultInjector extends Injector {
     invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
         return this.get(Invoker).invoke(this, target, propertyKey, (args.length === 1 && isArray(args[0])) ? args[0] : args);
         // let providers = args.length === 1 && isArray(args[0]) ? args[0] : args;
+
         // let targetClass: Type, instance: any, key: string;
         // if (isTypeObject(target)) {
         //     targetClass = getClass(target);
@@ -619,25 +620,9 @@ export class DefaultInjector extends Injector {
         // if (!instance || !isFunction(instance[key])) {
         //     throw new Error(`type: ${targetClass} has no method ${(key || '').toString()}.`);
         // }
+        // const factory = this.resolve({ token: OperationInvokerFactory, target: targetClass, providers });
+        // return factory.create(target, key, this, providers).invoke()
 
-        // const state = this.state();
-        // providers = [...providers || EMPTY, state.getTypeProvider(targetClass), ...tgRefl.methodProviders.get(key) || EMPTY];
-        // const proxy = instance[key]['_proxy'];
-        
-        // const factory = this.resolve({token: ParameterResolverFactory, target: targetClass })
-
-        // const injector = providers.length ? Injector.create(providers, this, proxy ? 'invoked' : 'parameter') : this;
-        
-        // const resolver = injector.get(ParameterResolver);
-        // const paramInstances = (tgRefl.methodParams.get(key) || EMPTY).map(p => resolver.resolve(injector, p));
-        // if (injector !== this) {
-        //     if (proxy) {
-        //         paramInstances.push(injector);
-        //     } else {
-        //         injector.destroy();
-        //     }
-        // }
-        // return instance[key](...paramInstances) as TR;
     }
 
 
