@@ -4,7 +4,7 @@ import { Abstract } from './metadata/fac';
 import { get } from './metadata/refl';
 import { Token } from './tokens';
 import { Type } from './types';
-import { EMPTY, getClass, isDefined, isFunction, isNil } from './utils/chk';
+import { EMPTY, getClass, isDefined, isNil } from './utils/chk';
 
 export interface Parameter<T = any> extends ParameterMetadata {
     type?: ClassType<T>;
