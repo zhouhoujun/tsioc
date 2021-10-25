@@ -252,7 +252,7 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
 export const Module: IModuleDecorator<ModuleMetadata> = createModuleDecorator<ModuleMetadata>('DIModule');
 /**
  * Module Decorator, definde class as module.
- * @deprecated use `Module` instead.
+ * @deprecated use {@link Module} instead.
  */
 export const DIModule = Module;
 
@@ -381,7 +381,7 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
 
 /**
  * message handle decorator.
- * @deprecated use `Handle` instead.
+ * @deprecated use {@link Handle} instead.
  */
 export const Message = Handle;
 

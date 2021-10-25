@@ -544,7 +544,7 @@ export function isInjector(target: any): target is Injector {
 
 /**
 * root container interface.
-* @deprecated use `Injector` instead.
+* @deprecated use {@link Injector} instead.
 */
 @Abstract()
 export abstract class Container extends Injector { };
@@ -568,7 +568,8 @@ export const INJECT_IMPL = {
 
 
 /**
- * providers.
+ * providers for {@link Injector}.
+ * 
  */
 export type ProviderType = Modules[] | Injector | StaticProvider | undefined;
 

@@ -13,7 +13,7 @@ export const ROOT_INJECTOR: Token<Injector> = tokenId<Injector>('ROOT_INJECTOR')
 
 /**
  * root container token.
- * @deprecated use `ROOT_INJECTOR` instead.
+ * @deprecated use {@link ROOT_INJECTOR} instead.
  */
 export const CONTAINER: Token<Container> = tokenId<Container>('DI_CONTAINER');
 

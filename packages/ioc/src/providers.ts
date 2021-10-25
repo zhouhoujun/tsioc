@@ -19,8 +19,10 @@ export interface ProvideProvider {
 }
 
 /**
- * @usageNotes
- * ```
+ * class provider for {@link Injector }
+ * 
+ * example:
+ * ```typescript
  * @Injectable()
  * class MyService {}
  *
@@ -185,7 +187,8 @@ export interface TypeProvider extends Type { }
 export type StaticProviders = ClassProvider & ValueProvider & ConstructorProvider & ExistingProvider & FactoryProvider;
 
 /**
- * provider type.
+ * static provider type.
+ * 
+ * include type {@link TypeProvider}, {@link ClassProvider}, {@link ValueProvider}, {@link ConstructorProvider}, {@link ExistingProvider}, {@link FactoryProvider}, {@link KeyValueProvider}.
  */
 export type StaticProvider = TypeProvider | ClassProvider | ValueProvider | ConstructorProvider | ExistingProvider | FactoryProvider | KeyValueProvider;
-

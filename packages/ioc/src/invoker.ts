@@ -94,8 +94,7 @@ export interface OperationInvoker {
 
 
 /**
- * Mis
- * sing argument errror.
+ * Missing argument errror.
  */
 export class MissingParameterError extends Error {
     constructor(parameters: Parameter[]) {

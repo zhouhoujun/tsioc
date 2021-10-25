@@ -5,8 +5,10 @@
 export type Modules = Type | Record<string, Type | Object>;
 
 /**
- * object map.
- *
+ * object map. 
+ * 
+ * @deprecated use {@link Record} instead.
+ *  
  */
 export type ObjectMap<T = any> = Record<string, T>;
 
