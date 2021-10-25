@@ -609,7 +609,7 @@ export class DefaultInjector extends Injector {
         if (args.length === 1) {
             if (args[0] instanceof InvocationContext) {
                 context = args[0];
-                providers = [];
+                providers = EMPTY;
             } else {
                 providers = isArray(args[0]) ? args[0] : args;
             }
@@ -637,7 +637,7 @@ export class DefaultInjector extends Injector {
         }
 
         const factory = this.resolve({ token: OperationInvokerFactory, target: targetClass, providers });
-        return factory.create(targetClass, key, instance).invoke(context ?? factory.createContext(targetClass, key, this, providers && providers.length ? { providers } : undefined));
+        return factory.create(targetClass, key, instance).invoke(context ?? factory.createContext(targetClass, key, this, { providers }));
     }
 
 
@@ -1108,14 +1108,15 @@ export function createInvocationContext(injector: Injector, type: Type, method: 
         resolvers?: OperationArgumentResolver[],
         providers?: ProviderType[]
     }) {
+    option = option || EMPTY_OBJ;
     const state = injector.state();
     const proxy = type.prototype[method]['_proxy'];
-    let providers = [...option?.providers || EMPTY, state.getTypeProvider(type), ...get(type).methodProviders.get(method) || EMPTY]
+    let providers = [...option.providers || EMPTY, state.getTypeProvider(type), ...get(type).methodProviders.get(method) || EMPTY]
     if (providers.length) {
         injector = Injector.create(providers, injector, proxy ? 'invoked' : 'parameter');
     }
-    return new InvocationContext(injector, option?.args || EMPTY_OBJ,
-        ...option?.resolvers ?? EMPTY,
+    return new InvocationContext(injector, option.args || EMPTY_OBJ,
+        ...option.resolvers ?? EMPTY,
         {
             resolve(parameter) {
                 const pdr = parameter.provider!;
