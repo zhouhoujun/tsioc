@@ -1,4 +1,4 @@
-import { Inject, Injectable, isFunction, isString, refl, Singleton } from '@tsdi/ioc';
+import { Injectable, isFunction, isString, refl, Singleton } from '@tsdi/ioc';
 import { Context } from './context';
 import { IRouter, MiddlewareType, RouteInfo, RouteReflect } from './middleware';
 import { MessageQueue } from './queue';

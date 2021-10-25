@@ -1,6 +1,6 @@
 import { ContextFactory, RouteVaildator } from './context';
 import { Module } from '../metadata/decor';
-import { ExtendBaseTypeMap } from './parser';
+// import { ExtendBaseTypeMap } from './parser';
 import { MessageQueue } from './queue';
 import { RootMessageQueue } from './root';
 import { MsgRouteVaildator, BASE_CONTEXT_FACTORY_IMPL } from './base';
@@ -18,7 +18,7 @@ import { RootRouter, Router } from './router';
             provide: RouteVaildator,
             useExisting: MsgRouteVaildator
         },
-        ExtendBaseTypeMap,
+        // ExtendBaseTypeMap,
         MessageQueue,
         Router,
         RootRouter,

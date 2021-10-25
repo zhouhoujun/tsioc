@@ -1,6 +1,7 @@
 import {
-    AsyncHandler, DecorDefine, ParameterMetadata, ProviderType, Type, TypeReflect, Injector, Token, tokenId,RegisteredState, 
-    isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, isPlainObject, EMPTY_OBJ, lang, chain
+    AsyncHandler, DecorDefine, ParameterMetadata, ProviderType, Type, TypeReflect, Injector, Token, tokenId, RegisteredState,
+    isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, isPlainObject, EMPTY_OBJ, lang,
+    chain, isObservable, OperationInvokerFactory
 } from '@tsdi/ioc';
 import { PipeTransform } from '..';
 import { CONTEXT } from '../metadata/tk';
@@ -8,7 +9,7 @@ import { TypeParser } from '../services/interface';
 import { Context } from './context';
 import { CanActive } from './guard';
 import { IRouter, isMiddlwareType, Middleware, MiddlewareType, RouteInfo } from './middleware';
-import { MODEL_PARSER, ModelParser } from './parser';
+// import { MODEL_PARSER, ModelParser } from './parser';
 import { ResultValue } from './result';
 import { Route } from './route';
 import { ResultStrategy } from './strategy';
@@ -133,10 +134,23 @@ export class MappingRoute extends Route {
                 return;
             }
 
-            const providers = this.createProvider(ctx, ctrl, meta.metadata, this.reflect.methodParams.get(meta.propertyKey));
-            let result = injector.invoke(ctrl, meta.propertyKey, providers.length > 0 ? Injector.create(providers, ctx.injector) : ctx.injector);
+
+            const factory = injector.resolve({ token: OperationInvokerFactory, target: this.reflect });
+            // todo add module resolve
+            const context = factory.createContext(this.reflect, meta.propertyKey, injector, {
+                args: ctx,
+                resolvers: [],
+                providers: []
+            });
+            let result = factory.create(this.reflect, meta.propertyKey, ctrl).invoke(context);
+
+            // const providers = this.createProvider(ctx, ctrl, meta.metadata, this.reflect.methodParams.get(meta.propertyKey));
+            // let result = injector.invoke(ctrl, meta.propertyKey, providers.length > 0 ? Injector.create(providers, ctx.injector) : ctx.injector);
+
             if (isPromise(result)) {
                 result = await result;
+            } else if (isObservable(result)) {
+                result = await result.toPromise();
             }
 
             // middleware.
@@ -198,87 +212,87 @@ export class MappingRoute extends Route {
         return meta;
     }
 
-    protected createProvider(ctx: Context, ctrl: any, meta: RouteMapingMetadata, params?: ParameterMetadata[]): ProviderType[] {
-        const vaild = ctx.vaild;
-        const injector = this.injector;
-        let providers: ProviderType[] = [{ provide: CONTEXT, useValue: ctx }];
-        if (params && params.length) {
-            let restParams: any = {};
-            if (meta.route && isRest.test(meta.route)) {
-                let routes = meta.route.split('/').map(r => r.trim());
-                let restParamNames = routes.filter(d => restParms.test(d));
-                let baseURL = vaild.vaildify(this.url, true);
-                let routeUrls = vaild.vaildify(ctx.url.replace(baseURL, '')).split('/');
-                restParamNames.forEach(pname => {
-                    let val = routeUrls[routes.indexOf(pname)];
-                    restParams[pname.substring(1)] = val;
-                });
-            }
-            let body: any = ctx.request.body || EMPTY_OBJ;
-            let parser = injector.get(TypeParser);
-            let ppds: (ProviderType | null)[] = params.map((param) => {
-                let ptype = isFunction(param.provider) ? param.provider : param.type;
-                let val;
-                let provide: Token = ptype!;
-                if (isFunction(ptype)) {
-                    if (isPrimitiveType(ptype)) {
-                        let paramVal = restParams[param.paramName!];
-                        if (isUndefined(paramVal)) {
-                            paramVal = ctx.request.query[param.paramName!];
-                        }
-                        val = parser.parse(ptype, paramVal);
-                    }
-                    if (isNil(val)) {
-                        const keys = Object.keys(body);
-                        if (keys.length) {
-                            if (isArray(ptype) && isArray(body)) {
-                                val = body;
-                            } else if (isPrimitiveType(ptype)) {
-                                if (param.paramName) {
-                                    provide = param.paramName;
-                                    val = parser.parse(ptype, body[param.paramName]);
-                                }
-                            } else if (isClass(ptype)) {
-                                if (body instanceof ptype) {
-                                    val = body;
-                                } else {
-                                    let rkey: string = '';
-                                    if (isPlainObject(body)) {
-                                        rkey = keys.find(k => body[k] instanceof (ptype as Type))!;
-                                    }
+    // protected createProvider(ctx: Context, ctrl: any, meta: RouteMapingMetadata, params?: ParameterMetadata[]): ProviderType[] {
+    //     const vaild = ctx.vaild;
+    //     const injector = this.injector;
+    //     let providers: ProviderType[] = [{ provide: CONTEXT, useValue: ctx }];
+    //     if (params && params.length) {
+    //         let restParams: any = {};
+    //         if (meta.route && isRest.test(meta.route)) {
+    //             let routes = meta.route.split('/').map(r => r.trim());
+    //             let restParamNames = routes.filter(d => restParms.test(d));
+    //             let baseURL = vaild.vaildify(this.url, true);
+    //             let routeUrls = vaild.vaildify(ctx.url.replace(baseURL, '')).split('/');
+    //             restParamNames.forEach(pname => {
+    //                 let val = routeUrls[routes.indexOf(pname)];
+    //                 restParams[pname.substring(1)] = val;
+    //             });
+    //         }
+    //         let body: any = ctx.request.body || EMPTY_OBJ;
+    //         let parser = injector.get(TypeParser);
+    //         let ppds: (ProviderType | null)[] = params.map((param) => {
+    //             let ptype = isFunction(param.provider) ? param.provider : param.type;
+    //             let val;
+    //             let provide: Token = ptype!;
+    //             if (isFunction(ptype)) {
+    //                 if (isPrimitiveType(ptype)) {
+    //                     let paramVal = restParams[param.paramName!];
+    //                     if (isUndefined(paramVal)) {
+    //                         paramVal = ctx.request.query[param.paramName!];
+    //                     }
+    //                     val = parser.parse(ptype, paramVal);
+    //                 }
+    //                 if (isNil(val)) {
+    //                     const keys = Object.keys(body);
+    //                     if (keys.length) {
+    //                         if (isArray(ptype) && isArray(body)) {
+    //                             val = body;
+    //                         } else if (isPrimitiveType(ptype)) {
+    //                             if (param.paramName) {
+    //                                 provide = param.paramName;
+    //                                 val = parser.parse(ptype, body[param.paramName]);
+    //                             }
+    //                         } else if (isClass(ptype)) {
+    //                             if (body instanceof ptype) {
+    //                                 val = body;
+    //                             } else {
+    //                                 let rkey: string = '';
+    //                                 if (isPlainObject(body)) {
+    //                                     rkey = keys.find(k => body[k] instanceof (ptype as Type))!;
+    //                                 }
 
-                                    if (rkey) {
-                                        val = body[rkey];
-                                    } else {
-                                        let mdparser = injector.resolve({ token: ModelParser, target: ptype, defaultToken: MODEL_PARSER });
-                                        if (mdparser) {
-                                            val = mdparser.parseModel(ptype, body);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        provide = param.paramName!
-                    }
-                } else if (ptype === REQUEST) {
-                    val = ctx.request;
-                } else if (ptype === REQUEST_PARAMS) {
-                    val = ctx.request.query ?? {};
-                } else if (ptype === REQUEST_BODY) {
-                    val = body;
-                }
+    //                                 if (rkey) {
+    //                                     val = body[rkey];
+    //                                 } else {
+    //                                     let mdparser = injector.resolve({ token: ModelParser, target: ptype, defaultToken: MODEL_PARSER });
+    //                                     if (mdparser) {
+    //                                         val = mdparser.parseModel(ptype, body);
+    //                                     }
+    //                                 }
+    //                             }
+    //                         }
+    //                     }
+    //                 } else {
+    //                     provide = param.paramName!
+    //                 }
+    //             } else if (ptype === REQUEST) {
+    //                 val = ctx.request;
+    //             } else if (ptype === REQUEST_PARAMS) {
+    //                 val = ctx.request.query ?? {};
+    //             } else if (ptype === REQUEST_BODY) {
+    //                 val = body;
+    //             }
 
-                if (!provide || isNil(val)) {
-                    return null;
-                }
-                return { provide, useValue: val };
-            });
-            providers = providers.concat(ppds.filter(p => p !== null) as ProviderType[]);
-        }
+    //             if (!provide || isNil(val)) {
+    //                 return null;
+    //             }
+    //             return { provide, useValue: val };
+    //         });
+    //         providers = providers.concat(ppds.filter(p => p !== null) as ProviderType[]);
+    //     }
 
-        return providers;
-    }
+    //     return providers;
+    // }
 
     protected parseHandle(state: RegisteredState, mdty: MiddlewareType): AsyncHandler<Context> {
         if (mdty instanceof Middleware) {
