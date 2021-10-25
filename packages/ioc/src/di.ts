@@ -11,17 +11,16 @@ import { cleanObj, getClass, getTypes, isBaseOf, mapEach } from './utils/lang';
 import { KeyValueProvider, StaticProviders } from './providers';
 import {
     isArray, isClass, isDefined, isFunction, isNil, isPlainObject, isString,
-    isTypeObject, isTypeReflect, EMPTY
+    isTypeObject, isTypeReflect, EMPTY, EMPTY_OBJ
 } from './utils/chk';
 import { DesignContext } from './actions/ctx';
 import { DesignLifeScope } from './actions/design';
 import { Action, IActionSetup } from './action';
 import { Handler } from './utils/hdl';
-import { InvokerImpl } from './actions/invoker';
 import { RuntimeLifeScope } from './actions/runtime';
 import { TypeReflect } from './metadata/type';
 import { get } from './metadata/refl';
-import { Invoker, OperationInvokerFactory } from './invoker';
+import { InvocationContext, OperationArgumentResolver, OperationInvokerFactory, ReflectiveOperationInvoker } from './invoker';
 import { DefaultModuleLoader } from './loader';
 import { ResolveServicesScope, ServicesContext } from './actions/serv';
 
@@ -578,7 +577,16 @@ export class DefaultInjector extends Injector {
     * @template T
     * @param {(T | Type<T>)} target type of class or instance
     * @param {MethodType} propertyKey
-    * @param {T} [instance] instance of target type.
+    * @param {InvocationContext} context ivacation context.
+    * @returns {TR}
+    */
+    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
+    /**
+    * invoke method.
+    *
+    * @template T
+    * @param {(T | Type<T>)} target type of class or instance
+    * @param {MethodType} propertyKey
     * @param {ProviderType[]} providers
     * @returns {TR}
     */
@@ -595,34 +603,41 @@ export class DefaultInjector extends Injector {
     */
     invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
     invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
-        return this.get(Invoker).invoke(this, target, propertyKey, (args.length === 1 && isArray(args[0])) ? args[0] : args);
-        // let providers = args.length === 1 && isArray(args[0]) ? args[0] : args;
+        // return this.get(Invoker).invoke(this, target, propertyKey, (args.length === 1 && isArray(args[0])) ? args[0] : args);
+        let providers: ProviderType[];
+        let context: InvocationContext | null = null;
+        if (args.length === 1) {
+            if (args[0] instanceof InvocationContext) {
+                context = args[0];
+                providers = [];
+            } else {
+                providers = isArray(args[0]) ? args[0] : args;
+            }
+        } else {
+            providers = args;
+        }
 
-        // let targetClass: Type, instance: any, key: string;
-        // if (isTypeObject(target)) {
-        //     targetClass = getClass(target);
-        //     instance = target as T;
-        // } else {
-        //     instance = this.resolve(target as Token, providers);
-        //     targetClass = getClass(instance);
-        //     if (!targetClass) {
-        //         throw new Error((target as Token).toString() + ' is not implements by any class.')
-        //     }
-        // }
+        let targetClass: Type, instance: any, key: string;
+        if (isTypeObject(target)) {
+            targetClass = getClass(target);
+            instance = target as T;
+        } else {
+            instance = this.resolve(target as Token, providers);
+            targetClass = getClass(instance);
+            if (!targetClass) {
+                throw new Error((target as Token).toString() + ' is not implements by any class.')
+            }
+        }
 
-        // const tgRefl = get(targetClass);
-        // if (isFunction(propertyKey)) {
-        //     key = tgRefl.class.getPropertyName(propertyKey(tgRefl.class.getPropertyDescriptors() as any) as TypedPropertyDescriptor<any>);
-        // } else {
-        //     key = propertyKey;
-        // }
+        if (isFunction(propertyKey)) {
+            const tgRefl = get(targetClass);
+            key = tgRefl.class.getPropertyName(propertyKey(tgRefl.class.getPropertyDescriptors() as any) as TypedPropertyDescriptor<any>);
+        } else {
+            key = propertyKey;
+        }
 
-        // if (!instance || !isFunction(instance[key])) {
-        //     throw new Error(`type: ${targetClass} has no method ${(key || '').toString()}.`);
-        // }
-        // const factory = this.resolve({ token: OperationInvokerFactory, target: targetClass, providers });
-        // return factory.create(target, key, this, providers).invoke()
-
+        const factory = this.resolve({ token: OperationInvokerFactory, target: targetClass, providers });
+        return factory.create(targetClass, key, instance).invoke(context ?? factory.createContext(targetClass, key, this, providers && providers.length ? { providers } : undefined));
     }
 
 
@@ -1087,6 +1102,63 @@ class ActionProviderImpl extends DefaultInjector implements ActionProvider {
     }
 }
 
+export function createInvocationContext(injector: Injector, type: Type, method: string
+    , option?: {
+        args?: Record<string, any> | Map<string, any>,
+        resolvers?: OperationArgumentResolver[],
+        providers?: ProviderType[]
+    }) {
+    const state = injector.state();
+    const proxy = type.prototype[method]['_proxy'];
+    let providers = [...option?.providers || EMPTY, state.getTypeProvider(type), ...get(type).methodProviders.get(method) || EMPTY]
+    if (providers.length) {
+        injector = Injector.create(providers, injector, proxy ? 'invoked' : 'parameter');
+    }
+    return new InvocationContext(injector, option?.args || EMPTY_OBJ,
+        ...option?.resolvers ?? EMPTY,
+        {
+            resolve(parameter) {
+                const pdr = parameter.provider!;
+                if (isClass(pdr) && !state.isRegistered(pdr) && !injector.has(pdr, true)) {
+                    injector.register(pdr);
+                }
+                return injector.get(pdr);
+            },
+            canResolve(parameter) {
+                return !!parameter.provider;
+            }
+        },
+        {
+            resolve(parameter) {
+                return injector.get<any>(parameter.paramName!);
+            },
+            canResolve(parameter) {
+                return !!parameter.paramName && injector.has(parameter.paramName);
+            }
+        },
+        {
+            resolve(parameter) {
+                const ty = parameter.type!;
+                if (isClass(ty) && !state.isRegistered(ty) && !injector.has(ty, true)) {
+                    injector.register(ty);
+                }
+                return injector.get(ty);
+            },
+            canResolve(parameter) {
+                return !!parameter.type;
+            }
+        },
+        // default value
+        {
+            resolve(parameter) {
+                return parameter.defaultValue as any;
+            },
+            canResolve(parameter) {
+                return isDefined(parameter.defaultValue);
+            }
+        });
+}
+
 /**
  * register core for root.
  *
@@ -1094,9 +1166,16 @@ class ActionProviderImpl extends DefaultInjector implements ActionProvider {
  * @param {IContainer} root
  */
 function registerCores(root: Injector) {
-    root.setValue(Invoker, new InvokerImpl());
     root.setValue(ModuleLoader, new DefaultModuleLoader());
     root.setValue(ServicesProvider, new Services(root));
+    root.setValue(OperationInvokerFactory, {
+        create: (type, method, instance?) => {
+            return new ReflectiveOperationInvoker(type, method, instance);
+        },
+        createContext: (type, method, injector, options?) => {
+            return createInvocationContext(injector, type, method, options);
+        }
+    });
     // bing action.
     root.action().regAction(
         DesignLifeScope,

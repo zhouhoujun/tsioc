@@ -1,42 +1,15 @@
-import { ClassType, ParameterMetadata } from '.';
-import { Injector, MethodType, ProviderType } from './injector';
+import { Injector, ProviderType } from './injector';
 import { Abstract } from './metadata/fac';
+import { ParameterMetadata } from './metadata/meta';
 import { get } from './metadata/refl';
-import { Token } from './tokens';
-import { Type } from './types';
-import { EMPTY, getClass, isDefined, isNil } from './utils/chk';
+import { ClassType, Type } from './types';
+import { EMPTY, isDefined, isFunction, isNil } from './utils/chk';
+
+
+
 
 export interface Parameter<T = any> extends ParameterMetadata {
     type?: ClassType<T>;
-}
-
-/**
- * execution, invoke some type method.
- */
-@Abstract()
-export abstract class Invoker {
-    /**
-     * try to async invoke the method of intance, if no instance will create by type.
-     *
-     * @template T
-     * @param { IInjector } injector
-     * @param {(Token<T> | T)} target
-     * @param {MethodType} propertyKey
-     * @param {ProviderType[]} providers
-     * @returns {TR}
-     */
-    abstract invoke<T, TR = any>(injector: Injector, target: Token<T> | T, propertyKey: MethodType<T>, providers?: ProviderType[]): TR;
-    /**
-     * create params instances with IParameter and provider of target type.
-     *
-     * @param { Injector } injector
-     * @param {Type} target target type.
-     * @param {string} propertyKey
-     * @param {ProviderType[]} providers
-     * @returns {any[]}
-     */
-    abstract createParams(injector: Injector, target: Type, propertyKey: string, providers?: ProviderType[]): any[];
-
 }
 
 /**
@@ -63,7 +36,7 @@ export class InvocationContext {
 
     private _argumentResolvers: OperationArgumentResolver[];
     private _arguments: Map<string, any>;
-    constructor(args: Record<string, any> | Map<string, any>, ...argumentResolvers: OperationArgumentResolver[]) {
+    constructor(readonly injector: Injector, args: Record<string, any> | Map<string, any>, ...argumentResolvers: OperationArgumentResolver[]) {
         this._argumentResolvers = argumentResolvers;
         if (args instanceof Map) {
             this._arguments = args;
@@ -111,6 +84,7 @@ export interface OperationInvoker {
      * @param context the context to use to invoke the operation
      */
     invoke(context: InvocationContext): any;
+
     /**
      * resolve args.
      * @param context 
@@ -134,13 +108,25 @@ export class MissingParameterError extends Error {
  */
 export class ReflectiveOperationInvoker implements OperationInvoker {
 
-    constructor(private target: any, private method: string) {
-    }
+    constructor(private type: Type, private method: string, private instance?: any) { }
 
     invoke(context: InvocationContext) {
-        return this.target[this.method](...this.resolveArguments(context));
+        const injector = context.injector;
+        const instance = this.instance ?? injector.resolve(this.type);
+        if (!instance || !isFunction(instance[this.method])) {
+            throw new Error(`type: ${this.type} has no method ${this.method}.`);
+        }
+        const val = instance[this.method](...this.resolveArguments(context), injector.scope === 'invoked' ? injector : undefined);
+        if (injector.scope === 'parameter') {
+            injector.destroy();
+        }
+        return val;
     }
 
+    /**
+     * resolve args.
+     * @param context 
+     */
     resolveArguments(context: InvocationContext): any[] {
         const parameters = this.getParameters();
         this.validate(context, parameters);
@@ -154,7 +140,7 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
     }
 
     protected getParameters(): Parameter[] {
-        return get(getClass(this.target)).methodParams.get(this.method) ?? EMPTY;
+        return get(this.type).methodParams?.get(this.method) ?? EMPTY;
     }
 
     protected validate(context: InvocationContext, parameters: Parameter[]) {
@@ -168,13 +154,17 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
         if (context.canResolve(parameter)) return false;
         return !parameter.paramName || isNil(context.arguments.get(parameter.paramName));
     }
-
 }
 
 
 @Abstract()
 export abstract class OperationInvokerFactory {
-    abstract create<T>(target: Type<T> | T, method: string, injector: Injector, providers: ProviderType[]): OperationInvoker;
+    abstract create<T>(type: Type<T>, method: string, instance?: T): OperationInvoker;
+    abstract createContext<T>(target: Type<T>, method: string, injector: Injector, option?: {
+        args?: Record<string, any> | Map<string, any>,
+        resolvers?: OperationArgumentResolver[],
+        providers?: ProviderType[]
+    }): InvocationContext;
 }
 
 

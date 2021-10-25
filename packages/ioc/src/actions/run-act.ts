@@ -5,7 +5,7 @@ import { RuntimeContext } from './ctx';
 import { IocRegAction, IocRegScope } from './reg';
 import { Token } from '../tokens';
 import { PropertyMetadata } from '../metadata/meta';
-import { Invoker } from '../invoker';
+import { OperationInvokerFactory } from '../invoker';
 
 /**
  * ioc runtime register action.
@@ -24,7 +24,9 @@ export abstract class IocRuntimeAction extends IocRegAction<RuntimeContext> { }
 export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): void {
     if (!ctx.args) {
         ctx.params = ctx.reflect.methodParams.get('constructor') ?? EMPTY;
-        ctx.args = ctx.injector.get(Invoker).createParams(ctx.injector, ctx.type, 'constructor', ctx.providers ? [ctx.providers] : []);
+        const factory = ctx.injector.resolve({ token: OperationInvokerFactory, target: ctx.type });
+        ctx.args = factory.create(ctx.type, 'constructor').resolveArguments(
+            factory.createContext(ctx.type, 'constructor', ctx.injector, ctx.providers ? { providers: [ctx.providers] } : undefined));
     }
     next();
 };
