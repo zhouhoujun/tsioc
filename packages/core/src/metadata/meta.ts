@@ -1,4 +1,4 @@
-import { Metadata, PatternMetadata, ProviderMetadata, Type, TypeMetadata, DataType } from '@tsdi/ioc';
+import { Metadata, PatternMetadata, ProviderMetadata, Type, TypeMetadata } from '@tsdi/ioc';
 import { ModuleConfigure } from './ref';
 import { CanActive } from '../middlewares/guard';
 import { Middleware, Middlewares } from '../middlewares/middleware';

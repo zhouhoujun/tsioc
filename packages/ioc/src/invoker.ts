@@ -7,7 +7,9 @@ import { EMPTY, isDefined, isFunction, isNil } from './utils/chk';
 
 
 
-
+/**
+ * parameter.
+ */
 export interface Parameter<T = any> extends ParameterMetadata {
     type?: ClassType<T>;
 }
