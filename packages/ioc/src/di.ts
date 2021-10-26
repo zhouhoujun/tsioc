@@ -583,17 +583,17 @@ export class DefaultInjector extends Injector {
      * @param {...ProviderType[]} providers
      * @returns {TR}
      */
-    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
+    invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
     /**
      * invoke method.
      *
      * @template T
-     * @param {(T | Type<T>)} target type of class or instance
+     * @param {(T | Type<T> | TypeReflect<T>)} target type of class or instance
      * @param {MethodType} propertyKey
      * @param {InvocationContext} context ivacation context.
      * @returns {TR}
      */
-    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, option: {
+    invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, option: {
         args?: Record<string, any>,
         resolvers?: OperationArgumentResolver[] | ((injector: Injector, typeRef?: TypeReflect<T>, method?: string) => OperationArgumentResolver[]),
         providers?: ProviderType[]
@@ -602,12 +602,12 @@ export class DefaultInjector extends Injector {
      * invoke method.
      *
      * @template T
-     * @param {(T | Type<T>)} target type of class or instance
+     * @param {(T | Type<T> | TypeReflect<T>)} target type of class or instance
      * @param {MethodType} propertyKey
      * @param {InvocationContext} context ivacation context.
      * @returns {TR}
      */
-    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, context: InvocationContext): TR;
+    invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, context: InvocationContext): TR;
     /**
      * invoke method.
      *
@@ -617,8 +617,8 @@ export class DefaultInjector extends Injector {
      * @param {ProviderType[]} providers
      * @returns {TR}
      */
-    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, providers: ProviderType[]): TR;
-    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
+    invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, providers: ProviderType[]): TR;
+    invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
         let providers: ProviderType[] | undefined;
         let context: InvocationContext | null = null;
         let option: any;
@@ -639,18 +639,25 @@ export class DefaultInjector extends Injector {
         }
 
         let targetClass: Type, instance: any, key: string;
+        let tgRefl: TypeReflect | undefined;
         if (isTypeObject(target)) {
             targetClass = getClass(target);
             instance = target as T;
         } else {
-            instance = this.resolve(target as Token, providers!);
-            targetClass = getClass(instance);
-            if (!targetClass) {
-                throw new Error((target as Token).toString() + ' is not implements by any class.')
+            if (isTypeReflect(target)) {
+                tgRefl = target;
+                instance = this.resolve(target.type, providers!);
+                targetClass = target.type as Type;
+            } else {
+                instance = this.resolve(target as Token, providers!);
+                targetClass = getClass(instance);
+                if (!targetClass) {
+                    throw new Error((target as Token).toString() + ' is not implements by any class.')
+                }
             }
         }
 
-        const tgRefl = get(targetClass);
+        tgRefl = tgRefl ?? get(targetClass);
         if (isFunction(propertyKey)) {
             key = tgRefl.class.getPropertyName(propertyKey(tgRefl.class.getPropertyDescriptors() as any) as TypedPropertyDescriptor<any>);
         } else {
@@ -1136,7 +1143,7 @@ export function createInvocationContext(injector: Injector, typeRef: TypeReflect
     if (providers.length) {
         injector = Injector.create(providers, injector, proxy ? 'invoked' : 'parameter');
     }
-    return new InvocationContext(injector, option.args || EMPTY_OBJ,
+    return injector.has(InvocationContext)? injector.get(InvocationContext) : new InvocationContext(injector, option.args || EMPTY_OBJ,
         ...(isFunction(option.resolvers) ? option.resolvers(injector, typeRef, method) : option.resolvers) ?? EMPTY,
         {
             resolve(parameter) {

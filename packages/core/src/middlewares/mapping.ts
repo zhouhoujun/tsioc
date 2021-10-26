@@ -127,11 +127,6 @@ export class MappingRoute extends Route {
         const injector = this.injector;
         if (meta && meta.propertyKey) {
 
-            const ctrl = this.getInstance(ctx);
-            if (!ctrl) {
-                return;
-            }
-
             let restParams: any = {};
             const route: string = meta.metadata.route;
             if (route && isRest.test(route)) {
@@ -146,15 +141,7 @@ export class MappingRoute extends Route {
             }
             ctx.restful = restParams;
 
-            // const factory = injector.resolve({ token: OperationInvokerFactory, target: this.reflect });
-            // // todo add module resolve
-            // const context = factory.createContext(this.reflect, meta.propertyKey, injector, {
-            //     args: ctx,
-            //     resolvers: createRequstResolvers
-            // });
-            // let result = factory.create(this.reflect, meta.propertyKey, ctrl).invoke(context);
-
-            let result = injector.invoke(ctrl, meta.propertyKey, {
+            let result = injector.invoke(this.reflect, meta.propertyKey, {
                 args: ctx,
                 resolvers: createRequstResolvers
             });
@@ -187,10 +174,10 @@ export class MappingRoute extends Route {
         }
     }
 
-    protected getInstance(ctx: Context) {
-        return this.injector.resolve(this.reflect.type, ctx.injector)
-            ?? this.injector.state().resolve(this.reflect.type, [ctx.injector]);
-    }
+    // protected getInstance(ctx: Context) {
+    //     return this.injector.resolve(this.reflect.type, ctx.injector)
+    //         ?? this.injector.state().resolve(this.reflect.type, [ctx.injector]);
+    // }
 
     protected getRouteMiddleware(ctx: Context, meta: DecorDefine) {
         return [...this.middlewares || [], ...(meta.metadata as RouteMapingMetadata).middlewares || []];
