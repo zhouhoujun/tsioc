@@ -146,14 +146,18 @@ export class MappingRoute extends Route {
             }
             ctx.restful = restParams;
 
+            // const factory = injector.resolve({ token: OperationInvokerFactory, target: this.reflect });
+            // // todo add module resolve
+            // const context = factory.createContext(this.reflect, meta.propertyKey, injector, {
+            //     args: ctx,
+            //     resolvers: createRequstResolvers
+            // });
+            // let result = factory.create(this.reflect, meta.propertyKey, ctrl).invoke(context);
 
-            const factory = injector.resolve({ token: OperationInvokerFactory, target: this.reflect });
-            // todo add module resolve
-            const context = factory.createContext(this.reflect, meta.propertyKey, injector, {
+            let result = injector.invoke(ctrl, meta.propertyKey, {
                 args: ctx,
                 resolvers: createRequstResolvers
             });
-            let result = factory.create(this.reflect, meta.propertyKey, ctrl).invoke(context);
 
             if (isPromise(result)) {
                 result = await result;

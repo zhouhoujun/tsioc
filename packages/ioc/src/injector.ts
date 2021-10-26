@@ -8,6 +8,7 @@ import { EMPTY, isArray } from './utils/chk';
 import { Handler } from './utils/hdl';
 import { Action } from './action';
 import { ClassProvider, ExistingProvider, FactoryProvider, StaticProvider, ValueProvider } from './providers';
+import { InvocationContext, OperationArgumentResolver } from './invoker';
 
 
 /**
@@ -240,30 +241,52 @@ export abstract class Injector implements Destroyable {
      * @param to
      */
     abstract clone(filter: (key: Token<any>) => boolean, to?: Injector): Injector;
+
     /**
      * invoke method.
      *
      * @template T
-     * @param {(T | Type<T>)} target type of class or instance.
-     * @param {MethodType} propertyKey
-     * @param {T} [instance] instance of target type.
-     * @param {ProviderType[]} providers
-     * @returns {TR}
-     * @memberof Injector
-     */
-    abstract invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, providers?: ProviderType[]): TR
-    /**
-     * invoke method.
-     *
-     * @template T
-     * @param {(T | Type<T>)} target type of class or instance.
+     * @param {(T | Type<T>)} target type of class or instance
      * @param {MethodType} propertyKey
      * @param {T} [instance] instance of target type.
      * @param {...ProviderType[]} providers
      * @returns {TR}
-     * @memberof Injector
      */
     abstract invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
+    /**
+     * invoke method.
+     *
+     * @template T
+     * @param {(T | Type<T>)} target type of class or instance
+     * @param {MethodType} propertyKey
+     * @param {ProviderType[]} providers
+     * @returns {TR}
+     */
+    abstract invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, providers: ProviderType[]): TR;
+    /**
+     * invoke method.
+     *
+     * @template T
+     * @param {(T | Type<T>)} target type of class or instance
+     * @param {MethodType} propertyKey
+     * @param {any} option ivacation context option.
+     * @returns {TR}
+     */
+    abstract invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, option: {
+        args?: Record<string, any>,
+        resolvers?: OperationArgumentResolver[] | ((injector: Injector, typeRef?: TypeReflect<T>, method?: string) => OperationArgumentResolver[]),
+        providers?: ProviderType[]
+    }): TR;
+    /**
+     * invoke method.
+     *
+     * @template T
+     * @param {(T | Type<T>)} target type of class or instance
+     * @param {MethodType} propertyKey
+     * @param {InvocationContext} context ivacation context.
+     * @returns {TR}
+     */
+    abstract invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, context: InvocationContext): TR;
     /**
      * get module loader.
      *

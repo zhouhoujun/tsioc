@@ -23,6 +23,7 @@ import { get } from './metadata/refl';
 import { InvocationContext, OperationArgumentResolver, OperationInvokerFactory, ReflectiveOperationInvoker } from './invoker';
 import { DefaultModuleLoader } from './loader';
 import { ResolveServicesScope, ServicesContext } from './actions/serv';
+import { any } from 'expect';
 
 
 
@@ -571,47 +572,67 @@ export class DefaultInjector extends Injector {
         return to!;
     }
 
+
     /**
-    * invoke method.
-    *
-    * @template T
-    * @param {(T | Type<T>)} target type of class or instance
-    * @param {MethodType} propertyKey
-    * @param {InvocationContext} context ivacation context.
-    * @returns {TR}
-    */
-    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
-    /**
-    * invoke method.
-    *
-    * @template T
-    * @param {(T | Type<T>)} target type of class or instance
-    * @param {MethodType} propertyKey
-    * @param {ProviderType[]} providers
-    * @returns {TR}
-    */
-    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, providers?: ProviderType[]): TR;
-    /**
-    * invoke method.
-    *
-    * @template T
-    * @param {(T | Type<T>)} target type of class or instance
-    * @param {MethodType} propertyKey
-    * @param {T} [instance] instance of target type.
-    * @param {...ProviderType[]} providers
-    * @returns {TR}
-    */
+     * invoke method.
+     *
+     * @template T
+     * @param {(T | Type<T>)} target type of class or instance
+     * @param {MethodType} propertyKey
+     * @param {T} [instance] instance of target type.
+     * @param {...ProviderType[]} providers
+     * @returns {TR}
+     */
     invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
+    /**
+     * invoke method.
+     *
+     * @template T
+     * @param {(T | Type<T>)} target type of class or instance
+     * @param {MethodType} propertyKey
+     * @param {InvocationContext} context ivacation context.
+     * @returns {TR}
+     */
+    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, option: {
+        args?: Record<string, any>,
+        resolvers?: OperationArgumentResolver[] | ((injector: Injector, typeRef?: TypeReflect<T>, method?: string) => OperationArgumentResolver[]),
+        providers?: ProviderType[]
+    }): TR;
+    /**
+     * invoke method.
+     *
+     * @template T
+     * @param {(T | Type<T>)} target type of class or instance
+     * @param {MethodType} propertyKey
+     * @param {InvocationContext} context ivacation context.
+     * @returns {TR}
+     */
+    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, context: InvocationContext): TR;
+    /**
+     * invoke method.
+     *
+     * @template T
+     * @param {(T | Type<T>)} target type of class or instance
+     * @param {MethodType} propertyKey
+     * @param {ProviderType[]} providers
+     * @returns {TR}
+     */
+    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, providers: ProviderType[]): TR;
     invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
-        // return this.get(Invoker).invoke(this, target, propertyKey, (args.length === 1 && isArray(args[0])) ? args[0] : args);
-        let providers: ProviderType[];
+        let providers: ProviderType[] | undefined;
         let context: InvocationContext | null = null;
+        let option: any;
         if (args.length === 1) {
-            if (args[0] instanceof InvocationContext) {
-                context = args[0];
+            const arg0 = args[0];
+            if (arg0 instanceof InvocationContext) {
+                context = arg0;
                 providers = EMPTY;
+            } else if (isArray(arg0)) {
+                providers = arg0;
+            } else if (isPlainObject(arg0) && !arg0.provide) {
+                option = arg0;
             } else {
-                providers = isArray(args[0]) ? args[0] : args;
+                providers = args;
             }
         } else {
             providers = args;
@@ -622,7 +643,7 @@ export class DefaultInjector extends Injector {
             targetClass = getClass(target);
             instance = target as T;
         } else {
-            instance = this.resolve(target as Token, providers);
+            instance = this.resolve(target as Token, providers!);
             targetClass = getClass(instance);
             if (!targetClass) {
                 throw new Error((target as Token).toString() + ' is not implements by any class.')
@@ -637,7 +658,7 @@ export class DefaultInjector extends Injector {
         }
 
         const factory = this.resolve({ token: OperationInvokerFactory, target: tgRefl, providers });
-        return factory.create(tgRefl, key, instance).invoke(context ?? factory.createContext(tgRefl, key, this, { providers }));
+        return factory.create(tgRefl, key, instance).invoke(context ?? factory.createContext(tgRefl, key, this, option ?? { providers }));
     }
 
 
