@@ -3,6 +3,7 @@ export * from './tokens';
 export * from './action';
 export * from './destroy';
 export * from './injector';
+export * from './invoker';
 export * from './di';
 export * from './loader';
 

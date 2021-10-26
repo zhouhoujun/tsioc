@@ -629,15 +629,15 @@ export class DefaultInjector extends Injector {
             }
         }
 
+        const tgRefl = get(targetClass);
         if (isFunction(propertyKey)) {
-            const tgRefl = get(targetClass);
             key = tgRefl.class.getPropertyName(propertyKey(tgRefl.class.getPropertyDescriptors() as any) as TypedPropertyDescriptor<any>);
         } else {
             key = propertyKey;
         }
 
-        const factory = this.resolve({ token: OperationInvokerFactory, target: targetClass, providers });
-        return factory.create(targetClass, key, instance).invoke(context ?? factory.createContext(targetClass, key, this, { providers }));
+        const factory = this.resolve({ token: OperationInvokerFactory, target: tgRefl, providers });
+        return factory.create(tgRefl, key, instance).invoke(context ?? factory.createContext(tgRefl, key, this, { providers }));
     }
 
 
@@ -1102,7 +1102,7 @@ class ActionProviderImpl extends DefaultInjector implements ActionProvider {
     }
 }
 
-export function createInvocationContext(injector: Injector, type: Type, method: string
+export function createInvocationContext(injector: Injector, typeRef: TypeReflect, method: string
     , option?: {
         args?: Record<string, any> | Map<string, any>,
         resolvers?: OperationArgumentResolver[],
@@ -1110,8 +1110,8 @@ export function createInvocationContext(injector: Injector, type: Type, method: 
     }) {
     option = option || EMPTY_OBJ;
     const state = injector.state();
-    const proxy = type.prototype[method]['_proxy'];
-    let providers = [...option.providers || EMPTY, state.getTypeProvider(type), ...get(type).methodProviders.get(method) || EMPTY]
+    const proxy = typeRef.type.prototype[method]['_proxy'];
+    let providers = [...option.providers || EMPTY, state.getTypeProvider(typeRef.type), ...typeRef.methodProviders.get(method) || EMPTY]
     if (providers.length) {
         injector = Injector.create(providers, injector, proxy ? 'invoked' : 'parameter');
     }
@@ -1171,10 +1171,10 @@ function registerCores(root: Injector) {
     root.setValue(ServicesProvider, new Services(root));
     root.setValue(OperationInvokerFactory, {
         create: (type, method, instance?) => {
-            return new ReflectiveOperationInvoker(type, method, instance);
+            return new ReflectiveOperationInvoker(isFunction(type) ? get(type) : type, method, instance);
         },
         createContext: (type, method, injector, options?) => {
-            return createInvocationContext(injector, type, method, options);
+            return createInvocationContext(injector, isFunction(type) ? get(type) : type, method, options);
         }
     });
     // bing action.

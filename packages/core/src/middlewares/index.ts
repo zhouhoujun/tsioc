@@ -6,7 +6,6 @@ export * from './guard';
 export * from './interceptor';
 export * from './base';
 export * from './middleware';
-export * from './parser';
 export * from './queue';
 export * from './route';
 export * from './router';

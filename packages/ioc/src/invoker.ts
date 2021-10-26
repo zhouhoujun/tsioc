@@ -1,3 +1,4 @@
+import { TypeReflect } from '.';
 import { Injector, ProviderType } from './injector';
 import { Abstract } from './metadata/fac';
 import { ParameterMetadata } from './metadata/meta';
@@ -109,13 +110,14 @@ export class MissingParameterError extends Error {
  */
 export class ReflectiveOperationInvoker implements OperationInvoker {
 
-    constructor(private type: Type, private method: string, private instance?: any) { }
+    constructor(private typeRef: TypeReflect, private method: string, private instance?: any) { }
 
     invoke(context: InvocationContext) {
         const injector = context.injector;
-        const instance = this.instance ?? injector.resolve(this.type);
+        const type = this.typeRef.type;
+        const instance = this.instance ?? injector.resolve(type);
         if (!instance || !isFunction(instance[this.method])) {
-            throw new Error(`type: ${this.type} has no method ${this.method}.`);
+            throw new Error(`type: ${type} has no method ${this.method}.`);
         }
         const val = instance[this.method](...this.resolveArguments(context), injector.scope === 'invoked' ? injector : undefined);
         if (injector.scope === 'parameter') {
@@ -141,7 +143,7 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
     }
 
     protected getParameters(): Parameter[] {
-        return get(this.type).methodParams?.get(this.method) ?? EMPTY;
+        return this.typeRef.methodParams?.get(this.method) ?? EMPTY;
     }
 
     protected validate(context: InvocationContext, parameters: Parameter[]) {
@@ -160,8 +162,8 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
 
 @Abstract()
 export abstract class OperationInvokerFactory {
-    abstract create<T>(type: Type<T>, method: string, instance?: T): OperationInvoker;
-    abstract createContext<T>(target: Type<T>, method: string, injector: Injector, option?: {
+    abstract create<T>(type: ClassType<T> | TypeReflect<T>, method: string, instance?: T): OperationInvoker;
+    abstract createContext<T>(target: ClassType<T> | TypeReflect<T>, method: string, injector: Injector, option?: {
         args?: Record<string, any> | Map<string, any>,
         resolvers?: OperationArgumentResolver[],
         providers?: ProviderType[]
