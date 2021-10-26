@@ -25,6 +25,15 @@ export abstract class Response {
     }
 
     /**
+     * get response error
+     */
+    abstract get error(): any;
+    /**
+     * set response error
+     */
+    abstract set error(err: any)
+
+    /**
      * Get response status message
      *
      * @return {String}

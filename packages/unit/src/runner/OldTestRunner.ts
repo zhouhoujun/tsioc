@@ -38,10 +38,10 @@ export class OldTestRunner extends UnitRunner {
 
     suites: ISuiteDescribe[];
 
-    constructor(private injector: Injector, timeout?: number) {
+    constructor(private injector: Injector) {
         super()
         this.suites = [];
-        this.timeout = timeout || (3 * 60 * 60 * 1000);
+        this.timeout =  (3 * 60 * 60 * 1000);
     }
 
     override getInstanceType() {

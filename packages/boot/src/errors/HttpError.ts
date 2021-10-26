@@ -10,8 +10,8 @@ import { HttpStatusCode } from '../status';
  */
 export class HttpError extends Error {
     constructor(readonly status: HttpStatusCode, message?: string | string[]) {
-        super();
-        this.message = isArray(message) ? message.join('\n') : message || '';
+        super(isArray(message) ? message.join('\n') : message || '');
+        Object.setPrototypeOf(this, HttpError.prototype);
         Error.captureStackTrace(this);
     }
 

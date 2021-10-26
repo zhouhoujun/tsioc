@@ -1,6 +1,6 @@
 import { Application, Module, Message, MessageQueue, Context, Middleware, RouteMapping, ApplicationContext, Handle, RequestBody } from '../src';
 import expect = require('expect');
-import { Injector, Injectable, lang } from '@tsdi/ioc';
+import { Injector, Injectable, lang, MissingParameterError } from '@tsdi/ioc';
 
 @RouteMapping('/device')
 class DeviceController {
@@ -192,6 +192,12 @@ describe('app message queue', () => {
         expect(a.ok).toBeTruthy();
         expect(a.body).toBeDefined();
         expect(a.body.year).toStrictEqual(50);
+    })
+
+    it('route with pipe throw argument err', async () => {
+        const r = await ctx.getMessager().send('/device/usage', { method: 'post', body: {} });
+        expect(r.status).toEqual(500);
+        expect(r.error).toBeInstanceOf(MissingParameterError)
     })
 
     after(() => {

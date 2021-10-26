@@ -23,8 +23,8 @@ export interface PipeTransform<TReturn = any, T = any> {
  */
  export class ArgumentError extends Error {
     constructor(message?: string | string[]) {
-        super();
-        this.message = isArray(message) ? message.join('\n') : message || '';
+        super(isArray(message) ? message.join('\n') : message || '');
+        Object.setPrototypeOf(this, ArgumentError.prototype);
         Error.captureStackTrace(this);
     }
 }

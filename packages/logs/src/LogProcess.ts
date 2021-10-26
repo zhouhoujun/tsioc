@@ -6,6 +6,7 @@ import { LogConfigure } from './LogConfigure';
 import { ILogger } from './ILogger';
 import { ConfigureLoggerManager } from './manager';
 import { ILoggerManager } from './ILoggerManager';
+import { LogConfigureToken } from './tk';
 
 
 
@@ -18,9 +19,11 @@ export abstract class LogProcess {
     private _logger!: ILogger;
     private _logManger!: ILoggerManager;
 
-    constructor(
-        @Inject() protected injector: Injector,
-        private config?: LogConfigure | Type<LogConfigure>) {
+    constructor(@Inject() protected injector: Injector) {
+    }
+
+    get config(): LogConfigure {
+        return this.injector.get(LogConfigureToken);
     }
 
     get logger(): ILogger {

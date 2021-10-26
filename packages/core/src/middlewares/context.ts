@@ -18,7 +18,9 @@ export abstract class Context implements Destroyable {
         return this._vaild;
     }
 
-    abstract set error(err: Error);
+    set error(err: Error) {
+        this.response.error = err;
+    }
 
     abstract get request(): Request;
     abstract get response(): Response;

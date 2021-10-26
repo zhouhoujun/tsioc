@@ -3,7 +3,7 @@ import { Abstract } from './metadata/fac';
 import { ParameterMetadata } from './metadata/meta';
 import { TypeReflect } from './metadata/type';
 import { ClassType } from './types';
-import { EMPTY, isDefined, isFunction, isNil } from './utils/chk';
+import { EMPTY, isDefined, isFunction } from './utils/chk';
 
 
 
@@ -97,8 +97,10 @@ export interface OperationInvoker {
  * Missing argument errror.
  */
 export class MissingParameterError extends Error {
-    constructor(parameters: Parameter[]) {
-        super(`ailed to invoke operation because the following required parameters were missing: ${JSON.stringify(parameters)}`)
+    constructor(parameters: Parameter[], type: ClassType, method: string) {
+        super(`ailed to invoke operation because the following required parameters were missing: ${parameters.map(p => JSON.stringify(p)).join('\n')}, method ${method} of class type ${type}`);
+        Object.setPrototypeOf(this, MissingParameterError.prototype);
+        Error.captureStackTrace(this);
     }
 }
 
@@ -134,9 +136,7 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
     }
 
     protected resolveArgument(parameter: Parameter, context: InvocationContext) {
-        let arg = context.resolveArgument(parameter);
-        if (isDefined(arg)) return arg;
-        return context.arguments[parameter.paramName!];
+        return context.resolveArgument(parameter);
     }
 
     protected getParameters(): Parameter[] {
@@ -146,13 +146,12 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
     protected validate(context: InvocationContext, parameters: Parameter[]) {
         const missings = parameters.filter(p => this.isisMissing(context, p));
         if (missings.length) {
-            throw new MissingParameterError(missings);
+            throw new MissingParameterError(missings, this.typeRef.type, this.method);
         }
     }
 
     protected isisMissing(context: InvocationContext, parameter: Parameter) {
-        if (context.canResolve(parameter)) return false;
-        return !parameter.paramName || isNil(context.arguments[parameter.paramName]);
+        return !context.canResolve(parameter);
     }
 }
 

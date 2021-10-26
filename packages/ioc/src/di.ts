@@ -11,7 +11,7 @@ import { cleanObj, getClass, getTypes, isBaseOf, mapEach } from './utils/lang';
 import { KeyValueProvider, StaticProviders } from './providers';
 import {
     isArray, isClass, isDefined, isFunction, isNil, isPlainObject, isString,
-    isTypeObject, isTypeReflect, EMPTY, EMPTY_OBJ
+    isTypeObject, isTypeReflect, EMPTY, EMPTY_OBJ, isPrimitiveType
 } from './utils/chk';
 import { DesignContext } from './actions/ctx';
 import { DesignLifeScope } from './actions/design';
@@ -1143,38 +1143,38 @@ export function createInvocationContext(injector: Injector, typeRef: TypeReflect
     if (providers.length) {
         injector = Injector.create(providers, injector, proxy ? 'invoked' : 'parameter');
     }
-    return injector.has(InvocationContext)? injector.get(InvocationContext) : new InvocationContext(injector, option.args || EMPTY_OBJ,
+    return injector.has(InvocationContext) ? injector.get(InvocationContext) : new InvocationContext(injector, option.args || EMPTY_OBJ,
         ...(isFunction(option.resolvers) ? option.resolvers(injector, typeRef, method) : option.resolvers) ?? EMPTY,
         {
             resolve(parameter) {
                 const pdr = parameter.provider!;
-                if (isClass(pdr) && !state.isRegistered(pdr) && !injector.has(pdr, true)) {
-                    injector.register(pdr);
+                if (isFunction(pdr) && !state.isRegistered(pdr) && !injector.has(pdr, true)) {
+                    injector.register(pdr as Type);
                 }
                 return injector.get(pdr);
             },
             canResolve(parameter) {
-                return !!parameter.provider;
+                return (parameter.provider && !isPrimitiveType(parameter.provider)) as boolean;
             }
         },
         {
-            resolve(parameter) {
-                return injector.get<any>(parameter.paramName!);
+            resolve(parameter, args) {
+                return args[parameter.paramName!] ?? injector.get<any>(parameter.paramName!);
             },
-            canResolve(parameter) {
-                return !!parameter.paramName && injector.has(parameter.paramName);
+            canResolve(parameter, args) {
+                return (parameter.paramName && (isDefined(args[parameter.paramName]) || injector.has(parameter.paramName))) as boolean;
             }
         },
         {
             resolve(parameter) {
                 const ty = parameter.type!;
-                if (isClass(ty) && !state.isRegistered(ty) && !injector.has(ty, true)) {
-                    injector.register(ty);
+                if (isFunction(ty) && !state.isRegistered(ty) && !injector.has(ty, true)) {
+                    injector.register(ty as Type);
                 }
                 return injector.get(ty);
             },
             canResolve(parameter) {
-                return !!parameter.type;
+                return (parameter.type && !isPrimitiveType(parameter.type)) as boolean;
             }
         },
         // default value

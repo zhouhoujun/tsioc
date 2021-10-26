@@ -22,10 +22,7 @@ export class ConfigureLoggerManager implements IConfigureLoggerManager {
     private _config!: LogConfigure;
     private _logManger!: ILoggerManager;
 
-    constructor(
-        @Inject() protected injector: Injector,
-        config?: LogConfigure | Type<LogConfigure>) {
-        this.setLogConfigure(config);
+    constructor(@Inject() protected injector: Injector)  {
     }
 
     get config(): LogConfigure {

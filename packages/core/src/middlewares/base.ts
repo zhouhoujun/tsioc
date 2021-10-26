@@ -56,15 +56,6 @@ export class ContextBase extends Context {
         super();
     }
 
-    private _err!: Error;
-    set error(err: Error) {
-        this._err = err;
-        if (err) {
-            this.message = err.stack ?? err.message;
-            this.status = 500;
-        }
-    }
-
     get subdomains(): string[] {
         throw new Error('Method not implemented.');
     }
@@ -310,6 +301,25 @@ export class ResponseBase extends Response {
     set message(msg: string) {
         this._msg = msg;
     }
+
+    private _err: any;
+    /**
+     * get response error
+     */
+    get error(): any {
+        return this._err;
+    }
+    /**
+     * set response error
+     */
+    set error(err: any) {
+        this._err = err;
+        if (!err) return;
+        
+        this.status = err.status ?? 500;
+        this.message = err.message ?? err.toString();
+    }
+
 
     private _body: any;
     get body(): any {
