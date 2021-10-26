@@ -182,7 +182,7 @@ export class RequestBase extends Request {
             this._originalUrl = init.originalUrl;
             this._URL = init.URL;
             this._url = init.url;
-            this._body = init.body;
+            this.body = init.body;
             this._method = init.method;
             this.query = init.query;
         } else {
@@ -205,7 +205,7 @@ export class RequestBase extends Request {
             url = uri.pathname + uri.search;
             this._originalUrl = url;
             this._url = String(url);
-            this._body = body;
+            this.body = body;
             this._method = method || 'GET';
             if (query) this.query = query;
             init.type && this.setHeader('Content-Type', init.type);
@@ -240,13 +240,7 @@ export class RequestBase extends Request {
         this._method = val;
     }
 
-    private _body: any;
-    get body(): any {
-        return this._body;
-    }
-    set body(val: any) {
-        this._body = val;
-    }
+    body: any;
 
     get secure(): boolean {
         return this.protocol == 'https';

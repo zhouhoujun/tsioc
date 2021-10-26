@@ -1,4 +1,4 @@
-import { Application, Module, Message, MessageQueue, Context, Middleware,  RouteMapping, ApplicationContext, Handle } from '../src';
+import { Application, Module, Message, MessageQueue, Context, Middleware, RouteMapping, ApplicationContext, Handle, RequestBody } from '../src';
 import expect = require('expect');
 import { Injector, Injectable, lang } from '@tsdi/ioc';
 
@@ -11,13 +11,20 @@ class DeviceController {
         return { name };
     }
 
+    @RouteMapping('/usage', 'post')
+    age(@RequestBody('age', { pipe: 'int' }) year: number) {
+        console.log('usage:', year);
+        return { year };
+    }
+
+
     @RouteMapping('/update', 'post')
     async update(version: string) {
         // do smth.
         console.log('update version:', version);
         let defer = lang.defer();
 
-        setTimeout(()=> {
+        setTimeout(() => {
             defer.resolve(version);
         }, 10);
 
@@ -178,6 +185,14 @@ describe('app message queue', () => {
         expect(b.ok).toBeTruthy();
         expect(b.body).toEqual('1.0.0');
     });
+
+    it('route with pipe response', async () => {
+        const a = await ctx.getMessager().send('/device/usage', { method: 'post', body: { age: '50' } });
+        expect(a.status).toEqual(200);
+        expect(a.ok).toBeTruthy();
+        expect(a.body).toBeDefined();
+        expect(a.body.year).toStrictEqual(50);
+    })
 
     after(() => {
         ctx.destroy();

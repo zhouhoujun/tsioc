@@ -236,17 +236,17 @@ export function createRequstResolvers(injector: Injector, typeRef?: TypeReflect,
     return [
         {
             canResolve(parameter: Parameter & RequsetParameterMetadata, args) {
-                const filed = parameter.filed ?? parameter.paramName;
+                const field = parameter.field ?? parameter.paramName;
                 return args instanceof Context
                     && (isPrimitiveType(parameter.provider) || !!parameter.pipe)
                     && parameter.type == Array
-                    && !!filed
-                    && isArray(args.request.body[filed]);
+                    && !!field
+                    && isArray(args.request.body[field]);
             },
             resolve(parameter: Parameter & RequsetParameterMetadata, args: Context) {
                 if (!parameter.type || !parameter.paramName) throw new ArgumentError('paramter type and name is null');
-                const filed = parameter.filed ?? parameter.paramName;
-                const value: any[] = args.request.body[filed];
+                const field = parameter.field ?? parameter.paramName;
+                const value: any[] = args.request.body[field];
                 const pipeName = parameter.pipe ?? parameter.type.name.toLowerCase();
                 const pipe = injector.get<PipeTransform>(pipeName);
                 return value.map(val => pipe.transform(val, ...parameter.args || EMPTY));
@@ -283,46 +283,46 @@ export function createRequstResolvers(injector: Injector, typeRef?: TypeReflect,
             }
         },
         {
-            canResolve(parameter: Parameter & RequsetParameterMetadata, args) {
+            canResolve(parameter: Parameter & RequsetParameterMetadata, args: Context) {
                 return args instanceof Context
                     && parameter.scope === 'body'
                     && isPrimitiveType(parameter.type)
                     && injector.has(parameter.pipe ?? parameter.type!.name.toLowerCase(), true)
                     && !!parameter.paramName
-                    && isDefined(args.request.body[parameter.filed ?? parameter.paramName]);
+                    && isDefined(args.request.body[parameter.field ?? parameter.paramName]);
             },
             resolve(parameter: Parameter & RequsetParameterMetadata, args: Context) {
                 if (!parameter.type || !parameter.paramName) throw new ArgumentError('paramter type and name is null');
                 const pipe = parameter.pipe ?? parameter.type.name.toLowerCase();
-                return injector.get<PipeTransform>(pipe).transform(args.body[parameter.filed ?? parameter.paramName], ...parameter.args || EMPTY)
+                return injector.get<PipeTransform>(pipe).transform(args.request.body[parameter.field ?? parameter.paramName], ...parameter.args || EMPTY)
             }
         },
         {
             canResolve(parameter: Parameter & RequsetParameterMetadata, args) {
-                const filed = parameter.filed ?? parameter.paramName;
+                const field = parameter.field ?? parameter.paramName;
                 return args instanceof Context
                     && !parameter.scope
                     && isPrimitiveType(parameter.type)
                     && injector.has(parameter.pipe ?? parameter.type!.name.toLowerCase(), true)
-                    && !!filed
-                    && isDefined(args.query[filed] || args.restful[filed] || args.request.body[filed]);
+                    && !!field
+                    && isDefined(args.query[field] ?? args.restful[field] ?? args.request.body[field]);
             },
             resolve(parameter: Parameter & RequsetParameterMetadata, args: Context) {
                 if (!parameter.type || !parameter.paramName) throw new ArgumentError('paramter type and name is null');
                 const pipe = parameter.pipe ?? parameter.type.name.toLowerCase();
-                const field = parameter.filed ?? parameter.paramName;
-                return injector.get<PipeTransform>(pipe).transform(args.query[field] || args.restful[field] || args.request.body[field], ...parameter.args || EMPTY)
+                const field = parameter.field ?? parameter.paramName;
+                return injector.get<PipeTransform>(pipe).transform(args.query[field] ?? args.restful[field] ?? args.request.body[field], ...parameter.args || EMPTY)
             }
         },
         // {
         //     canResolve(parameter: Parameter & RequsetParameterMetadata, args) {
         //         return args instanceof Context && isClass(parameter.type)
         //             && (injector.has(parameter.type, true) || (!!parameter.pipe && injector.has(parameter.pipe, true)))
-        //             && isDefined(parameter.filed ? args.request.body[parameter.filed] : args.request.body);
+        //             && isDefined(parameter.field ? args.request.body[parameter.field] : args.request.body);
         //     },
         //     resolve(parameter: Parameter & RequsetParameterMetadata, args: Context) {
         //         if (!parameter.type || !parameter.paramName) throw new ArgumentError('paramter type and name is null');
-        //         const value = parameter.filed ? args.request.body[parameter.filed] : args.request.body;
+        //         const value = parameter.field ? args.request.body[parameter.field] : args.request.body;
         //         if (parameter.pipe) {
         //             return injector.get<PipeTransform>(parameter.pipe).transform(value, ...parameter.args || EMPTY);
         //         }

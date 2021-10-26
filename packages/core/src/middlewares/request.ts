@@ -106,19 +106,13 @@ export abstract class Request {
     }
 
     /**
-     * Get parsed request data to body.
+     * Get or set request body.
      *
      * @return {any}
      * @api public
      */
-    abstract get body(): any;
-    /**
-     * Set parsed request data to body.
-     *
-     * @param {any} obj
-     * @api public
-     */
-    abstract set body(obj: any);
+    body: any;
+
 
     /**
      * Get query string.

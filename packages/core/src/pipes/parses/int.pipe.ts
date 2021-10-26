@@ -6,18 +6,18 @@ import { PipeTransform, invalidPipeArgumentError } from '../pipe';
 export class ParseIntPipe implements PipeTransform<number> {
 
     transform(value: any, ...args: any[]): number {
-         let ret: number;
-        if(isString(value)){
-            ret = parseInt(value, 10); 
-        } else if(isNumber(value)){
+        let ret: number;
+        if (isString(value)) {
+            ret = parseInt(value, 10);
+        } else if (isNumber(value)) {
             ret = parseInt(value.toString(), 10);
         } else {
             ret = NaN;
         }
-        if(isNaN(ret)){
+        if (isNaN(ret)) {
             throw invalidPipeArgumentError(this, value);
         }
         return ret;
     }
-    
+
 }

@@ -584,13 +584,13 @@ export const RouteMapping: IRouteMappingDecorator = createDecorator<ProtocolRout
 
 export interface RequsetParameterMetadata extends ParameterMetadata {
     /**
-     * filed scope.
+     * field scope.
      */
     scope: 'body' | 'query' | 'restful'
     /**
      * field of request query params or body.
      */
-    filed?: string;
+    field?: string;
     /**
      * pipe
      */
