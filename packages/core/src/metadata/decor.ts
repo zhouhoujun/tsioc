@@ -584,6 +584,10 @@ export const RouteMapping: IRouteMappingDecorator = createDecorator<ProtocolRout
 
 export interface RequsetParameterMetadata extends ParameterMetadata {
     /**
+     * filed scope.
+     */
+    scope: 'body' | 'query' | 'restful'
+    /**
      * field of request query params or body.
      */
     filed?: string;
@@ -592,7 +596,7 @@ export interface RequsetParameterMetadata extends ParameterMetadata {
      */
     pipe: string | Type<PipeTransform>;
     /**
-     * pipe args
+     * pipe extends args
      */
     args?: any[];
 }
@@ -616,19 +620,19 @@ export interface RequsetParameterDecorator {
  * Request path param decorator.
  */
 export const PathParam: RequsetParameterDecorator = createParamDecorator('PathParam', {
-    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe })
+    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, scope: 'restful', ...pipe } as RequsetParameterMetadata)
 });
 
 /**
  * Request query param decorator.
  */
 export const RequestParam: RequsetParameterDecorator = createParamDecorator('RequestParam', {
-    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe })
+    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, scope: 'query', ...pipe } as RequsetParameterMetadata)
 });
 
 /**
  * Request body param decorator.
  */
 export const RequestBody: RequsetParameterDecorator = createParamDecorator('RequestBody', {
-    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe })
+    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, scope: 'body', ...pipe } as RequsetParameterMetadata)
 });

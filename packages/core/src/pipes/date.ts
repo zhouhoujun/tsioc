@@ -1,7 +1,6 @@
 import { isDate, isNumber, isString } from '@tsdi/ioc';
 import { Pipe } from '../metadata/decor';
-import { invalidPipeArgumentError } from './err';
-import { PipeTransform } from './pipe';
+import { PipeTransform, invalidPipeArgumentError } from './pipe';
 
 export function formatDate(date: Date, fmt: string = 'yyyy-MM-dd') {
     var o = {
@@ -22,24 +21,23 @@ export function formatDate(date: Date, fmt: string = 'yyyy-MM-dd') {
 /**
  * date format pipe.
  */
- @Pipe('date-format')
- export class DateFormatPipe implements PipeTransform<string> {
+@Pipe('date-format')
+export class DateFormatPipe implements PipeTransform<string> {
 
-     transform(value: any, ...args: any[]): string {
-        let date:Date|null = null;
-        if(isString(value)|| isNumber(value)){
+    transform(value: any, ...args: any[]): string {
+        let date: Date | null = null;
+        if (isString(value) || isNumber(value)) {
             date = new Date(value);
-        } else if(isDate(value)){
+        } else if (isDate(value)) {
             date = value;
         }
 
-        if(isDate(value)){
-            return formatDate(date as Date, args.length? args[0] : 'yyyy-MM-dd')
+        if (isDate(value)) {
+            return formatDate(date as Date, args.length ? args[0] : 'yyyy-MM-dd')
         } else {
-            
+
             throw invalidPipeArgumentError(this, value);
         }
-     }
-     
- }
- 
+    }
+
+}

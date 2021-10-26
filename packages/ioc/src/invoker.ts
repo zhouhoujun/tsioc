@@ -1,9 +1,8 @@
-import { TypeReflect } from '.';
 import { Injector, ProviderType } from './injector';
 import { Abstract } from './metadata/fac';
 import { ParameterMetadata } from './metadata/meta';
-import { get } from './metadata/refl';
-import { ClassType, Type } from './types';
+import { TypeReflect } from './metadata/type';
+import { ClassType } from './types';
 import { EMPTY, isDefined, isFunction, isNil } from './utils/chk';
 
 
@@ -20,16 +19,17 @@ export interface Parameter<T = any> extends ParameterMetadata {
  */
 export interface OperationArgumentResolver {
     /**
-     * Return whether an argument of the given {@code type} can be resolved.
-     * @param type argument type
+     * Return whether an argument of the given {@code parameter} can be resolved.
+     * @param parameter argument type
+     * @param args gave arguments
      */
-    canResolve(type: Parameter): boolean;
-
+    canResolve(parameter: Parameter, args: Record<string, any>): boolean;
     /**
-     * Resolves an argument of the given {@code type}.
-     * @param type argument type
+     * Resolves an argument of the given {@code parameter}.
+     * @param parameter argument type
+     * @param args gave arguments
      */
-    resolve<T>(type: Parameter<T>): T;
+    resolve<T>(parameter: Parameter<T>, args: Record<string, any>): T;
 }
 
 /**
@@ -38,19 +38,16 @@ export interface OperationArgumentResolver {
 export class InvocationContext {
 
     private _argumentResolvers: OperationArgumentResolver[];
-    private _arguments: Map<string, any>;
-    constructor(readonly injector: Injector, args: Record<string, any> | Map<string, any>, ...argumentResolvers: OperationArgumentResolver[]) {
+    private _arguments: Record<string, any>;
+    constructor(readonly injector: Injector, args?: Record<string, any>, ...argumentResolvers: OperationArgumentResolver[]) {
         this._argumentResolvers = argumentResolvers;
-        if (args instanceof Map) {
-            this._arguments = args;
-        } else {
-            this._arguments = new Map(Object.keys(args).map(k => [k, args[k]]));
-        }
+        this._arguments = args ?? {};
+
     }
     /**
      * the invocation arguments.
      */
-    get arguments(): Map<string, any> {
+    get arguments(): Record<string, any> {
         return this._arguments;
     }
     /**
@@ -62,14 +59,14 @@ export class InvocationContext {
 
 
     canResolve(type: Parameter): boolean {
-        return this.argumentResolvers.some(r => r.canResolve(type));
+        return this.argumentResolvers.some(r => r.canResolve(type, this.arguments));
     }
 
     resolveArgument<T>(argumentType: Parameter<T>): T | null {
         let result: T | undefined;
         this.argumentResolvers.some(r => {
-            if (r.canResolve(argumentType)) {
-                result = r.resolve(argumentType);
+            if (r.canResolve(argumentType, this.arguments)) {
+                result = r.resolve(argumentType, this.arguments);
                 return isDefined(result);
             }
             return false;
@@ -101,7 +98,7 @@ export interface OperationInvoker {
  */
 export class MissingParameterError extends Error {
     constructor(parameters: Parameter[]) {
-        super(`ailed to invoke operation because the following required parameters were missing: ${parameters}`);
+        super(`ailed to invoke operation because the following required parameters were missing: ${JSON.stringify(parameters)}`)
     }
 }
 
@@ -139,7 +136,7 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
     protected resolveArgument(parameter: Parameter, context: InvocationContext) {
         let arg = context.resolveArgument(parameter);
         if (isDefined(arg)) return arg;
-        return context.arguments.get(parameter.paramName!);
+        return context.arguments[parameter.paramName!];
     }
 
     protected getParameters(): Parameter[] {
@@ -155,7 +152,7 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
 
     protected isisMissing(context: InvocationContext, parameter: Parameter) {
         if (context.canResolve(parameter)) return false;
-        return !parameter.paramName || isNil(context.arguments.get(parameter.paramName));
+        return !parameter.paramName || isNil(context.arguments[parameter.paramName]);
     }
 }
 
@@ -164,8 +161,8 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
 export abstract class OperationInvokerFactory {
     abstract create<T>(type: ClassType<T> | TypeReflect<T>, method: string, instance?: T): OperationInvoker;
     abstract createContext<T>(target: ClassType<T> | TypeReflect<T>, method: string, injector: Injector, option?: {
-        args?: Record<string, any> | Map<string, any>,
-        resolvers?: OperationArgumentResolver[],
+        args?: Record<string, any>,
+        resolvers?: OperationArgumentResolver[] | ((injector: Injector, typeRef?: TypeReflect, method?: string) => OperationArgumentResolver[]),
         providers?: ProviderType[]
     }): InvocationContext;
 }

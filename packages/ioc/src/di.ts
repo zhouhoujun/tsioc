@@ -1104,8 +1104,8 @@ class ActionProviderImpl extends DefaultInjector implements ActionProvider {
 
 export function createInvocationContext(injector: Injector, typeRef: TypeReflect, method: string
     , option?: {
-        args?: Record<string, any> | Map<string, any>,
-        resolvers?: OperationArgumentResolver[],
+        args?: Record<string, any>,
+        resolvers?: OperationArgumentResolver[] | ((injector: Injector, typeRef?: TypeReflect, method?: string) => OperationArgumentResolver[]),
         providers?: ProviderType[]
     }) {
     option = option || EMPTY_OBJ;
@@ -1116,7 +1116,7 @@ export function createInvocationContext(injector: Injector, typeRef: TypeReflect
         injector = Injector.create(providers, injector, proxy ? 'invoked' : 'parameter');
     }
     return new InvocationContext(injector, option.args || EMPTY_OBJ,
-        ...option.resolvers ?? EMPTY,
+        ...(isFunction(option.resolvers) ? option.resolvers(injector, typeRef, method) : option.resolvers) ?? EMPTY,
         {
             resolve(parameter) {
                 const pdr = parameter.provider!;

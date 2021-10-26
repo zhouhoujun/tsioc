@@ -1,15 +1,13 @@
 import {
-    AsyncHandler, DecorDefine, ParameterMetadata, ProviderType, Type, TypeReflect, Injector, Token, tokenId, RegisteredState,
-    isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, isPlainObject, EMPTY_OBJ, lang,
-    chain, isObservable, OperationInvokerFactory
+    AsyncHandler, DecorDefine, Type, TypeReflect, Injector, tokenId, RegisteredState,
+    isPrimitiveType, isPromise, isString, isArray, isFunction, isNil, isDefined, lang,
+    chain, isObservable, OperationInvokerFactory, OperationArgumentResolver, Parameter, EMPTY
 } from '@tsdi/ioc';
-import { PipeTransform } from '..';
-import { CONTEXT } from '../metadata/tk';
-import { TypeParser } from '../services/interface';
+import { RequsetParameterMetadata } from '../metadata/decor';
+import { ArgumentError, PipeTransform } from '../pipes/pipe';
 import { Context } from './context';
 import { CanActive } from './guard';
 import { IRouter, isMiddlwareType, Middleware, MiddlewareType, RouteInfo } from './middleware';
-// import { MODEL_PARSER, ModelParser } from './parser';
 import { ResultValue } from './result';
 import { Route } from './route';
 import { ResultStrategy } from './strategy';
@@ -134,22 +132,33 @@ export class MappingRoute extends Route {
                 return;
             }
 
+            let restParams: any = {};
+            const route: string = meta.metadata.route;
+            if (route && isRest.test(route)) {
+                let routes = route.split('/').map(r => r.trim());
+                let restParamNames = routes.filter(d => restParms.test(d));
+                let baseURL = ctx.vaild.vaildify(this.url, true);
+                let routeUrls = ctx.vaild.vaildify(ctx.url.replace(baseURL, '')).split('/');
+                restParamNames.forEach(pname => {
+                    let val = routeUrls[routes.indexOf(pname)];
+                    restParams[pname.substring(1)] = val;
+                });
+            }
+            ctx.restful = restParams;
+
 
             const factory = injector.resolve({ token: OperationInvokerFactory, target: this.reflect });
             // todo add module resolve
             const context = factory.createContext(this.reflect, meta.propertyKey, injector, {
                 args: ctx,
-                resolvers: [],
-                providers: []
+                resolvers: createRequstResolvers
             });
             let result = factory.create(this.reflect, meta.propertyKey, ctrl).invoke(context);
 
-            // const providers = this.createProvider(ctx, ctrl, meta.metadata, this.reflect.methodParams.get(meta.propertyKey));
-            // let result = injector.invoke(ctrl, meta.propertyKey, providers.length > 0 ? Injector.create(providers, ctx.injector) : ctx.injector);
-
             if (isPromise(result)) {
                 result = await result;
-            } else if (isObservable(result)) {
+            }
+            if (isObservable(result)) {
                 result = await result.toPromise();
             }
 
@@ -212,88 +221,6 @@ export class MappingRoute extends Route {
         return meta;
     }
 
-    // protected createProvider(ctx: Context, ctrl: any, meta: RouteMapingMetadata, params?: ParameterMetadata[]): ProviderType[] {
-    //     const vaild = ctx.vaild;
-    //     const injector = this.injector;
-    //     let providers: ProviderType[] = [{ provide: CONTEXT, useValue: ctx }];
-    //     if (params && params.length) {
-    //         let restParams: any = {};
-    //         if (meta.route && isRest.test(meta.route)) {
-    //             let routes = meta.route.split('/').map(r => r.trim());
-    //             let restParamNames = routes.filter(d => restParms.test(d));
-    //             let baseURL = vaild.vaildify(this.url, true);
-    //             let routeUrls = vaild.vaildify(ctx.url.replace(baseURL, '')).split('/');
-    //             restParamNames.forEach(pname => {
-    //                 let val = routeUrls[routes.indexOf(pname)];
-    //                 restParams[pname.substring(1)] = val;
-    //             });
-    //         }
-    //         let body: any = ctx.request.body || EMPTY_OBJ;
-    //         let parser = injector.get(TypeParser);
-    //         let ppds: (ProviderType | null)[] = params.map((param) => {
-    //             let ptype = isFunction(param.provider) ? param.provider : param.type;
-    //             let val;
-    //             let provide: Token = ptype!;
-    //             if (isFunction(ptype)) {
-    //                 if (isPrimitiveType(ptype)) {
-    //                     let paramVal = restParams[param.paramName!];
-    //                     if (isUndefined(paramVal)) {
-    //                         paramVal = ctx.request.query[param.paramName!];
-    //                     }
-    //                     val = parser.parse(ptype, paramVal);
-    //                 }
-    //                 if (isNil(val)) {
-    //                     const keys = Object.keys(body);
-    //                     if (keys.length) {
-    //                         if (isArray(ptype) && isArray(body)) {
-    //                             val = body;
-    //                         } else if (isPrimitiveType(ptype)) {
-    //                             if (param.paramName) {
-    //                                 provide = param.paramName;
-    //                                 val = parser.parse(ptype, body[param.paramName]);
-    //                             }
-    //                         } else if (isClass(ptype)) {
-    //                             if (body instanceof ptype) {
-    //                                 val = body;
-    //                             } else {
-    //                                 let rkey: string = '';
-    //                                 if (isPlainObject(body)) {
-    //                                     rkey = keys.find(k => body[k] instanceof (ptype as Type))!;
-    //                                 }
-
-    //                                 if (rkey) {
-    //                                     val = body[rkey];
-    //                                 } else {
-    //                                     let mdparser = injector.resolve({ token: ModelParser, target: ptype, defaultToken: MODEL_PARSER });
-    //                                     if (mdparser) {
-    //                                         val = mdparser.parseModel(ptype, body);
-    //                                     }
-    //                                 }
-    //                             }
-    //                         }
-    //                     }
-    //                 } else {
-    //                     provide = param.paramName!
-    //                 }
-    //             } else if (ptype === REQUEST) {
-    //                 val = ctx.request;
-    //             } else if (ptype === REQUEST_PARAMS) {
-    //                 val = ctx.request.query ?? {};
-    //             } else if (ptype === REQUEST_BODY) {
-    //                 val = body;
-    //             }
-
-    //             if (!provide || isNil(val)) {
-    //                 return null;
-    //             }
-    //             return { provide, useValue: val };
-    //         });
-    //         providers = providers.concat(ppds.filter(p => p !== null) as ProviderType[]);
-    //     }
-
-    //     return providers;
-    // }
-
     protected parseHandle(state: RegisteredState, mdty: MiddlewareType): AsyncHandler<Context> {
         if (mdty instanceof Middleware) {
             return mdty.toHandle();
@@ -310,3 +237,107 @@ export class MappingRoute extends Route {
     }
 
 }
+
+
+
+export function createRequstResolvers(injector: Injector, typeRef?: TypeReflect, method?: string): OperationArgumentResolver[] {
+
+    return [
+        {
+            canResolve(parameter: Parameter & RequsetParameterMetadata, args) {
+                const filed = parameter.filed ?? parameter.paramName;
+                return args instanceof Context
+                    && (isPrimitiveType(parameter.provider) || !!parameter.pipe)
+                    && parameter.type == Array
+                    && !!filed
+                    && isArray(args.request.body[filed]);
+            },
+            resolve(parameter: Parameter & RequsetParameterMetadata, args: Context) {
+                if (!parameter.type || !parameter.paramName) throw new ArgumentError('paramter type and name is null');
+                const filed = parameter.filed ?? parameter.paramName;
+                const value: any[] = args.request.body[filed];
+                const pipeName = parameter.pipe ?? parameter.type.name.toLowerCase();
+                const pipe = injector.get<PipeTransform>(pipeName);
+                return value.map(val => pipe.transform(val, ...parameter.args || EMPTY));
+            }
+        },
+        {
+            canResolve(parameter: Parameter & RequsetParameterMetadata, args) {
+                return args instanceof Context
+                    && parameter.scope === 'query'
+                    && isPrimitiveType(parameter.type)
+                    && injector.has(parameter.pipe ?? parameter.type!.name.toLowerCase(), true)
+                    && !!parameter.paramName
+                    && isDefined(args.query[parameter.paramName]);
+            },
+            resolve(parameter: Parameter & RequsetParameterMetadata, args: Context) {
+                if (!parameter.type || !parameter.paramName) throw new ArgumentError('paramter type and name is null');
+                const pipe = parameter.pipe ?? parameter.type.name.toLowerCase();
+                return injector.get<PipeTransform>(pipe).transform(args.query[parameter.paramName], ...parameter.args || EMPTY)
+            }
+        },
+        {
+            canResolve(parameter: Parameter & RequsetParameterMetadata, args) {
+                return args instanceof Context
+                    && parameter.scope === 'restful'
+                    && isPrimitiveType(parameter.type)
+                    && injector.has(parameter.pipe ?? parameter.type!.name.toLowerCase(), true)
+                    && !!parameter.paramName
+                    && isDefined(args.restful[parameter.paramName]);
+            },
+            resolve(parameter: Parameter & RequsetParameterMetadata, args: Context) {
+                if (!parameter.type || !parameter.paramName) throw new ArgumentError('paramter type and name is null');
+                const pipe = parameter.pipe ?? parameter.type.name.toLowerCase();
+                return injector.get<PipeTransform>(pipe).transform(args.restful[parameter.paramName], ...parameter.args || EMPTY)
+            }
+        },
+        {
+            canResolve(parameter: Parameter & RequsetParameterMetadata, args) {
+                return args instanceof Context
+                    && parameter.scope === 'body'
+                    && isPrimitiveType(parameter.type)
+                    && injector.has(parameter.pipe ?? parameter.type!.name.toLowerCase(), true)
+                    && !!parameter.paramName
+                    && isDefined(args.request.body[parameter.filed ?? parameter.paramName]);
+            },
+            resolve(parameter: Parameter & RequsetParameterMetadata, args: Context) {
+                if (!parameter.type || !parameter.paramName) throw new ArgumentError('paramter type and name is null');
+                const pipe = parameter.pipe ?? parameter.type.name.toLowerCase();
+                return injector.get<PipeTransform>(pipe).transform(args.body[parameter.filed ?? parameter.paramName], ...parameter.args || EMPTY)
+            }
+        },
+        {
+            canResolve(parameter: Parameter & RequsetParameterMetadata, args) {
+                const filed = parameter.filed ?? parameter.paramName;
+                return args instanceof Context
+                    && !parameter.scope
+                    && isPrimitiveType(parameter.type)
+                    && injector.has(parameter.pipe ?? parameter.type!.name.toLowerCase(), true)
+                    && !!filed
+                    && isDefined(args.query[filed] || args.restful[filed] || args.request.body[filed]);
+            },
+            resolve(parameter: Parameter & RequsetParameterMetadata, args: Context) {
+                if (!parameter.type || !parameter.paramName) throw new ArgumentError('paramter type and name is null');
+                const pipe = parameter.pipe ?? parameter.type.name.toLowerCase();
+                const field = parameter.filed ?? parameter.paramName;
+                return injector.get<PipeTransform>(pipe).transform(args.query[field] || args.restful[field] || args.request.body[field], ...parameter.args || EMPTY)
+            }
+        },
+        // {
+        //     canResolve(parameter: Parameter & RequsetParameterMetadata, args) {
+        //         return args instanceof Context && isClass(parameter.type)
+        //             && (injector.has(parameter.type, true) || (!!parameter.pipe && injector.has(parameter.pipe, true)))
+        //             && isDefined(parameter.filed ? args.request.body[parameter.filed] : args.request.body);
+        //     },
+        //     resolve(parameter: Parameter & RequsetParameterMetadata, args: Context) {
+        //         if (!parameter.type || !parameter.paramName) throw new ArgumentError('paramter type and name is null');
+        //         const value = parameter.filed ? args.request.body[parameter.filed] : args.request.body;
+        //         if (parameter.pipe) {
+        //             return injector.get<PipeTransform>(parameter.pipe).transform(value, ...parameter.args || EMPTY);
+        //         }
+        //         const model = injector.get(parameter.type);
+        //     }
+        // }
+    ];
+}
+

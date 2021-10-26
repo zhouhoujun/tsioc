@@ -26,6 +26,11 @@ export abstract class Context implements Destroyable {
     get querystring(): string {
         return this.request.querystring;
     }
+
+    /**
+     * resetful value. 
+     */
+    restful: any;
     // set querystring(val: string) {
     //     this.request.querystring = val;
     // }

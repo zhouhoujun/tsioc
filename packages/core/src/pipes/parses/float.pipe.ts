@@ -1,4 +1,4 @@
-import { DataType, isNumber, isString } from '@tsdi/ioc';
+import { isNumber, isString } from '@tsdi/ioc';
 import { invalidPipeArgumentError } from '@tsdi/core';
 import { Pipe } from '../../metadata/decor';
 import { PipeTransform } from '../pipe';

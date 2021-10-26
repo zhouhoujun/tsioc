@@ -1,7 +1,6 @@
 import { isString, isArray } from '@tsdi/ioc';
 import { Pipe } from '../metadata/decor';
-import { invalidPipeArgumentError } from './err';
-import { PipeTransform } from './pipe';
+import { PipeTransform, invalidPipeArgumentError } from './pipe';
 
 
 /**

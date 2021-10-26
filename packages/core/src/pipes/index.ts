@@ -1,5 +1,5 @@
 export * from './pipe';
-export * from './err';
+
 export * from './json';
 export * from './slice';
 export * from './cases';
@@ -11,3 +11,6 @@ export * from './parses/date.pipe';
 export * from './parses/enum.pipe';
 export * from './parses/float.pipe';
 export * from './parses/int.pipe';
+export * from './parses/number.pipe';
+export * from './parses/string.pipe';
+

@@ -1,10 +1,9 @@
 import { isNumber, isString } from '@tsdi/ioc';
 import { Pipe } from '../../metadata/decor';
-import { invalidPipeArgumentError } from '../err';
-import { PipeTransform } from '../pipe';
+import { PipeTransform, invalidPipeArgumentError } from '../pipe';
 
 @Pipe('number')
-export class ParseIntPipe implements PipeTransform<number> {
+export class ParseNumberPipe implements PipeTransform<number> {
 
     transform(value: any, ...args: any[]): number {
         let ret: number;
