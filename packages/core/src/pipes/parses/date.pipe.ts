@@ -20,7 +20,7 @@ export class DatePipe implements PipeTransform<Date> {
             date = value;
         }
 
-        if (isDate(value)) {
+        if (isDate(date)) {
             return date as Date;
         } else {
             throw invalidPipeArgumentError(this, value);

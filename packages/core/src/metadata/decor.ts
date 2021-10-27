@@ -586,7 +586,7 @@ export interface RequsetParameterMetadata extends ParameterMetadata {
     /**
      * field scope.
      */
-    scope: 'body' | 'query' | 'restful'
+    scope?: 'body' | 'query' | 'restful'
     /**
      * field of request query params or body.
      */
@@ -613,26 +613,35 @@ export interface RequsetParameterDecorator {
      * Request Parameter decorator
      * @param {RequsetParameterMetadata} meta.
      */
-    (meta: RequsetParameterMetadata): ParameterDecorator;
+    (meta: { field?: string, pipe?: string | Type<PipeTransform>, args?: any[], defaultValue?: any }): ParameterDecorator;
 }
 
 /**
  * Request path param decorator.
  */
-export const PathParam: RequsetParameterDecorator = createParamDecorator('PathParam', {
-    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, scope: 'restful', ...pipe } as RequsetParameterMetadata)
+export const RequestPath: RequsetParameterDecorator = createParamDecorator('RequestPath', {
+    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as RequsetParameterMetadata),
+    appendProps: meta => {
+        meta.scope = 'restful';
+    }
 });
 
 /**
  * Request query param decorator.
  */
 export const RequestParam: RequsetParameterDecorator = createParamDecorator('RequestParam', {
-    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, scope: 'query', ...pipe } as RequsetParameterMetadata)
+    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as RequsetParameterMetadata),
+    appendProps: meta => {
+        meta.scope = 'query';
+    }
 });
 
 /**
  * Request body param decorator.
  */
 export const RequestBody: RequsetParameterDecorator = createParamDecorator('RequestBody', {
-    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, scope: 'body', ...pipe } as RequsetParameterMetadata)
+    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as RequsetParameterMetadata),
+    appendProps: meta => {
+        meta.scope = 'body';
+    }
 });

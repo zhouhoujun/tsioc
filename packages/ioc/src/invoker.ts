@@ -11,25 +11,49 @@ import { EMPTY, isDefined, isFunction } from './utils/chk';
  * parameter.
  */
 export interface Parameter<T = any> extends ParameterMetadata {
-    type?: ClassType<T>;
+    type: ClassType<T>;
+    paramName: string;
 }
 
 /**
  * Resolver for an argument of an {@link OperationInvoker}.
  */
-export interface OperationArgumentResolver {
+export interface OperationArgumentResolver<T extends Parameter = Parameter> {
     /**
      * Return whether an argument of the given {@code parameter} can be resolved.
      * @param parameter argument type
      * @param args gave arguments
      */
-    canResolve(parameter: Parameter, args: Record<string, any>): boolean;
+    canResolve(parameter: T, args: Record<string, any>): boolean;
     /**
      * Resolves an argument of the given {@code parameter}.
      * @param parameter argument type
      * @param args gave arguments
      */
-    resolve<T>(parameter: Parameter<T>, args: Record<string, any>): T;
+    resolve(parameter: T, args: Record<string, any>): any;
+}
+
+/**
+ * Resolver group for an argument of an {@link OperationInvoker}.
+ * @param filter group fiter
+ * @param resolvers resolves of the group.
+ * @returns 
+ */
+export function resolverGroup<T extends Parameter>(filter: (parameter: T, args: Record<string, any>) => boolean, ...resolvers: OperationArgumentResolver<T>[]): OperationArgumentResolver {
+    return {
+        canResolve: (parameter: T, args: Record<string, any>) => filter(parameter, args) && resolvers.some(r => r.canResolve(parameter, args)),
+        resolve: (parameter: T, args: Record<string, any>) => {
+            let result: any;
+            resolvers.some(r => {
+                if (r.canResolve(parameter, args)) {
+                    result = r.resolve(parameter, args);
+                    return isDefined(result);
+                }
+                return false;
+            });
+            return result ?? null;
+        }
+    }
 }
 
 /**

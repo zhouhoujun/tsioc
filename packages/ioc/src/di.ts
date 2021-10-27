@@ -1159,10 +1159,18 @@ export function createInvocationContext(injector: Injector, typeRef: TypeReflect
         },
         {
             resolve(parameter, args) {
-                return args[parameter.paramName!] ?? injector.get<any>(parameter.paramName!);
+                return args[parameter.paramName!];
             },
             canResolve(parameter, args) {
-                return (parameter.paramName && (isDefined(args[parameter.paramName]) || injector.has(parameter.paramName))) as boolean;
+                return (parameter.paramName && isDefined(args[parameter.paramName])) as boolean;
+            }
+        },
+        {
+            resolve(parameter, args) {
+                return injector.get<any>(parameter.paramName!);
+            },
+            canResolve(parameter, args) {
+                return (parameter.paramName && isDefined(args[parameter.paramName])) as boolean;
             }
         },
         {
