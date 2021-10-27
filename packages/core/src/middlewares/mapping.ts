@@ -1,7 +1,7 @@
 import {
     AsyncHandler, DecorDefine, Type, TypeReflect, Injector, tokenId, RegisteredState,
     isPrimitiveType, isPromise, isString, isArray, isFunction, isNil, isDefined, lang,
-    chain, isObservable, resolverGroup, OperationArgumentResolver, Parameter, EMPTY, ClassType
+    chain, isObservable, composeResolver, OperationArgumentResolver, Parameter, EMPTY, ClassType
 } from '@tsdi/ioc';
 import { RequsetParameterMetadata } from '../metadata/decor';
 import { ArgumentError, PipeTransform } from '../pipes/pipe';
@@ -234,9 +234,9 @@ export function missingPipeError(parameter: Parameter, type?: ClassType, method?
 export function createRequstResolvers(injector: Injector, typeRef?: TypeReflect, method?: string): OperationArgumentResolver[] {
 
     return [
-        resolverGroup<Parameter & RequsetParameterMetadata>(
+        composeResolver<Parameter & RequsetParameterMetadata>(
             (parameter, args) => args instanceof Context && isDefined(parameter.field ?? parameter.paramName),
-            resolverGroup<Parameter & RequsetParameterMetadata>(
+            composeResolver<Parameter & RequsetParameterMetadata>(
                 (parameter, args) => isPrimitiveType(parameter.type),
                 {
                     canResolve(parameter, args: Context) {
@@ -281,7 +281,7 @@ export function createRequstResolvers(injector: Injector, typeRef?: TypeReflect,
                     }
                 }
             ),
-            resolverGroup<Parameter & RequsetParameterMetadata>(
+            composeResolver<Parameter & RequsetParameterMetadata>(
                 (parameter, args) => isPrimitiveType(parameter.provider) && parameter.type == Array,
                 {
                     canResolve(parameter, args: Context) {

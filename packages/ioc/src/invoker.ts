@@ -34,12 +34,12 @@ export interface OperationArgumentResolver<T extends Parameter = Parameter> {
 }
 
 /**
- * Resolver group for an argument of an {@link OperationInvoker}.
- * @param filter group fiter
+ * compose resolver for an argument of an {@link OperationInvoker}.
+ * @param filter compose fiter
  * @param resolvers resolves of the group.
  * @returns 
  */
-export function resolverGroup<T extends Parameter>(filter: (parameter: T, args: Record<string, any>) => boolean, ...resolvers: OperationArgumentResolver<T>[]): OperationArgumentResolver {
+export function composeResolver<T extends Parameter>(filter: (parameter: T, args: Record<string, any>) => boolean, ...resolvers: OperationArgumentResolver<T>[]): OperationArgumentResolver {
     return {
         canResolve: (parameter: T, args: Record<string, any>) => filter(parameter, args) && resolvers.some(r => r.canResolve(parameter, args)),
         resolve: (parameter: T, args: Record<string, any>) => {
