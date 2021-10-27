@@ -1,10 +1,10 @@
 import {
     AsyncHandler, DecorDefine, Type, TypeReflect, Injector, tokenId, RegisteredState,
     isPrimitiveType, isPromise, isString, isArray, isFunction, isNil, isDefined, lang,
-    chain, isObservable, resolverGroup, OperationArgumentResolver, Parameter, EMPTY
+    chain, isObservable, resolverGroup, OperationArgumentResolver, Parameter, EMPTY, ClassType
 } from '@tsdi/ioc';
 import { RequsetParameterMetadata } from '../metadata/decor';
-import { PipeTransform } from '../pipes/pipe';
+import { ArgumentError, PipeTransform } from '../pipes/pipe';
 import { Context } from './context';
 import { CanActive } from './guard';
 import { IRouter, isMiddlwareType, Middleware, MiddlewareType, RouteInfo } from './middleware';
@@ -176,11 +176,6 @@ export class MappingRoute extends Route {
         }
     }
 
-    // protected getInstance(ctx: Context) {
-    //     return this.injector.resolve(this.reflect.type, ctx.injector)
-    //         ?? this.injector.state().resolve(this.reflect.type, [ctx.injector]);
-    // }
-
     protected getRouteMiddleware(ctx: Context, meta: DecorDefine) {
         return [...this.middlewares || [], ...(meta.metadata as RouteMapingMetadata).middlewares || []];
     }
@@ -231,6 +226,9 @@ export class MappingRoute extends Route {
 
 }
 
+export function missingPipeError(parameter: Parameter, type?: ClassType, method?: string) {
+    return new ArgumentError(`missing pipe to transform argument ${parameter.paramName} type, method ${method} of class ${type}`);
+}
 
 
 export function createRequstResolvers(injector: Injector, typeRef?: TypeReflect, method?: string): OperationArgumentResolver[] {
@@ -238,68 +236,89 @@ export function createRequstResolvers(injector: Injector, typeRef?: TypeReflect,
     return [
         resolverGroup<Parameter & RequsetParameterMetadata>(
             (parameter, args) => args instanceof Context && isDefined(parameter.field ?? parameter.paramName),
-            {
-                canResolve(parameter, args) {
-                    return (isPrimitiveType(parameter.provider) || !!parameter.pipe)
-                        && parameter.type == Array
-                        && isArray(args.request.body[parameter.field ?? parameter.paramName]);
-                },
-                resolve(parameter, args: Context) {
-                    const value: any[] = args.request.body[parameter.field ?? parameter.paramName];
-                    const pipeName = parameter.pipe ?? parameter.type.name.toLowerCase();
-                    const pipe = injector.get<PipeTransform>(pipeName);
-                    return value.map(val => pipe.transform(val, ...parameter.args || EMPTY));
-                }
-            },
             resolverGroup<Parameter & RequsetParameterMetadata>(
-                (parameter, args) => isPrimitiveType(parameter.type) && !!parameter.scope,
+                (parameter, args) => isPrimitiveType(parameter.type),
                 {
-                    canResolve(parameter, args) {
-                        return parameter.scope === 'query'
-                            && injector.has(parameter.pipe ?? parameter.type.name.toLowerCase(), true)
-                            && isDefined(args.query[parameter.field ?? parameter.paramName]);
+                    canResolve(parameter, args: Context) {
+                        return parameter.scope === 'query' && isDefined(args.query[parameter.field ?? parameter.paramName]);
                     },
                     resolve(parameter, args: Context) {
-                        const pipe = parameter.pipe ?? parameter.type.name.toLowerCase();
-                        return injector.get<PipeTransform>(pipe).transform(args.query[parameter.field ?? parameter.paramName], ...parameter.args || EMPTY)
-                    }
-                },
-                {
-                    canResolve(parameter, args) {
-                        return parameter.scope === 'restful'
-                            && injector.has(parameter.pipe ?? parameter.type!.name.toLowerCase(), true)
-                            && isDefined(args.restful[parameter.field ?? parameter.paramName]);
-                    },
-                    resolve(parameter, args: Context) {
-                        const pipe = parameter.pipe ?? parameter.type.name.toLowerCase();
-                        return injector.get<PipeTransform>(pipe).transform(args.restful[parameter.field ?? parameter.paramName], ...parameter.args || EMPTY)
+                        const pipe = injector.get<PipeTransform>(parameter.pipe ?? parameter.type.name.toLowerCase());
+                        if (!pipe) throw missingPipeError(parameter, typeRef?.type, method);
+                        return pipe.transform(args.query[parameter.field ?? parameter.paramName], ...parameter.args || EMPTY)
                     }
                 },
                 {
                     canResolve(parameter, args: Context) {
-                        return parameter.scope === 'body'
-                            && injector.has(parameter.pipe ?? parameter.type.name.toLowerCase(), true)
-                            && isDefined(args.request.body[parameter.field ?? parameter.paramName]);
+                        return parameter.scope === 'restful' && isDefined(args.restful[parameter.field ?? parameter.paramName]);
                     },
                     resolve(parameter, args: Context) {
-                        const pipe = parameter.pipe ?? parameter.type.name.toLowerCase();
-                        return injector.get<PipeTransform>(pipe).transform(args.request.body[parameter.field ?? parameter.paramName], ...parameter.args || EMPTY)
+                        const pipe = injector.get<PipeTransform>(parameter.pipe ?? parameter.type.name.toLowerCase());
+                        if (!pipe) throw missingPipeError(parameter, typeRef?.type, method);
+                        return pipe.transform(args.restful[parameter.field ?? parameter.paramName], ...parameter.args || EMPTY)
+                    }
+                },
+                {
+                    canResolve(parameter, args: Context) {
+                        return parameter.scope === 'body' && isDefined(args.request.body[parameter.field ?? parameter.paramName]);
+                    },
+                    resolve(parameter, args: Context) {
+                        const pipe = injector.get<PipeTransform>(parameter.pipe ?? parameter.type.name.toLowerCase());
+                        if (!pipe) throw missingPipeError(parameter, typeRef?.type, method);
+                        return pipe.transform(args.request.body[parameter.field ?? parameter.paramName], ...parameter.args || EMPTY)
+                    }
+                },
+                {
+                    canResolve(parameter, args: Context) {
+                        const field = parameter.field ?? parameter.paramName;
+                        return !parameter.scope && isDefined(args.query[field] ?? args.restful[field] ?? args.request.body[field])
+                    },
+                    resolve(parameter, args: Context) {
+                        const field = parameter.field ?? parameter.paramName;
+                        const pipe = injector.get<PipeTransform>(parameter.pipe ?? parameter.type.name.toLowerCase());
+                        if (!pipe) throw missingPipeError(parameter, typeRef?.type, method);
+                        return pipe.transform(args.query[field] ?? args.restful[field] ?? args.request.body[field], ...parameter.args || EMPTY)
                     }
                 }
             ),
-            {
-                canResolve(parameter, args) {
-                    const field = parameter.field ?? parameter.paramName;
-                    return isPrimitiveType(parameter.type) && !parameter.scope
-                        && injector.has(parameter.pipe ?? parameter.type.name.toLowerCase(), true)
-                        && isDefined(args.query[field] ?? args.restful[field] ?? args.request.body[field]);
+            resolverGroup<Parameter & RequsetParameterMetadata>(
+                (parameter, args) => isPrimitiveType(parameter.provider) && parameter.type == Array,
+                {
+                    canResolve(parameter, args: Context) {
+                        const field = parameter.field ?? parameter.paramName;
+                        return parameter.scope === 'query' && (isArray(args.request.query[field]) || isString(args.request.query[field]));
+                    },
+                    resolve(parameter, args: Context) {
+                        const value = args.request.body[parameter.field ?? parameter.paramName];
+                        const values: any[] = isString(value) ? value.split(',') : value;
+                        const pipe = injector.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase());
+                        if (!pipe) throw missingPipeError(parameter, typeRef?.type, method);
+                        return values.map(val => pipe.transform(val, ...parameter.args || EMPTY));
+                    }
                 },
-                resolve(parameter, args: Context) {
-                    const pipe = parameter.pipe ?? parameter.type.name.toLowerCase();
-                    const field = parameter.field ?? parameter.paramName;
-                    return injector.get<PipeTransform>(pipe).transform(args.query[field] ?? args.restful[field] ?? args.request.body[field], ...parameter.args || EMPTY)
+                {
+                    canResolve(parameter, args: Context) {
+                        return parameter.scope === 'restful' && isDefined(args.restful[parameter.field ?? parameter.paramName]);
+                    },
+                    resolve(parameter, args: Context) {
+                        const value = (args.restful[parameter.field ?? parameter.paramName] as string).split(',');
+                        const pipe = injector.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase());
+                        if (!pipe) throw missingPipeError(parameter, typeRef?.type, method);
+                        return value.map(val => pipe.transform(val, ...parameter.args || EMPTY));
+                    }
+                },
+                {
+                    canResolve(parameter, args: Context) {
+                        return isArray(args.request.body[parameter.field ?? parameter.paramName]);
+                    },
+                    resolve(parameter, args: Context) {
+                        const value: any[] = args.request.body[parameter.field ?? parameter.paramName];
+                        const pipe = injector.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase());
+                        if (!pipe) throw missingPipeError(parameter, typeRef?.type, method);
+                        return value.map(val => pipe.transform(val, ...parameter.args || EMPTY));
+                    }
                 }
-            }
+            )
         ),
     ]
 }
