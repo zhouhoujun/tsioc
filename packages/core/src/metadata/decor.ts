@@ -594,7 +594,7 @@ export interface RequsetParameterMetadata extends ParameterMetadata {
     /**
      * pipe
      */
-    pipe: string | Type<PipeTransform>;
+    pipe?: string | Type<PipeTransform>;
     /**
      * pipe extends args
      */

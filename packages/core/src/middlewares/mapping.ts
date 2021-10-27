@@ -1,9 +1,8 @@
 import {
     AsyncHandler, DecorDefine, Type, TypeReflect, Injector, tokenId, RegisteredState,
-    isPrimitiveType, isPromise, isString, isArray, isFunction, isNil, isDefined, lang,
+    isPrimitiveType, isPromise, isString, isArray, isFunction, isNil, isDefined, isClass, lang,
     chain, isObservable, composeResolver, OperationArgumentResolver, Parameter, EMPTY, ClassType
 } from '@tsdi/ioc';
-import { RequsetParameterMetadata } from '../metadata/decor';
 import { ArgumentError, PipeTransform } from '../pipes/pipe';
 import { Context } from './context';
 import { CanActive } from './guard';
@@ -230,13 +229,45 @@ export function missingPipeError(parameter: Parameter, type?: ClassType, method?
     return new ArgumentError(`missing pipe to transform argument ${parameter.paramName} type, method ${method} of class ${type}`);
 }
 
+/**
+ * trasport parameter.
+ */
+export interface TrasportParameter<T = any> extends Parameter<T> {
+    /**
+     * field scope.
+     */
+    scope?: 'body' | 'query' | 'restful'
+    /**
+     * field of request query params or body.
+     */
+    field?: string;
+    /**
+     * pipe
+     */
+    pipe?: string | Type<PipeTransform>;
+    /**
+     * pipe extends args
+     */
+    args?: any[];
+}
 
-export function createRequstResolvers(injector: Injector, typeRef?: TypeReflect, method?: string): OperationArgumentResolver[] {
+export interface RequsetArgumentResolver<T extends TrasportParameter = TrasportParameter> extends OperationArgumentResolver<T> {
+    /**
+     * Resolves an argument of the given {@code parameter}.
+     * @param parameter argument type
+     * @param args gave arguments
+     */
+    resolve(parameter: T, args: Record<string, any>): any;
+}
+
+export const MODEL_RESOLVERS = tokenId<RequsetArgumentResolver[]>('MODEL_RESOLVERS');
+
+export function createRequstResolvers(injector: Injector, typeRef?: TypeReflect, method?: string): RequsetArgumentResolver[] {
 
     return [
-        composeResolver<Parameter & RequsetParameterMetadata>(
+        composeResolver<TrasportParameter>(
             (parameter, args) => args instanceof Context && isDefined(parameter.field ?? parameter.paramName),
-            composeResolver<Parameter & RequsetParameterMetadata>(
+            composeResolver<TrasportParameter>(
                 (parameter, args) => isPrimitiveType(parameter.type),
                 {
                     canResolve(parameter, args: Context) {
@@ -281,7 +312,7 @@ export function createRequstResolvers(injector: Injector, typeRef?: TypeReflect,
                     }
                 }
             ),
-            composeResolver<Parameter & RequsetParameterMetadata>(
+            composeResolver<TrasportParameter>(
                 (parameter, args) => isPrimitiveType(parameter.provider) && parameter.type == Array,
                 {
                     canResolve(parameter, args: Context) {
@@ -318,6 +349,23 @@ export function createRequstResolvers(injector: Injector, typeRef?: TypeReflect,
                         return value.map(val => pipe.transform(val, ...parameter.args || EMPTY));
                     }
                 }
+            ),
+            composeResolver<TrasportParameter>(
+                (parameter, args) => parameter.scope === 'body'
+                    && (parameter.field ? args.request.body[parameter.field] : Object.keys(args.request.body).length > 0)
+                    && (isClass(parameter.type) || isClass(parameter.provider)),
+                {
+                    canResolve(parameter, args: Context) {
+                        return isDefined(parameter.pipe);
+                    },
+                    resolve(parameter, args: Context) {
+                        const value = parameter.field ? args.request.body[parameter.field] : args.request.body;
+                        const pipe = injector.get<PipeTransform>(parameter.pipe!);
+                        if (!pipe) throw missingPipeError(parameter, typeRef?.type, method);
+                        return pipe.transform(value, ...parameter.args || EMPTY);
+                    }
+                },
+                ...injector.get(MODEL_RESOLVERS) ?? EMPTY
             )
         ),
     ]
