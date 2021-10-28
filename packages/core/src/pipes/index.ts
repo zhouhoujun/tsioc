@@ -13,4 +13,4 @@ export * from './parses/float.pipe';
 export * from './parses/int.pipe';
 export * from './parses/number.pipe';
 export * from './parses/string.pipe';
-
+export * from './parses/json.pipe';

@@ -1,6 +1,6 @@
 import {
     DecoratorOption, isUndefined, ROOT_INJECTOR, EMPTY_OBJ, isArray, isString, lang, Type, DesignContext,
-    createDecorator, ClassMethodDecorator, Injector, ClassMetadata, createParamDecorator, ParameterMetadata
+    createDecorator, ClassMethodDecorator, Injector, ClassMetadata, createParamDecorator, ParameterMetadata, Token, ClassType
 } from '@tsdi/ioc';
 import { Service } from '../services/service';
 import { ModuleReflect, ModuleConfigure, AnnotationReflect } from './ref';
@@ -599,21 +599,22 @@ export interface RequsetParameterMetadata extends ParameterMetadata {
      * pipe extends args
      */
     args?: any[];
+
 }
 
 export interface RequsetParameterDecorator {
     /**
      * Request Parameter decorator
      *
-     * @param {Type} toType the type transform to.
-     * @param {boolean} pure If Pipe is pure (its output depends only on its input.) defaut true.
+     * @param {string} field field of request query params or body.
+     * @param option option.
      */
-    (field: string, pipe?: { pipe?: string | Type<PipeTransform>, args?: any[], defaultValue?: any }): ParameterDecorator;
+    (field: string, option?: { provider?: Type, mutil?: boolean, pipe?: string | Type<PipeTransform>, args?: any[], defaultValue?: any }): ParameterDecorator;
     /**
      * Request Parameter decorator
-     * @param {RequsetParameterMetadata} meta.
+     * @param meta.
      */
-    (meta: { field?: string, pipe?: string | Type<PipeTransform>, args?: any[], defaultValue?: any }): ParameterDecorator;
+    (meta: { field?: string, provider?: Type, mutil?: boolean, pipe?: string | Type<PipeTransform>, args?: any[], defaultValue?: any }): ParameterDecorator;
 }
 
 /**

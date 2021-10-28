@@ -2,35 +2,43 @@ import { Injector, ProviderType } from './injector';
 import { Abstract } from './metadata/fac';
 import { ParameterMetadata } from './metadata/meta';
 import { TypeReflect } from './metadata/type';
-import { ClassType } from './types';
+import { ClassType, Type } from './types';
 import { EMPTY, isDefined, isFunction } from './utils/chk';
 
 
 
 /**
- * parameter.
+ * parameter argument of an {@link OperationArgumentResolver}.
  */
 export interface Parameter<T = any> extends ParameterMetadata {
     type: ClassType<T>;
     paramName: string;
+    /**
+     * provider type
+     */
+    provider?: Type;
+    /**
+     * mutil provider or not.
+     */
+    mutil?: boolean;
 }
 
 /**
  * Resolver for an argument of an {@link OperationInvoker}.
  */
-export interface OperationArgumentResolver<T extends Parameter = Parameter> {
+export interface OperationArgumentResolver {
     /**
      * Return whether an argument of the given {@code parameter} can be resolved.
      * @param parameter argument type
      * @param args gave arguments
      */
-    canResolve(parameter: T, args: Record<string, any>): boolean;
+    canResolve(parameter: Parameter, args: Record<string, any>): boolean;
     /**
      * Resolves an argument of the given {@code parameter}.
      * @param parameter argument type
      * @param args gave arguments
      */
-    resolve(parameter: T, args: Record<string, any>): any;
+    resolve<T>(parameter: Parameter<T>, args: Record<string, any>): T;
 }
 
 /**
@@ -39,10 +47,10 @@ export interface OperationArgumentResolver<T extends Parameter = Parameter> {
  * @param resolvers resolves of the group.
  * @returns 
  */
-export function composeResolver<T extends Parameter>(filter: (parameter: T, args: Record<string, any>) => boolean, ...resolvers: OperationArgumentResolver<T>[]): OperationArgumentResolver {
+export function composeResolver<T extends OperationArgumentResolver, TP extends Parameter = Parameter>(filter: (parameter: TP, args: Record<string, any>) => boolean, ...resolvers: T[]): OperationArgumentResolver {
     return {
-        canResolve: (parameter: T, args: Record<string, any>) => filter(parameter, args) && resolvers.some(r => r.canResolve(parameter, args)),
-        resolve: (parameter: T, args: Record<string, any>) => {
+        canResolve: (parameter: TP, args: Record<string, any>) => filter(parameter, args) && resolvers.some(r => r.canResolve(parameter, args)),
+        resolve: (parameter: TP, args: Record<string, any>) => {
             let result: any;
             resolvers.some(r => {
                 if (r.canResolve(parameter, args)) {

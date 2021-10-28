@@ -1,8 +1,8 @@
 import { Pipe } from '../metadata/decor';
 import { PipeTransform } from './pipe';
 
-@Pipe('json')
-export class JsonPipe implements PipeTransform {
+@Pipe('json-format')
+export class ParseJsonPipe implements PipeTransform {
   /**
    * @param value A value of any type to convert into a JSON-format string.
    */

@@ -5,12 +5,12 @@ import { PipeTransform, invalidPipeArgumentError } from '../pipe';
 @Pipe('int')
 export class ParseIntPipe implements PipeTransform<number> {
 
-    transform(value: any, ...args: any[]): number {
+    transform(value: any, radix: number = 10): number {
         let ret: number;
         if (isString(value)) {
-            ret = parseInt(value, 10);
+            ret = parseInt(value, radix);
         } else if (isNumber(value)) {
-            ret = parseInt(value.toString(), 10);
+            ret = parseInt(value.toString(), radix);
         } else {
             ret = NaN;
         }

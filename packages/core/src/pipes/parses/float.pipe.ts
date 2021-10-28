@@ -7,7 +7,7 @@ import { PipeTransform } from '../pipe';
 @Pipe('float')
 export class ParseFloatPipe implements PipeTransform<number> {
 
-    transform(value: any, ...args: any[]): number {
+    transform(value: any, precision?: number): number {
         let ret: number;
         if(isString(value)){
             ret = parseFloat(value); 

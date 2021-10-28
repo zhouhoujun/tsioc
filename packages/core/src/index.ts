@@ -37,3 +37,4 @@ export * from './Application';
 // middlewares
 export * from './middlewares';
 
+export * from './model';

@@ -47,6 +47,11 @@ export interface ProvideMetadata {
      * @memberof Provide
      */
     provider?: Token;
+    
+    /**
+     * is mutil provider or not
+     */
+     mutil?: boolean;
 }
 
 

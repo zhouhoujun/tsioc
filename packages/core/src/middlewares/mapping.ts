@@ -1,12 +1,14 @@
 import {
     AsyncHandler, DecorDefine, Type, TypeReflect, Injector, tokenId, RegisteredState,
     isPrimitiveType, isPromise, isString, isArray, isFunction, isNil, isDefined, isClass, lang,
-    chain, isObservable, composeResolver, OperationArgumentResolver, Parameter, EMPTY, ClassType
+    chain, isObservable, composeResolver, Parameter, EMPTY, ClassType
 } from '@tsdi/ioc';
+import { MODEL_RESOLVERS } from '../model/resolver';
 import { ArgumentError, PipeTransform } from '../pipes/pipe';
 import { Context } from './context';
 import { CanActive } from './guard';
 import { IRouter, isMiddlwareType, Middleware, MiddlewareType, RouteInfo } from './middleware';
+import { TrasportArgumentResolver, TrasportParameter } from './resolver';
 import { ResultValue } from './result';
 import { Route } from './route';
 import { ResultStrategy } from './strategy';
@@ -71,19 +73,7 @@ const emptyNext = async () => { };
 const isRest = /\/:/;
 const restParms = /^\S*:/;
 
-/**
- * mapping request token.
- */
-export const REQUEST = tokenId('REQUEST');
-/**
- * mapping request params token.
- */
-export const REQUEST_PARAMS = tokenId('REQUEST_PARAMS');
 
-/**
- * mapping request body token.
- */
-export const REQUEST_BODY = tokenId('REQUEST_BODY');
 
 /**
  * mapping route.
@@ -229,45 +219,13 @@ export function missingPipeError(parameter: Parameter, type?: ClassType, method?
     return new ArgumentError(`missing pipe to transform argument ${parameter.paramName} type, method ${method} of class ${type}`);
 }
 
-/**
- * trasport parameter.
- */
-export interface TrasportParameter<T = any> extends Parameter<T> {
-    /**
-     * field scope.
-     */
-    scope?: 'body' | 'query' | 'restful'
-    /**
-     * field of request query params or body.
-     */
-    field?: string;
-    /**
-     * pipe
-     */
-    pipe?: string | Type<PipeTransform>;
-    /**
-     * pipe extends args
-     */
-    args?: any[];
-}
 
-export interface RequsetArgumentResolver<T extends TrasportParameter = TrasportParameter> extends OperationArgumentResolver<T> {
-    /**
-     * Resolves an argument of the given {@code parameter}.
-     * @param parameter argument type
-     * @param args gave arguments
-     */
-    resolve(parameter: T, args: Record<string, any>): any;
-}
-
-export const MODEL_RESOLVERS = tokenId<RequsetArgumentResolver[]>('MODEL_RESOLVERS');
-
-export function createRequstResolvers(injector: Injector, typeRef?: TypeReflect, method?: string): RequsetArgumentResolver[] {
+export function createRequstResolvers(injector: Injector, typeRef?: TypeReflect, method?: string): TrasportArgumentResolver[] {
 
     return [
-        composeResolver<TrasportParameter>(
+        composeResolver<TrasportArgumentResolver, TrasportParameter>(
             (parameter, args) => args instanceof Context && isDefined(parameter.field ?? parameter.paramName),
-            composeResolver<TrasportParameter>(
+            composeResolver<TrasportArgumentResolver>(
                 (parameter, args) => isPrimitiveType(parameter.type),
                 {
                     canResolve(parameter, args: Context) {
@@ -312,8 +270,8 @@ export function createRequstResolvers(injector: Injector, typeRef?: TypeReflect,
                     }
                 }
             ),
-            composeResolver<TrasportParameter>(
-                (parameter, args) => isPrimitiveType(parameter.provider) && parameter.type == Array,
+            composeResolver<TrasportArgumentResolver, TrasportParameter>(
+                (parameter, args) => isPrimitiveType(parameter.provider) && (parameter.mutil === true || parameter.type === Array),
                 {
                     canResolve(parameter, args: Context) {
                         const field = parameter.field ?? parameter.paramName;
@@ -324,7 +282,7 @@ export function createRequstResolvers(injector: Injector, typeRef?: TypeReflect,
                         const values: any[] = isString(value) ? value.split(',') : value;
                         const pipe = injector.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase());
                         if (!pipe) throw missingPipeError(parameter, typeRef?.type, method);
-                        return values.map(val => pipe.transform(val, ...parameter.args || EMPTY));
+                        return values.map(val => pipe.transform(val, ...parameter.args || EMPTY)) as any;
                     }
                 },
                 {
@@ -335,7 +293,7 @@ export function createRequstResolvers(injector: Injector, typeRef?: TypeReflect,
                         const value = (args.restful[parameter.field ?? parameter.paramName] as string).split(',');
                         const pipe = injector.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase());
                         if (!pipe) throw missingPipeError(parameter, typeRef?.type, method);
-                        return value.map(val => pipe.transform(val, ...parameter.args || EMPTY));
+                        return value.map(val => pipe.transform(val, ...parameter.args || EMPTY)) as any;;
                     }
                 },
                 {
@@ -346,11 +304,11 @@ export function createRequstResolvers(injector: Injector, typeRef?: TypeReflect,
                         const value: any[] = args.request.body[parameter.field ?? parameter.paramName];
                         const pipe = injector.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase());
                         if (!pipe) throw missingPipeError(parameter, typeRef?.type, method);
-                        return value.map(val => pipe.transform(val, ...parameter.args || EMPTY));
+                        return value.map(val => pipe.transform(val, ...parameter.args || EMPTY)) as any;;
                     }
                 }
             ),
-            composeResolver<TrasportParameter>(
+            composeResolver<TrasportArgumentResolver, TrasportParameter>(
                 (parameter, args) => parameter.scope === 'body'
                     && (parameter.field ? args.request.body[parameter.field] : Object.keys(args.request.body).length > 0)
                     && (isClass(parameter.type) || isClass(parameter.provider)),

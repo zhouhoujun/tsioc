@@ -23,7 +23,6 @@ import { get } from './metadata/refl';
 import { InvocationContext, OperationArgumentResolver, OperationInvokerFactory, ReflectiveOperationInvoker } from './invoker';
 import { DefaultModuleLoader } from './loader';
 import { ResolveServicesScope, ServicesContext } from './actions/serv';
-import { any } from 'expect';
 
 
 
@@ -1154,7 +1153,7 @@ export function createInvocationContext(injector: Injector, typeRef: TypeReflect
                 return injector.get(pdr);
             },
             canResolve(parameter) {
-                return (parameter.provider && !isPrimitiveType(parameter.provider)) as boolean;
+                return (parameter.provider && !parameter.mutil && !isPrimitiveType(parameter.provider)) as boolean;
             }
         },
         {
