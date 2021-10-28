@@ -1,11 +1,12 @@
 import 'reflect-metadata';
 import { ILogger } from '@tsdi/logs';
-import { Type, isString, isArray, Injector } from '@tsdi/ioc';
-import { ConnectionOptions, Configuration, ApplicationContext, Configure, Server } from '@tsdi/core';
+import { Type, isString, isArray, Injector, isFunction, EMPTY, isNil } from '@tsdi/ioc';
+import { ConnectionOptions, Configuration, ApplicationContext, Configure, Server, MODEL_RESOLVERS, createModelResolver, DBPropertyMetadata, PipeTransform, missingPropPipeError } from '@tsdi/core';
 import {
     getConnection, createConnection, ConnectionOptions as OrmConnOptions, Connection,
     getMetadataArgsStorage, getCustomRepository, getConnectionManager
 } from 'typeorm';
+import { ObjectIDToken } from '.';
 
 
 
@@ -43,12 +44,66 @@ export class TypeormServer implements Server {
         }
     }
 
+    private mdlmap = new Map<Type, DBPropertyMetadata[]>();
+    getModelPropertyMetadata(type: Type) {
+        let props = this.mdlmap.get(type);
+        if (!props) {
+            props = [];
+            getMetadataArgsStorage().columns.filter(col => col.target === type)
+                .forEach(col => {
+                    props?.push({
+                        propertyKey: col.propertyName,
+                        dbtype: isString(col.options.type) ? col.options.type : (col.mode === 'objectId'? 'objectId': ''),
+                        type: isString(col.options.type) ? Object : col.options.type!
+                    });
+                });
+
+            getMetadataArgsStorage().relations.filter(col => col.target === type)
+                .forEach(col => {
+                    let relaModel = isFunction(col.type) ? col.type() as Type : undefined;
+                    props?.push({
+                        propertyKey: col.propertyName,
+                        provider: relaModel,
+                        mutil: (col.relationType === 'one-to-many' || col.relationType === 'many-to-many'),
+                        type: (col.relationType === 'one-to-many' || col.relationType === 'many-to-many') ? Array : relaModel!
+                    });
+                });
+            this.mdlmap.set(type, props);
+        }
+        return props;
+    }
+
+
     async statupConnection(injector: Injector, options: ConnectionOptions, config: Configuration) {
+        if(options.type == 'mongodb'){
+            const mgd = await injector.getLoader().require('mongodb');
+            if(mgd.ObjectID){
+                injector.setValue(ObjectIDToken, mgd.ObjectID);
+            }
+        }
         const connection = await this.createConnection(options, config);
 
-        options.entities?.forEach(e => {
-            injector.register(e);
-        });
+        // options.entities?.forEach(e => {
+        //     injector.register(e);
+        // });
+        const entities = options.entities ?? EMPTY;
+        const resovler = createModelResolver({
+            isModel: (type) => entities.indexOf(type) >= 0,
+            getPropertyMeta: (type) => this.getModelPropertyMetadata(type),
+            fieldResolvers: [
+                {
+                    canResolve: (prop, ctx, args) => prop.dbtype === 'objectId',
+                    resolve: (prop, ctx, args, target) => {
+                        const value = args[prop.propertyKey];
+                        if (isNil(value)) return null;
+                        const pipe = ctx.injector.get<PipeTransform>('objectId');
+                        if (!pipe) throw missingPropPipeError(prop, target)
+                        return pipe.transform(value, prop.enum);
+                    }
+                },
+            ]
+        })
+        injector.inject({ provide: MODEL_RESOLVERS, useValue: resovler, multi: true });
 
         getMetadataArgsStorage().entityRepositories?.forEach(meta => {
             if (options.entities?.some(e => e === meta.entity)) {

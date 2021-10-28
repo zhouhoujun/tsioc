@@ -1,4 +1,5 @@
-import { OperationArgumentResolver, Parameter, Type } from '@tsdi/ioc';
+import { InvocationContext, OperationArgumentResolver, Parameter, Type } from '@tsdi/ioc';
+import { Context } from './context';
 import { PipeTransform } from '../pipes/pipe';
 
 /**
@@ -26,17 +27,17 @@ export interface TrasportParameter<T = any> extends Parameter<T> {
 /**
  * Resolver for an trasport argument of an {@link OperationInvoker}
  */
-export interface TrasportArgumentResolver extends OperationArgumentResolver {
+export interface TrasportArgumentResolver<C extends Context = Context> extends OperationArgumentResolver<C> {
     /**
      * Return whether an argument of the given {@code parameter} can be resolved.
      * @param parameter argument type
-     * @param args gave arguments
+     * @param ctx InvocationContext
      */
-    canResolve(parameter: TrasportParameter, args: Record<string, any>): boolean;
+    canResolve(parameter: TrasportParameter, ctx: InvocationContext<C>): boolean;
     /**
      * Resolves an argument of the given {@code parameter}.
      * @param parameter argument type
-     * @param args gave arguments
+     * @param ctx InvocationContext
      */
-    resolve<T>(parameter: TrasportParameter<T>, args: Record<string, any>): T;
+    resolve<T>(parameter: TrasportParameter<T>, ctx: InvocationContext<C>): T;
 }

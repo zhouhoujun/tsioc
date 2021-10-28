@@ -1,6 +1,6 @@
 import { Module } from '@tsdi/core';
+import { ParseObjectIdPipe } from './objectid.pipe';
 import { TypeOrmHelper } from './TypeOrmHelper';
-import { TypeOrmModelParser } from './TypeOrmModelParser';
 import { TypeormServer } from './TypeormServer';
 
 @Module({
@@ -8,7 +8,7 @@ import { TypeormServer } from './TypeormServer';
     providers: [
         TypeormServer,
         TypeOrmHelper,
-        TypeOrmModelParser
+        ParseObjectIdPipe,
     ]
 })
 export class TypeOrmModule { }

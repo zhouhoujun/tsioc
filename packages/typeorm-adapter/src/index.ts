@@ -1,4 +1,4 @@
 export * from './TypeOrmHelper';
-export * from './TypeOrmModelParser';
+export * from './objectid.pipe';
 export * from './TypeOrmModule';
 export * from './TypeormServer';

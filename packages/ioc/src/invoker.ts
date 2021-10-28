@@ -26,19 +26,19 @@ export interface Parameter<T = any> extends ParameterMetadata {
 /**
  * Resolver for an argument of an {@link OperationInvoker}.
  */
-export interface OperationArgumentResolver {
+export interface OperationArgumentResolver<C = any> {
     /**
      * Return whether an argument of the given {@code parameter} can be resolved.
      * @param parameter argument type
      * @param args gave arguments
      */
-    canResolve(parameter: Parameter, args: Record<string, any>): boolean;
+    canResolve(parameter: Parameter, ctx: InvocationContext<C>): boolean;
     /**
      * Resolves an argument of the given {@code parameter}.
      * @param parameter argument type
      * @param args gave arguments
      */
-    resolve<T>(parameter: Parameter<T>, args: Record<string, any>): T;
+    resolve<T>(parameter: Parameter<T>, ctx: InvocationContext<C>): T;
 }
 
 /**
@@ -47,14 +47,14 @@ export interface OperationArgumentResolver {
  * @param resolvers resolves of the group.
  * @returns 
  */
-export function composeResolver<T extends OperationArgumentResolver, TP extends Parameter = Parameter>(filter: (parameter: TP, args: Record<string, any>) => boolean, ...resolvers: T[]): OperationArgumentResolver {
+export function composeResolver<T extends OperationArgumentResolver, TP extends Parameter = Parameter>(filter: (parameter: TP, ctx: InvocationContext) => boolean, ...resolvers: T[]): OperationArgumentResolver {
     return {
-        canResolve: (parameter: TP, args: Record<string, any>) => filter(parameter, args) && resolvers.some(r => r.canResolve(parameter, args)),
-        resolve: (parameter: TP, args: Record<string, any>) => {
+        canResolve: (parameter: TP, ctx: InvocationContext) => filter(parameter, ctx) && resolvers.some(r => r.canResolve(parameter, ctx)),
+        resolve: (parameter: TP, ctx: InvocationContext) => {
             let result: any;
             resolvers.some(r => {
-                if (r.canResolve(parameter, args)) {
-                    result = r.resolve(parameter, args);
+                if (r.canResolve(parameter, ctx)) {
+                    result = r.resolve(parameter, ctx);
                     return isDefined(result);
                 }
                 return false;
@@ -67,38 +67,37 @@ export function composeResolver<T extends OperationArgumentResolver, TP extends 
 /**
  * The context for the {@link OperationInvoker invocation of an operation}.
  */
-export class InvocationContext {
+export class InvocationContext<T = any> {
 
     private _argumentResolvers: OperationArgumentResolver[];
-    private _arguments: Record<string, any>;
-    constructor(readonly injector: Injector, args?: Record<string, any>, ...argumentResolvers: OperationArgumentResolver[]) {
+    private _arguments: T;
+    constructor(readonly injector: Injector, readonly target: ClassType, readonly method: string, args?: T, ...argumentResolvers: OperationArgumentResolver[]) {
         this._argumentResolvers = argumentResolvers;
-        this._arguments = args ?? {};
-
+        this._arguments = args ?? {} as T;
     }
     /**
      * the invocation arguments.
      */
-    get arguments(): Record<string, any> {
+    get arguments(): T {
         return this._arguments;
     }
     /**
      * the invocation arguments resolver.
      */
-    get argumentResolvers(): OperationArgumentResolver[] {
+    protected get argumentResolvers(): OperationArgumentResolver[] {
         return this._argumentResolvers;
     }
 
 
     canResolve(type: Parameter): boolean {
-        return this.argumentResolvers.some(r => r.canResolve(type, this.arguments));
+        return this.argumentResolvers.some(r => r.canResolve(type, this));
     }
 
     resolveArgument<T>(argumentType: Parameter<T>): T | null {
         let result: T | undefined;
         this.argumentResolvers.some(r => {
-            if (r.canResolve(argumentType, this.arguments)) {
-                result = r.resolve(argumentType, this.arguments);
+            if (r.canResolve(argumentType, this)) {
+                result = r.resolve(argumentType, this);
                 return isDefined(result);
             }
             return false;

@@ -1129,6 +1129,60 @@ class ActionProviderImpl extends DefaultInjector implements ActionProvider {
     }
 }
 
+const resolves: OperationArgumentResolver[] = [
+    {
+        canResolve(parameter) {
+            return (parameter.provider && !parameter.mutil && !isPrimitiveType(parameter.provider)) as boolean;
+        },
+        resolve(parameter, ctx) {
+            const pdr = parameter.provider!;
+            const injector = ctx.injector;
+            if (isFunction(pdr) && !injector.state().isRegistered(pdr) && !injector.has(pdr, true)) {
+                injector.register(pdr as Type);
+            }
+            return injector.get(pdr);
+        }
+    },
+    {
+        canResolve(parameter, ctx) {
+            return (parameter.paramName && isDefined(ctx.arguments[parameter.paramName])) as boolean;
+        },
+        resolve(parameter, ctx) {
+            return ctx.arguments[parameter.paramName!];
+        }
+    },
+    {
+        canResolve(parameter, ctx) {
+            return (parameter.paramName && isDefined(ctx.arguments[parameter.paramName])) as boolean;
+        },
+        resolve(parameter, ctx) {
+            return ctx.injector.get<any>(parameter.paramName!);
+        }
+    },
+    {
+        canResolve(parameter) {
+            return (parameter.type && !isPrimitiveType(parameter.type)) as boolean;
+        },
+        resolve(parameter, ctx) {
+            const ty = parameter.type!;
+            const injector = ctx.injector;
+            if (isFunction(ty) && !injector.state().isRegistered(ty) && !injector.has(ty, true)) {
+                injector.register(ty as Type);
+            }
+            return injector.get(ty);
+        }
+    },
+    // default value
+    {
+        resolve(parameter) {
+            return parameter.defaultValue as any;
+        },
+        canResolve(parameter) {
+            return isDefined(parameter.defaultValue);
+        }
+    }
+];
+
 export function createInvocationContext(injector: Injector, typeRef: TypeReflect, method: string
     , option?: {
         args?: Record<string, any>,
@@ -1142,57 +1196,9 @@ export function createInvocationContext(injector: Injector, typeRef: TypeReflect
     if (providers.length) {
         injector = Injector.create(providers, injector, proxy ? 'invoked' : 'parameter');
     }
-    return injector.has(InvocationContext) ? injector.get(InvocationContext) : new InvocationContext(injector, option.args || EMPTY_OBJ,
+    return injector.has(InvocationContext) ? injector.get(InvocationContext) : new InvocationContext(injector, typeRef.type, method , option.args || EMPTY_OBJ,
         ...(isFunction(option.resolvers) ? option.resolvers(injector, typeRef, method) : option.resolvers) ?? EMPTY,
-        {
-            resolve(parameter) {
-                const pdr = parameter.provider!;
-                if (isFunction(pdr) && !state.isRegistered(pdr) && !injector.has(pdr, true)) {
-                    injector.register(pdr as Type);
-                }
-                return injector.get(pdr);
-            },
-            canResolve(parameter) {
-                return (parameter.provider && !parameter.mutil && !isPrimitiveType(parameter.provider)) as boolean;
-            }
-        },
-        {
-            resolve(parameter, args) {
-                return args[parameter.paramName!];
-            },
-            canResolve(parameter, args) {
-                return (parameter.paramName && isDefined(args[parameter.paramName])) as boolean;
-            }
-        },
-        {
-            resolve(parameter, args) {
-                return injector.get<any>(parameter.paramName!);
-            },
-            canResolve(parameter, args) {
-                return (parameter.paramName && isDefined(args[parameter.paramName])) as boolean;
-            }
-        },
-        {
-            resolve(parameter) {
-                const ty = parameter.type!;
-                if (isFunction(ty) && !state.isRegistered(ty) && !injector.has(ty, true)) {
-                    injector.register(ty as Type);
-                }
-                return injector.get(ty);
-            },
-            canResolve(parameter) {
-                return (parameter.type && !isPrimitiveType(parameter.type)) as boolean;
-            }
-        },
-        // default value
-        {
-            resolve(parameter) {
-                return parameter.defaultValue as any;
-            },
-            canResolve(parameter) {
-                return isDefined(parameter.defaultValue);
-            }
-        });
+        ...resolves);
 }
 
 /**
