@@ -269,6 +269,8 @@ export abstract class Request {
 
 }
 
+export type ProtocolType = 'http://' | 'https://'| 'mqtt://' | 'amqp://' | 'coap://'
+     | 'tcp://' | 'udp://' | 'ftp://' | 'smtp://' | 'telnet://' | 'dns://' | 'msg://';
 
 export interface RequestInit {
     headers?: HeadersOption;
