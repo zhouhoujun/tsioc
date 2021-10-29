@@ -4,8 +4,8 @@ import { Pipe } from '../../metadata/decor';
 import { PipeTransform } from '../pipe';
 
 
-@Pipe('float')
-export class ParseFloatPipe implements PipeTransform<number> {
+@Pipe('double')
+export class ParseDoublePipe implements PipeTransform<number> {
 
     transform(value: any, precision?: number): number {
         let ret: number;
