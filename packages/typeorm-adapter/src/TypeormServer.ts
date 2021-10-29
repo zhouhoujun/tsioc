@@ -53,7 +53,13 @@ export class TypeormServer implements Server {
                 .forEach(col => {
                     props?.push({
                         propertyKey: col.propertyName,
-                        dbtype: isString(col.options.type) ? col.options.type : (col.mode === 'objectId'? 'objectId': ''),
+                        primary: col.options.primary,
+                        nullable: col.options.nullable,
+                        precision: col.options.precision,
+                        length: col.options.length,
+                        width: col.options.width,
+                        default: col.options.default,
+                        dbtype: isString(col.options.type) ? col.options.type : (col.mode === 'objectId' ? 'objectId' : ''),
                         type: isString(col.options.type) ? Object : col.options.type!
                     });
                 });
@@ -64,6 +70,7 @@ export class TypeormServer implements Server {
                     props?.push({
                         propertyKey: col.propertyName,
                         provider: relaModel,
+                        nullable: col.options.nullable,
                         mutil: (col.relationType === 'one-to-many' || col.relationType === 'many-to-many'),
                         type: (col.relationType === 'one-to-many' || col.relationType === 'many-to-many') ? Array : relaModel!
                     });
@@ -75,9 +82,9 @@ export class TypeormServer implements Server {
 
 
     async statupConnection(injector: Injector, options: ConnectionOptions, config: Configuration) {
-        if(options.type == 'mongodb'){
+        if (options.type == 'mongodb') {
             const mgd = await injector.getLoader().require('mongodb');
-            if(mgd.ObjectID){
+            if (mgd.ObjectID) {
                 injector.setValue(ObjectIDToken, mgd.ObjectID);
             }
         }

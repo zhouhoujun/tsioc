@@ -24,13 +24,19 @@ export interface DBPropertyMetadata<T = any> extends PropertyMetadata {
      */
     provider?: Type<T>;
     type: Type;
-
+    /**
+     * Indicates if this column is a primary key.
+     * Same can be achieved when @PrimaryColumn decorator is used.
+     */
+    primary?: boolean;
+    /**
+     * Indicates if column's value can be set to NULL.
+     */
     nullable?: boolean;
     /**
      * Default database value.
      */
     default?: any;
-
     /**
      * The precision for a decimal (exact numeric) column (applies only for decimal column), which is the maximum
      * number of digits that are stored for the values.
@@ -136,7 +142,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
         {
             canResolve: (prop, ctx, args) => prop.dbtype === 'enum',
             resolve: (prop, ctx, args, target) => {
-                const value = args[prop.propertyKey];
+                const value = args[prop.propertyKey] ?? prop.default;
                 if (isNil(value)) return null;
                 const pipe = ctx.injector.get<PipeTransform>('enum');
                 if (!pipe) throw missingPropPipeError(prop, target)
@@ -156,7 +162,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
         {
             canResolve: (prop, ctx, args) => intExp.test(prop.dbtype!),
             resolve: (prop, ctx, args, target) => {
-                const value = args[prop.propertyKey];
+                const value = args[prop.propertyKey] ?? prop.default;
                 if (isNil(value)) return null;
                 const pipe = ctx.injector.get<PipeTransform>(prop.dbtype!) ?? ctx.injector.get<PipeTransform>('int');
                 if (!pipe) throw missingPropPipeError(prop, target);
@@ -166,7 +172,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
         {
             canResolve: (prop, ctx, args) => floatExp.test(prop.dbtype!),
             resolve: (prop, ctx, args, target) => {
-                const value = args[prop.propertyKey];
+                const value = args[prop.propertyKey] ?? prop.default;
                 if (isNil(value)) return null;
                 const pipe = ctx.injector.get<PipeTransform>(prop.dbtype!) ?? ctx.injector.get<PipeTransform>('float');
                 if (!pipe) throw missingPropPipeError(prop, target);
@@ -176,7 +182,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
         {
             canResolve: (prop, ctx, args) => doubleExp.test(prop.dbtype!),
             resolve: (prop, ctx, args, target) => {
-                const value = args[prop.propertyKey];
+                const value = args[prop.propertyKey] ?? prop.default;
                 if (isNil(value)) return null;
                 const pipe = ctx.injector.get<PipeTransform>(prop.dbtype!) ?? ctx.injector.get<PipeTransform>('double');
                 if (!pipe) throw missingPropPipeError(prop, target);
@@ -186,7 +192,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
         {
             canResolve: (prop, ctx, args) => decExp.test(prop.dbtype!),
             resolve: (prop, ctx, args, target) => {
-                const value = args[prop.propertyKey];
+                const value = args[prop.propertyKey] ?? prop.default;
                 if (isNil(value)) return null;
                 const pipe = ctx.injector.get<PipeTransform>(prop.dbtype!) ?? ctx.injector.get<PipeTransform>('number');
                 if (!pipe) throw missingPropPipeError(prop, target);
@@ -196,7 +202,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
         {
             canResolve: (prop, ctx, args) => strExp.test(prop.dbtype!),
             resolve: (prop, ctx, args, target) => {
-                const value = args[prop.propertyKey];
+                const value = args[prop.propertyKey] ?? prop.default;
                 if (isNil(value)) return null;
                 const pipe = ctx.injector.get<PipeTransform>(prop.dbtype!) ?? ctx.injector.get<PipeTransform>('string');
                 if (!pipe) throw missingPropPipeError(prop, target);
@@ -206,7 +212,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
         {
             canResolve: (prop, ctx, args) => jsonExp.test(prop.dbtype!),
             resolve: (prop, ctx, args, target) => {
-                const value = args[prop.propertyKey];
+                const value = args[prop.propertyKey] ?? prop.default;
                 if (isNil(value)) return null;
                 const pipe = ctx.injector.get<PipeTransform>(prop.dbtype!) ?? ctx.injector.get<PipeTransform>('json');
                 if (!pipe) throw missingPropPipeError(prop, target);
@@ -216,7 +222,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
         {
             canResolve: (prop, ctx, args) => bufferExp.test(prop.dbtype!),
             resolve: (prop, ctx, args, target) => {
-                const value = args[prop.propertyKey];
+                const value = args[prop.propertyKey] ?? prop.default;
                 const dbtype = prop.dbtype!;
                 if (isNil(value)) return null;
                 let pipeName = '';
@@ -238,7 +244,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
         {
             canResolve: (prop, ctx, args) => dateExp.test(prop.dbtype!),
             resolve: (prop, ctx, args, target) => {
-                const value = args[prop.propertyKey];
+                const value = args[prop.propertyKey] ?? prop.default;
                 if (isNil(value)) return null;
                 const pipe = ctx.injector.get<PipeTransform>(prop.dbtype!) ?? ctx.injector.get<PipeTransform>('date');
                 if (!pipe) throw missingPropPipeError(prop, target);
@@ -249,7 +255,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
     {
         canResolve: (prop, ctx, args) => !prop.mutil && isFunction(prop.provider ?? prop.type),
         resolve: (prop, ctx, args, target) => {
-            const value = args[prop.propertyKey];
+            const value = args[prop.propertyKey] ?? prop.default;
             if (isNil(value)) return null;
             const pipe = ctx.injector.get<PipeTransform>((prop.provider ?? prop.type)?.name.toLowerCase());
             if (!pipe) throw missingPropPipeError(prop, target);
@@ -270,44 +276,59 @@ export function missingPropError(type?: Type) {
 @Abstract()
 export abstract class BaseModelArgumentResolver<C extends Context = Context> implements ModelArgumentResolver {
 
-
     abstract get resolvers(): ModelFieldResolver[];
-
 
     canResolve(parameter: TrasportParameter<any>, ctx: InvocationContext<C>): boolean {
         return this.isModel(parameter.provider ?? parameter.type as Type);
     }
 
-    canResolveModel(model: Type, ctx: InvocationContext<C>, args: Record<string, any>): boolean {
-        return !this.getPropertyMeta(model).some(p => {
+    resolve<T>(parameter: TrasportParameter<T>, ctx: InvocationContext<C>): T {
+        const classType = (parameter.provider ?? parameter.type) as Type;
+        const fields = parameter.field ? ctx.arguments.request.body[parameter.field] : ctx.arguments.request.body;
+        if (!fields) {
+            throw missingPropError(classType);
+        }
+        if (parameter.mutil && isArray(fields)) {
+            return fields.map(arg => this.resolveModel(classType, ctx, arg)) as any;
+        }
+        return this.resolveModel(classType, ctx, fields);
+    }
+
+    canResolveModel(model: Type, ctx: InvocationContext<C>, args: Record<string, any>, nullable?: boolean): boolean {
+        return nullable || !this.getPropertyMeta(model).some(p => {
             if (this.isModel(p.provider ?? p.type)) {
-                return !this.canResolveModel(p.provider ?? p.type, ctx, args[p.propertyKey]);
+                return !this.canResolveModel(p.provider ?? p.type, ctx, args[p.propertyKey], p.nullable);
             }
             return !this.fieldResolver.canResolve(p, ctx, args, model);
         })
     }
 
-    resolve<T>(parameter: TrasportParameter<T>, ctx: InvocationContext<C>): T {
-        const classType = (parameter.provider ?? parameter.type) as Type;
-        const args = parameter.field ? ctx.arguments.request.body[parameter.field] : ctx.arguments.request.body;
-        if(!args) {
-            throw missingPropError(classType);
+    resolveModel(modelType: Type, ctx: InvocationContext<C>, fields: Record<string, any>, nullable?: boolean): any {
+        if (nullable && (!fields || Object.keys(fields).length < 1)) {
+            return null;
         }
-        if (parameter.mutil && isArray(args)) {
-            return args.map(arg => this.resolve({ provider: classType, type: classType, paramName: parameter.paramName }, arg)) as any;
+        if (!fields) {
+            throw missingPropError(modelType);
         }
-        const model = this.createInstance(classType);
-        const fields = this.getPropertyMeta(classType);
 
-        const missings = fields.filter(p => !this.fieldResolver.canResolve(p, args, classType));
+        const props = this.getPropertyMeta(modelType);
+        const missings = props.filter(p => !(this.isModel(p.provider ?? p.type) ?
+            this.canResolveModel(p.provider ?? p.type, ctx, fields[p.propertyKey], p.nullable) : this.fieldResolver.canResolve(p, ctx, fields, modelType)));
         if (missings.length) {
-            throw new MissingModelFieldError(missings, classType);
+            throw new MissingModelFieldError(missings, modelType);
         }
-        fields.forEach(prop => {
+
+        const model = this.createInstance(modelType);
+        props.forEach(prop => {
+            let val: any;
             if (this.isModel(prop.provider ?? prop.type)) {
-                model[prop.propertyKey] = this.resolve({ type: prop.type, provider: prop.provider, mutil: prop.mutil, paramName: prop.propertyKey }, args[prop.propertyKey]);
+                val = this.resolveModel(prop.provider ?? prop.type, ctx, fields[prop.propertyKey], prop.nullable);
+            } else {
+                val = this.fieldResolver.resolve(prop, ctx, fields, modelType);
             }
-            model[prop.propertyKey] = this.fieldResolver.resolve(prop, args, classType);
+            if (isDefined(val)) {
+                model[prop.propertyKey] = val;
+            }
         });
         return model;
     }
@@ -319,7 +340,12 @@ export abstract class BaseModelArgumentResolver<C extends Context = Context> imp
     private _resolver!: ModelFieldResolver;
     protected get fieldResolver(): ModelFieldResolver {
         if (!this._resolver) {
-            this._resolver = composeFieldResolver((p, ctx, args) => p.nullable || isDefined(args[p.propertyKey]), ...this.resolvers ?? EMPTY, ...MODEL_FIELD_RESOLVERS);
+            this._resolver = composeFieldResolver(
+                (p, ctx, fields) => p.nullable === true
+                    || (fields && isDefined(fields[p.propertyKey] ?? p.default))
+                    || (ctx.method.toLowerCase() !== 'put' && p.primary === true),
+                ...this.resolvers ?? EMPTY,
+                ...MODEL_FIELD_RESOLVERS);
         }
         return this._resolver;
     }
