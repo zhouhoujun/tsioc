@@ -4,13 +4,12 @@ import {
 } from '@tsdi/ioc';
 import {
     AnnotationReflect, MappingReflect, MessageQueue, Middlewares,
-    MiddlewareType, RouteMapingMetadata, Router, RunnableFactoryResolver
+    MiddlewareType, ProtocolRouteMapingMetadata, RouteInfo, RouteMapingMetadata, Router, RunnableFactoryResolver
 } from '@tsdi/core';
 import {
     BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
     HostListenerMetadata, QueryMetadata, VaildateMetadata
 } from './meta';
-import { PipeTransform } from '../pipes/pipe';
 import { ComponentReflect, DirectiveReflect } from '../reflect';
 import { CompilerFacade } from '../compile/facade';
 import { HostMappingRoot, HostMappingRoute } from '../router';
@@ -412,7 +411,7 @@ export const HostMapping: IHostMappingDecorator = createDecorator<RouteMapingMet
     },
     design: {
         afterAnnoation: (ctx, next) => {
-            const { route, parent, middlewares } = ctx.reflect.class.getMetadata<RouteMapingMetadata>(ctx.currDecor);
+            const { route, protocol, parent, middlewares, guards } = ctx.reflect.class.getMetadata<ProtocolRouteMapingMetadata>(ctx.currDecor);
             const injector = ctx.injector;
             let queue: Middlewares;
             if (parent) {
@@ -424,7 +423,8 @@ export const HostMapping: IHostMappingDecorator = createDecorator<RouteMapingMet
             if (!queue) throw new Error(lang.getClassName(parent) + 'has not registered!');
             if (!(queue instanceof Router)) throw new Error(lang.getClassName(queue) + 'is not message router!');
 
-            const mapping = new HostMappingRoute(route || '', queue.getPath(), ctx.reflect as MappingReflect, injector, middlewares);
+            const info = RouteInfo.create(route, queue.getPath(), guards, protocol);
+            const mapping = new HostMappingRoute(info, ctx.reflect as MappingReflect, injector, middlewares);
             injector.onDestroy(() => queue.unuse(mapping));
             queue.use(mapping);
             next();

@@ -6,7 +6,7 @@ import {
     getConnection, createConnection, ConnectionOptions as OrmConnOptions, Connection,
     getMetadataArgsStorage, getCustomRepository, getConnectionManager
 } from 'typeorm';
-import { ObjectIDToken } from '.';
+import { ObjectIDToken } from './objectid.pipe';
 
 
 
@@ -90,24 +90,21 @@ export class TypeormServer implements Server {
         }
         const connection = await this.createConnection(options, config);
 
-        // options.entities?.forEach(e => {
-        //     injector.register(e);
-        // });
         const entities = options.entities ?? EMPTY;
         const resovler = createModelResolver({
             isModel: (type) => entities.indexOf(type) >= 0,
             getPropertyMeta: (type) => this.getModelPropertyMetadata(type),
             fieldResolvers: [
                 {
-                    canResolve: (prop, ctx, args) => prop.dbtype === 'objectId',
-                    resolve: (prop, ctx, args, target) => {
-                        const value = args[prop.propertyKey];
+                    canResolve: (prop, ctx, fields) => prop.dbtype === 'objectId',
+                    resolve: (prop, ctx, fields, target) => {
+                        const value = fields[prop.propertyKey];
                         if (isNil(value)) return null;
                         const pipe = ctx.injector.get<PipeTransform>('objectId');
                         if (!pipe) throw missingPropPipeError(prop, target)
                         return pipe.transform(value, prop.enum);
                     }
-                },
+                }
             ]
         })
         injector.inject({ provide: MODEL_RESOLVERS, useValue: resovler, multi: true });

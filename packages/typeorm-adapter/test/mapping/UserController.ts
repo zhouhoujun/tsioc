@@ -22,7 +22,7 @@ export class UserController {
     @RouteMapping('/', 'post')
     @RouteMapping('/', 'put')
     async modify(user: User) {
-        console.log(lang.getClassName(this.usrRep), this.usrRep.save, user);
+        console.log(lang.getClassName(this.usrRep), user);
         let val = await this.usrRep.save(user);
         console.log(val);
         return val;

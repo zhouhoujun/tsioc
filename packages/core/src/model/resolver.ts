@@ -294,12 +294,12 @@ export abstract class BaseModelArgumentResolver<C extends Context = Context> imp
         return this.resolveModel(classType, ctx, fields);
     }
 
-    canResolveModel(model: Type, ctx: InvocationContext<C>, args: Record<string, any>, nullable?: boolean): boolean {
-        return nullable || !this.getPropertyMeta(model).some(p => {
+    canResolveModel(modelType: Type, ctx: InvocationContext<C>, args: Record<string, any>, nullable?: boolean): boolean {
+        return nullable || !this.getPropertyMeta(modelType).some(p => {
             if (this.isModel(p.provider ?? p.type)) {
                 return !this.canResolveModel(p.provider ?? p.type, ctx, args[p.propertyKey], p.nullable);
             }
-            return !this.fieldResolver.canResolve(p, ctx, args, model);
+            return !this.fieldResolver.canResolve(p, ctx, args, modelType);
         })
     }
 
