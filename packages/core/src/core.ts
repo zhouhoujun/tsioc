@@ -1,11 +1,12 @@
 import { Inject, IocExt, Injector, ProviderType, TARGET } from '@tsdi/ioc';
 import { ConfigureManagerImpl, ConfigureMergerImpl } from './configure/manager';
-// import { BaseTypeParser } from './services/parser';
 import { BootLifeScope } from './appl/lifescope';
-import { ApplicationFactory, ModuleFactory, RunnableFactoryResolver } from './Context';
+import { ApplicationFactory } from './Context';
 import { DefaultModuleFactory } from './modules/injector';
 import { DefaultApplicationFactory } from './appl/ctx';
 import { DefaultServiceFactoryResolver } from './services/factory';
+import { RunnableFactoryResolver } from './runnable';
+import { ModuleFactory } from './module';
 
 
 export const DEFAULTA_FACTORYS: ProviderType[] = [

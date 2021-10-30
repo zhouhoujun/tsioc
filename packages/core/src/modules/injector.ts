@@ -1,5 +1,5 @@
 import { ActionProvider, DefaultInjector, EMPTY, Injector, InjectorScope, isArray, isFunction, isPlainObject, KeyValueProvider, Modules, ProviderType, refl, RegisteredState, StaticProviders, Type } from '@tsdi/ioc';
-import { IModuleExports, ModuleFactory, ModuleInjector, ModuleOption, ModuleRegistered } from '../Context';
+import { IModuleExports, ModuleFactory, ModuleInjector, ModuleOption, ModuleRegistered } from '../module';
 import { ModuleReflect } from '../metadata/ref';
 import { ModuleStrategy } from './strategy';
 

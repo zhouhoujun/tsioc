@@ -1,5 +1,6 @@
 import { Type, refl, Destroyable, lang, Injector } from '@tsdi/ioc';
-import { ApplicationContext, BootstrapOption, Runnable, RunnableFactory, RunnableFactoryResolver, TargetRef } from '../Context';
+import { ApplicationContext, BootstrapOption } from '../Context';
+import { Runnable, RunnableFactory, RunnableFactoryResolver, TargetRef } from '../runnable';
 import { AnnotationReflect } from '../metadata/ref';
 
 

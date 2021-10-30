@@ -1,6 +1,6 @@
 import {
     DecoratorOption, isUndefined, ROOT_INJECTOR, EMPTY_OBJ, isArray, isString, lang, Type, DesignContext,
-    createDecorator, ClassMethodDecorator, Injector, ClassMetadata, createParamDecorator, ParameterMetadata, Token, ClassType
+    createDecorator, ClassMethodDecorator, Injector, ClassMetadata, createParamDecorator, ParameterMetadata
 } from '@tsdi/ioc';
 import { Service } from '../services/service';
 import { ModuleReflect, ModuleConfigure, AnnotationReflect } from './ref';
@@ -10,7 +10,7 @@ import { CanActive } from '../middlewares/guard';
 import { RouteResolver, Route } from '../middlewares/route';
 import { RootRouter, Router } from '../middlewares/router';
 import { MappingReflect, MappingRoute, ProtocolRouteMapingMetadata } from '../middlewares/mapping';
-import { ModuleFactory, ModuleInjector, ModuleRegistered } from '../Context';
+import { ModuleFactory, ModuleInjector, ModuleRegistered } from '../module';
 import { SERVICES, SERVERS } from './tk';
 import { BootMetadata, ModuleMetadata, HandleMetadata, HandlesMetadata, PipeMetadata } from './meta';
 import { PipeTransform } from '../pipes/pipe';

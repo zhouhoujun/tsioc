@@ -13,4 +13,3 @@ export * from './root';
 export * from './result';
 export * from './mapping';
 export * from './strategy';
-export * from './mdl';

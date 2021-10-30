@@ -1,5 +1,5 @@
 import { isNil, FnRecord, Strategy, Token, Injector } from '@tsdi/ioc';
-import { ModuleInjector } from '../Context';
+import { ModuleInjector } from '../module';
 
 
 

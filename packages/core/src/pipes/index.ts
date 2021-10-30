@@ -2,6 +2,7 @@ export * from './pipe';
 
 export * from './json';
 export * from './slice';
+export * from './sort';
 export * from './cases';
 export * from './date';
 

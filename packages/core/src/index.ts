@@ -15,6 +15,7 @@ export * from './metadata/decor';
 export * from './metadata/ref';
 export * from './metadata/tk';
 
+export * from './runnable';
 export * from './Context';
 export * from './global';
 
@@ -24,6 +25,7 @@ export * from './server/server';
 export * from './client/client';
 
 // modules
+export * from './module';
 export * from './modules/strategy';
 export * from './modules/injector';
 
@@ -36,5 +38,6 @@ export * from './Application';
 
 // middlewares
 export * from './middlewares';
+export * from './middleware';
 
 export * from './model';
