@@ -5,7 +5,7 @@ import { AnnotationReflect } from '../metadata/ref';
 
 
 /**
- * runable boot factory.
+ * factory for {@link Runnable}.
  */
 export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
 
@@ -45,7 +45,7 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
 
 
 /**
- * target ref.
+ * target ref for {@link Runnable}.
  */
 export class RunnableTargetRef<T = any> extends TargetRef<T>  {
     constructor(readonly reflect: AnnotationReflect<T>, readonly injector: Injector, private _instance?: T) {
@@ -82,7 +82,9 @@ export class RunnableTargetRef<T = any> extends TargetRef<T>  {
     }
 }
 
-
+/**
+ * factory resolver for {@link RunnableFactory}.
+ */
 export class DefaultServiceFactoryResolver extends RunnableFactoryResolver {
 
     override resolve<T>(type: Type<T>) {

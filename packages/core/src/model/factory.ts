@@ -30,7 +30,7 @@ class ModelResolver<C extends Context = Context> extends AbstractModelArgumentRe
 /**
  * model resolver factory. create resolver for {@link OperationInvoker}
  * @param option 
- * @returns model reolver {@link ModelArgumentResolver}.
+ * @returns model resolver instance of {@link ModelArgumentResolver}.
  */
 export function createModelResolver<C extends Context = Context>(option: {
     isModel(type: Type): boolean;

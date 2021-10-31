@@ -1,6 +1,5 @@
 // services
 export * from './services/service';
-export * from './services/interface';
 export * from './services/startup';
 export * from './services/factory';
 
