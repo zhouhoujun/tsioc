@@ -1,4 +1,4 @@
-import { Abstract, EMPTY, InvocationContext, isArray, isDefined, isFunction, isNil, PropertyMetadata, tokenId, Type } from '@tsdi/ioc';
+import { Abstract, EMPTY, InvocationContext, isArray, isDefined, isFunction, isNil, PropertyMetadata, tokenId, Type, OperationInvoker } from '@tsdi/ioc';
 import { Context } from '../middlewares/context';
 import { TrasportArgumentResolver, TrasportParameter } from '../middlewares/resolver';
 import { ArgumentError, PipeTransform } from '../pipes/pipe';
@@ -264,17 +264,21 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
     }
 ];
 
-
+/**
+ * missing property error. 
+ * @param type 
+ * @returns argument error {@link ArgumentError}.
+ */
 export function missingPropError(type?: Type) {
     return new ArgumentError(`missing modle properties of class ${type}`);
 }
 
 
 /**
- * base model argument resolver.
+ * abstract model argument resolver. base implements {@link ModelArgumentResolver}
  */
 @Abstract()
-export abstract class BaseModelArgumentResolver<C extends Context = Context> implements ModelArgumentResolver {
+export abstract class AbstractModelArgumentResolver<C extends Context = Context> implements ModelArgumentResolver {
 
     abstract get resolvers(): ModelFieldResolver[];
 
@@ -355,6 +359,7 @@ export abstract class BaseModelArgumentResolver<C extends Context = Context> imp
 }
 
 /**
- * model argument resolvers.
+ * model argument resolvers mutil token.
+ * provider instances of {@link ModelArgumentResolver}
  */
 export const MODEL_RESOLVERS = tokenId<ModelArgumentResolver[]>('MODEL_RESOLVERS');

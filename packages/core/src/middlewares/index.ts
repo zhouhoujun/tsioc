@@ -3,7 +3,6 @@ export * from './header';
 export * from './request';
 export * from './response';
 export * from './guard';
-export * from './interceptor';
 export * from './base';
 export * from './middleware';
 export * from './queue';

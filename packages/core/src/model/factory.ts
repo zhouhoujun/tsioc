@@ -1,8 +1,8 @@
-import { EMPTY, Type } from '@tsdi/ioc';
-import { DBPropertyMetadata, ModelArgumentResolver, ModelFieldResolver, BaseModelArgumentResolver } from './resolver';
+import { EMPTY, Type, OperationInvoker } from '@tsdi/ioc';
+import { DBPropertyMetadata, ModelArgumentResolver, ModelFieldResolver, AbstractModelArgumentResolver } from './resolver';
 import { Context } from '../middlewares/context';
 
-class ModelResolver<C extends Context = Context> extends BaseModelArgumentResolver<C> {
+class ModelResolver<C extends Context = Context> extends AbstractModelArgumentResolver<C> {
     constructor(private option: {
         isModel(type: Type): boolean;
         createInstance?<T>(model: Type<T>): T;
@@ -28,9 +28,9 @@ class ModelResolver<C extends Context = Context> extends BaseModelArgumentResolv
 }
 
 /**
- * model resolver factory.
+ * model resolver factory. create resolver for {@link OperationInvoker}
  * @param option 
- * @returns model reolver.
+ * @returns model reolver {@link ModelArgumentResolver}.
  */
 export function createModelResolver<C extends Context = Context>(option: {
     isModel(type: Type): boolean;
