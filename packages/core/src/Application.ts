@@ -2,7 +2,7 @@ import { ModuleLoader, isFunction, Type, EMPTY, ProviderType } from '@tsdi/ioc';
 import { CTX_ARGS, PROCESS_ROOT } from './metadata/tk';
 import {  ApplicationContext, ApplicationFactory, ApplicationExit, ApplicationOption, BootstrapOption } from './Context';
 import { MiddlewareModule } from './middleware';
-import { BootLifeScope } from './appl/lifescope';
+import { BootLifeScope } from './appfac/lifescope';
 import { CoreModule, DEFAULTA_FACTORYS } from './core';
 import { createModuleInjector } from './modules/injector';
 import { ModuleFactory, ModuleInjector } from './module';

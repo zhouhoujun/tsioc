@@ -29,9 +29,9 @@ export * from './modules/strategy';
 export * from './modules/injector';
 
 // applications
-export * from './appl/ctx';
-export * from './appl/handles';
-export * from './appl/lifescope';
+export * from './appfac/ctx';
+export * from './appfac/handles';
+export * from './appfac/lifescope';
 
 export * from './Application';
 
