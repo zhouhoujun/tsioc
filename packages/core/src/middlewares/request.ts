@@ -1,7 +1,9 @@
 import { Abstract, isArray, isString } from '@tsdi/ioc';
 import { Headers, HeadersOption } from './header';
 
-
+/**
+ * abstract request.
+ */
 @Abstract()
 export abstract class Request {
     /**
@@ -272,6 +274,10 @@ export abstract class Request {
 export type ProtocolType = 'http://' | 'https://'| 'mqtt://' | 'amqp://' | 'coap://'
      | 'tcp://' | 'udp://' | 'ftp://' | 'smtp://' | 'telnet://' | 'dns://' | 'msg://';
 
+
+/**
+ * request init option for {@link Request}.
+ */
 export interface RequestInit {
     headers?: HeadersOption;
     /**
@@ -310,7 +316,7 @@ export interface RequestInit {
 }
 
 /**
- * Request
+ * Request option for {@link Request}.
  */
 export interface RequestOption extends RequestInit {
 

@@ -16,7 +16,7 @@ import { ResultStrategy } from './strategy';
 /**
  * route mapping metadata.
  */
-export interface RouteMapingMetadata {
+export interface RouteMappingMetadata {
     /**
      * route.
      *
@@ -56,7 +56,10 @@ export interface RouteMapingMetadata {
     guards?: Type<CanActive>[];
 }
 
-export interface ProtocolRouteMapingMetadata extends RouteMapingMetadata {
+/**
+ * protocol route mapping metadata.
+ */
+export interface ProtocolRouteMappingMetadata extends RouteMappingMetadata {
     /**
      * protocol type.
      */
@@ -99,7 +102,7 @@ export class MappingRoute extends Route {
         if (!await super.canActive(ctx)) return false;
         const meta = this.getRouteMetaData(ctx);
         if (!meta) return false;
-        let rmeta = meta.metadata as RouteMapingMetadata;
+        let rmeta = meta.metadata as RouteMappingMetadata;
         if (rmeta.guards && rmeta.guards.length) {
             if (!(await lang.some(
                 rmeta.guards.map(token => () => this.injector.resolve({ token, regify: true })?.canActivate(ctx)),
@@ -168,7 +171,7 @@ export class MappingRoute extends Route {
     }
 
     protected getRouteMiddleware(ctx: Context, meta: DecorDefine) {
-        return [...this.middlewares || [], ...(meta.metadata as RouteMapingMetadata).middlewares || []];
+        return [...this.middlewares || [], ...(meta.metadata as RouteMappingMetadata).middlewares || []];
     }
 
     protected getRouteMetaData(ctx: Context) {

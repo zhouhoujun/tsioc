@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import {
     AnnotationReflect, MappingReflect, MessageQueue, Middlewares,
-    MiddlewareType, ProtocolRouteMapingMetadata, RouteInfo, RouteMapingMetadata, Router, RunnableFactoryResolver
+    MiddlewareType, ProtocolRouteMappingMetadata, RouteInfo, RouteMappingMetadata, Router, RunnableFactoryResolver
 } from '@tsdi/core';
 import {
     BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
@@ -391,13 +391,13 @@ export interface IHostMappingDecorator {
      *
      * @param {RouteMetadata} [metadata] route metadata.
      */
-    (metadata: RouteMapingMetadata): ClassMethodDecorator;
+    (metadata: RouteMappingMetadata): ClassMethodDecorator;
 }
 
 /**
  * HostMapping decorator
  */
-export const HostMapping: IHostMappingDecorator = createDecorator<RouteMapingMetadata>('HostMapping', {
+export const HostMapping: IHostMappingDecorator = createDecorator<RouteMappingMetadata>('HostMapping', {
     props: (route: string, arg2?: Type<Router> | MiddlewareType[] | string | { middlewares: MiddlewareType[], contentType?: string, method?: string }) => {
         if (isArray(arg2)) {
             return { route, middlewares: arg2 };
@@ -411,7 +411,7 @@ export const HostMapping: IHostMappingDecorator = createDecorator<RouteMapingMet
     },
     design: {
         afterAnnoation: (ctx, next) => {
-            const { route, protocol, parent, middlewares, guards } = ctx.reflect.class.getMetadata<ProtocolRouteMapingMetadata>(ctx.currDecor);
+            const { route, protocol, parent, middlewares, guards } = ctx.reflect.class.getMetadata<ProtocolRouteMappingMetadata>(ctx.currDecor);
             const injector = ctx.injector;
             let queue: Middlewares;
             if (parent) {

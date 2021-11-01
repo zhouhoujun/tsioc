@@ -9,7 +9,7 @@ import { ROOT_QUEUE } from '../middlewares/root';
 import { CanActive } from '../middlewares/guard';
 import { RouteResolver, Route } from '../middlewares/route';
 import { RootRouter, Router } from '../middlewares/router';
-import { MappingReflect, MappingRoute, ProtocolRouteMapingMetadata } from '../middlewares/mapping';
+import { MappingReflect, MappingRoute, ProtocolRouteMappingMetadata } from '../middlewares/mapping';
 import { ModuleFactory, ModuleInjector, ModuleRegistered } from '../module';
 import { SERVICES, SERVERS } from './tk';
 import { BootMetadata, ModuleMetadata, HandleMetadata, HandlesMetadata, PipeMetadata } from './meta';
@@ -547,7 +547,7 @@ export interface RouteMapping {
      *
      * @param {RouteMetadata} [metadata] route metadata.
      */
-    (metadata: ProtocolRouteMapingMetadata): ClassMethodDecorator;
+    (metadata: ProtocolRouteMappingMetadata): ClassMethodDecorator;
 }
 
 /**
@@ -555,7 +555,7 @@ export interface RouteMapping {
  * 
  * @exports  {@link RouteMapping}
  */
-export const RouteMapping: RouteMapping = createDecorator<ProtocolRouteMapingMetadata>('RouteMapping', {
+export const RouteMapping: RouteMapping = createDecorator<ProtocolRouteMappingMetadata>('RouteMapping', {
     props: (route: string, arg2?: Type<Router> | MiddlewareType[] | string | { protocol?: string, middlewares: MiddlewareType[], contentType?: string, method?: string }) => {
         if (isArray(arg2)) {
             return { route, middlewares: arg2 };
@@ -569,7 +569,7 @@ export const RouteMapping: RouteMapping = createDecorator<ProtocolRouteMapingMet
     },
     design: {
         afterAnnoation: (ctx, next) => {
-            const { route, protocol, parent, middlewares, guards } = ctx.reflect.class.getMetadata<ProtocolRouteMapingMetadata>(ctx.currDecor);
+            const { route, protocol, parent, middlewares, guards } = ctx.reflect.class.getMetadata<ProtocolRouteMappingMetadata>(ctx.currDecor);
             const injector = ctx.injector;
             let queue: Middlewares;
             if (parent) {

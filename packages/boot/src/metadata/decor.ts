@@ -1,5 +1,5 @@
 import { ClassMethodDecorator, createDecorator, isArray, isString, lang, Type } from '@tsdi/ioc';
-import { MappingReflect, MappingRoute, Middlewares, MiddlewareType, RouteInfo, RouteMapingMetadata, Router } from '@tsdi/core';
+import { MappingReflect, MappingRoute, Middlewares, MiddlewareType, RouteInfo, RouteMappingMetadata, Router } from '@tsdi/core';
 import { HttpRouter } from '../router';
 
 
@@ -59,14 +59,14 @@ import { HttpRouter } from '../router';
      *
      * @param {RouteMetadata} [metadata] route metadata.
      */
-    (metadata: RouteMapingMetadata): ClassMethodDecorator;
+    (metadata: RouteMappingMetadata): ClassMethodDecorator;
 }
 
 
 /**
  * RestController decorator
  */
-export const RestController: RestController = createDecorator<RouteMapingMetadata>('RestController', {
+export const RestController: RestController = createDecorator<RouteMappingMetadata>('RestController', {
     props: (route: string, arg2?: Type<Router> | MiddlewareType[] | string | { middlewares: MiddlewareType[], contentType?: string, method?: string }) => {
         if (isArray(arg2)) {
             return { route, middlewares: arg2 };
@@ -80,7 +80,7 @@ export const RestController: RestController = createDecorator<RouteMapingMetadat
     },
     design: {
         afterAnnoation: (ctx, next) => {
-            const { route, parent, middlewares } = ctx.reflect.class.getMetadata<RouteMapingMetadata>(ctx.currDecor);
+            const { route, parent, middlewares } = ctx.reflect.class.getMetadata<RouteMappingMetadata>(ctx.currDecor);
             const injector = ctx.injector;
             let queue: Middlewares;
             if (parent) {

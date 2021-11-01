@@ -75,9 +75,7 @@ export class Router<T extends Context = Context> extends MessageQueue<T> impleme
  * message queue.
  *
  * @export
- * @class MessageQueue
- * @extends {BuildHandles<T>}
- * @template T
+ * @class RootRouter
  */
 @Singleton()
 export class RootRouter extends Router {

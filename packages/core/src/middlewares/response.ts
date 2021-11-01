@@ -2,7 +2,9 @@ import { Abstract, isArray } from '@tsdi/ioc';
 import { Headers, HeadersOption } from './header';
 
 
-
+/**
+ * abstract response.
+ */
 @Abstract()
 export abstract class Response {
     /**
@@ -133,6 +135,9 @@ export abstract class Response {
 
 }
 
+/**
+ * response init option for {@link Response}.
+ */
 export interface ResponseOption {
     headers?: HeadersOption;
     status?: number;

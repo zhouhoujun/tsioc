@@ -25,7 +25,7 @@ export interface TrasportParameter<T = any> extends Parameter<T> {
 }
 
 /**
- * Resolver for an trasport argument of an {@link OperationInvoker}
+ * Resolver for an trasport argument of an {@link OperationInvoker}.
  */
 export interface TrasportArgumentResolver<C extends Context = Context> extends OperationArgumentResolver<C> {
     /**

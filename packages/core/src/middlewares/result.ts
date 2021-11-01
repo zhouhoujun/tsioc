@@ -2,7 +2,7 @@ import { Abstract } from '@tsdi/ioc';
 import { Context } from './context';
 
 /**
- * controller method return result type.
+ * route mapping return result. 
  *
  * @export
  * @abstract

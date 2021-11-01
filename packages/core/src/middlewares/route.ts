@@ -1,11 +1,11 @@
 import { Abstract, Injector, Type, lang } from '@tsdi/ioc';
 import { Context } from './context';
 import { CanActive } from './guard';
-import { AbstractMiddleware, Middleware, RouteInfo } from './middleware';
+import { AbstractMiddleware, Middleware, RouteInfo, AbstractRouter } from './middleware';
 
 
 /**
- * route
+ * route for {@link AbstractRouter}
  */
 @Abstract()
 export abstract class Route<T extends Context = Context> extends AbstractMiddleware<T> {
