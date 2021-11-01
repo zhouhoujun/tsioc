@@ -1,4 +1,4 @@
-import { createDecorator } from '@tsdi/ioc';
+import { createDecorator, DataType } from '@tsdi/ioc';
 
 /**
  * api Operation decorator for swagger.
@@ -8,6 +8,28 @@ export interface ApiOperation {
 }
 
 export const ApiOperation: ApiOperation = createDecorator('ApiOperation', {
+
+});
+
+/**
+ * api param.
+ */
+export interface ApiParam {
+    (option: {
+        required?: boolean,
+        value?: string,
+        access?: string,
+        allowMultiple?: boolean,
+        name?: string,
+        notes?: string,
+        dataType?: DataType,
+        hidden?: boolean,
+        readonly?: boolean
+        example?: string
+    }): ParameterDecorator;
+}
+
+export const ApiParam = createDecorator('ApiParam', {
 
 });
 
@@ -26,7 +48,18 @@ export const ApiModel: ApiModel = createDecorator('ApiModel', {
  * api model decorator for swagger.
  */
 export interface ApiModelProperty {
-    (position: number, summary?: string): PropertyDecorator;
+    (option: {
+        position?: number,
+        required?: boolean,
+        value?: string,
+        access?: string,
+        name?: string,
+        notes?: string,
+        dataType?: DataType,
+        hidden?: boolean,
+        readonly?: boolean,
+        example?: string
+    }): PropertyDecorator;
 }
 export const ApiModelProperty: ApiModelProperty = createDecorator('ApiModelProperty', {
 
