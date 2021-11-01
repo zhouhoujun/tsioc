@@ -8,10 +8,9 @@ import { UnitRunner } from '../runner/Runner';
  * Suite decorator type define.
  *
  * @export
- * @interface ISuiteDecorator
- * @template T
+ * @interface Suite
  */
-export interface ISuiteDecorator {
+export interface Suite {
     /**
      * suite decorator.
      * @param {string} suite describe.
@@ -34,7 +33,7 @@ export interface ISuiteDecorator {
 /**
  * @Suite decorator.
  */
-export const Suite: ISuiteDecorator = createDecorator<SuiteMetadata>('Suite', {
+export const Suite: Suite = createDecorator<SuiteMetadata>('Suite', {
     actionType: 'annoation',
     reflect: {
         class: (ctx, next) => {
@@ -59,10 +58,10 @@ export const Suite: ISuiteDecorator = createDecorator<SuiteMetadata>('Suite', {
  * define the method of class as unit test case.
  *
  * @export
- * @interface ITestDecorator
+ * @interface TestDecorator
  * @template T
  */
-export interface ITestDecorator<T extends TestMetadata> {
+export interface TestDecorator<T extends TestMetadata> {
     (timeout: number): MethodDecorator;
     (metadata?: T): MethodDecorator;
 }
@@ -80,24 +79,23 @@ export interface TestDecorOption<T> extends DecoratorOption<T> {
  * @param {string} [TestType]
  * @param {MetadataAdapter} [actions]
  * @param {MetadataExtends<T>} [metaExtends]
- * @returns {ITestDecorator<T>}
+ * @returns {TestDecorator<T>}
  */
-export function createTestDecorator<T extends TestMetadata>(name: string, options?: TestDecorOption<T>): ITestDecorator<T> {
+export function createTestDecorator<T extends TestMetadata>(name: string, options?: TestDecorOption<T>): TestDecorator<T> {
     options = options || EMPTY_OBJ;
     return createDecorator<TestMetadata>(name, {
         props: (timeout: number, setp?: number) => ({ timeout, setp }),
         ...options,
-    }) as ITestDecorator<T>;
+    }) as TestDecorator<T>;
 }
 
 /**
  * test case decorator
  *
  * @export
- * @interface ITestCaseDecorator
- * @extends {ITestDecorator<TestCaseMetadata>}
+ * @interface TestCase
  */
-export interface ITestCaseDecorator extends ITestDecorator<TestCaseMetadata> {
+export interface TestCase extends TestDecorator<TestCaseMetadata> {
     /**
      * @Test decorator. define the method of class as unit test case.  Describe a specification or test-case with the given `title` and callback `fn` acting
      * as a thunk.
@@ -114,12 +112,11 @@ export interface ITestCaseDecorator extends ITestDecorator<TestCaseMetadata> {
  * as a thunk.
  *
  * @export
- * @interface ITestDecorator
- * @template T
+ * @interface TestCase
  */
-export const Test: ITestCaseDecorator = createTestDecorator<TestCaseMetadata>('TestCase', {
+export const Test: TestCase = createTestDecorator<TestCaseMetadata>('TestCase', {
     props: (title?: string, timeout?: number, setp?: number) => ({ title, timeout, setp })
-}) as ITestCaseDecorator;
+}) as TestCase;
 
 
 
@@ -128,24 +125,22 @@ export const Test: ITestCaseDecorator = createTestDecorator<TestCaseMetadata>('T
  *
  * @export
  * @interface IBeforeTestDecorator
- * @extends {ITestDecorator<TestMetadata>}
+ * @extends {TestDecorator<TestMetadata>}
  */
-export interface IBeforeTestDecorator extends ITestDecorator<TestMetadata> { }
+export interface BeforeAll extends TestDecorator<TestMetadata> { }
 
 /**
  * @BeforeAll decorator. define the method of class as unit test action run before all test case.
  *
  * @export
- * @interface IBeforeTestDecorator
- * @template T
+ * @interface BeforeAll
  */
-export const BeforeAll: IBeforeTestDecorator = createTestDecorator<TestMetadata>('BeforeAll') as IBeforeTestDecorator;
+export const BeforeAll: BeforeAll = createTestDecorator<TestMetadata>('BeforeAll');
 /**
  * @BeforeAll decorator. define the method of class as unit test action run before all test case.
  *
  * @export
- * @interface IBeforeTestDecorator
- * @template T
+ * @interface BeforeAll
  */
 export const Before = BeforeAll;
 
@@ -153,43 +148,40 @@ export const Before = BeforeAll;
  * @BeforeEach decorator. define the method of class as unit test action run before each test case.
  *
  * @export
- * @interface IBeforeEachTestDecorator
- * @extends {ITestDecorator<TestMetadata>}
+ * @interface BeforeEach
+ * @extends {TestDecorator<TestMetadata>}
  */
-export interface IBeforeEachTestDecorator extends ITestDecorator<TestMetadata> { }
+export interface BeforeEach extends TestDecorator<TestMetadata> { }
 
 /**
  * @BeforeEach decorator. define the method of class as unit test action run before each test case.
  *
  * @export
- * @interface IBeforeEachTestDecorator
- * @template T
+ * @interface BeforeEach
  */
-export const BeforeEach: IBeforeEachTestDecorator = createTestDecorator<TestMetadata>('BeforeEach') as IBeforeEachTestDecorator;
+export const BeforeEach: BeforeEach = createTestDecorator<TestMetadata>('BeforeEach');
 
 /**
  * @AfterAll decorator. define the method of class as unit test action run after all test case.
  *
  * @export
- * @interface IAfterTestDecorator
- * @extends {ITestDecorator<TestMetadata>}
+ * @interface AfterAll
+ * @extends {TestDecorator<TestMetadata>}
  */
-export interface IAfterTestDecorator extends ITestDecorator<TestMetadata> { }
+export interface AfterAll extends TestDecorator<TestMetadata> { }
 
 /**
  * @AfterAll decorator. define the method of class as unit test action run after all test case.
  *
  * @export
- * @interface IAfterTestDecorator
- * @template T
+ * @interface AfterAll
  */
-export const AfterAll: IAfterTestDecorator = createTestDecorator<TestMetadata>('AfterAll') as IAfterTestDecorator;
+export const AfterAll: AfterAll = createTestDecorator<TestMetadata>('AfterAll');
 /**
  * @AfterAll decorator. define the method of class as unit test action run after all test case.
  *
  * @export
- * @interface IAfterTestDecorator
- * @template T
+ * @interface AfterAll
  */
 export const After = AfterAll;
 
@@ -199,10 +191,9 @@ export const After = AfterAll;
  * @AfterEach decorator. define the method of class as unit test action run after each test case.
  *
  * @export
- * @interface IAfterEachTestDecorator
- * @extends {ITestDecorator<TestMetadata>}
+ * @interface AfterEach
  */
-export interface IAfterEachTestDecorator extends ITestDecorator<TestMetadata> {
+export interface AfterEach extends TestDecorator<TestMetadata> {
 
 }
 
@@ -210,7 +201,6 @@ export interface IAfterEachTestDecorator extends ITestDecorator<TestMetadata> {
  * @AfterEach decorator. define the method of class as unit test action run after each test case.
  *
  * @export
- * @interface IAfterEachTestDecorator
- * @template T
+ * @interface AfterEach
  */
-export const AfterEach: IAfterEachTestDecorator = createTestDecorator<TestMetadata>('TestAfterEach') as IAfterEachTestDecorator;
+export const AfterEach: AfterEach = createTestDecorator<TestMetadata>('TestAfterEach');

@@ -26,10 +26,10 @@ export type BootDecorator = <TFunction extends Type<Service>>(target: TFunction)
  * Boot decorator, use to define class as statup service when bootstrap application.
  *
  * @export
- * @interface IBootDecorator
+ * @interface Boot
  * @template T
  */
-export interface IBootDecorator {
+export interface Boot {
     /**
      * Boot decorator, use to define class as statup service when bootstrap application.
      *
@@ -44,8 +44,9 @@ export interface IBootDecorator {
  * Boot decorator, use to define class as statup service when bootstrap application.
  *
  * @Boot()
+ * @exports {@link Boot}
  */
-export const Boot: IBootDecorator = createDecorator<BootMetadata>('Boot', {
+export const Boot: Boot = createDecorator<BootMetadata>('Boot', {
     actionType: 'annoation',
     reflect: {
         class: [
@@ -124,10 +125,9 @@ export type ConfigDecorator = <TFunction extends Type<Server>>(target: TFunction
  * Configure decorator, define this class as configure register when bootstrap application.
  *
  * @export
- * @interface IConfigureDecorator
- * @template T
+ * @interface Configure
  */
-export interface IConfigureDecorator {
+export interface Configure {
     /**
      * Configure decorator, define this class as configure register when bootstrap application.
      *
@@ -136,7 +136,12 @@ export interface IConfigureDecorator {
     (): ConfigDecorator;
 }
 
-export const Configure: IConfigureDecorator = createDecorator<ClassMetadata>('Configure', {
+/**
+ * Configure decorator, define this class as configure register when bootstrap application.
+ * 
+ * @exports {@link Configure}
+ */
+export const Configure: Configure = createDecorator<ClassMetadata>('Configure', {
     actionType: 'annoation',
     design: {
         afterAnnoation: (ctx, next) => {
@@ -163,10 +168,10 @@ export const Configure: IConfigureDecorator = createDecorator<ClassMetadata>('Co
  * Module decorator, use to define class as ioc Module.
  *
  * @export
- * @interface IModuleDecorator
+ * @interface Module
  * @template T
  */
-export interface IModuleDecorator<T extends ModuleMetadata> {
+export interface Module<T extends ModuleMetadata> {
     /**
      * Module decorator, use to define class as ioc Module.
      *
@@ -189,9 +194,9 @@ interface ModuleDesignContext extends DesignContext {
  * @template T
  * @param {string} name decorator name.
  * @param {DecoratorOption<T>} [options]
- * @returns {IModuleDecorator<T>}
+ * @returns {Module<T>}
  */
-export function createModuleDecorator<T extends ModuleMetadata>(name: string, options?: DecoratorOption<T>): IModuleDecorator<T> {
+export function createModuleDecorator<T extends ModuleMetadata>(name: string, options?: DecoratorOption<T>): Module<T> {
     options = options || EMPTY_OBJ;
     let hd = options.reflect?.class ?? [];
     const append = options.appendProps;
@@ -241,15 +246,16 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
                 meta.name = lang.getClassName(meta.token);
             }
         }
-    }) as IModuleDecorator<T>;
+    }) as Module<T>;
 }
 
 /**
  * Module Decorator, definde class as module.
  *
  * @Module
+ * @exports {@link Module}
  */
-export const Module: IModuleDecorator<ModuleMetadata> = createModuleDecorator<ModuleMetadata>('DIModule');
+export const Module: Module<ModuleMetadata> = createModuleDecorator<ModuleMetadata>('DIModule');
 /**
  * Module Decorator, definde class as module.
  * @deprecated use {@link Module} instead.
@@ -263,9 +269,9 @@ export type HandleDecorator = <TFunction extends Type<IMiddleware>>(target: TFun
  * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
  *
  * @export
- * @interface IHandleDecorator
+ * @interface Handle
  */
-export interface IHandleDecorator {
+export interface Handle {
     /**
      * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
      *
@@ -307,8 +313,10 @@ export interface IHandleDecorator {
 /**
  * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
  * @Handle
+ * 
+ * @exports {@link Handle}
  */
-export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle', {
+export const Handle: Handle = createDecorator<HandleMetadata>('Handle', {
     actionType: ['annoation', 'autorun'],
     props: (parent?: Type<Middlewares> | string, before?: Type<IMiddleware>, options?: { guards?: Type<CanActive>[] }) =>
         (isString(parent) ? ({ route: parent, parent: before, ...options }) : ({ parent, before })) as HandleMetadata,
@@ -396,10 +404,9 @@ export type PipeDecorator = <TFunction extends Type<PipeTransform>>(target: TFun
  * Pipe decorator.
  *
  * @export
- * @interface IInjectableDecorator
+ * @interface Pipe
  */
-export interface IPipeDecorator {
-
+export interface Pipe {
     /**
      * Pipe decorator, define the class as pipe.
      *
@@ -408,7 +415,6 @@ export interface IPipeDecorator {
      * @param {boolean} pure If Pipe is pure (its output depends only on its input.) defaut true.
      */
     (name: string, pure?: boolean): PipeDecorator;
-
     /**
      * Pipe decorator, define the class as pipe.
      *
@@ -423,8 +429,9 @@ export interface IPipeDecorator {
  * Pipe decorator, define for class. use to define the class. it can setting provider to some token, singleton or not. it will execute  [`PipeLifecycle`]
  *
  * @Pipe
+ * @expors {@link Pipe}
  */
-export const Pipe: IPipeDecorator = createDecorator<PipeMetadata>('Pipe', {
+export const Pipe: Pipe = createDecorator<PipeMetadata>('Pipe', {
     actionType: ['annoation', 'typeProviders'],
     reflect: {
         class: (ctx, next) => {
@@ -447,9 +454,9 @@ export const Pipe: IPipeDecorator = createDecorator<PipeMetadata>('Pipe', {
  * decorator used to define Request route mapping.
  *
  * @export
- * @interface IRouteMappingDecorator
+ * @interface RouteMapping
  */
-export interface IRouteMappingDecorator {
+export interface RouteMapping {
     /**
      * route decorator. define the controller method as an route.
      *
@@ -545,8 +552,10 @@ export interface IRouteMappingDecorator {
 
 /**
  * RouteMapping decorator
+ * 
+ * @exports  {@link RouteMapping}
  */
-export const RouteMapping: IRouteMappingDecorator = createDecorator<ProtocolRouteMapingMetadata>('RouteMapping', {
+export const RouteMapping: RouteMapping = createDecorator<ProtocolRouteMapingMetadata>('RouteMapping', {
     props: (route: string, arg2?: Type<Router> | MiddlewareType[] | string | { protocol?: string, middlewares: MiddlewareType[], contentType?: string, method?: string }) => {
         if (isArray(arg2)) {
             return { route, middlewares: arg2 };
@@ -619,6 +628,8 @@ export interface RequsetParameterDecorator {
 
 /**
  * Request path param decorator.
+ * 
+ * @exports {@link RequsetParameterDecorator}
  */
 export const RequestPath: RequsetParameterDecorator = createParamDecorator('RequestPath', {
     props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as RequsetParameterMetadata),
@@ -629,6 +640,8 @@ export const RequestPath: RequsetParameterDecorator = createParamDecorator('Requ
 
 /**
  * Request query param decorator.
+ * 
+ * @exports {@link RequsetParameterDecorator}
  */
 export const RequestParam: RequsetParameterDecorator = createParamDecorator('RequestParam', {
     props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as RequsetParameterMetadata),
@@ -639,6 +652,8 @@ export const RequestParam: RequsetParameterDecorator = createParamDecorator('Req
 
 /**
  * Request body param decorator.
+ * 
+ * @exports {@link RequsetParameterDecorator}
  */
 export const RequestBody: RequsetParameterDecorator = createParamDecorator('RequestBody', {
     props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as RequsetParameterMetadata),

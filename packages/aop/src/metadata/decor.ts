@@ -8,9 +8,9 @@ import { ADVISOR } from './tk';
  * Aspect decorator
  *
  * @export
- * @interface IAspectDecorator
+ * @interface Aspect
  */
-export interface IAspectDecorator {
+export interface Aspect {
     /**
      * Aspect decorator, define for class.  use to define class as aspect. it can setting provider to some token, singleton or not.
      *
@@ -38,7 +38,7 @@ export interface IAspectDecorator {
  *
  * @Aspect()
  */
-export const Aspect: IAspectDecorator = createDecorator<AspectMetadata>('Aspect', {
+export const Aspect: Aspect = createDecorator<AspectMetadata>('Aspect', {
     actionType: 'annoation',
     reflect: {
         class: (ctx, next) => {
@@ -59,16 +59,16 @@ export const Aspect: IAspectDecorator = createDecorator<AspectMetadata>('Aspect'
     },
     props: (annotation: string, within?: ClassType | ClassType[], append?: ClassMetadata) =>
         ({ annotation, within, ...append })
-}) as IAspectDecorator;
+});
 
 
 /**
  * none pointcut decorator.
  *
  * @export
- * @interface INonePointcutDecorator
+ * @interface NonePointcut
  */
-export interface INonePointcutDecorator {
+export interface NonePointcut {
     /**
      * NonePointcut decorator, define class not work with aop.
      *
@@ -83,7 +83,7 @@ export interface INonePointcutDecorator {
  *
  * @NonePointcut()
  */
-export const NonePointcut: INonePointcutDecorator = createDecorator<ClassMetadata>('NonePointcut', {
+export const NonePointcut: NonePointcut = createDecorator<ClassMetadata>('NonePointcut', {
     reflect: {
         class: (ctx, next) => {
             (ctx.reflect as AopReflect).nonePointcut = true;
@@ -97,9 +97,9 @@ export const NonePointcut: INonePointcutDecorator = createDecorator<ClassMetadat
  * advice decorator for method.
  *
  * @export
- * @interface IAdviceDecorator
+ * @interface AdviceDecorator
  */
-export interface IAdviceDecorator {
+export interface AdviceDecorator {
     /**
      * define advice with params.
      *
@@ -210,15 +210,15 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
  *
  * @Advice
  */
-export const Advice: IAdviceDecorator = createAdviceDecorator('Advice');
+export const Advice: AdviceDecorator = createAdviceDecorator('Advice');
 
 /**
  * Pointcut decorator for method.
  *
  * @export
- * @interface IPointcutDecorator
+ * @interface Pointcut
  */
-export interface IPointcutDecorator {
+export interface Pointcut {
     /**
      * Pointcut advice with params.
      *
@@ -298,9 +298,7 @@ export interface IPointcutDecorator {
  *
  * @Pointcut
  */
-export const Pointcut: IPointcutDecorator =
-    createAdviceDecorator<AdviceMetadata>('Pointcut') as IPointcutDecorator;
-
+export const Pointcut: Pointcut = createAdviceDecorator<AdviceMetadata>('Pointcut');
 
 
 /**
@@ -396,9 +394,9 @@ export const Before: IBeforeDecorator = createAdviceDecorator<AdviceMetadata>('B
  * After decorator for method.
  *
  * @export
- * @interface IAfterDecorator
+ * @interface After
  */
-export interface IAfterDecorator {
+export interface After {
     /**
      * After advice with params.
      *
@@ -478,7 +476,7 @@ export interface IAfterDecorator {
  *
  * @After
  */
-export const After: IAfterDecorator = createAdviceDecorator<AdviceMetadata>('After') as IAfterDecorator;
+export const After: After = createAdviceDecorator<AdviceMetadata>('After');
 
 
 export interface AroundAnnoation extends PointcutAnnotation {
@@ -490,9 +488,9 @@ export interface AroundAnnoation extends PointcutAnnotation {
  * aop around decorator.
  *
  * @export
- * @interface IAroundDecorator
+ * @interface Around
  */
-export interface IAroundDecorator {
+export interface Around {
 
     /**
      * Around advice with params.
@@ -550,16 +548,16 @@ export interface IAroundDecorator {
  *
  * @Around
  */
-export const Around: IAroundDecorator = createAdviceDecorator<AroundMetadata>('Around') as IAroundDecorator;
+export const Around: Around = createAdviceDecorator<AroundMetadata>('Around');
 
 
 /**
  * aop after returning decorator.
  *
  * @export
- * @interface IAfterReturningDecorator
+ * @interface AfterReturning
  */
-export interface IAfterReturningDecorator {
+export interface AfterReturning {
 
     /**
      * AfterReturning advice with params.
@@ -626,7 +624,7 @@ export interface IAfterReturningDecorator {
  *
  * @AfterReturning
  */
-export const AfterReturning: IAfterReturningDecorator =
+export const AfterReturning: AfterReturning =
     createAdviceDecorator<AfterReturningMetadata>('AfterReturning', {
         props: (pointcut: string | RegExp, returning: string, annotation?: string | PointcutAnnotation) => {
             if (isString(annotation)) {
@@ -635,15 +633,15 @@ export const AfterReturning: IAfterReturningDecorator =
                 return { pointcut, ...annotation, returning };
             }
         }
-    }) as IAfterReturningDecorator;
+    });
 
 /**
  * aop after throwing decorator.
  *
  * @export
- * @interface IAfterThrowingDecorator
+ * @interface AfterThrowing
  */
-export interface IAfterThrowingDecorator {
+export interface AfterThrowing {
 
     /**
      * AfterThrowing advice with params.
@@ -712,7 +710,7 @@ export interface IAfterThrowingDecorator {
  *
  * @AfterThrowing
  */
-export const AfterThrowing: IAfterThrowingDecorator =
+export const AfterThrowing: AfterThrowing =
     createAdviceDecorator<AfterThrowingMetadata>('AfterThrowing', {
         props: (pointcut: string | RegExp, throwing: string, annotation?: string | PointcutAnnotation) => {
             if (isString(annotation)) {
@@ -721,4 +719,4 @@ export const AfterThrowing: IAfterThrowingDecorator =
                 return { pointcut, ...annotation, throwing };
             }
         }
-    }) as IAfterThrowingDecorator;
+    });

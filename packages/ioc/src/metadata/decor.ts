@@ -13,7 +13,7 @@ import { Injector, ProviderType } from '../injector';
 /**
  * AutoWired decoator.
  */
-export interface IAutoWiredDecorator {
+export interface AutoWired {
     /**
      * AutoWired decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
      *
@@ -40,7 +40,7 @@ export interface IAutoWiredDecorator {
  *
  * @AutoWired()
  */
-export const AutoWired: IAutoWiredDecorator = createDecorator<AutoWiredMetadata>('AutoWired', {
+export const AutoWired: AutoWired = createDecorator<AutoWiredMetadata>('AutoWired', {
     props: (pdr: ProviderType[] | Token, alias?: string) => {
         if (isArray(pdr)) {
             return { providers: pdr };
@@ -53,7 +53,7 @@ export const AutoWired: IAutoWiredDecorator = createDecorator<AutoWiredMetadata>
 /**
  * inject decoator.
  */
-export interface IInjectDecorator {
+export interface Inject {
     /**
      * Inject decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
      *
@@ -79,7 +79,7 @@ export interface IInjectDecorator {
  *
  * @Inject()
  */
-export const Inject: IInjectDecorator = createDecorator<InjectMetadata>('Inject', {
+export const Inject: Inject = createDecorator<InjectMetadata>('Inject', {
     props: (pdr: ProviderType[] | Token, alias?: string) => {
         if (isArray(pdr)) {
             return { providers: pdr };
@@ -94,9 +94,9 @@ export const Inject: IInjectDecorator = createDecorator<InjectMetadata>('Inject'
  * Parameter decorator.
  *
  * @export
- * @interface IParamDecorator
+ * @interface Param
  */
-export interface IParamDecorator {
+export interface Param {
     /**
      * define parameter decorator with param.
      *
@@ -115,17 +115,16 @@ export interface IParamDecorator {
  *
  * @Param()
  */
-export const Param: IParamDecorator = createParamDecorator<ParameterMetadata>('Param');
+export const Param: Param = createParamDecorator<ParameterMetadata>('Param');
 
 
 /**
  * Injectable decorator
  *
  * @export
- * @interface IInjectableDecorator
- * @extends {IClassDecorator<InjectableMetadata>}
+ * @interface Injectable
  */
-export interface IInjectableDecorator {
+export interface Injectable {
 
     /**
      * Injectable decorator setting with params.
@@ -160,7 +159,7 @@ export interface IInjectableDecorator {
  *
  * @Injectable()
  */
-export const Injectable: IInjectableDecorator = createDecorator<InjectableMetadata>('Injectable', {
+export const Injectable: Injectable = createDecorator<InjectableMetadata>('Injectable', {
     props: (provide: Token, arg2: any, arg3?: any) => {
         if (isString(arg2)) {
             return { provide: getToken(provide, arg2), ...arg3 }
@@ -177,10 +176,9 @@ export const Injectable: IInjectableDecorator = createDecorator<InjectableMetada
  * @Providers
  *
  * @export
- * @interface IProvidersDecorator
- * @extends {IClassDecorator<ProvidersMetadata>}
+ * @interface Providers
  */
-export interface IProvidersDecorator {
+export interface Providers {
     /**
      * Providers decorator, for class. use to add ref service to the class.
      *
@@ -205,9 +203,9 @@ export interface IProvidersDecorator {
  *
  * @Providers
  */
-export const Providers: IProvidersDecorator = createDecorator<ProvidersMetadata>('Providers', {
+export const Providers: Providers = createDecorator<ProvidersMetadata>('Providers', {
     props: (providers: ProviderType[]) => ({ providers }),
-}) as IProvidersDecorator;
+});
 
 
 
@@ -217,10 +215,9 @@ export const Providers: IProvidersDecorator = createDecorator<ProvidersMetadata>
  * @Refs
  *
  * @export
- * @interface IProviderInDecorator
- * @extends {IClassDecorator<ProviderInMetadata>}
+ * @interface ProviderIn
  */
-export interface IProviderInDecorator {
+export interface ProviderIn {
     /**
      * Refs decorator, for class. use to define the class as service of target.
      *
@@ -256,7 +253,7 @@ export interface IProviderInDecorator {
  *
  * @Refs
  */
-export const ProviderIn: IProviderInDecorator = createDecorator<ProviderInMetadata>('ProviderIn', {
+export const ProviderIn: ProviderIn = createDecorator<ProviderInMetadata>('ProviderIn', {
     props: (target: ClassType, provide?: Token, alias?: string) => ({ target, provide: getToken(provide!, alias) }),
     design: {
         afterAnnoation: (ctx, next) => {
@@ -266,7 +263,7 @@ export const ProviderIn: IProviderInDecorator = createDecorator<ProviderInMetada
             return next();
         }
     }
-}) as IProviderInDecorator;
+});
 
 
 export const Refs = ProviderIn;
@@ -277,10 +274,9 @@ export const Refs = ProviderIn;
  * @Singleton()
  *
  * @export
- * @interface ISingletonDecorator
- * @extends {IClassDecorator<ClassMetadata>}
+ * @interface Singleton
  */
-export interface ISingletonDecorator {
+export interface Singleton {
     /**
      * Singleton decorator, for class. use to define the class is singleton.
      *
@@ -315,12 +311,12 @@ export interface ISingletonDecorator {
  *
  * @Singleton()
  */
-export const Singleton: ISingletonDecorator = createDecorator<ClassMetadata>('Singleton', {
+export const Singleton: Singleton = createDecorator<ClassMetadata>('Singleton', {
     props: (provide: Token, alias?: string) => ({ provide: getToken(provide, alias) }),
     appendProps: (meta) => {
         meta.singleton = true;
     }
-}) as ISingletonDecorator;
+});
 
 
 
@@ -341,7 +337,7 @@ export type IocExtentdDecorator = <TFunction extends Type<IocExtentd>>(target: T
  *
  * @IocExt()
  */
-export interface IocExtDecorator {
+export interface IocExt {
     /**
      * IocExt decorator. define for class, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
      *
@@ -357,7 +353,7 @@ export interface IocExtDecorator {
  *
  * @IocExt()
  */
-export const IocExt: IocExtDecorator = createDecorator<AutorunMetadata>('IocExt', {
+export const IocExt: IocExt = createDecorator<AutorunMetadata>('IocExt', {
     reflect: {
         class: (ctx, next) => {
             ctx.reflect.iocExt = true;
@@ -368,7 +364,7 @@ export const IocExt: IocExtDecorator = createDecorator<AutorunMetadata>('IocExt'
         metadata.singleton = true;
         metadata.regIn = 'root';
     }
-}) as IocExtDecorator;
+});
 
 
 
@@ -376,10 +372,9 @@ export const IocExt: IocExtDecorator = createDecorator<AutorunMetadata>('IocExt'
  * autorun decorator inteface
  *
  * @export
- * @interface IAutorunDecorator
- * @extends {IClassMethodDecorator<AutorunMetadata>}
+ * @interface Autorun
  */
-export interface IAutorunDecorator {
+export interface Autorun {
     /**
      * Autorun decorator, for class.  use to define the class auto run (via a method or not) after registered.
      * @Autorun
@@ -409,7 +404,7 @@ export interface IAutorunDecorator {
  *
  * @Autorun
  */
-export const Autorun: IAutorunDecorator = createDecorator<AutorunMetadata>('Autorun', {
+export const Autorun: Autorun = createDecorator<AutorunMetadata>('Autorun', {
     props: (arg: string | number) => {
         if (isString(arg)) {
             return { autorun: arg };
@@ -419,4 +414,4 @@ export const Autorun: IAutorunDecorator = createDecorator<AutorunMetadata>('Auto
     appendProps: (meta) => {
         meta.singleton = true;
     }
-}) as IAutorunDecorator;
+});

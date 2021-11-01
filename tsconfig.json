@@ -29,6 +29,9 @@
       "@tsdi/boot": [
         "packages/boot/src"
       ],
+      "@tsdi/typeorm-datapter": [
+        "packages/typeorm-datapter/src"
+      ],
       "@tsdi/components": [
         "packages/components/src"
       ],

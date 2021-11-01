@@ -8,9 +8,9 @@ import { HttpRouter } from '../router';
  * decorator used to define Request restful route mapping.
  *
  * @export
- * @interface RestControllerDecorator
+ * @interface RestController
  */
- export interface RestControllerDecorator {
+ export interface RestController {
     /**
      * route decorator. define the controller method as an route.
      *
@@ -66,7 +66,7 @@ import { HttpRouter } from '../router';
 /**
  * RestController decorator
  */
-export const RestController: RestControllerDecorator = createDecorator<RouteMapingMetadata>('RestController', {
+export const RestController: RestController = createDecorator<RouteMapingMetadata>('RestController', {
     props: (route: string, arg2?: Type<Router> | MiddlewareType[] | string | { middlewares: MiddlewareType[], contentType?: string, method?: string }) => {
         if (isArray(arg2)) {
             return { route, middlewares: arg2 };

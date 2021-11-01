@@ -43,7 +43,7 @@ export interface LoggerMetadata extends TypeMetadata {
  * @interface ILoggerDecorator
  * @template T
  */
-export interface ILoggerDecorator<T extends LoggerMetadata> {
+export interface Logger<T extends LoggerMetadata> {
     /**
      * define logger annotation pointcut to this class or method.
      * @Logger
@@ -88,7 +88,7 @@ export interface ILoggerDecorator<T extends LoggerMetadata> {
  *
  * @Logger
  */
-export const Logger: ILoggerDecorator<LoggerMetadata> = createDecorator<LoggerMetadata>('Logger', {
+export const Logger: Logger<LoggerMetadata> = createDecorator<LoggerMetadata>('Logger', {
     props: (...args: any[]) => {
         if (args.length === 1) {
             return { message: args[0] };
@@ -110,4 +110,4 @@ export const Logger: ILoggerDecorator<LoggerMetadata> = createDecorator<LoggerMe
         }
         return EMPTY_OBJ;
     }
-}) as ILoggerDecorator<LoggerMetadata>;
+});
