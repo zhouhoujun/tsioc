@@ -1,6 +1,6 @@
 import {
     DecoratorOption, isUndefined, ROOT_INJECTOR, EMPTY_OBJ, isArray, isString, lang, Type, DesignContext,
-    createDecorator, ClassMethodDecorator, Injector, ClassMetadata, createParamDecorator, ParameterMetadata
+    createDecorator, ClassMethodDecorator, Injector, ClassMetadata, createParamDecorator, ParameterMetadata, isRegExp
 } from '@tsdi/ioc';
 import { Service } from '../services/service';
 import { ModuleReflect, ModuleConfigure, AnnotationReflect } from './ref';
@@ -12,7 +12,7 @@ import { RootRouter, Router } from '../middlewares/router';
 import { MappingReflect, MappingRoute, ProtocolRouteMappingMetadata } from '../middlewares/mapping';
 import { ModuleFactory, ModuleInjector, ModuleRegistered } from '../module';
 import { SERVICES, SERVERS } from './tk';
-import { BootMetadata, ModuleMetadata, HandleMetadata, HandlesMetadata, PipeMetadata } from './meta';
+import { BootMetadata, ModuleMetadata, HandleMetadata, HandlesMetadata, PipeMetadata, HandleMessagePattern } from './meta';
 import { PipeTransform } from '../pipes/pipe';
 import { Server } from '../server/server';
 
@@ -277,6 +277,47 @@ export interface Handle {
      *
      */
     (): HandleDecorator;
+    // /**
+    //  * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
+    //  *
+    //  * @RegisterFor
+    //  *
+    //  * @param {string} parent the handle reg in the handle queue. default register in root handle queue.
+    //  * @param [option] register this handle handle before this handle.
+    //  */
+    // (route: string, options?: {
+    //     /**
+    //      * register this handle handle in the parent handle.
+    //      */
+    //     parent?: Type<Router>;
+    //     /**
+    //      * register this handle handle before the handle.
+    //      */
+    //     before?: Type<Middleware>;
+    //     /**
+    //     * route guards.
+    //     */
+    //     guards?: Type<CanActive>[],
+    // }): HandleDecorator;
+    /**
+     * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
+     *
+     * @RegisterFor
+     *
+     * @param {Type<Middlewares>} parent the handle reg in the handle queue. default register in root handle queue.
+     * @param [option] register this handle handle before this handle.
+     */
+    (parent: Type<Middlewares>, options?: {
+        route?: string;
+        /**
+         * register this handle handle before the handle.
+         */
+        before?: Type<Middleware>;
+        /**
+        * route guards.
+        */
+        guards?: Type<CanActive>[],
+    }): HandleDecorator;
     /**
      * RegisterFor decorator, for class. use to define the class as handle register in global handle queue or parent.
      *
@@ -285,29 +326,22 @@ export interface Handle {
      * @param {ClassMetadata} [metadata] metadata map.
      */
     (metadata: HandleMetadata): HandleDecorator;
+
+
+
     /**
-     * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
+     * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
-     * @RegisterFor
-     *
-     * @param {string} parent the handle reg in the handle queue. default register in root handle queue.
-     * @param {Type<Router>} [parent] register this handle handle before this handle.
+     * @param {string} pattern message match pattern.
+     * @param {cmd?: string, pattern?: string } option message match option.
      */
-    (route: string, parent?: Type<Router>, options?: {
-        /**
-        * route guards.
-        */
-        guards?: Type<CanActive>[],
-    }): HandleDecorator;
+    (pattern: string | RegExp, option?: { cmd?: string }): MethodDecorator;
     /**
-     * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
+     * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
-     * @RegisterFor
-     *
-     * @param {Type<Middlewares>} [parent] the handle reg in the handle queue. default register in root handle queue.
-     * @param {Type<Middleware>} [before] register this handle handle before this handle.
+     * @param {cmd?: string, pattern?: string } option message match option.
      */
-    (parent: Type<Middlewares>, before?: Type<Middleware>): HandleDecorator;
+    (option: { cmd?: string, pattern?: string | RegExp }): MethodDecorator;
 }
 
 /**
@@ -316,10 +350,10 @@ export interface Handle {
  * 
  * @exports {@link Handle}
  */
-export const Handle: Handle = createDecorator<HandleMetadata>('Handle', {
+export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePattern>('Handle', {
     actionType: ['annoation', 'autorun'],
-    props: (parent?: Type<Middlewares> | string, before?: Type<Middleware>, options?: { guards?: Type<CanActive>[] }) =>
-        (isString(parent) ? ({ route: parent, parent: before, ...options }) : ({ parent, before })) as HandleMetadata,
+    props: (parent?: Type<Middlewares> | string, options?: { guards?: Type<CanActive>[], parent?: Type<Middlewares> | string,  before?: Type<Middleware> }) =>
+        (isString(parent) || isRegExp(parent) ? ({ pattern: parent, ...options }) : ({ parent, ...options })) as HandleMetadata & HandleMessagePattern,
     design: {
         afterAnnoation: (ctx, next) => {
             const reflect = ctx.reflect as RouteReflect;
@@ -379,11 +413,14 @@ export const Handle: Handle = createDecorator<HandleMetadata>('Handle', {
                 injector.onDestroy(() => queue.unuse(type));
             }
             next();
+        },
+        method: (ctx, next) => {
+            // todo register message handle
         }
     },
     appendProps: (meta) => {
+        if(meta.cmd || meta.pattern) return;
         meta.singleton = true;
-        // default register in root.
     }
 });
 

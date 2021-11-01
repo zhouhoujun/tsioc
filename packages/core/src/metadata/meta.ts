@@ -38,6 +38,16 @@ export interface BootMetadata extends TypeMetadata, PatternMetadata {
 export interface ModuleMetadata extends ModuleConfigure { }
 
 
+export interface HandleMessagePattern {
+    /**
+     * message handle pattern for route mapping.
+     */
+    pattern?: string | RegExp;
+    /**
+     * message handle command for route mapping.
+     */
+    cmd?: string;
+}
 
 /**
  * Handle metadata. use to define the class as handle handle register in global handle queue.

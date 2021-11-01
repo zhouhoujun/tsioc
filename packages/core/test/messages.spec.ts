@@ -43,6 +43,18 @@ class DeviceController {
         return await defer.promise;
     }
 
+    @Handle({ cmd: 'xxx' })
+    async subMessage() {
+
+    }
+
+    @Handle(/dd./)
+    async subMessage1() {
+
+    }
+
+
+
 
 }
 
@@ -59,7 +71,7 @@ class DeviceController {
 
 // }
 
-@Handle('/hdevice')
+@Handle({ route: '/hdevice' })
 class DeviceQueue extends MessageQueue {
     override async execute(ctx: Context, next?: () => Promise<void>): Promise<void> {
         console.log('device msg start.');
