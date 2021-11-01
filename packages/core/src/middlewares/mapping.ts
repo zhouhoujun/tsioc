@@ -7,7 +7,7 @@ import { MODEL_RESOLVERS } from '../model/resolver';
 import { ArgumentError, PipeTransform } from '../pipes/pipe';
 import { Context } from './context';
 import { CanActive } from './guard';
-import { IRouter, isMiddlwareType, isMiddlware, MiddlewareType, RouteInfo } from './middleware';
+import { AbstractRouter, isMiddlwareType, isMiddlware, MiddlewareType, RouteInfo } from './middleware';
 import { TrasportArgumentResolver, TrasportParameter } from './resolver';
 import { ResultValue } from './result';
 import { Route } from './route';
@@ -25,7 +25,7 @@ export interface RouteMapingMetadata {
      */
     route?: string;
 
-    parent?: Type<IRouter>;
+    parent?: Type<AbstractRouter>;
 
     /**
      * request method.

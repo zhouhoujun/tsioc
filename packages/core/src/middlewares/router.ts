@@ -1,12 +1,12 @@
 import { Injectable, isFunction, isString, refl, Singleton } from '@tsdi/ioc';
 import { Context } from './context';
-import { IRouter, MiddlewareType, RouteInfo, RouteReflect } from './middleware';
+import { AbstractRouter, MiddlewareType, RouteInfo, RouteReflect } from './middleware';
 import { MessageQueue } from './queue';
 import { Route } from './route';
 
 
 @Injectable()
-export class Router<T extends Context = Context> extends MessageQueue<T> implements IRouter<T> {
+export class Router<T extends Context = Context> extends MessageQueue<T> implements AbstractRouter<T> {
 
     constructor(protected info: RouteInfo) {
         super();

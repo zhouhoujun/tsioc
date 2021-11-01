@@ -18,10 +18,20 @@ export interface Middleware<T extends Context = Context> {
     toHandle(): AsyncHandler<T>
 }
 
+/**
+ * is target instance of {@link Middleware}.
+ * @param target 
+ * @returns is instance of {@link Middleware} or not.
+ */
 export function isMiddlware(target: any): target is Middleware {
     return isObject(target) && isFunction((target as Middleware).execute) && isFunction((target as Middleware).toHandle);
 }
 
+/**
+ * is target type of {@link Middleware}.
+ * @param target 
+ * @returns is {@link Middleware} type or not.
+ */
 export function isMiddlwareType(target: any): target is Type<Middleware> {
     return isFunction(target)
         && (
@@ -35,8 +45,7 @@ export function isMiddlwareType(target: any): target is Type<Middleware> {
  *
  * @export
  * @abstract
- * @class MessageHandle
- * @extends {Middleware<Context>}
+ * @class AbstractMiddleware
  */
 @Abstract()
 export abstract class AbstractMiddleware<T extends Context = Context> implements Middleware<T> {
@@ -63,12 +72,12 @@ export abstract class AbstractMiddleware<T extends Context = Context> implements
 }
 
 /**
- * message type.
+ * message type for register in {@link Middlewares}.
  */
 export type MiddlewareType = AsyncHandler<Context> | Middleware | Type<Middleware>;
 
 /**
- * middlewares.
+ * middlewares, compose of {@link Middleware}.
  */
 @Abstract()
 export abstract class Middlewares<T extends Context = Context> extends AbstractMiddleware<T> {
@@ -166,11 +175,12 @@ export abstract class Middlewares<T extends Context = Context> extends AbstractM
 
 
 /**
- * router interface
+ * abstract router.
  */
-export interface IRouter<T extends Context = Context> extends Middlewares<T> {
-    readonly url: string;
-    getPath(): string;
+@Abstract()
+export abstract class AbstractRouter<T extends Context = Context> extends Middlewares<T> {
+    abstract get url(): string;
+    abstract getPath(): string;
 }
 
 
