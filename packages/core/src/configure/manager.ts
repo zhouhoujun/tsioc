@@ -10,7 +10,7 @@ import { DEFAULT_CONFIG, PROCESS_ROOT } from '../metadata/tk';
  * @class ConfigureManager
  */
 @Singleton(ConfigureManager)
-export class ConfigureManagerImpl implements ConfigureManager {
+export class DefaultConfigureManager implements ConfigureManager {
 
     @Inject(ROOT_INJECTOR) injector!: Injector;
     private config!: Configuration;

@@ -20,8 +20,8 @@ export * from './global';
 
 export * from './pipes';
 
-export * from './server/server';
-export * from './client/client';
+export * from './server';
+export * from './client';
 
 // modules
 export * from './module';

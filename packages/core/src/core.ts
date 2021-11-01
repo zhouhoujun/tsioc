@@ -1,5 +1,5 @@
 import { Inject, IocExt, Injector, ProviderType, TARGET } from '@tsdi/ioc';
-import { ConfigureManagerImpl, ConfigureMergerImpl } from './configure/manager';
+import { DefaultConfigureManager, ConfigureMergerImpl } from './configure/manager';
 import { BootLifeScope } from './appfac/lifescope';
 import { ApplicationFactory } from './Context';
 import { DefaultModuleFactory } from './modules/injector';
@@ -28,6 +28,6 @@ export class CoreModule {
      */
     setup(@Inject() injector: Injector) {
         injector.action().regAction(BootLifeScope);
-        injector.register(ConfigureManagerImpl, ConfigureMergerImpl);
+        injector.register(DefaultConfigureManager, ConfigureMergerImpl);
     }
 }
