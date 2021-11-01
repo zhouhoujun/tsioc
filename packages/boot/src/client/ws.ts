@@ -1,7 +1,7 @@
 import { AbstractClient } from './client';
 
 
-export class MQTTClient extends AbstractClient {
+export class WSClient extends AbstractClient {
 
 
 
