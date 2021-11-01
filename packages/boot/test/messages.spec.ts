@@ -1,4 +1,4 @@
-import { Module, Message, MessageQueue, Context, Middleware,  RouteMapping, ApplicationContext, Handle } from '@tsdi/core';
+import { Module, Message, MessageQueue, Context, RouteMapping, ApplicationContext, Handle, AbstractMiddleware } from '@tsdi/core';
 import expect = require('expect');
 import { Injector, Injectable, lang } from '@tsdi/ioc';
 import { BootApplication } from '../src';
@@ -60,7 +60,7 @@ class DeviceStartQueue extends MessageQueue {
 }
 
 @Handle(DeviceStartQueue)
-class DeviceStartupHandle extends Middleware {
+class DeviceStartupHandle extends AbstractMiddleware {
 
     override async execute(ctx: Context, next: () => Promise<void>): Promise<void> {
         console.log('DeviceStartupHandle.')
@@ -73,7 +73,7 @@ class DeviceStartupHandle extends Middleware {
 }
 
 @Handle(DeviceStartQueue)
-class DeviceAStartupHandle extends Middleware {
+class DeviceAStartupHandle extends AbstractMiddleware {
 
     override async execute(ctx: Context, next: () => Promise<void>): Promise<void> {
         console.log('DeviceAStartupHandle.')

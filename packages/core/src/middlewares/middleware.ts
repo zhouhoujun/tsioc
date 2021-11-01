@@ -1,9 +1,11 @@
-import { Abstract, AsyncHandler, chain, isFunction, lang, RegisteredState, Type, TypeReflect } from '@tsdi/ioc';
+import { Abstract, AsyncHandler, chain, isFunction, isObject, lang, RegisteredState, Type, TypeReflect } from '@tsdi/ioc';
 import { Context } from './context';
 import { CanActive } from './guard';
 
-
-export interface IMiddleware<T extends Context = Context> {
+/**
+ * middleware interface.
+ */
+export interface Middleware<T extends Context = Context> {
     /**
      * execute middleware.
      * @param ctx 
@@ -16,16 +18,20 @@ export interface IMiddleware<T extends Context = Context> {
     toHandle(): AsyncHandler<T>
 }
 
-export function isMiddlwareType(target: any): target is Type<IMiddleware> {
+export function isMiddlware(target: any): target is Middleware {
+    return isObject(target) && isFunction((target as Middleware).execute) && isFunction((target as Middleware).toHandle);
+}
+
+export function isMiddlwareType(target: any): target is Type<Middleware> {
     return isFunction(target)
         && (
             (isFunction(Object.getOwnPropertyDescriptor(target, 'execute')?.value)
                 && isFunction(Object.getOwnPropertyDescriptor(target, 'toHandle')?.value))
-            || lang.isBaseOf(target, Middleware));
+            || lang.isBaseOf(target, AbstractMiddleware));
 }
 
 /**
- * middleware handle.
+ * abstract middleware implements {@link Middleware}.
  *
  * @export
  * @abstract
@@ -33,7 +39,7 @@ export function isMiddlwareType(target: any): target is Type<IMiddleware> {
  * @extends {Middleware<Context>}
  */
 @Abstract()
-export abstract class Middleware<T extends Context = Context> implements IMiddleware<T> {
+export abstract class AbstractMiddleware<T extends Context = Context> implements Middleware<T> {
     /**
      * execute middleware.
      *
@@ -59,13 +65,13 @@ export abstract class Middleware<T extends Context = Context> implements IMiddle
 /**
  * message type.
  */
-export type MiddlewareType = AsyncHandler<Context> | Middleware | Type<IMiddleware>;
+export type MiddlewareType = AsyncHandler<Context> | Middleware | Type<Middleware>;
 
 /**
  * middlewares.
  */
 @Abstract()
-export abstract class Middlewares<T extends Context = Context> extends Middleware<T> {
+export abstract class Middlewares<T extends Context = Context> extends AbstractMiddleware<T> {
     protected handles: MiddlewareType[] = [];
     private funcs!: AsyncHandler<T>[];
 
@@ -143,7 +149,7 @@ export abstract class Middlewares<T extends Context = Context> extends Middlewar
             const state = ctx.injector.state();
             this.funcs = this.handles.map(ac => this.parseHandle(state, ac)).filter(f => f);
         }
-        await chain( this.funcs, ctx, next);
+        await chain(this.funcs, ctx, next);
     }
 
     protected resetHandler() {

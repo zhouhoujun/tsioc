@@ -7,7 +7,7 @@ import { MODEL_RESOLVERS } from '../model/resolver';
 import { ArgumentError, PipeTransform } from '../pipes/pipe';
 import { Context } from './context';
 import { CanActive } from './guard';
-import { IRouter, isMiddlwareType, Middleware, MiddlewareType, RouteInfo } from './middleware';
+import { IRouter, isMiddlwareType, isMiddlware, MiddlewareType, RouteInfo } from './middleware';
 import { TrasportArgumentResolver, TrasportParameter } from './resolver';
 import { ResultValue } from './result';
 import { Route } from './route';
@@ -149,7 +149,7 @@ export class MappingRoute extends Route {
             // middleware.
             if (isFunction(result)) {
                 await result(ctx);
-            } else if (result instanceof Middleware) {
+            } else if (isMiddlware(result)) {
                 await result.execute(ctx, emptyNext);
             } else {
                 if (result instanceof ResultValue) {
@@ -201,7 +201,7 @@ export class MappingRoute extends Route {
     }
 
     protected parseHandle(state: RegisteredState, mdty: MiddlewareType): AsyncHandler<Context> {
-        if (mdty instanceof Middleware) {
+        if (isMiddlware(mdty)) {
             return mdty.toHandle();
         } else if (isMiddlwareType(mdty)) {
             if (!state.isRegistered(mdty)) {

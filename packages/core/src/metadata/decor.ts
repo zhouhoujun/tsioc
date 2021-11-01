@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { Service } from '../services/service';
 import { ModuleReflect, ModuleConfigure, AnnotationReflect } from './ref';
-import { IMiddleware, Middlewares, MiddlewareType, RouteInfo, RouteReflect } from '../middlewares/middleware';
+import { Middleware, Middlewares, MiddlewareType, RouteInfo, RouteReflect } from '../middlewares/middleware';
 import { ROOT_QUEUE } from '../middlewares/root';
 import { CanActive } from '../middlewares/guard';
 import { RouteResolver, Route } from '../middlewares/route';
@@ -263,7 +263,7 @@ export const Module: Module<ModuleMetadata> = createModuleDecorator<ModuleMetada
 export const DIModule = Module;
 
 
-export type HandleDecorator = <TFunction extends Type<IMiddleware>>(target: TFunction) => TFunction | void;
+export type HandleDecorator = <TFunction extends Type<Middleware>>(target: TFunction) => TFunction | void;
 
 /**
  * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
@@ -307,7 +307,7 @@ export interface Handle {
      * @param {Type<Middlewares>} [parent] the handle reg in the handle queue. default register in root handle queue.
      * @param {Type<Middleware>} [before] register this handle handle before this handle.
      */
-    (parent: Type<Middlewares>, before?: Type<IMiddleware>): HandleDecorator;
+    (parent: Type<Middlewares>, before?: Type<Middleware>): HandleDecorator;
 }
 
 /**
@@ -318,7 +318,7 @@ export interface Handle {
  */
 export const Handle: Handle = createDecorator<HandleMetadata>('Handle', {
     actionType: ['annoation', 'autorun'],
-    props: (parent?: Type<Middlewares> | string, before?: Type<IMiddleware>, options?: { guards?: Type<CanActive>[] }) =>
+    props: (parent?: Type<Middlewares> | string, before?: Type<Middleware>, options?: { guards?: Type<CanActive>[] }) =>
         (isString(parent) ? ({ route: parent, parent: before, ...options }) : ({ parent, before })) as HandleMetadata,
     design: {
         afterAnnoation: (ctx, next) => {

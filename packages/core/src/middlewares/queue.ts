@@ -2,7 +2,7 @@ import { Injectable, Type, isString, ProviderType, AsyncHandler, isFunction, Inj
 import { Context, ContextFactory } from './context';
 import { Request, RequestInit, RequestOption } from './request';
 import { Response } from './response';
-import { isMiddlwareType, Middleware, Middlewares, MiddlewareType } from './middleware';
+import { isMiddlware, isMiddlwareType, Middleware, Middlewares, MiddlewareType } from './middleware';
 
 
 /**
@@ -165,7 +165,7 @@ export class MessageQueue<T extends Context = Context> extends Middlewares<T> {
     }
 
     protected override parseHandle(state: RegisteredState, mdty: MiddlewareType): AsyncHandler<T> {
-        if (mdty instanceof Middleware) {
+        if (isMiddlware(mdty)) {
             return mdty.toHandle();
         } else if (isMiddlwareType(mdty)) {
             if (!state.isRegistered(mdty)) {
