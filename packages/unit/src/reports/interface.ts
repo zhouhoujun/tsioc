@@ -62,9 +62,9 @@ export interface ICaseDescribe {
  * suite hook for old unit test.
  *
  * @export
- * @interface ISuiteHook
+ * @interface SuiteHook
  */
-export interface ISuiteHook {
+export interface SuiteHook {
     fn: Function;
     /**
      * case test time out.
@@ -78,9 +78,9 @@ export interface ISuiteHook {
  * suite.
  *
  * @export
- * @interface ISuite
+ * @interface SuiteDescribe
  */
-export interface ISuiteDescribe {
+export interface SuiteDescribe {
     /**
      * suite describe.
      *
@@ -115,56 +115,56 @@ export interface ISuiteDescribe {
     /**
      * suite before hook for old unit test.
      *
-     * @type {ISuiteHook[]}
+     * @type {SuiteHook[]}
      */
-    before?: ISuiteHook[];
+    before?: SuiteHook[];
     /**
      * suite beforeEach hook for old unit test.
      *
-     * @type {ISuiteHook[]}
+     * @type {SuiteHook[]}
      */
-    beforeEach?: ISuiteHook[];
+    beforeEach?: SuiteHook[];
     /**
      * suite after hook for old unit test.
      *
-     * @type {ISuiteHook[]}
+     * @type {SuiteHook[]}
      */
-    after?: ISuiteHook[];
+    after?: SuiteHook[];
     /**
      * suite afterEach hook for old unit test.
      *
-     * @type {ISuiteHook[]}
+     * @type {SuiteHook[]}
      */
-    afterEach?: ISuiteHook[];
+    afterEach?: SuiteHook[];
 }
 
 /**
  * report
  *
  * @export
- * @interface ITestReport
+ * @interface TestReport
  */
-export interface ITestReport {
+export interface TestReport {
     /**
      * suites.
      *
-     * @type {Map<Token, ISuiteDescribe>}
+     * @type {Map<Token, SuiteDescribe>}
      */
-    suites: Map<Token, ISuiteDescribe>;
+    suites: Map<Token, SuiteDescribe>;
     /**
      * add suite.
      *
      * @param {Token} suit
-     * @param {ISuiteDescribe} describe
+     * @param {SuiteDescribe} describe
      */
-    addSuite(suit: Token, describe: ISuiteDescribe): void;
+    addSuite(suit: Token, describe: SuiteDescribe): void;
     /**
      * get suite.
      *
      * @param {Token} suit
-     * @returns {ISuiteDescribe}
+     * @returns {SuiteDescribe}
      */
-    getSuite(suit: Token): ISuiteDescribe;
+    getSuite(suit: Token): SuiteDescribe;
     /**
      * set suite completed.
      *

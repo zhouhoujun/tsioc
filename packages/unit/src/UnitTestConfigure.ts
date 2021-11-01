@@ -1,6 +1,6 @@
 import { Type } from '@tsdi/ioc';
 import { AnnotationMetadata, Configuration } from '@tsdi/core';
-import { ITestReport } from './reports/interface';
+import { TestReport } from './reports/interface';
 
 /**
  * unit test options.
@@ -30,8 +30,8 @@ export interface UnitTestConfigure extends Configuration {
     /**
      * resports.
      *
-     * @type {Token<ITestReport>[]}
+     * @type {Token<TestReport>[]}
      */
-    reporters?: Type<ITestReport>[];
+    reporters?: Type<TestReport>[];
 }
 

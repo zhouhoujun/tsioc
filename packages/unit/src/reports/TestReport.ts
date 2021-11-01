@@ -1,26 +1,22 @@
-import { Singleton, Inject, Token, Type, lang, tokenId, Injector } from '@tsdi/ioc';;
-import { ITestReport, ISuiteDescribe, ICaseDescribe } from './interface';
+import { Singleton, Inject, Token, lang, Injector } from '@tsdi/ioc';;
+import { TestReport, SuiteDescribe, ICaseDescribe } from './interface';
 import { Reporter, RealtimeReporter, UNIT_REPORTES } from './Reporter';
 
-/**
- * report token.
- */
-export const ReportsToken: Token<Type<Reporter>[]> = tokenId<Type<Reporter>[]>('unit-reports')
 
 /**
- * test report.
+ * default test report. implements {@link TestReport}
  *
  * @export
- * @class TestReport
- * @implements {ITestReport}
+ * @class DefaultTestReport
+ * @implements {TestReport}
  */
 @Singleton()
-export class TestReport implements ITestReport {
+export class DefaultTestReport implements TestReport {
 
     @Inject()
     injector!: Injector;
 
-    suites: Map<Token, ISuiteDescribe>;
+    suites: Map<Token, SuiteDescribe>;
 
     reports!: Reporter[];
     getReports() {
@@ -40,7 +36,7 @@ export class TestReport implements ITestReport {
         });
     }
 
-    addSuite(suit: Token, describe: ISuiteDescribe): void {
+    addSuite(suit: Token, describe: SuiteDescribe): void {
         if (!this.suites.has(suit)) {
             describe.start = new Date().getTime();
             // init suite must has no completed cases.
@@ -59,7 +55,7 @@ export class TestReport implements ITestReport {
         }
     }
 
-    getSuite(suit: Token): ISuiteDescribe {
+    getSuite(suit: Token): SuiteDescribe {
         return this.suites.get(suit)!;
     }
 

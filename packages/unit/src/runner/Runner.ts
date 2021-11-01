@@ -1,6 +1,6 @@
 import { Abstract, Type } from '@tsdi/ioc';
 import { Runnable } from '@tsdi/core';
-import { ISuiteDescribe, ICaseDescribe } from '../reports/interface';
+import { SuiteDescribe, ICaseDescribe } from '../reports/interface';
 
 /**
  * suite runner interface.
@@ -17,10 +17,10 @@ export abstract class UnitRunner extends Runnable {
     /**
      * run suite.
      *
-     * @param {ISuiteDescribe} desc
+     * @param {SuiteDescribe} desc
      * @returns {Promise<void>}
      */
-    abstract runSuite(desc: ISuiteDescribe): Promise<void>;
+    abstract runSuite(desc: SuiteDescribe): Promise<void>;
     /**
      * run case.
      *

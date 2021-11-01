@@ -1,8 +1,8 @@
 import { EMPTY_OBJ } from '@tsdi/ioc';
 import { Aspect, Around, Joinpoint, JoinpointState, AfterThrowing } from '@tsdi/aop';
 import { LoggerAspect } from '@tsdi/logs';
-import { TestReport } from '../reports/TestReport';
-import { ITestReport, ISuiteDescribe, ICaseDescribe } from '../reports/interface';
+import { DefaultTestReport } from '../reports/TestReport';
+import { TestReport, SuiteDescribe, ICaseDescribe } from '../reports/interface';
 import { UnitRunner } from '../runner/Runner';
 import { SuiteRunner } from '../runner/SuiteRunner';
 import { OldTestRunner } from '../runner/OldTestRunner';
@@ -13,10 +13,10 @@ import { OldTestRunner } from '../runner/OldTestRunner';
 })
 export class RunAspect extends LoggerAspect {
 
-    report!: ITestReport;
-    getReport(): ITestReport {
+    report!: TestReport;
+    getReport(): TestReport {
         if (!this.report) {
-            this.report = this.injector.resolve(TestReport);
+            this.report = this.injector.resolve(DefaultTestReport);
         }
         return this.report;
     }
@@ -44,7 +44,7 @@ export class RunAspect extends LoggerAspect {
     @Around('execution(*.runSuite)')
     logSuite(joinPoint: Joinpoint) {
         let runner = joinPoint.target as UnitRunner;
-        let desc = joinPoint.args[0] as ISuiteDescribe;
+        let desc = joinPoint.args[0] as SuiteDescribe;
         switch (joinPoint.state) {
             case JoinpointState.Before:
                 this.getReport().addSuite(runner.getInstanceType() || desc.describe, desc);

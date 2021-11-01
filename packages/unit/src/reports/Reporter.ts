@@ -1,24 +1,44 @@
-import { Token, lang, Type, Abstract, isFunction, tokenId } from '@tsdi/ioc';
-import { ISuiteDescribe, ICaseDescribe } from './interface';
+import { Token, Abstract, tokenId } from '@tsdi/ioc';
+import { SuiteDescribe, ICaseDescribe } from './interface';
 
 
+/**
+ * unit report mutil token.
+ */
 export const UNIT_REPORTES = tokenId<Reporter[]>('UNIT_REPORTES');
 
 /**
  * reportor.
+ *
+ */
+export interface Reporter {
+    /**
+     * reporter render.
+     * @param suites 
+     */
+    render(suites: Map<Token, SuiteDescribe>): Promise<void>;
+    /**
+     * reporter track.
+     * @param error 
+     */
+    track(error: Error): void;
+}
+
+
+/**
+ * abstract reportor. base reportor.
  *
  * @export
  * @abstract
  * @class Reporter
  */
 @Abstract()
-export abstract class Reporter {
-
+export abstract class AbstractReporter {
     /**
      * reporter render.
      * @param suites 
      */
-    abstract render(suites: Map<Token, ISuiteDescribe>): Promise<void>;
+    abstract render(suites: Map<Token, SuiteDescribe>): Promise<void>;
     /**
      * reporter track.
      * @param error 
@@ -30,14 +50,14 @@ export abstract class Reporter {
  * realtime reporter.
  */
 @Abstract()
-export abstract class RealtimeReporter extends Reporter {
+export abstract class RealtimeReporter extends AbstractReporter {
     /**
      * render suite.
      *
      * @abstract
-     * @param {ISuiteDescribe} desc
+     * @param {SuiteDescribe} desc
      */
-    abstract renderSuite(desc: ISuiteDescribe): void;
+    abstract renderSuite(desc: SuiteDescribe): void;
     /**
      * render case.
      *
@@ -45,15 +65,4 @@ export abstract class RealtimeReporter extends Reporter {
      * @param {ICaseDescribe} desc
      */
     abstract renderCase(desc: ICaseDescribe): void;
-}
-
-/**
- * is target reporter.
- *
- * @export
- * @param {*} target
- * @returns
- */
-export function isReporterClass(target: any): target is Type<Reporter> {
-    return isFunction(target) && lang.isBaseOf(target, Reporter);
 }

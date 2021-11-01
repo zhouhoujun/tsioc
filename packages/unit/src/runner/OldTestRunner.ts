@@ -1,6 +1,6 @@
 import { lang, Singleton, isFunction, Injector } from '@tsdi/ioc';
 import { Assert } from '../assert/assert';
-import { ISuiteDescribe, ICaseDescribe, ISuiteHook } from '../reports/interface';
+import { SuiteDescribe, ICaseDescribe } from '../reports/interface';
 import { UnitRunner } from './Runner';
 
 
@@ -36,7 +36,7 @@ export class OldTestRunner extends UnitRunner {
     timeout: number;
     describe!: string;
 
-    suites: ISuiteDescribe[];
+    suites: SuiteDescribe[];
 
     constructor(private injector: Injector) {
         super()
@@ -64,13 +64,13 @@ export class OldTestRunner extends UnitRunner {
         let suites = this.suites;
 
         // BDD style
-        let describe = globals.describe = (name: string, fn: () => any, superDesc?: ISuiteDescribe) => {
+        let describe = globals.describe = (name: string, fn: () => any, superDesc?: SuiteDescribe) => {
             if (!isFunction(fn)) return;
             let suiteDesc = {
                 ...superDesc,
                 describe: name,
                 cases: []
-            } as ISuiteDescribe;
+            } as SuiteDescribe;
 
             suites.push(suiteDesc);
 
@@ -119,12 +119,12 @@ export class OldTestRunner extends UnitRunner {
         };
 
         // TDD style
-        let suite = globals.suite = function (name: string, fn: () => any, superDesc?: ISuiteDescribe) {
+        let suite = globals.suite = function (name: string, fn: () => any, superDesc?: SuiteDescribe) {
             let suiteDesc = {
                 ...superDesc,
                 describe: name,
                 cases: []
-            } as ISuiteDescribe;
+            } as SuiteDescribe;
             suites.push(suiteDesc);
 
             globals.suite = (subname: string, suitefn: () => any) => {
@@ -173,7 +173,7 @@ export class OldTestRunner extends UnitRunner {
         });
     }
 
-    override async runSuite(desc: ISuiteDescribe): Promise<void> {
+    override async runSuite(desc: SuiteDescribe): Promise<void> {
         await this.runBefore(desc);
         await this.runTest(desc);
         await this.runAfter(desc);
@@ -209,7 +209,7 @@ export class OldTestRunner extends UnitRunner {
         return defer.promise;
     }
 
-    async runHook(describe: ISuiteDescribe, action: string, desc: string) {
+    async runHook(describe: SuiteDescribe, action: string, desc: string) {
         await lang.step(
             ((describe as any)[action] || [])
                 .map((hk: ICaseDescribe) => () => this.runTimeout(
@@ -218,27 +218,27 @@ export class OldTestRunner extends UnitRunner {
                     hk.timeout || describe.timeout)));
     }
 
-    async runBefore(describe: ISuiteDescribe) {
+    async runBefore(describe: SuiteDescribe) {
         await this.runHook(describe, 'before', 'suite before');
     }
 
-    async runBeforeEach(describe: ISuiteDescribe) {
+    async runBeforeEach(describe: SuiteDescribe) {
         await this.runHook(describe, 'beforeEach', 'before each');
     }
 
-    async runAfterEach(describe: ISuiteDescribe) {
+    async runAfterEach(describe: SuiteDescribe) {
         await this.runHook(describe, 'afterEach', 'after case each');
     }
 
-    async runAfter(describe: ISuiteDescribe) {
+    async runAfter(describe: SuiteDescribe) {
         await this.runHook(describe, 'after', 'suite after');
     }
 
-    async runTest(desc: ISuiteDescribe) {
+    async runTest(desc: SuiteDescribe) {
         await lang.step(desc.cases.map(caseDesc => () => this.runCase(caseDesc, desc)));
     }
 
-    override async runCase(caseDesc: ICaseDescribe, suiteDesc?: ISuiteDescribe): Promise<ICaseDescribe> {
+    override async runCase(caseDesc: ICaseDescribe, suiteDesc?: SuiteDescribe): Promise<ICaseDescribe> {
         try {
             await this.runBeforeEach(suiteDesc!);
             await this.runTimeout(

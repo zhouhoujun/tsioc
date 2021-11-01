@@ -9,7 +9,7 @@ import { RunAspect } from './aop/RunAspect';
 import { UnitRunner } from './runner/Runner';
 import { OldTestRunner } from './runner/OldTestRunner';
 import { SuiteRunner } from './runner/SuiteRunner';
-import { TestReport } from './reports/TestReport';
+import { DefaultTestReport } from './reports/TestReport';
 
 
 @Module({
@@ -23,7 +23,7 @@ import { TestReport } from './reports/TestReport';
       OldTestRunner,
       { provide: UnitRunner, useClass: SuiteRunner },
       UnitTestRunner,
-      TestReport
+      DefaultTestReport
    ],
    bootstrap: UnitTestRunner
 })

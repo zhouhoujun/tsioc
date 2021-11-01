@@ -3,7 +3,7 @@ import { TargetRef } from '@tsdi/core';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata/decor';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata/meta';
 import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
-import { ISuiteDescribe, ICaseDescribe } from '../reports/interface';
+import { SuiteDescribe, ICaseDescribe } from '../reports/interface';
 import { UnitRunner } from './Runner';
 
 /**
@@ -39,9 +39,9 @@ export class SuiteRunner extends UnitRunner {
     /**
      * get suite describe.
      *
-     * @returns {ISuiteDescribe}
+     * @returns {SuiteDescribe}
      */
-    getSuiteDescribe(): ISuiteDescribe {
+    getSuiteDescribe(): SuiteDescribe {
         let meta = this.tgRef.reflect.annotation as SuiteMetadata;
         this.timeout = (meta && meta.timeout) ? meta.timeout : (3 * 60 * 60 * 1000);
         this.describe = meta.describe || this.tgRef.reflect.class.className;
@@ -52,7 +52,7 @@ export class SuiteRunner extends UnitRunner {
         }
     }
 
-    override async runSuite(desc: ISuiteDescribe): Promise<void> {
+    override async runSuite(desc: SuiteDescribe): Promise<void> {
         await this.runBefore(desc);
         await this.runTest(desc);
         await this.runAfter(desc);
@@ -92,7 +92,7 @@ export class SuiteRunner extends UnitRunner {
         return defer.promise;
     }
 
-    async runBefore(describe: ISuiteDescribe) {
+    async runBefore(describe: SuiteDescribe) {
         let befores = this.tgRef.reflect.class.getDecorDefines<BeforeTestMetadata>(Before.toString(), 'method');
         await lang.step(
             befores.map(df => () => {
@@ -124,7 +124,7 @@ export class SuiteRunner extends UnitRunner {
         }));
     }
 
-    async runAfter(describe: ISuiteDescribe) {
+    async runAfter(describe: SuiteDescribe) {
         let afters = this.tgRef.reflect.class.getDecorDefines<BeforeTestMetadata>(After.toString(), 'method');
         await lang.step(
             afters.map(df => () => {
@@ -135,7 +135,7 @@ export class SuiteRunner extends UnitRunner {
             }));
     }
 
-    async runTest(desc: ISuiteDescribe) {
+    async runTest(desc: SuiteDescribe) {
         let tests = this.tgRef.reflect.class.getDecorDefines<TestCaseMetadata>(Test.toString(), 'method');
         await lang.step(
             tests.map(df => {

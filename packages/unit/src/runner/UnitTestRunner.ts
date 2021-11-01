@@ -1,7 +1,7 @@
 import { Injectable, isString, isClass, isArray, lang, refl, Injector } from '@tsdi/ioc';
 import { AnnotationReflect, ApplicationContext, Runnable } from '@tsdi/core';
 import { OldTestRunner } from './OldTestRunner';
-import { TestReport } from '../reports/TestReport';
+import { DefaultTestReport } from '../reports/TestReport';
 import { UnitTestConfigure } from '../UnitTestConfigure';
 
 
@@ -37,6 +37,6 @@ export class UnitTestRunner extends Runnable {
         oldRunner.unregisterGlobalScope();
         await oldRunner.run();
         await lang.step(suites.filter(v => v && refl.get<AnnotationReflect>(v)?.annoType === 'suite').map(s => () => ctx.bootstrap(s)));
-        await injector.resolve(TestReport).report();
+        await injector.resolve(DefaultTestReport).report();
     }
 }

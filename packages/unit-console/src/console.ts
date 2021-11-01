@@ -1,6 +1,6 @@
 import { Token, lang } from '@tsdi/ioc';
 import { Module } from '@tsdi/core';
-import { ISuiteDescribe, RealtimeReporter, ICaseDescribe } from '@tsdi/unit';
+import { SuiteDescribe, RealtimeReporter, ICaseDescribe } from '@tsdi/unit';
 import { ServerBootstrapModule, ServerLogsModule } from '@tsdi/platform-server';
 import * as chalk from 'chalk';
 
@@ -18,7 +18,7 @@ export class ConsoleReporter extends RealtimeReporter {
         throw error;
     }
 
-    override renderSuite(desc: ISuiteDescribe): void {
+    override renderSuite(desc: SuiteDescribe): void {
         console.log('\n  ', desc.describe, '\n');
     }
 
@@ -26,10 +26,10 @@ export class ConsoleReporter extends RealtimeReporter {
         console.log('    ', desc.error ? chalk.red('x') : chalk.green('√'), chalk.gray(desc.title));
     }
 
-    override async render(suites: Map<Token, ISuiteDescribe>): Promise<void> {
+    override async render(suites: Map<Token, SuiteDescribe>): Promise<void> {
         let reportStr = '';
-        let first: ISuiteDescribe | undefined;
-        let last: ISuiteDescribe | undefined;
+        let first: SuiteDescribe | undefined;
+        let last: SuiteDescribe | undefined;
         let sus = Array.from(suites.values());
         let fails: Record<string, string[]> = {};
         let successed = 0, failed = 0;

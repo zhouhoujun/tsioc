@@ -5,7 +5,7 @@ import { Assert } from './assert/assert';
 import * as assert from 'assert';
 import * as expect from 'expect';
 import { ExpectToken } from './assert/expects';
-import { Reporter, UNIT_REPORTES } from './reports/Reporter';
+import { AbstractReporter, UNIT_REPORTES } from './reports/Reporter';
 
 /**
  * unit test configure register.
@@ -26,7 +26,7 @@ export class UnitTestStartup implements Service {
         if (!inj.has(ExpectToken)) {
             inj.setValue(ExpectToken, expect);
         }
-        const reps = inj.get(Application).loadTypes.filter(l => lang.isBaseOf(l, Reporter));
+        const reps = inj.get(Application).loadTypes.filter(l => lang.isBaseOf(l, AbstractReporter));
         if (reps.length) {
             inj.inject(reps.map(r => ({ provide: UNIT_REPORTES, useExisting: r, multi: true } as ProviderType)))
         }
