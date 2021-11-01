@@ -591,6 +591,9 @@ export const RouteMapping: RouteMapping = createDecorator<ProtocolRouteMapingMet
     }
 });
 
+/**
+ * request parameter metadata.
+ */
 export interface RequsetParameterMetadata extends ParameterMetadata {
     /**
      * field scope.

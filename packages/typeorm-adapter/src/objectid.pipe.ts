@@ -9,9 +9,7 @@ export const ObjectIDToken: Token<Type> = tokenId<Type>('ObjectID');
 @Pipe('objectId')
 export class ParseObjectIdPipe implements PipeTransform {
 
-    constructor(@Inject(ObjectIDToken) private type: Type) {
-
-    }
+    constructor(@Inject(ObjectIDToken) private type: Type) { }
 
     transform(value: any) {
         if(!this.type) {

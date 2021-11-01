@@ -2,7 +2,7 @@ import { EMPTY_OBJ } from '@tsdi/ioc';
 import { Aspect, Around, Joinpoint, JoinpointState, AfterThrowing } from '@tsdi/aop';
 import { LoggerAspect } from '@tsdi/logs';
 import { TestReport } from '../reports/TestReport';
-import { ITestReport, ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
+import { ITestReport, ISuiteDescribe, ICaseDescribe } from '../reports/interface';
 import { UnitRunner } from '../runner/Runner';
 import { SuiteRunner } from '../runner/SuiteRunner';
 import { OldTestRunner } from '../runner/OldTestRunner';

@@ -9,7 +9,6 @@ export * from './errors';
 export * from './http';
 export * from './http2';
 
-export * from './IBootApplication';
 export * from './BootApplication';
 
 

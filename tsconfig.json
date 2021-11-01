@@ -32,6 +32,9 @@
       "@tsdi/typeorm-datapter": [
         "packages/typeorm-datapter/src"
       ],
+      "@tsdi/swagger": [
+        "packages/swagger/src"
+      ],
       "@tsdi/components": [
         "packages/components/src"
       ],

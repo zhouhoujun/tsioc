@@ -1,6 +1,6 @@
 import { Type } from '@tsdi/ioc';
 import { AnnotationMetadata, Configuration } from '@tsdi/core';
-import { ITestReport } from './reports/ITestReport';
+import { ITestReport } from './reports/interface';
 
 /**
  * unit test options.

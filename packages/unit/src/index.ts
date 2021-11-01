@@ -10,7 +10,7 @@ export * from './runner/SuiteRunner';
 export * from './runner/OldTestRunner';
 export * from './runner/UnitTestRunner';
 
-export * from './reports/ITestReport';
+export * from './reports/interface';
 export * from './reports/TestReport';
 export * from './reports/Reporter';
 

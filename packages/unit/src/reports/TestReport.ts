@@ -1,5 +1,5 @@
 import { Singleton, Inject, Token, Type, lang, tokenId, Injector } from '@tsdi/ioc';;
-import { ITestReport, ISuiteDescribe, ICaseDescribe } from './ITestReport';
+import { ITestReport, ISuiteDescribe, ICaseDescribe } from './interface';
 import { Reporter, RealtimeReporter, UNIT_REPORTES } from './Reporter';
 
 /**

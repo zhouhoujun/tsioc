@@ -1,6 +1,6 @@
 import { lang, Singleton, isFunction, Injector } from '@tsdi/ioc';
 import { Assert } from '../assert/assert';
-import { ISuiteDescribe, ICaseDescribe, ISuiteHook } from '../reports/ITestReport';
+import { ISuiteDescribe, ICaseDescribe, ISuiteHook } from '../reports/interface';
 import { UnitRunner } from './Runner';
 
 

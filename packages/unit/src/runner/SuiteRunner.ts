@@ -2,9 +2,9 @@ import { lang, Injectable } from '@tsdi/ioc';
 import { TargetRef } from '@tsdi/core';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata/decor';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata/meta';
-import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
-import { UnitRunner } from './Runner';
 import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
+import { ISuiteDescribe, ICaseDescribe } from '../reports/interface';
+import { UnitRunner } from './Runner';
 
 /**
  * Suite runner.
