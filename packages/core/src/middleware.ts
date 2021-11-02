@@ -1,5 +1,5 @@
+import { Module } from '@tsdi/ioc';
 import { ContextFactory, RouteVaildator } from './middlewares/context';
-import { Module } from './metadata/decor';
 import { MessageQueue } from './middlewares/queue';
 import { RootMessageQueue } from './middlewares/root';
 import { MsgRouteVaildator, BASE_CONTEXT_FACTORY_IMPL } from './middlewares/base';
@@ -8,6 +8,7 @@ import {
     SlicePipe, SortPipe, LowerCasePipe, UpperCasePipe, JsonPipe, DateFormatPipe, ParseStringPipe,
     ParseBoolPipe, ParseEnumPipe, ParseFloatPipe, ParseIntPipe, ParseNumberPipe, DatePipe
 } from './pipes'
+
 
 
 /**

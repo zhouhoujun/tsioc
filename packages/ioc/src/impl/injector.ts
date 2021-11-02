@@ -1,61 +1,36 @@
-import { ClassType, LoadType, Modules, Type } from './types';
+import { ClassType, LoadType, Modules, Type } from '../types';
 import {
     ProviderType, ResolveOption, ServicesOption, MethodType, InjectorScope, Factory,
     ProviderOption, RegisterOption, TypeOption, FnType, FnRecord, ActionProvider, Container,
-    Injector, INJECT_IMPL, ModuleLoader, Registered, RegisteredState
-} from './injector';
-import { isToken, Token } from './tokens';
-import { CONTAINER, INJECTOR, ROOT_INJECTOR, TARGET } from './metadata/tk';
-import { Abstract } from './metadata/fac';
-import { cleanObj, getClass, getTypes, isBaseOf, mapEach } from './utils/lang';
-import { KeyValueProvider, StaticProviders } from './providers';
+    Injector, INJECT_IMPL, RegisteredState, ServicesProvider
+} from '../injector';
+import { Token } from '../tokens';
+import { CONTAINER, INJECTOR, ROOT_INJECTOR, TARGET } from '../metadata/tk';
+import { cleanObj, getClass, getTypes, mapEach } from '../utils/lang';
+import { KeyValueProvider, StaticProviders } from '../providers';
 import {
-    isArray, isClass, isDefined, isFunction, isNil, isPlainObject, isString,
+    isArray, isClass, isDefined, isFunction, isNil, isPlainObject,
     isTypeObject, isTypeReflect, EMPTY, EMPTY_OBJ, isPrimitiveType
-} from './utils/chk';
-import { DesignContext } from './actions/ctx';
-import { DesignLifeScope } from './actions/design';
-import { Action, IActionSetup } from './action';
-import { Handler } from './utils/hdl';
-import { RuntimeLifeScope } from './actions/runtime';
-import { TypeReflect } from './metadata/type';
-import { get } from './metadata/refl';
-import { InvocationContext, OperationArgumentResolver, OperationInvokerFactory, ReflectiveOperationInvoker } from './invoker';
+} from '../utils/chk';
+import { DesignContext } from '../actions/ctx';
+import { DesignLifeScope } from '../actions/design';
+import { RuntimeLifeScope } from '../actions/runtime';
+import { TypeReflect } from '../metadata/type';
+import { get } from '../metadata/refl';
+import { InvocationContext, OperationArgumentResolver, OperationInvokerFactory, ReflectiveOperationInvoker } from '../invoker';
 import { DefaultModuleLoader } from './loader';
-import { ResolveServicesScope, ServicesContext } from './actions/serv';
+import { ResolveServicesScope } from '../actions/serv';
+import { ModuleLoader } from '../module.loader';
+import { resolveToken } from './resolves';
+import { Services } from './services';
+import { RegisteredStateImpl } from './state';
+import { ActionProviderImpl } from './action.provider';
 
 
 
-/**
- * strategy of di.
- */
-export interface Strategy {
-    has?(injector: Injector, token: Token, deep?: boolean): boolean;
-    hasValue?(injector: Injector, token: Token, deep?: boolean): boolean;
-    resolve?<T>(injector: Injector, token: Token<T>, provider?: Injector): T;
-    getProvider?<T>(injector: Injector, token: Token<T>): Type<T>;
-    iterator?(injector: Injector, callbackfn: (fac: FnRecord, key: Token, resolvor?: Injector) => void | boolean, deep?: boolean): void | boolean;
-}
-
-export const EMPTY_STRATEGY: Strategy = {};
-
-export const INJECT_STRATEGY: Strategy = {
-    has(injector: Injector, token: Token, deep?: boolean): boolean {
-        return deep && injector.parent ? injector.parent.has(token, deep) : false;
-    },
-    hasValue(injector: Injector, token: Token, deep?: boolean): boolean {
-        return deep && injector.parent ? injector.parent.hasValue(token, deep) : false;
-    },
-    resolve<T>(injector: Injector, token: Token<T>, provider?: Injector): T {
-        return injector.parent?.get(token, provider)!;
-    },
-    getProvider<T>(injector: Injector, token: Token<T>): Type<T> {
-        return injector.parent?.getTokenProvider(token)!;
-    },
-    iterator(injector: Injector, callbackfn: (fac: FnRecord, key: Token, resolvor?: Injector) => void | boolean, deep?: boolean): void | boolean {
-        return deep && injector.parent?.iterator(callbackfn, deep);
-    }
-}
+const platformAlias = (token: any) => token === Injector || token === INJECTOR || token === Container || token === CONTAINER;
+const rootAlias = (token: any) => token === Injector || token === INJECTOR || token == ROOT_INJECTOR;
+const injectAlias = (token: any) => token === Injector || token === INJECTOR;
 
 /**
  * provider container.
@@ -78,7 +53,7 @@ export class DefaultInjector extends Injector {
     protected factories: Map<Token, FnRecord>;
     protected destCb!: () => void;
 
-    constructor(providers: ProviderType[] = EMPTY, readonly parent?: Injector, readonly scope?: string | InjectorScope, private strategy: Strategy = INJECT_STRATEGY) {
+    constructor(providers: ProviderType[] = EMPTY, readonly parent?: Injector, readonly scope?: InjectorScope) {
         super();
         this.factories = new Map();
         if (parent) {
@@ -91,30 +66,27 @@ export class DefaultInjector extends Injector {
         this.inject(providers);
     }
 
-    protected initScope(scope?: string) {
-        const val = { value: this };
-        switch (scope) {
-            case 'platform':
-                this.factories.set(Container, val);
-                this.factories.set(CONTAINER, val);
-                this.factories.set(INJECTOR, val);
-                this.factories.set(Injector, val);
-                this._state = new RegisteredStateImpl();
-                this._action = new ActionProviderImpl([], this);
-                registerCores(this);
+    protected isSelf(token: Token) {
+        switch (this.scope) {
+            case 'platfrom':
+                return platformAlias(token);
             case 'root':
-                this.factories.set(ROOT_INJECTOR, val);
-                this.factories.set(INJECTOR, val);
-                this.factories.set(Injector, val);
-                break;
+                return rootAlias(token);
             case 'provider':
             case 'invoked':
             case 'parameter':
-                break;
+                return false;
             default:
-                this.factories.set(INJECTOR, val);
-                this.factories.set(Injector, val);
-                break;
+                return injectAlias(token);
+        }
+    }
+
+
+    protected initScope(scope?: InjectorScope) {
+        if (scope === 'platfrom') {
+            this._state = new RegisteredStateImpl();
+            this._action = new ActionProviderImpl([], this);
+            registerCores(this);
         }
     }
 
@@ -405,27 +377,10 @@ export class DefaultInjector extends Injector {
      * @param {Injector} provider
      * @returns {T}
      */
-    get<T>(key: Token<T>, notFoundValue?: T): T;
-    /**
-     * get token factory resolve instace in current BaseInjector.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {Injector} provider
-     * @returns {T}
-     */
-    get<T>(key: Token<T>, provider?: Injector, notFoundValue?: T): T;
-    get<T>(key: Token<T>, arg1?: Injector | T, arg2?: T): T {
-        let provider: Injector | undefined;
-        let notFoundValue: T | undefined;
-        if (arg1 instanceof Injector) {
-            provider = arg1;
-            notFoundValue = arg2 ?? null!;
-        } else {
-            notFoundValue = arg1 ?? null!;
-        }
-        return resolveToken(this.factories.get(key)!, provider || this)
-            ?? this.strategy.resolve?.(this, key, provider || this)
+    get<T>(token: Token<T>, notFoundValue?: T): T {
+        if (this.isSelf(token)) return this as any;
+        return resolveToken(this.factories.get(token)!, this)
+            ?? this.strategy.resolve?.(this, token, this)
             ?? notFoundValue;
     }
 
@@ -499,7 +454,7 @@ export class DefaultInjector extends Injector {
     protected resolveFailed<T>(injector: Injector, state: RegisteredState, token: Token<T>, regify?: boolean, defaultToken?: Token): T {
         if (regify && isFunction(token) && !state?.isRegistered(token)) {
             this.regType(token as Type);
-            return this.get(token, injector);
+            return this.get(token);
         }
         if (defaultToken) {
             return injector.get(defaultToken);
@@ -752,7 +707,6 @@ export class DefaultInjector extends Injector {
             (args.length === 1 && isArray(args[0])) ? args[0] : args) ?? EMPTY;
     }
 
-
     protected merge(from: DefaultInjector, to: DefaultInjector, filter?: (key: Token) => boolean) {
         from.factories.forEach((rd, key) => {
             if (key === Injector || key === INJECTOR) return;
@@ -771,7 +725,7 @@ export class DefaultInjector extends Injector {
         if (this.parent) {
             !this.parent.destroyed && this.parent.offDestory(this.destCb);
         }
-        if (this.scope === 'root') {
+        if (this.scope === 'platfrom') {
             this._action.destroy();
             this._state.destroy();
         }
@@ -783,76 +737,6 @@ export class DefaultInjector extends Injector {
     }
 }
 
-/**
- * service provider.
- */
-@Abstract()
-export abstract class ServicesProvider {
-    /**
-    * get all service extends type.
-    *
-    * @template T
-    * @param {Injector} injector
-    * @param {Token<T>} token servive token or express match token.
-    * @param {ProviderType[]} providers
-    * @returns {T[]} all service instance type of token type.
-    */
-    abstract getServices<T>(injector: Injector, token: Token<T>, providers: ProviderType[]): T[];
-    /**
-     * get all service extends type.
-     *
-     * @template T
-     * @param {Injector} injector
-     * @param {ServicesOption<T>} option servive token or express match token.
-     * @returns {T[]} all service instance type of token type.
-     */
-    abstract getServices<T>(injector: Injector, option: ServicesOption<T>): T[];
-}
-
-
-/**
- * resolve token.
- * @param rd 
- * @param provider 
- * @returns 
- */
-export function resolveToken<T>(rd: FnRecord<T>, provider: Injector): T {
-    if (!rd) return null!;
-
-    if (!isNil(rd.value)) return rd.value;
-
-    switch (rd.fnType) {
-        case 'cotr':
-            return new (rd.fn as Type)(...createArgs(rd.deps!, provider));
-        case 'fac':
-            return rd.fn?.(...createArgs(rd.deps!, provider));
-        case 'inj':
-        default:
-            if (rd.expires) {
-                if ((rd.expires + rd.ltop!) < Date.now()) {
-                    rd.ltop = Date.now();
-                    return rd.cache!;
-                }
-                rd.expires = null!;
-                rd.cache = null!;
-                rd.ltop = null!;
-            }
-            return rd.fn?.(provider);
-
-    }
-}
-
-function createArgs(deps: any[], provider: Injector): any[] {
-    return deps?.map(d => {
-        if (isToken(d)) {
-            return provider.get(d);
-        } else if (isFunction(d.fn) && (d.fnType === 'cotr' || d.fnType === 'fac' || d.fnType === 'inj')) {
-            return resolveToken(d, provider);
-        } else {
-            return d;
-        }
-    }) ?? EMPTY;
-}
 
 
 INJECT_IMPL.create = (providers: ProviderType[], parent?: Injector, scope?: InjectorScope) => {
@@ -914,223 +798,6 @@ function computeDeps(provider: StaticProviders) {
     return deps ?? EMPTY;
 }
 
-
-/**
- * service provider.
- */
-class Services implements ServicesProvider {
-
-    static ρNPT = true;
-    private servicesScope!: ResolveServicesScope;
-
-    constructor(private readonly injector: Injector) { }
-    /**
-    * get all service extends type.
-    *
-    * @template T
-    * @param {Injector} injector
-    * @param {Token<T>} token servive token or express match token.
-    * @param {ProviderType[]} providers
-    * @returns {T[]} all service instance type of token type.
-    */
-    getServices<T>(injector: Injector, token: Token<T>, providers: ProviderType[]): T[];
-    /**
-     * get all service extends type.
-     *
-     * @template T
-     * @param {Injector} injector
-     * @param {ServicesOption<T>} option servive token or express match token.
-     * @returns {T[]} all service instance type of token type.
-     */
-    getServices<T>(injector: Injector, option: ServicesOption<T>): T[];
-    getServices<T>(injector: Injector, target: Token<T> | ServicesOption<T>, args?: ProviderType[]): T[] {
-        let providers: ProviderType[];
-        if (isPlainObject(target)) {
-            providers = (target as ServicesOption<T>).providers || [];
-            if ((target as ServicesOption<T>).target) {
-                providers.push({ provide: TARGET, useValue: (target as ServicesOption<T>).target });
-            }
-        } else {
-            providers = args || EMPTY;
-        }
-        let context = {
-            injector,
-            ...isPlainObject(target) ? target : { token: target },
-        } as ServicesContext;
-
-        this.initTargetRef(context);
-        if (!this.servicesScope) {
-            this.servicesScope = this.injector.action().get(ResolveServicesScope);
-        }
-
-        const services: T[] = [];
-        this.servicesScope.execute(context);
-        const pdr = providers.length ? Injector.create(providers, injector, 'provider') : injector;
-        context.services.forEach(rd => {
-            services.push(resolveToken(rd, pdr));
-        });
-        providers.length && pdr.destroy();
-        context.services.clear();
-        // clean obj.
-        cleanObj(context);
-        return services;
-    }
-
-    private initTargetRef(ctx: ServicesContext) {
-        let targets = (isArray(ctx.target) ? ctx.target : [ctx.target]).filter(t => t).map(tr => isFunction(tr) ? tr : getClass(tr));
-        if (targets.length) {
-            ctx.targetRefs = targets;
-        }
-    }
-}
-
-/**
- * registered state.
- */
-class RegisteredStateImpl implements RegisteredState {
-
-    private states: Map<ClassType, Registered>;
-    constructor() {
-        this.states = new Map();
-    }
-
-    /**
-     * get injector
-     * @param type
-     */
-    getInjector<T extends Injector = Injector>(type: ClassType): T {
-        return this.states.get(type)?.injector as T;
-    }
-
-    /**
-     * get injector
-     * @param type
-     */
-    getTypeProvider(type: ClassType): Injector {
-        return this.states.get(type)?.providers!;
-    }
-
-    setTypeProvider(type: ClassType | TypeReflect, providers: ProviderType[]) {
-        const trefl = isFunction(type) ? get(type) : type;
-        trefl.providers.push(...providers);
-        const state = this.states.get(trefl.type);
-        if (state) {
-            if (!state.providers) {
-                state.providers = Injector.create(providers, state.injector as Injector, 'provider');
-            } else {
-                state.providers.inject(providers);
-            }
-        }
-    }
-
-    getInstance<T>(type: ClassType<T>, provider?: Injector): T {
-        const state = this.states.get(type)!;
-        return state.providers ? state.providers.get(type, provider) : state.injector.get(type, provider);
-    }
-
-    resolve<T>(token: ClassType<T>, providers?: ProviderType[]): T {
-        const state = this.states.get(token)!;
-        return state.providers ? state.providers.resolve(token, providers) : state.injector.resolve(token, providers);
-    }
-
-    getRegistered<T extends Registered>(type: ClassType): T {
-        return this.states.get(type) as T;
-    }
-
-    regType<T extends Registered>(type: ClassType, data: T) {
-        const state = this.states.get(type);
-        if (state) {
-            Object.assign(state, data);
-        } else {
-            this.states.set(type, data);
-        }
-    }
-
-    deleteType(type: ClassType) {
-        const state = this.states.get(type);
-        if (state) {
-            state.providers?.destroy();
-            const injector = state.injector;
-            if (state.provides?.length && injector) {
-                state.provides.forEach(p => state.injector.unregister(p));
-            }
-            cleanObj(state);
-        }
-        this.states.delete(type);
-    }
-
-    isRegistered(type: ClassType): boolean {
-        return this.states.has(type);
-    }
-
-    destroy() {
-        this.states.forEach(v => {
-            if (!v) return;
-            v.providers?.destroy();
-            v.injector?.destroy();
-            cleanObj(v);
-        });
-        this.states.clear();
-    }
-
-}
-
-/**
- * action injector.
- */
-class ActionProviderImpl extends DefaultInjector implements ActionProvider {
-
-    constructor(providers: ProviderType[], parent: Injector) {
-        super(providers, parent, 'provider');
-    }
-
-    protected override initParent(parent: Injector) {
-
-    }
-
-    /**
-     * get token factory resolve instace in current BaseInjector.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {Injector} provider
-     * @returns {T}
-     */
-    override get<T>(key: Token<T>, prvoider?: Injector, notFoundValue?: T): T {
-        if (isFunction(key) && !this.has(key)) {
-            this.registerAction(key as Type);
-        }
-        return super.get(key, prvoider, notFoundValue);
-    }
-
-    regAction(...types: Type<Action>[]): this {
-        types.forEach(type => {
-            if (this.has(type)) return;
-            this.registerAction(type);
-        });
-        return this;
-    }
-
-    protected override regType<T>(target: Type<T>) {
-        if (isBaseOf(target, Action)) {
-            this.registerAction(target);
-            return;
-        }
-        super.regType(target);
-    }
-
-    getAction<T extends Handler>(target: Token<Action>): T {
-        return this.get(target)?.toHandler() as T ?? null;
-    }
-
-    protected registerAction(type: Type<Action>) {
-        if (this.has(type)) return true;
-        const instance = new type(this) as Action & IActionSetup;
-
-        this.setValue(type, instance);
-        if (isFunction(instance.setup)) instance.setup();
-    }
-}
 
 const resolves: OperationArgumentResolver[] = [
     {

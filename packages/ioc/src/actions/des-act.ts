@@ -37,7 +37,7 @@ export class DesignClassScope extends IocRegScope<DesignContext> implements IAct
 
 export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): void {
     if (ctx.reflect.providedIn === 'root') {
-        ctx.regIn = ctx.reflect.providedIn;
+        ctx.providedIn = ctx.reflect.providedIn;
         ctx.injector = ctx.injector.get(ROOT_INJECTOR);
     }
     const state = ctx.state = genState(ctx.injector, ctx.provide);

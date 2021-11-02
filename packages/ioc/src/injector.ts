@@ -9,6 +9,7 @@ import { Handler } from './utils/hdl';
 import { Action } from './action';
 import { ClassProvider, ExistingProvider, FactoryProvider, StaticProvider, ValueProvider } from './providers';
 import { InvocationContext, OperationArgumentResolver } from './invoker';
+import { ModuleLoader } from './module.loader';
 
 
 /**
@@ -58,28 +59,18 @@ export abstract class Injector implements Destroyable {
     abstract has<T>(token: Token<T>, deep?: boolean): boolean;
     /**
      * has value or not.
-     * @param key
+     * @param token
      */
-    abstract hasValue<T>(key: Token<T>, deep?: boolean): boolean;
+    abstract hasValue<T>(token: Token<T>, deep?: boolean): boolean;
     /**
      * get token instance in current injector or root container.
      *
      * @template T
-     * @param {Token<T>} key
+     * @param {Token<T>} token
      * @param {T} notFoundValue
      * @returns {T}
      */
-    abstract get<T>(key: Token<T>, notFoundValue?: T): T;
-    /**
-     * get token instance in current injector or root container.
-     *
-     * @template T
-     * @param {Token<T>} key
-     * @param {Injector} provider origin raise provider
-     * @param {T} notFoundValue
-     * @returns {T}
-     */
-    abstract get<T>(key: Token<T>, provider?: Injector, notFoundValue?: T): T;
+    abstract get<T>(token: Token<T>, notFoundValue?: T): T;
     /**
      * resolve token instance with token and param provider.
      *
@@ -429,52 +420,6 @@ export abstract class ActionProvider extends Injector {
     abstract getAction<T extends Handler>(target: Token<Action>): T;
 }
 
-/**
- * module loader for ioc.
- *
- * @export
- */
-@Abstract()
-export abstract class ModuleLoader {
-    /**
-     * load modules by files patterns, module name or modules.
-     *
-     * @param {...LoadType[]} modules
-     * @returns {Promise<Modules[]>}
-     */
-    abstract load(modules: LoadType[]): Promise<Modules[]>;
-    /**
-     * register types.
-     * @param modules modules.
-     */
-    abstract register(injecor: Injector, modules: LoadType[]): Promise<Type[]>;
-    /**
-     * dynamic require file.
-     *
-     * @param {string} fileName
-     * @returns {Promise<any>}
-     */
-    abstract require(fileName: string): Promise<any>;
-    /**
-     * get modules.
-     * @param mdty
-     */
-    abstract getMoudle(mdty: LoadType): Promise<Modules[]>;
-    /**
-     * load all class types in modules
-     *
-     * @param {LoadType[]} mdl
-     * @returns {Promise<Type[]>}
-     */
-    abstract loadType(mdl: LoadType): Promise<Type[]>;
-    /**
-     * load all class types in modules
-     *
-     * @param {LoadType[]} modules
-     * @returns {Promise<Type[]>}
-     */
-    abstract loadTypes(modules: LoadType[]): Promise<Type[][]>;
-}
 
 /**
  * registered.
@@ -581,9 +526,9 @@ export const INJECT_IMPL = {
      * create injector
      * @param providers 
      * @param parent 
-     * @param name 
+     * @param scope 
      */
-    create(providers: ProviderType[], parent?: Injector, name?: string): Injector {
+    create(providers: ProviderType[], parent?: Injector, scope?: string | InjectorScope): Injector {
         throw new Error('not implemented.');
     }
 };
@@ -633,7 +578,7 @@ export type FnType = 'cotr' | 'inj' | 'fac';
 /**
  * injector scope.
  */
-export type InjectorScope = 'platfrom' | 'root' | 'provider' | 'invoked' | 'parameter';
+export type InjectorScope = Type | 'platfrom' | 'root' | 'provider' | 'invoked' | 'parameter';
 
 /**
  * factory record.
@@ -729,6 +674,33 @@ export interface ServicesOption<T> extends ResolveOption<T> {
      */
     both?: boolean;
 }
+
+/**
+ * service provider.
+ */
+@Abstract()
+export abstract class ServicesProvider {
+    /**
+    * get all service extends type.
+    *
+    * @template T
+    * @param {Injector} injector
+    * @param {Token<T>} token servive token or express match token.
+    * @param {ProviderType[]} providers
+    * @returns {T[]} all service instance type of token type.
+    */
+    abstract getServices<T>(injector: Injector, token: Token<T>, providers: ProviderType[]): T[];
+    /**
+     * get all service extends type.
+     *
+     * @template T
+     * @param {Injector} injector
+     * @param {ServicesOption<T>} option servive token or express match token.
+     * @returns {T[]} all service instance type of token type.
+     */
+    abstract getServices<T>(injector: Injector, option: ServicesOption<T>): T[];
+}
+
 
 /**
  * method type.

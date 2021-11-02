@@ -1,9 +1,9 @@
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { ProviderType } from '../injector';
 import { Token } from '../tokens';
-import { ClassType } from '../types';
+import { ClassType, Type } from '../types';
 import { Handler } from '../utils/hdl';
-import { ParameterMetadata, PatternMetadata, PropertyMetadata, ProvidersMetadata, ProvidedInMetadata, TypeMetadata } from './meta';
+import { ParameterMetadata, PatternMetadata, PropertyMetadata, ProvidersMetadata, ProvidedInMetadata, TypeMetadata, ModuleMetadata } from './meta';
 import { TypeDefine } from './typedef';
 
 /**
@@ -131,4 +131,32 @@ export interface TypeReflect<T = any> extends PatternMetadata, ProvidedInMetadat
      * auto run defines.
      */
     autoruns: AutorunDefine[];
+}
+
+/**
+ * module reflect.
+ */
+export interface ModuleReflect<T = any> extends TypeReflect<T> {
+    /**
+     * is module or not.
+     */
+    module: boolean;
+    /**
+     * imports types.
+     */
+     imports: Type[];
+     /**
+      * exports.
+      */
+     exports: Type[];
+     /**
+      *  components, directives, pipes ... of current module.
+      */
+     declarations?: Type[];
+     /**
+      * the module bootstraps.
+      */
+     bootstrap?: Type[];
+
+     annotation?: ModuleMetadata
 }

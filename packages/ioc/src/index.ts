@@ -4,8 +4,11 @@ export * from './action';
 export * from './destroy';
 export * from './injector';
 export * from './invoker';
-export * from './di';
-export * from './loader';
+
+// module
+export * from './module.loader';
+export * from './module.ref';
+export * from './module.factory';
 
 // utils
 export * from './utils/chk';
@@ -41,4 +44,7 @@ export * from './actions/runtime';
 // design time action.
 export * as designs from './actions/des-act';
 export * from './actions/design';
+
+// ioc default implmenents.
+export * from './impl';
 

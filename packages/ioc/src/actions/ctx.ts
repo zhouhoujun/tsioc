@@ -1,3 +1,4 @@
+import { InjectorScope } from '..';
 import { Injector, Registered } from '../injector';
 import { ParameterMetadata } from '../metadata/meta';
 import { TypeReflect } from '../metadata/type';
@@ -57,7 +58,7 @@ export interface DesignContext extends RegContext {
     /**
      * type register in.
      */
-    regIn: string;
+    providedIn: string| InjectorScope | Type;
 
     /**
      * registered state.

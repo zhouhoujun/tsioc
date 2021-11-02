@@ -37,7 +37,7 @@ export type ProvideToken<T> = string | symbol | InjectToken<T> | AbstractType;
  * parse id string to token id.
  * @param key id
  */
-export function tokenId<T = any>(key: string, ): Token<T> {
+export function tokenId<T = any>(key: string,): Token<T> {
     return Symbol(key);
 }
 
@@ -89,17 +89,31 @@ export function isInjectToken<T>(target: any): target is InjectToken<T> {
     return target instanceof InjectToken;
 }
 
+
 /**
- * Basic value type.
+ * Injection flags for DI.
+ *
+ * @publicApi
  */
-export type DataType = 'string'
-    | 'char' | 'varchar' | 'nvarchar' | 'text'
-    | 'bit' | 'byte' | 'bytes' | 'binary'
-    | 'number'
-    | 'int' | 'int2' | 'int4' | 'int8' | 'int32' | 'int64' | 'bigint'
-    | 'float' | 'double' | 'decimal'
-    | 'date' | 'datetime' | 'time' | 'timestamp'
-    | 'boolean' | 'bool'
-    | 'blob'
-    | 'uuid' | 'ObjectID'
-    | 'json';
+export enum InjectFlags {
+
+    /** Check self and check parent injector if needed */
+    Default = 0b0000,
+
+    /**
+     * Specifies that an injector should retrieve a dependency from any injector until reaching the
+     * host element of the current component. (Only used with Element Injector)
+     */
+    Host = 0b0001,
+
+    /** Don't ascend to ancestors of the node requesting injection. */
+    Self = 0b0010,
+
+    /** Skip the node that is requesting injection. */
+    SkipSelf = 0b0100,
+
+    /** Inject `defaultValue` instead if token not found. */
+    Optional = 0b1000,
+}
+
+

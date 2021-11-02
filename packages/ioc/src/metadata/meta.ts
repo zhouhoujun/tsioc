@@ -1,4 +1,4 @@
-import { ClassType, Type } from '../types';
+import { ClassType, Modules, Type } from '../types';
 import { Token } from '../tokens';
 import { ProviderType } from '../injector';
 
@@ -281,6 +281,33 @@ export interface ClassMetadata extends AbstractMetadata, PatternMetadata, Provid
  */
 export interface InjectableMetadata extends TypeMetadata, PatternMetadata, ProviderMetadata, ProvidedInMetadata, ProvidersMetadata { }
 
+/**
+ * module metadata.
+ */
+export interface ModuleMetadata extends ProvidedInMetadata, ProvidersMetadata {
+    /**
+     * bootstrap.
+     *
+     * @type {Type<T>}
+     */
+     bootstrap?: Modules|Type| Type[];
+     /**
+      * imports dependens modules
+      *
+      * @type {Modules[]}
+      */
+     imports?: Modules[];
+     /**
+      * exports modules
+      *
+      * @type {Modules[]}
+      */
+     exports?: Modules[];
+     /**
+      * declaration the set of components, directives, pipes ... of this module.
+      */
+     declarations?: Modules[];
+}
 
 /**
  * AutoWired metadata.

@@ -10,9 +10,8 @@ import { CanActive } from '../middlewares/guard';
 import { RouteResolver, Route } from '../middlewares/route';
 import { RootRouter, Router } from '../middlewares/router';
 import { MappingReflect, MappingRoute, ProtocolRouteMappingMetadata } from '../middlewares/mapping';
-import { ModuleFactory, ModuleInjector, ModuleRegistered } from '../module';
 import { SERVICES, SERVERS } from './tk';
-import { BootMetadata, ModuleMetadata, HandleMetadata, HandlesMetadata, PipeMetadata, HandleMessagePattern } from './meta';
+import { BootMetadata, HandleMetadata, HandlesMetadata, PipeMetadata, HandleMessagePattern } from './meta';
 import { PipeTransform } from '../pipes/pipe';
 import { Server } from '../server/server';
 
@@ -163,104 +162,6 @@ export const Configure: Configure = createDecorator<ClassMetadata>('Configure', 
         return meta;
     }
 })
-
-/**
- * Module decorator, use to define class as ioc Module.
- *
- * @export
- * @interface Module
- * @template T
- */
-export interface Module<T extends ModuleMetadata> {
-    /**
-     * Module decorator, use to define class as ioc Module.
-     *
-     * @Module
-     *
-     * @param {T} [metadata] bootstrap metadate config.
-     */
-    (metadata: T): ClassDecorator;
-}
-
-
-interface ModuleDesignContext extends DesignContext {
-    reflect: ModuleReflect;
-}
-
-/**
- * create bootstrap decorator.
- *
- * @export
- * @template T
- * @param {string} name decorator name.
- * @param {DecoratorOption<T>} [options]
- * @returns {Module<T>}
- */
-export function createModuleDecorator<T extends ModuleMetadata>(name: string, options?: DecoratorOption<T>): Module<T> {
-    options = options || EMPTY_OBJ;
-    let hd = options.reflect?.class ?? [];
-    const append = options.appendProps;
-    return createDecorator<ModuleMetadata>(name, {
-        ...options,
-        reflect: {
-            ...options.reflect,
-            class: [
-                (ctx, next) => {
-                    const reflect = ctx.reflect as ModuleReflect;
-                    reflect.annoType = 'module';
-                    reflect.annoDecor = ctx.decor;
-                    const annotation: ModuleConfigure = reflect.annotation = ctx.metadata;
-                    if (annotation.imports) reflect.imports = lang.getTypes(annotation.imports);
-                    if (annotation.exports) reflect.exports = lang.getTypes(annotation.exports);
-                    if (annotation.declarations) reflect.declarations = lang.getTypes(annotation.declarations);
-                    if (annotation.bootstrap) reflect.bootstrap = lang.getTypes(annotation.bootstrap);
-                    return next();
-                },
-                ...isArray(hd) ? hd : [hd]
-            ]
-        },
-        design: {
-            beforeAnnoation: (context: DesignContext, next) => {
-                const ctx = context as ModuleDesignContext;
-                if (ctx.reflect.annoType === 'module') {
-                    const { injector, type, regIn } = ctx;
-                    let mdinj: ModuleInjector;
-                    if ((injector as ModuleInjector).type === type) {
-                        mdinj = injector as ModuleInjector;
-                    } else {
-                        mdinj = injector.resolve({ token: ModuleFactory, target: ctx.reflect }).create(injector, { providedIn: regIn });
-                        ctx.injector = mdinj;
-                        ctx.state.injector = ctx.injector;
-                    }
-                    (ctx.state as ModuleRegistered).moduleRef = mdinj;
-                }
-                next();
-            }
-        },
-        appendProps: (meta) => {
-            if (append) {
-                append(meta as T);
-            }
-
-            if (!meta.name) {
-                meta.name = lang.getClassName(meta.token);
-            }
-        }
-    }) as Module<T>;
-}
-
-/**
- * Module Decorator, definde class as module.
- *
- * @Module
- * @exports {@link Module}
- */
-export const Module: Module<ModuleMetadata> = createModuleDecorator<ModuleMetadata>('DIModule');
-/**
- * Module Decorator, definde class as module.
- * @deprecated use {@link Module} instead.
- */
-export const DIModule = Module;
 
 
 export type HandleDecorator = <TFunction extends Type<Middleware>>(target: TFunction) => TFunction | void;

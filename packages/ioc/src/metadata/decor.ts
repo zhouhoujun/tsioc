@@ -1,12 +1,18 @@
 import { ClassType, Type } from '../types';
-import { isString, isArray } from '../utils/chk';
+import { isString, isArray, EMPTY_OBJ } from '../utils/chk';
 import { Token, getToken } from '../tokens';
 import {
     ClassMetadata, AutorunMetadata, AutoWiredMetadata, InjectMetadata, PatternMetadata,
-    InjectableMetadata, ParameterMetadata, ProvidersMetadata, ProviderInMetadata
+    InjectableMetadata, ParameterMetadata, ProvidersMetadata, ProviderInMetadata, ModuleMetadata
 } from './meta';
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
 import { Injector, ProviderType } from '../injector';
+import { getTypes } from '../utils/lang';
+import { DesignContext } from '../actions/ctx';
+import { DecoratorOption } from './refl';
+import { ModuleReflect } from './type';
+import { ModuleRef, ModuleRegistered } from '../module.ref';
+import { ModuleFactory } from '../module.factory';
 
 
 
@@ -317,6 +323,98 @@ export const Singleton: Singleton = createDecorator<ClassMetadata>('Singleton', 
         meta.singleton = true;
     }
 });
+
+
+/**
+ * Module decorator, use to define class as ioc Module.
+ *
+ * @export
+ * @interface Module
+ * @template T
+ */
+export interface Module<T extends ModuleMetadata> {
+    /**
+     * Module decorator, use to define class as ioc Module.
+     *
+     * @Module
+     *
+     * @param {T} [metadata] bootstrap metadate config.
+     */
+    (metadata: T): ClassDecorator;
+}
+
+
+interface ModuleDesignContext extends DesignContext {
+    reflect: ModuleReflect;
+    moduleRef?: ModuleRef;
+}
+
+/**
+ * create bootstrap decorator.
+ *
+ * @export
+ * @template T
+ * @param {string} name decorator name.
+ * @param {DecoratorOption<T>} [options]
+ * @returns {Module<T>}
+ */
+export function createModuleDecorator<T extends ModuleMetadata>(name: string, options?: DecoratorOption<T>): Module<T> {
+    options = options || EMPTY_OBJ;
+    let hd = options.reflect?.class ?? [];
+    const append = options.appendProps;
+    return createDecorator<ModuleMetadata>(name, {
+        ...options,
+        reflect: {
+            ...options.reflect,
+            class: [
+                (ctx, next) => {
+                    const reflect = ctx.reflect as ModuleReflect;
+                    const annotation: ModuleMetadata = reflect.annotation = ctx.metadata;
+                    if (annotation.imports) reflect.imports = getTypes(annotation.imports);
+                    if (annotation.exports) reflect.exports = getTypes(annotation.exports);
+                    if (annotation.declarations) reflect.declarations = getTypes(annotation.declarations);
+                    if (annotation.bootstrap) reflect.bootstrap = getTypes(annotation.bootstrap);
+                    return next();
+                },
+                ...isArray(hd) ? hd : [hd]
+            ]
+        },
+        design: {
+            beforeAnnoation: (context: DesignContext, next) => {
+                const ctx = context as ModuleDesignContext;
+                if (ctx.reflect.module) {
+                    let { injector, type, providedIn, moduleRef } = ctx;
+                    if (!(moduleRef && moduleRef.moduleType === type)) {
+                        moduleRef = injector.resolve({ token: ModuleFactory, target: ctx.reflect }).create(injector, { providedIn });
+                        ctx.injector = moduleRef?.injector;
+                        ctx.state.injector = ctx.injector;
+                    }
+                    (ctx.state as ModuleRegistered).moduleRef = moduleRef;
+                }
+                next();
+            }
+        },
+        appendProps: (meta) => {
+            if (append) {
+                append(meta as T);
+            }
+        }
+    }) as Module<T>;
+}
+
+/**
+ * Module Decorator, definde class as module.
+ *
+ * @Module
+ * @exports {@link Module}
+ */
+export const Module: Module<ModuleMetadata> = createModuleDecorator<ModuleMetadata>('DIModule');
+/**
+ * Module Decorator, definde class as module.
+ * @deprecated use {@link Module} instead.
+ */
+export const DIModule = Module;
+
 
 
 
