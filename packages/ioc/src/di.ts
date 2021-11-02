@@ -842,7 +842,7 @@ export function resolveToken<T>(rd: FnRecord<T>, provider: Injector): T {
 function createArgs(deps: any[], provider: Injector): any[] {
     return deps?.map(d => {
         if (isToken(d)) {
-            return provider.get(d) ?? (isString(d) ? d : undefined);
+            return provider.get(d);
         } else if (isFunction(d.fn) && (d.fnType === 'cotr' || d.fnType === 'fac' || d.fnType === 'inj')) {
             return resolveToken(d, provider);
         } else {
