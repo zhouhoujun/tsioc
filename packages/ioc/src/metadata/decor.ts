@@ -1,6 +1,6 @@
 import { ClassType, Type } from '../types';
 import { isString, isArray, EMPTY_OBJ } from '../utils/chk';
-import { Token, getToken } from '../tokens';
+import { Token, getToken, InjectFlags } from '../tokens';
 import {
     ClassMetadata, AutorunMetadata, AutoWiredMetadata, InjectMetadata, PatternMetadata,
     InjectableMetadata, ParameterMetadata, ProvidersMetadata, ProviderInMetadata, ModuleMetadata
@@ -13,7 +13,6 @@ import { DecoratorOption } from './refl';
 import { ModuleReflect } from './type';
 import { ModuleRef, ModuleRegistered } from '../module.ref';
 import { ModuleFactory } from '../module.factory';
-import { InjectFlags } from '..';
 
 
 

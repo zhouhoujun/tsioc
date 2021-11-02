@@ -1,5 +1,5 @@
-import { Module, Message, MessageQueue, StartupService, ApplicationContext, Boot, Configuration, Runnable, TargetRef, Runner } from '../src';
-import { Injectable, Inject, Singleton } from '@tsdi/ioc';
+import { Message, MessageQueue, StartupService, ApplicationContext, Boot, Configuration, Runnable, TargetRef, Runner } from '../src';
+import { Module, Injectable, Inject, Singleton } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
 import { LogConfigure, LogModule } from '@tsdi/logs';
 import * as net from 'net';

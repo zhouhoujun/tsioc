@@ -11,7 +11,13 @@ import { EMPTY, isDefined, isFunction } from './utils/chk';
  * parameter argument of an {@link OperationArgumentResolver}.
  */
 export interface Parameter<T = any> extends ParameterMetadata {
+    /**
+     * type.
+     */
     type: ClassType<T>;
+    /**
+     * param name.
+     */
     paramName: string;
     /**
      * provider type

@@ -18,8 +18,6 @@ export interface ModuleOption extends ProvidedInMetadata {
      * dependence types.
      */
     deps?: Modules[];
-
-    providedIn?: string | Type;
 }
 
 @Abstract()

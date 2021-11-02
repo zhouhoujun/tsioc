@@ -1,6 +1,6 @@
-import { Application, Module, StartupService, Boot, ApplicationContext } from '../src';
+import { Application,  StartupService, Boot, ApplicationContext } from '../src';
 import expect = require('expect');
-import { Injector, lang } from '@tsdi/ioc';
+import { Module, Injector, lang } from '@tsdi/ioc';
 
 @Boot()
 export class MyStartupService extends StartupService {
