@@ -1,4 +1,4 @@
-import { Metadata, PatternMetadata, ProviderMetadata, Type, TypeMetadata } from '@tsdi/ioc';
+import { PatternMetadata, ProviderMetadata, Type, TypeMetadata } from '@tsdi/ioc';
 import { ModuleConfigure } from './ref';
 import { CanActive } from '../middlewares/guard';
 import { Middleware, Middlewares } from '../middlewares/middleware';
@@ -106,7 +106,8 @@ export interface HandlesMetadata extends HandleMetadata {
  * @interface PipeMetadata
  * @extends {TypeMetadata}
  */
-export interface PipeMetadata extends Metadata, ProviderMetadata {
+export interface PipeMetadata extends ProviderMetadata {
+    type?: Type;
     /**
      * name of pipe.
      */

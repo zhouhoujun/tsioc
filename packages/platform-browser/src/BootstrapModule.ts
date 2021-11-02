@@ -4,7 +4,7 @@ let processRoot = global.baseURL || '.';
 
 
 @DIModule({
-    regIn: 'root',
+    providedIn: 'root',
     providers: [
         { provide: PROCESS_ROOT, useValue: processRoot }
     ]

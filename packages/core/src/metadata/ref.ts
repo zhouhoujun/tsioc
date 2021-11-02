@@ -1,4 +1,4 @@
-import { ClassMetadata, RegInMetadata, Token, ClassType, TypeReflect, ProvidersMetadata, Type, Modules } from '@tsdi/ioc';
+import { ClassMetadata, ProvidedInMetadata, Token, ClassType, TypeReflect, ProvidersMetadata, Type, Modules } from '@tsdi/ioc';
 
 
 /**
@@ -9,7 +9,7 @@ import { ClassMetadata, RegInMetadata, Token, ClassType, TypeReflect, ProvidersM
  * @extends {ClassMetadata}
  * @template T
  */
-export interface AnnotationMetadata<T = any> extends ClassMetadata, ProvidersMetadata, RegInMetadata {
+export interface AnnotationMetadata<T = any> extends ClassMetadata, ProvidersMetadata, ProvidedInMetadata {
     /**
      * annotation for the type.
      *

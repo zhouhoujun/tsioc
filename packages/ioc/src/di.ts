@@ -86,9 +86,6 @@ export class DefaultInjector extends Injector {
             this.initParent(parent);
         } else {
             scope = this.scope = 'root';
-            this._state = new RegisteredStateImpl();
-            this._action = new ActionProviderImpl([], this);
-            registerCores(this);
         }
         this.initScope(scope);
         this.inject(providers);
@@ -97,9 +94,15 @@ export class DefaultInjector extends Injector {
     protected initScope(scope?: string) {
         const val = { value: this };
         switch (scope) {
-            case 'root':
+            case 'platform':
                 this.factories.set(Container, val);
                 this.factories.set(CONTAINER, val);
+                this.factories.set(INJECTOR, val);
+                this.factories.set(Injector, val);
+                this._state = new RegisteredStateImpl();
+                this._action = new ActionProviderImpl([], this);
+                registerCores(this);
+            case 'root':
                 this.factories.set(ROOT_INJECTOR, val);
                 this.factories.set(INJECTOR, val);
                 this.factories.set(Injector, val);
@@ -1196,7 +1199,7 @@ export function createInvocationContext(injector: Injector, typeRef: TypeReflect
     if (providers.length) {
         injector = Injector.create(providers, injector, proxy ? 'invoked' : 'parameter');
     }
-    return injector.has(InvocationContext) ? injector.get(InvocationContext) : new InvocationContext(injector, typeRef.type, method , option.args || EMPTY_OBJ,
+    return injector.has(InvocationContext) ? injector.get(InvocationContext) : new InvocationContext(injector, typeRef.type, method, option.args || EMPTY_OBJ,
         ...(isFunction(option.resolvers) ? option.resolvers(injector, typeRef, method) : option.resolvers) ?? EMPTY,
         ...resolves);
 }

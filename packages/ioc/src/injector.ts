@@ -633,7 +633,7 @@ export type FnType = 'cotr' | 'inj' | 'fac';
 /**
  * injector scope.
  */
-export type InjectorScope = 'root' | 'provider' | 'invoked' | 'parameter';
+export type InjectorScope = 'platfrom' | 'root' | 'provider' | 'invoked' | 'parameter';
 
 /**
  * factory record.

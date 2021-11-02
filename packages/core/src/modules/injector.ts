@@ -35,8 +35,8 @@ export class DefaultModuleInjector<T> extends ModuleInjector<T> {
         return this.scope === 'root';
     }
 
-    get regIn(): string {
-        return this._regIn ?? this.reflect.regIn ?? this.reflect.annotation?.regIn!;
+    get regIn(): string | Type {
+        return this._regIn ?? this.reflect.providedIn ?? this.reflect.annotation?.providedIn!;
     }
 
     get instance(): T {

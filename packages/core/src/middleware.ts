@@ -14,7 +14,7 @@ import {
 * router module.
 */
 @Module({
-    regIn: 'root',
+    providedIn: 'root',
     providers: [
         MsgRouteVaildator,
         {

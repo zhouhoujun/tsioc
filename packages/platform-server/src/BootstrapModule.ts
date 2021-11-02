@@ -100,7 +100,7 @@ export class ServerApplicationExit extends ApplicationExit {
  * server boot module.
  */
 @Module({
-    regIn: 'root',
+    providedIn: 'root',
     imports: [ ServerModule ],
     providers: [
         ConfigureFileLoader,

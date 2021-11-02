@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { isUndefined, isNumber, isMetadataObject } from '../utils/chk';
-import { ClassMetadata, ParameterMetadata, PatternMetadata, PropertyMetadata, TypeMetadata } from './meta';
+import { AbstractMetadata, ClassMetadata, ParameterMetadata, PatternMetadata, PropertyMetadata } from './meta';
 import { Type } from '../types';
 import { Token } from '../tokens';
 import { DecoratorOption } from './refl';
@@ -158,7 +158,7 @@ export function createPropDecorator<T = PropertyMetadata>(name: string, options?
      *
      * @param {T} [metadata] metadata map.
      */
-    (metadata?: TypeMetadata): ClassDecorator;
+    (metadata?: AbstractMetadata): ClassDecorator;
 }
 
 /**
@@ -166,7 +166,7 @@ export function createPropDecorator<T = PropertyMetadata>(name: string, options?
  *
  * @Abstract
  */
-export const Abstract: IAbstractDecorator = createDecorator<TypeMetadata>('Abstract', {
+export const Abstract: IAbstractDecorator = createDecorator<AbstractMetadata>('Abstract', {
     appendProps: (meta) => {
         meta.abstract = true;
     }

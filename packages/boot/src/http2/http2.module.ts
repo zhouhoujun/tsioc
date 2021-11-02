@@ -3,7 +3,7 @@ import { Http2StartupService } from './serv';
 
 
 @Module({
-    regIn: 'root',
+    providedIn: 'root',
     providers: [
         Http2StartupService
     ]

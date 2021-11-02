@@ -2,7 +2,7 @@ import { Module } from '@tsdi/core';
 import { HttpRouter } from './router';
 
 @Module({
-    regIn: 'root',
+    providedIn: 'root',
     providers:[
         HttpRouter
     ]

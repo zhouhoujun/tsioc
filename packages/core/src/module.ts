@@ -1,4 +1,4 @@
-import { Abstract, DefaultInjector, Injector, Modules, ProviderType, RegInMetadata, Registered, Type } from '@tsdi/ioc';
+import { Abstract, DefaultInjector, Injector, Modules, ProviderType, ProvidedInMetadata, Registered, Type } from '@tsdi/ioc';
 import { ModuleReflect } from './metadata/ref';
 
 /**
@@ -63,7 +63,7 @@ export interface ModuleRegistered extends Registered {
 /**
  * module option.
  */
-export interface ModuleOption<T = any> extends RegInMetadata {
+export interface ModuleOption<T = any> extends ProvidedInMetadata {
     /**
      * boot base url.
      *

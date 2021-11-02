@@ -3,7 +3,7 @@ import { ProviderType } from '../injector';
 import { Token } from '../tokens';
 import { ClassType } from '../types';
 import { Handler } from '../utils/hdl';
-import { ParameterMetadata, PatternMetadata, PropertyMetadata, ProvidersMetadata, RegInMetadata, TypeMetadata } from './meta';
+import { ParameterMetadata, PatternMetadata, PropertyMetadata, ProvidersMetadata, ProvidedInMetadata, TypeMetadata } from './meta';
 import { TypeDefine } from './typedef';
 
 /**
@@ -84,7 +84,7 @@ export interface DecorContext extends DecorDefine {
 /**
  * type reflect metadata.
  */
-export interface TypeReflect<T = any> extends TypeMetadata, PatternMetadata, RegInMetadata {
+export interface TypeReflect<T = any> extends PatternMetadata, ProvidedInMetadata {
     /**
      * ioc ext or not.
      */
@@ -93,6 +93,10 @@ export interface TypeReflect<T = any> extends TypeMetadata, PatternMetadata, Reg
      * class type.
      */
     readonly type: ClassType<T>;
+    /**
+     * is abstract or not.
+     */
+    abstract?: boolean;
     /**
      * class define.
      */

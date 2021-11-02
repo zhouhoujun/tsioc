@@ -228,7 +228,7 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
                     if ((injector as ModuleInjector).type === type) {
                         mdinj = injector as ModuleInjector;
                     } else {
-                        mdinj = injector.resolve({ token: ModuleFactory, target: ctx.reflect }).create(injector, { regIn });
+                        mdinj = injector.resolve({ token: ModuleFactory, target: ctx.reflect }).create(injector, { providedIn: regIn });
                         ctx.injector = mdinj;
                         ctx.state.injector = ctx.injector;
                     }

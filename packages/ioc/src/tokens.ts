@@ -11,14 +11,14 @@ import { getClassName } from './utils/lang';
  * @template T
  */
 export class InjectToken<T = any> {
-    constructor(private desc: string, private _providedIn?: Type<any> | 'root') { }
-
-    get providedIn() {
-        return this._providedIn;
-    }
+    constructor(private desc: string, readonly providedIn: Type | 'root' | 'platfrom' | string = '') { }
 
     toString(): string {
         return `Token ${this.desc}`;
+    }
+
+    to(alias: string): InjectToken<T> {
+        return alias ? new InjectToken(`${this.desc}_${alias}`, this.providedIn) : this;
     }
 }
 
@@ -37,7 +37,7 @@ export type ProvideToken<T> = string | symbol | InjectToken<T> | AbstractType;
  * parse id string to token id.
  * @param key id
  */
-export function tokenId<T = any>(key: string): Token<T> {
+export function tokenId<T = any>(key: string, ): Token<T> {
     return Symbol(key);
 }
 
@@ -52,7 +52,11 @@ function format(token: Token) {
  * @param alias the alias of token.
  */
 export function getToken<T>(token: Token<T>, alias?: string): Token<T> {
-    return alias ? `${format(token)}_${alias}` : token;
+    if (!alias) return token;
+    if (token instanceof InjectToken) {
+        return token.to(alias);
+    }
+    return `${format(token)}_${alias}`;
 }
 
 /**

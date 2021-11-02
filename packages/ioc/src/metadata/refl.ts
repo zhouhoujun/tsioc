@@ -2,7 +2,7 @@ import { Action, Actions } from '../action';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { AnnotationType, ClassType, Type } from '../types';
 import { EMPTY, isArray, isFunction } from '../utils/chk';
-import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, AutorunMetadata, InjectableMetadata } from './meta';
+import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata, AutorunMetadata, InjectableMetadata } from './meta';
 import { DecoratorType, DecorContext, DecorDefine, TypeReflect } from './type';
 import { TypeDefine } from './typedef';
 import { chain, Handler } from '../utils/hdl';
@@ -284,7 +284,7 @@ export const typeAnnoDecors = ['@Injectable', '@Singleton', '@Abstract'];
 export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
     if (typeAnnoDecors.indexOf(ctx.decor) >= 0) {
         const reflect = ctx.reflect;
-        const meta = ctx.metadata as InjectableMetadata;
+        const meta = ctx.metadata as ClassMetadata & InjectableMetadata;
         if (meta.abstract) {
             reflect.abstract = true;
         } else {
@@ -304,8 +304,8 @@ export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
             reflect.providers.push(...ctx.providers);
         }
 
-        if (meta.regIn) {
-            reflect.regIn = meta.regIn;
+        if (meta.providedIn) {
+            reflect.providedIn = meta.providedIn;
         }
     }
     return next();

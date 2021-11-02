@@ -1,21 +1,6 @@
-import { ClassType } from '../types';
+import { ClassType, Type } from '../types';
 import { Token } from '../tokens';
 import { ProviderType } from '../injector';
-
-/**
- * metadata
- *
- * @export
- * @interface Metadata
- */
-export interface Metadata {
-    /**
-     * property type
-     *
-     * @type {SymbolType}
-     */
-    type?: ClassType;
-}
 
 /**
  * type metadata
@@ -23,12 +8,11 @@ export interface Metadata {
  * @export
  * @interface TypeMetadata
  */
-export interface TypeMetadata extends Metadata {
-
+export interface TypeMetadata {
     /**
-     * is abstract or not.
+     * class type.
      */
-    abstract?: boolean;
+    type?: Type;
 }
 
 
@@ -47,11 +31,11 @@ export interface ProvideMetadata {
      * @memberof Provide
      */
     provider?: Token;
-    
+
     /**
      * is mutil provider or not
      */
-     mutil?: boolean;
+    mutil?: boolean;
 }
 
 
@@ -100,20 +84,19 @@ export interface RefProvider {
  * @interface ProviderInMetadata
  */
 export interface ProviderInMetadata {
-    
     /**
      * int tagert.
      *
      * @type {Token}
      */
-     target: ClassType;
+    target: ClassType;
 
-     /**
-      * ref provide
-      *
-      * @type {Token}
-      */
-     provide?: Token;
+    /**
+     * ref provide
+     *
+     * @type {Token}
+     */
+    provide?: Token;
 }
 
 /**
@@ -139,7 +122,13 @@ export interface ProvidersMetadata {
  * @export
  * @interface PropMetadata
  */
-export interface PropertyMetadata extends ProvideMetadata, Metadata {
+export interface PropertyMetadata extends ProvideMetadata {
+    /**
+     * property type
+     *
+     * @type {SymbolType}
+     */
+    type?: ClassType;
     /**
      * property name
      *
@@ -154,7 +143,7 @@ export interface PropertyMetadata extends ProvideMetadata, Metadata {
  * @export
  * @interface PropMetadata
  */
-export interface MethodMetadata extends Metadata {
+export interface MethodMetadata {
     /**
      * param providers
      *
@@ -234,13 +223,13 @@ export interface MethodParamPropMetadata extends ParamPropMetadata, MethodMetada
 export interface InjectMetadata extends ParamPropMetadata { }
 
 /**
- * register in metadata.
+ * provided in metadata.
  */
-export interface RegInMetadata {
+export interface ProvidedInMetadata {
     /**
-     * reg the class type in root or not.
+     * the token provided in.
      */
-    regIn?: 'root' | string;
+    providedIn?: Type | 'root' | 'platform' | string;
 }
 
 
@@ -263,12 +252,26 @@ export interface PatternMetadata {
 }
 
 /**
+ * abstract metadata.
+ */
+export interface AbstractMetadata {
+    /**
+     * class type.
+     */
+    type?: ClassType;
+    /**
+     * is abstract or not.
+     */
+    abstract?: boolean;
+}
+
+/**
  * class metadata.
  *
  * @export
  * @interface ClassMetadata
  */
-export interface ClassMetadata extends PatternMetadata, ProviderMetadata, TypeMetadata { }
+export interface ClassMetadata extends AbstractMetadata, PatternMetadata, ProviderMetadata { }
 
 /**
  * Injectable decorator metadata.
@@ -276,7 +279,7 @@ export interface ClassMetadata extends PatternMetadata, ProviderMetadata, TypeMe
  * @export
  * @interface InjectableMetadata
  */
-export interface InjectableMetadata extends ClassMetadata, RegInMetadata, ProvidersMetadata { }
+export interface InjectableMetadata extends TypeMetadata, PatternMetadata, ProviderMetadata, ProvidedInMetadata, ProvidersMetadata { }
 
 
 /**
@@ -296,7 +299,7 @@ export interface AutoWiredMetadata extends MethodParamPropMetadata { }
  * @interface AutorunMetadata
  * @extends {TypeMetadata}
  */
-export interface AutorunMetadata extends TypeMetadata, PatternMetadata, RegInMetadata {
+export interface AutorunMetadata extends TypeMetadata, PatternMetadata, ProvidedInMetadata {
     autorun?: string;
     order?: number;
 }
