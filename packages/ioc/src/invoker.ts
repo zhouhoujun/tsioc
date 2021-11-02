@@ -1,10 +1,9 @@
+import { ClassType, Type } from './types';
+import { EMPTY, isDefined, isFunction } from './utils/chk';
 import { Injector, ProviderType } from './injector';
 import { Abstract } from './metadata/fac';
 import { ParameterMetadata } from './metadata/meta';
 import { TypeReflect } from './metadata/type';
-import { ClassType, Type } from './types';
-import { EMPTY, isDefined, isFunction } from './utils/chk';
-
 
 
 /**

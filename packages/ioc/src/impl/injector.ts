@@ -23,13 +23,41 @@ import { ResolveServicesScope } from '../actions/serv';
 import { ModuleLoader } from '../module.loader';
 import { resolveToken } from './resolves';
 import { Services } from './services';
-import { DefaultPlatform } from './state';
+import { DefaultPlatform } from './platform';
 
 
 
-const platformAlias = (token: any) => token === Injector || token === INJECTOR || token === Container || token === CONTAINER;
-const rootAlias = (token: any) => token === Injector || token === INJECTOR || token == ROOT_INJECTOR;
-const injectAlias = (token: any) => token === Injector || token === INJECTOR;
+/**
+ * strategy of di.
+ */
+ export interface Strategy {
+    has?(injector: Injector, token: Token, deep?: boolean): boolean;
+    hasValue?(injector: Injector, token: Token, deep?: boolean): boolean;
+    resolve?<T>(injector: Injector, token: Token<T>, provider?: Injector): T;
+    getProvider?<T>(injector: Injector, token: Token<T>): Type<T>;
+    iterator?(injector: Injector, callbackfn: (fac: FnRecord, key: Token, resolvor?: Injector) => void | boolean, deep?: boolean): void | boolean;
+}
+
+export const EMPTY_STRATEGY: Strategy = {};
+
+export const INJECT_STRATEGY: Strategy = {
+    has(injector: Injector, token: Token, deep?: boolean): boolean {
+        return deep && injector.parent ? injector.parent.has(token, deep) : false;
+    },
+    hasValue(injector: Injector, token: Token, deep?: boolean): boolean {
+        return deep && injector.parent ? injector.parent.hasValue(token, deep) : false;
+    },
+    resolve<T>(injector: Injector, token: Token<T>, provider?: Injector): T {
+        return injector.parent?.get(token)!;
+    },
+    getProvider<T>(injector: Injector, token: Token<T>): Type<T> {
+        return injector.parent?.getTokenProvider(token)!;
+    },
+    iterator(injector: Injector, callbackfn: (fac: FnRecord, key: Token, resolvor?: Injector) => void | boolean, deep?: boolean): void | boolean {
+        return deep && injector.parent?.iterator(callbackfn, deep);
+    }
+}
+
 
 /**
  * provider container.
@@ -51,7 +79,7 @@ export class DefaultInjector extends Injector {
     protected factories: Map<Token, FnRecord>;
     protected destCb!: () => void;
 
-    constructor(providers: ProviderType[] = EMPTY, readonly parent?: Injector, readonly scope?: InjectorScope) {
+    constructor(providers: ProviderType[] = EMPTY, readonly parent?: Injector, readonly scope?: InjectorScope, private strategy: Strategy = INJECT_STRATEGY) {
         super();
         this.factories = new Map();
         if (parent) {
@@ -726,6 +754,9 @@ export class DefaultInjector extends Injector {
 }
 
 
+const platformAlias = (token: any) => token === Injector || token === INJECTOR || token === Container || token === CONTAINER;
+const rootAlias = (token: any) => token === Injector || token === INJECTOR || token == ROOT_INJECTOR;
+const injectAlias = (token: any) => token === Injector || token === INJECTOR;
 
 INJECT_IMPL.create = (providers: ProviderType[], parent?: Injector, scope?: InjectorScope) => {
     return new DefaultInjector(providers, parent!, scope);

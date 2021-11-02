@@ -1,7 +1,7 @@
 import { Destroyable } from './destroy';
-import { Injector, Registered } from './injector';
-import { Abstract } from './metadata/fac';
 import { Type } from './types';
+import { Abstract } from './metadata/fac';
+import { Injector, Registered } from './injector';
 
 
 @Abstract()

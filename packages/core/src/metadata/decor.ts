@@ -1,9 +1,9 @@
 import {
-    DecoratorOption, isUndefined, ROOT_INJECTOR, EMPTY_OBJ, isArray, isString, lang, Type, DesignContext,
-    createDecorator, ClassMethodDecorator, Injector, ClassMetadata, createParamDecorator, ParameterMetadata, isRegExp
+    isUndefined, ROOT_INJECTOR, EMPTY_OBJ, isArray, isString, lang, Type, isRegExp, Injector,
+    createDecorator, ClassMethodDecorator, ClassMetadata, createParamDecorator, ParameterMetadata
 } from '@tsdi/ioc';
 import { Service } from '../services/service';
-import { ModuleReflect, ModuleConfigure, AnnotationReflect } from './ref';
+import { ModuleReflect, AnnotationReflect } from './ref';
 import { Middleware, Middlewares, MiddlewareType, RouteInfo, RouteReflect } from '../middlewares/middleware';
 import { ROOT_QUEUE } from '../middlewares/root';
 import { CanActive } from '../middlewares/guard';

@@ -1,7 +1,7 @@
+import { Modules, Type } from './types';
 import { Injector, ProviderType } from './injector';
 import { Abstract } from './metadata/fac';
 import { ProvidedInMetadata } from './metadata/meta';
-import { Modules, Type } from './types';
 import { ModuleRef } from './module.ref';
 
 

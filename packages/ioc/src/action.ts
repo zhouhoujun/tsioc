@@ -1,8 +1,9 @@
-import { Platform } from './injector';
 import { Token } from './tokens';
 import { isBoolean, isFunction } from './utils/chk';
 import { chain, Handler } from './utils/hdl';
 import { isBaseOf } from './utils/lang';
+import { Platform } from './injector';
+
 
 /**
  * action interface.

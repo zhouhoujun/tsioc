@@ -1,7 +1,7 @@
 import { tokenId, Token, Type } from '@tsdi/ioc';
 import { Configuration } from '../configure/config';
-import { Service } from '../services/service';
 import { Context } from '../middlewares/context';
+import { Service } from '../services/service';
 import { Server } from '../server/server';
 
 

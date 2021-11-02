@@ -1,6 +1,7 @@
-import { Injector } from './injector';
-import { Abstract } from './metadata/fac';
 import { LoadType, Modules, Type } from './types';
+import { Abstract } from './metadata/fac';
+import { Injector } from './injector';
+
 
 /**
  * module loader for ioc.

@@ -550,7 +550,7 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
  * @Module
  * @exports {@link Module}
  */
-export const Module: Module<ModuleMetadata> = createModuleDecorator<ModuleMetadata>('DIModule');
+export const Module: Module<ModuleMetadata> = createModuleDecorator<ModuleMetadata>('Module');
 /**
  * Module Decorator, definde class as module.
  * @deprecated use {@link Module} instead.

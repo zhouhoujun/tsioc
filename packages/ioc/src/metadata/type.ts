@@ -3,7 +3,10 @@ import { ProviderType } from '../injector';
 import { Token } from '../tokens';
 import { ClassType, Type } from '../types';
 import { Handler } from '../utils/hdl';
-import { ParameterMetadata, PatternMetadata, PropertyMetadata, ProvidersMetadata, ProvidedInMetadata, TypeMetadata, ModuleMetadata } from './meta';
+import {
+    ParameterMetadata, PatternMetadata, PropertyMetadata,
+    ProvidersMetadata, ProvidedInMetadata, ModuleMetadata
+} from './meta';
 import { TypeDefine } from './typedef';
 
 /**
@@ -144,19 +147,19 @@ export interface ModuleReflect<T = any> extends TypeReflect<T> {
     /**
      * imports types.
      */
-     imports: Type[];
-     /**
-      * exports.
-      */
-     exports: Type[];
-     /**
-      *  components, directives, pipes ... of current module.
-      */
-     declarations?: Type[];
-     /**
-      * the module bootstraps.
-      */
-     bootstrap?: Type[];
+    imports: Type[];
+    /**
+     * exports.
+     */
+    exports: Type[];
+    /**
+     *  components, directives, pipes ... of current module.
+     */
+    declarations?: Type[];
+    /**
+     * the module bootstraps.
+     */
+    bootstrap?: Type[];
 
-     annotation?: ModuleMetadata
+    annotation?: ModuleMetadata
 }
