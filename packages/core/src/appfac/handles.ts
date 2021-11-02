@@ -41,8 +41,8 @@ export abstract class BuildHandle<T extends ApplicationContext> extends IocActio
  */
 export class BuildHandles<T extends ApplicationContext = ApplicationContext> extends Actions<T, HandleType<T>, AsyncHandler<T>, Promise<void>> {
 
-    protected override getActionProvider(ctx: T) {
-        return ctx.injector.action();
+    protected override getPlatform(ctx: T) {
+        return ctx.injector.platform();
     }
 }
 
@@ -108,9 +108,9 @@ export const ConfigureServerHandle = async function (ctx: ApplicationContext, ne
     const injector = ctx.injector;
     const servers = injector.get(SERVERS);
     if (servers && servers.length) {
-        const state = injector.state();
+        const platfrom = injector.platform();
         await Promise.all(servers.map(type => {
-            const svr = state.getInstance(type);
+            const svr = platfrom.getInstance(type);
             ctx.onDestroy(() => svr?.disconnect());
             return svr.connect(ctx);
         }));
@@ -136,11 +136,11 @@ export class StartupHandles extends BuildHandles<ApplicationContext> implements 
  * @param next next step.
  */
 export const ConfigureServiceHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
-    const regedState = ctx.injector.state();
+    const platform = ctx.injector.platform();
     const boots = ctx.boots;
     if (boots?.length) {
         await lang.step(boots.map(tyser => () => {
-            const ser = regedState.getInstance(tyser) as Service;
+            const ser = platform.getInstance(tyser) as Service;
             ctx.onDestroy(() => ser.destroy());
             ctx.startups.push(tyser);
             return ser?.configureService(ctx);

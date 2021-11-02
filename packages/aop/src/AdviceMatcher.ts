@@ -190,8 +190,8 @@ export class AdviceMatcher implements IAdviceMatcher {
 
         if (targetChkExp.test(strExp)) {
             let torken = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).trim();
-            const state = this.container.state();
-            return (name?: string, fullName?: string, targetType?: ClassType) => targetType ? state.getInjector(reflect.type).getTokenProvider(torken) === targetType : false;
+            const platform = this.container.platform();
+            return (name?: string, fullName?: string, targetType?: ClassType) => targetType ? platform.getInjector(reflect.type).getTokenProvider(torken) === targetType : false;
         }
 
         return fasleFn;

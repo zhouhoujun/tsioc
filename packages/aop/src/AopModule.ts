@@ -22,23 +22,23 @@ export class AopModule {
      */
     setup(@Inject(ROOT_INJECTOR) root: Injector) {
 
-        const prdr = root.action();
+        const platform = root.platform();
 
-        prdr.setValue(ADVISOR, new Advisor(root), Advisor)
+        platform.setValue(ADVISOR, new Advisor(root), Advisor)
             .setValue(ADVICE_MATCHER, new AdviceMatcher(root), AdviceMatcher);
 
-        prdr.regAction(ProceedingScope);
+        platform.regAction(ProceedingScope);
 
-        prdr.get(runtimes.BeforeCtorScope)
+        platform.getAction(runtimes.BeforeCtorScope)
             .useBefore(BeforeCtorAdviceAction);
 
-        prdr.get(runtimes.AfterCtorScope)
+        platform.getAction(runtimes.AfterCtorScope)
             .use(AfterCtorAdviceAction);
 
-        prdr.get(runtimes.RuntimeMthScope)
+        platform.getAction(runtimes.RuntimeMthScope)
             .useBefore(BindMthPointcutAction);
 
-        prdr.get(RuntimeLifeScope)
+        platform.getAction(RuntimeLifeScope)
             .useBefore(MatchPointcutAction, runtimes.CtorArgsAction);
 
     }

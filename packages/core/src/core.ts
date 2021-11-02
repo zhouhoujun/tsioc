@@ -27,7 +27,7 @@ export class CoreModule {
      * register core module.
      */
     setup(@Inject() injector: Injector) {
-        injector.action().regAction(BootLifeScope);
+        injector.platform().regAction(BootLifeScope);
         injector.register(DefaultConfigureManager, ConfigureMergerImpl);
     }
 }

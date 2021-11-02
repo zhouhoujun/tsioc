@@ -1,4 +1,4 @@
-import { ActionProvider, DefaultInjector, EMPTY, Injector, InjectorScope, isArray, isFunction, isPlainObject, KeyValueProvider, Modules, ProviderType, refl, RegisteredState, StaticProviders, Type } from '@tsdi/ioc';
+import { Platform, DefaultInjector, EMPTY, Injector, InjectorScope, isArray, isFunction, isPlainObject, KeyValueProvider, Modules, ProviderType, refl, RegisteredState, StaticProviders, Type } from '@tsdi/ioc';
 import { IModuleExports, ModuleFactory, ModuleInjector, ModuleOption, ModuleRegistered } from '../module';
 import { ModuleReflect } from '../metadata/ref';
 import { ModuleStrategy } from './strategy';
@@ -78,18 +78,10 @@ export class ModuleExports extends DefaultInjector implements IModuleExports {
     }
 
     /**
-     * registered state.
+     * platfrom.
      */
-    override state(): RegisteredState {
-        return this.moduleRef.state();
-    }
-
-
-    /**
-     * action provider.
-     */
-    override action(): ActionProvider {
-        return this.moduleRef.action();
+    override platform(): Platform {
+        return this.moduleRef.platform();
     }
 
     /**
@@ -107,7 +99,7 @@ export class ModuleExports extends DefaultInjector implements IModuleExports {
         if (this.has(type)) {
             return;
         }
-        const state = this.state();
+        const state = this.platform();
         if (!hasReged && !state.isRegistered(type)) {
             this.moduleRef.register(type);
         }
@@ -203,7 +195,7 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
     }
 
     protected regModule(inj: ModuleInjector) {
-        const state = inj.state();
+        const state = inj.platform();
         const regInRoot = inj.regIn === 'root';
         if (inj.reflect.imports) {
             inj.register(inj.reflect.imports);

@@ -41,7 +41,7 @@ export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): 
         ctx.injector = ctx.injector.get(ROOT_INJECTOR);
     }
     const state = ctx.state = genState(ctx.injector, ctx.provide);
-    ctx.injector.state().regType(ctx.type, state);
+    ctx.injector.platform().regType(ctx.type, state);
     next();
 };
 
@@ -53,6 +53,7 @@ function genState(injector: Injector, provide?: Token) {
 }
 
 function regInstf(injector: Injector, type: Type, provide: Token, singleton: boolean) {
+    const platfrom = injector.platform()
     injector.set(provide, {
         type,
         fn: (providers: Injector) => {
@@ -68,14 +69,14 @@ function regInstf(injector: Injector, type: Type, provide: Token, singleton: boo
                 providers
             } as RuntimeContext;
 
-            injector.action().get(RuntimeLifeScope).register(ctx);
+            platfrom.getAction(RuntimeLifeScope).register(ctx);
             const instance = ctx.instance;
             // clean context
             cleanObj(ctx);
             return instance;
         },
         fnType: 'inj',
-        unreg: () => injector.state().deleteType(type)
+        unreg: () => platfrom.deleteType(type)
     });
 }
 

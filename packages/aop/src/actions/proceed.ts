@@ -1,5 +1,5 @@
 import {
-    Type, isFunction, lang, ActionProvider, Injector, ProviderType,
+    Type, isFunction, lang, Platform, Injector, ProviderType,
     ParameterMetadata, IocActions, IActionSetup, isArray, isNil, isPromise, refl
 } from '@tsdi/ioc';
 import { IPointcut } from '../joinpoints/IPointcut';
@@ -23,7 +23,7 @@ const aExp = /^@/;
 export class ProceedingScope extends IocActions<Joinpoint> implements IActionSetup {
 
 
-    constructor(private provider: ActionProvider) {
+    constructor(private platfrom: Platform) {
         super();
     }
 
@@ -34,13 +34,13 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
 
 
     beforeConstr(targetType: Type, params: ParameterMetadata[] | undefined, args: any[] | undefined, providers: Injector | undefined) {
-        const advices = this.provider.get(ADVISOR).getAdvices(targetType, ctor);
+        const advices = this.platfrom.getAction(ADVISOR).getAdvices(targetType, ctor);
         if (!advices) {
             return;
         }
 
         const fullName = lang.getClassName(targetType) + '.' + ctor;
-        const joinPoint = Joinpoint.parse(this.provider.state().getInjector(targetType), {
+        const joinPoint = Joinpoint.parse(this.platfrom.getInjector(targetType), {
             name: ctor,
             state: JoinpointState.Before,
             advices,
@@ -54,13 +54,13 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
     }
 
     afterConstr(target: any, targetType: Type, params: ParameterMetadata[] | undefined, args: any[] | undefined, providers: Injector | undefined) {
-        const advices = this.provider.get(ADVISOR).getAdvices(targetType, ctor);
+        const advices = this.platfrom.getAction(ADVISOR).getAdvices(targetType, ctor);
         if (!advices) {
             return;
         }
 
         const fullName = lang.getClassName(targetType) + '.' + ctor;
-        const joinPoint = Joinpoint.parse(this.provider.state().getInjector(targetType), {
+        const joinPoint = Joinpoint.parse(this.platfrom.getInjector(targetType), {
             name: ctor,
             state: JoinpointState.After,
             advices,
@@ -120,9 +120,9 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
         const fullName = pointcut.fullName;
         const name = pointcut.name;
         const self = this;
-        const root = this.provider.parent;
+        const platfrom = this.platfrom;
         return (...args: any[]) => {
-            if (!root || root.destroyed) {
+            if (!platfrom || platfrom.destroyed) {
                 return propertyMethod.call(target, ...args);
             }
             const larg = lang.last(args);
@@ -131,7 +131,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
                 args = args.slice(0, args.length - 1);
                 providers = larg;
             }
-            const joinPoint = Joinpoint.parse(root.state().getInjector(targetType), {
+            const joinPoint = Joinpoint.parse(platfrom.getInjector(targetType), {
                 name,
                 fullName,
                 params: refl.getParameters(targetType, name),
@@ -193,7 +193,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
 
         joinPoint.providers.inject(providers);
 
-        return this.provider.state().getInjector(advicer.aspectType).invoke(advicer.aspectType, advicer.advice.propertyKey!, joinPoint.providers);
+        return this.platfrom.getInjector(advicer.aspectType).invoke(advicer.aspectType, advicer.advice.propertyKey!, joinPoint.providers);
     }
 
 }

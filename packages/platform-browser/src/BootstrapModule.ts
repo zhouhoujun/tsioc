@@ -1,9 +1,10 @@
-import { DIModule, global, PROCESS_ROOT } from '@tsdi/core';
+import { global, PROCESS_ROOT } from '@tsdi/core';
+import { Module } from '@tsdi/ioc';
 
 let processRoot = global.baseURL || '.';
 
 
-@DIModule({
+@Module({
     providedIn: 'root',
     providers: [
         { provide: PROCESS_ROOT, useValue: processRoot }

@@ -271,10 +271,10 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
                 return next();
             }
 
-            const state = injector.state();
+            const platform = injector.platform();
             let queue: Middlewares = null!;
             if (parent) {
-                queue = state.getInstance(parent);
+                queue = platform.getInstance(parent);
                 if (!queue) {
                     throw new Error(lang.getClassName(parent) + 'has not registered!')
                 }
@@ -293,7 +293,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
                 reflect.route = info;
                 let middl: MiddlewareType;
                 if (reflect.class.isExtends(Route) || reflect.class.isExtends(Router)) {
-                    state.setTypeProvider(reflect, [{ provide: RouteInfo, useValue: info }]);
+                    platform.setTypeProvider(reflect, [{ provide: RouteInfo, useValue: info }]);
                     middl = type;
                 } else {
                     middl = new RouteResolver(route || '', prefix, (inj: Injector) => injector.get(type, inj), guards);
@@ -511,7 +511,7 @@ export const RouteMapping: RouteMapping = createDecorator<ProtocolRouteMappingMe
             const injector = ctx.injector;
             let queue: Middlewares;
             if (parent) {
-                queue = injector.state().getInstance(parent);
+                queue = injector.platform().getInstance(parent);
             } else {
                 queue = injector.get(RootRouter).getRoot(protocol);
             }

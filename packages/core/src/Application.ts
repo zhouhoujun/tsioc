@@ -85,7 +85,7 @@ export class Application {
     async run(): Promise<ApplicationContext> {
         try {
             const ctx = await this.setup();
-            await ctx.injector.action().get(BootLifeScope).execute(ctx);
+            await ctx.injector.platform().getAction(BootLifeScope).execute(ctx);
             ctx.onDestroy(() => this.destroy());
             return ctx;
         } catch (err) {

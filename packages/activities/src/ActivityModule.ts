@@ -18,8 +18,6 @@ export class ActivityModule {
 
     setup(@Inject() injector: Injector) {
 
-        let actInjector = injector.action();
-
         // actInjector.regAction(ComponentSelectorHandle);
         // actInjector.getInstance(StartupDecoratorRegisterer)
         //     .register(Task, 'TranslateTemplate', ComponentSelectorHandle);

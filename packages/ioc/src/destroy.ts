@@ -3,6 +3,7 @@
  * destroyable interface.
  */
 export interface Destroyable {
+    destroyed?: boolean;
     /**
      * destory this.
      */

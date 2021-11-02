@@ -1,4 +1,4 @@
-import { ActionProvider } from './injector';
+import { Platform } from './injector';
 import { Token } from './tokens';
 import { isBoolean, isFunction } from './utils/chk';
 import { chain, Handler } from './utils/hdl';
@@ -172,7 +172,7 @@ export abstract class Actions<T, TA = ActionType, TH extends Handler = Handler<T
 
     override execute(ctx: T, next?: () => TR): TR {
         if (!this._hdlrs) {
-            const pdr = this.getActionProvider(ctx);
+            const pdr = this.getPlatform(ctx);
             this._hdlrs = [...this._befs, ...this._acts, ...this._afts].map(ac => this.parseHandler(pdr, ac)).filter(f => f);
         }
         return chain(this._hdlrs, ctx, next);
@@ -182,19 +182,19 @@ export abstract class Actions<T, TA = ActionType, TH extends Handler = Handler<T
      * get action provider from context.
      * @param ctx the action context.
      */
-    protected abstract getActionProvider(ctx: T): ActionProvider;
+    protected abstract getPlatform(ctx: T): Platform;
 
     /**
      * parse action to handler.
      * @param provider action provider
      * @param ac action.
      */
-    protected parseHandler(provider: ActionProvider, ac: any): TH {
+    protected parseHandler(provider: Platform, ac: any): TH {
         if (isBaseOf(ac, Action)) {
-            if (!provider.has(ac)) {
+            if (!provider.hasAction(ac)) {
                 provider.regAction(ac);
             }
-            return provider.getAction(ac)
+            return provider.getHandle(ac)
         } else if (isFunction(ac)) {
             return ac as TH;
         }

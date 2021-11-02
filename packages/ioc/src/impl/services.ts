@@ -51,7 +51,7 @@ export class Services implements ServicesProvider {
 
         this.initTargetRef(context);
         if (!this.servicesScope) {
-            this.servicesScope = this.injector.action().get(ResolveServicesScope);
+            this.servicesScope = this.injector.platform().getAction(ResolveServicesScope);
         }
 
         const services: T[] = [];

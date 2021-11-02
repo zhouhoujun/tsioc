@@ -100,10 +100,10 @@ export class ResolveServicesScope extends IocActions implements IActionSetup {
 export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () => void): void {
     if (ctx.targetRefs && ctx.targetRefs.length) {
         const { injector, services, type, match } = ctx;
-        const state = injector.state();
+        const platfrom = injector.platform();
         let maps: Injector, dtype: Type;
         ctx.targetRefs.forEach(tk => {
-            maps = state.getTypeProvider(tk);
+            maps = platfrom.getTypeProvider(tk);
             if (maps && maps.size) {
                 maps.iterator((pdr, token) => {
                     dtype = pdr.type || token as Type;

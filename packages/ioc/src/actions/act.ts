@@ -14,8 +14,8 @@ import { Handler } from '../utils/hdl';
  */
 export class IocActions<T extends IocContext = IocContext> extends Actions<T, ActionType, Handler, void> {
 
-    protected override getActionProvider(ctx: T) {
-        return ctx.injector.action();
+    protected override getPlatform(ctx: T) {
+        return ctx.injector.platform();
     }
 
 }

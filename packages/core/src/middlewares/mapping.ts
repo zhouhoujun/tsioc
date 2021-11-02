@@ -1,7 +1,7 @@
 import {
-    AsyncHandler, DecorDefine, Type, TypeReflect, Injector, RegisteredState,
+    AsyncHandler, DecorDefine, Type, TypeReflect, Injector,
     isPrimitiveType, isPromise, isString, isArray, isFunction, isDefined, lang,
-    chain, isObservable, composeResolver, Parameter, EMPTY, ClassType
+    chain, isObservable, composeResolver, Parameter, EMPTY, ClassType, Platform
 } from '@tsdi/ioc';
 import { MODEL_RESOLVERS } from '../model/resolver';
 import { ArgumentError, PipeTransform } from '../pipes/pipe';
@@ -91,8 +91,8 @@ export class MappingRoute extends Route {
         const meta = ctx.activeRouteMetadata || this.getRouteMetaData(ctx)!;
         let middlewares = this.getRouteMiddleware(ctx, meta);
         if (middlewares.length) {
-            const state = this.injector.state();
-            await chain(middlewares.map(m => this.parseHandle(state, m)).filter(f => !!f), ctx)
+            const platform = this.injector.platform();
+            await chain(middlewares.map(m => this.parseHandle(platform, m)).filter(f => !!f), ctx)
         }
         await this.invoke(ctx, meta);
         return await next();
@@ -203,14 +203,14 @@ export class MappingRoute extends Route {
         return meta;
     }
 
-    protected parseHandle(state: RegisteredState, mdty: MiddlewareType): AsyncHandler<Context> {
+    protected parseHandle(platform: Platform, mdty: MiddlewareType): AsyncHandler<Context> {
         if (isMiddlware(mdty)) {
             return mdty.toHandle();
         } else if (isMiddlwareType(mdty)) {
-            if (!state.isRegistered(mdty)) {
+            if (!platform.isRegistered(mdty)) {
                 this.injector.register(mdty);
             }
-            const handle = this.injector.get(mdty) ?? state.getInstance(mdty);
+            const handle = this.injector.get(mdty) ?? platform.getInstance(mdty);
             return handle?.toHandle?.();
         } else if (isFunction(mdty)) {
             return mdty;

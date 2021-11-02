@@ -31,15 +31,10 @@ export abstract class Injector implements Destroyable {
      * parent injector.
      */
     readonly parent?: Injector;
-
     /**
-     * registered state.
+     * platform.
      */
-    abstract state(): RegisteredState;
-    /**
-     * action provider.
-     */
-    abstract action(): ActionProvider;
+    abstract platform(): Platform;
     /**
      * registered tokens.
      */
@@ -403,23 +398,6 @@ export abstract class Injector implements Destroyable {
     }
 }
 
-/**
- * action injector.
- */
-@Abstract()
-export abstract class ActionProvider extends Injector {
-    /**
-     * register action, simple create instance via `new type(this)`.
-     * @param types
-     */
-    abstract regAction(...types: Type<Action>[]): this;
-    /**
-     * get action via target.
-     * @param target target.
-     */
-    abstract getAction<T extends Handler>(target: Token<Action>): T;
-}
-
 
 /**
  * registered.
@@ -439,11 +417,9 @@ export interface Registered {
     providers?: Injector;
 }
 
-/**
- * registered state.
- */
+
 @Abstract()
-export abstract class RegisteredState {
+export abstract class Platform implements Destroyable {
     /**
      * get type registered info.
      * @param type
@@ -495,9 +471,39 @@ export abstract class RegisteredState {
      */
     abstract deleteType(type: ClassType): void;
 
-    abstract destroy(): void;
-}
+    /**
+    * register action, simple create instance via `new type(this)`.
+    * @param types
+    */
+    abstract regAction(...types: Type<Action>[]): this;
+    abstract hasAction(token: Token): boolean;
+    /**
+     * get action instace in current .
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {Injector} provider
+     * @returns {T}
+     */
+    abstract getAction<T>(token: Token<T>, notFoundValue?: T): T
+    /**
+     * get action handle.
+     * @param target target.
+     */
+    abstract getHandle<T extends Handler>(target: Token<Action>): T;
+    /**
+     * set value.
+     * @param token 
+     * @param value 
+     * @param provider 
+     */
+    abstract setValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
 
+    abstract get destroyed(): boolean; 
+    abstract destroy(): void;
+    abstract onDestroy(callback: () => void): void;
+
+}
 
 /**
  * object is provider map or not.

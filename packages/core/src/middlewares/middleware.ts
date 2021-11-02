@@ -155,8 +155,8 @@ export abstract class Middlewares<T extends Context = Context> extends AbstractM
 
     override async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
         if (!this.funcs) {
-            const state = ctx.injector.state();
-            this.funcs = this.handles.map(ac => this.parseHandle(state, ac)).filter(f => f);
+            const platfrom = ctx.injector.platform();
+            this.funcs = this.handles.map(ac => this.parseHandle(platfrom, ac)).filter(f => f);
         }
         await chain(this.funcs, ctx, next);
     }

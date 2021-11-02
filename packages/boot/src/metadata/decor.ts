@@ -84,7 +84,7 @@ export const RestController: RestController = createDecorator<RouteMappingMetada
             const injector = ctx.injector;
             let queue: Middlewares;
             if (parent) {
-                queue = injector.state().getInstance(parent);
+                queue = injector.platform().getInstance(parent);
             } else {
                 queue = injector.get(HttpRouter);
             }

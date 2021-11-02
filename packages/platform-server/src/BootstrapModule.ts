@@ -1,9 +1,9 @@
-import { Injectable, Singleton } from '@tsdi/ioc';
-import { ConfigureLoader, Module, PROCESS_ROOT, Configuration, ApplicationExit, ApplicationContext } from '@tsdi/core';
+import { Module, Injectable, Singleton, ModuleLoader } from '@tsdi/ioc';
+import { ConfigureLoader, PROCESS_ROOT, Configuration, ApplicationExit, ApplicationContext } from '@tsdi/core';
 import * as path from 'path';
 import * as fs from 'fs';
 import { runMainPath } from './toAbsolute';
-import { ServerModule } from './ServerModule';
+import { NodeModuleLoader } from '.';
 
 
 // to fix nodejs Date toJson bug.
@@ -46,7 +46,7 @@ export class ConfigureFileLoader implements ConfigureLoader {
         } else {
             const cfgpath = path.join(this.baseURL, './config');
             const file = ['.js', '.ts', '.json'].map(ext => cfgpath + ext).find(f => fs.existsSync(f))!;
-            return file? await import(file) as T : null!;
+            return file ? await import(file) as T : null!;
         }
     }
 }
@@ -101,12 +101,15 @@ export class ServerApplicationExit extends ApplicationExit {
  */
 @Module({
     providedIn: 'root',
-    imports: [ ServerModule ],
     providers: [
         ConfigureFileLoader,
         {
             provide: PROCESS_ROOT,
             useValue: runMainPath()
+        },
+        {
+            provide: ModuleLoader,
+            useValue: new NodeModuleLoader()
         },
         {
             provide: ApplicationExit,
