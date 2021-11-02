@@ -13,6 +13,7 @@ import { DecoratorOption } from './refl';
 import { ModuleReflect } from './type';
 import { ModuleRef, ModuleRegistered } from '../module.ref';
 import { ModuleFactory } from '../module.factory';
+import { InjectFlags } from '..';
 
 
 
@@ -122,6 +123,148 @@ export interface Param {
  * @Param()
  */
 export const Param: Param = createParamDecorator<ParameterMetadata>('Param');
+
+/**
+ * Type of the Optional metadata.
+ *
+ * @publicApi
+ */
+export interface Optional {
+    /**
+     * Parameter decorator to be used on constructor parameters,
+     * which marks the parameter as being an optional dependency.
+     * The DI framework provides `null` if the dependency is not found.
+     *
+     * Can be used together with other parameter decorators
+     * that modify how dependency injection operates.
+     *
+     * @usageNotes
+     *
+     * The following code allows the possibility of a `null` result
+     */
+    (): ParameterDecorator;
+}
+
+export const Optional: Optional = createParamDecorator('Optional', {
+    appendProps: (meta) => {
+        if (meta.flags) {
+            meta.flags = meta.flags & InjectFlags.Optional;
+        } else {
+            meta.flags = InjectFlags.Optional;
+        }
+        return meta;
+    }
+});
+
+
+/**
+ * Type of the Self metadata.
+ *
+ * @publicApi
+ */
+export interface Self {
+    /**
+     * Parameter decorator to be used on constructor parameters,
+     * which tells the DI framework to start dependency resolution from the local injector.
+     *
+     * Resolution works upward through the injector hierarchy, so the children
+     * of this class must configure their own providers or be prepared for a `null` result.
+     *
+     * @usageNotes
+     *
+     * In the following example, the dependency can be resolved
+     * by the local injector when instantiating the class itself, but not
+     * when instantiating a child.
+     */
+    (): ParameterDecorator;
+}
+
+export const Self: Self = createParamDecorator('Self', {
+    appendProps: (meta) => {
+        if (meta.flags) {
+            meta.flags = meta.flags & InjectFlags.Self;
+        } else {
+            meta.flags = InjectFlags.Self;
+        }
+        return meta;
+    }
+});
+
+
+/**
+ * Type of the SkipSelf metadata.
+ *
+ * @publicApi
+ */
+export interface SkipSelf {
+    /**
+     * Parameter decorator to be used on constructor parameters,
+     * which tells the DI framework to start dependency resolution from the parent injector.
+     * Resolution works upward through the injector hierarchy, so the local injector
+     * is not checked for a provider.
+     *
+     * @usageNotes
+     *
+     * In the following example, the dependency can be resolved when
+     * instantiating a child, but not when instantiating the class itself.
+     *
+     * @see `Self`
+     * @see `Optional`
+     *
+     */
+    (): ParameterDecorator;
+}
+
+/**
+ * `SkipSelf` decorator and metadata.
+ * 
+ * @Annotation
+ * @publicApi
+ */
+export const SkipSelf: SkipSelf = createParamDecorator('SkipSelf', {
+    appendProps: (meta) => {
+        if (meta.flags) {
+            meta.flags = meta.flags & InjectFlags.SkipSelf;
+        } else {
+            meta.flags = InjectFlags.SkipSelf;
+        }
+        return meta;
+    }
+});
+
+/**
+ * Type of the Host metadata.
+ *
+ * @publicApi
+ */
+ export interface Host {
+    /**
+     * Parameter decorator on a compose element provider parameter of a class constructor
+     * that tells the DI framework to resolve the view by checking injectors of child
+     * elements, and stop when reaching the host element of the current component.
+     *
+     * @usageNotes
+     *
+     * The following shows use with the `@Optional` decorator, and allows for a `null` result.
+     */
+    (): ParameterDecorator;
+}
+
+/**
+ * Host decorator and metadata.
+ * @Annotation
+ * @publicApi
+ */
+export const Host: Host = createParamDecorator('Host', {
+    appendProps: (meta) => {
+        if (meta.flags) {
+            meta.flags = meta.flags & InjectFlags.Host;
+        } else {
+            meta.flags = InjectFlags.Host;
+        }
+        return meta;
+    }
+});
 
 
 /**

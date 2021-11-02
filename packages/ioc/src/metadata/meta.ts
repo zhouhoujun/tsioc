@@ -1,5 +1,5 @@
 import { ClassType, Modules, Type } from '../types';
-import { Token } from '../tokens';
+import { InjectFlags, Token } from '../tokens';
 import { ProviderType } from '../injector';
 
 /**
@@ -189,6 +189,8 @@ export interface ParameterMetadata extends PropertyMetadata {
      * parameter name.
      */
     paramName?: string;
+
+    flags?: InjectFlags
 
     /**
      * default value
