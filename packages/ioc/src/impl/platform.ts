@@ -18,6 +18,8 @@ export class DefaultPlatform implements Platform {
     private _destroyed = false;
     private map = new Map<Token, any>();
 
+    modules = new Set<Type>();
+
     constructor() {
         this.states = new Map();
     }

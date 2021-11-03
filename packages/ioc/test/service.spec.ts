@@ -1,5 +1,5 @@
 import expect = require('expect');
-import { Injectable, Inject, getToken, ProviderIn, refl, Injector } from '../src';
+import { Injectable, Inject, getToken, ProviderIn, Injector } from '../src';
 
 
 @Injectable()
