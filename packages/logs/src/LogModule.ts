@@ -1,4 +1,4 @@
-import { Inject, IocExt, Injector } from '@tsdi/ioc';
+import { Inject, IocExt, Injector, PLATFORM_INJECTOR } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { AnnotationLoggerAspect } from './aspect';
 import { ConsoleLogManager, ConfigureLoggerManager } from './manager';
@@ -15,7 +15,7 @@ export class LogModule {
     /**
      * register aop for container.
      */
-    setup(@Inject() injector: Injector) {
+    setup(@Inject(PLATFORM_INJECTOR) injector: Injector) {
         if (!injector.has(AopModule)) {
             injector.register(AopModule);
         }

@@ -1,5 +1,5 @@
 import { IActionSetup } from '../action';
-import { FnRecord, Injector } from '../injector';
+import { FactoryRecord, Injector } from '../injector';
 import { get } from '../metadata/refl';
 import { Token } from '../tokens';
 import { ClassType, Type } from '../types';
@@ -42,7 +42,7 @@ export interface ServicesContext extends IocContext {
      *
      * @type {Injector}
      */
-    services: Map<ClassType, FnRecord>;
+    services: Map<ClassType, FactoryRecord>;
 
     /**
      * only for target private or ref token. if has target.

@@ -1,4 +1,4 @@
-import { FnRecord, Injector } from '../injector';
+import { FactoryRecord, Injector } from '../injector';
 import { isToken } from '../tokens';
 import { Type } from '../types';
 import { EMPTY, isFunction, isNil } from '../utils/chk';
@@ -10,7 +10,7 @@ import { EMPTY, isFunction, isNil } from '../utils/chk';
  * @param provider 
  * @returns 
  */
-export function resolveToken<T>(rd: FnRecord<T>, provider: Injector): T {
+export function resolveToken<T>(rd: FactoryRecord<T>, provider: Injector): T {
     if (!rd) return null!;
 
     if (!isNil(rd.value)) return rd.value;

@@ -22,11 +22,12 @@ export abstract class IocRuntimeAction extends IocRegAction<RuntimeContext> { }
  * resolve constructor args action.
  */
 export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): void {
-    if (!ctx.args) {
+    if (!ctx.params) {
         ctx.params = ctx.reflect.methodParams.get('constructor') ?? EMPTY;
+    }
+    if (!ctx.args) {
         const factory = ctx.injector.resolve({ token: OperationInvokerFactory, target: ctx.type });
-        ctx.args = factory.create(ctx.reflect, 'constructor').resolveArguments(
-            factory.createContext(ctx.reflect, 'constructor', ctx.injector, ctx.providers ? { providers: [ctx.providers] } : undefined));
+        ctx.args = factory.create(ctx.reflect, 'constructor').resolveArguments(ctx.context ?? factory.createContext(ctx.reflect, 'constructor', ctx.injector));
     }
     next();
 };
@@ -40,9 +41,7 @@ export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): 
  * @extends {IocRuntimeAction}
  */
 export const CreateInstanceAction = function (ctx: RuntimeContext, next: () => void): void {
-    if (!ctx.instance) {
-        ctx.instance = new ctx.type(...ctx.args || EMPTY);
-    }
+    ctx.instance = new ctx.type(...ctx.args || EMPTY);
     next();
 };
 
@@ -52,7 +51,7 @@ export const CreateInstanceAction = function (ctx: RuntimeContext, next: () => v
  */
 export const InjectPropAction = function (ctx: RuntimeContext, next: () => void) {
     if (ctx.reflect.propProviders.size) {
-        const { injector, type } = ctx;
+        const { injector, context, type } = ctx;
         let meta: PropertyMetadata, key: string, token: Token, val;
         ctx.reflect.propProviders.forEach((metas, propertyKey) => {
             key = `${propertyKey}_INJECTED`;
@@ -62,7 +61,7 @@ export const InjectPropAction = function (ctx: RuntimeContext, next: () => void)
             }
             if (meta && !(ctx as any)[key]) {
                 token = meta.provider! || meta.type!;
-                val = injector.resolve({ token, target: type, regify: true, providers: ctx.providers ? [ctx.providers] : [] });
+                val = injector.resolve({ token, target: type, regify: true, context });
                 if (!isNil(val)) {
                     ctx.instance[propertyKey] = val;
                     (ctx as any)[key] = true;
@@ -159,7 +158,7 @@ export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void)
     if (ctx.reflect.autoruns.length) {
         const { injector: injector, type, instance } = ctx;
         ctx.reflect.autoruns.forEach(aut => {
-            injector.invoke(instance || type, aut.autorun, instance, ctx.providers);
+            injector.invoke(instance || type, aut.autorun, instance);
         });
     }
 

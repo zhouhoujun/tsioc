@@ -4,7 +4,7 @@ import { Injector } from './injector';
 
 
 /**
- * module loader for ioc.
+ * module loader for {@link Injector}.
  *
  * @export
  */

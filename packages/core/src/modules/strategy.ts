@@ -1,4 +1,4 @@
-import { isNil, FnRecord, Strategy, Token, Injector } from '@tsdi/ioc';
+import { isNil, FactoryRecord, Strategy, Token, Injector } from '@tsdi/ioc';
 import { ModuleInjector } from '../module';
 
 
@@ -39,7 +39,7 @@ export class ModuleStrategy<TI extends Injector = ModuleInjector> implements Str
         return type ?? injector.parent?.getTokenProvider(key)!;
     }
 
-    iterator(injector: TI, callbackfn: (fac: FnRecord, key: Token, resolvor?: Injector) => void | boolean, deep?: boolean) {
+    iterator(injector: TI, callbackfn: (fac: FactoryRecord, key: Token, resolvor?: Injector) => void | boolean, deep?: boolean) {
         if (this.getMDRef(injector).some(e => e.exports.iterator(callbackfn) === false)) return false;
         return deep && injector.parent?.iterator(callbackfn, deep)
     }

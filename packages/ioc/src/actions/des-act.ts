@@ -9,6 +9,7 @@ import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
 import { ROOT_INJECTOR } from '../metadata/tk';
 import { Injector } from '../injector';
+import { InvocationContext } from '../invoker';
 
 
 
@@ -56,7 +57,7 @@ function regInstf(injector: Injector, type: Type, provide: Token, singleton: boo
     const platfrom = injector.platform()
     injector.set(provide, {
         type,
-        fn: (providers: Injector) => {
+        fn: (context?: InvocationContext) => {
             // make sure has value.
             if (singleton && injector.hasValue(type)) {
                 return injector.get(type);
@@ -66,7 +67,7 @@ function regInstf(injector: Injector, type: Type, provide: Token, singleton: boo
                 provide,
                 type,
                 singleton,
-                providers
+                context
             } as RuntimeContext;
 
             platfrom.getAction(RuntimeLifeScope).register(ctx);

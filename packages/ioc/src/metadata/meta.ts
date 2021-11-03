@@ -231,7 +231,7 @@ export interface ProvidedInMetadata {
     /**
      * the token provided in.
      */
-    providedIn?: Type | 'root' | 'platform' | string;
+    providedIn?: Type | 'root' | 'platform';
 }
 
 

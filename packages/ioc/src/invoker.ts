@@ -76,7 +76,7 @@ export class InvocationContext<T = any> {
 
     private _argumentResolvers: OperationArgumentResolver[];
     private _arguments: T;
-    constructor(readonly injector: Injector, readonly target: ClassType, readonly method: string, args?: T, ...argumentResolvers: OperationArgumentResolver[]) {
+    constructor(readonly injector: Injector, readonly target?: ClassType, readonly method?: string, args?: T, ...argumentResolvers: OperationArgumentResolver[]) {
         this._argumentResolvers = argumentResolvers;
         this._arguments = args ?? {} as T;
     }

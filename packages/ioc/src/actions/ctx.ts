@@ -1,9 +1,9 @@
-import { InjectorScope } from '..';
-import { Injector, Registered } from '../injector';
-import { ParameterMetadata } from '../metadata/meta';
-import { TypeReflect } from '../metadata/type';
 import { Token } from '../tokens';
 import { Type } from '../types';
+import { ParameterMetadata, ProvidedInMetadata } from '../metadata/meta';
+import { TypeReflect } from '../metadata/type';
+import { Injector, Registered } from '../injector';
+import { InvocationContext } from '..';
 
 
 /**
@@ -54,12 +54,7 @@ export interface RegContext extends IocContext {
 /**
  * design action context.
  */
-export interface DesignContext extends RegContext {
-    /**
-     * type register in.
-     */
-    providedIn: string| InjectorScope | Type;
-
+export interface DesignContext extends RegContext, ProvidedInMetadata {
     /**
      * registered state.
      */
@@ -73,17 +68,16 @@ export interface DesignContext extends RegContext {
  */
 export interface RuntimeContext extends RegContext {
     /**
+     * invocation context.
+     */
+    context?: InvocationContext;
+    /**
      * target instance.
      *
      * @type {*}
      * @memberof RuntimeActionContext
      */
     instance?: any;
-
-    /**
-     * raise provider.
-     */
-    providers?: Injector;
 
     /**
      * property key

@@ -2,7 +2,7 @@ import { Type } from './types';
 import { Token } from './tokens';
 
 /**
- * provider.
+ * provider for {@link Injector }.
  */
 export interface ProvideProvider {
     /**
@@ -43,6 +43,8 @@ export interface ClassProvider extends ProvideProvider {
     useClass: Type;
     /**
      * A list of `token`s which need to be resolved by the injector.
+     * 
+     * [[token1, InjectFlags.SkipSelf], token2]
      */
     deps?: any[];
     /**

@@ -1,16 +1,16 @@
 import { ClassType, LoadType, Modules, Type } from '../types';
 import {
     ProviderType, ResolveOption, ServicesOption, MethodType, InjectorScope, Factory,
-    ProviderOption, RegisterOption, TypeOption, FnType, FnRecord, Platform, Container,
-    Injector, INJECT_IMPL, ServicesProvider
+    ProviderOption, RegisterOption, TypeOption, FnType, FactoryRecord, Platform, Container,
+    Injector, INJECT_IMPL, ServicesProvider, DependencyRecord, OptionFlags
 } from '../injector';
-import { Token } from '../tokens';
+import { InjectFlags, Token } from '../tokens';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR, TARGET } from '../metadata/tk';
 import { cleanObj, getClass, getTypes, mapEach } from '../utils/lang';
 import { KeyValueProvider, StaticProviders } from '../providers';
 import {
     isArray, isClass, isDefined, isFunction, isNil, isPlainObject,
-    isTypeObject, isTypeReflect, EMPTY, EMPTY_OBJ, isPrimitiveType
+    isTypeObject, isTypeReflect, EMPTY, EMPTY_OBJ, isPrimitiveType, isUndefined, isNumber
 } from '../utils/chk';
 import { DesignContext } from '../actions/ctx';
 import { DesignLifeScope } from '../actions/design';
@@ -21,7 +21,6 @@ import { InvocationContext, OperationArgumentResolver, OperationInvokerFactory, 
 import { DefaultModuleLoader } from './loader';
 import { ResolveServicesScope } from '../actions/serv';
 import { ModuleLoader } from '../module.loader';
-import { resolveToken } from './resolves';
 import { Services } from './services';
 import { DefaultPlatform } from './platform';
 
@@ -30,12 +29,12 @@ import { DefaultPlatform } from './platform';
 /**
  * strategy of di.
  */
- export interface Strategy {
+export interface Strategy {
     has?(injector: Injector, token: Token, deep?: boolean): boolean;
     hasValue?(injector: Injector, token: Token, deep?: boolean): boolean;
     resolve?<T>(injector: Injector, token: Token<T>, provider?: Injector): T;
     getProvider?<T>(injector: Injector, token: Token<T>): Type<T>;
-    iterator?(injector: Injector, callbackfn: (fac: FnRecord, key: Token, resolvor?: Injector) => void | boolean, deep?: boolean): void | boolean;
+    iterator?(injector: Injector, callbackfn: (fac: FactoryRecord, key: Token, resolvor?: Injector) => void | boolean, deep?: boolean): void | boolean;
 }
 
 export const EMPTY_STRATEGY: Strategy = {};
@@ -53,7 +52,7 @@ export const INJECT_STRATEGY: Strategy = {
     getProvider<T>(injector: Injector, token: Token<T>): Type<T> {
         return injector.parent?.getTokenProvider(token)!;
     },
-    iterator(injector: Injector, callbackfn: (fac: FnRecord, key: Token, resolvor?: Injector) => void | boolean, deep?: boolean): void | boolean {
+    iterator(injector: Injector, callbackfn: (fac: FactoryRecord, key: Token, resolvor?: Injector) => void | boolean, deep?: boolean): void | boolean {
         return deep && injector.parent?.iterator(callbackfn, deep);
     }
 }
@@ -76,7 +75,7 @@ export class DefaultInjector extends Injector {
      * @type {Map<Token, Function>}
      * @memberof BaseInjector
      */
-    protected factories: Map<Token, FnRecord>;
+    protected factories: Map<Token, FactoryRecord>;
     protected destCb!: () => void;
 
     constructor(providers: ProviderType[] = EMPTY, readonly parent?: Injector, readonly scope?: InjectorScope, private strategy: Strategy = INJECT_STRATEGY) {
@@ -148,7 +147,7 @@ export class DefaultInjector extends Injector {
      * @param token token.
      * @param option factory option.
      */
-    set<T>(token: Token<T>, option: FnRecord<T>): this;
+    set<T>(token: Token<T>, option: FactoryRecord<T>): this;
     /**
      * set provide.
      *
@@ -184,10 +183,11 @@ export class DefaultInjector extends Injector {
                 this.set(provide, multiPdr = {
                     fnType: 'fac',
                     fn: MUTIL,
+                    value: EMPTY,
                     deps: []
                 });
             }
-            multiPdr.deps?.push(generateRecord(this, target));
+            multiPdr.deps?.push({ token: generateRecord(this, target), options: OptionFlags.Default });
         } else {
             this.factories.set(provide, generateRecord(this, target));
         }
@@ -395,11 +395,10 @@ export class DefaultInjector extends Injector {
      * @param {Injector} provider
      * @returns {T}
      */
-    get<T>(token: Token<T>, notFoundValue?: T): T {
+    get<T>(token: Token<T>, notFoundValue?: T, injectFlags = InjectFlags.Default): T {
         if (this.isSelf(token)) return this as any;
-        return resolveToken(this.factories.get(token)!, this)
-            ?? this.strategy.resolve?.(this, token, this)
-            ?? notFoundValue;
+        return resolveToken(token, this.factories.get(token), this.factories, this.parent, notFoundValue, injectFlags)
+
     }
 
     /**
@@ -513,7 +512,7 @@ export class DefaultInjector extends Injector {
         return this;
     }
 
-    iterator(callbackfn: (fac: FnRecord, key: Token, resolvor?: Injector) => void | boolean, deep?: boolean): void | boolean {
+    iterator(callbackfn: (fac: FactoryRecord, key: Token, resolvor?: Injector) => void | boolean, deep?: boolean): void | boolean {
         if (mapEach(this.factories, callbackfn, this) === false) {
             return false;
         }
@@ -639,7 +638,7 @@ export class DefaultInjector extends Injector {
             key = propertyKey;
         }
 
-        const factory = this.resolve({ token: OperationInvokerFactory, target: tgRefl, providers });
+        const factory = this.resolve({ token: OperationInvokerFactory, target: tgRefl });
         return factory.create(tgRefl, key, instance).invoke(context ?? factory.createContext(tgRefl, key, this, option ?? { providers }));
     }
 
@@ -769,13 +768,15 @@ const IDENT = function <T>(value: T): T {
 const MUTIL = function <T>(...args: any): T[] {
     return args;
 };
+const CIRCULAR = IDENT;
+
 /**
  * generate record.
  * @param injector 
  * @param option 
  * @returns 
  */
-export function generateRecord<T>(injector: Injector, option: StaticProviders): FnRecord<T> {
+export function generateRecord<T>(injector: Injector, option: StaticProviders): FactoryRecord<T> {
     let fn: Function = IDENT;
     let value: T | undefined;
     let fnType: FnType = 'fac';
@@ -807,14 +808,117 @@ export function generateRecord<T>(injector: Injector, option: StaticProviders): 
     return { value, fn, fnType, deps, type };
 }
 
-function computeDeps(provider: StaticProviders) {
+function computeDeps(provider: StaticProviders): DependencyRecord[] {
     let deps: any[] = null!;
-    if (provider.deps && provider.deps.length) {
-        deps = provider.deps;
+    const pdrdeps = provider.deps;
+    if (pdrdeps && pdrdeps.length) {
+        deps = pdrdeps.map(dep => {
+            let options = OptionFlags.Default;
+            let token = dep;
+            if (isArray(dep)) {
+                for (let i = 0; i < dep.length; i++) {
+                    let d = dep[i];
+                    if (isNumber(d)) {
+                        switch (d) {
+                            case InjectFlags.Optional:
+                                options = options | OptionFlags.Optional;
+                                break;
+                            case InjectFlags.SkipSelf:
+                                options = options & ~OptionFlags.CheckSelf;
+                                break;
+                            case InjectFlags.Self:
+                                options = options & ~OptionFlags.CheckParent;
+                                break;
+                        }
+                    } else {
+                        token = d;
+                    }
+                }
+            }
+            return { token, options };
+        });
     } else if (provider.useExisting) {
-        deps = [provider.useExisting];
+        deps = [{ token: provider.useExisting, options: OptionFlags.Default }];
     }
     return deps ?? EMPTY;
+}
+
+/**
+ * circular dependency error.
+ */
+export class CircularDependencyError extends Error {
+    constructor(message?: string) {
+        super('Circular dependency' + message);
+        Object.setPrototypeOf(this, CircularDependencyError);
+    }
+}
+
+export class NullInjectorError extends Error {
+    constructor(token: Token) {
+        super(`NullInjectorError: No provider for ${token?.toString()}!`);
+        Object.setPrototypeOf(this, NullInjectorError);
+    }
+}
+
+/**
+ * resolve token.
+ * @param rd 
+ * @param provider 
+ * @returns 
+ */
+export function resolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, parent: Injector | undefined, notFoundValue: any, flags: InjectFlags): any {
+    if (rd && !(flags & InjectFlags.SkipSelf)) {
+        let value = rd.value;
+        if (value === CIRCULAR) {
+            throw new CircularDependencyError();
+        }
+        if (value === EMPTY && !isNil(rd.value)) return rd.value;
+        let deps = EMPTY;
+        if (rd.deps?.length) {
+            deps = [];
+            for (let i = 0; i < rd.deps.length; i++) {
+                const dep = rd.deps[i];
+                const chlrd = isPlainObject(dep.token) ? dep.token : (dep.options & OptionFlags.CheckSelf ? records.get(dep.token) : undefined);
+                deps.push(resolveToken(
+                    dep.token,
+                    chlrd,
+                    records,
+                    !chlrd && !(dep.options & OptionFlags.CheckParent) ? undefined : parent,
+                    dep.options & OptionFlags.Optional ? null : undefined,
+                    InjectFlags.Default));
+            }
+        }
+        switch (rd.fnType) {
+            case 'cotr':
+                return new (rd.fn as Type)(...deps);
+            case 'fac':
+                if (value === EMPTY) {
+                    return rd.value = value = rd.fn?.(...deps);
+                }
+                return rd.fn?.(...deps);
+            case 'inj':
+            default:
+                if (rd.expires) {
+                    if ((rd.expires + rd.ltop!) < Date.now()) {
+                        rd.ltop = Date.now();
+                        return rd.cache!;
+                    }
+                    rd.expires = null!;
+                    rd.cache = null!;
+                    rd.ltop = null!;
+                }
+                return rd.fn?.(...deps);
+        }
+    } else if (!(flags & InjectFlags.Self)) {
+        return parent?.get(token, notFoundValue, InjectFlags.Default);
+    } else if (!(flags & InjectFlags.Optional)) {
+        if (isUndefined(notFoundValue)) {
+            throw new NullInjectorError(token);
+        }
+        return notFoundValue;
+    } else {
+        return notFoundValue ?? null;
+    }
 }
 
 
@@ -829,7 +933,7 @@ const resolves: OperationArgumentResolver[] = [
             if (isFunction(pdr) && !injector.platform().isRegistered(pdr) && !injector.has(pdr, true)) {
                 injector.register(pdr as Type);
             }
-            return injector.get(pdr);
+            return injector.get(pdr, null, parameter.flags);
         }
     },
     {
@@ -845,7 +949,7 @@ const resolves: OperationArgumentResolver[] = [
             return (parameter.paramName && isDefined(ctx.arguments[parameter.paramName])) as boolean;
         },
         resolve(parameter, ctx) {
-            return ctx.injector.get<any>(parameter.paramName!);
+            return ctx.injector.get<any>(parameter.paramName!, null, parameter.flags);
         }
     },
     {
@@ -858,7 +962,7 @@ const resolves: OperationArgumentResolver[] = [
             if (isFunction(ty) && !injector.platform().isRegistered(ty) && !injector.has(ty, true)) {
                 injector.register(ty as Type);
             }
-            return injector.get(ty);
+            return injector.get(ty, null, parameter.flags);
         }
     },
     // default value
@@ -872,20 +976,25 @@ const resolves: OperationArgumentResolver[] = [
     }
 ];
 
-export function createInvocationContext(injector: Injector, typeRef: TypeReflect, method: string
-    , option?: {
-        args?: Record<string, any>,
-        resolvers?: OperationArgumentResolver[] | ((injector: Injector, typeRef?: TypeReflect, method?: string) => OperationArgumentResolver[]),
-        providers?: ProviderType[]
-    }) {
+export function createInvocationContext(injector: Injector, option?: {
+    typeRef?: TypeReflect,
+    method?: string,
+    args?: Record<string, any>,
+    resolvers?: OperationArgumentResolver[] | ((injector: Injector, typeRef?: TypeReflect, method?: string) => OperationArgumentResolver[]),
+    providers?: ProviderType[]
+}) {
     option = option || EMPTY_OBJ;
-    const platform = injector.platform();
-    const proxy = typeRef.type.prototype[method]['_proxy'];
-    let providers = [...option.providers || EMPTY, platform.getTypeProvider(typeRef.type), ...typeRef.methodProviders.get(method) || EMPTY]
+    let providers: ProviderType[] = option.providers ?? EMPTY;
+    const { typeRef, method } = option;
+    if (typeRef) {
+        const platform = injector.platform();
+        providers = [...providers, platform.getTypeProvider(typeRef.type), ...(method ? typeRef.methodProviders.get(method) ?? EMPTY : EMPTY)]
+    }
     if (providers.length) {
+        const proxy = typeRef && method ? typeRef.type.prototype[method]['_proxy'] : false;
         injector = Injector.create(providers, injector, proxy ? 'invoked' : 'parameter');
     }
-    return injector.has(InvocationContext) ? injector.get(InvocationContext) : new InvocationContext(injector, typeRef.type, method, option.args || EMPTY_OBJ,
+    return injector.has(InvocationContext) ? injector.get(InvocationContext) : new InvocationContext(injector, typeRef?.type, method, option.args || EMPTY_OBJ,
         ...(isFunction(option.resolvers) ? option.resolvers(injector, typeRef, method) : option.resolvers) ?? EMPTY,
         ...resolves);
 }
@@ -904,7 +1013,11 @@ function registerCores(root: Injector) {
             return new ReflectiveOperationInvoker(isFunction(type) ? get(type) : type, method, instance);
         },
         createContext: (type, method, injector, options?) => {
-            return createInvocationContext(injector, isFunction(type) ? get(type) : type, method, options);
+            return createInvocationContext(injector, {
+                ...options,
+                typeRef: isFunction(type) ? get(type) : type,
+                method
+            });
         }
     });
     // bing action.

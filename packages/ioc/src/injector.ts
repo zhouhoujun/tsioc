@@ -1,6 +1,6 @@
 import { Destroyable } from './destroy';
 import { ClassType, LoadType, Modules, Type } from './types';
-import { Token } from './tokens';
+import { Token, InjectFlags } from './tokens';
 import { Abstract } from './metadata/fac';
 import { TypeReflect } from './metadata/type';
 import { remove } from './utils/lang';
@@ -65,7 +65,7 @@ export abstract class Injector implements Destroyable {
      * @param {T} notFoundValue
      * @returns {T}
      */
-    abstract get<T>(token: Token<T>, notFoundValue?: T): T;
+    abstract get<T>(token: Token<T>, notFoundValue?: T, injectFlags?: InjectFlags): T;
     /**
      * resolve token instance with token and param provider.
      *
@@ -128,7 +128,7 @@ export abstract class Injector implements Destroyable {
      * @param token token.
      * @param option factory option.
      */
-    abstract set<T>(token: Token<T>, option: FnRecord<T>): this;
+    abstract set<T>(token: Token<T>, option: FactoryRecord<T>): this;
     /**
      * set provide.
      *
@@ -203,11 +203,11 @@ export abstract class Injector implements Destroyable {
     /**
      * iterator current resolver.
      *
-     * @param {((pdr: FnRecord, key: Token, resolvor?: Injector) => void|boolean)} callbackfn
+     * @param {((pdr: FactoryRecord, key: Token, resolvor?: Injector) => void|boolean)} callbackfn
      * @param {boolean} [deep] deep iterator all register in parent or not.
      * @returns {(void|boolean)}
      */
-    abstract iterator(callbackfn: (pdr: FnRecord<any>, key: Token<any>, resolvor?: Injector) => boolean | void, deep?: boolean): boolean | void;
+    abstract iterator(callbackfn: (pdr: FactoryRecord<any>, key: Token<any>, resolvor?: Injector) => boolean | void, deep?: boolean): boolean | void;
     /**
      * copy injector to current injector.
      *
@@ -499,7 +499,7 @@ export abstract class Platform implements Destroyable {
      */
     abstract setValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
 
-    abstract get destroyed(): boolean; 
+    abstract get destroyed(): boolean;
     abstract destroy(): void;
     abstract onDestroy(callback: () => void): void;
 
@@ -586,10 +586,21 @@ export type FnType = 'cotr' | 'inj' | 'fac';
  */
 export type InjectorScope = Type | 'platfrom' | 'root' | 'provider' | 'invoked' | 'parameter';
 
+export const enum OptionFlags {
+    Optional = 1 << 0,
+    CheckSelf = 1 << 1,
+    CheckParent = 1 << 2,
+    Default = CheckSelf | CheckParent
+}
+
+export interface DependencyRecord {
+    token: any;
+    options: OptionFlags;
+}
 /**
  * factory record.
  */
-export interface FnRecord<T = any> {
+export interface FactoryRecord<T = any> {
     /**
      * use value for provide.
      *
@@ -604,7 +615,7 @@ export interface FnRecord<T = any> {
 
     fnType?: FnType;
 
-    deps?: any[];
+    deps?: DependencyRecord[];
 
     /**
      * token provider type.
@@ -651,11 +662,14 @@ export interface ResolveOption<T = any> {
      * register token if has not register.
      */
     regify?: boolean;
-
     /**
      * resolve providers.
      */
     providers?: ProviderType[];
+    /**
+     * invocation context.
+     */
+    context?: InvocationContext;
 }
 
 

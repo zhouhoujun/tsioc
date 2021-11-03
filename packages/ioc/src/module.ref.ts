@@ -3,7 +3,12 @@ import { Type } from './types';
 import { Abstract } from './metadata/fac';
 import { Injector, Registered } from './injector';
 
-
+/**
+ * Represents an instance of an `Module` created by an `ModuleFactory`.
+ * Provides access to the `Module` instance and related objects.
+ *
+ * @publicApi
+ */
 @Abstract()
 export abstract class ModuleRef<T = any> extends Injector implements Destroyable {
     /**
