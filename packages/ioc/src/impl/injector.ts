@@ -6,11 +6,11 @@ import {
 } from '../injector';
 import { InjectFlags, Token } from '../tokens';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR, TARGET } from '../metadata/tk';
-import { cleanObj, getClass, getTypes } from '../utils/lang';
-import { KeyValueProvider, StaticProviders } from '../providers';
+import { cleanObj, deepForEach, getTypes } from '../utils/lang';
+import { KeyValueProvider, StaticProvider, StaticProviders } from '../providers';
 import {
     isArray, isDefined, isFunction, isNil, isPlainObject, isPrimitiveType,
-    isTypeObject, isTypeReflect, EMPTY, EMPTY_OBJ, isUndefined, isNumber
+    isTypeObject, isTypeReflect, EMPTY, EMPTY_OBJ, isUndefined, isNumber, getClass
 } from '../utils/chk';
 import { DesignContext } from '../actions/ctx';
 import { DesignLifeScope } from '../actions/design';
@@ -58,7 +58,7 @@ export class DefaultInjector extends Injector {
 
     protected isSelf(token: Token) {
         switch (this.scope) {
-            case 'platfrom':
+            case 'platform':
                 return platformAlias(token);
             case 'root':
                 return rootAlias(token);
@@ -73,7 +73,7 @@ export class DefaultInjector extends Injector {
 
 
     protected initScope(scope?: InjectorScope) {
-        if (scope === 'platfrom') {
+        if (scope === 'platform') {
             this._plat = new DefaultPlatform();
             registerCores(this);
         }
@@ -123,6 +123,7 @@ export class DefaultInjector extends Injector {
      */
     set<T>(token: Token<T>, fn: Factory<T>, type?: Type<T>): this;
     set<T>(target: any, fn?: any, type?: Type<T>): this {
+        this.assertNotDestroyed();
         if (isFunction(fn)) {
             const old = this.factories.get(target);
             if (old) {
@@ -138,6 +139,107 @@ export class DefaultInjector extends Injector {
             this.registerProvider((target as ProviderOption).provide, target);
         }
         return this;
+    }
+
+
+    /**
+     * register types.
+     * @param {Type<any>[]} types 
+     */
+    register(types: (Type | RegisterOption)[]): this;
+    /**
+     * register types.
+     * @param types 
+     */
+    register(...types: (Type | RegisterOption)[]): this;
+    register(...args: any[]): this {
+        this.assertNotDestroyed();
+        const platform = this.platform();
+        deepForEach(args, t => {
+            this.processProvider(t, platform)
+        });
+        return this;
+    }
+
+    /**
+     * cache instance.
+     * @param token 
+     * @param instance 
+     * @param expires 
+     */
+    cache<T>(token: Token<T>, cache: T, expires: number): this {
+        this.assertNotDestroyed();
+        const pd = this.factories.get(token);
+        const ltop = Date.now();
+        if (pd) {
+            pd.cache = cache;
+            pd.ltop = ltop
+            pd.expires = expires;
+        } else {
+            this.factories.set(token, { cache, ltop, expires });
+        }
+        return this;
+    }
+
+    /**
+     * inject providers.
+     *
+     * @param {...ProviderType[]} providers
+     * @returns {this}
+     */
+    inject(providers: ProviderType[]): this;
+    /**
+     * inject providers.
+     *
+     * @param {...ProviderType[]} providers
+     * @returns {this}
+     */
+    inject(...providers: ProviderType[]): this;
+    inject(...args: any[]): this {
+        this.assertNotDestroyed();
+        if (args.length) {
+            const platform = this.platform();
+            deepForEach(args, p => this.processProvider(p, platform), v => isPlainObject(v) && !(v as StaticProviders).provide);
+        }
+        return this;
+    }
+
+    protected processProvider(p: Injector | TypeOption | StaticProvider, platform: Platform) {
+        if (isFunction(p)) {
+            this.registerType(platform, p);
+        } else if (isPlainObject(p) && (p as StaticProviders).provide) {
+            this.registerProvider((p as StaticProviders).provide, p as StaticProviders);
+        } else if (isPlainObject(p) && (p as TypeOption).type) {
+            this.registerType(platform, (p as TypeOption).type, p as TypeOption);
+        } else if (p instanceof Injector) {
+            this.copy(p);
+        } else if (p instanceof KeyValueProvider) {
+            p.each((k, useValue) => {
+                this.factories.set(k, { value: useValue });
+            });
+        }
+    }
+
+    /**
+     * register type class.
+     * @param injector register in the injector.
+     * @param option the type register option.
+     * @param [singleton]
+     */
+    protected registerType<T>(platform: Platform, type: Type<T>, option?: TypeOption<T>) {
+        // make sure class register once.
+        if (platform.isRegistered(type) || this.has(type)) {
+            return false;
+        }
+        const injector: Injector = this;
+        const ctx = {
+            injector,
+            ...option,
+            type
+        } as DesignContext;
+        platform.getAction(DesignLifeScope).register(ctx);
+        cleanObj(ctx);
+        return true;
     }
 
     protected registerProvider(provide: Token, target: StaticProviders) {
@@ -157,140 +259,7 @@ export class DefaultInjector extends Injector {
         }
     }
 
-    /**
-     * register with option.
-     * @param options
-     */
-    register<T>(option: RegisterOption<T>): this;
-    /**
-     * register type class.
-     * @param type the class type.
-     * @param [options] the class prodvider to.
-     * @returns {this}
-     */
-    register<T>(type: Type<T>): this;
-    /**
-     * register types.
-     * @param type the class type.
-     * @param [options] the class prodvider to.
-     * @returns {this}
-     */
-    register(types: Type[]): this;
-    register(...types: Type[]): this;
-    register(...args: any[]): this {
-        if (args.length === 1) {
-            const target = args[0];
-            if (isArray(target)) {
-                target.forEach(t => this.regType(t));
-            } else if (isFunction(target)) {
-                this.regType(target);
-            } else {
-                if ((target as TypeOption).type) {
-                    this.registerIn(this, (target as TypeOption).type, target as TypeOption);
-                } else if (target.provide) {
-                    this.registerProvider(target.provide, target);
-                }
-            }
-        } else {
-            args.forEach(t => this.regType(t));
-        }
 
-        return this;
-    }
-
-    /**
-     * cache instance.
-     * @param token 
-     * @param instance 
-     * @param expires 
-     */
-    cache<T>(token: Token<T>, cache: T, expires: number): this {
-        const pd = this.factories.get(token);
-        const ltop = Date.now();
-        if (pd) {
-            pd.cache = cache;
-            pd.ltop = ltop
-            pd.expires = expires;
-        } else {
-            this.factories.set(token, { cache, ltop, expires });
-        }
-        return this;
-    }
-
-
-    /**
-     * register type class.
-     * @param injector register in the injector.
-     * @param option the type register option.
-     * @param [singleton]
-     */
-    protected registerIn<T>(injector: Injector, type: Type<T>, option?: TypeOption<T>) {
-        const platform = injector.platform();
-        // make sure class register once.
-        if (platform.isRegistered(type) || injector.has(type)) {
-            return false;
-        }
-
-        const ctx = {
-            injector,
-            ...option,
-            type
-        } as DesignContext;
-        platform.getAction(DesignLifeScope).register(ctx);
-        cleanObj(ctx);
-        return true;
-    }
-
-    protected regType(type: Type) {
-        this.registerIn(this, type);
-    }
-
-    /**
-     * inject providers.
-     *
-     * @param {...ProviderType[]} providers
-     * @returns {this}
-     */
-    inject(providers: ProviderType[]): this;
-    /**
-     * inject providers.
-     *
-     * @param {...ProviderType[]} providers
-     * @returns {this}
-     */
-    inject(...providers: ProviderType[]): this;
-    inject(...args: any[]): this {
-        const providers = (args.length === 1 && isArray(args[0])) ? args[0] : args;
-        providers?.length && providers.forEach(p => {
-            if (!p) {
-                return;
-            }
-
-            if (isFunction(p)) {
-                return this.regType(p);
-            }
-
-            if (isArray(p)) {
-                return this.use(p);
-            }
-
-            if (isPlainObject(p)) {
-                if ((p as StaticProviders).provide) {
-                    this.registerProvider((p as StaticProviders).provide, p as StaticProviders);
-                } else {
-                    this.use(p);
-                }
-            } else if (p instanceof Injector) {
-                this.copy(p);
-            } else if (p instanceof KeyValueProvider) {
-                p.each((k, useValue) => {
-                    this.factories.set(k, { value: useValue });
-                });
-            }
-        });
-
-        return this;
-    }
 
     /**
      * use modules.
@@ -307,14 +276,10 @@ export class DefaultInjector extends Injector {
      */
     use(...modules: Modules[]): Type[];
     use(...args: any[]): Type[] {
-        let modules: Modules[];
-        if (args.length === 1 && isArray(args[0])) {
-            modules = args[0];
-        } else {
-            modules = args;
-        }
-        let types = getTypes(modules);
-        types.forEach(ty => this.regType(ty));
+        this.assertNotDestroyed();
+        let types = getTypes(args);
+        const platform = this.platform();
+        types.forEach(ty => this.registerType(platform, ty));
         return types;
     }
 
@@ -327,6 +292,7 @@ export class DefaultInjector extends Injector {
      * @returns {boolean}
      */
     has<T>(token: Token<T>, flags = InjectFlags.Default): boolean {
+        this.assertNotDestroyed();
         if (!(flags & InjectFlags.SkipSelf) && (this.isSelf(token) || this.factories.has(token))) return true;
         if (!(flags & InjectFlags.Self)) {
             return this.parent?.has(token, flags) || false;
@@ -341,6 +307,7 @@ export class DefaultInjector extends Injector {
      * @returns 
      */
     hasValue<T>(token: Token<T>, flags = InjectFlags.Default): boolean {
+        this.assertNotDestroyed();
         if (!(flags & InjectFlags.SkipSelf) && (this.isSelf(token) || !isNil(this.factories.get(token)?.value))) return true;
         if (!(flags & InjectFlags.Self)) {
             return this.parent?.hasValue(token, flags) || false;
@@ -349,6 +316,7 @@ export class DefaultInjector extends Injector {
     }
 
     setValue<T>(token: Token<T>, value: T, type?: Type<T>): this {
+        this.assertNotDestroyed();
         const isp = this.factories.get(token);
         if (isp) {
             isp.value = value;
@@ -369,6 +337,7 @@ export class DefaultInjector extends Injector {
      * @returns {T} token value.
      */
     get<T>(token: Token<T>, notFoundValue?: T, flags = InjectFlags.Default): T {
+        this.assertNotDestroyed();
         if (!(flags & InjectFlags.SkipSelf) && this.isSelf(token)) return this as any;
         return tryResolveToken(token, this.factories.get(token), this.factories, this.parent, notFoundValue, flags);
     }
@@ -430,6 +399,7 @@ export class DefaultInjector extends Injector {
      */
     resolve<T>(token: Token<T>, providers: ProviderType[]): T;
     resolve<T>(token: Token<T> | ResolveOption<T>, ...args: any[]) {
+        this.assertNotDestroyed();
         let inst: T;
         if (isPlainObject(token)) {
             let option = token as ResolveOption;
@@ -470,10 +440,9 @@ export class DefaultInjector extends Injector {
             ?? this.resolveFailed(injector, platform, option.token!, option.regify, option.defaultToken);
     }
 
-
     protected resolveFailed<T>(injector: Injector, platform: Platform, token: Token<T>, regify?: boolean, defaultToken?: Token): T {
         if (regify && isFunction(token) && !platform.isRegistered(token)) {
-            this.regType(token as Type);
+            this.registerType(platform, token as Type);
             return this.get(token);
         }
         if (defaultToken) {
@@ -491,6 +460,7 @@ export class DefaultInjector extends Injector {
      * @returns {Type<T>}
      */
     getTokenProvider<T>(token: Token<T>, flags = InjectFlags.Default): Type<T> {
+        this.assertNotDestroyed();
         let type: Type | undefined;
         if (!(flags & InjectFlags.SkipSelf)) {
             const rd = this.factories.get(token);
@@ -511,6 +481,7 @@ export class DefaultInjector extends Injector {
      * @memberof BaseInjector
      */
     unregister<T>(token: Token<T>): this {
+        this.assertNotDestroyed();
         const isp = this.factories.get(token);
         if (isp) {
             this.factories.delete(token);
@@ -601,6 +572,7 @@ export class DefaultInjector extends Injector {
      */
     invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, providers: ProviderType[]): TR;
     invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
+        this.assertNotDestroyed();
         let providers: ProviderType[] | undefined;
         let context: InvocationContext | null = null;
         let option: any;
@@ -663,6 +635,7 @@ export class DefaultInjector extends Injector {
     load(modules: LoadType[]): Promise<Type[]>;
     load(...modules: LoadType[]): Promise<Type[]>;
     async load(...args: any[]): Promise<Type[]> {
+        this.assertNotDestroyed();
         let modules: LoadType[];
         if (args.length === 1 && isArray(args[0])) {
             modules = args[0];
@@ -711,6 +684,13 @@ export class DefaultInjector extends Injector {
         });
     }
 
+    protected assertNotDestroyed(): void {
+        if (this.destroyed) {
+            throw new Error('Injector has already been destroyed.');
+        }
+    }
+
+
     protected destroying() {
         Array.from(this.factories.keys())
             .forEach(k => {
@@ -721,7 +701,7 @@ export class DefaultInjector extends Injector {
         if (this.parent) {
             !this.parent.destroyed && this.parent.offDestory(this.destCb);
         }
-        if (this.scope === 'platfrom') {
+        if (this.scope === 'platform') {
             this._plat.destroy();
         }
         this._plat = null!;

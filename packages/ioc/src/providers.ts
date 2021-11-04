@@ -1,4 +1,4 @@
-import { Type } from './types';
+import { Modules, Type } from './types';
 import { Token } from './tokens';
 
 /**
@@ -19,7 +19,7 @@ export interface ProvideProvider {
 }
 
 /**
- * class provider for {@link Injector }
+ * class provider for {@link Injector }.
  * 
  * example:
  * ```typescript
@@ -86,7 +86,6 @@ export interface ValueProvider extends ProvideProvider {
  *
  * @description
  * Configures the `Injector` to return a value by invoking a `useFactory` function.
- *
  *
  */
 export interface FactoryProvider extends ProvideProvider {
@@ -194,3 +193,11 @@ export type StaticProviders = ClassProvider & ValueProvider & ConstructorProvide
  * include type {@link TypeProvider}, {@link ClassProvider}, {@link ValueProvider}, {@link ConstructorProvider}, {@link ExistingProvider}, {@link FactoryProvider}, {@link KeyValueProvider}.
  */
 export type StaticProvider = TypeProvider | ClassProvider | ValueProvider | ConstructorProvider | ExistingProvider | FactoryProvider | KeyValueProvider;
+
+/**
+ * injector type with providers.
+ */
+export interface InjectorTypeWithProviders<T = any> {
+    module: Type<T>;
+    providers: (Modules[]|StaticProvider)[]
+}

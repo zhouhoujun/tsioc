@@ -16,15 +16,15 @@ export const BindMthPointcutAction = function (ctx: RuntimeContext, next: () => 
         return next();
     }
 
-    const platfrom = ctx.injector.platform();
-    const scope = platfrom.getAction(ProceedingScope);
+    const platform = ctx.injector.platform();
+    const scope = platform.getAction(ProceedingScope);
 
     const target = ctx.instance;
     const targetType = ctx.type;
 
     const className = ctx.reflect.class.className;
     const decorators = ctx.reflect.class.getPropertyDescriptors();
-    const advicesMap = platfrom.getAction(ADVISOR).getAdviceMap(targetType);
+    const advicesMap = platform.getAction(ADVISOR).getAdviceMap(targetType);
 
     if (advicesMap && advicesMap.size) {
         advicesMap.forEach((advices, name) => {
@@ -93,9 +93,9 @@ export const MatchPointcutAction = function (ctx: RuntimeContext, next: () => vo
         return next();
     }
 
-    const platfrom = ctx.injector.platform();
-    let advisor = platfrom.getAction(ADVISOR);
-    let matcher = platfrom.getAction(ADVICE_MATCHER);
+    const platform = ctx.injector.platform();
+    let advisor = platform.getAction(ADVISOR);
+    let matcher = platform.getAction(ADVICE_MATCHER);
     let targetType = ctx.type;
 
     advisor.aspects.forEach(type => {

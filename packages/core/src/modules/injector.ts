@@ -78,7 +78,7 @@ export class ModuleExports extends DefaultInjector implements IModuleExports {
     }
 
     /**
-     * platfrom.
+     * platform.
      */
     override platform(): Platform {
         return this.moduleRef.platform();
@@ -89,11 +89,11 @@ export class ModuleExports extends DefaultInjector implements IModuleExports {
      */
     exports: ModuleInjector[] = [];
 
-    protected override regType<T>(type: Type<T>) {
-        if (this.registerIn(this.moduleRef, type)) {
-            this.export(type, true, true);
-        }
-    }
+    // protected override regType<T>(type: Type<T>) {
+    //     if (this.registerIn(this.moduleRef, type)) {
+    //         this.export(type, true, true);
+    //     }
+    // }
 
     export(type: Type, noRef?: boolean, hasReged?: boolean) {
         if (this.has(type)) {

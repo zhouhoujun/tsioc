@@ -1,19 +1,24 @@
 
+import { Platform, StaticProviders } from '..';
 import { Injector, InjectorScope, ProviderType } from '../injector';
 import { get } from '../metadata/refl';
 import { ModuleReflect } from '../metadata/type';
 import { ModuleFactory, ModuleOption } from '../module.factory';
 import { ModuleRef } from '../module.ref';
+import { InjectorTypeWithProviders, StaticProvider } from '../providers';
 import { InjectFlags, Token } from '../tokens';
 import { Modules, Type } from '../types';
-import { isFunction } from '../utils/chk';
+import { EMPTY, isFunction } from '../utils/chk';
+import { deepForEach } from '../utils/lang';
 import { DefaultInjector, tryResolveToken } from './injector';
 
 export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T> {
 
     private _instance!: T;
-    constructor(readonly moduleType: Type<T>, readonly parent: Injector, readonly scope?: InjectorScope) {
-        super()
+    constructor(readonly moduleType: Type<T>, providers: ProviderType[], readonly parent: Injector, readonly scope?: InjectorScope) {
+        super(providers, parent, scope);
+        const dedupStack: Type[] = [];
+        deepForEach([moduleType], type => this.processInjectorType(type, [], dedupStack));
     }
 
 
@@ -29,13 +34,21 @@ export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T>
     }
 
     protected override isSelf(token: Token): boolean {
-        if (token === ModuleRef) return true;
-        return super.isSelf(token);
+        return token === ModuleRef || super.isSelf(token);
     }
 
-    get<T>(token: Token<T>, notFoundValue?: T, injectFlags = InjectFlags.Default): T {
-        if (this.isSelf(token)) return this as any;
-        return tryResolveToken(token, this.factories.get(token), this.factories, this.parent, notFoundValue, injectFlags);
+    override get<T>(token: Token<T>, notFoundValue?: T, flags = InjectFlags.Default): T {
+        this.assertNotDestroyed();
+        if (!(flags & InjectFlags.SkipSelf) && this.isSelf(token)) return this as any;
+        return tryResolveToken(token, this.factories.get(token), this.factories, this.parent, notFoundValue, flags);
+    }
+
+    protected processInjectorType(def: Type|InjectorTypeWithProviders, parents: Type[], dedupStack: Type[]) {
+        
+    }
+
+    protected override processProvider(provider: Injector | StaticProvider, platform: Platform, moduleType?: Type, providers?: ProviderType[]): void {
+
     }
 
 }

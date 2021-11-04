@@ -3,7 +3,6 @@ import { Type, Modules, ClassType } from '../types';
 import { getClass, isArray, isClass, isClassType, isFunction, isNil, isPlainObject } from './chk';
 import { clsUglifyExp } from './exps';
 import { getClassAnnotation } from './util';
-export { getClass } from './chk';
 
 /**
  * create an new object from target object omit some field.
@@ -70,13 +69,22 @@ export function forIn(target: any, iterator: (item: any, idx?: any) => void | bo
     }
 }
 
-export function mapEach<TKey, TVal, TC = any>(map: Map<TKey, TVal>, callbackfn: (fac: TVal, key: TKey, resolvor?: TC) => void | boolean, resolvor?: TC) {
-    const keys = Array.from(map.keys());
-    const values = Array.from(map.values());
-    if (keys.some((tk, idx) => callbackfn(values[idx], tk, resolvor) === false)) {
-        return false;
-    }
+
+/**
+ * deep for each.
+ * @param input 
+ * @param fn iterator callback.
+ * @param isRecord is item record or not.
+ * @param getRecord get record values.
+ */
+export function deepForEach<T>(
+    input: (T | Record<string, T> | any[])[],
+    fn: (value: T) => void,
+    isRecord?: (value: any) => boolean,
+    getRecord?: (value: any) => T[]): void {
+    input.forEach(value => Array.isArray(value) ? deepForEach(value, fn) : isRecord && isRecord(value) ? deepForEach(getRecord ? getRecord(value) : Object.values(value), fn) : fn(value as T));
 }
+
 
 /**
  * first.
@@ -226,32 +234,37 @@ export function isExtendsClass<T extends ClassType>(target: ClassType, baseClass
  * @returns {Type[]}
  */
 export function getTypes(mds: Modules | Modules[]): Type[] {
-    if (!mds) return [];
-    return isArray(mds) ? mds.reduce((typs, curr) => typs.concat(getContentTypes(curr)), [] as Type[]) : getContentTypes(mds);
+    let types: Type[] = [];
+    mds && deepForEach(isArray(mds) ? mds : Object.values(mds), ty => {
+        isClass(ty) && types.push(ty)
+    }, v => isPlainObject(v));
+    return types;
 }
 
-const exportKey = 'exports';
-const esModuleKey = '__esModule';
 
-function getContentTypes(regModule: Modules): Type[] {
-    let regModules: Type[] = [];
-    if (isClass(regModule)) {
-        regModules.push(regModule);
-    } else if (isPlainObject(regModule)) {
-        let rmodules = regModule[exportKey] ? regModule[exportKey] : regModule;
-        if (isPlainObject(rmodules)) {
-            if (rmodules[esModuleKey]) {
-                for (let p in rmodules) {
-                    let type = rmodules[p];
-                    regModules.push(...getContentTypes(type));
-                }
-            }
-        } else if (isClass(rmodules)) {
-            regModules.push(rmodules);
-        }
-    }
-    return regModules;
-}
+
+// const exportKey = 'exports';
+// const esModuleKey = '__esModule';
+
+// function getContentTypes(regModule: Modules): Type[] {
+//     let regModules: Type[] = [];
+//     if (isClass(regModule)) {
+//         regModules.push(regModule);
+//     } else if (isPlainObject(regModule)) {
+//         let rmodules = regModule[exportKey] ? regModule[exportKey] : regModule;
+//         if (isPlainObject(rmodules)) {
+//             if (rmodules[esModuleKey]) {
+//                 for (let p in rmodules) {
+//                     let type = rmodules[p];
+//                     regModules.push(...getContentTypes(type));
+//                 }
+//             }
+//         } else if (isClass(rmodules)) {
+//             regModules.push(rmodules);
+//         }
+//     }
+//     return regModules;
+// }
 
 /**
  * clean object.

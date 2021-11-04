@@ -200,25 +200,15 @@ export abstract class Injector implements Destroyable {
      */
     abstract use(...modules: Modules[]): Type<any>[];
     /**
-     * register with option.
-     * @param options
+     * register types.
+     * @param {Type<any>[]} types 
      */
-    abstract register<T>(option: RegisterOption<T>): this;
+    abstract register(types: (Type | RegisterOption)[]): this;
     /**
      * register types.
      * @param types 
      */
-    abstract register(...types: Type<any>[]): this;
-    /**
-     * register types.
-     * @param {Type<any>[]} types 
-     */
-    abstract register(types: Type<any>[]): this;
-    /**
-     * regoster type.
-     * @param type 
-     */
-    abstract register<T>(type: Type<T>): this;
+    abstract register(...types: (Type | RegisterOption)[]): this;
     /**
      * unregister the token
      *
@@ -227,7 +217,7 @@ export abstract class Injector implements Destroyable {
      * @returns {this}
      */
     abstract unregister<T>(token: Token<T>): this;
-    
+
     // /**
     //  * iterator current resolver.
     //  *
@@ -236,7 +226,7 @@ export abstract class Injector implements Destroyable {
     //  * @returns {(void|boolean)}
     //  */
     // abstract iterator(callbackfn: (pdr: FactoryRecord<any>, key: Token<any>, resolvor?: Injector) => boolean | void, flags?: InjectFlags): boolean | void;
-    
+
     /**
      * copy injector to current injector.
      *
@@ -540,7 +530,7 @@ export const INJECT_IMPL = {
  * providers for {@link Injector}.
  * 
  */
-export type ProviderType = Modules[] | Injector | StaticProvider | undefined;
+export type ProviderType = Type | Modules[] | Injector | StaticProvider | undefined;
 
 /**
  * instance factory.
@@ -580,7 +570,7 @@ export const enum FnType {
 /**
  * injector scope.
  */
-export type InjectorScope = Type | 'platfrom' | 'root' | 'provider' | 'invoked' | 'parameter';
+export type InjectorScope = Type | 'platform' | 'root' | 'provider' | 'invoked' | 'parameter';
 
 export const enum OptionFlags {
     Optional = 1 << 0,

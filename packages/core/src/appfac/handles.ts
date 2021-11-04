@@ -108,9 +108,9 @@ export const ConfigureServerHandle = async function (ctx: ApplicationContext, ne
     const injector = ctx.injector;
     const servers = injector.get(SERVERS);
     if (servers && servers.length) {
-        const platfrom = injector.platform();
+        const platform = injector.platform();
         await Promise.all(servers.map(type => {
-            const svr = platfrom.getInstance(type);
+            const svr = platform.getInstance(type);
             ctx.onDestroy(() => svr?.disconnect());
             return svr.connect(ctx);
         }));

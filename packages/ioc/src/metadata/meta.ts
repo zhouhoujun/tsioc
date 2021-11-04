@@ -1,6 +1,7 @@
-import { ClassType, Modules, Type } from '../types';
+import { ClassType, Modules, ModuleType, Type } from '../types';
 import { InjectFlags, Token } from '../tokens';
 import { ProviderType } from '../injector';
+import { InjectorTypeWithProviders } from '../providers';
 
 /**
  * type metadata
@@ -292,23 +293,23 @@ export interface ModuleMetadata extends ProvidedInMetadata, ProvidersMetadata {
      *
      * @type {Type<T>}
      */
-     bootstrap?: Modules|Type| Type[];
+     bootstrap?: ModuleType;
      /**
       * imports dependens modules
       *
       * @type {Modules[]}
       */
-     imports?: Modules[];
+     imports?: (ModuleType|InjectorTypeWithProviders)[];
      /**
       * exports modules
       *
-      * @type {Modules[]}
+      * @type {ModuleType[]}
       */
-     exports?: Modules[];
+     exports?: ModuleType[];
      /**
       * declaration the set of components, directives, pipes ... of this module.
       */
-     declarations?: Modules[];
+     declarations?: ModuleType[];
 }
 
 /**

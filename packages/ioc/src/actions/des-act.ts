@@ -54,7 +54,7 @@ function genState(injector: Injector, provide?: Token) {
 }
 
 function regInstf(injector: Injector, type: Type, provide: Token, singleton: boolean) {
-    const platfrom = injector.platform();
+    const platform = injector.platform();
     injector.set(provide, {
         type,
         fn: (context?: InvocationContext) => {
@@ -70,14 +70,14 @@ function regInstf(injector: Injector, type: Type, provide: Token, singleton: boo
                 context
             } as RuntimeContext;
 
-            platfrom.getAction(RuntimeLifeScope).register(ctx);
+            platform.getAction(RuntimeLifeScope).register(ctx);
             const instance = ctx.instance;
             // clean context
             cleanObj(ctx);
             return instance;
         },
         fnType: FnType.Inj,
-        unreg: () => platfrom.deleteType(type)
+        unreg: () => platform.deleteType(type)
     });
 }
 

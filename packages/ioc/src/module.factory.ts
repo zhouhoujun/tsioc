@@ -1,19 +1,17 @@
 import { Modules, Type } from './types';
 import { Injector, ProviderType } from './injector';
 import { Abstract } from './metadata/fac';
-import { ProvidedInMetadata } from './metadata/meta';
 import { ModuleRef } from './module.ref';
 
 
 /**
  * module option.
  */
-export interface ModuleOption extends ProvidedInMetadata {
+export interface ModuleOption {
     /**
      *  providers.
      */
     providers?: ProviderType[];
-
     /**
      * dependence types.
      */

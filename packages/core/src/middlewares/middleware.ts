@@ -1,4 +1,4 @@
-import { Abstract, AsyncHandler, chain, isFunction, isObject, lang, RegisteredState, Type, TypeReflect } from '@tsdi/ioc';
+import { Abstract, AsyncHandler, chain, isFunction, isObject, lang, Platform, Type, TypeReflect } from '@tsdi/ioc';
 import { Context } from './context';
 import { CanActive } from './guard';
 
@@ -155,8 +155,8 @@ export abstract class Middlewares<T extends Context = Context> extends AbstractM
 
     override async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
         if (!this.funcs) {
-            const platfrom = ctx.injector.platform();
-            this.funcs = this.handles.map(ac => this.parseHandle(platfrom, ac)).filter(f => f);
+            const platform = ctx.injector.platform();
+            this.funcs = this.handles.map(ac => this.parseHandle(platform, ac)).filter(f => f);
         }
         await chain(this.funcs, ctx, next);
     }
@@ -167,10 +167,10 @@ export abstract class Middlewares<T extends Context = Context> extends AbstractM
 
     /**
      * pase middleware to handler.
-     * @param state global registered state.
+     * @param platform global platform.
      * @param mdty mdiddleware type.
      */
-    protected abstract parseHandle(state: RegisteredState, mdty: MiddlewareType): AsyncHandler<T>;
+    protected abstract parseHandle(platform: Platform, mdty: MiddlewareType): AsyncHandler<T>;
 }
 
 
