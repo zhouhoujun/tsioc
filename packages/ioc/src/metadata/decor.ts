@@ -1,5 +1,5 @@
 import { ClassType, Type } from '../types';
-import { isString, isArray, EMPTY_OBJ } from '../utils/chk';
+import { isString, isArray, EMPTY_OBJ, EMPTY } from '../utils/chk';
 import { Token, getToken, InjectFlags } from '../tokens';
 import {
     ClassMetadata, AutorunMetadata, AutoWiredMetadata, InjectMetadata, PatternMetadata,
@@ -13,6 +13,7 @@ import { DecoratorOption } from './refl';
 import { ModuleReflect } from './type';
 import { ModuleRef, ModuleRegistered } from '../module.ref';
 import { ModuleFactory } from '../module.factory';
+import { ROOT_INJECTOR } from '..';
 
 
 
@@ -236,7 +237,7 @@ export const SkipSelf: SkipSelf = createParamDecorator('SkipSelf', {
  *
  * @publicApi
  */
- export interface Host {
+export interface Host {
     /**
      * Parameter decorator on a compose element provider parameter of a class constructor
      * that tells the DI framework to resolve the view by checking injectors of child
@@ -512,7 +513,7 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
                 (ctx, next) => {
                     const reflect = ctx.reflect as ModuleReflect;
                     const annotation: ModuleMetadata = reflect.annotation = ctx.metadata;
-                    if (annotation.imports) reflect.imports = getTypes(annotation.imports);
+                    if (annotation.imports) reflect.imports = annotation.imports ?? EMPTY; //getTypes(annotation.imports);
                     if (annotation.exports) reflect.exports = getTypes(annotation.exports);
                     if (annotation.declarations) reflect.declarations = getTypes(annotation.declarations);
                     if (annotation.bootstrap) reflect.bootstrap = getTypes(annotation.bootstrap);
@@ -525,9 +526,9 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
             beforeAnnoation: (context: DesignContext, next) => {
                 const ctx = context as ModuleDesignContext;
                 if (ctx.reflect.module) {
-                    let { injector, type, providedIn, moduleRef } = ctx;
+                    let { injector, type, moduleRef } = ctx;
                     if (!(moduleRef && moduleRef.moduleType === type)) {
-                        moduleRef = injector.resolve({ token: ModuleFactory, target: ctx.reflect }).create(injector, { providedIn });
+                        moduleRef = injector.resolve({ token: ModuleFactory, target: ctx.reflect }).create(injector.get(ROOT_INJECTOR));
                         ctx.injector = moduleRef?.injector;
                         ctx.state.injector = ctx.injector;
                     }
