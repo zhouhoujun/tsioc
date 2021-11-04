@@ -8,7 +8,7 @@ import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
 import { ROOT_INJECTOR } from '../metadata/tk';
-import { Injector } from '../injector';
+import { FnType, Injector } from '../injector';
 import { InvocationContext } from '../invoker';
 
 
@@ -54,7 +54,7 @@ function genState(injector: Injector, provide?: Token) {
 }
 
 function regInstf(injector: Injector, type: Type, provide: Token, singleton: boolean) {
-    const platfrom = injector.platform()
+    const platfrom = injector.platform();
     injector.set(provide, {
         type,
         fn: (context?: InvocationContext) => {
@@ -76,7 +76,7 @@ function regInstf(injector: Injector, type: Type, provide: Token, singleton: boo
             cleanObj(ctx);
             return instance;
         },
-        fnType: 'inj',
+        fnType: FnType.Inj,
         unreg: () => platfrom.deleteType(type)
     });
 }

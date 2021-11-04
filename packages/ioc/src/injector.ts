@@ -227,14 +227,16 @@ export abstract class Injector implements Destroyable {
      * @returns {this}
      */
     abstract unregister<T>(token: Token<T>): this;
-    /**
-     * iterator current resolver.
-     *
-     * @param {((pdr: FactoryRecord, key: Token, resolvor?: Injector) => void|boolean)} callbackfn
-     * @param {InjectFlags} [flags] iterator strategy.
-     * @returns {(void|boolean)}
-     */
-    abstract iterator(callbackfn: (pdr: FactoryRecord<any>, key: Token<any>, resolvor?: Injector) => boolean | void, flags?: InjectFlags): boolean | void;
+    
+    // /**
+    //  * iterator current resolver.
+    //  *
+    //  * @param {((pdr: FactoryRecord, key: Token, resolvor?: Injector) => void|boolean)} callbackfn
+    //  * @param {InjectFlags} [flags] iterator strategy.
+    //  * @returns {(void|boolean)}
+    //  */
+    // abstract iterator(callbackfn: (pdr: FactoryRecord<any>, key: Token<any>, resolvor?: Injector) => boolean | void, flags?: InjectFlags): boolean | void;
+    
     /**
      * copy injector to current injector.
      *
@@ -254,7 +256,6 @@ export abstract class Injector implements Destroyable {
      * @param to
      */
     abstract clone(filter: (key: Token<any>) => boolean, to?: Injector): Injector;
-
     /**
      * invoke method.
      *
@@ -535,26 +536,16 @@ export const INJECT_IMPL = {
     }
 };
 
-
-
 /**
  * providers for {@link Injector}.
  * 
  */
 export type ProviderType = Modules[] | Injector | StaticProvider | undefined;
 
-
 /**
  * instance factory.
  */
 export type Factory<T = any> = (...args: any[]) => T;
-
-
-/**
- * Factory of Token
- */
-export type FactoryLike<T> = Type<T> | Factory<T>;
-
 
 /**
  * type register option.
@@ -567,6 +558,9 @@ export interface TypeOption<T = any> {
     regIn?: 'root';
 }
 
+/**
+ * provider option.
+ */
 export type ProviderOption<T = any> = ClassProvider | ValueProvider | ExistingProvider | FactoryProvider;
 
 /**
@@ -574,8 +568,14 @@ export type ProviderOption<T = any> = ClassProvider | ValueProvider | ExistingPr
  */
 export type RegisterOption<T = any> = TypeOption<T> | ProviderOption<T>;
 
-
-export type FnType = 'cotr' | 'inj' | 'fac';
+/**
+ * fn type
+ */
+export const enum FnType {
+    Cotr,
+    Inj,
+    Fac
+}
 
 /**
  * injector scope.

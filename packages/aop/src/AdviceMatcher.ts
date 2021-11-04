@@ -20,7 +20,7 @@ export type MatchExpress = (method?: string, fullName?: string, targetType?: Cla
  */
 export class AdviceMatcher implements IAdviceMatcher {
 
-    constructor(private container: Injector) { }
+    constructor(private injector: Injector) { }
 
     match(aspectType: Type, targetType: Type, adviceMetas?: AdviceMetadata[], target?: any): MatchPointcut[] {
         const aspref = refl.get<AopReflect>(aspectType);
@@ -190,7 +190,7 @@ export class AdviceMatcher implements IAdviceMatcher {
 
         if (targetChkExp.test(strExp)) {
             let torken = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).trim();
-            const platform = this.container.platform();
+            const platform = this.injector.platform();
             return (name?: string, fullName?: string, targetType?: ClassType) => targetType ? platform.getInjector(reflect.type).getTokenProvider(torken) === targetType : false;
         }
 

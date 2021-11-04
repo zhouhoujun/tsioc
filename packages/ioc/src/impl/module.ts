@@ -34,7 +34,7 @@ export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T>
     }
 
     get<T>(token: Token<T>, notFoundValue?: T, injectFlags = InjectFlags.Default): T {
-        if ((token as any) === ModuleRef) return this as any;
+        if (this.isSelf(token)) return this as any;
         return tryResolveToken(token, this.factories.get(token), this.factories, this.parent, notFoundValue, injectFlags);
     }
 
