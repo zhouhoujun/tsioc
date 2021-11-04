@@ -52,12 +52,12 @@ export abstract class Injector implements Destroyable {
      * @returns {boolean}
      */
     abstract has<T>(token: Token<T>, flags?: InjectFlags): boolean;
-    /**
-     * has value or not.
-     * @param token
-     * @param {InjectFlags} flags check strategy by inject flags.
-     */
-    abstract hasValue<T>(token: Token<T>, flags?: InjectFlags): boolean;
+    // /**
+    //  * has value or not.
+    //  * @param token
+    //  * @param {InjectFlags} flags check strategy by inject flags.
+    //  */
+    // abstract hasValue<T>(token: Token<T>, flags?: InjectFlags): boolean;
     /**
      * get token factory resolve instace in current.
      *
@@ -142,30 +142,30 @@ export abstract class Injector implements Destroyable {
      * @returns {Type<T>}
      */
     abstract getTokenProvider<T>(token: Token<T>, flags?: InjectFlags): Type<T>;
-    /**
-     * set provide.
-     *
-     * @template T
-     * @param {ProviderOption<T>} option
-     * @returns {this}
-     */
-    abstract set<T>(option: ProviderOption<T>): this;
-    /**
-     * set provide.
-     * @param token token.
-     * @param option factory option.
-     */
-    abstract set<T>(token: Token<T>, option: FactoryRecord<T>): this;
-    /**
-     * set provide.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {Factory<T>} fac
-     * @param {Type<T>} [type] provider type.
-     * @returns {this}
-     */
-    abstract set<T>(token: Token<T>, fac: Factory<T>, type?: Type<T>): this;
+    // /**
+    //  * set provide.
+    //  *
+    //  * @template T
+    //  * @param {ProviderOption<T>} option
+    //  * @returns {this}
+    //  */
+    // abstract set<T>(option: ProviderOption<T>): this;
+    // /**
+    //  * set provide.
+    //  * @param token token.
+    //  * @param option factory option.
+    //  */
+    // abstract set<T>(token: Token<T>, option: FactoryRecord<T>): this;
+    // /**
+    //  * set provide.
+    //  *
+    //  * @template T
+    //  * @param {Token<T>} token
+    //  * @param {Factory<T>} fac
+    //  * @param {Type<T>} [type] provider type.
+    //  * @returns {this}
+    //  */
+    // abstract set<T>(token: Token<T>, fac: Factory<T>, type?: Type<T>): this;
     /**
      * cache instance.
      * @param token 
@@ -403,6 +403,22 @@ export interface Registered {
 
 @Abstract()
 export abstract class Platform implements Destroyable {
+    /**
+     * set singleton value
+     * @param token 
+     * @param value 
+     */
+    abstract setSingleton<T>(token: Token<T>, value:T): this;
+    /**
+     * get singleton instance.
+     * @param token 
+     */
+    abstract getSingleton<T>(token: Token<T>): T;
+    /**
+     * has singleton or not.
+     * @param token 
+     */
+    abstract hasSingleton(token: Token): boolean;
     /**
      * modules.
      */

@@ -8,9 +8,8 @@ import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
 import { ROOT_INJECTOR } from '../metadata/tk';
-import { FnType, Injector } from '../injector';
+import { FnType, Injector, Platform } from '../injector';
 import { InvocationContext } from '../invoker';
-
 
 
 /**
@@ -42,7 +41,7 @@ export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): 
         ctx.injector = ctx.injector.get(ROOT_INJECTOR);
     }
     const state = ctx.state = genState(ctx.injector, ctx.provide);
-    ctx.injector.platform().regType(ctx.type, state);
+    ctx.platform.regType(ctx.type, state);
     next();
 };
 
@@ -53,20 +52,20 @@ function genState(injector: Injector, provide?: Token) {
     }
 }
 
-function regInstf(injector: Injector, type: Type, provide: Token, singleton: boolean) {
-    const platform = injector.platform();
+function regInstf(platform: Platform, injector: Injector, type: Type, provide: Token, singleton: boolean) {
     injector.set(provide, {
         type,
         fn: (context?: InvocationContext) => {
             // make sure has value.
-            if (singleton && injector.hasValue(type)) {
-                return injector.get(type);
+            if (singleton && platform.hasSingleton(type)) {
+                return platform.getSingleton(type);
             }
             const ctx = {
                 injector,
                 provide,
                 type,
                 singleton,
+                platform,
                 context
             } as RuntimeContext;
 
@@ -83,7 +82,7 @@ function regInstf(injector: Injector, type: Type, provide: Token, singleton: boo
 
 
 export const RegClassAction = function (ctx: DesignContext, next: () => void): void {
-    regInstf(ctx.injector, ctx.type, ctx.provide || ctx.type, ctx.singleton || ctx.reflect.singleton === true);
+    regInstf(ctx.platform, ctx.injector, ctx.type, ctx.provide || ctx.type, ctx.singleton || ctx.reflect.singleton === true);
     next();
 };
 
@@ -140,13 +139,13 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
     if (regpdr && regpdr !== type) {
         ctx.reflect.provides.forEach(provide => {
             if (provide != regpdr && regProvides !== false) {
-                injector.set({ provide, useExisting: regpdr });
+                injector.inject({ provide, useExisting: regpdr });
             }
             state.provides.push(provide);
         });
     } else {
         ctx.reflect.provides.forEach(provide => {
-            regProvides !== false && injector.set({ provide, useClass: type });
+            regProvides !== false && injector.inject({ provide, useClass: type });
             state.provides.push(provide);
         });
     }

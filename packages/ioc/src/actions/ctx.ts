@@ -2,8 +2,8 @@ import { Token } from '../tokens';
 import { Type } from '../types';
 import { ParameterMetadata, ProvidedInMetadata } from '../metadata/meta';
 import { TypeReflect } from '../metadata/type';
-import { Injector, Registered } from '../injector';
-import { InvocationContext } from '..';
+import { Injector, Platform, Registered } from '../injector';
+import { InvocationContext } from '../invoker';
 
 
 /**
@@ -55,6 +55,7 @@ export interface RegContext extends IocContext {
  * design action context.
  */
 export interface DesignContext extends RegContext, ProvidedInMetadata {
+    platform: Platform;
     /**
      * registered state.
      */
@@ -67,6 +68,7 @@ export interface DesignContext extends RegContext, ProvidedInMetadata {
  * @extends {RegContext}
  */
 export interface RuntimeContext extends RegContext {
+    platform: Platform;
     /**
      * invocation context.
      */

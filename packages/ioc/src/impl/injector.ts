@@ -12,7 +12,7 @@ import {
     isArray, isDefined, isFunction, isNil, isPlainObject, isPrimitiveType,
     isTypeObject, isTypeReflect, EMPTY, EMPTY_OBJ, isUndefined, isNumber, getClass
 } from '../utils/chk';
-import { DesignContext } from '../actions/ctx';
+import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
 import { TypeReflect } from '../metadata/type';
@@ -40,12 +40,12 @@ export class DefaultInjector extends Injector {
      * @type {Map<Token, Function>}
      * @memberof BaseInjector
      */
-    protected factories: Map<Token, FactoryRecord>;
+    protected records: Map<Token, FactoryRecord>;
     protected destCb!: () => void;
 
     constructor(providers: ProviderType[] = EMPTY, readonly parent?: Injector, readonly scope?: InjectorScope) {
         super();
-        this.factories = new Map();
+        this.records = new Map();
         if (parent) {
             this.destCb = () => this.destroy();
             this.initParent(parent);
@@ -84,11 +84,11 @@ export class DefaultInjector extends Injector {
     }
 
     get size(): number {
-        return this.factories.size;
+        return this.records.size;
     }
 
     tokens() {
-        return Array.from(this.factories.keys());
+        return Array.from(this.records.keys());
     }
 
     /**
@@ -98,48 +98,48 @@ export class DefaultInjector extends Injector {
         return this._plat ?? this.parent?.platform();
     }
 
-    /**
-     * set provide.
-     *
-     * @template T
-     * @param {ProviderOption<T>} option
-     * @returns {this}
-     */
-    set<T>(option: ProviderOption<T>): this;
-    /**
-     * set provide.
-     * @param token token.
-     * @param option factory option.
-     */
-    set<T>(token: Token<T>, option: FactoryRecord<T>): this;
-    /**
-     * set provide.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {Factory<T>} fn
-     * @param {Type<T>} [providerType]
-     * @returns {this}
-     */
-    set<T>(token: Token<T>, fn: Factory<T>, type?: Type<T>): this;
-    set<T>(target: any, fn?: any, type?: Type<T>): this {
-        this.assertNotDestroyed();
-        if (isFunction(fn)) {
-            const old = this.factories.get(target);
-            if (old) {
-                old.fn = fn;
-                if (
-                    type) old.type = type;
-            } else {
-                this.factories.set(target, type ? { fn, type } : { fn });
-            }
-        } else if (fn) {
-            this.factories.set(target, fn);
-        } else {
-            this.registerProvider((target as ProviderOption).provide, target);
-        }
-        return this;
-    }
+    // /**
+    //  * set provide.
+    //  *
+    //  * @template T
+    //  * @param {ProviderOption<T>} option
+    //  * @returns {this}
+    //  */
+    // set<T>(option: ProviderOption<T>): this;
+    // /**
+    //  * set provide.
+    //  * @param token token.
+    //  * @param option factory option.
+    //  */
+    // set<T>(token: Token<T>, option: FactoryRecord<T>): this;
+    // /**
+    //  * set provide.
+    //  *
+    //  * @template T
+    //  * @param {Token<T>} token
+    //  * @param {Factory<T>} fn
+    //  * @param {Type<T>} [providerType]
+    //  * @returns {this}
+    //  */
+    // set<T>(token: Token<T>, fn: Factory<T>, type?: Type<T>): this;
+    // set<T>(target: any, fn?: any, type?: Type<T>): this {
+    //     this.assertNotDestroyed();
+    //     if (isFunction(fn)) {
+    //         const old = this.factories.get(target);
+    //         if (old) {
+    //             old.fn = fn;
+    //             if (
+    //                 type) old.type = type;
+    //         } else {
+    //             this.factories.set(target, type ? { fn, type } : { fn });
+    //         }
+    //     } else if (fn) {
+    //         this.factories.set(target, fn);
+    //     } else {
+    //         this.registerProvider((target as ProviderOption).provide, target);
+    //     }
+    //     return this;
+    // }
 
 
     /**
@@ -169,14 +169,14 @@ export class DefaultInjector extends Injector {
      */
     cache<T>(token: Token<T>, cache: T, expires: number): this {
         this.assertNotDestroyed();
-        const pd = this.factories.get(token);
+        const pd = this.records.get(token);
         const ltop = Date.now();
         if (pd) {
             pd.cache = cache;
             pd.ltop = ltop
             pd.expires = expires;
         } else {
-            this.factories.set(token, { cache, ltop, expires });
+            this.records.set(token, { cache, ltop, expires });
         }
         return this;
     }
@@ -215,7 +215,7 @@ export class DefaultInjector extends Injector {
             this.copy(p);
         } else if (p instanceof KeyValueProvider) {
             p.each((k, useValue) => {
-                this.factories.set(k, { value: useValue });
+                this.records.set(k, { value: useValue });
             });
         }
     }
@@ -231,10 +231,44 @@ export class DefaultInjector extends Injector {
         if (platform.isRegistered(type) || this.has(type)) {
             return false;
         }
+        
         const injector: Injector = this;
+        const provide = option?.provide;
+        const reflect = get(type, true);
+        const singleton = option?.singleton || reflect?.singleton;
+        this.records.set(option?.provide || type, {
+            type,
+            fn: (context?: InvocationContext) => {
+                // make sure has value.
+                if (singleton && platform.hasSingleton(type)) {
+                    return platform.getSingleton(type);
+                }
+                const ctx = {
+                    injector,
+                    provide,
+                    type,
+                    reflect,
+                    platform,
+                    singleton,
+                    context
+                } as RuntimeContext;
+    
+                platform.getAction(RuntimeLifeScope).register(ctx);
+                const instance = ctx.instance;
+                // clean context
+                cleanObj(ctx);
+                return instance;
+            },
+            fnType: FnType.Inj,
+            unreg: () => platform.deleteType(type)
+        });
+
         const ctx = {
             injector,
             ...option,
+            // singleton,
+            // reflect,
+            platform,
             type
         } as DesignContext;
         platform.getAction(DesignLifeScope).register(ctx);
@@ -244,9 +278,9 @@ export class DefaultInjector extends Injector {
 
     protected registerProvider(provide: Token, target: StaticProviders) {
         if (target.multi) {
-            let multiPdr = this.factories.get(provide);
+            let multiPdr = this.records.get(provide);
             if (!multiPdr) {
-                this.set(provide, multiPdr = {
+                this.records.set(provide, multiPdr = {
                     fnType: FnType.Fac,
                     fn: MUTIL,
                     value: EMPTY,
@@ -255,7 +289,7 @@ export class DefaultInjector extends Injector {
             }
             multiPdr.deps?.push({ token: generateRecord(this, target), options: OptionFlags.Default });
         } else {
-            this.factories.set(provide, generateRecord(this, target));
+            this.records.set(provide, generateRecord(this, target));
         }
     }
 
@@ -293,36 +327,37 @@ export class DefaultInjector extends Injector {
      */
     has<T>(token: Token<T>, flags = InjectFlags.Default): boolean {
         this.assertNotDestroyed();
-        if (!(flags & InjectFlags.SkipSelf) && (this.isSelf(token) || this.factories.has(token))) return true;
+        if (this.platform().hasSingleton(token)) return true;
+        if (!(flags & InjectFlags.SkipSelf) && (this.isSelf(token) || this.records.has(token))) return true;
         if (!(flags & InjectFlags.Self)) {
             return this.parent?.has(token, flags) || false;
         }
         return false;
     }
 
-    /**
-     * has value or not.
-     * @param token 
-     * @param flags 
-     * @returns 
-     */
-    hasValue<T>(token: Token<T>, flags = InjectFlags.Default): boolean {
-        this.assertNotDestroyed();
-        if (!(flags & InjectFlags.SkipSelf) && (this.isSelf(token) || !isNil(this.factories.get(token)?.value))) return true;
-        if (!(flags & InjectFlags.Self)) {
-            return this.parent?.hasValue(token, flags) || false;
-        }
-        return false;
-    }
+    // /**
+    //  * has value or not.
+    //  * @param token 
+    //  * @param flags 
+    //  * @returns 
+    //  */
+    // hasValue<T>(token: Token<T>, flags = InjectFlags.Default): boolean {
+    //     this.assertNotDestroyed();
+    //     if (!(flags & InjectFlags.SkipSelf) && (this.isSelf(token) || !isNil(this.factories.get(token)?.value))) return true;
+    //     if (!(flags & InjectFlags.Self)) {
+    //         return this.parent?.hasValue(token, flags) || false;
+    //     }
+    //     return false;
+    // }
 
     setValue<T>(token: Token<T>, value: T, type?: Type<T>): this {
         this.assertNotDestroyed();
-        const isp = this.factories.get(token);
+        const isp = this.records.get(token);
         if (isp) {
             isp.value = value;
             if (type) isp.type = type;
         } else if (isDefined(value)) {
-            this.factories.set(token, type ? { value, type } : { value });
+            this.records.set(token, type ? { value, type } : { value });
         }
         return this;
     }
@@ -339,7 +374,9 @@ export class DefaultInjector extends Injector {
     get<T>(token: Token<T>, notFoundValue?: T, flags = InjectFlags.Default): T {
         this.assertNotDestroyed();
         if (!(flags & InjectFlags.SkipSelf) && this.isSelf(token)) return this as any;
-        return tryResolveToken(token, this.factories.get(token), this.factories, this.parent, notFoundValue, flags);
+        const platfrom = this.platform();
+        if (platfrom.hasSingleton(token)) return platfrom.getSingleton(token);
+        return tryResolveToken(token, this.records.get(token), this.records, platfrom, this.parent, notFoundValue, flags);
     }
     /**
      * resolve token instance with token and param provider.
@@ -463,7 +500,7 @@ export class DefaultInjector extends Injector {
         this.assertNotDestroyed();
         let type: Type | undefined;
         if (!(flags & InjectFlags.SkipSelf)) {
-            const rd = this.factories.get(token);
+            const rd = this.records.get(token);
             type = rd?.type;
         }
         if (!type || !(flags & InjectFlags.Self)) {
@@ -482,9 +519,9 @@ export class DefaultInjector extends Injector {
      */
     unregister<T>(token: Token<T>): this {
         this.assertNotDestroyed();
-        const isp = this.factories.get(token);
+        const isp = this.records.get(token);
         if (isp) {
-            this.factories.delete(token);
+            this.records.delete(token);
             if (isFunction(isp.unreg)) isp.unreg();
             cleanObj(isp);
         }
@@ -677,10 +714,10 @@ export class DefaultInjector extends Injector {
 
 
     protected merge(from: DefaultInjector, to: DefaultInjector, filter?: (key: Token) => boolean) {
-        from.factories.forEach((rd, key) => {
+        from.records.forEach((rd, key) => {
             if (key === Injector || key === INJECTOR) return;
             if (filter && !filter(key)) return;
-            to.factories.set(key, rd.fnType === FnType.Inj ? { fn: (pdr: Injector) => from.get(key, pdr) } : { ...rd });
+            to.records.set(key, rd.fnType === FnType.Inj ? { fn: (pdr: Injector) => from.get(key, pdr) } : { ...rd });
         });
     }
 
@@ -692,12 +729,12 @@ export class DefaultInjector extends Injector {
 
 
     protected destroying() {
-        Array.from(this.factories.keys())
+        Array.from(this.records.keys())
             .forEach(k => {
                 this.unregister(k);
             });
-        this.factories.clear();
-        this.factories = null!;
+        this.records.clear();
+        this.records = null!;
         if (this.parent) {
             !this.parent.destroyed && this.parent.offDestory(this.destCb);
         }
@@ -826,9 +863,9 @@ export class NullInjectorError extends Error {
  * @param provider 
  * @returns 
  */
-export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, parent: Injector | undefined, notFoundValue: any, flags: InjectFlags): any {
+export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Platform, parent: Injector | undefined, notFoundValue: any, flags: InjectFlags): any {
     try {
-        return resolveToken(token, rd, records, parent, notFoundValue, flags);
+        return resolveToken(token, rd, records, platform, parent, notFoundValue, flags);
     } catch (e) {
         if (rd && rd.value === CIRCULAR) {
             rd.value = EMPTY;
@@ -844,7 +881,7 @@ export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, rec
  * @param provider 
  * @returns 
  */
-export function resolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, parent: Injector | undefined, notFoundValue: any, flags: InjectFlags): any {
+export function resolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Platform, parent: Injector | undefined, notFoundValue: any, flags: InjectFlags): any {
     if (rd && !(flags & InjectFlags.SkipSelf)) {
         let value = rd.value;
         if (value === CIRCULAR) {
@@ -861,6 +898,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                     dep.token,
                     chlrd,
                     records,
+                    platform,
                     !chlrd && !(dep.options & OptionFlags.CheckParent) ? undefined : parent,
                     dep.options & OptionFlags.Optional ? null : undefined,
                     InjectFlags.Default));

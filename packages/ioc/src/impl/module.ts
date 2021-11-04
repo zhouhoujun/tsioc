@@ -1,6 +1,6 @@
 
 import { Platform, StaticProviders } from '..';
-import { Injector, InjectorScope, ProviderType } from '../injector';
+import { Injector, InjectorScope, ProviderType, TypeOption } from '../injector';
 import { get } from '../metadata/refl';
 import { ModuleReflect } from '../metadata/type';
 import { ModuleFactory, ModuleOption } from '../module.factory';
@@ -40,15 +40,15 @@ export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T>
     override get<T>(token: Token<T>, notFoundValue?: T, flags = InjectFlags.Default): T {
         this.assertNotDestroyed();
         if (!(flags & InjectFlags.SkipSelf) && this.isSelf(token)) return this as any;
-        return tryResolveToken(token, this.factories.get(token), this.factories, this.parent, notFoundValue, flags);
+        return tryResolveToken(token, this.records.get(token), this.records, this.parent, notFoundValue, flags);
     }
 
     protected processInjectorType(def: Type|InjectorTypeWithProviders, parents: Type[], dedupStack: Type[]) {
         
     }
 
-    protected override processProvider(provider: Injector | StaticProvider, platform: Platform, moduleType?: Type, providers?: ProviderType[]): void {
-
+    protected override processProvider(provider: Injector  | TypeOption | StaticProvider, platform: Platform, moduleType?: Type, providers?: ProviderType[]): void {
+        super.processProvider(provider, platform);
     }
 
 }

@@ -16,12 +16,41 @@ export class DefaultPlatform implements Platform {
     private states: Map<ClassType, Registered>;
     private destroyCbs: (() => void)[] | null = [];
     private _destroyed = false;
-    private map = new Map<Token, any>();
-
+    private actions: Map<Token, any>;
+    private singletons: Map<Token, any>;
     modules = new Set<Type>();
 
     constructor() {
         this.states = new Map();
+        this.actions = new Map();
+        this.singletons = new Map()
+    }
+
+    /**
+     * set singleton value
+     * @param token 
+     * @param value 
+     */
+    setSingleton<T>(token: Token<T>, value: T): this {
+        if (this.singletons.has(token)) {
+            throw Error('has singleton instance with token:' + token.toString());
+        }
+        this.singletons.set(token, value);
+        return this;
+    }
+    /**
+     * get singleton instance.
+     * @param token 
+     */
+    getSingleton<T>(token: Token<T>): T {
+        return this.singletons.get(token);
+    }
+    /**
+     * has singleton or not.
+     * @param token 
+     */
+    hasSingleton(token: Token): boolean {
+        return this.singletons.has(token);
     }
 
 
@@ -34,39 +63,39 @@ export class DefaultPlatform implements Platform {
      * @returns {T}
      */
     getAction<T>(token: Token<T>, notFoundValue?: T): T {
-        if (this.map.has(token)) {
+        if (this.actions.has(token)) {
             this.registerAction(token as Type);
         }
-        return this.map.get(token) ?? notFoundValue;
+        return this.actions.get(token) ?? notFoundValue;
     }
 
     hasAction(token: Token) {
-        return this.map.has(token);
+        return this.actions.has(token);
     }
 
     regAction(...types: Type<Action>[]): this {
         types.forEach(type => {
-            if (this.map.has(type)) return;
+            if (this.actions.has(type)) return;
             this.registerAction(type);
         });
         return this;
     }
 
     getHandle<T extends Handler>(target: Token<Action>): T {
-        return this.map.get(target)?.toHandler() as T ?? null;
+        return this.actions.get(target)?.toHandler() as T ?? null;
     }
 
     setValue<T>(token: Token<T>, value: T, provider?: Type<T>) {
-        this.map.set(token, value);
-        if (provider) this.map.set(provider, value);
+        this.actions.set(token, value);
+        if (provider) this.actions.set(provider, value);
         return this;
     }
 
     protected registerAction(type: Type<Action>) {
-        if (this.map.has(type)) return true;
+        if (this.actions.has(type)) return true;
         const instance = new type(this) as Action & IActionSetup;
 
-        this.map.set(type, instance);
+        this.actions.set(type, instance);
         if (isFunction(instance.setup)) instance.setup();
     }
 
@@ -160,6 +189,8 @@ export class DefaultPlatform implements Platform {
             cleanObj(v);
         });
         this.states.clear();
+        this.actions.clear();
+        this.singletons.clear();
 
     }
 
