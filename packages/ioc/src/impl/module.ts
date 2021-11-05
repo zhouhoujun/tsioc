@@ -47,7 +47,7 @@ export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T>
         if (!isFunction(typeOrDef)) {
             deepForEach(
                 typeOrDef.providers,
-                pdr => this.processProvider(pdr, platform, type, typeOrDef.providers),
+                pdr => this.processProvider(platform, pdr, typeOrDef.providers, type),
                 v => isPlainObject(v) && !v.provide
             );
         }
@@ -71,14 +71,14 @@ export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T>
         if (typeRef.providers && !isDuplicate) {
             deepForEach(
                 typeRef.providers,
-                pdr => this.processProvider(pdr, platform, type, typeRef.providers),
+                pdr => this.processProvider(platform, pdr, typeRef.providers, type),
                 v => isPlainObject(v) && !v.provide
             );
         }
     }
 
-    protected override processProvider(provider: Injector | TypeOption | StaticProvider, platform: Platform, moduleType?: Type, providers?: ProviderType[]): void {
-        super.processProvider(provider, platform);
+    protected override processProvider(platform: Platform, provider: Injector | TypeOption | StaticProvider, providers?: ProviderType[], moduleType?: Type): void {
+        super.processProvider(platform, provider, providers);
     }
 
 }

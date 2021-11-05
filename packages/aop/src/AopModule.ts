@@ -24,8 +24,8 @@ export class AopModule {
 
         const platform = injector.platform();
 
-        platform.setValue(ADVISOR, new Advisor(injector), Advisor)
-            .setValue(ADVICE_MATCHER, new AdviceMatcher(injector), AdviceMatcher);
+        platform.setActionValue(ADVISOR, new Advisor(injector), Advisor)
+            .setActionValue(ADVICE_MATCHER, new AdviceMatcher(injector), AdviceMatcher);
 
         platform.registerAction(ProceedingScope);
 

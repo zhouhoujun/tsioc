@@ -508,7 +508,8 @@ export abstract class Platform implements Destroyable {
      * @param value 
      * @param provider 
      */
-    abstract setValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
+    abstract setActionValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
+    abstract getActionValue<T>(token: Token<T>, notFoundValue?: T): T 
 
     abstract get destroyed(): boolean;
     abstract destroy(): void;

@@ -94,7 +94,7 @@ export class DefaultPlatform implements Platform {
     registerAction(...types: Type<Action>[]): this {
         types.forEach(type => {
             if (this.actions.has(type)) return;
-            this.registerAction(type);
+            this.processAction(type);
         });
         return this;
     }
@@ -103,13 +103,17 @@ export class DefaultPlatform implements Platform {
         return this.actions.get(target)?.toHandler() as T ?? null;
     }
 
-    setValue<T>(token: Token<T>, value: T, provider?: Type<T>) {
+    setActionValue<T>(token: Token<T>, value: T, provider?: Type<T>) {
         this.actions.set(token, value);
         if (provider) this.actions.set(provider, value);
         return this;
     }
 
-    protected registerAction(type: Type<Action>) {
+    getActionValue<T>(token: Token<T>, notFoundValue?: T): T {
+        return this.actions.get(token) ?? notFoundValue;
+    }
+
+    protected processAction(type: Type<Action>) {
         if (this.actions.has(type)) return true;
         const instance = new type(this) as Action & IActionSetup;
 

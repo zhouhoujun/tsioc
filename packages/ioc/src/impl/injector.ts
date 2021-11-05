@@ -115,7 +115,7 @@ export class DefaultInjector extends Injector {
         this.assertNotDestroyed();
         const platform = this.platform();
         deepForEach(args, t => {
-            this.processProvider(t, platform)
+            this.processProvider(platform, t);
         });
         return this;
     }
@@ -158,12 +158,12 @@ export class DefaultInjector extends Injector {
         this.assertNotDestroyed();
         if (args.length) {
             const platform = this.platform();
-            deepForEach(args, p => this.processProvider(p, platform), v => isPlainObject(v) && !(v as StaticProviders).provide);
+            deepForEach(args, p => this.processProvider(platform, p, args), v => isPlainObject(v) && !(v as StaticProviders).provide);
         }
         return this;
     }
 
-    protected processProvider(p: Injector | TypeOption | StaticProvider, platform: Platform) {
+    protected processProvider(platform: Platform, p: Injector | TypeOption | StaticProvider, providers?: ProviderType[]) {
         if (isFunction(p)) {
             this.registerType(platform, p);
         } else if (isPlainObject(p) && (p as StaticProviders).provide) {

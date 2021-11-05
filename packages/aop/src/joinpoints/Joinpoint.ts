@@ -1,6 +1,6 @@
 import {
     Type, MethodMetadata, ClassMetadata, tokenId,
-    IocContext, Injector, ParameterMetadata, ProviderType, lang
+    IocContext, Injector, ParameterMetadata, ProviderType, lang, InvocationContext, ClassType, OperationArgumentResolver, EMPTY
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advices } from '../advices/Advices';
@@ -10,9 +10,8 @@ import { Advicer } from '../advices/Advicer';
  * joinpoint option.
  */
 export interface JoinpointOption {
-    provJoinpoint?: Joinpoint;
     name: string;
-    fullName: string;
+    provJoinpoint?: Joinpoint;
     params?: ParameterMetadata[];
     originMethod?: Function;
     args?: any[];
@@ -21,142 +20,205 @@ export interface JoinpointOption {
     annotations?: (ClassMetadata | MethodMetadata)[];
     target?: any;
     targetType: Type;
-    providers?: Injector;
+    resolvers?: OperationArgumentResolver[];
+    context?: InvocationContext;
 }
 
 
 export const AOP_METHOD_ANNOTATIONS = tokenId<any[]>('AOP_METHOD_ANNOTATIONS');
 
 
-/**
- * Join point data.
- *
- * @export
- * @class Joinpoint
- * @implements {IJoinpoint}
- */
-export class Joinpoint implements IocContext {
-
-    injector: Injector;
-    /**
-     * method name
-     *
-     * @type {string}
-     */
-    name!: string;
-
-    /**
-     * prov joinpoint.
-     *
-     * @type {IJoinpoint}
-     */
-    provJoinpoint!: Joinpoint;
-
-    /**
-     * full name.
-     *
-     * @type {string}
-     */
-    fullName!: string;
-
-    originMethod!: Function;
-
-    /**
-     * join point state.
-     *
-     * @type {JoinpointState}
-     */
-    state!: JoinpointState;
-
-    /**
-     * params of pointcut.
-     *
-     * @type {ParameterMetadata[]}
-     */
-    params!: ParameterMetadata[];
-
-    /**
-     * args of pointcut.
-     *
-     * @type {any[]}
-     */
-    args!: any[];
-    /**
-     * pointcut origin returing
-     *
-     * @type {*}
-     */
-    returning: any;
-
-    /**
-     * to reset returning for AfterReturning, Around advice.
-     */
-    resetReturning?: any;
-
-    /**
-     * pointcut throwing error.
-     *
-     * @type {*}
-     */
-    throwing!: Error;
-
-    /**
-     * advicer of joinpoint
-     *
-     * @type {Advicer}
-     */
-    advices!: Advices;
-
-    /**
-     * orgin pointcut method metadatas.
-     *
-     * @type {any[]}
-     */
-    get annotations(): any[] {
-        return this.injector.get(AOP_METHOD_ANNOTATIONS);
-    }
-    /**
-     * set annotations.
-     */
-    set annotations(meta: any[]) {
-        this.injector.setValue(AOP_METHOD_ANNOTATIONS, meta);
-    }
-
+export class Joinpoint<T = any> extends InvocationContext<T> implements IocContext {
     invokeHandle!: (joinPoint: Joinpoint, advicer: Advicer) => any;
 
-    /**
-     * pointcut target instance
-     *
-     * @type {*}
-     */
-    target: any;
+    returning: any;
 
-    /**
-     * pointcut target type.
-     *
-     * @type {Type}
-     */
-    targetType!: Type;
+    throwing: any;
 
-    get providers(): Injector {
-        return this.injector;
+    resetReturning: any;
+
+    constructor(
+        injector: Injector,
+        readonly targetInstance: any,
+        readonly target: ClassType,
+        readonly method: string,
+        public state: JoinpointState,
+        readonly advices: Advices,
+        readonly originMethod?: Function,
+        readonly args?: any[],
+        readonly annotations?: any[],
+        readonly params?: ParameterMetadata[],
+        readonly parent?: InvocationContext,
+        readonly provJoinpoint?: Joinpoint, data?: T, ...argumentResolvers: OperationArgumentResolver[]) {
+        super(injector, target, method, data, ...argumentResolvers);
     }
 
-
-    constructor(injector: Injector, ...providers: ProviderType[]) {
-        this.injector = Injector.create([...providers, { provide: Joinpoint, useValue: this }], injector, 'provider')
+    private _fullName!: string
+    get fullName(): string {
+        if (!this._fullName) {
+            this._fullName = lang.getClassName(this.target) + '.' + this.method;
+        }
+        return this._fullName;
     }
 
+    setArgument(name: string, value: any): void {
+        (this.arguments as any)[name] = value;
+    }
 
-    /**
-     * create resolve context via options.
-     *
-     * @static
-     * @param {Injector} injector
-     * @param {ResolveActionOption} options
-     * @returns {ResolveActionContext}
-     */
-    static parse<T>(injector: Injector, options: JoinpointOption): Joinpoint {
-        return lang.assign(new Joinpoint(injector, options.providers, options.provJoinpoint?.providers), options, 'providers', 'injector');
+    static parse(injector: Injector, options: JoinpointOption) {
+        return new Joinpoint(injector,
+            options.target,
+            options.targetType,
+            options.name,
+            options.state ?? JoinpointState.Before,
+            options.advices,
+            options.originMethod,
+            options.args,
+            options.params,
+            options.annotations,
+            options.context,
+            options.provJoinpoint,
+            {
+                // method: options.name,
+                // params: options.params,
+                // args: options.args,
+                // advices: options.advices,
+                // originMethod: options.originMethod,
+                // annotations: options.annotations
+            },
+            ...options.resolvers || EMPTY)
     }
 }
+
+// /**
+//  * Join point data.
+//  *
+//  * @export
+//  * @class Joinpoint
+//  * @implements {IJoinpoint}
+//  */
+// export class Joinpoint1 implements IocContext {
+
+//     injector: Injector;
+//     /**
+//      * method name
+//      *
+//      * @type {string}
+//      */
+//     name!: string;
+
+//     /**
+//      * prov joinpoint.
+//      *
+//      * @type {IJoinpoint}
+//      */
+//     provJoinpoint!: Joinpoint;
+
+//     /**
+//      * full name.
+//      *
+//      * @type {string}
+//      */
+//     fullName!: string;
+
+//     originMethod!: Function;
+
+//     /**
+//      * join point state.
+//      *
+//      * @type {JoinpointState}
+//      */
+//     state!: JoinpointState;
+
+//     /**
+//      * params of pointcut.
+//      *
+//      * @type {ParameterMetadata[]}
+//      */
+//     params!: ParameterMetadata[];
+
+//     /**
+//      * args of pointcut.
+//      *
+//      * @type {any[]}
+//      */
+//     args!: any[];
+//     /**
+//      * pointcut origin returing
+//      *
+//      * @type {*}
+//      */
+//     returning: any;
+
+//     /**
+//      * to reset returning for AfterReturning, Around advice.
+//      */
+//     resetReturning?: any;
+
+//     /**
+//      * pointcut throwing error.
+//      *
+//      * @type {*}
+//      */
+//     throwing!: Error;
+
+//     /**
+//      * advicer of joinpoint
+//      *
+//      * @type {Advicer}
+//      */
+//     advices!: Advices;
+
+//     /**
+//      * orgin pointcut method metadatas.
+//      *
+//      * @type {any[]}
+//      */
+//     get annotations(): any[] {
+//         return this.injector.get(AOP_METHOD_ANNOTATIONS);
+//     }
+//     /**
+//      * set annotations.
+//      */
+//     set annotations(meta: any[]) {
+//         this.injector.setValue(AOP_METHOD_ANNOTATIONS, meta);
+//     }
+
+//     invokeHandle!: (joinPoint: Joinpoint, advicer: Advicer) => any;
+
+//     /**
+//      * pointcut target instance
+//      *
+//      * @type {*}
+//      */
+//     target: any;
+
+//     /**
+//      * pointcut target type.
+//      *
+//      * @type {Type}
+//      */
+//     targetType!: Type;
+
+//     get providers(): Injector {
+//         return this.injector;
+//     }
+
+
+//     constructor(injector: Injector, ...providers: ProviderType[]) {
+//         this.injector = Injector.create([...providers, { provide: Joinpoint, useValue: this }], injector, 'provider')
+//     }
+
+
+//     /**
+//      * create resolve context via options.
+//      *
+//      * @static
+//      * @param {Injector} injector
+//      * @param {ResolveActionOption} options
+//      * @returns {ResolveActionContext}
+//      */
+//     static parse<T>(injector: Injector, options: JoinpointOption): Joinpoint {
+//         return lang.assign(new Joinpoint(injector, options.providers, options.provJoinpoint?.providers), options, 'providers', 'injector');
+//     }
+// }
