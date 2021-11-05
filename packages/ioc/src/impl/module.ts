@@ -1,6 +1,4 @@
-
-import { Platform, StaticProviders } from '..';
-import { Injector, InjectorScope, ProviderType, TypeOption } from '../injector';
+import { Injector, InjectorScope, Platform, ProviderType, TypeOption } from '../injector';
 import { get } from '../metadata/refl';
 import { ModuleReflect } from '../metadata/type';
 import { ModuleFactory, ModuleOption } from '../module.factory';
@@ -8,17 +6,19 @@ import { ModuleRef } from '../module.ref';
 import { InjectorTypeWithProviders, StaticProvider } from '../providers';
 import { InjectFlags, Token } from '../tokens';
 import { Modules, Type } from '../types';
-import { EMPTY, isFunction } from '../utils/chk';
+import { EMPTY, isFunction, isPlainObject } from '../utils/chk';
 import { deepForEach } from '../utils/lang';
 import { DefaultInjector, tryResolveToken } from './injector';
 
 export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T> {
 
     private _instance!: T;
+    private defTypes = new Set<Type>();
     constructor(readonly moduleType: Type<T>, providers: ProviderType[], readonly parent: Injector, readonly scope?: InjectorScope) {
         super(providers, parent, scope);
         const dedupStack: Type[] = [];
-        deepForEach([moduleType], type => this.processInjectorType(type, [], dedupStack));
+        this.setValue(ModuleRef, this);
+        deepForEach([moduleType], type => this.processInjectorType(type, this.platform(), dedupStack));
     }
 
 
@@ -33,27 +33,78 @@ export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T>
         return this._instance;
     }
 
-    protected override isSelf(token: Token): boolean {
-        return token === ModuleRef || super.isSelf(token);
+    protected override isself(token: Token): boolean {
+        return token === ModuleRef || super.isself(token);
     }
 
     override get<T>(token: Token<T>, notFoundValue?: T, flags = InjectFlags.Default): T {
         this.assertNotDestroyed();
-        if (!(flags & InjectFlags.SkipSelf) && this.isSelf(token)) return this as any;
-        return tryResolveToken(token, this.records.get(token), this.records, this.parent, notFoundValue, flags);
+        return tryResolveToken(token, this.records.get(token), this.records, this.platform(), this.parent, notFoundValue, flags);
     }
 
-    protected processInjectorType(def: Type|InjectorTypeWithProviders, parents: Type[], dedupStack: Type[]) {
-        
+    protected processInjectorType(typeOrDef: Type | InjectorTypeWithProviders, platform: Platform, dedupStack: Type[]) {
+        const type = isFunction(typeOrDef) ? typeOrDef : typeOrDef.module;
+        if (!isFunction(typeOrDef)) {
+            deepForEach(
+                typeOrDef.providers,
+                pdr => this.processProvider(pdr, platform, type, typeOrDef.providers),
+                v => isPlainObject(v) && !v.provide
+            );
+        }
+        const isDuplicate = dedupStack.indexOf(type) !== -1;
+        const typeRef = get<ModuleReflect>(type);
+        if (typeRef.module && !isDuplicate) {
+            dedupStack.push(type);
+            typeRef.imports?.forEach(imp => {
+                this.processInjectorType(imp, platform, dedupStack);
+            });
+
+            if (typeRef.declarations) {
+                typeRef.declarations.forEach(d => {
+                    this.processInjectorType(d, platform, dedupStack);
+                });
+            }
+        }
+
+        this.defTypes.add(type);
+        this.registerType(platform, type);
+        if (typeRef.providers && !isDuplicate) {
+            deepForEach(
+                typeRef.providers,
+                pdr => this.processProvider(pdr, platform, type, typeRef.providers),
+                v => isPlainObject(v) && !v.provide
+            );
+        }
     }
 
-    protected override processProvider(provider: Injector  | TypeOption | StaticProvider, platform: Platform, moduleType?: Type, providers?: ProviderType[]): void {
+    protected override processProvider(provider: Injector | TypeOption | StaticProvider, platform: Platform, moduleType?: Type, providers?: ProviderType[]): void {
         super.processProvider(provider, platform);
     }
 
 }
 
 
+export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
+    constructor(public moduleType: Type<T>) {
+        super();
+
+    }
+
+    create(parent: Injector, option?: ModuleOption): ModuleRef<T> {
+
+    }
+
+    protected registerModule(moduleType: Type) {
+        this.recurse(moduleType, new Set());
+    }
+
+    protected recurse(moduleType: Type, visited: Set<Type>) {
+        const imports = get<ModuleReflect>(moduleType)?.imports || [];
+        for (let i of imports) {
+
+        }
+    }
+}
 
 // export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
 

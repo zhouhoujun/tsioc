@@ -193,7 +193,7 @@ export abstract class Actions<T, TA = ActionType, TH extends Handler = Handler<T
     protected parseHandler(provider: Platform, ac: any): TH {
         if (isBaseOf(ac, Action)) {
             if (!provider.hasAction(ac)) {
-                provider.regAction(ac);
+                provider.registerAction(ac);
             }
             return provider.getHandle(ac)
         } else if (isFunction(ac)) {

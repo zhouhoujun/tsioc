@@ -27,7 +27,7 @@ export class AopModule {
         platform.setValue(ADVISOR, new Advisor(injector), Advisor)
             .setValue(ADVICE_MATCHER, new AdviceMatcher(injector), AdviceMatcher);
 
-        platform.regAction(ProceedingScope);
+        platform.registerAction(ProceedingScope);
 
         platform.getAction(runtimes.BeforeCtorScope)
             .useBefore(BeforeCtorAdviceAction);

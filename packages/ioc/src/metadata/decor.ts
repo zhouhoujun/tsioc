@@ -7,13 +7,13 @@ import {
 } from './meta';
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
 import { Injector, ProviderType } from '../injector';
-import { getTypes } from '../utils/lang';
+import { deepForEach, getTypes } from '../utils/lang';
 import { DesignContext } from '../actions/ctx';
 import { DecoratorOption } from './refl';
 import { ModuleReflect } from './type';
 import { ModuleRef, ModuleRegistered } from '../module.ref';
 import { ModuleFactory } from '../module.factory';
-import { ROOT_INJECTOR } from '..';
+import { getModuleType, ROOT_INJECTOR } from '..';
 
 
 
@@ -513,7 +513,8 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
                 (ctx, next) => {
                     const reflect = ctx.reflect as ModuleReflect;
                     const annotation: ModuleMetadata = reflect.annotation = ctx.metadata;
-                    if (annotation.imports) reflect.imports = annotation.imports ?? EMPTY; //getTypes(annotation.imports);
+
+                    if (annotation.imports) reflect.imports = getModuleType(annotation.imports);
                     if (annotation.exports) reflect.exports = getTypes(annotation.exports);
                     if (annotation.declarations) reflect.declarations = getTypes(annotation.declarations);
                     if (annotation.bootstrap) reflect.bootstrap = getTypes(annotation.bootstrap);

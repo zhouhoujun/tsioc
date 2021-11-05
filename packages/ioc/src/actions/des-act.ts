@@ -7,8 +7,7 @@ import { DesignContext, RuntimeContext } from './ctx';
 import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
-import { ROOT_INJECTOR } from '../metadata/tk';
-import { FnType, Injector, Platform } from '../injector';
+import { FactoryRecord, FnType, Injector, Platform } from '../injector';
 import { InvocationContext } from '../invoker';
 
 
@@ -36,12 +35,8 @@ export class DesignClassScope extends IocRegScope<DesignContext> implements IAct
 }
 
 export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): void {
-    if (ctx.reflect.providedIn === 'root') {
-        ctx.providedIn = ctx.reflect.providedIn;
-        ctx.injector = ctx.injector.get(ROOT_INJECTOR);
-    }
     const state = ctx.state = genState(ctx.injector, ctx.provide);
-    ctx.platform.regType(ctx.type, state);
+    ctx.platform.registerType(ctx.type, state);
     next();
 };
 
@@ -52,8 +47,13 @@ function genState(injector: Injector, provide?: Token) {
     }
 }
 
-function regInstf(platform: Platform, injector: Injector, type: Type, provide: Token, singleton: boolean) {
-    injector.set(provide, {
+export const RegClassAction = function (ctx: DesignContext, next: () => void): void {
+    regProvider(ctx.getRecords(), ctx.platform, ctx.injector, ctx.type, ctx.provide || ctx.type, ctx.singleton || ctx.reflect.singleton === true);
+    next();
+};
+
+function regProvider(records: Map<Token, FactoryRecord>, platform: Platform, injector: Injector, type: Type, provide: Token, singleton: boolean) {
+    records.set(provide, {
         type,
         fn: (context?: InvocationContext) => {
             // make sure has value.
@@ -80,13 +80,6 @@ function regInstf(platform: Platform, injector: Injector, type: Type, provide: T
     });
 }
 
-
-export const RegClassAction = function (ctx: DesignContext, next: () => void): void {
-    regInstf(ctx.platform, ctx.injector, ctx.type, ctx.provide || ctx.type, ctx.singleton || ctx.reflect.singleton === true);
-    next();
-};
-
-
 export const BeforeAnnoDecorHandle = function (ctx: DesignContext, next: () => void) {
     ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
@@ -106,9 +99,7 @@ export const DesignClassDecorHandle = function (ctx: DesignContext, next: () => 
     return next();
 }
 
-
 export class DesignPropScope extends IocRegScope<DesignContext> implements IActionSetup {
-
     setup() {
         this.use(
             DesignPropDecorScope
@@ -162,7 +153,6 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
     next();
 };
 
-
 export class DesignMthScope extends IocRegScope<DesignContext> implements IActionSetup {
     setup() {
         this.use(
@@ -170,7 +160,6 @@ export class DesignMthScope extends IocRegScope<DesignContext> implements IActio
         );
     }
 }
-
 
 export const DesignMthDecorScope = function (ctx: DesignContext, next: () => void) {
     ctx.reflect.class.methodDecors.forEach(d => {
@@ -213,7 +202,6 @@ export class AnnoScope extends IocRegScope<DesignContext> implements IActionSetu
         this.use(AnnoDecorScope, AfterAnnoDecorScope, IocAutorunAction);
     }
 }
-
 
 export const AnnoDecorScope = function (ctx: DesignContext, next: () => void) {
     ctx.reflect.class.classDecors.forEach(d => {

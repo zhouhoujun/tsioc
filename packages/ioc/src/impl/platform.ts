@@ -2,11 +2,12 @@ import { Action, IActionSetup } from '../action';
 import { Injector, ProviderType, Registered, Platform } from '../injector';
 import { get } from '../metadata/refl';
 import { TypeReflect } from '../metadata/type';
+import { ModuleFactory } from '../module.factory';
 import { Token } from '../tokens';
 import { ClassType, Type } from '../types';
-import { isFunction } from '../utils/chk';
 import { Handler } from '../utils/hdl';
-import { cleanObj } from '../utils/lang';
+import { isFunction, isString } from '../utils/chk';
+import { cleanObj, getClassName } from '../utils/lang';
 
 /**
  * registered state.
@@ -18,12 +19,14 @@ export class DefaultPlatform implements Platform {
     private _destroyed = false;
     private actions: Map<Token, any>;
     private singletons: Map<Token, any>;
-    modules = new Set<Type>();
+    private modules: Map<Type | string, ModuleFactory>;
 
-    constructor() {
+
+    constructor(readonly injector: Injector) {
         this.states = new Map();
         this.actions = new Map();
-        this.singletons = new Map()
+        this.singletons = new Map();
+        this.modules = new Map();
     }
 
     /**
@@ -53,6 +56,21 @@ export class DefaultPlatform implements Platform {
         return this.singletons.has(token);
     }
 
+    /**
+     * register module.
+     */
+    registerModule(moduleType: Type, factory: ModuleFactory): void {
+        const exist = this.modules.get(moduleType);
+        this.assertSameOrNotExisting(exist?.moduleType, factory.moduleType);
+        this.modules.set(moduleType, factory);
+    }
+
+    assertSameOrNotExisting(type: Type<any> | undefined, incoming: Type<any>) {
+        if (type && type !== incoming) {
+            throw new Error(
+                `Duplicate module registered for - ${getClassName(type)}`);
+        }
+    }
 
     /**
      * get token factory resolve instace in current BaseInjector.
@@ -73,7 +91,7 @@ export class DefaultPlatform implements Platform {
         return this.actions.has(token);
     }
 
-    regAction(...types: Type<Action>[]): this {
+    registerAction(...types: Type<Action>[]): this {
         types.forEach(type => {
             if (this.actions.has(type)) return;
             this.registerAction(type);
@@ -103,8 +121,16 @@ export class DefaultPlatform implements Platform {
      * get injector
      * @param type
      */
-    getInjector<T extends Injector = Injector>(type: ClassType): T {
-        return this.states.get(type)?.injector as T;
+    getInjector<T extends Injector = Injector>(scope: ClassType | 'root' | 'platform'): T {
+        if (isString(scope)) {
+            switch (scope) {
+                case 'platform':
+                    return this.injector as T;
+                case 'root':
+                    return this.modules.get(root);
+            }
+        }
+        return this.states.get(scope)?.injector as T;
     }
 
     /**
@@ -142,7 +168,7 @@ export class DefaultPlatform implements Platform {
         return this.states.get(type) as T;
     }
 
-    regType<T extends Registered>(type: ClassType, data: T) {
+    registerType<T extends Registered>(type: ClassType, data: T) {
         const state = this.states.get(type);
         if (state) {
             Object.assign(state, data);
@@ -191,7 +217,7 @@ export class DefaultPlatform implements Platform {
         this.states.clear();
         this.actions.clear();
         this.singletons.clear();
-
+        this.modules.clear();
     }
 
     onDestroy(callback: () => void): void {

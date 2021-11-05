@@ -1,6 +1,6 @@
 import {
     Token, Type, PropertyMetadata, InjectableMetadata, isBoolean, isArray, isString, isUndefined,
-    refl, lang, createDecorator, createPropDecorator, createParamDecorator, ClassMethodDecorator
+    refl, lang, createDecorator, createPropDecorator, createParamDecorator, ClassMethodDecorator, getClass
 } from '@tsdi/ioc';
 import {
     AnnotationReflect, MappingReflect, MessageQueue, Middlewares,
@@ -547,7 +547,7 @@ export const Output: OutputPropertyDecorator = createPropDecorator<BindingMetada
 export abstract class Query { }
 
 function isDirOrComponent(target: any) {
-    const anTy = refl.get<AnnotationReflect>(lang.getClass(target))?.annoType;
+    const anTy = refl.get<AnnotationReflect>(getClass(target))?.annoType;
     return anTy === 'component' || anTy === 'decorator';
 }
 

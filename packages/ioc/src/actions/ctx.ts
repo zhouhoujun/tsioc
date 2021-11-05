@@ -2,8 +2,9 @@ import { Token } from '../tokens';
 import { Type } from '../types';
 import { ParameterMetadata, ProvidedInMetadata } from '../metadata/meta';
 import { TypeReflect } from '../metadata/type';
-import { Injector, Platform, Registered } from '../injector';
+import { FactoryRecord, Injector, Platform, Registered } from '../injector';
 import { InvocationContext } from '../invoker';
+
 
 
 /**
@@ -56,6 +57,7 @@ export interface RegContext extends IocContext {
  */
 export interface DesignContext extends RegContext, ProvidedInMetadata {
     platform: Platform;
+    getRecords: () => Map<Token, FactoryRecord>;
     /**
      * registered state.
      */

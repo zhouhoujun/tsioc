@@ -41,9 +41,8 @@ export function tokenId<T = any>(key: string,): Token<T> {
     return Symbol(key);
 }
 
-
-function format(token: Token) {
-    return isFunction(token) ? `{${getClassName(token)}}` : token.toString();
+export function formatToken(token: Token) {
+    return isFunction(token) ? `${getClassName(token)}` : token.toString();
 }
 
 /**
@@ -56,7 +55,7 @@ export function getToken<T>(token: Token<T>, alias?: string): Token<T> {
     if (token instanceof InjectToken) {
         return token.to(alias);
     }
-    return `${format(token)}_${alias}`;
+    return `${formatToken(token)}_${alias}`;
 }
 
 /**
@@ -65,7 +64,7 @@ export function getToken<T>(token: Token<T>, alias?: string): Token<T> {
  * @param target token ref target.
  */
 export function tokenRef<T>(token: Token<T>, target: Token): Token<T> {
-    return `Ref ${format(token)} for ${format(target)}`;
+    return `Ref ${formatToken(token)} for ${formatToken(target)}`;
 }
 
 /**
@@ -88,6 +87,7 @@ export function isToken(target: any): target is Token {
 export function isInjectToken<T>(target: any): target is InjectToken<T> {
     return target instanceof InjectToken;
 }
+
 
 
 /**

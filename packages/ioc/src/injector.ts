@@ -10,6 +10,8 @@ import { Action } from './action';
 import { ClassProvider, ExistingProvider, FactoryProvider, StaticProvider, ValueProvider } from './providers';
 import { InvocationContext, OperationArgumentResolver } from './invoker';
 import { ModuleLoader } from './module.loader';
+import { ProvidedInMetadata } from './metadata/meta';
+import { ModuleFactory } from './module.factory';
 
 
 /**
@@ -359,6 +361,8 @@ export abstract class Injector implements Destroyable {
 
     protected abstract destroying(): void;
 
+    protected abstract processRegister(platform: Platform, type: Type, reflect: TypeReflect, option?: TypeOption): void;
+
     /**
      * create injector.
      * @param providers 
@@ -404,6 +408,10 @@ export interface Registered {
 @Abstract()
 export abstract class Platform implements Destroyable {
     /**
+     * platform injector.
+     */
+    abstract get injector(): Injector;
+    /**
      * set singleton value
      * @param token 
      * @param value 
@@ -420,9 +428,9 @@ export abstract class Platform implements Destroyable {
      */
     abstract hasSingleton(token: Token): boolean;
     /**
-     * modules.
+     * register module.
      */
-    abstract get modules(): Set<Type>;
+    abstract registerModule(moduleType: Type, factory: ModuleFactory): void;
     /**
      * get type registered info.
      * @param type
@@ -430,9 +438,9 @@ export abstract class Platform implements Destroyable {
     abstract getRegistered<T extends Registered>(type: ClassType): T;
     /**
      * get injector the type registered in.
-     * @param type
+     * @param scope
      */
-    abstract getInjector<T extends Injector = Injector>(type: ClassType): T;
+    abstract getInjector(scope: ClassType | 'root' | 'platform'): Injector;
     /**
      * get the type private providers.
      * @param type
@@ -466,7 +474,7 @@ export abstract class Platform implements Destroyable {
      * @param type class type
      * @param data registered data.
      */
-    abstract regType<T extends Registered>(type: ClassType, data: T): void;
+    abstract registerType<T extends Registered>(type: ClassType, data: T): void;
 
     /**
      * delete registered.
@@ -478,7 +486,7 @@ export abstract class Platform implements Destroyable {
     * register action, simple create instance via `new type(this)`.
     * @param types
     */
-    abstract regAction(...types: Type<Action>[]): this;
+    abstract registerAction(...types: Type<Action>[]): this;
     abstract hasAction(token: Token): boolean;
     /**
      * get action instace in current .
@@ -546,7 +554,7 @@ export const INJECT_IMPL = {
  * providers for {@link Injector}.
  * 
  */
-export type ProviderType = Type | Modules[] | Injector | StaticProvider | undefined;
+export type ProviderType = Type | Modules[] | Injector | StaticProvider;
 
 /**
  * instance factory.
@@ -556,12 +564,11 @@ export type Factory<T = any> = (...args: any[]) => T;
 /**
  * type register option.
  */
-export interface TypeOption<T = any> {
+export interface TypeOption<T = any> extends ProvidedInMetadata {
     provide?: Token<T>;
     type: Type<T>;
     regProvides?: boolean;
     singleton?: boolean;
-    regIn?: 'root';
 }
 
 /**

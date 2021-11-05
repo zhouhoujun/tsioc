@@ -201,3 +201,5 @@ export interface InjectorTypeWithProviders<T = any> {
     module: Type<T>;
     providers: (Modules[]|StaticProvider)[]
 }
+
+

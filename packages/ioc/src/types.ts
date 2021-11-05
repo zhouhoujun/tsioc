@@ -2,7 +2,7 @@
 /**
  * module object.
  */
-export type Modules =  Record<string, Type> | Type[];
+export type Modules =  Record<string, Type|Object> | Type[];
 
 /**
  * module type.

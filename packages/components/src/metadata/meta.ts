@@ -1,4 +1,4 @@
-import { InjectableMetadata, ProviderMetadata, PropertyMetadata, Metadata, Type } from '@tsdi/ioc';
+import { InjectableMetadata, ProviderMetadata, PropertyMetadata, Type } from '@tsdi/ioc';
 import { MessageQueue } from '@tsdi/core';
 
 /**
@@ -53,7 +53,8 @@ export interface ComponentMetadata extends DirectiveMetadata {
  * @interface BindingMetadata
  * @extends {ParamPropMetadata}
  */
-export interface BindingMetadata extends Metadata {
+export interface BindingMetadata {
+    type?: Type;
     /**
      * binding name.
      *
@@ -73,7 +74,8 @@ export interface BindingMetadata extends Metadata {
 /**
  * query metadata.
  */
-export interface QueryMetadata extends Metadata {
+export interface QueryMetadata {
+    type?: Type;
     descendants: boolean;
     first: boolean;
     read: any;
@@ -87,7 +89,8 @@ export interface QueryMetadata extends Metadata {
  * HostBinding metadata.
  *
  */
-export interface HostBindingMetadata extends Metadata {
+export interface HostBindingMetadata {
+    type?: Type;
     /**
      * host property name.
      *
@@ -102,7 +105,8 @@ export interface HostBindingMetadata extends Metadata {
  * HostListener metadata.
  *
  */
-export interface HostListenerMetadata extends Metadata {
+export interface HostListenerMetadata {
+    type?: Type;
     /**
      * event name.
      *

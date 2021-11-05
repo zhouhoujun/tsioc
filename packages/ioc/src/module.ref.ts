@@ -1,7 +1,10 @@
 import { Destroyable } from './destroy';
-import { Type } from './types';
+import { ModuleType, Type } from './types';
 import { Abstract } from './metadata/fac';
 import { Injector, Registered } from './injector';
+import { InjectorTypeWithProviders } from './providers';
+import { deepForEach } from './utils/lang';
+import { isFunction, isPlainObject } from '.';
 
 /**
  * Represents an instance of an `Module` created by an `ModuleFactory`.
@@ -41,3 +44,13 @@ export interface ModuleRegistered extends Registered {
     moduleRef?: ModuleRef;
 }
 
+
+export function getModuleType(input: any[]): (Type | InjectorTypeWithProviders)[] {
+    const types: (Type | InjectorTypeWithProviders)[] = [];
+    deepForEach<Type | InjectorTypeWithProviders>(input, ty => {
+        if (isFunction(ty) || (ty as InjectorTypeWithProviders).module) {
+            types.push(ty);
+        }
+    }, v => isPlainObject(v) && !(v as InjectorTypeWithProviders).module);
+    return types;
+}
