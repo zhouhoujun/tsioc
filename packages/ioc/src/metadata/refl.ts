@@ -184,31 +184,31 @@ function mapToFac(maps: Record<string, Handler | Handler[]>): (type: DecoratorTy
 function regActionType(decor: string, type: DecorActionType) {
     switch (type) {
         case 'annoation':
-            typeAnnoDecors.push(decor);
+            typeAnnoDecors[decor] = true;
             break;
         case 'paramInject':
-            paramInjectDecors.push(decor);
+            paramInjectDecors[decor] = true;
             break;
         case 'propInject':
-            propInjectDecors.push(decor);
+            propInjectDecors[decor] = true;
             break;
         case 'autorun':
-            autorunDecors.push(decor);
+            autorunDecors[decor] = true;
             break;
         case 'typeProviders':
-            typeProvidersDecors.push(decor);
+            typeProvidersDecors[decor] = true;
             break;
         case 'methodProviders':
-            methodProvidersDecors.push(decor);
+            methodProvidersDecors[decor] = true;
             break;
         default:
             return;
     }
 }
 
-export const paramInjectDecors = ['@Inject', '@AutoWired', '@Param'];
+const paramInjectDecors: Record<string, boolean> = { '@Inject': true, '@AutoWired': true, '@Param': true };
 export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
-    if (paramInjectDecors.indexOf(ctx.decor) >= 0) {
+    if (paramInjectDecors[ctx.decor]) {
         const reflect = ctx.reflect;
         let meta = ctx.metadata as ParameterMetadata;
         const propertyKey = ctx.propertyKey;
@@ -249,9 +249,9 @@ export const InitPropDesignAction = (ctx: DecorContext, next: () => void) => {
 
 
 
-export const propInjectDecors = ['@Inject', '@AutoWired'];
+const propInjectDecors: Record<string, boolean> = { '@Inject': true, '@AutoWired': true };
 export const PropInjectAction = (ctx: DecorContext, next: () => void) => {
-    if (propInjectDecors.indexOf(ctx.decor) >= 0) {
+    if (propInjectDecors[ctx.decor]) {
         let pdrs = ctx.reflect.propProviders.get(ctx.propertyKey);
         if (!pdrs) {
             pdrs = [];
@@ -280,9 +280,9 @@ export const InitCtorDesignParams = (ctx: DecorContext, next: () => void) => {
     return next();
 }
 
-export const typeAnnoDecors = ['@Injectable', '@Singleton', '@Abstract'];
+const typeAnnoDecors: Record<string, boolean> = { '@Injectable': true, '@Singleton': true, '@Abstract': true };
 export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
-    if (typeAnnoDecors.indexOf(ctx.decor) >= 0) {
+    if (typeAnnoDecors[ctx.decor]) {
         const reflect = ctx.reflect;
         const meta = ctx.metadata as ClassMetadata & InjectableMetadata;
         if (meta.abstract) {
@@ -311,9 +311,9 @@ export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
     return next();
 };
 
-export const autorunDecors = ['@Autorun', '@IocExt'];
+const autorunDecors: Record<string, boolean> = { '@Autorun': true, '@IocExt': true };
 export const AutorunAction = (ctx: DecorContext, next: () => void) => {
-    if (autorunDecors.indexOf(ctx.decor) >= 0) {
+    if (autorunDecors[ctx.decor]) {
         ctx.reflect.autoruns.push({
             decorType: ctx.decorType,
             autorun: (ctx.metadata as AutorunMetadata).autorun!,
@@ -324,9 +324,9 @@ export const AutorunAction = (ctx: DecorContext, next: () => void) => {
     return next();
 }
 
-export const typeProvidersDecors = ['@Injectable', '@Providers'];
+const typeProvidersDecors: Record<string, boolean> = { '@Module': true, '@Injectable': true, '@Providers': true };
 export const TypeProvidersAction = (ctx: DecorContext, next: () => void) => {
-    if (typeProvidersDecors.indexOf(ctx.decor) >= 0) {
+    if (typeProvidersDecors[ctx.decor]) {
         if ((ctx.metadata as ProvidersMetadata).providers) {
             ctx.reflect.providers.push(...(ctx.metadata as ProvidersMetadata).providers!);
         }
@@ -345,9 +345,9 @@ export const InitMethodDesignParams = (ctx: DecorContext, next: () => void) => {
     return next();
 }
 
-export const methodProvidersDecors = ['@Providers', '@AutoWired'];
+const methodProvidersDecors: Record<string, boolean> = { '@Providers': true, '@AutoWired': true };
 export const MethodProvidersAction = (ctx: DecorContext, next: () => void) => {
-    if (methodProvidersDecors.indexOf(ctx.decor) >= 0) {
+    if (methodProvidersDecors[ctx.decor]) {
         let pdrs = ctx.reflect.methodProviders.get(ctx.propertyKey);
         if (!pdrs) {
             pdrs = []

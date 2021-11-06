@@ -416,7 +416,7 @@ export abstract class Platform implements Destroyable {
      * @param token 
      * @param value 
      */
-    abstract setSingleton<T>(token: Token<T>, value:T): this;
+    abstract setSingleton<T>(token: Token<T>, value: T): this;
     /**
      * get singleton instance.
      * @param token 
@@ -509,7 +509,7 @@ export abstract class Platform implements Destroyable {
      * @param provider 
      */
     abstract setActionValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
-    abstract getActionValue<T>(token: Token<T>, notFoundValue?: T): T 
+    abstract getActionValue<T>(token: Token<T>, notFoundValue?: T): T
 
     abstract get destroyed(): boolean;
     abstract destroy(): void;
@@ -594,7 +594,7 @@ export const enum FnType {
 /**
  * injector scope.
  */
-export type InjectorScope = Type | 'platform' | 'root' | 'provider' | 'invoked' | 'parameter';
+export type InjectorScope = Type | 'platform' | 'root' | 'provider' | 'invoked' | 'parameter' | string;
 
 export const enum OptionFlags {
     Optional = 1 << 0,

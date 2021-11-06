@@ -4,6 +4,7 @@ import { Injector, ProviderType } from './injector';
 import { Abstract } from './metadata/fac';
 import { ParameterMetadata } from './metadata/meta';
 import { TypeReflect } from './metadata/type';
+import { Destroyable } from '.';
 
 
 /**
@@ -72,14 +73,17 @@ export function composeResolver<T extends OperationArgumentResolver, TP extends 
 /**
  * The context for the {@link OperationInvoker invocation of an operation}.
  */
-export class InvocationContext<T = any> {
+export class InvocationContext<T = any> implements Destroyable {
 
     private _argumentResolvers: OperationArgumentResolver[];
     private _arguments: T;
+    private destroyCbs: (() => void)[] | null = [];
+    private _destroyed = false;
     constructor(readonly injector: Injector, readonly target?: ClassType, readonly method?: string, args?: T, ...argumentResolvers: OperationArgumentResolver[]) {
         this._argumentResolvers = argumentResolvers;
         this._arguments = args ?? {} as T;
     }
+
     /**
      * the invocation arguments.
      */
@@ -108,6 +112,27 @@ export class InvocationContext<T = any> {
             return false;
         });
         return result ?? null;
+    }
+
+    get destroyed() {
+        return this._destroyed;
+    }
+
+    destroy(): void {
+        if (!this._destroyed) {
+            this._destroyed = true;
+            this.destroyCbs?.forEach(c => c && c());
+            this._arguments = null!;
+            this._argumentResolvers = null!;
+            if(!this.injector.destroyed && this.injector.scope === 'parameter'){
+                this.injector.destroy();
+            }
+            (this as any).injector = null;
+        }
+    }
+
+    onDestroy(callback: () => void): void {
+        this.destroyCbs?.push(callback);
     }
 }
 
@@ -154,11 +179,7 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
         if (!instance || !isFunction(instance[this.method])) {
             throw new Error(`type: ${type} has no method ${this.method}.`);
         }
-        const val = instance[this.method](...this.resolveArguments(context), injector.scope === 'invoked' ? injector : undefined);
-        if (injector.scope === 'parameter') {
-            injector.destroy();
-        }
-        return val;
+        return instance[this.method](...this.resolveArguments(context), context);
     }
 
     /**

@@ -131,7 +131,7 @@ export class DefaultPlatform implements Platform {
                 case 'platform':
                     return this.injector as T;
                 case 'root':
-                    return this.modules.get(root);
+                    return this.modules.get(scope);
             }
         }
         return this.states.get(scope)?.injector as T;

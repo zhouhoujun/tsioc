@@ -16,6 +16,8 @@ export interface ModuleOption {
      * dependence types.
      */
     deps?: Modules[];
+
+    scope?: 'root' | string;
 }
 
 /**

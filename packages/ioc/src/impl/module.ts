@@ -14,7 +14,7 @@ export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T>
 
     private _instance!: T;
     private defTypes = new Set<Type>();
-    constructor(readonly moduleType: Type<T>, providers: ProviderType[], readonly parent: Injector, readonly scope?: InjectorScope) {
+    constructor(readonly moduleType: Type<T>, providers: ProviderType[]|undefined, readonly parent: Injector, readonly scope?: InjectorScope) {
         super(providers, parent, scope);
         const dedupStack: Type[] = [];
         this.setValue(ModuleRef, this);
@@ -91,19 +91,19 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
     }
 
     create(parent: Injector, option?: ModuleOption): ModuleRef<T> {
-
+        return new DefaultModuleRef(this.moduleType, option?.providers, parent, option?.scope);
     }
 
-    protected registerModule(moduleType: Type) {
-        this.recurse(moduleType, new Set());
-    }
+    // protected registerModule(moduleType: Type) {
+    //     this.recurse(moduleType, new Set());
+    // }
 
-    protected recurse(moduleType: Type, visited: Set<Type>) {
-        const imports = get<ModuleReflect>(moduleType)?.imports || [];
-        for (let i of imports) {
+    // protected recurse(moduleType: Type, visited: Set<Type>) {
+    //     const imports = get<ModuleReflect>(moduleType)?.imports || [];
+    //     for (let i of imports) {
 
-        }
-    }
+    //     }
+    // }
 }
 
 // export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {

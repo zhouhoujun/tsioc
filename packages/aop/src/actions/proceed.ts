@@ -1,6 +1,6 @@
 import {
-    Type, isFunction, lang, Platform, Injector, ProviderType,
-    ParameterMetadata, IocActions, IActionSetup, isArray, isNil, isPromise, refl, InvocationContext, EMPTY
+    Type, isFunction, lang, Platform, isNil, isPromise, refl,
+    ParameterMetadata, IocActions, IActionSetup, InvocationContext, EMPTY
 } from '@tsdi/ioc';
 import { IPointcut } from '../joinpoints/IPointcut';
 import { Joinpoint } from '../joinpoints/Joinpoint';
@@ -115,7 +115,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
     }
 
     proxy(propertyMethod: Function, advices: Advices, target: any, targetType: Type, pointcut: IPointcut, provJoinpoint?: Joinpoint) {
-        const fullName = pointcut.fullName;
+        // const fullName = pointcut.fullName;
         const name = pointcut.name;
         const self = this;
         const platform = this.platform;

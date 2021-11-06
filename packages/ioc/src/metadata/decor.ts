@@ -1,5 +1,5 @@
 import { ClassType, Type } from '../types';
-import { isString, isArray, EMPTY_OBJ, EMPTY } from '../utils/chk';
+import { isString, isArray, EMPTY_OBJ } from '../utils/chk';
 import { Token, getToken, InjectFlags } from '../tokens';
 import {
     ClassMetadata, AutorunMetadata, AutoWiredMetadata, InjectMetadata, PatternMetadata,
@@ -11,9 +11,9 @@ import { deepForEach, getTypes } from '../utils/lang';
 import { DesignContext } from '../actions/ctx';
 import { DecoratorOption } from './refl';
 import { ModuleReflect } from './type';
-import { ModuleRef, ModuleRegistered } from '../module.ref';
+import { getModuleType, ModuleRef, ModuleRegistered } from '../module.ref';
 import { ModuleFactory } from '../module.factory';
-import { getModuleType, ROOT_INJECTOR } from '..';
+import { ROOT_INJECTOR } from './tk';
 
 
 
