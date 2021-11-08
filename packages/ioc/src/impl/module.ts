@@ -63,6 +63,7 @@ export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T>
         }
         const isDuplicate = dedupStack.indexOf(type) !== -1;
         const typeRef = moduleRefl ?? get<ModuleReflect>(type);
+        console.log(typeRef.type, typeRef.module && !isDuplicate);
         if (typeRef.module && !isDuplicate) {
             dedupStack.push(type);
             typeRef.imports?.forEach(imp => {
@@ -125,7 +126,7 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
 }
 
 export class DefaultModuleFactoryResolver extends ModuleFactoryResolver {
-    resolve<T>(type: Type<T>): ModuleFactory<T> {
+    resolve<T>(type: Type<T> | ModuleReflect<T>): ModuleFactory<T> {
         return new DefaultModuleFactory(type);
     }
 }

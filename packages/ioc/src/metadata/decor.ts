@@ -15,6 +15,7 @@ import { getModuleType, ModuleRef, ModuleRegistered } from '../module.ref';
 import { ModuleFactory } from '../module.factory';
 import { ROOT_INJECTOR } from './tk';
 import { ProviderType, StaticProvider } from '../providers';
+import { ModuleFactoryResolver } from '..';
 
 
 
@@ -514,7 +515,7 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
                 (ctx, next) => {
                     const reflect = ctx.reflect as ModuleReflect;
                     const annotation: ModuleMetadata = reflect.annotation = ctx.metadata;
-
+                    reflect.module = true;
                     if (annotation.imports) reflect.imports = getModuleType(annotation.imports);
                     if (annotation.exports) reflect.exports = getTypes(annotation.exports);
                     if (annotation.declarations) reflect.declarations = getTypes(annotation.declarations);
@@ -524,21 +525,21 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
                 ...isArray(hd) ? hd : [hd]
             ]
         },
-        design: {
-            beforeAnnoation: (context: DesignContext, next) => {
-                const ctx = context as ModuleDesignContext;
-                if (ctx.reflect.module) {
-                    let { injector, type, moduleRef } = ctx;
-                    if (!(moduleRef && moduleRef.moduleType === type)) {
-                        moduleRef = injector.resolve({ token: ModuleFactory, target: ctx.reflect }).create(injector.get(ROOT_INJECTOR));
-                        ctx.injector = moduleRef?.injector;
-                        ctx.state.injector = ctx.injector;
-                    }
-                    (ctx.state as ModuleRegistered).moduleRef = moduleRef;
-                }
-                next();
-            }
-        },
+        // design: {
+        //     beforeAnnoation: (context: DesignContext, next) => {
+        //         const ctx = context as ModuleDesignContext;
+        //         if (ctx.reflect.module) {
+        //             let { injector, type, moduleRef } = ctx;
+        //             if (!(moduleRef && moduleRef.moduleType === type)) {
+        //                 moduleRef = injector.resolve({ token: ModuleFactoryResolver, target: ctx.reflect }).resolve(ctx.reflect).create(injector.get(ROOT_INJECTOR));
+        //                 ctx.injector = moduleRef?.injector;
+        //                 ctx.state.injector = ctx.injector;
+        //             }
+        //             (ctx.state as ModuleRegistered).moduleRef = moduleRef;
+        //         }
+        //         next();
+        //     }
+        // },
         appendProps: (meta) => {
             if (append) {
                 append(meta as T);

@@ -3,6 +3,7 @@ import { Injector } from './injector';
 import { Abstract } from './metadata/fac';
 import { ModuleRef } from './module.ref';
 import { ProviderType } from './providers';
+import { ModuleReflect } from './metadata/type';
 
 
 /**
@@ -35,5 +36,5 @@ export abstract class ModuleFactory<T = any> {
  */
 @Abstract()
 export abstract class ModuleFactoryResolver {
-    abstract resolve<T>(type: Type<T>): ModuleFactory<T>;
+    abstract resolve<T>(type: Type<T> | ModuleReflect<T>): ModuleFactory<T>;
 }

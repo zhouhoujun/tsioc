@@ -31,9 +31,10 @@ export class Application {
             if (!this.loader) this.loader = target.loader;
             const providers = (target.providers && target.providers.length) ? [...DEFAULTA_FACTORYS, ...target.providers] : DEFAULTA_FACTORYS;
             target.deps = [...this.getDeps(), ...target.deps || EMPTY];
+            target.scope = 'root';
             this.root = this.createInjector(providers, target);
         } else {
-            const option = { type: target, deps: this.getDeps() };
+            const option = { type: target, deps: this.getDeps(), scope: 'root' };
             this.root = this.createInjector(DEFAULTA_FACTORYS, option);
         }
         this.initRoot();
