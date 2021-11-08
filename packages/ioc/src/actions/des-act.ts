@@ -53,17 +53,27 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
 };
 
 function regProvider(records: Map<Token, FactoryRecord>, platform: Platform, injector: Injector, type: Type, provide: Token, singleton: boolean) {
-    records.set(provide, {
+    const recd = {
         type,
-        fn: (context?: InvocationContext) => {
+        fn: (...fnArgs: any[]) => {
             // make sure has value.
             if (singleton && platform.hasSingleton(type)) {
                 return platform.getSingleton(type);
+            }
+            let args: any[] | undefined;
+            let context: InvocationContext | undefined;
+            if (fnArgs.length) {
+                if (fnArgs[0] instanceof InvocationContext) {
+                    context = fnArgs[0]
+                } else {
+                    args = fnArgs;
+                }
             }
             const ctx = {
                 injector,
                 provide,
                 type,
+                args,
                 singleton,
                 platform,
                 context
@@ -71,13 +81,17 @@ function regProvider(records: Map<Token, FactoryRecord>, platform: Platform, inj
 
             platform.getAction(RuntimeLifeScope).register(ctx);
             const instance = ctx.instance;
+            if (singleton) {
+                recd.value = instance;
+            }
             // clean context
             cleanObj(ctx);
             return instance;
         },
         fnType: FnType.Inj,
         unreg: () => platform.deleteType(type)
-    });
+    } as FactoryRecord;
+    records.set(provide, recd);
 }
 
 export const BeforeAnnoDecorHandle = function (ctx: DesignContext, next: () => void) {

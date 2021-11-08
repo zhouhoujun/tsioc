@@ -25,11 +25,17 @@ export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): 
     if (!ctx.params) {
         ctx.params = ctx.reflect.methodParams.get('constructor') ?? EMPTY;
     }
+    const factory = ctx.injector.resolve({ token: OperationInvokerFactory, target: ctx.type });
+    const context = ctx.context = factory.createContext(ctx.injector, {
+        invokerReflect: ctx.reflect,
+        invokerMethod: 'constructor',
+        parent: ctx.context
+    });
     if (!ctx.args) {
-        const factory = ctx.injector.resolve({ token: OperationInvokerFactory, target: ctx.type });
-        ctx.args = factory.create(ctx.reflect, 'constructor').resolveArguments(ctx.context ?? factory.createContext(ctx.reflect, 'constructor', ctx.injector));
+        ctx.args = factory.create(ctx.reflect, 'constructor').resolveArguments(context);
     }
     next();
+    context.destroy();
 };
 
 

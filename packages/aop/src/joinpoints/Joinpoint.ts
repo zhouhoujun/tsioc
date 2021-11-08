@@ -48,9 +48,9 @@ export class Joinpoint<T = any> extends InvocationContext<T> implements IocConte
         readonly args?: any[],
         readonly annotations?: any[],
         readonly params?: ParameterMetadata[],
-        readonly parent?: InvocationContext,
+        parent?: InvocationContext,
         readonly provJoinpoint?: Joinpoint, data?: T, ...argumentResolvers: OperationArgumentResolver[]) {
-        super(injector, target, method, data, ...argumentResolvers);
+        super(injector, parent, target, method, data, ...argumentResolvers);
     }
 
     private _fullName!: string

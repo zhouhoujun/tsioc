@@ -116,7 +116,6 @@ export class InvocationContext<T = any> implements Destroyable {
         return this._argumentResolvers;
     }
 
-
     canResolve(type: Parameter): boolean {
         return this.argumentResolvers.some(r => r.canResolve(type, this)) || (this.parent?.canResolve(type) || false);
     }
@@ -233,15 +232,44 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
     }
 }
 
+/**
+ * invocation option.
+ */
+export interface InvocationOption {
+    /**
+     * invocation invoker target.
+     */
+    invokerTarget?: Type;
+    /**
+     * invocation invoker target reflect.
+     */
+    invokerReflect?: TypeReflect;
+    /**
+     * invocation target method.
+     */
+    invokerMethod?: string;
+    /**
+     * parent InvocationContext,
+     */
+    parent?: InvocationContext;
+    /**
+     * invocation arguments data.
+     */
+    arguments?: Record<string, any>;
+    /**
+     * custom resolvers.
+     */
+    resolvers?: OperationArgumentResolver[] | ((injector: Injector, typeRef?: TypeReflect, method?: string) => OperationArgumentResolver[]);
+    /**
+     * custom providers.
+     */
+    providers?: ProviderType[];
+}
 
 @Abstract()
 export abstract class OperationInvokerFactory {
     abstract create<T>(type: ClassType<T> | TypeReflect<T>, method: string, instance?: T): OperationInvoker;
-    abstract createContext<T>(target: ClassType<T> | TypeReflect<T>, method: string, injector: Injector, option?: {
-        args?: Record<string, any>,
-        resolvers?: OperationArgumentResolver[] | ((injector: Injector, typeRef?: TypeReflect, method?: string) => OperationArgumentResolver[]),
-        providers?: ProviderType[]
-    }): InvocationContext;
+    abstract createContext<T>(injector: Injector, option?: InvocationOption): InvocationContext;
 }
 
 

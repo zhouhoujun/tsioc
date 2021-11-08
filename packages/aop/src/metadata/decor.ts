@@ -48,7 +48,7 @@ export const Aspect: Aspect = createDecorator<AspectMetadata>('Aspect', {
     },
     design: {
         class: (ctx, next) => {
-            const advisor = ctx.injector.platform().getAction(ADVISOR);
+            const advisor = ctx.injector.platform().getActionValue(ADVISOR);
             if (advisor) {
                 advisor.add(ctx.type);
             } else {

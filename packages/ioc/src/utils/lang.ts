@@ -241,31 +241,6 @@ export function getTypes(mds: Modules | Modules[]): Type[] {
     return types;
 }
 
-
-
-// const exportKey = 'exports';
-// const esModuleKey = '__esModule';
-
-// function getContentTypes(regModule: Modules): Type[] {
-//     let regModules: Type[] = [];
-//     if (isClass(regModule)) {
-//         regModules.push(regModule);
-//     } else if (isPlainObject(regModule)) {
-//         let rmodules = regModule[exportKey] ? regModule[exportKey] : regModule;
-//         if (isPlainObject(rmodules)) {
-//             if (rmodules[esModuleKey]) {
-//                 for (let p in rmodules) {
-//                     let type = rmodules[p];
-//                     regModules.push(...getContentTypes(type));
-//                 }
-//             }
-//         } else if (isClass(rmodules)) {
-//             regModules.push(rmodules);
-//         }
-//     }
-//     return regModules;
-// }
-
 /**
  * clean object.
  * @param obj.
@@ -276,8 +251,6 @@ export function cleanObj(obj: any) {
         obj[k] = null;
     }
 }
-
-
 
 /**
  * defer

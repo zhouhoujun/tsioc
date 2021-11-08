@@ -17,7 +17,7 @@ import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
 import { TypeReflect } from '../metadata/type';
 import { get } from '../metadata/refl';
-import { InvocationContext, OperationArgumentResolver, OperationInvokerFactory, ReflectiveOperationInvoker } from '../invoker';
+import { InvocationContext, InvocationOption, OperationArgumentResolver, OperationInvokerFactory, ReflectiveOperationInvoker } from '../invoker';
 import { DefaultModuleLoader } from './loader';
 import { ModuleLoader } from '../module.loader';
 import { DefaultPlatform } from './platform';
@@ -167,7 +167,7 @@ export class DefaultInjector extends Injector {
         if (isFunction(p)) {
             this.registerType(platform, p);
         } else if (isPlainObject(p) && (p as StaticProviders).provide) {
-            this.registerProvider((p as StaticProviders).provide, p as StaticProviders);
+            this.registerProvider(platform, p as StaticProviders);
         } else if (isPlainObject(p) && (p as TypeOption).type) {
             this.registerType(platform, (p as TypeOption).type, p as TypeOption);
         } else if (p instanceof Injector) {
@@ -212,20 +212,20 @@ export class DefaultInjector extends Injector {
         return true;
     }
 
-    protected registerProvider(provide: Token, target: StaticProviders) {
-        if (target.multi) {
-            let multiPdr = this.records.get(provide);
+    protected registerProvider(platfrom: Platform, provider: StaticProviders) {
+        if (provider.multi) {
+            let multiPdr = this.records.get(provider.provide);
             if (!multiPdr) {
-                this.records.set(provide, multiPdr = {
+                this.records.set(provider.provide, multiPdr = {
                     fnType: FnType.Fac,
                     fn: MUTIL,
                     value: EMPTY,
                     deps: []
                 });
             }
-            multiPdr.deps?.push({ token: generateRecord(this, target), options: OptionFlags.Default });
+            multiPdr.deps?.push({ token: generateRecord(platfrom, this, provider), options: OptionFlags.Default });
         } else {
-            this.records.set(provide, generateRecord(this, target));
+            this.records.set(provider.provide, generateRecord(platfrom, this, provider));
         }
     }
 
@@ -355,7 +355,7 @@ export class DefaultInjector extends Injector {
             option.target && context.setValue(TARGET, option.target);
         }
         inst = this.resolveStrategy(option, context);
-        if(!option.context && context){
+        if (!option.context && context) {
             context.destroy();
         }
         return inst;
@@ -612,7 +612,7 @@ export class DefaultInjector extends Injector {
         }
 
         const factory = this.resolve({ token: OperationInvokerFactory, target: tgRefl });
-        return factory.create(tgRefl, key, instance).invoke(context ?? factory.createContext(tgRefl, key, this, option ?? { providers }));
+        return factory.create(tgRefl, key, instance).invoke(context ?? factory.createContext(this, { ...option, providers, invokerReflect: tgRefl, invokerMethod: key }));
     }
 
 
@@ -700,38 +700,38 @@ const CIRCULAR = IDENT;
 /**
  * generate record.
  * @param injector 
- * @param option 
+ * @param provider 
  * @returns 
  */
-export function generateRecord<T>(injector: Injector, option: StaticProviders): FactoryRecord<T> {
+export function generateRecord<T>(platfrom: Platform, injector: Injector, provider: StaticProviders): FactoryRecord<T> {
     let fn: Function = IDENT;
     let value: T | undefined;
     let fnType = FnType.Fac;
-    let type = option.useClass;
-    const deps = computeDeps(option);
-    if (isDefined(option.useValue)) {
-        value = option.useValue;
-    } else if (option.useFactory) {
-        fn = option.useFactory;
-    } else if (option.useExisting) {
+    let type = provider.useClass;
+    const deps = computeDeps(provider);
+    if (isDefined(provider.useValue)) {
+        value = provider.useValue;
+    } else if (provider.useFactory) {
+        fn = provider.useFactory;
+    } else if (provider.useExisting) {
 
-    } else if (option.useClass) {
-        if (deps.length) {
-            fnType = FnType.Cotr;
-            fn = option.useClass;
-        } else {
-            fnType = FnType.Inj;
-            fn = (pdr: Injector) => {
-                if (!injector.platform().isRegistered(type) && !injector.has(type, InjectFlags.Default)) {
-                    injector.register({ type, deps, regProvides: false });
-                }
-                return injector.get(type, pdr);
-            };
-        }
-    } else if (isFunction(option.provide)) {
+    } else if (provider.useClass) {
+        // if (deps.length) {
+        //     fnType = FnType.Cotr;
+        //     fn = option.useClass;
+        // } else {
+        fnType = FnType.Inj;
+        fn = (...args: any[]) => {
+            if (!platfrom.isRegistered(type) && !injector.has(type, InjectFlags.Default)) {
+                injector.register({ type, deps, regProvides: false });
+            }
+            return injector.resolve(type, { args });
+        };
+        // }
+    } else if (isFunction(provider.provide)) {
         fnType = FnType.Cotr;
-        fn = option.provide;
-        type = option.provide;
+        fn = provider.provide;
+        type = provider.provide;
     }
     return { value, fn, fnType, deps, type };
 }
@@ -923,27 +923,21 @@ const resolves: OperationArgumentResolver[] = [
     }
 ];
 
-export function createInvocationContext(injector: Injector, option?: {
-    typeRef?: TypeReflect,
-    parent?: InvocationContext,
-    method?: string,
-    args?: Record<string, any>,
-    resolvers?: OperationArgumentResolver[] | ((injector: Injector, typeRef?: TypeReflect, method?: string) => OperationArgumentResolver[]),
-    providers?: ProviderType[]
-}) {
+export function createInvocationContext(injector: Injector, option?: InvocationOption) {
     option = option || EMPTY_OBJ;
     let providers: ProviderType[] = option.providers ?? EMPTY;
-    const { typeRef, method } = option;
+    const { invokerTarget, invokerReflect: invokerTargetReflect, invokerMethod } = option;
+    const typeRef = invokerTargetReflect ?? (invokerTarget ? get(invokerTarget) : undefined);
     if (typeRef) {
         const platform = injector.platform();
-        providers = [...providers, platform.getTypeProvider(typeRef.type), ...(method ? typeRef.methodProviders.get(method) ?? EMPTY : EMPTY)]
+        providers = [...providers, platform.getTypeProvider(typeRef.type), ...(invokerMethod ? typeRef.methodProviders.get(invokerMethod) ?? EMPTY : EMPTY)]
     }
     if (providers.length) {
-        const proxy = typeRef && method ? typeRef.type.prototype[method]['_proxy'] : false;
+        const proxy = typeRef && invokerMethod ? typeRef.type.prototype[invokerMethod]['_proxy'] : false;
         injector = Injector.create(providers, injector, proxy ? 'invoked' : 'parameter');
     }
-    return new InvocationContext(injector, option.parent ?? injector.get(InvocationContext), typeRef?.type, method, option.args || EMPTY_OBJ,
-        ...(isFunction(option.resolvers) ? option.resolvers(injector, typeRef, method) : option.resolvers) ?? EMPTY,
+    return new InvocationContext(injector, option.parent ?? injector.get(InvocationContext), typeRef?.type, invokerMethod, option.arguments || EMPTY_OBJ,
+        ...(isFunction(option.resolvers) ? option.resolvers(injector, typeRef, invokerMethod) : option.resolvers) ?? EMPTY,
         ...resolves);
 }
 
@@ -959,12 +953,8 @@ function registerCores(container: Container) {
         create: (type, method, instance?) => {
             return new ReflectiveOperationInvoker(isFunction(type) ? get(type) : type, method, instance);
         },
-        createContext: (type, method, injector, options?) => {
-            return createInvocationContext(injector, {
-                ...options,
-                typeRef: isFunction(type) ? get(type) : type,
-                method
-            });
+        createContext: (injector, options?: InvocationOption) => {
+            return createInvocationContext(injector, options);
         }
     });
     // bing action.

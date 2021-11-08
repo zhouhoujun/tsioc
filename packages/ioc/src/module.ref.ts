@@ -4,7 +4,8 @@ import { Abstract } from './metadata/fac';
 import { Injector, Registered } from './injector';
 import { InjectorTypeWithProviders } from './providers';
 import { deepForEach } from './utils/lang';
-import { isFunction, isPlainObject, ModuleReflect } from '.';
+import { ModuleReflect } from './metadata/type';
+import { isFunction, isPlainObject } from './utils/chk';
 
 /**
  * Represents an instance of an `Module` created by an `ModuleFactory`.
@@ -21,7 +22,7 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
     /**
      * module type
      */
-     abstract get moduleReflect(): ModuleReflect<T>;
+    abstract get moduleReflect(): ModuleReflect<T>;
     /**
      * The injector that contains all of the providers of the `Module`.
      */

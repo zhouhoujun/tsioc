@@ -4,7 +4,7 @@ import { get } from '../metadata/refl';
 import { ModuleReflect } from '../metadata/type';
 import { ModuleFactory, ModuleFactoryResolver, ModuleOption } from '../module.factory';
 import { ModuleRef } from '../module.ref';
-import { InjectorTypeWithProviders, ProviderType, StaticProvider } from '../providers';
+import { InjectorTypeWithProviders, ProviderType } from '../providers';
 import { isFunction, isPlainObject } from '../utils/chk';
 import { deepForEach } from '../utils/lang';
 import { Injector, InjectorScope, Platform } from '../injector';

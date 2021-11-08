@@ -11,6 +11,7 @@ import { InvocationContext, OperationArgumentResolver } from './invoker';
 import { ModuleLoader } from './module.loader';
 import { ProvidedInMetadata } from './metadata/meta';
 import { ModuleFactory } from './module.factory';
+import { InvocationOption } from '.';
 
 
 /**
@@ -627,7 +628,11 @@ export interface FactoryRecord<T = any> {
 /**
  * resovler option.
  */
-export interface ResolverOption {
+export interface ResolverOption extends InvocationOption {
+    /**
+     * args.
+     */
+    args?: any[];
     /**
      * resolve token in target context.
      */
@@ -644,17 +649,7 @@ export interface ResolverOption {
      * register token if has not register.
      */
     regify?: boolean;
-    /**
-     * resolve providers.
-     */
-    providers?: ProviderType[];
-    /**
-     * custom resolvers.
-     */
-    resolvers?: OperationArgumentResolver[] | ((injector: Injector, typeRef?: TypeReflect, method?: string) => OperationArgumentResolver[]),
-    /**
-     * invocation context.
-     */
+
     context?: InvocationContext;
 }
 
