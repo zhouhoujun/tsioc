@@ -63,7 +63,6 @@ export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T>
         }
         const isDuplicate = dedupStack.indexOf(type) !== -1;
         const typeRef = moduleRefl ?? get<ModuleReflect>(type);
-        console.log(typeRef.type, typeRef.module && !isDuplicate);
         if (typeRef.module && !isDuplicate) {
             dedupStack.push(type);
             typeRef.imports?.forEach(imp => {
@@ -134,75 +133,3 @@ export class DefaultModuleFactoryResolver extends ModuleFactoryResolver {
 export const DEFAULTA_MODULE_FACTORYS: ProviderType[] = [
     { provide: ModuleFactoryResolver, useValue: new DefaultModuleFactoryResolver() }
 ]
-
-// export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
-
-//     private _modelRefl: ModuleReflect<T>;
-//     constructor(modelRefl: ModuleReflect<T> | Type<T>) {
-//         super();
-//         this._modelRefl = isFunction(modelRefl) ? get(modelRefl) : modelRefl;
-//     }
-
-//     override get moduleType() {
-//         return this._modelRefl?.type;
-//     }
-
-//     override create(parent: Injector, option?: ModuleOption): ModuleRef<T> {
-//         let inj: ModuleRef;
-//         if ((parent as ModuleRef)?.moduleType === this._modelRefl.type) {
-//             inj = parent as ModuleRef;
-//         } else {
-//             inj = createModuleInjector(this._modelRefl, option?.providers, parent || option?.injector, option);
-//         }
-//         this.regModule(inj);
-//         return inj;
-//     }
-
-//     protected regModule(inj: ModuleRef) {
-//         const state = inj.platform();
-//         const regInRoot = inj.regIn === 'root';
-//         if (inj.reflect.imports) {
-//             inj.register(inj.reflect.imports);
-//             inj.reflect.imports.forEach(ty => {
-//                 const importRef = state.getRegistered<ModuleRegistered>(ty)?.moduleRef;
-//                 if (importRef) {
-//                     inj.imports.unshift(importRef);
-//                 }
-//                 if (regInRoot) {
-//                     inj.exports.export(ty, false, true);
-//                 }
-//             })
-//         }
-//         if (inj.reflect.declarations) {
-//             inj.register(inj.reflect.declarations);
-//             if (regInRoot) {
-//                 inj.reflect.declarations.forEach(d => inj.exports.export(d, true, true));
-//             }
-//         }
-//         if (inj.reflect.annotation?.providers) {
-//             inj.exports.inject(inj.reflect.annotation.providers);
-//         }
-
-//         inj.reflect.exports?.forEach(ty => inj.exports.export(ty));
-//         if (inj.exports.size && inj.parent instanceof ModuleInjector && inj.parent.isRoot) {
-//             inj.parent.imports.push(inj);
-//         }
-//     }
-
-// }
-
-// export function createModuleInjector(type: ModuleReflect | Type, providers?: ProviderType[], parent?: Injector,
-//     option: {
-//         scope?: string | InjectorScope;
-//         providedIn?: string;
-//         deps?: Modules[];
-//         args?: any[];
-//         baseURL?: string;
-//     } = {}) {
-
-//     let inj = new DefaultModuleRef(isFunction(type) ? get<ModuleReflect>(type) : type, providers, option.scope);
-//     if (option.deps) {
-//         inj.use(option.deps);
-//     }
-//     return inj;
-// }

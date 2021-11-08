@@ -516,6 +516,7 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
                     const reflect = ctx.reflect as ModuleReflect;
                     const annotation: ModuleMetadata = reflect.annotation = ctx.metadata;
                     reflect.module = true;
+                    if (annotation.providedIn) reflect.providedIn = annotation.providedIn;
                     if (annotation.imports) reflect.imports = getModuleType(annotation.imports);
                     if (annotation.exports) reflect.exports = getTypes(annotation.exports);
                     if (annotation.declarations) reflect.declarations = getTypes(annotation.declarations);

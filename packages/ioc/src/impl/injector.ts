@@ -15,12 +15,13 @@ import {
 import { DesignContext } from '../actions/ctx';
 import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
-import { TypeReflect } from '../metadata/type';
+import { ModuleReflect, TypeReflect } from '../metadata/type';
 import { get } from '../metadata/refl';
 import { InvocationContext, InvocationOption, OperationArgumentResolver, OperationInvokerFactory, ReflectiveOperationInvoker } from '../invoker';
 import { DefaultModuleLoader } from './loader';
 import { ModuleLoader } from '../module.loader';
 import { DefaultPlatform } from './platform';
+import { ModuleFactoryResolver } from '..';
 
 
 /**
@@ -186,9 +187,18 @@ export class DefaultInjector extends Injector {
      * @param [singleton]
      */
     protected registerType(platform: Platform, type: Type, option?: TypeOption) {
-        const reflect = get(type, true);
+        this.registerReflect(platform, get(type, true), option)
+    }
+
+    protected registerModule(platform: Platform, mdref: ModuleReflect) {
+        const providedIn = mdref.providedIn;
+        console.log(mdref.type, providedIn);
+        return this.resolve(ModuleFactoryResolver, { target: mdref }).resolve(mdref).create(providedIn ? platform.getInjector(providedIn) as DefaultInjector : this)
+    }
+
+    protected registerReflect(platform: Platform, reflect: TypeReflect, option?: TypeOption) {
         const providedIn = option?.providedIn ?? reflect.providedIn;
-        (providedIn ? platform.getInjector(providedIn) as DefaultInjector : this).processRegister(platform, type, reflect, option);
+        (providedIn ? platform.getInjector(providedIn) as DefaultInjector : this).processRegister(platform, reflect.type as Type, reflect, option);
     }
 
     protected processRegister(platform: Platform, type: Type, reflect: TypeReflect, option?: TypeOption) {
@@ -247,9 +257,22 @@ export class DefaultInjector extends Injector {
     use(...modules: Modules[]): Type[];
     use(...args: any[]): Type[] {
         this.assertNotDestroyed();
-        let types = getTypes(args);
+        let types: Type[] = [];
         const platform = this.platform();
-        types.forEach(ty => this.registerType(platform, ty));
+        deepForEach(args, ty => {
+            if (isFunction(ty)) {
+                const mdref = get<ModuleReflect>(ty);
+                if (mdref) {
+                    types.push(ty);
+                    if (mdref.module) {
+                        this.registerModule(platform, mdref);
+                    } else {
+                        this.registerReflect(platform, mdref);
+                    }
+                }
+            }
+        }, v => isPlainObject(v));
+        // types.forEach(ty => this.registerType(platform, ty));
         return types;
     }
 
