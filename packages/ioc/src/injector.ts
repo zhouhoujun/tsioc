@@ -3,11 +3,10 @@ import { ClassType, LoadType, Modules, Type } from './types';
 import { Token, InjectFlags } from './tokens';
 import { Abstract } from './metadata/fac';
 import { TypeReflect } from './metadata/type';
-import { remove } from './utils/lang';
 import { EMPTY, isArray } from './utils/chk';
 import { Handler } from './utils/hdl';
 import { Action } from './action';
-import { ClassProvider, ExistingProvider, FactoryProvider, StaticProvider, ValueProvider } from './providers';
+import { ClassProvider, ExistingProvider, FactoryProvider, ProviderType, StaticProvider, ValueProvider } from './providers';
 import { InvocationContext, OperationArgumentResolver } from './invoker';
 import { ModuleLoader } from './module.loader';
 import { ProvidedInMetadata } from './metadata/meta';
@@ -25,7 +24,7 @@ export abstract class Injector implements Destroyable {
     static ρNPT = true;
 
     private _destroyed = false;
-    protected _dsryCbs: (() => void)[] = [];
+    protected _dsryCbs = new Set<() => void>();
 
     readonly scope?: InjectorScope | string;
 
@@ -83,34 +82,28 @@ export abstract class Injector implements Destroyable {
      *
      * @template T
      * @param {Token<T>} token the token to resolve.
+     * @param {option} option use to resolve and {@link InvocationContext}
      * @returns {T}
      */
-    abstract resolve<T>(token: Token<T>, option?: {
-        /**
-        * resolve token in target context.
-        */
-        target?: Token | TypeReflect | Object | (Token | Object)[];
-        /**
-         * all faild use the default token to get instance.
-         */
-        defaultToken?: Token<T>;
-        /**
-         * resolve strategy.
-         */
-        flags?: InjectFlags;
-        /**
-         * register token if has not register.
-         */
-        regify?: boolean;
-        /**
-         * resolve providers.
-         */
-        providers?: ProviderType[];
-        /**
-         * invocation context.
-         */
-        context?: InvocationContext;
-    }): T;
+    abstract resolve<T>(token: Token<T>, option?: ResolverOption): T;
+    /**
+     * resolve token instance with token and param provider.
+     *
+     * @template T
+     * @param {Token<T>} token the token to resolve.
+     * @param {InvocationContext} context
+     * @returns {T}
+     */
+    abstract resolve<T>(token: Token<T>, context?: InvocationContext): T;
+    /**
+     * resolve token instance with token and param provider.
+     *
+     * @template T
+     * @param {Token<T>} token the token to resolve.
+     * @param {ProviderType[]} providers
+     * @returns {T}
+     */
+    abstract resolve<T>(token: Token<T>, providers?: ProviderType[]): T;
     /**
      * resolve token instance with token and param provider.
      *
@@ -121,14 +114,50 @@ export abstract class Injector implements Destroyable {
      */
     abstract resolve<T>(token: Token<T>, ...providers: ProviderType[]): T;
     /**
-    * resolve token instance with token and param provider.
-    *
-    * @template T
-    * @param {Token<T>} token the token to resolve.
-    * @param {ProviderType[]} providers
-    * @returns {T}
-    */
-    abstract resolve<T>(token: Token<T>, providers?: ProviderType[]): T;
+     * get service or target reference service in the injector.
+     *
+     * @template T
+     * @param {(ResolveOption<T>} option resolve option.
+     * @returns {T}
+     */
+    abstract getService<T>(option: ResolveOption<T>): T;
+    /**
+     * get service or target reference service in the injector.
+     *
+     * @template T
+     * @param {Token<T>} token the token to resolve.
+     * @param {option} option use to resolve and {@link InvocationContext}
+     * @returns {T}
+     */
+    abstract getService<T>(token: Token<T>, option?: ResolverOption): T;
+    /**
+     * get service or target reference service in the injector.
+     *
+     * @template T
+     * @param {Token<T>} token the token to resolve.
+     * @param {InvocationContext} context
+     * @returns {T}
+     */
+    abstract getService<T>(token: Token<T>, context?: InvocationContext): T;
+    /**
+     * get service or target reference service in the injector.
+     *
+     * @template T
+     * @param {Token<T> } token servive token.
+     * @param {ProviderType[]} providers
+     * @returns {T}
+     */
+    abstract getService<T>(token: Token<T>, providers?: ProviderType[]): T;
+    /**
+     * get service or target reference service in the injector.
+     *
+     * @template T
+     * @param {Token<T> } token servive token.
+     * @param {...ProviderType[]} providers
+     * @returns {T}
+     */
+    abstract getService<T>(token: Token<T>, ...providers: ProviderType[]): T;
+
     /**
      * set value.
      * @param token provide key
@@ -144,30 +173,6 @@ export abstract class Injector implements Destroyable {
      * @returns {Type<T>}
      */
     abstract getTokenProvider<T>(token: Token<T>, flags?: InjectFlags): Type<T>;
-    // /**
-    //  * set provide.
-    //  *
-    //  * @template T
-    //  * @param {ProviderOption<T>} option
-    //  * @returns {this}
-    //  */
-    // abstract set<T>(option: ProviderOption<T>): this;
-    // /**
-    //  * set provide.
-    //  * @param token token.
-    //  * @param option factory option.
-    //  */
-    // abstract set<T>(token: Token<T>, option: FactoryRecord<T>): this;
-    // /**
-    //  * set provide.
-    //  *
-    //  * @template T
-    //  * @param {Token<T>} token
-    //  * @param {Factory<T>} fac
-    //  * @param {Type<T>} [type] provider type.
-    //  * @returns {this}
-    //  */
-    // abstract set<T>(token: Token<T>, fac: Factory<T>, type?: Type<T>): this;
     /**
      * cache instance.
      * @param token 
@@ -219,16 +224,6 @@ export abstract class Injector implements Destroyable {
      * @returns {this}
      */
     abstract unregister<T>(token: Token<T>): this;
-
-    // /**
-    //  * iterator current resolver.
-    //  *
-    //  * @param {((pdr: FactoryRecord, key: Token, resolvor?: Injector) => void|boolean)} callbackfn
-    //  * @param {InjectFlags} [flags] iterator strategy.
-    //  * @returns {(void|boolean)}
-    //  */
-    // abstract iterator(callbackfn: (pdr: FactoryRecord<any>, key: Token<any>, resolvor?: Injector) => boolean | void, flags?: InjectFlags): boolean | void;
-
     /**
      * copy injector to current injector.
      *
@@ -314,23 +309,6 @@ export abstract class Injector implements Destroyable {
      */
     abstract load(...modules: LoadType[]): Promise<Type[]>;
     /**
-     * get service or target reference service in the injector.
-     *
-     * @template T
-     * @param {(ResolveOption<T>} option resolve option.
-     * @returns {T}
-     */
-    abstract getService<T>(option: ResolveOption<T>): T;
-    /**
-     * get service or target reference service in the injector.
-     *
-     * @template T
-     * @param {Token<T> } token servive token.
-     * @param {...ProviderType[]} providers
-     * @returns {T}
-     */
-    abstract getService<T>(token: Token<T>, ...providers: ProviderType[]): T;
-    /**
      * has destoryed or not.
      */
     get destroyed() {
@@ -343,7 +321,7 @@ export abstract class Injector implements Destroyable {
         if (!this._destroyed) {
             this._destroyed = true;
             this._dsryCbs.forEach(cb => cb());
-            this._dsryCbs = null!;
+            this._dsryCbs.clear();
             this.destroying();
         }
     }
@@ -352,11 +330,11 @@ export abstract class Injector implements Destroyable {
      * @param callback destory callback
      */
     onDestroy(callback: () => void): void {
-        this._dsryCbs?.unshift(callback);
+        this._dsryCbs.add(callback);
     }
 
     offDestory(callback: () => void) {
-        remove(this._dsryCbs, callback);
+        this._dsryCbs.delete(callback);
     }
 
     protected abstract destroying(): void;
@@ -451,7 +429,7 @@ export abstract class Platform implements Destroyable {
      * @param type
      * @param providers
      */
-    abstract setTypeProvider(type: ClassType | TypeReflect, providers: ProviderType[]): void;
+    abstract setTypeProvider(type: ClassType | TypeReflect, providers: StaticProvider[]): void;
     /**
      * get instance.
      * @param type class type.
@@ -529,8 +507,7 @@ export function isInjector(target: any): target is Injector {
 }
 
 /**
-* root container interface.
-* @deprecated use {@link Injector} instead.
+* platform container interface.
 */
 @Abstract()
 export abstract class Container extends Injector { };
@@ -551,11 +528,6 @@ export const INJECT_IMPL = {
     }
 };
 
-/**
- * providers for {@link Injector}.
- * 
- */
-export type ProviderType = Type | Modules[] | Injector | StaticProvider;
 
 /**
  * instance factory.
@@ -653,13 +625,9 @@ export interface FactoryRecord<T = any> {
 
 
 /**
- * resovle action option.
+ * resovler option.
  */
-export interface ResolveOption<T = any> {
-    /**
-     * token.
-     */
-    token: Token<T>;
+export interface ResolverOption {
     /**
      * resolve token in target context.
      */
@@ -667,7 +635,7 @@ export interface ResolveOption<T = any> {
     /**
      * all faild use the default token to get instance.
      */
-    defaultToken?: Token<T>;
+    defaultToken?: Token;
     /**
      * resolve strategy.
      */
@@ -681,9 +649,23 @@ export interface ResolveOption<T = any> {
      */
     providers?: ProviderType[];
     /**
+     * custom resolvers.
+     */
+    resolvers?: OperationArgumentResolver[] | ((injector: Injector, typeRef?: TypeReflect, method?: string) => OperationArgumentResolver[]),
+    /**
      * invocation context.
      */
     context?: InvocationContext;
+}
+
+/**
+ * resolve option of {@link Injector}
+ */
+export interface ResolveOption<T = any> extends ResolverOption {
+    /**
+     * token.
+     */
+    token: Token<T>;
 }
 
 /**

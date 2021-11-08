@@ -1,4 +1,4 @@
-import { EMPTY, Type, OperationInvoker } from '@tsdi/ioc';
+import { EMPTY, Type } from '@tsdi/ioc';
 import { DBPropertyMetadata, ModelArgumentResolver, ModelFieldResolver, AbstractModelArgumentResolver } from './resolver';
 import { Context } from '../middlewares/context';
 

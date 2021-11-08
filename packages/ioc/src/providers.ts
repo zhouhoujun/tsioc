@@ -194,12 +194,20 @@ export type StaticProviders = ClassProvider & ValueProvider & ConstructorProvide
  */
 export type StaticProvider = TypeProvider | ClassProvider | ValueProvider | ConstructorProvider | ExistingProvider | FactoryProvider | KeyValueProvider;
 
+
+
+/**
+ * providers for {@link Injector}.
+ * 
+ */
+export type ProviderType = Type | Modules[] | StaticProvider;
+
 /**
  * injector type with providers.
  */
 export interface InjectorTypeWithProviders<T = any> {
     module: Type<T>;
-    providers: (Modules[]|StaticProvider)[]
+    providers: ProviderType[]
 }
 
 

@@ -1,7 +1,6 @@
 import { ClassType, Modules, Type } from '../types';
 import { InjectFlags, Token } from '../tokens';
-import { ProviderType } from '../injector';
-import { InjectorTypeWithProviders } from '../providers';
+import { InjectorTypeWithProviders, ProviderType } from '../providers';
 
 /**
  * type metadata

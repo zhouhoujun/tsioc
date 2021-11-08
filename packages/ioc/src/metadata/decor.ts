@@ -6,14 +6,15 @@ import {
     InjectableMetadata, ParameterMetadata, ProvidersMetadata, ProviderInMetadata, ModuleMetadata
 } from './meta';
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
-import { Injector, ProviderType } from '../injector';
-import { deepForEach, getTypes } from '../utils/lang';
+import { Injector } from '../injector';
+import { getTypes } from '../utils/lang';
 import { DesignContext } from '../actions/ctx';
 import { DecoratorOption } from './refl';
 import { ModuleReflect } from './type';
 import { getModuleType, ModuleRef, ModuleRegistered } from '../module.ref';
 import { ModuleFactory } from '../module.factory';
 import { ROOT_INJECTOR } from './tk';
+import { ProviderType, StaticProvider } from '../providers';
 
 
 
@@ -353,7 +354,7 @@ export interface Providers {
  * @Providers
  */
 export const Providers: Providers = createDecorator<ProvidersMetadata>('Providers', {
-    props: (providers: ProviderType[]) => ({ providers }),
+    props: (providers: StaticProvider[]) => ({ providers }),
 });
 
 

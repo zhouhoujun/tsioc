@@ -1,14 +1,13 @@
-import { Injector, InjectorScope, Platform, ProviderType, TypeOption } from '../injector';
+import { Token } from '../tokens';
+import { Type } from '../types';
 import { get } from '../metadata/refl';
-import { TARGET } from '../metadata/tk';
 import { ModuleReflect } from '../metadata/type';
-import { ModuleFactory, ModuleOption } from '../module.factory';
+import { ModuleFactory, ModuleFactoryResolver, ModuleOption } from '../module.factory';
 import { ModuleRef } from '../module.ref';
-import { InjectorTypeWithProviders, StaticProvider } from '../providers';
-import { InjectFlags, Token } from '../tokens';
-import { Modules, Type } from '../types';
-import { EMPTY, isFunction, isPlainObject } from '../utils/chk';
+import { InjectorTypeWithProviders, ProviderType, StaticProvider } from '../providers';
+import { isFunction, isPlainObject } from '../utils/chk';
 import { deepForEach } from '../utils/lang';
+import { Injector, InjectorScope, Platform } from '../injector';
 import { DefaultInjector, tryResolveToken } from './injector';
 
 export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T> {
@@ -70,22 +69,21 @@ export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T>
                 this.processInjectorType(platform, imp, dedupStack);
             });
 
-            if (typeRef.declarations) {
-                typeRef.declarations.forEach(d => {
-                    this.processInjectorType(platform, d, dedupStack);
-                });
+            typeRef.declarations?.forEach(d => {
+                this.processInjectorType(platform, d, dedupStack);
+            });
+
+            if (typeRef.providers) {
+                deepForEach(
+                    typeRef.providers,
+                    pdr => this.processProvider(platform, pdr, typeRef.providers),
+                    v => isPlainObject(v) && !v.provide
+                );
             }
         }
 
         this.defTypes.add(type);
         this.registerType(platform, type);
-        if (typeRef.providers && !isDuplicate) {
-            deepForEach(
-                typeRef.providers,
-                pdr => this.processProvider(platform, pdr, typeRef.providers),
-                v => isPlainObject(v) && !v.provide
-            );
-        }
     }
 
     protected override destroying() {
@@ -99,7 +97,7 @@ export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T>
 
 
 export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
-    
+
     private _moduleType: Type;
     private _moduleRefl: ModuleReflect;
     constructor(moduleType: Type<T> | ModuleReflect<T>) {
@@ -126,9 +124,14 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
     }
 }
 
+export class DefaultModuleFactoryResolver extends ModuleFactoryResolver {
+    resolve<T>(type: Type<T>): ModuleFactory<T> {
+        return new DefaultModuleFactory(type);
+    }
+}
 
 export const DEFAULTA_MODULE_FACTORYS: ProviderType[] = [
-    { provide: ModuleFactory, useClass: DefaultModuleFactory, deps: [TARGET] }
+    { provide: ModuleFactoryResolver, useValue: new DefaultModuleFactoryResolver() }
 ]
 
 // export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {

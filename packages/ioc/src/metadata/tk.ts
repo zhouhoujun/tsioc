@@ -1,4 +1,4 @@
-import { Container, Injector } from '../injector';
+import { Injector } from '../injector';
 import { Token, tokenId } from '../tokens';
 
 /**
@@ -9,13 +9,7 @@ export const INJECTOR: Token<Injector> = tokenId<Injector>('DI_INJECTOR');
 /**
  * appliction platform injector token.
  */
-export const PLATFORM_INJECTOR: Token<Injector> = tokenId<Injector>('PLATFORM_INJECTOR');
-
-/**
- * root container token.
- * @deprecated use {@link PLATFORM_INJECTOR} instead.
- */
-export const CONTAINER: Token<Container> = PLATFORM_INJECTOR;
+export const CONTAINER: Token<Injector> = tokenId<Injector>('CONTAINER');
 
 /**
  * appliction root injector token.

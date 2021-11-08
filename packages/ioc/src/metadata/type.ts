@@ -1,6 +1,5 @@
 import { DesignContext, RuntimeContext } from '../actions/ctx';
-import { ProviderType } from '../injector';
-import { InjectorTypeWithProviders } from '../providers';
+import { InjectorTypeWithProviders, ProviderType } from '../providers';
 import { Token } from '../tokens';
 import { ClassType, Type } from '../types';
 import { Handler } from '../utils/hdl';
@@ -135,7 +134,7 @@ export interface TypeReflect<T = any> extends PatternMetadata, ProvidedInMetadat
      * auto run defines.
      */
     autoruns: AutorunDefine[];
-    
+
     annotation?: any;
 }
 

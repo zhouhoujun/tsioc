@@ -61,10 +61,6 @@ export class Joinpoint<T = any> extends InvocationContext<T> implements IocConte
         return this._fullName;
     }
 
-    setArgument(name: string, value: any): void {
-        (this.arguments as any)[name] = value;
-    }
-
     static parse(injector: Injector, options: JoinpointOption) {
         return new Joinpoint(injector,
             options.target,

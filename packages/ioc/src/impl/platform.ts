@@ -1,5 +1,5 @@
 import { Action, IActionSetup } from '../action';
-import { Injector, ProviderType, Registered, Platform } from '../injector';
+import { Injector, Registered, Platform } from '../injector';
 import { get } from '../metadata/refl';
 import { TypeReflect } from '../metadata/type';
 import { ModuleFactory } from '../module.factory';
@@ -9,6 +9,7 @@ import { Handler } from '../utils/hdl';
 import { isFunction, isString } from '../utils/chk';
 import { cleanObj, getClassName } from '../utils/lang';
 import { ROOT_INJECTOR } from '../metadata/tk';
+import { ProviderType, StaticProvider } from '../providers';
 
 
 /**
@@ -17,7 +18,7 @@ import { ROOT_INJECTOR } from '../metadata/tk';
 export class DefaultPlatform implements Platform {
 
     private states: Map<ClassType, Registered>;
-    private destroyCbs: (() => void)[] | null = [];
+    private destroyCbs = new Set<() => void>();
     private _destroyed = false;
     private actions: Map<Token, any>;
     private singletons: Map<Token, any>;
@@ -147,7 +148,7 @@ export class DefaultPlatform implements Platform {
         return this.states.get(type)?.providers!;
     }
 
-    setTypeProvider(type: ClassType | TypeReflect, providers: ProviderType[]) {
+    setTypeProvider(type: ClassType | TypeReflect, providers: StaticProvider[]) {
         const trefl = isFunction(type) ? get(type) : type;
         trefl.providers.push(...providers);
         const state = this.states.get(trefl.type);
@@ -212,8 +213,8 @@ export class DefaultPlatform implements Platform {
             return;
         }
         this._destroyed = true;
-        this.destroyCbs?.forEach(c => c && c());
-        this.destroyCbs = null;
+        this.destroyCbs.forEach(c => c && c());
+        this.destroyCbs.clear();
         this.states.forEach(v => {
             if (!v) return;
             v.providers?.destroy();
@@ -227,7 +228,7 @@ export class DefaultPlatform implements Platform {
     }
 
     onDestroy(callback: () => void): void {
-        this.destroyCbs?.push(callback);
+        this.destroyCbs.add(callback);
     }
 
 }
