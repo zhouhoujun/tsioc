@@ -1,5 +1,6 @@
 import { Injector, InjectorScope, Platform, ProviderType, TypeOption } from '../injector';
 import { get } from '../metadata/refl';
+import { TARGET } from '../metadata/tk';
 import { ModuleReflect } from '../metadata/type';
 import { ModuleFactory, ModuleOption } from '../module.factory';
 import { ModuleRef } from '../module.ref';
@@ -14,11 +15,24 @@ export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T>
 
     private _instance!: T;
     private defTypes = new Set<Type>();
-    constructor(readonly moduleType: Type<T>, providers: ProviderType[]|undefined, readonly parent: Injector, readonly scope?: InjectorScope) {
+    private _type: Type;
+    private _typeRefl: ModuleReflect;
+    constructor(moduleType: ModuleReflect, providers: ProviderType[] | undefined, readonly parent: Injector, readonly scope?: InjectorScope) {
         super(providers, parent, scope);
         const dedupStack: Type[] = [];
+        this._typeRefl = moduleType;
+        this._type = moduleType.type as Type;
         this.setValue(ModuleRef, this);
-        deepForEach([moduleType], type => this.processInjectorType(type, this.platform(), dedupStack));
+        this.processInjectorType(this.platform(), this._type, dedupStack, this.moduleReflect);
+        this._instance = this.get(this._type);
+    }
+
+    get moduleType() {
+        return this._type;
+    }
+
+    get moduleReflect() {
+        return this._typeRefl;
     }
 
 
@@ -27,9 +41,6 @@ export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T>
     }
 
     get instance(): T {
-        if (!this._instance) {
-            this._instance = this.resolve({ token: this.moduleType, regify: true });
-        }
         return this._instance;
     }
 
@@ -37,31 +48,31 @@ export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T>
         return token === ModuleRef || super.isself(token);
     }
 
-    override get<T>(token: Token<T>, notFoundValue?: T, flags = InjectFlags.Default): T {
-        this.assertNotDestroyed();
-        return tryResolveToken(token, this.records.get(token), this.records, this.platform(), this.parent, notFoundValue, flags);
-    }
+    // override get<T>(token: Token<T>, notFoundValue?: T, flags = InjectFlags.Default): T {
+    //     this.assertNotDestroyed();
+    //     return tryResolveToken(token, this.records.get(token), this.records, this.platform(), this.parent, notFoundValue, flags);
+    // }
 
-    protected processInjectorType(typeOrDef: Type | InjectorTypeWithProviders, platform: Platform, dedupStack: Type[]) {
+    protected processInjectorType(platform: Platform, typeOrDef: Type | InjectorTypeWithProviders, dedupStack: Type[], moduleRefl?: ModuleReflect) {
         const type = isFunction(typeOrDef) ? typeOrDef : typeOrDef.module;
         if (!isFunction(typeOrDef)) {
             deepForEach(
                 typeOrDef.providers,
-                pdr => this.processProvider(platform, pdr, typeOrDef.providers, type),
+                pdr => this.processProvider(platform, pdr, typeOrDef.providers),
                 v => isPlainObject(v) && !v.provide
             );
         }
         const isDuplicate = dedupStack.indexOf(type) !== -1;
-        const typeRef = get<ModuleReflect>(type);
+        const typeRef = moduleRefl ?? get<ModuleReflect>(type);
         if (typeRef.module && !isDuplicate) {
             dedupStack.push(type);
             typeRef.imports?.forEach(imp => {
-                this.processInjectorType(imp, platform, dedupStack);
+                this.processInjectorType(platform, imp, dedupStack);
             });
 
             if (typeRef.declarations) {
                 typeRef.declarations.forEach(d => {
-                    this.processInjectorType(d, platform, dedupStack);
+                    this.processInjectorType(platform, d, dedupStack);
                 });
             }
         }
@@ -71,40 +82,54 @@ export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T>
         if (typeRef.providers && !isDuplicate) {
             deepForEach(
                 typeRef.providers,
-                pdr => this.processProvider(platform, pdr, typeRef.providers, type),
+                pdr => this.processProvider(platform, pdr, typeRef.providers),
                 v => isPlainObject(v) && !v.provide
             );
         }
     }
 
-    protected override processProvider(platform: Platform, provider: Injector | TypeOption | StaticProvider, providers?: ProviderType[], moduleType?: Type): void {
-        super.processProvider(platform, provider, providers);
+    protected override destroying() {
+        super.destroying();
+        this._type = null!;
+        this._typeRefl = null!;
+        this._instance = null!;
     }
 
 }
 
 
 export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
-    constructor(public moduleType: Type<T>) {
+    
+    private _moduleType: Type;
+    private _moduleRefl: ModuleReflect;
+    constructor(moduleType: Type<T> | ModuleReflect<T>) {
         super();
+        if (isFunction(moduleType)) {
+            this._moduleType = moduleType;
+            this._moduleRefl = get(moduleType);
+        } else {
+            this._moduleRefl = moduleType;
+            this._moduleType = moduleType.type as Type;
+        }
+    }
 
+    get moduleType() {
+        return this._moduleType;
+    }
+
+    get moduleReflect() {
+        return this._moduleRefl;
     }
 
     create(parent: Injector, option?: ModuleOption): ModuleRef<T> {
-        return new DefaultModuleRef(this.moduleType, option?.providers, parent, option?.scope);
+        return new DefaultModuleRef(this.moduleReflect, option?.providers, parent, option?.scope);
     }
-
-    // protected registerModule(moduleType: Type) {
-    //     this.recurse(moduleType, new Set());
-    // }
-
-    // protected recurse(moduleType: Type, visited: Set<Type>) {
-    //     const imports = get<ModuleReflect>(moduleType)?.imports || [];
-    //     for (let i of imports) {
-
-    //     }
-    // }
 }
+
+
+export const DEFAULTA_MODULE_FACTORYS: ProviderType[] = [
+    { provide: ModuleFactory, useClass: DefaultModuleFactory, deps: [TARGET] }
+]
 
 // export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
 

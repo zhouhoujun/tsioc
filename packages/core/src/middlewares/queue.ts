@@ -1,4 +1,4 @@
-import { Injectable, Type, isString, ProviderType, AsyncHandler, isFunction, Inject, Injector, RegisteredState } from '@tsdi/ioc';
+import { Injectable, Type, isString, ProviderType, AsyncHandler, isFunction, Inject, Injector, Platform } from '@tsdi/ioc';
 import { Context, ContextFactory } from './context';
 import { Request, RequestInit, RequestOption } from './request';
 import { Response } from './response';
@@ -164,14 +164,14 @@ export class MessageQueue<T extends Context = Context> extends Middlewares<T> {
         this.unuse(haddle);
     }
 
-    protected override parseHandle(state: RegisteredState, mdty: MiddlewareType): AsyncHandler<T> {
+    protected override parseHandle(platform: Platform, mdty: MiddlewareType): AsyncHandler<T> {
         if (isMiddlware(mdty)) {
             return mdty.toHandle();
         } else if (isMiddlwareType(mdty)) {
-            if (!state.isRegistered(mdty)) {
+            if (!platform.isRegistered(mdty)) {
                 this.injector.register(mdty);
             }
-            const handle = this.injector.get(mdty) ?? state.getInstance(mdty);
+            const handle = this.injector.get(mdty) ?? platform.getInstance(mdty);
             return handle?.toHandle?.();
         } else if (isFunction(mdty)) {
             return mdty;

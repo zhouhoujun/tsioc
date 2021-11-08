@@ -71,7 +71,7 @@ export const ConfigureLoadHandle = async function (ctx: ApplicationContext, next
         injector.setValue(PROCESS_ROOT, config.baseURL);
     }
 
-    config = { ...config, ...injector.reflect.annotation };
+    config = { ...config, ...injector.moduleReflect.annotation };
     injector.setValue(CONFIGURATION, config);
 
     if (config.logConfig) {
@@ -162,8 +162,8 @@ export class BootstrapHandles extends BuildHandles<ApplicationContext> implement
 
 export const ModuleBootstrap = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
     const injector = ctx.injector;
-    if (injector.reflect.bootstrap && injector.reflect.bootstrap.length) {
-        await Promise.all(injector.reflect.bootstrap.map(b => ctx.bootstrap(b)));
+    if (injector.moduleReflect.bootstrap && injector.moduleReflect.bootstrap.length) {
+        await Promise.all(injector.moduleReflect.bootstrap.map(b => ctx.bootstrap(b)));
     }
     return await next();
 };

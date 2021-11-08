@@ -1,17 +1,15 @@
-import { Inject, IocExt, Injector, ProviderType, TARGET } from '@tsdi/ioc';
+import { Inject, IocExt, Injector, ProviderType, TARGET, DEFAULTA_MODULE_FACTORYS } from '@tsdi/ioc';
 import { DefaultConfigureManager, ConfigureMergerImpl } from './configure/manager';
 import { BootLifeScope } from './appfac/lifescope';
 import { ApplicationFactory } from './Context';
-import { DefaultModuleFactory } from './modules/injector';
 import { DefaultApplicationFactory } from './appfac/ctx';
 import { DefaultServiceFactoryResolver } from './services/factory';
 import { RunnableFactoryResolver } from './runnable';
-import { ModuleFactory } from './module';
 
 
 export const DEFAULTA_FACTORYS: ProviderType[] = [
+    ...DEFAULTA_MODULE_FACTORYS,
     { provide: RunnableFactoryResolver, useValue: new DefaultServiceFactoryResolver() },
-    { provide: ModuleFactory, useClass: DefaultModuleFactory, deps: [TARGET] },
     { provide: ApplicationFactory, useValue: new DefaultApplicationFactory() }
 ]
 

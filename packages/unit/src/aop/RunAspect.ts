@@ -44,7 +44,7 @@ export class RunAspect extends LoggerAspect {
     @Around('execution(*.runSuite)')
     logSuite(joinPoint: Joinpoint) {
         let runner = joinPoint.target as UnitRunner;
-        let desc = joinPoint.args[0] as SuiteDescribe;
+        let desc = joinPoint.args?.[0] as SuiteDescribe;
         switch (joinPoint.state) {
             case JoinpointState.Before:
                 this.getReport().addSuite(runner.getInstanceType() || desc.describe, desc);
@@ -58,8 +58,8 @@ export class RunAspect extends LoggerAspect {
 
     @Around('execution(*.runCase)')
     logTestCase(joinPoint: Joinpoint) {
-        let desc = joinPoint.args[0] as ICaseDescribe;
-        let suiteDesc = joinPoint.args.length > 1 ? joinPoint.args[1] : EMPTY_OBJ;
+        let desc = joinPoint.args?.[0] as ICaseDescribe;
+        let suiteDesc = joinPoint.args && joinPoint.args.length > 1 ? joinPoint.args[1] : EMPTY_OBJ;
         let runner = joinPoint.target as SuiteRunner;
         switch (joinPoint.state) {
             case JoinpointState.Before:

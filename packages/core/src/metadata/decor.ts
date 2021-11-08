@@ -1,9 +1,9 @@
 import {
     isUndefined, ROOT_INJECTOR, EMPTY_OBJ, isArray, isString, lang, Type, isRegExp, Injector,
-    createDecorator, ClassMethodDecorator, ClassMetadata, createParamDecorator, ParameterMetadata
+    createDecorator, ClassMethodDecorator, ClassMetadata, createParamDecorator, ParameterMetadata, ModuleReflect, TypeReflect
 } from '@tsdi/ioc';
 import { Service } from '../services/service';
-import { ModuleReflect, AnnotationReflect } from './ref';
+import { AnnotationReflect } from './ref';
 import { Middleware, Middlewares, MiddlewareType, RouteInfo, RouteReflect } from '../middlewares/middleware';
 import { ROOT_QUEUE } from '../middlewares/root';
 import { CanActive } from '../middlewares/guard';
@@ -50,10 +50,10 @@ export const Boot: Boot = createDecorator<BootMetadata>('Boot', {
     reflect: {
         class: [
             (ctx, next) => {
-                (ctx.reflect as ModuleReflect).singleton = true;
-                (ctx.reflect as ModuleReflect).annoType = 'boot';
-                (ctx.reflect as ModuleReflect).annoDecor = ctx.decor;
-                (ctx.reflect as ModuleReflect).annotation = ctx.metadata;
+                ctx.reflect.singleton = true;
+                // (ctx.reflect as ModuleReflect).annoType = 'boot';
+                // (ctx.reflect as ModuleReflect).annoDecor = ctx.decor;
+                ctx.reflect.annotation = ctx.metadata;
                 return next();
             }
         ]

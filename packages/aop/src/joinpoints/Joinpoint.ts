@@ -1,6 +1,6 @@
 import {
-    Type, MethodMetadata, ClassMetadata, tokenId,
-    IocContext, Injector, ParameterMetadata, ProviderType, lang, InvocationContext, ClassType, OperationArgumentResolver, EMPTY
+    Type, MethodMetadata, ClassMetadata, ParameterMetadata, tokenId, Injector,
+    lang, IocContext, InvocationContext, ClassType, OperationArgumentResolver, EMPTY
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advices } from '../advices/Advices';
@@ -39,8 +39,8 @@ export class Joinpoint<T = any> extends InvocationContext<T> implements IocConte
 
     constructor(
         injector: Injector,
-        readonly targetInstance: any,
-        readonly target: ClassType,
+        readonly target: any,
+        readonly targetType: ClassType,
         readonly method: string,
         public state: JoinpointState,
         readonly advices: Advices,
@@ -56,7 +56,7 @@ export class Joinpoint<T = any> extends InvocationContext<T> implements IocConte
     private _fullName!: string
     get fullName(): string {
         if (!this._fullName) {
-            this._fullName = lang.getClassName(this.target) + '.' + this.method;
+            this._fullName = lang.getClassName(this.targetType) + '.' + this.method;
         }
         return this._fullName;
     }
@@ -79,12 +79,12 @@ export class Joinpoint<T = any> extends InvocationContext<T> implements IocConte
             options.context,
             options.provJoinpoint,
             {
-                // method: options.name,
-                // params: options.params,
-                // args: options.args,
-                // advices: options.advices,
-                // originMethod: options.originMethod,
-                // annotations: options.annotations
+                method: options.name,
+                params: options.params,
+                args: options.args,
+                advices: options.advices,
+                originMethod: options.originMethod,
+                annotations: options.annotations
             },
             ...options.resolvers || EMPTY)
     }

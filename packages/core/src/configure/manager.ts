@@ -94,7 +94,7 @@ export class DefaultConfigureManager implements ConfigureManager {
             return await loader.load(src);
         } else if (src) {
             let cfg = await this.injector.getLoader().load([src])
-            return lang.first(cfg);
+            return lang.first(cfg) as Configuration;
         } else {
             return null!;
         }

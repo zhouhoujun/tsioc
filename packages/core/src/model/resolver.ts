@@ -347,7 +347,7 @@ export abstract class AbstractModelArgumentResolver<C extends Context = Context>
             this._resolver = composeFieldResolver(
                 (p, ctx, fields) => p.nullable === true
                     || (fields && isDefined(fields[p.propertyKey] ?? p.default))
-                    || (ctx.method.toLowerCase() !== 'put' && p.primary === true),
+                    || (ctx.method?.toLowerCase() !== 'put' && p.primary === true),
                 ...this.resolvers ?? EMPTY,
                 ...MODEL_FIELD_RESOLVERS);
         }

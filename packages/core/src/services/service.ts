@@ -1,11 +1,11 @@
-import { Destroyable } from '@tsdi/ioc';
+import { Destory } from '@tsdi/ioc';
 import { ApplicationContext } from '../Context';
 
 
 /**
  * configure services for application.
  */
-export interface Service extends Destroyable {
+export interface Service extends Destory {
     /**
      * config service of application.
      *

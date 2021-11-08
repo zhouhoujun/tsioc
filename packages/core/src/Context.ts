@@ -1,11 +1,10 @@
-import { ProviderType, LoadType, Injector, Abstract, Token, Type, ModuleLoader, Destroyable } from '@tsdi/ioc';
+import { ProviderType, LoadType, Injector, Abstract, Token, Type, ModuleLoader, Destroyable, ModuleRef, ModuleOption, Modules } from '@tsdi/ioc';
 import { ILoggerManager } from '@tsdi/logs';
 import { Configuration, ConfigureManager } from './configure/config';
 import { Request, RequestInit, RequestOption } from './middlewares/request';
 import { Response } from './middlewares/response';
 import { Context } from './middlewares/context';
 import { MessageQueue } from './middlewares/queue';
-import { ModuleInjector, ModuleOption } from './module';
 import { Runnable, RunnableFactory } from './runnable';
 
 
@@ -38,7 +37,7 @@ export abstract class ApplicationContext implements Destroyable {
     /**
      * application injector.
      */
-    abstract get injector(): ModuleInjector;
+    abstract get injector(): ModuleRef;
     /**
      * exit application or not, when throw error.
      */
@@ -167,7 +166,23 @@ export abstract class ApplicationExit {
 /**
  * application option.
  */
-export interface ApplicationOption<T = any> extends ModuleOption<T> {
+export interface ApplicationOption<T = any> extends ModuleOption {
+    /**
+     * boot base url.
+     *
+     * @type {string}
+     */
+    baseURL?: string;
+    /**
+     * boot run env args.
+     *
+     * @type {string[]}
+     */
+    args?: string[];
+    /**
+     * injector.
+     */
+    injector?: Injector;
     /**
      * exit application or not, when throw error.
      */
@@ -203,5 +218,5 @@ export interface ApplicationOption<T = any> extends ModuleOption<T> {
  */
 @Abstract()
 export abstract class ApplicationFactory {
-    abstract create<T>(root: ModuleInjector<T>, option?: ApplicationOption<T>): ApplicationContext;
+    abstract create<T>(root: ModuleRef<T>, option?: ApplicationOption<T>): ApplicationContext;
 }

@@ -1,9 +1,8 @@
-import { Token, ProviderType, Type, isFunction, isBoolean } from '@tsdi/ioc';
+import { Token, ProviderType, Type, isFunction, isBoolean, ModuleRef } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { ModuleMetadata } from '../metadata/meta';
 import { SERVICES, CONFIGURATION, PROCESS_ROOT } from '../metadata/tk';
 import { Configuration, ConfigureManager } from '../configure/config';
-import { ModuleInjector } from '../module';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from '../Context';
 import { Runnable, RunnableFactory, RunnableFactoryResolver } from '../runnable';
 import { Response, Request, Context, MessageQueue, RequestInit, RequestOption, ROOT_QUEUE } from '../middlewares';
@@ -27,7 +26,7 @@ export class DefaultApplicationContext extends ApplicationContext {
 
     exit = true;
 
-    constructor(readonly injector: ModuleInjector) {
+    constructor(readonly injector: ModuleRef) {
         super();
         injector.setValue(ApplicationContext, this);
     }
@@ -101,7 +100,7 @@ export class DefaultApplicationContext extends ApplicationContext {
     }
 
     getAnnoation<TM extends ModuleMetadata>(): TM {
-        return this.injector.reflect?.annotation as TM;
+        return this.injector.moduleReflect?.annotation as TM;
     }
 
     /**
@@ -151,9 +150,9 @@ export class DefaultApplicationContext extends ApplicationContext {
  */
 export class DefaultApplicationFactory extends ApplicationFactory {
 
-    create<T>(root: ModuleInjector<T>, option?: ApplicationOption<T>): ApplicationContext {
-        if (root.reflect.annotation?.baseURL) {
-            root.setValue(PROCESS_ROOT, root.reflect.annotation.baseURL);
+    create<T>(root: ModuleRef<T>, option?: ApplicationOption<T>): ApplicationContext {
+        if (root.moduleReflect.annotation?.baseURL) {
+            root.setValue(PROCESS_ROOT, root.moduleReflect.annotation.baseURL);
         }
         const ctx = this.createInstance(root);
         this.initOption(ctx, option);
@@ -178,7 +177,7 @@ export class DefaultApplicationFactory extends ApplicationFactory {
         }
     }
 
-    protected createInstance(inj: ModuleInjector) {
+    protected createInstance(inj: ModuleRef) {
         return new DefaultApplicationContext(inj);
     }
 }

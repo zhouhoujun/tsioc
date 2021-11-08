@@ -106,34 +106,3 @@ export interface AnnotationReflect<T = any> extends TypeReflect {
 export interface ModuleConfigure<T = any> extends IModuleMetadata<T> {
     debug?: boolean;
 }
-
-
-/**
- * di module relfect.
- */
- export interface ModuleReflect<T = any> extends AnnotationReflect<T> {
-    /**
-     * imports types.
-     */
-    imports: Type[];
-    /**
-     * exports.
-     */
-    exports: Type[];
-    /**
-     *  components, directives, pipes ... of current module.
-     */
-    declarations?: Type[];
-    /**
-     * the module bootstraps.
-     */
-    bootstrap?: Type[];
-    /**
-     * module decorator.
-     */
-    annoDecor?: string;
-    /**
-     * module metadata.
-     */
-    annotation?: ModuleConfigure<T>;
-}

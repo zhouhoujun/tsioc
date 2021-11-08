@@ -1,11 +1,9 @@
-import { ModuleLoader, isFunction, Type, EMPTY, ProviderType } from '@tsdi/ioc';
+import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, ModuleRef, ModuleFactory, Injector, Modules, ROOT_INJECTOR } from '@tsdi/ioc';
 import { CTX_ARGS, PROCESS_ROOT } from './metadata/tk';
-import {  ApplicationContext, ApplicationFactory, ApplicationExit, ApplicationOption, BootstrapOption } from './Context';
+import { ApplicationContext, ApplicationFactory, ApplicationExit, ApplicationOption, BootstrapOption } from './Context';
 import { MiddlewareModule } from './middleware';
 import { BootLifeScope } from './appfac/lifescope';
 import { CoreModule, DEFAULTA_FACTORYS } from './core';
-import { createModuleInjector } from './modules/injector';
-import { ModuleFactory, ModuleInjector } from './module';
 
 
 /**
@@ -18,7 +16,7 @@ export class Application {
 
     private _destroyed = false;
     private _dsryCbs: (() => void)[] = [];
-    readonly root: ModuleInjector;
+    readonly root: ModuleRef;
 
     /**
      * application context.
@@ -42,6 +40,7 @@ export class Application {
     }
 
     protected initRoot() {
+        this.root.parent?.setValue(ROOT_INJECTOR, this.root);
         this.root.setValue(Application, this);
     }
 
@@ -122,23 +121,26 @@ export class Application {
         return this._loads ?? EMPTY;
     }
 
-    protected getDeps() {
+    protected getDeps(): Modules[] {
         return [CoreModule, MiddlewareModule];
     }
 
     protected createInjector(providers: ProviderType[], option: ApplicationOption) {
-        const root = createModuleInjector(option.type, providers, option.injector, option);
+        const container = option.injector ?? Injector.create(providers);
         if (this.loader) {
-            root.setValue(ModuleLoader, this.loader);
+            container.setValue(ModuleLoader, this.loader);
         }
         if (option.args) {
-            root.setValue(CTX_ARGS, option.args);
+            container.setValue(CTX_ARGS, option.args);
         }
         if (option.baseURL) {
-            root.setValue(PROCESS_ROOT, option.baseURL);
+            container.setValue(PROCESS_ROOT, option.baseURL);
+        }
+        if (option.deps) {
+            container.use(option.deps);
         }
 
-        return root.resolve({ token: ModuleFactory, target: option.type }).create(root, option);
+        return container.resolve({ token: ModuleFactory, target: option.type }).create(container, option);
     }
 
     /**

@@ -135,6 +135,8 @@ export interface TypeReflect<T = any> extends PatternMetadata, ProvidedInMetadat
      * auto run defines.
      */
     autoruns: AutorunDefine[];
+    
+    annotation?: any;
 }
 
 /**

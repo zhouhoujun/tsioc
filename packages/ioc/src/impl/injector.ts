@@ -51,7 +51,7 @@ export class DefaultInjector extends Injector {
             this.destCb = () => this.destroy();
             this.initParent(parent);
         } else {
-            scope = this.scope = 'root';
+            scope = this.scope = 'platform';
         }
         this.initScope(scope);
         this.inject(providers);
@@ -683,6 +683,7 @@ export class DefaultInjector extends Injector {
         }
         this._plat = null!;
         this.destCb = null!;
+        this.isAlias = null!;
         (this as any).parent = null!;
         (this as any).strategy = null!;
     }

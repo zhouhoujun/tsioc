@@ -1,5 +1,5 @@
 // use core-js in browser.
-import { Type, Modules, ClassType, ModuleType } from '../types';
+import { Type, Modules, ClassType } from '../types';
 import { getClass, isArray, isClass, isClassType, isFunction, isNil, isPlainObject } from './chk';
 import { clsUglifyExp } from './exps';
 import { getClassAnnotation } from './util';
@@ -233,7 +233,7 @@ export function isExtendsClass<T extends ClassType>(target: ClassType, baseClass
  * @param {...Express<Type, boolean>[]} filters
  * @returns {Type[]}
  */
-export function getTypes(mds: ModuleType | ModuleType[]): Type[] {
+export function getTypes(mds: Modules | Modules[]): Type[] {
     let types: Type[] = [];
     mds && deepForEach(isArray(mds) ? mds : isPlainObject(mds) ? Object.values(mds) : [mds], ty => {
         isClass(ty) && types.push(ty)

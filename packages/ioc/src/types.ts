@@ -2,12 +2,8 @@
 /**
  * module object.
  */
-export type Modules =  Record<string, Type|Object> | Type[];
+export type Modules = Type | Type[] | Record<string, Type | Object>;
 
-/**
- * module type.
- */
-export type ModuleType = Modules | Type;
 
 /**
  * object map. 

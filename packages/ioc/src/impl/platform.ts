@@ -8,6 +8,8 @@ import { ClassType, Type } from '../types';
 import { Handler } from '../utils/hdl';
 import { isFunction, isString } from '../utils/chk';
 import { cleanObj, getClassName } from '../utils/lang';
+import { ROOT_INJECTOR } from '../metadata/tk';
+
 
 /**
  * registered state.
@@ -131,7 +133,7 @@ export class DefaultPlatform implements Platform {
                 case 'platform':
                     return this.injector as T;
                 case 'root':
-                    return this.modules.get(scope);
+                    return this.injector.get(ROOT_INJECTOR) as T;
             }
         }
         return this.states.get(scope)?.injector as T;
