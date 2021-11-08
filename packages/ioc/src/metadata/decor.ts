@@ -11,11 +11,9 @@ import { getTypes } from '../utils/lang';
 import { DesignContext } from '../actions/ctx';
 import { DecoratorOption } from './refl';
 import { ModuleReflect } from './type';
-import { getModuleType, ModuleRef, ModuleRegistered } from '../module.ref';
-import { ModuleFactory } from '../module.factory';
-import { ROOT_INJECTOR } from './tk';
+import { getModuleType, ModuleRef } from '../module.ref';
 import { ProviderType, StaticProvider } from '../providers';
-import { ModuleFactoryResolver } from '..';
+import { processInjectorType } from '..';
 
 
 
@@ -526,21 +524,25 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
                 ...isArray(hd) ? hd : [hd]
             ]
         },
-        // design: {
-        //     beforeAnnoation: (context: DesignContext, next) => {
-        //         const ctx = context as ModuleDesignContext;
-        //         if (ctx.reflect.module) {
-        //             let { injector, type, moduleRef } = ctx;
-        //             if (!(moduleRef && moduleRef.moduleType === type)) {
-        //                 moduleRef = injector.resolve({ token: ModuleFactoryResolver, target: ctx.reflect }).resolve(ctx.reflect).create(injector.get(ROOT_INJECTOR));
-        //                 ctx.injector = moduleRef?.injector;
-        //                 ctx.state.injector = ctx.injector;
-        //             }
-        //             (ctx.state as ModuleRegistered).moduleRef = moduleRef;
-        //         }
-        //         next();
-        //     }
-        // },
+        design: {
+            beforeAnnoation: (context: DesignContext, next) => {
+                let { type, reflect } = context;
+                // use as inject module.
+                if (context.injectorType) {
+                    context.injectorType(type, reflect);
+                }
+                // if (ctx.reflect.module) {
+                //     let { injector, type, moduleRef } = ctx;
+                //     if (!(moduleRef && moduleRef.moduleType === type)) {
+                //         moduleRef = injector.resolve({ token: ModuleFactoryResolver, target: ctx.reflect }).resolve(ctx.reflect).create(injector.get(ROOT_INJECTOR));
+                //         ctx.injector = moduleRef?.injector;
+                //         ctx.state.injector = ctx.injector;
+                //     }
+                //     (ctx.state as ModuleRegistered).moduleRef = moduleRef;
+                // }
+                next();
+            }
+        },
         appendProps: (meta) => {
             if (append) {
                 append(meta as T);

@@ -57,6 +57,8 @@ export interface RegContext extends IocContext {
  */
 export interface DesignContext extends RegContext, ProvidedInMetadata {
     platform: Platform;
+    injectorType?: (type: Type, typeReflect: TypeReflect)=> void;
+    regProvides?: boolean;
     getRecords: () => Map<Token, FactoryRecord>;
     /**
      * registered state.

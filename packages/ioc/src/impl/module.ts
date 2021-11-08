@@ -8,7 +8,8 @@ import { InjectorTypeWithProviders, ProviderType } from '../providers';
 import { isFunction, isPlainObject } from '../utils/chk';
 import { deepForEach } from '../utils/lang';
 import { Injector, InjectorScope, Platform } from '../injector';
-import { DefaultInjector, tryResolveToken } from './injector';
+import { DefaultInjector, processInjectorType, tryResolveToken } from './injector';
+import { StaticProvider } from '..';
 
 export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T> {
 
@@ -47,43 +48,41 @@ export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T>
         return token === ModuleRef || super.isself(token);
     }
 
-    // override get<T>(token: Token<T>, notFoundValue?: T, flags = InjectFlags.Default): T {
-    //     this.assertNotDestroyed();
-    //     return tryResolveToken(token, this.records.get(token), this.records, this.platform(), this.parent, notFoundValue, flags);
-    // }
-
     protected processInjectorType(platform: Platform, typeOrDef: Type | InjectorTypeWithProviders, dedupStack: Type[], moduleRefl?: ModuleReflect) {
-        const type = isFunction(typeOrDef) ? typeOrDef : typeOrDef.module;
-        if (!isFunction(typeOrDef)) {
-            deepForEach(
-                typeOrDef.providers,
-                pdr => this.processProvider(platform, pdr, typeOrDef.providers),
-                v => isPlainObject(v) && !v.provide
-            );
-        }
-        const isDuplicate = dedupStack.indexOf(type) !== -1;
-        const typeRef = moduleRefl ?? get<ModuleReflect>(type);
-        if (typeRef.module && !isDuplicate) {
-            dedupStack.push(type);
-            typeRef.imports?.forEach(imp => {
-                this.processInjectorType(platform, imp, dedupStack);
-            });
+        // const type = isFunction(typeOrDef) ? typeOrDef : typeOrDef.module;
+        // if (!isFunction(typeOrDef)) {
+        //     deepForEach(
+        //         typeOrDef.providers,
+        //         pdr => this.processProvider(platform, pdr, typeOrDef.providers),
+        //         v => isPlainObject(v) && !v.provide
+        //     );
+        // }
+        // const isDuplicate = dedupStack.indexOf(type) !== -1;
+        // const typeRef = moduleRefl ?? get<ModuleReflect>(type);
+        // if (typeRef.module && !isDuplicate) {
+        //     dedupStack.push(type);
+        //     typeRef.imports?.forEach(imp => {
+        //         this.processInjectorType(platform, imp, dedupStack);
+        //     });
 
-            typeRef.declarations?.forEach(d => {
-                this.processInjectorType(platform, d, dedupStack);
-            });
+        //     typeRef.declarations?.forEach(d => {
+        //         this.processInjectorType(platform, d, dedupStack);
+        //     });
 
-            if (typeRef.providers) {
-                deepForEach(
-                    typeRef.providers,
-                    pdr => this.processProvider(platform, pdr, typeRef.providers),
-                    v => isPlainObject(v) && !v.provide
-                );
-            }
-        }
-
-        this.defTypes.add(type);
-        this.registerType(platform, type);
+        //     if (typeRef.providers) {
+        //         deepForEach(
+        //             typeRef.providers,
+        //             pdr => this.processProvider(platform, pdr, typeRef.providers),
+        //             v => isPlainObject(v) && !v.provide
+        //         );
+        //     }
+        // }
+        processInjectorType(typeOrDef, dedupStack,
+            (pdr, pdrs) => this.processProvider(platform, pdr, pdrs),
+            (tyref, type) => {
+                this.defTypes.add(type);
+                this.registerReflect(platform, tyref);
+            })
     }
 
     protected override destroying() {

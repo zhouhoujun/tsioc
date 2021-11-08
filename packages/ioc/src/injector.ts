@@ -7,11 +7,10 @@ import { EMPTY, isArray } from './utils/chk';
 import { Handler } from './utils/hdl';
 import { Action } from './action';
 import { ClassProvider, ExistingProvider, FactoryProvider, ProviderType, StaticProvider, ValueProvider } from './providers';
-import { InvocationContext, OperationArgumentResolver } from './invoker';
+import { InvocationContext, InvocationOption, OperationArgumentResolver } from './invoker';
 import { ModuleLoader } from './module.loader';
 import { ProvidedInMetadata } from './metadata/meta';
 import { ModuleFactory } from './module.factory';
-import { InvocationOption } from '.';
 
 
 /**
@@ -54,12 +53,6 @@ export abstract class Injector implements Destroyable {
      * @returns {boolean}
      */
     abstract has<T>(token: Token<T>, flags?: InjectFlags): boolean;
-    // /**
-    //  * has value or not.
-    //  * @param token
-    //  * @param {InjectFlags} flags check strategy by inject flags.
-    //  */
-    // abstract hasValue<T>(token: Token<T>, flags?: InjectFlags): boolean;
     /**
      * get token factory resolve instace in current.
      *
@@ -535,14 +528,18 @@ export const INJECT_IMPL = {
  */
 export type Factory<T = any> = (...args: any[]) => T;
 
+export interface RegOption<T = any> extends ProvidedInMetadata {
+    provide?: Token<T>;
+    injectorType?: boolean;
+    regProvides?: boolean;
+    singleton?: boolean;
+}
+
 /**
  * type register option.
  */
-export interface TypeOption<T = any> extends ProvidedInMetadata {
-    provide?: Token<T>;
+export interface TypeOption<T = any> extends RegOption<T> {
     type: Type<T>;
-    regProvides?: boolean;
-    singleton?: boolean;
 }
 
 /**
