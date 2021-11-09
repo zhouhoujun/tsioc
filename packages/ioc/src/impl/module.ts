@@ -5,11 +5,10 @@ import { ModuleReflect } from '../metadata/type';
 import { ModuleFactory, ModuleFactoryResolver, ModuleOption } from '../module.factory';
 import { ModuleRef } from '../module.ref';
 import { InjectorTypeWithProviders, ProviderType } from '../providers';
-import { isFunction, isPlainObject } from '../utils/chk';
-import { deepForEach } from '../utils/lang';
+import { isFunction } from '../utils/chk';
 import { Injector, InjectorScope, Platform } from '../injector';
-import { DefaultInjector, processInjectorType, tryResolveToken } from './injector';
-import { StaticProvider } from '..';
+import { DefaultInjector, processInjectorType } from './injector';
+import { Modules, ROOT_INJECTOR } from '..';
 
 export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T> {
 
@@ -17,12 +16,14 @@ export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T>
     private defTypes = new Set<Type>();
     private _type: Type;
     private _typeRefl: ModuleReflect;
-    constructor(moduleType: ModuleReflect, providers: ProviderType[] | undefined, readonly parent: Injector, readonly scope?: InjectorScope) {
+    constructor(moduleType: ModuleReflect, providers: ProviderType[] | undefined, readonly parent: Injector, readonly scope?: InjectorScope, deps?: Modules[]) {
         super(providers, parent, scope);
         const dedupStack: Type[] = [];
         this._typeRefl = moduleType;
         this._type = moduleType.type as Type;
         this.setValue(ModuleRef, this);
+        if(scope === 'root' && this.parent) this.parent.setValue(ROOT_INJECTOR, this);
+        deps && this.use(deps);
         this.processInjectorType(this.platform(), this._type, dedupStack, this.moduleReflect);
         this._instance = this.get(this._type);
     }
@@ -91,7 +92,7 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
     }
 
     create(parent: Injector, option?: ModuleOption): ModuleRef<T> {
-        return new DefaultModuleRef(this.moduleReflect, option?.providers, parent, option?.scope);
+        return new DefaultModuleRef(this.moduleReflect, option?.providers, parent, option?.scope, option?.deps);
     }
 }
 

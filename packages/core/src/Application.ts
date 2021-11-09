@@ -139,12 +139,7 @@ export class Application {
         // if (option.deps) {
         //     container.use(option.deps);
         // }
-        const root = container.resolve({ token: ModuleFactoryResolver, target: option.type }).resolve(option.type).create(container, option);
-        container.setValue(ROOT_INJECTOR, root);
-        if (option.deps) {
-            root.use(option.deps);
-        }
-        return root;
+        return container.resolve({ token: ModuleFactoryResolver, target: option.type }).resolve(option.type).create(container, option);
     }
 
     /**
