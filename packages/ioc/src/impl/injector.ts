@@ -1,8 +1,8 @@
 import { ClassType, LoadType, Modules, Type } from '../types';
 import {
-    ResolveOption, MethodType, FnType, InjectorScope,
+    ResolveOption, MethodType, FnType, InjectorScope, ResolverOption,
     RegisterOption, TypeOption, FactoryRecord, Platform, Container,
-    Injector, INJECT_IMPL, DependencyRecord, OptionFlags, ResolverOption, RegOption
+    Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption
 } from '../injector';
 import { InjectFlags, Token } from '../tokens';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR, TARGET } from '../metadata/tk';

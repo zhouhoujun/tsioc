@@ -1,5 +1,5 @@
 import { ClassType, Type } from './types';
-import { EMPTY, getClass, isDefined, isFunction } from './utils/chk';
+import { EMPTY, isDefined, isFunction } from './utils/chk';
 import { Injector } from './injector';
 import { Abstract } from './metadata/fac';
 import { ParameterMetadata } from './metadata/meta';

@@ -1,4 +1,7 @@
-import { ProviderType, LoadType, Injector, Abstract, Token, Type, ModuleLoader, Destroyable, ModuleRef, ModuleOption, Modules } from '@tsdi/ioc';
+import {
+    ProviderType, LoadType, Injector, Abstract, Token, Type,
+    ModuleLoader, Destroyable, ModuleRef, ModuleOption
+} from '@tsdi/ioc';
 import { ILoggerManager } from '@tsdi/logs';
 import { Configuration, ConfigureManager } from './configure/config';
 import { Request, RequestInit, RequestOption } from './middlewares/request';

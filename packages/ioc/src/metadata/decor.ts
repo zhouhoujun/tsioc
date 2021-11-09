@@ -13,7 +13,6 @@ import { DecoratorOption } from './refl';
 import { ModuleReflect } from './type';
 import { getModuleType, ModuleRef } from '../module.ref';
 import { ProviderType, StaticProvider } from '../providers';
-import { processInjectorType } from '..';
 
 
 

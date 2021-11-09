@@ -49,40 +49,12 @@ export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T>
     }
 
     protected processInjectorType(platform: Platform, typeOrDef: Type | InjectorTypeWithProviders, dedupStack: Type[], moduleRefl?: ModuleReflect) {
-        // const type = isFunction(typeOrDef) ? typeOrDef : typeOrDef.module;
-        // if (!isFunction(typeOrDef)) {
-        //     deepForEach(
-        //         typeOrDef.providers,
-        //         pdr => this.processProvider(platform, pdr, typeOrDef.providers),
-        //         v => isPlainObject(v) && !v.provide
-        //     );
-        // }
-        // const isDuplicate = dedupStack.indexOf(type) !== -1;
-        // const typeRef = moduleRefl ?? get<ModuleReflect>(type);
-        // if (typeRef.module && !isDuplicate) {
-        //     dedupStack.push(type);
-        //     typeRef.imports?.forEach(imp => {
-        //         this.processInjectorType(platform, imp, dedupStack);
-        //     });
-
-        //     typeRef.declarations?.forEach(d => {
-        //         this.processInjectorType(platform, d, dedupStack);
-        //     });
-
-        //     if (typeRef.providers) {
-        //         deepForEach(
-        //             typeRef.providers,
-        //             pdr => this.processProvider(platform, pdr, typeRef.providers),
-        //             v => isPlainObject(v) && !v.provide
-        //         );
-        //     }
-        // }
         processInjectorType(typeOrDef, dedupStack,
             (pdr, pdrs) => this.processProvider(platform, pdr, pdrs),
             (tyref, type) => {
                 this.defTypes.add(type);
                 this.registerReflect(platform, tyref);
-            })
+            }, moduleRefl);
     }
 
     protected override destroying() {
