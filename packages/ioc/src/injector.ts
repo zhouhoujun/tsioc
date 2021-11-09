@@ -277,7 +277,7 @@ export abstract class Injector implements Destroyable {
      * @param {any} option ivacation context option.
      * @returns {TR}
      */
-    abstract invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, option: {
+    abstract invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, option?: {
         args?: Record<string, any>,
         resolvers?: OperationArgumentResolver[] | ((injector: Injector, typeRef?: TypeReflect<T>, method?: string) => OperationArgumentResolver[]),
         providers?: ProviderType[]
@@ -291,7 +291,7 @@ export abstract class Injector implements Destroyable {
      * @param {InvocationContext} context ivacation context.
      * @returns {TR}
      */
-    abstract invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, context: InvocationContext): TR;
+    abstract invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
     /**
      * get module loader.
      *

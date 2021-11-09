@@ -584,7 +584,7 @@ export class DefaultInjector extends Injector {
      * @param {InvocationContext} context ivacation context.
      * @returns {TR}
      */
-    invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, option: {
+    invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, option?: {
         args?: Record<string, any>,
         resolvers?: OperationArgumentResolver[] | ((injector: Injector, typeRef?: TypeReflect<T>, method?: string) => OperationArgumentResolver[]),
         providers?: ProviderType[]
@@ -598,7 +598,7 @@ export class DefaultInjector extends Injector {
      * @param {InvocationContext} context ivacation context.
      * @returns {TR}
      */
-    invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, context: InvocationContext): TR;
+    invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
     /**
      * invoke method.
      *
