@@ -1,6 +1,6 @@
 import {
     isUndefined, ROOT_INJECTOR, EMPTY_OBJ, isArray, isString, lang, Type, isRegExp, Injector,
-    createDecorator, ClassMethodDecorator, ClassMetadata, createParamDecorator, ParameterMetadata, ModuleReflect, TypeReflect
+    createDecorator, ClassMethodDecorator, ClassMetadata, createParamDecorator, ParameterMetadata,
 } from '@tsdi/ioc';
 import { Service } from '../services/service';
 import { AnnotationReflect } from './ref';
