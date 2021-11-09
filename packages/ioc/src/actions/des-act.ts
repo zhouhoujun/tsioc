@@ -63,8 +63,12 @@ function regProvider(records: Map<Token, FactoryRecord>, platform: Platform, inj
             let args: any[] | undefined;
             let context: InvocationContext | undefined;
             if (fnArgs.length) {
-                if (fnArgs[0] instanceof InvocationContext) {
-                    context = fnArgs[0]
+                const last = fnArgs[fnArgs.length - 1];
+                if (last instanceof InvocationContext) {
+                    context = last;
+                    if (fnArgs.length > 1) {
+                        args = fnArgs.slice(0, fnArgs.length - 1);
+                    }
                 } else {
                     args = fnArgs;
                 }

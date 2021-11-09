@@ -82,7 +82,15 @@ export function deepForEach<T>(
     fn: (value: T) => void,
     isRecord?: (value: any) => boolean,
     getRecord?: (value: any) => T[]): void {
-    input.forEach(value => Array.isArray(value) ? deepForEach(value, fn) : isRecord && isRecord(value) ? deepForEach(getRecord ? getRecord(value) : Object.values(value), fn) : fn(value as T));
+    input.forEach(value => {
+        if (isArray(value)) {
+            deepForEach(value, fn, isRecord, getRecord)
+        } else if (isRecord && isRecord(value)) {
+            deepForEach(getRecord ? getRecord(value) : Object.values(value), fn, isRecord, getRecord);
+        } else {
+            fn(value as T)
+        }
+    });
 }
 
 

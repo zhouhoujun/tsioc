@@ -1,5 +1,5 @@
 import { ClassType, Type } from './types';
-import { EMPTY, isDefined, isFunction } from './utils/chk';
+import { EMPTY, getClass, isDefined, isFunction } from './utils/chk';
 import { Injector } from './injector';
 import { Abstract } from './metadata/fac';
 import { ParameterMetadata } from './metadata/meta';
@@ -83,10 +83,17 @@ export class InvocationContext<T = any> implements Destroyable {
     private _values: Map<Token, any>;
     private destroyCbs = new Set<() => void>();
     private _destroyed = false;
-    constructor(readonly injector: Injector, readonly parent?: InvocationContext, readonly target?: ClassType, readonly method?: string, args?: T, ...argumentResolvers: OperationArgumentResolver[]) {
+    constructor(
+        readonly injector: Injector,
+        readonly parent?: InvocationContext,
+        readonly target?: ClassType,
+        readonly method?: string,
+        args?: T,
+        ...argumentResolvers: OperationArgumentResolver[]) {
         this._argumentResolvers = argumentResolvers;
         this._arguments = args ?? {} as T;
         this._values = new Map();
+        injector.onDestroy(() => this.destroy());
     }
 
     /**
@@ -100,13 +107,23 @@ export class InvocationContext<T = any> implements Destroyable {
         (this.arguments as any)[name] = value;
     }
 
-    setValue<T>(token: Token, value: T) {
-        this._values.set(token, value);
-        return this;
+    protected isSelf(token: Token) {
+        return token === InvocationContext;
+    }
+
+    hasValue<T>(token: Token): boolean {
+        if (this.isSelf(token)) return true;
+        return this._values.has(token);
     }
 
     getValue<T>(token: Token): T {
+        if (this.isSelf(token)) return this as any;
         return this._values.get(token);
+    }
+
+    setValue<T>(token: Token, value: T) {
+        this._values.set(token, value);
+        return this;
     }
 
     /**
@@ -117,7 +134,7 @@ export class InvocationContext<T = any> implements Destroyable {
     }
 
     canResolve(type: Parameter): boolean {
-        return this.argumentResolvers.some(r => r.canResolve(type, this)) || (this.parent?.canResolve(type) || false);
+        return this.argumentResolvers.some(r => r.canResolve(type, this)) || this.parent?.canResolve(type) || false;
     }
 
     resolveArgument<T>(argumentType: Parameter<T>): T | null {
@@ -144,9 +161,7 @@ export class InvocationContext<T = any> implements Destroyable {
             cleanObj(this._arguments);
             this._arguments = null!;
             this._argumentResolvers = null!;
-            if (!this.injector.destroyed && this.injector.scope === 'parameter') {
-                this.injector.destroy();
-            }
+            (this as any).parent = null;
             (this as any).injector = null;
         }
     }

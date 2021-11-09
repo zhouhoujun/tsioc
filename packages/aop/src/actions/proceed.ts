@@ -279,7 +279,7 @@ export const ExecuteOriginMethodAction = function (ctx: Joinpoint, next: () => v
         return next();
     }
     try {
-        const val = ctx.originMethod?.(...ctx.args||EMPTY);
+        const val = ctx.originMethod?.(...ctx.args || EMPTY);
         ctx.returning = val;
     } catch (err) {
         ctx.throwing = err as Error;

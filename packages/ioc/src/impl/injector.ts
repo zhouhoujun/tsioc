@@ -10,7 +10,7 @@ import { cleanObj, deepForEach } from '../utils/lang';
 import { InjectorTypeWithProviders, KeyValueProvider, ProviderType, StaticProvider, StaticProviders } from '../providers';
 import {
     isArray, isDefined, isFunction, isPlainObject, isPrimitiveType, isUndefined,
-    isNumber, isTypeObject, isTypeReflect, EMPTY, EMPTY_OBJ, getClass
+    isNumber, isTypeObject, isTypeReflect, EMPTY, EMPTY_OBJ, getClass, isString
 } from '../utils/chk';
 import { DesignContext } from '../actions/ctx';
 import { DesignLifeScope } from '../actions/design';
@@ -21,7 +21,6 @@ import { InvocationContext, InvocationOption, OperationArgumentResolver, Operati
 import { DefaultModuleLoader } from './loader';
 import { ModuleLoader } from '../module.loader';
 import { DefaultPlatform } from './platform';
-import { ModuleFactoryResolver } from '..';
 
 
 /**
@@ -275,7 +274,6 @@ export class DefaultInjector extends Injector {
                 }
             }
         }, v => isPlainObject(v));
-        // types.forEach(ty => this.registerType(platform, ty));
         return types;
     }
 
@@ -322,12 +320,30 @@ export class DefaultInjector extends Injector {
      * @param {InjectFlags} flags
      * @returns {T} token value.
      */
-    get<T>(token: Token<T>, notFoundValue?: T, flags = InjectFlags.Default): T {
+    get<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags): T;
+    /**
+     * get token factory resolve instace in current.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {T} notFoundValue 
+     * @param {InjectFlags} flags
+     * @returns {T} token value.
+     */
+    get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags): T;
+    get<T>(token: Token<T>, arg1?: InvocationContext | T, flags = InjectFlags.Default): T {
         this.assertNotDestroyed();
         if (this.isself(token)) return this as any;
         const platfrom = this.platform();
         if (platfrom.hasSingleton(token)) return platfrom.getSingleton(token);
-        return tryResolveToken(token, this.records.get(token), this.records, platfrom, this.parent, notFoundValue, flags);
+        let context: InvocationContext | undefined;
+        let notFoundValue: T | undefined;
+        if (arg1 instanceof InvocationContext) {
+            context = arg1;
+        } else {
+            notFoundValue = arg1;
+        }
+        return tryResolveToken(token, this.records.get(token), this.records, platfrom, this.parent, context, notFoundValue, flags);
     }
     /**
      * resolve token instance with token and param provider.
@@ -373,21 +389,25 @@ export class DefaultInjector extends Injector {
     resolve<T>(token: Token<T>, ...providers: ProviderType[]): T;
     resolve<T>(token: Token<T> | ResolveOption<T>, ...args: any[]) {
         this.assertNotDestroyed();
-        let option: ResolveOption<T> = this.toOption(token, args);
+        let option: ResolveOption<T> | undefined = this.toOption(token, args);
         let inst: T;
-        let context = option.context;
-        if ((option.target || option.providers || option.resolvers)) {
-            context = context ?? createInvocationContext(this, option);
-            option.target && context.setValue(TARGET, option.target);
-        }
-        inst = this.resolveStrategy(option, context);
-        if (!option.context && context) {
-            context.destroy();
+        if (option) {
+            let context = option.context;
+            if ((option.target || option.providers || option.resolvers)) {
+                context = context ?? createInvocationContext(this, option);
+                option.target && context.setValue(TARGET, option.target);
+            }
+            inst = this.resolveStrategy(option, context);
+            if (!option.context && context) {
+                context.destroy();
+            }
+        } else {
+            inst = this.get(token as Token);
         }
         return inst;
     }
 
-    protected toOption(token: Token | ResolveOption, args: any[]): ResolveOption {
+    protected toOption(token: Token | ResolveOption, args: any[]): ResolveOption | undefined {
         if (isPlainObject(token)) return token as ResolveOption;
         if (args.length) {
             if (args.length > 1 || args.length === 1 && isArray(args)) return { token, providers: args };
@@ -395,9 +415,8 @@ export class DefaultInjector extends Injector {
                 return { token, context: args[0] };
             }
             return { token, ...args[0] };
-
         }
-        return { token };
+        return;
     }
 
     protected resolveStrategy<T>(option: ResolveOption, context?: InvocationContext): T {
@@ -412,18 +431,18 @@ export class DefaultInjector extends Injector {
             }
         }
         const platform = this.platform();
-        return (targetToken ? platform.getTypeProvider(targetToken)?.get(option.token!) : null)
-            ?? this.get(option.token!)
-            ?? this.resolveFailed(platform, option.token!, option.regify, option.defaultToken);
+        return (targetToken ? platform.getTypeProvider(targetToken)?.get(option.token!, context) : null)
+            ?? this.get(option.token!, context)
+            ?? this.resolveFailed(platform, option.token!, context, option.regify, option.defaultToken);
     }
 
-    protected resolveFailed<T>(platform: Platform, token: Token<T>, regify?: boolean, defaultToken?: Token): T {
+    protected resolveFailed<T>(platform: Platform, token: Token<T>, context?: InvocationContext, regify?: boolean, defaultToken?: Token): T {
         if (regify && isFunction(token) && !platform.isRegistered(token)) {
             this.registerType(platform, token as Type);
-            return this.get(token);
+            return this.get(token, context);
         }
         if (defaultToken) {
-            return this.get(defaultToken);
+            return this.get(defaultToken, context);
         }
         return null!;
     }
@@ -593,7 +612,7 @@ export class DefaultInjector extends Injector {
     invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
         this.assertNotDestroyed();
         let providers: ProviderType[] | undefined;
-        let context: InvocationContext | null = null;
+        let context: InvocationContext | undefined;
         let option: any;
         if (args.length === 1) {
             const arg0 = args[0];
@@ -653,7 +672,7 @@ export class DefaultInjector extends Injector {
 
     load(modules: LoadType[]): Promise<Type[]>;
     load(...modules: LoadType[]): Promise<Type[]>;
-    async load(...args: any[]): Promise<Type[]> {
+    load(...args: any[]): Promise<Type[]> {
         this.assertNotDestroyed();
         let modules: LoadType[];
         if (args.length === 1 && isArray(args[0])) {
@@ -661,7 +680,7 @@ export class DefaultInjector extends Injector {
         } else {
             modules = args;
         }
-        return await this.getLoader()?.register(this, modules) ?? [];
+        return this.getLoader().register(this, modules);
     }
 
 
@@ -864,9 +883,9 @@ export class NullInjectorError extends Error {
  * @param provider 
  * @returns 
  */
-export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Platform, parent: Injector | undefined, notFoundValue: any, flags: InjectFlags): any {
+export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Platform, parent: Injector | undefined, context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags): any {
     try {
-        return resolveToken(token, rd, records, platform, parent, notFoundValue, flags);
+        return resolveToken(token, rd, records, platform, parent, context, notFoundValue, flags);
     } catch (e) {
         if (rd && rd.value === CIRCULAR) {
             rd.value = EMPTY;
@@ -882,25 +901,30 @@ export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, rec
  * @param provider 
  * @returns 
  */
-export function resolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Platform, parent: Injector | undefined, notFoundValue: any, flags: InjectFlags): any {
+export function resolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Platform, parent: Injector | undefined, context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags): any {
     if (rd && !(flags & InjectFlags.SkipSelf)) {
         let value = rd.value;
         if (value === CIRCULAR) {
             throw new CircularDependencyError();
         }
         if (isDefined(rd.value) && value !== EMPTY) return rd.value;
-        let deps = EMPTY;
+        let deps = [];
         if (rd.deps?.length) {
-            deps = [];
             for (let i = 0; i < rd.deps.length; i++) {
                 const dep = rd.deps[i];
                 const chlrd = isPlainObject(dep.token) ? dep.token : (dep.options & OptionFlags.CheckSelf ? records.get(dep.token) : undefined);
-                deps.push(resolveToken(
+
+                let val: any;
+                if (context) {
+                    val = context.resolveArgument(isString(dep.token) ? { paramName: dep.token } : { provider: dep.token } as any);
+                }
+                deps.push(val ?? resolveToken(
                     dep.token,
                     chlrd,
                     records,
                     platform,
                     !chlrd && !(dep.options & OptionFlags.CheckParent) ? undefined : parent,
+                    context,
                     dep.options & OptionFlags.Optional ? null : undefined,
                     InjectFlags.Default));
             }
@@ -924,10 +948,13 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                     rd.cache = null!;
                     rd.ltop = null!;
                 }
+                if (context) {
+                    deps.push(context);
+                }
                 return rd.fn?.(...deps);
         }
     } else if (!(flags & InjectFlags.Self)) {
-        return parent?.get(token, notFoundValue, InjectFlags.Default);
+        return parent?.get(token, context ?? notFoundValue, InjectFlags.Default) ?? notFoundValue;
     } else if (!(flags & InjectFlags.Optional)) {
         if (isUndefined(notFoundValue)) {
             throw new NullInjectorError(token);
@@ -939,7 +966,15 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
 }
 
 
-const resolves: OperationArgumentResolver[] = [
+export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
+    {
+        canResolve(parameter, ctx) {
+            return (parameter.provider && ctx.hasValue(parameter.provider)) as boolean;
+        },
+        resolve(parameter, ctx) {
+            return ctx.getValue(parameter.provider!);
+        }
+    },
     {
         canResolve(parameter) {
             return (parameter.provider && !parameter.mutil && !isPrimitiveType(parameter.provider)) as boolean;
@@ -955,6 +990,14 @@ const resolves: OperationArgumentResolver[] = [
     },
     {
         canResolve(parameter, ctx) {
+            return (parameter.paramName && ctx.hasValue(parameter.paramName)) as boolean;
+        },
+        resolve(parameter, ctx) {
+            return ctx.getValue(parameter.paramName!);
+        }
+    },
+    {
+        canResolve(parameter, ctx) {
             return (parameter.paramName && isDefined(ctx.arguments[parameter.paramName])) as boolean;
         },
         resolve(parameter, ctx) {
@@ -963,10 +1006,18 @@ const resolves: OperationArgumentResolver[] = [
     },
     {
         canResolve(parameter, ctx) {
-            return (parameter.paramName && isDefined(ctx.arguments[parameter.paramName])) as boolean;
+            return (parameter.paramName && ctx.injector.has(parameter.paramName, parameter.flags)) as boolean;
         },
         resolve(parameter, ctx) {
             return ctx.injector.get<any>(parameter.paramName!, null, parameter.flags);
+        }
+    },
+    {
+        canResolve(parameter, ctx) {
+            return parameter.type && ctx.hasValue(parameter.type);
+        },
+        resolve(parameter, ctx) {
+            return ctx.getValue(parameter.type);
         }
     },
     {
@@ -1006,9 +1057,14 @@ export function createInvocationContext(injector: Injector, option?: InvocationO
         const proxy = typeRef && invokerMethod ? typeRef.type.prototype[invokerMethod]['_proxy'] : false;
         injector = Injector.create(providers, injector, proxy ? 'invoked' : 'parameter');
     }
-    return new InvocationContext(injector, option.parent ?? injector.get(InvocationContext), typeRef?.type, invokerMethod, option.arguments || EMPTY_OBJ,
+    return new InvocationContext(
+        injector,
+        option.parent ?? injector.get(InvocationContext),
+        typeRef?.type,
+        invokerMethod,
+        option.arguments || EMPTY_OBJ,
         ...(isFunction(option.resolvers) ? option.resolvers(injector, typeRef, invokerMethod) : option.resolvers) ?? EMPTY,
-        ...resolves);
+        ...DEFAULT_RESOLVERS);
 }
 
 /**

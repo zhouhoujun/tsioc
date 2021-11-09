@@ -1,6 +1,6 @@
 import {
-    Type, MethodMetadata, ClassMetadata, ParameterMetadata, tokenId, Injector,
-    lang, IocContext, InvocationContext, ClassType, OperationArgumentResolver, EMPTY
+    Type, MethodMetadata, ClassMetadata, ParameterMetadata, tokenId, Injector, EMPTY, Token,
+    lang, IocContext, InvocationContext, ClassType, OperationArgumentResolver, DEFAULT_RESOLVERS
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advices } from '../advices/Advices';
@@ -50,7 +50,7 @@ export class Joinpoint<T = any> extends InvocationContext<T> implements IocConte
         readonly params?: ParameterMetadata[],
         parent?: InvocationContext,
         readonly provJoinpoint?: Joinpoint, data?: T, ...argumentResolvers: OperationArgumentResolver[]) {
-        super(injector, parent, target, method, data, ...argumentResolvers);
+        super(injector, parent, target, method, data, ...argumentResolvers, ...DEFAULT_RESOLVERS);
     }
 
     private _fullName!: string
@@ -59,6 +59,10 @@ export class Joinpoint<T = any> extends InvocationContext<T> implements IocConte
             this._fullName = lang.getClassName(this.targetType) + '.' + this.method;
         }
         return this._fullName;
+    }
+
+    protected override isSelf(token: Token) {
+        return token === InvocationContext || token === Joinpoint;
     }
 
     static parse(injector: Injector, options: JoinpointOption) {

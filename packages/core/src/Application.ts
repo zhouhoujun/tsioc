@@ -88,11 +88,11 @@ export class Application {
             ctx.onDestroy(() => this.destroy());
             return ctx;
         } catch (err) {
-            const appex = this.context.injector.get(ApplicationExit);
+            const appex = this.context?.injector?.get(ApplicationExit);
             if (appex) {
                 appex.exit(err as Error);
             } else {
-                const logger = this.context.getLogManager()?.getLogger();
+                const logger = this.context?.getLogManager()?.getLogger();
                 logger ? logger.error(err) : console.error(err);
             }
             throw err;

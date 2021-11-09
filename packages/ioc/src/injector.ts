@@ -58,6 +58,16 @@ export abstract class Injector implements Destroyable {
      *
      * @template T
      * @param {Token<T>} token
+     * @param {InvocationContext} context 
+     * @param {InjectFlags} flags
+     * @returns {T} token value.
+     */
+    abstract get<T>(token: Token<T>, context?: InvocationContext, flags?:InjectFlags): T;
+    /**
+     * get token factory resolve instace in current.
+     *
+     * @template T
+     * @param {Token<T>} token
      * @param {T} notFoundValue 
      * @param {InjectFlags} flags get token strategy.
      * @returns {T} token value.

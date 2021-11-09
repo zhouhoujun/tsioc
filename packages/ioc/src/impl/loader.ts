@@ -21,7 +21,7 @@ export function isChildModule(target: any): target is ChildModule {
  * @class DefaultModuleLoader
  * @implements {ModuleLoader}
  */
-export class DefaultModuleLoader implements ModuleLoader {
+export class DefaultModuleLoader extends ModuleLoader {
 
     static ρNPT = true;
 
