@@ -1,6 +1,6 @@
 import { createDecorator, DecoratorOption, EMPTY_OBJ } from '@tsdi/ioc';
-import { AnnotationReflect, Runnable } from '@tsdi/core';
-import { SuiteMetadata, TestCaseMetadata, TestMetadata } from './meta';
+import { Runnable } from '@tsdi/core';
+import { SuiteMetadata, SuiteReflect, TestCaseMetadata, TestMetadata } from './meta';
 import { UnitRunner } from '../runner/Runner';
 
 
@@ -37,9 +37,8 @@ export const Suite: Suite = createDecorator<SuiteMetadata>('Suite', {
     actionType: 'annoation',
     reflect: {
         class: (ctx, next) => {
-            (ctx.reflect as AnnotationReflect).annoType = 'suite';
-            (ctx.reflect as AnnotationReflect).annoDecor = ctx.decor;
-            (ctx.reflect as AnnotationReflect).annotation = ctx.metadata;
+            (ctx.reflect as SuiteReflect).suite = true;
+            ctx.reflect.annotation = ctx.metadata;
             return next();
         }
     },

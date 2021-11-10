@@ -7,7 +7,7 @@ import { EMPTY, isArray } from './utils/chk';
 import { Handler } from './utils/hdl';
 import { Action } from './action';
 import { ClassProvider, ExistingProvider, FactoryProvider, ProviderType, StaticProvider, ValueProvider } from './providers';
-import { InvocationContext, InvocationOption, InvokeOption } from './invoker';
+import { InvocationContext, InvokeOption } from './invoker';
 import { ModuleLoader } from './module.loader';
 import { ProvidedInMetadata } from './metadata/meta';
 import { ModuleFactory } from './module.factory';
@@ -630,7 +630,7 @@ export interface FactoryRecord<T = any> {
 /**
  * resovler option.
  */
-export interface ResolverOption extends InvocationOption {
+export interface ResolverOption extends InvokeOption {
     /**
      * args.
      */

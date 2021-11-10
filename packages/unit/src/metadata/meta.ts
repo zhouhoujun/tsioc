@@ -1,4 +1,8 @@
-import { AnnotationMetadata } from '@tsdi/core';
+import { ClassMetadata, TypeReflect } from '@tsdi/ioc';
+
+export interface SuiteReflect extends TypeReflect {
+    suite?: boolean;
+}
 
 /**
  * Test metadata.
@@ -74,7 +78,7 @@ export interface TestCaseMetadata extends TestMetadata {
  * @interface SuiteMetadata
  * @extends {AnnotationMetadata}
  */
-export interface SuiteMetadata extends AnnotationMetadata {
+export interface SuiteMetadata extends ClassMetadata {
     /**
      * test suite describe message.
      *

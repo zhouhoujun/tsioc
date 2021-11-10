@@ -1,6 +1,6 @@
 import {
     ProviderType, LoadType, Injector, Abstract, Token, Type,
-    ModuleLoader, Destroyable, ModuleRef, ModuleOption
+    ModuleLoader, Destroyable, ModuleRef, ModuleOption, InvokeOption
 } from '@tsdi/ioc';
 import { ILoggerManager } from '@tsdi/logs';
 import { Configuration, ConfigureManager } from './configure/config';
@@ -16,7 +16,7 @@ import { Runnable, RunnableFactory } from './runnable';
 /**
  * bootstrap option.
  */
-export interface BootstrapOption {
+export interface BootstrapOption extends InvokeOption {
     /**
      * injector
      */

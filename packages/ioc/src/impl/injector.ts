@@ -740,7 +740,7 @@ export function processInjectorType(typeOrDef: Type | InjectorTypeWithProviders,
         );
     }
     const isDuplicate = dedupStack.indexOf(type) !== -1;
-    const typeRef = moduleRefl ?? get<ModuleReflect>(type);
+    const typeRef = moduleRefl ?? get<ModuleReflect>(type, true);
     if (typeRef.module && !isDuplicate) {
         dedupStack.push(type);
         typeRef.imports?.forEach(imp => {

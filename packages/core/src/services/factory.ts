@@ -1,7 +1,7 @@
-import { Type, refl, Destroyable, lang, Injector } from '@tsdi/ioc';
+import { Type, refl, Destroyable, lang, Injector, TypeReflect, EMPTY } from '@tsdi/ioc';
 import { ApplicationContext, BootstrapOption } from '../Context';
 import { Runnable, RunnableFactory, RunnableFactoryResolver, TargetRef } from '../runnable';
-import { AnnotationReflect } from '../metadata/ref';
+
 
 
 /**
@@ -9,20 +9,19 @@ import { AnnotationReflect } from '../metadata/ref';
  */
 export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
 
-    constructor(private _refl: AnnotationReflect<T>) {
+    constructor(private _refl: TypeReflect<T>) {
         super();
     }
 
     override get type() {
-        return this._refl.type;
+        return this._refl.type as Type;
     }
 
     override create(option: BootstrapOption, context?: ApplicationContext) {
-        const injector = Injector.create(option.providers, option.injector);
+        const injector = option.injector ?? context?.injector!;
         const targetRef = new RunnableTargetRef(this._refl, injector);
-        injector.inject({ provide: TargetRef, useValue: targetRef })
         const target = targetRef.instance;
-        const runable = ((target instanceof Runnable) ? target : injector.resolve({ token: Runnable, target, providers: [{ provide: TargetRef, useValue: targetRef }] })) as Runnable & Destroyable;
+        const runable = ((target instanceof Runnable) ? target : injector.resolve({ token: Runnable, target, ...option, providers: [...option.providers || EMPTY, { provide: TargetRef, useValue: targetRef }] })) as Runnable & Destroyable;
 
         if (context) {
             targetRef.onDestroy(() => {
@@ -48,7 +47,7 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
  * target ref for {@link Runnable}.
  */
 export class RunnableTargetRef<T = any> extends TargetRef<T>  {
-    constructor(readonly reflect: AnnotationReflect<T>, readonly injector: Injector, private _instance?: T) {
+    constructor(readonly reflect: TypeReflect<T>, readonly injector: Injector, private _instance?: T) {
         super();
     }
 
@@ -60,7 +59,7 @@ export class RunnableTargetRef<T = any> extends TargetRef<T>  {
     }
 
     get type(): Type<T> {
-        return this.reflect.type;
+        return this.reflect.type as Type;
     }
 
     /**

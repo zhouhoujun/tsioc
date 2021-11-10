@@ -1,6 +1,5 @@
-import { Abstract, Destroyable, Injector, Type } from '@tsdi/ioc';
+import { Abstract, Destroyable, Injector, Type, TypeReflect } from '@tsdi/ioc';
 import { ApplicationContext, BootstrapOption } from './Context';
-import { AnnotationReflect } from './metadata/ref';
 
 /**
  * runnable
@@ -70,7 +69,7 @@ import { AnnotationReflect } from './metadata/ref';
       * @type {AnnotationReflect<T>}
       * @memberof Executor
       */
-     abstract get reflect(): AnnotationReflect<T>;
+     abstract get reflect(): TypeReflect<T>;
      /**
       * execute target type.
       *

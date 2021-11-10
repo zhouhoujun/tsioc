@@ -7,6 +7,7 @@ import * as net from 'net';
 describe('di module', () => {
 
     it('should has bootstrap, and auto wrid mark via inject.', async () => {
+        try {
         let ctx = await Application.run(ModuleB);
         expect(ctx.instance).not.toBeNull();
         expect(ctx.bootstraps[0]).not.toBeNull();
@@ -18,6 +19,9 @@ describe('di module', () => {
         expect(runner.instance.mark).toEqual('marked');
         // expect(md.state).eq('started');
         ctx.destroy();
+        } catch (err) {
+            console.log(err);
+        }
     });
 
 
