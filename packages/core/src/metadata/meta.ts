@@ -1,5 +1,4 @@
 import { PatternMetadata, ProviderMetadata, Type, TypeMetadata } from '@tsdi/ioc';
-import { ModuleConfigure } from './ref';
 import { CanActive } from '../middlewares/guard';
 import { Middleware, Middlewares } from '../middlewares/middleware';
 import { Service } from '../services/service';
@@ -25,18 +24,6 @@ export interface BootMetadata extends TypeMetadata, PatternMetadata {
      */
     after?: Type<Service> | 'all';
 }
-
-
-/**
- * module metadata.
- *
- * @export
- * @interface ModuleMetadata
- * @extends {ModuleConfigure}
- * @extends {ClassMetadata}
- */
-export interface ModuleMetadata extends ModuleConfigure { }
-
 
 export interface HandleMessagePattern {
     /**

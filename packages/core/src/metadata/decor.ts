@@ -3,17 +3,16 @@ import {
     createDecorator, ClassMethodDecorator, ClassMetadata, createParamDecorator, ParameterMetadata,
 } from '@tsdi/ioc';
 import { Service } from '../services/service';
-import { AnnotationReflect } from './ref';
 import { Middleware, Middlewares, MiddlewareType, RouteInfo, RouteReflect } from '../middlewares/middleware';
 import { ROOT_QUEUE } from '../middlewares/root';
 import { CanActive } from '../middlewares/guard';
 import { RouteResolver, Route } from '../middlewares/route';
 import { RootRouter, Router } from '../middlewares/router';
 import { MappingReflect, MappingRoute, ProtocolRouteMappingMetadata } from '../middlewares/mapping';
-import { SERVICES, SERVERS } from './tk';
 import { BootMetadata, HandleMetadata, HandlesMetadata, PipeMetadata, HandleMessagePattern } from './meta';
 import { PipeTransform } from '../pipes/pipe';
 import { Server } from '../server/server';
+import { SERVICES, SERVERS } from './tk';
 
 
 /**
@@ -178,28 +177,6 @@ export interface Handle {
      *
      */
     (): HandleDecorator;
-    // /**
-    //  * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
-    //  *
-    //  * @RegisterFor
-    //  *
-    //  * @param {string} parent the handle reg in the handle queue. default register in root handle queue.
-    //  * @param [option] register this handle handle before this handle.
-    //  */
-    // (route: string, options?: {
-    //     /**
-    //      * register this handle handle in the parent handle.
-    //      */
-    //     parent?: Type<Router>;
-    //     /**
-    //      * register this handle handle before the handle.
-    //      */
-    //     before?: Type<Middleware>;
-    //     /**
-    //     * route guards.
-    //     */
-    //     guards?: Type<CanActive>[],
-    // }): HandleDecorator;
     /**
      * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
      *
@@ -374,9 +351,7 @@ export const Pipe: Pipe = createDecorator<PipeMetadata>('Pipe', {
     actionType: ['annoation', 'typeProviders'],
     reflect: {
         class: (ctx, next) => {
-            (ctx.reflect as AnnotationReflect).annoType = 'pipe';
-            (ctx.reflect as AnnotationReflect).annoDecor = ctx.decor;
-            (ctx.reflect as AnnotationReflect).annotation = ctx.metadata;
+            ctx.reflect.annotation = ctx.metadata;
             return next();
         }
     },

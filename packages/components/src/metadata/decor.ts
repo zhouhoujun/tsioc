@@ -3,14 +3,14 @@ import {
     refl, lang, createDecorator, createPropDecorator, createParamDecorator, ClassMethodDecorator, getClass
 } from '@tsdi/ioc';
 import {
-    AnnotationReflect, MappingReflect, MessageQueue, Middlewares,
+    MappingReflect, MessageQueue, Middlewares,
     MiddlewareType, ProtocolRouteMappingMetadata, RouteInfo, RouteMappingMetadata, Router, RunnableFactoryResolver
 } from '@tsdi/core';
 import {
     BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
     HostListenerMetadata, QueryMetadata, VaildateMetadata
 } from './meta';
-import { ComponentReflect, DirectiveReflect } from '../reflect';
+import { AnnotationReflect, ComponentReflect, DirectiveReflect } from '../reflect';
 import { CompilerFacade } from '../compile/facade';
 import { HostMappingRoot, HostMappingRoute } from '../router';
 import { ComponentFactoryResolver } from '../refs/component';

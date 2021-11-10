@@ -1,5 +1,5 @@
 import { Injectable, lang, Type } from '@tsdi/ioc';
-import { ApplicationContext } from 'packages/boot/src/Context';
+import { ApplicationContext } from '@tsdi/core';
 import { OnDestroy } from '../lifecycle';
 import { ComponentFactory, ComponentRef } from './component';
 import { InternalViewRef } from './inter';

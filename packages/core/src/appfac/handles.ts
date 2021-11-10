@@ -71,7 +71,7 @@ export const ConfigureLoadHandle = async function (ctx: ApplicationContext, next
         injector.setValue(PROCESS_ROOT, config.baseURL);
     }
 
-    config = { ...config, ...injector.moduleReflect.annotation };
+    config = { ...config, baseURL, debug: injector.moduleReflect.annotation?.debug };
     injector.setValue(CONFIGURATION, config);
 
     if (config.logConfig) {

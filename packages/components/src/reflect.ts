@@ -1,9 +1,33 @@
-import { refl, Type } from '@tsdi/ioc';
-import { AnnotationReflect } from '@tsdi/core';
+import { refl, Type, TypeReflect } from '@tsdi/ioc';
 import { ComponentMetadata, DirectiveMetadata } from './metadata/meta';
 import { ComponentDef, DirectiveDef } from './type';
 
 
+
+/**
+ * annotation type.
+ */
+ export type AnnotationTypes = 'module' | 'component' | 'decorator' | 'directive' | 'pipe' | 'boot' | 'suite' | 'activity' | 'workflow';
+
+ /**
+  * AnnotationReflect
+  */
+ export interface AnnotationReflect<T = any> extends TypeReflect {
+     /**
+      * class type.
+      */
+     readonly type: Type<T>;
+     /**
+      * the type of annoation.
+      */
+     annoType?: AnnotationTypes;
+     /**
+      * annoation decorator.
+      */
+     annoDecor?: string;
+ }
+
+ 
 /**
  * directive reflect data.
  *

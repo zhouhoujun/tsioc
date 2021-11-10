@@ -288,6 +288,7 @@ export interface InjectableMetadata extends TypeMetadata, PatternMetadata, Provi
  */
 export interface ModuleMetadata extends ProvidedInMetadata, ProvidersMetadata {
     baseURL?: string;
+    debug?: boolean;
     /**
      * bootstrap.
      *

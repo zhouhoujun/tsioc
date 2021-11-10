@@ -15,7 +15,7 @@ export abstract class ViewRef extends ChangeDetectorRef implements Destroyable {
   /**
    * has destoryed or not.
    */
-  abstract get destroyed();
+  abstract get destroyed(): boolean;
   /**
   * destory this.
   */

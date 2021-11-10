@@ -11,7 +11,6 @@ export * from './configure/manager';
 // metadata
 export * from './metadata/meta';
 export * from './metadata/decor';
-export * from './metadata/ref';
 export * from './metadata/tk';
 
 export * from './runnable';
