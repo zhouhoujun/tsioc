@@ -89,10 +89,11 @@ export class InvocationContext<T = any> implements Destroyable {
         readonly target?: ClassType,
         readonly method?: string,
         args?: T,
+        values?: TokenValue[],
         ...argumentResolvers: OperationArgumentResolver[]) {
         this._argumentResolvers = argumentResolvers;
         this._arguments = args ?? {} as T;
-        this._values = new Map();
+        this._values = new Map(values);
         injector.onDestroy(() => this.destroy());
     }
 
@@ -247,6 +248,9 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
     }
 }
 
+export type TokenValue<T= any> = [Token<T>, T];
+
+
 /**
  * invoke option.
  */
@@ -260,9 +264,13 @@ export interface InvokeOption {
       */
      arguments?: Record<string, any>;
      /**
+      * token values.
+      */
+     values?: TokenValue[];
+     /**
       * custom resolvers.
       */
-     resolvers?: OperationArgumentResolver[] | ((injector: Injector, typeRef?: TypeReflect, method?: string) => OperationArgumentResolver[]);
+     resolvers?: OperationArgumentResolver[];
      /**
       * custom providers.
       */

@@ -1,4 +1,4 @@
-import { Type, refl, Destroyable, lang, Injector, TypeReflect, EMPTY } from '@tsdi/ioc';
+import { Type, refl, Destroyable, lang, Injector, TypeReflect, EMPTY, TokenValue } from '@tsdi/ioc';
 import { ApplicationContext, BootstrapOption } from '../Context';
 import { Runnable, RunnableFactory, RunnableFactoryResolver, TargetRef } from '../runnable';
 
@@ -21,7 +21,13 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
         const injector = option.injector ?? context?.injector!;
         const targetRef = new RunnableTargetRef(this._refl, injector);
         const target = targetRef.instance;
-        const runable = ((target instanceof Runnable) ? target : injector.resolve({ token: Runnable, target, ...option, providers: [...option.providers || EMPTY, { provide: TargetRef, useValue: targetRef }] })) as Runnable & Destroyable;
+        const runable = ((target instanceof Runnable) ? target
+            : injector.resolve({
+                ...option,
+                token: Runnable,
+                target,
+                values: [[TargetRef, targetRef]]
+            })) as Runnable & Destroyable;
 
         if (context) {
             targetRef.onDestroy(() => {

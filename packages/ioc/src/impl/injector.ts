@@ -393,7 +393,7 @@ export class DefaultInjector extends Injector {
         let inst: T;
         if (option) {
             let context = option.context;
-            if ((option.target || option.providers || option.resolvers)) {
+            if ((option.target || option.providers || option.resolvers || option.arguments || option.values)) {
                 context = context ?? createInvocationContext(this, option);
                 option.target && context.setValue(TARGET, option.target);
             }
@@ -793,7 +793,7 @@ export function generateRecord<T>(platfrom: Platform, injector: Injector, provid
     let value: T | undefined;
     let fnType = FnType.Fac;
     let type = provider.useClass;
-    const deps = computeDeps(provider);
+    let deps = computeDeps(provider);
     if (isDefined(provider.useValue)) {
         value = provider.useValue;
     } else if (provider.useFactory) {
@@ -801,17 +801,24 @@ export function generateRecord<T>(platfrom: Platform, injector: Injector, provid
     } else if (provider.useExisting) {
 
     } else if (provider.useClass) {
+        if(deps) {
+            deps.unshift({ token: provider.useClass, options: OptionFlags.Default });
+        } else {
+            deps = [{ token: provider.useClass, options: OptionFlags.Default }];
+        }
+        if (!platfrom.isRegistered(type) && !injector.has(type, InjectFlags.Default)) {
+            injector.register({ type, deps, regProvides: false });
+        }
         // if (deps.length) {
         //     fnType = FnType.Cotr;
         //     fn = option.useClass;
         // } else {
-        fnType = FnType.Inj;
-        fn = (...args: any[]) => {
-            if (!platfrom.isRegistered(type) && !injector.has(type, InjectFlags.Default)) {
-                injector.register({ type, deps, regProvides: false });
-            }
-            return injector.resolve(type, { args });
-        };
+        // fn = (...args: any[]) => {
+        //     if (!platfrom.isRegistered(type) && !injector.has(type, InjectFlags.Default)) {
+        //         injector.register({ type, deps, regProvides: false });
+        //     }
+        //     return injector.resolve(type, { args });
+        // };
         // }
     } else if (isFunction(provider.provide)) {
         fnType = FnType.Cotr;
@@ -853,7 +860,7 @@ function computeDeps(provider: StaticProviders): DependencyRecord[] {
     } else if (provider.useExisting) {
         deps = [{ token: provider.useExisting, options: OptionFlags.Default }];
     }
-    return deps ?? EMPTY;
+    return deps;
 }
 
 /**
@@ -925,6 +932,9 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                     InjectFlags.Default));
             }
         }
+        if (context) {
+            deps.push(context);
+        }
         switch (rd.fnType) {
             case FnType.Cotr:
                 return new (rd.fn as Type)(...deps);
@@ -943,9 +953,6 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                     rd.expires = null!;
                     rd.cache = null!;
                     rd.ltop = null!;
-                }
-                if (context) {
-                    deps.push(context);
                 }
                 return rd.fn?.(...deps);
         }
@@ -978,10 +985,10 @@ export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
         resolve(parameter, ctx) {
             const pdr = parameter.provider!;
             const injector = ctx.injector;
-            if (isFunction(pdr) && !injector.platform().isRegistered(pdr) && !injector.has(pdr, InjectFlags.Default)) {
+            if (isFunction(pdr) && !get(pdr)?.abstract && !injector.platform().isRegistered(pdr) && !injector.has(pdr, InjectFlags.Default)) {
                 injector.register(pdr as Type);
             }
-            return injector.get(pdr, null, parameter.flags);
+            return injector.get(pdr, ctx, parameter.flags);
         }
     },
     {
@@ -1005,7 +1012,7 @@ export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
             return (parameter.paramName && ctx.injector.has(parameter.paramName, parameter.flags)) as boolean;
         },
         resolve(parameter, ctx) {
-            return ctx.injector.get<any>(parameter.paramName!, null, parameter.flags);
+            return ctx.injector.get<any>(parameter.paramName!, ctx, parameter.flags);
         }
     },
     {
@@ -1023,10 +1030,10 @@ export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
         resolve(parameter, ctx) {
             const ty = parameter.type!;
             const injector = ctx.injector;
-            if (isFunction(ty) && !injector.platform().isRegistered(ty) && !injector.has(ty, InjectFlags.Default)) {
+            if (isFunction(ty) && !get(ty)?.abstract && !injector.platform().isRegistered(ty) && !injector.has(ty, InjectFlags.Default)) {
                 injector.register(ty as Type);
             }
-            return injector.get(ty, null, parameter.flags);
+            return injector.get(ty, ctx, parameter.flags);
         }
     },
     // default value
@@ -1059,7 +1066,8 @@ export function createInvocationContext(injector: Injector, option?: InvocationO
         typeRef?.type,
         invokerMethod,
         option.arguments || EMPTY_OBJ,
-        ...(isFunction(option.resolvers) ? option.resolvers(injector, typeRef, invokerMethod) : option.resolvers) ?? EMPTY,
+        option.values,
+        ...option.resolvers ?? EMPTY,
         ...DEFAULT_RESOLVERS);
 }
 

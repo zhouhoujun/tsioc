@@ -1,4 +1,4 @@
-import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, ModuleRef, Injector, Modules, ROOT_INJECTOR, ModuleFactoryResolver } from '@tsdi/ioc';
+import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, ModuleRef, Injector, Modules, ModuleFactoryResolver } from '@tsdi/ioc';
 import { CTX_ARGS, PROCESS_ROOT } from './metadata/tk';
 import { ApplicationContext, ApplicationFactory, ApplicationExit, ApplicationOption, BootstrapOption } from './Context';
 import { MiddlewareModule } from './middleware';
@@ -136,9 +136,6 @@ export class Application {
         if (option.baseURL) {
             container.setValue(PROCESS_ROOT, option.baseURL);
         }
-        // if (option.deps) {
-        //     container.use(option.deps);
-        // }
         return container.resolve({ token: ModuleFactoryResolver, target: option.type }).resolve(option.type).create(container, option);
     }
 

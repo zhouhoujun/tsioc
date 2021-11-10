@@ -33,7 +33,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
     }
 
 
-    beforeConstr(targetType: Type, params: ParameterMetadata[] | undefined, args: any[] | undefined, context: InvocationContext | undefined) {
+    beforeConstr(targetType: Type, params: ParameterMetadata[] | undefined, args: any[] | undefined, parent: InvocationContext | undefined) {
         const advices = this.platform.getAction(ADVISOR).getAdvices(targetType, ctor);
         if (!advices) {
             return;
@@ -47,12 +47,12 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
             args,
             params,
             targetType,
-            context
+            parent
         });
         this.execute(joinPoint);
     }
 
-    afterConstr(target: any, targetType: Type, params: ParameterMetadata[] | undefined, args: any[] | undefined, context: InvocationContext | undefined) {
+    afterConstr(target: any, targetType: Type, params: ParameterMetadata[] | undefined, args: any[] | undefined, parent: InvocationContext | undefined) {
         const advices = this.platform.getAction(ADVISOR).getAdvices(targetType, ctor);
         if (!advices) {
             return;
@@ -67,7 +67,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
             params,
             target,
             targetType,
-            context
+            parent
         });
         this.execute(joinPoint);
     }
@@ -124,10 +124,10 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
                 return propertyMethod.call(target, ...args);
             }
             const larg = lang.last(args);
-            let context: InvocationContext | undefined;
+            let parent: InvocationContext | undefined;
             if (larg instanceof InvocationContext) {
                 args = args.slice(0, args.length - 1);
-                context = larg;
+                parent = larg;
             }
             const joinPoint = Joinpoint.parse(platform.getInjector(targetType), {
                 name,
@@ -140,7 +140,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
                 originMethod: propertyMethod,
                 provJoinpoint,
                 annotations: refl.get(targetType).class.decors.filter(d => d.propertyKey === name).map(d => d.metadata),
-                context
+                parent
             });
 
             self.execute(joinPoint);
