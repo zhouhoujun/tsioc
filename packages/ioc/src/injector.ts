@@ -7,7 +7,7 @@ import { EMPTY, isArray } from './utils/chk';
 import { Handler } from './utils/hdl';
 import { Action } from './action';
 import { ClassProvider, ExistingProvider, FactoryProvider, ProviderType, StaticProvider, ValueProvider } from './providers';
-import { InvocationContext, InvocationOption, OperationArgumentResolver } from './invoker';
+import { InvocationContext, InvocationOption, InvokeOption } from './invoker';
 import { ModuleLoader } from './module.loader';
 import { ProvidedInMetadata } from './metadata/meta';
 import { ModuleFactory } from './module.factory';
@@ -61,7 +61,7 @@ export abstract class Injector implements Destroyable {
      * @param {InjectFlags} flags
      * @returns {T} token value.
      */
-    abstract get<T>(token: Token<T>, context?: InvocationContext, flags?:InjectFlags): T;
+    abstract get<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags): T;
     /**
      * get token factory resolve instace in current.
      *
@@ -276,11 +276,7 @@ export abstract class Injector implements Destroyable {
      * @param {any} option ivacation context option.
      * @returns {TR}
      */
-    abstract invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, option?: {
-        args?: Record<string, any>,
-        resolvers?: OperationArgumentResolver[] | ((injector: Injector, typeRef?: TypeReflect<T>, method?: string) => OperationArgumentResolver[]),
-        providers?: ProviderType[]
-    }): TR;
+    abstract invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, option?: InvokeOption): TR;
     /**
      * invoke method.
      *

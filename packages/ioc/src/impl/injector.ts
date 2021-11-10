@@ -17,7 +17,7 @@ import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
 import { ModuleReflect, TypeReflect } from '../metadata/type';
 import { get } from '../metadata/refl';
-import { InvocationContext, InvocationOption, OperationArgumentResolver, OperationInvokerFactory, ReflectiveOperationInvoker } from '../invoker';
+import { InvocationContext, InvocationOption, InvokeOption, OperationArgumentResolver, OperationInvokerFactory, ReflectiveOperationInvoker } from '../invoker';
 import { DefaultModuleLoader } from './loader';
 import { ModuleLoader } from '../module.loader';
 import { DefaultPlatform } from './platform';
@@ -584,11 +584,7 @@ export class DefaultInjector extends Injector {
      * @param {InvocationContext} context ivacation context.
      * @returns {TR}
      */
-    invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, option?: {
-        args?: Record<string, any>,
-        resolvers?: OperationArgumentResolver[] | ((injector: Injector, typeRef?: TypeReflect<T>, method?: string) => OperationArgumentResolver[]),
-        providers?: ProviderType[]
-    }): TR;
+    invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, option?: InvokeOption): TR;
     /**
      * invoke method.
      *

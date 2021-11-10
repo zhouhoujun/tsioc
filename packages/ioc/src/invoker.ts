@@ -248,9 +248,31 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
 }
 
 /**
+ * invoke option.
+ */
+export interface InvokeOption {
+    /**
+     * parent InvocationContext,
+     */
+     parent?: InvocationContext;
+     /**
+      * invocation arguments data.
+      */
+     arguments?: Record<string, any>;
+     /**
+      * custom resolvers.
+      */
+     resolvers?: OperationArgumentResolver[] | ((injector: Injector, typeRef?: TypeReflect, method?: string) => OperationArgumentResolver[]);
+     /**
+      * custom providers.
+      */
+     providers?: ProviderType[];
+}
+
+/**
  * invocation option.
  */
-export interface InvocationOption {
+export interface InvocationOption extends InvokeOption {
     /**
      * invocation invoker target.
      */
@@ -263,22 +285,6 @@ export interface InvocationOption {
      * invocation target method.
      */
     invokerMethod?: string;
-    /**
-     * parent InvocationContext,
-     */
-    parent?: InvocationContext;
-    /**
-     * invocation arguments data.
-     */
-    arguments?: Record<string, any>;
-    /**
-     * custom resolvers.
-     */
-    resolvers?: OperationArgumentResolver[] | ((injector: Injector, typeRef?: TypeReflect, method?: string) => OperationArgumentResolver[]);
-    /**
-     * custom providers.
-     */
-    providers?: ProviderType[];
 }
 
 @Abstract()

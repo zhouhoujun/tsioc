@@ -135,7 +135,7 @@ export class MappingRoute extends Route {
             }
             ctx.restful = restParams;
             let result = injector.invoke(this.reflect, meta.propertyKey, {
-                args: ctx,
+                arguments: ctx,
                 resolvers: [
                     ...primitiveResolvers,
                     ...injector.get(MODEL_RESOLVERS) ?? EMPTY
