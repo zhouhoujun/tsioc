@@ -29,7 +29,7 @@ export class Application {
     constructor(protected target: Type | ApplicationOption, protected loader?: ModuleLoader) {
         if (!isFunction(target)) {
             if (!this.loader) this.loader = target.loader;
-            const providers = (target.providers && target.providers.length) ? [...DEFAULTA_FACTORYS, ...target.providers] : DEFAULTA_FACTORYS;
+            const providers = (target.platformProviders && target.platformProviders.length) ? [...DEFAULTA_FACTORYS, ...target.platformProviders] : DEFAULTA_FACTORYS;
             target.deps = [...this.getDeps(), ...target.deps || EMPTY];
             target.scope = 'root';
             this.root = this.createInjector(providers, target);
@@ -136,6 +136,7 @@ export class Application {
         if (option.baseURL) {
             container.setValue(PROCESS_ROOT, option.baseURL);
         }
+        option.platformDeps && container.use(...option.platformDeps);
         return container.resolve({ token: ModuleFactoryResolver, target: option.type }).resolve(option.type).create(container, option);
     }
 

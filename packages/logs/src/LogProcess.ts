@@ -1,4 +1,4 @@
-import { Abstract, Type, Injector, Inject } from '@tsdi/ioc';
+import { Abstract, Injector, Inject } from '@tsdi/ioc';
 import { Joinpoint } from '@tsdi/aop';
 import { Level } from './Level';
 import { LoggerMetadata } from './metadata/Logger';

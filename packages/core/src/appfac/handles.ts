@@ -75,9 +75,7 @@ export const ConfigureLoadHandle = async function (ctx: ApplicationContext, next
     injector.setValue(CONFIGURATION, config);
 
     if (config.logConfig) {
-        if (!injector.has(LogConfigureToken)) {
-            injector.setValue(LogConfigureToken, config.logConfig);
-        }
+        injector.parent?.setValue(LogConfigureToken, config.logConfig);
         injector.setValue(LogConfigureToken, config.logConfig);
     }
     if (config.debug) {

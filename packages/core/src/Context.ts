@@ -1,6 +1,6 @@
 import {
     ProviderType, LoadType, Injector, Abstract, Token, Type,
-    ModuleLoader, Destroyable, ModuleRef, ModuleOption, InvokeOption
+    ModuleLoader, Destroyable, ModuleRef, ModuleOption, InvokeOption, Modules
 } from '@tsdi/ioc';
 import { ILoggerManager } from '@tsdi/logs';
 import { Configuration, ConfigureManager } from './configure/config';
@@ -209,11 +209,19 @@ export interface ApplicationOption<T = any> extends ModuleOption {
      */
     configures?: (string | Configuration)[];
     /**
-     * boot dependencies.
+     * application dependencies.
      *
      * @type {LoadType[]}
      */
     loads?: LoadType[];
+    /**
+     * application deps.
+     */
+    platformDeps?: Modules[];
+    /**
+     * application providers.
+     */
+    platformProviders?: ProviderType[];
 }
 
 /**
