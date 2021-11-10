@@ -15,7 +15,7 @@ import { CoreModule, DEFAULTA_FACTORYS } from './core';
 export class Application {
 
     private _destroyed = false;
-    private _dsryCbs: (() => void)[] = [];
+    private _dsryCbs = new Set<() => void>();
     readonly root: ModuleRef;
 
     /**
@@ -155,7 +155,7 @@ export class Application {
         if (!this._destroyed) {
             this._destroyed = true;
             this._dsryCbs.forEach(cb => cb());
-            this._dsryCbs = null!;
+            this._dsryCbs.clear();
             this.destroying();
         }
     }
@@ -165,7 +165,7 @@ export class Application {
      * @param callback destory callback
      */
     onDestroy(callback: () => void): void {
-        this._dsryCbs?.unshift(callback);
+        this._dsryCbs.add(callback);
     }
 
     protected destroying() {

@@ -9,7 +9,7 @@ import { Response } from './response';
 export abstract class Context implements Destroyable {
     activeRouteMetadata?: DecorDefine;
     private _destroyed = false;
-    protected _dsryCbs: (() => void)[] = [];
+    protected _dsryCbs = new Set<() => void>();
     private _vaild!: RouteVaildator
     get vaild(): RouteVaildator {
         if (!this._vaild) {
@@ -206,7 +206,7 @@ export abstract class Context implements Destroyable {
         if (!this._destroyed) {
             this._destroyed = true;
             this._dsryCbs.forEach(cb => cb());
-            this._dsryCbs = null!;
+            this._dsryCbs.clear();
             this.destroying();
         }
     }
@@ -215,7 +215,7 @@ export abstract class Context implements Destroyable {
      * @param callback destory callback
      */
     onDestroy(callback: () => void): void {
-        this._dsryCbs?.unshift(callback);
+        this._dsryCbs.add(callback);
     }
 
     protected destroying(): void {

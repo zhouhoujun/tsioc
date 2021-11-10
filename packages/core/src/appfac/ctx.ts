@@ -19,7 +19,7 @@ import { Response, Request, Context, MessageQueue, RequestInit, RequestOption, R
 export class DefaultApplicationContext extends ApplicationContext {
 
     readonly destroyed = false;
-    private _dsryCbs: (() => void)[] = [];
+    private _dsryCbs = new Set<() => void>();
     readonly bootstraps: Runnable[] = [];
     readonly args: string[] = [];
     readonly startups: Token[] = [];
@@ -126,7 +126,7 @@ export class DefaultApplicationContext extends ApplicationContext {
         if (!this.destroyed) {
             (this as { destroyed: boolean }).destroyed = true;
             this._dsryCbs.forEach(cb => cb());
-            this._dsryCbs = null!;
+            this._dsryCbs.clear();
             this.destroying();
         }
     }
@@ -135,7 +135,7 @@ export class DefaultApplicationContext extends ApplicationContext {
      * @param callback destory callback
      */
     onDestroy(callback: () => void): void {
-        this._dsryCbs?.unshift(callback);
+        this._dsryCbs.add(callback);
     }
 
     protected destroying() {

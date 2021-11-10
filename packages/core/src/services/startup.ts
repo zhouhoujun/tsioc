@@ -15,7 +15,7 @@ import { Service } from './service';
 export abstract class StartupService implements Service {
 
     private _destroyed = false;
-    private _dsryCbs: (() => void)[] = [];
+    private _dsryCbs = new Set<() => void>();
 
     /**
      * config service of application.
@@ -38,7 +38,7 @@ export abstract class StartupService implements Service {
         if (!this._destroyed) {
             this._destroyed = true;
             this._dsryCbs.forEach(cb => cb());
-            this._dsryCbs = null!;
+            this._dsryCbs.clear();
             this.destroying();
         }
     }
@@ -48,7 +48,7 @@ export abstract class StartupService implements Service {
      * @param callback destory callback
      */
     onDestroy(callback: () => void): void {
-        this._dsryCbs?.unshift(callback);
+        this._dsryCbs.add(callback);
     }
     /**
      * default do nothing.
