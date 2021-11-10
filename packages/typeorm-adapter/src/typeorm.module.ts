@@ -1,10 +1,10 @@
-import { Module } from '@tsdi/core';
+import { Module } from '@tsdi/ioc';
 import { ParseObjectIdPipe } from './objectid.pipe';
 import { TypeOrmHelper } from './helper';
 import { TypeormServer } from './TypeormServer';
 
 @Module({
-    regIn: 'root',
+    providedIn: 'root',
     providers: [
         TypeormServer,
         TypeOrmHelper,

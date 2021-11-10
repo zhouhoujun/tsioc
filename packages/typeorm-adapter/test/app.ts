@@ -1,4 +1,5 @@
-import { DIModule, ConnectionOptions } from '@tsdi/core';
+import { Module } from '@tsdi/ioc';
+import { ConnectionOptions } from '@tsdi/core';
 import { ServerBootstrapModule } from '@tsdi/platform-server';
 import { TypeOrmModule } from '../src';
 import { Connection } from 'typeorm';
@@ -33,7 +34,7 @@ export const option = <ConnectionOptions>{
 
 
 
-@DIModule({
+@Module({
     baseURL: __dirname,
     imports: [
         ServerBootstrapModule,

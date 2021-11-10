@@ -114,7 +114,7 @@ export class TypeormServer implements Server {
 
         getMetadataArgsStorage().entityRepositories?.forEach(meta => {
             if (options.entities?.some(e => e === meta.entity)) {
-                injector.set(meta.target, () => getCustomRepository(meta.target, options.name));
+                injector.inject({ provide: meta.target, useFactory: () => getCustomRepository(meta.target, options.name) });
             }
         });
 
