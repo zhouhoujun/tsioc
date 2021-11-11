@@ -26,7 +26,7 @@ export class RootMessageQueue extends MessageQueue {
     setup() {
         this.use(
             initQueue,
-            RootRouter
+            this.toResolver(RootRouter)
         );
     }
 }

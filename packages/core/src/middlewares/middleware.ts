@@ -1,4 +1,4 @@
-import { Abstract, AsyncHandler, chain, isFunction, isObject, lang, Platform, Type, TypeReflect } from '@tsdi/ioc';
+import { Abstract, AsyncHandler, chain, isFunction, isObject, isResolver, lang, Resolver, Type, TypeReflect } from '@tsdi/ioc';
 import { Context } from './context';
 import { CanActive } from './guard';
 
@@ -27,18 +27,6 @@ export function isMiddlware(target: any): target is Middleware {
     return isObject(target) && isFunction((target as Middleware).execute) && isFunction((target as Middleware).toHandle);
 }
 
-/**
- * is target type of {@link Middleware}.
- * @param target 
- * @returns is {@link Middleware} type or not.
- */
-export function isMiddlwareType(target: any): target is Type<Middleware> {
-    return isFunction(target)
-        && (
-            (isFunction(Object.getOwnPropertyDescriptor(target, 'execute')?.value)
-                && isFunction(Object.getOwnPropertyDescriptor(target, 'toHandle')?.value))
-            || lang.isBaseOf(target, AbstractMiddleware));
-}
 
 /**
  * abstract middleware implements {@link Middleware}.
@@ -74,7 +62,7 @@ export abstract class AbstractMiddleware<T extends Context = Context> implements
 /**
  * message type for register in {@link Middlewares}.
  */
-export type MiddlewareType = AsyncHandler<Context> | Middleware | Type<Middleware>;
+export type MiddlewareType = AsyncHandler<Context> | Middleware | Resolver<Middleware>;
 
 /**
  * middlewares, compose of {@link Middleware}.
@@ -100,18 +88,20 @@ export abstract class Middlewares<T extends Context = Context> extends AbstractM
         return this;
     }
 
-    unuse(...handles: MiddlewareType[]) {
+    unuse(...handles: (MiddlewareType | Type)[]) {
         const len = this.handles.length;
         handles.forEach(handle => {
             lang.remove(this.handles, handle);
         });
+        this.handles = this.handles.filter(h => handles.some(uh => this.equals(h, uh)));
         if (this.handles.length !== len) this.resetHandler();
-
         return this;
     }
 
-    has(handle: MiddlewareType): boolean {
-        return this.handles.indexOf(handle) >= 0;
+
+
+    has(handle: MiddlewareType | Type): boolean {
+        return this.handles.some(h => this.equals(h, handle));
     }
 
     /**
@@ -121,12 +111,12 @@ export abstract class Middlewares<T extends Context = Context> extends AbstractM
      * @param {MiddlewareType} before
      * @returns {this}
      */
-    useBefore(handle: MiddlewareType, before: MiddlewareType): this {
+    useBefore(handle: MiddlewareType, before: MiddlewareType | Type): this {
         if (this.has(handle)) {
             return this;
         }
         if (before) {
-            this.handles.splice(this.handles.indexOf(before), 0, handle);
+            this.handles.splice(this.handles.findIndex(h => this.equals(h, before)), 0, handle);
         } else {
             this.handles.unshift(handle);
         }
@@ -140,12 +130,12 @@ export abstract class Middlewares<T extends Context = Context> extends AbstractM
      * @param {MiddlewareType} after
      * @returns {this}
      */
-    useAfter(handle: MiddlewareType, after?: MiddlewareType): this {
+    useAfter(handle: MiddlewareType, after?: MiddlewareType | Type): this {
         if (this.has(handle)) {
             return this;
         }
         if (after) {
-            this.handles.splice(this.handles.indexOf(after) + 1, 0, handle);
+            this.handles.splice(this.handles.findIndex(h => this.equals(h, after)) + 1, 0, handle);
         } else {
             this.handles.push(handle);
         }
@@ -155,8 +145,7 @@ export abstract class Middlewares<T extends Context = Context> extends AbstractM
 
     override async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
         if (!this.funcs) {
-            const platform = ctx.injector.platform();
-            this.funcs = this.handles.map(ac => this.parseHandle(platform, ac)).filter(f => f);
+            this.funcs = this.handles.map(ac => this.parseHandle(ac)!).filter(f => f);
         }
         await chain(this.funcs, ctx, next);
     }
@@ -170,7 +159,24 @@ export abstract class Middlewares<T extends Context = Context> extends AbstractM
      * @param platform global platform.
      * @param mdty mdiddleware type.
      */
-    protected abstract parseHandle(platform: Platform, mdty: MiddlewareType): AsyncHandler<T>;
+    protected parseHandle(mdty: MiddlewareType): AsyncHandler<T> | undefined {
+        if (isFunction(mdty)) {
+            return mdty;
+        } else if (isMiddlware(mdty)) {
+            return mdty.toHandle();
+        } else if (isResolver(mdty)) {
+            return mdty.resolve()?.toHandle();
+        }
+    }
+
+    protected equals(hd: MiddlewareType, hd2: MiddlewareType | Type) {
+        if (isFunction(hd2)) {
+            return isFunction(hd) ? hd === hd2 : (isResolver(hd) ? hd.type === hd2 : false);
+        } else if (isResolver(hd2)) {
+            return isResolver(hd) ? hd.type === hd2.type : false;
+        }
+        return hd === hd2;
+    }
 }
 
 

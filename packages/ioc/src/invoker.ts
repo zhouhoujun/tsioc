@@ -1,5 +1,5 @@
 import { ClassType, Type } from './types';
-import { EMPTY, isDefined, isFunction } from './utils/chk';
+import { EMPTY, isDefined, isFunction, isObject } from './utils/chk';
 import { cleanObj } from './utils/lang';
 import { Abstract } from './metadata/fac';
 import { ParameterMetadata } from './metadata/meta';
@@ -8,6 +8,7 @@ import { ProviderType } from './providers';
 import { Destroyable } from './destroy';
 import { Token } from './tokens';
 import { Injector } from './injector';
+
 
 
 /**
@@ -112,16 +113,28 @@ export class InvocationContext<T = any> implements Destroyable {
         return token === InvocationContext;
     }
 
+    /**
+     * has value to context
+     * @param token
+     */
     hasValue<T>(token: Token): boolean {
         if (this.isSelf(token)) return true;
         return this._values.has(token);
     }
 
+    /**
+     * get value to context
+     * @param token
+     */
     getValue<T>(token: Token): T {
         if (this.isSelf(token)) return this as any;
         return this._values.get(token);
     }
-
+    /**
+     * set value
+     * @param token
+     * @param value 
+     */
     setValue<T>(token: Token, value: T) {
         this._values.set(token, value);
         return this;
@@ -170,6 +183,19 @@ export class InvocationContext<T = any> implements Destroyable {
     onDestroy(callback: () => void): void {
         this.destroyCbs.add(callback);
     }
+}
+
+/**
+ * resolver of {@link Type}.
+ */
+export interface Resolver<T = any> {
+    get type(): Type<T>;
+    resolve(ctx?: InvocationContext): T;
+}
+
+export function isResolver(target: any): target is Resolver {
+    if(!isObject(target)) return false;
+    return  isFunction((target as Resolver).type) && isFunction((target as Resolver).resolve);
 }
 
 /**
@@ -248,7 +274,7 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
     }
 }
 
-export type TokenValue<T= any> = [Token<T>, T];
+export type TokenValue<T = any> = [Token<T>, T];
 
 
 /**
@@ -258,23 +284,23 @@ export interface InvokeOption {
     /**
      * parent InvocationContext,
      */
-     parent?: InvocationContext;
-     /**
-      * invocation arguments data.
-      */
-     arguments?: Record<string, any>;
-     /**
-      * token values.
-      */
-     values?: TokenValue[];
-     /**
-      * custom resolvers.
-      */
-     resolvers?: OperationArgumentResolver[];
-     /**
-      * custom providers.
-      */
-     providers?: ProviderType[];
+    parent?: InvocationContext;
+    /**
+     * invocation arguments data.
+     */
+    arguments?: Record<string, any>;
+    /**
+     * token values.
+     */
+    values?: TokenValue[];
+    /**
+     * custom resolvers.
+     */
+    resolvers?: OperationArgumentResolver[];
+    /**
+     * custom providers.
+     */
+    providers?: ProviderType[];
 }
 
 /**

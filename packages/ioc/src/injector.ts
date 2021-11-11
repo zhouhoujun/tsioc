@@ -6,11 +6,10 @@ import { TypeReflect } from './metadata/type';
 import { EMPTY, isArray } from './utils/chk';
 import { Handler } from './utils/hdl';
 import { Action } from './action';
-import { ClassProvider, ExistingProvider, FactoryProvider, ProviderType, StaticProvider, ValueProvider } from './providers';
+import { ClassProvider, ExistingProvider, FactoryProvider, ProviderType, ValueProvider } from './providers';
 import { InvocationContext, InvokeOption } from './invoker';
 import { ModuleLoader } from './module.loader';
 import { ProvidedInMetadata } from './metadata/meta';
-import { ModuleFactory } from './module.factory';
 
 
 /**
@@ -363,25 +362,6 @@ export abstract class Injector implements Destroyable {
 }
 
 
-/**
- * registered.
- */
-export interface Registered {
-    /**
-     * provides.
-     */
-    readonly provides: Token[];
-    /**
-     * injector.
-     */
-    injector: Injector;
-    /**
-     * type private providers.
-     */
-    providers?: Injector;
-}
-
-
 @Abstract()
 export abstract class Platform implements Destroyable {
     /**
@@ -405,14 +385,11 @@ export abstract class Platform implements Destroyable {
      */
     abstract hasSingleton(token: Token): boolean;
     /**
-     * register module.
+     * set injector scope.
+     * @param scope 
+     * @param injector 
      */
-    abstract registerModule(moduleType: Type, factory: ModuleFactory): void;
-    /**
-     * get type registered info.
-     * @param type
-     */
-    abstract getRegistered<T extends Registered>(type: ClassType): T;
+    abstract setInjector(scope: ClassType| string, injector: Injector): void;
     /**
      * get injector the type registered in.
      * @param scope
@@ -422,43 +399,18 @@ export abstract class Platform implements Destroyable {
      * get the type private providers.
      * @param type
      */
-    abstract getTypeProvider(type: ClassType): Injector;
+    abstract getTypeProvider(type: ClassType): ProviderType[];
     /**
      * set type providers.
      * @param type
      * @param providers
      */
-    abstract setTypeProvider(type: ClassType | TypeReflect, providers: StaticProvider[]): void;
+    abstract setTypeProvider(type: ClassType | TypeReflect, providers: ProviderType[]): void;
     /**
-     * get instance.
-     * @param type class type.
+     * clear type provider.
+     * @param type 
      */
-    abstract getInstance<T>(type: ClassType<T>): T;
-    /**
-     * get instance.
-     * @param type class type.
-     * @param providers
-     */
-    abstract resolve<T>(token: ClassType<T>, providers?: ProviderType[]): T
-    /**
-     * check the type registered or not.
-     * @param type
-     */
-    abstract isRegistered(type: ClassType): boolean;
-
-    /**
-     * register type.
-     * @param type class type
-     * @param data registered data.
-     */
-    abstract registerType<T extends Registered>(type: ClassType, data: T): void;
-
-    /**
-     * delete registered.
-     * @param type
-     */
-    abstract deleteType(type: ClassType): void;
-
+    abstract clearTypeProvider(type: ClassType): void;
     /**
     * register action, simple create instance via `new type(this)`.
     * @param types
@@ -491,7 +443,6 @@ export abstract class Platform implements Destroyable {
     abstract get destroyed(): boolean;
     abstract destroy(): void;
     abstract onDestroy(callback: () => void): void;
-
 }
 
 /**

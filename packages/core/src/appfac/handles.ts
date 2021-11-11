@@ -106,9 +106,8 @@ export const ConfigureServerHandle = async function (ctx: ApplicationContext, ne
     const injector = ctx.injector;
     const servers = injector.get(SERVERS);
     if (servers && servers.length) {
-        const platform = injector.platform();
         await Promise.all(servers.map(type => {
-            const svr = platform.getInstance(type);
+            const svr = injector.get(type);
             ctx.onDestroy(() => svr?.disconnect());
             return svr.connect(ctx);
         }));
@@ -134,11 +133,11 @@ export class StartupHandles extends BuildHandles<ApplicationContext> implements 
  * @param next next step.
  */
 export const ConfigureServiceHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
-    const platform = ctx.injector.platform();
+    const injector = ctx.injector;
     const boots = ctx.boots;
     if (boots?.length) {
         await lang.step(boots.map(tyser => () => {
-            const ser = platform.getInstance(tyser) as Service;
+            const ser = injector.get(tyser) as Service;
             ctx.onDestroy(() => ser.destroy());
             ctx.startups.push(tyser);
             return ser?.configureService(ctx);

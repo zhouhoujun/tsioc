@@ -1,15 +1,13 @@
-import { Action, IActionSetup } from '../action';
-import { Injector, Registered, Platform } from '../injector';
-import { get } from '../metadata/refl';
-import { TypeReflect } from '../metadata/type';
-import { ModuleFactory } from '../module.factory';
 import { Token } from '../tokens';
 import { ClassType, Type } from '../types';
 import { Handler } from '../utils/hdl';
-import { isFunction, isString } from '../utils/chk';
-import { cleanObj, getClassName } from '../utils/lang';
-import { ROOT_INJECTOR } from '../metadata/tk';
+import { EMPTY, isFunction } from '../utils/chk';
+import { getClassName } from '../utils/lang';
+import { Action, IActionSetup } from '../action';
+import { get } from '../metadata/refl';
+import { TypeReflect } from '../metadata/type';
 import { ProviderType, StaticProvider } from '../providers';
+import { Injector, Platform } from '../injector';
 
 
 /**
@@ -17,19 +15,20 @@ import { ProviderType, StaticProvider } from '../providers';
  */
 export class DefaultPlatform implements Platform {
 
-    private states: Map<ClassType, Registered>;
+    // private states: Map<ClassType, Registered>;
     private destroyCbs = new Set<() => void>();
     private _destroyed = false;
     private actions: Map<Token, any>;
     private singletons: Map<Token, any>;
-    private modules: Map<Type | string, ModuleFactory>;
+    private extendPds: Map<ClassType, ProviderType[]>;
 
+    private scopes: Map<string | ClassType, Injector>;
 
     constructor(readonly injector: Injector) {
-        this.states = new Map();
+        this.scopes = new Map();
+        this.extendPds = new Map();
         this.actions = new Map();
         this.singletons = new Map();
-        this.modules = new Map();
     }
 
     /**
@@ -59,13 +58,19 @@ export class DefaultPlatform implements Platform {
         return this.singletons.has(token);
     }
 
+    setInjector(scope: ClassType | string, injector: Injector) {
+        this.scopes.set(scope, injector);
+    }
+
     /**
-     * register module.
+     * get injector
+     * @param type
      */
-    registerModule(moduleType: Type, factory: ModuleFactory): void {
-        const exist = this.modules.get(moduleType);
-        this.assertSameOrNotExisting(exist?.moduleType, factory.moduleType);
-        this.modules.set(moduleType, factory);
+    getInjector<T extends Injector = Injector>(scope: ClassType | 'root' | 'platform'): T {
+        if (scope === 'platform') {
+            return this.injector as T;
+        }
+        return this.scopes.get(scope) as T;
     }
 
     assertSameOrNotExisting(type: Type<any> | undefined, incoming: Type<any>) {
@@ -125,80 +130,33 @@ export class DefaultPlatform implements Platform {
     }
 
     /**
-     * get injector
+     * get type provider.
      * @param type
      */
-    getInjector<T extends Injector = Injector>(scope: ClassType | 'root' | 'platform'): T {
-        if (isString(scope)) {
-            switch (scope) {
-                case 'platform':
-                    return this.injector as T;
-                case 'root':
-                    return this.injector.get(ROOT_INJECTOR) as T;
-            }
+    getTypeProvider(type: ClassType | TypeReflect) {
+        if (isFunction(type)) {
+            return this.extendPds.has(type) ? [...get(type)?.providers, ...this.extendPds.get(type) || EMPTY] : get(type)?.providers;
         }
-        return this.states.get(scope)?.injector as T;
+        return this.extendPds.has(type.type) ? [...type.providers, ...this.extendPds.get(type.type) || EMPTY] : type?.providers;
     }
 
     /**
-     * get injector
-     * @param type
+     * set type provider.
+     * @param type 
+     * @param providers 
      */
-    getTypeProvider(type: ClassType): Injector {
-        return this.states.get(type)?.providers!;
-    }
-
     setTypeProvider(type: ClassType | TypeReflect, providers: StaticProvider[]) {
-        const trefl = isFunction(type) ? get(type) : type;
-        trefl.providers.push(...providers);
-        const state = this.states.get(trefl.type);
-        if (state) {
-            if (!state.providers) {
-                state.providers = Injector.create(providers, state.injector as Injector, 'provider');
-            } else {
-                state.providers.inject(providers);
-            }
-        }
-    }
-
-    getInstance<T>(type: ClassType<T>): T {
-        const state = this.states.get(type)!;
-        return state.providers ? state.providers.get(type) : state.injector.get(type);
-    }
-
-    resolve<T>(token: ClassType<T>, providers?: ProviderType[]): T {
-        const state = this.states.get(token)!;
-        return state.providers ? state.providers.resolve(token, providers) : state.injector.resolve(token, providers);
-    }
-
-    getRegistered<T extends Registered>(type: ClassType): T {
-        return this.states.get(type) as T;
-    }
-
-    registerType<T extends Registered>(type: ClassType, data: T) {
-        const state = this.states.get(type);
-        if (state) {
-            Object.assign(state, data);
+        const ty = isFunction(type) ? type : type.type;
+        const prds = this.extendPds.get(ty);
+        if (prds) {
+            prds.push(...providers)
         } else {
-            this.states.set(type, data);
+            this.extendPds.set(ty, providers);
         }
     }
 
-    deleteType(type: ClassType) {
-        const state = this.states.get(type);
-        if (state) {
-            state.providers?.destroy();
-            const injector = state.injector;
-            if (state.provides?.length && injector) {
-                state.provides.forEach(p => state.injector.unregister(p));
-            }
-            cleanObj(state);
-        }
-        this.states.delete(type);
-    }
-
-    isRegistered(type: ClassType): boolean {
-        return this.states.has(type);
+    clearTypeProvider(type: ClassType) {
+        this.extendPds.delete(type);
     }
 
     /**
@@ -215,16 +173,10 @@ export class DefaultPlatform implements Platform {
         this._destroyed = true;
         this.destroyCbs.forEach(c => c && c());
         this.destroyCbs.clear();
-        this.states.forEach(v => {
-            if (!v) return;
-            v.providers?.destroy();
-            v.injector?.destroy();
-            cleanObj(v);
-        });
-        this.states.clear();
+        this.scopes.clear();
+        this.extendPds.clear();
         this.actions.clear();
         this.singletons.clear();
-        this.modules.clear();
     }
 
     onDestroy(callback: () => void): void {

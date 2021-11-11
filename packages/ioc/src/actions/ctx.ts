@@ -2,7 +2,7 @@ import { Token } from '../tokens';
 import { Type } from '../types';
 import { ParameterMetadata, ProvidedInMetadata } from '../metadata/meta';
 import { TypeReflect } from '../metadata/type';
-import { FactoryRecord, Injector, Platform, Registered } from '../injector';
+import { FactoryRecord, Injector, Platform } from '../injector';
 import { InvocationContext } from '../invoker';
 
 
@@ -60,10 +60,6 @@ export interface DesignContext extends RegContext, ProvidedInMetadata {
     injectorType?: (type: Type, typeReflect: TypeReflect)=> void;
     regProvides?: boolean;
     getRecords: () => Map<Token, FactoryRecord>;
-    /**
-     * registered state.
-     */
-    state: Registered;
 }
 
 /**

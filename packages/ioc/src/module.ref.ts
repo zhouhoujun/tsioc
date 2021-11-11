@@ -5,7 +5,7 @@ import { isFunction, isPlainObject } from './utils/chk';
 import { InjectorTypeWithProviders } from './providers';
 import { Abstract } from './metadata/fac';
 import { ModuleReflect } from './metadata/type';
-import { Injector, Registered } from './injector';
+import { Injector } from './injector';
 
 /**
  * Represents an instance of an `Module` created by an `ModuleFactory`.
@@ -40,13 +40,6 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
      * @param callback destory callback
      */
     abstract onDestroy(callback: () => void): void
-}
-
-/**
- * module registered state.
- */
-export interface ModuleRegistered extends Registered {
-    moduleRef?: ModuleRef;
 }
 
 

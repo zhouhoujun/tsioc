@@ -1,8 +1,7 @@
 import { ClassType, LoadType, Modules, Type } from '../types';
 import {
-    ResolveOption, MethodType, FnType, InjectorScope, ResolverOption,
-    RegisterOption, TypeOption, FactoryRecord, Platform, Container,
-    Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption
+    ResolveOption, MethodType, FnType, InjectorScope, ResolverOption,  RegisterOption, TypeOption, FactoryRecord,
+    Platform, Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption
 } from '../injector';
 import { InjectFlags, Token } from '../tokens';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR, TARGET } from '../metadata/tk';
@@ -196,7 +195,7 @@ export class DefaultInjector extends Injector {
 
     protected processRegister(platform: Platform, type: Type, reflect: TypeReflect, option?: RegOption) {
         // make sure class register once.
-        if (platform.isRegistered(type) || this.has(type)) {
+        if (this.has(type, InjectFlags.Default)) {
             return false;
         }
 
@@ -393,11 +392,25 @@ export class DefaultInjector extends Injector {
         let inst: T;
         if (option) {
             let context = option.context;
+            const platform = this.platform();
             if ((option.target || option.providers || option.resolvers || option.arguments || option.values)) {
+                let targetProviders: ProviderType[] | undefined;
+                if (option.target) {
+                    if (isFunction(option.target)) {
+                        targetProviders = platform.getTypeProvider(option.target);
+                    } else if (isTypeReflect(option.target)) {
+                        targetProviders = option.target.providers;
+                    } else if (isTypeObject(option.target)) {
+                        targetProviders = platform.getTypeProvider(getClass(option.target));
+                    }
+                    option.values = [...option.values || EMPTY, [TARGET, option.target]];
+                }
+                if (targetProviders) {
+                    option.providers = [...option.providers || EMPTY, ...targetProviders]
+                }
                 context = context ?? createInvocationContext(this, option);
-                option.target && context.setValue(TARGET, option.target);
             }
-            inst = this.resolveStrategy(option, context);
+            inst = this.resolveStrategy(platform, option, context);
             if (!option.context && context) {
                 context.destroy();
             }
@@ -419,7 +432,7 @@ export class DefaultInjector extends Injector {
         return;
     }
 
-    protected resolveStrategy<T>(option: ResolveOption, context?: InvocationContext): T {
+    protected resolveStrategy<T>(platform: Platform, option: ResolveOption, context?: InvocationContext): T {
         let targetToken: ClassType = null!;
         if (option.target) {
             if (isFunction(option.target)) {
@@ -430,14 +443,13 @@ export class DefaultInjector extends Injector {
                 targetToken = isTypeObject(option.target) ? getClass(option.target) : null!;
             }
         }
-        const platform = this.platform();
-        return (targetToken ? platform.getTypeProvider(targetToken)?.get(option.token!, context) : null)
-            ?? this.get(option.token!, context)
+
+        return this.get(option.token!, context)
             ?? this.resolveFailed(platform, option.token!, context, option.regify, option.defaultToken);
     }
 
     protected resolveFailed<T>(platform: Platform, token: Token<T>, context?: InvocationContext, regify?: boolean, defaultToken?: Token): T {
-        if (regify && isFunction(token) && !platform.isRegistered(token)) {
+        if (regify && isFunction(token)) {
             this.registerType(platform, token as Type);
             return this.get(token, context);
         }
@@ -801,25 +813,14 @@ export function generateRecord<T>(platfrom: Platform, injector: Injector, provid
     } else if (provider.useExisting) {
 
     } else if (provider.useClass) {
-        if(deps) {
+        if (deps) {
             deps.unshift({ token: provider.useClass, options: OptionFlags.Default });
         } else {
             deps = [{ token: provider.useClass, options: OptionFlags.Default }];
         }
-        if (!platfrom.isRegistered(type) && !injector.has(type, InjectFlags.Default)) {
+        if (!injector.has(type, InjectFlags.Default)) {
             injector.register({ type, deps, regProvides: false });
         }
-        // if (deps.length) {
-        //     fnType = FnType.Cotr;
-        //     fn = option.useClass;
-        // } else {
-        // fn = (...args: any[]) => {
-        //     if (!platfrom.isRegistered(type) && !injector.has(type, InjectFlags.Default)) {
-        //         injector.register({ type, deps, regProvides: false });
-        //     }
-        //     return injector.resolve(type, { args });
-        // };
-        // }
     } else if (isFunction(provider.provide)) {
         fnType = FnType.Cotr;
         fn = provider.provide;
@@ -985,7 +986,7 @@ export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
         resolve(parameter, ctx) {
             const pdr = parameter.provider!;
             const injector = ctx.injector;
-            if (isFunction(pdr) && !get(pdr)?.abstract && !injector.platform().isRegistered(pdr) && !injector.has(pdr, InjectFlags.Default)) {
+            if (isFunction(pdr) && !get(pdr)?.abstract && !injector.has(pdr, InjectFlags.Default)) {
                 injector.register(pdr as Type);
             }
             return injector.get(pdr, ctx, parameter.flags);
@@ -1030,7 +1031,7 @@ export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
         resolve(parameter, ctx) {
             const ty = parameter.type!;
             const injector = ctx.injector;
-            if (isFunction(ty) && !get(ty)?.abstract && !injector.platform().isRegistered(ty) && !injector.has(ty, InjectFlags.Default)) {
+            if (isFunction(ty) && !get(ty)?.abstract && !injector.has(ty, InjectFlags.Default)) {
                 injector.register(ty as Type);
             }
             return injector.get(ty, ctx, parameter.flags);
@@ -1054,7 +1055,7 @@ export function createInvocationContext(injector: Injector, option?: InvocationO
     const typeRef = invokerTargetReflect ?? (invokerTarget ? get(invokerTarget) : undefined);
     if (typeRef) {
         const platform = injector.platform();
-        providers = [...providers, platform.getTypeProvider(typeRef.type), ...(invokerMethod ? typeRef.methodProviders.get(invokerMethod) ?? EMPTY : EMPTY)]
+        providers = [...providers, ...platform.getTypeProvider(typeRef.type), ...(invokerMethod ? typeRef.methodProviders.get(invokerMethod) ?? EMPTY : EMPTY)]
     }
     if (providers.length) {
         const proxy = typeRef && invokerMethod ? typeRef.type.prototype[invokerMethod]['_proxy'] : false;

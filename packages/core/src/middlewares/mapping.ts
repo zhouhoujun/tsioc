@@ -1,13 +1,13 @@
 import {
     AsyncHandler, DecorDefine, Type, TypeReflect, Injector,
     isPrimitiveType, isPromise, isString, isArray, isFunction, isDefined, lang,
-    chain, isObservable, composeResolver, Parameter, EMPTY, ClassType, Platform
+    chain, isObservable, composeResolver, Parameter, EMPTY, ClassType, Platform, isResolver
 } from '@tsdi/ioc';
 import { MODEL_RESOLVERS } from '../model/resolver';
 import { ArgumentError, PipeTransform } from '../pipes/pipe';
 import { Context } from './context';
 import { CanActive } from './guard';
-import { AbstractRouter, isMiddlwareType, isMiddlware, MiddlewareType, RouteInfo } from './middleware';
+import { AbstractRouter, isMiddlware, MiddlewareType, RouteInfo } from './middleware';
 import { TrasportArgumentResolver, TrasportParameter } from './resolver';
 import { ResultValue } from './result';
 import { Route } from './route';
@@ -91,8 +91,7 @@ export class MappingRoute extends Route {
         const meta = ctx.activeRouteMetadata || this.getRouteMetaData(ctx)!;
         let middlewares = this.getRouteMiddleware(ctx, meta);
         if (middlewares.length) {
-            const platform = this.injector.platform();
-            await chain(middlewares.map(m => this.parseHandle(platform, m)).filter(f => !!f), ctx)
+            await chain(middlewares.map(m => this.parseHandle(m)!).filter(f => !!f), ctx)
         }
         await this.invoke(ctx, meta);
         return await next();
@@ -203,19 +202,14 @@ export class MappingRoute extends Route {
         return meta;
     }
 
-    protected parseHandle(platform: Platform, mdty: MiddlewareType): AsyncHandler<Context> {
-        if (isMiddlware(mdty)) {
-            return mdty.toHandle();
-        } else if (isMiddlwareType(mdty)) {
-            if (!platform.isRegistered(mdty)) {
-                this.injector.register(mdty);
-            }
-            const handle = this.injector.get(mdty) ?? platform.getInstance(mdty);
-            return handle?.toHandle?.();
-        } else if (isFunction(mdty)) {
+    protected parseHandle(mdty: MiddlewareType): AsyncHandler<Context> | undefined {
+        if (isFunction(mdty)) {
             return mdty;
+        } else if (isMiddlware(mdty)) {
+            return mdty.toHandle();
+        } else if (isResolver(mdty)) {
+            return mdty.resolve()?.toHandle();
         }
-        return null!;
     }
 
 }

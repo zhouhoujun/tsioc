@@ -25,7 +25,7 @@ export class DesignClassScope extends IocRegScope<DesignContext> implements IAct
 
     setup() {
         this.use(
-            AnnoRegInAction,
+            // AnnoRegInAction,
             BeforeAnnoDecorHandle,
             TypeProviderAction,
             RegClassAction,
@@ -34,18 +34,18 @@ export class DesignClassScope extends IocRegScope<DesignContext> implements IAct
     }
 }
 
-export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): void {
-    const state = ctx.state = genState(ctx.injector, ctx.provide);
-    ctx.platform.registerType(ctx.type, state);
-    next();
-};
+// export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): void {
+//     const state = ctx.state = genState(ctx.injector, ctx.provide);
+//     ctx.platform.registerType(ctx.type, state);
+//     next();
+// };
 
-function genState(injector: Injector, provide?: Token) {
-    return {
-        provides: provide ? [provide] : [],
-        injector
-    }
-}
+// function genState(injector: Injector, provide?: Token) {
+//     return {
+//         provides: provide ? [provide] : [],
+//         injector
+//     }
+// }
 
 export const RegClassAction = function (ctx: DesignContext, next: () => void): void {
     regProvider(ctx.getRecords(), ctx.platform, ctx.injector, ctx.type, ctx.provide || ctx.type, ctx.singleton || ctx.reflect.singleton === true);
@@ -93,7 +93,7 @@ function regProvider(records: Map<Token, FactoryRecord>, platform: Platform, inj
             return instance;
         },
         fnType: FnType.Inj,
-        unreg: () => platform.deleteType(type)
+        unreg: () => platform.clearTypeProvider(type)
     } as FactoryRecord;
     records.set(provide, recd);
 }
@@ -144,28 +144,17 @@ export const DesignPropDecorScope = function (ctx: DesignContext, next: () => vo
  * @extends {ActionComposite}
  */
 export const TypeProviderAction = function (ctx: DesignContext, next: () => void) {
-    const { injector: injector, type, provide: regpdr, state, regProvides } = ctx;
+    const { injector: injector, type, provide: regpdr, regProvides } = ctx;
     if (regpdr && regpdr !== type) {
         ctx.reflect.provides.forEach(provide => {
             if (provide != regpdr && regProvides !== false) {
                 injector.inject({ provide, useExisting: regpdr });
             }
-            state.provides.push(provide);
         });
     } else {
         ctx.reflect.provides.forEach(provide => {
             regProvides !== false && injector.inject({ provide, useClass: type });
-            state.provides.push(provide);
         });
-    }
-
-    // class private provider.
-    if (ctx.reflect.providers && ctx.reflect.providers.length) {
-        if (state.providers) {
-            state.providers.inject(ctx.reflect.providers);
-        } else {
-            state.providers = Injector.create(ctx.reflect.providers, injector, 'provider');
-        }
     }
 
     next();

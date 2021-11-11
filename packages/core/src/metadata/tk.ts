@@ -1,4 +1,4 @@
-import { tokenId, Token, Type } from '@tsdi/ioc';
+import { tokenId, Token, Type, Resolver } from '@tsdi/ioc';
 import { Configuration } from '../configure/config';
 import { Context } from '../middlewares/context';
 import { Service } from '../services/service';
@@ -8,12 +8,12 @@ import { Server } from '../server/server';
 /**
  * config servers.
  */
- export const SERVERS = tokenId<Type<Server>[]>('SERVERS');
+ export const SERVERS = tokenId<Resolver<Server>[]>('SERVERS');
 
 /**
  * boot services.
  */
-export const SERVICES = tokenId<Type<Service>[]>('SERVICES');
+export const SERVICES = tokenId<Resolver<Service>[]>('SERVICES');
 
 /**
 * context options.

@@ -1,6 +1,6 @@
 import {
     isUndefined, ROOT_INJECTOR, EMPTY_OBJ, isArray, isString, lang, Type, isRegExp, Injector,
-    createDecorator, ClassMethodDecorator, ClassMetadata, createParamDecorator, ParameterMetadata,
+    createDecorator, ClassMethodDecorator, ClassMetadata, createParamDecorator, ParameterMetadata, Resolver, isFunction,
 } from '@tsdi/ioc';
 import { Service } from '../services/service';
 import { Middleware, Middlewares, MiddlewareType, RouteInfo, RouteReflect } from '../middlewares/middleware';
@@ -59,7 +59,8 @@ export const Boot: Boot = createDecorator<BootMetadata>('Boot', {
     },
     design: {
         afterAnnoation: (ctx, next) => {
-            const root = ctx.injector.get(ROOT_INJECTOR);
+            const { type, injector } = ctx;
+            const root = injector.get(ROOT_INJECTOR);
             if (!root) return next();
             let boots = root.get(SERVICES);
             if (!boots) {
@@ -68,39 +69,79 @@ export const Boot: Boot = createDecorator<BootMetadata>('Boot', {
             }
             const meta = ctx.reflect.class.getMetadata<BootMetadata>(ctx.currDecor) || EMPTY_OBJ as BootMetadata;
 
-            let idx = -1;
-            if (meta.before) {
-                idx = isString(meta.before) ? 0 : boots.indexOf(meta.before);
-            } else if (meta.after) {
-                idx = isString(meta.after) ? -1 : boots.indexOf(meta.after) + 1;
-            }
-            if (idx >= 0) {
-                if (meta.deps) {
-                    const news: Type<Service>[] = [];
-                    const moved: Type<Service>[] = [];
-                    meta.deps.forEach(d => {
-                        const depidx = boots.indexOf(d);
-                        if (depidx < 0) {
-                            news.push(d);
-                        } else if (depidx >= idx) {
-                            moved.push(d);
-                            boots.splice(depidx, 1);
-                        }
-                    });
-                    boots.splice(idx, 0, ...news, ...moved, ctx.type);
-                } else {
-                    boots.splice(idx, 0, ctx.type);
-                }
+
+            let resolverIdx = boots.findIndex(b => b.type === type);
+            let resolver = resolverIdx >= 0 ? boots[resolverIdx] : undefined;
+            if (resolver) {
+                resolver.resolve = (ctx: any) => injector.get(type, ctx);
             } else {
-                if (meta.deps) {
-                    meta.deps.forEach(d => {
-                        if (boots.indexOf(d) < 0) {
-                            boots.push(d);
-                        }
-                    });
-                }
-                boots.push(ctx.type);
+                resolver = { type, resolve: (ctx) => injector.get(type, ctx) } as Resolver;
             }
+
+            let befIdx = -1;
+            let aftIdx = -1;
+            const { before, after } = meta;
+            if (before) {
+                befIdx = isString(meta.before) ? 0 : boots.findIndex(b => b.type === before);
+                if (befIdx < resolverIdx) {
+                    boots.splice(resolverIdx, 1);
+                    boots.splice(befIdx, 0, resolver);
+                    resolverIdx = befIdx - 1;
+                }
+            } else if (after) {
+                aftIdx = isString(meta.after) ? -1 : boots.findIndex(b => b.type === after) + 1;
+                if (aftIdx > resolverIdx) {
+                    boots.splice(aftIdx + 1, 0, resolver);
+                    boots.splice(resolverIdx, 1);
+                    resolverIdx = aftIdx;
+                }
+            }
+
+
+
+            // if (befIdx >= 0 && befIdx < resolverIdx) {
+            //     if (meta.deps) {
+            //         const news: Resolver<Service>[] = [];
+            //         const moved: Resolver<Service>[] = [];
+            //         meta.deps.forEach(d => {
+            //             let reged = boots.find(b => b.type === d);
+            //             if (!reged) {
+            //                 news.push({ type: d, resolve: (context) => injector.resolve({ token: d, regify: true, context }) });
+            //             } else {
+            //                 const depidx = boots.indexOf(reged);
+            //                 if (depidx >= befIdx) {
+            //                     moved.push(reged);
+            //                     boots.splice(depidx, 1);
+            //                 }
+            //             }
+            //         });
+            //         boots.splice(idx, 0, ...news, ...moved, resolver);
+            //     } else {
+            //         boots.splice(idx, 0, resolver);
+            //     }
+            // } else {
+            if (meta.deps) {
+                meta.deps.forEach(d => {
+                    let reged = boots.findIndex(b => b.type === d);
+                    if (reged < 0) {
+                        const depResr = { type: d, resolve: (context) => injector.resolve({ token: d, regify: true, context }) } as Resolver;
+                        if (resolverIdx < 0) {
+                            boots.push(depResr);
+                        }
+                        boots.splice(resolverIdx - 1, 0, depResr);
+                    }
+                });
+            }
+            if (isFunction(before) && befIdx < 0) {
+                boots.push({ type: before, resolve: (context) => injector.resolve({ token: before, regify: true, context }) });
+            }
+            if (resolverIdx < 0) {
+                boots.push(resolver);
+            }
+            if (isFunction(after) && befIdx <= 0) {
+                boots.push({ type: after, resolve: (context) => injector.resolve({ token: after, regify: true, context }) });
+            }
+            // }
             return next();
         }
     },
@@ -147,11 +188,12 @@ export const Configure: Configure = createDecorator<ClassMetadata>('Configure', 
             const root = injector.get(ROOT_INJECTOR);
             if (!root) return next();
             let servs = root.get(SERVERS);
+            const resolver = { type, resolve: (ctx) => injector.get(type, ctx) } as Resolver;
             if (!servs) {
-                servs = [type];
+                servs = [resolver];
                 root.setValue(SERVERS, servs);
             } else {
-                servs.push(type);
+                servs.push(resolver);
             }
             return next();
         }
@@ -230,7 +272,7 @@ export interface Handle {
  */
 export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePattern>('Handle', {
     actionType: ['annoation', 'autorun'],
-    props: (parent?: Type<Middlewares> | string, options?: { guards?: Type<CanActive>[], parent?: Type<Middlewares> | string,  before?: Type<Middleware> }) =>
+    props: (parent?: Type<Middlewares> | string, options?: { guards?: Type<CanActive>[], parent?: Type<Middlewares> | string, before?: Type<Middleware> }) =>
         (isString(parent) || isRegExp(parent) ? ({ pattern: parent, ...options }) : ({ parent, ...options })) as HandleMetadata & HandleMessagePattern,
     design: {
         afterAnnoation: (ctx, next) => {
@@ -251,7 +293,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
             const platform = injector.platform();
             let queue: Middlewares = null!;
             if (parent) {
-                queue = platform.getInstance(parent);
+                queue = injector.get(parent);
                 if (!queue) {
                     throw new Error(lang.getClassName(parent) + 'has not registered!')
                 }
@@ -261,7 +303,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
             if (isString(route) || reflect.class.isExtends(Route) || reflect.class.isExtends(Router)) {
                 if (!queue) {
                     let root = injector.get(RootRouter);
-                    if(!root) console.log(type);
+                    if (!root) console.log(type);
                     queue = reflect.class.isExtends(Router) ? root : root.getRoot(protocol);
                 } else if (!(queue instanceof Router)) {
                     throw new Error(lang.getClassName(queue) + 'is not message router!');
@@ -271,8 +313,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
                 reflect.route = info;
                 let middl: MiddlewareType;
                 if (reflect.class.isExtends(Route) || reflect.class.isExtends(Router)) {
-                    platform.setTypeProvider(reflect, [{ provide: RouteInfo, useValue: info }]);
-                    middl = type;
+                    middl = { type, resolve: () => injector.resolve(type, { values: [[RouteInfo, info]] }) };
                 } else {
                     middl = new RouteResolver(route || '', prefix, (inj: Injector) => injector.get(type, inj), guards);
                 }
@@ -282,12 +323,13 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
                 if (!queue) {
                     queue = injector.get(ROOT_QUEUE);
                 }
+                let resolver: Resolver = { type, resolve: () => injector.get(type) };
                 if (before) {
-                    queue.useBefore(type, before);
+                    queue.useBefore(resolver, before);
                 } else if (after) {
-                    queue.useAfter(type, after);
+                    queue.useAfter(resolver, after);
                 } else {
-                    queue.use(type);
+                    queue.use(resolver);
                 }
                 injector.onDestroy(() => queue.unuse(type));
             }
@@ -298,7 +340,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
         }
     },
     appendProps: (meta) => {
-        if(meta.cmd || meta.pattern) return;
+        if (meta.cmd || meta.pattern) return;
         meta.singleton = true;
     }
 });
@@ -487,7 +529,7 @@ export const RouteMapping: RouteMapping = createDecorator<ProtocolRouteMappingMe
             const injector = ctx.injector;
             let queue: Middlewares;
             if (parent) {
-                queue = injector.platform().getInstance(parent);
+                queue = injector.get(parent);
             } else {
                 queue = injector.get(RootRouter).getRoot(protocol);
             }

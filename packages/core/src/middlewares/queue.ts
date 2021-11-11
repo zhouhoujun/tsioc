@@ -1,8 +1,8 @@
-import { Injectable, Type, isString, ProviderType, AsyncHandler, isFunction, Inject, Injector, Platform } from '@tsdi/ioc';
+import { Injectable, isString, ProviderType, Inject, Injector, Resolver, Type } from '@tsdi/ioc';
 import { Context, ContextFactory } from './context';
 import { Request, RequestInit, RequestOption } from './request';
 import { Response } from './response';
-import { isMiddlware, isMiddlwareType, Middleware, Middlewares, MiddlewareType } from './middleware';
+import { Middleware, Middlewares, MiddlewareType } from './middleware';
 
 
 /**
@@ -131,9 +131,9 @@ export class MessageQueue<T extends Context = Context> extends Middlewares<T> {
     /**
      * subscribe message by handle type or token.
      *
-     * @param {Type<Middleware>} handle
+     * @param {Resolver<Middleware>} handle
      */
-    subscribe(handle: Type<Middleware>): Subscripted;
+    subscribe(handle: Resolver<Middleware>): Subscripted;
     subscribe(haddle: MiddlewareType) {
         this.use(haddle);
         return {
@@ -157,26 +157,16 @@ export class MessageQueue<T extends Context = Context> extends Middlewares<T> {
     /**
      * subscribe message by handle type or token.
      *
-     * @param {Type<Middleware>} handle
+     * @param {Resolver<Middleware>} handle
      */
-    unsubscribe(handle: Type<Middleware>): void;
+    unsubscribe(handle: Resolver<Middleware>): void;
     unsubscribe(haddle: MiddlewareType): void {
         this.unuse(haddle);
     }
 
-    protected override parseHandle(platform: Platform, mdty: MiddlewareType): AsyncHandler<T> {
-        if (isMiddlware(mdty)) {
-            return mdty.toHandle();
-        } else if (isMiddlwareType(mdty)) {
-            if (!platform.isRegistered(mdty)) {
-                this.injector.register(mdty);
-            }
-            const handle = this.injector.get(mdty) ?? platform.getInstance(mdty);
-            return handle?.toHandle?.();
-        } else if (isFunction(mdty)) {
-            return mdty;
-        }
-        return null!;
+    protected toResolver(type: Type<Middleware>): Resolver<Middleware> {
+        return { type, resolve: () => this.injector.resolve({ token: type, regify: true }) };
     }
+
 
 }
