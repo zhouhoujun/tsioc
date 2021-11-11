@@ -3,7 +3,7 @@ import { ApplicationContext } from '../Context';
 /**
  * server.
  */
- export interface Server {
+export interface Server {
     /**
      * connect server
      */
@@ -12,5 +12,5 @@ import { ApplicationContext } from '../Context';
     /**
      * disconnect server.
      */
-    disconnect(): void| Promise<void>;
+    disconnect(): void | Promise<void>;
 }

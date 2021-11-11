@@ -22,7 +22,7 @@ export class SortPipe implements PipeTransform {
         if (!value || value.length < 1) return [];
         const { sort, order } = (isString(option)? { order: option, sort: orderby } : option) as { sort: string, order: 'asc' | 'desc' };
         let type = sort ? typeof value[0]?.[sort] : typeof value[0];
-        if (sort && type === 'undefined') {
+        if (type === 'undefined') {
             value.some(i => {
                 if (i[sort] == null) return false;
                 type = typeof i[sort];

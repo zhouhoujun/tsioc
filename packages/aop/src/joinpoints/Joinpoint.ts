@@ -1,6 +1,6 @@
 import {
-    Type, MethodMetadata, ClassMetadata, ParameterMetadata, tokenId, Injector, EMPTY, Token,
-    lang, IocContext, InvocationContext, ClassType, OperationArgumentResolver, DEFAULT_RESOLVERS, InvokeOption, TokenValue
+    Type, MethodMetadata, ClassMetadata, ParameterMetadata, tokenId, Injector, EMPTY, Token, InvocationContext,
+    lang, IocContext, ClassType, OperationArgumentResolver, DEFAULT_RESOLVERS, InvokeOption, TokenValue
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advices } from '../advices/Advices';
@@ -11,6 +11,7 @@ import { Advicer } from '../advices/Advicer';
  */
 export interface JoinpointOption extends InvokeOption {
     name: string;
+    fullName?: string;
     provJoinpoint?: Joinpoint;
     params?: ParameterMetadata[];
     originMethod?: Function;
@@ -40,6 +41,7 @@ export class Joinpoint<T = any> extends InvocationContext<T> implements IocConte
         readonly target: any,
         readonly targetType: ClassType,
         readonly method: string,
+        private _fullName: string | undefined,
         public state: JoinpointState,
         readonly advices: Advices,
         readonly originMethod?: Function,
@@ -51,7 +53,6 @@ export class Joinpoint<T = any> extends InvocationContext<T> implements IocConte
         super(injector, parent, target, method, data, values, ...argumentResolvers, ...DEFAULT_RESOLVERS);
     }
 
-    private _fullName!: string
     get fullName(): string {
         if (!this._fullName) {
             this._fullName = lang.getClassName(this.targetType) + '.' + this.method;
@@ -68,6 +69,7 @@ export class Joinpoint<T = any> extends InvocationContext<T> implements IocConte
             options.target,
             options.targetType,
             options.name,
+            options.fullName,
             options.state ?? JoinpointState.Before,
             options.advices,
             options.originMethod,

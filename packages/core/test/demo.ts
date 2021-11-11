@@ -76,6 +76,11 @@ export class Logger {
     logTest() {
         console.log('test........');
     }
+
+    @Around('execution(*.destoryed)')
+    destoryedlog(jp: Joinpoint) {
+        console.log(jp.fullName, jp.state, 'destoryed........');
+    }
 }
 
 @Message()
@@ -87,10 +92,10 @@ export class SubMessageQueue extends MessageQueue {
     imports: [
         AopModule,
         LogModule,
-        Logger,
         ModuleA
     ],
     providers: [
+        Logger,
         ClassSevice,
         SubMessageQueue
     ],
@@ -135,13 +140,13 @@ export class StatupModule { }
     imports: [
         AopModule,
         LogModule,
-        Logger,
+        StatupModule,
         ServerBootstrapModule,
         ServerLogsModule
     ],
     providers: [
+        Logger,
         ClassSevice,
-        StatupModule,
         SubMessageQueue
     ],
     bootstrap: ClassSevice

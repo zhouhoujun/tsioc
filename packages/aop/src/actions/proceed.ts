@@ -39,7 +39,6 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
             return;
         }
 
-        // const fullName = lang.getClassName(targetType) + '.' + ctor;
         const joinPoint = Joinpoint.parse(this.platform.getInjector(targetType), {
             name: ctor,
             state: JoinpointState.Before,
@@ -58,7 +57,6 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
             return;
         }
 
-        // const fullName = lang.getClassName(targetType) + '.' + ctor;
         const joinPoint = Joinpoint.parse(this.platform.getInjector(targetType), {
             name: ctor,
             state: JoinpointState.After,
@@ -84,25 +82,27 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
         if (advices && pointcut) {
             const methodName = pointcut.name;
             if (pointcut.descriptor && (pointcut.descriptor.get || pointcut.descriptor.set)) {
+                const getProxy = pointcut.descriptor.get ? this.proxy(pointcut.descriptor.get.bind(target) as Function, advices, target, targetType, pointcut, provJoinpoint) : emptyFunc;
+                const setProxy = pointcut.descriptor.set ? this.proxy(pointcut.descriptor.set.bind(target) as Function, advices, target, targetType, pointcut, provJoinpoint) : emptyFunc;
                 if (pointcut.descriptor.get && pointcut.descriptor.set) {
                     Object.defineProperty(target, methodName, {
                         get: () => {
-                            return this.proxy(pointcut.descriptor?.get?.bind(target) as Function, advices, target, targetType, pointcut, provJoinpoint)();
+                            return getProxy();
                         },
                         set: () => {
-                            this.proxy(pointcut.descriptor?.set?.bind(target) as Function, advices, target, targetType, pointcut, provJoinpoint)();
+                            setProxy();
                         }
                     });
                 } else if (pointcut.descriptor.get) {
                     Object.defineProperty(target, methodName, {
                         get: () => {
-                            return this.proxy(pointcut.descriptor?.get?.bind(target) as Function, advices, target, targetType, pointcut, provJoinpoint)();
+                            return getProxy();
                         }
                     });
                 } else if (pointcut.descriptor.set) {
                     Object.defineProperty(target, methodName, {
                         set: () => {
-                            this.proxy(pointcut.descriptor?.set?.bind(target) as Function, advices, target, targetType, pointcut, provJoinpoint)();
+                            setProxy();
                         }
                     });
                 }
@@ -115,7 +115,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
     }
 
     proxy(propertyMethod: Function, advices: Advices, target: any, targetType: Type, pointcut: IPointcut, provJoinpoint?: Joinpoint) {
-        // const fullName = pointcut.fullName;
+        const fullName = pointcut.fullName;
         const name = pointcut.name;
         const self = this;
         const platform = this.platform;
@@ -131,7 +131,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
             }
             const joinPoint = Joinpoint.parse(platform.getInjector(targetType), {
                 name,
-                // fullName,
+                fullName,
                 params: refl.getParameters(targetType, name),
                 args,
                 target,
@@ -155,7 +155,6 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
 
     protected invokeAdvice(joinPoint: Joinpoint, advicer: Advicer) {
         let metadata: any = advicer.advice;
-        // let providers: ProviderType[] = [];
         if (!isNil(joinPoint.args) && metadata.args) {
             joinPoint.setArgument(metadata.args, joinPoint.args);
         }
@@ -214,6 +213,7 @@ export const CtorBeforeAdviceAction = function (ctx: Joinpoint, next: () => void
 
 }
 
+const emptyFunc = function() {};
 
 export const CtorAfterAdviceAction = function (ctx: Joinpoint, next: () => void): void {
     if (ctx.state === JoinpointState.After) {
