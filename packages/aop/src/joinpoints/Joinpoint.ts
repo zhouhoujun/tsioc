@@ -26,7 +26,9 @@ export interface JoinpointOption extends InvokeOption {
 
 export const AOP_METHOD_ANNOTATIONS = tokenId<any[]>('AOP_METHOD_ANNOTATIONS');
 
-
+/**
+ * Joinpoint of aop.
+ */
 export class Joinpoint<T = any> extends InvocationContext<T> implements IocContext {
     invokeHandle!: (joinPoint: Joinpoint, advicer: Advicer) => any;
 
@@ -64,6 +66,12 @@ export class Joinpoint<T = any> extends InvocationContext<T> implements IocConte
         return token === InvocationContext || token === Joinpoint;
     }
 
+    /**
+     * parse option to instance of {@link Joinpoint}
+     * @param injector 
+     * @param options 
+     * @returns 
+     */
     static parse(injector: Injector, options: JoinpointOption) {
         return new Joinpoint(injector,
             options.target,
