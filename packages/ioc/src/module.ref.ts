@@ -1,11 +1,11 @@
 import { Destroyable } from './destroy';
 import { Type } from './types';
-import { Abstract } from './metadata/fac';
-import { Injector, Registered } from './injector';
-import { InjectorTypeWithProviders } from './providers';
 import { deepForEach } from './utils/lang';
-import { ModuleReflect } from './metadata/type';
 import { isFunction, isPlainObject } from './utils/chk';
+import { InjectorTypeWithProviders } from './providers';
+import { Abstract } from './metadata/fac';
+import { ModuleReflect } from './metadata/type';
+import { Injector, Registered } from './injector';
 
 /**
  * Represents an instance of an `Module` created by an `ModuleFactory`.

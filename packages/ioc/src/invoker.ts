@@ -1,13 +1,13 @@
 import { ClassType, Type } from './types';
 import { EMPTY, isDefined, isFunction } from './utils/chk';
-import { Injector } from './injector';
+import { cleanObj } from './utils/lang';
 import { Abstract } from './metadata/fac';
 import { ParameterMetadata } from './metadata/meta';
 import { TypeReflect } from './metadata/type';
 import { ProviderType } from './providers';
 import { Destroyable } from './destroy';
 import { Token } from './tokens';
-import { cleanObj } from './utils/lang';
+import { Injector } from './injector';
 
 
 /**

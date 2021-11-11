@@ -1,5 +1,5 @@
-import { Injector } from '../injector';
 import { Token, tokenId } from '../tokens';
+import { Injector } from '../injector';
 
 /**
  * injector instance token of self.

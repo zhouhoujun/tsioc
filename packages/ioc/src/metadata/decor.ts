@@ -1,4 +1,5 @@
 import { ClassType, Type } from '../types';
+import { getTypes } from '../utils/lang';
 import { isString, isArray, EMPTY_OBJ } from '../utils/chk';
 import { Token, getToken, InjectFlags } from '../tokens';
 import {
@@ -6,13 +7,12 @@ import {
     InjectableMetadata, ParameterMetadata, ProvidersMetadata, ProviderInMetadata, ModuleMetadata
 } from './meta';
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
-import { Injector } from '../injector';
-import { getTypes } from '../utils/lang';
 import { DesignContext } from '../actions/ctx';
 import { DecoratorOption } from './refl';
 import { ModuleReflect } from './type';
-import { getModuleType, ModuleRef } from '../module.ref';
 import { ProviderType, StaticProvider } from '../providers';
+import { Injector } from '../injector';
+import { getModuleType, ModuleRef } from '../module.ref';
 
 
 
