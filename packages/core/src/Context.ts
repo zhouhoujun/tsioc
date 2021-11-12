@@ -1,6 +1,6 @@
 import {
     ProviderType, LoadType, Injector, Abstract, Token, Type,
-    ModuleLoader, Destroyable, ModuleRef, ModuleOption, InvokeOption, Modules
+    ModuleLoader, Destroyable, ModuleRef, ModuleOption, InvokeOption, Modules, Resolver
 } from '@tsdi/ioc';
 import { ILoggerManager } from '@tsdi/logs';
 import { Configuration, ConfigureManager } from './configure/config';
@@ -9,7 +9,8 @@ import { Response } from './middlewares/response';
 import { Context } from './middlewares/context';
 import { MessageQueue } from './middlewares/queue';
 import { Runnable, RunnableFactory } from './runnable';
-
+import { Service } from './services/service';
+import { Server } from './server/server';
 
 
 
@@ -122,14 +123,13 @@ export abstract class ApplicationContext implements Destroyable {
      */
     abstract getConfigureManager(): ConfigureManager;
     /**
-     * get statup service tokens.
+     * application services.
      */
-    abstract get startups(): Token[];
+    abstract get services(): Resolver<Service>[];
     /**
-     * registered boot service.
+     * application servers.
      */
-    abstract get boots(): Type[];
-
+    abstract get servers(): Resolver<Server>[]
     /**
      * application bootstraps.
      */

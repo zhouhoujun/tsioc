@@ -1,7 +1,7 @@
 import { ClassType, LoadType, Modules, Type } from '../types';
 import {
-    ResolveOption, MethodType, FnType, InjectorScope, ResolverOption,  RegisterOption, TypeOption, FactoryRecord,
-    Platform, Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption
+    ResolveOption, MethodType, FnType, InjectorScope, ResolverOption, RegisterOption, FactoryRecord,
+    Platform, Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption
 } from '../injector';
 import { InjectFlags, Token } from '../tokens';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR, TARGET } from '../metadata/tk';
@@ -16,7 +16,10 @@ import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
 import { ModuleReflect, TypeReflect } from '../metadata/type';
 import { get } from '../metadata/refl';
-import { InvocationContext, InvocationOption, InvokeOption, OperationArgumentResolver, OperationInvokerFactory, ReflectiveOperationInvoker } from '../invoker';
+import {
+    InvocationContext, InvocationOption, InvokeOption, OperationArgumentResolver,
+    isResolver, OperationInvokerFactory, ReflectiveOperationInvoker, Parameter
+} from '../invoker';
 import { DefaultModuleLoader } from './loader';
 import { ModuleLoader } from '../module.loader';
 import { DefaultPlatform } from './platform';
@@ -445,6 +448,7 @@ export class DefaultInjector extends Injector {
         }
 
         return this.get(option.token!, context)
+            ?? context?.resolveArgument({ provider: option.token } as Parameter)
             ?? this.resolveFailed(platform, option.token!, context, option.regify, option.defaultToken);
     }
 
@@ -640,7 +644,10 @@ export class DefaultInjector extends Injector {
 
         let targetClass: Type, instance: any, key: string;
         let tgRefl: TypeReflect | undefined;
-        if (isTypeObject(target)) {
+        if (isResolver(target)) {
+            targetClass = target.type;
+            instance = target.resolve(context);
+        } else if (isTypeObject(target)) {
             targetClass = getClass(target);
             instance = target as T;
         } else {
@@ -1018,10 +1025,10 @@ export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
     },
     {
         canResolve(parameter, ctx) {
-            return parameter.type && ctx.hasValue(parameter.type);
+            return (parameter.type && ctx.hasValue(parameter.type)) as boolean;
         },
         resolve(parameter, ctx) {
-            return ctx.getValue(parameter.type);
+            return ctx.getValue(parameter.type!);
         }
     },
     {

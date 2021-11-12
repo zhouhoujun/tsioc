@@ -1,4 +1,4 @@
-import { Type, ProviderType } from '@tsdi/ioc';
+import { Type, ProviderType, Resolver } from '@tsdi/ioc';
 import { Advices } from './advices/Advices';
 
 /**
@@ -11,7 +11,7 @@ export interface IAdvisor {
     /**
      * aspect types.
      */
-    aspects: Type[];
+    aspects: Resolver[];
     /**
      * advices
      *
@@ -48,14 +48,17 @@ export interface IAdvisor {
      * @returns {Advices}
      */
     getAdvices(type: Type, key: string): Advices;
-
     /**
      * add aspect.
      *
      * @param {Type} aspect
      */
-    add(aspect: Type): void;
-
+    add(aspect: Resolver): void;
+    /**
+     * get aspect resolver
+     * @param type 
+     */
+    get(type: Type): Resolver | undefined;
     /**
      * resolve aspect.
      *

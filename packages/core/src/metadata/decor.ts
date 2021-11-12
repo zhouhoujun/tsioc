@@ -69,79 +69,60 @@ export const Boot: Boot = createDecorator<BootMetadata>('Boot', {
             }
             const meta = ctx.reflect.class.getMetadata<BootMetadata>(ctx.currDecor) || EMPTY_OBJ as BootMetadata;
 
-
-            let resolverIdx = boots.findIndex(b => b.type === type);
-            let resolver = resolverIdx >= 0 ? boots[resolverIdx] : undefined;
+            let existIdx = boots.findIndex(b => b.type === type);
+            let restIdx = existIdx;
+            let resolver = existIdx >= 0 ? boots[existIdx] : undefined;
+            const { before, after } = meta;
             if (resolver) {
                 resolver.resolve = (ctx: any) => injector.get(type, ctx);
             } else {
                 resolver = { type, resolve: (ctx) => injector.get(type, ctx) } as Resolver;
             }
 
-            let befIdx = -1;
-            let aftIdx = -1;
-            const { before, after } = meta;
-            if (before) {
-                befIdx = isString(meta.before) ? 0 : boots.findIndex(b => b.type === before);
-                if (befIdx < resolverIdx) {
-                    boots.splice(resolverIdx, 1);
-                    boots.splice(befIdx, 0, resolver);
-                    resolverIdx = befIdx - 1;
+            if (before === 'all') {
+                existIdx >= 0 && boots.splice(existIdx, 1);
+                boots.unshift(resolver);
+                restIdx = 0;
+            } else if (before) {
+                let idx = boots.findIndex(b => b.type === before);
+                if (idx < 0) {
+                    boots.splice(existIdx + 1, 0, { type: before, resolve: (context) => injector.resolve({ token: before, regify: true, context }) });
+                } else {
+                    existIdx >= 0 && boots.splice(existIdx, 1);
+                    restIdx = idx - 1;
+                    boots.splice(restIdx, 0, resolver);
                 }
+            } else if (after === 'all') {
+                existIdx >= 0 && boots.splice(existIdx, 1);
+                boots.push(resolver);
+                restIdx = -1;
             } else if (after) {
-                aftIdx = isString(meta.after) ? -1 : boots.findIndex(b => b.type === after) + 1;
-                if (aftIdx > resolverIdx) {
-                    boots.splice(aftIdx + 1, 0, resolver);
-                    boots.splice(resolverIdx, 1);
-                    resolverIdx = aftIdx;
+                let idx = boots.findIndex(b => b.type === after);
+                if (idx < 0) {
+                    boots.splice(existIdx - 1, 0, { type: after, resolve: (context) => injector.resolve({ token: after, regify: true, context }) });
+                } else {
+                    existIdx >= 0 && boots.splice(existIdx, 1);
+                    restIdx = idx + 1;
+                    boots.splice(restIdx, 0, resolver);
                 }
+            } else {
+                boots.push(resolver);
+                restIdx = -1;
             }
 
-
-
-            // if (befIdx >= 0 && befIdx < resolverIdx) {
-            //     if (meta.deps) {
-            //         const news: Resolver<Service>[] = [];
-            //         const moved: Resolver<Service>[] = [];
-            //         meta.deps.forEach(d => {
-            //             let reged = boots.find(b => b.type === d);
-            //             if (!reged) {
-            //                 news.push({ type: d, resolve: (context) => injector.resolve({ token: d, regify: true, context }) });
-            //             } else {
-            //                 const depidx = boots.indexOf(reged);
-            //                 if (depidx >= befIdx) {
-            //                     moved.push(reged);
-            //                     boots.splice(depidx, 1);
-            //                 }
-            //             }
-            //         });
-            //         boots.splice(idx, 0, ...news, ...moved, resolver);
-            //     } else {
-            //         boots.splice(idx, 0, resolver);
-            //     }
-            // } else {
             if (meta.deps) {
                 meta.deps.forEach(d => {
                     let reged = boots.findIndex(b => b.type === d);
                     if (reged < 0) {
                         const depResr = { type: d, resolve: (context) => injector.resolve({ token: d, regify: true, context }) } as Resolver;
-                        if (resolverIdx < 0) {
+                        if (restIdx < 0) {
                             boots.push(depResr);
                         }
-                        boots.splice(resolverIdx - 1, 0, depResr);
+                        boots.splice(restIdx - 1, 0, depResr);
                     }
                 });
             }
-            if (isFunction(before) && befIdx < 0) {
-                boots.push({ type: before, resolve: (context) => injector.resolve({ token: before, regify: true, context }) });
-            }
-            if (resolverIdx < 0) {
-                boots.push(resolver);
-            }
-            if (isFunction(after) && befIdx <= 0) {
-                boots.push({ type: after, resolve: (context) => injector.resolve({ token: after, regify: true, context }) });
-            }
-            // }
+
             return next();
         }
     },
@@ -531,6 +512,7 @@ export const RouteMapping: RouteMapping = createDecorator<ProtocolRouteMappingMe
             if (parent) {
                 queue = injector.get(parent);
             } else {
+                !injector.has(RootRouter) && console.log(protocol, injector);
                 queue = injector.get(RootRouter).getRoot(protocol);
             }
 

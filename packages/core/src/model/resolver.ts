@@ -283,7 +283,7 @@ export abstract class AbstractModelArgumentResolver<C extends Context = Context>
     abstract get resolvers(): ModelFieldResolver[];
 
     canResolve(parameter: TrasportParameter<any>, ctx: InvocationContext<C>): boolean {
-        return this.isModel(parameter.provider ?? parameter.type as Type);
+        return this.isModel(parameter.provider as Type ?? parameter.type);
     }
 
     resolve<T>(parameter: TrasportParameter<T>, ctx: InvocationContext<C>): T {
@@ -354,7 +354,7 @@ export abstract class AbstractModelArgumentResolver<C extends Context = Context>
         return this._resolver;
     }
 
-    protected abstract isModel(type: Type): boolean;
+    protected abstract isModel(type: Type | undefined): boolean;
     protected abstract getPropertyMeta(type: Type): DBPropertyMetadata[];
 }
 

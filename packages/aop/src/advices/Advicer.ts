@@ -1,4 +1,4 @@
-import { Type } from '@tsdi/ioc';
+import { Resolver } from '@tsdi/ioc';
 import { MatchPointcut } from '../joinpoints/MatchPointcut';
 
 /**
@@ -13,6 +13,6 @@ export interface Advicer extends MatchPointcut {
      *
      * @type {Type}
      */
-    aspectType: Type;
+    aspect: Resolver;
 }
 

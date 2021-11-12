@@ -1,7 +1,7 @@
 import {
     AsyncHandler, DecorDefine, Type, TypeReflect, Injector,
     isPrimitiveType, isPromise, isString, isArray, isFunction, isDefined, lang,
-    chain, isObservable, composeResolver, Parameter, EMPTY, ClassType, Platform, isResolver
+    chain, isObservable, composeResolver, Parameter, EMPTY, ClassType, Platform, isResolver, InvocationContext
 } from '@tsdi/ioc';
 import { MODEL_RESOLVERS } from '../model/resolver';
 import { ArgumentError, PipeTransform } from '../pipes/pipe';
@@ -202,13 +202,13 @@ export class MappingRoute extends Route {
         return meta;
     }
 
-    protected parseHandle(mdty: MiddlewareType): AsyncHandler<Context> | undefined {
+    protected parseHandle(mdty: MiddlewareType, context?: InvocationContext): AsyncHandler<Context> | undefined {
         if (isFunction(mdty)) {
             return mdty;
         } else if (isMiddlware(mdty)) {
             return mdty.toHandle();
         } else if (isResolver(mdty)) {
-            return mdty.resolve()?.toHandle();
+            return mdty.resolve(context)?.toHandle();
         }
     }
 
@@ -228,7 +228,7 @@ const primitiveResolvers: TrasportArgumentResolver[] = [
                     return parameter.scope === 'query' && isDefined(ctx.arguments.query[parameter.field ?? parameter.paramName]);
                 },
                 resolve(parameter, ctx) {
-                    const pipe = ctx.injector.get<PipeTransform>(parameter.pipe ?? parameter.type.name.toLowerCase());
+                    const pipe = ctx.injector.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
                     if (!pipe) throw missingPipeError(parameter, ctx.target, ctx.method);
                     return pipe.transform(ctx.arguments.query[parameter.field ?? parameter.paramName], ...parameter.args || EMPTY)
                 }
@@ -238,7 +238,7 @@ const primitiveResolvers: TrasportArgumentResolver[] = [
                     return parameter.scope === 'restful' && isDefined(ctx.arguments.restful[parameter.field ?? parameter.paramName]);
                 },
                 resolve(parameter, ctx) {
-                    const pipe = ctx.injector.get<PipeTransform>(parameter.pipe ?? parameter.type.name.toLowerCase());
+                    const pipe = ctx.injector.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
                     if (!pipe) throw missingPipeError(parameter, ctx.target, ctx.method);
                     return pipe.transform(ctx.arguments.restful[parameter.field ?? parameter.paramName], ...parameter.args || EMPTY)
                 }
@@ -248,7 +248,7 @@ const primitiveResolvers: TrasportArgumentResolver[] = [
                     return parameter.scope === 'body' && isDefined(ctx.arguments.request.body[parameter.field ?? parameter.paramName]);
                 },
                 resolve(parameter, ctx) {
-                    const pipe = ctx.injector.get<PipeTransform>(parameter.pipe ?? parameter.type.name.toLowerCase());
+                    const pipe = ctx.injector.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
                     if (!pipe) throw missingPipeError(parameter, ctx.target, ctx.method);
                     return pipe.transform(ctx.arguments.request.body[parameter.field ?? parameter.paramName], ...parameter.args || EMPTY)
                 }
@@ -261,7 +261,7 @@ const primitiveResolvers: TrasportArgumentResolver[] = [
                 },
                 resolve(parameter, ctx) {
                     const field = parameter.field ?? parameter.paramName;
-                    const pipe = ctx.injector.get<PipeTransform>(parameter.pipe ?? parameter.type.name.toLowerCase());
+                    const pipe = ctx.injector.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
                     if (!pipe) throw missingPipeError(parameter, ctx.target, ctx.method);
                     const args = ctx.arguments;
                     return pipe.transform(args.query[field] ?? args.restful[field] ?? args.request.body[field], ...parameter.args || EMPTY)

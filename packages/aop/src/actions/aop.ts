@@ -57,7 +57,7 @@ export const BeforeCtorAdviceAction = function (ctx: RuntimeContext, next: () =>
 
     ctx.injector.platform()
         .getAction(ProceedingScope)
-        .beforeConstr(ctx.type, ctx.params, ctx.args, ctx.context);
+        .beforeConstr(ctx.type, ctx.params, ctx.args, ctx.injector, ctx.context);
 
     next();
 };
@@ -76,7 +76,7 @@ export const AfterCtorAdviceAction = function (ctx: RuntimeContext, next: () => 
 
     ctx.injector.platform()
         .getAction(ProceedingScope)
-        .afterConstr(ctx.instance, ctx.type, ctx.params, ctx.args, ctx.context);
+        .afterConstr(ctx.instance, ctx.type, ctx.params, ctx.args, ctx.injector, ctx.context);
 
     next();
 };
@@ -98,9 +98,9 @@ export const MatchPointcutAction = function (ctx: RuntimeContext, next: () => vo
     let matcher = platform.getActionValue(ADVICE_MATCHER);
     let targetType = ctx.type;
 
-    advisor.aspects.forEach(type => {
-        let aopRef = refl.get<AopReflect>(type);
-        let matchpoints = matcher.match(type, targetType, aopRef.advices, ctx.instance);
+    advisor.aspects.forEach(aspect => {
+        let aopRef = refl.get<AopReflect>(aspect.type);
+        let matchpoints = matcher.match(aspect.type, targetType, aopRef.advices, ctx.instance);
         matchpoints.forEach(mpt => {
             let name = mpt.name;
             let advice = mpt.advice;
@@ -119,7 +119,7 @@ export const MatchPointcutAction = function (ctx: RuntimeContext, next: () => vo
             }
             let advicer = {
                 ...mpt,
-                aspectType: type
+                aspect
             } as Advicer;
 
             if (advice.adviceName === 'Before') {
@@ -153,7 +153,7 @@ export const MatchPointcutAction = function (ctx: RuntimeContext, next: () => vo
 }
 
 function equals(a: Advicer, b: Advicer) {
-    return a.aspectType === b.aspectType && a.advice.propertyKey === b.advice.propertyKey;
+    return a.aspect.type === b.aspect.type && a.advice.propertyKey === b.advice.propertyKey;
 }
 
 

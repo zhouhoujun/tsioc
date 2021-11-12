@@ -1,8 +1,8 @@
 import { ChildModule, LoadType, Modules, PathModules, Type } from '../types';
 import { isArray, isFunction, isMetadataObject, isString } from '../utils/chk';
 import { first, getTypes } from '../utils/lang';
-import { Injector } from '../injector';
 import { ModuleLoader } from '../module.loader';
+import { Injector } from '../injector';
 
 
 const fileChkExp = /\/((\w|%|\.))+\.\w+$/;

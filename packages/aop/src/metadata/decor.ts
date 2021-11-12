@@ -48,9 +48,10 @@ export const Aspect: Aspect = createDecorator<AspectMetadata>('Aspect', {
     },
     design: {
         class: (ctx, next) => {
-            const advisor = ctx.injector.platform().getActionValue(ADVISOR);
+            let advisor = ctx.injector.platform().getActionValue(ADVISOR);
             if (advisor) {
-                advisor.add(ctx.type);
+                const { type, injector } = ctx;
+                advisor.add({ type, resolve: (context) => injector.get(type, context) });
             } else {
                 console.error('aop module not registered. make sure register before', ctx.type);
             }

@@ -103,11 +103,10 @@ export class RegisterHandles extends BuildHandles<ApplicationContext> implements
  * @export
  */
 export const ConfigureServerHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
-    const injector = ctx.injector;
-    const servers = injector.get(SERVERS);
+    const servers = ctx.servers;
     if (servers && servers.length) {
-        await Promise.all(servers.map(type => {
-            const svr = injector.get(type);
+        await Promise.all(servers.map(svrr => {
+            const svr = svrr.resolve();
             ctx.onDestroy(() => svr?.disconnect());
             return svr.connect(ctx);
         }));
@@ -133,13 +132,12 @@ export class StartupHandles extends BuildHandles<ApplicationContext> implements 
  * @param next next step.
  */
 export const ConfigureServiceHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
-    const injector = ctx.injector;
-    const boots = ctx.boots;
+
+    const boots = ctx.services;
     if (boots?.length) {
-        await lang.step(boots.map(tyser => () => {
-            const ser = injector.get(tyser) as Service;
+        await lang.step(boots.map(rser => () => {
+            const ser =  rser.resolve();
             ctx.onDestroy(() => ser.destroy());
-            ctx.startups.push(tyser);
             return ser?.configureService(ctx);
         }));
     }

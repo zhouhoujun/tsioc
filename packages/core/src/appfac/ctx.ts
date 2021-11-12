@@ -1,6 +1,6 @@
 import { Token, ProviderType, Type, isFunction, isBoolean, ModuleRef, ModuleMetadata } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
-import { SERVICES, CONFIGURATION, PROCESS_ROOT } from '../metadata/tk';
+import { SERVICES, CONFIGURATION, PROCESS_ROOT, SERVERS } from '../metadata/tk';
 import { Configuration, ConfigureManager } from '../configure/config';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from '../Context';
 import { Runnable, RunnableFactory, RunnableFactoryResolver } from '../runnable';
@@ -30,8 +30,12 @@ export class DefaultApplicationContext extends ApplicationContext {
         injector.setValue(ApplicationContext, this);
     }
 
-    get boots() {
+    get services() {
         return this.injector.get(SERVICES);
+    }
+
+    get servers() {
+        return this.injector.get(SERVERS);
     }
 
     /**

@@ -18,7 +18,7 @@ export interface Parameter<T = any> extends ParameterMetadata {
     /**
      * type.
      */
-    type: ClassType<T>;
+    type: ClassType<T> | undefined;
     /**
      * param name.
      */
@@ -26,7 +26,7 @@ export interface Parameter<T = any> extends ParameterMetadata {
     /**
      * provider type
      */
-    provider?: Type;
+    provider?: Token;
     /**
      * mutil provider or not.
      */
@@ -194,8 +194,8 @@ export interface Resolver<T = any> {
 }
 
 export function isResolver(target: any): target is Resolver {
-    if(!isObject(target)) return false;
-    return  isFunction((target as Resolver).type) && isFunction((target as Resolver).resolve);
+    if (!isObject(target)) return false;
+    return isFunction((target as Resolver).type) && isFunction((target as Resolver).resolve);
 }
 
 /**
