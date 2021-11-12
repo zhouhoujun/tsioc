@@ -738,7 +738,7 @@ export class DefaultInjector extends Injector {
 }
 
 export class StaticInjector extends DefaultInjector {
-    isStatic = true;
+
     override get<T>(token: Token<T>, arg1?: InvocationContext | T, flags = InjectFlags.Default): T {
         this.assertNotDestroyed();
         if (this.isself(token)) return this as any;
@@ -975,7 +975,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                     context,
                     dep.options & OptionFlags.Optional ? null : undefined,
                     InjectFlags.Default,
-                    (parent as StaticInjector)?.isStatic && isStatic));
+                    isStatic));
             }
         }
         if (context) {
@@ -1104,7 +1104,7 @@ export function createInvocationContext(injector: Injector, option?: InvocationO
     }
     if (providers.length) {
         const proxy = typeRef && invokerMethod ? typeRef.type.prototype[invokerMethod]['_proxy'] : false;
-        injector = Injector.create(providers, injector, proxy ? 'invoked' : 'parameter');
+        injector = new StaticInjector(providers, injector, proxy ? 'invoked' : 'parameter');
     }
     return new InvocationContext(
         injector,

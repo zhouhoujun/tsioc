@@ -175,6 +175,7 @@ export class InvocationContext<T = any> implements Destroyable {
             cleanObj(this._arguments);
             this._arguments = null!;
             this._argumentResolvers = null!;
+            this._values.clear();
             (this as any).parent = null;
             (this as any).injector = null;
         }
