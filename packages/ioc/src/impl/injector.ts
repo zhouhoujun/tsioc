@@ -347,6 +347,8 @@ export class DefaultInjector extends Injector {
         }
         return tryResolveToken(token, this.records.get(token), this.records, platfrom, this.parent, context, notFoundValue, flags);
     }
+
+
     /**
      * resolve token instance with token and param provider.
      *
@@ -735,6 +737,23 @@ export class DefaultInjector extends Injector {
     }
 }
 
+export class StaticInjector extends DefaultInjector {
+    isStatic = true;
+    override get<T>(token: Token<T>, arg1?: InvocationContext | T, flags = InjectFlags.Default): T {
+        this.assertNotDestroyed();
+        if (this.isself(token)) return this as any;
+        const platfrom = this.platform();
+        if (platfrom.hasSingleton(token)) return platfrom.getSingleton(token);
+        let context: InvocationContext | undefined;
+        let notFoundValue: T | undefined;
+        if (arg1 instanceof InvocationContext) {
+            context = arg1;
+        } else {
+            notFoundValue = arg1;
+        }
+        return tryResolveToken(token, this.records.get(token), this.records, platfrom, this.parent, context, notFoundValue, flags, true);
+    }
+}
 
 const platformAlias = [Injector, INJECTOR, Container, CONTAINER];
 const rootAlias = [Injector, INJECTOR, ROOT_INJECTOR];
@@ -902,9 +921,18 @@ export class NullInjectorError extends Error {
  * @param provider 
  * @returns 
  */
-export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Platform, parent: Injector | undefined, context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags): any {
+export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Platform, parent: Injector | undefined,
+    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
     try {
-        return resolveToken(token, rd, records, platform, parent, context, notFoundValue, flags);
+        let value = resolveToken(token, rd, records, platform, parent, context, notFoundValue, flags);
+        if (isStatic) {
+            if (rd) {
+                rd.value = value;
+            } else {
+                records.set(token, { value });
+            }
+        }
+        return value;
     } catch (e) {
         if (rd && rd.value === CIRCULAR) {
             rd.value = EMPTY;
@@ -920,7 +948,8 @@ export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, rec
  * @param provider 
  * @returns 
  */
-export function resolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Platform, parent: Injector | undefined, context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags): any {
+export function resolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Platform, parent: Injector | undefined,
+    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
     if (rd && !(flags & InjectFlags.SkipSelf)) {
         let value = rd.value;
         if (value === CIRCULAR) {
@@ -937,7 +966,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                 if (context) {
                     val = context.resolveArgument(isString(dep.token) ? { paramName: dep.token } : { provider: dep.token } as any);
                 }
-                deps.push(val ?? resolveToken(
+                deps.push(val ?? tryResolveToken(
                     dep.token,
                     chlrd,
                     records,
@@ -945,7 +974,8 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                     !chlrd && !(dep.options & OptionFlags.CheckParent) ? undefined : parent,
                     context,
                     dep.options & OptionFlags.Optional ? null : undefined,
-                    InjectFlags.Default));
+                    InjectFlags.Default,
+                    (parent as StaticInjector)?.isStatic && isStatic));
             }
         }
         if (context) {
