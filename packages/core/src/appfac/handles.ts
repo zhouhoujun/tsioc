@@ -131,7 +131,6 @@ export class StartupHandles extends BuildHandles<ApplicationContext> implements 
  * @param next next step.
  */
 export const ConfigureServiceHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
-
     const boots = ctx.services;
     if (boots?.length) {
         await lang.step(boots.map(rser => () => {

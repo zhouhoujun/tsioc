@@ -529,19 +529,10 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
         design: {
             beforeAnnoation: (context: DesignContext, next) => {
                 let { type, reflect } = context;
-                // use as inject module.
+                // use as dependence inject module.
                 if (context.injectorType) {
                     context.injectorType(type, reflect);
                 }
-                // if (ctx.reflect.module) {
-                //     let { injector, type, moduleRef } = ctx;
-                //     if (!(moduleRef && moduleRef.moduleType === type)) {
-                //         moduleRef = injector.resolve({ token: ModuleFactoryResolver, target: ctx.reflect }).resolve(ctx.reflect).create(injector.get(ROOT_INJECTOR));
-                //         ctx.injector = moduleRef?.injector;
-                //         ctx.state.injector = ctx.injector;
-                //     }
-                //     (ctx.state as ModuleRegistered).moduleRef = moduleRef;
-                // }
                 next();
             }
         },
