@@ -22,7 +22,7 @@ export abstract class IocRuntimeAction extends IocRegAction<RuntimeContext> { }
  */
 export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): void {
     if (!ctx.params) {
-        ctx.params = ctx.reflect.class.methodParams.get('constructor') ?? EMPTY;
+        ctx.params = ctx.reflect.class.getParameters('constructor');
     }
     const factory = ctx.injector.resolve({ token: OperationInvokerFactory, target: ctx.type });
     const context = ctx.context = factory.createContext(ctx.context?.injector ?? ctx.injector, {
@@ -55,24 +55,22 @@ export const CreateInstanceAction = function (ctx: RuntimeContext, next: () => v
  * inject property value action, to inject property value for resolve instance.
  */
 export const InjectPropAction = function (ctx: RuntimeContext, next: () => void) {
-    if (ctx.reflect.class.propProviders.size) {
-        const { injector, context, type } = ctx;
-        let meta: PropertyMetadata, key: string, val;
-        ctx.reflect.class.propProviders.forEach((metas, propertyKey) => {
-            key = `${propertyKey}_INJECTED`;
-            meta = metas.find(m => m.provider)!;
-            if (!meta) {
-                meta = metas.find(m => m.type)!;
+    const { injector, context, type } = ctx;
+    let meta: PropertyMetadata, key: string, val;
+    ctx.reflect.class.eachProperty((metas, propertyKey) => {
+        key = `${propertyKey}_INJECTED`;
+        meta = metas.find(m => m.provider)!;
+        if (!meta) {
+            meta = metas.find(m => m.type)!;
+        }
+        if (meta && !(ctx as any)[key]) {
+            val = context?.resolveArgument(meta as Parameter) ?? injector.resolve({ token: meta.provider! || meta.type!, target: type, regify: true, context });
+            if (isDefined(val)) {
+                ctx.instance[propertyKey] = val;
+                (ctx as any)[key] = true;
             }
-            if (meta && !(ctx as any)[key]) {
-                val = context?.resolveArgument(meta as Parameter) ?? injector.resolve({ token: meta.provider! || meta.type!, target: type, regify: true, context });
-                if (isDefined(val)) {
-                    ctx.instance[propertyKey] = val;
-                    (ctx as any)[key] = true;
-                }
-            }
-        });
-    }
+        }
+    });
 
     next();
 };

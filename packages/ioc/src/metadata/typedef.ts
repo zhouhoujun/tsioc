@@ -45,19 +45,19 @@ export class TypeDefine {
      *
      * @type {Map<string, PropertyMetadata[]>}
      */
-    readonly propProviders: Map<string, PropertyMetadata[]>;
+    private propProviders: Map<string, PropertyMetadata[]>;
     /**
      * method params.
      *
      * @type {Map<IParameter[]>}
      */
-    readonly methodParams: Map<string, ParameterMetadata[]>;
+    private methodParams: Map<string, ParameterMetadata[]>;
     /**
      * method providers.
      *
      * @type {Map<ProviderType[]>}
      */
-    readonly methodProviders: Map<string, ProviderType[]>;
+    private methodProviders: Map<string, ProviderType[]>;
     /**
      * auto run defines.
      */
@@ -81,9 +81,62 @@ export class TypeDefine {
         this.provides = [];
         this.providers = [];
         this.autoruns = parent ? parent.autoruns.filter(a => a.decorType !== 'class') : [];
-        this.propProviders = parent ? new Map(parent.propProviders) : new Map();
-        this.methodParams = parent ? new Map(parent.methodParams) : new Map();
-        this.methodProviders = parent ? new Map(parent.methodParams) : new Map();
+        this.propProviders = new Map();
+        this.methodParams = new Map();
+        this.methodProviders = new Map();
+    }
+
+
+    hasParameters(method: string): boolean {
+        return this.methodParams.has(method);
+    }
+
+    getParameters(method: string): ParameterMetadata[] | undefined {
+        return this.methodParams.get(method) ?? this.parent?.getParameters(method);
+    }
+
+    setParameters(method: string, metadatas: ParameterMetadata[]) {
+        if (this.methodParams.has(method)) {
+            this.methodParams.get(method)?.push(...metadatas);
+        } else {
+            this.methodParams.set(method, metadatas);
+        }
+    }
+
+    hasProperyProviders(prop: string): boolean {
+        return this.propProviders.has(prop);
+    }
+
+    getProperyProviders(prop: string): PropertyMetadata[] | undefined {
+        return this.propProviders.get(prop) ?? this.parent?.getProperyProviders(prop);
+    }
+
+    eachProperty(callback: (value: PropertyMetadata[], key: string)=> void) {
+        this.propProviders.size && this.propProviders.forEach(callback);
+        this.parent?.eachProperty(callback);
+    }
+
+    setProperyProviders(prop: string, metadatas: PropertyMetadata[]) {
+        if (this.propProviders.has(prop)) {
+            this.propProviders.get(prop)?.push(...metadatas);
+        } else {
+            this.propProviders.set(prop, metadatas);
+        }
+    }
+
+    hasMethodProviders(method: string): boolean {
+        return this.methodProviders.has(method);
+    }
+    getMethodProviders(method: string): ProviderType[] {
+        return this.methodProviders.get(method) ?? this.parent?.getMethodProviders(method) ?? EMPTY;
+    }
+
+    setMethodProviders(method: string, providers: ProviderType[]) {
+        if (this.methodProviders.has(method)) {
+            this.methodProviders.get(method)?.push(...providers);
+        } else {
+            this.methodProviders.set(method, providers);
+        }
     }
 
     private currprop: string | undefined;

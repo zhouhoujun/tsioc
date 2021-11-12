@@ -212,7 +212,7 @@ export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
         const reflect = ctx.reflect;
         let meta = ctx.metadata as ParameterMetadata;
         const propertyKey = ctx.propertyKey;
-        let params = reflect.class.methodParams.get(propertyKey);
+        let params = reflect.class.getParameters(propertyKey);
         if (!params) {
             const names = reflect.class.getParamNames(propertyKey);
             let paramTypes: any[];
@@ -223,7 +223,7 @@ export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
             }
             if (paramTypes) {
                 params = paramTypes.map((type, idx) => ({ type, paramName: names[idx] }));
-                reflect.class.methodParams.set(propertyKey, params);
+                reflect.class.setParameters(propertyKey, params);
             }
         }
         if (params) {
@@ -252,12 +252,13 @@ export const InitPropDesignAction = (ctx: DecorContext, next: () => void) => {
 const propInjectDecors: Record<string, boolean> = { '@Inject': true, '@AutoWired': true };
 export const PropInjectAction = (ctx: DecorContext, next: () => void) => {
     if (propInjectDecors[ctx.decor]) {
-        let pdrs = ctx.reflect.class.propProviders.get(ctx.propertyKey);
-        if (!pdrs) {
-            pdrs = [];
-            ctx.reflect.class.propProviders.set(ctx.propertyKey, pdrs);
-        }
-        pdrs.push(ctx.metadata as PropertyMetadata);
+        // let pdrs = ctx.reflect.class.propProviders.get(ctx.propertyKey);
+        // if (!pdrs) {
+        //     pdrs = [];
+        //     ctx.reflect.class.propProviders.set(ctx.propertyKey, pdrs);
+        // }
+        // pdrs.push(ctx.metadata as PropertyMetadata);
+        ctx.reflect.class.setProperyProviders(ctx.propertyKey, [ctx.metadata]);
     }
     return next();
 };
@@ -265,14 +266,14 @@ export const PropInjectAction = (ctx: DecorContext, next: () => void) => {
 
 export const InitCtorDesignParams = (ctx: DecorContext, next: () => void) => {
     const propertyKey = 'constructor';
-    if (!ctx.reflect.class.methodParams.has(propertyKey)) {
+    if (!ctx.reflect.class.hasParameters(propertyKey)) {
         let paramTypes: any[] = Reflect.getMetadata('design:paramtypes', ctx.reflect.type);
         if (paramTypes) {
             const names = ctx.reflect.class.getParamNames(propertyKey);
             if (!paramTypes) {
                 paramTypes = [];
             }
-            ctx.reflect.class.methodParams.set(propertyKey, paramTypes.map((type, idx) => {
+            ctx.reflect.class.setParameters(propertyKey, paramTypes.map((type, idx) => {
                 return { type, paramName: names[idx] };
             }));
         }
@@ -335,9 +336,9 @@ export const TypeProvidersAction = (ctx: DecorContext, next: () => void) => {
 }
 
 export const InitMethodDesignParams = (ctx: DecorContext, next: () => void) => {
-    if (!ctx.reflect.class.methodParams.has(ctx.propertyKey)) {
+    if (!ctx.reflect.class.hasParameters(ctx.propertyKey)) {
         const names = ctx.reflect.class.getParamNames(ctx.propertyKey);
-        ctx.reflect.class.methodParams.set(
+        ctx.reflect.class.setParameters(
             ctx.propertyKey,
             (Reflect.getMetadata('design:paramtypes', ctx.target, ctx.propertyKey) as Type[]).map((type, idx) => ({ type, paramName: names[idx] }))
         );
@@ -348,14 +349,14 @@ export const InitMethodDesignParams = (ctx: DecorContext, next: () => void) => {
 const methodProvidersDecors: Record<string, boolean> = { '@Providers': true, '@AutoWired': true };
 export const MethodProvidersAction = (ctx: DecorContext, next: () => void) => {
     if (methodProvidersDecors[ctx.decor]) {
-        let pdrs = ctx.reflect.class.methodProviders.get(ctx.propertyKey);
-        if (!pdrs) {
-            pdrs = []
-            ctx.reflect.class.methodProviders.set(ctx.propertyKey, pdrs);
-        }
+        // let pdrs = ctx.reflect.class.getMethodProviders(ctx.propertyKey);
+        // // if (!pdrs) {
+        // //     pdrs = []
+        // //     ctx.reflect.class.setMethodProviders(ctx.propertyKey, pdrs);
+        // // }
         const mpdrs = (ctx.metadata as ProvidersMetadata).providers;
         if (mpdrs) {
-            pdrs.push(...mpdrs);
+            ctx.reflect.class.setMethodProviders(ctx.propertyKey, mpdrs)
         }
     }
     return next();
@@ -473,25 +474,25 @@ export function get<T extends TypeReflect>(type: ClassType, ify?: boolean): T {
     return tagRefl as T;
 }
 
-/**
- * get type class constructor parameters.
- *
- * @template T
- * @param {Type<T>} type
- * @returns {IParameter[]}
- */
-export function getParameters<T>(type: Type<T>): ParameterMetadata[];
-/**
- * get method parameters of type.
- *
- * @template T
- * @param {Type<T>} type
- * @param {string} propertyKey
- * @returns {IParameter[]}
- */
-export function getParameters<T>(type: Type<T>, propertyKey: string): ParameterMetadata[];
-export function getParameters<T>(type: Type<T>, propertyKey?: string): ParameterMetadata[] {
-    propertyKey = propertyKey || 'constructor';
-    return get(type)?.class.methodParams.get(propertyKey) || EMPTY;
-}
+// /**
+//  * get type class constructor parameters.
+//  *
+//  * @template T
+//  * @param {Type<T>} type
+//  * @returns {IParameter[]}
+//  */
+// export function getParameters<T>(type: Type<T>): ParameterMetadata[];
+// /**
+//  * get method parameters of type.
+//  *
+//  * @template T
+//  * @param {Type<T>} type
+//  * @param {string} propertyKey
+//  * @returns {IParameter[]}
+//  */
+// export function getParameters<T>(type: Type<T>, propertyKey: string): ParameterMetadata[];
+// export function getParameters<T>(type: Type<T>, propertyKey?: string): ParameterMetadata[] {
+//     propertyKey = propertyKey || 'constructor';
+//     return get(type)?.class.getParameters(propertyKey);
+// }
 

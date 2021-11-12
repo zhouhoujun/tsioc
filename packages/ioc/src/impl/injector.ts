@@ -1069,7 +1069,7 @@ export function createInvocationContext(injector: Injector, option?: InvocationO
     const typeRef = invokerTargetReflect ?? (invokerTarget ? get(invokerTarget) : undefined);
     if (typeRef) {
         const platform = injector.platform();
-        providers = [...providers, ...platform.getTypeProvider(typeRef.type), ...(invokerMethod ? typeRef.class.methodProviders.get(invokerMethod) ?? EMPTY : EMPTY)]
+        providers = [...providers, ...platform.getTypeProvider(typeRef.type), ...(invokerMethod ? typeRef.class.getMethodProviders(invokerMethod) : EMPTY)]
     }
     if (providers.length) {
         const proxy = typeRef && invokerMethod ? typeRef.type.prototype[invokerMethod]['_proxy'] : false;

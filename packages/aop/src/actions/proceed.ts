@@ -129,17 +129,18 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
                 args = args.slice(0, args.length - 1);
                 parent = larg;
             }
+            const targetRef = refl.get(targetType);
             const joinPoint = Joinpoint.parse((parent || provJoinpoint)?.injector ?? platform.getInjector('root'), {
                 name,
                 fullName,
-                params: refl.getParameters(targetType, name),
+                params: targetRef.class.getParameters(name),
                 args,
                 target,
                 targetType,
                 advices,
                 originMethod: propertyMethod,
                 provJoinpoint,
-                annotations: refl.get(targetType).class.decors.filter(d => d.propertyKey === name).map(d => d.metadata),
+                annotations: targetRef.class.decors.filter(d => d.propertyKey === name).map(d => d.metadata),
                 parent
             });
 

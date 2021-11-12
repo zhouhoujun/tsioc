@@ -259,7 +259,7 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
     }
 
     protected getParameters(): Parameter[] {
-        return this.typeRef.class.methodParams?.get(this.method) ?? EMPTY;
+        return this.typeRef.class.getParameters(this.method) as Parameter[] ?? EMPTY;
     }
 
     protected validate(context: InvocationContext, parameters: Parameter[]) {
