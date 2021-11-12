@@ -787,13 +787,14 @@ export function processInjectorType(typeOrDef: Type | InjectorTypeWithProviders,
             );
         }
     }
-    if (typeRef.class.providers && !isDuplicate) {
-        deepForEach(
-            typeRef.class.providers,
-            pdr => processProvider(pdr, typeRef.class.providers),
-            v => isPlainObject(v) && !v.provide
-        );
-    }
+    //// private providers.
+    // if (typeRef.class.providers && !isDuplicate) {
+    //     deepForEach(
+    //         typeRef.class.providers,
+    //         pdr => processProvider(pdr, typeRef.class.providers),
+    //         v => isPlainObject(v) && !v.provide
+    //     );
+    // }
 
     regType(typeRef, type);
 }
