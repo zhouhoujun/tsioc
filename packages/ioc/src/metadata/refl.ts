@@ -252,12 +252,6 @@ export const InitPropDesignAction = (ctx: DecorContext, next: () => void) => {
 const propInjectDecors: Record<string, boolean> = { '@Inject': true, '@AutoWired': true };
 export const PropInjectAction = (ctx: DecorContext, next: () => void) => {
     if (propInjectDecors[ctx.decor]) {
-        // let pdrs = ctx.reflect.class.propProviders.get(ctx.propertyKey);
-        // if (!pdrs) {
-        //     pdrs = [];
-        //     ctx.reflect.class.propProviders.set(ctx.propertyKey, pdrs);
-        // }
-        // pdrs.push(ctx.metadata as PropertyMetadata);
         ctx.reflect.class.setProperyProviders(ctx.propertyKey, [ctx.metadata]);
     }
     return next();
@@ -349,11 +343,6 @@ export const InitMethodDesignParams = (ctx: DecorContext, next: () => void) => {
 const methodProvidersDecors: Record<string, boolean> = { '@Providers': true, '@AutoWired': true };
 export const MethodProvidersAction = (ctx: DecorContext, next: () => void) => {
     if (methodProvidersDecors[ctx.decor]) {
-        // let pdrs = ctx.reflect.class.getMethodProviders(ctx.propertyKey);
-        // // if (!pdrs) {
-        // //     pdrs = []
-        // //     ctx.reflect.class.setMethodProviders(ctx.propertyKey, pdrs);
-        // // }
         const mpdrs = (ctx.metadata as ProvidersMetadata).providers;
         if (mpdrs) {
             ctx.reflect.class.setMethodProviders(ctx.propertyKey, mpdrs)
@@ -473,26 +462,3 @@ export function get<T extends TypeReflect>(type: ClassType, ify?: boolean): T {
     }
     return tagRefl as T;
 }
-
-// /**
-//  * get type class constructor parameters.
-//  *
-//  * @template T
-//  * @param {Type<T>} type
-//  * @returns {IParameter[]}
-//  */
-// export function getParameters<T>(type: Type<T>): ParameterMetadata[];
-// /**
-//  * get method parameters of type.
-//  *
-//  * @template T
-//  * @param {Type<T>} type
-//  * @param {string} propertyKey
-//  * @returns {IParameter[]}
-//  */
-// export function getParameters<T>(type: Type<T>, propertyKey: string): ParameterMetadata[];
-// export function getParameters<T>(type: Type<T>, propertyKey?: string): ParameterMetadata[] {
-//     propertyKey = propertyKey || 'constructor';
-//     return get(type)?.class.getParameters(propertyKey);
-// }
-
