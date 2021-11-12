@@ -749,7 +749,7 @@ INJECT_IMPL.create = (providers: ProviderType[], parent?: Injector, scope?: Inje
 }
 
 
-export function processInjectorType(typeOrDef: Type | InjectorTypeWithProviders, dedupStack: Type[], processProvider: (provider: StaticProvider, providers: any[]) => void, regType: (typeRef: ModuleReflect, type: Type) => void, moduleRefl?: ModuleReflect, imported?: boolean) {
+export function processInjectorType(typeOrDef: Type | InjectorTypeWithProviders, dedupStack: Type[], processProvider: (provider: StaticProvider, providers?: any[]) => void, regType: (typeRef: ModuleReflect, type: Type) => void, moduleRefl?: ModuleReflect, imported?: boolean) {
     const type = isFunction(typeOrDef) ? typeOrDef : typeOrDef.module;
     if (!isFunction(typeOrDef)) {
         deepForEach(
@@ -762,30 +762,37 @@ export function processInjectorType(typeOrDef: Type | InjectorTypeWithProviders,
     const typeRef = moduleRefl ?? get<ModuleReflect>(type, true);
     if (typeRef.module && !isDuplicate) {
         dedupStack.push(type);
-        typeRef.imports?.forEach(imp => {
+        typeRef.annotation.imports?.forEach(imp => {
             processInjectorType(imp, dedupStack, processProvider, regType, undefined, true);
         });
 
         if (imported && !(typeRef.providedIn === 'root' || typeRef.providedIn === 'platform')) {
-            typeRef.exports?.forEach(d => {
+            typeRef.annotation.exports?.forEach(d => {
                 processInjectorType(d, dedupStack, processProvider, regType, undefined, true);
             })
         } else {
-            typeRef.declarations?.forEach(d => {
+            typeRef.annotation.declarations?.forEach(d => {
                 processInjectorType(d, dedupStack, processProvider, regType, undefined, true);
             });
-            typeRef.exports?.forEach(d => {
+            typeRef.annotation.exports?.forEach(d => {
                 processInjectorType(d, dedupStack, processProvider, regType, undefined, true);
             })
         }
 
-        if (typeRef.providers) {
+        if (typeRef.annotation.providers) {
             deepForEach(
-                typeRef.providers,
-                pdr => processProvider(pdr, typeRef.providers),
+                typeRef.annotation.providers,
+                pdr => processProvider(pdr, typeRef.annotation.providers),
                 v => isPlainObject(v) && !v.provide
             );
         }
+    }
+    if (typeRef.providers && !isDuplicate) {
+        deepForEach(
+            typeRef.providers,
+            pdr => processProvider(pdr, typeRef.providers),
+            v => isPlainObject(v) && !v.provide
+        );
     }
 
     regType(typeRef, type);

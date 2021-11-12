@@ -324,7 +324,7 @@ export const AutorunAction = (ctx: DecorContext, next: () => void) => {
     return next();
 }
 
-const typeProvidersDecors: Record<string, boolean> = { '@Module': true, '@Injectable': true, '@Providers': true };
+const typeProvidersDecors: Record<string, boolean> = { '@Injectable': true, '@Providers': true };
 export const TypeProvidersAction = (ctx: DecorContext, next: () => void) => {
     if (typeProvidersDecors[ctx.decor]) {
         if ((ctx.metadata as ProvidersMetadata).providers) {

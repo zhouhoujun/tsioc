@@ -1,3 +1,4 @@
+
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { InjectorTypeWithProviders, ProviderType } from '../providers';
 import { Token } from '../tokens';
@@ -87,23 +88,19 @@ export interface DecorContext extends DecorDefine {
 /**
  * type reflect metadata.
  */
-export interface TypeReflect<T = any> extends PatternMetadata, ProvidedInMetadata {
-    /**
-     * ioc ext or not.
-     */
-    iocExt?: boolean;
+export interface TypeReflect<T = any> extends ProvidedInMetadata, PatternMetadata {
     /**
      * class type.
      */
     readonly type: ClassType<T>;
     /**
-     * is abstract or not.
-     */
-    abstract?: boolean;
-    /**
      * class define.
      */
     class: TypeDefine;
+    /**
+     * is abstract or not.
+     */
+    abstract?: boolean;
     /**
      * class provides.
      */
@@ -139,13 +136,9 @@ export interface TypeReflect<T = any> extends PatternMetadata, ProvidedInMetadat
 }
 
 /**
- * module reflect.
+ * module annoation for {@link ModuleReflect}
  */
-export interface ModuleReflect<T = any> extends TypeReflect<T> {
-    /**
-     * is module or not.
-     */
-    module: boolean;
+export interface ModuleAnnotation extends ModuleMetadata {
     /**
      * imports types.
      */
@@ -162,6 +155,18 @@ export interface ModuleReflect<T = any> extends TypeReflect<T> {
      * the module bootstraps.
      */
     bootstrap?: Type[];
+}
 
-    annotation?: ModuleMetadata
+/**
+ * module reflect.
+ */
+export interface ModuleReflect<T = any> extends TypeReflect<T> {
+    /**
+     * is module or not.
+     */
+    module: boolean;
+    /**
+     * module annoation.
+     */
+    annotation: ModuleAnnotation
 }

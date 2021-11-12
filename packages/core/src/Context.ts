@@ -1,6 +1,6 @@
 import {
-    ProviderType, LoadType, Injector, Abstract, Token, Type,
-    ModuleLoader, Destroyable, ModuleRef, ModuleOption, InvokeOption, Modules, Resolver
+    ProviderType, LoadType, Injector, Abstract, Type, InvokeOption,
+    ModuleLoader, Destroyable, ModuleRef, ModuleOption,  Modules, Resolver
 } from '@tsdi/ioc';
 import { ILoggerManager } from '@tsdi/logs';
 import { Configuration, ConfigureManager } from './configure/config';

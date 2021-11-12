@@ -34,18 +34,6 @@ export class DesignClassScope extends IocRegScope<DesignContext> implements IAct
     }
 }
 
-// export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): void {
-//     const state = ctx.state = genState(ctx.injector, ctx.provide);
-//     ctx.platform.registerType(ctx.type, state);
-//     next();
-// };
-
-// function genState(injector: Injector, provide?: Token) {
-//     return {
-//         provides: provide ? [provide] : [],
-//         injector
-//     }
-// }
 
 export const RegClassAction = function (ctx: DesignContext, next: () => void): void {
     regProvider(ctx.getRecords(), ctx.platform, ctx.injector, ctx.type, ctx.provide || ctx.type, ctx.singleton || ctx.reflect.singleton === true);

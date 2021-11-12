@@ -511,13 +511,18 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
             class: [
                 (ctx, next) => {
                     const reflect = ctx.reflect as ModuleReflect;
-                    const annotation: ModuleMetadata = reflect.annotation = ctx.metadata;
+                    const metadata: ModuleMetadata = ctx.metadata;
                     reflect.module = true;
-                    if (annotation.providedIn) reflect.providedIn = annotation.providedIn;
-                    if (annotation.imports) reflect.imports = getModuleType(annotation.imports);
-                    if (annotation.exports) reflect.exports = getTypes(annotation.exports);
-                    if (annotation.declarations) reflect.declarations = getTypes(annotation.declarations);
-                    if (annotation.bootstrap) reflect.bootstrap = getTypes(annotation.bootstrap);
+                    if (metadata.providedIn) reflect.providedIn = metadata.providedIn;
+                    reflect.annotation = {
+                        baseURL: metadata.baseURL,
+                        debug: metadata.debug,
+                        providers: metadata.providers,
+                        imports: metadata.imports ? getModuleType(metadata.imports) : undefined,
+                        exports: metadata.exports ? getTypes(metadata.exports) : undefined,
+                        declarations: metadata.declarations ? getTypes(metadata.declarations) : undefined,
+                        bootstrap: metadata.bootstrap ? getTypes(metadata.bootstrap) : undefined,
+                    };
                     return next();
                 },
                 ...isArray(hd) ? hd : [hd]
@@ -600,11 +605,6 @@ export interface IocExt {
  * @IocExt()
  */
 export const IocExt: IocExt = createDecorator<AutorunMetadata>('IocExt', {
-    reflect: {
-        class: (ctx, next) => {
-            ctx.reflect.iocExt = true;
-        }
-    },
     appendProps: (metadata) => {
         metadata.autorun = 'setup';
         metadata.singleton = true;
