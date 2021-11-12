@@ -22,7 +22,7 @@ export abstract class IocRuntimeAction extends IocRegAction<RuntimeContext> { }
  */
 export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): void {
     if (!ctx.params) {
-        ctx.params = ctx.reflect.methodParams.get('constructor') ?? EMPTY;
+        ctx.params = ctx.reflect.class.methodParams.get('constructor') ?? EMPTY;
     }
     const factory = ctx.injector.resolve({ token: OperationInvokerFactory, target: ctx.type });
     const context = ctx.context = factory.createContext(ctx.context?.injector ?? ctx.injector, {
@@ -55,10 +55,10 @@ export const CreateInstanceAction = function (ctx: RuntimeContext, next: () => v
  * inject property value action, to inject property value for resolve instance.
  */
 export const InjectPropAction = function (ctx: RuntimeContext, next: () => void) {
-    if (ctx.reflect.propProviders.size) {
+    if (ctx.reflect.class.propProviders.size) {
         const { injector, context, type } = ctx;
         let meta: PropertyMetadata, key: string, val;
-        ctx.reflect.propProviders.forEach((metas, propertyKey) => {
+        ctx.reflect.class.propProviders.forEach((metas, propertyKey) => {
             key = `${propertyKey}_INJECTED`;
             meta = metas.find(m => m.provider)!;
             if (!meta) {
@@ -159,9 +159,9 @@ export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void
  * @extends {IocRuntimeAction}
  */
 export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void) {
-    if (ctx.reflect.autoruns.length) {
+    if (ctx.reflect.class.autoruns.length) {
         const { injector: injector, type, instance, context } = ctx;
-        ctx.reflect.autoruns.forEach(aut => {
+        ctx.reflect.class.autoruns.forEach(aut => {
             injector.invoke(instance || type, aut.autorun, context);
         });
     }

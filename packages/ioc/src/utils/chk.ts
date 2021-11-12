@@ -381,7 +381,7 @@ export function isClassType(target: any, abstract?: boolean): target is ClassTyp
 
     const rf: TypeReflect = (target as AnnotationType).ρRfl?.();
     if (rf) {
-        if (isBoolean(abstract) && rf.type === target) return abstract ? rf.abstract === true : !rf.abstract;
+        if (isBoolean(abstract) && rf.type === target) return abstract ? rf.class.abstract === true : !rf.class.abstract;
         return true;
     }
 

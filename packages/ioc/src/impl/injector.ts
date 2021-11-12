@@ -402,7 +402,7 @@ export class DefaultInjector extends Injector {
                     if (isFunction(option.target)) {
                         targetProviders = platform.getTypeProvider(option.target);
                     } else if (isTypeReflect(option.target)) {
-                        targetProviders = option.target.providers;
+                        targetProviders = option.target.class.providers;
                     } else if (isTypeObject(option.target)) {
                         targetProviders = platform.getTypeProvider(getClass(option.target));
                     }
@@ -787,10 +787,10 @@ export function processInjectorType(typeOrDef: Type | InjectorTypeWithProviders,
             );
         }
     }
-    if (typeRef.providers && !isDuplicate) {
+    if (typeRef.class.providers && !isDuplicate) {
         deepForEach(
-            typeRef.providers,
-            pdr => processProvider(pdr, typeRef.providers),
+            typeRef.class.providers,
+            pdr => processProvider(pdr, typeRef.class.providers),
             v => isPlainObject(v) && !v.provide
         );
     }
@@ -1000,7 +1000,7 @@ export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
         resolve(parameter, ctx) {
             const pdr = parameter.provider!;
             const injector = ctx.injector;
-            if (isFunction(pdr) && !get(pdr)?.abstract && !injector.has(pdr, InjectFlags.Default)) {
+            if (isFunction(pdr) && !get(pdr)?.class.abstract && !injector.has(pdr, InjectFlags.Default)) {
                 injector.register(pdr as Type);
             }
             return injector.get(pdr, ctx, parameter.flags);
@@ -1045,7 +1045,7 @@ export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
         resolve(parameter, ctx) {
             const ty = parameter.type!;
             const injector = ctx.injector;
-            if (isFunction(ty) && !get(ty)?.abstract && !injector.has(ty, InjectFlags.Default)) {
+            if (isFunction(ty) && !get(ty)?.class.abstract && !injector.has(ty, InjectFlags.Default)) {
                 injector.register(ty as Type);
             }
             return injector.get(ty, ctx, parameter.flags);
@@ -1069,7 +1069,7 @@ export function createInvocationContext(injector: Injector, option?: InvocationO
     const typeRef = invokerTargetReflect ?? (invokerTarget ? get(invokerTarget) : undefined);
     if (typeRef) {
         const platform = injector.platform();
-        providers = [...providers, ...platform.getTypeProvider(typeRef.type), ...(invokerMethod ? typeRef.methodProviders.get(invokerMethod) ?? EMPTY : EMPTY)]
+        providers = [...providers, ...platform.getTypeProvider(typeRef.type), ...(invokerMethod ? typeRef.class.methodProviders.get(invokerMethod) ?? EMPTY : EMPTY)]
     }
     if (providers.length) {
         const proxy = typeRef && invokerMethod ? typeRef.type.prototype[invokerMethod]['_proxy'] : false;

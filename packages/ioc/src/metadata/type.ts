@@ -97,41 +97,7 @@ export interface TypeReflect<T = any> extends ProvidedInMetadata, PatternMetadat
      * class define.
      */
     class: TypeDefine;
-    /**
-     * is abstract or not.
-     */
-    abstract?: boolean;
-    /**
-     * class provides.
-     */
-    provides: Token[];
-    /**
-     * class extends providers.
-     */
-    providers: ProviderType[];
-    /**
-     * props.
-     *
-     * @type {Map<string, PropertyMetadata[]>}
-     */
-    propProviders: Map<string, PropertyMetadata[]>;
-    /**
-     * method params.
-     *
-     * @type {Map<IParameter[]>}
-     */
-    methodParams: Map<string, ParameterMetadata[]>;
-    /**
-     * method providers.
-     *
-     * @type {Map<ProviderType[]>}
-     */
-    methodProviders: Map<string, ProviderType[]>;
-    /**
-     * auto run defines.
-     */
-    autoruns: AutorunDefine[];
-
+    
     annotation?: any;
 }
 

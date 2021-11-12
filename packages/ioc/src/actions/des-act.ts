@@ -134,13 +134,13 @@ export const DesignPropDecorScope = function (ctx: DesignContext, next: () => vo
 export const TypeProviderAction = function (ctx: DesignContext, next: () => void) {
     const { injector: injector, type, provide: regpdr, regProvides } = ctx;
     if (regpdr && regpdr !== type) {
-        ctx.reflect.provides.forEach(provide => {
+        ctx.reflect.class.provides.forEach(provide => {
             if (provide != regpdr && regProvides !== false) {
                 injector.inject({ provide, useExisting: regpdr });
             }
         });
     } else {
-        ctx.reflect.provides.forEach(provide => {
+        ctx.reflect.class.provides.forEach(provide => {
             regProvides !== false && injector.inject({ provide, useClass: type });
         });
     }
@@ -174,14 +174,14 @@ export const DesignMthDecorScope = function (ctx: DesignContext, next: () => voi
  * @extends {IocDesignAction}
  */
 export const IocAutorunAction = function (ctx: DesignContext, next: () => void) {
-    if (ctx.reflect.autoruns.length < 1) {
+    if (ctx.reflect.class.autoruns.length < 1) {
         return next();
     }
 
     const injector = ctx.injector;
     const instance = injector.get(ctx.provide || ctx.type);
     if (!instance) return;
-    ctx.reflect.autoruns.forEach(meta => {
+    ctx.reflect.class.autoruns.forEach(meta => {
         if (meta && meta.autorun) {
             if (isFunction(instance[meta.autorun])) {
                 injector.invoke(instance, meta.autorun);

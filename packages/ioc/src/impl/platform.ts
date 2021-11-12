@@ -135,9 +135,9 @@ export class DefaultPlatform implements Platform {
      */
     getTypeProvider(type: ClassType | TypeReflect) {
         if (isFunction(type)) {
-            return this.extendPds.has(type) ? [...get(type)?.providers, ...this.extendPds.get(type) || EMPTY] : get(type)?.providers;
+            return this.extendPds.has(type) ? [...get(type)?.class.providers, ...this.extendPds.get(type) || EMPTY] : get(type)?.class.providers;
         }
-        return this.extendPds.has(type.type) ? [...type.providers, ...this.extendPds.get(type.type) || EMPTY] : type?.providers;
+        return this.extendPds.has(type.type) ? [...type.class.providers, ...this.extendPds.get(type.type) || EMPTY] : type.class.providers;
     }
 
     /**

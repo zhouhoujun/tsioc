@@ -3,7 +3,10 @@ import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { EMPTY, isFunction, isString } from '../utils/chk';
 import { getClassAnnotation } from '../utils/util';
 import { forIn } from '../utils/lang';
-import { DecoratorType, DecorDefine, DecorMemberType } from './type';
+import { AutorunDefine, DecoratorType, DecorDefine, DecorMemberType } from './type';
+import { Token } from '../tokens';
+import { ProviderType } from '../providers';
+import { ParameterMetadata, PropertyMetadata } from './meta';
 
 
 interface DefineDescriptor<T = any> extends TypedPropertyDescriptor<T> {
@@ -16,14 +19,49 @@ interface DefineDescriptor<T = any> extends TypedPropertyDescriptor<T> {
 export class TypeDefine {
     className: string;
 
-    decors: DecorDefine[];
-    classDecors: DecorDefine[];
-    propDecors: DecorDefine[];
-    methodDecors: DecorDefine[];
-    paramDecors: DecorDefine[];
+    readonly decors: DecorDefine[];
+    readonly classDecors: DecorDefine[];
+    readonly propDecors: DecorDefine[];
+    readonly methodDecors: DecorDefine[];
+    readonly paramDecors: DecorDefine[];
 
     readonly annotation: DesignAnnotation;
     private params!: Map<string, any[]>;
+
+    /**
+     * is abstract or not.
+     */
+    abstract = false;
+    /**
+     * class provides.
+     */
+    readonly provides: Token[];
+    /**
+     * class extends providers.
+     */
+    readonly providers: ProviderType[];
+    /**
+     * props.
+     *
+     * @type {Map<string, PropertyMetadata[]>}
+     */
+    readonly propProviders: Map<string, PropertyMetadata[]>;
+    /**
+     * method params.
+     *
+     * @type {Map<IParameter[]>}
+     */
+    readonly methodParams: Map<string, ParameterMetadata[]>;
+    /**
+     * method providers.
+     *
+     * @type {Map<ProviderType[]>}
+     */
+    readonly methodProviders: Map<string, ProviderType[]>;
+    /**
+     * auto run defines.
+     */
+    readonly autoruns: AutorunDefine[];
 
     constructor(public readonly type: ClassType, private parent?: TypeDefine) {
         this.annotation = getClassAnnotation(type)!;
@@ -40,6 +78,12 @@ export class TypeDefine {
             this.methodDecors = [];
             this.paramDecors = [];
         }
+        this.provides = [];
+        this.providers = [];
+        this.autoruns = parent ? parent.autoruns.filter(a => a.decorType !== 'class') : [];
+        this.propProviders = parent ? new Map(parent.propProviders) : new Map();
+        this.methodParams = parent ? new Map(parent.methodParams) : new Map();
+        this.methodProviders = parent ? new Map(parent.methodParams) : new Map();
     }
 
     private currprop: string | undefined;
