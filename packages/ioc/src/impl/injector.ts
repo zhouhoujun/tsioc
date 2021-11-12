@@ -762,27 +762,27 @@ export function processInjectorType(typeOrDef: Type | InjectorTypeWithProviders,
     const typeRef = moduleRefl ?? get<ModuleReflect>(type, true);
     if (typeRef.module && !isDuplicate) {
         dedupStack.push(type);
-        typeRef.annotation.imports?.forEach(imp => {
+        typeRef.imports?.forEach(imp => {
             processInjectorType(imp, dedupStack, processProvider, regType, undefined, true);
         });
 
         if (imported && !(typeRef.providedIn === 'root' || typeRef.providedIn === 'platform')) {
-            typeRef.annotation.exports?.forEach(d => {
+            typeRef.exports?.forEach(d => {
                 processInjectorType(d, dedupStack, processProvider, regType, undefined, true);
             })
         } else {
-            typeRef.annotation.declarations?.forEach(d => {
+            typeRef.declarations?.forEach(d => {
                 processInjectorType(d, dedupStack, processProvider, regType, undefined, true);
             });
-            typeRef.annotation.exports?.forEach(d => {
+            typeRef.exports?.forEach(d => {
                 processInjectorType(d, dedupStack, processProvider, regType, undefined, true);
             })
         }
 
-        if (typeRef.annotation.providers) {
+        if (typeRef.providers) {
             deepForEach(
-                typeRef.annotation.providers,
-                pdr => processProvider(pdr, typeRef.annotation.providers),
+                typeRef.providers,
+                pdr => processProvider(pdr, typeRef.providers),
                 v => isPlainObject(v) && !v.provide
             );
         }

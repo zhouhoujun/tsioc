@@ -97,14 +97,21 @@ export interface TypeReflect<T = any> extends ProvidedInMetadata, PatternMetadat
      * class define.
      */
     class: TypeDefine;
-    
+
     annotation?: any;
 }
 
+
 /**
- * module annoation for {@link ModuleReflect}
+ * module reflect.
  */
-export interface ModuleAnnotation extends ModuleMetadata {
+export interface ModuleReflect<T = any> extends TypeReflect<T> {
+    /**
+     * is module or not.
+     */
+    module: boolean;
+    baseURL?: string,
+    debug?: boolean,
     /**
      * imports types.
      */
@@ -121,18 +128,12 @@ export interface ModuleAnnotation extends ModuleMetadata {
      * the module bootstraps.
      */
     bootstrap?: Type[];
-}
-
-/**
- * module reflect.
- */
-export interface ModuleReflect<T = any> extends TypeReflect<T> {
     /**
-     * is module or not.
-     */
-    module: boolean;
+    * module extends providers.
+    */
+    providers?: ProviderType[];
     /**
-     * module annoation.
+     * module annoation metadata.
      */
-    annotation: ModuleAnnotation
+    annotation?: ModuleMetadata
 }

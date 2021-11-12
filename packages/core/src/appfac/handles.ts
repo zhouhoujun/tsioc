@@ -1,8 +1,7 @@
 import { lang, IActionSetup, IocAction, ActionType, AsyncHandler, Actions } from '@tsdi/ioc';
 import { LogConfigureToken, DebugLogAspect, LogModule } from '@tsdi/logs';
 import { ApplicationContext } from '../Context';
-import { Service } from '../services/service';
-import { CONFIGURATION, PROCESS_ROOT, SERVERS } from '../metadata/tk';
+import { CONFIGURATION, PROCESS_ROOT } from '../metadata/tk';
 
 
 
@@ -157,8 +156,8 @@ export class BootstrapHandles extends BuildHandles<ApplicationContext> implement
 
 export const ModuleBootstrap = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
     const injector = ctx.injector;
-    if (injector.moduleReflect.annotation.bootstrap && injector.moduleReflect.annotation.bootstrap.length) {
-        await Promise.all(injector.moduleReflect.annotation.bootstrap.map(b => ctx.bootstrap(b)));
+    if (injector.moduleReflect.bootstrap && injector.moduleReflect.bootstrap.length) {
+        await Promise.all(injector.moduleReflect.bootstrap.map(b => ctx.bootstrap(b)));
     }
     return await next();
 };

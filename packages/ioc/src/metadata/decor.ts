@@ -511,18 +511,16 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
             class: [
                 (ctx, next) => {
                     const reflect = ctx.reflect as ModuleReflect;
-                    const metadata: ModuleMetadata = ctx.metadata;
+                    const metadata: ModuleMetadata = reflect.annotation = ctx.metadata;
                     reflect.module = true;
-                    if (metadata.providedIn) reflect.providedIn = metadata.providedIn;
-                    reflect.annotation = {
-                        baseURL: metadata.baseURL,
-                        debug: metadata.debug,
-                        providers: metadata.providers,
-                        imports: metadata.imports ? getModuleType(metadata.imports) : undefined,
-                        exports: metadata.exports ? getTypes(metadata.exports) : undefined,
-                        declarations: metadata.declarations ? getTypes(metadata.declarations) : undefined,
-                        bootstrap: metadata.bootstrap ? getTypes(metadata.bootstrap) : undefined,
-                    };
+                    reflect.providedIn = metadata.providedIn;
+                    reflect.baseURL = metadata.baseURL;
+                    reflect.debug = metadata.debug;
+                    reflect.providers = metadata.providers;
+                    if (metadata.imports) reflect.imports = getModuleType(metadata.imports);
+                    if (metadata.exports) reflect.exports = getTypes(metadata.exports);
+                    if (metadata.declarations) reflect.declarations = getTypes(metadata.declarations);
+                    if (metadata.bootstrap) reflect.bootstrap = getTypes(metadata.bootstrap);
                     return next();
                 },
                 ...isArray(hd) ? hd : [hd]
