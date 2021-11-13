@@ -1102,10 +1102,10 @@ export function createInvocationContext(injector: Injector, option?: InvocationO
         const platform = injector.platform();
         providers = [...providers, ...platform.getTypeProvider(typeRef.type), ...(invokerMethod ? typeRef.class.getMethodProviders(invokerMethod) : EMPTY)]
     }
-    if (providers.length) {
-        const proxy = typeRef && invokerMethod ? typeRef.type.prototype[invokerMethod]['_proxy'] : false;
-        injector = new StaticInjector(providers, injector, proxy ? 'invoked' : 'parameter');
-    }
+    // if (providers.length) {
+    const proxy = typeRef && invokerMethod ? typeRef.type.prototype[invokerMethod]['_proxy'] : false;
+    injector = new StaticInjector(providers, injector, proxy ? 'invoked' : 'parameter');
+    // }
     return new InvocationContext(
         injector,
         option.parent ?? injector.get(InvocationContext),
