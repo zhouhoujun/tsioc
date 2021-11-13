@@ -181,7 +181,7 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
     return createDecorator<T>(adviceName, {
         props: (pointcut?: string | RegExp, annotation?: string | PointcutAnnotation) => {
             if (isString(annotation)) {
-                return { pointcut, annotationName: annotation } as T;
+                return { pointcut, annotationArgName: annotation } as T;
             } else {
                 return { pointcut, ...annotation } as T;
             }

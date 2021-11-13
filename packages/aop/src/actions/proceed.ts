@@ -8,6 +8,7 @@ import { JoinpointState } from '../joinpoints/state';
 import { Advices } from '../advices/Advices';
 import { Advicer } from '../advices/Advicer';
 import { ADVISOR } from '../metadata/tk';
+import { AroundMetadata } from '../metadata/meta';
 
 const proxyFlag = '_proxy';
 const ctor = 'constructor';
@@ -39,7 +40,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
             return;
         }
 
-        const joinPoint = Joinpoint.parse(injector ?? this.platform.getInjector('root'), {
+        const joinPoint = Joinpoint.parse(injector ?? this.platform.getInjector('root') ?? this.platform.getInjector('platform'), {
             name: ctor,
             state: JoinpointState.Before,
             advices,
@@ -57,7 +58,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
             return;
         }
 
-        const joinPoint = Joinpoint.parse(injector ?? this.platform.getInjector('root'), {
+        const joinPoint = Joinpoint.parse(injector ?? this.platform.getInjector('root') ?? this.platform.getInjector('platform'), {
             name: ctor,
             state: JoinpointState.After,
             advices,
@@ -130,7 +131,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
                 parent = larg;
             }
             const targetRef = refl.get(targetType);
-            const joinPoint = Joinpoint.parse((parent || provJoinpoint)?.injector ?? platform.getInjector('root'), {
+            const joinPoint = Joinpoint.parse((parent || provJoinpoint)?.injector ?? platform.getInjector('root') ?? this.platform.getInjector('platform'), {
                 name,
                 fullName,
                 params: targetRef.class.getParameters(name),
@@ -155,15 +156,19 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
     }
 
     protected invokeAdvice(joinPoint: Joinpoint, advicer: Advicer) {
-        let metadata: any = advicer.advice;
+        let metadata = advicer.advice as AroundMetadata;
         if (!isNil(joinPoint.args) && metadata.args) {
             joinPoint.setArgument(metadata.args, joinPoint.args);
         }
 
         if (metadata.annotationArgName) {
-            let d: string = metadata.annotationName;
-            d = d ? (aExp.test(d) ? d : `@${d}`) : '';
-            joinPoint.setArgument(metadata.annotationArgName, joinPoint.annotations ? joinPoint.annotations.filter(v => v && d ? v.decorator = d : true) : []);
+            if (metadata.annotationName) {
+                let d: string = metadata.annotationName;
+                d = d ? (aExp.test(d) ? d : `@${d}`) : '';
+                joinPoint.setArgument(metadata.annotationArgName, joinPoint.annotations ? joinPoint.annotations.filter(v => v && d ? v.decorator = d : true) : []);
+            } else {
+                joinPoint.setArgument(metadata.annotationArgName, joinPoint.annotations ?? []);
+            }
         }
 
         if (!isNil(joinPoint.returning) && metadata.returning) {
