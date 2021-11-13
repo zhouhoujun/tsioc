@@ -1,4 +1,5 @@
-import { Application } from '@tsdi/core';
+import { Application, ApplicationContext, ApplicationOption, BootstrapOption } from '@tsdi/core';
+import { Type } from '@tsdi/ioc';
 import { BootModule } from './BootModule';
 
 
@@ -14,11 +15,31 @@ export class BootApplication extends Application {
         return [...super.getDeps(), BootModule];
     }
 
-    protected initRoot() {
+    protected override initRoot() {
         super.initRoot();
         this.root.setValue(BootApplication, this);
     }
-    
+
+    /**
+    * run application.
+    *
+    * @static
+    * @param {ApplicationOption<M>)} target
+    * @returns {Promise<ApplicationContext<M>>}
+    */
+    static override run(target: ApplicationOption): Promise<ApplicationContext>
+    /**
+     * run application.
+     *
+     * @static
+     * @param {Type<T>} target
+     * @param {BootstrapOption)} [option]  application run depdences.
+     * @returns {Promise<IBootContext>}
+     */
+    static override run(target: Type, option?: BootstrapOption): Promise<ApplicationContext>;
+    static override run(target: any, option?: BootstrapOption): Promise<ApplicationContext> {
+        return new BootApplication(option ? { type: target, ...option } as ApplicationOption : target).run();
+    }
 }
 
 
