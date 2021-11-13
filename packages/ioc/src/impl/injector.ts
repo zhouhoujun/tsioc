@@ -8,7 +8,7 @@ import { CONTAINER, INJECTOR, ROOT_INJECTOR, TARGET } from '../metadata/tk';
 import { cleanObj, deepForEach } from '../utils/lang';
 import { InjectorTypeWithProviders, KeyValueProvider, ProviderType, StaticProvider, StaticProviders } from '../providers';
 import {
-    isArray, isDefined, isFunction, isPlainObject, isPrimitiveType, isUndefined,
+    isArray, isDefined, isFunction, isPlainObject, isPrimitiveType, isUndefined, isPromise,
     isNumber, isTypeObject, isTypeReflect, EMPTY, EMPTY_OBJ, getClass, isString
 } from '../utils/chk';
 import { DesignContext } from '../actions/ctx';
@@ -674,7 +674,11 @@ export class DefaultInjector extends Injector {
         }
 
         const factory = this.resolve({ token: OperationInvokerFactory, target: tgRefl });
-        return factory.create(tgRefl, key, instance).invoke(context ?? factory.createContext(this, { ...option, providers, invokerReflect: tgRefl, invokerMethod: key }));
+        if (!context) {
+            context = factory.createContext(this, { ...option, providers, invokerReflect: tgRefl, invokerMethod: key });
+            return factory.create(tgRefl, key, instance).invoke(context, () => context?.destroy());
+        }
+        return factory.create(tgRefl, key, instance).invoke(context);
     }
 
 

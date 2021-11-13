@@ -172,10 +172,10 @@ export class InvocationContext<T = any> implements Destroyable {
             this._destroyed = true;
             this.destroyCbs.forEach(c => c && c());
             this.destroyCbs.clear();
-            cleanObj(this._arguments);
             this._arguments = null!;
             this._argumentResolvers = null!;
             this._values.clear();
+            this.injector.destroy();
             (this as any).parent = null;
             (this as any).injector = null;
         }
@@ -206,11 +206,12 @@ export interface OperationInvoker {
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation
+     * @param callback (result: any) => void  after invoked callback.
      */
-    invoke(context: InvocationContext): any;
+    invoke(context: InvocationContext, callback?: (result: any) => void): any;
 
     /**
-     * resolve args.
+     * resolve args. 
      * @param context 
      */
     resolveArguments(context: InvocationContext): any[];
@@ -235,14 +236,16 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
 
     constructor(private typeRef: TypeReflect, private method: string, private instance?: any) { }
 
-    invoke(context: InvocationContext) {
+    invoke(context: InvocationContext, callback?: (result: any) => void) {
         const injector = context.injector;
         const type = this.typeRef.type;
         const instance = this.instance ?? injector.resolve(type);
         if (!instance || !isFunction(instance[this.method])) {
             throw new Error(`type: ${type} has no method ${this.method}.`);
         }
-        return instance[this.method](...this.resolveArguments(context), context);
+        let result = instance[this.method](...this.resolveArguments(context), context);
+        if(callback) callback(result);
+        return result;
     }
 
     /**
