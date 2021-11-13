@@ -1,5 +1,4 @@
-import { Injectable, Inject, AutoWired, Container } from '@tsdi/ioc';
-import { ContainerBuilder } from '@tsdi/core';
+import { Injectable, Inject, AutoWired, Container, Injector } from '@tsdi/ioc';
 import { LogModule, Logger } from '../src';
 import { DebugLogAspect } from './DebugLogAspect';
 import { AnntotationLogAspect } from './AnntotationLogAspect';
@@ -74,8 +73,7 @@ describe('logging test', () => {
 
     let container: Container;
     beforeEach(async () => {
-        let builder = new ContainerBuilder();
-        container = builder.create();
+        container = Injector.create();
         await container.use(LogModule);
     });
 
