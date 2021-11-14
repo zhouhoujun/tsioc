@@ -8,7 +8,7 @@ import { CONTAINER, INJECTOR, ROOT_INJECTOR, TARGET } from '../metadata/tk';
 import { cleanObj, deepForEach } from '../utils/lang';
 import { InjectorTypeWithProviders, KeyValueProvider, ProviderType, StaticProvider, StaticProviders } from '../providers';
 import {
-    isArray, isDefined, isFunction, isPlainObject, isPrimitiveType, isUndefined, isPromise,
+    isArray, isDefined, isFunction, isPlainObject, isPrimitiveType, isUndefined,
     isNumber, isTypeObject, isTypeReflect, EMPTY, EMPTY_OBJ, getClass, isString
 } from '../utils/chk';
 import { DesignContext } from '../actions/ctx';
@@ -70,6 +70,7 @@ export class DefaultInjector extends Injector {
                 registerCores(this);
                 break;
             case 'root':
+                this.platform().setInjector(scope, this);
                 rootAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = isRootAlias;
                 break;
@@ -78,6 +79,7 @@ export class DefaultInjector extends Injector {
             case 'parameter':
                 break;
             default:
+                if (scope) this.platform().setInjector(scope, this);
                 injectAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = isInjectAlias;
                 break;
@@ -728,7 +730,7 @@ export class DefaultInjector extends Injector {
         this.records.clear();
         this.records = null!;
         if (this.parent && this.destCb) {
-            !this.parent.destroyed && this.parent.offDestory(this.destCb);
+            !this.parent.destroyed && this.parent.offDestroy(this.destCb);
         }
         if (this.scope === 'platform') {
             this._plat?.destroy();

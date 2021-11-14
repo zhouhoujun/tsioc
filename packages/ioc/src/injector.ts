@@ -331,7 +331,7 @@ export abstract class Injector implements Destroyable {
         this._dsryCbs.add(callback);
     }
 
-    offDestory(callback: () => void) {
+    offDestroy(callback: () => void) {
         this._dsryCbs.delete(callback);
     }
 

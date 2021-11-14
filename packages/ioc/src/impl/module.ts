@@ -22,11 +22,9 @@ export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T>
         this._typeRefl = moduleType;
         this._type = moduleType.type as Type;
         this.setValue(ModuleRef, this);
-        const platform = this.platform();
-        if(scope === 'root') platform.setInjector('root', this);
         deps && this.use(deps);
         providers && this.inject(providers);
-        this.processInjectorType(platform, this._type, dedupStack, this.moduleReflect);
+        this.processInjectorType(this.platform(), this._type, dedupStack, this.moduleReflect);
         this._instance = this.get(this._type);
     }
 
