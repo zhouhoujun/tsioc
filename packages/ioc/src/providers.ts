@@ -209,5 +209,3 @@ export interface InjectorTypeWithProviders<T = any> {
     module: Type<T>;
     providers: ProviderType[]
 }
-
-

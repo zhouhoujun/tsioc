@@ -597,7 +597,7 @@ export const IocExt: IocExt = createDecorator<AutorunMetadata>('IocExt', {
     appendProps: (metadata) => {
         metadata.autorun = 'setup';
         metadata.singleton = true;
-        metadata.providedIn = 'root';
+        metadata.providedIn = 'platform';
     }
 });
 

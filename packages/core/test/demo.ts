@@ -77,10 +77,10 @@ export class Logger {
         console.log('test........');
     }
 
-    // @Around('execution(*.destroyed)')
-    // destoryedlog(jp: Joinpoint) {
-    //     console.log(jp.fullName, jp.state, 'destroyed........');
-    // }
+    @Around('execution(*.destroyed)')
+    destoryedlog(jp: Joinpoint) {
+        console.log(jp.fullName, jp.state, 'destroyed........');
+    }
 }
 
 @Message()

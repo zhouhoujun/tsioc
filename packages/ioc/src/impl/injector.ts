@@ -743,6 +743,9 @@ export class DefaultInjector extends Injector {
     }
 }
 
+/**
+ * static injector.
+ */
 export class StaticInjector extends DefaultInjector {
 
     override get<T>(token: Token<T>, arg1?: InvocationContext | T, flags = InjectFlags.Default): T {

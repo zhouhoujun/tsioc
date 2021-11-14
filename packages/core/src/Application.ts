@@ -167,9 +167,8 @@ export class Application {
     }
 
     protected destroying() {
-        if (!this.context || !this.context.destroyed) return;
-
         this.context.destroy();
+        this.root.parent?.destroy();
         this.root.destroy();
     }
 }
