@@ -128,9 +128,12 @@ export class DefaultApplicationContext extends ApplicationContext {
     destroy(): void {
         if (!this.destroyed) {
             (this as { destroyed: boolean }).destroyed = true;
-            this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.destroy());
-            this._dsryCbs.clear();
-            this.destroying();
+            try {
+                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.destroy());
+            } finally {
+                this._dsryCbs.clear();
+                this.destroying();
+            }
         }
     }
     /**

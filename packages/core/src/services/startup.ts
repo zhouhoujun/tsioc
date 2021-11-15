@@ -1,4 +1,4 @@
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, DestroyCallback, isFunction } from '@tsdi/ioc';
 import { ApplicationContext } from '../Context';
 import { Service } from './service';
 
@@ -15,7 +15,7 @@ import { Service } from './service';
 export abstract class StartupService implements Service {
 
     private _destroyed = false;
-    private _dsryCbs = new Set<() => void>();
+    private _dsryCbs = new Set<DestroyCallback>();
 
     /**
      * config service of application.
@@ -37,9 +37,12 @@ export abstract class StartupService implements Service {
     destroy(): void {
         if (!this._destroyed) {
             this._destroyed = true;
-            this._dsryCbs.forEach(cb => cb());
-            this._dsryCbs.clear();
-            this.destroying();
+            try {
+                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.destroy());
+            } finally {
+                this._dsryCbs.clear();
+                this.destroying();
+            }
         }
     }
 
@@ -47,7 +50,7 @@ export abstract class StartupService implements Service {
      * register callback on destory.
      * @param callback destory callback
      */
-    onDestroy(callback: () => void): void {
+    onDestroy(callback: DestroyCallback): void {
         this._dsryCbs.add(callback);
     }
     /**

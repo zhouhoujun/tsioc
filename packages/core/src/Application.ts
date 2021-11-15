@@ -1,4 +1,4 @@
-import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, ModuleRef, Injector, Modules, ModuleFactoryResolver, Destroy, DestroyCallback } from '@tsdi/ioc';
+import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, ModuleRef, Injector, Modules, ModuleFactoryResolver, DestroyCallback } from '@tsdi/ioc';
 import { CTX_ARGS, PROCESS_ROOT } from './metadata/tk';
 import { ApplicationContext, ApplicationFactory, ApplicationExit, ApplicationOption, BootstrapOption } from './Context';
 import { MiddlewareModule } from './middleware';
@@ -152,9 +152,12 @@ export class Application {
     destroy(): void {
         if (!this._destroyed) {
             this._destroyed = true;
-            this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.destroy());
-            this._dsryCbs.clear();
-            this.destroying();
+            try {
+                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.destroy());
+            } finally {
+                this._dsryCbs.clear();
+                this.destroying();
+            }
         }
     }
 

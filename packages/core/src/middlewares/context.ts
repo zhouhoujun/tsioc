@@ -205,9 +205,12 @@ export abstract class Context implements Destroyable {
     destroy(): void {
         if (!this._destroyed) {
             this._destroyed = true;
-            this._dsryCbs.forEach(cb => cb());
-            this._dsryCbs.clear();
-            this.destroying();
+            try {
+                this._dsryCbs.forEach(cb => cb());
+            } finally {
+                this._dsryCbs.clear();
+                this.destroying();
+            }
         }
     }
     /**
