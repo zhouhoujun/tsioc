@@ -1,6 +1,6 @@
 import {
     ProviderType, LoadType, Injector, Abstract, Type, InvokeOption,
-    ModuleLoader, Destroyable, ModuleRef, ModuleOption,  Modules, Resolver, DestroyCallback
+    ModuleLoader, Destroyable, Modules, Resolver, DestroyCallback
 } from '@tsdi/ioc';
 import { ILoggerManager } from '@tsdi/logs';
 import { Configuration, ConfigureManager } from './configure/config';
@@ -11,6 +11,8 @@ import { MessageQueue } from './middlewares/queue';
 import { Runnable, RunnableFactory } from './runnable';
 import { Service } from './services/service';
 import { Server } from './server/server';
+import { ModuleOption } from './module.factory';
+import { ModuleRef } from './module.ref';
 
 
 

@@ -1,4 +1,4 @@
-import { Module } from '@tsdi/ioc';
+import { Module } from './metadata/decor';
 import { ContextFactory, RouteVaildator } from './middlewares/context';
 import { MessageQueue } from './middlewares/queue';
 import { RootMessageQueue } from './middlewares/root';

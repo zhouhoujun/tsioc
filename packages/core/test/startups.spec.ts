@@ -1,5 +1,5 @@
-import { Module, Injector, lang } from '@tsdi/ioc';
-import { Application,  StartupService, Boot, ApplicationContext } from '../src';
+import { Injector, lang } from '@tsdi/ioc';
+import { Module, Application, StartupService, Boot, ApplicationContext } from '../src';
 import expect = require('expect');
 
 @Boot()
@@ -116,7 +116,7 @@ describe('app message queue', () => {
     });
 
     it('has startup', async () => {
-        const startups = ctx.services.map(r=> r.type);
+        const startups = ctx.services.map(r => r.type);
         expect(startups).toEqual([MyStartupService1, DeviceConnectionService, DeviceInitService, DeviceAService, MyStartupService]);
         expect(ctx.injector.get('MyStartup')).toEqual('start');
     });

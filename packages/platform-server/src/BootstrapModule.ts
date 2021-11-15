@@ -1,5 +1,5 @@
-import { Module, Injectable, Singleton, ModuleLoader } from '@tsdi/ioc';
-import { ConfigureLoader, PROCESS_ROOT, Configuration, ApplicationExit, ApplicationContext } from '@tsdi/core';
+import { Injectable, Singleton, ModuleLoader } from '@tsdi/ioc';
+import { Module, ConfigureLoader, PROCESS_ROOT, Configuration, ApplicationExit, ApplicationContext } from '@tsdi/core';
 import * as path from 'path';
 import * as fs from 'fs';
 import { runMainPath } from './toAbsolute';

@@ -1,4 +1,4 @@
-import { Module } from '@tsdi/ioc';
+import { Module } from '@tsdi/core';
 import { ParseObjectIdPipe } from './objectid.pipe';
 import { TypeOrmHelper } from './helper';
 import { TypeormServer } from './TypeormServer';

@@ -1,5 +1,5 @@
-import { global, PROCESS_ROOT } from '@tsdi/core';
-import { Module } from '@tsdi/ioc';
+import { Module, global, PROCESS_ROOT } from '@tsdi/core';
+
 
 let processRoot = global.baseURL || '.';
 

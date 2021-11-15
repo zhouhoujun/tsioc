@@ -1,9 +1,5 @@
-import { Modules, Type } from './types';
-import { Abstract } from './metadata/fac';
+import { Abstract, Injector, ModuleReflect, Modules, ProviderType, Type } from '@tsdi/ioc';
 import { ModuleRef } from './module.ref';
-import { ProviderType } from './providers';
-import { ModuleReflect } from './metadata/type';
-import { Injector } from './injector';
 
 
 /**

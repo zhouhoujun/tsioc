@@ -1,11 +1,8 @@
-import { Destroyable, DestroyCallback } from './destroy';
-import { Type } from './types';
-import { deepForEach } from './utils/lang';
-import { isFunction, isPlainObject } from './utils/chk';
-import { InjectorTypeWithProviders } from './providers';
-import { Abstract } from './metadata/fac';
-import { ModuleReflect } from './metadata/type';
-import { Injector } from './injector';
+import {
+    Abstract, Destroyable, DestroyCallback, Injector, InjectorTypeWithProviders,
+    isFunction, isPlainObject, lang, ModuleReflect, Type
+} from '@tsdi/ioc';
+
 
 /**
  * Represents an instance of an `Module` created by an `ModuleFactory`.
@@ -46,7 +43,7 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
 
 export function getModuleType(input: any[]): (Type | InjectorTypeWithProviders)[] {
     const types: (Type | InjectorTypeWithProviders)[] = [];
-    deepForEach<Type | InjectorTypeWithProviders>(input, ty => {
+    lang.deepForEach<Type | InjectorTypeWithProviders>(input, ty => {
         if (isFunction(ty) || (ty as InjectorTypeWithProviders).module) {
             types.push(ty);
         }

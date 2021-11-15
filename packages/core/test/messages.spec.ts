@@ -1,6 +1,6 @@
-import { Application, Message, MessageQueue, Context, Middleware, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, ArgumentError, RequestPath, AbstractMiddleware } from '../src';
+import { Application, MessageQueue, Context, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, ArgumentError, RequestPath, AbstractMiddleware, Module } from '../src';
 import expect = require('expect');
-import { Module, Injector, Injectable, lang, MissingParameterError } from '@tsdi/ioc';
+import { Injector, Injectable, lang, MissingParameterError } from '@tsdi/ioc';
 
 @RouteMapping('/device')
 class DeviceController {

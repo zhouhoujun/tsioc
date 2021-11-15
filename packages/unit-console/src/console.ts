@@ -1,4 +1,5 @@
-import { Token, lang, Module } from '@tsdi/ioc';
+import { Token, lang } from '@tsdi/ioc';
+import { Module } from '@tsdi/core';
 import { SuiteDescribe, RealtimeReporter, ICaseDescribe } from '@tsdi/unit';
 import { ServerBootstrapModule, ServerLogsModule } from '@tsdi/platform-server';
 import * as chalk from 'chalk';

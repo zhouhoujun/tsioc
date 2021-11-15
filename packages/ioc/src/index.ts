@@ -7,8 +7,6 @@ export * from './invoker';
 
 // module
 export * from './module.loader';
-export * from './module.ref';
-export * from './module.factory';
 
 // utils
 export * from './utils/chk';

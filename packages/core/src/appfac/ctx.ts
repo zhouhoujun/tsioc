@@ -1,10 +1,11 @@
-import { Token, ProviderType, Type, isFunction, isBoolean, ModuleRef, ModuleMetadata, Destroy, DestroyCallback } from '@tsdi/ioc';
+import { Token, ProviderType, Type, isFunction, isBoolean, ModuleMetadata, DestroyCallback } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { SERVICES, CONFIGURATION, PROCESS_ROOT, SERVERS } from '../metadata/tk';
 import { Configuration, ConfigureManager } from '../configure/config';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from '../Context';
 import { Runnable, RunnableFactory, RunnableFactoryResolver } from '../runnable';
 import { Response, Request, Context, MessageQueue, RequestInit, RequestOption, ROOT_QUEUE } from '../middlewares';
+import { ModuleRef } from '../module.ref';
 
 
 

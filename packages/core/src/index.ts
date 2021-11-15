@@ -23,9 +23,9 @@ export * from './server';
 export * from './client';
 
 // modules
-// export * from './module';
-// export * from './modules/strategy';
-// export * from './modules/injector';
+export * from './module.ref';
+export * from './module.factory';
+export * from './module/module';
 
 // applications
 export * from './appfac/ctx';

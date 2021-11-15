@@ -1,13 +1,8 @@
-import { Token } from '../tokens';
-import { Modules, Type } from '../types';
-import { get } from '../metadata/refl';
-import { ModuleReflect } from '../metadata/type';
+
+import { DefaultInjector, Injector, InjectorScope, InjectorTypeWithProviders, isFunction, ModuleReflect, Modules, Platform, processInjectorType, ProviderType, refl, Token, Type } from '@tsdi/ioc';
 import { ModuleFactory, ModuleFactoryResolver, ModuleOption } from '../module.factory';
 import { ModuleRef } from '../module.ref';
-import { InjectorTypeWithProviders, ProviderType } from '../providers';
-import { isFunction } from '../utils/chk';
-import { Injector, InjectorScope, Platform } from '../injector';
-import { DefaultInjector, processInjectorType } from './injector';
+
 
 /**
  * default modeuleRef implements {@link ModuleRef}
@@ -77,7 +72,7 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
         super();
         if (isFunction(moduleType)) {
             this._moduleType = moduleType;
-            this._moduleRefl = get(moduleType);
+            this._moduleRefl = refl.get(moduleType);
         } else {
             this._moduleRefl = moduleType;
             this._moduleType = moduleType.type as Type;
