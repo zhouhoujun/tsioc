@@ -12,7 +12,7 @@ import { DecoratorOption } from './refl';
 import { ModuleReflect } from './type';
 import { ProviderType, StaticProvider } from '../providers';
 import { Injector } from '../injector';
-import { getModuleType, ModuleRef } from '../module.ref';
+import { getModuleType } from '../module.ref';
 
 
 
@@ -483,12 +483,6 @@ export interface Module<T extends ModuleMetadata> {
      * @param {T} [metadata] bootstrap metadate config.
      */
     (metadata: T): ClassDecorator;
-}
-
-
-interface ModuleDesignContext extends DesignContext {
-    reflect: ModuleReflect;
-    moduleRef?: ModuleRef;
 }
 
 /**
