@@ -7,7 +7,6 @@ import { ProviderType } from './providers';
 import { DestroyCallback, Destroyable } from './destroy';
 import { Token } from './tokens';
 import { Injector } from './injector';
-import { Destroy } from '.';
 
 
 

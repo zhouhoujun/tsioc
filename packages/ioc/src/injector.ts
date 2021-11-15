@@ -488,6 +488,9 @@ export const INJECT_IMPL = {
  */
 export type Factory<T = any> = (...args: any[]) => T;
 
+/**
+ * register option
+ */
 export interface RegOption<T = any> extends ProvidedInMetadata {
     provide?: Token<T>;
     injectorType?: boolean;

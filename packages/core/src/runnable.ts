@@ -116,4 +116,3 @@ import { ApplicationContext, BootstrapOption } from './Context';
      abstract resolve<T>(type: Type<T>): RunnableFactory<T>;
  }
  
- 
