@@ -2,7 +2,7 @@ import {
     Abstract, Destroyable, DestroyCallback, Injector, InjectorTypeWithProviders,
     isFunction, isPlainObject, lang, ModuleReflect, Type
 } from '@tsdi/ioc';
-import { ResolverFactoryResolver } from './resolver';
+import { RunnableFactoryResolver } from './runnable';
 
 
 /**
@@ -26,6 +26,12 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
     //  * factory resolver.
     //  */
     // abstract get factoryResolver():  ResolverFactoryResolver;
+
+    /**
+     * runnable factory resolver.
+     */
+    abstract get runnableFactoryResolver():  RunnableFactoryResolver;
+
 
     /**
      * The injector that contains all of the providers of the `Module`.

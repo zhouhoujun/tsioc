@@ -3,15 +3,12 @@ import { DefaultConfigureManager, ConfigureMergerImpl } from './configure/manage
 import { BootLifeScope } from './appfac/lifescope';
 import { ApplicationFactory } from './Context';
 import { DefaultApplicationFactory } from './appfac/ctx';
-import { DefaultServiceFactoryResolver } from './services/factory';
-import { RunnableFactoryResolver } from './runnable';
 import { DefaultModuleFactoryResolver } from './module/module';
 import { ModuleFactoryResolver } from './module.factory';
 
 
 export const DEFAULTA_FACTORYS: ProviderType[] = [
     { provide: ModuleFactoryResolver, useValue: new DefaultModuleFactoryResolver() },
-    { provide: RunnableFactoryResolver, useValue: new DefaultServiceFactoryResolver() },
     { provide: ApplicationFactory, useValue: new DefaultApplicationFactory() }
 ]
 

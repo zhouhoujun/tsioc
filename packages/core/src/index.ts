@@ -1,7 +1,6 @@
 // services
 export * from './services/service';
 export * from './services/startup';
-export * from './services/factory';
 
 // annotations
 export * from './configure/config';
@@ -26,6 +25,7 @@ export * from './client';
 export * from './module.ref';
 export * from './module.factory';
 export * from './module/module';
+export * from './module/runnable';
 
 // applications
 export * from './appfac/ctx';

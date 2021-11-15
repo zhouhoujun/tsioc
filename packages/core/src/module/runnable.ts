@@ -1,5 +1,6 @@
 import { Type, refl, Destroyable, lang, Injector, TypeReflect } from '@tsdi/ioc';
 import { ApplicationContext, BootstrapOption } from '../Context';
+import { ModuleRef } from '../module.ref';
 import { Runnable, RunnableFactory, RunnableFactoryResolver, TargetRef } from '../runnable';
 
 
@@ -9,7 +10,7 @@ import { Runnable, RunnableFactory, RunnableFactoryResolver, TargetRef } from '.
  */
 export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
 
-    constructor(private _refl: TypeReflect<T>) {
+    constructor(private _refl: TypeReflect<T>, private moduleRef?: ModuleRef) {
         super();
     }
 
@@ -18,7 +19,7 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
     }
 
     override create(option: BootstrapOption, context?: ApplicationContext) {
-        const injector = option.injector ?? context?.injector!;
+        const injector = this.moduleRef ?? option.injector ?? context?.injector!;
         const targetRef = new RunnableTargetRef(this._refl, injector);
         const target = targetRef.instance;
         const runable = ((target instanceof Runnable) ? target
@@ -88,9 +89,13 @@ export class RunnableTargetRef<T = any> extends TargetRef<T>  {
 /**
  * factory resolver for {@link RunnableFactory}.
  */
-export class DefaultServiceFactoryResolver extends RunnableFactoryResolver {
+export class DefaultRunnableFactoryResolver extends RunnableFactoryResolver {
+
+    constructor(private moduleRef?: ModuleRef) {
+        super();
+    }
 
     override resolve<T>(type: Type<T>) {
-        return new DefaultRunnableFactory(refl.get(type));
+        return new DefaultRunnableFactory(refl.get(type), this.moduleRef);
     }
 }
