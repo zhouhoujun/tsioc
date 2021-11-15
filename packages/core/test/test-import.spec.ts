@@ -1,5 +1,5 @@
 import { ModuleA, ModuleB, ClassSevice, SubMessageQueue, SocketService, StatupModule, TestService } from './demo';
-import { Application, RootMessageQueue, ROOT_QUEUE, Runner,  } from '../src';
+import { Application, Runner  } from '../src';
 import expect = require('expect');
 import * as net from 'net';
 

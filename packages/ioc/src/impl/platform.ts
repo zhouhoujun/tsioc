@@ -2,45 +2,45 @@ import { Token } from '../tokens';
 import { ClassType, Type } from '../types';
 import { Handler } from '../utils/hdl';
 import { EMPTY, isFunction } from '../utils/chk';
-import { getClassName } from '../utils/lang';
 import { Action, IActionSetup } from '../action';
 import { get } from '../metadata/refl';
 import { TypeReflect } from '../metadata/type';
 import { ProviderType, StaticProvider } from '../providers';
 import { Injector, Platform } from '../injector';
+import { DestroyCallback } from '../destroy';
 
 
 /**
- * registered state.
+ * default platform implements {@link Platform}.
  */
 export class DefaultPlatform implements Platform {
 
-    // private states: Map<ClassType, Registered>;
-    private destroyCbs = new Set<() => void>();
+    private _dsryCbs = new Set<DestroyCallback>();
     private _destroyed = false;
     private actions: Map<Token, any>;
     private singletons: Map<Token, any>;
-    private extendPds: Map<ClassType, ProviderType[]>;
-
+    private extPdrs: Map<ClassType, ProviderType[]>;
     private scopes: Map<string | ClassType, Injector>;
 
     constructor(readonly injector: Injector) {
         this.scopes = new Map();
-        this.extendPds = new Map();
+        this.extPdrs = new Map();
         this.actions = new Map();
         this.singletons = new Map();
+        injector.onDestroy(this);
     }
 
     /**
-     * set singleton value
+     * register singleton value
      * @param token 
      * @param value 
      */
-    setSingleton<T>(token: Token<T>, value: T): this {
+    registerSingleton<T>(injector: Injector, token: Token<T>, value: T): this {
         if (this.singletons.has(token)) {
             throw Error('has singleton instance with token:' + token.toString());
         }
         this.singletons.set(token, value);
+        injector.onDestroy(()=> this.singletons.delete(token));
         return this;
     }
     /**
@@ -71,13 +71,6 @@ export class DefaultPlatform implements Platform {
             return this.injector as T;
         }
         return this.scopes.get(scope) as T;
-    }
-
-    assertSameOrNotExisting(type: Type<any> | undefined, incoming: Type<any>) {
-        if (type && type !== incoming) {
-            throw new Error(
-                `Duplicate module registered for - ${getClassName(type)}`);
-        }
     }
 
     /**
@@ -135,9 +128,9 @@ export class DefaultPlatform implements Platform {
      */
     getTypeProvider(type: ClassType | TypeReflect) {
         if (isFunction(type)) {
-            return this.extendPds.has(type) ? [...get(type)?.class.providers, ...this.extendPds.get(type) || EMPTY] : get(type)?.class.providers;
+            return this.extPdrs.has(type) ? [...get(type)?.class.providers, ...this.extPdrs.get(type) || EMPTY] : get(type)?.class.providers;
         }
-        return this.extendPds.has(type.type) ? [...type.class.providers, ...this.extendPds.get(type.type) || EMPTY] : type.class.providers;
+        return this.extPdrs.has(type.type) ? [...type.class.providers, ...this.extPdrs.get(type.type) || EMPTY] : type.class.providers;
     }
 
     /**
@@ -147,16 +140,16 @@ export class DefaultPlatform implements Platform {
      */
     setTypeProvider(type: ClassType | TypeReflect, providers: StaticProvider[]) {
         const ty = isFunction(type) ? type : type.type;
-        const prds = this.extendPds.get(ty);
+        const prds = this.extPdrs.get(ty);
         if (prds) {
             prds.push(...providers)
         } else {
-            this.extendPds.set(ty, providers);
+            this.extPdrs.set(ty, providers);
         }
     }
 
     clearTypeProvider(type: ClassType) {
-        this.extendPds.delete(type);
+        this.extPdrs.delete(type);
     }
 
     /**
@@ -171,16 +164,19 @@ export class DefaultPlatform implements Platform {
             return;
         }
         this._destroyed = true;
-        this.destroyCbs.forEach(c => c && c());
-        this.destroyCbs.clear();
-        this.scopes.clear();
-        this.extendPds.clear();
-        this.actions.clear();
-        this.singletons.clear();
+        try {
+            this._dsryCbs.forEach(c => isFunction(c) ? c() : c?.destroy());
+        } finally {
+            this._dsryCbs.clear();
+            this.scopes.clear();
+            this.extPdrs.clear();
+            this.actions.clear();
+            this.singletons.clear();
+        }
     }
 
-    onDestroy(callback: () => void): void {
-        this.destroyCbs.add(callback);
+    onDestroy(callback: DestroyCallback): void {
+        this._dsryCbs.add(callback);
     }
 
 }

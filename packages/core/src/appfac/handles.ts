@@ -106,7 +106,7 @@ export const ConfigureServerHandle = async function (ctx: ApplicationContext, ne
     if (servers && servers.length) {
         await Promise.all(servers.map(svrr => {
             const svr = svrr.resolve();
-            ctx.onDestroy(() => svr?.disconnect());
+            ctx.onDestroy(svr);
             return svr.connect(ctx);
         }));
     }
@@ -135,7 +135,7 @@ export const ConfigureServiceHandle = async function (ctx: ApplicationContext, n
     if (boots?.length) {
         await lang.step(boots.map(rser => () => {
             const ser = rser.resolve();
-            ctx.onDestroy(() => ser.destroy());
+            ctx.onDestroy(ser);
             return ser?.configureService(ctx);
         }));
     }

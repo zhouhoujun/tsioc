@@ -1,4 +1,4 @@
-import { Type, refl, Destroyable, lang, Injector, TypeReflect, EMPTY, TokenValue } from '@tsdi/ioc';
+import { Type, refl, Destroyable, lang, Injector, TypeReflect } from '@tsdi/ioc';
 import { ApplicationContext, BootstrapOption } from '../Context';
 import { Runnable, RunnableFactory, RunnableFactoryResolver, TargetRef } from '../runnable';
 
@@ -33,13 +33,11 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
             targetRef.onDestroy(() => {
                 runable.destroy?.();
                 lang.remove(context.bootstraps, runable);
-                lang.cleanObj(runable);
             });
             context.bootstraps.push(runable);
         } else {
             targetRef.onDestroy(() => {
                 runable.destroy?.();
-                lang.cleanObj(runable);
             });
         }
 
@@ -72,8 +70,8 @@ export class RunnableTargetRef<T = any> extends TargetRef<T>  {
      * Destroys the component instance and all of the data structures associated with it.
      */
     destroy(): void {
-        this.injector.destroy();
-        lang.cleanObj(this);
+        this._instance = null!;
+        (this as any).reflect = null!;
     }
 
     /**

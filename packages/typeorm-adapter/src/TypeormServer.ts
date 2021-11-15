@@ -22,6 +22,7 @@ export class TypeormServer implements Server {
     protected ctx!: ApplicationContext;
 
     private logger!: ILogger;
+    private destroyed = false;
     /**
      * configure service.
      * @param ctx context.
@@ -167,5 +168,11 @@ export class TypeormServer implements Server {
                 c.close()
             }
         });
+    }
+
+    destroy(): void {
+        if (this.destroyed) return;
+        this.destroyed = true;
+        this.disconnect();
     }
 }

@@ -9,7 +9,9 @@ import { isFunction } from '../utils/chk';
 import { Injector, InjectorScope, Platform } from '../injector';
 import { DefaultInjector, processInjectorType } from './injector';
 
-
+/**
+ * default modeuleRef implements {@link ModuleRef}
+ */
 export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T> {
 
     private _instance!: T;
@@ -66,7 +68,6 @@ export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T>
     }
 
 }
-
 
 export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
 

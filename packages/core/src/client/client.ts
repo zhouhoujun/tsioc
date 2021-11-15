@@ -1,8 +1,9 @@
+import { Destroy } from '@tsdi/ioc';
 
 /**
  * client proxy
  */
-export interface Client {
+export interface Client extends Destroy {
     /**
      * connect server
      */

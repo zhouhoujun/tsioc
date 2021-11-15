@@ -4,23 +4,12 @@ import { first, getTypes } from '../utils/lang';
 import { ModuleLoader } from '../module.loader';
 import { Injector } from '../injector';
 
-
-const fileChkExp = /\/((\w|%|\.))+\.\w+$/;
-
-export function isPathModules(target: any): target is PathModules {
-    return isMetadataObject(target, 'modules', 'files');
-}
-
-export function isChildModule(target: any): target is ChildModule {
-    return target && isFunction(target.loadChild);
-}
-
 /**
- * default module loader.
+ * default module loader for {@link ModuleLoader}.
  *
  * @export
  * @class DefaultModuleLoader
- * @implements {ModuleLoader}
+ * @extends {ModuleLoader}
  */
 export class DefaultModuleLoader extends ModuleLoader {
 
@@ -148,4 +137,15 @@ export class DefaultModuleLoader extends ModuleLoader {
         return pth ? pth.split('\\').join('/') : pth;
     }
 
+}
+
+
+const fileChkExp = /\/((\w|%|\.))+\.\w+$/;
+
+export function isPathModules(target: any): target is PathModules {
+    return isMetadataObject(target, 'modules', 'files');
+}
+
+export function isChildModule(target: any): target is ChildModule {
+    return target && isFunction(target.loadChild);
 }

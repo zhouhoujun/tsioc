@@ -23,6 +23,7 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
      * module type
      */
     abstract get moduleReflect(): ModuleReflect<T>;
+    
     /**
      * The injector that contains all of the providers of the `Module`.
      */

@@ -1,4 +1,4 @@
-import { Token, ProviderType, Type, isFunction, isBoolean, ModuleRef, ModuleMetadata } from '@tsdi/ioc';
+import { Token, ProviderType, Type, isFunction, isBoolean, ModuleRef, ModuleMetadata, Destroy, DestroyCallback } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { SERVICES, CONFIGURATION, PROCESS_ROOT, SERVERS } from '../metadata/tk';
 import { Configuration, ConfigureManager } from '../configure/config';
@@ -18,7 +18,7 @@ import { Response, Request, Context, MessageQueue, RequestInit, RequestOption, R
 export class DefaultApplicationContext extends ApplicationContext {
 
     readonly destroyed = false;
-    private _dsryCbs = new Set<() => void>();
+    private _dsryCbs = new Set<DestroyCallback>();
     readonly bootstraps: Runnable[] = [];
     readonly args: string[] = [];
     readonly startups: Token[] = [];
@@ -128,7 +128,7 @@ export class DefaultApplicationContext extends ApplicationContext {
     destroy(): void {
         if (!this.destroyed) {
             (this as { destroyed: boolean }).destroyed = true;
-            this._dsryCbs.forEach(cb => cb());
+            this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.destroy());
             this._dsryCbs.clear();
             this.destroying();
         }
@@ -137,7 +137,7 @@ export class DefaultApplicationContext extends ApplicationContext {
      * register callback on destory.
      * @param callback destory callback
      */
-    onDestroy(callback: () => void): void {
+    onDestroy(callback: DestroyCallback): void {
         this._dsryCbs.add(callback);
     }
 

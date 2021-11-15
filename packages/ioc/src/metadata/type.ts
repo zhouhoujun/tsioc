@@ -1,13 +1,9 @@
 
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { InjectorTypeWithProviders, ProviderType } from '../providers';
-import { Token } from '../tokens';
 import { ClassType, Type } from '../types';
 import { Handler } from '../utils/hdl';
-import {
-    ParameterMetadata, PatternMetadata, PropertyMetadata,
-    ProvidersMetadata, ProvidedInMetadata, ModuleMetadata
-} from './meta';
+import { PatternMetadata, ProvidersMetadata, ProvidedInMetadata, ModuleMetadata } from './meta';
 import { TypeDefine } from './typedef';
 
 /**
@@ -97,7 +93,9 @@ export interface TypeReflect<T = any> extends ProvidedInMetadata, PatternMetadat
      * class define.
      */
     class: TypeDefine;
-
+    /**
+     * annotation metadata.
+     */
     annotation?: any;
 }
 

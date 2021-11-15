@@ -1,4 +1,4 @@
-import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, ModuleRef, Injector, Modules, ModuleFactoryResolver } from '@tsdi/ioc';
+import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, ModuleRef, Injector, Modules, ModuleFactoryResolver, Destroy, DestroyCallback } from '@tsdi/ioc';
 import { CTX_ARGS, PROCESS_ROOT } from './metadata/tk';
 import { ApplicationContext, ApplicationFactory, ApplicationExit, ApplicationOption, BootstrapOption } from './Context';
 import { MiddlewareModule } from './middleware';
@@ -15,7 +15,7 @@ import { CoreModule, DEFAULTA_FACTORYS } from './core';
 export class Application {
 
     private _destroyed = false;
-    private _dsryCbs = new Set<() => void>();
+    private _dsryCbs = new Set<DestroyCallback>();
     readonly root: ModuleRef;
 
     /**
@@ -152,7 +152,7 @@ export class Application {
     destroy(): void {
         if (!this._destroyed) {
             this._destroyed = true;
-            this._dsryCbs.forEach(cb => cb());
+            this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.destroy());
             this._dsryCbs.clear();
             this.destroying();
         }
@@ -162,7 +162,7 @@ export class Application {
      * register callback on destory.
      * @param callback destory callback
      */
-    onDestroy(callback: () => void): void {
+    onDestroy(callback: DestroyCallback): void {
         this._dsryCbs.add(callback);
     }
 

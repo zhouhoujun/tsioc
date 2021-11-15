@@ -1,6 +1,6 @@
 import {
     ProviderType, LoadType, Injector, Abstract, Type, InvokeOption,
-    ModuleLoader, Destroyable, ModuleRef, ModuleOption,  Modules, Resolver
+    ModuleLoader, Destroyable, ModuleRef, ModuleOption,  Modules, Resolver, DestroyCallback
 } from '@tsdi/ioc';
 import { ILoggerManager } from '@tsdi/logs';
 import { Configuration, ConfigureManager } from './configure/config';
@@ -147,7 +147,7 @@ export abstract class ApplicationContext implements Destroyable {
      * @param callback A handler function that cleans up developer-defined data
      * associated with this component. Called when the `destroy()` method is invoked.
      */
-    abstract onDestroy(callback: Function): void;
+    abstract onDestroy(callback: DestroyCallback): void;
 }
 
 /**

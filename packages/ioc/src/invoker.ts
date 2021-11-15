@@ -1,13 +1,13 @@
 import { ClassType, Type } from './types';
 import { EMPTY, isDefined, isFunction, isObject } from './utils/chk';
-import { cleanObj } from './utils/lang';
 import { Abstract } from './metadata/fac';
 import { ParameterMetadata } from './metadata/meta';
 import { TypeReflect } from './metadata/type';
 import { ProviderType } from './providers';
-import { Destroyable } from './destroy';
+import { DestroyCallback, Destroyable } from './destroy';
 import { Token } from './tokens';
 import { Injector } from './injector';
+import { Destroy } from '.';
 
 
 
@@ -82,7 +82,7 @@ export class InvocationContext<T = any> implements Destroyable {
     private _argumentResolvers: OperationArgumentResolver[];
     private _arguments: T;
     private _values: Map<Token, any>;
-    private destroyCbs = new Set<() => void>();
+    private _dsryCbs = new Set<DestroyCallback>();
     private _destroyed = false;
     constructor(
         readonly injector: Injector,
@@ -170,19 +170,22 @@ export class InvocationContext<T = any> implements Destroyable {
     destroy(): void {
         if (!this._destroyed) {
             this._destroyed = true;
-            this.destroyCbs.forEach(c => c && c());
-            this.destroyCbs.clear();
-            this._arguments = null!;
-            this._argumentResolvers = null!;
-            this._values.clear();
-            this.injector.destroy();
-            (this as any).parent = null;
-            (this as any).injector = null;
+            try {
+                this._dsryCbs.forEach(c => isFunction(c) ? c() : c?.destroy());
+            } finally {
+                this._dsryCbs.clear();
+                this._arguments = null!;
+                this._argumentResolvers = null!;
+                this._values.clear();
+                this.injector.destroy();
+                (this as any).parent = null;
+                (this as any).injector = null;
+            }
         }
     }
 
-    onDestroy(callback: () => void): void {
-        this.destroyCbs.add(callback);
+    onDestroy(callback: DestroyCallback): void {
+        this._dsryCbs.add(callback);
     }
 }
 
@@ -236,6 +239,11 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
 
     constructor(private typeRef: TypeReflect, private method: string, private instance?: any) { }
 
+    /**
+     * Invoke the underlying operation using the given {@code context}.
+     * @param context the context to use to invoke the operation
+     * @param callback (result: any) => void  after invoked callback.
+     */
     invoke(context: InvocationContext, callback?: (result: any) => void) {
         const injector = context.injector;
         const type = this.typeRef.type;
@@ -244,7 +252,7 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
             throw new Error(`type: ${type} has no method ${this.method}.`);
         }
         let result = instance[this.method](...this.resolveArguments(context), context);
-        if(callback) callback(result);
+        if (callback) callback(result);
         return result;
     }
 

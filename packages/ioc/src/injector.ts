@@ -1,15 +1,16 @@
-import { Destroyable } from './destroy';
+import { Destroyable, DestroyCallback } from './destroy';
 import { ClassType, LoadType, Modules, Type } from './types';
 import { Token, InjectFlags } from './tokens';
 import { Abstract } from './metadata/fac';
 import { TypeReflect } from './metadata/type';
-import { EMPTY, isArray } from './utils/chk';
+import { EMPTY, isArray, isFunction } from './utils/chk';
 import { Handler } from './utils/hdl';
 import { Action } from './action';
 import { ClassProvider, ExistingProvider, FactoryProvider, ProviderType, ValueProvider } from './providers';
 import { InvocationContext, InvokeOption, Resolver } from './invoker';
 import { ModuleLoader } from './module.loader';
 import { ProvidedInMetadata } from './metadata/meta';
+import { Destroy } from './destroy';
 
 
 /**
@@ -23,7 +24,7 @@ export abstract class Injector implements Destroyable {
     static ρNPT = true;
 
     private _destroyed = false;
-    protected _dsryCbs = new Set<() => void>();
+    protected _dsryCbs = new Set<DestroyCallback>();
 
     readonly scope?: InjectorScope | string;
     /**
@@ -318,20 +319,23 @@ export abstract class Injector implements Destroyable {
     destroy(): void {
         if (!this._destroyed) {
             this._destroyed = true;
-            this._dsryCbs.forEach(cb => cb());
-            this._dsryCbs.clear();
-            this.destroying();
+            try {
+                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.destroy());
+            } finally {
+                this._dsryCbs.clear();
+                this.destroying();
+            }
         }
     }
     /**
      * register callback on destory.
      * @param callback destory callback
      */
-    onDestroy(callback: () => void): void {
+    onDestroy(callback: DestroyCallback): void {
         this._dsryCbs.add(callback);
     }
 
-    offDestroy(callback: () => void) {
+    offDestroy(callback: DestroyCallback) {
         this._dsryCbs.delete(callback);
     }
 
@@ -373,7 +377,7 @@ export abstract class Platform implements Destroyable {
      * @param token 
      * @param value 
      */
-    abstract setSingleton<T>(token: Token<T>, value: T): this;
+    abstract registerSingleton<T>(injector: Injector, token: Token<T>, value: T): this;
     /**
      * get singleton instance.
      * @param token 
@@ -389,7 +393,7 @@ export abstract class Platform implements Destroyable {
      * @param scope 
      * @param injector 
      */
-    abstract setInjector(scope: ClassType| string, injector: Injector): void;
+    abstract setInjector(scope: ClassType | string, injector: Injector): void;
     /**
      * get injector the type registered in.
      * @param scope
@@ -442,7 +446,7 @@ export abstract class Platform implements Destroyable {
 
     abstract get destroyed(): boolean;
     abstract destroy(): void;
-    abstract onDestroy(callback: () => void): void;
+    abstract onDestroy(callback: Destroy | (() => void)): void;
 }
 
 /**
