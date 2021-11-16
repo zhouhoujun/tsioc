@@ -1,5 +1,8 @@
 
-import { DefaultInjector, Injector, InjectorScope, InjectorTypeWithProviders, isFunction, ModuleReflect, Modules, Platform, processInjectorType, ProviderType, refl, Token, Type } from '@tsdi/ioc';
+import {
+    DefaultInjector, Injector, InjectorScope, InjectorTypeWithProviders, isFunction, Platform,
+    ModuleReflect, Modules, processInjectorType, ProviderType, refl, Token, Type
+} from '@tsdi/ioc';
 import { ModuleFactory, ModuleFactoryResolver, ModuleOption } from '../module.factory';
 import { ModuleRef } from '../module.ref';
 import { RunnableFactoryResolver } from '../runnable';
@@ -12,10 +15,12 @@ import { DefaultRunnableFactoryResolver } from './runnable';
 export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T> {
 
     private _instance!: T;
-    private defTypes = new Set<Type>();
+    private _defs = new Set<Type>();
     private _type: Type;
     private _typeRefl: ModuleReflect;
+
     readonly runnableFactoryResolver: RunnableFactoryResolver = new DefaultRunnableFactoryResolver(this);
+
     constructor(moduleType: ModuleReflect, providers: ProviderType[] | undefined, readonly parent: Injector, readonly scope?: InjectorScope, deps?: Modules[]) {
         super(undefined, parent, scope);
         const dedupStack: Type[] = [];
@@ -54,13 +59,14 @@ export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T>
         processInjectorType(typeOrDef, dedupStack,
             (pdr, pdrs) => this.processProvider(platform, pdr, pdrs),
             (tyref, type) => {
-                this.defTypes.add(type);
+                this._defs.add(type);
                 this.registerReflect(platform, tyref);
             }, moduleRefl);
     }
 
     protected override destroying() {
         super.destroying();
+        this._defs.clear();
         this._type = null!;
         this._typeRefl = null!;
         this._instance = null!;

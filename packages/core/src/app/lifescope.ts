@@ -1,8 +1,6 @@
 import { IActionSetup } from '@tsdi/ioc';
 import { ApplicationContext } from '../Context';
-import {
-    BuildHandles, RegisterHandles, StartupHandles, BootstrapHandles, ConfigureLoadHandle
-} from './handles';
+import { BuildHandles, RegisterHandles, StartupHandles, BootstrapHandles, ConfigureLoadHandle } from './handles';
 
 /**
  * boot life scope.

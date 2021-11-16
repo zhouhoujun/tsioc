@@ -28,9 +28,9 @@ export * from './module/module';
 export * from './module/runnable';
 
 // applications
-export * from './appfac/ctx';
-export * from './appfac/handles';
-export * from './appfac/lifescope';
+export * from './app/ctx';
+export * from './app/handles';
+export * from './app/lifescope';
 
 export * from './Application';
 

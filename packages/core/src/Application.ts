@@ -2,7 +2,7 @@ import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, Injector, Modules,
 import { CTX_ARGS, PROCESS_ROOT } from './metadata/tk';
 import { ApplicationContext, ApplicationFactory, ApplicationExit, ApplicationOption, BootstrapOption } from './Context';
 import { MiddlewareModule } from './middleware';
-import { BootLifeScope } from './appfac/lifescope';
+import { BootLifeScope } from './app/lifescope';
 import { CoreModule, DEFAULTA_FACTORYS } from './core';
 import { ModuleRef } from './module.ref';
 import { ModuleFactoryResolver } from './module.factory';

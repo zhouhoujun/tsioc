@@ -1,8 +1,8 @@
 import { Inject, IocExt, Injector, ProviderType } from '@tsdi/ioc';
 import { DefaultConfigureManager, ConfigureMergerImpl } from './configure/manager';
-import { BootLifeScope } from './appfac/lifescope';
+import { BootLifeScope } from './app/lifescope';
 import { ApplicationFactory } from './Context';
-import { DefaultApplicationFactory } from './appfac/ctx';
+import { DefaultApplicationFactory } from './app/ctx';
 import { DefaultModuleFactoryResolver } from './module/module';
 import { ModuleFactoryResolver } from './module.factory';
 
