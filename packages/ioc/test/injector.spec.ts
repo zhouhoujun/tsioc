@@ -1,4 +1,4 @@
-import { Injectable, Injector, isNumber, tokenId } from '@tsdi/ioc';
+import { EMPTY, Injectable, InjectFlags, Injector, isNumber, tokenId } from '@tsdi/ioc';
 import expect = require('expect');
 import { CollegeStudent, MiddleSchoolStudent, Student } from './debug';
 
@@ -31,13 +31,13 @@ describe('Injector test', () => {
             PlcService,
             { provide: Student, useClass: CollegeStudent },
             { provide: 'hi', useValue: 'hello world.' },
-            { provide: Person, useFactory: (name:string, arg: number) => new Person(name, arg), deps: ['name', 'age'] },
+            { provide: Person, useFactory: (name: string, arg: number) => new Person(name, arg), deps: ['name', 'age'] },
             { provide: 'Hanke', useValue: new Person('Hanke', 2) },
             { provide: DeviceA, deps: [PlcService] },
-            { provide: GROUP1, useValue: new Person('zhangsan', 20), multi: true},
-            { provide: GROUP1, useValue: new Person('lisi', 21), multi: true},
-            { provide: Students, useClass: CollegeStudent, multi: true},
-            { provide: Students, useClass: MiddleSchoolStudent, multi: true},
+            { provide: GROUP1, useValue: new Person('zhangsan', 20), multi: true },
+            { provide: GROUP1, useValue: new Person('lisi', 21), multi: true },
+            { provide: Students, useClass: CollegeStudent, multi: true },
+            { provide: Students, useClass: MiddleSchoolStudent, multi: true },
         ]);
     });
 
@@ -86,7 +86,7 @@ describe('Injector test', () => {
 
     it('invoke by injector', () => {
         const device = inj.get(DeviceA);
-        const data =  inj.invoke(device.service, plc=> plc.read);
+        const data = inj.invoke(device.service, plc => plc.read);
         expect(isNumber(data)).toBeTruthy();
     });
 
@@ -109,7 +109,37 @@ describe('Injector test', () => {
         expect(inj.get(Student)).toBeInstanceOf(CollegeStudent);
     });
 
-    after(()=>{
+
+    describe('with inject flags', () => {
+
+        it('resolve default flags', () => {
+            let subinj = Injector.create([], inj);
+            expect(subinj.get(Student)).toBeInstanceOf(CollegeStudent);
+            expect(subinj.get(Student, undefined, InjectFlags.Default)).toBeInstanceOf(CollegeStudent);
+            subinj.destroy();
+            expect(subinj.destroyed).toBeTruthy();
+        })
+
+        it('resolve self flags', () => {
+            let subinj = Injector.create([], inj);
+            expect(subinj.get(Students, EMPTY, InjectFlags.Self)).toEqual(EMPTY);
+            expect(subinj.get(Students, undefined, InjectFlags.Self)).toBeNull();
+            subinj.destroy();
+        })
+
+        it('resolve skip self flags', () => {
+            let subinj = Injector.create([], inj);
+            const value = subinj.get(Students, EMPTY, InjectFlags.SkipSelf);
+            expect(value).not.toEqual(EMPTY);
+            expect(Array.isArray(value)).toBeTruthy();
+            expect(value[0]).toBeInstanceOf(CollegeStudent);
+            expect(value[1]).toBeInstanceOf(MiddleSchoolStudent);
+            subinj.destroy();
+        })
+
+    });
+
+    after(() => {
         inj.destroy();
     })
 });

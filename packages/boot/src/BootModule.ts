@@ -1,4 +1,4 @@
-import { Module } from '@tsdi/ioc';
+import { Module } from '@tsdi/core';
 import { HttpRouter } from './router';
 
 @Module({

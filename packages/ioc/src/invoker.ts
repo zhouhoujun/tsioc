@@ -196,6 +196,11 @@ export interface Resolver<T = any> {
     resolve(ctx?: InvocationContext): T;
 }
 
+/**
+ * is resolver or not.
+ * @param target 
+ * @returns 
+ */
 export function isResolver(target: any): target is Resolver {
     if (!isObject(target)) return false;
     return isFunction((target as Resolver).type) && isFunction((target as Resolver).resolve);

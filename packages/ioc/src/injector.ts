@@ -1,16 +1,15 @@
-import { Destroyable, DestroyCallback } from './destroy';
+import { Destroy, Destroyable, DestroyCallback } from './destroy';
 import { ClassType, LoadType, Modules, Type } from './types';
+import { ClassProvider, ExistingProvider, FactoryProvider, ProviderType, ValueProvider } from './providers';
 import { Token, InjectFlags } from './tokens';
 import { Abstract } from './metadata/fac';
 import { TypeReflect } from './metadata/type';
+import { ProvidedInMetadata } from './metadata/meta';
 import { EMPTY, isArray, isFunction } from './utils/chk';
 import { Handler } from './utils/hdl';
 import { Action } from './action';
-import { ClassProvider, ExistingProvider, FactoryProvider, ProviderType, ValueProvider } from './providers';
 import { InvocationContext, InvokeOption, Resolver } from './invoker';
 import { ModuleLoader } from './module.loader';
-import { ProvidedInMetadata } from './metadata/meta';
-import { Destroy } from './destroy';
 
 
 /**
@@ -71,7 +70,7 @@ export abstract class Injector implements Destroyable {
      * @param {InjectFlags} flags get token strategy.
      * @returns {T} token value.
      */
-    abstract get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags): T;
+    abstract get<T>(token: Token<T>, notFoundValue?: T | any, flags?: InjectFlags): T;
     /**
      * resolve token instance with token and param provider.
      *
@@ -530,9 +529,9 @@ export const enum FnType {
 export type InjectorScope = Type | 'platform' | 'root' | 'provider' | 'invoked' | 'parameter' | string;
 
 export const enum OptionFlags {
-    Optional = 1 << 0,
-    CheckSelf = 1 << 1,
-    CheckParent = 1 << 2,
+    Optional = 1 << 4,
+    CheckSelf = 1 << 5,
+    CheckParent = 1 << 6,
     Default = CheckSelf | CheckParent
 }
 

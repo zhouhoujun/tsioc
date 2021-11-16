@@ -333,7 +333,7 @@ export class DefaultInjector extends Injector {
      * @param {InjectFlags} flags
      * @returns {T} token value.
      */
-    get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags): T;
+    get<T>(token: Token<T>, notFoundValue?: T | any, flags?: InjectFlags): T;
     get<T>(token: Token<T>, arg1?: InvocationContext | T, flags = InjectFlags.Default): T {
         this.assertNotDestroyed();
         if (this.isself(token)) return this as any;
@@ -953,6 +953,7 @@ export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, rec
     }
 }
 
+const THROW_FLAGE = {};
 
 /**
  * resolve token.
@@ -985,7 +986,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                     platform,
                     !chlrd && !(dep.options & OptionFlags.CheckParent) ? undefined : parent,
                     context,
-                    dep.options & OptionFlags.Optional ? null : undefined,
+                    dep.options & OptionFlags.Optional ? null : THROW_FLAGE,
                     InjectFlags.Default,
                     dsryCbs,
                     isStatic));
@@ -1018,10 +1019,10 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
     } else if (!(flags & InjectFlags.Self)) {
         return parent?.get(token, context ?? notFoundValue, InjectFlags.Default) ?? notFoundValue;
     } else if (!(flags & InjectFlags.Optional)) {
-        if (isUndefined(notFoundValue)) {
+        if (notFoundValue === THROW_FLAGE) {
             throw new NullInjectorError(token);
         }
-        return notFoundValue;
+        return notFoundValue ?? null;
     } else {
         return notFoundValue ?? null;
     }

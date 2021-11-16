@@ -36,11 +36,8 @@ export * from './directivies/switch';
 export * from './i18n/tokens';
 
 // pipes
-export * from './pipes/pipe';
 export * from './pipes/async';
-export * from './pipes/cases';
-export * from './pipes/slice';
-export * from './pipes/json';
+
 
 // refs
 export * from './refs/component';
