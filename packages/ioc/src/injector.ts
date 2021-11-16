@@ -402,7 +402,7 @@ export abstract class Platform implements Destroyable {
      * get the type private providers.
      * @param type
      */
-    abstract getTypeProvider(type: ClassType): ProviderType[];
+    abstract getTypeProvider(type: ClassType | TypeReflect): ProviderType[];
     /**
      * set type providers.
      * @param type

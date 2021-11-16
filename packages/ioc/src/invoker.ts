@@ -118,7 +118,7 @@ export class InvocationContext<T = any> implements Destroyable {
      */
     hasValue<T>(token: Token): boolean {
         if (this.isSelf(token)) return true;
-        return this._values.has(token);
+        return this._values.has(token) || this.parent?.hasValue(token) === true;
     }
 
     /**
@@ -127,7 +127,7 @@ export class InvocationContext<T = any> implements Destroyable {
      */
     getValue<T>(token: Token): T {
         if (this.isSelf(token)) return this as any;
-        return this._values.get(token);
+        return this._values.get(token) ?? this.parent?.getValue(token);
     }
     /**
      * set value
@@ -292,15 +292,10 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
 
 export type TokenValue<T = any> = [Token<T>, T];
 
-
 /**
- * invoke option.
+ * invoke arguments.
  */
-export interface InvokeOption {
-    /**
-     * parent InvocationContext,
-     */
-    parent?: InvocationContext;
+export interface InvokeArguments {
     /**
      * invocation arguments data.
      */
@@ -320,17 +315,19 @@ export interface InvokeOption {
 }
 
 /**
+ * invoke option.
+ */
+export interface InvokeOption extends InvokeArguments {
+    /**
+     * parent InvocationContext,
+     */
+    parent?: InvocationContext;
+}
+
+/**
  * invocation option.
  */
 export interface InvocationOption extends InvokeOption {
-    /**
-     * invocation invoker target.
-     */
-    invokerTarget?: Type;
-    /**
-     * invocation invoker target reflect.
-     */
-    invokerReflect?: TypeReflect;
     /**
      * invocation target method.
      */
@@ -338,9 +335,15 @@ export interface InvocationOption extends InvokeOption {
 }
 
 @Abstract()
-export abstract class OperationInvokerFactory {
-    abstract create<T>(type: ClassType<T> | TypeReflect<T>, method: string, instance?: T): OperationInvoker;
-    abstract createContext<T>(injector: Injector, option?: InvocationOption): InvocationContext;
+export abstract class OperationInvokerFactory<T> {
+    abstract get targetType(): Type<T>;
+    abstract get targetReflect(): TypeReflect<T>;
+    abstract create(method: string, instance?: T): OperationInvoker;
+    abstract createContext(injector: Injector, option?: InvocationOption): InvocationContext;
 }
 
+@Abstract()
+export abstract class OperationInvokerFactoryResolver {
+    abstract create<T>(type: ClassType<T> | TypeReflect<T>): OperationInvokerFactory<T>;
+}
 

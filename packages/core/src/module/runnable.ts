@@ -1,4 +1,4 @@
-import { Type, refl, Destroyable, lang, Injector, TypeReflect, DestroyCallback, isFunction } from '@tsdi/ioc';
+import { Type, refl, lang, TypeReflect, DestroyCallback, isFunction, OperationInvokerFactory, InvocationContext, OperationInvokerFactoryResolver, InvokeArguments } from '@tsdi/ioc';
 import { ApplicationContext, BootstrapOption } from '../Context';
 import { ModuleRef } from '../module.ref';
 import { Runnable, RunnableFactory, RunnableFactoryResolver, TargetRef } from '../runnable';
@@ -20,15 +20,23 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
 
     override create(option: BootstrapOption, context?: ApplicationContext) {
         const injector = this.moduleRef ?? option.injector ?? context?.injector!;
-        const target = injector.resolve({ token: this.type, regify: true });
+        const factory = injector.get(OperationInvokerFactoryResolver).create(this._refl);
+        const ctx = factory.createContext(injector, option);
+        context && ctx.setValue(ApplicationContext, context);
+
+        const target = injector.resolve({ token: this.type, regify: true, context: ctx });
         let targetRef: TargetRef | undefined;
-        const runable = ((target instanceof Runnable) ? target
-            : injector.resolve({
-                ...option,
+        let runable: Runnable;
+        if (target instanceof Runnable) {
+            runable = target;
+        } else {
+            targetRef = new RunnableTargetRef(factory, ctx, target);
+            ctx.setValue(TargetRef, targetRef);
+            runable = injector.resolve({
                 token: Runnable,
-                target,
-                values: [[TargetRef, targetRef = new RunnableTargetRef(this._refl, target, injector)]]
-            })) as Runnable & Destroyable;
+                context: ctx
+            });
+        }
 
         if (context) {
             (targetRef || injector).onDestroy(() => {
@@ -54,12 +62,23 @@ export class RunnableTargetRef<T = any> extends TargetRef<T>  {
     private _destroyed = false;
     private _dsryCbs = new Set<DestroyCallback>();
 
-    constructor(readonly reflect: TypeReflect<T>, readonly instance: T, readonly injector: Injector) {
+    constructor(readonly invokerFactory: OperationInvokerFactory<T>, readonly context: InvocationContext, readonly instance: T) {
         super();
     }
 
     get type(): Type<T> {
-        return this.reflect.type as Type;
+        return this.invokerFactory.targetType;
+    }
+
+    get reflect(): TypeReflect<T> {
+        return this.invokerFactory.targetReflect;
+    }
+
+    invoke(method: string, option?: InvokeArguments): any {
+        const context = this.invokerFactory.createContext(this.context.injector, { ...option, parent: this.context })
+        const result = this.invokerFactory.create(method, this.instance).invoke(context);
+        context.destroy();
+        return result;
     }
 
     get destroyed() {
@@ -76,8 +95,10 @@ export class RunnableTargetRef<T = any> extends TargetRef<T>  {
                 this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.destroy());
             } finally {
                 this._dsryCbs.clear();
-                (this as any).instance = null!;
-                (this as any).reflect = null!;
+                this.context.destroy();
+                (this as any).context = null;
+                (this as any).instance = null;
+                (this as any).invokerFactory = null;
             }
         }
     }

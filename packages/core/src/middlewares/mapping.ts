@@ -1,7 +1,7 @@
 import {
     AsyncHandler, DecorDefine, Type, TypeReflect, Injector,
     isPrimitiveType, isPromise, isString, isArray, isFunction, isDefined, lang,
-    chain, isObservable, composeResolver, Parameter, EMPTY, ClassType, Platform, isResolver, InvocationContext
+    chain, isObservable, composeResolver, Parameter, EMPTY, ClassType, isResolver, InvocationContext
 } from '@tsdi/ioc';
 import { MODEL_RESOLVERS } from '../model/resolver';
 import { ArgumentError, PipeTransform } from '../pipes/pipe';

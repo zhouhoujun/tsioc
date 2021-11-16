@@ -61,11 +61,12 @@ export class SuiteRunner extends UnitRunner {
     runTimeout(key: string, describe: string, timeout?: number): Promise<any> {
         let instance = this.tgRef.instance;
         let defer = lang.defer();
-        let injector = this.tgRef.injector;
+        const context = this.tgRef.context;
+        let injector = context.injector;
         let timer = setTimeout(() => {
             if (timer) {
                 clearTimeout(timer);
-                let assert = injector.resolve(Assert);
+                let assert = injector.get(Assert, context);
                 let err = new assert.AssertionError({
                     message: `${describe}, timeout ${timeout}`,
                     stackStartFunction: instance[key],
@@ -75,9 +76,12 @@ export class SuiteRunner extends UnitRunner {
             }
         }, timeout || this.timeout);
 
-        Promise.resolve(injector.invoke(instance, key,
-            { provide: RunCaseToken, useValue: instance[key] },
-            { provide: RunSuiteToken, useValue: instance }))
+        Promise.resolve(this.tgRef.invoke(key, {
+            providers: [
+                { provide: RunCaseToken, useValue: instance[key] },
+                { provide: RunSuiteToken, useValue: instance }
+            ]
+        }))
             .then(r => {
                 clearTimeout(timer);
                 timer = null!;
