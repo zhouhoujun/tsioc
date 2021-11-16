@@ -13,30 +13,6 @@ import { ApplicationContext, BootstrapOption } from './Context';
      abstract run(context?: ApplicationContext): any;
  }
  
- /**
-  * runner with target ref.
-  */
- @Abstract()
- export abstract class Runner<T = any> extends Runnable {
-     /**
-      * instance of target
-      *
-      * @readonly
-      * @abstract
-      * @type {T}
-      * @memberof Executor
-      */
-     abstract get instance(): T;
-     /**
-      * runnable target ref.
-      *
-      * @readonly
-      * @abstract
-      * @type {TargetRef<T>}
-      * @memberof Runner
-      */
-     abstract get targetRef(): TargetRef<T>;
- }
  
  /**
   * target ref.

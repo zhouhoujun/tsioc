@@ -20,21 +20,24 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
 
     override create(option: BootstrapOption, context?: ApplicationContext) {
         const injector = this.moduleRef ?? option.injector ?? context?.injector!;
-        const targetRef = new RunnableTargetRef(this._refl, injector);
-        const target = targetRef.instance;
+        const target = injector.resolve({ token: this.type, regify: true });
+        let targetRef: TargetRef | undefined;
         const runable = ((target instanceof Runnable) ? target
             : injector.resolve({
                 ...option,
                 token: Runnable,
                 target,
-                values: [[TargetRef, targetRef]]
+                values: [[TargetRef, targetRef = new RunnableTargetRef(this._refl, target, injector)]]
             })) as Runnable & Destroyable;
 
         if (context) {
-            targetRef.onDestroy(() => {
+            (targetRef || injector).onDestroy(() => {
                 lang.remove(context.bootstraps, runable);
             });
             context.bootstraps.push(runable);
+            if (targetRef) {
+                injector.onDestroy(targetRef);
+            }
         }
 
         return runable;
@@ -51,15 +54,8 @@ export class RunnableTargetRef<T = any> extends TargetRef<T>  {
     private _destroyed = false;
     private _dsryCbs = new Set<DestroyCallback>();
 
-    constructor(readonly reflect: TypeReflect<T>, readonly injector: Injector, private _instance?: T) {
+    constructor(readonly reflect: TypeReflect<T>, readonly instance: T, readonly injector: Injector) {
         super();
-    }
-
-    get instance(): T {
-        if (!this._instance) {
-            this._instance = this.injector.resolve({ token: this.type, regify: true, providers: [{ provide: TargetRef, useValue: this }] });
-        }
-        return this._instance;
     }
 
     get type(): Type<T> {
@@ -80,7 +76,7 @@ export class RunnableTargetRef<T = any> extends TargetRef<T>  {
                 this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.destroy());
             } finally {
                 this._dsryCbs.clear();
-                this._instance = null!;
+                (this as any).instance = null!;
                 (this as any).reflect = null!;
             }
         }

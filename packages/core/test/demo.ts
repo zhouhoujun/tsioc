@@ -1,4 +1,4 @@
-import { Module, Message, MessageQueue, StartupService, ApplicationContext, Boot, Configuration, Runnable, TargetRef, Runner } from '../src';
+import { Module, Message, MessageQueue, StartupService, ApplicationContext, Boot, Configuration, Runnable } from '../src';
 import { Injectable, Inject } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
 import { LogConfigure, LogModule } from '@tsdi/logs';
@@ -40,15 +40,7 @@ export class ModuleA {
 }
 
 @Injectable()
-export class ClassSevice extends Runner {
-
-    constructor(readonly targetRef: TargetRef) {
-        super()
-    }
-
-    get instance() {
-        return this.targetRef.instance;
-    }
+export class ClassSevice extends Runnable {
 
     @Inject('mark')
     mark!: string;
