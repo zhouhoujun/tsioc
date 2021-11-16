@@ -1,4 +1,4 @@
-import { Abstract, Destroyable, InvocationContext, InvokeArguments, OperationInvokerFactory, Type, TypeReflect } from '@tsdi/ioc';
+import { Abstract, Destroyable, Injector, InvocationContext, InvokeArguments, OperationInvokerFactory, Type, TypeReflect } from '@tsdi/ioc';
 import { ApplicationContext, BootstrapOption } from './Context';
 
 /**
@@ -18,6 +18,8 @@ export abstract class Runnable {
  */
 @Abstract()
 export abstract class TargetRef<T = any> implements Destroyable {
+    
+    abstract get injector(): Injector;
     /**
      * target invoker factory.
      */
