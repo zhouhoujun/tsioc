@@ -1,6 +1,6 @@
 import { Abstract, EMPTY, InvocationContext, isArray, isDefined, isFunction, isNil, PropertyMetadata, tokenId, Type, OperationInvoker } from '@tsdi/ioc';
-import { Context } from '../middlewares/context';
 import { TrasportArgumentResolver, TrasportParameter } from '../middlewares/resolver';
+import { Context } from '../middlewares/context';
 import { ArgumentError, PipeTransform } from '../pipes/pipe';
 
 /**
@@ -17,13 +17,24 @@ export interface ModelArgumentResolver<C extends Context = Context> extends Tras
  */
 export interface DBPropertyMetadata<T = any> extends PropertyMetadata {
     /**
-     * this type provide from.
+     * the provider for this property.
      *
      * @type {Token}
      * @memberof Provide
      */
     provider?: Type<T>;
+    /**
+     * property type.
+     */
     type: Type;
+    /**
+     * property key.
+     */
+    propertyKey: string;
+    /**
+     * db type.
+     */
+    dbtype?: string;
     /**
      * Indicates if this column is a primary key.
      * Same can be achieved when @PrimaryColumn decorator is used.
@@ -52,14 +63,10 @@ export interface DBPropertyMetadata<T = any> extends PropertyMetadata {
      * For example, INT(4) specifies an INT with a display width of four digits.
      */
     width?: number;
-
     /**
      * Array of possible enumerated values.
      */
     enum?: (string | number)[] | Object;
-
-    propertyKey: string;
-    dbtype?: string;
 }
 
 /**

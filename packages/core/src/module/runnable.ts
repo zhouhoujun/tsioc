@@ -1,4 +1,4 @@
-import { Type, refl, Destroyable, lang, Injector, TypeReflect } from '@tsdi/ioc';
+import { Type, refl, Destroyable, lang, Injector, TypeReflect, DestroyCallback, isFunction } from '@tsdi/ioc';
 import { ApplicationContext, BootstrapOption } from '../Context';
 import { ModuleRef } from '../module.ref';
 import { Runnable, RunnableFactory, RunnableFactoryResolver, TargetRef } from '../runnable';
@@ -32,14 +32,9 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
 
         if (context) {
             targetRef.onDestroy(() => {
-                runable.destroy?.();
                 lang.remove(context.bootstraps, runable);
             });
             context.bootstraps.push(runable);
-        } else {
-            targetRef.onDestroy(() => {
-                runable.destroy?.();
-            });
         }
 
         return runable;
@@ -52,6 +47,10 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
  * target ref for {@link Runnable}.
  */
 export class RunnableTargetRef<T = any> extends TargetRef<T>  {
+
+    private _destroyed = false;
+    private _dsryCbs = new Set<DestroyCallback>();
+
     constructor(readonly reflect: TypeReflect<T>, readonly injector: Injector, private _instance?: T) {
         super();
     }
@@ -67,12 +66,24 @@ export class RunnableTargetRef<T = any> extends TargetRef<T>  {
         return this.reflect.type as Type;
     }
 
+    get destroyed() {
+        return this._destroyed;
+    }
+
     /**
      * Destroys the component instance and all of the data structures associated with it.
      */
     destroy(): void {
-        this._instance = null!;
-        (this as any).reflect = null!;
+        if (!this._destroyed) {
+            this._destroyed = true;
+            try {
+                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.destroy());
+            } finally {
+                this._dsryCbs.clear();
+                this._instance = null!;
+                (this as any).reflect = null!;
+            }
+        }
     }
 
     /**
@@ -81,8 +92,8 @@ export class RunnableTargetRef<T = any> extends TargetRef<T>  {
      * @param callback A handler function that cleans up developer-defined data
      * associated with this component. Called when the `destroy()` method is invoked.
      */
-    onDestroy(callback: () => void): void {
-        this.injector.onDestroy(callback);
+    onDestroy(callback: DestroyCallback): void {
+        this._dsryCbs.add(callback);
     }
 }
 

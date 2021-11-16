@@ -136,7 +136,7 @@ export const ConfigureServiceHandle = async function (ctx: ApplicationContext, n
         await lang.step(boots.map(rser => () => {
             const ser = rser.resolve();
             ctx.onDestroy(ser);
-            return ser?.configureService(ctx);
+            return ser.configureService(ctx);
         }));
     }
     return await next();

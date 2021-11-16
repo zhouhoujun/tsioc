@@ -1,7 +1,7 @@
 
 import {
-    DefaultInjector, Injector, InjectorScope, InjectorTypeWithProviders, isFunction, Platform,
-    ModuleReflect, Modules, processInjectorType, ProviderType, refl, Token, Type
+    DefaultInjector, Injector, InjectorScope, InjectorTypeWithProviders, refl, isFunction,
+    Platform, ModuleReflect, Modules, processInjectorType, ProviderType, Token, Type
 } from '@tsdi/ioc';
 import { ModuleFactory, ModuleFactoryResolver, ModuleOption } from '../module.factory';
 import { ModuleRef } from '../module.ref';

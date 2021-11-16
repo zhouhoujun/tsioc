@@ -18,7 +18,7 @@ import { ModuleRef } from '../module.ref';
  */
 export class DefaultApplicationContext extends ApplicationContext {
 
-    readonly destroyed = false;
+    private _destroyed = false;
     private _dsryCbs = new Set<DestroyCallback>();
     readonly bootstraps: Runnable[] = [];
     readonly args: string[] = [];
@@ -37,6 +37,10 @@ export class DefaultApplicationContext extends ApplicationContext {
 
     get servers() {
         return this.injector.get(SERVERS);
+    }
+
+    get destroyed() {
+        return this._destroyed;
     }
 
     /**
@@ -127,8 +131,8 @@ export class DefaultApplicationContext extends ApplicationContext {
     * destory this.
     */
     destroy(): void {
-        if (!this.destroyed) {
-            (this as { destroyed: boolean }).destroyed = true;
+        if (!this._destroyed) {
+            this._destroyed = true;
             try {
                 this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.destroy());
             } finally {
