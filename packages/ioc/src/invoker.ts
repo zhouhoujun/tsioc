@@ -344,6 +344,6 @@ export abstract class OperationInvokerFactory<T> {
 
 @Abstract()
 export abstract class OperationInvokerFactoryResolver {
-    abstract create<T>(type: ClassType<T> | TypeReflect<T>): OperationInvokerFactory<T>;
+    abstract create<T>(type: ClassType<T> | TypeReflect<T>, options?: InvokeArguments): OperationInvokerFactory<T>;
 }
 

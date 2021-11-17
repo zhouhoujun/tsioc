@@ -18,7 +18,7 @@ import { ModuleReflect, TypeReflect } from '../metadata/type';
 import { get } from '../metadata/refl';
 import {
     InvocationContext, InvocationOption, InvokeOption, OperationArgumentResolver, isResolver, Parameter,
-    OperationInvokerFactory, ReflectiveOperationInvoker, OperationInvokerFactoryResolver, OperationInvoker
+    OperationInvokerFactory, ReflectiveOperationInvoker, OperationInvokerFactoryResolver, OperationInvoker, InvokeArguments
 } from '../invoker';
 import { DefaultModuleLoader } from './loader';
 import { ModuleLoader } from '../module.loader';
@@ -1107,31 +1107,27 @@ export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
     }
 ];
 
-export function createInvocationContext(injector: Injector, option?: InvocationOption & {
+function createInvocationContext(injector: Injector, option?: InvocationOption & {
+    proxy?: boolean;
     /**
      * invocation invoker target.
      */
     invokerTarget?: Type;
-    /**
-     * invocation invoker target reflect.
-     */
-    invokerReflect?: TypeReflect;
+    targetProviders?: ProviderType[],
+    methodProviders?: ProviderType[]
 }) {
     option = option || EMPTY_OBJ;
     let providers: ProviderType[] = option.providers ?? EMPTY;
-    const { invokerTarget, invokerReflect, invokerMethod } = option;
-    const typeRef = invokerReflect ?? (invokerTarget ? get(invokerTarget) : undefined);
-    if (typeRef) {
-        const platform = injector.platform();
-        providers = [...providers, ...platform.getTypeProvider(typeRef), ...(invokerMethod ? typeRef.class.getMethodProviders(invokerMethod) : EMPTY)]
+    if (option.targetProviders || option.methodProviders) {
+        providers = [...providers, ...option.targetProviders || EMPTY, ...option.methodProviders || EMPTY]
     }
-    const proxy = typeRef && invokerMethod ? typeRef.type.prototype[invokerMethod]['_proxy'] : false;
-    injector = new StaticInjector(providers, injector, proxy ? 'invoked' : 'parameter');
+
+    injector = new StaticInjector(providers, injector, option.proxy ? 'invoked' : 'parameter');
     return new InvocationContext(
         injector,
         option.parent ?? injector.get(InvocationContext),
-        typeRef?.type,
-        invokerMethod,
+        option.invokerTarget,
+        option.invokerMethod,
         option.arguments || EMPTY_OBJ,
         option.values,
         ...option.resolvers ?? EMPTY,
@@ -1141,7 +1137,8 @@ export function createInvocationContext(injector: Injector, option?: InvocationO
 class OperationInvokerFactoryImpl<T> extends OperationInvokerFactory<T> {
 
     private _tagRefl: TypeReflect<T>;
-    constructor(targetType: ClassType<T> | TypeReflect<T>) {
+    private _tagPdrs: ProviderType[] | undefined;
+    constructor(targetType: ClassType<T> | TypeReflect<T>, private options?: InvokeArguments) {
         super()
         this._tagRefl = isFunction(targetType) ? get(targetType) : targetType;
     }
@@ -1157,8 +1154,19 @@ class OperationInvokerFactoryImpl<T> extends OperationInvokerFactory<T> {
     create(method: string, instance?: T): OperationInvoker {
         return new ReflectiveOperationInvoker(this.targetReflect, method, instance);
     }
+
     createContext(injector: Injector, option?: InvocationOption): InvocationContext<any> {
-        return createInvocationContext(injector, { invokerReflect: this.targetReflect, ...option });
+        if (!this._tagPdrs) {
+            this._tagPdrs = injector.platform().getTypeProvider(this.targetReflect);
+        }
+        return createInvocationContext(injector, {
+            ...this.options,
+            ...option,
+            proxy: option?.invokerMethod ? this.targetReflect.type.prototype[option?.invokerMethod]['_proxy'] : false,
+            invokerTarget: this.targetType,
+            targetProviders: this._tagPdrs,
+            methodProviders: option?.invokerMethod ? this.targetReflect.class.getMethodProviders(option.invokerMethod) : undefined
+        });
     }
 
 }
