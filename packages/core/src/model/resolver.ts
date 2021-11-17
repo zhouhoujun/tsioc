@@ -104,7 +104,9 @@ export class MissingModelFieldError extends Error {
  * @param resolvers resolves of the group.
  * @returns 
  */
-export function composeFieldResolver<T extends ModelFieldResolver, TP extends DBPropertyMetadata = DBPropertyMetadata>(filter: (prop: TP, ctx: InvocationContext, fields: Record<string, any>) => boolean, ...resolvers: T[]): ModelFieldResolver {
+export function composeFieldResolver<T extends ModelFieldResolver, TP extends DBPropertyMetadata = DBPropertyMetadata>(
+    filter: (prop: TP, ctx: InvocationContext, fields: Record<string, any>) => boolean,
+    ...resolvers: T[]): ModelFieldResolver {
     return {
         canResolve: (prop: TP, ctx, fields, target) => filter(prop, ctx, fields) && resolvers.some(r => r.canResolve(prop, ctx, fields, target)),
         resolve: (prop: TP, ctx, fields, target) => {
@@ -324,7 +326,8 @@ export abstract class AbstractModelArgumentResolver<C extends Context = Context>
 
         const props = this.getPropertyMeta(modelType);
         const missings = props.filter(p => !(this.isModel(p.provider ?? p.type) ?
-            this.canResolveModel(p.provider ?? p.type, ctx, fields[p.propertyKey], p.nullable) : this.fieldResolver.canResolve(p, ctx, fields, modelType)));
+            this.canResolveModel(p.provider ?? p.type, ctx, fields[p.propertyKey], p.nullable)
+            : this.fieldResolver.canResolve(p, ctx, fields, modelType)));
         if (missings.length) {
             throw new MissingModelFieldError(missings, modelType);
         }

@@ -59,6 +59,9 @@ export abstract class AbstractMiddleware<T extends Context = Context> implements
     }
 }
 
+/**
+ * route resolver.
+ */
 export interface RouteResolver<T = any> extends Resolver<T> {
     route?: Route;
 }
@@ -206,7 +209,7 @@ export abstract class AbstractRouter<T extends Context = Context> extends Middle
 
 
 /**
- * route.
+ * route data.
  */
 export class Route {
     constructor(readonly url: string = '', readonly prefix: string = '', readonly guards?: Type<CanActive>[], readonly protocol: string = '') {

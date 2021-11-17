@@ -1,4 +1,4 @@
-import { Abstract, DecorDefine, Destroyable, Injector, Token } from '@tsdi/ioc';
+import { Abstract, DecorDefine, Destroyable, DestroyCallback, Injector, isFunction, Token } from '@tsdi/ioc';
 import { RequestOption, Request } from './request';
 import { Response } from './response';
 
@@ -9,7 +9,7 @@ import { Response } from './response';
 export abstract class Context implements Destroyable {
     activeRouteMetadata?: DecorDefine;
     private _destroyed = false;
-    protected _dsryCbs = new Set<() => void>();
+    protected _dsryCbs = new Set<DestroyCallback>();
     private _vaild!: RouteVaildator
     get vaild(): RouteVaildator {
         if (!this._vaild) {
@@ -206,7 +206,7 @@ export abstract class Context implements Destroyable {
         if (!this._destroyed) {
             this._destroyed = true;
             try {
-                this._dsryCbs.forEach(cb => cb());
+                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.destroy());
             } finally {
                 this._dsryCbs.clear();
                 this.destroying();
@@ -217,7 +217,7 @@ export abstract class Context implements Destroyable {
      * register callback on destory.
      * @param callback destory callback
      */
-    onDestroy(callback: () => void): void {
+    onDestroy(callback: DestroyCallback): void {
         this._dsryCbs.add(callback);
     }
 
