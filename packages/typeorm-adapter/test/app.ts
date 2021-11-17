@@ -1,5 +1,4 @@
-import { Module } from '@tsdi/ioc';
-import { ConnectionOptions } from '@tsdi/core';
+import { Module, ConnectionOptions } from '@tsdi/core';
 import { ServerBootstrapModule } from '@tsdi/platform-server';
 import { TypeOrmModule } from '../src';
 import { Connection } from 'typeorm';

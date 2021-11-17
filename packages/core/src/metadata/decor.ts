@@ -1,7 +1,7 @@
 import {
-    isUndefined, ROOT_INJECTOR, EMPTY_OBJ, isArray, isString, lang, Type, isRegExp, Injector,
+    isUndefined, ROOT_INJECTOR, EMPTY_OBJ, isArray, isString, lang, Type, isRegExp,
     createDecorator, ClassMethodDecorator, ClassMetadata, createParamDecorator, ParameterMetadata,
-    Resolver, ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, InvocationContext,
+    Resolver, ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption,
 } from '@tsdi/ioc';
 import { Service } from '../services/service';
 import { Middleware, Middlewares, MiddlewareType, Route } from '../middlewares/middleware';
@@ -139,8 +139,6 @@ export const Boot: Boot = createDecorator<BootMetadata>('Boot', {
         class: [
             (ctx, next) => {
                 ctx.reflect.singleton = true;
-                // (ctx.reflect as ModuleReflect).annoType = 'boot';
-                // (ctx.reflect as ModuleReflect).annoDecor = ctx.decor;
                 ctx.reflect.annotation = ctx.metadata;
                 return next();
             }
@@ -156,7 +154,7 @@ export const Boot: Boot = createDecorator<BootMetadata>('Boot', {
                 boots = [];
                 root.setValue(SERVICES, boots);
             }
-            const meta = ctx.reflect.class.getMetadata<BootMetadata>(ctx.currDecor) || EMPTY_OBJ as BootMetadata;
+            const meta = ctx.reflect.annotation as BootMetadata;
 
             let existIdx = boots.findIndex(b => b.type === type);
             let restIdx = existIdx;
@@ -317,8 +315,6 @@ export interface Handle {
      */
     (metadata: HandleMetadata): HandleDecorator;
 
-
-
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
@@ -360,7 +356,6 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
                 return next();
             }
 
-            const platform = injector.platform();
             let queue: Middlewares = null!;
             if (parent) {
                 queue = injector.get(parent);
