@@ -1,5 +1,5 @@
 import { ClassMethodDecorator, createDecorator, isArray, isString, lang, Type } from '@tsdi/ioc';
-import { MappingReflect, MappingRef, Middlewares, MiddlewareType, Route, RouteMappingMetadata, Router } from '@tsdi/core';
+import { MappingReflect, RouteMappingRef, Middlewares, MiddlewareType, Route, RouteMappingMetadata, Router } from '@tsdi/core';
 import { HttpRouter } from '../router';
 
 
@@ -93,7 +93,7 @@ export const RestController: RestController = createDecorator<RouteMappingMetada
             if (!(queue instanceof Router)) throw new Error(lang.getClassName(queue) + 'is not message router!');
 
             const info = Route.create(route, queue.getPath());
-            const mapping = new MappingRef(info, ctx.reflect as MappingReflect, injector, middlewares);
+            const mapping = new RouteMappingRef(info, ctx.reflect as MappingReflect, injector, middlewares);
             injector.onDestroy(() => queue.unuse(mapping));
             queue.use(mapping);
 

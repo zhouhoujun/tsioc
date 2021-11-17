@@ -1,4 +1,4 @@
-import { MappingRef, Context } from '@tsdi/core';
+import { RouteMappingRef, Context } from '@tsdi/core';
 import { Type } from '@tsdi/ioc';
 import { ApplicationRef } from '../refs/app';
 
@@ -6,7 +6,7 @@ import { ApplicationRef } from '../refs/app';
 /**
  * mapping route for host live view component.
  */
-export class HostMappingRoute<T = any> extends MappingRef<T> {
+export class HostMappingRoute<T = any> extends RouteMappingRef<T> {
 
     protected getInstance(ctx: Context) {
         // todo get host lived component.

@@ -1,9 +1,11 @@
 import {
-    AsyncHandler, DecorDefine, Type, TypeReflect, Injector,
-    isPrimitiveType, isPromise, isString, isArray, isFunction, isDefined, lang,
-    chain, isObservable, composeResolver, Parameter, EMPTY, ClassType, isResolver,
-    InvocationContext, OperationInvokerFactory, OperationInvokerFactoryResolver
+    AsyncHandler, DecorDefine, Type, TypeReflect, Injector, lang, chain,
+    isPrimitiveType, isPromise, isString, isArray, isFunction, isDefined,
+    isObservable, composeResolver, Parameter, EMPTY, ClassType, isResolver,
+    InvocationContext, OperationInvokerFactory, OperationInvokerFactoryResolver,
+    InvokeArguments, DestroyCallback
 } from '@tsdi/ioc';
+import { TargetRef } from '..';
 import { MODEL_RESOLVERS } from '../model/resolver';
 import { ArgumentError, PipeTransform } from '../pipes/pipe';
 import { Context } from './context';
@@ -85,15 +87,31 @@ const restParms = /^\S*:/;
 
 
 /**
- * mapping route.
+ * route mapping ref.
  */
-export class MappingRef<T> extends AbstractRoute {
+export class RouteMappingRef<T> extends AbstractRoute implements TargetRef<T> {
 
-    private invokerFactory: OperationInvokerFactory<T>;
-    constructor(protected reflect: MappingReflect<T>, protected injector: Injector, prefix: string | undefined) {
+    private _destroyed = false;
+    private _dsryCbs = new Set<DestroyCallback>();
+    private _instance: T | undefined;
+
+    readonly invokerFactory: OperationInvokerFactory<T>;
+    constructor(readonly reflect: MappingReflect<T>, readonly injector: Injector, prefix: string | undefined) {
         super(Route.create(reflect.annotation?.route, prefix, reflect.annotation?.guards))
 
         this.invokerFactory = injector.get(OperationInvokerFactoryResolver).create(reflect);
+        injector.onDestroy(this);
+    }
+
+    get type(): Type<T> {
+        return this.invokerFactory.targetType;
+    }
+
+    get instance(): T {
+        if (!this._instance) {
+            this._instance = this.injector.resolve({ token: this.type, regify: true });
+        }
+        return this._instance;
     }
 
     protected override async navigate(ctx: Context, next: () => Promise<void>): Promise<void> {
@@ -102,7 +120,7 @@ export class MappingRef<T> extends AbstractRoute {
         if (middlewares.length) {
             await chain(middlewares.map(m => this.parseHandle(m)!).filter(f => !!f), ctx)
         }
-        await this.invoke(ctx, meta);
+        await this.response(ctx, meta);
         return await next();
     }
 
@@ -123,7 +141,7 @@ export class MappingRef<T> extends AbstractRoute {
         return true;
     }
 
-    async invoke(ctx: Context, meta: DecorDefine) {
+    async response(ctx: Context, meta: DecorDefine) {
         const injector = this.injector;
         if (meta && meta.propertyKey) {
 
@@ -142,15 +160,13 @@ export class MappingRef<T> extends AbstractRoute {
                 });
             }
             ctx.restful = restParams;
-            let result = this.invokerFactory.create(meta.propertyKey)
-                .invoke(this.invokerFactory.createContext(injector, {
-                    invokerMethod: meta.propertyKey,
-                    arguments: ctx,
-                    resolvers: [
-                        ...primitiveResolvers,
-                        ...injector.get(MODEL_RESOLVERS) ?? EMPTY
-                    ]
-                }));
+            let result = this.invoke(meta.propertyKey, {
+                arguments: ctx,
+                resolvers: [
+                    ...primitiveResolvers,
+                    ...injector.get(MODEL_RESOLVERS) ?? EMPTY
+                ]
+            });
 
             if (isPromise(result)) {
                 result = await result;
@@ -178,6 +194,15 @@ export class MappingRef<T> extends AbstractRoute {
                 ctx.status = 200;
             }
         }
+    }
+
+    /**
+     * invoke target method.
+     * @param method 
+     * @param option 
+     */
+    invoke(method: string, option?: InvokeArguments): any {
+        return this.invokerFactory.create(method, this.instance).invoke(this.invokerFactory.createContext(this.injector, option));
     }
 
     protected getRouteMiddleware(ctx: Context, meta: DecorDefine) {
@@ -222,7 +247,37 @@ export class MappingRef<T> extends AbstractRoute {
             return mdty.resolve(context)?.toHandle();
         }
     }
+    get destroyed() {
+        return this._destroyed;
+    }
 
+    /**
+     * Destroys the component instance and all of the data structures associated with it.
+     */
+    destroy(): void {
+        if (!this._destroyed) {
+            this._destroyed = true;
+            try {
+                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.destroy());
+            } finally {
+                this._dsryCbs.clear();
+                this._instance = null!;
+                (this as any).reflect = null;
+                (this as any).injector = null;
+                (this as any).invokerFactory = null;
+            }
+        }
+    }
+
+    /**
+     * A lifecycle hook that provides additional developer-defined cleanup
+     * functionality for the component.
+     * @param callback A handler function that cleans up developer-defined data
+     * associated with this component. Called when the `destroy()` method is invoked.
+     */
+    onDestroy(callback: DestroyCallback): void {
+        this._dsryCbs.add(callback);
+    }
 }
 
 export function missingPipeError(parameter: Parameter, type?: ClassType, method?: string) {

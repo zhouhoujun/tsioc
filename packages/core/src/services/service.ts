@@ -1,7 +1,6 @@
 import { Destroy } from '@tsdi/ioc';
 import { ApplicationContext } from '../Context';
 
-
 /**
  * configure services for application.
  */
@@ -15,11 +14,18 @@ export interface Service extends Destroy {
     configureService(ctx: ApplicationContext): void | Promise<void>;
 }
 
-/**
- * configure services for application.
- * 
- * @deprecated use `Service` instead.
- */
-export interface IStartupService extends Service {
 
-}
+
+
+// export class ServiceSet {
+
+//     private servis: Set<ServiceRef>;
+//     constructor() {
+
+//     }
+
+//     add() {
+
+//     }
+
+// }

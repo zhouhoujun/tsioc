@@ -19,11 +19,11 @@ export interface Client extends Destroy {
      * @param pattern 
      * @param data 
      */
-    send<TO = any, TI = any>(pattern: any, data: TI): TO;
+    send<TResult = any, TInput = any>(pattern: any, data: TInput): TResult;
     /**
      * emit message
      * @param pattern 
      * @param data 
      */
-    emit<TO = any, TI = any>(pattern: any, data: TI): TO;
+    emit<TResult = any, TInput = any>(pattern: any, data: TInput): TResult;
 }

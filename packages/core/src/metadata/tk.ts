@@ -1,4 +1,4 @@
-import { tokenId, Token, Type, Resolver } from '@tsdi/ioc';
+import { tokenId, Token, Resolver } from '@tsdi/ioc';
 import { Configuration } from '../configure/config';
 import { Context } from '../middlewares/context';
 import { Service } from '../services/service';

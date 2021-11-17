@@ -24,14 +24,14 @@ export abstract class TargetRef<T = any> implements Destroyable {
      * target invoker factory.
      */
     abstract get invokerFactory(): OperationInvokerFactory<T>;
-    /**
-     * invocation context of current target.
-     *
-     * @readonly
-     * @abstract
-     * @type {Injector}
-     */
-    abstract get context(): InvocationContext;
+    // /**
+    //  * invocation context of current target.
+    //  *
+    //  * @readonly
+    //  * @abstract
+    //  * @type {Injector}
+    //  */
+    // abstract get context(): InvocationContext;
     /**
      * instance of target
      *

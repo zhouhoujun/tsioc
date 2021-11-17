@@ -9,7 +9,7 @@ import { ROOT_QUEUE } from '../middlewares/root';
 import { CanActive } from '../middlewares/guard';
 import { AbstractRoute, RouteAdapter } from '../middlewares/route';
 import { RootRouter, Router } from '../middlewares/router';
-import { MappingReflect, MappingRef, ProtocolRouteMappingMetadata } from '../middlewares/mapping';
+import { MappingReflect, RouteMappingRef, ProtocolRouteMappingMetadata } from '../middlewares/mapping';
 import { BootMetadata, HandleMetadata, HandlesMetadata, PipeMetadata, HandleMessagePattern } from './meta';
 import { PipeTransform } from '../pipes/pipe';
 import { Server } from '../server/server';
@@ -607,8 +607,8 @@ export const RouteMapping: RouteMapping = createDecorator<ProtocolRouteMappingMe
             if (!queue) throw new Error(lang.getClassName(parent) + 'has not registered!');
             if (!(queue instanceof Router)) throw new Error(lang.getClassName(queue) + 'is not message router!');
 
-            const mapping = new MappingRef(reflect, injector, queue.getPath());
-            injector.onDestroy(() => queue.unuse(mapping));
+            const mapping = new RouteMappingRef(reflect, injector, queue.getPath());
+            mapping.onDestroy(() => queue.unuse(mapping));
             queue.use(mapping);
 
             next();
