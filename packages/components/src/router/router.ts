@@ -1,4 +1,4 @@
-import { Handle, Router } from '@tsdi/core';
+import { Handle, Route, Router } from '@tsdi/core';
 
 /**
  * component host mapping message router root.
@@ -6,6 +6,6 @@ import { Handle, Router } from '@tsdi/core';
 @Handle()
 export class HostMappingRoot extends Router {
     constructor() {
-        super('', '', 'host:')
+        super(Route.createProtocol('host:'))
     }
 }

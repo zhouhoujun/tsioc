@@ -1,10 +1,10 @@
 import {
-    Token, Type, PropertyMetadata, InjectableMetadata, isBoolean, isArray, isString, isUndefined,
+    Token, Type, PropertyMetadata, InjectableMetadata, isBoolean, isArray, isString,
     refl, lang, createDecorator, createPropDecorator, createParamDecorator, ClassMethodDecorator, getClass
 } from '@tsdi/ioc';
 import {
     MappingReflect, MessageQueue, Middlewares,
-    MiddlewareType, ProtocolRouteMappingMetadata, Route, RouteMappingMetadata, Router, RunnableFactoryResolver
+    MiddlewareType, RouteMappingMetadata, Router, RunnableFactoryResolver
 } from '@tsdi/core';
 import {
     BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
@@ -409,9 +409,16 @@ export const HostMapping: IHostMappingDecorator = createDecorator<RouteMappingMe
             return { ...arg2, route };
         }
     },
+    reflect: {
+        class: (ctx, next) => {
+            ctx.reflect.annotation = ctx.metadata;
+            return next();
+        }
+    },
     design: {
         afterAnnoation: (ctx, next) => {
-            const { route, protocol, parent, middlewares, guards } = ctx.reflect.class.getMetadata<ProtocolRouteMappingMetadata>(ctx.currDecor);
+            const reflect = ctx.reflect as MappingReflect;
+            const { parent } = reflect.annotation;
             const injector = ctx.injector;
             let queue: Middlewares;
             if (parent) {
@@ -423,8 +430,7 @@ export const HostMapping: IHostMappingDecorator = createDecorator<RouteMappingMe
             if (!queue) throw new Error(lang.getClassName(parent) + 'has not registered!');
             if (!(queue instanceof Router)) throw new Error(lang.getClassName(queue) + 'is not message router!');
 
-            const info = Route.create(route, queue.getPath(), guards, protocol);
-            const mapping = new HostMappingRoute(info, ctx.reflect as MappingReflect, injector, middlewares);
+            const mapping = new HostMappingRoute(reflect, injector, queue.getPath());
             injector.onDestroy(() => queue.unuse(mapping));
             queue.use(mapping);
             next();

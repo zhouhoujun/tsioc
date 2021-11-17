@@ -1,4 +1,4 @@
-import { Handle, Router } from '@tsdi/core';
+import { Handle, Route, Router } from '@tsdi/core';
 
 /**
  * component renderer router.
@@ -6,6 +6,6 @@ import { Handle, Router } from '@tsdi/core';
 @Handle()
 export class RendererMapping extends Router {
     constructor() {
-        super('', '', 'render:')
+        super(Route.createProtocol('render:'))
     }
 }
