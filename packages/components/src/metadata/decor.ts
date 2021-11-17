@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import {
     MappingReflect, MessageQueue, Middlewares,
-    MiddlewareType, ProtocolRouteMappingMetadata, RouteInfo, RouteMappingMetadata, Router, RunnableFactoryResolver
+    MiddlewareType, ProtocolRouteMappingMetadata, Route, RouteMappingMetadata, Router, RunnableFactoryResolver
 } from '@tsdi/core';
 import {
     BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
@@ -415,7 +415,7 @@ export const HostMapping: IHostMappingDecorator = createDecorator<RouteMappingMe
             const injector = ctx.injector;
             let queue: Middlewares;
             if (parent) {
-                queue = injector.platform().getInstance(parent);
+                queue = injector.get(parent);
             } else {
                 queue = injector.get(HostMappingRoot);
             }
@@ -423,7 +423,7 @@ export const HostMapping: IHostMappingDecorator = createDecorator<RouteMappingMe
             if (!queue) throw new Error(lang.getClassName(parent) + 'has not registered!');
             if (!(queue instanceof Router)) throw new Error(lang.getClassName(queue) + 'is not message router!');
 
-            const info = RouteInfo.create(route, queue.getPath(), guards, protocol);
+            const info = Route.create(route, queue.getPath(), guards, protocol);
             const mapping = new HostMappingRoute(info, ctx.reflect as MappingReflect, injector, middlewares);
             injector.onDestroy(() => queue.unuse(mapping));
             queue.use(mapping);

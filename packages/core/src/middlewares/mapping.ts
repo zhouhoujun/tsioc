@@ -1,16 +1,17 @@
 import {
     AsyncHandler, DecorDefine, Type, TypeReflect, Injector,
     isPrimitiveType, isPromise, isString, isArray, isFunction, isDefined, lang,
-    chain, isObservable, composeResolver, Parameter, EMPTY, ClassType, isResolver, InvocationContext
+    chain, isObservable, composeResolver, Parameter, EMPTY, ClassType, isResolver,
+    InvocationContext, OperationInvokerFactory, OperationInvokerFactoryResolver
 } from '@tsdi/ioc';
 import { MODEL_RESOLVERS } from '../model/resolver';
 import { ArgumentError, PipeTransform } from '../pipes/pipe';
 import { Context } from './context';
 import { CanActive } from './guard';
-import { AbstractRouter, isMiddlware, MiddlewareType, RouteInfo } from './middleware';
+import { AbstractRouter, isMiddlware, MiddlewareType, Route } from './middleware';
 import { TrasportArgumentResolver, TrasportParameter } from './resolver';
 import { ResultValue } from './result';
-import { Route } from './route';
+import { AbstractRoute } from './route';
 import { ResultStrategy } from './strategy';
 
 /**
@@ -66,7 +67,12 @@ export interface ProtocolRouteMappingMetadata extends RouteMappingMetadata {
     protocol?: string;
 }
 
-export interface MappingReflect extends TypeReflect {
+export interface MappingReflect<T = any> extends TypeReflect<T> {
+    /**
+     * protocol type.
+     */
+    annotation: ProtocolRouteMappingMetadata;
+
     sortRoutes: DecorDefine[];
 }
 
@@ -81,10 +87,13 @@ const restParms = /^\S*:/;
 /**
  * mapping route.
  */
-export class MappingRoute extends Route {
+export class MappingRef<T> extends AbstractRoute {
 
-    constructor(info: RouteInfo, protected reflect: MappingReflect, protected injector: Injector, protected middlewares?: MiddlewareType[]) {
-        super(info);
+    private invokerFactory: OperationInvokerFactory<T>;
+    constructor(protected reflect: MappingReflect<T>, protected injector: Injector, prefix: string | undefined) {
+        super(Route.create(reflect.annotation?.route, prefix, reflect.annotation?.guards))
+
+        this.invokerFactory = injector.get(OperationInvokerFactoryResolver).create(reflect);
     }
 
     protected override async navigate(ctx: Context, next: () => Promise<void>): Promise<void> {
@@ -133,13 +142,15 @@ export class MappingRoute extends Route {
                 });
             }
             ctx.restful = restParams;
-            let result = injector.invoke(this.reflect, meta.propertyKey, {
-                arguments: ctx,
-                resolvers: [
-                    ...primitiveResolvers,
-                    ...injector.get(MODEL_RESOLVERS) ?? EMPTY
-                ]
-            });
+            let result = this.invokerFactory.create(meta.propertyKey)
+                .invoke(this.invokerFactory.createContext(injector, {
+                    invokerMethod: meta.propertyKey,
+                    arguments: ctx,
+                    resolvers: [
+                        ...primitiveResolvers,
+                        ...injector.get(MODEL_RESOLVERS) ?? EMPTY
+                    ]
+                }));
 
             if (isPromise(result)) {
                 result = await result;
@@ -170,7 +181,7 @@ export class MappingRoute extends Route {
     }
 
     protected getRouteMiddleware(ctx: Context, meta: DecorDefine) {
-        return [...this.middlewares || [], ...(meta.metadata as RouteMappingMetadata).middlewares || []];
+        return [...this.reflect.annotation?.middlewares || EMPTY, ...(meta.metadata as RouteMappingMetadata).middlewares || EMPTY];
     }
 
     protected getRouteMetaData(ctx: Context) {

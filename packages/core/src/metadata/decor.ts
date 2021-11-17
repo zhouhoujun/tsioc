@@ -1,14 +1,15 @@
 import {
     isUndefined, ROOT_INJECTOR, EMPTY_OBJ, isArray, isString, lang, Type, isRegExp, Injector,
-    createDecorator, ClassMethodDecorator, ClassMetadata, createParamDecorator, ParameterMetadata, Resolver, isFunction, ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption,
+    createDecorator, ClassMethodDecorator, ClassMetadata, createParamDecorator, ParameterMetadata,
+    Resolver, ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, InvocationContext,
 } from '@tsdi/ioc';
 import { Service } from '../services/service';
-import { Middleware, Middlewares, MiddlewareType, RouteInfo, RouteReflect } from '../middlewares/middleware';
+import { Middleware, Middlewares, MiddlewareType, Route } from '../middlewares/middleware';
 import { ROOT_QUEUE } from '../middlewares/root';
 import { CanActive } from '../middlewares/guard';
-import { RouteResolver, Route } from '../middlewares/route';
+import { AbstractRoute, RouteAdapter } from '../middlewares/route';
 import { RootRouter, Router } from '../middlewares/router';
-import { MappingReflect, MappingRoute, ProtocolRouteMappingMetadata } from '../middlewares/mapping';
+import { MappingReflect, MappingRef, ProtocolRouteMappingMetadata } from '../middlewares/mapping';
 import { BootMetadata, HandleMetadata, HandlesMetadata, PipeMetadata, HandleMessagePattern } from './meta';
 import { PipeTransform } from '../pipes/pipe';
 import { Server } from '../server/server';
@@ -25,7 +26,7 @@ import { getModuleType } from '../module.ref';
  * @interface Module
  * @template T
  */
- export interface Module<T extends ModuleMetadata> {
+export interface Module<T extends ModuleMetadata> {
     /**
      * Module decorator, use to define class as ioc Module.
      *
@@ -345,7 +346,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
         (isString(parent) || isRegExp(parent) ? ({ pattern: parent, ...options }) : ({ parent, ...options })) as HandleMetadata & HandleMessagePattern,
     design: {
         afterAnnoation: (ctx, next) => {
-            const reflect = ctx.reflect as RouteReflect;
+            const reflect = ctx.reflect;
             const metadata = reflect.class.getMetadata<HandleMetadata>(ctx.currDecor);
             if (reflect.class.isExtends(Middlewares)) {
                 if (!(metadata as HandlesMetadata).autorun) {
@@ -369,22 +370,20 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
             }
 
             const type = ctx.type;
-            if (isString(route) || reflect.class.isExtends(Route) || reflect.class.isExtends(Router)) {
+            if (isString(route) || reflect.class.isExtends(AbstractRoute) || reflect.class.isExtends(Router)) {
                 if (!queue) {
                     let root = injector.get(RootRouter);
-                    if (!root) console.log(type);
                     queue = reflect.class.isExtends(Router) ? root : root.getRoot(protocol);
                 } else if (!(queue instanceof Router)) {
                     throw new Error(lang.getClassName(queue) + 'is not message router!');
                 }
                 const prefix = (queue as Router).getPath();
-                const info = RouteInfo.create(route || '', prefix, guards, protocol);
-                reflect.route = info;
                 let middl: MiddlewareType;
-                if (reflect.class.isExtends(Route) || reflect.class.isExtends(Router)) {
-                    middl = { type, resolve: () => injector.resolve(type, { values: [[RouteInfo, info]] }) };
+                if (reflect.class.isExtends(AbstractRoute) || reflect.class.isExtends(Router)) {
+                    const rt = Route.create(route || '', prefix, guards, protocol);
+                    middl = { type, route: rt, resolve: (ctx) => injector.resolve(type, { values: [[Route, rt]], parent: ctx }) };
                 } else {
-                    middl = new RouteResolver(route || '', prefix, (inj: Injector) => injector.get(type, inj), guards);
+                    middl = new RouteAdapter(route || '', prefix, (ctx) => injector.get(type, ctx), guards);
                 }
                 queue.use(middl);
                 injector.onDestroy(() => queue.unuse(middl));
@@ -592,23 +591,28 @@ export const RouteMapping: RouteMapping = createDecorator<ProtocolRouteMappingMe
             return { ...arg2, route };
         }
     },
+    reflect: {
+        class: (ctx, next) => {
+            ctx.reflect.annotation = ctx.metadata;
+            return next();
+        }
+    },
     design: {
         afterAnnoation: (ctx, next) => {
-            const { route, protocol, parent, middlewares, guards } = ctx.reflect.class.getMetadata<ProtocolRouteMappingMetadata>(ctx.currDecor);
+            const reflect = ctx.reflect as MappingReflect;
+            const { protocol, parent } = reflect.annotation;
             const injector = ctx.injector;
             let queue: Middlewares;
             if (parent) {
                 queue = injector.get(parent);
             } else {
-                !injector.has(RootRouter) && console.log(protocol, injector);
                 queue = injector.get(RootRouter).getRoot(protocol);
             }
 
             if (!queue) throw new Error(lang.getClassName(parent) + 'has not registered!');
             if (!(queue instanceof Router)) throw new Error(lang.getClassName(queue) + 'is not message router!');
 
-            const info = RouteInfo.create(route, queue.getPath(), guards, protocol);
-            const mapping = new MappingRoute(info, ctx.reflect as MappingReflect, injector, middlewares);
+            const mapping = new MappingRef(reflect, injector, queue.getPath());
             injector.onDestroy(() => queue.unuse(mapping));
             queue.use(mapping);
 

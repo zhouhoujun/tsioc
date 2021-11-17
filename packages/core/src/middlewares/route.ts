@@ -1,26 +1,27 @@
-import { Abstract, Injector, Type, lang } from '@tsdi/ioc';
+import { Abstract, Type, lang, InvocationContext } from '@tsdi/ioc';
 import { Context } from './context';
 import { CanActive } from './guard';
-import { AbstractMiddleware, Middleware, RouteInfo, AbstractRouter } from './middleware';
+import { AbstractMiddleware, Middleware, AbstractRouter, Route } from './middleware';
 
 
 /**
  * route for {@link AbstractRouter}
  */
 @Abstract()
-export abstract class Route<T extends Context = Context> extends AbstractMiddleware<T> {
+export abstract class AbstractRoute<T extends Context = Context> extends AbstractMiddleware<T> {
 
-    constructor(protected info: RouteInfo) {
+    constructor(protected route: Route) {
         super();
     }
 
     get url() {
-        return this.info.url;
+        return this.route.url;
     }
 
     get prefix() {
-        return this.info.prefix;
+        return this.route.prefix;
     }
+
 
     override async execute(ctx: T, next: () => Promise<void>): Promise<void> {
         if (await this.canActive(ctx)) {
@@ -34,9 +35,9 @@ export abstract class Route<T extends Context = Context> extends AbstractMiddlew
 
     protected async canActive(ctx: T): Promise<boolean> {
         if (!((!ctx.status || ctx.status === 404) && ctx.vaild.isActiveRoute(ctx, this.url, this.prefix) === true)) return false;
-        if (this.info.guards && this.info.guards.length) {
+        if (this.route.guards && this.route.guards.length) {
             if (!(await lang.some(
-                this.info.guards.map(token => () => ctx.injector.resolve({ token, regify: true })?.canActivate(ctx)),
+                this.route.guards.map(token => () => ctx.injector.resolve({ token, regify: true })?.canActivate(ctx)),
                 vaild => vaild === false))) return false;
         }
         return true;
@@ -44,16 +45,15 @@ export abstract class Route<T extends Context = Context> extends AbstractMiddlew
 }
 
 /**
- * custom route resolver.
+ * route adapter.
  */
-export class RouteResolver extends Route {
+export class RouteAdapter extends AbstractRoute {
 
-    constructor(url: string, prefix: string, private factory: (pdr: Injector) => Middleware, readonly guards?: Type<CanActive>[]) {
-        super(RouteInfo.create(url, prefix));
+    constructor(url: string, prefix: string, private factory: (ctx?: InvocationContext) => Middleware, guards?: Type<CanActive>[]) {
+        super(Route.create(url, prefix, guards));
     }
 
     protected override navigate(ctx: Context, next: () => Promise<void>): Promise<void> {
-        return this.factory(ctx.injector)?.execute(ctx, next);
+        return this.factory(ctx.injector.get(InvocationContext))?.execute(ctx, next);
     }
-
 }

@@ -1,8 +1,10 @@
-import { Type, refl, lang, TypeReflect, DestroyCallback, isFunction, OperationInvokerFactory, InvocationContext, OperationInvokerFactoryResolver, InvokeArguments, Injector } from '@tsdi/ioc';
+import {
+    Type, refl, lang, TypeReflect, DestroyCallback, isFunction, OperationInvokerFactory,
+    InvocationContext, OperationInvokerFactoryResolver, InvokeArguments, Injector
+} from '@tsdi/ioc';
+import { Runnable, RunnableFactory, RunnableFactoryResolver, TargetRef } from '../runnable';
 import { ApplicationContext, BootstrapOption } from '../Context';
 import { ModuleRef } from '../module.ref';
-import { Runnable, RunnableFactory, RunnableFactoryResolver, TargetRef } from '../runnable';
-
 
 
 /**
@@ -57,7 +59,11 @@ export class RunnableTargetRef<T = any> extends TargetRef<T>  {
     private _destroyed = false;
     private _dsryCbs = new Set<DestroyCallback>();
     private _instance: T;
-    constructor(readonly injector: Injector, readonly invokerFactory: OperationInvokerFactory<T>, readonly context: InvocationContext, instance?: T) {
+    constructor(
+        readonly injector: Injector,
+        readonly invokerFactory: OperationInvokerFactory<T>,
+        readonly context: InvocationContext,
+        instance?: T) {
         super();
         this.context.setValue(TargetRef, this);
         this._instance = instance ?? this.injector.resolve({ token: this.type, regify: true, context });

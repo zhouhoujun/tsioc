@@ -59,10 +59,25 @@ export abstract class AbstractMiddleware<T extends Context = Context> implements
     }
 }
 
+export interface RouteResolver<T = any> extends Resolver<T> {
+    route?: Route;
+}
+
+/**
+ * is resolver or not.
+ * @param target 
+ * @returns 
+ */
+ export function isRouteResolver(target: any): target is RouteResolver {
+    if (!isObject(target)) return false;
+    return isFunction((target as Resolver).type) && (target as RouteResolver).route instanceof Route && isFunction((target as Resolver).resolve);
+}
+
 /**
  * message type for register in {@link Middlewares}.
  */
-export type MiddlewareType = AsyncHandler<Context> | Middleware | Resolver<Middleware>;
+export type MiddlewareType = AsyncHandler<Context> | Middleware | RouteResolver<Middleware>;
+
 
 /**
  * middlewares, compose of {@link Middleware}.
@@ -191,9 +206,9 @@ export abstract class AbstractRouter<T extends Context = Context> extends Middle
 
 
 /**
- * route info.
+ * route.
  */
-export class RouteInfo {
+export class Route {
     constructor(readonly url: string = '', readonly prefix: string = '', readonly guards?: Type<CanActive>[], readonly protocol: string = '') {
 
     }
@@ -207,11 +222,11 @@ export class RouteInfo {
     }
 
     static create(url: string = '', prefix: string = '', guards?: Type<CanActive>[], protocol: string = '') {
-        return new RouteInfo(url, prefix, guards, protocol);
+        return new Route(url, prefix, guards, protocol);
     }
 
     static createProtocol(protocol: string, prefix: string = '', guards?: Type<CanActive>[]) {
-        return new RouteInfo('', prefix, guards, protocol);
+        return new Route('', prefix, guards, protocol);
     }
 }
 
@@ -219,5 +234,5 @@ export class RouteInfo {
  * middleware handle route reflect.
  */
 export interface RouteReflect extends TypeReflect {
-    route?: RouteInfo;
+    route?: Route;
 }

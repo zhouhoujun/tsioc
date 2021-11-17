@@ -251,7 +251,7 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
     invoke(context: InvocationContext, callback?: (result: any) => void) {
         const injector = context.injector;
         const type = this.typeRef.type;
-        const instance = this.instance ?? injector.resolve(type);
+        const instance = this.instance ?? injector.get(type, context);
         if (!instance || !isFunction(instance[this.method])) {
             throw new Error(`type: ${type} has no method ${this.method}.`);
         }
