@@ -1,5 +1,5 @@
 import { ClassType, Type } from './types';
-import { EMPTY, isDefined, isFunction, isObject } from './utils/chk';
+import { EMPTY, isArray, isDefined, isFunction, isObject } from './utils/chk';
 import { Abstract } from './metadata/fac';
 import { ParameterMetadata } from './metadata/meta';
 import { TypeReflect } from './metadata/type';
@@ -224,6 +224,16 @@ export interface OperationInvoker {
     resolveArguments(context: InvocationContext): any[];
 }
 
+/**
+ * argument errror.
+ */
+export class ArgumentError extends Error {
+    constructor(message?: string | string[]) {
+        super(isArray(message) ? message.join('\n') : message || '');
+        Object.setPrototypeOf(this, ArgumentError.prototype);
+        Error.captureStackTrace(this);
+    }
+}
 
 /**
  * Missing argument errror.
@@ -334,16 +344,73 @@ export interface InvocationOption extends InvokeOption {
     invokerMethod?: string;
 }
 
+/**
+ * relective ref.
+ */
 @Abstract()
-export abstract class OperationInvokerFactory<T> {
-    abstract get targetType(): Type<T>;
-    abstract get targetReflect(): TypeReflect<T>;
-    abstract create(method: string, instance?: T): OperationInvoker;
-    abstract createContext(injector: Injector, option?: InvocationOption): InvocationContext;
+export abstract class ReflectiveRef<T = any> implements Destroyable {
+    /**
+     * injector.
+     */
+    abstract get injector(): Injector;
+    /**
+     * the type root invocation context.
+     */
+    abstract get root(): InvocationContext;
+    /**
+     * instance of target
+     *
+     * @readonly
+     * @abstract
+     * @type {T}
+     */
+    abstract get instance(): T;
+    /**
+     * target reflect.
+     *
+     * @readonly
+     * @abstract
+     */
+    abstract get reflect(): TypeReflect<T>;
+    /**
+     * execute target type.
+     *
+     * @readonly
+     * @abstract
+     * @type {Type<T>}
+     */
+    abstract get type(): Type<T>;
+    /**
+     * invoke target method.
+     * @param method 
+     * @param option 
+     */
+    abstract invoke(method: string, option?: InvokeArguments): any;
+
+    abstract get destroyed(): boolean;
+    /**
+     * Destroys the component instance and all of the data structures associated with it.
+     */
+    abstract destroy(): void;
+    /**
+     * A lifecycle hook that provides additional developer-defined cleanup
+     * functionality for the component.
+     * @param callback A handler function that cleans up developer-defined data
+     * associated with this component. Called when the `destroy()` method is invoked.
+     */
+    abstract onDestroy(callback: DestroyCallback): void;
 }
 
 @Abstract()
-export abstract class OperationInvokerFactoryResolver {
-    abstract create<T>(type: ClassType<T> | TypeReflect<T>, options?: InvokeArguments): OperationInvokerFactory<T>;
+export abstract class OperationFactory<T> {
+    abstract get targetReflect(): TypeReflect<T>;
+    abstract create(injector: Injector, option?: InvokeOption): ReflectiveRef<T>;
+    abstract createInvoker(method: string, instance?: T): OperationInvoker;
+    abstract createContext(injector: Injector, option?: InvocationOption, root?: InvocationContext): InvocationContext;
+}
+
+@Abstract()
+export abstract class OperationFactoryResolver {
+    abstract create<T>(type: ClassType<T> | TypeReflect<T>): OperationFactory<T>;
 }
 

@@ -18,7 +18,7 @@ import { ModuleReflect, TypeReflect } from '../metadata/type';
 import { get } from '../metadata/refl';
 import {
     InvocationContext, InvocationOption, InvokeOption, OperationArgumentResolver, isResolver, Parameter,
-    OperationInvokerFactory, ReflectiveOperationInvoker, OperationInvokerFactoryResolver, OperationInvoker, InvokeArguments
+    OperationFactory, ReflectiveOperationInvoker, OperationFactoryResolver, OperationInvoker, InvokeArguments, ReflectiveRef, MissingParameterError, ArgumentError
 } from '../invoker';
 import { DefaultModuleLoader } from './loader';
 import { ModuleLoader } from '../module.loader';
@@ -416,10 +416,7 @@ export class DefaultInjector extends Injector {
                     }
                     option.values = [...option.values || EMPTY, [TARGET, option.target]];
                 }
-                if (targetProviders) {
-                    option.providers = [...option.providers || EMPTY, ...targetProviders]
-                }
-                context = context ? createInvocationContext(this, { parent: context, ...option }) : createInvocationContext(this, option);
+                context = context ? createInvocationContext(this, { parent: context, ...option, targetProviders }) : createInvocationContext(this, targetProviders ? { ...option, targetProviders } : option);
                 isnew = true;
             }
             inst = this.resolveStrategy(platform, option, context);
@@ -680,12 +677,12 @@ export class DefaultInjector extends Injector {
             key = propertyKey;
         }
 
-        const factory = this.get(OperationInvokerFactoryResolver).create(tgRefl);
+        const factory = this.get(OperationFactoryResolver).create(tgRefl);
         if (!context) {
             context = factory.createContext(this, { ...option, providers, invokerMethod: key });
-            return factory.create(key, instance).invoke(context, () => context?.destroy());
+            return factory.createInvoker(key, instance).invoke(context, () => context?.destroy());
         }
-        return factory.create(key, instance).invoke(context);
+        return factory.createInvoker(key, instance).invoke(context);
     }
 
 
@@ -1112,7 +1109,7 @@ function createInvocationContext(injector: Injector, option?: InvocationOption &
     /**
      * invocation invoker target.
      */
-    invokerTarget?: Type;
+    invokerTarget?: ClassType;
     targetProviders?: ProviderType[],
     methodProviders?: ProviderType[]
 }) {
@@ -1134,11 +1131,84 @@ function createInvocationContext(injector: Injector, option?: InvocationOption &
         ...DEFAULT_RESOLVERS);
 }
 
-class OperationInvokerFactoryImpl<T> extends OperationInvokerFactory<T> {
+class ReflectiveRefImpl<T> extends ReflectiveRef<T> {
+
+    private _destroyed = false;
+    private _dsryCbs = new Set<DestroyCallback>();
+    private _type: Type<T>;
+
+    constructor(private factory: OperationFactory<T>, private _injector: Injector, readonly root: InvocationContext, private _instance?: T) {
+        super()
+        this._type = factory.targetReflect.type as Type;
+        this.root.setValue(ReflectiveRef, this);
+    }
+
+    get injector(): Injector {
+        return this._injector;
+    }
+
+    get instance(): T {
+        if (!this._instance) {
+            this._instance = this._injector.resolve({ token: this.type, regify: true, context: this.root });
+        }
+        return this._instance;
+    }
+
+    get reflect(): TypeReflect<T> {
+        return this.factory.targetReflect;
+    }
+
+    get type(): Type<T> {
+        return this._type;
+    }
+
+    invoke(method: string, option?: InvokeArguments) {
+        const context = this.factory.createContext(this.root.injector, option, this.root);
+        const result = this.factory.createInvoker(method, this.instance).invoke(context);
+        context.destroy();
+        return result;
+    }
+
+    get destroyed() {
+        return this._destroyed;
+    }
+
+    /**
+     * Destroys the component instance and all of the data structures associated with it.
+     */
+    destroy(): void {
+        if (!this._destroyed) {
+            this._destroyed = true;
+            try {
+                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.destroy());
+            } finally {
+                this._dsryCbs.clear();
+                this.root.destroy();
+                this._instance = null!;
+                this._injector = null!;
+                this._type = null!;
+                this.factory = null!;
+            }
+        }
+    }
+
+    /**
+     * A lifecycle hook that provides additional developer-defined cleanup
+     * functionality for the component.
+     * @param callback A handler function that cleans up developer-defined data
+     * associated with this component. Called when the `destroy()` method is invoked.
+     */
+    onDestroy(callback: DestroyCallback): void {
+        this._dsryCbs.add(callback);
+    }
+
+}
+
+export class DefaultOperationFactory<T> extends OperationFactory<T> {
 
     private _tagRefl: TypeReflect<T>;
     private _tagPdrs: ProviderType[] | undefined;
-    constructor(targetType: ClassType<T> | TypeReflect<T>, private options?: InvokeArguments) {
+    constructor(targetType: ClassType<T> | TypeReflect<T>) {
         super()
         this._tagRefl = isFunction(targetType) ? get(targetType) : targetType;
     }
@@ -1147,28 +1217,39 @@ class OperationInvokerFactoryImpl<T> extends OperationInvokerFactory<T> {
         return this._tagRefl;
     }
 
-    get targetType(): Type<T> {
-        return this._tagRefl.type as Type;
+    create(injector: Injector, option?: InvokeOption): ReflectiveRef<T> {
+        return new ReflectiveRefImpl(this, injector, this.createContext(injector, option));
     }
 
-    create(method: string, instance?: T): OperationInvoker {
+    createInvoker(method: string, instance?: T): OperationInvoker {
         return new ReflectiveOperationInvoker(this.targetReflect, method, instance);
     }
 
-    createContext(injector: Injector, option?: InvocationOption): InvocationContext<any> {
+    createContext(injector: Injector, option?: InvocationOption, parent?: InvocationContext): InvocationContext<any> {
         if (!this._tagPdrs) {
             this._tagPdrs = injector.platform().getTypeProvider(this.targetReflect);
         }
-        return createInvocationContext(injector, {
-            ...this.options,
+        let proxy: boolean | undefined;
+        let methodProviders: ProviderType[] | undefined;
+        if (option?.invokerMethod) {
+            methodProviders = this.targetReflect.class.getMethodProviders(option.invokerMethod);
+            proxy = this.targetReflect.type.prototype[option?.invokerMethod]['_proxy'];
+        }
+        return parent ? createInvocationContext(injector, {
+            parent,
             ...option,
-            proxy: option?.invokerMethod ? this.targetReflect.type.prototype[option?.invokerMethod]['_proxy'] : false,
-            invokerTarget: this.targetType,
-            targetProviders: this._tagPdrs,
-            methodProviders: option?.invokerMethod ? this.targetReflect.class.getMethodProviders(option.invokerMethod) : undefined
-        });
+            proxy,
+            invokerTarget: this.targetReflect.type,
+            methodProviders
+        })
+            : createInvocationContext(injector, {
+                ...option,
+                proxy,
+                invokerTarget: this.targetReflect.type,
+                targetProviders: this._tagPdrs,
+                methodProviders
+            });
     }
-
 }
 
 /**
@@ -1179,9 +1260,9 @@ class OperationInvokerFactoryImpl<T> extends OperationInvokerFactory<T> {
  */
 function registerCores(container: Container) {
     container.setValue(ModuleLoader, new DefaultModuleLoader());
-    container.setValue(OperationInvokerFactoryResolver, {
+    container.setValue(OperationFactoryResolver, {
         create: (type) => {
-            return new OperationInvokerFactoryImpl(type);
+            return new DefaultOperationFactory(type);
         }
     });
     // bing action.

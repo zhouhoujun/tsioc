@@ -2,12 +2,10 @@ import {
     AsyncHandler, DecorDefine, Type, TypeReflect, Injector, lang, chain,
     isPrimitiveType, isPromise, isString, isArray, isFunction, isDefined,
     isObservable, composeResolver, Parameter, EMPTY, ClassType, isResolver,
-    InvocationContext, OperationInvokerFactory, OperationInvokerFactoryResolver,
-    InvokeArguments, DestroyCallback
+    InvocationContext, OperationFactoryResolver, DestroyCallback, ReflectiveRef, ArgumentError
 } from '@tsdi/ioc';
-import { TargetRef } from '..';
 import { MODEL_RESOLVERS } from '../model/resolver';
-import { ArgumentError, PipeTransform } from '../pipes/pipe';
+import { PipeTransform } from '../pipes/pipe';
 import { Context } from './context';
 import { CanActive } from './guard';
 import { AbstractRouter, isMiddlware, MiddlewareType, Route } from './middleware';
@@ -89,30 +87,16 @@ const restParms = /^\S*:/;
 /**
  * route mapping ref.
  */
-export class RouteMappingRef<T> extends AbstractRoute implements TargetRef<T> {
+export class RouteMappingRef<T> extends AbstractRoute {
 
-    private _destroyed = false;
-    private _dsryCbs = new Set<DestroyCallback>();
-    private _instance: T | undefined;
-
-    readonly invokerFactory: OperationInvokerFactory<T>;
+    private reflectiveRef: ReflectiveRef<T>;
     constructor(readonly reflect: MappingReflect<T>, readonly injector: Injector, prefix: string | undefined) {
         super(Route.create(reflect.annotation?.route, prefix, reflect.annotation?.guards))
-
-        this.invokerFactory = injector.get(OperationInvokerFactoryResolver).create(reflect);
+        this.reflectiveRef = injector.get(OperationFactoryResolver).create(reflect).create(injector);
         injector.onDestroy(this);
     }
 
-    get type(): Type<T> {
-        return this.invokerFactory.targetType;
-    }
 
-    get instance(): T {
-        if (!this._instance) {
-            this._instance = this.injector.resolve({ token: this.type, regify: true });
-        }
-        return this._instance;
-    }
 
     protected override async navigate(ctx: Context, next: () => Promise<void>): Promise<void> {
         const meta = ctx.activeRouteMetadata || this.getRouteMetaData(ctx)!;
@@ -160,7 +144,7 @@ export class RouteMappingRef<T> extends AbstractRoute implements TargetRef<T> {
                 });
             }
             ctx.restful = restParams;
-            let result = this.invoke(meta.propertyKey, {
+            let result = this.reflectiveRef.invoke(meta.propertyKey, {
                 arguments: ctx,
                 resolvers: [
                     ...primitiveResolvers,
@@ -194,15 +178,6 @@ export class RouteMappingRef<T> extends AbstractRoute implements TargetRef<T> {
                 ctx.status = 200;
             }
         }
-    }
-
-    /**
-     * invoke target method.
-     * @param method 
-     * @param option 
-     */
-    invoke(method: string, option?: InvokeArguments): any {
-        return this.invokerFactory.create(method, this.instance).invoke(this.invokerFactory.createContext(this.injector, option));
     }
 
     protected getRouteMiddleware(ctx: Context, meta: DecorDefine) {
@@ -248,24 +223,18 @@ export class RouteMappingRef<T> extends AbstractRoute implements TargetRef<T> {
         }
     }
     get destroyed() {
-        return this._destroyed;
+        return !this.reflectiveRef || this.reflectiveRef.destroyed;
     }
 
     /**
      * Destroys the component instance and all of the data structures associated with it.
      */
     destroy(): void {
-        if (!this._destroyed) {
-            this._destroyed = true;
-            try {
-                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.destroy());
-            } finally {
-                this._dsryCbs.clear();
-                this._instance = null!;
-                (this as any).reflect = null;
-                (this as any).injector = null;
-                (this as any).invokerFactory = null;
-            }
+        if (!this.destroyed) {
+            this.reflectiveRef.destroy();
+            this.reflectiveRef = null!;
+            (this as any).reflect = null;
+            (this as any).injector = null;
         }
     }
 
@@ -276,7 +245,7 @@ export class RouteMappingRef<T> extends AbstractRoute implements TargetRef<T> {
      * associated with this component. Called when the `destroy()` method is invoked.
      */
     onDestroy(callback: DestroyCallback): void {
-        this._dsryCbs.add(callback);
+        this.reflectiveRef.onDestroy(callback);
     }
 }
 

@@ -1,7 +1,8 @@
 
 import {
     DefaultInjector, Injector, InjectorScope, InjectorTypeWithProviders, refl, isFunction,
-    Platform, ModuleReflect, Modules, processInjectorType, ProviderType, Token, Type
+    Platform, ModuleReflect, Modules, processInjectorType, ProviderType, Token, Type, ClassType,
+    OperationFactory, TypeReflect, DefaultOperationFactory, OperationFactoryResolver
 } from '@tsdi/ioc';
 import { ModuleFactory, ModuleFactoryResolver, ModuleOption } from '../module.factory';
 import { ModuleRef } from '../module.ref';
@@ -9,24 +10,30 @@ import { RunnableFactoryResolver } from '../runnable';
 import { DefaultRunnableFactoryResolver } from './runnable';
 
 
+
 /**
  * default modeuleRef implements {@link ModuleRef}
  */
-export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T> {
+export class DefaultModuleRef<T = any> extends DefaultInjector implements ModuleRef<T> {
 
     private _instance!: T;
     private _defs = new Set<Type>();
     private _type: Type;
     private _typeRefl: ModuleReflect;
 
-    readonly runnableFactoryResolver: RunnableFactoryResolver = new DefaultRunnableFactoryResolver(this);
+    runnableFactoryResolver: RunnableFactoryResolver = new DefaultRunnableFactoryResolver(this);
+    operationFactoryResolver = new ModuleOperationFactoryResolver();
 
-    constructor(moduleType: ModuleReflect, providers: ProviderType[] | undefined, readonly parent: Injector, readonly scope?: InjectorScope, deps?: Modules[]) {
+    constructor(moduleType: ModuleReflect, providers: ProviderType[] | undefined, readonly parent: Injector,
+        readonly scope?: InjectorScope, deps?: Modules[]) {
         super(undefined, parent, scope);
         const dedupStack: Type[] = [];
         this._typeRefl = moduleType;
         this._type = moduleType.type as Type;
-        this.inject({ provide: RunnableFactoryResolver, useValue: this.runnableFactoryResolver });
+        this.inject(
+            { provide: RunnableFactoryResolver, useValue: this.runnableFactoryResolver },
+            { provide: OperationFactoryResolver, useValue: this.operationFactoryResolver }
+        );
         this.setValue(ModuleRef, this);
         deps && this.use(deps);
         providers && this.inject(providers);
@@ -68,6 +75,8 @@ export class DefaultModuleRef<T> extends DefaultInjector implements ModuleRef<T>
         super.destroying();
         this._defs.clear();
         this._type = null!;
+        this.operationFactoryResolver = null!;
+        this.runnableFactoryResolver = null!;
         this._typeRefl = null!;
         this._instance = null!;
     }
@@ -105,5 +114,12 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
 export class DefaultModuleFactoryResolver extends ModuleFactoryResolver {
     resolve<T>(type: Type<T> | ModuleReflect<T>): ModuleFactory<T> {
         return new DefaultModuleFactory(type);
+    }
+}
+
+
+export class ModuleOperationFactoryResolver extends OperationFactoryResolver {
+    create<T>(type: ClassType<T> | TypeReflect<T>): OperationFactory<T> {
+        return new DefaultOperationFactory(type);
     }
 }

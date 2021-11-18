@@ -1,7 +1,7 @@
-import { Abstract, EMPTY, InvocationContext, isArray, isDefined, isFunction, isNil, PropertyMetadata, tokenId, Type, OperationInvoker } from '@tsdi/ioc';
+import { Abstract, EMPTY, InvocationContext, isArray, isDefined, isFunction, isNil, PropertyMetadata, tokenId, Type, OperationInvoker, ArgumentError } from '@tsdi/ioc';
 import { TrasportArgumentResolver, TrasportParameter } from '../middlewares/resolver';
 import { Context } from '../middlewares/context';
-import { ArgumentError, PipeTransform } from '../pipes/pipe';
+import { PipeTransform } from '../pipes/pipe';
 
 /**
  * model parameter argument of an {@link OperationInvoker}.

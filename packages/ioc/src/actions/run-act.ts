@@ -4,7 +4,7 @@ import { IActionSetup } from '../action';
 import { RuntimeContext } from './ctx';
 import { IocRegAction, IocRegScope } from './reg';
 import { PropertyMetadata } from '../metadata/meta';
-import { OperationInvokerFactoryResolver, Parameter } from '../invoker';
+import { OperationFactoryResolver, Parameter } from '../invoker';
 
 /**
  * ioc runtime register action.
@@ -24,13 +24,13 @@ export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): 
     if (!ctx.params) {
         ctx.params = ctx.reflect.class.getParameters('constructor');
     }
-    const factory = ctx.injector.get(OperationInvokerFactoryResolver).create(ctx.reflect);
+    const factory = ctx.injector.get(OperationFactoryResolver).create(ctx.reflect);
     const context = ctx.context = factory.createContext(ctx.context?.injector ?? ctx.injector, {
         invokerMethod: 'constructor',
         parent: ctx.context
     });
     if (!ctx.args) {
-        ctx.args = factory.create('constructor').resolveArguments(context);
+        ctx.args = factory.createInvoker('constructor').resolveArguments(context);
     }
     next();
     context.destroy();
