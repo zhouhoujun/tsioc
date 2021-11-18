@@ -1,6 +1,6 @@
 import {
-    Token, Type, PropertyMetadata, InjectableMetadata, isBoolean, isArray, isString,
-    refl, lang, createDecorator, createPropDecorator, createParamDecorator, ClassMethodDecorator, getClass
+    Token, Type, PropertyMetadata, InjectableMetadata, isBoolean, isArray, isString, getClass,
+    refl, lang, createDecorator, createPropDecorator, createParamDecorator, ClassMethodDecorator
 } from '@tsdi/ioc';
 import {
     MappingReflect, MessageQueue, Middlewares,

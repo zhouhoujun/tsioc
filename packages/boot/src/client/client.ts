@@ -15,5 +15,7 @@ export abstract class AbstractClient implements Client {
     emit<TO = any, TI = any>(pattern: any, data: TI): TO {
         throw new Error('Method not implemented.');
     }
-
+    destroy(): void {
+        throw new Error('Method not implemented.');
+    }
 }

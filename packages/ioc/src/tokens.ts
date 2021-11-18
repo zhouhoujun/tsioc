@@ -11,7 +11,7 @@ import { getClassName } from './utils/lang';
  * @template T
  */
 export class InjectToken<T = any> {
-    constructor(private desc: string, readonly providedIn: Type | 'root' | 'platform' | string = '') { }
+    constructor(private desc: string, readonly providedIn: Type | 'root' | 'platform' | string = '', factory?: () => T) { }
 
     toString(): string {
         return `Token ${this.desc}`;

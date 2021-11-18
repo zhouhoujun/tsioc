@@ -214,19 +214,17 @@ export const Boot: Boot = createDecorator<BootMetadata>('Boot', {
         }
     },
     appendProps: (meta) => {
-        if (isUndefined(meta.singleton)) {
-            meta.singleton = true;
-        }
+        meta.singleton = true;
         return meta;
     }
 });
+
+
 
 /**
  * configure register decorator.
  */
 export type ConfigDecorator = <TFunction extends Type<Server>>(target: TFunction) => TFunction | void;
-
-
 
 /**
  * Configure decorator, define this class as configure register when bootstrap application.
@@ -271,6 +269,7 @@ export const Configure: Configure = createDecorator<ClassMetadata>('Configure', 
         return meta;
     }
 })
+
 
 
 export type HandleDecorator = <TFunction extends Type<Middleware>>(target: TFunction) => TFunction | void;
@@ -415,11 +414,11 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
 export const Message = Handle;
 
 
+
 /**
  * pipe decorator.
  */
 export type PipeDecorator = <TFunction extends Type<PipeTransform>>(target: TFunction) => TFunction | void;
-
 
 /**
  * Pipe decorator.

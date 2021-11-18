@@ -21,18 +21,14 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
      * module type
      */
     abstract get moduleReflect(): ModuleReflect<T>;
-
     /**
      * operation factory resolver.
      */
     abstract get operationFactoryResolver(): OperationFactoryResolver;
-
     /**
      * runnable factory resolver.
      */
     abstract get runnableFactoryResolver(): RunnableFactoryResolver;
-
-
     /**
      * The injector that contains all of the providers of the `Module`.
      */

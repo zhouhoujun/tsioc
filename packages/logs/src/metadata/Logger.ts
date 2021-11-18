@@ -1,4 +1,4 @@
-import { TypeMetadata, ClassMethodDecorator, isFunction, createDecorator, EMPTY_OBJ } from '@tsdi/ioc';
+import { TypeMetadata, ClassMethodDecorator, isFunction, createDecorator, EMPTY_OBJ, InjectToken } from '@tsdi/ioc';
 import { isLevel, Level } from '../Level';
 
 
@@ -36,6 +36,7 @@ export interface LoggerMetadata extends TypeMetadata {
 
 /**
  * Logger decorator, for method or class.
+ * inject logger for property or parameter with the name in {@link ILoggerManager}.
  *
  * @Logger
  *
@@ -45,13 +46,21 @@ export interface LoggerMetadata extends TypeMetadata {
  */
 export interface Logger<T extends LoggerMetadata> {
     /**
+     * inject logger for property or parameter with the name in {@link ILoggerManager}.
+     * @Logger
+     *
+     * @param {string} name the logger name.
+     */
+     (name: string): PropertyDecorator | ParameterDecorator;
+
+    /**
      * define logger annotation pointcut to this class or method.
      * @Logger
      *
      * @param {string} message set special message to logging.
      * @param {Level} [level] set log level to this message.
      */
-    (message: string, level?: Level): ClassMethodDecorator;
+    (message: string, level: Level): ClassMethodDecorator;
     /**
      * define logger annotation pointcut to this class or method.
      * @Logger
@@ -72,15 +81,6 @@ export interface Logger<T extends LoggerMetadata> {
      */
     (logname: string, express: (item: any) => boolean, message: string, level?: Level): ClassMethodDecorator;
 
-    /**
-     * define logger annotation pointcut to this class or method.
-     *
-     * @Logger
-     *
-     * @param {T} [metadata] logger metadata.
-     */
-    (metadata?: T): ClassMethodDecorator;
-
 }
 
 /**
@@ -91,7 +91,8 @@ export interface Logger<T extends LoggerMetadata> {
 export const Logger: Logger<LoggerMetadata> = createDecorator<LoggerMetadata>('Logger', {
     props: (...args: any[]) => {
         if (args.length === 1) {
-            return { message: args[0] };
+            //TODO  factory inject token.
+            return { provider: new InjectToken(args[0]) };
         } else if (args.length === 2) {
             const [arg1, arg2] = args;
             if (isLevel(arg2)) {

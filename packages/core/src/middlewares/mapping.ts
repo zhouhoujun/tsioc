@@ -96,8 +96,6 @@ export class RouteMappingRef<T> extends AbstractRoute {
         injector.onDestroy(this);
     }
 
-
-
     protected override async navigate(ctx: Context, next: () => Promise<void>): Promise<void> {
         const meta = ctx.activeRouteMetadata || this.getRouteMetaData(ctx)!;
         let middlewares = this.getRouteMiddleware(ctx, meta);
