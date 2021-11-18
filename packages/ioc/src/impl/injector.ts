@@ -18,7 +18,7 @@ import { ModuleReflect, TypeReflect } from '../metadata/type';
 import { get } from '../metadata/refl';
 import {
     InvocationContext, InvocationOption, InvokeOption, OperationArgumentResolver, isResolver, Parameter,
-    OperationFactory, ReflectiveOperationInvoker, OperationFactoryResolver, OperationInvoker, InvokeArguments, ReflectiveRef, MissingParameterError, ArgumentError
+    OperationFactory, ReflectiveOperationInvoker, OperationFactoryResolver, OperationInvoker, InvokeArguments, ReflectiveRef
 } from '../invoker';
 import { DefaultModuleLoader } from './loader';
 import { ModuleLoader } from '../module.loader';
@@ -1173,9 +1173,6 @@ class ReflectiveRefImpl<T> extends ReflectiveRef<T> {
         return this._destroyed;
     }
 
-    /**
-     * Destroys the component instance and all of the data structures associated with it.
-     */
     destroy(): void {
         if (!this._destroyed) {
             this._destroyed = true;
@@ -1191,13 +1188,7 @@ class ReflectiveRefImpl<T> extends ReflectiveRef<T> {
             }
         }
     }
-
-    /**
-     * A lifecycle hook that provides additional developer-defined cleanup
-     * functionality for the component.
-     * @param callback A handler function that cleans up developer-defined data
-     * associated with this component. Called when the `destroy()` method is invoked.
-     */
+    
     onDestroy(callback: DestroyCallback): void {
         this._dsryCbs.add(callback);
     }

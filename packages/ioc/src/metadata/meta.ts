@@ -1,6 +1,7 @@
 import { ClassType, Modules, Type } from '../types';
 import { InjectFlags, Token } from '../tokens';
 import { InjectorTypeWithProviders, ProviderType } from '../providers';
+import { OperationArgumentResolver } from '../invoker';
 
 /**
  * type metadata
@@ -135,6 +136,10 @@ export interface PropertyMetadata extends ProvideMetadata {
      * @type {string}
      */
     propertyKey?: string;
+    /**
+     * custom resolver to resolve property or parameter.
+     */
+    resolver?: OperationArgumentResolver;
 }
 
 /**

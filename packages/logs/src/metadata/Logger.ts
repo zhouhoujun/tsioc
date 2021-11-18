@@ -1,5 +1,6 @@
-import { TypeMetadata, ClassMethodDecorator, isFunction, createDecorator, EMPTY_OBJ, InjectToken } from '@tsdi/ioc';
+import { TypeMetadata, ClassMethodDecorator, isFunction, createDecorator, EMPTY_OBJ, InjectToken, OperationArgumentResolver, Type, isString, lang, PropParamDecorator } from '@tsdi/ioc';
 import { isLevel, Level } from '../Level';
+import { ConfigureLoggerManager } from '../manager';
 
 
 /**
@@ -51,7 +52,7 @@ export interface Logger<T extends LoggerMetadata> {
      *
      * @param {string} name the logger name.
      */
-     (name: string): PropertyDecorator | ParameterDecorator;
+    (name: string | Type): PropParamDecorator;
 
     /**
      * define logger annotation pointcut to this class or method.
@@ -83,6 +84,11 @@ export interface Logger<T extends LoggerMetadata> {
 
 }
 
+const loggerResolver = {
+    canResolve: (pr: LoggerMetadata, ctx) => pr.logname && ctx.injector.has(ConfigureLoggerManager),
+    resolve: (pr: LoggerMetadata, ctx) => ctx.injector.get(ConfigureLoggerManager).getLogger(pr.logname)
+} as OperationArgumentResolver;
+
 /**
  * Logger decorator, for method or class.
  *
@@ -91,8 +97,11 @@ export interface Logger<T extends LoggerMetadata> {
 export const Logger: Logger<LoggerMetadata> = createDecorator<LoggerMetadata>('Logger', {
     props: (...args: any[]) => {
         if (args.length === 1) {
-            //TODO  factory inject token.
-            return { provider: new InjectToken(args[0]) };
+            const logname = isString(args[0])? args[0] : lang.getClassName(args[0]);
+            return {
+                logname,
+                resolver: loggerResolver
+            };
         } else if (args.length === 2) {
             const [arg1, arg2] = args;
             if (isLevel(arg2)) {
