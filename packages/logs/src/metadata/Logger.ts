@@ -1,4 +1,4 @@
-import { TypeMetadata, ClassMethodDecorator, isFunction, createDecorator, EMPTY_OBJ, InjectToken, OperationArgumentResolver, Type, isString, lang, PropParamDecorator } from '@tsdi/ioc';
+import { TypeMetadata, ClassMethodDecorator, isFunction, createDecorator, EMPTY_OBJ, OperationArgumentResolver, Type, isString, lang, PropParamDecorator } from '@tsdi/ioc';
 import { isLevel, Level } from '../Level';
 import { ConfigureLoggerManager } from '../manager';
 

@@ -1,5 +1,6 @@
 import { ApplicationContext, Boot, RouteMapping, StartupService } from '@tsdi/core';
 import { Inject, Injector, lang } from '@tsdi/ioc';
+import { ILogger, Logger } from '@tsdi/logs';
 import { User } from '../models/models';
 import { UserRepository } from '../repositories/UserRepository';
 
@@ -7,6 +8,7 @@ import { UserRepository } from '../repositories/UserRepository';
 export class UserController {
 
     @Inject() injector!: Injector;
+    @Logger(UserController) logger!: ILogger;
 
     constructor(public usrRep: UserRepository) {
 
@@ -15,22 +17,22 @@ export class UserController {
 
     @RouteMapping('/:name', 'get')
     getUser(name: string) {
-        console.log('name:', name);
+        this.logger.log('name:', name);
         return this.usrRep.findByAccount(name);
     }
 
     @RouteMapping('/', 'post')
     @RouteMapping('/', 'put')
     async modify(user: User) {
-        console.log(lang.getClassName(this.usrRep), user);
+        this.logger.log(lang.getClassName(this.usrRep), user);
         let val = await this.usrRep.save(user);
-        console.log(val);
+        this.logger.log(val);
         return val;
     }
 
     @RouteMapping('/:id', 'delete')
     async del(id: string) {
-        console.log('id:', id);
+        this.logger.log('id:', id);
         await this.usrRep.delete(id);
         return true;
     }

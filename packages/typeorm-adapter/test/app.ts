@@ -4,6 +4,7 @@ import { TypeOrmModule } from '../src';
 import { Connection } from 'typeorm';
 import { User } from './models/models';
 import { UserController } from './mapping/UserController';
+import { LogModule } from '@tsdi/logs';
 
 
 export const option = <ConnectionOptions>{
@@ -36,6 +37,7 @@ export const option = <ConnectionOptions>{
 @Module({
     baseURL: __dirname,
     imports: [
+        LogModule,
         ServerBootstrapModule,
         TypeOrmModule
     ],
