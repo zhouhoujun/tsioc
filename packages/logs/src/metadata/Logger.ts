@@ -1,4 +1,7 @@
-import { TypeMetadata, ClassMethodDecorator, isFunction, createDecorator, EMPTY_OBJ, OperationArgumentResolver, Type, isString, lang, PropParamDecorator, Handler, DecorContext } from '@tsdi/ioc';
+import {
+    TypeMetadata, ClassMethodDecorator, isFunction, createDecorator, EMPTY_OBJ,
+    OperationArgumentResolver, Type, isString, lang, PropParamDecorator, ArgumentError
+} from '@tsdi/ioc';
 import { isLevel, Level } from '../Level';
 import { ConfigureLoggerManager } from '../manager';
 
@@ -17,6 +20,9 @@ export interface LoggerMetadata extends TypeMetadata {
      * @type {string}
      */
     logname?: string;
+
+    paramName?: string;
+    propertyKey?: string;
 
     resolver?: OperationArgumentResolver;
 
@@ -87,7 +93,21 @@ export interface Logger<T extends LoggerMetadata> {
 }
 
 const loggerResolver = {
-    canResolve: (pr: LoggerMetadata, ctx) => pr.logname && ctx.injector.has(ConfigureLoggerManager),
+    canResolve: (pr: LoggerMetadata, ctx) => {
+        if (!ctx.injector.has(ConfigureLoggerManager)) {
+            let local: string;
+            console.log(pr);
+            if (pr.propertyKey && pr.paramName) {
+                local = ` method ${ctx.method} param ${pr.paramName} of class `
+            } else if (pr.propertyKey) {
+                local = ` field ${pr.propertyKey} of class `
+            } else {
+                local = ' ';
+            }
+            throw new ArgumentError(`Autowired logger in${local}${lang.getClassName(ctx.target)} failed. It denpendence on LogModule in package '@tsdi/logs',  please register LogModule first. `);
+        }
+        return !!pr.logname;
+    },
     resolve: (pr: LoggerMetadata, ctx) => ctx.injector.get(ConfigureLoggerManager).getLogger(pr.logname)
 } as OperationArgumentResolver;
 
@@ -106,6 +126,7 @@ export const Logger: Logger<LoggerMetadata> = createDecorator<LoggerMetadata>('L
                 metadata.logname = lang.getClassName(ctx.reflect.type);
                 metadata.resolver = loggerResolver;
             }
+            metadata.propertyKey = ctx.propertyKey;
         }
     },
     props: (...args: any[]) => {
