@@ -1,7 +1,7 @@
 import { Module, Message, MessageQueue, StartupService, ApplicationContext, Boot, Configuration, Runnable } from '../src';
 import { Injectable, Inject } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
-import { LogConfigure, LogModule } from '@tsdi/logs';
+import { ILogger, LogConfigure, Logger, LogModule } from '@tsdi/logs';
 import * as net from 'net';
 import { ServerBootstrapModule, ServerLogsModule } from '@tsdi/platform-server';
 
@@ -42,13 +42,15 @@ export class ModuleA {
 @Injectable()
 export class ClassSevice extends Runnable {
 
+    @Logger(ClassSevice) logger!: ILogger;
+
     @Inject('mark')
     mark!: string;
 
     state!: string;
 
     override async run(): Promise<any> {
-        console.log('ClassSevice running.....');
+        this.logger.log('ClassSevice running.....');
         // console.log(refs.get(ClassSevice));
 
         // console.log(this.container);
@@ -57,7 +59,7 @@ export class ClassSevice extends Runnable {
 }
 
 @Aspect()
-export class Logger {
+export class LoggerAspect {
 
     @Around('execution(*.run)')
     log(jp: Joinpoint) {
@@ -81,13 +83,23 @@ export class SubMessageQueue extends MessageQueue {
 }
 
 @Module({
-    imports: [
+    exports:[
         AopModule,
-        LogModule,
+        LogModule
+    ]
+})
+export class SharedModule {
+
+}
+
+
+@Module({
+    imports: [
+        SharedModule,
         ModuleA
     ],
     providers: [
-        Logger,
+        LoggerAspect,
         ClassSevice,
         SubMessageQueue
     ],
@@ -99,21 +111,22 @@ export class ModuleB { }
 @Boot()
 export class SocketService extends StartupService {
 
+    @Logger(SocketService) logger!: ILogger;
     public tcpServer!: net.Server;
     private context!: ApplicationContext;
     private init_times = 0;
 
     override async configureService(ctx: ApplicationContext): Promise<void> {
-        console.log('SocketService init...')
+        this.logger.log('SocketService init...')
         this.context = ctx;
         const tcpServer = this.tcpServer = new net.Server();
         tcpServer.listen(8801);
         this.init_times++;
-        console.log('destroyed state', this.destroyed, 'init', this.init_times);
+        this.logger.log('destroyed state', this.destroyed, 'init', this.init_times);
     }
 
     protected override destroying() {
-        console.log('SocketService destroying...');
+        this.logger.log('SocketService destroying...');
         this.tcpServer.removeAllListeners();
         this.tcpServer.close();
     }
@@ -121,23 +134,24 @@ export class SocketService extends StartupService {
 }
 
 @Module({
+    imports:[
+        SharedModule
+    ],
     providers: [
         SocketService
     ]
 })
 export class StatupModule { }
 
-
 @Module({
     imports: [
-        AopModule,
-        LogModule,
+        SharedModule,
         StatupModule,
         ServerBootstrapModule,
         ServerLogsModule
     ],
     providers: [
-        Logger,
+        LoggerAspect,
         ClassSevice,
         SubMessageQueue
     ],
