@@ -83,6 +83,7 @@ export class InvocationContext<T = any> implements Destroyable {
     private _values: Map<Token, any>;
     private _dsryCbs = new Set<DestroyCallback>();
     private _destroyed = false;
+    propertyKey?: string;
     constructor(
         readonly injector: Injector,
         readonly parent?: InvocationContext,

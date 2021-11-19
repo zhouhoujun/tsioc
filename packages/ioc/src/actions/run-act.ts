@@ -4,7 +4,8 @@ import { IActionSetup } from '../action';
 import { RuntimeContext } from './ctx';
 import { IocRegAction, IocRegScope } from './reg';
 import { PropertyMetadata } from '../metadata/meta';
-import { OperationFactoryResolver, Parameter } from '../invoker';
+import { ArgumentError, OperationFactoryResolver, Parameter } from '../invoker';
+import { getClassName } from '../utils/lang';
 
 /**
  * ioc runtime register action.
@@ -54,7 +55,8 @@ export const CreateInstanceAction = function (ctx: RuntimeContext, next: () => v
  * inject property value action, to inject property value for resolve instance.
  */
 export const InjectPropAction = function (ctx: RuntimeContext, next: () => void) {
-    const { injector, context, type } = ctx;
+    const context = ctx.context;
+    if (!context) throw new Error('autowride property need InvocationContext');
     let meta: PropertyMetadata, key: string, val;
     ctx.reflect.class.eachProperty((metas, propertyKey) => {
         key = `${propertyKey}_INJECTED`;
@@ -63,7 +65,10 @@ export const InjectPropAction = function (ctx: RuntimeContext, next: () => void)
             meta = metas.find(m => m.type)!;
         }
         if (meta && !(ctx as any)[key]) {
-            val = context?.resolveArgument(meta as Parameter) ?? injector.resolve({ token: meta.provider! || meta.type!, target: type, regify: true, context });
+            if (!context.canResolve(meta as Parameter)) {
+                throw new ArgumentError(`can not autowride property ${propertyKey} of class ${getClassName(ctx.type)}`);
+            }
+            val = context.resolveArgument(meta as Parameter);
             if (isDefined(val)) {
                 ctx.instance[propertyKey] = val;
                 (ctx as any)[key] = true;

@@ -7,10 +7,10 @@ import { UserRepository } from '../repositories/UserRepository';
 @RouteMapping('/users')
 export class UserController {
 
-    @Inject() injector!: Injector;
-    @Logger() logger!: ILogger;
+    // @Inject() injector!: Injector;
+    // @Logger() logger!: ILogger;
 
-    constructor(public usrRep: UserRepository) {
+    constructor(private usrRep: UserRepository, @Logger() private logger: ILogger) {
 
     }
 
