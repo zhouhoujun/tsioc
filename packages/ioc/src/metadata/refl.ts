@@ -332,10 +332,8 @@ export const TypeProvidersAction = (ctx: DecorContext, next: () => void) => {
 export const InitMethodDesignParams = (ctx: DecorContext, next: () => void) => {
     if (!ctx.reflect.class.hasParameters(ctx.propertyKey)) {
         const names = ctx.reflect.class.getParamNames(ctx.propertyKey);
-        ctx.reflect.class.setParameters(
-            ctx.propertyKey,
-            (Reflect.getMetadata('design:paramtypes', ctx.target, ctx.propertyKey) as Type[]).map((type, idx) => ({ type, paramName: names[idx] }))
-        );
+        ctx.reflect.class.setParameters(ctx.propertyKey,
+            (Reflect.getMetadata('design:paramtypes', ctx.target, ctx.propertyKey) as Type[]).map((type, idx) => ({ type, paramName: names[idx] })));
     }
     return next();
 }

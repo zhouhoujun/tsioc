@@ -47,9 +47,9 @@ export class Joinpoint<T = any> extends InvocationContext<T> implements IocConte
         public state: JoinpointState,
         readonly advices: Advices,
         readonly originMethod?: Function,
+        readonly params?: ParameterMetadata[],
         readonly args?: any[],
         readonly annotations?: any[],
-        readonly params?: ParameterMetadata[],
         parent?: InvocationContext,
         readonly provJoinpoint?: Joinpoint, data?: T, values?: TokenValue[], ...argumentResolvers: OperationArgumentResolver[]) {
         super(injector, parent, target, method, data, values, ...argumentResolvers, ...DEFAULT_RESOLVERS);
@@ -81,8 +81,8 @@ export class Joinpoint<T = any> extends InvocationContext<T> implements IocConte
             options.state ?? JoinpointState.Before,
             options.advices,
             options.originMethod,
-            options.args,
             options.params,
+            options.args,
             options.annotations,
             options.parent,
             options.provJoinpoint,

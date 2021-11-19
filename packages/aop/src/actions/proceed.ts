@@ -141,7 +141,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
                 advices,
                 originMethod: propertyMethod,
                 provJoinpoint,
-                annotations: targetRef.class.decors.filter(d => d.propertyKey === name).map(d => d.metadata),
+                annotations: targetRef.class.decors.filter(d => d.propertyKey === name && d.decorType === 'method').map(d => d.metadata),
                 parent
             });
 
@@ -165,7 +165,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
             if (metadata.annotationName) {
                 let d: string = metadata.annotationName;
                 d = d ? (aExp.test(d) ? d : `@${d}`) : '';
-                joinPoint.setArgument(metadata.annotationArgName, joinPoint.annotations ? joinPoint.annotations.filter(v => v && d ? v.decorator = d : true) : []);
+                joinPoint.setArgument(metadata.annotationArgName, joinPoint.annotations ? joinPoint.annotations.filter(v => v && v.decorator == d) : []);
             } else {
                 joinPoint.setArgument(metadata.annotationArgName, joinPoint.annotations ?? []);
             }

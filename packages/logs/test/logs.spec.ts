@@ -1,4 +1,4 @@
-import { Injectable, Inject, AutoWired, Container, Injector } from '@tsdi/ioc';
+import { Injectable, Inject, AutoWired, Container, Injector, refl } from '@tsdi/ioc';
 import { LogModule, Logger, ILogger } from '../src';
 import { DebugLogAspect } from './DebugLogAspect';
 import { AnntotationLogAspect } from './AnntotationLogAspect';
@@ -62,9 +62,9 @@ class MethodTest3 {
     constructor() {
 
     }
-
+    
+    @AutoWired()
     @Logger('Test3', 'it is test mesasge.')
-    // @AutoWired()
     sayHello(@Inject(Child) personA: Person, personB: Person) {
         return personA.say() + ', ' + personB.say();
     }
@@ -92,6 +92,8 @@ describe('logging test', () => {
     it('injected logger', ()=> {
         container.register(MethodTest3);
         const mt3 = container.get(MethodTest3);
+        console.log('MethodTest3 sayHello param:', refl.get(MethodTest3).class.getParameters('sayHello'))
+        expect(mt3).toBeDefined();
         expect(mt3.logger).toBeDefined();
     })
 

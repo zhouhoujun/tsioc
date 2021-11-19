@@ -44,7 +44,6 @@ export class LogFormater implements ILogFormater {
     }
 
     format(joinPoint: Joinpoint, ...messages: any[]): any[] {
-        // let pointMsg: string;
         switch (joinPoint.state) {
             case JoinpointState.Before:
             case JoinpointState.Pointcut:
