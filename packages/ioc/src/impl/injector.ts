@@ -18,12 +18,13 @@ import { ModuleReflect, TypeReflect } from '../metadata/type';
 import { get } from '../metadata/refl';
 import {
     InvocationContext, InvocationOption, InvokeOption, OperationArgumentResolver, isResolver, Parameter,
-    OperationFactory, ReflectiveOperationInvoker, OperationFactoryResolver, OperationInvoker, InvokeArguments, ReflectiveRef
+    OperationFactory, ReflectiveOperationInvoker, OperationFactoryResolver, OperationInvoker, InvokeArguments, ReflectiveRef, composeResolver
 } from '../invoker';
 import { DefaultModuleLoader } from './loader';
 import { ModuleLoader } from '../module.loader';
 import { DefaultPlatform } from './platform';
 import { isDestroy, DestroyCallback } from '../destroy';
+
 
 
 /**
@@ -333,7 +334,7 @@ export class DefaultInjector extends Injector {
      * @param {InjectFlags} flags
      * @returns {T} token value.
      */
-    get<T>(token: Token<T>, notFoundValue?: T | any, flags?: InjectFlags): T;
+    get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags): T;
     get<T>(token: Token<T>, arg1?: InvocationContext | T, flags = InjectFlags.Default): T {
         this.assertNotDestroyed();
         if (this.isself(token)) return this as any;
@@ -1027,79 +1028,106 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
 
 
 export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
-    {
-        canResolve(parameter, ctx) {
-            return (parameter.provider && ctx.hasValue(parameter.provider)) as boolean;
-        },
-        resolve(parameter, ctx) {
-            return ctx.getValue(parameter.provider!);
-        }
-    },
-    {
-        canResolve(parameter) {
-            return (parameter.provider && !parameter.mutil && !isPrimitiveType(parameter.provider)) as boolean;
-        },
-        resolve(parameter, ctx) {
-            const pdr = parameter.provider!;
-            const injector = ctx.injector;
-            if (isFunction(pdr) && !get(pdr)?.class.abstract && !injector.has(pdr, InjectFlags.Default)) {
-                injector.register(pdr as Type);
+    composeResolver(
+        (parameter, ctx) => isDefined(parameter.provider),
+        {
+            canResolve(parameter, ctx) {
+                return ctx.hasValue(parameter.provider!);
+            },
+            resolve(parameter, ctx) {
+                return ctx.getValue<any>(parameter.provider!);
             }
-            return injector.get(pdr, ctx, parameter.flags);
-        }
-    },
-    {
-        canResolve(parameter, ctx) {
-            return (parameter.paramName && ctx.hasValue(parameter.paramName)) as boolean;
         },
-        resolve(parameter, ctx) {
-            return ctx.getValue(parameter.paramName!);
-        }
-    },
-    {
-        canResolve(parameter, ctx) {
-            return (parameter.paramName && isDefined(ctx.arguments[parameter.paramName])) as boolean;
-        },
-        resolve(parameter, ctx) {
-            return ctx.arguments[parameter.paramName!];
-        }
-    },
-    {
-        canResolve(parameter, ctx) {
-            return (parameter.paramName && ctx.injector.has(parameter.paramName, parameter.flags)) as boolean;
-        },
-        resolve(parameter, ctx) {
-            return ctx.injector.get<any>(parameter.paramName!, ctx, parameter.flags);
-        }
-    },
-    {
-        canResolve(parameter, ctx) {
-            return (parameter.type && ctx.hasValue(parameter.type)) as boolean;
-        },
-        resolve(parameter, ctx) {
-            return ctx.getValue(parameter.type!);
-        }
-    },
-    {
-        canResolve(parameter) {
-            return (parameter.type && !isPrimitiveType(parameter.type)) as boolean;
-        },
-        resolve(parameter, ctx) {
-            const ty = parameter.type!;
-            const injector = ctx.injector;
-            if (isFunction(ty) && !get(ty)?.class.abstract && !injector.has(ty, InjectFlags.Default)) {
-                injector.register(ty as Type);
+        {
+            canResolve(parameter, ctx) {
+                return ctx.injector.has(parameter.provider!, parameter.flags);
+            },
+            resolve(parameter, ctx) {
+                return ctx.injector.get(parameter.provider!, ctx, parameter.flags);
             }
-            return injector.get(ty, ctx, parameter.flags);
+        },
+        {
+            canResolve(parameter, ctx) {
+                if (parameter.mutil || isPrimitiveType(parameter.provider)) return false;
+                return isDefined(parameter.flags) ? !ctx.injector.has(parameter.provider!, InjectFlags.Default) : true;
+            },
+            resolve(parameter, ctx) {
+                const pdr = parameter.provider!;
+                const injector = ctx.injector;
+                if (isFunction(pdr) && !get(pdr)?.class.abstract) {
+                    injector.register(pdr as Type);
+                }
+                return injector.get(pdr, ctx, parameter.flags);
+            }
         }
-    },
+    ),
+    composeResolver(
+        (parameter, ctx) => isDefined(parameter.paramName),
+        {
+            canResolve(parameter, ctx) {
+                return isDefined(ctx.arguments[parameter.paramName]);
+            },
+            resolve(parameter, ctx) {
+                return ctx.arguments[parameter.paramName!];
+            }
+        },
+        {
+            canResolve(parameter, ctx) {
+                return ctx.hasValue(parameter.paramName);
+            },
+            resolve(parameter, ctx) {
+                return ctx.getValue(parameter.paramName!);
+            }
+        },
+        {
+            canResolve(parameter, ctx) {
+                return ctx.injector.has(parameter.paramName, parameter.flags);
+            },
+            resolve(parameter, ctx) {
+                return ctx.injector.get(parameter.paramName!, ctx, parameter.flags);
+            }
+        }
+    ),
+    composeResolver(
+        (parameter, ctx) => isDefined(parameter.type),
+        {
+            canResolve(parameter, ctx) {
+                return ctx.hasValue(parameter.type!);
+            },
+            resolve(parameter, ctx) {
+                return ctx.getValue<any>(parameter.type!);
+            }
+        },
+        {
+            canResolve(parameter, ctx) {
+                return ctx.injector.has(parameter.type!, parameter.flags);
+            },
+            resolve(parameter, ctx) {
+                return ctx.injector.get(parameter.type!, ctx, parameter.flags);
+            }
+        },
+        {
+            canResolve(parameter, ctx) {
+                if (isPrimitiveType(parameter.type)) return false;
+                return isDefined(parameter.flags) ? !ctx.injector.has(parameter.type!, InjectFlags.Default) : true;
+            },
+            resolve(parameter, ctx) {
+                const ty = parameter.type!;
+                const injector = ctx.injector;
+                if (isFunction(ty) && !get(ty)?.class.abstract) {
+                    injector.register(ty as Type);
+                }
+                return injector.get(ty, ctx, parameter.flags);
+            }
+        }
+    ),
     // default value
     {
-        resolve(parameter) {
-            return parameter.defaultValue as any;
-        },
         canResolve(parameter) {
             return isDefined(parameter.defaultValue);
+        },
+        resolve(parameter) {
+            return parameter.defaultValue as any;
         }
     }
 ];
@@ -1188,7 +1216,7 @@ class ReflectiveRefImpl<T> extends ReflectiveRef<T> {
             }
         }
     }
-    
+
     onDestroy(callback: DestroyCallback): void {
         this._dsryCbs.add(callback);
     }

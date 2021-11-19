@@ -70,7 +70,7 @@ export abstract class Injector implements Destroyable {
      * @param {InjectFlags} flags get token strategy.
      * @returns {T} token value.
      */
-    abstract get<T>(token: Token<T>, notFoundValue?: T | any, flags?: InjectFlags): T;
+    abstract get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags): T;
     /**
      * resolve token instance with token and param provider.
      *

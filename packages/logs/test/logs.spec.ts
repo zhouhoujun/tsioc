@@ -43,6 +43,7 @@ class MethodTest2 {
 
     @Inject()
     testAt!: Date;
+
     constructor(@Logger(MethodTest2) readonly logger: ILogger) {
 
     }
@@ -81,7 +82,8 @@ describe('logging test', () => {
     let container: Container;
     beforeEach(async () => {
         container = Injector.create();
-        await container.use(LogModule);
+        container.use(LogModule);
+        container.setValue(Date, new Date());
     });
 
     it('Aop log test', () => {
