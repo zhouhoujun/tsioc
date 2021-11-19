@@ -25,9 +25,11 @@ class Child extends Person {
 }
 
 class MethodTest {
-    constructor() {
+    constructor(@Logger() readonly logger1: ILogger) {
 
     }
+
+    @Logger() readonly logger2!: ILogger
 
     @AutoWired()
     sayHello(person: Person) {
@@ -41,7 +43,7 @@ class MethodTest2 {
 
     @Inject()
     testAt!: Date;
-    constructor( @Logger(MethodTest2) readonly logger: ILogger) {
+    constructor(@Logger(MethodTest2) readonly logger: ILogger) {
 
     }
 
@@ -58,11 +60,11 @@ class MethodTest3 {
 
     @Logger(MethodTest3)
     logger!: ILogger;
-    
+
     constructor() {
 
     }
-    
+
     @AutoWired()
     @Logger('Test3', 'it is test mesasge, for MethodTest3 sayHello invoked.')
     sayHello(@Inject(Child) personA: Person, personB: Person) {
@@ -89,7 +91,7 @@ describe('logging test', () => {
         expect(container.invoke('Test3', 'sayHello')).toEqual('Mama, I love you.');
     });
 
-    it('property injected logger', ()=> {
+    it('property injected logger', () => {
         container.register(MethodTest3);
         const mt3 = container.get(MethodTest3);
         expect(mt3).toBeDefined();
@@ -98,13 +100,25 @@ describe('logging test', () => {
         mt3.logger.log('property injected!')
     })
 
-    it('parameter injected logger', ()=> {
+    it('parameter injected logger', () => {
         container.register(MethodTest2);
         const mt2 = container.get(MethodTest2);
         expect(mt2).toBeDefined();
         expect(mt2.logger).toBeDefined();
         expect(mt2.logger.constructor.name).toEqual('ConsoleLog');
         mt2.logger.log('parameter injected!')
+    })
+
+    it('default class name logger injected', () => {
+        container.register(MethodTest);
+        const mt2 = container.get(MethodTest);
+        expect(mt2).toBeDefined();
+        expect(mt2.logger1).toBeDefined();
+        expect(mt2.logger1.constructor.name).toEqual('ConsoleLog');
+
+        expect(mt2.logger2).toBeDefined();
+        expect(mt2.logger2.constructor.name).toEqual('ConsoleLog');
+        expect(mt2.logger1).toEqual(mt2.logger2);
     })
 
     it('Aop anntotation log test', () => {

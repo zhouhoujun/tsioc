@@ -42,7 +42,7 @@ export class ModuleA {
 @Injectable()
 export class ClassSevice extends Runnable {
 
-    @Logger(ClassSevice) logger!: ILogger;
+    @Logger() logger!: ILogger;
 
     @Inject('mark')
     mark!: string;
@@ -111,7 +111,8 @@ export class ModuleB { }
 @Boot()
 export class SocketService extends StartupService {
 
-    @Logger(SocketService) logger!: ILogger;
+    @Logger() logger!: ILogger;
+
     public tcpServer!: net.Server;
     private context!: ApplicationContext;
     private init_times = 0;

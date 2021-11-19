@@ -3,7 +3,6 @@ import { HttpStartupService } from './serv';
 
 
 @Module({
-    regIn: 'root',
     providers: [
         HttpStartupService
     ]

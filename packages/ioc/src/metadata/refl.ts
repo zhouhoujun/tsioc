@@ -121,6 +121,10 @@ export interface MetadataFactory<T> {
      * @param metadata
      */
     appendProps?(metadata: T): void;
+    /**
+     * init decor context.
+     */
+    init?:(ctx: DecorContext)=> void;
 }
 
 /**
@@ -401,38 +405,39 @@ paramDecorActions.use(
     ExecuteDecorHandle
 );
 
-function dispatch(actions: Actions<DecorContext>, target: any, type: ClassType, define: DecorDefine) {
+function dispatch(actions: Actions<DecorContext>, target: any, type: ClassType, define: DecorDefine, init?: (ctx: DecorContext)=> void) {
     const ctx = {
         ...define,
         target,
         reflect: get(type, true)
     };
+    init && init(ctx);
     actions.execute(ctx, () => {
         ctx.reflect.class.addDefine(define);
     });
     cleanObj(ctx);
 }
 
-export function dispatchTypeDecor(type: ClassType, define: DecorDefine) {
-    dispatch(typeDecorActions, type, type, define);
+export function dispatchTypeDecor(type: ClassType, define: DecorDefine, init?: (ctx: DecorContext)=> void) {
+    dispatch(typeDecorActions, type, type, define, init);
 }
 
-export function dispatchPorpDecor(type: any, define: DecorDefine) {
-    dispatch(propDecorActions, type, type.constructor, define);
+export function dispatchPorpDecor(type: any, define: DecorDefine, init?: (ctx: DecorContext)=> void) {
+    dispatch(propDecorActions, type, type.constructor, define, init);
 }
 
-export function dispatchMethodDecor(type: any, define: DecorDefine) {
-    dispatch(methodDecorActions, type, type.constructor, define);
+export function dispatchMethodDecor(type: any, define: DecorDefine, init?: (ctx: DecorContext)=> void) {
+    dispatch(methodDecorActions, type, type.constructor, define, init);
 }
 
-export function dispatchParamDecor(type: any, define: DecorDefine) {
+export function dispatchParamDecor(type: any, define: DecorDefine, init?: (ctx: DecorContext)=> void) {
     let target = type;
     if (!define.propertyKey) {
         define.propertyKey = 'constructor';
     } else {
         type = type.constructor;
     }
-    dispatch(paramDecorActions, target, type, define);
+    dispatch(paramDecorActions, target, type, define, init);
 }
 
 /**

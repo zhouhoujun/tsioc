@@ -1,4 +1,4 @@
-import { TypeMetadata, ClassMethodDecorator, isFunction, createDecorator, EMPTY_OBJ, OperationArgumentResolver, Type, isString, lang, PropParamDecorator } from '@tsdi/ioc';
+import { TypeMetadata, ClassMethodDecorator, isFunction, createDecorator, EMPTY_OBJ, OperationArgumentResolver, Type, isString, lang, PropParamDecorator, Handler, DecorContext } from '@tsdi/ioc';
 import { isLevel, Level } from '../Level';
 import { ConfigureLoggerManager } from '../manager';
 
@@ -17,6 +17,8 @@ export interface LoggerMetadata extends TypeMetadata {
      * @type {string}
      */
     logname?: string;
+
+    resolver?: OperationArgumentResolver;
 
     /**
      * log level
@@ -50,9 +52,9 @@ export interface Logger<T extends LoggerMetadata> {
      * inject logger for property or parameter with the name in {@link ILoggerManager}.
      * @Logger
      *
-     * @param {string} name the logger name.
+     * @param {string} name the logger name.  Default current class name.
      */
-    (name: string | Type): PropParamDecorator;
+    (name?: string | Type): PropParamDecorator;
 
     /**
      * define logger annotation pointcut to this class or method.
@@ -89,6 +91,7 @@ const loggerResolver = {
     resolve: (pr: LoggerMetadata, ctx) => ctx.injector.get(ConfigureLoggerManager).getLogger(pr.logname)
 } as OperationArgumentResolver;
 
+
 /**
  * Logger decorator, for method or class.
  *
@@ -96,9 +99,18 @@ const loggerResolver = {
  */
 export const Logger: Logger<LoggerMetadata> = createDecorator<LoggerMetadata>('Logger', {
     actionType: ['paramInject', 'propInject'],
+    init: (ctx) => {
+        if (ctx.decorType === 'parameter' || ctx.decorType === 'property') {
+            const metadata = ctx.metadata as LoggerMetadata;
+            if (!metadata.logname) {
+                metadata.logname = lang.getClassName(ctx.reflect.type);
+                metadata.resolver = loggerResolver;
+            }
+        }
+    },
     props: (...args: any[]) => {
         if (args.length === 1) {
-            const logname = isString(args[0])? args[0] : lang.getClassName(args[0]);
+            const logname = isString(args[0]) ? args[0] : lang.getClassName(args[0]);
             return {
                 logname,
                 resolver: loggerResolver

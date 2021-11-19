@@ -3,7 +3,6 @@ import { Http2StartupService } from './serv';
 
 
 @Module({
-    providedIn: 'root',
     providers: [
         Http2StartupService
     ]
