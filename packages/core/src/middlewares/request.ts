@@ -197,8 +197,8 @@ export abstract class Request {
             }
             uri = new URL(url);
         } catch (err) {
-            console.log(url, 'parseURL:', err);
             uri = null!;
+            throw err;
         }
         return uri;
     }

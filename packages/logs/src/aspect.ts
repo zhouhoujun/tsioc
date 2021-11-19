@@ -28,10 +28,7 @@ export abstract class LoggerAspect extends LogProcess {
                 !isNil(level) && messages.unshift(level);
             }
             annotation.forEach((logmeta: LoggerMetadata) => {
-                let canlog = false;
-                if (logmeta?.express?.(joinPoint)) {
-                    canlog = true;
-                }
+                let canlog = logmeta.express? logmeta.express(joinPoint) : true;
                 if (canlog && logmeta.message) {
                     this.writeLog(
                         logmeta.logname ? this.logManger.getLogger(logmeta.logname) : this.logger,

@@ -41,11 +41,11 @@ class MethodTest2 {
 
     @Inject()
     testAt!: Date;
-    constructor() {
+    constructor( @Logger(MethodTest2) readonly logger: ILogger) {
 
     }
 
-    @Logger('Hanmm', 'it is test mesasge.')
+    @Logger('Hanmm', 'it is test mesasge, for MethodTest2 sayHello invoked.')
     sayHello(@Inject(Child) person: Person) {
         console.log(person.say());
         return person.say();
@@ -64,7 +64,7 @@ class MethodTest3 {
     }
     
     @AutoWired()
-    @Logger('Test3', 'it is test mesasge.')
+    @Logger('Test3', 'it is test mesasge, for MethodTest3 sayHello invoked.')
     sayHello(@Inject(Child) personA: Person, personB: Person) {
         return personA.say() + ', ' + personB.say();
     }
@@ -89,17 +89,26 @@ describe('logging test', () => {
         expect(container.invoke('Test3', 'sayHello')).toEqual('Mama, I love you.');
     });
 
-    it('injected logger', ()=> {
+    it('property injected logger', ()=> {
         container.register(MethodTest3);
         const mt3 = container.get(MethodTest3);
-        console.log('MethodTest3 sayHello param:', refl.get(MethodTest3).class.getParameters('sayHello'))
         expect(mt3).toBeDefined();
         expect(mt3.logger).toBeDefined();
+        expect(mt3.logger.constructor.name).toEqual('ConsoleLog');
+        mt3.logger.log('property injected!')
+    })
+
+    it('parameter injected logger', ()=> {
+        container.register(MethodTest2);
+        const mt2 = container.get(MethodTest2);
+        expect(mt2).toBeDefined();
+        expect(mt2.logger).toBeDefined();
+        expect(mt2.logger.constructor.name).toEqual('ConsoleLog');
+        mt2.logger.log('parameter injected!')
     })
 
     it('Aop anntotation log test', () => {
         container.register(AnntotationLogAspect);
-        // console.log(container.has(AnntotationLogAspect));
         container.register(MethodTest2);
         expect(container.invoke(MethodTest2, 'sayHello')).toEqual('Mama');
 

@@ -95,6 +95,7 @@ const loggerResolver = {
  * @Logger
  */
 export const Logger: Logger<LoggerMetadata> = createDecorator<LoggerMetadata>('Logger', {
+    actionType: ['paramInject', 'propInject'],
     props: (...args: any[]) => {
         if (args.length === 1) {
             const logname = isString(args[0])? args[0] : lang.getClassName(args[0]);
