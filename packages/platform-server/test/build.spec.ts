@@ -2,21 +2,26 @@ import { getToken, Injector } from '@tsdi/ioc';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, Student, InjCollegeClassRoom, InjMClassRoom, StringIdTest, SymbolIdest } from './debug';
 
 import expect = require('expect');
-import { ServerModule } from '../src';
+import { ServerBootstrapModule } from '../src';
+import { Application, ApplicationContext } from '@tsdi/core';
 
 
 
 describe('auto register with build', () => {
 
     let injector: Injector;
+    let ctx: ApplicationContext;
 
     before(async () => {
-        injector = Injector.create([ServerModule]);
-
-        await injector.load({
-            files: __dirname + '/debug.ts'
+        ctx = await Application.run({
+            type: ServerBootstrapModule,
+            loads: [
+                {
+                    files: __dirname + '/debug.ts'
+                }
+            ]
         });
-        // container.register(IocLog);
+        injector = ctx.injector;
     });
 
     it('should auto wried property', () => {
@@ -107,7 +112,7 @@ describe('auto register with build', () => {
     });
 
     after(() => {
-        injector.destroy();
+        ctx.destroy();
     })
 
 });

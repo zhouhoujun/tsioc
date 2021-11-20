@@ -1,23 +1,9 @@
-import { Injectable, Singleton, ModuleLoader } from '@tsdi/ioc';
+import { Injectable, Singleton, ModuleLoader, Inject } from '@tsdi/ioc';
 import { Module, ConfigureLoader, PROCESS_ROOT, Configuration, ApplicationExit, ApplicationContext } from '@tsdi/core';
 import * as path from 'path';
 import * as fs from 'fs';
 import { runMainPath } from './toAbsolute';
 import { NodeModuleLoader } from './NodeModuleLoader';
-
-
-// // to fix nodejs Date toJson bug.
-// Date.prototype.toJSON = function () {
-//     const timezoneOffsetInHours = -(this.getTimezoneOffset() / 60); // UTC minus local time
-
-//     // It's a bit unfortunate that we need to construct a new Date instance
-//     // (we don't want _this_ Date instance to be modified)
-//     const correctedDate = new Date(this.getFullYear(), this.getMonth(),
-//         this.getDate(), this.getHours(), this.getMinutes(), this.getSeconds(),
-//         this.getMilliseconds());
-//     correctedDate.setHours(this.getHours() + timezoneOffsetInHours);
-//     return correctedDate.toISOString();
-// }
 
 
 /**
@@ -29,7 +15,7 @@ import { NodeModuleLoader } from './NodeModuleLoader';
 @Injectable(ConfigureLoader)
 export class ConfigureFileLoader implements ConfigureLoader {
 
-    constructor(private baseURL: string) {
+    constructor(@Inject(PROCESS_ROOT, { defaultValue: '' }) private baseURL: string) {
         this.baseURL = this.baseURL || runMainPath();
     }
 

@@ -4,7 +4,7 @@ export class SimppleAutoWried {
     constructor() {
     }
 
-    @AutoWired()
+    @AutoWired({ defaultValue: new Date() })
     dateProperty!: Date;
 }
 
@@ -19,7 +19,7 @@ export class RoomService {
     constructor() {
 
     }
-    @AutoWired()
+    @AutoWired({ defaultValue: new Date() })
     current!: Date;
 }
 
@@ -33,7 +33,7 @@ export class ClassRoom {
 export abstract class Student {
     @Inject()
     container!: Container;
-    @Inject(Date)
+    @Inject(Date, { defaultValue: new Date() })
     join: any;
     constructor() {
     }
@@ -139,7 +139,7 @@ export class StingMClassRoom {
 }
 
 export class StringIdTest {
-    constructor( @Inject('StringClassRoom') public room: IClassRoom) {
+    constructor(@Inject('StringClassRoom') public room: IClassRoom) {
 
     }
 }
@@ -162,7 +162,7 @@ export class SymbolIdest {
 
     @Inject()
     public container!: Container
-    constructor( @Inject('StringClassRoom')
+    constructor(@Inject('StringClassRoom')
     public room2: IClassRoom) {
 
     }

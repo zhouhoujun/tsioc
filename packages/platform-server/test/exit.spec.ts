@@ -1,10 +1,11 @@
-import { ApplicationContext, BootApplication, DIModule } from '@tsdi/boot';
+
+import { Application, ApplicationContext, Module } from '@tsdi/core';
 import { ServerBootstrapModule } from '../src';
 import { Before, Suite, Test } from '@tsdi/unit';
 import expect = require('expect');
 
 
-@DIModule({
+@Module({
     // baseURL: __dirname,
     imports: [
         ServerBootstrapModule
@@ -20,7 +21,7 @@ export class ProcessExitTest {
 
     @Before()
     async init() {
-        this.ctx = await BootApplication.run(MainModule);
+        this.ctx = await Application.run(MainModule);
     }
 
 
