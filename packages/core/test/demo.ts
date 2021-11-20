@@ -44,7 +44,7 @@ export class ClassSevice extends Runnable {
 
     @Logger() logger!: ILogger;
 
-    @Inject('mark')
+    @Inject('mark', { defaultValue: '' })
     mark!: string;
 
     state!: string;
@@ -83,7 +83,7 @@ export class SubMessageQueue extends MessageQueue {
 }
 
 @Module({
-    exports:[
+    exports: [
         AopModule,
         LogModule
     ]
@@ -135,7 +135,7 @@ export class SocketService extends StartupService {
 }
 
 @Module({
-    imports:[
+    imports: [
         SharedModule
     ],
     providers: [

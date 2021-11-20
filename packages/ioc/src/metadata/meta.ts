@@ -145,13 +145,12 @@ export interface PropertyMetadata extends ProvideMetadata {
      * custom resolver to resolve property or parameter.
      */
     resolver?: OperationArgumentResolver;
-
     /**
      * default value
      *
-     * @type {object}
+     * @type {any}
      */
-     defaultValue?: object;
+    defaultValue?: any;
 }
 
 /**
@@ -303,23 +302,23 @@ export interface ModuleMetadata extends ProvidedInMetadata, ProvidersMetadata {
      *
      * @type {Type<T>}
      */
-     bootstrap?: Modules;
-     /**
-      * imports dependens modules
-      *
-      * @type {Modules[]}
-      */
-     imports?: (Modules|InjectorTypeWithProviders)[];
-     /**
-      * exports modules
-      *
-      * @type {Modules[]}
-      */
-     exports?: Modules[];
-     /**
-      * declaration the set of components, directives, pipes ... of this module.
-      */
-     declarations?: Modules[];
+    bootstrap?: Modules;
+    /**
+     * imports dependens modules
+     *
+     * @type {Modules[]}
+     */
+    imports?: (Modules | InjectorTypeWithProviders)[];
+    /**
+     * exports modules
+     *
+     * @type {Modules[]}
+     */
+    exports?: Modules[];
+    /**
+     * declaration the set of components, directives, pipes ... of this module.
+     */
+    declarations?: Modules[];
 }
 
 /**

@@ -20,7 +20,7 @@ export class DefaultConfigureManager implements ConfigureManager {
      * Creates an instance of ConfigureManager.
      * @param {string} [baseURL]
      */
-    constructor(@Inject(PROCESS_ROOT) protected baseURL?: string) {
+    constructor(@Inject(PROCESS_ROOT, { defaultValue: '' }) protected baseURL?: string) {
         this.configs = [];
     }
     /**

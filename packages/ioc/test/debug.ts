@@ -144,7 +144,7 @@ export class InjCollegeAliasClassRoom {
         // @Inject({ provider: CollegeStudent })
         // @Inject({ provider: Student, alias: 'college' }) // need CollegeStudent also register.
         // @Inject({ type: CollegeStudent })
-        @AutoWired(Student, 'college')
+        @AutoWired(Student, { alias: 'college'})
         public leader: Student
     ) {
 

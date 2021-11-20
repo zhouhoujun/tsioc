@@ -53,9 +53,9 @@ export interface AutoWired {
         /**
          * default value
          *
-         * @type {object}
+         * @type {any}
          */
-        defaultValue?: object
+        defaultValue?: any
 
     }): PropParamDecorator;
     /**
@@ -87,9 +87,9 @@ export interface AutoWired {
         /**
          * default value
          *
-         * @type {object}
+         * @type {any}
          */
-        defaultValue?: object
+        defaultValue?: any
 
     }): PropParamDecorator;
     /**
@@ -137,10 +137,6 @@ export interface Inject {
      */
     (provider: Token, option?: {
         /**
-         * define provider to resolve value to the parameter or property.
-         */
-        provider?: Token;
-        /**
          * define this class provider with alias for provide.
          */
         alias?: string;
@@ -159,9 +155,9 @@ export interface Inject {
         /**
          * default value
          *
-         * @type {object}
+         * @type {any}
          */
-        defaultValue?: object
+        defaultValue?: any
 
     }): PropParamDecorator;
     /**
@@ -193,9 +189,9 @@ export interface Inject {
         /**
          * default value
          *
-         * @type {object}
+         * @type {any}
          */
-        defaultValue?: object
+        defaultValue?: any
 
     }): PropParamDecorator;
     /**
@@ -245,10 +241,6 @@ export interface Param {
      */
     (provider: Token, option?: {
         /**
-         * define provider to resolve value to the parameter or property.
-         */
-        provider?: Token;
-        /**
          * define this class provider with alias for provide.
          */
         alias?: string;
@@ -267,9 +259,9 @@ export interface Param {
         /**
          * default value
          *
-         * @type {object}
+         * @type {any}
          */
-        defaultValue?: object
+        defaultValue?: any
 
     }): ParameterDecorator;
     /**
@@ -301,9 +293,9 @@ export interface Param {
         /**
          * default value
          *
-         * @type {object}
+         * @type {any}
          */
-        defaultValue?: object
+        defaultValue?: any
 
     }): ParameterDecorator;
 }
