@@ -106,6 +106,8 @@ describe('custom register test', () => {
 
     it('should work with Symbol id to get class', () => {
         container.register(SymbolCollegeClassRoom);
+        container.register(MiddleSchoolStudent);
+        container.register(StingMClassRoom)
         container.register(SymbolIdest);
 
         let instance = container.get(SymbolIdest);

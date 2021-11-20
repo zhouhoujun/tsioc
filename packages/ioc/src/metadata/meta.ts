@@ -136,10 +136,22 @@ export interface PropertyMetadata extends ProvideMetadata {
      * @type {string}
      */
     propertyKey?: string;
+
+    /**
+     * inject flags.
+     */
+    flags?: InjectFlags
     /**
      * custom resolver to resolve property or parameter.
      */
     resolver?: OperationArgumentResolver;
+
+    /**
+     * default value
+     *
+     * @type {object}
+     */
+     defaultValue?: object;
 }
 
 /**
@@ -195,14 +207,6 @@ export interface ParameterMetadata extends PropertyMetadata {
      */
     paramName?: string;
 
-    flags?: InjectFlags
-
-    /**
-     * default value
-     *
-     * @type {object}
-     */
-    defaultValue?: object
 }
 
 

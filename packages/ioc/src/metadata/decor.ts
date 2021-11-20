@@ -8,6 +8,7 @@ import {
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
 import { ProviderType, StaticProvider } from '../providers';
 import { Injector } from '../injector';
+import { OperationArgumentResolver } from '../invoker';
 
 
 
@@ -23,16 +24,80 @@ export interface AutoWired {
      */
     (provider?: Token, alias?: string): PropParamDecorator;
     /**
+     * AutoWired decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+     *
+     * @param {Token} provider define provider to resolve value to the parameter or property.
+     * @param option autowired option.
+     */
+    (provider: Token, option?: {
+        /**
+         * define provider to resolve value to the parameter or property.
+         */
+        provider?: Token;
+        /**
+         * define this class provider with alias for provide.
+         */
+        alias?: string;
+        /**
+         * inject flags.
+         */
+        flags?: InjectFlags;
+        /**
+        * custom resolver to resolve the value for the property or parameter.
+        */
+        resolver?: OperationArgumentResolver;
+        /**
+         * is mutil provider or not
+         */
+        mutil?: boolean;
+        /**
+         * default value
+         *
+         * @type {object}
+         */
+        defaultValue?: object
+
+    }): PropParamDecorator;
+    /**
+     * AutoWired decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+     *
+     * @param option autowired option.
+     */
+    (option: {
+        /**
+         * define provider to resolve value to the parameter or property.
+         */
+        provider?: Token;
+        /**
+         * define this class provider with alias for provide.
+         */
+        alias?: string;
+        /**
+         * inject flags.
+         */
+        flags?: InjectFlags;
+        /**
+        * custom resolver to resolve the value for the property or parameter.
+        */
+        resolver?: OperationArgumentResolver;
+        /**
+         * is mutil provider or not
+         */
+        mutil?: boolean;
+        /**
+         * default value
+         *
+         * @type {object}
+         */
+        defaultValue?: object
+
+    }): PropParamDecorator;
+    /**
      * AutoWired decorator with providers for method.
      *
      * @param {ProviderType[]} [providers] the providers for the method.
      */
     (providers?: ProviderType[]): MethodDecorator;
-    /**
-     * AutoWired decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
-     * @param {T} [metadata] define matadata map to resolve value to the parameter or property.
-     */
-    (metadata: AutoWiredMetadata): PropParamDecorator;
 }
 
 
@@ -42,11 +107,13 @@ export interface AutoWired {
  * @AutoWired()
  */
 export const AutoWired: AutoWired = createDecorator<AutoWiredMetadata>('AutoWired', {
-    props: (pdr: ProviderType[] | Token, alias?: string) => {
-        if (isArray(pdr)) {
-            return { providers: pdr };
+    props: (provider: ProviderType[] | Token, alias?: string | Record<string, any>) => {
+        if (isArray(provider)) {
+            return { providers: provider };
+        } else if (alias) {
+            return isString(alias) ? { provider: getToken(provider, alias) } : { provider: getToken(provider, alias.alias), ...alias, alias: undefined };
         } else {
-            return { provider: getToken(pdr, alias) };
+            return { provider: provider };
         }
     }
 });
@@ -63,16 +130,80 @@ export interface Inject {
      */
     (provider?: Token, alias?: string): PropParamDecorator;
     /**
+     * Inject decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+     *
+     * @param {Token} provider define provider to resolve value to the parameter or property.
+     * @param option inject option.
+     */
+    (provider: Token, option?: {
+        /**
+         * define provider to resolve value to the parameter or property.
+         */
+        provider?: Token;
+        /**
+         * define this class provider with alias for provide.
+         */
+        alias?: string;
+        /**
+         * inject flags.
+         */
+        flags?: InjectFlags;
+        /**
+        * custom resolver to resolve the value for the property or parameter.
+        */
+        resolver?: OperationArgumentResolver;
+        /**
+         * is mutil provider or not
+         */
+        mutil?: boolean;
+        /**
+         * default value
+         *
+         * @type {object}
+         */
+        defaultValue?: object
+
+    }): PropParamDecorator;
+    /**
+     * Inject decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+     *
+     * @param option inject option.
+     */
+    (option: {
+        /**
+         * define provider to resolve value to the parameter or property.
+         */
+        provider?: Token;
+        /**
+         * define this class provider with alias for provide.
+         */
+        alias?: string;
+        /**
+         * inject flags.
+         */
+        flags?: InjectFlags;
+        /**
+        * custom resolver to resolve the value for the property or parameter.
+        */
+        resolver?: OperationArgumentResolver;
+        /**
+         * is mutil provider or not
+         */
+        mutil?: boolean;
+        /**
+         * default value
+         *
+         * @type {object}
+         */
+        defaultValue?: object
+
+    }): PropParamDecorator;
+    /**
      * Inject decorator with providers for method.
      *
      * @param {ProviderType[]} [providers] the providers for the method.
      */
     (providers?: ProviderType[]): MethodDecorator;
-    /**
-     * Inject decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
-     * @param {T} [metadata] define matadata map to resolve value to the parameter or property.
-     */
-    (metadata: InjectMetadata): PropParamDecorator;
 }
 
 /**
@@ -81,11 +212,13 @@ export interface Inject {
  * @Inject()
  */
 export const Inject: Inject = createDecorator<InjectMetadata>('Inject', {
-    props: (pdr: ProviderType[] | Token, alias?: string) => {
-        if (isArray(pdr)) {
-            return { providers: pdr };
+    props: (provider: ProviderType[] | Token, alias?: string | Record<string, any>) => {
+        if (isArray(provider)) {
+            return { providers: provider };
+        } else if (alias) {
+            return isString(alias) ? { provider: getToken(provider, alias) } : { provider: getToken(provider, alias.alias), ...alias, alias: undefined };
         } else {
-            return { provider: getToken(pdr, alias) };
+            return { provider };
         }
     }
 });
@@ -99,16 +232,80 @@ export const Inject: Inject = createDecorator<InjectMetadata>('Inject', {
  */
 export interface Param {
     /**
-     * define parameter decorator with param.
+     * Param decorator, define parameter decorator with param.
      *
      * @param {Token} provider define provider to resolve value to the parameter.
      */
     (provider?: Token, alias?: string): ParameterDecorator;
     /**
-     * define parameter decorator with metadata map.
-     * @param {T} [metadata] define matadata map to resolve value to the parameter.
+     * Param decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+     *
+     * @param {Token} provider define provider to resolve value to the parameter or property.
+     * @param option inject option.
      */
-    (metadata: ParameterMetadata): ParameterDecorator;
+    (provider: Token, option?: {
+        /**
+         * define provider to resolve value to the parameter or property.
+         */
+        provider?: Token;
+        /**
+         * define this class provider with alias for provide.
+         */
+        alias?: string;
+        /**
+         * inject flags.
+         */
+        flags?: InjectFlags;
+        /**
+        * custom resolver to resolve the value for the property or parameter.
+        */
+        resolver?: OperationArgumentResolver;
+        /**
+         * is mutil provider or not
+         */
+        mutil?: boolean;
+        /**
+         * default value
+         *
+         * @type {object}
+         */
+        defaultValue?: object
+
+    }): ParameterDecorator;
+    /**
+     * Param decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+     *
+     * @param option inject option.
+     */
+    (option: {
+        /**
+         * define provider to resolve value to the parameter or property.
+         */
+        provider?: Token;
+        /**
+         * define this class provider with alias for provide.
+         */
+        alias?: string;
+        /**
+         * inject flags.
+         */
+        flags?: InjectFlags;
+        /**
+        * custom resolver to resolve the value for the property or parameter.
+        */
+        resolver?: OperationArgumentResolver;
+        /**
+         * is mutil provider or not
+         */
+        mutil?: boolean;
+        /**
+         * default value
+         *
+         * @type {object}
+         */
+        defaultValue?: object
+
+    }): ParameterDecorator;
 }
 
 /**

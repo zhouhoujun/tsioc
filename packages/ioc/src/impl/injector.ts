@@ -1040,23 +1040,30 @@ export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
         },
         {
             canResolve(parameter, ctx) {
-                return ctx.injector.has(parameter.provider!, parameter.flags);
+                return isString(parameter.provider) && isDefined(ctx.arguments[parameter.provider]);
             },
             resolve(parameter, ctx) {
-                return ctx.injector.get(parameter.provider!, ctx, parameter.flags);
+                return ctx.arguments[parameter.provider as string];
             }
         },
         {
             canResolve(parameter, ctx) {
-                if (parameter.mutil || isPrimitiveType(parameter.provider)) return false;
+                return ctx.injector.has(parameter.provider as Token, parameter.flags);
+            },
+            resolve(parameter, ctx) {
+                return ctx.injector.get(parameter.provider as Token, ctx, parameter.flags);
+            }
+        },
+        {
+            canResolve(parameter, ctx) {
+                if (parameter.mutil || !isFunction(parameter.provider) || isPrimitiveType(parameter.provider)
+                    || get(parameter.provider)?.class.abstract) return false;
                 return isDefined(parameter.flags) ? !ctx.injector.has(parameter.provider!, InjectFlags.Default) : true;
             },
             resolve(parameter, ctx) {
                 const pdr = parameter.provider!;
                 const injector = ctx.injector;
-                if (isFunction(pdr) && !get(pdr)?.class.abstract) {
-                    injector.register(pdr as Type);
-                }
+                injector.register(pdr as Type);
                 return injector.get(pdr, ctx, parameter.flags);
             }
         }
@@ -1108,15 +1115,13 @@ export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
         },
         {
             canResolve(parameter, ctx) {
-                if (isPrimitiveType(parameter.type)) return false;
+                if (isPrimitiveType(parameter.type) || get(parameter.type!)?.class.abstract) return false;
                 return isDefined(parameter.flags) ? !ctx.injector.has(parameter.type!, InjectFlags.Default) : true;
             },
             resolve(parameter, ctx) {
                 const ty = parameter.type!;
                 const injector = ctx.injector;
-                if (isFunction(ty) && !get(ty)?.class.abstract) {
-                    injector.register(ty as Type);
-                }
+                injector.register(ty as Type);
                 return injector.get(ty, ctx, parameter.flags);
             }
         }

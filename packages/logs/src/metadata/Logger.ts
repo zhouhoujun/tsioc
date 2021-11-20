@@ -96,7 +96,6 @@ const loggerResolver = {
     canResolve: (pr: LoggerMetadata, ctx) => {
         if (!ctx.injector.has(ConfigureLoggerManager)) {
             let local: string;
-            console.log(pr);
             if (pr.propertyKey && pr.paramName) {
                 local = ` method ${ctx.method} param ${pr.paramName} of class `
             } else if (pr.propertyKey) {
@@ -104,7 +103,7 @@ const loggerResolver = {
             } else {
                 local = ' ';
             }
-            throw new ArgumentError(`Autowired logger in${local}${lang.getClassName(ctx.target)} failed. It denpendence on LogModule in package '@tsdi/logs',  please register LogModule first. `);
+            throw new ArgumentError(`Autowired logger in${local}${ctx.target} failed. It denpendence on LogModule in package '@tsdi/logs',  please register LogModule first. `);
         }
         return !!pr.logname;
     },

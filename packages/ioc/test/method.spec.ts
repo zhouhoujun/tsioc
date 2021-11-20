@@ -41,7 +41,7 @@ describe('method exec test', () => {
 
         tester!: string;
 
-        @Inject()
+        @Inject({ defaultValue: new Date() })
         testAt!: Date;
         constructor() {
 

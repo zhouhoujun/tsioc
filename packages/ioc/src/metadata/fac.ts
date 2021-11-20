@@ -1,8 +1,8 @@
 import 'reflect-metadata';
-import { isUndefined, isNumber, isMetadataObject } from '../utils/chk';
+import { isUndefined, isNumber, isMetadataObject, isString } from '../utils/chk';
 import { AbstractMetadata, ClassMetadata, ParameterMetadata, PatternMetadata, PropertyMetadata } from './meta';
 import { Type } from '../types';
-import { Token } from '../tokens';
+import { getToken, Token } from '../tokens';
 import { DecoratorOption } from './refl';
 import * as refl from './refl';
 
@@ -120,7 +120,13 @@ export type MethodPropParamDecorator = (target: Object, propertyKey: string | sy
 export function createParamDecorator<T = ParameterMetadata>(name: string, options?: DecoratorOption<T>) {
     return createDecorator<T>(name, {
         actionType: ['paramInject'],
-        props: (provider: Token, alias?: string) => ({ provider, alias } as any),
+        props: (provider: Token, alias?: string | Record<string, any>) => {
+            if (alias) {
+                return isString(alias) ? { provider: getToken(provider, alias) } : { provider: getToken(provider, alias.alias), ...alias, alias: undefined } as any;
+            } else {
+                return { provider };
+            }
+        },
         ...options
     });
 }

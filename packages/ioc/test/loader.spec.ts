@@ -1,6 +1,6 @@
 import { Container, getToken, Injector } from '../src';
 import * as debuModules from './debug';
-import { ClassRoom, CollegeClassRoom, InjCollegeClassRoom, InjMClassRoom, MClassRoom, MiddleSchoolStudent, Person, SimppleAutoWried, StringIdTest, Student, SymbolIdest } from './debug';
+import { ClassRoom, CollegeClassRoom, InjCollegeClassRoom, InjMClassRoom, MClassRoom, MiddleSchoolStudent, Person, SimppleAutoWried, StingMClassRoom, StringIdTest, Student, SymbolIdest } from './debug';
 import expect = require('expect');
 
 
@@ -122,7 +122,6 @@ describe('ModuleLoader test', () => {
         });
 
         it('should work with Symbol id to get class', () => {
-
             let instance = container.get(SymbolIdest);
             expect(instance).toBeDefined();
             expect(instance.room).toBeDefined();

@@ -30,11 +30,12 @@ export class ClassRoom {
     }
 }
 
-// @Abstract()
+@Abstract()
 export abstract class Student {
     @Inject(CONTAINER)
     container!: Container;
-    @Inject(Date)
+
+    @Inject({provider: Date, defaultValue: new Date()})
     join: any;
     constructor() {
     }
@@ -186,8 +187,7 @@ export class SymbolIdest {
 
     @Inject(CONTAINER)
     public container!: Container
-    constructor(@Param('StringClassRoom')
-    public room2: IClassRoom) {
+    constructor(@Param('StringClassRoom') public room2: IClassRoom) {
 
     }
 }
