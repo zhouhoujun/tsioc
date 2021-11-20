@@ -46,7 +46,7 @@ describe('aop test', () => {
 
         tester!: string;
 
-        @Inject()
+        @Inject({ defaultValue: new Date()})
         testAt!: Date;
         constructor() {
 
