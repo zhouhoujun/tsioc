@@ -1,7 +1,7 @@
 import { ClassType, LoadType, Modules, Type } from '../types';
 import {
     ResolveOption, MethodType, FnType, InjectorScope, ResolverOption, RegisterOption, FactoryRecord,
-    Platform, Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption, isInjector
+    Platform, Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption
 } from '../injector';
 import { InjectFlags, Token } from '../tokens';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR, TARGET } from '../metadata/tk';
@@ -17,13 +17,13 @@ import { RuntimeLifeScope } from '../actions/runtime';
 import { ModuleReflect, TypeReflect } from '../metadata/type';
 import { get } from '../metadata/refl';
 import {
-    InvocationContext, InvocationOption, InvokeOption, OperationArgumentResolver, isResolver, Parameter,
-    OperationFactory, ReflectiveOperationInvoker, OperationFactoryResolver, OperationInvoker, InvokeArguments, ReflectiveRef, composeResolver
+    InvocationContext, InvocationOption, InvokeOption, OperationArgumentResolver, isResolver, Parameter, OperationFactory,
+    ReflectiveOperationInvoker, OperationFactoryResolver, OperationInvoker, InvokeArguments, ReflectiveRef, composeResolver
 } from '../invoker';
 import { DefaultModuleLoader } from './loader';
 import { ModuleLoader } from '../module.loader';
 import { DefaultPlatform } from './platform';
-import { isDestroy, DestroyCallback } from '../destroy';
+import { DestroyCallback } from '../destroy';
 
 
 
@@ -46,6 +46,7 @@ export class DefaultInjector extends Injector {
      */
     protected records: Map<Token, FactoryRecord>;
     private isAlias?: (token: Token) => boolean;
+    private _createdHandle?: (val: any) => void;
 
     constructor(providers: ProviderType[] = EMPTY, readonly parent?: Injector, readonly scope?: InjectorScope) {
         super();
@@ -348,14 +349,16 @@ export class DefaultInjector extends Injector {
             notFoundValue = arg1;
         }
 
-        return this.tryResolve(token, this.records.get(token), platform, this.parent, context, notFoundValue, flags);
+        if (!this._createdHandle) {
+            this._createdHandle = platform.toCreatedHandle(this);
+        }
+        return this.tryResolve(token, this.records.get(token), platform, this.parent, context, notFoundValue, flags, this._createdHandle);
     }
 
     protected tryResolve(token: Token, record: FactoryRecord | undefined, platform: Platform, parent: Injector | undefined,
-        context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags) {
-        return tryResolveToken(token, record, this.records, platform, parent, context, notFoundValue, flags, this._dsryCbs);
+        context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, instanceCreated?: (value: any) => void) {
+        return tryResolveToken(token, record, this.records, platform, parent, context, notFoundValue, flags, instanceCreated);
     }
-
 
     /**
      * resolve token instance with token and param provider.
@@ -737,10 +740,12 @@ export class DefaultInjector extends Injector {
         }
         this._plat = null!;
         this.isAlias = null!;
+        this._createdHandle = null!;
         (this as any).parent = null!;
         (this as any).strategy = null!;
     }
 }
+
 
 /**
  * static injector.
@@ -748,8 +753,8 @@ export class DefaultInjector extends Injector {
 export class StaticInjector extends DefaultInjector {
 
     protected override tryResolve(token: Token, record: FactoryRecord | undefined, platform: Platform, parent: Injector | undefined,
-        context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags) {
-        return tryResolveToken(token, record, this.records, platform, parent, context, notFoundValue, flags, this._dsryCbs, true);
+        context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, created: (value: any) => void) {
+        return tryResolveToken(token, record, this.records, platform, parent, context, notFoundValue, flags, created, true);
     }
 }
 
@@ -929,11 +934,11 @@ export class NullInjectorError extends Error {
  * @returns 
  */
 export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Platform, parent: Injector | undefined,
-    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, dsryCbs: Set<DestroyCallback>, isStatic?: boolean): any {
+    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, instanceCreated?: (value: any) => void, isStatic?: boolean): any {
     try {
-        let value = resolveToken(token, rd, records, platform, parent, context, notFoundValue, flags, dsryCbs);
-        if (rd && isDestroy(value) && !isInjector(value) && !dsryCbs.has(value)) {
-            dsryCbs.add(value);
+        const value = resolveToken(token, rd, records, platform, parent, context, notFoundValue, flags, instanceCreated, isStatic);
+        if (rd && rd.fn !== IDENT && rd.fn !== MUTIL && instanceCreated && isDefined(value)) {
+            instanceCreated(value);
         }
         if (isStatic) {
             if (rd) {
@@ -960,7 +965,7 @@ const THROW_FLAGE = {};
  * @returns 
  */
 export function resolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Platform, parent: Injector | undefined,
-    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, dsryCbs: Set<DestroyCallback>, isStatic?: boolean): any {
+    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, instanceCreated?: (value: any) => void, isStatic?: boolean): any {
     if (rd && !(flags & InjectFlags.SkipSelf)) {
         let value = rd.value;
         if (value === CIRCULAR) {
@@ -986,7 +991,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                     context,
                     dep.options & OptionFlags.Optional ? null : THROW_FLAGE,
                     InjectFlags.Default,
-                    dsryCbs,
+                    instanceCreated,
                     isStatic));
             }
         }
@@ -1000,7 +1005,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                 if (value === EMPTY) {
                     return rd.value = value = rd.fn?.(...deps);
                 }
-                return rd.fn?.(...deps);
+                return rd.fn?.(...deps)
             case FnType.Inj:
             default:
                 if (rd.expires) {
@@ -1012,7 +1017,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                     rd.cache = null!;
                     rd.ltop = null!;
                 }
-                return rd.fn?.(...deps);
+                return rd.fn?.(...deps)
         }
     } else if (!(flags & InjectFlags.Self)) {
         return parent?.get(token, context ?? notFoundValue, InjectFlags.Default) ?? notFoundValue;
@@ -1275,6 +1280,7 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
             });
     }
 }
+
 
 /**
  * register core for root.

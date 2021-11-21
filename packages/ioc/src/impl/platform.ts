@@ -7,7 +7,7 @@ import { get } from '../metadata/refl';
 import { TypeReflect } from '../metadata/type';
 import { ProviderType, StaticProvider } from '../providers';
 import { Injector, Platform } from '../injector';
-import { DestroyCallback } from '../destroy';
+import { DestroyCallback, isDestroy } from '../destroy';
 
 
 /**
@@ -21,13 +21,25 @@ export class DefaultPlatform implements Platform {
     private singletons: Map<Token, any>;
     private extPdrs: Map<ClassType, ProviderType[]>;
     private scopes: Map<string | ClassType, Injector>;
+    private _createdCbs: Set<(injector: Injector, value: any) => void>;
 
     constructor(readonly injector: Injector) {
         this.scopes = new Map();
         this.extPdrs = new Map();
         this.actions = new Map();
         this.singletons = new Map();
+        this._createdCbs = new Set([(inj, value) => isDestroy(value) && inj.onDestroy(value)]);
         injector.onDestroy(this);
+    }
+
+    onInstanceCreated(callback: (injector: Injector, value: any) => void): void {
+        this._createdCbs.add(callback);
+    }
+
+    toCreatedHandle(injector: Injector): (value: any) => void {
+        return (value) => {
+            this._createdCbs.forEach(h => h(injector, value));
+        }
     }
 
     /**
@@ -40,7 +52,7 @@ export class DefaultPlatform implements Platform {
             throw Error('has singleton instance with token:' + token.toString());
         }
         this.singletons.set(token, value);
-        injector.onDestroy(()=> this.singletons.delete(token));
+        injector.onDestroy(() => this.singletons.delete(token));
         return this;
     }
     /**
@@ -168,6 +180,7 @@ export class DefaultPlatform implements Platform {
             this._dsryCbs.forEach(c => isFunction(c) ? c() : c?.destroy());
         } finally {
             this._dsryCbs.clear();
+            this._createdCbs.clear();
             this.scopes.clear();
             this.extPdrs.clear();
             this.actions.clear();

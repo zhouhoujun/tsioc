@@ -441,7 +441,18 @@ export abstract class Platform implements Destroyable {
      * @param provider 
      */
     abstract setActionValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
-    abstract getActionValue<T>(token: Token<T>, notFoundValue?: T): T
+    abstract getActionValue<T>(token: Token<T>, notFoundValue?: T): T;
+
+    /**
+     * add instance created callback.
+     * @param callback 
+     */
+    abstract onInstanceCreated(callback: (injector: Injector, value: any) => void): void;
+    /**
+     * parse instance created callback to create handle.
+     * @param injector 
+     */
+    abstract toCreatedHandle(injector: Injector): (value: any) => void;
 
     abstract get destroyed(): boolean;
     abstract destroy(): void;
