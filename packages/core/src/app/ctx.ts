@@ -140,7 +140,7 @@ export class DefaultApplicationContext extends ApplicationContext {
     */
     destroy(): void {
         if (!this._destroyed) {
-            if(!this.shutdownHandlers.enabled){
+            if (!this.shutdownHandlers.enabled) {
                 throw new Error('Application has not shutdown, can not destory application.')
             }
             this._destroyed = true;
@@ -148,7 +148,10 @@ export class DefaultApplicationContext extends ApplicationContext {
                 this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.destroy());
             } finally {
                 this._dsryCbs.clear();
-                this.destroying();
+                this.shutdownHandlers.clear();
+                const parent = this.injector.parent;
+                this.injector.destroy();
+                if(parent) parent.destroy();
             }
         }
     }
@@ -158,11 +161,6 @@ export class DefaultApplicationContext extends ApplicationContext {
      */
     onDestroy(callback: DestroyCallback): void {
         this._dsryCbs.add(callback);
-    }
-
-    protected destroying() {
-        this.shutdownHandlers.clear();
-        this.injector.destroy();
     }
 
 }

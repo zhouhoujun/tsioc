@@ -15,9 +15,7 @@ import { ModuleFactoryResolver } from './module.factory';
  * @class Application
  */
 export class Application {
-
-    private _destroyed = false;
-    private _dsryCbs = new Set<DestroyCallback>();
+    
     readonly root: ModuleRef;
 
     /**
@@ -87,7 +85,6 @@ export class Application {
         try {
             const ctx = await this.setup();
             await ctx.injector.platform().getAction(BootLifeScope).execute(ctx);
-            ctx.onDestroy(() => this.destroy());
             return ctx;
         } catch (err) {
             const appex = this.context?.injector?.get(ApplicationExit);
@@ -142,40 +139,6 @@ export class Application {
         return container.resolve({ token: ModuleFactoryResolver, target: option.type }).resolve(option.type).create(container, option);
     }
 
-    /**
-     * has destoryed or not.
-     */
-    get destroyed() {
-        return this._destroyed;
-    }
-    /**
-    * destory this.
-    */
-    destroy(): void {
-        if (!this._destroyed) {
-            this._destroyed = true;
-            try {
-                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.destroy());
-            } finally {
-                this._dsryCbs.clear();
-                this.destroying();
-            }
-        }
-    }
-
-    /**
-     * register callback on destory.
-     * @param callback destory callback
-     */
-    onDestroy(callback: DestroyCallback): void {
-        this._dsryCbs.add(callback);
-    }
-
-    protected destroying() {
-        this.context.destroy();
-        this.root.parent?.destroy();
-        this.root.destroy();
-    }
 }
 
 
