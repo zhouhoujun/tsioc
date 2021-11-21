@@ -21,24 +21,24 @@ export class DefaultPlatform implements Platform {
     private singletons: Map<Token, any>;
     private extPdrs: Map<ClassType, ProviderType[]>;
     private scopes: Map<string | ClassType, Injector>;
-    private _createdCbs: Set<(injector: Injector, value: any) => void>;
+    private _createdCbs: Set<(value: any, injector: Injector) => void>;
 
     constructor(readonly injector: Injector) {
         this.scopes = new Map();
         this.extPdrs = new Map();
         this.actions = new Map();
         this.singletons = new Map();
-        this._createdCbs = new Set([(inj, value) => isDestroy(value) && inj.onDestroy(value)]);
+        this._createdCbs = new Set([(value, inj) => isDestroy(value) && inj.onDestroy(value)]);
         injector.onDestroy(this);
     }
 
-    onInstanceCreated(callback: (injector: Injector, value: any) => void): void {
+    onInstanceCreated(callback: (value: any, injector: Injector) => void): void {
         this._createdCbs.add(callback);
     }
 
     toCreatedHandle(injector: Injector): (value: any) => void {
         return (value) => {
-            this._createdCbs.forEach(h => h(injector, value));
+            this._createdCbs.forEach(h => h(value, injector));
         }
     }
 

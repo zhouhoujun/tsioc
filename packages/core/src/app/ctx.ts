@@ -6,6 +6,8 @@ import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOpt
 import { Runnable, RunnableFactory, RunnableFactoryResolver } from '../runnable';
 import { Response, Request, Context, MessageQueue, RequestInit, RequestOption, ROOT_QUEUE } from '../middlewares';
 import { ModuleRef } from '../module.ref';
+import { ApplicationShutdownHandlers, isShutdown, OnShutdown } from '../shutdown';
+
 
 
 
@@ -23,12 +25,18 @@ export class DefaultApplicationContext extends ApplicationContext {
     readonly bootstraps: Runnable[] = [];
     readonly args: string[] = [];
     readonly startups: Token[] = [];
+    readonly shutdownHandlers = new DefaultApplicationShutdownHandlers();
 
     exit = true;
 
     constructor(readonly injector: ModuleRef) {
         super();
         injector.setValue(ApplicationContext, this);
+        injector.platform().onInstanceCreated((value, inj) => {
+            if (isShutdown(value)) {
+                this.shutdownHandlers.add(value);
+            }
+        });
     }
 
     get services() {
@@ -132,6 +140,9 @@ export class DefaultApplicationContext extends ApplicationContext {
     */
     destroy(): void {
         if (!this._destroyed) {
+            if(!this.shutdownHandlers.enabled){
+                throw new Error('Application has not shutdown, can not destory application.')
+            }
             this._destroyed = true;
             try {
                 this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.destroy());
@@ -150,11 +161,43 @@ export class DefaultApplicationContext extends ApplicationContext {
     }
 
     protected destroying() {
+        this.shutdownHandlers.clear();
         this.injector.destroy();
     }
 
 }
 
+export class DefaultApplicationShutdownHandlers implements ApplicationShutdownHandlers {
+
+    private shutdowns: Set<OnShutdown>;
+    private _enabled = false;
+    constructor() {
+        this.shutdowns = new Set();
+    }
+
+    get enabled(): boolean {
+        return this.shutdowns.size === 0 || this._enabled;
+    }
+    async run(): Promise<void> {
+        if (!this._enabled) {
+            this._enabled = true;
+            await Promise.all(Array.from(this.shutdowns.values())
+                .map(s => Promise.resolve(s && s.onApplicationShutdown())));
+        }
+    }
+    add(shutdown: OnShutdown): void {
+        this.shutdowns.add(shutdown);
+    }
+    clear(): void {
+        this.shutdowns.clear();
+    }
+    forEach(callback: (value: any) => void): void {
+        this.shutdowns.forEach(callback);
+    }
+    remove(shutdown: OnShutdown): void {
+        this.shutdowns.delete(shutdown);
+    }
+}
 
 /**
  * default application factory.

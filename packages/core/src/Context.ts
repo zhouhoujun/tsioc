@@ -13,6 +13,7 @@ import { Service } from './services/service';
 import { Server } from './server/server';
 import { ModuleOption } from './module.factory';
 import { ModuleRef } from './module.ref';
+import { ApplicationShutdownHandlers } from './shutdown';
 
 
 
@@ -39,11 +40,19 @@ export interface BootstrapOption extends InvokeOption {
  */
 @Abstract()
 export abstract class ApplicationContext implements Destroyable {
-
     /**
      * application injector.
      */
     abstract get injector(): ModuleRef;
+    /**
+     * shudown handlers.
+     *
+     * @readonly
+     * @abstract
+     * @type {ApplicationShutdownHandlers}
+     * @memberof ApplicationContext
+     */
+    abstract get shutdownHandlers(): ApplicationShutdownHandlers;
     /**
      * exit application or not, when throw error.
      */

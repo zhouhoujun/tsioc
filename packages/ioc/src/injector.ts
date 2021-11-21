@@ -447,7 +447,7 @@ export abstract class Platform implements Destroyable {
      * add instance created callback.
      * @param callback 
      */
-    abstract onInstanceCreated(callback: (injector: Injector, value: any) => void): void;
+    abstract onInstanceCreated(callback: (value: any, injector: Injector) => void): void;
     /**
      * parse instance created callback to create handle.
      * @param injector 
