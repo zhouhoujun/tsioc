@@ -1,4 +1,4 @@
-import { Injectable, Singleton, ModuleLoader, Inject } from '@tsdi/ioc';
+import { Injectable, Singleton, ModuleLoader, Inject, isString, EMPTY } from '@tsdi/ioc';
 import { Module, ConfigureLoader, PROCESS_ROOT, Configuration, ApplicationExit, ApplicationContext, ApplicationArguments } from '@tsdi/core';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -51,32 +51,67 @@ const signls = [
     'SIGTERM',
 ];
 
+const isArg = /^--/;
+const isNum = /^\d+(.\d+)?$/;
 export class ServerApplicationArguments extends ApplicationArguments {
-    private _signls?: string[];
-    private _options: Record<string, any>;
+    private _signls: string[];
+    private _args: Record<string, any>;
+    private _cmds?: string[];
 
-    constructor(private _args: string[]) {
-        this._options = this.toRecord(_args);
-        this._signls = this._options.signls || signls;
+    constructor(private _env: Record<string, string | undefined>, private _source: string[]) {
+        super()
+        this._args = this.toRecord(_source);
+        this._env = this._env || {};
+        this._signls = this.tryGetSignls();
     }
 
-    get args(): string[] {
+    get env() {
+        return this._env;
+    }
+    get argsSource(): string[] {
+        return this._source;
+    }
+    get args(): Record<string, string> {
         return this._args;
     }
-    get options(): Record<string, string> {
-        return this._options;
+
+    get cmds() {
+        return this._cmds || EMPTY;
     }
+
     get signls(): string[] {
-       return this._signls; 
+        return this._signls;
     }
 
     reset(args: string[]): void {
-        this._options = this.toRecord(args);
-        this._signls = this._options.signls || signls;
+        this._source = args;
+        this._args = this.toRecord(args);
+        this._signls = this.tryGetSignls();
     }
 
-    protected toRecord(args: string[]): Record<string, string> {
-        
+    protected toRecord(args: string[]): Record<string, string | boolean | number> {
+        const argr = {} as Record<string, string | boolean | number>;
+        const cmds: string[] = this._cmds = [];
+        args.forEach(arg => {
+            if (isArg.test(arg)) {
+                const [k, val] = arg.slice(2).split('=');
+                if (isNum.test(val)) {
+                    argr[k] = val.indexOf('.') ? parseFloat(val) : parseInt(val);
+                } else if (val) {
+                    argr[k] = val;
+                } else {
+                    argr[k] = true;
+                }
+            } else {
+                cmds.push(arg);
+            }
+        });
+        return argr;
+    }
+
+    protected tryGetSignls() {
+        const sigs =  this.env.signls || this._args.signls;
+        return sigs ? (isString(sigs) ? sigs.split(',') : signls) : EMPTY;
     }
 
 
@@ -91,6 +126,8 @@ export class ServerApplicationExit extends ApplicationExit {
 
     override register(): void {
         const usedsignls = this.context.args.signls;
+        if (!usedsignls.length) return;
+
         const logger = this.context.getLogManager()?.getLogger();
         const callback = async (signal: string) => {
             try {
@@ -118,8 +155,8 @@ export class ServerApplicationExit extends ApplicationExit {
     providers: [
         ConfigureFileLoader,
         {
-            provide: APPLICATION_ARGS,
-            useValue: process.argv
+            provide: ApplicationArguments,
+            useValue: new ServerApplicationArguments(process.env, process.argv.slice(2))
         },
         {
             provide: PROCESS_ROOT,

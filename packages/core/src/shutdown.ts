@@ -22,8 +22,10 @@ export function isShutdown(target: any): target is OnShutdown {
 
 @Abstract()
 export abstract class ApplicationArguments {
-    abstract get args(): string[];
-    abstract get options(): Record<string, string>;
+    abstract get argsSource(): string[];
+    abstract get args(): Record<string, string>;
+    abstract get cmds(): string[];
+    abstract get env(): Record<string, string|undefined>;
     abstract get signls(): string[];
     abstract reset(args: string[]): void;
 }
