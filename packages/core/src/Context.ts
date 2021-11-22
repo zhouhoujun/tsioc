@@ -13,7 +13,8 @@ import { Service } from './services/service';
 import { Server } from './server/server';
 import { ModuleOption } from './module.factory';
 import { ModuleRef } from './module.ref';
-import { ApplicationShutdownHandlers } from './shutdown';
+import { ApplicationArguments, ApplicationShutdownHandlers } from './shutdown';
+import { Disposable } from './dispose';
 
 
 
@@ -39,7 +40,7 @@ export interface BootstrapOption extends InvokeOption {
  * boot context.
  */
 @Abstract()
-export abstract class ApplicationContext implements Destroyable {
+export abstract class ApplicationContext implements Destroyable, Disposable {
     /**
      * application root module injector.
      */
@@ -106,10 +107,9 @@ export abstract class ApplicationContext implements Destroyable {
     /**
      * boot run env args.
      *
-     * @type {string[]}
-     * @memberof BootOptions
+     * @type {ApplicationArguments}
      */
-    abstract get args(): string[];
+    abstract get args(): ApplicationArguments;
 
     /**
      * configuration merge metadata config and all application config.
@@ -137,6 +137,10 @@ export abstract class ApplicationContext implements Destroyable {
      */
     abstract get bootstraps(): Runnable[];
     /**
+     * dispose service.
+     */
+    abstract dispose(): Promise<void>;
+    /**
      * destroyed or not.
      */
     abstract get destroyed(): boolean;
@@ -163,10 +167,8 @@ export const BootContext = ApplicationContext;
 export abstract class ApplicationExit {
 
     abstract get context(): ApplicationContext;
-
+    
     abstract register(): void;
-
-    abstract exit(error?: Error): void;
 }
 
 /**

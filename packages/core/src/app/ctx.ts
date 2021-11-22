@@ -1,11 +1,12 @@
 import { Token, ProviderType, Type, isFunction, isBoolean, ModuleMetadata, DestroyCallback } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
-import { SERVICES, CONFIGURATION, PROCESS_ROOT, SERVERS } from '../metadata/tk';
+import { SERVICES, CONFIGURATION, PROCESS_ROOT, SERVERS, APPLICATION_ARGS } from '../metadata/tk';
 import { Configuration, ConfigureManager } from '../configure/config';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from '../Context';
 import { Runnable, RunnableFactory, RunnableFactoryResolver } from '../runnable';
 import { Response, Request, Context, MessageQueue, RequestInit, RequestOption, ROOT_QUEUE } from '../middlewares';
 import { ModuleRef } from '../module.ref';
+import { ApplicationArguments } from '../shutdown';
 
 
 
@@ -22,7 +23,6 @@ export class DefaultApplicationContext extends ApplicationContext {
     private _destroyed = false;
     private _dsryCbs = new Set<DestroyCallback>();
     readonly bootstraps: Runnable[] = [];
-    readonly args: string[] = [];
     readonly startups: Token[] = [];
 
     exit = true;
@@ -30,6 +30,10 @@ export class DefaultApplicationContext extends ApplicationContext {
     constructor(readonly injector: ModuleRef) {
         super();
         injector.setValue(ApplicationContext, this);
+    }
+
+    get args() {
+        return this.injector.get(ApplicationArguments)
     }
 
     get services() {
@@ -128,6 +132,12 @@ export class DefaultApplicationContext extends ApplicationContext {
         return this.injector.get(ConfigureManager);
     }
 
+    async dispose(): Promise<void> {
+        const modules = Array.from(this.injector.platform().modules).reverse();
+        await Promise.all(modules.map(m=> (m as ModuleRef)?.dispose()));
+        this.destroy();
+    }
+
     /**
     * destory this.
     */
@@ -171,7 +181,6 @@ export class DefaultApplicationFactory extends ApplicationFactory {
     initOption<T>(ctx: ApplicationContext, option?: ApplicationOption<T>) {
         if (!option) return;
 
-        if (option.args) ctx.args.push(...option.args);
         if (isBoolean(option.exit)) {
             (ctx as DefaultApplicationContext).exit = option.exit;
         }

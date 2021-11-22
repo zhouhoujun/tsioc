@@ -79,8 +79,21 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
             }, moduleRefl);
     }
 
+
+    async dispose(): Promise<void> {
+        try {
+            await this.shutdownHandlers.run();
+        } catch (err) {
+            throw err;
+        } finally {
+            this.destroy();
+        }
+    }
+
+
     override destroy() {
         if (!this.destroyed && !this.shutdownHandlers.enabled) {
+            this.shutdownHandlers.run()
             throw new Error('Application has not shutdown, can not destory application.')
         }
         super.destroy();

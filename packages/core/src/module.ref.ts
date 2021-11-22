@@ -2,6 +2,7 @@ import {
     Abstract, Destroyable, DestroyCallback, Injector, InjectorTypeWithProviders,
     isFunction, isPlainObject, lang, ModuleReflect, OperationFactoryResolver, Type
 } from '@tsdi/ioc';
+import { Disposable } from './dispose';
 import { RunnableFactoryResolver } from './runnable';
 import { ApplicationShutdownHandlers } from './shutdown';
 
@@ -13,7 +14,7 @@ import { ApplicationShutdownHandlers } from './shutdown';
  * @publicApi
  */
 @Abstract()
-export abstract class ModuleRef<T = any> extends Injector implements Destroyable {
+export abstract class ModuleRef<T = any> extends Injector implements Destroyable, Disposable {
     /**
      * module type
      */
@@ -46,6 +47,10 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
      * the modle instance.
      */
     abstract get instance(): T;
+    /**
+     * dispose.
+     */
+    abstract dispose(): Promise<void>;
     /**
      * destory.
      */

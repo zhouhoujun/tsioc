@@ -19,6 +19,15 @@ export function isShutdown(target: any): target is OnShutdown {
     return isTypeObject(target) && isFunction((target as OnShutdown).onApplicationShutdown);
 }
 
+
+@Abstract()
+export abstract class ApplicationArguments {
+    abstract get args(): string[];
+    abstract get options(): Record<string, string>;
+    abstract get signls(): string[];
+    abstract reset(args: string[]): void;
+}
+
 /**
  * application shutdown handlers
  */

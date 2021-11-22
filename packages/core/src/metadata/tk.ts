@@ -16,11 +16,6 @@ import { Server } from '../server/server';
 export const SERVICES = tokenId<Resolver<Service>[]>('SERVICES');
 
 /**
-* context options.
-*/
-export const CTX_ARGS = tokenId<string[]>('CTX_ARGS');
-
-/**
  * config token.
  */
 export const CONFIGURATION = tokenId<Configuration>('CONFIGURATION');
@@ -34,11 +29,6 @@ export const DEFAULT_CONFIG: Token<Configuration> = tokenId<Configuration>('DEFA
  *  appliaction boot process root path.
  */
 export const PROCESS_ROOT: Token<string> = tokenId<string>('PROCESS_ROOT');
-
-/**
- * context options.
- */
-export const CTX_OPTIONS = tokenId<Record<string, any>>('CTX_OPTIONS');
 
 /**
  * middleware context.

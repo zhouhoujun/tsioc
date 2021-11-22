@@ -1,11 +1,13 @@
 import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, Injector, Modules } from '@tsdi/ioc';
-import { CTX_ARGS, PROCESS_ROOT } from './metadata/tk';
+import { PROCESS_ROOT } from './metadata/tk';
 import { ApplicationContext, ApplicationFactory, ApplicationExit, ApplicationOption, BootstrapOption } from './Context';
 import { MiddlewareModule } from './middleware';
 import { BootLifeScope } from './app/lifescope';
 import { CoreModule, DEFAULTA_FACTORYS } from './core';
 import { ModuleRef } from './module.ref';
 import { ModuleFactoryResolver } from './module.factory';
+import { Disposable } from './dispose';
+import { ApplicationArguments } from './shutdown';
 
 
 /**
@@ -14,7 +16,7 @@ import { ModuleFactoryResolver } from './module.factory';
  * @export
  * @class Application
  */
-export class Application {
+export class Application implements Disposable {
 
     readonly root: ModuleRef;
 
@@ -85,15 +87,14 @@ export class Application {
         try {
             const ctx = await this.setup();
             await ctx.injector.platform().getAction(BootLifeScope).execute(ctx);
+            const exit = this.context?.injector?.get(ApplicationExit);
+            if (exit) {
+                exit.register();
+            }
             return ctx;
         } catch (err) {
-            const appex = this.context?.injector?.get(ApplicationExit);
-            if (appex) {
-                appex.exit(err as Error);
-            } else {
-                const logger = this.context?.getLogManager()?.getLogger();
-                logger ? logger.error(err) : console.error(err);
-            }
+            const logger = this.context?.getLogManager()?.getLogger();
+            logger ? logger.error(err) : console.error(err);
             throw err;
         }
     }
@@ -129,14 +130,18 @@ export class Application {
         if (this.loader) {
             container.setValue(ModuleLoader, this.loader);
         }
-        if (option.args) {
-            container.setValue(CTX_ARGS, option.args);
+        if (option.args && option.args.length) {
+            container.get(ApplicationArguments)?.reset(option.args);
         }
         if (option.baseURL) {
             container.setValue(PROCESS_ROOT, option.baseURL);
         }
         option.platformDeps && container.use(...option.platformDeps);
         return container.resolve({ token: ModuleFactoryResolver, target: option.type }).resolve(option.type).create(container, option);
+    }
+
+    dispose(): Promise<void> {
+        return this.context.dispose();
     }
 
 }

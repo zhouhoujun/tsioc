@@ -12,6 +12,7 @@ export * from './metadata/meta';
 export * from './metadata/decor';
 export * from './metadata/tk';
 
+export * from './dispose';
 export * from './shutdown';
 export * from './runnable';
 export * from './Context';

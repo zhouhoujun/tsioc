@@ -1,5 +1,5 @@
 import { Injectable, Singleton, ModuleLoader, Inject } from '@tsdi/ioc';
-import { Module, ConfigureLoader, PROCESS_ROOT, Configuration, ApplicationExit, ApplicationContext } from '@tsdi/core';
+import { Module, ConfigureLoader, PROCESS_ROOT, Configuration, ApplicationExit, ApplicationContext, ApplicationArguments } from '@tsdi/core';
 import * as path from 'path';
 import * as fs from 'fs';
 import { runMainPath } from './toAbsolute';
@@ -37,46 +37,74 @@ export class ConfigureFileLoader implements ConfigureLoader {
     }
 }
 
+const signls = [
+    'SIGHUP',
+    'SIGINT',
+    'SIGQUIT',
+    'SIGILL',
+    'SIGTRAP',
+    'SIGABRT',
+    'SIGBUS',
+    'SIGFPE',
+    'SIGSEGV',
+    'SIGUSR2',
+    'SIGTERM',
+];
+
+export class ServerApplicationArguments extends ApplicationArguments {
+    private _signls?: string[];
+    private _options: Record<string, any>;
+
+    constructor(private _args: string[]) {
+        this._options = this.toRecord(_args);
+        this._signls = this._options.signls || signls;
+    }
+
+    get args(): string[] {
+        return this._args;
+    }
+    get options(): Record<string, string> {
+        return this._options;
+    }
+    get signls(): string[] {
+       return this._signls; 
+    }
+
+    reset(args: string[]): void {
+        this._options = this.toRecord(args);
+        this._signls = this._options.signls || signls;
+    }
+
+    protected toRecord(args: string[]): Record<string, string> {
+        
+    }
+
+
+}
+
 @Singleton()
 export class ServerApplicationExit extends ApplicationExit {
-
-    private hdl!: () => void;
 
     constructor(readonly context: ApplicationContext) {
         super();
     }
 
     override register(): void {
-        if (!this.hdl) {
-            this.hdl = () => {
-                const logger = this.context.getLogManager()?.getLogger();
-                if (logger) {
-                    logger.log('SIGINT: app destoryed.');
-                } else {
-                    console.log('SIGINT: app destoryed.');
-                }
-                this.exit();
-            };
-        }
-        process.on('SIGINT', () => {
-            this.exit();
-        });
-        this.context.onDestroy(() => {
-            process.removeListener('SIGINT', this.hdl)
-        });
-    }
-
-    override exit(err?: Error) {
+        const usedsignls = this.context.args.signls;
         const logger = this.context.getLogManager()?.getLogger();
-        if (err) {
-            logger ? logger.error(err) : console.error(err);
+        const callback = async (signal: string) => {
+            try {
+                usedsignls.forEach(si => process.removeListener(si, callback));
+                await this.context.dispose();
+                process.kill(process.pid, signal);
+            } catch (err) {
+                logger?.error(err);
+                process.exit(1);
+            }
         }
-        this.context.destroy();
-        if (this.context.exit) {
-            process.exit(err ? 1 : 0);
-        } else if (err) {
-            throw err;
-        }
+        usedsignls.forEach(signl => {
+            process.on(signl, callback);
+        });
     }
 
 }
@@ -89,6 +117,10 @@ export class ServerApplicationExit extends ApplicationExit {
     providedIn: 'platform',
     providers: [
         ConfigureFileLoader,
+        {
+            provide: APPLICATION_ARGS,
+            useValue: process.argv
+        },
         {
             provide: PROCESS_ROOT,
             useValue: runMainPath()
