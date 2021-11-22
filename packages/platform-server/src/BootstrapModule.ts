@@ -110,7 +110,7 @@ export class ServerApplicationArguments extends ApplicationArguments {
     }
 
     protected tryGetSignls() {
-        const sigs =  this.env.signls || this._args.signls;
+        const sigs = this.env.signls || this._args.signls;
         return sigs ? (isString(sigs) ? sigs.split(',') : signls) : EMPTY;
     }
 

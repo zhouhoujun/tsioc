@@ -13,7 +13,7 @@ import { Service } from './services/service';
 import { Server } from './server/server';
 import { ModuleOption } from './module.factory';
 import { ModuleRef } from './module.ref';
-import { ApplicationArguments, ApplicationShutdownHandlers } from './shutdown';
+import { ApplicationArguments } from './shutdown';
 import { Disposable } from './dispose';
 
 
@@ -162,14 +162,6 @@ export abstract class ApplicationContext implements Destroyable, Disposable {
  */
 export const BootContext = ApplicationContext;
 
-
-@Abstract()
-export abstract class ApplicationExit {
-
-    abstract get context(): ApplicationContext;
-    
-    abstract register(): void;
-}
 
 /**
  * application option.

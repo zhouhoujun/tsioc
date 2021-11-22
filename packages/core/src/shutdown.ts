@@ -1,5 +1,4 @@
 import { Abstract, isFunction, isTypeObject } from '@tsdi/ioc';
-
 /**
  * application shutdown hooks
  */
@@ -19,6 +18,16 @@ export function isShutdown(target: any): target is OnShutdown {
     return isTypeObject(target) && isFunction((target as OnShutdown).onApplicationShutdown);
 }
 
+/**
+ * application exit.
+ */
+@Abstract()
+export abstract class ApplicationExit {
+    /**
+     * register application process signls
+     */
+    abstract register(): void;
+}
 
 @Abstract()
 export abstract class ApplicationArguments {

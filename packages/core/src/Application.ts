@@ -1,13 +1,13 @@
 import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, Injector, Modules } from '@tsdi/ioc';
 import { PROCESS_ROOT } from './metadata/tk';
-import { ApplicationContext, ApplicationFactory, ApplicationExit, ApplicationOption, BootstrapOption } from './Context';
+import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from './Context';
 import { MiddlewareModule } from './middleware';
 import { BootLifeScope } from './app/lifescope';
 import { CoreModule, DEFAULTA_FACTORYS } from './core';
 import { ModuleRef } from './module.ref';
 import { ModuleFactoryResolver } from './module.factory';
 import { Disposable } from './dispose';
-import { ApplicationArguments } from './shutdown';
+import { ApplicationArguments, ApplicationExit } from './shutdown';
 
 
 /**
@@ -87,7 +87,7 @@ export class Application implements Disposable {
         try {
             const ctx = await this.setup();
             await ctx.injector.platform().getAction(BootLifeScope).execute(ctx);
-            const exit = this.context?.injector?.get(ApplicationExit);
+            const exit = ctx.injector.get(ApplicationExit);
             if (exit) {
                 exit.register();
             }
