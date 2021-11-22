@@ -1,4 +1,4 @@
-import { lang, Injectable, ReflectiveRef } from '@tsdi/ioc';
+import { lang, Injectable, ReflectiveRef, Decors } from '@tsdi/ioc';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata/decor';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata/meta';
 import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
@@ -95,7 +95,7 @@ export class SuiteRunner extends UnitRunner {
     }
 
     async runBefore(describe: SuiteDescribe) {
-        let befores = this.tgRef.reflect.class.getDecorDefines<BeforeTestMetadata>(Before.toString(), 'method');
+        let befores = this.tgRef.reflect.class.getDecorDefines<BeforeTestMetadata>(Before.toString(), Decors.method);
         await lang.step(
             befores.map(df => () => {
                 return this.runTimeout(
@@ -106,7 +106,7 @@ export class SuiteRunner extends UnitRunner {
     }
 
     async runBeforeEach() {
-        let befores = this.tgRef.reflect.class.getDecorDefines<BeforeEachTestMetadata>(BeforeEach.toString(), 'method');
+        let befores = this.tgRef.reflect.class.getDecorDefines<BeforeEachTestMetadata>(BeforeEach.toString(), Decors.method);
         await lang.step(
             befores.map(df => () => {
                 return this.runTimeout(
@@ -117,7 +117,7 @@ export class SuiteRunner extends UnitRunner {
     }
 
     async runAfterEach() {
-        let afters = this.tgRef.reflect.class.getDecorDefines<BeforeEachTestMetadata>(AfterEach.toString(), 'method');
+        let afters = this.tgRef.reflect.class.getDecorDefines<BeforeEachTestMetadata>(AfterEach.toString(), Decors.method);
         await lang.step(afters.map(df => () => {
             return this.runTimeout(
                 df.propertyKey,
@@ -127,7 +127,7 @@ export class SuiteRunner extends UnitRunner {
     }
 
     async runAfter(describe: SuiteDescribe) {
-        let afters = this.tgRef.reflect.class.getDecorDefines<BeforeTestMetadata>(After.toString(), 'method');
+        let afters = this.tgRef.reflect.class.getDecorDefines<BeforeTestMetadata>(After.toString(), Decors.method);
         await lang.step(
             afters.map(df => () => {
                 return this.runTimeout(
@@ -138,7 +138,7 @@ export class SuiteRunner extends UnitRunner {
     }
 
     async runTest(desc: SuiteDescribe) {
-        let tests = this.tgRef.reflect.class.getDecorDefines<TestCaseMetadata>(Test.toString(), 'method');
+        let tests = this.tgRef.reflect.class.getDecorDefines<TestCaseMetadata>(Test.toString(), Decors.method);
         await lang.step(
             tests.map(df => {
                 return {

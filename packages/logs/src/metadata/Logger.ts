@@ -1,6 +1,6 @@
 import {
     TypeMetadata, ClassMethodDecorator, isFunction, createDecorator, EMPTY_OBJ,
-    OperationArgumentResolver, Type, isString, lang, PropParamDecorator, ArgumentError
+    OperationArgumentResolver, Type, isString, lang, PropParamDecorator, ArgumentError, Decors, ActionTypes
 } from '@tsdi/ioc';
 import { isLevel, Level } from '../Level';
 import { ConfigureLoggerManager } from '../manager';
@@ -117,9 +117,9 @@ const loggerResolver = {
  * @Logger
  */
 export const Logger: Logger<LoggerMetadata> = createDecorator<LoggerMetadata>('Logger', {
-    actionType: ['paramInject', 'propInject'],
+    actionType: [ActionTypes.paramInject, ActionTypes.propInject],
     init: (ctx) => {
-        if (ctx.decorType === 'parameter' || ctx.decorType === 'property') {
+        if (ctx.decorType === Decors.parameter || ctx.decorType === Decors.property) {
             const metadata = ctx.metadata as LoggerMetadata;
             if (!metadata.logname) {
                 metadata.logname = lang.getClassName(ctx.reflect.type);

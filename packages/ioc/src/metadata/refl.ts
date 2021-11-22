@@ -5,13 +5,14 @@ import { chain, Handler } from '../utils/hdl';
 import { cleanObj, getParentClass } from '../utils/lang';
 import { EMPTY, isArray, isFunction } from '../utils/chk';
 import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata, AutorunMetadata, InjectableMetadata } from './meta';
-import { DecoratorType, DecorContext, DecorDefine, TypeReflect } from './type';
+import { ctorName, DecoratorType, DecorContext, DecorDefine, Decors, ActionTypes, TypeReflect } from './type';
 import { TypeDefine } from './typedef';
 import { Platform } from '../injector';
 
 
 
-export type DecorActionType = 'propInject' | 'paramInject' | 'annoation' | 'autorun' | 'typeProviders' | 'methodProviders';
+export type ActionType = 'propInject' | 'paramInject' | 'annoation' | 'autorun' | 'typeProviders' | 'methodProviders';
+
 
 /**
  * decorator reflect hanldes.
@@ -92,7 +93,7 @@ export interface DecorRegisterOption extends ProvidersMetadata {
     /**
      * decorator basic action type.
      */
-    actionType?: DecorActionType | DecorActionType[];
+    actionType?: ActionType | ActionType[];
     /**
      * set reflect handles.
      */
@@ -124,7 +125,7 @@ export interface MetadataFactory<T> {
     /**
      * init decor context.
      */
-    init?:(ctx: DecorContext)=> void;
+    init?: (ctx: DecorContext) => void;
 }
 
 /**
@@ -185,24 +186,24 @@ function mapToFac(maps: Record<string, Handler | Handler[]>): (type: DecoratorTy
     return (type: DecoratorType) => mapHd.get(type) ?? EMPTY;
 }
 
-function regActionType(decor: string, type: DecorActionType) {
+function regActionType(decor: string, type: ActionType) {
     switch (type) {
-        case 'annoation':
+        case ActionTypes.annoation:
             typeAnnoDecors[decor] = true;
             break;
-        case 'paramInject':
+        case ActionTypes.paramInject:
             paramInjectDecors[decor] = true;
             break;
-        case 'propInject':
+        case ActionTypes.propInject:
             propInjectDecors[decor] = true;
             break;
-        case 'autorun':
+        case ActionTypes.autorun:
             autorunDecors[decor] = true;
             break;
-        case 'typeProviders':
+        case ActionTypes.typeProviders:
             typeProvidersDecors[decor] = true;
             break;
-        case 'methodProviders':
+        case ActionTypes.methodProviders:
             methodProvidersDecors[decor] = true;
             break;
         default:
@@ -220,7 +221,7 @@ export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
         if (!params) {
             const names = reflect.class.getParamNames(propertyKey);
             let paramTypes: any[];
-            if (propertyKey === 'constructor') {
+            if (propertyKey === ctorName) {
                 paramTypes = Reflect.getMetadata('design:paramtypes', reflect.type);
             } else {
                 paramTypes = Reflect.getMetadata('design:paramtypes', ctx.target, propertyKey);
@@ -263,15 +264,14 @@ export const PropInjectAction = (ctx: DecorContext, next: () => void) => {
 
 
 export const InitCtorDesignParams = (ctx: DecorContext, next: () => void) => {
-    const propertyKey = 'constructor';
-    if (!ctx.reflect.class.hasParameters(propertyKey)) {
+    if (!ctx.reflect.class.hasParameters(ctorName)) {
         let paramTypes: any[] = Reflect.getMetadata('design:paramtypes', ctx.reflect.type);
         if (paramTypes) {
-            const names = ctx.reflect.class.getParamNames(propertyKey);
+            const names = ctx.reflect.class.getParamNames(ctorName);
             if (!paramTypes) {
                 paramTypes = [];
             }
-            ctx.reflect.class.setParameters(propertyKey, paramTypes.map((type, idx) => {
+            ctx.reflect.class.setParameters(ctorName, paramTypes.map((type, idx) => {
                 return { type, paramName: names[idx] };
             }));
         }
@@ -316,7 +316,7 @@ export const AutorunAction = (ctx: DecorContext, next: () => void) => {
         ctx.reflect.class.autoruns.push({
             decorType: ctx.decorType,
             autorun: (ctx.metadata as AutorunMetadata).autorun!,
-            order: ctx.decorType === 'class' ? 0 : (ctx.metadata as AutorunMetadata).order
+            order: ctx.decorType === Decors.CLASS ? 0 : (ctx.metadata as AutorunMetadata).order
         });
         ctx.reflect.class.autoruns.sort((au1, au2) => au1.order! - au2.order!);
     }
@@ -405,7 +405,7 @@ paramDecorActions.use(
     ExecuteDecorHandle
 );
 
-function dispatch(actions: Actions<DecorContext>, target: any, type: ClassType, define: DecorDefine, init?: (ctx: DecorContext)=> void) {
+function dispatch(actions: Actions<DecorContext>, target: any, type: ClassType, define: DecorDefine, init?: (ctx: DecorContext) => void) {
     const ctx = {
         ...define,
         target,
@@ -418,22 +418,22 @@ function dispatch(actions: Actions<DecorContext>, target: any, type: ClassType, 
     cleanObj(ctx);
 }
 
-export function dispatchTypeDecor(type: ClassType, define: DecorDefine, init?: (ctx: DecorContext)=> void) {
+export function dispatchTypeDecor(type: ClassType, define: DecorDefine, init?: (ctx: DecorContext) => void) {
     dispatch(typeDecorActions, type, type, define, init);
 }
 
-export function dispatchPorpDecor(type: any, define: DecorDefine, init?: (ctx: DecorContext)=> void) {
+export function dispatchPorpDecor(type: any, define: DecorDefine, init?: (ctx: DecorContext) => void) {
     dispatch(propDecorActions, type, type.constructor, define, init);
 }
 
-export function dispatchMethodDecor(type: any, define: DecorDefine, init?: (ctx: DecorContext)=> void) {
+export function dispatchMethodDecor(type: any, define: DecorDefine, init?: (ctx: DecorContext) => void) {
     dispatch(methodDecorActions, type, type.constructor, define, init);
 }
 
-export function dispatchParamDecor(type: any, define: DecorDefine, init?: (ctx: DecorContext)=> void) {
+export function dispatchParamDecor(type: any, define: DecorDefine, init?: (ctx: DecorContext) => void) {
     let target = type;
     if (!define.propertyKey) {
-        define.propertyKey = 'constructor';
+        define.propertyKey = ctorName;
     } else {
         type = type.constructor;
     }

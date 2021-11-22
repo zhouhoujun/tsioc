@@ -1,5 +1,5 @@
 import {
-    Type, isFunction, lang, Platform, isNil, isPromise, refl, EMPTY,
+    Type, isFunction, lang, Platform, isNil, isPromise, refl, EMPTY, ctorName, Decors,
     ParameterMetadata, IocActions, IActionSetup, InvocationContext, Injector
 } from '@tsdi/ioc';
 import { IPointcut } from '../joinpoints/IPointcut';
@@ -11,7 +11,6 @@ import { ADVISOR } from '../metadata/tk';
 import { AroundMetadata } from '../metadata/meta';
 
 const proxyFlag = '_proxy';
-const ctor = 'constructor';
 const aExp = /^@/;
 
 /**
@@ -35,13 +34,13 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
 
 
     beforeConstr(targetType: Type, params: ParameterMetadata[] | undefined, args: any[] | undefined, injector: Injector, parent: InvocationContext | undefined) {
-        const advices = this.platform.getAction(ADVISOR).getAdvices(targetType, ctor);
+        const advices = this.platform.getAction(ADVISOR).getAdvices(targetType, ctorName);
         if (!advices) {
             return;
         }
 
         const joinPoint = Joinpoint.parse(injector ?? this.platform.getInjector('root') ?? this.platform.getInjector('platform'), {
-            name: ctor,
+            name: ctorName,
             state: JoinpointState.Before,
             advices,
             args,
@@ -53,13 +52,13 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
     }
 
     afterConstr(target: any, targetType: Type, params: ParameterMetadata[] | undefined, args: any[] | undefined, injector: Injector, parent: InvocationContext | undefined) {
-        const advices = this.platform.getAction(ADVISOR).getAdvices(targetType, ctor);
+        const advices = this.platform.getAction(ADVISOR).getAdvices(targetType, ctorName);
         if (!advices) {
             return;
         }
 
         const joinPoint = Joinpoint.parse(injector ?? this.platform.getInjector('root') ?? this.platform.getInjector('platform'), {
-            name: ctor,
+            name: ctorName,
             state: JoinpointState.After,
             advices,
             args,
@@ -141,7 +140,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
                 advices,
                 originMethod: propertyMethod,
                 provJoinpoint,
-                annotations: targetRef.class.decors.filter(d => d.propertyKey === name && d.decorType === 'method').map(d => d.metadata),
+                annotations: targetRef.class.decors.filter(d => d.propertyKey === name && d.decorType === Decors.method).map(d => d.metadata),
                 parent
             });
 
@@ -188,7 +187,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
 export class CtorAdvicesScope extends IocActions<Joinpoint> implements IActionSetup {
 
     override execute(ctx: Joinpoint, next?: () => void) {
-        if (ctx.method === ctor) {
+        if (ctx.method === ctorName) {
             super.execute(ctx);
         } else {
             next?.();

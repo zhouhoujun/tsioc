@@ -1,4 +1,4 @@
-import { Type, RuntimeContext, refl, AnnotationType } from '@tsdi/ioc';
+import { Type, RuntimeContext, refl, AnnotationType, ctorName } from '@tsdi/ioc';
 import { ProceedingScope } from './proceed';
 import { Advicer } from '../advices/Advicer';
 import { Advices } from '../advices/Advices';
@@ -28,7 +28,7 @@ export const BindMthPointcutAction = function (ctx: RuntimeContext, next: () => 
 
     if (advicesMap && advicesMap.size) {
         advicesMap.forEach((advices, name) => {
-            if (name === 'constructor') {
+            if (name === ctorName) {
                 return;
             }
             const pointcut = {

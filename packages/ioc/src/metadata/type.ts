@@ -27,6 +27,27 @@ export type DecoratorType = 'class' | DecorMemberType;
 export type DecoratorScope = 'beforeAnnoation' | DecoratorType
     | 'beforeConstructor' | 'afterConstructor' | 'annoation' | 'afterAnnoation';
 
+export const ctorName = 'constructor';
+export namespace Decors {
+    export const CLASS = 'class';
+    export const property = 'property';
+    export const method = 'method';
+    export const parameter = 'parameter';
+    export const beforeAnnoation = 'beforeAnnoation';
+    export const beforeConstructor = 'beforeConstructor';
+    export const afterConstructor = 'afterConstructor';
+    export const annoation = 'annoation';
+    export const afterAnnoation = 'afterAnnoation';
+}
+
+export namespace ActionTypes {
+    export const propInject = 'propInject';
+    export const paramInject = 'paramInject';
+    export const annoation = 'annoation';
+    export const autorun = 'autorun';
+    export const typeProviders = 'typeProviders';
+    export const methodProviders = 'methodProviders';
+}
 
 /**
  * decorator define.

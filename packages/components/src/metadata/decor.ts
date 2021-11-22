@@ -1,6 +1,6 @@
 import {
     Token, Type, PropertyMetadata, InjectableMetadata, isBoolean, isArray, isString, getClass,
-    refl, lang, createDecorator, createPropDecorator, createParamDecorator, ClassMethodDecorator
+    refl, lang, createDecorator, createPropDecorator, createParamDecorator, ClassMethodDecorator, ActionTypes
 } from '@tsdi/ioc';
 import {
     MappingReflect, MessageQueue, Middlewares,
@@ -47,7 +47,7 @@ export interface IDirectiveDecorator {
  * @Component
  */
 export const Directive: IDirectiveDecorator = createDecorator<DirectiveMetadata>('Directive', {
-    actionType: ['annoation', 'typeProviders'],
+    actionType: [ActionTypes.annoation, ActionTypes.typeProviders],
     props: (selector: string, option?: InjectableMetadata) => ({ selector, ...option }),
     reflect: {
         class: (ctx, next) => {
@@ -109,7 +109,7 @@ export interface IComponentDecorator {
  * @Component
  */
 export const Component: IComponentDecorator = createDecorator<ComponentMetadata>('Component', {
-    actionType: ['annoation', 'typeProviders'],
+    actionType: [ActionTypes.annoation, ActionTypes.typeProviders],
     props: (selector: string, template?: any, option?: InjectableMetadata) => ({ selector, template, ...option }),
     reflect: {
         class: (ctx, next) => {

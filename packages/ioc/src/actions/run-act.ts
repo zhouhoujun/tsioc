@@ -5,7 +5,8 @@ import { RuntimeContext } from './ctx';
 import { IocRegAction, IocRegScope } from './reg';
 import { PropertyMetadata } from '../metadata/meta';
 import { ArgumentError, OperationFactoryResolver, Parameter } from '../invoker';
-import { getClassName } from '../utils/lang';
+import { ctorName, Decors } from '../metadata/type';
+
 
 /**
  * ioc runtime register action.
@@ -23,15 +24,15 @@ export abstract class IocRuntimeAction extends IocRegAction<RuntimeContext> { }
  */
 export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): void {
     if (!ctx.params) {
-        ctx.params = ctx.reflect.class.getParameters('constructor');
+        ctx.params = ctx.reflect.class.getParameters(ctorName);
     }
     const factory = ctx.injector.get(OperationFactoryResolver).create(ctx.reflect);
     const context = ctx.context = factory.createContext(ctx.context?.injector ?? ctx.injector, {
-        invokerMethod: 'constructor',
+        invokerMethod: ctorName,
         parent: ctx.context
     });
     if (!ctx.args) {
-        ctx.args = factory.createInvoker('constructor').resolveArguments(context);
+        ctx.args = factory.createInvoker(ctorName).resolveArguments(context);
     }
     next();
     context.destroy();
@@ -97,7 +98,7 @@ export class BeforeCtorScope extends IocRegScope<RuntimeContext> implements IAct
 export const BeforeCtorDecorHandle = function (ctx: RuntimeContext, next: () => void) {
     ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        chain(d.getRuntimeHandle('beforeConstructor'), ctx);
+        chain(d.getRuntimeHandle(Decors.beforeConstructor), ctx);
     });
 
     return next();
@@ -128,7 +129,7 @@ export class AfterCtorScope extends IocRegScope<RuntimeContext> implements IActi
 export const AfterCtorDecorHandle = function (ctx: RuntimeContext, next: () => void) {
     ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        chain(d.getRuntimeHandle('afterConstructor'), ctx);
+        chain(d.getRuntimeHandle(Decors.afterConstructor), ctx);
     });
 
     return next();
@@ -204,7 +205,7 @@ export class RuntimeAnnoScope extends IocRegScope<RuntimeContext> implements IAc
 export const RuntimeAnnoDecorHandle = function (ctx: RuntimeContext, next: () => void) {
     ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        chain(d.getRuntimeHandle('class'), ctx);
+        chain(d.getRuntimeHandle(Decors.CLASS), ctx);
     });
 
     return next();
@@ -219,7 +220,7 @@ export class RuntimeMthScope extends IocRegScope<RuntimeContext> implements IAct
 export const RuntimeMthDecorHandle = function (ctx: RuntimeContext, next: () => void) {
     ctx.reflect.class.methodDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        chain(d.getRuntimeHandle('method'), ctx);
+        chain(d.getRuntimeHandle(Decors.method), ctx);
     });
 
     return next();
@@ -235,7 +236,7 @@ export class RuntimePropScope extends IocRegScope<RuntimeContext> implements IAc
 export const RuntimePropDecorHandle = function (ctx: RuntimeContext, next: () => void) {
     ctx.reflect.class.propDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        chain(d.getRuntimeHandle('property'), ctx);
+        chain(d.getRuntimeHandle(Decors.property), ctx);
     });
 
     return next();

@@ -1,4 +1,4 @@
-import { isString, isRegExp, Type, lang, isArray, isFunction, refl, ClassType, Injector } from '@tsdi/ioc';
+import { isString, isRegExp, Type, lang, isArray, isFunction, refl, ClassType, Injector, ctorName, Decors } from '@tsdi/ioc';
 import { IAdviceMatcher } from './IAdviceMatcher';
 import { AdviceMetadata } from './metadata/meta';
 import { IPointcut } from './joinpoints/IPointcut';
@@ -141,7 +141,7 @@ export class AdviceMatcher implements IAdviceMatcher {
         }
 
         if (metadata.annotation) {
-            checks.push((method) => relfect.class.hasMetadata(metadata.annotation!, (!method || method === 'constructor') ? 'class' : 'method', method));
+            checks.push((method) => relfect.class.hasMetadata(metadata.annotation!, (!method || method === ctorName) ? Decors.CLASS : Decors.method, method));
         }
 
         if (isString(metadata.pointcut)) {
@@ -199,7 +199,7 @@ export class AdviceMatcher implements IAdviceMatcher {
 
     protected toAnnExpress(reflect: AopReflect, exp: string): MatchExpress {
         let annotation = aExp.test(exp) ? exp : ('@' + exp);
-        return (name?: string, fullName?: string) => reflect.class.hasMetadata(annotation, (!name || name === 'constructor') ? 'class' : 'method', name);
+        return (name?: string, fullName?: string) => reflect.class.hasMetadata(annotation, (!name || name === ctorName) ? Decors.CLASS : Decors.method, name);
     }
 
     protected toExecExpress(reflect: AopReflect, exp: string): MatchExpress {
