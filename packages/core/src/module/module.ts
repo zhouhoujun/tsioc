@@ -7,6 +7,7 @@ import {
 import { ModuleFactory, ModuleFactoryResolver, ModuleOption } from '../module.factory';
 import { ModuleRef } from '../module.ref';
 import { RunnableFactoryResolver } from '../runnable';
+import { ApplicationShutdownHandlers, OnShutdown } from '../shutdown';
 import { DefaultRunnableFactoryResolver } from './runnable';
 
 
@@ -23,6 +24,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
     runnableFactoryResolver: RunnableFactoryResolver = new DefaultRunnableFactoryResolver(this);
     operationFactoryResolver = new ModuleOperationFactoryResolver();
+    shutdownHandlers = new DefaultApplicationShutdownHandlers();
 
     constructor(moduleType: ModuleReflect, providers: ProviderType[] | undefined, readonly parent: Injector,
         readonly scope?: InjectorScope, deps?: Modules[]) {
@@ -71,16 +73,60 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
             }, moduleRefl);
     }
 
+    override destroy() {
+        if (!this.destroyed && !this.shutdownHandlers.enabled) {
+            throw new Error('Application has not shutdown, can not destory application.')
+        }
+        super.destroy();
+    }
+
     protected override destroying() {
         super.destroying();
         this._defs.clear();
         this._type = null!;
+        this.shutdownHandlers.clear();
+        this.shutdownHandlers = null!;
         this.operationFactoryResolver = null!;
         this.runnableFactoryResolver = null!;
         this._typeRefl = null!;
         this._instance = null!;
     }
 
+}
+
+
+
+export class DefaultApplicationShutdownHandlers extends ApplicationShutdownHandlers {
+
+    private shutdowns: Set<OnShutdown>;
+    private _enabled = false;
+    constructor() {
+        super()
+        this.shutdowns = new Set();
+    }
+
+    get enabled(): boolean {
+        return this.shutdowns.size === 0 || this._enabled;
+    }
+    async run(): Promise<void> {
+        if (!this._enabled) {
+            this._enabled = true;
+            await Promise.all(Array.from(this.shutdowns.values())
+                .map(s => Promise.resolve(s && s.onApplicationShutdown())));
+        }
+    }
+    add(shutdown: OnShutdown): void {
+        this.shutdowns.add(shutdown);
+    }
+    clear(): void {
+        this.shutdowns.clear();
+    }
+    forEach(callback: (value: any) => void): void {
+        this.shutdowns.forEach(callback);
+    }
+    remove(shutdown: OnShutdown): void {
+        this.shutdowns.delete(shutdown);
+    }
 }
 
 export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {

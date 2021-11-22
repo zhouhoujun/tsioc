@@ -45,15 +45,6 @@ export abstract class ApplicationContext implements Destroyable {
      */
     abstract get injector(): ModuleRef;
     /**
-     * shudown handlers.
-     *
-     * @readonly
-     * @abstract
-     * @type {ApplicationShutdownHandlers}
-     * @memberof ApplicationContext
-     */
-    abstract get shutdownHandlers(): ApplicationShutdownHandlers;
-    /**
      * exit application or not, when throw error.
      */
     abstract get exit(): boolean;

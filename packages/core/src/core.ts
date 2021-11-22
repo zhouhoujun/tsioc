@@ -2,9 +2,11 @@ import { Inject, IocExt, Injector, ProviderType } from '@tsdi/ioc';
 import { DefaultConfigureManager, ConfigureMergerImpl } from './configure/manager';
 import { BootLifeScope } from './app/lifescope';
 import { ApplicationFactory } from './Context';
-import { DefaultApplicationFactory } from './app/ctx';
-import { DefaultModuleFactoryResolver } from './module/module';
+import { isShutdown } from './shutdown';
+import { ModuleRef } from './module.ref';
 import { ModuleFactoryResolver } from './module.factory';
+import { DefaultModuleFactoryResolver } from './module/module';
+import { DefaultApplicationFactory } from './app/ctx';
 
 
 export const DEFAULTA_FACTORYS: ProviderType[] = [
@@ -24,7 +26,15 @@ export class CoreModule {
      * register core module.
      */
     setup(@Inject() injector: Injector) {
-        injector.platform().registerAction(BootLifeScope);
+        const platform = injector.platform();
+
+        platform.registerAction(BootLifeScope);
+        platform.onInstanceCreated((value, inj) => {
+            if (isShutdown(value) && inj instanceof ModuleRef) {
+                inj.shutdownHandlers.add(value);
+            }
+        });
+
         injector.register(DefaultConfigureManager, ConfigureMergerImpl);
     }
 }

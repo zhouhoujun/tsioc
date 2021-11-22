@@ -3,6 +3,7 @@ import {
     isFunction, isPlainObject, lang, ModuleReflect, OperationFactoryResolver, Type
 } from '@tsdi/ioc';
 import { RunnableFactoryResolver } from './runnable';
+import { ApplicationShutdownHandlers } from './shutdown';
 
 
 /**
@@ -21,6 +22,14 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
      * module type
      */
     abstract get moduleReflect(): ModuleReflect<T>;
+    /**
+     * shudown handlers.
+     *
+     * @readonly
+     * @abstract
+     * @type {ApplicationShutdownHandlers}
+     */
+    abstract get shutdownHandlers(): ApplicationShutdownHandlers;
     /**
      * operation factory resolver.
      */
