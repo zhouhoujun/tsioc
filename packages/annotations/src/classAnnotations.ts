@@ -7,6 +7,7 @@ import { Plugin } from 'rollup';
 const tsChkExp = /\.ts$/;
 const replEmpty = /\s*$/;
 const repl$ = /\'\$\'/gi;
+const constructorName = 'constructor';
 /**
  * attach class Annotations before typescript ts compile.
  *
@@ -63,7 +64,7 @@ export function iocAnnotations(contents: string): string {
                 let paramNames = node.parameters.map(param => {
                     return param.name.getText();
                 });
-                annations.params['constructor'] = paramNames;
+                annations.params[constructorName] = paramNames;
             }
         } else if (ts.isMethodDeclaration(node)) {
             if (annations && node.parameters.length) {

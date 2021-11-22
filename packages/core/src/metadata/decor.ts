@@ -1,7 +1,7 @@
 import {
     isUndefined, ROOT_INJECTOR, EMPTY_OBJ, isArray, isString, lang, Type, isRegExp,
     createDecorator, ClassMethodDecorator, ClassMetadata, createParamDecorator, ParameterMetadata,
-    Resolver, ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption,
+    Resolver, ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes,
 } from '@tsdi/ioc';
 import { Service } from '../services/service';
 import { Middleware, Middlewares, MiddlewareType, Route } from '../middlewares/middleware';
@@ -134,7 +134,7 @@ export interface Boot {
  * @exports {@link Boot}
  */
 export const Boot: Boot = createDecorator<BootMetadata>('Boot', {
-    actionType: 'annoation',
+    actionType: ActionTypes.annoation,
     reflect: {
         class: [
             (ctx, next) => {
@@ -247,7 +247,7 @@ export interface Configure {
  * @exports {@link Configure}
  */
 export const Configure: Configure = createDecorator<ClassMetadata>('Configure', {
-    actionType: 'annoation',
+    actionType: ActionTypes.annoation,
     design: {
         afterAnnoation: (ctx, next) => {
             const { type, injector } = ctx;
@@ -336,7 +336,7 @@ export interface Handle {
  * @exports {@link Handle}
  */
 export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePattern>('Handle', {
-    actionType: ['annoation', 'autorun'],
+    actionType: [ActionTypes.annoation, ActionTypes.autorun],
     props: (parent?: Type<Middlewares> | string, options?: { guards?: Type<CanActive>[], parent?: Type<Middlewares> | string, before?: Type<Middleware> }) =>
         (isString(parent) || isRegExp(parent) ? ({ pattern: parent, ...options }) : ({ parent, ...options })) as HandleMetadata & HandleMessagePattern,
     design: {
@@ -452,7 +452,7 @@ export interface Pipe {
  * @expors {@link Pipe}
  */
 export const Pipe: Pipe = createDecorator<PipeMetadata>('Pipe', {
-    actionType: ['annoation', 'typeProviders'],
+    actionType: [ActionTypes.annoation, ActionTypes.typeProviders],
     reflect: {
         class: (ctx, next) => {
             ctx.reflect.annotation = ctx.metadata;

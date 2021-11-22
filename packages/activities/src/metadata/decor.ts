@@ -1,6 +1,6 @@
 import { AnnotationReflect, RunnableFactoryResolver, Runner } from '@tsdi/boot';
 import { CompilerFacade } from '@tsdi/components';
-import { ClassType, createDecorator, InjectableMetadata } from '@tsdi/ioc';
+import { ActionTypes, ClassType, createDecorator, InjectableMetadata } from '@tsdi/ioc';
 import { ActivityMetadata, WorkflowMetadata } from './meta';
 
 
@@ -35,7 +35,7 @@ import { ActivityMetadata, WorkflowMetadata } from './meta';
  * @Activity
  */
 export const Activity: IActivityDecorator = createDecorator<ActivityMetadata>('Activity', {
-    actionType: ['annoation', 'typeProviders'],
+    actionType: [ActionTypes.annoation, ActionTypes.typeProviders],
     props: (selector: string, option?: InjectableMetadata) => ({ selector, ...option }),
     reflect: {
         class: (ctx, next) => {
@@ -97,7 +97,7 @@ export const Activity: IActivityDecorator = createDecorator<ActivityMetadata>('A
  * @Workflow
  */
 export const Workflow: IWorkflowDecorator = createDecorator<WorkflowMetadata>('Workflow', {
-    actionType: ['annoation', 'typeProviders'],
+    actionType: [ActionTypes.annoation, ActionTypes.typeProviders],
     props: (selector: string, template?: any, option?: InjectableMetadata) => ({ selector, template, ...option }),
     reflect: {
         class: (ctx, next) => {
@@ -170,7 +170,7 @@ export interface TaskDecorator {
  * @Task
  */
 export const Task: TaskDecorator = createDecorator<ActivityMetadata>('Task', {
-    actionType: 'annoation',
+    actionType: ActionTypes.annoation,
     props: (selector: string) => ({ selector }) as ActivityMetadata,
     reflect: {
         class: (ctx, next) => {
