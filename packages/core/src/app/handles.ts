@@ -104,11 +104,7 @@ export class RegisterHandles extends BuildHandles<ApplicationContext> implements
 export const ConfigureServerHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
     const servers = ctx.servers;
     if (servers && servers.length) {
-        await Promise.all(servers.map(svrr => {
-            const svr = svrr.resolve();
-            ctx.onDestroy(svr);
-            return svr.connect(ctx);
-        }));
+        await Promise.all(servers.map(svr => svr.resolve()?.connect(ctx)));
     }
     return await next();
 };
@@ -133,11 +129,7 @@ export class StartupHandles extends BuildHandles<ApplicationContext> implements 
 export const ConfigureServiceHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
     const boots = ctx.services;
     if (boots?.length) {
-        await lang.step(boots.map(rser => () => {
-            const ser = rser.resolve();
-            ctx.onDestroy(ser);
-            return ser.configureService(ctx);
-        }));
+        await lang.step(boots.map(rser => () => rser.resolve()?.configureService(ctx)));
     }
     return await next();
 };
