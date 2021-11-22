@@ -28,18 +28,24 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
     constructor(moduleType: ModuleReflect, providers: ProviderType[] | undefined, readonly parent: Injector,
         readonly scope?: InjectorScope, deps?: Modules[]) {
-        super(undefined, parent, scope);
+        super(undefined, parent, scope ?? moduleType.type as Type);
         const dedupStack: Type[] = [];
         this._typeRefl = moduleType;
         this._type = moduleType.type as Type;
         this.inject(
+            { provide: ApplicationShutdownHandlers, useValue: this.shutdownHandlers },
             { provide: RunnableFactoryResolver, useValue: this.runnableFactoryResolver },
             { provide: OperationFactoryResolver, useValue: this.operationFactoryResolver }
         );
+        if (scope === 'root') {
+            this.parent?.setValue(ApplicationShutdownHandlers, this.shutdownHandlers);
+        }
         this.setValue(ModuleRef, this);
+        const platfrom = this.platform();
+        platfrom.modules.add(this);
         deps && this.use(deps);
         providers && this.inject(providers);
-        this.processInjectorType(this.platform(), this._type, dedupStack, this.moduleReflect);
+        this.processInjectorType(platfrom, this._type, dedupStack, this.moduleReflect);
         this._instance = this.get(this._type);
     }
 
@@ -81,6 +87,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     }
 
     protected override destroying() {
+        this.platform()?.modules.delete(this);
         super.destroying();
         this._defs.clear();
         this._type = null!;

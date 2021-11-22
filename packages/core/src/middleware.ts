@@ -23,7 +23,7 @@ import {
             useExisting: MsgRouteVaildator
         },
         LowerCasePipe, UpperCasePipe, SlicePipe, SortPipe, JsonPipe, DatePipe, DateFormatPipe,
-        ParseStringPipe, ParseBoolPipe, ParseEnumPipe, ParseFloatPipe, ParseIntPipe, ParseNumberPipe, 
+        ParseStringPipe, ParseBoolPipe, ParseEnumPipe, ParseFloatPipe, ParseIntPipe, ParseNumberPipe,
         MessageQueue, Router, RootRouter, RootMessageQueue,
         {
             provide: ContextFactory,

@@ -364,9 +364,16 @@ export abstract class Injector implements Destroyable {
     }
 }
 
+export interface ModuleRef<T = any> extends Destroyable {
+    get injector(): Injector;
+    get moduleType(): Type<T>;
+    get instance(): T;
+}
 
 @Abstract()
 export abstract class Platform implements Destroyable {
+
+    abstract get modules(): Set<ModuleRef>;
     /**
      * platform injector.
      */
@@ -397,7 +404,12 @@ export abstract class Platform implements Destroyable {
      * get injector the type registered in.
      * @param scope
      */
-    abstract getInjector(scope: ClassType | 'root' | 'platform'): Injector;
+    abstract getInjector(scope: ClassType | 'root' | 'platform' | string): Injector;
+    /**
+     * remove injector of scope.
+     * @param scope 
+     */
+    abstract removeInjector(scope: ClassType | 'root' | 'platform' | string): void;
     /**
      * get the type private providers.
      * @param type

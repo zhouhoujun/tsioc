@@ -41,7 +41,7 @@ export interface BootstrapOption extends InvokeOption {
 @Abstract()
 export abstract class ApplicationContext implements Destroyable {
     /**
-     * application injector.
+     * application root module injector.
      */
     abstract get injector(): ModuleRef;
     /**
@@ -136,13 +136,14 @@ export abstract class ApplicationContext implements Destroyable {
      * application bootstraps.
      */
     abstract get bootstraps(): Runnable[];
-
+    /**
+     * destroyed or not.
+     */
     abstract get destroyed(): boolean;
     /**
      * Destroys the component instance and all of the data structures associated with it.
      */
     abstract destroy(): void;
-
     /**
      * A lifecycle hook that provides additional developer-defined cleanup
      * functionality for the component.

@@ -1,4 +1,4 @@
-import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, Injector, Modules, DestroyCallback } from '@tsdi/ioc';
+import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, Injector, Modules } from '@tsdi/ioc';
 import { CTX_ARGS, PROCESS_ROOT } from './metadata/tk';
 import { ApplicationContext, ApplicationFactory, ApplicationExit, ApplicationOption, BootstrapOption } from './Context';
 import { MiddlewareModule } from './middleware';
@@ -15,7 +15,7 @@ import { ModuleFactoryResolver } from './module.factory';
  * @class Application
  */
 export class Application {
-    
+
     readonly root: ModuleRef;
 
     /**
@@ -140,5 +140,3 @@ export class Application {
     }
 
 }
-
-

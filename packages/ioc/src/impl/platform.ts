@@ -6,7 +6,7 @@ import { Action, IActionSetup } from '../action';
 import { get } from '../metadata/refl';
 import { TypeReflect } from '../metadata/type';
 import { ProviderType, StaticProvider } from '../providers';
-import { Injector, Platform } from '../injector';
+import { Injector, ModuleRef, Platform } from '../injector';
 import { DestroyCallback, isDestroy } from '../destroy';
 
 
@@ -22,6 +22,8 @@ export class DefaultPlatform implements Platform {
     private extPdrs: Map<ClassType, ProviderType[]>;
     private scopes: Map<string | ClassType, Injector>;
     private _createdCbs: Set<(value: any, injector: Injector) => void>;
+
+    readonly modules = new Set<ModuleRef>();
 
     constructor(readonly injector: Injector) {
         this.scopes = new Map();
@@ -72,6 +74,10 @@ export class DefaultPlatform implements Platform {
 
     setInjector(scope: ClassType | string, injector: Injector) {
         this.scopes.set(scope, injector);
+    }
+
+    removeInjector(scope: ClassType | 'root' | 'platform'): void {
+        this.scopes.delete(scope);
     }
 
     /**
@@ -182,6 +188,7 @@ export class DefaultPlatform implements Platform {
             this._dsryCbs.clear();
             this._createdCbs.clear();
             this.scopes.clear();
+            this.modules.clear();
             this.extPdrs.clear();
             this.actions.clear();
             this.singletons.clear();

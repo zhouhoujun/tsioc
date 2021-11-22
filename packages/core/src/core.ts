@@ -2,8 +2,7 @@ import { Inject, IocExt, Injector, ProviderType } from '@tsdi/ioc';
 import { DefaultConfigureManager, ConfigureMergerImpl } from './configure/manager';
 import { BootLifeScope } from './app/lifescope';
 import { ApplicationFactory } from './Context';
-import { isShutdown } from './shutdown';
-import { ModuleRef } from './module.ref';
+import { ApplicationShutdownHandlers, isShutdown } from './shutdown';
 import { ModuleFactoryResolver } from './module.factory';
 import { DefaultModuleFactoryResolver } from './module/module';
 import { DefaultApplicationFactory } from './app/ctx';
@@ -30,8 +29,8 @@ export class CoreModule {
 
         platform.registerAction(BootLifeScope);
         platform.onInstanceCreated((value, inj) => {
-            if (isShutdown(value) && inj instanceof ModuleRef) {
-                inj.shutdownHandlers.add(value);
+            if (isShutdown(value)) {
+                inj.get(ApplicationShutdownHandlers)?.add(value);
             }
         });
 
