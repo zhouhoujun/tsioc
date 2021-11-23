@@ -1,8 +1,8 @@
 import { Abstract } from '@tsdi/ioc';
-import { Client } from '@tsdi/core';
+import { Client, Disposable } from '@tsdi/core';
 
 @Abstract()
-export abstract class AbstractClient implements Client {
+export abstract class AbstractClient implements Client, Disposable {
 
     connect(): void | Promise<void> {
         

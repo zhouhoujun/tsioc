@@ -31,8 +31,6 @@ export * from './module/runnable';
 
 // applications
 export * from './context.impl';
-// export * from './app/handles';
-// export * from './app/lifescope';
 
 export * from './Application';
 

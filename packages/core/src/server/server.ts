@@ -1,10 +1,9 @@
 import { Abstract, Destroy, Resolver } from '@tsdi/ioc';
-import { Disposable } from '../dispose';
 
 /**
  * server.
  */
-export interface Server extends Disposable {
+export interface Server {
     /**
      * connect server
      */
