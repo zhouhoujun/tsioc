@@ -1,15 +1,15 @@
 import { Token, ProviderType, Type, isFunction, isBoolean, ModuleMetadata, DestroyCallback } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
-import { CONFIGURATION, PROCESS_ROOT } from '../metadata/tk';
-import { Configuration, ConfigureManager } from '../configure/config';
-import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from '../Context';
-import { Runnable, RunnableFactory, RunnableFactoryResolver } from '../runnable';
-import { Response, Request, Context, MessageQueue, RequestInit, RequestOption, ROOT_QUEUE } from '../middlewares';
-import { ModuleRef } from '../module.ref';
-import { ApplicationArguments } from '../shutdown';
-import { ServerSet } from '../server';
-import { ClientSet } from '../client';
-import { ServiceSet } from '../services/service';
+import { CONFIGURATION, PROCESS_ROOT } from './metadata/tk';
+import { Configuration, ConfigureManager } from './configure/config';
+import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from './context';
+import { Runnable, RunnableFactory, RunnableFactoryResolver } from './runnable';
+import { Response, Request, Context, MessageQueue, RequestInit, RequestOption, ROOT_QUEUE } from './middlewares';
+import { ModuleRef } from './module.ref';
+import { ApplicationArguments } from './shutdown';
+import { ServerSet } from './server';
+import { ClientSet } from './client';
+import { ServiceSet } from './services/service';
 
 
 

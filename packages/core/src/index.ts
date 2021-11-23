@@ -15,7 +15,7 @@ export * from './metadata/tk';
 export * from './dispose';
 export * from './shutdown';
 export * from './runnable';
-export * from './Context';
+export * from './context';
 export * from './global';
 
 export * from './pipes';
@@ -30,7 +30,7 @@ export * from './module/module';
 export * from './module/runnable';
 
 // applications
-export * from './app/ctx';
+export * from './context.impl';
 // export * from './app/handles';
 // export * from './app/lifescope';
 

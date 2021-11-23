@@ -1,7 +1,7 @@
 import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, Injector, Modules } from '@tsdi/ioc';
 import { DebugLogAspect, LogConfigureToken, LogModule } from '@tsdi/logs';
 import { CONFIGURATION, PROCESS_ROOT } from './metadata/tk';
-import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from './Context';
+import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from './context';
 import { Disposable } from './dispose';
 import { ApplicationArguments, ApplicationExit } from './shutdown';
 import { ServerSet } from './server';

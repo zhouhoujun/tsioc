@@ -1,6 +1,6 @@
 import { Type, refl, lang, TypeReflect, OperationFactoryResolver, EMPTY } from '@tsdi/ioc';
 import { Runnable, RunnableFactory, RunnableFactoryResolver } from '../runnable';
-import { ApplicationContext, BootstrapOption } from '../Context';
+import { ApplicationContext, BootstrapOption } from '../context';
 import { ModuleRef } from '../module.ref';
 
 

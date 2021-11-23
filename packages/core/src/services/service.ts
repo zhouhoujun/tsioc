@@ -1,5 +1,5 @@
 import { Abstract, Destroy, Resolver } from '@tsdi/ioc';
-import { ApplicationContext } from '../Context';
+import { ApplicationContext } from '../context';
 
 /**
  * configure services for application.

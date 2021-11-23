@@ -1,5 +1,5 @@
 import { Abstract, Type } from '@tsdi/ioc';
-import { ApplicationContext, BootstrapOption } from './Context';
+import { ApplicationContext, BootstrapOption } from './context';
 
 /**
  * runnable

@@ -1,10 +1,10 @@
 import { Inject, IocExt, Injector, ProviderType, Resolver, lang } from '@tsdi/ioc';
 import { DefaultConfigureManager, ConfigureMergerImpl } from './configure/manager';
-import { ApplicationContext, ApplicationFactory } from './Context';
+import { ApplicationContext, ApplicationFactory } from './context';
 import { ApplicationShutdownHandlers, createShutdown, isShutdown } from './shutdown';
 import { ModuleFactoryResolver } from './module.factory';
 import { DefaultModuleFactoryResolver } from './module/module';
-import { DefaultApplicationFactory } from './app/ctx';
+import { DefaultApplicationFactory } from './context.impl';
 import { isDisposable } from './dispose';
 import { Server, ServerSet } from './server';
 import { Client, ClientSet } from './client';

@@ -1,5 +1,5 @@
 import { Autorun, Singleton, Token, tokenId } from '@tsdi/ioc';
-import { ApplicationContext } from '../Context';
+import { ApplicationContext } from '../context';
 import { Context } from './context';
 import { MessageQueue } from './queue';
 import { RootRouter } from './router';
