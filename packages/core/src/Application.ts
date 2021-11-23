@@ -100,7 +100,7 @@ export class Application implements Disposable {
             await this.statupServers(ctx.servers);
             await this.statupClients(ctx.clients);
             await this.statupServices(ctx, ctx.services);
-            await this.bootstrap(ctx, this.root.moduleReflect.bootstrap);
+            await this.bootstraps(ctx, this.root.moduleReflect.bootstrap);
             return ctx;
         } catch (err) {
             if (this.context) {
@@ -141,7 +141,7 @@ export class Application implements Disposable {
         return container.resolve({ token: ModuleFactoryResolver, target: option.type }).resolve(option.type).create(container, option);
     }
 
-    protected async createContext() {
+    protected async createContext(): Promise<ApplicationContext> {
         if (!this.context) {
             const target = this.target;
             const root = this.root;
@@ -187,25 +187,25 @@ export class Application implements Disposable {
         }
     }
 
-    protected async statupServers(servers: ServerSet) {
+    protected async statupServers(servers: ServerSet): Promise<void> {
         if (servers?.count) {
             await servers.connent();
         }
     }
 
-    protected async statupClients(clients: ClientSet) {
+    protected async statupClients(clients: ClientSet): Promise<void> {
         if (clients?.count) {
             await clients.connent();
         }
     }
 
-    protected async statupServices(ctx: ApplicationContext, services: ServiceSet) {
+    protected async statupServices(ctx: ApplicationContext, services: ServiceSet): Promise<void> {
         if (services?.count) {
             await services.configuration(ctx);
         }
     }
 
-    protected async bootstrap(ctx: ApplicationContext, bootstraps?: Type[]) {
+    protected async bootstraps(ctx: ApplicationContext, bootstraps?: Type[]): Promise<void> {
         if (bootstraps && bootstraps.length) {
             await Promise.all(bootstraps.map(b => ctx.bootstrap(b)));
         }

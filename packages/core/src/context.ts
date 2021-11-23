@@ -1,6 +1,6 @@
 import {
     ProviderType, LoadType, Injector, Abstract, Type, InvokeOption,
-    ModuleLoader, Destroyable, Modules, Resolver, DestroyCallback
+    ModuleLoader, Destroyable, Modules, DestroyCallback
 } from '@tsdi/ioc';
 import { ILoggerManager } from '@tsdi/logs';
 import { Configuration, ConfigureManager } from './configure/config';
@@ -9,9 +9,9 @@ import { Response } from './middlewares/response';
 import { Context } from './middlewares/context';
 import { MessageQueue } from './middlewares/queue';
 import { Runnable, RunnableFactory } from './runnable';
-import { Service, ServiceSet } from './services/service';
-import { Client, ClientSet } from './client';
-import { Server, ServerSet } from './server';
+import { ServiceSet } from './services/service';
+import { ClientSet } from './client';
+import { ServerSet } from './server';
 import { ModuleOption } from './module.factory';
 import { ModuleRef } from './module.ref';
 import { ApplicationArguments } from './shutdown';

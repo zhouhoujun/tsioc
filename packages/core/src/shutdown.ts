@@ -1,5 +1,5 @@
 import { Abstract, isFunction, isTypeObject } from '@tsdi/ioc';
-import { isDisposable } from '.';
+import { isDisposable } from './dispose';
 
 /**
  * application shutdown hooks
