@@ -1,18 +1,14 @@
-import { Destroy } from '@tsdi/ioc';
+import { Disposable } from '../dispose';
+
 
 /**
  * client proxy
  */
-export interface Client extends Destroy {
+export interface Client extends Disposable {
     /**
      * connect server
      */
     connect(): void | Promise<void>;
-
-    /**
-     * close client.
-     */
-    close(): void | Promise<void>;
 
     /**
      * send message.

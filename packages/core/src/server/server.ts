@@ -10,8 +10,4 @@ export interface Server extends Disposable {
      */
     connect(ctx: ApplicationContext): void | Promise<void>;
 
-    /**
-     * disconnect server.
-     */
-    disconnect(): void | Promise<void>;
 }
