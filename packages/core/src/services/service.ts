@@ -1,4 +1,4 @@
-import { Destroy } from '@tsdi/ioc';
+import { Abstract, Destroy, Resolver } from '@tsdi/ioc';
 import { ApplicationContext } from '../Context';
 
 /**
@@ -16,16 +16,25 @@ export interface Service extends Destroy {
 
 
 
+@Abstract()
+export abstract class ServiceSet implements Destroy {
+    /**
+     * the service count.
+     */
+    abstract get count(): number;
 
-// export class ServiceSet {
+    abstract getAll(): Resolver<Service>[];
+    /**
+     * clear service resolver.
+     */
+    abstract clear(): void;
+    /**
+     * configuration all service.
+     */
+    abstract configuration(ctx: ApplicationContext): Promise<void>;
+    /**
+     * destory this.
+     */
+    abstract destroy(): void
+}
 
-//     private servis: Set<ServiceRef>;
-//     constructor() {
-
-//     }
-
-//     add() {
-
-//     }
-
-// }

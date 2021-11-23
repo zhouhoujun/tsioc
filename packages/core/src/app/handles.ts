@@ -91,7 +91,7 @@ export const ConfigureLoadHandle = async function (ctx: ApplicationContext, next
 export class RegisterHandles extends BuildHandles<ApplicationContext> implements IActionSetup {
 
     setup() {
-        this.use(ConfigureServerHandle);
+        this.use(ConfigureServerHandle, ConfigureClientHandle);
     }
 }
 
@@ -103,8 +103,21 @@ export class RegisterHandles extends BuildHandles<ApplicationContext> implements
  */
 export const ConfigureServerHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
     const servers = ctx.servers;
-    if (servers && servers.length) {
-        await Promise.all(servers.map(svr => svr.resolve()?.connect(ctx)));
+    if (servers?.count) {
+        await servers.connent();
+    }
+    return await next();
+};
+
+/**
+ * configure register client handle.
+ *
+ * @export
+ */
+export const ConfigureClientHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
+    const clients = ctx.clients;
+    if (clients?.count) {
+        await clients.connent();
     }
     return await next();
 };
@@ -127,9 +140,9 @@ export class StartupHandles extends BuildHandles<ApplicationContext> implements 
  * @param next next step.
  */
 export const ConfigureServiceHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
-    const boots = ctx.services;
-    if (boots?.length) {
-        await lang.step(boots.map(rser => () => rser.resolve()?.configureService(ctx)));
+    const services = ctx.services;
+    if (services?.count) {
+        await services.configuration(ctx);
     }
     return await next();
 };

@@ -866,12 +866,20 @@ export function generateRecord<T>(platfrom: Platform, injector: Injector, provid
             deps = [{ token: provider.useClass, options: OptionFlags.Default }];
         }
         if (!injector.has(type, InjectFlags.Default)) {
-            injector.register({ type, deps, regProvides: false });
+            injector.register({ singleton: provider.singleton, type, deps, regProvides: false });
         }
     } else if (isFunction(provider.provide)) {
-        fnType = FnType.Cotr;
-        fn = provider.provide;
-        type = provider.provide;
+        if (deps) {
+            fnType = FnType.Cotr;
+            fn = provider.provide;
+            type = provider.provide;
+        } else {
+            deps = [{ token: provider.provide, options: OptionFlags.Default }];
+            type = provider.provide;
+            if (!injector.has(type, InjectFlags.Default)) {
+                injector.register({ singleton: provider.singleton, type, deps, regProvides: false });
+            }
+        }
     }
     return { value, fn, fnType, deps, type };
 }

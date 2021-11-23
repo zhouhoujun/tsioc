@@ -1,12 +1,15 @@
 import { Token, ProviderType, Type, isFunction, isBoolean, ModuleMetadata, DestroyCallback } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
-import { SERVICES, CONFIGURATION, PROCESS_ROOT, SERVERS } from '../metadata/tk';
+import { CONFIGURATION, PROCESS_ROOT } from '../metadata/tk';
 import { Configuration, ConfigureManager } from '../configure/config';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from '../Context';
 import { Runnable, RunnableFactory, RunnableFactoryResolver } from '../runnable';
 import { Response, Request, Context, MessageQueue, RequestInit, RequestOption, ROOT_QUEUE } from '../middlewares';
 import { ModuleRef } from '../module.ref';
 import { ApplicationArguments } from '../shutdown';
+import { ServerSet } from '../server';
+import { ClientSet } from '../client';
+import { ServiceSet } from '../services/service';
 
 
 
@@ -37,11 +40,15 @@ export class DefaultApplicationContext extends ApplicationContext {
     }
 
     get services() {
-        return this.injector.get(SERVICES);
+        return this.injector.get(ServiceSet);
     }
 
     get servers() {
-        return this.injector.get(SERVERS);
+        return this.injector.get(ServerSet);
+    }
+
+    get clients() {
+        return this.injector.get(ClientSet);
     }
 
     get destroyed() {
@@ -143,7 +150,7 @@ export class DefaultApplicationContext extends ApplicationContext {
     */
     destroy() {
         if (this._destroyed) return;
-        if (!this.injector.shutdownHandlers.disposed) {
+        if (!this.injector.destroyed && !this.injector.shutdownHandlers.disposed) {
             return this.dispose();
         } else {
             this._destroyed = true;

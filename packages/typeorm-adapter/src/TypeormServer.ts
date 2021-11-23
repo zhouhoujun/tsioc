@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { ILogger } from '@tsdi/logs';
+import { ILogger, Logger } from '@tsdi/logs';
 import { Type, isString, isArray, Injector, isFunction, EMPTY, isNil } from '@tsdi/ioc';
 import {
     ConnectionOptions, Configuration, ApplicationContext, Configure, Server, createModelResolver,
@@ -19,17 +19,20 @@ export class TypeormServer implements Server {
      * default connection options.
      */
     protected options!: ConnectionOptions;
-    protected ctx!: ApplicationContext;
+    
+    @Logger() private logger!: ILogger;
+    
+    constructor(protected ctx: ApplicationContext) {
 
-    private logger!: ILogger;
+    }
+
     /**
      * configure service.
      * @param ctx context.
      */
-    async connect(ctx: ApplicationContext): Promise<void> {
-        this.ctx = ctx;
-        const logger = this.logger = ctx.getLogManager()?.getLogger();
-        logger?.info('startup db connections');
+    async connect(): Promise<void> {
+        let ctx = this.ctx;
+        this.logger.info('startup db connections');
         const config = this.ctx.getConfiguration();
         const injector = ctx.injector;
 

@@ -148,14 +148,14 @@ export class InvocationContext<T = any> implements Destroyable {
     }
 
     canResolve(type: Parameter): boolean {
-        return  type.resolver?.canResolve(type, this) || this.argumentResolvers.some(r => r.canResolve(type, this)) || this.parent?.canResolve(type) || false;
+        return type.resolver?.canResolve(type, this) || this.argumentResolvers.some(r => r.canResolve(type, this)) || this.parent?.canResolve(type) || false;
     }
 
     resolveArgument<T>(argumentType: Parameter<T>): T | null {
         let result: T | undefined;
-        if(argumentType.resolver && argumentType.resolver.canResolve(argumentType, this)){
+        if (argumentType.resolver && argumentType.resolver.canResolve(argumentType, this)) {
             result = argumentType.resolver.resolve(argumentType, this);
-            if(isDefined(result)) return result;
+            if (isDefined(result)) return result;
         }
         this.argumentResolvers.some(r => {
             if (r.canResolve(argumentType, this)) {

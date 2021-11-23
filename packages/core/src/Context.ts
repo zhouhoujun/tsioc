@@ -9,8 +9,9 @@ import { Response } from './middlewares/response';
 import { Context } from './middlewares/context';
 import { MessageQueue } from './middlewares/queue';
 import { Runnable, RunnableFactory } from './runnable';
-import { Service } from './services/service';
-import { Server } from './server/server';
+import { Service, ServiceSet } from './services/service';
+import { Client, ClientSet } from './client';
+import { Server, ServerSet } from './server';
 import { ModuleOption } from './module.factory';
 import { ModuleRef } from './module.ref';
 import { ApplicationArguments } from './shutdown';
@@ -127,11 +128,15 @@ export abstract class ApplicationContext implements Destroyable, Disposable {
     /**
      * application services.
      */
-    abstract get services(): Resolver<Service>[];
+    abstract get services(): ServiceSet;
     /**
      * application servers.
      */
-    abstract get servers(): Resolver<Server>[]
+    abstract get servers(): ServerSet;
+    /**
+     * application clients.
+     */
+     abstract get clients(): ClientSet;
     /**
      * application bootstraps.
      */

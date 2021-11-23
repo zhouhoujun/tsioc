@@ -1,15 +1,102 @@
-import { Inject, IocExt, Injector, ProviderType } from '@tsdi/ioc';
+import { Inject, IocExt, Injector, ProviderType, Resolver, lang, Singleton } from '@tsdi/ioc';
 import { DefaultConfigureManager, ConfigureMergerImpl } from './configure/manager';
 import { BootLifeScope } from './app/lifescope';
-import { ApplicationFactory } from './Context';
+import { ApplicationContext, ApplicationFactory } from './Context';
 import { ApplicationShutdownHandlers, createShutdown, isShutdown } from './shutdown';
 import { ModuleFactoryResolver } from './module.factory';
 import { DefaultModuleFactoryResolver } from './module/module';
 import { DefaultApplicationFactory } from './app/ctx';
 import { isDisposable } from './dispose';
+import { Server, ServerSet } from './server';
+import { Client, ClientSet } from './client';
+import { Service, ServiceSet } from './services/service';
+
+
+class ServiceSetImpl extends ServiceSet {
+
+    private _sets: Resolver<Service>[] = [];
+    get count(): number {
+        return this._sets.length;
+    }
+
+    getAll(): Resolver<Service>[] {
+        return this._sets;
+    }
+
+    async configuration(ctx: ApplicationContext): Promise<void> {
+        if (this._sets.length) {
+            await lang.step(this._sets.map(rser => () => rser.resolve()?.configureService(ctx)));
+        }
+    }
+
+    clear(): void {
+        this._sets = [];
+    }
+    destroy(): void {
+        this.clear();
+    }
+
+}
+
+class ClientSetImpl extends ClientSet {
+    private _set = new Set<Resolver<Client>>();
+    get count(): number {
+        return this._set.size;
+    }
+    add(resolver: Resolver<Client>): void {
+        this._set.add(resolver);
+    }
+    remove(resolver: Resolver<Client>): void {
+        this._set.delete(resolver);
+    }
+    clear(): void {
+        this._set.clear();
+    }
+
+    async connent(): Promise<void> {
+        if (this._set.size) {
+            await Promise.all(Array.from(this._set).map(clt => clt.resolve()?.connect()));
+        }
+    }
+
+    destroy(): void {
+        this.clear();
+    }
+
+}
+
+class ServerSetImpl extends ServerSet {
+    private _set = new Set<Resolver<Server>>();
+    get count(): number {
+        return this._set.size;
+    }
+    add(resolver: Resolver<Server>): void {
+        this._set.add(resolver);
+    }
+    remove(resolver: Resolver<Server>): void {
+        this._set.delete(resolver);
+    }
+    clear(): void {
+        this._set.clear();
+    }
+
+    async connent(): Promise<void> {
+        if (this._set.size) {
+            await Promise.all(Array.from(this._set).map(svr => svr.resolve()?.connect()));
+        }
+    }
+
+    destroy(): void {
+        this.clear();
+    }
+
+}
 
 
 export const DEFAULTA_FACTORYS: ProviderType[] = [
+    { provide: ServerSet, useClass: ServerSetImpl, singleton: true },
+    { provide: ClientSet, useClass: ClientSetImpl, singleton: true },
+    { provide: ServiceSet, useClass: ServiceSetImpl, singleton: true },
     { provide: ModuleFactoryResolver, useValue: new DefaultModuleFactoryResolver() },
     { provide: ApplicationFactory, useValue: new DefaultApplicationFactory() }
 ]

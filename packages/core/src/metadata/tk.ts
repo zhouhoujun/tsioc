@@ -1,19 +1,8 @@
-import { tokenId, Token, Resolver } from '@tsdi/ioc';
+import { tokenId, Token } from '@tsdi/ioc';
 import { Configuration } from '../configure/config';
 import { Context } from '../middlewares/context';
-import { Service } from '../services/service';
-import { Server } from '../server/server';
 
 
-/**
- * config servers.
- */
- export const SERVERS = tokenId<Resolver<Server>[]>('SERVERS');
-
-/**
- * boot services.
- */
-export const SERVICES = tokenId<Resolver<Service>[]>('SERVICES');
 
 /**
  * config token.

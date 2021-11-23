@@ -1,9 +1,9 @@
 import {
-    isUndefined, ROOT_INJECTOR, EMPTY_OBJ, isArray, isString, lang, Type, isRegExp,
+    isUndefined, EMPTY_OBJ, isArray, isString, lang, Type, isRegExp,
     createDecorator, ClassMethodDecorator, ClassMetadata, createParamDecorator, ParameterMetadata,
     Resolver, ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes,
 } from '@tsdi/ioc';
-import { Service } from '../services/service';
+import { Service, ServiceSet } from '../services/service';
 import { Middleware, Middlewares, MiddlewareType, Route } from '../middlewares/middleware';
 import { ROOT_QUEUE } from '../middlewares/root';
 import { CanActive } from '../middlewares/guard';
@@ -12,8 +12,7 @@ import { RootRouter, Router } from '../middlewares/router';
 import { MappingReflect, RouteMappingRef, ProtocolRouteMappingMetadata } from '../middlewares/mapping';
 import { BootMetadata, HandleMetadata, HandlesMetadata, PipeMetadata, HandleMessagePattern } from './meta';
 import { PipeTransform } from '../pipes/pipe';
-import { Server } from '../server/server';
-import { SERVICES, SERVERS } from './tk';
+import { Server, ServerSet } from '../server/server';
 import { getModuleType } from '../module.ref';
 
 
@@ -147,13 +146,7 @@ export const Boot: Boot = createDecorator<BootMetadata>('Boot', {
     design: {
         afterAnnoation: (ctx, next) => {
             const { type, injector } = ctx;
-            const root = injector.get(ROOT_INJECTOR);
-            if (!root) return next();
-            let boots = root.get(SERVICES);
-            if (!boots) {
-                boots = [];
-                root.setValue(SERVICES, boots);
-            }
+            let boots = injector.get(ServiceSet).getAll();
             const meta = ctx.reflect.annotation as BootMetadata;
 
             let existIdx = boots.findIndex(b => b.type === type);
@@ -251,16 +244,9 @@ export const Configure: Configure = createDecorator<ClassMetadata>('Configure', 
     design: {
         afterAnnoation: (ctx, next) => {
             const { type, injector } = ctx;
-            const root = injector.get(ROOT_INJECTOR);
-            if (!root) return next();
-            let servs = root.get(SERVERS);
+            let servs = injector.get(ServerSet);
             const resolver = { type, resolve: (ctx) => injector.get(type, ctx) } as Resolver;
-            if (!servs) {
-                servs = [resolver];
-                root.setValue(SERVERS, servs);
-            } else {
-                servs.push(resolver);
-            }
+            servs.add(resolver);
             return next();
         }
     },
