@@ -7,7 +7,7 @@ import {
 import { ModuleFactory, ModuleFactoryResolver, ModuleOption } from '../module.factory';
 import { ModuleRef } from '../module.ref';
 import { RunnableFactoryResolver } from '../runnable';
-import { ApplicationShutdownHandlers, OnShutdown } from '../shutdown';
+import { ApplicationShutdownHandlers, Shutdown } from '../shutdown';
 import { DefaultRunnableFactoryResolver } from './runnable';
 
 
@@ -86,17 +86,18 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         } catch (err) {
             throw err;
         } finally {
-            this.destroy();
+            super.destroy();
         }
     }
 
 
     override destroy() {
-        if (!this.destroyed && !this.shutdownHandlers.enabled) {
-            this.shutdownHandlers.run()
-            throw new Error('Application has not shutdown, can not destory application.')
+        if (this.destroyed) return;
+        if (!this.shutdownHandlers.disposed) {
+            return this.dispose();
+        } else {
+            super.destroy();
         }
-        super.destroy();
     }
 
     protected override destroying() {
@@ -118,34 +119,41 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
 export class DefaultApplicationShutdownHandlers extends ApplicationShutdownHandlers {
 
-    private shutdowns: Set<OnShutdown>;
-    private _enabled = false;
+    private shutdowns: Shutdown[];
+    private _disposed = false;
     constructor() {
         super()
-        this.shutdowns = new Set();
+        this.shutdowns = [];
     }
 
-    get enabled(): boolean {
-        return this.shutdowns.size === 0 || this._enabled;
+    get disposed(): boolean {
+        return this.shutdowns.length === 0 || this._disposed;
     }
+
     async run(): Promise<void> {
-        if (!this._enabled) {
-            this._enabled = true;
-            await Promise.all(Array.from(this.shutdowns.values())
-                .map(s => Promise.resolve(s && s.onApplicationShutdown())));
+        if (!this._disposed) {
+            this._disposed = true;
+            await Promise.all(this.shutdowns.map(s => s && s.run()));
+            this.clear();
         }
     }
-    add(shutdown: OnShutdown): void {
-        this.shutdowns.add(shutdown);
+
+    has(shutdown: Shutdown | any): boolean {
+        return this.shutdowns.some(i => i === shutdown || i.target === shutdown.target);
+    }
+    add(shutdown: Shutdown): void {
+        if (this.shutdowns.some(i => i.target === shutdown.target)) return;
+        this.shutdowns.unshift(shutdown);
     }
     clear(): void {
-        this.shutdowns.clear();
+        this.shutdowns = [];
     }
     forEach(callback: (value: any) => void): void {
         this.shutdowns.forEach(callback);
     }
-    remove(shutdown: OnShutdown): void {
-        this.shutdowns.delete(shutdown);
+    remove(shutdown: Shutdown | any): void {
+        let idx = this.shutdowns.findIndex(i => i === shutdown || i.target === shutdown.target);
+        if (idx >= 0) this.shutdowns.splice(idx, 1);
     }
 }
 

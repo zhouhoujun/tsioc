@@ -93,8 +93,13 @@ export class Application implements Disposable {
             }
             return ctx;
         } catch (err) {
-            const logger = this.context?.getLogManager()?.getLogger();
-            logger ? logger.error(err) : console.error(err);
+            if (this.context) {
+                const logger = this.context.getLogManager()?.getLogger();
+                logger ? logger.error(err) : console.error(err);
+                await this.context.dispose();
+            } else {
+                console.error(err);
+            }
             throw err;
         }
     }

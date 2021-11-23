@@ -144,7 +144,12 @@ export class BootstrapHandles extends BuildHandles<ApplicationContext> implement
     }
 }
 
-
+/**
+ * bootstrap.
+ * @param ctx 
+ * @param next 
+ * @returns 
+ */
 export const ModuleBootstrap = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
     const injector = ctx.injector;
     if (injector.moduleReflect.bootstrap && injector.moduleReflect.bootstrap.length) {

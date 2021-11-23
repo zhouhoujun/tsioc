@@ -1,10 +1,10 @@
-import { Destroy } from '@tsdi/ioc';
 import { ApplicationContext } from '../Context';
+import { Disposable } from '../dispose';
 
 /**
  * server.
  */
-export interface Server extends Destroy {
+export interface Server extends Disposable {
     /**
      * connect server
      */

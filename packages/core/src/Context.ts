@@ -137,7 +137,7 @@ export abstract class ApplicationContext implements Destroyable, Disposable {
      */
     abstract get bootstraps(): Runnable[];
     /**
-     * dispose service.
+     * dispose application.
      */
     abstract dispose(): Promise<void>;
     /**
@@ -147,7 +147,7 @@ export abstract class ApplicationContext implements Destroyable, Disposable {
     /**
      * Destroys the component instance and all of the data structures associated with it.
      */
-    abstract destroy(): void;
+    abstract destroy(): void | Promise<void>;
     /**
      * A lifecycle hook that provides additional developer-defined cleanup
      * functionality for the component.

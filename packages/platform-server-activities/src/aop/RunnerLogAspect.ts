@@ -1,4 +1,4 @@
-import { Inject, lang, IContainer, CONTAINER} from '@tsdi/ioc';
+import { Inject, lang, Container } from '@tsdi/ioc';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LogProcess } from '@tsdi/logs';
 import { WorkflowInstance } from '@tsdi/activities';
@@ -18,7 +18,7 @@ const prettyTime = require('pretty-hrtime');
 })
 export class RunnerLogAspect extends LogProcess {
 
-    constructor(@Inject(CONTAINER) container: IContainer) {
+    constructor(@Inject() container: Container) {
         super(container);
     }
 

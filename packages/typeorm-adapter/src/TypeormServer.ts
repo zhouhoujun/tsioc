@@ -22,7 +22,6 @@ export class TypeormServer implements Server {
     protected ctx!: ApplicationContext;
 
     private logger!: ILogger;
-    private destroyed = false;
     /**
      * configure service.
      * @param ctx context.
@@ -161,18 +160,19 @@ export class TypeormServer implements Server {
         return getConnection(connectName ?? this.options?.name);
     }
 
-    disconnect() {
+    async disconnect(): Promise<void> {
         this.logger?.info('close db connections');
-        getConnectionManager().connections?.forEach(c => {
+        await Promise.all(getConnectionManager().connections?.map(async c => {
             if (c && c.isConnected) {
-                c.close()
+                await c.close();
             }
-        });
+        }));
     }
 
-    destroy(): void {
-        if (this.destroyed) return;
-        this.destroyed = true;
-        this.disconnect();
+    async dispose(): Promise<void> {
+        await this.disconnect();
+        this.logger = null!;
+        this.ctx = null!;
+        this.options = null!;
     }
 }

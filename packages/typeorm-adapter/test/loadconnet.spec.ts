@@ -100,7 +100,7 @@ export class LoadReposTest {
 
     @After()
     async after() {
-        this.ctx.destroy();
+        await this.ctx.dispose();
     }
 
 }

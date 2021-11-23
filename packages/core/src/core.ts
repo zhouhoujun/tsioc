@@ -2,10 +2,11 @@ import { Inject, IocExt, Injector, ProviderType } from '@tsdi/ioc';
 import { DefaultConfigureManager, ConfigureMergerImpl } from './configure/manager';
 import { BootLifeScope } from './app/lifescope';
 import { ApplicationFactory } from './Context';
-import { ApplicationShutdownHandlers, isShutdown } from './shutdown';
+import { ApplicationShutdownHandlers, createShutdown, isShutdown } from './shutdown';
 import { ModuleFactoryResolver } from './module.factory';
 import { DefaultModuleFactoryResolver } from './module/module';
 import { DefaultApplicationFactory } from './app/ctx';
+import { isDisposable } from './dispose';
 
 
 export const DEFAULTA_FACTORYS: ProviderType[] = [
@@ -28,9 +29,12 @@ export class CoreModule {
         const platform = injector.platform();
 
         platform.registerAction(BootLifeScope);
-        platform.onInstanceCreated((value, inj) => {
-            if (isShutdown(value)) {
-                inj.get(ApplicationShutdownHandlers)?.add(value);
+        platform.onInstanceCreated((target, inj) => {
+            if (isShutdown(target) || isDisposable(target)) {
+                const hdrs = inj.get(ApplicationShutdownHandlers);
+                if (hdrs && !hdrs.has(target)) {
+                    hdrs.add(createShutdown(target));
+                }
             }
         });
 

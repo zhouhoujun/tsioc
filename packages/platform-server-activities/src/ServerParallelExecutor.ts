@@ -1,6 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
 import { ParallelExecutor } from '@tsdi/activities';
-import { syncRequire } from '@tsdi/platform-server';
 
 @Injectable()
 export class ServerParallelExecutor extends ParallelExecutor {
@@ -11,7 +10,7 @@ export class ServerParallelExecutor extends ParallelExecutor {
     override run<T>(func: (item: T) => any, items: T[], ...args: any[]) {
         let napa;
         try {
-            napa = syncRequire('napajs');
+            napa = require('napajs');
         } catch { }
 
         if (napa) {

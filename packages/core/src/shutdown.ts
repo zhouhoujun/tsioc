@@ -1,4 +1,6 @@
 import { Abstract, isFunction, isTypeObject } from '@tsdi/ioc';
+import { isDisposable } from '.';
+
 /**
  * application shutdown hooks
  */
@@ -29,14 +31,67 @@ export abstract class ApplicationExit {
     abstract register(): void;
 }
 
+/**
+ * application arguments.
+ */
 @Abstract()
 export abstract class ApplicationArguments {
+    /**
+     * process args source
+     */
     abstract get argsSource(): string[];
+    /**
+     * process args map.
+     */
     abstract get args(): Record<string, string>;
+    /**
+     * process args command.
+     */
     abstract get cmds(): string[];
-    abstract get env(): Record<string, string|undefined>;
+    /**
+     * process env
+     */
+    abstract get env(): Record<string, string | undefined>;
+    /**
+     * process exit signls.
+     */
     abstract get signls(): string[];
+    /**
+     * reset args.
+     * @param args 
+     */
     abstract reset(args: string[]): void;
+}
+
+/**
+ * application shutdown
+ */
+export interface Shutdown<T = any> {
+    /**
+     * shundown target.
+     */
+    target: T;
+    /**
+     * run shutdown.
+     */
+    run(): Promise<void>;
+}
+
+export function createShutdown(target: any, run?: () => Promise<void>) {
+    if (!run) {
+        run = async () => {
+            if (isDisposable(target)) {
+                await target.dispose();
+            }
+            if (isShutdown(target)) {
+                await target.onApplicationShutdown();
+            }
+        }
+    }
+    return {
+        target,
+        run
+    }
 }
 
 /**
@@ -45,15 +100,20 @@ export abstract class ApplicationArguments {
 @Abstract()
 export abstract class ApplicationShutdownHandlers {
     /**
+     * has shutdown hooks or not.
+     * @param shutdown 
+     */
+    abstract has(shutdown: Shutdown|any): boolean;
+    /**
      * add shutdown hooks
      * @param shutdown 
      */
-    abstract add(shutdown: OnShutdown): void;
+    abstract add(shutdown: Shutdown): void;
     /**
      * remove shutdown hooks
-     * @param shutdown 
+     * @param shutdown shutdown or shutdown target.
      */
-    abstract remove(shutdown: OnShutdown): void;
+    abstract remove(shutdown: Shutdown | any): void;
     /**
      * clear all shutdown hooks.
      */
@@ -61,7 +121,7 @@ export abstract class ApplicationShutdownHandlers {
     /** 
      * shutdown enabled or not
      */
-    abstract get enabled(): boolean;
+    abstract get disposed(): boolean;
     /**
      * run all shutdown hooks.
      */

@@ -113,8 +113,6 @@ export class ServerApplicationArguments extends ApplicationArguments {
         const sigs = this.env.signls || this._args.signls;
         return sigs ? (isString(sigs) ? sigs.split(',') : signls) : EMPTY;
     }
-
-
 }
 
 @Singleton()
