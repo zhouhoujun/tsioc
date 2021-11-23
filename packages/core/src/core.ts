@@ -1,6 +1,5 @@
-import { Inject, IocExt, Injector, ProviderType, Resolver, lang, Singleton } from '@tsdi/ioc';
+import { Inject, IocExt, Injector, ProviderType, Resolver, lang } from '@tsdi/ioc';
 import { DefaultConfigureManager, ConfigureMergerImpl } from './configure/manager';
-import { BootLifeScope } from './app/lifescope';
 import { ApplicationContext, ApplicationFactory } from './Context';
 import { ApplicationShutdownHandlers, createShutdown, isShutdown } from './shutdown';
 import { ModuleFactoryResolver } from './module.factory';
@@ -10,6 +9,37 @@ import { isDisposable } from './dispose';
 import { Server, ServerSet } from './server';
 import { Client, ClientSet } from './client';
 import { Service, ServiceSet } from './services/service';
+
+
+
+
+/**
+ * Bootstrap ext for ioc. auto run setup after registered.
+ * with @IocExt('setup') decorator.
+ * @export
+ * @class CoreModule
+ */
+@IocExt()
+export class CoreModule {
+    /**
+     * register core module.
+     */
+    setup(@Inject() injector: Injector) {
+        const platform = injector.platform();
+
+        // platform.registerAction(BootLifeScope);
+        platform.onInstanceCreated((target, inj) => {
+            if (isShutdown(target) || isDisposable(target)) {
+                const hdrs = inj.get(ApplicationShutdownHandlers);
+                if (hdrs && !hdrs.has(target)) {
+                    hdrs.add(createShutdown(target));
+                }
+            }
+        });
+
+        injector.register(DefaultConfigureManager, ConfigureMergerImpl);
+    }
+}
 
 
 class ServiceSetImpl extends ServiceSet {
@@ -92,7 +122,6 @@ class ServerSetImpl extends ServerSet {
 
 }
 
-
 export const DEFAULTA_FACTORYS: ProviderType[] = [
     { provide: ServerSet, useClass: ServerSetImpl, singleton: true },
     { provide: ClientSet, useClass: ClientSetImpl, singleton: true },
@@ -100,31 +129,3 @@ export const DEFAULTA_FACTORYS: ProviderType[] = [
     { provide: ModuleFactoryResolver, useValue: new DefaultModuleFactoryResolver() },
     { provide: ApplicationFactory, useValue: new DefaultApplicationFactory() }
 ]
-
-/**
- * Bootstrap ext for ioc. auto run setup after registered.
- * with @IocExt('setup') decorator.
- * @export
- * @class CoreModule
- */
-@IocExt()
-export class CoreModule {
-    /**
-     * register core module.
-     */
-    setup(@Inject() injector: Injector) {
-        const platform = injector.platform();
-
-        platform.registerAction(BootLifeScope);
-        platform.onInstanceCreated((target, inj) => {
-            if (isShutdown(target) || isDisposable(target)) {
-                const hdrs = inj.get(ApplicationShutdownHandlers);
-                if (hdrs && !hdrs.has(target)) {
-                    hdrs.add(createShutdown(target));
-                }
-            }
-        });
-
-        injector.register(DefaultConfigureManager, ConfigureMergerImpl);
-    }
-}

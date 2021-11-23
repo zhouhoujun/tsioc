@@ -1,13 +1,16 @@
 import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, Injector, Modules } from '@tsdi/ioc';
-import { PROCESS_ROOT } from './metadata/tk';
+import { DebugLogAspect, LogConfigureToken, LogModule } from '@tsdi/logs';
+import { CONFIGURATION, PROCESS_ROOT } from './metadata/tk';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from './Context';
+import { Disposable } from './dispose';
+import { ApplicationArguments, ApplicationExit } from './shutdown';
+import { ServerSet } from './server';
+import { ClientSet } from './client';
+import { ServiceSet } from './services/service';
 import { MiddlewareModule } from './middleware';
-import { BootLifeScope } from './app/lifescope';
 import { CoreModule, DEFAULTA_FACTORYS } from './core';
 import { ModuleRef } from './module.ref';
 import { ModuleFactoryResolver } from './module.factory';
-import { Disposable } from './dispose';
-import { ApplicationArguments, ApplicationExit } from './shutdown';
 
 
 /**
@@ -18,8 +21,11 @@ import { ApplicationArguments, ApplicationExit } from './shutdown';
  */
 export class Application implements Disposable {
 
+    private _loads?: Type[];
+    /**
+     * root module ref.
+     */
     readonly root: ModuleRef;
-
     /**
      * application context.
      *
@@ -85,12 +91,16 @@ export class Application implements Disposable {
      */
     async run(): Promise<ApplicationContext> {
         try {
-            const ctx = await this.setup();
-            await ctx.injector.platform().getAction(BootLifeScope).execute(ctx);
-            const exit = ctx.injector.get(ApplicationExit);
+            const ctx = await this.createContext();
+            await this.configation(ctx);
+            const exit = this.root.get(ApplicationExit);
             if (exit) {
                 exit.register();
             }
+            await this.statupServers(ctx.servers);
+            await this.statupClients(ctx.clients);
+            await this.statupServices(ctx, ctx.services);
+            await this.bootstrap(ctx, this.root.moduleReflect.bootstrap);
             return ctx;
         } catch (err) {
             if (this.context) {
@@ -104,24 +114,10 @@ export class Application implements Disposable {
         }
     }
 
-    async setup() {
-        if (!this.context) {
-            const target = this.target;
-            const root = this.root;
-            if (isFunction(target)) {
-                this.context = root.resolve({ token: ApplicationFactory, target: target }).create(root);
-            } else {
-
-                if (target.loads) {
-                    this._loads = await this.root.load(target.loads);
-                }
-                this.context = root.resolve({ token: ApplicationFactory, target: target.type }).create(root, target);
-            }
-        }
-        return this.context;
+    dispose(): Promise<void> {
+        return this.context.dispose();
     }
 
-    private _loads?: Type[];
     get loadTypes(): Type[] {
         return this._loads ?? EMPTY;
     }
@@ -145,8 +141,73 @@ export class Application implements Disposable {
         return container.resolve({ token: ModuleFactoryResolver, target: option.type }).resolve(option.type).create(container, option);
     }
 
-    dispose(): Promise<void> {
-        return this.context.dispose();
+    protected async createContext() {
+        if (!this.context) {
+            const target = this.target;
+            const root = this.root;
+            if (isFunction(target)) {
+                this.context = root.resolve({ token: ApplicationFactory, target: target }).create(root);
+            } else {
+                if (target.loads) {
+                    this._loads = await this.root.load(target.loads);
+                }
+                this.context = root.resolve({ token: ApplicationFactory, target: target.type }).create(root, target);
+            }
+        }
+        return this.context;
     }
 
+    protected async configation(ctx: ApplicationContext): Promise<void> {
+        const { baseURL, injector } = ctx;
+        const mgr = ctx.getConfigureManager();
+        let config = await mgr.getConfig();
+
+        if (config.deps && config.deps.length) {
+            await injector.load(config.deps);
+        }
+
+        if (config.providers && config.providers.length) {
+            injector.inject(config.providers);
+        }
+
+        if (!baseURL && config.baseURL) {
+            injector.setValue(PROCESS_ROOT, config.baseURL);
+        }
+
+        config = { ...config, baseURL, debug: injector.moduleReflect.annotation?.debug };
+        injector.setValue(CONFIGURATION, config);
+
+        if (config.logConfig) {
+            injector.parent?.setValue(LogConfigureToken, config.logConfig);
+            injector.setValue(LogConfigureToken, config.logConfig);
+        }
+        if (config.debug) {
+            // make sure log module registered.
+            injector.register(LogModule, DebugLogAspect);
+        }
+    }
+
+    protected async statupServers(servers: ServerSet) {
+        if (servers?.count) {
+            await servers.connent();
+        }
+    }
+
+    protected async statupClients(clients: ClientSet) {
+        if (clients?.count) {
+            await clients.connent();
+        }
+    }
+
+    protected async statupServices(ctx: ApplicationContext, services: ServiceSet) {
+        if (services?.count) {
+            await services.configuration(ctx);
+        }
+    }
+
+    protected async bootstrap(ctx: ApplicationContext, bootstraps?: Type[]) {
+        if (bootstraps && bootstraps.length) {
+            await Promise.all(bootstraps.map(b => ctx.bootstrap(b)));
+        }
+    }
 }

@@ -1,6 +1,6 @@
 import {
-    isUndefined, EMPTY_OBJ, isArray, isString, lang, Type, isRegExp,
-    createDecorator, ClassMethodDecorator, ClassMetadata, createParamDecorator, ParameterMetadata,
+    isUndefined, EMPTY_OBJ, isArray, isString, lang, Type, isRegExp, createDecorator,
+    ClassMethodDecorator, ClassMetadata, createParamDecorator, ParameterMetadata,
     Resolver, ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes,
 } from '@tsdi/ioc';
 import { Service, ServiceSet } from '../services/service';
@@ -254,7 +254,7 @@ export const Configure: Configure = createDecorator<ClassMetadata>('Configure', 
         meta.singleton = true;
         return meta;
     }
-})
+});
 
 
 

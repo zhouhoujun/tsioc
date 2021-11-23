@@ -31,8 +31,8 @@ export * from './module/runnable';
 
 // applications
 export * from './app/ctx';
-export * from './app/handles';
-export * from './app/lifescope';
+// export * from './app/handles';
+// export * from './app/lifescope';
 
 export * from './Application';
 
