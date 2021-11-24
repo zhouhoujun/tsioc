@@ -1,7 +1,7 @@
 import {
     isUndefined, EMPTY_OBJ, isArray, isString, lang, Type, isRegExp, createDecorator,
     ClassMethodDecorator, ClassMetadata, createParamDecorator, ParameterMetadata,
-    Resolver, ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes, isFunction,
+    Resolver, ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes, isFunction, ProviderType,
 } from '@tsdi/ioc';
 import { Service, ServiceSet } from '../services/service';
 import { Middleware, Middlewares, MiddlewareType, Route } from '../middlewares/middleware';
@@ -10,7 +10,7 @@ import { CanActive } from '../middlewares/guard';
 import { AbstractRoute, RouteAdapter } from '../middlewares/route';
 import { RootRouter, Router } from '../middlewares/router';
 import { MappingReflect, RouteMappingRef, ProtocolRouteMappingMetadata } from '../middlewares/mapping';
-import { BootMetadata, HandleMetadata, HandlesMetadata, PipeMetadata, HandleMessagePattern } from './meta';
+import { BootMetadata, HandleMetadata, HandlesMetadata, PipeMetadata, HandleMessagePattern, ComponentScanMetadata } from './meta';
 import { PipeTransform } from '../pipes/pipe';
 import { Server, ServerSet } from '../server/server';
 import { getModuleType } from '../module.ref';
@@ -232,7 +232,19 @@ export interface ComponentScan {
      *
      * @Configure()
      */
-    (): ComponentScanDecorator;
+    (option?: {
+        /**
+         * order in set.
+         */
+        order?: number;
+        scanType?: 'server' | 'client' | 'service';
+        /**
+         * provider services of the class.
+         *
+         * @type {KeyValue<Token, Token>}
+         */
+        providers?: ProviderType[];
+    }): ComponentScanDecorator;
 }
 
 /**
@@ -240,7 +252,7 @@ export interface ComponentScan {
  * 
  * @exports {@link ComponentScan}
  */
-export const ComponentScan: ComponentScan = createDecorator<ClassMetadata>('ComponentScan', {
+export const ComponentScan: ComponentScan = createDecorator<ComponentScanMetadata>('ComponentScan', {
     actionType: ActionTypes.annoation,
     design: {
         afterAnnoation: (ctx, next) => {

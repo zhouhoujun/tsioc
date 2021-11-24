@@ -1,4 +1,4 @@
-import { PatternMetadata, ProviderMetadata, Type, TypeMetadata } from '@tsdi/ioc';
+import { PatternMetadata, ProviderMetadata, ProvidersMetadata, Type, TypeMetadata } from '@tsdi/ioc';
 import { CanActive } from '../middlewares/guard';
 import { Middleware, Middlewares } from '../middlewares/middleware';
 import { Service } from '../services/service';
@@ -34,6 +34,20 @@ export interface HandleMessagePattern {
      * message handle command for route mapping.
      */
     cmd?: string;
+}
+
+export interface ComponentScanMetadata extends TypeMetadata, ProvidersMetadata {
+    /**
+     * order in set.
+     */
+    order?: number;
+    scanType?: 'server' | 'client' | 'service';
+    /**
+     * is singleton or not.
+     *
+     * @type {boolean}
+     */
+     singleton?: boolean;
 }
 
 /**
