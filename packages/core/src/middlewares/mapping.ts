@@ -1,8 +1,8 @@
 import {
     AsyncHandler, DecorDefine, Type, TypeReflect, Injector, lang, chain,
     isPrimitiveType, isPromise, isString, isArray, isFunction, isDefined,
-    isObservable, composeResolver, Parameter, EMPTY, ClassType, isResolver,
-    InvocationContext, OperationFactoryResolver, DestroyCallback, ReflectiveRef, ArgumentError
+    composeResolver, Parameter, EMPTY, ClassType, isResolver, ArgumentError,
+    InvocationContext, OperationFactoryResolver, DestroyCallback, ReflectiveRef
 } from '@tsdi/ioc';
 import { MODEL_RESOLVERS } from '../model/resolver';
 import { PipeTransform } from '../pipes/pipe';
@@ -12,7 +12,6 @@ import { AbstractRouter, isMiddlware, MiddlewareType, Route } from './middleware
 import { TrasportArgumentResolver, TrasportParameter } from './resolver';
 import { ResultValue } from './result';
 import { AbstractRoute } from './route';
-import { ResultStrategy } from './strategy';
 
 /**
  * route mapping metadata.
@@ -32,7 +31,6 @@ export interface RouteMappingMetadata {
      * request method.
      */
     method?: string;
-
     /**
      * http content type.
      *
@@ -153,9 +151,6 @@ export class RouteMappingRef<T> extends AbstractRoute {
             if (isPromise(result)) {
                 result = await result;
             }
-            if (isObservable(result)) {
-                result = await result.toPromise();
-            }
 
             // middleware.
             if (isFunction(result)) {
@@ -165,15 +160,9 @@ export class RouteMappingRef<T> extends AbstractRoute {
             } else {
                 if (result instanceof ResultValue) {
                     return await result.sendValue(ctx);
+                } else {
+                    ctx.body = result;
                 }
-
-                const strategy = injector.resolve({ token: ResultStrategy, target: result });
-                if (strategy) {
-                    return await strategy.send(ctx, result);
-                }
-
-                ctx.body = result;
-                ctx.status = 200;
             }
         }
     }

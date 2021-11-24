@@ -1,8 +1,11 @@
 import { Abstract } from '@tsdi/ioc';
 import { Client, Disposable } from '@tsdi/core';
+import { ILogger, Logger } from '@tsdi/logs';
 
 @Abstract()
 export abstract class AbstractClient implements Client, Disposable {
+
+    @Logger() protected logger!: ILogger;
 
     connect(): void | Promise<void> {
         

@@ -116,8 +116,6 @@ export abstract class Middlewares<T extends Context = Context> extends AbstractM
         return this;
     }
 
-
-
     has(handle: MiddlewareType | Type): boolean {
         return this.handles.some(h => this.equals(h, handle));
     }

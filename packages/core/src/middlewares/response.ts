@@ -61,7 +61,7 @@ export abstract class Response {
     /**
      * Set response body.
      *
-     * @param {String|Buffer|Object|Stream} val
+     * @param {String|Buffer|Object|Stream|Observable<any>} val
      * @api public
      */
     abstract set body(val: any);
