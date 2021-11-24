@@ -4,9 +4,11 @@ import { ILogger, Logger } from '@tsdi/logs';
 import { Observable } from 'rxjs';
 
 @Abstract()
-export abstract class AbstractClient extends Client implements Disposable {
+export abstract class AbstractClient implements Client, Disposable {
 
     @Logger() protected logger!: ILogger;
+
+    abstract connect(): void | Promise<void>;
 
     send<TResult = any, TInput = any>(pattern: any, data: TInput): Observable<TResult> {
         throw new Error('Method not implemented.');
@@ -15,7 +17,5 @@ export abstract class AbstractClient extends Client implements Disposable {
         throw new Error('Method not implemented.');
     }
 
-    dispose(): Promise<void> {
-        throw new Error('Method not implemented.');
-    }
+    abstract dispose(): Promise<void>;
 }

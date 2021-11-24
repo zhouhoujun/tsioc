@@ -5,25 +5,24 @@ import { Observable } from 'rxjs';
 /**
  * client proxy
  */
-@Abstract()
-export abstract class Client {
+export interface Client {
     /**
      * connect server
      */
-    abstract connect(): void | Promise<void>;
+    connect(): void | Promise<void>;
 
     /**
      * send message.
      * @param pattern 
      * @param data 
      */
-    abstract send<TResult = any, TInput = any>(pattern: any, data: TInput): Observable<TResult>;
+    send<TResult = any, TInput = any>(pattern: any, data: TInput): Observable<TResult>;
     /**
      * emit message
      * @param pattern 
      * @param data 
      */
-    abstract emit<TResult = any, TInput = any>(pattern: any, data: TInput): Observable<TResult>;
+    emit<TResult = any, TInput = any>(pattern: any, data: TInput): Observable<TResult>;
 }
 
 

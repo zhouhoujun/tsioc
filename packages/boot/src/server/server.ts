@@ -3,16 +3,12 @@ import { Disposable, Server } from '@tsdi/core';
 import { ILogger, Logger } from '@tsdi/logs';
 
 @Abstract()
-export abstract class AbstractServer extends Server implements Disposable {
+export abstract class AbstractServer implements Server, Disposable {
 
     @Logger() protected logger!: ILogger;
     
-    startup(): void | Promise<void> {
-        throw new Error('Method not implemented.');
-    }
+    abstract startup(): void | Promise<void>;
 
-    dispose(): Promise<void> {
-        throw new Error('Method not implemented.');
-    }
+    abstract dispose(): Promise<void>;
 
 }

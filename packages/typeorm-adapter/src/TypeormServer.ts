@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { ILogger, Logger } from '@tsdi/logs';
 import { Type, isString, isArray, Injector, isFunction, EMPTY, isNil } from '@tsdi/ioc';
 import {
-    ConnectionOptions, Configuration, ApplicationContext, Configure, Server, createModelResolver,
+    ConnectionOptions, Configuration, ApplicationContext, ComponentScan, Server, createModelResolver,
     DBPropertyMetadata, PipeTransform, missingPropPipeError, MODEL_RESOLVERS
 } from '@tsdi/core';
 import {
@@ -13,7 +13,7 @@ import { ObjectIDToken } from './objectid.pipe';
 
 
 
-@Configure()
+@ComponentScan()
 export class TypeormServer implements Server {
     /**
      * default connection options.

@@ -3,12 +3,11 @@ import { Abstract, Destroy, Resolver } from '@tsdi/ioc';
 /**
  * server.
  */
- @Abstract()
-export abstract class Server {
+export interface Server {
     /**
      * connect server
      */
-    abstract startup(): void | Promise<void>;
+    startup(): void | Promise<void>;
 }
 
 

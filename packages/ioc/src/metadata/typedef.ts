@@ -353,6 +353,11 @@ export class TypeDefine {
         return pty;
     }
 
+    hasMethod(...names: string[]): boolean {
+        const descs = this.getPropertyDescriptors();
+        return !names.some(name => !isFunction(descs[name]?.value));
+    }
+
     private descriptos!: Record<string, TypedPropertyDescriptor<any>>;
     getPropertyDescriptors(): Record<string, TypedPropertyDescriptor<any>> {
         if (!this.descriptos) {

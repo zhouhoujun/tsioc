@@ -5,4 +5,7 @@ export class KafkaClient extends AbstractClient {
         throw new Error('Method not implemented.');
     }
 
+    dispose(): Promise<void> {
+        throw new Error('Method not implemented.');
+    }
 }

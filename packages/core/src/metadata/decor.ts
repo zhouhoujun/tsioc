@@ -216,38 +216,38 @@ export const Boot: Boot = createDecorator<BootMetadata>('Boot', {
 
 
 /**
- * configure register decorator.
+ * ComponentScan decorator.
  */
-export type ConfigDecorator = <TFunction extends Type<Server | Client>>(target: TFunction) => TFunction | void;
+export type ComponentScanDecorator = <TFunction extends Type<Server | Client>>(target: TFunction) => TFunction | void;
 
 /**
- * Configure decorator, define this class as configure register when bootstrap application.
+ * ComponentScan decorator, use to auto scan server or client for application.
  *
  * @export
  * @interface Configure
  */
-export interface Configure {
+export interface ComponentScan {
     /**
-     * Configure decorator, define this class as configure register when bootstrap application.
+     * Configure decorator, use to auto scan server or client for application.
      *
      * @Configure()
      */
-    (): ConfigDecorator;
+    (): ComponentScanDecorator;
 }
 
 /**
- * Configure decorator, define this class as configure register when bootstrap application.
+ * Configure decorator, use to auto scan server or client for application.
  * 
- * @exports {@link Configure}
+ * @exports {@link ComponentScan}
  */
-export const Configure: Configure = createDecorator<ClassMetadata>('Configure', {
+export const ComponentScan: ComponentScan = createDecorator<ClassMetadata>('ComponentScan', {
     actionType: ActionTypes.annoation,
     design: {
         afterAnnoation: (ctx, next) => {
             const { type, reflect, injector } = ctx;
-            let servs = reflect.class.isExtends(Client) ? injector.get(ClientSet) : injector.get(ServerSet);
+            let sets = reflect.class.hasMethod('connect', 'send', 'emit') ? injector.get(ClientSet) : injector.get(ServerSet);
             const resolver = { type, resolve: (ctx) => injector.get(type, ctx) } as Resolver;
-            servs.add(resolver);
+            sets.add(resolver);
             return next();
         }
     },
