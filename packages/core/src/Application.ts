@@ -195,7 +195,7 @@ export class Application implements Disposable {
 
     protected async statupClients(clients: ClientSet): Promise<void> {
         if (clients?.count) {
-            await clients.connent();
+            await clients.connect();
         }
     }
 

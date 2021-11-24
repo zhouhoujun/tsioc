@@ -1,22 +1,17 @@
 import { Abstract } from '@tsdi/ioc';
 import { Client, Disposable } from '@tsdi/core';
 import { ILogger, Logger } from '@tsdi/logs';
+import { Observable } from 'rxjs';
 
 @Abstract()
-export abstract class AbstractClient implements Client, Disposable {
+export abstract class AbstractClient extends Client implements Disposable {
 
     @Logger() protected logger!: ILogger;
 
-    connect(): void | Promise<void> {
-        
-    }
-    close(): void | Promise<void> {
+    send<TResult = any, TInput = any>(pattern: any, data: TInput): Observable<TResult> {
         throw new Error('Method not implemented.');
     }
-    send<TO = any, TI = any>(pattern: any, data: TI): TO {
-        throw new Error('Method not implemented.');
-    }
-    emit<TO = any, TI = any>(pattern: any, data: TI): TO {
+    emit<TResult = any, TInput = any>(pattern: any, data: TInput): Observable<TResult> {
         throw new Error('Method not implemented.');
     }
 

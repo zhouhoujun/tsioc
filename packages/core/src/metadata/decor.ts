@@ -1,7 +1,7 @@
 import {
     isUndefined, EMPTY_OBJ, isArray, isString, lang, Type, isRegExp, createDecorator,
     ClassMethodDecorator, ClassMetadata, createParamDecorator, ParameterMetadata,
-    Resolver, ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes,
+    Resolver, ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes, isFunction,
 } from '@tsdi/ioc';
 import { Service, ServiceSet } from '../services/service';
 import { Middleware, Middlewares, MiddlewareType, Route } from '../middlewares/middleware';
@@ -14,6 +14,7 @@ import { BootMetadata, HandleMetadata, HandlesMetadata, PipeMetadata, HandleMess
 import { PipeTransform } from '../pipes/pipe';
 import { Server, ServerSet } from '../server/server';
 import { getModuleType } from '../module.ref';
+import { Client, ClientSet } from '../client';
 
 
 
@@ -217,7 +218,7 @@ export const Boot: Boot = createDecorator<BootMetadata>('Boot', {
 /**
  * configure register decorator.
  */
-export type ConfigDecorator = <TFunction extends Type<Server>>(target: TFunction) => TFunction | void;
+export type ConfigDecorator = <TFunction extends Type<Server | Client>>(target: TFunction) => TFunction | void;
 
 /**
  * Configure decorator, define this class as configure register when bootstrap application.
@@ -243,8 +244,8 @@ export const Configure: Configure = createDecorator<ClassMetadata>('Configure', 
     actionType: ActionTypes.annoation,
     design: {
         afterAnnoation: (ctx, next) => {
-            const { type, injector } = ctx;
-            let servs = injector.get(ServerSet);
+            const { type, reflect, injector } = ctx;
+            let servs = reflect.class.isExtends(Client) ? injector.get(ClientSet) : injector.get(ServerSet);
             const resolver = { type, resolve: (ctx) => injector.get(type, ctx) } as Resolver;
             servs.add(resolver);
             return next();

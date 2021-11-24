@@ -27,7 +27,6 @@ export class CoreModule {
     setup(@Inject() injector: Injector) {
         const platform = injector.platform();
 
-        // platform.registerAction(BootLifeScope);
         platform.onInstanceCreated((target, inj) => {
             if (isShutdown(target) || isDisposable(target)) {
                 const hdrs = inj.get(ApplicationShutdownHandlers);
@@ -83,7 +82,7 @@ class ClientSetImpl extends ClientSet {
         this._set.clear();
     }
 
-    async connent(): Promise<void> {
+    async connect(): Promise<void> {
         if (this._set.size) {
             await Promise.all(Array.from(this._set).map(clt => clt.resolve()?.connect()));
         }
@@ -112,7 +111,7 @@ class ServerSetImpl extends ServerSet {
 
     async connent(): Promise<void> {
         if (this._set.size) {
-            await Promise.all(Array.from(this._set).map(svr => svr.resolve()?.connect()));
+            await Promise.all(Array.from(this._set).map(svr => svr.resolve()?.startup()));
         }
     }
 

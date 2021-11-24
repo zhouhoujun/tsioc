@@ -27,10 +27,9 @@ export class TypeormServer implements Server {
     }
 
     /**
-     * configure service.
-     * @param ctx context.
+     * startup server.
      */
-    async connect(): Promise<void> {
+    async startup(): Promise<void> {
         let ctx = this.ctx;
         this.logger.info('startup db connections');
         const config = this.ctx.getConfiguration();

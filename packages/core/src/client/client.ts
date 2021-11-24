@@ -1,28 +1,31 @@
 import { Abstract, Destroy, Resolver } from '@tsdi/ioc';
+import { Observable } from 'rxjs';
 
 
 /**
  * client proxy
  */
-export interface Client {
+@Abstract()
+export abstract class Client {
     /**
      * connect server
      */
-    connect(): void | Promise<void>;
+    abstract connect(): void | Promise<void>;
 
     /**
      * send message.
      * @param pattern 
      * @param data 
      */
-    send<TResult = any, TInput = any>(pattern: any, data: TInput): TResult;
+    abstract send<TResult = any, TInput = any>(pattern: any, data: TInput): Observable<TResult>;
     /**
      * emit message
      * @param pattern 
      * @param data 
      */
-    emit<TResult = any, TInput = any>(pattern: any, data: TInput): TResult;
+    abstract emit<TResult = any, TInput = any>(pattern: any, data: TInput): Observable<TResult>;
 }
+
 
 @Abstract()
 export abstract class ClientSet implements Destroy {
@@ -47,7 +50,7 @@ export abstract class ClientSet implements Destroy {
     /**
      * connect all client.
      */
-    abstract connent(): Promise<void>;
+    abstract connect(): Promise<void>;
     /**
      * destory this.
      */
