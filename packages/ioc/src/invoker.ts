@@ -17,15 +17,11 @@ export interface Parameter<T = any> extends ParameterMetadata {
     /**
      * type.
      */
-    type: ClassType<T> | undefined;
-    /**
-     * param name.
-     */
-    paramName: string;
+    type?: ClassType<T>;
     /**
      * provider type
      */
-    provider?: Token;
+    provider?: Token<T>;
     /**
      * mutil provider or not.
      */
@@ -52,7 +48,7 @@ export interface OperationArgumentResolver<C = any> {
 
 /**
  * compose resolver for an argument of an {@link OperationInvoker}.
- * @param filter compose fiter
+ * @param filter compose canResolver filter.
  * @param resolvers resolves of the group.
  * @returns 
  */
@@ -77,13 +73,16 @@ export function composeResolver<T extends OperationArgumentResolver, TP extends 
  * The context for the {@link OperationInvoker invocation of an operation}.
  */
 export class InvocationContext<T = any> implements Destroyable {
-
-    private _argumentResolvers: OperationArgumentResolver[];
     private _arguments: T;
     private _values: Map<Token, any>;
     private _dsryCbs = new Set<DestroyCallback>();
     private _destroyed = false;
+    /**
+     * the invocation arguments resolver.
+     */
+    protected resolvers: OperationArgumentResolver[];
     propertyKey?: string;
+
     constructor(
         readonly injector: Injector,
         readonly parent?: InvocationContext,
@@ -92,7 +91,7 @@ export class InvocationContext<T = any> implements Destroyable {
         args?: T,
         values?: TokenValue[],
         ...argumentResolvers: OperationArgumentResolver[]) {
-        this._argumentResolvers = argumentResolvers;
+        this.resolvers = argumentResolvers;
         this._arguments = args ?? {} as T;
         this._values = new Map(values);
         injector.onDestroy(() => this.destroy());
@@ -140,31 +139,26 @@ export class InvocationContext<T = any> implements Destroyable {
         return this;
     }
 
-    /**
-     * the invocation arguments resolver.
-     */
-    protected get argumentResolvers(): OperationArgumentResolver[] {
-        return this._argumentResolvers;
+    canResolve(meta: Parameter): boolean {
+        return meta.resolver?.canResolve(meta, this) === true
+            || this.resolvers.some(r => r.canResolve(meta, this))
+            || this.parent?.canResolve(meta) == true;
     }
 
-    canResolve(type: Parameter): boolean {
-        return type.resolver?.canResolve(type, this) || this.argumentResolvers.some(r => r.canResolve(type, this)) || this.parent?.canResolve(type) || false;
-    }
-
-    resolveArgument<T>(argumentType: Parameter<T>): T | null {
+    resolveArgument<T>(meta: Parameter<T>): T | null {
         let result: T | undefined;
-        if (argumentType.resolver && argumentType.resolver.canResolve(argumentType, this)) {
-            result = argumentType.resolver.resolve(argumentType, this);
+        if (meta.resolver?.canResolve(meta, this)) {
+            result = meta.resolver.resolve(meta, this);
             if (isDefined(result)) return result;
         }
-        this.argumentResolvers.some(r => {
-            if (r.canResolve(argumentType, this)) {
-                result = r.resolve(argumentType, this);
+        this.resolvers.some(r => {
+            if (r.canResolve(meta, this)) {
+                result = r.resolve(meta, this);
                 return isDefined(result);
             }
             return false;
         });
-        return result ?? this.parent?.resolveArgument(argumentType) ?? null;
+        return result ?? this.parent?.resolveArgument(meta) ?? null;
     }
 
     get destroyed() {
@@ -179,7 +173,7 @@ export class InvocationContext<T = any> implements Destroyable {
             } finally {
                 this._dsryCbs.clear();
                 this._arguments = null!;
-                this._argumentResolvers = null!;
+                this.resolvers = null!;
                 this._values.clear();
                 this.injector.destroy();
                 (this as any).parent = null;

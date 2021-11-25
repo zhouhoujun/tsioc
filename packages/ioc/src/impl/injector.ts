@@ -1086,7 +1086,7 @@ export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
         (parameter, ctx) => isDefined(parameter.paramName),
         {
             canResolve(parameter, ctx) {
-                return isDefined(ctx.arguments[parameter.paramName]);
+                return isDefined(ctx.arguments[parameter.paramName!]);
             },
             resolve(parameter, ctx) {
                 return ctx.arguments[parameter.paramName!];
@@ -1094,7 +1094,7 @@ export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
         },
         {
             canResolve(parameter, ctx) {
-                return ctx.hasValue(parameter.paramName);
+                return ctx.hasValue(parameter.paramName!);
             },
             resolve(parameter, ctx) {
                 return ctx.getValue(parameter.paramName!);
@@ -1102,7 +1102,7 @@ export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
         },
         {
             canResolve(parameter, ctx) {
-                return ctx.injector.has(parameter.paramName, parameter.flags);
+                return ctx.injector.has(parameter.paramName!, parameter.flags);
             },
             resolve(parameter, ctx) {
                 return ctx.injector.get(parameter.paramName!, ctx, parameter.flags);

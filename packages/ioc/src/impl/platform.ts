@@ -17,30 +17,30 @@ export class DefaultPlatform implements Platform {
 
     private _dsryCbs = new Set<DestroyCallback>();
     private _destroyed = false;
-    private actions: Map<Token, any>;
-    private singletons: Map<Token, any>;
-    private extPdrs: Map<ClassType, ProviderType[]>;
-    private scopes: Map<string | ClassType, Injector>;
-    private _createdCbs: Set<(value: any, injector: Injector) => void>;
+    private _actions: Map<Token, any>;
+    private _singls: Map<Token, any>;
+    private _pdrs: Map<ClassType, ProviderType[]>;
+    private _scopes: Map<string | ClassType, Injector>;
+    private _crtCbs: Set<(value: any, injector: Injector) => void>;
 
     readonly modules = new Set<ModuleRef>();
 
     constructor(readonly injector: Injector) {
-        this.scopes = new Map();
-        this.extPdrs = new Map();
-        this.actions = new Map();
-        this.singletons = new Map();
-        this._createdCbs = new Set([(value, inj) => isDestroy(value) && inj.onDestroy(value)]);
+        this._scopes = new Map();
+        this._pdrs = new Map();
+        this._actions = new Map();
+        this._singls = new Map();
+        this._crtCbs = new Set([(value, inj) => isDestroy(value) && inj.onDestroy(value)]);
         injector.onDestroy(this);
     }
 
     onInstanceCreated(callback: (value: any, injector: Injector) => void): void {
-        this._createdCbs.add(callback);
+        this._crtCbs.add(callback);
     }
 
     toCreatedHandle(injector: Injector): (value: any) => void {
         return (value) => {
-            this._createdCbs.forEach(h => h(value, injector));
+            this._crtCbs.forEach(h => h(value, injector));
         }
     }
 
@@ -50,11 +50,11 @@ export class DefaultPlatform implements Platform {
      * @param value 
      */
     registerSingleton<T>(injector: Injector, token: Token<T>, value: T): this {
-        if (this.singletons.has(token)) {
+        if (this._singls.has(token)) {
             throw Error('has singleton instance with token:' + token.toString());
         }
-        this.singletons.set(token, value);
-        injector.onDestroy(() => this.singletons.delete(token));
+        this._singls.set(token, value);
+        injector.onDestroy(() => this._singls.delete(token));
         return this;
     }
     /**
@@ -62,22 +62,22 @@ export class DefaultPlatform implements Platform {
      * @param token 
      */
     getSingleton<T>(token: Token<T>): T {
-        return this.singletons.get(token);
+        return this._singls.get(token);
     }
     /**
      * has singleton or not.
      * @param token 
      */
     hasSingleton(token: Token): boolean {
-        return this.singletons.has(token);
+        return this._singls.has(token);
     }
 
     setInjector(scope: ClassType | string, injector: Injector) {
-        this.scopes.set(scope, injector);
+        this._scopes.set(scope, injector);
     }
 
     removeInjector(scope: ClassType | 'root' | 'platform'): void {
-        this.scopes.delete(scope);
+        this._scopes.delete(scope);
     }
 
     /**
@@ -88,7 +88,7 @@ export class DefaultPlatform implements Platform {
         if (scope === 'platform') {
             return this.injector as T;
         }
-        return this.scopes.get(scope) as T;
+        return this._scopes.get(scope) as T;
     }
 
     /**
@@ -100,43 +100,43 @@ export class DefaultPlatform implements Platform {
      * @returns {T}
      */
     getAction<T>(token: Token<T>, notFoundValue?: T): T {
-        if (this.actions.has(token)) {
+        if (this._actions.has(token)) {
             this.registerAction(token as Type);
         }
-        return this.actions.get(token) ?? notFoundValue;
+        return this._actions.get(token) ?? notFoundValue;
     }
 
     hasAction(token: Token) {
-        return this.actions.has(token);
+        return this._actions.has(token);
     }
 
     registerAction(...types: Type<Action>[]): this {
         types.forEach(type => {
-            if (this.actions.has(type)) return;
+            if (this._actions.has(type)) return;
             this.processAction(type);
         });
         return this;
     }
 
     getHandle<T extends Handler>(target: Token<Action>): T {
-        return this.actions.get(target)?.toHandler() as T ?? null;
+        return this._actions.get(target)?.toHandler() as T ?? null;
     }
 
     setActionValue<T>(token: Token<T>, value: T, provider?: Type<T>) {
-        this.actions.set(token, value);
-        if (provider) this.actions.set(provider, value);
+        this._actions.set(token, value);
+        if (provider) this._actions.set(provider, value);
         return this;
     }
 
     getActionValue<T>(token: Token<T>, notFoundValue?: T): T {
-        return this.actions.get(token) ?? notFoundValue;
+        return this._actions.get(token) ?? notFoundValue;
     }
 
     protected processAction(type: Type<Action>) {
-        if (this.actions.has(type)) return true;
+        if (this._actions.has(type)) return true;
         const instance = new type(this) as Action & IActionSetup;
 
-        this.actions.set(type, instance);
+        this._actions.set(type, instance);
         if (isFunction(instance.setup)) instance.setup();
     }
 
@@ -146,9 +146,9 @@ export class DefaultPlatform implements Platform {
      */
     getTypeProvider(type: ClassType | TypeReflect) {
         if (isFunction(type)) {
-            return this.extPdrs.has(type) ? [...get(type)?.class.providers, ...this.extPdrs.get(type) || EMPTY] : get(type)?.class.providers;
+            return this._pdrs.has(type) ? [...get(type)?.class.providers, ...this._pdrs.get(type) || EMPTY] : get(type)?.class.providers;
         }
-        return this.extPdrs.has(type.type) ? [...type.class.providers, ...this.extPdrs.get(type.type) || EMPTY] : type.class.providers;
+        return this._pdrs.has(type.type) ? [...type.class.providers, ...this._pdrs.get(type.type) || EMPTY] : type.class.providers;
     }
 
     /**
@@ -158,16 +158,16 @@ export class DefaultPlatform implements Platform {
      */
     setTypeProvider(type: ClassType | TypeReflect, providers: StaticProvider[]) {
         const ty = isFunction(type) ? type : type.type;
-        const prds = this.extPdrs.get(ty);
+        const prds = this._pdrs.get(ty);
         if (prds) {
             prds.push(...providers)
         } else {
-            this.extPdrs.set(ty, providers);
+            this._pdrs.set(ty, providers);
         }
     }
 
     clearTypeProvider(type: ClassType) {
-        this.extPdrs.delete(type);
+        this._pdrs.delete(type);
     }
 
     /**
@@ -186,12 +186,12 @@ export class DefaultPlatform implements Platform {
             this._dsryCbs.forEach(c => isFunction(c) ? c() : c?.destroy());
         } finally {
             this._dsryCbs.clear();
-            this._createdCbs.clear();
-            this.scopes.clear();
+            this._crtCbs.clear();
+            this._scopes.clear();
             this.modules.clear();
-            this.extPdrs.clear();
-            this.actions.clear();
-            this.singletons.clear();
+            this._pdrs.clear();
+            this._actions.clear();
+            this._singls.clear();
         }
     }
 
