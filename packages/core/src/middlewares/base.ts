@@ -1,6 +1,6 @@
-import { EMPTY_OBJ, Injectable, Injector, isArray, isNumber, isString, Singleton } from '@tsdi/ioc';
+import { EMPTY_OBJ, Injectable, Injector, isArray, isDefined, isString, Singleton } from '@tsdi/ioc';
 import { RouteVaildator, Context, ContextFactory } from './context';
-import { HeadersOption, Headers } from './header';
+import { HeadersOption } from './header';
 import { RequestOption, Request } from './request';
 import { ResponseOption, Response } from './response';
 
@@ -67,92 +67,42 @@ const empty: any = {
     304: true
 };
 
-export class HeadersBase extends Headers {
-    /**
-     * Internal map of lowercase header names to values.
-     */
-    private headers: Map<string, string | string[] | number> = new Map();
-
-
-    constructor(headers?: HeadersOption | Headers) {
-        super();
-        if (headers) this.init(headers);
-    }
-
-    protected init(headers: HeadersOption | Headers) {
-        if (isString(headers)) {
-            headers.split('\n').forEach(line => {
-                const index = line.indexOf(':');
-                if (index > 0) {
-                    const key = line.slice(0, index).trim();
-                    const value = line.slice(index + 1).trim();
-                    this.append(key, value);
+function toRecords(headers?: HeadersOption): Record<string, string | string[] | number> {
+    let records: Record<string, string | string[] | number> = {};
+    if (isString(headers)) {
+        headers.split('\n').forEach(line => {
+            const index = line.indexOf(':');
+            if (index > 0) {
+                const key = line.slice(0, index).trim();
+                const value = line.slice(index + 1).trim();
+                if (records[key]) {
+                    let old = records[key];
+                    if (isArray(old)) {
+                        old.push(value)
+                    } else {
+                        records[key] = [old.toString(), value];
+                    }
+                } else {
+                    records[key] = value;
                 }
-            });
-        } else if (isArray(headers)) {
-            headers.forEach(line => {
-                if (line.length > 0) {
-                    const key = line[0].trim();
-                    const value = line[1].trim();
-                    this.headers.set(key, value);
-                }
-            });
-        } else if (headers instanceof Headers) {
-            this._referrer = headers.referrer;
-            headers.forEach((v, k) => {
-                this.headers.set(k, v);
-            });
-        } else {
-            this._referrer = headers.referrer as string;
-            Object.keys(headers).forEach(key => {
-                let values = headers[key];
-                this.headers.set(key, values);
-
-            })
-        }
-    }
-
-    private _referrer: string = '';
-    get referrer(): string {
-        return this._referrer;
-    }
-
-    append(name: string, value: string | string[] | number): void {
-        if (!isNumber(value) && this.headers.has(name)) {
-            const val = this.headers.get(name);
-            if (isArray(val)) {
-                isArray(value) ? val.push(...value) : val.push(value);
-            } else {
-                let cv: string | string[] = value;
-                if (isString(val)) {
-                    cv = isArray(value) ? [...value, val] : [value, val];
-                }
-                this.headers.set(name, cv)
             }
-        } else {
-            this.headers.set(name, value);
-        }
+        });
+    } else if (isArray(headers)) {
+        headers.forEach(line => {
+            if (line.length > 0) {
+                const key = line[0].trim();
+                const value = line[1].trim();
+                records[key] = value;
+            }
+        });
+    } else {
+        headers && Object.keys(headers).forEach(key => {
+            let values = headers[key];
+            records[key] = isArray(values) ? values.slice(0) : values;
+        })
     }
 
-    delete(name: string): void {
-        this.headers.delete(name);
-    }
-
-    get(name: string): string | string[] | number {
-        return this.headers.get(name) ?? '';
-    }
-
-    has(name: string): boolean {
-        return this.headers.has(name);
-    }
-
-    set(name: string, value: string | string[] | number): void {
-        this.headers.set(name, value);
-    }
-
-    forEach(callbackfn: (value: string | string[] | number, key: string, parent: Headers) => void, thisArg?: any): void {
-        this.headers.forEach((v, k) => callbackfn(v, k, this), this);
-    }
+    return records;
 }
 
 export class RequestBase extends Request {
@@ -162,14 +112,14 @@ export class RequestBase extends Request {
         this.init(init);
     }
 
-    protected createHeader(headers?: Headers | Record<string, string | string[]> | HeadersOption) {
-        return new HeadersBase(headers);
+    protected toRecords(headers?: Record<string, string | string[]> | HeadersOption) {
+        return toRecords(headers);
     }
 
     protected init(option?: RequestOption | Request) {
         const init = (option || EMPTY_OBJ) as RequestOption | Request;
         if (init instanceof Request) {
-            this._headers = this.createHeader(init.getHeaders())
+            this._headers = this.toRecords(init.getHeaders()) as Record<string, string | string[]>;
             this._originalUrl = init.originalUrl;
             this._URL = init.URL;
             this._url = init.url;
@@ -177,7 +127,7 @@ export class RequestBase extends Request {
             this._method = init.method;
             this.query = init.query;
         } else {
-            this._headers = this.createHeader(init?.headers)
+            this._headers = this.toRecords(init?.headers) as Record<string, string | string[]>;
             const { url: originalUrl, body, method, restful, query } = init;
             let url = originalUrl || '';
             if (restful) {
@@ -204,8 +154,8 @@ export class RequestBase extends Request {
     }
 
 
-    private _headers!: Headers;
-    get headers(): Headers {
+    private _headers!: Record<string, string | string[]>;
+    get headers(): Record<string, string | string[]> {
         return this._headers;
     }
 
@@ -242,17 +192,17 @@ export class RequestBase extends Request {
     }
 
     getHeader(name: string): string | string[] {
-        return this.headers.get(name) as (string | string[]) ?? '';
+        return this.headers[name] as (string | string[]) ?? '';
     }
 
     hasHeader(name: string): boolean {
-        return this.headers.has(name.toLowerCase());
+        return isDefined(this.headers[name]);
     }
     setHeader(name: string, value: string | string[]): void {
-        this.headers.set(name, value);
+        this.headers[name] = value;
     }
     removeHeader(name: string): void {
-        this.headers.delete(name);
+        this.headers[name] = undefined!;
     }
 
 }
@@ -264,24 +214,24 @@ export class ResponseBase extends Response {
         this.init(init);
     }
 
-    protected createHeader(headers?: Headers | HeadersOption) {
-        return new HeadersBase(headers);
+    protected toRecords(headers?: HeadersOption) {
+        return toRecords(headers);
     }
 
     protected init(option?: ResponseOption) {
         const init = option || EMPTY_OBJ as ResponseOption;
-        this._headers = this.createHeader(init?.headers);
+        this._headers = this.toRecords(init?.headers);
         if (init.status) this._status = init.status;
     }
 
-    private _headers!: Headers;
+    private _headers!: Record<string, string | string[] | number>;
     /**
      * Return response header.
      *
      * @return {Object}
      * @api public
      */
-    get headers(): Headers {
+    get headers(): Record<string, string | string[] | number> {
         return this._headers;
     }
 
@@ -315,7 +265,7 @@ export class ResponseBase extends Response {
     set error(err: any) {
         this._err = err;
         if (!err) return;
-        
+
         this.status = err.status ?? 500;
         this.message = err.message ?? err.toString();
     }
@@ -385,18 +335,18 @@ export class ResponseBase extends Response {
     }
 
     getHeader(name: string): string | string[] | number {
-        return this.headers.get(name) ?? '';
+        return this.headers[name] ?? '';
     }
     hasHeader(name: string): boolean {
-        return this.headers.has(name);
+        return isDefined(this.headers[name]);
     }
     setHeader(name: string, value: number | string | string[]): void {
         if (this.headersSent) return;
-        this.headers.set(name, value);
+        this.headers[name] = value;
     }
     removeHeader(name: string): void {
         if (this.headersSent) return;
-        this.headers.delete(name);
+        this.headers[name] = undefined!;
     }
 }
 

@@ -1,5 +1,5 @@
 import { Abstract, isArray } from '@tsdi/ioc';
-import { Headers, HeadersOption } from './header';
+import { HeadersOption } from './header';
 
 
 /**
@@ -118,7 +118,7 @@ export abstract class Response {
 
     abstract get headersSent(): boolean;
 
-    abstract getHeaders(): Headers | Record<string, string | string[] | number>;
+    abstract getHeaders(): Record<string, string | string[] | number>;
 
     abstract getHeader(name: string): string | string[] | number;
 

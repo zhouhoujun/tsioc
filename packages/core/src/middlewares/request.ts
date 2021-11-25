@@ -1,5 +1,5 @@
 import { Abstract, isArray, isString } from '@tsdi/ioc';
-import { Headers, HeadersOption } from './header';
+import { HeadersOption } from './header';
 
 /**
  * abstract request.
@@ -259,7 +259,7 @@ export abstract class Request {
         return isArray(vals) ? vals[0] : vals;
     }
 
-    abstract getHeaders(): Headers | Record<string, string | string[]>;
+    abstract getHeaders(): Record<string, string | string[]>;
 
     abstract getHeader(name: string): string | string[];
 
@@ -271,8 +271,6 @@ export abstract class Request {
 
 }
 
-export type ProtocolType = 'http://' | 'https://'| 'mqtt://' | 'amqp://' | 'coap://'
-     | 'tcp://' | 'udp://' | 'ftp://' | 'smtp://' | 'telnet://' | 'dns://' | 'msg://';
 
 
 /**
