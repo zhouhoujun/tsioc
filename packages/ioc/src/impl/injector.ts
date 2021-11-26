@@ -1158,7 +1158,9 @@ function createInvocationContext(injector: Injector, option?: InvocationOption &
      */
     invokerTarget?: ClassType;
     targetProviders?: ProviderType[],
-    methodProviders?: ProviderType[]
+    methodProviders?: ProviderType[],
+    targetResolvers?: OperationArgumentResolver[],
+    methodResolvers?: OperationArgumentResolver[]
 }) {
     option = option || EMPTY_OBJ;
     let providers: ProviderType[] = option.providers ?? EMPTY;
@@ -1175,6 +1177,8 @@ function createInvocationContext(injector: Injector, option?: InvocationOption &
         option.arguments || EMPTY_OBJ,
         option.values,
         ...option.resolvers ?? EMPTY,
+        ...option.targetResolvers ?? EMPTY,
+        ...option.methodResolvers ?? EMPTY,
         ...DEFAULT_RESOLVERS);
 }
 
@@ -1263,29 +1267,35 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
         return new ReflectiveOperationInvoker(this.targetReflect, method, instance);
     }
 
-    createContext(injector: Injector, option?: InvocationOption, parent?: InvocationContext): InvocationContext<any> {
+    createContext(injector: Injector, option?: InvocationOption, root?: InvocationContext): InvocationContext<any> {
         if (!this._tagPdrs) {
             this._tagPdrs = injector.platform().getTypeProvider(this.targetReflect);
         }
         let proxy: boolean | undefined;
         let methodProviders: ProviderType[] | undefined;
-        if (option?.invokerMethod) {
-            methodProviders = this.targetReflect.class.getMethodProviders(option.invokerMethod);
-            proxy = this.targetReflect.type.prototype[option?.invokerMethod]['_proxy'];
+        let methodResolvers: OperationArgumentResolver[] | undefined;
+        const method = option?.invokerMethod;
+        if (method) {
+            methodProviders = this.targetReflect.class.getMethodProviders(method);
+            methodResolvers = this.targetReflect.class.getMethodResolvers(method);
+            proxy = this.targetReflect.type.prototype[method]['_proxy'];
         }
-        return parent ? createInvocationContext(injector, {
-            parent,
+        return root ? createInvocationContext(injector, {
             ...option,
+            parent: root,
             proxy,
             invokerTarget: this.targetReflect.type,
-            methodProviders
+            methodProviders,
+            methodResolvers
         })
             : createInvocationContext(injector, {
                 ...option,
                 proxy,
                 invokerTarget: this.targetReflect.type,
                 targetProviders: this._tagPdrs,
-                methodProviders
+                methodProviders,
+                targetResolvers: this.targetReflect.class.resolvers,
+                methodResolvers
             });
     }
 }

@@ -1,10 +1,10 @@
 import { Module, ConnectionOptions } from '@tsdi/core';
+import { LogModule } from '@tsdi/logs';
 import { ServerBootstrapModule } from '@tsdi/platform-server';
-import { TypeOrmModule } from '../src';
 import { Connection } from 'typeorm';
+import { TypeOrmModule } from '../src';
 import { User } from './models/models';
 import { UserController } from './mapping/UserController';
-import { LogModule } from '@tsdi/logs';
 
 
 export const option = <ConnectionOptions>{

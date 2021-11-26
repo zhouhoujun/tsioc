@@ -7,6 +7,7 @@ import { AutorunDefine, ctorName, DecoratorType, DecorDefine, DecorMemberType, D
 import { Token } from '../tokens';
 import { ProviderType } from '../providers';
 import { ParameterMetadata, PropertyMetadata } from './meta';
+import { OperationArgumentResolver } from '../invoker';
 
 
 interface DefineDescriptor<T = any> extends TypedPropertyDescriptor<T> {
@@ -41,11 +42,17 @@ export class TypeDefine {
      */
     readonly providers: ProviderType[];
     /**
-     * props.
+     * class resolvers.
+     *
+     * @type {Map<ProviderType[]>}
+     */
+    readonly resolvers: OperationArgumentResolver[];
+    /**
+     * property metadata.
      *
      * @type {Map<string, PropertyMetadata[]>}
      */
-    private propProviders: Map<string, PropertyMetadata[]>;
+    private propMetadatas: Map<string, PropertyMetadata[]>;
     /**
      * method params.
      *
@@ -58,6 +65,12 @@ export class TypeDefine {
      * @type {Map<ProviderType[]>}
      */
     private methodProviders: Map<string, ProviderType[]>;
+    /**
+     * method resolvers.
+     *
+     * @type {Map<ProviderType[]>}
+     */
+    private methodResolvers: Map<string, OperationArgumentResolver[]>;
     /**
      * auto run defines.
      */
@@ -80,10 +93,12 @@ export class TypeDefine {
         }
         this.provides = [];
         this.providers = [];
+        this.resolvers = parent ? parent.resolvers.slice(0) : [];
         this.autoruns = parent ? parent.autoruns.filter(a => a.decorType !== 'class') : [];
-        this.propProviders = new Map();
+        this.propMetadatas = new Map();
         this.methodParams = new Map();
         this.methodProviders = new Map();
+        this.methodResolvers = new Map();
     }
 
 
@@ -104,33 +119,31 @@ export class TypeDefine {
     }
 
     hasProperyProviders(prop: string): boolean {
-        return this.propProviders.has(prop);
+        return this.propMetadatas.has(prop);
     }
-
     getProperyProviders(prop: string): PropertyMetadata[] | undefined {
-        return this.propProviders.get(prop) ?? this.parent?.getProperyProviders(prop);
+        return this.propMetadatas.get(prop) ?? this.parent?.getProperyProviders(prop);
+    }
+    setProperyProviders(prop: string, metadatas: PropertyMetadata[]) {
+        if (this.propMetadatas.has(prop)) {
+            this.propMetadatas.get(prop)?.push(...metadatas);
+        } else {
+            this.propMetadatas.set(prop, metadatas);
+        }
     }
 
     eachProperty(callback: (value: PropertyMetadata[], key: string) => void) {
-        this.propProviders.size && this.propProviders.forEach(callback);
+        this.propMetadatas.size && this.propMetadatas.forEach(callback);
         this.parent?.eachProperty(callback);
     }
 
-    setProperyProviders(prop: string, metadatas: PropertyMetadata[]) {
-        if (this.propProviders.has(prop)) {
-            this.propProviders.get(prop)?.push(...metadatas);
-        } else {
-            this.propProviders.set(prop, metadatas);
-        }
-    }
 
     hasMethodProviders(method: string): boolean {
         return this.methodProviders.has(method);
     }
-    getMethodProviders(method: string): ProviderType[] {
-        return this.methodProviders.get(method) ?? this.parent?.getMethodProviders(method) ?? EMPTY;
+    getMethodProviders(method: string): ProviderType[] | undefined {
+        return this.methodProviders.get(method) ?? this.parent?.getMethodProviders(method);
     }
-
     setMethodProviders(method: string, providers: ProviderType[]) {
         if (this.methodProviders.has(method)) {
             this.methodProviders.get(method)?.push(...providers);
@@ -138,6 +151,18 @@ export class TypeDefine {
             this.methodProviders.set(method, providers);
         }
     }
+
+    getMethodResolvers(method: string): OperationArgumentResolver[] | undefined {
+        return this.methodResolvers.get(method) ?? this.parent?.getMethodResolvers(method);
+    }
+    setMethodResolvers(method: string, metadatas: OperationArgumentResolver[]) {
+        if (this.methodResolvers.has(method)) {
+            this.methodResolvers.get(method)?.push(...metadatas);
+        } else {
+            this.methodResolvers.set(method, metadatas);
+        }
+    }
+
 
     private currprop: string | undefined;
     private currpropidx!: number;

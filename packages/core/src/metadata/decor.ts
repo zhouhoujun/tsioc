@@ -10,7 +10,7 @@ import { CanActive } from '../middlewares/guard';
 import { AbstractRoute, RouteAdapter } from '../middlewares/route';
 import { RootRouter, Router } from '../middlewares/router';
 import { MappingReflect, RouteMappingRef, ProtocolRouteMappingMetadata } from '../middlewares/mapping';
-import { BootMetadata, HandleMetadata, HandlesMetadata, PipeMetadata, HandleMessagePattern, ComponentScanMetadata } from './meta';
+import { BootMetadata, HandleMetadata, HandlesMetadata, PipeMetadata, HandleMessagePattern, ComponentScanMetadata, TransactionalMetadata } from './meta';
 import { PipeTransform } from '../pipes/pipe';
 import { Server, ServerSet } from '../server/server';
 import { getModuleType } from '../module.ref';
@@ -685,5 +685,27 @@ export const RequestBody: RequsetParameterDecorator = createParamDecorator('Requ
     props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as RequsetParameterMetadata),
     appendProps: meta => {
         meta.scope = 'body';
+    }
+});
+
+/**
+ * Transactional Decorator, define transaction propagation behaviors.
+ * 
+ * @Transactional
+ */
+export interface Transactional {
+    /**
+     * Transactional decorator, define transaction propagation behaviors.
+     * @param option transactional metadata.
+     */
+    (option?: TransactionalMetadata): MethodDecorator;
+}
+
+export const Transactional: Transactional = createDecorator<TransactionalMetadata>('Transactional', {
+    actionType: ActionTypes.methodProviders,
+    design: {
+        method: [
+
+        ]
     }
 });
