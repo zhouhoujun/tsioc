@@ -227,25 +227,6 @@ export abstract class Injector implements Destroyable {
      */
     abstract unregister<T>(token: Token<T>): this;
     /**
-     * copy injector to current injector.
-     *
-     * @param {Injector} target copy from
-     * @param {(key: Token) => boolean} filter token key filter
-     * @returns {this} current injector.
-     */
-    abstract copy(from: Injector, filter?: (key: Token<any>) => boolean): this;
-    /**
-     * clone this injector to.
-     * @param to
-     */
-    abstract clone(to?: Injector): Injector;
-    /**
-     * clone this injector to.
-     * @param {(key: Token) => boolean} filter token key filter
-     * @param to
-     */
-    abstract clone(filter: (key: Token<any>) => boolean, to?: Injector): Injector;
-    /**
      * invoke method.
      *
      * @template T

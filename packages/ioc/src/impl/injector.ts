@@ -168,15 +168,13 @@ export class DefaultInjector extends Injector {
         return this;
     }
 
-    protected processProvider(platform: Platform, p: Injector | TypeOption | StaticProvider, providers?: ProviderType[]) {
+    protected processProvider(platform: Platform, p: TypeOption | StaticProvider, providers?: ProviderType[]) {
         if (isFunction(p)) {
             this.registerType(platform, p);
         } else if (isPlainObject(p) && (p as StaticProviders).provide) {
             this.registerProvider(platform, p as StaticProviders);
         } else if (isPlainObject(p) && (p as TypeOption).type) {
             this.registerType(platform, (p as TypeOption).type, p as TypeOption);
-        } else if (p instanceof Injector) {
-            this.copy(p);
         } else if (p instanceof KeyValueProvider) {
             p.each((k, useValue) => {
                 this.records.set(k, { value: useValue });
@@ -563,34 +561,6 @@ export class DefaultInjector extends Injector {
     }
 
     /**
-     * copy resolver.
-     *
-     * @param {BaseInjector} from
-     * @returns
-     * @memberof ProviderMap
-     */
-    copy(from: Injector, filter?: (key: Token) => boolean): this {
-        if (!from) {
-            return this;
-        }
-        this.merge(from as DefaultInjector, this, filter);
-        return this;
-    }
-
-    clone(to?: Injector): Injector;
-    clone(filter: (key: Token) => boolean, to?: Injector): Injector;
-    clone(filter?: any, to?: Injector): Injector {
-        if (!isFunction(filter)) {
-            to = filter;
-            filter = undefined;
-        }
-        to = to || new (getClass(this))(this.parent);
-        this.merge(this, to as DefaultInjector, filter);
-        return to!;
-    }
-
-
-    /**
      * invoke method.
      *
      * @template T
@@ -712,15 +682,6 @@ export class DefaultInjector extends Injector {
         return this.getLoader().register(this, modules);
     }
 
-
-    protected merge(from: DefaultInjector, to: DefaultInjector, filter?: (key: Token) => boolean) {
-        from.records.forEach((rd, key) => {
-            if (key === Injector || key === INJECTOR) return;
-            if (filter && !filter(key)) return;
-            to.records.set(key, rd.fnType === FnType.Inj ? { fn: (pdr: Injector) => from.get(key, pdr) } : { ...rd });
-        });
-    }
-
     protected assertNotDestroyed(): void {
         if (this.destroyed) {
             throw new Error('Injector has already been destroyed.');
@@ -822,14 +783,6 @@ export function processInjectorType(typeOrDef: Type | InjectorTypeWithProviders,
 
     regType(typeRef, type);
 }
-
-
-// export function throwExisting(type: Type<any> | undefined, incoming: Type<any>) {
-//     if (type && type !== incoming) {
-//         throw new Error(
-//             `Duplicate module registered for - ${getClassName(type)}`);
-//     }
-// }
 
 
 const IDENT = function <T>(value: T): T {
