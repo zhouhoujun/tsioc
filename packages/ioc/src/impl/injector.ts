@@ -730,10 +730,9 @@ export class DefaultInjector extends Injector {
 
     protected destroying() {
         this.scope && this.platform()?.removeInjector(this.scope);
-        Array.from(this.records.keys())
-            .forEach(k => {
-                this.unregister(k);
-            });
+        this.records.forEach(r=> {
+            r.unreg && r.unreg()
+        });
         this.records.clear();
         this.records = null!;
         if (this.parent) {
