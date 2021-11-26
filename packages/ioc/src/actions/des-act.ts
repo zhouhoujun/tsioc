@@ -26,7 +26,6 @@ export class DesignClassScope extends IocRegScope<DesignContext> implements IAct
 
     setup() {
         this.use(
-            // AnnoRegInAction,
             BeforeAnnoDecorHandle,
             TypeProviderAction,
             RegClassAction,

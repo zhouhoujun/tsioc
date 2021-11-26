@@ -1,5 +1,5 @@
 import { ArgumentError, lang, Singleton } from '@tsdi/ioc';
-import { Aspect, Joinpoint, Pointcut } from '@tsdi/aop';
+import { Aspect, Joinpoint, Pointcut, Before, AfterReturning, AfterThrowing } from '@tsdi/aop';
 import { TransactionalMetadata } from '../metadata/meta';
 import { TransactionManager } from './manager';
 
@@ -14,11 +14,22 @@ import { TransactionManager } from './manager';
 @Aspect()
 export class AnnotationTransactionalAspect {
 
-    @Pointcut('@annotation(Transactional)', { annotationName: 'Transactional', annotationArgName: 'annotation' })
-    processTransaction(manager: TransactionManager, annotation: TransactionalMetadata[], joinPoint: Joinpoint) {
+    @Before('@annotation(Transactional)', { annotationName: 'Transactional', annotationArgName: 'annotation' })
+    transaction(manager: TransactionManager, annotation: TransactionalMetadata[], joinPoint: Joinpoint) {
         if(!manager) throw new ArgumentError('TransactionManager can not be null.');
         const metadata = lang.first(annotation);
         
-        
+    }
+
+    @AfterReturning('@annotation(Transactional)', 'returning', { annotationName: 'Transactional', annotationArgName: 'annotation' })
+    commit(manager: TransactionManager, annotation: TransactionalMetadata[], returning: any, joinPoint: Joinpoint) {
+        if(!manager) throw new ArgumentError('TransactionManager can not be null.');
+        const metadata = lang.first(annotation);
+    }
+
+    @AfterThrowing('@annotation(Transactional)', 'error', { annotationName: 'Transactional', annotationArgName: 'annotation' })
+    rollback(manager: TransactionManager, error: Error, annotation: TransactionalMetadata[], joinPoint: Joinpoint) {
+        if(!manager) throw new ArgumentError('TransactionManager can not be null.');
+        const metadata = lang.first(annotation);
     }
 }
