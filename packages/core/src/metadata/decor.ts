@@ -1,7 +1,7 @@
 import {
     isUndefined, EMPTY_OBJ, isArray, isString, lang, Type, isRegExp, createDecorator,
     ClassMethodDecorator, ClassMetadata, createParamDecorator, ParameterMetadata,
-    Resolver, ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes, isFunction, ProviderType,
+    Resolver, ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes, ProviderType,
 } from '@tsdi/ioc';
 import { Service, ServiceSet } from '../services/service';
 import { Middleware, Middlewares, MiddlewareType, Route } from '../middlewares/middleware';
@@ -703,9 +703,12 @@ export interface Transactional {
 
 export const Transactional: Transactional = createDecorator<TransactionalMetadata>('Transactional', {
     actionType: ActionTypes.methodProviders,
-    design: {
+    reflect: {
         method: [
-
+            (ctx, next) => {
+                let pdrs = ctx.providers;
+                next();
+            }
         ]
     }
 });

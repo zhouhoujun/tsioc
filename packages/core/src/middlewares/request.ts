@@ -139,12 +139,12 @@ export abstract class Request {
     }
 
     /**
-   * Get the search string. Same as the querystring
-   * except it includes the leading ?.
-   *
-   * @return {String}
-   * @api public
-   */
+     * Get the search string. Same as the querystring
+     * except it includes the leading.
+     *
+     * @return {String}
+     * @api public
+     */
     get search() {
         return this.URL.search;
     }
@@ -277,6 +277,9 @@ export abstract class Request {
  * request init option for {@link Request}.
  */
 export interface RequestInit {
+    /**
+     * headers options.
+     */
     headers?: HeadersOption;
     /**
      * protocol.
