@@ -7,6 +7,7 @@ import { ProviderType } from './providers';
 import { DestroyCallback, Destroyable } from './destroy';
 import { Token } from './tokens';
 import { Injector } from './injector';
+import { remove } from './utils/lang';
 
 
 
@@ -46,13 +47,36 @@ export interface OperationArgumentResolver<C = any> {
     resolve<T>(parameter: Parameter<T>, ctx: InvocationContext<C>): T;
 }
 
+@Abstract()
+export abstract class ResolverFactory {
+    abstract create(): OperationArgumentResolver[]
+}
+
+export type Resovlver = OperationArgumentResolver | Type<ResolverFactory>;
+
+/**
+ * Compose argument resolver.
+ */
+export interface ComposeArgumentResolver<C = any> extends OperationArgumentResolver<C> {
+    /**
+     * add resolver.
+     * @param resolver 
+     */
+    add(resolver: OperationArgumentResolver): void;
+    /**
+     * remove resolver.
+     * @param resolver 
+     */
+    remove(resolver: OperationArgumentResolver): void;
+}
+
 /**
  * compose resolver for an argument of an {@link OperationInvoker}.
  * @param filter compose canResolver filter.
  * @param resolvers resolves of the group.
  * @returns 
  */
-export function composeResolver<T extends OperationArgumentResolver, TP extends Parameter = Parameter>(filter: (parameter: TP, ctx: InvocationContext) => boolean, ...resolvers: T[]): OperationArgumentResolver {
+export function composeResolver<T extends OperationArgumentResolver, TP extends Parameter = Parameter>(filter: (parameter: TP, ctx: InvocationContext) => boolean, ...resolvers: T[]): ComposeArgumentResolver {
     return {
         canResolve: (parameter: TP, ctx: InvocationContext) => filter(parameter, ctx) && resolvers.some(r => r.canResolve(parameter, ctx)),
         resolve: (parameter: TP, ctx: InvocationContext) => {
@@ -65,6 +89,14 @@ export function composeResolver<T extends OperationArgumentResolver, TP extends 
                 return false;
             });
             return result ?? null;
+        },
+        add: (resolver) => {
+            if (resolvers.indexOf(resolver as T) < 0) {
+                resolvers.push(resolver as T);
+            }
+        },
+        remove: (resolver) => {
+            remove(resolvers, resolver);
         }
     }
 }
@@ -90,8 +122,15 @@ export class InvocationContext<T = any> implements Destroyable {
         readonly method?: string,
         args?: T,
         values?: TokenValue[],
-        ...argumentResolvers: OperationArgumentResolver[]) {
-        this.resolvers = argumentResolvers;
+        ...argumentResolvers: (OperationArgumentResolver | Type<ResolverFactory>)[]) {
+        this.resolvers = [];
+        argumentResolvers.forEach(r => {
+            if (isFunction(r)) {
+                this.resolvers.push(...injector.get<ResolverFactory>(r).create());
+            } else {
+                this.resolvers.push(r);
+            }
+        })
         this._arguments = args ?? {} as T;
         this._values = new Map(values);
         injector.onDestroy(() => this.destroy());
@@ -143,6 +182,11 @@ export class InvocationContext<T = any> implements Destroyable {
         return meta.resolver?.canResolve(meta, this) === true
             || this.resolvers.some(r => r.canResolve(meta, this))
             || this.parent?.canResolve(meta) == true;
+    }
+
+    getMetaReolvers(meta: Parameter) {
+        meta.resolver
+        return 
     }
 
     resolveArgument<T>(meta: Parameter<T>): T | null {

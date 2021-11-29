@@ -1,4 +1,4 @@
-import { ApplicationContext, ComponentScan, RouteMapping, StartupService } from '@tsdi/core';
+import { ApplicationContext, ComponentScan, RouteMapping, StartupService, Transactional } from '@tsdi/core';
 import { Inject, Injector, lang } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { User } from '../models/models';
@@ -21,6 +21,7 @@ export class UserController {
         return this.usrRep.findByAccount(name);
     }
 
+    @Transactional()
     @RouteMapping('/', 'post')
     @RouteMapping('/', 'put')
     async modify(user: User) {

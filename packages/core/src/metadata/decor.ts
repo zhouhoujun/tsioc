@@ -1,7 +1,7 @@
 import {
     isUndefined, EMPTY_OBJ, isArray, isString, lang, Type, isRegExp, createDecorator,
-    ClassMethodDecorator, ClassMetadata, createParamDecorator, ParameterMetadata,
-    Resolver, ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes, ProviderType,
+    ClassMethodDecorator, createParamDecorator, ParameterMetadata, Resolver, ProviderType,
+    ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes, composeResolver,
 } from '@tsdi/ioc';
 import { StartupService, ServiceSet } from '../service';
 import { Middleware, Middlewares, MiddlewareType, Route } from '../middlewares/middleware';
@@ -10,7 +10,7 @@ import { CanActive } from '../middlewares/guard';
 import { AbstractRoute, RouteAdapter } from '../middlewares/route';
 import { RootRouter, Router } from '../middlewares/router';
 import { MappingReflect, RouteMappingRef, ProtocolRouteMappingMetadata } from '../middlewares/mapping';
-import { BootMetadata, HandleMetadata, HandlesMetadata, PipeMetadata, HandleMessagePattern, ComponentScanMetadata, TransactionalMetadata, ScanReflect } from './meta';
+import { HandleMetadata, HandlesMetadata, PipeMetadata, HandleMessagePattern, ComponentScanMetadata, TransactionalMetadata, ScanReflect } from './meta';
 import { PipeTransform } from '../pipes/pipe';
 import { Server, ServerSet } from '../server';
 import { getModuleType } from '../module.ref';
@@ -596,6 +596,8 @@ export const RequestBody: RequsetParameterDecorator = createParamDecorator('Requ
     }
 });
 
+const TRANSACTION_METHOD_RESOLVERS = composeResolver((p) => true);
+
 /**
  * Transactional Decorator, define transaction propagation behaviors.
  * 
@@ -612,9 +614,15 @@ export interface Transactional {
 export const Transactional: Transactional = createDecorator<TransactionalMetadata>('Transactional', {
     actionType: ActionTypes.methodProviders,
     reflect: {
+        property: [
+            (ctx, next) => {
+                ctx.reflect.class.resolvers.push(TRANSACTION_METHOD_RESOLVERS);
+                next();
+            }
+        ],
         method: [
             (ctx, next) => {
-                let pdrs = ctx.providers;
+                ctx.reflect.class.setMethodResolvers(ctx.propertyKey, [TRANSACTION_METHOD_RESOLVERS]);
                 next();
             }
         ]
