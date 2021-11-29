@@ -1,11 +1,7 @@
-// services
-export * from './services/service';
-export * from './services/startup';
 
 // annotations
 export * from './configure/config';
 export * from './configure/manager';
-
 
 // metadata
 export * from './metadata/meta';
@@ -15,13 +11,16 @@ export * from './metadata/tk';
 export * from './dispose';
 export * from './shutdown';
 export * from './runnable';
+export * from './server';
+export * from './client';
+export * from './service';
+
 export * from './context';
 export * from './global';
 
 export * from './pipes';
 
-export * from './server';
-export * from './client';
+
 
 // modules
 export * from './module.ref';

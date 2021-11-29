@@ -1,5 +1,5 @@
 import { Injectable, isString, isClass, isArray, lang, refl } from '@tsdi/ioc';
-import { ApplicationContext, Runnable } from '@tsdi/core';
+import { ApplicationContext, Runner } from '@tsdi/core';
 import { OldTestRunner } from './OldTestRunner';
 import { DefaultTestReport } from '../reports/TestReport';
 import { UnitTestConfigure } from '../UnitTestConfigure';
@@ -10,7 +10,7 @@ import { SuiteReflect } from '../metadata/meta';
  * Suite runner.
  */
 @Injectable()
-export class UnitTestRunner extends Runnable {
+export class UnitTestRunner extends Runner {
 
     constructor(private ctx: ApplicationContext) {
         super()

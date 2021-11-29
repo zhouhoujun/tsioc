@@ -6,11 +6,12 @@ import { Disposable } from './dispose';
 import { ApplicationArguments, ApplicationExit } from './shutdown';
 import { ServerSet } from './server';
 import { ClientSet } from './client';
-import { ServiceSet } from './services/service';
+import { ServiceSet } from './service';
 import { MiddlewareModule } from './middleware';
 import { CoreModule, DEFAULTA_FACTORYS } from './core';
 import { ModuleRef } from './module.ref';
 import { ModuleFactoryResolver } from './module.factory';
+import { RunnableSet } from '.';
 
 
 /**
@@ -99,8 +100,9 @@ export class Application implements Disposable {
             }
             await this.statupServers(ctx.servers);
             await this.statupClients(ctx.clients);
-            await this.statupServices(ctx, ctx.services);
-            await this.bootstraps(ctx, this.root.moduleReflect.bootstrap);
+            await this.statupServices(ctx.services);
+            await this.statupRunnable(ctx.runnables);
+            await this.bootstraps(this.root.moduleReflect.bootstrap);
             return ctx;
         } catch (err) {
             if (this.context) {
@@ -189,25 +191,31 @@ export class Application implements Disposable {
 
     protected async statupServers(servers: ServerSet): Promise<void> {
         if (servers?.count) {
-            await servers.connent();
+            await servers.startup(this.context);
         }
     }
 
     protected async statupClients(clients: ClientSet): Promise<void> {
         if (clients?.count) {
-            await clients.connect();
+            await clients.startup(this.context);
         }
     }
 
-    protected async statupServices(ctx: ApplicationContext, services: ServiceSet): Promise<void> {
+    protected async statupServices(services: ServiceSet): Promise<void> {
         if (services?.count) {
-            await services.configuration(ctx);
+            await services.startup(this.context);
         }
     }
 
-    protected async bootstraps(ctx: ApplicationContext, bootstraps?: Type[]): Promise<void> {
+    protected async statupRunnable(runnables: RunnableSet): Promise<void> {
+        if (runnables?.count) {
+            await runnables.startup(this.context);
+        }
+    }
+
+    protected async bootstraps(bootstraps?: Type[]): Promise<void> {
         if (bootstraps && bootstraps.length) {
-            await Promise.all(bootstraps.map(b => ctx.bootstrap(b)));
+            await Promise.all(bootstraps.map(b => this.context.bootstrap(b)));
         }
     }
 }

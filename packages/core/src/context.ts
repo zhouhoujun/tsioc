@@ -8,14 +8,15 @@ import { Request, RequestInit, RequestOption } from './middlewares/request';
 import { Response } from './middlewares/response';
 import { Context } from './middlewares/context';
 import { MessageQueue } from './middlewares/queue';
-import { Runnable, RunnableFactory } from './runnable';
-import { ServiceSet } from './services/service';
+import { Runner, RunnableFactory } from './runnable';
+import { ServiceSet } from './service';
 import { ClientSet } from './client';
 import { ServerSet } from './server';
 import { ModuleOption } from './module.factory';
 import { ModuleRef } from './module.ref';
 import { ApplicationArguments } from './shutdown';
 import { Disposable } from './dispose';
+import { RunnableSet } from '.';
 
 
 
@@ -136,11 +137,15 @@ export abstract class ApplicationContext implements Destroyable, Disposable {
     /**
      * application clients.
      */
-     abstract get clients(): ClientSet;
+    abstract get clients(): ClientSet;
+    /**
+     * application clients.
+     */
+    abstract get runnables(): RunnableSet;
     /**
      * application bootstraps.
      */
-    abstract get bootstraps(): Runnable[];
+    abstract get bootstraps(): Runner[];
     /**
      * dispose application.
      */

@@ -1,5 +1,5 @@
 import { Abstract, Type } from '@tsdi/ioc';
-import { Runnable } from '@tsdi/core';
+import { Runner } from '@tsdi/core';
 import { SuiteDescribe, ICaseDescribe } from '../reports/interface';
 
 /**
@@ -10,7 +10,7 @@ import { SuiteDescribe, ICaseDescribe } from '../reports/interface';
  * @extends {IRunner<any>}
  */
 @Abstract()
-export abstract class UnitRunner extends Runnable {
+export abstract class UnitRunner extends Runner {
 
     abstract getInstanceType(): Type;
 

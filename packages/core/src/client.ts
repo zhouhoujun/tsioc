@@ -1,5 +1,7 @@
-import { Abstract, Destroy, Resolver } from '@tsdi/ioc';
+import { Abstract, Resolver, Type } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
+import { ApplicationContext } from './context';
+import { ScanSet } from './scan.set';
 
 
 /**
@@ -27,16 +29,23 @@ export interface Client {
 
 
 @Abstract()
-export abstract class ClientSet implements Destroy {
+export abstract class ClientSet implements ScanSet<Client> {
     /**
      * the client count.
      */
     abstract get count(): number;
+    
+    abstract getAll(): Resolver<Client>[];
+    /**
+     * has the client type or not.
+     * @param type 
+     */
+    abstract has(type: Type<any>): boolean;
     /**
      * add client resolver.
      * @param resolver 
      */
-    abstract add(resolver: Resolver<Client>): void;
+    abstract add(resolver: Resolver<Client>, order?: number): void;
     /**
      * remove client resolver.
      * @param resolver 
@@ -47,11 +56,11 @@ export abstract class ClientSet implements Destroy {
      */
     abstract clear(): void;
     /**
-     * connect all client.
-     */
-    abstract connect(): Promise<void>;
-    /**
      * destory this.
      */
     abstract destroy(): void
+    /**
+     * connect all client.
+     */
+    abstract startup(ctx: ApplicationContext): Promise<void>;
 }

@@ -3,13 +3,13 @@ import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { CONFIGURATION, PROCESS_ROOT } from './metadata/tk';
 import { Configuration, ConfigureManager } from './configure/config';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from './context';
-import { Runnable, RunnableFactory, RunnableFactoryResolver } from './runnable';
+import { Runner, RunnableFactory, RunnableFactoryResolver, RunnableSet } from './runnable';
 import { Response, Request, Context, MessageQueue, RequestInit, RequestOption, ROOT_QUEUE } from './middlewares';
 import { ModuleRef } from './module.ref';
 import { ApplicationArguments } from './shutdown';
 import { ServerSet } from './server';
 import { ClientSet } from './client';
-import { ServiceSet } from './services/service';
+import { ServiceSet } from './service';
 
 
 
@@ -25,7 +25,7 @@ export class DefaultApplicationContext extends ApplicationContext {
 
     private _destroyed = false;
     private _dsryCbs = new Set<DestroyCallback>();
-    readonly bootstraps: Runnable[] = [];
+    readonly bootstraps: Runner[] = [];
     readonly startups: Token[] = [];
 
     exit = true;
@@ -41,6 +41,10 @@ export class DefaultApplicationContext extends ApplicationContext {
 
     get services() {
         return this.injector.get(ServiceSet);
+    }
+
+    get runnables() {
+        return this.injector.get(RunnableSet);
     }
 
     get servers() {

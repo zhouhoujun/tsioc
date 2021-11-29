@@ -3,18 +3,20 @@ import {
     ClassMethodDecorator, ClassMetadata, createParamDecorator, ParameterMetadata,
     Resolver, ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes, ProviderType,
 } from '@tsdi/ioc';
-import { Service, ServiceSet } from '../services/service';
+import { StartupService, ServiceSet } from '../service';
 import { Middleware, Middlewares, MiddlewareType, Route } from '../middlewares/middleware';
 import { ROOT_QUEUE } from '../middlewares/root';
 import { CanActive } from '../middlewares/guard';
 import { AbstractRoute, RouteAdapter } from '../middlewares/route';
 import { RootRouter, Router } from '../middlewares/router';
 import { MappingReflect, RouteMappingRef, ProtocolRouteMappingMetadata } from '../middlewares/mapping';
-import { BootMetadata, HandleMetadata, HandlesMetadata, PipeMetadata, HandleMessagePattern, ComponentScanMetadata, TransactionalMetadata } from './meta';
+import { BootMetadata, HandleMetadata, HandlesMetadata, PipeMetadata, HandleMessagePattern, ComponentScanMetadata, TransactionalMetadata, ScanReflect } from './meta';
 import { PipeTransform } from '../pipes/pipe';
-import { Server, ServerSet } from '../server/server';
+import { Server, ServerSet } from '../server';
 import { getModuleType } from '../module.ref';
 import { Client, ClientSet } from '../client';
+import { Runnable, RunnableSet } from '../runnable';
+import { ScanSet } from '../scan.set';
 
 
 
@@ -105,120 +107,9 @@ export const DIModule = Module;
 
 
 /**
- * boot decorator.
- */
-export type BootDecorator = <TFunction extends Type<Service>>(target: TFunction) => TFunction | void;
-
-/**
- * Boot decorator, use to define class as statup service when bootstrap application.
- *
- * @export
- * @interface Boot
- * @template T
- */
-export interface Boot {
-    /**
-     * Boot decorator, use to define class as statup service when bootstrap application.
-     *
-     * @Boot()
-     *
-     * @param {BootMetadata} [metadata] bootstrap metadate config.
-     */
-    (metadata?: BootMetadata): BootDecorator;
-}
-
-/**
- * Boot decorator, use to define class as statup service when bootstrap application.
- *
- * @Boot()
- * @exports {@link Boot}
- */
-export const Boot: Boot = createDecorator<BootMetadata>('Boot', {
-    actionType: ActionTypes.annoation,
-    reflect: {
-        class: [
-            (ctx, next) => {
-                ctx.reflect.singleton = true;
-                ctx.reflect.annotation = ctx.metadata;
-                return next();
-            }
-        ]
-    },
-    design: {
-        afterAnnoation: (ctx, next) => {
-            const { type, injector } = ctx;
-            let boots = injector.get(ServiceSet).getAll();
-            const meta = ctx.reflect.annotation as BootMetadata;
-
-            let existIdx = boots.findIndex(b => b.type === type);
-            let restIdx = existIdx;
-            let resolver = existIdx >= 0 ? boots[existIdx] : undefined;
-            const { before, after } = meta;
-            if (resolver) {
-                resolver.resolve = (ctx: any) => injector.get(type, ctx);
-            } else {
-                resolver = { type, resolve: (ctx) => injector.get(type, ctx) } as Resolver;
-            }
-
-            if (before === 'all') {
-                existIdx >= 0 && boots.splice(existIdx, 1);
-                boots.unshift(resolver);
-                restIdx = 0;
-            } else if (before) {
-                let idx = boots.findIndex(b => b.type === before);
-                if (idx < 0) {
-                    boots.splice(existIdx + 1, 0, { type: before, resolve: (context) => injector.resolve({ token: before, regify: true, context }) });
-                } else {
-                    existIdx >= 0 && boots.splice(existIdx, 1);
-                    restIdx = idx - 1;
-                    boots.splice(restIdx, 0, resolver);
-                }
-            } else if (after === 'all') {
-                existIdx >= 0 && boots.splice(existIdx, 1);
-                boots.push(resolver);
-                restIdx = -1;
-            } else if (after) {
-                let idx = boots.findIndex(b => b.type === after);
-                if (idx < 0) {
-                    boots.splice(existIdx - 1, 0, { type: after, resolve: (context) => injector.resolve({ token: after, regify: true, context }) });
-                } else {
-                    existIdx >= 0 && boots.splice(existIdx, 1);
-                    restIdx = idx + 1;
-                    boots.splice(restIdx, 0, resolver);
-                }
-            } else {
-                boots.push(resolver);
-                restIdx = -1;
-            }
-
-            if (meta.deps) {
-                meta.deps.forEach(d => {
-                    let reged = boots.findIndex(b => b.type === d);
-                    if (reged < 0) {
-                        const depResr = { type: d, resolve: (context) => injector.resolve({ token: d, regify: true, context }) } as Resolver;
-                        if (restIdx < 0) {
-                            boots.push(depResr);
-                        }
-                        boots.splice(restIdx - 1, 0, depResr);
-                    }
-                });
-            }
-
-            return next();
-        }
-    },
-    appendProps: (meta) => {
-        meta.singleton = true;
-        return meta;
-    }
-});
-
-
-
-/**
  * ComponentScan decorator.
  */
-export type ComponentScanDecorator = <TFunction extends Type<Server | Client>>(target: TFunction) => TFunction | void;
+export type ComponentScanDecorator = <TFunction extends Type<Server | Client | StartupService | Runnable>>(target: TFunction) => TFunction | void;
 
 /**
  * ComponentScan decorator, use to auto scan server or client for application.
@@ -237,7 +128,6 @@ export interface ComponentScan {
          * order in set.
          */
         order?: number;
-        scanType?: 'server' | 'client' | 'service';
         /**
          * provider services of the class.
          *
@@ -254,12 +144,30 @@ export interface ComponentScan {
  */
 export const ComponentScan: ComponentScan = createDecorator<ComponentScanMetadata>('ComponentScan', {
     actionType: ActionTypes.annoation,
+    reflect: {
+        class: (ctx, next) => {
+            (ctx.reflect as ScanReflect).order = (ctx.metadata as ComponentScanMetadata).order;
+            next();
+        }
+    },
     design: {
         afterAnnoation: (ctx, next) => {
-            const { type, reflect, injector } = ctx;
-            let sets = reflect.class.hasMethod('connect', 'send', 'emit') ? injector.get(ClientSet) : injector.get(ServerSet);
-            const resolver = { type, resolve: (ctx) => injector.get(type, ctx) } as Resolver;
-            sets.add(resolver);
+            const { type, injector } = ctx;
+            const reflect = ctx.reflect as ScanReflect;
+            let sets: ScanSet | undefined;
+            if (reflect.class.hasMethod('connect', 'send', 'emit')) {
+                sets = injector.get(ClientSet)
+            } else if (reflect.class.hasMethod('startup')) {
+                sets = injector.get(ServerSet);
+            } else if (reflect.class.hasMethod('configureService')) {
+                sets = injector.get(ServiceSet);
+            } else if (reflect.class.hasMetadata('run')) {
+                sets = injector.get(RunnableSet);
+            }
+            if (sets && !sets.has(type)) {
+                const resolver = { type, resolve: (ctx) => injector.get(type, ctx) } as Resolver;
+                sets.add(resolver, reflect.order);
+            }
             return next();
         }
     },

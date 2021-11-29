@@ -1,5 +1,5 @@
-import { Module, Message, MessageQueue, StartupService, ApplicationContext, Boot, Configuration, Runnable } from '../src';
-import { Injectable, Inject } from '@tsdi/ioc';
+import { Module, Message, MessageQueue, StartupService, ApplicationContext, Configuration, Runner, ComponentScan } from '../src';
+import { Injectable, Inject, Destroy } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
 import { ILogger, LogConfigure, Logger, LogModule } from '@tsdi/logs';
 import * as net from 'net';
@@ -40,7 +40,7 @@ export class ModuleA {
 }
 
 @Injectable()
-export class ClassSevice extends Runnable {
+export class ClassSevice extends Runner {
 
     @Logger() logger!: ILogger;
 
@@ -108,8 +108,8 @@ export class SharedModule {
 export class ModuleB { }
 
 
-@Boot()
-export class SocketService extends StartupService {
+@ComponentScan()
+export class SocketService implements StartupService, Destroy {
 
     @Logger() logger!: ILogger;
 
@@ -117,16 +117,16 @@ export class SocketService extends StartupService {
     private context!: ApplicationContext;
     private init_times = 0;
 
-    override async configureService(ctx: ApplicationContext): Promise<void> {
+    async configureService(ctx: ApplicationContext): Promise<void> {
         this.logger.log('SocketService init...')
         this.context = ctx;
         const tcpServer = this.tcpServer = new net.Server();
         tcpServer.listen(8801);
         this.init_times++;
-        this.logger.log('destroyed state', this.destroyed, 'init', this.init_times);
+        this.logger.log('destroyed state', 'init', this.init_times);
     }
 
-    protected override destroying() {
+    destroy() {
         this.logger.log('SocketService destroying...');
         this.tcpServer.removeAllListeners();
         this.tcpServer.close();

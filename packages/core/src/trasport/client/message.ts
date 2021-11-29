@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
-import { Router } from '../middlewares/router';
-import { Client } from './client';
+import { Router } from '../../middlewares/router';
+import { Client } from '../../client';
 
 
 export class MessageClient implements Client {

@@ -78,10 +78,8 @@ describe('di module', () => {
         let ser = ctx.injector.get(SocketService);
         expect(ser).toBeInstanceOf(SocketService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server);
-        expect(ser.destroyed).toBeFalsy();
         ctx.destroy();
         expect(ctx.destroyed).toBeTruthy();
-        expect(ser.destroyed).toBeTruthy();
     });
 
     it('can statup socket service in module', async () => {
@@ -89,10 +87,8 @@ describe('di module', () => {
         let ser = ctx.injector.get(SocketService);
         expect(ser).toBeInstanceOf(SocketService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server);
-        expect(ser.destroyed).toBeFalsy();
         ctx.destroy();
         expect(ctx.destroyed).toBeTruthy();
-        expect(ser.destroyed).toBeTruthy();
     });
 
     it('can statup socket service in module with option', async () => {
@@ -103,12 +99,10 @@ describe('di module', () => {
             ]
         });
         let ser = ctx.injector.get(SocketService);
-        expect(ser.destroyed).toEqual(false);
         expect(ser).toBeInstanceOf(SocketService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server)
         ctx.destroy();
         expect(ctx.destroyed).toBeTruthy();
-        expect(ser.destroyed).toBeTruthy();
     });
 
 
@@ -124,13 +118,11 @@ describe('di module', () => {
         });
         let ser = ctx.injector.get(SocketService);
         expect(ser).toBeInstanceOf(SocketService);
-        expect(ser.destroyed).toEqual(false);
         expect(ctx.injector.get('mark')).toEqual('marked');
         let tsr = ctx.injector.get(TestService);
         expect(tsr).toBeInstanceOf(TestService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server);
         ctx.destroy();
-        expect(ser.destroyed).toEqual(true);
     })
 
 });
