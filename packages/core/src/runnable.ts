@@ -16,7 +16,7 @@ export interface Runnable {
  * runner
  */
 @Abstract()
-export abstract class Runner {
+export abstract class Runner implements Runnable {
     /**
      * run.
      */

@@ -11,7 +11,7 @@ import { MiddlewareModule } from './middleware';
 import { CoreModule, DEFAULTA_FACTORYS } from './core';
 import { ModuleRef } from './module.ref';
 import { ModuleFactoryResolver } from './module.factory';
-import { RunnableSet } from '.';
+import { RunnableSet } from './runnable';
 
 
 /**

@@ -64,7 +64,7 @@ export class AsyncPipe implements OnDestroy, PipeTransform {
   }
 
   private _dispose(): void {
-    this._strategy.dispose(this._subscription);
+    this._subscription && this._strategy.dispose(this._subscription);
     this._latestValue = null;
     this._subscription = null;
     this._obj = null;
