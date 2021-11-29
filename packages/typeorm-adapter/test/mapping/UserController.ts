@@ -1,4 +1,4 @@
-import { ApplicationContext, Boot, RouteMapping, StartupService } from '@tsdi/core';
+import { ApplicationContext, ComponentScan, RouteMapping, StartupService } from '@tsdi/core';
 import { Inject, Injector, lang } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { User } from '../models/models';
@@ -40,10 +40,10 @@ export class UserController {
 }
 
 
-@Boot()
-export class RouteStartup extends StartupService {
+@ComponentScan()
+export class RouteStartup implements StartupService {
    
-    override async configureService(ctx: ApplicationContext): Promise<void> {
+    async configureService(ctx: ApplicationContext): Promise<void> {
         ctx.injector.register(UserController);
     }
 
