@@ -43,46 +43,46 @@ export class CoreModule {
 
 
 abstract class AbstractScanSet<T = any> implements ScanSet<T> {
-    private _rsvrs: Resolver<T>[] = [];
+    private _rs: Resolver<T>[] = [];
     protected order = false;
     constructor() {
-        this._rsvrs = [];
+        this._rs = [];
     }
 
     get count(): number {
-        return this._rsvrs.length;
+        return this._rs.length;
     }
 
 
     getAll(): Resolver<T>[] {
-        return this._rsvrs;
+        return this._rs;
     }
 
     has(type: Type): boolean {
-        return this._rsvrs.some(i => i.type === type);
+        return this._rs.some(i => i.type === type);
     }
     add(resolver: Resolver<T>, order?: number): void {
         if (this.has(resolver.type)) return;
         if (isNumber(order)) {
             this.order = true;
-            this._rsvrs.splice(order, 0, resolver);
+            this._rs.splice(order, 0, resolver);
         } else {
-            this._rsvrs.push(resolver);
+            this._rs.push(resolver);
         }
     }
     remove(resolver: Resolver<T> | Type<T>): void {
-        lang.remove(this._rsvrs, resolver);
+        lang.remove(this._rs, resolver);
     }
     clear(): void {
-        this._rsvrs = [];
+        this._rs = [];
     }
 
     async startup(ctx: ApplicationContext): Promise<void> {
-        if (this._rsvrs.length) {
+        if (this._rs.length) {
             if (this.order) {
-                await lang.step(Array.from(this._rsvrs).map(svr => () => this.run(svr, ctx)));
+                await lang.step(Array.from(this._rs).map(svr => () => this.run(svr, ctx)));
             } else {
-                await Promise.all(this._rsvrs.map(svr => this.run(svr, ctx)));
+                await Promise.all(this._rs.map(svr => this.run(svr, ctx)));
             }
         }
     }

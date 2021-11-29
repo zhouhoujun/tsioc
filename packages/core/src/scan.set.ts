@@ -9,6 +9,9 @@ export interface ScanSet<T = any> extends Destroy {
      * the scan count.
      */
     get count(): number;
+    /**
+     * get all.
+     */
     getAll(): Resolver<T>[];
     /**
      * has register scan type.

@@ -2,36 +2,45 @@ import { Abstract, Resolver, Type } from '@tsdi/ioc';
 import { ApplicationContext, BootstrapOption } from './context';
 import { ScanSet } from './scan.set';
 
-
+/**
+ * runnable
+ */
 export interface Runnable {
+    /**
+     * run.
+     */
     run(): any;
 }
 
 /**
- * runnable
+ * runner
  */
 @Abstract()
 export abstract class Runner {
     /**
-     * run this service.
+     * run.
      */
     abstract run(): any;
 }
 
-
+/**
+ * runnable scan set.
+ */
 @Abstract()
 export abstract class RunnableSet implements ScanSet<Runnable> {
-   /**
+    /**
      * the service count.
      */
     abstract get count(): number;
-    
+    /**
+     * get all.
+     */
     abstract getAll(): Resolver<Runnable>[];
     /**
      * has the client type or not.
      * @param type 
      */
-     abstract has(type: Type<any>): boolean;
+    abstract has(type: Type<any>): boolean;
     /**
      * add service resolver.
      * @param resolver
@@ -57,10 +66,8 @@ export abstract class RunnableSet implements ScanSet<Runnable> {
     abstract startup(ctx: ApplicationContext): Promise<void>;
 }
 
-
-
 /**
- * boot factory.
+ * runnable factory.
  */
 @Abstract()
 export abstract class RunnableFactory<T> {
@@ -72,7 +79,7 @@ export abstract class RunnableFactory<T> {
      * create boot context.
      * @param option 
      */
-    abstract create(option: BootstrapOption, context?: ApplicationContext): Runner;
+    abstract create(option: BootstrapOption, context?: ApplicationContext): Runnable;
 }
 
 /**

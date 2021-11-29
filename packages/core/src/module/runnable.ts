@@ -1,5 +1,5 @@
 import { Type, refl, lang, TypeReflect, OperationFactoryResolver, EMPTY } from '@tsdi/ioc';
-import { Runner, RunnableFactory, RunnableFactoryResolver } from '../runnable';
+import { Runner, RunnableFactory, RunnableFactoryResolver, Runnable } from '../runnable';
 import { ApplicationContext, BootstrapOption } from '../context';
 import { ModuleRef } from '../module.ref';
 
@@ -27,7 +27,7 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
             } : option);
 
         const target = runnableRef.instance;
-        let runable: Runner;
+        let runable: Runnable;
         if (target instanceof Runner) {
             runable = target;
         } else {
