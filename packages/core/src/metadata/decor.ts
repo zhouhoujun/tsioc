@@ -1,7 +1,7 @@
 import {
     isUndefined, EMPTY_OBJ, isArray, isString, lang, Type, isRegExp, createDecorator,
     ClassMethodDecorator, createParamDecorator, ParameterMetadata, Resolver, ProviderType,
-    ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes, composeResolver,
+    ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes
 } from '@tsdi/ioc';
 import { StartupService, ServiceSet } from '../service';
 import { Middleware, Middlewares, MiddlewareType, Route } from '../middlewares/middleware';
@@ -17,6 +17,7 @@ import { getModuleType } from '../module.ref';
 import { Client, ClientSet } from '../client';
 import { Runnable, RunnableSet } from '../runnable';
 import { ScanSet } from '../scan.set';
+import { TransactionResolvers } from '../transaction/resolver';
 
 
 
@@ -596,7 +597,7 @@ export const RequestBody: RequsetParameterDecorator = createParamDecorator('Requ
     }
 });
 
-const TRANSACTION_METHOD_RESOLVERS = composeResolver((p) => true);
+
 
 /**
  * Transactional Decorator, define transaction propagation behaviors.
@@ -616,13 +617,13 @@ export const Transactional: Transactional = createDecorator<TransactionalMetadat
     reflect: {
         property: [
             (ctx, next) => {
-                ctx.reflect.class.resolvers.push(TRANSACTION_METHOD_RESOLVERS);
+                ctx.reflect.class.resolvers.push(TransactionResolvers);
                 next();
             }
         ],
         method: [
             (ctx, next) => {
-                ctx.reflect.class.setMethodResolvers(ctx.propertyKey, [TRANSACTION_METHOD_RESOLVERS]);
+                ctx.reflect.class.setMethodResolvers(ctx.propertyKey, [TransactionResolvers]);
                 next();
             }
         ]
