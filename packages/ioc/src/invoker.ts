@@ -46,9 +46,10 @@ export interface OperationArgumentResolver<C = any> {
     resolve<T>(parameter: Parameter<T>, ctx: InvocationContext<C>): T;
 }
 
-
-export type ArgumentResovlver = OperationArgumentResolver | ClassType<OperationArgumentResolver>;
-
+/**
+ * argument resolver type.
+ */
+export type ArgumentResolver = OperationArgumentResolver | ClassType<OperationArgumentResolver>;
 
 /**
  * compose resolver for an argument of an {@link OperationInvoker}.
@@ -94,7 +95,7 @@ export class InvocationContext<T = any> implements Destroyable {
         readonly method?: string,
         args?: T,
         values?: TokenValue[],
-        ...argumentResolvers: ArgumentResovlver[]) {
+        ...argumentResolvers: ArgumentResolver[]) {
         this.resolvers = argumentResolvers.map(r => isFunction(r) ? injector.get<OperationArgumentResolver>(r) : r);
         this._arguments = args ?? {} as T;
         this._values = new Map(values);
@@ -328,7 +329,7 @@ export interface InvokeArguments {
     /**
      * custom resolvers.
      */
-    resolvers?: ArgumentResovlver[];
+    resolvers?: ArgumentResolver[];
     /**
      * custom providers.
      */

@@ -18,7 +18,7 @@ import { ModuleReflect, TypeReflect } from '../metadata/type';
 import { get } from '../metadata/refl';
 import {
     InvocationContext, InvocationOption, InvokeOption, OperationArgumentResolver, isResolver, Parameter, OperationFactory,
-    ReflectiveOperationInvoker, OperationFactoryResolver, OperationInvoker, InvokeArguments, ReflectiveRef, composeResolver, ArgumentResovlver
+    ReflectiveOperationInvoker, OperationFactoryResolver, OperationInvoker, InvokeArguments, ReflectiveRef, composeResolver, ArgumentResolver
 } from '../invoker';
 import { DefaultModuleLoader } from './loader';
 import { ModuleLoader } from '../module.loader';
@@ -1111,8 +1111,8 @@ function createInvocationContext(injector: Injector, option?: InvocationOption &
     invokerTarget?: ClassType;
     targetProviders?: ProviderType[],
     methodProviders?: ProviderType[],
-    targetResolvers?: ArgumentResovlver[],
-    methodResolvers?: ArgumentResovlver[]
+    targetResolvers?: ArgumentResolver[],
+    methodResolvers?: ArgumentResolver[]
 }) {
     option = option || EMPTY_OBJ;
     let providers: ProviderType[] = option.providers ?? EMPTY;
@@ -1225,7 +1225,7 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
         }
         let proxy: boolean | undefined;
         let methodProviders: ProviderType[] | undefined;
-        let methodResolvers: ArgumentResovlver[] | undefined;
+        let methodResolvers: ArgumentResolver[] | undefined;
         const method = option?.invokerMethod;
         if (method) {
             methodProviders = this.targetReflect.class.getMethodProviders(method);

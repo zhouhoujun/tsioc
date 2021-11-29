@@ -7,7 +7,7 @@ import { AutorunDefine, ctorName, DecoratorType, DecorDefine, DecorMemberType, D
 import { Token } from '../tokens';
 import { ProviderType } from '../providers';
 import { ParameterMetadata, PropertyMetadata } from './meta';
-import { ArgumentResovlver } from '../invoker';
+import { ArgumentResolver } from '../invoker';
 
 
 interface DefineDescriptor<T = any> extends TypedPropertyDescriptor<T> {
@@ -44,9 +44,9 @@ export class TypeDefine {
     /**
      * class resolvers.
      *
-     * @type {ArgumentResovlver[]}
+     * @type {ArgumentResolver[]}
      */
-    readonly resolvers: ArgumentResovlver[];
+    readonly resolvers: ArgumentResolver[];
     /**
      * property metadata.
      *
@@ -70,7 +70,7 @@ export class TypeDefine {
      *
      * @type {Map<ProviderType[]>}
      */
-    private methodResolvers: Map<string, ArgumentResovlver[]>;
+    private methodResolvers: Map<string, ArgumentResolver[]>;
     /**
      * auto run defines.
      */
@@ -152,10 +152,10 @@ export class TypeDefine {
         }
     }
 
-    getMethodResolvers(method: string): ArgumentResovlver[] | undefined {
+    getMethodResolvers(method: string): ArgumentResolver[] | undefined {
         return this.methodResolvers.get(method) ?? this.parent?.getMethodResolvers(method);
     }
-    setMethodResolvers(method: string, metadatas: ArgumentResovlver[]) {
+    setMethodResolvers(method: string, metadatas: ArgumentResolver[]) {
         if (this.methodResolvers.has(method)) {
             this.methodResolvers.get(method)?.push(...metadatas);
         } else {

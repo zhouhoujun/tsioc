@@ -1,7 +1,7 @@
 import { ClassType, Modules, Type } from '../types';
 import { InjectFlags, Token } from '../tokens';
 import { InjectorTypeWithProviders, ProviderType } from '../providers';
-import { ArgumentResovlver } from '../invoker';
+import { ArgumentResolver } from '../invoker';
 
 /**
  * type metadata
@@ -144,7 +144,7 @@ export interface PropertyMetadata extends ProvideMetadata {
     /**
      * custom resolver to resolve property or parameter.
      */
-    resolver?: ArgumentResovlver;
+    resolver?: ArgumentResolver;
     /**
      * default value
      *
