@@ -44,6 +44,7 @@ export class CoreModule {
 
 abstract class AbstractScanSet<T = any> implements ScanSet<T> {
     private _rsvrs: Resolver<T>[] = [];
+    protected order = false;
     constructor() {
         this._rsvrs = [];
     }
@@ -51,8 +52,8 @@ abstract class AbstractScanSet<T = any> implements ScanSet<T> {
     get count(): number {
         return this._rsvrs.length;
     }
-    
-    
+
+
     getAll(): Resolver<T>[] {
         return this._rsvrs;
     }
@@ -63,6 +64,7 @@ abstract class AbstractScanSet<T = any> implements ScanSet<T> {
     add(resolver: Resolver<T>, order?: number): void {
         if (this.has(resolver.type)) return;
         if (isNumber(order)) {
+            this.order = true;
             this._rsvrs.splice(order, 0, resolver);
         } else {
             this._rsvrs.push(resolver);
@@ -77,7 +79,11 @@ abstract class AbstractScanSet<T = any> implements ScanSet<T> {
 
     async startup(ctx: ApplicationContext): Promise<void> {
         if (this._rsvrs.length) {
-            await lang.step(Array.from(this._rsvrs).map(svr => () => this.run(svr, ctx)));
+            if (this.order) {
+                await lang.step(Array.from(this._rsvrs).map(svr => () => this.run(svr, ctx)));
+            } else {
+                await Promise.all(this._rsvrs.map(svr => this.run(svr, ctx)));
+            }
         }
     }
 
