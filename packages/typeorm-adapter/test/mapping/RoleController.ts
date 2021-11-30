@@ -1,4 +1,4 @@
-import { RouteMapping, DBRepository, Transactional } from '@tsdi/core';
+import { RouteMapping, DBRepository, Transactional, RequestParam } from '@tsdi/core';
 import { ILogger, Logger } from '@tsdi/logs';
 import { Repository } from 'typeorm';
 import { Role } from '../models/models';
@@ -15,9 +15,10 @@ export class RoleController {
     @Transactional()
     @RouteMapping('/', 'post')
     @RouteMapping('/', 'put')
-    async save(role: Role) {
+    async save(role: Role, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(role);
         const value = await this.roleRepo.save(role);
+        if (check) throw new Error('check');
         this.logger.info(value);
         return value;
     }
@@ -30,6 +31,7 @@ export class RoleController {
     }
 
 
+    @Transactional()
     @RouteMapping('/:id', 'delete')
     async del(id: string) {
         this.logger.log('id:', id);

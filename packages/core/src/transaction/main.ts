@@ -6,6 +6,6 @@ import { TransactionalAspect } from './aspect';
         TransactionalAspect
     ]
 })
-export class TransitionModule {
+export class TransactionModule {
 
 } 

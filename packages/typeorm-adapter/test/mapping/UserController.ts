@@ -29,10 +29,12 @@ export class UserController {
     async modify(user: User, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(lang.getClassName(this.usrRep), user);
         let val = await this.usrRep.save(user);
+        if(check) throw new Error('check');
         this.logger.log(val);
         return val;
     }
 
+    @Transactional()
     @RouteMapping('/:id', 'delete')
     async del(id: string) {
         this.logger.log('id:', id);

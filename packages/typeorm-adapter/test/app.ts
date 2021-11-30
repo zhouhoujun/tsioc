@@ -1,4 +1,4 @@
-import { Module, ConnectionOptions } from '@tsdi/core';
+import { Module, ConnectionOptions, TransactionModule } from '@tsdi/core';
 import { LogModule } from '@tsdi/logs';
 import { ServerBootstrapModule } from '@tsdi/platform-server';
 import { Connection } from 'typeorm';
@@ -50,6 +50,25 @@ export const option = <ConnectionOptions>{
     ]
 })
 export class MockBootTest {
+
+}
+
+
+@Module({
+    baseURL: __dirname,
+    imports: [
+        LogModule,
+        ServerBootstrapModule,
+        TransactionModule,
+        TypeOrmModule
+    ],
+    providers: [
+        // RouteStartup,
+        UserController,
+        RoleController
+    ]
+})
+export class MockTransBootTest {
 
 }
 
