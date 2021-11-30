@@ -51,6 +51,10 @@ export interface Autowired {
          */
         mutil?: boolean;
         /**
+         * null able or not.
+         */
+        nullable?: boolean;
+        /**
          * default value
          *
          * @type {any}
@@ -84,6 +88,10 @@ export interface Autowired {
          * is mutil provider or not
          */
         mutil?: boolean;
+        /**
+         * null able or not.
+         */
+        nullable?: boolean;
         /**
          * default value
          *
@@ -162,6 +170,10 @@ export interface Inject {
          */
         mutil?: boolean;
         /**
+         * null able or not.
+         */
+        nullable?: boolean;
+        /**
          * default value
          *
          * @type {any}
@@ -195,6 +207,10 @@ export interface Inject {
          * is mutil provider or not
          */
         mutil?: boolean;
+        /**
+         * null able or not.
+         */
+        nullable?: boolean;
         /**
          * default value
          *
@@ -266,6 +282,10 @@ export interface Param {
          */
         mutil?: boolean;
         /**
+         * null able or not.
+         */
+        nullable?: boolean;
+        /**
          * default value
          *
          * @type {any}
@@ -299,6 +319,10 @@ export interface Param {
          * is mutil provider or not
          */
         mutil?: boolean;
+        /**
+         * null able or not.
+         */
+        nullable?: boolean;
         /**
          * default value
          *

@@ -44,7 +44,7 @@ export class ClassSevice extends Runner {
 
     @Logger() logger!: ILogger;
 
-    @Inject('mark', { defaultValue: '' })
+    @Inject('mark', { nullable:true })
     mark!: string;
 
     state!: string;

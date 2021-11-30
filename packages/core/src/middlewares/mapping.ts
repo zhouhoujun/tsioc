@@ -144,7 +144,7 @@ export class RouteMappingRef<T> extends AbstractRoute {
                 arguments: ctx,
                 resolvers: [
                     ...primitiveResolvers,
-                    ...injector.get(MODEL_RESOLVERS) ?? EMPTY
+                    ...injector.get(MODEL_RESOLVERS) ?? EMPTY,
                 ]
             });
 
@@ -339,6 +339,14 @@ const primitiveResolvers: TrasportArgumentResolver[] = [
                 const pipe = ctx.injector.get<PipeTransform>(parameter.pipe!);
                 if (!pipe) throw missingPipeError(parameter, ctx.target, ctx.method);
                 return pipe.transform(value, ...parameter.args || EMPTY);
+            }
+        },
+        {
+            canResolve(parameter, ctx) {
+                return parameter.nullable === true;
+            },
+            resolve(parameter, ctx) {
+                return undefined as any;
             }
         }
     )

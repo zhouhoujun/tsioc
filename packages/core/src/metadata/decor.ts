@@ -1,7 +1,7 @@
 import {
     isUndefined, EMPTY_OBJ, isArray, isString, lang, Type, isRegExp, createDecorator,
     ClassMethodDecorator, createParamDecorator, ParameterMetadata, Resolver, ProviderType,
-    ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes, PropParamDecorator
+    ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes, PropParamDecorator, OperationArgumentResolver
 } from '@tsdi/ioc';
 import { StartupService, ServiceSet } from '../service';
 import { Middleware, Middlewares, MiddlewareType, Route } from '../middlewares/middleware';
@@ -555,12 +555,73 @@ export interface RequsetParameterDecorator {
      * @param {string} field field of request query params or body.
      * @param option option.
      */
-    (field: string, option?: { provider?: Type, mutil?: boolean, pipe?: string | Type<PipeTransform>, args?: any[], defaultValue?: any }): ParameterDecorator;
+    (field: string, option?: {
+        /**
+         * define provider to resolve value to the parameter or property.
+         */
+        provider?: Type;
+        /**
+         * pipes
+         */
+        pipe?: string | Type<PipeTransform>;
+        args?: any[],
+        /**
+        * custom resolver to resolve the value for the property or parameter.
+        */
+        resolver?: OperationArgumentResolver;
+        /**
+         * is mutil provider or not
+         */
+        mutil?: boolean;
+        /**
+         * null able or not.
+         */
+        nullable?: boolean;
+        /**
+         * default value
+         *
+         * @type {any}
+         */
+        defaultValue?: any;
+
+    }): ParameterDecorator;
     /**
      * Request Parameter decorator
      * @param meta.
      */
-    (meta: { field?: string, provider?: Type, mutil?: boolean, pipe?: string | Type<PipeTransform>, args?: any[], defaultValue?: any }): ParameterDecorator;
+    (meta: {
+        /**
+         * field of request query params or body.
+         */
+        field?: string,
+        /**
+         * define provider to resolve value to the parameter or property.
+         */
+         provider?: Type;
+         /**
+          * pipes
+          */
+         pipe?: string | Type<PipeTransform>;
+         args?: any[],
+         /**
+         * custom resolver to resolve the value for the property or parameter.
+         */
+         resolver?: OperationArgumentResolver;
+         /**
+          * is mutil provider or not
+          */
+         mutil?: boolean;
+         /**
+          * null able or not.
+          */
+         nullable?: boolean;
+         /**
+          * default value
+          *
+          * @type {any}
+          */
+         defaultValue?: any;
+    }): ParameterDecorator;
 }
 
 /**

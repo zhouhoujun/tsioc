@@ -1,4 +1,4 @@
-import { ApplicationContext, ComponentScan, RouteMapping, StartupService, Transactional } from '@tsdi/core';
+import { ApplicationContext, ComponentScan, RequestParam, RouteMapping, StartupService, Transactional } from '@tsdi/core';
 import { lang } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { User } from '../models/models';
@@ -26,7 +26,7 @@ export class UserController {
     @Transactional()
     @RouteMapping('/', 'post')
     @RouteMapping('/', 'put')
-    async modify(user: User) {
+    async modify(user: User, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(lang.getClassName(this.usrRep), user);
         let val = await this.usrRep.save(user);
         this.logger.log(val);
@@ -45,7 +45,7 @@ export class UserController {
 
 @ComponentScan()
 export class RouteStartup implements StartupService {
-   
+
     async configureService(ctx: ApplicationContext): Promise<void> {
         ctx.injector.register(UserController);
     }

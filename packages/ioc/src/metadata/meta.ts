@@ -146,6 +146,10 @@ export interface PropertyMetadata extends ProvideMetadata {
      */
     resolver?: ArgumentResolver;
     /**
+     * null able or not.
+     */
+    nullable?: boolean;
+    /**
      * default value
      *
      * @type {any}

@@ -3,7 +3,7 @@ import { EMPTY, isArray, isDefined, isFunction, isObject } from './utils/chk';
 import { Abstract } from './metadata/fac';
 import { ParameterMetadata } from './metadata/meta';
 import { TypeReflect } from './metadata/type';
-import { ProviderType, StaticProvider } from './providers';
+import { ProviderType } from './providers';
 import { DestroyCallback, Destroyable } from './destroy';
 import { Token } from './tokens';
 import { Injector } from './injector';

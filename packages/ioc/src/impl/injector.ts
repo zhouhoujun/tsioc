@@ -687,7 +687,7 @@ export class DefaultInjector extends Injector {
 
     protected destroying() {
         this.scope && this.platform()?.removeInjector(this.scope);
-        this.records.forEach(r=> {
+        this.records.forEach(r => {
             r.unreg && r.unreg()
         });
         this.records.clear();
@@ -1095,6 +1095,14 @@ export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
         },
         resolve(parameter) {
             return parameter.defaultValue as any;
+        }
+    },
+    {
+        canResolve(parameter) {
+            return parameter.nullable === true;
+        },
+        resolve(parameter) {
+            return undefined;
         }
     }
 ];

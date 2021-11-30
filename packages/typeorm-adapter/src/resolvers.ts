@@ -7,7 +7,7 @@ import {
 import { DEFAULT_CONNECTION } from './objectid.pipe';
 
 export class TypeormTransactionResolver extends TransactionResolver {
-    
+
     canResolve(parameter: Parameter<any>, ctx: InvocationContext<any>): boolean {
         throw new Error('Method not implemented.');
     }
@@ -20,7 +20,7 @@ export class TypeormTransactionResolver extends TransactionResolver {
 
 export class TypeormRepositoryArgumentResolver extends RepositoryArgumentResolver {
 
-    constructor(@Inject(DEFAULT_CONNECTION, { defaultValue: undefined }) private conn: string) {
+    constructor(@Inject(DEFAULT_CONNECTION, { nullable: true }) private conn: string) {
         super();
     }
 

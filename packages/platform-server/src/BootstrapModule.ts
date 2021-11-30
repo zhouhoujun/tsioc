@@ -15,7 +15,7 @@ import { NodeModuleLoader } from './NodeModuleLoader';
 @Injectable(ConfigureLoader)
 export class ConfigureFileLoader implements ConfigureLoader {
 
-    constructor(@Inject(PROCESS_ROOT, { defaultValue: '' }) private baseURL: string) {
+    constructor(@Inject(PROCESS_ROOT, { nullable: true }) private baseURL: string) {
         this.baseURL = this.baseURL || runMainPath();
     }
 
