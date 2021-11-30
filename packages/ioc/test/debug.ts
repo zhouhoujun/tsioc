@@ -1,10 +1,10 @@
-import { AutoWired, Injectable, Param, Singleton, Inject, Container, CONTAINER, Abstract } from '../src';
+import { Autowired, Injectable, Param, Singleton, Inject, Container, CONTAINER, Abstract } from '../src';
 
 export class SimppleAutoWried {
     constructor() {
     }
 
-    @AutoWired()
+    @Autowired()
     dateProperty!: Date;
 }
 
@@ -19,7 +19,7 @@ export class RoomService {
     constructor() {
 
     }
-    @AutoWired()
+    @Autowired()
     current!: Date;
 }
 
@@ -57,7 +57,7 @@ export class MiddleSchoolStudent extends Student {
 export class MClassRoom {
     private stu!: Student;
 
-    @AutoWired(MiddleSchoolStudent)
+    @Autowired(MiddleSchoolStudent)
     set leader(stu: Student) {
         console.log('set MClassRoom leader value')
         this.stu = stu;
@@ -88,7 +88,7 @@ export class CollegeStudent extends Student {
 export class CollegeClassRoom {
     constructor(
         @Param(CollegeStudent)
-        @AutoWired(CollegeStudent)
+        @Autowired(CollegeStudent)
         public leader: Student) {
 
     }
@@ -123,7 +123,7 @@ export interface IClassRoom {
 @Injectable()
 export class InjCollegeClassRoom {
     constructor(
-        // all below decorator can work, also @AutoWired(), @Param() is.
+        // all below decorator can work, also @Autowired(), @Param() is.
         // @Inject(new Registration(Student, 'college')) // need CollegeStudent also register.
         @Inject(CollegeStudent)
         // @Inject({ provider: CollegeStudent })
@@ -138,13 +138,13 @@ export class InjCollegeClassRoom {
 @Injectable()
 export class InjCollegeAliasClassRoom {
     constructor(
-        // all below decorator can work, also @AutoWired(), @Param() is.
-        // @AutoWired(new Registration(Student, 'college')) // need CollegeStudent also register.
+        // all below decorator can work, also @Autowired(), @Param() is.
+        // @Autowired(new Registration(Student, 'college')) // need CollegeStudent also register.
         // @Inject(CollegeStudent)
         // @Inject({ provider: CollegeStudent })
         // @Inject({ provider: Student, alias: 'college' }) // need CollegeStudent also register.
         // @Inject({ type: CollegeStudent })
-        @AutoWired(Student, { alias: 'college'})
+        @Autowired(Student, { alias: 'college'})
         public leader: Student
     ) {
 

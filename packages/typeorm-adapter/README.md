@@ -60,7 +60,7 @@ export class ProductionRepository extends Repository<Production> {
 @Injectable()
 export class SerachProduction {
 
-    @Inject() //or @AutoWired()
+    @Inject() //or @Autowired()
     resp: ProductionRepository;
 
 

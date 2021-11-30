@@ -17,7 +17,7 @@ import { getModuleType } from '../module.ref';
 import { Client, ClientSet } from '../client';
 import { Runnable, RunnableSet } from '../runnable';
 import { ScanSet } from '../scan.set';
-import { TransactionResolvers } from '../transaction/resolver';
+import { TransactionResolver } from '../transaction/resolver';
 import { RepositoryArgumentResolver } from '../model/repository';
 
 
@@ -601,11 +601,11 @@ export const RequestBody: RequsetParameterDecorator = createParamDecorator('Requ
 
 
 /**
- * Repository Decorator, define to autowride repository for paramerter or filed.
+ * Repository Decorator, to autowired repository for paramerter or filed.
  */
 export interface RepositoryDecorator {
     /**
-     * Repository Decorator, define to autowride repository for paramerter or filed.
+     * Repository Decorator, to autowired repository for paramerter or filed.
      * @param modle the model type.
      * @param connection the mutil connection name.
      */
@@ -613,16 +613,16 @@ export interface RepositoryDecorator {
 }
 
 /**
- * Repository Decorator, define to autowride repository for paramerter or filed.
+ * Repository Decorator, to autowired repository for paramerter or filed.
  * @Repository
  */
 export const Repository: RepositoryDecorator = createDecorator<RepositoryMetadata>('Repository', {
     actionType: [ActionTypes.paramInject, ActionTypes.propInject],
-    props: (model: Type, connection?: string) => ({ model, connection, resolver: RepositoryArgumentResolver }),
+    props: (model: Type, connection?: string) => ({ model, connection, resolver: RepositoryArgumentResolver })
 });
 
 /**
- * Repository Decorator, define to autowride repository for paramerter or filed.
+ * Repository Decorator, to autowired repository for paramerter or filed.
  * alias of @Repository
  * 
  * @alias 
@@ -647,7 +647,7 @@ export const Transactional: Transactional = createDecorator<TransactionalMetadat
     reflect: {
         method: [
             (ctx, next) => {
-                ctx.reflect.class.setMethodResolvers(ctx.propertyKey, [TransactionResolvers]);
+                ctx.reflect.class.setMethodResolvers(ctx.propertyKey, [TransactionResolver]);
                 next();
             }
         ]

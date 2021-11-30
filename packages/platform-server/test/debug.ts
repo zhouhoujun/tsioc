@@ -1,10 +1,10 @@
-import { AutoWired, Injectable, Param, Singleton, Inject, Container, getToken } from '@tsdi/ioc';
+import { Autowired, Injectable, Param, Singleton, Inject, Container, getToken } from '@tsdi/ioc';
 
 export class SimppleAutoWried {
     constructor() {
     }
 
-    @AutoWired({ defaultValue: new Date() })
+    @Autowired({ defaultValue: new Date() })
     dateProperty!: Date;
 }
 
@@ -19,7 +19,7 @@ export class RoomService {
     constructor() {
 
     }
-    @AutoWired({ defaultValue: new Date() })
+    @Autowired({ defaultValue: new Date() })
     current!: Date;
 }
 
@@ -52,7 +52,7 @@ export class MiddleSchoolStudent extends Student {
 
 @Injectable()
 export class MClassRoom {
-    @AutoWired(MiddleSchoolStudent)
+    @Autowired(MiddleSchoolStudent)
     leader!: Student;
     constructor() {
 
@@ -74,7 +74,7 @@ export class CollegeStudent extends Student {
 export class CollegeClassRoom {
     constructor(
         @Param(CollegeStudent)
-        @AutoWired(CollegeStudent)
+        @Autowired(CollegeStudent)
         public leader: Student) {
 
     }
@@ -99,7 +99,7 @@ export interface IClassRoom {
 @Injectable()
 export class InjCollegeClassRoom {
     constructor(
-        // all below decorator can work, also @AutoWired(), @Param() is.
+        // all below decorator can work, also @Autowired(), @Param() is.
         // @Inject(new Registration(Student, 'college')) // need CollegeStudent also register.
         @Inject(CollegeStudent)
         // @Inject({ provider: CollegeStudent })
@@ -114,7 +114,7 @@ export class InjCollegeClassRoom {
 @Injectable()
 export class InjCollegeAliasClassRoom {
     constructor(
-        // all below decorator can work, also @AutoWired(), @Param() is.
+        // all below decorator can work, also @Autowired(), @Param() is.
         @Inject(getToken(Student, 'college')) // need CollegeStudent also register.
         // @Inject(CollegeStudent)
         // @Inject({ provider: CollegeStudent })

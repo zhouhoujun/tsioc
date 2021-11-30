@@ -13,18 +13,18 @@ import { OperationArgumentResolver } from '../invoker';
 
 
 /**
- * AutoWired decoator.
+ * Autowired decoator.
  */
-export interface AutoWired {
+export interface Autowired {
     /**
-     * AutoWired decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+     * Autowired decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
      *
      * @param {Token<T>} [provider] define provider to resolve value to the parameter or property.
      * @param {string} [alias] define this class provider with alias for provide.
      */
     (provider?: Token, alias?: string): PropParamDecorator;
     /**
-     * AutoWired decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+     * Autowired decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
      *
      * @param {Token} provider define provider to resolve value to the parameter or property.
      * @param option autowired option.
@@ -59,7 +59,7 @@ export interface AutoWired {
 
     }): PropParamDecorator;
     /**
-     * AutoWired decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+     * Autowired decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
      *
      * @param option autowired option.
      */
@@ -93,7 +93,7 @@ export interface AutoWired {
 
     }): PropParamDecorator;
     /**
-     * AutoWired decorator with providers for method.
+     * Autowired decorator with providers for method.
      *
      * @param {ProviderType[]} [providers] the providers for the method.
      */
@@ -102,11 +102,11 @@ export interface AutoWired {
 
 
 /**
- * AutoWired decorator, for property or param. use to auto wried type instance or value to the instance of one class with the decorator.
+ * Autowired decorator, for property or param. use to auto wried type instance or value to the instance of one class with the decorator.
  *
- * @AutoWired()
+ * @Autowired()
  */
-export const AutoWired: AutoWired = createDecorator<AutoWiredMetadata>('AutoWired', {
+export const Autowired: Autowired = createDecorator<AutoWiredMetadata>('Autowired', {
     props: (provider: ProviderType[] | Token, alias?: string | Record<string, any>) => {
         if (isArray(provider)) {
             return { providers: provider };
@@ -117,6 +117,15 @@ export const AutoWired: AutoWired = createDecorator<AutoWiredMetadata>('AutoWire
         }
     }
 });
+
+/**
+ * Autowired decorator, for property or param. use to auto wried type instance or value to the instance of one class with the decorator.
+ *
+ * alias of @Autowired()
+ * 
+ * @alias
+ */
+export const AutoWired = Autowired;
 
 /**
  * inject decoator.

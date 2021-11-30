@@ -1,4 +1,4 @@
-import { Injectable, Inject, AutoWired, Container, Injector, refl } from '@tsdi/ioc';
+import { Injectable, Inject, Autowired, Container, Injector, refl } from '@tsdi/ioc';
 import { LogModule, Logger, ILogger } from '../src';
 import { DebugLogAspect } from './DebugLogAspect';
 import { AnntotationLogAspect } from './AnntotationLogAspect';
@@ -31,7 +31,7 @@ class MethodTest {
 
     @Logger() readonly logger2!: ILogger
 
-    @AutoWired()
+    @Autowired()
     sayHello(person: Person) {
         return person.say();
     }
@@ -66,7 +66,7 @@ class MethodTest3 {
 
     }
 
-    @AutoWired()
+    @Autowired()
     @Logger('Test3', 'it is test mesasge, for MethodTest3 sayHello invoked.')
     sayHello(@Inject(Child) personA: Person, personB: Person) {
         return personA.say() + ', ' + personB.say();

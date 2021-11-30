@@ -211,7 +211,7 @@ function regActionType(decor: string, type: ActionType) {
     }
 }
 
-const paramInjectDecors: Record<string, boolean> = { '@Inject': true, '@AutoWired': true, '@Param': true };
+const paramInjectDecors: Record<string, boolean> = { '@Inject': true, '@Autowired': true, '@Param': true };
 export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
     if (paramInjectDecors[ctx.decor]) {
         const reflect = ctx.reflect;
@@ -254,7 +254,7 @@ export const InitPropDesignAction = (ctx: DecorContext, next: () => void) => {
 
 
 
-const propInjectDecors: Record<string, boolean> = { '@Inject': true, '@AutoWired': true };
+const propInjectDecors: Record<string, boolean> = { '@Inject': true, '@Autowired': true };
 export const PropInjectAction = (ctx: DecorContext, next: () => void) => {
     if (propInjectDecors[ctx.decor]) {
         ctx.reflect.class.setProperyProviders(ctx.propertyKey, [ctx.metadata]);
@@ -342,7 +342,7 @@ export const InitMethodDesignParams = (ctx: DecorContext, next: () => void) => {
     return next();
 }
 
-const methodProvidersDecors: Record<string, boolean> = { '@Providers': true, '@AutoWired': true };
+const methodProvidersDecors: Record<string, boolean> = { '@Providers': true, '@Autowired': true };
 export const MethodProvidersAction = (ctx: DecorContext, next: () => void) => {
     if (methodProvidersDecors[ctx.decor]) {
         const mpdrs = (ctx.metadata as ProvidersMetadata).providers;

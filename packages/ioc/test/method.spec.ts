@@ -1,4 +1,4 @@
-import { Inject, AutoWired, Injectable, Singleton, ParameterMetadata, Param, isFunction, Container, refl } from '../src';
+import { Inject, Autowired, Injectable, Singleton, ParameterMetadata, Param, isFunction, Container, refl } from '../src';
 import expect = require('expect');
 // import { AnnotationAspect } from './aop/AnnotationAspect';
 // import { CheckRightAspect } from './aop/CheckRightAspect';
@@ -31,7 +31,7 @@ describe('method exec test', () => {
 
         }
 
-        @AutoWired()
+        @Autowired()
         sayHello(person: Person) {
             return person.say();
         }
@@ -47,7 +47,7 @@ describe('method exec test', () => {
 
         }
 
-        @AutoWired([
+        @Autowired([
             { provide: Person, useClass: Child }
         ])
         sayHello(person: Person) {
@@ -62,7 +62,7 @@ describe('method exec test', () => {
 
         }
 
-        @AutoWired()
+        @Autowired()
         sayHello(@Inject(Child) personA: Person, personB: Person) {
             return personA.say() + ', ' + personB.say();
         }
@@ -87,9 +87,9 @@ describe('method exec test', () => {
 
     it('show has method metadata', () => {
         let refs = refl.get(MethodTest3);
-        expect(refs.class.hasMetadata(AutoWired, 'method')).toBeTruthy();
-        expect(refs.class.hasMetadata(AutoWired, 'method', 'sayHello')).toBeTruthy();
-        expect(refs.class.hasMetadata(AutoWired, 'method', 'sayHello2')).toBeFalsy();
+        expect(refs.class.hasMetadata(Autowired, 'method')).toBeTruthy();
+        expect(refs.class.hasMetadata(Autowired, 'method', 'sayHello')).toBeTruthy();
+        expect(refs.class.hasMetadata(Autowired, 'method', 'sayHello2')).toBeFalsy();
     });
 
     it('show exec with type and instance', async () => {

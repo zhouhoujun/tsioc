@@ -1,5 +1,5 @@
 import {
-    Inject, Injectable, AutoWired, Container
+    Inject, Injectable, Autowired, Container
 } from '@tsdi/ioc';
 import { AnnotationAspect } from './aop/AnnotationAspect';
 import { CheckRightAspect } from './aop/CheckRightAspect';
@@ -36,7 +36,7 @@ describe('aop test', () => {
 
         }
 
-        @AutoWired()
+        @Autowired()
         sayHello(person: Person) {
             return person.say();
         }
@@ -52,7 +52,7 @@ describe('aop test', () => {
 
         }
 
-        @AutoWired()
+        @Autowired()
         sayHello(@Inject(Child) person: Person) {
             return person.say();
         }
@@ -65,7 +65,7 @@ describe('aop test', () => {
 
         }
 
-        @AutoWired()
+        @Autowired()
         sayHello(@Inject(Child) personA: Person, personB: Person) {
             return personA.say() + ', ' + personB.say();
         }

@@ -1,4 +1,4 @@
-import { AutoWired, Injectable, ParameterMetadata, Param, Inject, Singleton, Container, refl, getToken } from '../src';
+import { Autowired, Injectable, ParameterMetadata, Param, Inject, Singleton, Container, refl, getToken } from '../src';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, MiddleSchoolStudent, CollegeStudent, Student, InjMClassRoom, InjCollegeClassRoom, InjCollegeAliasClassRoom, StingMClassRoom, StringIdTest, SymbolIdest, SymbolCollegeClassRoom } from './debug';
 import expect = require('expect');
 
@@ -11,7 +11,7 @@ describe('custom register test', () => {
     });
 
     it('decorator toString is decorator name', () => {
-        expect(AutoWired.toString()).toEqual('@AutoWired');
+        expect(Autowired.toString()).toEqual('@Autowired');
         expect(Injectable.toString()).toEqual('@Injectable');
         expect(Inject.toString()).toEqual('@Inject');
         expect(Param.toString()).toEqual('@Param');
@@ -35,7 +35,7 @@ describe('custom register test', () => {
         expect(instance.service.current).toBeDefined();
     });
 
-    it('should auto create prop with spec @AutoWired() class.', () => {
+    it('should auto create prop with spec @Autowired() class.', () => {
         container.register(MClassRoom);
         let instance = container.get(MClassRoom);
         expect(instance).toBeDefined();

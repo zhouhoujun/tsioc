@@ -1,4 +1,4 @@
-import { RepositoryArgumentResolver, RepositoryMetadata, TransactionResolvers } from '@tsdi/core';
+import { RepositoryArgumentResolver, RepositoryMetadata, TransactionResolver } from '@tsdi/core';
 import { OperationArgumentResolver, Parameter, InvocationContext, Type, lang, Inject, ArgumentError } from '@tsdi/ioc';
 import {
     getConnection, getCustomRepository, getMongoRepository, getRepository,
@@ -6,10 +6,8 @@ import {
 } from 'typeorm';
 import { DEFAULT_CONNECTION } from './objectid.pipe';
 
-export class TypeormTransactionResolvers extends TransactionResolvers {
-    get resolvers(): OperationArgumentResolver<any>[] {
-        throw new Error('Method not implemented.');
-    }
+export class TypeormTransactionResolver extends TransactionResolver {
+    
     canResolve(parameter: Parameter<any>, ctx: InvocationContext<any>): boolean {
         throw new Error('Method not implemented.');
     }

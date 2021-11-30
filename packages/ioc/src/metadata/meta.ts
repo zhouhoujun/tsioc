@@ -322,7 +322,7 @@ export interface ModuleMetadata extends ProvidedInMetadata, ProvidersMetadata {
 }
 
 /**
- * AutoWired metadata.
+ * Autowired metadata.
  *
  * @export
  * @interface AutoWiredMetadata
@@ -332,7 +332,7 @@ export interface AutoWiredMetadata extends MethodParamPropMetadata { }
 
 
 /**
- * AutoWired metadata.
+ * Autowired metadata.
  *
  * @export
  * @interface AutorunMetadata
