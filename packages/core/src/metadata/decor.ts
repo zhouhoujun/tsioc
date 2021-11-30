@@ -615,12 +615,6 @@ export interface Transactional {
 export const Transactional: Transactional = createDecorator<TransactionalMetadata>('Transactional', {
     actionType: ActionTypes.methodProviders,
     reflect: {
-        property: [
-            (ctx, next) => {
-                ctx.reflect.class.resolvers.push(TransactionResolvers);
-                next();
-            }
-        ],
         method: [
             (ctx, next) => {
                 ctx.reflect.class.setMethodResolvers(ctx.propertyKey, [TransactionResolvers]);

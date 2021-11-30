@@ -1,9 +1,14 @@
-import { ApplicationContext, Boot, StartupService } from '@tsdi/core';
+import { ApplicationContext, ComponentScan, Disposable, StartupService } from '@tsdi/core';
+import { lang } from '@tsdi/ioc';
+import { ILogger, Logger } from '@tsdi/logs';
 import { Http2Server, Http2SecureServer, createServer, createSecureServer } from 'http2';
 
 
-@Boot()
-export class Http2StartupService extends StartupService {
+@ComponentScan()
+export class Http2StartupService implements StartupService, Disposable {
+
+    constructor(@Logger() private logger: ILogger) { }
+
     private _service!: Http2Server | Http2SecureServer;
     get service(): Http2Server | Http2SecureServer {
         return this._service;
@@ -27,5 +32,18 @@ export class Http2StartupService extends StartupService {
 
         this.service.listen(config.port, config.hostname);
 
+    }
+
+    dispose(): Promise<void> {
+        let defer = lang.defer<void>();
+        this.service.close((err) => {
+            if (err) {
+                this.logger.error(err);
+                defer.reject(err);
+            } else {
+                defer.resolve();
+            }
+        });
+        return defer.promise;
     }
 }

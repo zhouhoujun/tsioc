@@ -35,7 +35,6 @@ export class DeviceConnectionService implements StartupService {
         let defer = lang.defer<void>();
         setTimeout(() => {
             this.connention = { name: 'device_connect' };
-            console.log(this.connention);
             defer.resolve();
         }, 50);
         return defer.promise;
@@ -51,7 +50,6 @@ export class DeviceInitService implements StartupService {
     connid!: string;
     id = 0;
     async configureService(ctx: ApplicationContext): Promise<void> {
-        console.log(ctx.services.getAll().map(i=> i.type))
         let connention = ctx.injector.get(DeviceConnectionService).connention;
         this.connid = connention.name + this.id++;
     }

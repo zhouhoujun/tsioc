@@ -4,14 +4,14 @@ import { Token } from './tokens';
 /**
  * provider for {@link Injector }.
  */
-export interface ProvideProvider {
+export interface ProvideProvider<T = any> {
     /**
      * this type provider to.
      *
      * @type {SymbolType}
      * @memberof Provider
      */
-    provide: Token;
+    provide: Token<T>;
     /**
      * provide multi or not.
      */
@@ -33,14 +33,14 @@ export interface ProvideProvider {
  * Configures the `Injector` to return an instance of `useClass` for a token.
  *
  */
-export interface ClassProvider extends ProvideProvider {
+export interface ClassProvider<T = any> extends ProvideProvider<T> {
     /**
      * use class for provide.
      *
      * @type {Type}
      * @memberof ClassProvider
      */
-    useClass: Type;
+    useClass: Type<T>;
     /**
      * A list of `token`s which need to be resolved by the injector.
      * 
@@ -67,7 +67,7 @@ export interface ClassProvider extends ProvideProvider {
  * @interface ValueProvider
  * @extends {ProvideProvider}
  */
-export interface ValueProvider extends ProvideProvider {
+export interface ValueProvider<T = any> extends ProvideProvider<T> {
     /**
      * use value for provide.
      *
@@ -88,12 +88,12 @@ export interface ValueProvider extends ProvideProvider {
  * Configures the `Injector` to return a value by invoking a `useFactory` function.
  *
  */
-export interface FactoryProvider extends ProvideProvider {
+export interface FactoryProvider<T = any> extends ProvideProvider<T> {
     /**
     * A function to invoke to create a value for this `token`. The function is invoked with
     * resolved values of `token`s in the `deps` field.
     */
-    useFactory: Function;
+    useFactory: (...args: any[]) => T;
     /**
      * A list of `token`s which need to be resolved by the injector. The list of values is then
      * used as arguments to the `useFactory` function.
@@ -104,11 +104,11 @@ export interface FactoryProvider extends ProvideProvider {
 /**
  * constructor provider.
  */
-export interface ConstructorProvider {
+export interface ConstructorProvider<T = any> {
     /**
      * An injection token. Typically an instance of `Type` or `InjectionToken`, but can be `any`.
      */
-    provide: Type;
+    provide: Type<T>;
     /**
      * A list of `token`s which need to be resolved by the injector.
      */
@@ -126,61 +126,20 @@ export interface ConstructorProvider {
  * @interface ExistingProvider
  * @extends {ProvideProvider}
  */
-export interface ExistingProvider extends ProvideProvider {
+export interface ExistingProvider<T = any> extends ProvideProvider<T> {
     /**
      * use existing registered token for provide.
      *
      * @type {Token}
      * @memberof ExistingProvider
      */
-    useExisting: Token;
-}
-
-
-/**
- * keyvalues map provider.
- * use provider value for param by param name.
- *
- */
-export class KeyValueProvider {
-    protected maps: Record<string, any>;
-    constructor() {
-        this.maps = {};
-    }
-
-    set(options: Record<string, any>): this {
-        if (options) {
-            this.maps = { ... this.maps, ...options };
-        }
-        return this;
-    }
-
-    each(callback: (key: string, value: any) => boolean | void) {
-        for (let n in this.maps) {
-            if (callback(n, this.maps[n]) === false) {
-                break;
-            }
-        }
-    }
-
-    /**
-     * parse  provider.
-     *
-     * @static
-     * @param {Record<string, any>} options
-     * @returns
-     */
-    static parse(options: Record<string, any>) {
-        let pdr = new KeyValueProvider();
-        pdr.set(options);
-        return pdr;
-    }
+    useExisting: Token<T>;
 }
 
 /**
  * type provider.
  */
-export interface TypeProvider extends Type { }
+export interface TypeProvider<T = any> extends Type<T> { }
 
 /**
  * static providers.
@@ -192,8 +151,7 @@ export type StaticProviders = ClassProvider & ValueProvider & ConstructorProvide
  * 
  * include type {@link TypeProvider}, {@link ClassProvider}, {@link ValueProvider}, {@link ConstructorProvider}, {@link ExistingProvider}, {@link FactoryProvider}, {@link KeyValueProvider}.
  */
-export type StaticProvider = TypeProvider | ClassProvider | ValueProvider | ConstructorProvider | ExistingProvider | FactoryProvider | KeyValueProvider;
-
+export type StaticProvider<T = any> = TypeProvider<T> | ClassProvider<T> | ValueProvider<T> | ConstructorProvider<T> | ExistingProvider<T> | FactoryProvider<T>;
 
 
 /**

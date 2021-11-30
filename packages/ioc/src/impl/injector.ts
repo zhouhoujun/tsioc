@@ -6,7 +6,7 @@ import {
 import { InjectFlags, Token } from '../tokens';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR, TARGET } from '../metadata/tk';
 import { cleanObj, deepForEach } from '../utils/lang';
-import { InjectorTypeWithProviders, KeyValueProvider, ProviderType, StaticProvider, StaticProviders } from '../providers';
+import { InjectorTypeWithProviders, ProviderType, StaticProvider, StaticProviders } from '../providers';
 import {
     isArray, isDefined, isFunction, isPlainObject, isPrimitiveType,
     isNumber, isTypeObject, isTypeReflect, EMPTY, EMPTY_OBJ, getClass, isString
@@ -175,10 +175,6 @@ export class DefaultInjector extends Injector {
             this.registerProvider(platform, p as StaticProviders);
         } else if (isPlainObject(p) && (p as TypeOption).type) {
             this.registerType(platform, (p as TypeOption).type, p as TypeOption);
-        } else if (p instanceof KeyValueProvider) {
-            p.each((k, useValue) => {
-                this.records.set(k, { value: useValue });
-            });
         }
     }
 
