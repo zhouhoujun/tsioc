@@ -103,7 +103,8 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
 export const Module: Module<ModuleMetadata> = createModuleDecorator<ModuleMetadata>('Module');
 /**
  * Module Decorator, definde class as module.
- * @deprecated use {@link Module} instead.
+ * alias of @Module
+ * @alias
  */
 export const DIModule = Module;
 
@@ -622,9 +623,9 @@ export const Repository: RepositoryDecorator = createDecorator<RepositoryMetadat
 
 /**
  * Repository Decorator, define to autowride repository for paramerter or filed.
- * @Repository
+ * alias of @Repository
  * 
- * @alias alias of Repository
+ * @alias 
  */
 export const DBRepository: RepositoryDecorator = Repository;
 
