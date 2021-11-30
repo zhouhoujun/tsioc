@@ -1,6 +1,6 @@
 import { ApplicationContext, Application } from '@tsdi/core';
 
-import { User } from './models/models';
+import { Role, User } from './models/models';
 import { Suite, Before, Test, After } from '@tsdi/unit';
 import { TypeOrmHelper } from '../src';
 import * as expect from 'expect';
@@ -97,6 +97,37 @@ export class LoadReposTest {
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeTruthy();
     }
+
+
+
+    
+    @Test()
+    async postRole() {
+        const rep = await this.ctx.send('/roles', { method: 'post', body: { name: 'opter' } });
+        rep.error && console.log(rep.error)
+        expect(rep.status).toEqual(200);
+        expect(rep.body).toBeInstanceOf(Role);
+        expect(rep.body.name).toEqual('opter');
+    }
+
+    @Test()
+    async getRole() {
+        const rep = await this.ctx.send('/roles/opter', { method: 'get' });
+        expect(rep.status).toEqual(200);
+        expect(rep.body).toBeInstanceOf(Role);
+        expect(rep.body.name).toEqual('opter');
+    }
+
+    @Test()
+    async detRole() {
+        const rep1 = await this.ctx.send('/roles/opter', { method: 'get' });
+        expect(rep1.status).toEqual(200);
+        expect(rep1.body).toBeInstanceOf(Role);
+        const rep = await this.ctx.send('/roles/' + rep1.body.id, { method: 'delete' });
+        expect(rep.status).toEqual(200);
+        expect(rep.body).toBeTruthy();
+    }
+
 
     @After()
     async after() {

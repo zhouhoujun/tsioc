@@ -9,7 +9,7 @@ import {
     getConnection, createConnection, ConnectionOptions as OrmConnOptions, Connection,
     getMetadataArgsStorage, getCustomRepository, getConnectionManager
 } from 'typeorm';
-import { ObjectIDToken } from './objectid.pipe';
+import { DEFAULT_CONNECTION, ObjectIDToken } from './objectid.pipe';
 
 
 
@@ -45,6 +45,7 @@ export class TypeormServer implements Server {
         } else if (config.connections) {
             let options = config.connections;
             options.asDefault = true;
+            options.name && injector.setValue(DEFAULT_CONNECTION, options.name);
             await this.statupConnection(injector, options, config);
         }
     }

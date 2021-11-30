@@ -1,4 +1,4 @@
-import { MethodMetadata, PatternMetadata, ProviderMetadata, ProvidersMetadata, Type, TypeMetadata, TypeReflect } from '@tsdi/ioc';
+import { MethodMetadata, ParamPropMetadata, PatternMetadata, ProviderMetadata, ProvidersMetadata, Type, TypeMetadata, TypeReflect } from '@tsdi/ioc';
 import { CanActive } from '../middlewares/guard';
 import { Middleware, Middlewares } from '../middlewares/middleware';
 import { StartupService } from '../service';
@@ -120,6 +120,11 @@ export interface PipeMetadata extends ProviderMetadata {
      * If Pipe is pure (its output depends only on its input.)
      */
     pure?: boolean;
+}
+
+export interface RepositoryMetadata extends ParamPropMetadata {
+    model: Type;
+    connection?: string;
 }
 
 /**

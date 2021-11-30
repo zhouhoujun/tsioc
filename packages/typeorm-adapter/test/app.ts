@@ -5,6 +5,8 @@ import { Connection } from 'typeorm';
 import { TypeOrmModule } from '../src';
 import { User } from './models/models';
 import { UserController } from './mapping/UserController';
+import { RoleController } from './mapping/RoleController';
+
 
 
 export const option = <ConnectionOptions>{
@@ -43,7 +45,8 @@ export const option = <ConnectionOptions>{
     ],
     providers: [
         // RouteStartup,
-        UserController
+        UserController,
+        RoleController
     ]
 })
 export class MockBootTest {

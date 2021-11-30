@@ -1,7 +1,7 @@
 import {
     isUndefined, EMPTY_OBJ, isArray, isString, lang, Type, isRegExp, createDecorator,
     ClassMethodDecorator, createParamDecorator, ParameterMetadata, Resolver, ProviderType,
-    ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes
+    ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes, PropParamDecorator
 } from '@tsdi/ioc';
 import { StartupService, ServiceSet } from '../service';
 import { Middleware, Middlewares, MiddlewareType, Route } from '../middlewares/middleware';
@@ -10,7 +10,7 @@ import { CanActive } from '../middlewares/guard';
 import { AbstractRoute, RouteAdapter } from '../middlewares/route';
 import { RootRouter, Router } from '../middlewares/router';
 import { MappingReflect, RouteMappingRef, ProtocolRouteMappingMetadata } from '../middlewares/mapping';
-import { HandleMetadata, HandlesMetadata, PipeMetadata, HandleMessagePattern, ComponentScanMetadata, TransactionalMetadata, ScanReflect } from './meta';
+import { HandleMetadata, HandlesMetadata, PipeMetadata, HandleMessagePattern, ComponentScanMetadata, TransactionalMetadata, ScanReflect, RepositoryMetadata } from './meta';
 import { PipeTransform } from '../pipes/pipe';
 import { Server, ServerSet } from '../server';
 import { getModuleType } from '../module.ref';
@@ -18,6 +18,7 @@ import { Client, ClientSet } from '../client';
 import { Runnable, RunnableSet } from '../runnable';
 import { ScanSet } from '../scan.set';
 import { TransactionResolvers } from '../transaction/resolver';
+import { RepositoryArgumentResolver } from '../model/repository';
 
 
 
@@ -598,6 +599,34 @@ export const RequestBody: RequsetParameterDecorator = createParamDecorator('Requ
 });
 
 
+/**
+ * Repository Decorator, define to autowride repository for paramerter or filed.
+ */
+export interface RepositoryDecorator {
+    /**
+     * Repository Decorator, define to autowride repository for paramerter or filed.
+     * @param modle the model type.
+     * @param connection the mutil connection name.
+     */
+    (model: Type, connection?: string): PropParamDecorator;
+}
+
+/**
+ * Repository Decorator, define to autowride repository for paramerter or filed.
+ * @Repository
+ */
+export const Repository: RepositoryDecorator = createDecorator<RepositoryMetadata>('Repository', {
+    actionType: [ActionTypes.paramInject, ActionTypes.propInject],
+    props: (model: Type, connection?: string) => ({ model, connection, resolver: RepositoryArgumentResolver }),
+});
+
+/**
+ * Repository Decorator, define to autowride repository for paramerter or filed.
+ * @Repository
+ * 
+ * @alias alias of Repository
+ */
+export const DBRepository: RepositoryDecorator = Repository;
 
 /**
  * Transactional Decorator, define transaction propagation behaviors.
