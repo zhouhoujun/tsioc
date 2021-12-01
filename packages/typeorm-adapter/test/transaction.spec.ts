@@ -27,16 +27,17 @@ export class TransactionTest {
 
     @Test()
     async postRolebackUser() {
-        const rep = await this.ctx.send('/users', { method: 'post', body: { name: 'test111', account: 'post_test', password: '111111' }, query: { check: true } });
+        const rep = await this.ctx.send('/users', { method: 'post', body: { name: 'test_111', account: 'post_test', password: '111111' }, query: { check: true } });
         rep.error && console.log(rep.error)
         expect(rep.status).toEqual(500);
         expect(rep.error).toBeDefined();
+        expect(rep.error.message).toEqual('check');
         expect(rep.body).not.toBeInstanceOf(User);
     }
 
     @Test()
     async checkhasNotSavedUser() {
-        const rep = await this.ctx.send('/users/test111', { method: 'get' });
+        const rep = await this.ctx.send('/users/test_111', { method: 'get' });
         expect(rep.status).toEqual(200);
         expect(rep.body).not.toBeInstanceOf(User);
     }
@@ -72,16 +73,17 @@ export class TransactionTest {
 
     @Test()
     async postRolebackRole() {
-        const rep = await this.ctx.send('/roles', { method: 'post', body: { name: 'opter1' }, query: { check: true } });
+        const rep = await this.ctx.send('/roles', { method: 'post', body: { name: 'opter_1' }, query: { check: true } });
         rep.error && console.log(rep.error)
         expect(rep.status).toEqual(500);
         expect(rep.error).toBeDefined();
+        expect(rep.error.message).toEqual('check');
         expect(rep.body).not.toBeInstanceOf(Role);
     }
 
     @Test()
     async checkhasNotSavedRole() {
-        const rep = await this.ctx.send('/roles/opter1', { method: 'get' });
+        const rep = await this.ctx.send('/roles/opter_1', { method: 'get' });
         expect(rep.status).toEqual(200);
         expect(rep.body).not.toBeInstanceOf(Role);
     }

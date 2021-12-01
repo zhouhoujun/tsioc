@@ -1,5 +1,5 @@
 import { ClassType, Type } from './types';
-import { EMPTY, isArray, isDefined, isFunction, isObject } from './utils/chk';
+import { EMPTY, isArray, isClassType, isDefined, isFunction, isObject, isPlainObject, isString } from './utils/chk';
 import { Abstract } from './metadata/fac';
 import { ParameterMetadata } from './metadata/meta';
 import { TypeReflect } from './metadata/type';
@@ -7,6 +7,7 @@ import { ProviderType } from './providers';
 import { DestroyCallback, Destroyable } from './destroy';
 import { Token } from './tokens';
 import { Injector } from './injector';
+import { getClassName } from './utils/lang';
 
 
 
@@ -78,7 +79,7 @@ export function composeResolver<T extends OperationArgumentResolver, TP extends 
  * The context for the {@link OperationInvoker invocation of an operation}.
  */
 export class InvocationContext<T = any> implements Destroyable {
-    private _arguments: T;
+    private _args: T;
     private _values: Map<Token, any>;
     private _dsryCbs = new Set<DestroyCallback>();
     private _destroyed = false;
@@ -97,7 +98,7 @@ export class InvocationContext<T = any> implements Destroyable {
         values?: TokenValue[],
         ...argumentResolvers: ArgumentResolver[]) {
         this.resolvers = argumentResolvers.map(r => isFunction(r) ? injector.get<OperationArgumentResolver>(r) : r);
-        this._arguments = args ?? {} as T;
+        this._args = args ?? {} as T;
         this._values = new Map(values);
         injector.onDestroy(() => this.destroy());
     }
@@ -106,11 +107,11 @@ export class InvocationContext<T = any> implements Destroyable {
      * the invocation arguments.
      */
     get arguments(): T {
-        return this._arguments;
+        return this._args;
     }
 
     setArgument(name: string, value: any): void {
-        (this.arguments as any)[name] = value;
+        (this._args as any)[name] = value;
     }
 
     protected isSelf(token: Token) {
@@ -185,7 +186,7 @@ export class InvocationContext<T = any> implements Destroyable {
                 this._dsryCbs.forEach(c => isFunction(c) ? c() : c?.destroy());
             } finally {
                 this._dsryCbs.clear();
-                this._arguments = null!;
+                this._args = null!;
                 this.resolvers = null!;
                 this._values.clear();
                 this.injector.destroy();
@@ -252,10 +253,31 @@ export class ArgumentError extends Error {
  */
 export class MissingParameterError extends Error {
     constructor(parameters: Parameter[], type: ClassType, method: string) {
-        super(`ailed to invoke operation because the following required parameters were missing: ${parameters.map(p => JSON.stringify(p)).join('\n')}, method ${method} of class type ${type}`);
+        super(`ailed to invoke operation because the following required parameters were missing: [ ${parameters.map(p => object2string(p)).join(',\n')} ], method ${method} of class ${object2string(type)}`);
         Object.setPrototypeOf(this, MissingParameterError.prototype);
         Error.captureStackTrace(this);
     }
+}
+
+/**
+ * format object to string for log.
+ * @param obj 
+ * @returns 
+ */
+export function object2string(obj: any): string {
+    if (isString(obj)) {
+        return `"${obj}"`;
+    } else if (isClassType(obj)) {
+        return 'Type<' + getClassName(obj) + '>';
+    } else if (isPlainObject(obj)) {
+        let str: string[] = [];
+        for (let n in obj) {
+            let value = obj[n];
+            str.push(`${n}: ${object2string(value)}`)
+        }
+        return `{ ${str.join(', ')} }`;
+    }
+    return `${obj}`;
 }
 
 /**

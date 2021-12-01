@@ -1,4 +1,7 @@
-import { Abstract, EMPTY, InvocationContext, isArray, isDefined, isFunction, isNil, PropertyMetadata, tokenId, Type, OperationInvoker, ArgumentError } from '@tsdi/ioc';
+import {
+    Abstract, EMPTY, InvocationContext, isArray, isDefined, isFunction, isNil,
+    PropertyMetadata, tokenId, Type, OperationInvoker, ArgumentError, object2string
+} from '@tsdi/ioc';
 import { TrasportArgumentResolver, TrasportParameter } from '../middlewares/resolver';
 import { Context } from '../middlewares/context';
 import { PipeTransform } from '../pipes/pipe';
@@ -92,7 +95,7 @@ export interface ModelFieldResolver<C extends Context = Context> {
  */
 export class MissingModelFieldError extends Error {
     constructor(fields: DBPropertyMetadata[], type: Type) {
-        super(`ailed to resolve model class ${type} because the following required fields were missing: ${fields.map(p => JSON.stringify(p)).join('\n')}`);
+        super(`ailed to resolve model class ${object2string(type)} because the following required fields were missing: [ ${fields.map(p => object2string(p)).join(',\n')} ]`);
         Object.setPrototypeOf(this, MissingModelFieldError.prototype);
         Error.captureStackTrace(this);
     }

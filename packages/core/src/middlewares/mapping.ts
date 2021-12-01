@@ -157,13 +157,14 @@ export class RouteMappingRef<T> extends AbstractRoute {
                 await result(ctx);
             } else if (isMiddlware(result)) {
                 await result.execute(ctx, emptyNext);
+            } else if (result instanceof ResultValue) {
+                return await result.sendValue(ctx);
+            } else if (isDefined(result)) {
+                ctx.body = result;
             } else {
-                if (result instanceof ResultValue) {
-                    return await result.sendValue(ctx);
-                } else {
-                    ctx.body = result;
-                }
+                ctx.status = 200;
             }
+
         }
     }
 
