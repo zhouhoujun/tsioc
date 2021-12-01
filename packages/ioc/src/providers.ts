@@ -153,7 +153,6 @@ export type StaticProviders = ClassProvider & ValueProvider & ConstructorProvide
  */
 export type StaticProvider<T = any> = TypeProvider<T> | ClassProvider<T> | ValueProvider<T> | ConstructorProvider<T> | ExistingProvider<T> | FactoryProvider<T>;
 
-
 /**
  * providers for {@link Injector}.
  * 

@@ -282,6 +282,7 @@ export function object2string(obj: any): string {
 
 /**
  * reflective operation invoker.
+ * implements {@link OperationInvoker}
  */
 export class ReflectiveOperationInvoker implements OperationInvoker {
 

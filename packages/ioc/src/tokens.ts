@@ -34,9 +34,8 @@ export type Token<T = any> = string | symbol | InjectToken<T> | ClassType<T>;
  */
 export type ProvideToken<T> = string | symbol | InjectToken<T> | AbstractType;
 
-
 /**
- * parse id string to token id.
+ * parse id string to token, type of {@link Token}.
  * @param key id
  */
 export function tokenId<T = any>(key: string,): Token<T> {

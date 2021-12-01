@@ -18,6 +18,7 @@ export type DestroyCallback = Destroy | (() => void);
 
 /**
  * destroyable interface.
+ * extends {@link Destroy}
  */
 export interface Destroyable extends Destroy {
     /**
@@ -32,7 +33,7 @@ export interface Destroyable extends Destroy {
 }
 
 /**
- * is destroy or not.
+ * is target instanceof {@link Destroy} or not.
  * @param target 
  * @returns 
  */

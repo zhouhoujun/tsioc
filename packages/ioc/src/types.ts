@@ -124,7 +124,6 @@ export interface PathModules {
      * @type {(string | string[])}
      */
     files?: string | string[];
-
     /**
      * modules
      *

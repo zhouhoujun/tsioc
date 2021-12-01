@@ -14,6 +14,7 @@ import { ModuleLoader } from './module.loader';
 
 /**
  * injector.
+ * implements {@link Destroyable}
  */
 @Abstract()
 export abstract class Injector implements Destroyable {

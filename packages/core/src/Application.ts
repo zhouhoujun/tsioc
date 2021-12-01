@@ -2,16 +2,17 @@ import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, Injector, Modules 
 import { DebugLogAspect, LogConfigureToken, LogModule } from '@tsdi/logs';
 import { CONFIGURATION, PROCESS_ROOT } from './metadata/tk';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from './context';
-import { Disposable } from './dispose';
-import { ApplicationArguments, ApplicationExit } from './shutdown';
+import { Disposable, isDisposable } from './dispose';
+import { ApplicationArguments, ApplicationExit, ApplicationShutdownHandlers, createShutdown, isShutdown } from './shutdown';
 import { ServerSet } from './server';
 import { ClientSet } from './client';
 import { ServiceSet } from './service';
 import { MiddlewareModule } from './middleware';
-import { CoreModule, DEFAULTA_FACTORYS } from './core';
+import { DEFAULTA_PROVIDERS } from './providers';
 import { ModuleRef } from './module.ref';
 import { ModuleFactoryResolver } from './module.factory';
 import { RunnableSet } from './runnable';
+import { ConfigureMergerImpl, DefaultConfigureManager } from './configure/manager';
 
 
 /**
@@ -38,13 +39,13 @@ export class Application implements Disposable {
     constructor(protected target: Type | ApplicationOption, protected loader?: ModuleLoader) {
         if (!isFunction(target)) {
             if (!this.loader) this.loader = target.loader;
-            const providers = (target.platformProviders && target.platformProviders.length) ? [...DEFAULTA_FACTORYS, ...target.platformProviders] : DEFAULTA_FACTORYS;
+            const providers = (target.platformProviders && target.platformProviders.length) ? [...DEFAULTA_PROVIDERS, ...target.platformProviders] : DEFAULTA_PROVIDERS;
             target.deps = [...this.getDeps(), ...target.deps || EMPTY];
             target.scope = 'root';
             this.root = this.createInjector(providers, target);
         } else {
             const option = { type: target, deps: this.getDeps(), scope: 'root' };
-            this.root = this.createInjector(DEFAULTA_FACTORYS, option);
+            this.root = this.createInjector(DEFAULTA_PROVIDERS, option);
         }
         this.initRoot();
     }
@@ -125,7 +126,7 @@ export class Application implements Disposable {
     }
 
     protected getDeps(): Modules[] {
-        return [CoreModule, MiddlewareModule];
+        return [DefaultConfigureManager, ConfigureMergerImpl, MiddlewareModule];
     }
 
     protected createInjector(providers: ProviderType[], option: ApplicationOption) {
@@ -139,6 +140,14 @@ export class Application implements Disposable {
         if (option.baseURL) {
             container.setValue(PROCESS_ROOT, option.baseURL);
         }
+        container.platform().onInstanceCreated((target, inj) => {
+            if (isShutdown(target) || isDisposable(target)) {
+                const hdrs = inj.get(ApplicationShutdownHandlers);
+                if (hdrs && !hdrs.has(target)) {
+                    hdrs.add(createShutdown(target));
+                }
+            }
+        });
         option.platformDeps && container.use(...option.platformDeps);
         return container.resolve({ token: ModuleFactoryResolver, target: option.type }).resolve(option.type).create(container, option);
     }
