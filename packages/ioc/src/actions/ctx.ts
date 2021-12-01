@@ -17,7 +17,6 @@ export interface IocContext {
     injector: Injector;
 }
 
-
 /**
  * Ioc Register action context.
  *
@@ -31,6 +30,9 @@ export interface RegContext extends IocContext {
      *
      */
     provide?: Token;
+    /**
+     * reg provides or not.
+     */
     regProvides?: boolean;
     /**
      * target type.

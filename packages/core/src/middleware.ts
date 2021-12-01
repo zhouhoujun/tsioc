@@ -10,10 +10,9 @@ import {
 } from './pipes'
 
 
-
 /**
-* router module.
-*/
+ * middleware module.
+ */
 @Module({
     providedIn: 'root',
     providers: [

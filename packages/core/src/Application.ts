@@ -4,6 +4,7 @@ import { CONFIGURATION, PROCESS_ROOT } from './metadata/tk';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from './context';
 import { Disposable, isDisposable } from './dispose';
 import { ApplicationArguments, ApplicationExit, ApplicationShutdownHandlers, createShutdown, isShutdown } from './shutdown';
+import { ConfigureMergerImpl, DefaultConfigureManager } from './configure/manager';
 import { ServerSet } from './server';
 import { ClientSet } from './client';
 import { ServiceSet } from './service';
@@ -12,7 +13,6 @@ import { DEFAULTA_PROVIDERS } from './providers';
 import { ModuleRef } from './module.ref';
 import { ModuleFactoryResolver } from './module.factory';
 import { RunnableSet } from './runnable';
-import { ConfigureMergerImpl, DefaultConfigureManager } from './configure/manager';
 
 
 /**
@@ -40,7 +40,7 @@ export class Application implements Disposable {
         if (!isFunction(target)) {
             if (!this.loader) this.loader = target.loader;
             const providers = (target.platformProviders && target.platformProviders.length) ? [...DEFAULTA_PROVIDERS, ...target.platformProviders] : DEFAULTA_PROVIDERS;
-            target.deps = [...this.getDeps(), ...target.deps || EMPTY];
+            target.deps = target.deps?.length ? [...this.getDeps(), ...target.deps] : this.getDeps();
             target.scope = 'root';
             this.root = this.createInjector(providers, target);
         } else {
@@ -51,6 +51,7 @@ export class Application implements Disposable {
     }
 
     protected initRoot() {
+        this.root.register(DefaultConfigureManager, ConfigureMergerImpl);
         this.root.setValue(Application, this);
     }
 
@@ -126,7 +127,7 @@ export class Application implements Disposable {
     }
 
     protected getDeps(): Modules[] {
-        return [DefaultConfigureManager, ConfigureMergerImpl, MiddlewareModule];
+        return [MiddlewareModule];
     }
 
     protected createInjector(providers: ProviderType[], option: ApplicationOption) {

@@ -1,3 +1,4 @@
+export * from './global';
 
 // annotations
 export * from './configure/config';
@@ -16,7 +17,6 @@ export * from './client';
 export * from './service';
 
 export * from './context';
-export * from './global';
 
 export * from './pipes';
 

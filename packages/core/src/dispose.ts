@@ -11,7 +11,7 @@ export interface Disposable {
 }
 
 /**
- * is disposable or not.
+ * is target instance of {@link Disposable} or not.
  * @param target 
  * @returns 
  */

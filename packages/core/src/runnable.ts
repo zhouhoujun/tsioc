@@ -72,11 +72,11 @@ export abstract class RunnableSet implements ScanSet<Runnable> {
 @Abstract()
 export abstract class RunnableFactory<T> {
     /**
-     * service type.
+     * runnbale type.
      */
     abstract get type(): Type<T>;
     /**
-     * create boot context.
+     * create new instance of {@link Runnable} via this type.
      * @param option 
      */
     abstract create(option: BootstrapOption, context?: ApplicationContext): Runnable;

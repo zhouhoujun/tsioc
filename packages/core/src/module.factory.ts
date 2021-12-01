@@ -23,7 +23,16 @@ export interface ModuleOption {
  */
 @Abstract()
 export abstract class ModuleFactory<T = any> {
+    /**
+     * module type.
+     */
     abstract get moduleType(): Type<T>;
+    /**
+     * create new instance of {@link ModuleRef} via the moduleType.
+     * @param parent 
+     * @param option 
+     * @returns  instance of {@link ModuleRef}
+     */
     abstract create(parent: Injector, option?: ModuleOption): ModuleRef<T>;
 }
 
@@ -32,5 +41,9 @@ export abstract class ModuleFactory<T = any> {
  */
 @Abstract()
 export abstract class ModuleFactoryResolver {
+    /**
+     * resolve instance of {@link ModuleFactory}.
+     * @param type 
+     */
     abstract resolve<T>(type: Type<T> | ModuleReflect<T>): ModuleFactory<T>;
 }
