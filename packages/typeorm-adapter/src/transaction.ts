@@ -34,11 +34,11 @@ export class TypeormTransactionManager extends TransactionManager {
         return status;
 
     }
-    commit(status: TransactionStatus): void {
+    async commit(status: TransactionStatus): Promise<void> {
         this.logger.log();
     }
-    rollback(status: TransactionStatus): void {
-        this.logger
+    async rollback(status: TransactionStatus): Promise<void> {
+        this.logger.log();
     }
 
 }

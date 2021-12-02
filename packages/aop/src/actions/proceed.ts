@@ -155,6 +155,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
     }
 
     protected invokeAdvice(joinPoint: Joinpoint, advicer: Advicer) {
+        if(joinPoint.destroyed) return;
         let metadata = advicer.advice as AroundMetadata;
         if (!isNil(joinPoint.args) && metadata.args) {
             joinPoint.setArgument(metadata.args, joinPoint.args);
@@ -337,7 +338,7 @@ export const AfterReturningAdvicesAction = function (ctx: Joinpoint, next: () =>
     if (!isNil(ctx.returning)) {
         ctx.state = JoinpointState.AfterReturning;
         const invoker = ctx.invokeHandle;
-        const asyncValue = isPromise(ctx.returning);
+        const isAsync = isPromise(ctx.returning);
 
         chain([
             (ctx: Joinpoint, rnext) => isPromise(ctx.returning) ?
@@ -350,8 +351,8 @@ export const AfterReturningAdvicesAction = function (ctx: Joinpoint, next: () =>
                         next();
                     })
                 : rnext(),
-            (ctx: Joinpoint, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.asyncAround || asyncValue),
-            (ctx: Joinpoint, anext) => runAdvicers(ctx, invoker, ctx.advices.AfterReturning, anext, ctx.advices.asyncAfterReturning || asyncValue)
+            (ctx: Joinpoint, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.asyncAround || isAsync),
+            (ctx: Joinpoint, anext) => runAdvicers(ctx, invoker, ctx.advices.AfterReturning, anext, ctx.advices.asyncAfterReturning || isAsync)
         ], ctx, () => {
             if (!isNil(ctx.resetReturning)) {
                 ctx.returning = ctx.resetReturning;
