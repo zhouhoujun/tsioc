@@ -1,9 +1,9 @@
-import { Module, RepositoryArgumentResolver } from '@tsdi/core';
+import { Module, RepositoryArgumentResolver, TransactionManager, TransactionResolver } from '@tsdi/core';
 import { ParseObjectIdPipe } from './objectid.pipe';
 import { TypeOrmHelper } from './helper';
 import { TypeormServer } from './TypeormServer';
 import { TypeormTransactionManager } from './transaction';
-import { TypeormRepositoryArgumentResolver } from './resolvers';
+import { TypeormRepositoryArgumentResolver, TypeormTransactionResolver } from './resolvers';
 
 @Module({
     providers: [
@@ -11,7 +11,8 @@ import { TypeormRepositoryArgumentResolver } from './resolvers';
         TypeOrmHelper,
         ParseObjectIdPipe,
         { provide: RepositoryArgumentResolver, useClass: TypeormRepositoryArgumentResolver, singleton: true },
-        TypeormTransactionManager
+        { provide: TransactionResolver, useClass: TypeormTransactionResolver },
+        { provide: TransactionManager, useClass: TypeormTransactionManager }
     ]
 })
 export class TypeOrmModule { }

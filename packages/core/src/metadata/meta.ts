@@ -131,7 +131,7 @@ export interface RepositoryMetadata extends ParamPropMetadata {
  * Transactional metadata
  */
 export interface TransactionalMetadata extends MethodMetadata {
-    connection?: string | (() => string);
+    connection?: string;
     /**
      * transaction propagation behaviors for transactional.
      * 

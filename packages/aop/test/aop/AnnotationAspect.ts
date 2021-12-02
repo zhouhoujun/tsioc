@@ -4,9 +4,9 @@ import { Joinpoint, Pointcut, Around, Aspect, Before, After} from '../../src';
 @Aspect()
 export class AnnotationAspect {
     // pointcut for method has @AutoWried decorator.
-    @Pointcut('@annotation(Autowired)', 'authMetas')
-    auth(joinPoint: Joinpoint, authMetas: MethodMetadata[]) {
-        console.log('authMetas:', authMetas);
+    @Pointcut('@annotation(Autowired)', 'metas')
+    auth(joinPoint: Joinpoint, metas: MethodMetadata[]) {
+        console.log('metas:', metas);
         joinPoint.target.authdata = 'authdata';
         console.log('aspect annotation Before log, method name:', joinPoint.fullName, ' state:', joinPoint.state, ' returning:', joinPoint.returning, ' throwing:', joinPoint.throwing);
     }

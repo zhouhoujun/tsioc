@@ -1,21 +1,11 @@
-import { RepositoryArgumentResolver, RepositoryMetadata, TransactionResolver } from '@tsdi/core';
-import { OperationArgumentResolver, Parameter, InvocationContext, Type, lang, Inject, ArgumentError } from '@tsdi/ioc';
+import { Joinpoint } from '@tsdi/aop';
+import { RepositoryArgumentResolver, RepositoryMetadata, TransactionalMetadata, TransactionManager, TransactionResolver } from '@tsdi/core';
+import { Parameter, InvocationContext, Type, lang, Inject, ArgumentError, OperationArgumentResolver, isArray, composeResolver } from '@tsdi/ioc';
 import {
     getConnection, getCustomRepository, getMongoRepository, getRepository,
     getTreeRepository, MongoRepository, Repository, TreeRepository
 } from 'typeorm';
 import { DEFAULT_CONNECTION } from './objectid.pipe';
-
-export class TypeormTransactionResolver extends TransactionResolver {
-
-    canResolve(parameter: Parameter<any>, ctx: InvocationContext<any>): boolean {
-        throw new Error('Method not implemented.');
-    }
-    resolve<T>(parameter: Parameter<T>, ctx: InvocationContext<any>): T {
-        throw new Error('Method not implemented.');
-    }
-
-}
 
 
 export class TypeormRepositoryArgumentResolver extends RepositoryArgumentResolver {
@@ -30,12 +20,12 @@ export class TypeormRepositoryArgumentResolver extends RepositoryArgumentResolve
             connection = this.conn;
         }
 
-        if(!parameter.type || !lang.isExtendsClass(parameter.type, Repository)) {
+        if (!parameter.type || !lang.isExtendsClass(parameter.type, Repository)) {
             throw new ArgumentError(`Autowired repository design type not defined, or not extends with TypeORM Repository`);
         }
 
         if (!model || !getConnection(connection).hasMetadata(model)) {
-            throw new ArgumentError(`Autowired repository in${this.getLocal(parameter, ctx)}${ctx.target} failed. It denpendence on model type ${model? model: ''},  please register model in TypeORM first. `);
+            throw new ArgumentError(`Autowired repository in${this.getLocal(parameter, ctx)}${ctx.target} failed. It denpendence on model type ${model ? model : ''},  please register model in TypeORM first. `);
         }
         return true;
     }
@@ -71,4 +61,37 @@ export class TypeormRepositoryArgumentResolver extends RepositoryArgumentResolve
                 return getCustomRepository(model, connection);
         }
     }
+}
+
+
+export class TypeormTransactionResolver extends TransactionResolver {
+
+    protected resolver: OperationArgumentResolver;
+    constructor() {
+        super();
+        this.resolver = composeResolver(
+            (param, ctx) => ctx instanceof Joinpoint && isArray(ctx.arguments['annotation']) && ctx.arguments['annotation'].length > 0,
+            {
+                canResolve: (param, ctx: Joinpoint) => {
+                    return param.provider === TransactionManager || param.type === TransactionManager;
+                },
+                resolve(param, ctx: Joinpoint): any {
+                    if (ctx.hasValue(TransactionManager)) {
+                        return ctx.getValue(TransactionManager);
+                    } else {
+                        const manager = ctx.injector.get(TransactionManager, ctx);
+                        ctx.setValue(TransactionManager, manager);
+                        return manager;
+                    }
+                }
+            })
+    }
+
+    canResolve(parameter: Parameter, ctx: InvocationContext<any>): boolean {
+        return this.resolver.canResolve(parameter, ctx);
+    }
+    resolve(parameter: Parameter, ctx: InvocationContext<any>) {
+        return this.resolver.resolve(parameter, ctx);
+    }
+
 }

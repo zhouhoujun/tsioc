@@ -6,10 +6,10 @@ import { Joinpoint, Around, Aspect, Before, After, AdviceMetadata } from '../../
 @Aspect()
 export class CheckRightAspect {
     // pointcut for method has @AutoWried decorator.
-    @Before('execution(AnnotationAspect.auth)', 'authMetas')
+    @Before('execution(AnnotationAspect.auth)', 'allMetadata')
     // @Around({ pointcut: 'run()', annotation: Before })
-    beforelog(joinPoint: Joinpoint, authMetas: MethodMetadata[]) {
-        console.log('authMetas:', authMetas);
+    beforelog(joinPoint: Joinpoint, allMetadata: MethodMetadata[]) {
+        console.log('allMetadata:', allMetadata);
         console.log('aspect execution Before AnnotationAspect.auth, method name:', joinPoint.fullName, ' state:', joinPoint.state, ' returning:', joinPoint.returning, ' throwing:', joinPoint.throwing);
     }
 }

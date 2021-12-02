@@ -4,12 +4,17 @@ import { MethodMetadata, ClassType, ClassMetadata, MethodPropMetadata } from '@t
 /**
  * Joinpoint state.
  */
- export type AdviceTypes = 'Before' | 'Pointcut' | 'After' | 'AfterReturning' | 'AfterThrowing' | 'Advice' | 'Around';
+export type AdviceTypes = 'Before' | 'Pointcut' | 'After' | 'AfterReturning' | 'AfterThrowing' | 'Advice' | 'Around';
 
 /**
  * pointcut annotation
  */
 export interface PointcutAnnotation {
+
+    /**
+     * is advice async or not.
+     */
+    async?: boolean;
 
     /**
      * method with specail decortor.

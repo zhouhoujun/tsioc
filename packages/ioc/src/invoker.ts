@@ -58,7 +58,7 @@ export type ArgumentResolver = OperationArgumentResolver | ClassType<OperationAr
  * @param resolvers resolves of the group.
  * @returns 
  */
-export function composeResolver<T extends OperationArgumentResolver, TP extends Parameter = Parameter>(filter: (parameter: TP, ctx: InvocationContext) => boolean, ...resolvers: T[]): OperationArgumentResolver {
+export function composeResolver<T extends OperationArgumentResolver<any>, TP extends Parameter = Parameter>(filter: (parameter: TP, ctx: InvocationContext) => boolean, ...resolvers: T[]): OperationArgumentResolver {
     return {
         canResolve: (parameter: TP, ctx: InvocationContext) => filter(parameter, ctx) && resolvers.some(r => r.canResolve(parameter, ctx)),
         resolve: (parameter: TP, ctx: InvocationContext) => {

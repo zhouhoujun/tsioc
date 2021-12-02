@@ -4,6 +4,7 @@ import { ConfigureLoggerManager } from '@tsdi/logs';
 import { TransactionalMetadata } from '../metadata/meta';
 import { TransactionManager } from './manager';
 import { TransactionError } from './error';
+import { TransactionStatus } from './status';
 
 
 /**
@@ -16,30 +17,28 @@ import { TransactionError } from './error';
 @Aspect()
 export class TransactionalAspect {
 
-    @Before('@annotation(Transactional)', { annotationName: 'Transactional', annotationArgName: 'annotation' })
-    transaction(manager: TransactionManager, annotation: TransactionalMetadata[], joinPoint: Joinpoint) {
+    @Before('@annotation(Transactional)', { async: true, annotationName: 'Transactional', annotationArgName: 'annotation' })
+    async begin(manager: TransactionManager, annotation: TransactionalMetadata[], joinPoint: Joinpoint) {
         if (!manager) throw new ArgumentError('TransactionManager can not be null.');
         const metadata = lang.first(annotation);
-        manager.getTransaction(metadata).flush();
-
+        const status = await manager.getTransaction(metadata);
+        joinPoint.setValue(TransactionStatus, status);
     }
 
-    @AfterReturning('@annotation(Transactional)', 'returning', { annotationName: 'Transactional', annotationArgName: 'annotation' })
-    commit(manager: TransactionManager, annotation: TransactionalMetadata[], returning: any, joinPoint: Joinpoint) {
+    @AfterReturning('@annotation(Transactional)', 'returning', { async: true })
+    async commit(manager: TransactionManager, returning: any, joinPoint: Joinpoint) {
         if (!manager) throw new ArgumentError('TransactionManager can not be null.');
-        const metadata = lang.first(annotation);
-        manager.commit(manager.getTransaction(metadata));
+        await manager.commit(joinPoint.getValue(TransactionStatus));
     }
 
-    @AfterThrowing('@annotation(Transactional)', 'error', { annotationName: 'Transactional', annotationArgName: 'annotation' })
-    rollback(manager: TransactionManager, error: Error, annotation: TransactionalMetadata[], joinPoint: Joinpoint) {
+    @AfterThrowing('@annotation(Transactional)', 'error', { async: true })
+    async rollback(manager: TransactionManager, error: Error, joinPoint: Joinpoint) {
         if (!manager) throw new ArgumentError('TransactionManager can not be null.');
-        const metadata = lang.first(annotation);
         const logger = joinPoint.injector.get(ConfigureLoggerManager)?.getLogger(lang.getClassName(joinPoint.targetType));
 
         if (logger) logger.error(error);
         try {
-            manager.rollback(manager.getTransaction(metadata));
+            await manager.rollback(joinPoint.getValue(TransactionStatus));
         } catch (err) {
             if (logger) logger.error(err);
             throw new TransactionError(err as Error);

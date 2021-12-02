@@ -8,11 +8,17 @@ import { Advicer } from './Advicer';
  * @interface Advices
  */
 export interface Advices {
+    asyncPointcut?: boolean;
     Pointcut: Advicer[];
+    asyncBefore?: boolean;
     Before: Advicer[];
+    asyncAfter?: boolean;
     After: Advicer[];
+    asyncAround?: boolean;
     Around: Advicer[];
+    asyncAfterThrowing?: boolean;
     AfterThrowing: Advicer[];
+    asyncAfterReturning?: boolean;
     AfterReturning: Advicer[];
 }
 

@@ -124,26 +124,44 @@ export const MatchPointcutAction = function (ctx: RuntimeContext, next: () => vo
 
             if (advice.adviceName === 'Before') {
                 if (!advices.Before.some(a => equals(a, advicer))) {
+                    if (!advices.asyncBefore && advicer.advice.async) {
+                        advices.asyncBefore = true;
+                    }
                     advices.Before.push(advicer);
                 }
             } else if (advice.adviceName === 'Pointcut') {
                 if (!advices.Pointcut.some(a => equals(a, advicer))) {
+                    if (!advices.asyncPointcut && advicer.advice.async) {
+                        advices.asyncPointcut = true;
+                    }
                     advices.Pointcut.push(advicer);
                 }
             } else if (advice.adviceName === 'Around') {
                 if (!advices.Around.some(a => equals(a, advicer))) {
+                    if (!advices.asyncAround && advicer.advice.async) {
+                        advices.asyncAround = true;
+                    }
                     advices.Around.push(advicer);
                 }
             } else if (advice.adviceName === 'After') {
                 if (!advices.After.some(a => equals(a, advicer))) {
+                    if (!advices.asyncAfter && advicer.advice.async) {
+                        advices.asyncAfter = true;
+                    }
                     advices.After.push(advicer);
                 }
             } else if (advice.adviceName === 'AfterThrowing') {
                 if (!advices.AfterThrowing.some(a => equals(a, advicer))) {
+                    if (!advices.asyncAfterThrowing && advicer.advice.async) {
+                        advices.asyncAfterThrowing = true;
+                    }
                     advices.AfterThrowing.push(advicer);
                 }
             } else if (advice.adviceName === 'AfterReturning') {
                 if (!advices.AfterReturning.some(a => equals(a, advicer))) {
+                    if (!advices.asyncAfterReturning && advicer.advice.async) {
+                        advices.asyncAfterReturning = true;
+                    }
                     advices.AfterReturning.push(advicer);
                 }
             }

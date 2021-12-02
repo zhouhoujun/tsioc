@@ -1,6 +1,6 @@
 import {
     Type, MethodMetadata, ClassMetadata, ParameterMetadata, tokenId, Injector, EMPTY, Token, InvocationContext,
-    lang, IocContext, ClassType, OperationArgumentResolver, DEFAULT_RESOLVERS, InvokeOption, TokenValue
+    lang, IocContext, ClassType, OperationArgumentResolver, DEFAULT_RESOLVERS, InvokeOption, TokenValue, DecorDefine
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advices } from '../advices/Advices';
@@ -18,7 +18,7 @@ export interface JoinpointOption extends InvokeOption {
     args?: any[];
     state?: JoinpointState;
     advices: Advices;
-    annotations?: (ClassMetadata | MethodMetadata)[];
+    annotations?: DecorDefine[];
     target?: any;
     targetType: Type;
 }
@@ -49,7 +49,7 @@ export class Joinpoint<T = any> extends InvocationContext<T> implements IocConte
         readonly originMethod?: Function,
         readonly params?: ParameterMetadata[],
         readonly args?: any[],
-        readonly annotations?: any[],
+        readonly annotations?: DecorDefine[],
         parent?: InvocationContext,
         readonly provJoinpoint?: Joinpoint, data?: T, values?: TokenValue[], ...argumentResolvers: OperationArgumentResolver[]) {
         super(injector, parent, target, method, data, values, ...argumentResolvers, ...DEFAULT_RESOLVERS);

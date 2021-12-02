@@ -1,3 +1,5 @@
+import { Abstract } from '@tsdi/ioc';
+
 /**
  * Representation of the status of a transaction.
  *
@@ -5,7 +7,8 @@
  * and to programmatically request a rollback (instead of throwing
  * an exception that causes an implicit rollback).
  */
-export interface TransactionStatus {
+@Abstract()
+export abstract class TransactionStatus {
     /**
 	 * Return whether this transaction internally carries a savepoint,
 	 * that is, has been created as nested transaction based on a savepoint.
@@ -17,15 +20,15 @@ export interface TransactionStatus {
 	 * @see #rollbackToSavepoint(Object)
 	 * @see #releaseSavepoint(Object)
 	 */
-    hasPoint(): boolean;
+    abstract hasPoint(): boolean;
 
     /**
 	 * Flush the underlying session to the datastore, if applicable:
-	 * for example, all affected Hibernate/JPA sessions.
+	 * for example, all affected TypeORM/Hibernate/JPA sessions.
 	 * <p>This is effectively just a hint and may be a no-op if the underlying
 	 * transaction manager does not have a flush concept. A flush signal may
 	 * get applied to the primary resource or to transaction synchronizations,
 	 * depending on the underlying resource.
 	 */
-    flush(): void;
+	abstract flush(): void;
 }

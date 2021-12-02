@@ -1,6 +1,6 @@
 import {
-    Type, isFunction, lang, Platform, isNil, isPromise, refl, EMPTY, ctorName, Decors,
-    ParameterMetadata, IocActions, IActionSetup, InvocationContext, Injector
+    Type, isFunction, lang, Platform, isNil, isPromise, refl, EMPTY, ctorName,
+    ParameterMetadata, IocActions, IActionSetup, InvocationContext, Injector, chain
 } from '@tsdi/ioc';
 import { IPointcut } from '../joinpoints/IPointcut';
 import { Joinpoint } from '../joinpoints/Joinpoint';
@@ -140,7 +140,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
                 advices,
                 originMethod: propertyMethod,
                 provJoinpoint,
-                annotations: targetRef.class.decors.filter(d => d.propertyKey === name && d.decorType === Decors.method).map(d => d.metadata),
+                annotations: targetRef.class.decors.filter(d => d.propertyKey === name),
                 parent
             });
 
@@ -164,9 +164,9 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
             if (metadata.annotationName) {
                 let d: string = metadata.annotationName;
                 d = d ? (aExp.test(d) ? d : `@${d}`) : '';
-                joinPoint.setArgument(metadata.annotationArgName, joinPoint.annotations ? joinPoint.annotations.filter(v => v && v.decorator == d) : []);
+                joinPoint.setArgument(metadata.annotationArgName, joinPoint.annotations ? joinPoint.annotations.filter(v => v && v.decor == d).map(d => d.metadata) : []);
             } else {
-                joinPoint.setArgument(metadata.annotationArgName, joinPoint.annotations ?? []);
+                joinPoint.setArgument(metadata.annotationArgName, joinPoint.annotations?.map(d => d.metadata) ?? []);
             }
         }
 
@@ -199,22 +199,31 @@ export class CtorAdvicesScope extends IocActions<Joinpoint> implements IActionSe
     }
 }
 
+function runAdvicers(ctx: Joinpoint, invoker: (joinPoint: Joinpoint, advicer: Advicer) => any, advicers: Advicer[], next: () => void, async: boolean | undefined) {
+    if (async) {
+        lang.step(advicers.map(a => () => invoker(ctx, a)))
+            .then(() => {
+                next();
+            });
+    } else {
+        advicers.forEach(advicer => {
+            invoker(ctx, advicer);
+        });
+        next();
+    }
+}
+
 export const CtorBeforeAdviceAction = function (ctx: Joinpoint, next: () => void): void {
     if (ctx.state === JoinpointState.Before) {
         const invoker = ctx.invokeHandle;
-        ctx.advices.Before.forEach(advicer => {
-            invoker(ctx, advicer);
-        });
-
-        ctx.advices.Pointcut.forEach(advicer => {
-            invoker(ctx, advicer);
-        });
-
-        ctx.advices.Around.forEach(advicer => {
-            invoker(ctx, advicer);
-        });
+        chain([
+            (ctx: Joinpoint, anext) => runAdvicers(ctx, invoker, ctx.advices.Before, anext, ctx.advices.asyncBefore),
+            (ctx: Joinpoint, pnext) => runAdvicers(ctx, invoker, ctx.advices.Pointcut, pnext, ctx.advices.asyncPointcut),
+            (ctx: Joinpoint, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.asyncAround)
+        ], ctx, next)
+    } else {
+        next();
     }
-    next();
 
 }
 
@@ -223,15 +232,13 @@ const emptyFunc = function () { };
 export const CtorAfterAdviceAction = function (ctx: Joinpoint, next: () => void): void {
     if (ctx.state === JoinpointState.After) {
         const invoker = ctx.invokeHandle;
-        ctx.advices.After.forEach(advicer => {
-            invoker(ctx, advicer);
-        });
-
-        ctx.advices.Around.forEach(advicer => {
-            invoker(ctx, advicer);
-        });
+        chain([
+            (ctx: Joinpoint, anext) => runAdvicers(ctx, invoker, ctx.advices.After, anext, ctx.advices.asyncAfter),
+            (ctx: Joinpoint, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.asyncAround)
+        ], ctx, next);
+    } else {
+        next();
     }
-    next();
 }
 
 export class MethodAdvicesScope extends IocActions<Joinpoint> implements IActionSetup {
@@ -242,7 +249,7 @@ export class MethodAdvicesScope extends IocActions<Joinpoint> implements IAction
             PointcutAdvicesAction,
             ExecuteOriginMethodAction,
             AfterAdvicesAction,
-            AfterAsyncReturningAdvicesAction,
+            // AfterAsyncReturningAdvicesAction,
             AfterReturningAdvicesAction,
             AfterThrowingAdvicesAction
         );
@@ -257,14 +264,11 @@ export const BeforeAdvicesAction = function (ctx: Joinpoint, next: () => void): 
     }
     ctx.state = JoinpointState.Before;
     const invoker = ctx.invokeHandle;
-    ctx.advices.Around.forEach(advicer => {
-        invoker(ctx, advicer);
-    });
 
-    ctx.advices.Before.forEach(advicer => {
-        invoker(ctx, advicer);
-    });
-    next();
+    chain([
+        (ctx: Joinpoint, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.asyncAround),
+        (ctx: Joinpoint, bnext) => runAdvicers(ctx, invoker, ctx.advices.Before, bnext, ctx.advices.asyncBefore)
+    ], ctx, next);
 }
 
 export const PointcutAdvicesAction = function (ctx: Joinpoint, next: () => void): void {
@@ -272,11 +276,7 @@ export const PointcutAdvicesAction = function (ctx: Joinpoint, next: () => void)
         return next();
     }
     ctx.state = JoinpointState.Pointcut;
-    const invoker = ctx.invokeHandle;
-    ctx.advices.Pointcut.forEach(advicer => {
-        invoker(ctx, advicer);
-    });
-    next();
+    runAdvicers(ctx, ctx.invokeHandle, ctx.advices.Pointcut, next, ctx.advices.asyncPointcut);
 }
 
 export const ExecuteOriginMethodAction = function (ctx: Joinpoint, next: () => void): void {
@@ -298,57 +298,66 @@ export const AfterAdvicesAction = function (ctx: Joinpoint, next: () => void): v
     }
     ctx.state = JoinpointState.After;
     const invoker = ctx.invokeHandle;
-    ctx.advices.Around.forEach(advicer => {
-        invoker(ctx, advicer);
-    });
-    ctx.advices.After.forEach(advicer => {
-        invoker(ctx, advicer);
-    });
-    next();
+
+    chain([
+        (ctx: Joinpoint, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.asyncAround),
+        (ctx: Joinpoint, anext) => runAdvicers(ctx, invoker, ctx.advices.After, anext, ctx.advices.asyncAfter)
+    ], ctx, next);
 }
 
-export const AfterAsyncReturningAdvicesAction = function (ctx: Joinpoint, next: () => void): void {
-    if (ctx.throwing || !isPromise(ctx.returning)) {
-        return next();
-    }
+// export const AfterAsyncReturningAdvicesAction = function (ctx: Joinpoint, next: () => void): void {
+//     if (ctx.throwing || !isPromise(ctx.returning)) {
+//         return next();
+//     }
 
-    ctx.state = JoinpointState.AfterReturning;
-    const invoker = ctx.invokeHandle;
-    let val: any;
-    ctx.returning = lang.step([
-        ctx.returning.then(v => { val = v; }),
-        ...ctx.advices.Around.map(a => () => invoker(ctx, a)),
-        ...ctx.advices.AfterReturning.map(a => () => invoker(ctx, a)),
-        () => !isNil(ctx.resetReturning) ? ctx.resetReturning : val
-    ])
-        .then(v => {
-            ctx.resetReturning = null;
-            return v;
-        })
-        .catch(err => {
-            ctx.throwing = err;
-            next();
-        });
+//     ctx.state = JoinpointState.AfterReturning;
+//     const invoker = ctx.invokeHandle;
+//     let val: any;
+//     ctx.returning = lang.step([
+//         ctx.returning.then(v => { val = v; }),
+//         ...ctx.advices.Around.map(a => () => invoker(ctx, a)),
+//         ...ctx.advices.AfterReturning.map(a => () => invoker(ctx, a)),
+//         () => !isNil(ctx.resetReturning) ? ctx.resetReturning : val
+//     ])
+//         .then(v => {
+//             ctx.resetReturning = null;
+//             return v;
+//         })
+//         .catch(err => {
+//             ctx.throwing = err;
+//             next();
+//         });
 
-}
+// }
 
 export const AfterReturningAdvicesAction = function (ctx: Joinpoint, next: () => void): void {
-    if (ctx.throwing || isPromise(ctx.returning)) {
+    if (ctx.throwing) {
         return next();
     }
     if (!isNil(ctx.returning)) {
         ctx.state = JoinpointState.AfterReturning;
         const invoker = ctx.invokeHandle;
-        ctx.advices.Around.forEach(advicer => {
-            invoker(ctx, advicer);
+        const asyncValue = isPromise(ctx.returning);
+
+        chain([
+            (ctx: Joinpoint, rnext) => isPromise(ctx.returning) ?
+                ctx.returning.then(val => {
+                    rnext();
+                    return val;
+                })
+                    .catch(err => {
+                        ctx.throwing = err;
+                        next();
+                    })
+                : rnext(),
+            (ctx: Joinpoint, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.asyncAround || asyncValue),
+            (ctx: Joinpoint, anext) => runAdvicers(ctx, invoker, ctx.advices.AfterReturning, anext, ctx.advices.asyncAfterReturning || asyncValue)
+        ], ctx, () => {
+            if (!isNil(ctx.resetReturning)) {
+                ctx.returning = ctx.resetReturning;
+                ctx.resetReturning = null;
+            }
         });
-        ctx.advices.AfterReturning.forEach(advicer => {
-            invoker(ctx, advicer);
-        });
-        if (!isNil(ctx.resetReturning)) {
-            ctx.returning = ctx.resetReturning;
-            ctx.resetReturning = null;
-        }
     }
 }
 
@@ -357,10 +366,8 @@ export const AfterThrowingAdvicesAction = function (ctx: Joinpoint, next: () => 
 
     ctx.state = JoinpointState.AfterThrowing;
     const invoker = ctx.invokeHandle;
-    ctx.advices.Around.forEach(advicer => {
-        invoker(ctx, advicer);
-    });
-    ctx.advices.AfterThrowing.forEach(advicer => {
-        invoker(ctx, advicer);
-    });
+    chain([
+        (ctx: Joinpoint, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.asyncAround),
+        (ctx: Joinpoint, anext) => runAdvicers(ctx, invoker, ctx.advices.AfterThrowing, anext, ctx.advices.asyncAfterThrowing)
+    ], ctx);
 }

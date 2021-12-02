@@ -36,7 +36,7 @@ export abstract class TransactionManager {
      * cannot be executed (for example, if a currently active transaction is in
      * conflict with the specified propagation behavior)
      */
-    abstract getTransaction(definition: TransactionalMetadata): TransactionStatus;
+    abstract getTransaction(definition: TransactionalMetadata): Promise<TransactionStatus>;
 
     /**
      * Commit the given transaction, with regard to its status. If the transaction
@@ -65,7 +65,7 @@ export abstract class TransactionManager {
      * is already completed (that is, committed or rolled back)
      * @see TransactionStatus#setRollbackOnly
      */
-    abstract commit(status: TransactionStatus): void;
+    abstract commit(status: TransactionStatus): Promise<void>;
 
     /**
      * Perform a rollback of the given transaction.
@@ -83,6 +83,6 @@ export abstract class TransactionManager {
      * @throws IllegalTransactionStateException if the given transaction
      * is already completed (that is, committed or rolled back)
      */
-    abstract rollback(status: TransactionStatus): void;
+    abstract rollback(status: TransactionStatus): Promise<void>;
 }
 
