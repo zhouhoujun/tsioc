@@ -1,5 +1,5 @@
 import { ClassType, Type } from './types';
-import { EMPTY, isArray, isClassType, isDefined, isFunction, isObject, isPlainObject, isString } from './utils/chk';
+import { EMPTY, isArray, isClassType, isDefined, isFunction, isObject, isPlainObject, isPromise, isString, isTypeObject, isTypeReflect } from './utils/chk';
 import { Abstract } from './metadata/fac';
 import { ParameterMetadata } from './metadata/meta';
 import { TypeReflect } from './metadata/type';
@@ -100,7 +100,7 @@ export class InvocationContext<T = any> implements Destroyable {
         this.resolvers = argumentResolvers.map(r => isFunction(r) ? injector.get<OperationArgumentResolver>(r) : r);
         this._args = args ?? {} as T;
         this._values = new Map(values);
-        injector.onDestroy(() => this.destroy());
+        injector.onDestroy(this);
     }
 
     /**
@@ -226,9 +226,9 @@ export interface OperationInvoker {
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation
-     * @param callback (result: any) => void  after invoked callback.
+     * @param destroy try destroy the context after invoked.
      */
-    invoke(context: InvocationContext, callback?: (result: any) => void): any;
+    invoke(context: InvocationContext, destroy?: boolean): any;
 
     /**
      * resolve args. 
@@ -259,23 +259,38 @@ export class MissingParameterError extends Error {
     }
 }
 
+const deft = {
+    typeInst: true,
+    fun: true
+}
 /**
  * format object to string for log.
  * @param obj 
  * @returns 
  */
-export function object2string(obj: any): string {
-    if (isString(obj)) {
+export function object2string(obj: any, options?: { typeInst?: boolean; fun?: boolean; }): string {
+    options = { ...deft, ...options };
+    if (isArray(obj)) {
+        return `[${obj.map(v => object2string(v, options)).join(', ')}]`;
+    } else if (isString(obj)) {
         return `"${obj}"`;
     } else if (isClassType(obj)) {
         return 'Type<' + getClassName(obj) + '>';
+    } else if (isTypeReflect(obj)) {
+        return `[${obj.class.className} TypeReflect]`;
     } else if (isPlainObject(obj)) {
         let str: string[] = [];
         for (let n in obj) {
             let value = obj[n];
-            str.push(`${n}: ${object2string(value)}`)
+            str.push(`${n}: ${object2string(value, options)}`)
         }
         return `{ ${str.join(', ')} }`;
+    } else if (options.typeInst && isTypeObject(obj)) {
+        let fileds = Object.keys(obj).filter(k => k).map(k => `${k}: ${object2string(obj[k], { typeInst: false, fun: false })}`);
+        return `[${getClassName(obj)} {${fileds.join(', ')}} ]`;
+    }
+    if (!options.fun && isFunction(obj)) {
+        return 'Function';
     }
     return `${obj}`;
 }
@@ -286,22 +301,38 @@ export function object2string(obj: any): string {
  */
 export class ReflectiveOperationInvoker implements OperationInvoker {
 
-    constructor(private typeRef: TypeReflect, private method: string, private instance?: any) { }
+    constructor(private typeRef: TypeReflect, private method: string, private instance?: any) {
+
+    }
 
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation
-     * @param callback (result: any) => void  after invoked callback.
+     * @param destroy destroy the context after invoked.
      */
-    invoke(context: InvocationContext, callback?: (result: any) => void) {
+    invoke(context: InvocationContext, destroy?: boolean) {
         const injector = context.injector;
         const type = this.typeRef.type;
         const instance = this.instance ?? injector.get(type, context);
         if (!instance || !isFunction(instance[this.method])) {
             throw new Error(`type: ${type} has no method ${this.method}.`);
         }
-        let result = instance[this.method](...this.resolveArguments(context), context);
-        if (callback) callback(result);
+        const hasPointcut = instance[this.method]['_proxy'] == true;
+        const args = this.resolveArguments(context);
+        if (hasPointcut) {
+            args.push(context);
+        }
+        let result = instance[this.method](...args);
+        if (destroy && !hasPointcut) {
+            if (isPromise(result)) {
+                return result.then(val => {
+                    context?.destroy();
+                    return val;
+                }) as any;
+            } else {
+                context.destroy();
+            }
+        }
         return result;
     }
 
@@ -421,7 +452,9 @@ export abstract class ReflectiveRef<T = any> implements Destroyable {
      * @param option 
      */
     abstract invoke(method: string, option?: InvokeArguments): any;
-
+    /**
+     * is destroyed or not.
+     */
     abstract get destroyed(): boolean;
     /**
      * Destroys the component instance and all of the data structures associated with it.

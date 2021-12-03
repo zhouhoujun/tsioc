@@ -9,7 +9,7 @@ import { cleanObj, deepForEach } from '../utils/lang';
 import { InjectorTypeWithProviders, ProviderType, StaticProvider, StaticProviders } from '../providers';
 import {
     isArray, isDefined, isFunction, isPlainObject, isPrimitiveType,
-    isNumber, isTypeObject, isTypeReflect, EMPTY, EMPTY_OBJ, getClass, isString
+    isNumber, isTypeObject, isTypeReflect, EMPTY, EMPTY_OBJ, getClass, isString, isPromise
 } from '../utils/chk';
 import { DesignContext } from '../actions/ctx';
 import { DesignLifeScope } from '../actions/design';
@@ -76,8 +76,7 @@ export class DefaultInjector extends Injector {
                 this.isAlias = isRootAlias;
                 break;
             case 'provider':
-            case 'invoked':
-            case 'parameter':
+            case 'invocation':
                 break;
             default:
                 if (scope) this.platform().setInjector(scope, this);
@@ -650,7 +649,7 @@ export class DefaultInjector extends Injector {
         const factory = this.get(OperationFactoryResolver).create(tgRefl);
         if (!context) {
             context = factory.createContext(this, { ...option, providers, invokerMethod: key });
-            return factory.createInvoker(key, instance).invoke(context, () => context?.destroy());
+            return factory.createInvoker(key, instance).invoke(context, true);
         }
         return factory.createInvoker(key, instance).invoke(context);
     }
@@ -724,6 +723,9 @@ const isRootAlias = (token: any) => token === Injector || token === INJECTOR || 
 const isInjectAlias = (token: any) => token === Injector || token === INJECTOR;
 
 INJECT_IMPL.create = (providers: ProviderType[], parent?: Injector, scope?: InjectorScope) => {
+    if (scope === 'invocation') {
+        return new StaticInjector(providers, parent, scope);
+    }
     return new DefaultInjector(providers, parent!, scope);
 }
 
@@ -1108,7 +1110,6 @@ export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
 ];
 
 function createInvocationContext(injector: Injector, option?: InvocationOption & {
-    proxy?: boolean;
     /**
      * invocation invoker target.
      */
@@ -1124,7 +1125,7 @@ function createInvocationContext(injector: Injector, option?: InvocationOption &
         providers = [...providers, ...option.targetProviders || EMPTY, ...option.methodProviders || EMPTY]
     }
 
-    injector = new StaticInjector(providers, injector, option.proxy ? 'invoked' : 'parameter');
+    injector = new StaticInjector(providers, injector, 'invocation');
     return new InvocationContext(
         injector,
         option.parent ?? injector.get(InvocationContext),
@@ -1171,9 +1172,7 @@ class ReflectiveRefImpl<T> extends ReflectiveRef<T> {
 
     invoke(method: string, option?: InvokeArguments) {
         const context = this.factory.createContext(this.root.injector, option, this.root);
-        const result = this.factory.createInvoker(method, this.instance).invoke(context);
-        context.destroy();
-        return result;
+        return this.factory.createInvoker(method, this.instance).invoke(context, true);
     }
 
     get destroyed() {
@@ -1227,26 +1226,22 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
         if (!this._tagPdrs) {
             this._tagPdrs = injector.platform().getTypeProvider(this.targetReflect);
         }
-        let proxy: boolean | undefined;
         let methodProviders: ProviderType[] | undefined;
         let methodResolvers: ArgumentResolver[] | undefined;
         const method = option?.invokerMethod;
         if (method) {
             methodProviders = this.targetReflect.class.getMethodProviders(method);
             methodResolvers = this.targetReflect.class.getMethodResolvers(method);
-            proxy = this.targetReflect.type.prototype[method]['_proxy'];
         }
         return root ? createInvocationContext(injector, {
             ...option,
             parent: root,
-            proxy,
             invokerTarget: this.targetReflect.type,
             methodProviders,
             methodResolvers
         })
             : createInvocationContext(injector, {
                 ...option,
-                proxy,
                 invokerTarget: this.targetReflect.type,
                 targetProviders: this._tagPdrs,
                 methodProviders,

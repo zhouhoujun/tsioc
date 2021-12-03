@@ -1,6 +1,6 @@
 import {
     Type, isFunction, lang, Platform, isNil, isPromise, refl, EMPTY, ctorName,
-    ParameterMetadata, IocActions, IActionSetup, InvocationContext, Injector, chain
+    ParameterMetadata, IocActions, IActionSetup, InvocationContext, Injector, chain, object2string
 } from '@tsdi/ioc';
 import { IPointcut } from '../joinpoints/IPointcut';
 import { Joinpoint } from '../joinpoints/Joinpoint';
@@ -78,12 +78,12 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
      * @param {IPointcut} pointcut
      * @param {Joinpoint} [provJoinpoint]
      */
-    proceed(target: any, targetType: Type, advices: Advices, pointcut: IPointcut, provJoinpoint?: Joinpoint) {
+    proceed(target: any, targetType: Type, advices: Advices, pointcut: IPointcut) {
         if (advices && pointcut) {
             const methodName = pointcut.name;
             if (pointcut.descriptor && (pointcut.descriptor.get || pointcut.descriptor.set)) {
-                const getProxy = pointcut.descriptor.get ? this.proxy(pointcut.descriptor.get.bind(target) as Function, advices, target, targetType, pointcut, provJoinpoint) : emptyFunc;
-                const setProxy = pointcut.descriptor.set ? this.proxy(pointcut.descriptor.set.bind(target) as Function, advices, target, targetType, pointcut, provJoinpoint) : emptyFunc;
+                const getProxy = pointcut.descriptor.get ? this.proxy(pointcut.descriptor.get.bind(target) as Function, advices, target, targetType, pointcut) : emptyFunc;
+                const setProxy = pointcut.descriptor.set ? this.proxy(pointcut.descriptor.set.bind(target) as Function, advices, target, targetType, pointcut) : emptyFunc;
                 if (pointcut.descriptor.get && pointcut.descriptor.set) {
                     Object.defineProperty(target, methodName, {
                         get: () => {
@@ -108,13 +108,13 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
                 }
             } else if (isFunction(target[methodName]) && !target[methodName][proxyFlag]) {
                 let propertyMethod = target[methodName].bind(target);
-                target[methodName] = this.proxy(propertyMethod, advices, target, targetType, pointcut, provJoinpoint);
+                target[methodName] = this.proxy(propertyMethod, advices, target, targetType, pointcut);
                 target[methodName][proxyFlag] = true;
             }
         }
     }
 
-    proxy(propertyMethod: Function, advices: Advices, target: any, targetType: Type, pointcut: IPointcut, provJoinpoint?: Joinpoint) {
+    proxy(propertyMethod: Function, advices: Advices, target: any, targetType: Type, pointcut: IPointcut) {
         const fullName = pointcut.fullName;
         const name = pointcut.name;
         const self = this;
@@ -130,7 +130,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
                 parent = larg;
             }
             const targetRef = refl.get(targetType);
-            const joinPoint = Joinpoint.parse((parent || provJoinpoint)?.injector ?? platform.getInjector('root') ?? this.platform.getInjector('platform'), {
+            const joinPoint = Joinpoint.parse(parent?.injector ?? platform.getInjector('root') ?? this.platform.getInjector('platform'), {
                 name,
                 fullName,
                 params: targetRef.class.getParameters(name),
@@ -139,10 +139,12 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
                 targetType,
                 advices,
                 originMethod: propertyMethod,
-                provJoinpoint,
                 annotations: targetRef.class.decors.filter(d => d.propertyKey === name),
                 parent
             });
+            if (parent) {
+                joinPoint.onDestroy(parent);
+            }
 
             self.execute(joinPoint);
             let returning = joinPoint.returning;
@@ -155,8 +157,10 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
     }
 
     protected invokeAdvice(joinPoint: Joinpoint, advicer: Advicer) {
-        if(joinPoint.destroyed) return;
-        let metadata = advicer.advice as AroundMetadata;
+        if (joinPoint.destroyed) {
+            throw new Error(`joinPoint is destroyed, when invoked advicer ${object2string(advicer)}.\n\njoinPoint object ${object2string(joinPoint, { fun: false, typeInst: true })}`);
+        }
+        const metadata = advicer.advice as AroundMetadata;
         if (!isNil(joinPoint.args) && metadata.args) {
             joinPoint.setArgument(metadata.args, joinPoint.args);
         }
@@ -202,7 +206,7 @@ export class CtorAdvicesScope extends IocActions<Joinpoint> implements IActionSe
 
 function runAdvicers(ctx: Joinpoint, invoker: (joinPoint: Joinpoint, advicer: Advicer) => any, advicers: Advicer[], next: () => void, async: boolean | undefined) {
     if (async) {
-        lang.step(advicers.map(a => () => invoker(ctx, a)))
+        return lang.step(advicers.map(a => () => invoker(ctx, a)))
             .then(() => {
                 next();
             });
@@ -341,16 +345,18 @@ export const AfterReturningAdvicesAction = function (ctx: Joinpoint, next: () =>
         const isAsync = isPromise(ctx.returning);
 
         chain([
-            (ctx: Joinpoint, rnext) => isPromise(ctx.returning) ?
-                ctx.returning.then(val => {
-                    rnext();
-                    return val;
-                })
-                    .catch(err => {
-                        ctx.throwing = err;
-                        next();
-                    })
-                : rnext(),
+            (ctx: Joinpoint, rnext) => isAsync ?
+                (ctx.returning as Promise<any>).then(val => {
+                    return Promise.resolve(rnext())
+                        .then(() => {
+                            const restVal = ctx.resetReturning;
+                            ctx.resetReturning = null;
+                            return restVal ?? val;
+                        });
+                }).catch(err => {
+                    ctx.throwing = err;
+                    next();
+                }) : rnext(),
             (ctx: Joinpoint, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.asyncAround || isAsync),
             (ctx: Joinpoint, anext) => runAdvicers(ctx, invoker, ctx.advices.AfterReturning, anext, ctx.advices.asyncAfterReturning || isAsync)
         ], ctx, () => {

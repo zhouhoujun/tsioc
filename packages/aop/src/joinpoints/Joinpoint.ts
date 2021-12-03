@@ -51,7 +51,9 @@ export class Joinpoint<T = any> extends InvocationContext<T> implements IocConte
         readonly args?: any[],
         readonly annotations?: DecorDefine[],
         parent?: InvocationContext,
-        readonly provJoinpoint?: Joinpoint, data?: T, values?: TokenValue[], ...argumentResolvers: OperationArgumentResolver[]) {
+        data?: T,
+        values?: TokenValue[],
+        ...argumentResolvers: OperationArgumentResolver[]) {
         super(injector, parent, target, method, data, values, ...argumentResolvers, ...DEFAULT_RESOLVERS);
     }
 
@@ -73,7 +75,8 @@ export class Joinpoint<T = any> extends InvocationContext<T> implements IocConte
      * @returns 
      */
     static parse(injector: Injector, options: JoinpointOption) {
-        return new Joinpoint(injector,
+        return new Joinpoint(
+            Injector.create([], injector, 'invocation'),
             options.target,
             options.targetType,
             options.name,
@@ -85,7 +88,6 @@ export class Joinpoint<T = any> extends InvocationContext<T> implements IocConte
             options.args,
             options.annotations,
             options.parent,
-            options.provJoinpoint,
             {
                 // method: options.name,
                 // params: options.params,

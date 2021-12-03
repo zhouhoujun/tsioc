@@ -181,7 +181,7 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
     }
 
     create(parent: Injector, option?: ModuleOption): ModuleRef<T> {
-        return new DefaultModuleRef(this.moduleReflect, option?.providers, parent, option?.scope, option?.deps);
+        return new DefaultModuleRef(this.moduleReflect, option?.providers, parent, option?.scope as InjectorScope, option?.deps);
     }
 }
 
