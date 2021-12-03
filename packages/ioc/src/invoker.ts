@@ -1,4 +1,5 @@
 import { ClassType, Type } from './types';
+import { getClassName } from './utils/lang';
 import { EMPTY, isArray, isClassType, isDefined, isFunction, isObject, isPlainObject, isPromise, isString, isTypeObject, isTypeReflect } from './utils/chk';
 import { Abstract } from './metadata/fac';
 import { ParameterMetadata } from './metadata/meta';
@@ -7,7 +8,6 @@ import { ProviderType } from './providers';
 import { DestroyCallback, Destroyable } from './destroy';
 import { Token } from './tokens';
 import { Injector } from './injector';
-import { getClassName } from './utils/lang';
 
 
 
