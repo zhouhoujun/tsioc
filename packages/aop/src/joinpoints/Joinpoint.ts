@@ -32,6 +32,11 @@ export const AOP_METHOD_ANNOTATIONS = tokenId<any[]>('AOP_METHOD_ANNOTATIONS');
 export class Joinpoint<T = any> extends InvocationContext<T> implements IocContext {
     invokeHandle!: (joinPoint: Joinpoint, advicer: Advicer) => any;
 
+    /**
+     * custom proxy invoke origin method.
+     */
+    originProxy?: (joinpoint: Joinpoint) => void;
+
     returning: any;
 
     throwing: any;

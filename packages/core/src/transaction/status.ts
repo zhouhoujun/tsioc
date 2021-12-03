@@ -1,3 +1,4 @@
+import { Joinpoint } from '@tsdi/aop';
 import { Abstract } from '@tsdi/ioc';
 
 /**
@@ -30,5 +31,5 @@ export abstract class TransactionStatus {
 	 * get applied to the primary resource or to transaction synchronizations,
 	 * depending on the underlying resource.
 	 */
-	abstract flush(): void;
+	abstract flush(joinPoint: Joinpoint): Promise<void>;
 }

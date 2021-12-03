@@ -288,8 +288,11 @@ export const ExecuteOriginMethodAction = function (ctx: Joinpoint, next: () => v
         return next();
     }
     try {
-        const val = ctx.originMethod?.(...ctx.args || EMPTY);
-        ctx.returning = val;
+        if (ctx.originProxy) {
+            ctx.originProxy(ctx);
+        } else {
+            ctx.returning = ctx.originMethod?.(...ctx.args || EMPTY);
+        }
     } catch (err) {
         ctx.throwing = err as Error;
     }

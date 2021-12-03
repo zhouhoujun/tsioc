@@ -3,6 +3,7 @@ import { After, Before, Suite, Test } from '@tsdi/unit';
 import expect = require('expect');
 import { MockTransBootTest, option } from './app';
 import { Role, User } from './models/models';
+import { UserRepository } from './repositories/UserRepository';
 
 
 @Suite()
@@ -23,11 +24,19 @@ export class TransactionTest {
                 }
             ]
         });
+
+        
+        const urep = this.ctx.injector.get(UserRepository);
+        const u1 = await urep.findByAccount('test_111');
+        if(u1) await urep.remove(u1);
+        const u2 = await urep.findByAccount('post_test');
+        if(u2) await urep.remove(u2);
+
     }
 
     @Test()
     async postRolebackUser() {
-        const rep = await this.ctx.send('/users', { method: 'post', body: { name: 'test_111', account: 'post_test', password: '111111' }, query: { check: true } });
+        const rep = await this.ctx.send('/users', { method: 'post', body: { name: 'test_111', account: 'test_111', password: '111111' }, query: { check: true } });
         rep.error && console.log(rep.error)
         expect(rep.status).toEqual(500);
         expect(rep.error).toBeDefined();

@@ -26,6 +26,7 @@ export class LoadReposTest {
                 }
             ]
         });
+
     }
 
     @Test()
@@ -68,7 +69,13 @@ export class LoadReposTest {
     async deleteUser() {
         const rep = this.ctx.injector.get(UserRepository);
         let svu = await rep.findByAccount('admin----test');
-        await rep.remove(svu!);
+        const rmd = await rep.remove(svu!);
+        expect(rmd).toBeDefined();
+        
+        let svu1 = await rep.findByAccount('post_test');
+        if (svu1) {
+            await rep.remove(svu1);
+        }
     }
 
     @Test()
@@ -98,9 +105,6 @@ export class LoadReposTest {
         expect(rep.body).toBeTruthy();
     }
 
-
-
-    
     @Test()
     async postRole() {
         const rep = await this.ctx.send('/roles', { method: 'post', body: { name: 'opter' } });

@@ -20,9 +20,9 @@ export class TransactionalAspect {
     @Before('@annotation(Transactional)', { async: true, annotationName: 'Transactional', annotationArgName: 'annotation' })
     async begin(manager: TransactionManager, annotation: TransactionalMetadata[], joinPoint: Joinpoint) {
         if (!manager) throw new ArgumentError('TransactionManager can not be null.');
-        const metadata = lang.first(annotation);
-        const status = await manager.getTransaction(metadata);
+        const status = await manager.getTransaction(lang.first(annotation));
         joinPoint.setValue(TransactionStatus, status);
+        await status.flush(joinPoint);
     }
 
     @AfterReturning('@annotation(Transactional)', 'returning', { async: true })

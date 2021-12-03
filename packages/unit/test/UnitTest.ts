@@ -22,7 +22,7 @@ export class SuiteTest {
         console.log('---------beofre test-----------');
     }
 
-    @Test('assert test timeout', 50)
+    @Test('assert test timeout', 10)
     testTimeout() {
         console.log('---------assert test timeout------');
         let def = lang.defer();
@@ -33,7 +33,7 @@ export class SuiteTest {
         return def.promise;
     }
 
-    @Test('assert test in time', 50)
+    @Test('assert test in time', 11)
     testInTime(assert: Assert) {
         console.log('---------assert test in time------');
         let def = lang.defer();
@@ -51,5 +51,3 @@ export class SuiteTest {
     }
 }
 
-
-// runTest(SuiteTest, {}, ConsoleReporter);

@@ -47,7 +47,7 @@ export const initQueue = async (ctx: Context, next: () => Promise<void>) => {
         const err = error as any;
         logger.error(err);
         ctx.error = err;
-        throw err;
+        // throw err;
     } finally {
         logger?.debug(ctx.method, ctx.url, `- ${Date.now() - start}ms`);
     }
