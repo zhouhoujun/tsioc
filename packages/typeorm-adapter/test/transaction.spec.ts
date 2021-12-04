@@ -15,7 +15,6 @@ export class TransactionTest {
     async beforeInit() {
         this.ctx = await Application.run({
             type: MockTransBootTest,
-            exit: false,
             configures: [
                 {
                     models: ['./models/**/*.ts'],

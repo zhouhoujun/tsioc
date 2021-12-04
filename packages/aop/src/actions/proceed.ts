@@ -330,7 +330,7 @@ export const AfterReturningAdvicesAction = function (ctx: Joinpoint, next: () =>
                             const restVal = ctx.resetReturning;
                             ctx.resetReturning = null;
                             return restVal ?? val;
-                        });
+                        })
                 }).catch(err => {
                     ctx.throwing = err;
                     next();
@@ -354,5 +354,7 @@ export const AfterThrowingAdvicesAction = function (ctx: Joinpoint, next: () => 
     chain<Joinpoint>([
         (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.asyncAround),
         (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.AfterThrowing, anext, ctx.advices.asyncAfterThrowing)
-    ], ctx);
+    ], ctx, () => {
+        throw ctx.throwing;
+    });
 }

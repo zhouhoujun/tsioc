@@ -48,10 +48,6 @@ export abstract class ApplicationContext implements Destroyable, Disposable {
      */
     abstract get injector(): ModuleRef;
     /**
-     * exit application or not, when throw error.
-     */
-    abstract get exit(): boolean;
-    /**
      * module instance.
      */
     abstract get instance(): any;
@@ -199,10 +195,6 @@ export interface ApplicationOption<T = any> extends ModuleOption {
      * injector.
      */
     injector?: Injector;
-    /**
-     * exit application or not, when throw error.
-     */
-    exit?: boolean;
     /**
      * target module type.
      *

@@ -195,9 +195,6 @@ export class DefaultApplicationFactory extends ApplicationFactory {
     initOption<T>(ctx: ApplicationContext, option?: ApplicationOption<T>) {
         if (!option) return;
 
-        if (isBoolean(option.exit)) {
-            (ctx as DefaultApplicationContext).exit = option.exit;
-        }
         const mgr = ctx.getConfigureManager();
         if (option.configures && option.configures.length) {
             option.configures.forEach(cfg => {

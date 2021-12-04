@@ -1,4 +1,4 @@
-import { EMPTY, Inject } from '@tsdi/ioc';
+import { EMPTY, Inject, lang } from '@tsdi/ioc';
 import { TransactionalMetadata, TransactionManager, TransactionStatus } from '@tsdi/core';
 import { Joinpoint } from '@tsdi/aop';
 import { ILogger, Logger } from '@tsdi/logs';
@@ -23,15 +23,14 @@ export class TypeormTransactionStatus extends TransactionStatus {
         this._jointPoint = joinPoint;
         const isolation = this.definition.isolation?.replace('_', ' ') as IsolationLevel;
         const connection = this.definition.connection;
-        joinPoint.originProxy = (jpt) => {
+        joinPoint.originProxy = (jpt) => {;
             const runInTransaction = (entityManager: EntityManager) => {
-                jpt.returning = jpt.originMethod?.(...jpt.args ?? EMPTY);
-                return jpt.returning;
+                return jpt.originMethod?.(...jpt.args ?? EMPTY);
             }
             if (isolation) {
-                getConnection(connection).transaction(isolation, runInTransaction);
+                jpt.returning = getConnection(connection).transaction(isolation, runInTransaction);
             } else {
-                getConnection(connection).transaction(runInTransaction);
+                jpt.returning = getConnection(connection).transaction(runInTransaction);
             }
         }
     }
