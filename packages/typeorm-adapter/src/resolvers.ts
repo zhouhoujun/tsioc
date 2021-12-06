@@ -1,9 +1,8 @@
 import { Joinpoint } from '@tsdi/aop';
-import { RepositoryArgumentResolver, RepositoryMetadata, TransactionalMetadata, TransactionManager, TransactionResolver } from '@tsdi/core';
-import { Parameter, InvocationContext, Type, lang, Inject, ArgumentError, OperationArgumentResolver, isArray, composeResolver } from '@tsdi/ioc';
+import { RepositoryArgumentResolver, RepositoryMetadata, TransactionManager, TransactionResolver } from '@tsdi/core';
+import { Parameter, InvocationContext, Type, lang, Inject, ArgumentError, OperationArgumentResolver, isArray, composeResolver, Destroy, Singleton } from '@tsdi/ioc';
 import {
-    getConnection, getCustomRepository, getMongoRepository, getRepository,
-    getTreeRepository, MongoRepository, Repository, TreeRepository
+    getConnection, MongoRepository, Repository, TreeRepository, getManager
 } from 'typeorm';
 import { DEFAULT_CONNECTION } from './objectid.pipe';
 
@@ -30,11 +29,11 @@ export class TypeormRepositoryArgumentResolver extends RepositoryArgumentResolve
         return true;
     }
     resolve<T>(parameter: Parameter<T>, ctx: InvocationContext<any>): T {
-        let { model, connection } = parameter as RepositoryMetadata;
+        let { model, connection, type } = parameter as RepositoryMetadata;
         if (!connection) {
             connection = this.conn;
         }
-        return this.getRepository(model, parameter.type as any, connection);
+        return this.getRepository<T>(model, type as Type, connection);
     }
 
     protected getLocal(parameter: Parameter<any>, ctx: InvocationContext<any>) {
@@ -49,16 +48,19 @@ export class TypeormRepositoryArgumentResolver extends RepositoryArgumentResolve
         return local;
     }
 
-    protected getRepository<T>(model: Type<T>, rep: Type<Repository<T>>, connection?: string) {
+    protected getRepository<T>(model: Type<T> | undefined, rep: Type | undefined, connection: string) {
+        if (!model) {
+            return getManager(connection).getCustomRepository(rep!);
+        }
         switch (rep) {
             case Repository:
-                return getRepository(model, connection);
+                return getManager(connection).getRepository(model);
             case MongoRepository:
-                return getMongoRepository(model, connection);
+                return getManager(connection).getMongoRepository(model);
             case TreeRepository:
-                return getTreeRepository(model, connection);
+                return getManager(connection).getTreeRepository(model);
             default:
-                return getCustomRepository(model, connection);
+                return getManager(connection).getCustomRepository(rep!);
         }
     }
 }

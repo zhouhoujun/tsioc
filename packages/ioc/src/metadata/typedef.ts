@@ -22,9 +22,9 @@ export class TypeDefine {
 
     readonly decors: DecorDefine[];
     readonly classDecors: DecorDefine[];
-    readonly propDecors: DecorDefine[];
+    readonly propDecors: DecorDefine<PropertyMetadata>[];
     readonly methodDecors: DecorDefine[];
-    readonly paramDecors: DecorDefine[];
+    readonly paramDecors: DecorDefine<ParameterMetadata>[];
 
     readonly annotation: DesignAnnotation;
     private params!: Map<string, any[]>;
@@ -111,11 +111,7 @@ export class TypeDefine {
     }
 
     setParameters(method: string, metadatas: ParameterMetadata[]) {
-        if (this.methodParams.has(method)) {
-            this.methodParams.get(method)?.push(...metadatas);
-        } else {
-            this.methodParams.set(method, metadatas);
-        }
+        this.methodParams.set(method, metadatas);
     }
 
     hasProperyProviders(prop: string): boolean {

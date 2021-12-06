@@ -227,7 +227,7 @@ export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
                 paramTypes = Reflect.getMetadata('design:paramtypes', ctx.target, propertyKey);
             }
             if (paramTypes) {
-                params = paramTypes.map((type, idx) => ({ type, paramName: names[idx] }));
+                params = paramTypes.map((type, index) => ({ type, paramName: names[index], index }));
                 reflect.class.setParameters(propertyKey, params);
             }
         }
@@ -271,8 +271,8 @@ export const InitCtorDesignParams = (ctx: DecorContext, next: () => void) => {
             if (!paramTypes) {
                 paramTypes = [];
             }
-            ctx.reflect.class.setParameters(ctorName, paramTypes.map((type, idx) => {
-                return { type, paramName: names[idx] };
+            ctx.reflect.class.setParameters(ctorName, paramTypes.map((type, index) => {
+                return { type, paramName: names[index], index };
             }));
         }
     }

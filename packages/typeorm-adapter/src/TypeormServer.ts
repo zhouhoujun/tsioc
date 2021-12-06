@@ -7,7 +7,7 @@ import {
 } from '@tsdi/core';
 import {
     getConnection, createConnection, ConnectionOptions as OrmConnOptions, Connection,
-    getMetadataArgsStorage, getCustomRepository, getConnectionManager
+    getMetadataArgsStorage, getConnectionManager, getManager
 } from 'typeorm';
 import { DEFAULT_CONNECTION, ObjectIDToken } from './objectid.pipe';
 
@@ -117,7 +117,7 @@ export class TypeormServer implements Server {
 
         getMetadataArgsStorage().entityRepositories?.forEach(meta => {
             if (options.entities?.some(e => e === meta.entity)) {
-                injector.inject({ provide: meta.target, useFactory: () => getCustomRepository(meta.target, options.name) });
+                injector.inject({ provide: meta.target, useFactory: () => getManager(options.name!).getCustomRepository(meta.target) });
             }
         });
 

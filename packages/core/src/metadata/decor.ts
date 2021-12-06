@@ -670,7 +670,7 @@ export interface RepositoryDecorator {
      * @param modle the model type.
      * @param connection the mutil connection name.
      */
-    (model: Type, connection?: string): PropParamDecorator;
+    (model?: Type, connection?: string): PropParamDecorator;
 }
 
 /**
@@ -712,5 +712,10 @@ export const Transactional: Transactional = createDecorator<TransactionalMetadat
                 next();
             }
         ]
+    },
+    appendProps:(meta)=>{
+        if(!meta.propagation){
+            meta.propagation = 'REQUIRED';
+        }
     }
 });
