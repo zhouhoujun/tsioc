@@ -1,6 +1,6 @@
 import {
-    Type, MethodMetadata, ClassMetadata, ParameterMetadata, tokenId, Injector, EMPTY, Token, InvocationContext,
-    lang, IocContext, ClassType, OperationArgumentResolver, DEFAULT_RESOLVERS, InvokeOption, TokenValue, DecorDefine
+    Type, ParameterMetadata, tokenId, Injector, EMPTY, Token, IocContext, InvocationContext,
+    lang, ClassType, OperationArgumentResolver, DEFAULT_RESOLVERS, InvokeOption, TokenValue, DecorDefine, Defer
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advices } from '../advices/Advices';
@@ -26,6 +26,10 @@ export interface JoinpointOption extends InvokeOption {
 
 export const AOP_METHOD_ANNOTATIONS = tokenId<any[]>('AOP_METHOD_ANNOTATIONS');
 
+export interface ReturnDefer {
+    returningDefer: Defer;
+}
+
 /**
  * Joinpoint of aop.
  */
@@ -37,11 +41,10 @@ export class Joinpoint<T = any> extends InvocationContext<T> implements IocConte
      */
     originProxy?: (joinpoint: Joinpoint) => void;
 
+    returningDefer?: Defer;
     returning: any;
 
     throwing: any;
-
-    resetReturning: any;
 
     constructor(
         injector: Injector,

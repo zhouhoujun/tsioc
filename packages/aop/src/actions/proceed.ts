@@ -1,6 +1,6 @@
 import {
     Type, isFunction, lang, Platform, isNil, isPromise, refl, EMPTY, ctorName, IActionSetup,
-    IocActions, ParameterMetadata, InvocationContext, Injector, chain, object2string
+    IocActions, ParameterMetadata, InvocationContext, Injector, chain, object2string, tokenId, Defer
 } from '@tsdi/ioc';
 import { IPointcut } from '../joinpoints/IPointcut';
 import { Joinpoint } from '../joinpoints/Joinpoint';
@@ -147,8 +147,8 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
             }
 
             self.execute(joinPoint);
-            let returning = joinPoint.returning;
-            return returning;
+
+            return joinPoint.returningDefer?.promise ?? joinPoint.returning;
         }
     }
 
@@ -206,6 +206,9 @@ export class CtorAdvicesScope extends IocActions<Joinpoint> implements IActionSe
 
 function runAdvicers(ctx: Joinpoint, invoker: (joinPoint: Joinpoint, advicer: Advicer) => any, advicers: Advicer[], next: () => void, async: boolean | undefined) {
     if (async) {
+        if (!ctx.returningDefer) {
+            ctx.returningDefer = lang.defer();
+        }
         return lang.step(advicers.map(a => () => invoker(ctx, a)))
             .then(() => {
                 next();
@@ -321,28 +324,32 @@ export const AfterReturningAdvicesAction = function (ctx: Joinpoint, next: () =>
         ctx.state = JoinpointState.AfterReturning;
         const invoker = ctx.invokeHandle;
         const isAsync = isPromise(ctx.returning);
+        if (isAsync && !ctx.returningDefer) {
+            ctx.returningDefer = lang.defer();
+        }
 
         chain<Joinpoint, any>([
             (ctx, rnext) => isAsync ?
                 (ctx.returning as Promise<any>).then(val => {
+                    const orgReturning = ctx.returning;
                     return (rnext() as Promise<any>)
                         .then(() => {
-                            const restVal = ctx.resetReturning;
-                            ctx.resetReturning = null;
-                            return restVal ?? val;
+                            if (orgReturning !== ctx.returning) {
+                                return ctx.returning;
+                            }
+                            return val;
+                        })
+                        .then(r => {
+                            ctx.returningDefer?.resolve(r)
                         })
                 }).catch(err => {
                     ctx.throwing = err;
                     next();
-                }) : rnext(),
+                }) : (ctx.returningDefer?.resolve(ctx.returning), rnext())
+            ,
             (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.asyncAround || isAsync),
             (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.AfterReturning, anext, ctx.advices.asyncAfterReturning || isAsync)
-        ], ctx, () => {
-            if (!isNil(ctx.resetReturning)) {
-                ctx.returning = ctx.resetReturning;
-                ctx.resetReturning = null;
-            }
-        });
+        ], ctx);
     }
 }
 
@@ -355,6 +362,6 @@ export const AfterThrowingAdvicesAction = function (ctx: Joinpoint, next: () => 
         (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.asyncAround),
         (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.AfterThrowing, anext, ctx.advices.asyncAfterThrowing)
     ], ctx, () => {
-        throw ctx.throwing;
+        ctx.returningDefer?.reject(ctx.throwing);
     });
 }

@@ -267,7 +267,7 @@ export function cleanObj(obj: any) {
  * @class Defer
  * @template T
  */
-export class Defer<T> {
+export class Defer<T = any> {
     /**
      * create defer.
      *
@@ -319,6 +319,19 @@ export class Defer<T> {
  */
 export function defer<T>(then?: (val: T) => T | PromiseLike<T>): Defer<T> {
     return Defer.create(then);
+}
+
+/**
+ * create delay.
+ * @param times delay timeout ms.
+ */
+export function delay(times: number): Promise<void> {
+    const defer = Defer.create<void>();
+    const timout = setTimeout(() => {
+        timout && clearTimeout(timout);
+        defer.resolve();
+    }, times);
+    return defer.promise;
 }
 
 /**

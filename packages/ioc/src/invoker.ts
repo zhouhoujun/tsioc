@@ -1,6 +1,9 @@
 import { ClassType, Type } from './types';
 import { getClassName } from './utils/lang';
-import { EMPTY, isArray, isClassType, isDefined, isFunction, isObject, isPlainObject, isPromise, isString, isTypeObject, isTypeReflect } from './utils/chk';
+import {
+    EMPTY, isClassType, isDefined, isFunction, isObject, isPlainObject,
+    isArray, isPromise, isString, isTypeObject, isTypeReflect
+} from './utils/chk';
 import { Abstract } from './metadata/fac';
 import { ParameterMetadata } from './metadata/meta';
 import { TypeReflect } from './metadata/type';
@@ -131,7 +134,7 @@ export class InvocationContext<T = any> implements Destroyable {
      * get value to context
      * @param token
      */
-    getValue<T>(token: Token): T {
+    getValue<T>(token: Token<T>): T {
         if (this.isSelf(token)) return this as any;
         return this._values.get(token) ?? this.parent?.getValue(token);
     }
@@ -140,7 +143,7 @@ export class InvocationContext<T = any> implements Destroyable {
      * @param token
      * @param value 
      */
-    setValue<T>(token: Token, value: T) {
+    setValue<T>(token: Token<T>, value: T) {
         this._values.set(token, value);
         return this;
     }
