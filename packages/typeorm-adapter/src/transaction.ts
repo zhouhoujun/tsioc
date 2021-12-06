@@ -57,31 +57,32 @@ export class TypeormTransactionStatus extends TransactionStatus {
             return await joinPoint.originMethod?.(...joinPoint.args ?? EMPTY);
         }
 
-        const withNewTransaction = (jpt: Joinpoint) => {
+        const withNewTransaction = () => {
             if (isolation) {
-                jpt.returning = getConnection(connection).transaction(isolation, runInTransaction);
+                return getConnection(connection).transaction(isolation, runInTransaction);
             } else {
-                jpt.returning = getConnection(connection).transaction(runInTransaction);
+                return getConnection(connection).transaction(runInTransaction);
             }
         }
-        const withOrigin = (jpt: Joinpoint, afterReturning?: (val: any) => any) => {
-            jpt.returning = jpt.originMethod?.(...jpt.args ?? EMPTY);
-            if (afterReturning && isPromise(jpt.returning)) {
-                jpt.returning = jpt.returning.then(afterReturning);
+        const withOrigin = (afterReturning?: (val: any) => any) => {
+            let returning = joinPoint.originMethod?.(...joinPoint.args ?? EMPTY);
+            if (afterReturning && isPromise(returning)) {
+                returning = returning.then(afterReturning);
             }
+            return returning;
         };
 
-        joinPoint.originProxy = (jpt) => {
-            const currTransaction = jpt.getValue(EntityManager);
+        joinPoint.originProxy = () => {
+            const currTransaction = joinPoint.getValue(EntityManager);
             switch (propagation) {
                 case 'MANDATORY':
                     if (!currTransaction) {
                         throw new TransactionError(`No existing transaction found for transaction marked with propagation 'MANDATORY'`)
                     }
-                    return withOrigin(jpt);
+                    return withOrigin();
 
                 case 'NESTED':
-                    return withNewTransaction(jpt);
+                    return withNewTransaction();
 
                 case 'NEVER':
                     if (currTransaction) {
@@ -89,28 +90,24 @@ export class TypeormTransactionStatus extends TransactionStatus {
                             "Found an existing transaction, transaction marked with propagation 'NEVER'"
                         )
                     }
-                    withOrigin(jpt);
+                    return withOrigin();
 
                 case 'NOT_SUPPORTED':
-                    jpt.setValue(EntityManager, null);
-                    withOrigin(jpt, (value) => {
-                        jpt.setValue(EntityManager, currTransaction);
+                    joinPoint.setValue(EntityManager, null);
+                    return withOrigin((value) => {
+                        joinPoint.setValue(EntityManager, currTransaction);
                         return value;
                     });
-
-                    break;
                 case 'REQUIRED':
                     if (currTransaction) {
-                        return withOrigin(jpt);
+                        return withOrigin();
                     }
-                    return withNewTransaction(jpt);
+                    return withNewTransaction();
                 case 'REQUIRES_NEW':
-                    return withNewTransaction(jpt);
+                    return withNewTransaction();
                 case 'SUPPORTS':
-                    return withOrigin(jpt);
+                    return withOrigin();
             }
-
-
         }
     }
 

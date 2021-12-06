@@ -1,4 +1,4 @@
-import { ApplicationContext, ComponentScan, RequestParam, RouteMapping, StartupService, Transactional } from '@tsdi/core';
+import { ApplicationContext, ComponentScan, Repository, RequestParam, RouteMapping, StartupService, Transactional } from '@tsdi/core';
 import { lang } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { User } from '../models/models';
@@ -26,9 +26,9 @@ export class UserController {
     @Transactional()
     @RouteMapping('/', 'post')
     @RouteMapping('/', 'put')
-    async modify(user: User, @RequestParam({ nullable: true }) check?: boolean) {
+    async modify(user: User, @Repository() userRepo: UserRepository, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(lang.getClassName(this.usrRep), user);
-        let val = await this.usrRep.save(user);
+        let val = await userRepo.save(user);
         if(check) throw new Error('check');
         this.logger.log(val);
         return val;

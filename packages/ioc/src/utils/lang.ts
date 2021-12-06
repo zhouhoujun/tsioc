@@ -317,7 +317,7 @@ export class Defer<T = any> {
  * @param {((val: T) => T | PromiseLike<T>)} [then]
  * @returns {Defer<T>}
  */
-export function defer<T>(then?: (val: T) => T | PromiseLike<T>): Defer<T> {
+export function defer<T = any>(then?: (val: T) => T | PromiseLike<T>): Defer<T> {
     return Defer.create(then);
 }
 

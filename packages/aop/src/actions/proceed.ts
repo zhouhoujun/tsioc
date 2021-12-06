@@ -292,7 +292,7 @@ export const ExecuteOriginMethodAction = function (ctx: Joinpoint, next: () => v
     }
     try {
         if (ctx.originProxy) {
-            ctx.originProxy(ctx);
+            ctx.returning = ctx.originProxy(ctx);
         } else {
             ctx.returning = ctx.originMethod?.(...ctx.args || EMPTY);
         }

@@ -39,7 +39,7 @@ export class Joinpoint<T = any> extends InvocationContext<T> implements IocConte
     /**
      * custom proxy invoke origin method.
      */
-    originProxy?: (joinpoint: Joinpoint) => void;
+    originProxy?: (joinpoint: Joinpoint) => any;
 
     returningDefer?: Defer;
     returning: any;
