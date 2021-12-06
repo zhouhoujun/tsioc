@@ -199,17 +199,9 @@ export interface MethodPropMetadata extends PropertyMetadata, MethodMetadata { }
  */
 export interface ParameterMetadata extends PropertyMetadata {
     /**
-     * parameter index.
-     *
-     * @type {number}
-     */
-    index?: number;
-
-    /**
      * parameter name.
      */
     paramName?: string;
-
 }
 
 
