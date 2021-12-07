@@ -8,7 +8,7 @@ import { DEFAULT_CONNECTION } from './objectid.pipe';
 export class TypeormTransactionStatus extends TransactionStatus {
 
     private _jointPoint: Joinpoint | undefined;
-    constructor(private definition: TransactionalMetadata) {
+    constructor(private definition: TransactionalMetadata, private logger: ILogger) {
         super();
     }
 
@@ -26,6 +26,9 @@ export class TypeormTransactionStatus extends TransactionStatus {
         const connection = this.definition.connection;
         const propagation = this.definition.propagation;
         const targetRef = refl.get(joinPoint.targetType);
+
+
+        this.logger.log('begin transaction of', joinPoint?.fullName, 'isolation:', isolation, 'propagation:', propagation);
 
         const runInTransaction = (entityManager: EntityManager) => {
             joinPoint.setValue(EntityManager, entityManager);
@@ -158,17 +161,19 @@ export class TypeormTransactionManager extends TransactionManager {
     }
 
     async getTransaction(definition: TransactionalMetadata): Promise<TypeormTransactionStatus> {
-        return new TypeormTransactionStatus({ connection: this.conn, ...definition });
+        return new TypeormTransactionStatus({ connection: this.conn, ...definition }, this.logger);
     }
 
     async commit(status: TypeormTransactionStatus): Promise<void> {
-        status.getPoint()?.setValue(EntityManager, null);
-        this.logger.log('commit transaction');
+        const joinPoint = status.getPoint();
+        joinPoint?.setValue(EntityManager, null);
+        this.logger.log('commit transaction of', joinPoint?.fullName, 'with args:', joinPoint?.args);
 
     }
     async rollback(status: TypeormTransactionStatus): Promise<void> {
-        status.getPoint()?.setValue(EntityManager, null);
-        this.logger.log('rollback transaction');
+        const joinPoint = status.getPoint();
+        joinPoint?.setValue(EntityManager, null);
+        this.logger.log('rollback transaction of', joinPoint?.fullName, 'with args', joinPoint?.args, 'case by', joinPoint?.throwing);
     }
 
 }
