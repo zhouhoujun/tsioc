@@ -25,12 +25,12 @@ export class TransactionTest {
             ]
         });
 
-        
+
         const urep = this.ctx.injector.get(UserRepository);
         const u1 = await urep.findByAccount('test_111');
-        if(u1) await urep.remove(u1);
+        if (u1) await urep.remove(u1);
         const u2 = await urep.findByAccount('post_test');
-        if(u2) await urep.remove(u2);
+        if (u2) await urep.remove(u2);
 
     }
 
@@ -42,14 +42,11 @@ export class TransactionTest {
         expect(rep.error).toBeDefined();
         expect(rep.error.message).toEqual('check');
         expect(rep.body).not.toBeInstanceOf(User);
-    }
-
-    @Test()
-    async checkhasNotSavedUser() {
-        const rep = await this.ctx.send('/users/test_111', { method: 'get' });
-        expect(rep.status).toEqual(200);
-        console.log('rep.body:', rep.body);
-        expect(rep.body).not.toBeInstanceOf(User);
+        
+        const rep2 = await this.ctx.send('/users/test_111', { method: 'get' });
+        expect(rep2.status).toEqual(200);
+        console.log('rep.body:', rep2.body);
+        expect(rep2.body).not.toBeInstanceOf(User);
     }
 
     @Test()
@@ -60,14 +57,11 @@ export class TransactionTest {
         expect(rep.body).toBeInstanceOf(User);
         expect(rep.body.name).toEqual('post_test');
         // await lang.delay(100);
-    }
-
-    @Test()
-    async checkhasSavedUser() {
-        const rep = await this.ctx.send('/users/post_test', { method: 'get' });
-        expect(rep.status).toEqual(200);
-        expect(rep.body).toBeInstanceOf(User);
-        expect(rep.body.account).toEqual('post_test');
+        
+        const rep2 = await this.ctx.send('/users/post_test', { method: 'get' });
+        expect(rep2.status).toEqual(200);
+        expect(rep2.body).toBeInstanceOf(User);
+        expect(rep2.body.account).toEqual('post_test');
     }
 
     @Test()
@@ -80,7 +74,20 @@ export class TransactionTest {
         expect(rep.body).toBeTruthy();
     }
 
+    @Test()
+    async postRolebackUser2() {
+        const rep = await this.ctx.send('/users/save', { method: 'post', body: { name: 'test_112', account: 'test_112', password: '111111' }, query: { check: true } });
+        rep.error && console.log(rep.error)
+        expect(rep.status).toEqual(500);
+        expect(rep.error).toBeDefined();
+        expect(rep.error.message).toEqual('check');
+        expect(rep.body).not.toBeInstanceOf(User);
 
+        const rep2 = await this.ctx.send('/users/test_112', { method: 'get' });
+        expect(rep2.status).toEqual(200);
+        console.log('rep.body:', rep2.body);
+        expect(rep2.body).not.toBeInstanceOf(User);
+    }
 
     @Test()
     async postRolebackRole() {
@@ -91,14 +98,27 @@ export class TransactionTest {
         expect(rep.error.message).toEqual('check');
         expect(rep.body).not.toBeInstanceOf(Role);
         // await lang.delay(100);
+
+        const rep2 = await this.ctx.send('/roles/opter_1', { method: 'get' });
+        expect(rep2.status).toEqual(200);
+        console.log('rep.body:', rep2.body);
+        expect(rep2.body).not.toBeInstanceOf(Role);
     }
 
     @Test()
-    async checkhasNotSavedRole() {
-        const rep = await this.ctx.send('/roles/opter_1', { method: 'get' });
-        expect(rep.status).toEqual(200);
-        console.log('rep.body:', rep.body);
+    async postRolebackRole2() {
+        const rep = await this.ctx.send('/roles/save2', { method: 'post', body: { name: 'opter_2' }, query: { check: true } });
+        rep.error && console.log(rep.error)
+        expect(rep.status).toEqual(500);
+        expect(rep.error).toBeDefined();
+        expect(rep.error.message).toEqual('check');
         expect(rep.body).not.toBeInstanceOf(Role);
+        // await lang.delay(100);
+
+        const rep2 = await this.ctx.send('/roles/opter_2', { method: 'get' });
+        expect(rep2.status).toEqual(200);
+        console.log('rep.body:', rep2.body);
+        expect(rep2.body).not.toBeInstanceOf(Role);
     }
 
     @Test()
@@ -108,14 +128,11 @@ export class TransactionTest {
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeInstanceOf(Role);
         expect(rep.body.name).toEqual('opter');
-    }
-
-    @Test()
-    async checkSuccessSavedRole() {
-        const rep = await this.ctx.send('/roles/opter', { method: 'get' });
-        expect(rep.status).toEqual(200);
-        expect(rep.body).toBeInstanceOf(Role);
-        expect(rep.body.name).toEqual('opter');
+        
+        const rep2 = await this.ctx.send('/roles/opter', { method: 'get' });
+        expect(rep2.status).toEqual(200);
+        expect(rep2.body).toBeInstanceOf(Role);
+        expect(rep2.body.name).toEqual('opter');
     }
 
     @Test()

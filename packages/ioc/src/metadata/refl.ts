@@ -232,8 +232,11 @@ export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
             }
         }
         if (params) {
-            meta = { ...meta, ...params[ctx.parameterIndex!] };
-            params.splice(ctx.parameterIndex!, 1, meta);
+            const idx = ctx.parameterIndex || 0;
+            const desgmeta = params[idx];
+            meta.type = desgmeta.type;
+            meta.paramName = desgmeta.paramName;
+            params.splice(idx, 1, { ...meta, ...desgmeta });
         }
     }
     return next();

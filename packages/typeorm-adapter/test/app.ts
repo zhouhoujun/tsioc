@@ -11,7 +11,6 @@ import { RoleController } from './mapping/RoleController';
 
 export const option = <ConnectionOptions>{
     async initDb(connection: Connection) {
-        console.log('init db connection', connection.options);
         let userRep = connection.getRepository(User);
         let c = await userRep.count();
         if (c < 1) {

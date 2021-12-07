@@ -1,6 +1,6 @@
 import {
     Type, isFunction, lang, Platform, isNil, isPromise, refl, EMPTY, ctorName, IActionSetup,
-    IocActions, ParameterMetadata, InvocationContext, Injector, chain, object2string, tokenId, Defer
+    IocActions, ParameterMetadata, InvocationContext, Injector, chain, object2string
 } from '@tsdi/ioc';
 import { IPointcut } from '../joinpoints/IPointcut';
 import { Joinpoint } from '../joinpoints/Joinpoint';
@@ -107,7 +107,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
                     });
                 }
             } else if (isFunction(target[methodName]) && !target[methodName][proxyFlag]) {
-                let propertyMethod = target[methodName].bind(target);
+                let propertyMethod = target[methodName];
                 target[methodName] = this.proxy(propertyMethod, advices, target, targetType, pointcut);
                 target[methodName][proxyFlag] = true;
             }
@@ -294,7 +294,7 @@ export const ExecuteOriginMethodAction = function (ctx: Joinpoint, next: () => v
         if (ctx.originProxy) {
             ctx.returning = ctx.originProxy(ctx);
         } else {
-            ctx.returning = ctx.originMethod?.(...ctx.args || EMPTY);
+            ctx.returning = ctx.originMethod?.apply(ctx.target, ctx.args);
         }
     } catch (err) {
         ctx.throwing = err as Error;

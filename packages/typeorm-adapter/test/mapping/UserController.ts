@@ -10,9 +10,7 @@ export class UserController {
     // @Inject() injector!: Injector;
     // @Logger() logger!: ILogger;
 
-    constructor(
-        private usrRep: UserRepository,
-        @Logger() private logger: ILogger) {
+    constructor(private usrRep: UserRepository, @Logger() private logger: ILogger) {
 
     }
 
@@ -26,7 +24,18 @@ export class UserController {
     @Transactional()
     @RouteMapping('/', 'post')
     @RouteMapping('/', 'put')
-    async modify(user: User, @Repository() userRepo: UserRepository, @RequestParam({ nullable: true }) check?: boolean) {
+    async modify(user: User, @RequestParam({ nullable: true }) check?: boolean) {
+        this.logger.log(lang.getClassName(this.usrRep), user);
+        let val = await this.usrRep.save(user);
+        if(check) throw new Error('check');
+        this.logger.log(val);
+        return val;
+    }
+
+    @Transactional()
+    @RouteMapping('/save', 'post')
+    @RouteMapping('/save', 'put')
+    async modify2(user: User, @Repository() userRepo: UserRepository, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(lang.getClassName(this.usrRep), user);
         let val = await userRepo.save(user);
         if(check) throw new Error('check');
