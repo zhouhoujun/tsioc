@@ -26,21 +26,22 @@ export class TypeormTransactionStatus extends TransactionStatus {
         const connection = this.definition.connection;
         const propagation = this.definition.propagation;
         const targetRef = refl.get(joinPoint.targetType);
+
         const runInTransaction = (entityManager: EntityManager) => {
             joinPoint.setValue(EntityManager, entityManager);
-            if (joinPoint.params?.length) {
-                targetRef.class.paramDecors.filter(dec => {
-                    if (dec.propertyKey === joinPoint.method) {
-                        if (dec.decor === DBRepository.toString()) {
-                            joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager));
-                        } else if ((dec.metadata.provider as Type || dec.metadata.type) === EntityManager) {
-                            joinPoint.args?.splice(dec.parameterIndex || 0, 1, entityManager);
-                        } else if (isRepository(dec.metadata.provider as Type || dec.metadata.type)) {
-                            joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, (dec.metadata.provider as Type) || dec.metadata.type, entityManager));
-                        }
+
+            joinPoint.params?.length && targetRef.class.paramDecors.filter(dec => {
+                if (dec.propertyKey === joinPoint.method) {
+                    if (dec.decor === DBRepository.toString()) {
+                        joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager));
+                    } else if ((dec.metadata.provider as Type || dec.metadata.type) === EntityManager) {
+                        joinPoint.args?.splice(dec.parameterIndex || 0, 1, entityManager);
+                    } else if (isRepository(dec.metadata.provider as Type || dec.metadata.type)) {
+                        joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.provider as Type || dec.metadata.type, entityManager));
                     }
-                });
-            }
+                }
+            });
+
             const context = {} as any;
             targetRef.class.propDecors.forEach(dec => {
                 if (dec.decor === DBRepository.toString()) {
@@ -52,24 +53,23 @@ export class TypeormTransactionStatus extends TransactionStatus {
                 }
             });
 
-            if (ctorName !== joinPoint.method) {
-                targetRef.class.getParameters(ctorName)?.forEach(metadata => {
-                    const paramName = metadata.paramName;
-                    if (paramName) {
-                        const filed = joinPoint.target[paramName];
-                        if (filed instanceof EntityManager) {
-                            context[paramName] = entityManager;
-                        } else if (filed instanceof Repository) {
-                            context[paramName] = this.getRepository((metadata as RepositoryMetadata).model, metadata.provider as Type || metadata.type, entityManager);
-                        }
+            ctorName !== joinPoint.method && targetRef.class.getParameters(ctorName)?.forEach(metadata => {
+                const paramName = metadata.paramName;
+                if (paramName) {
+                    const filed = joinPoint.target[paramName];
+                    if (filed instanceof EntityManager) {
+                        context[paramName] = entityManager;
+                    } else if (filed instanceof Repository) {
+                        context[paramName] = this.getRepository((metadata as RepositoryMetadata).model, metadata.provider as Type || metadata.type, entityManager);
                     }
-                });
-            }
+                }
+            });
 
             let target = joinPoint.target;
             if (Object.keys(context).length) {
                 target = { ...target, ...context };
             }
+
             return joinPoint.originMethod?.apply(target, joinPoint.args);
         };
 
@@ -149,10 +149,6 @@ export class TypeormTransactionStatus extends TransactionStatus {
 
 }
 
-function isRepository(type?: ClassType) {
-    return type && (type === Repository || type === TreeRepository || type === MongoRepository || lang.isExtendsClass(type, Repository));
-}
-
 export class TypeormTransactionManager extends TransactionManager {
 
     constructor(
@@ -175,4 +171,8 @@ export class TypeormTransactionManager extends TransactionManager {
         this.logger.log('rollback transaction');
     }
 
+}
+
+function isRepository(type?: ClassType) {
+    return type && (type === Repository || type === TreeRepository || type === MongoRepository || lang.isExtendsClass(type, Repository));
 }

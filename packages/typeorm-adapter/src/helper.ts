@@ -1,22 +1,18 @@
-import { Singleton, Type, Inject, Injector } from '@tsdi/ioc';
-import { Repository, MongoRepository, Connection } from 'typeorm';
-import { TypeormServer } from './TypeormServer';
+import { Singleton, Type, Inject } from '@tsdi/ioc';
+import { Repository, MongoRepository, Connection, getConnection } from 'typeorm';
+import { DEFAULT_CONNECTION } from './objectid.pipe';
 
 
 
 @Singleton()
 export class TypeOrmHelper {
 
-    private service!: TypeormServer;
+    constructor(@Inject(DEFAULT_CONNECTION, { nullable: true }) private conn: string) {
 
-    @Inject()
-    private injector!: Injector;
+    }
 
     getConnection(connectName?: string): Connection {
-        if (!this.service) {
-            this.service = this.injector.get(TypeormServer);
-        }
-        return this.service.getConnection(connectName);
+        return getConnection(connectName || this.conn);
     }
 
     getRepository<T>(type: Type<T>, connectName?: string): Repository<T> {

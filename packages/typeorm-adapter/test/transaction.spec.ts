@@ -1,7 +1,7 @@
 import { Application, ApplicationContext } from '@tsdi/core';
-import { lang } from '@tsdi/ioc';
 import { After, Before, Suite, Test } from '@tsdi/unit';
 import expect = require('expect');
+import { TypeOrmHelper } from '../src';
 import { MockTransBootTest, option } from './app';
 import { Role, User } from './models/models';
 import { UserRepository } from './repositories/UserRepository';
@@ -31,7 +31,11 @@ export class TransactionTest {
         if (u1) await urep.remove(u1);
         const u2 = await urep.findByAccount('post_test');
         if (u2) await urep.remove(u2);
-
+        const rrep = await this.ctx.injector.get(TypeOrmHelper).getRepository(Role);
+        const role1 = await rrep.find({ where: {name: 'opter_1'}});
+        if(role1) await rrep.remove(role1);
+        const role2 = await rrep.find({ where: {name: 'opter_2'}});
+        if(role2)  await rrep.remove(role2);
     }
 
     @Test()
@@ -44,6 +48,21 @@ export class TransactionTest {
         expect(rep.body).not.toBeInstanceOf(User);
         
         const rep2 = await this.ctx.send('/users/test_111', { method: 'get' });
+        expect(rep2.status).toEqual(200);
+        console.log('rep.body:', rep2.body);
+        expect(rep2.body).not.toBeInstanceOf(User);
+    }
+
+    @Test()
+    async postRolebackUser2() {
+        const rep = await this.ctx.send('/users/save', { method: 'post', body: { name: 'test_112', account: 'test_112', password: '111111' }, query: { check: true } });
+        rep.error && console.log(rep.error)
+        expect(rep.status).toEqual(500);
+        expect(rep.error).toBeDefined();
+        expect(rep.error.message).toEqual('check');
+        expect(rep.body).not.toBeInstanceOf(User);
+
+        const rep2 = await this.ctx.send('/users/test_112', { method: 'get' });
         expect(rep2.status).toEqual(200);
         console.log('rep.body:', rep2.body);
         expect(rep2.body).not.toBeInstanceOf(User);
@@ -72,21 +91,6 @@ export class TransactionTest {
         const rep = await this.ctx.send('/users/' + rep1.body.id, { method: 'delete' });
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeTruthy();
-    }
-
-    @Test()
-    async postRolebackUser2() {
-        const rep = await this.ctx.send('/users/save', { method: 'post', body: { name: 'test_112', account: 'test_112', password: '111111' }, query: { check: true } });
-        rep.error && console.log(rep.error)
-        expect(rep.status).toEqual(500);
-        expect(rep.error).toBeDefined();
-        expect(rep.error.message).toEqual('check');
-        expect(rep.body).not.toBeInstanceOf(User);
-
-        const rep2 = await this.ctx.send('/users/test_112', { method: 'get' });
-        expect(rep2.status).toEqual(200);
-        console.log('rep.body:', rep2.body);
-        expect(rep2.body).not.toBeInstanceOf(User);
     }
 
     @Test()
