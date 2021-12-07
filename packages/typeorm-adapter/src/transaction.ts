@@ -5,7 +5,6 @@ import { ILogger, Logger } from '@tsdi/logs';
 import { EntityManager, getManager, MongoRepository, Repository, TreeRepository } from 'typeorm';
 import { DEFAULT_CONNECTION } from './objectid.pipe';
 
-const typeORMTypes = [Repository, MongoRepository, TreeRepository];
 export class TypeormTransactionStatus extends TransactionStatus {
 
     private _jointPoint: Joinpoint | undefined;
@@ -34,9 +33,9 @@ export class TypeormTransactionStatus extends TransactionStatus {
                     if (dec.propertyKey === joinPoint.method) {
                         if (dec.decor === DBRepository.toString()) {
                             joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager));
-                        } else if (((dec.metadata.provider as Type) || dec.metadata.type) === EntityManager) {
+                        } else if ((dec.metadata.provider as Type || dec.metadata.type) === EntityManager) {
                             joinPoint.args?.splice(dec.parameterIndex || 0, 1, entityManager);
-                        } else if (typeORMTypes.some(i => lang.isExtendsClass((dec.metadata.provider as Type) || dec.metadata.type, i))) {
+                        } else if (isRepository(dec.metadata.provider as Type || dec.metadata.type)) {
                             joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, (dec.metadata.provider as Type) || dec.metadata.type, entityManager));
                         }
                     }
@@ -46,23 +45,27 @@ export class TypeormTransactionStatus extends TransactionStatus {
             targetRef.class.propDecors.forEach(dec => {
                 if (dec.decor === DBRepository.toString()) {
                     context[dec.propertyKey] = this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager);
-                } else if (((dec.metadata.provider as Type) || dec.metadata.type) === EntityManager) {
+                } else if ((dec.metadata.provider as Type || dec.metadata.type) === EntityManager) {
                     context[dec.propertyKey] = entityManager;
-                } else if (typeORMTypes.some(i => lang.isExtendsClass((dec.metadata.provider as Type) || dec.metadata.type, i))) {
-                    context[dec.propertyKey] = this.getRepository((dec.metadata as RepositoryMetadata).model, (dec.metadata.provider as Type) || dec.metadata.type, entityManager)
+                } else if (isRepository(dec.metadata.provider as Type || dec.metadata.type)) {
+                    context[dec.propertyKey] = this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.provider as Type || dec.metadata.type, entityManager)
                 }
             });
-            targetRef.class.getParameters(ctorName)?.forEach(metadata => {
-                const paramName = metadata.paramName;
-                if (paramName) {
-                    const filed = joinPoint.target[paramName];
-                    if (filed instanceof EntityManager) {
-                        context[paramName] = entityManager;
-                    } else if (filed instanceof Repository) {
-                        context[paramName] = this.getRepository((metadata as RepositoryMetadata).model, metadata.provider as Type || metadata.type, entityManager);
+
+            if (ctorName !== joinPoint.method) {
+                targetRef.class.getParameters(ctorName)?.forEach(metadata => {
+                    const paramName = metadata.paramName;
+                    if (paramName) {
+                        const filed = joinPoint.target[paramName];
+                        if (filed instanceof EntityManager) {
+                            context[paramName] = entityManager;
+                        } else if (filed instanceof Repository) {
+                            context[paramName] = this.getRepository((metadata as RepositoryMetadata).model, metadata.provider as Type || metadata.type, entityManager);
+                        }
                     }
-                }
-            });
+                });
+            }
+
             let target = joinPoint.target;
             if (Object.keys(context).length) {
                 target = { ...target, ...context };
@@ -144,6 +147,10 @@ export class TypeormTransactionStatus extends TransactionStatus {
         }
     }
 
+}
+
+function isRepository(type?: ClassType) {
+    return type && (type === Repository || type === TreeRepository || type === MongoRepository || lang.isExtendsClass(type, Repository));
 }
 
 export class TypeormTransactionManager extends TransactionManager {
