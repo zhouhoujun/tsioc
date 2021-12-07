@@ -150,8 +150,11 @@ class DeviceAModule {
         DeviceAModule
     ],
     providers: [
-        DeviceController,
+        // DeviceController,
         DeviceStartupHandle
+    ],
+    declarations: [
+        DeviceController
     ]
 })
 class MainApp {

@@ -42,7 +42,7 @@ export const option = <ConnectionOptions>{
         ServerBootstrapModule,
         TypeOrmModule
     ],
-    providers: [
+    declarations: [
         // RouteStartup,
         UserController,
         RoleController
