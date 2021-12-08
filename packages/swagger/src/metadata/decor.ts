@@ -1,4 +1,4 @@
-import { createDecorator, DataType } from '@tsdi/ioc';
+import { createDecorator } from '@tsdi/ioc';
 
 /**
  * api Operation decorator for swagger.
@@ -22,7 +22,7 @@ export interface ApiParam {
         allowMultiple?: boolean,
         name?: string,
         notes?: string,
-        dataType?: DataType,
+        dataType?: string,
         hidden?: boolean,
         readonly?: boolean
         example?: string
@@ -55,7 +55,7 @@ export interface ApiModelProperty {
         access?: string,
         name?: string,
         notes?: string,
-        dataType?: DataType,
+        dataType?: string,
         hidden?: boolean,
         readonly?: boolean,
         example?: string

@@ -1,6 +1,5 @@
 import { ArgumentError, lang, Singleton } from '@tsdi/ioc';
 import { Aspect, Joinpoint, Before, AfterReturning, AfterThrowing } from '@tsdi/aop';
-import { ConfigureLoggerManager } from '@tsdi/logs';
 import { TransactionalMetadata } from '../metadata/meta';
 import { TransactionManager } from './manager';
 import { TransactionError } from './error';
@@ -34,13 +33,9 @@ export class TransactionalAspect {
     @AfterThrowing('@annotation(Transactional)', 'error', { async: true })
     async rollback(manager: TransactionManager, error: Error, joinPoint: Joinpoint) {
         if (!manager) throw new ArgumentError('TransactionManager can not be null.');
-        const logger = joinPoint.injector.get(ConfigureLoggerManager)?.getLogger(lang.getClassName(joinPoint.targetType));
-
-        if (logger) logger.error(error);
         try {
             await manager.rollback(joinPoint.getValue(TransactionStatus));
         } catch (err) {
-            if (logger) logger.error(err);
             throw new TransactionError(err as Error);
         }
     }

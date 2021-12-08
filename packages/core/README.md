@@ -25,10 +25,9 @@ npm install @tsdi/platform-server
 ## Decorators
 Module manager, application bootstrap. base on AOP.
 
-*  `@Module` Module decorator, use to define class as ioc Module.
+*  `@Module` Module decorator, use to define class as ioc Module. alias name @DIModule.
 *  `@ComponentScan`ComponentScan decorator, use to auto scan server or client for application.
-*  `@Configure` Configure decorator, define this class as configure register when bootstrap application.
-*  `@Handle`  Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
+*  `@Handle`  Handle decorator, for class. use to define the class as handle register in global handle queue or parent; for method as message handle, use to handle route message event, in class with decorator {@link RouteMapping}.
 *  `@RouteMapping` route mapping decorator, for class. use to define this class as message route.
 *  `@RequestPath` Request path parameter decorator for route mapping.
 *  `@RequestParam` Request query parameter decorator for route mapping.
