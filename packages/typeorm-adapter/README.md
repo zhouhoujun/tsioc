@@ -29,7 +29,7 @@ import { Application, Module, Transactional, TransactionModule, RouteMapping, Re
 import { ILogger, Logger, LogModule } from '@tsdi/logs';
 import { TypeOrmModule }  from '@tsdi/typeorm-adapter';
 import { ServerBootstrapModule } from '@tsdi/platform-server';
-import { Repository as TypeORMRepository } from 'typeorm';
+import { Repository as ORMRepository } from 'typeorm';
 
 
 @RouteMapping('/users')
@@ -85,7 +85,7 @@ export class UserController {
 @RouteMapping('/roles')
 export class RoleController {
 
-    constructor(@DBRepository(Role) private repo: TypeORMRepository<Role>, @Logger() private logger: ILogger) {
+    constructor(@Repository(Role) private repo: ORMRepository<Role>, @Logger() private logger: ILogger) {
 
     }
 
@@ -104,7 +104,7 @@ export class RoleController {
     @Transactional()
     @RouteMapping('/save2', 'post')
     @RouteMapping('/save2', 'put')
-    async save2(role: Role, @DBRepository(Role) roleRepo: Repository<Role>, @RequestParam({ nullable: true }) check?: boolean) {
+    async save2(role: Role, @Repository(Role) roleRepo: ORMRepository<Role>, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(role);
         console.log('save2 isTransactionActive:', roleRepo.queryRunner?.isTransactionActive);
         const value = await roleRepo.save(role);

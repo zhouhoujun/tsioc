@@ -48,7 +48,7 @@ import { Application, Module, Transactional, TransactionModule, RouteMapping, Re
 import { ILogger, Logger, LogModule } from '@tsdi/logs';
 import { TypeOrmModule }  from '@tsdi/typeorm-adapter';
 import { ServerBootstrapModule } from '@tsdi/platform-server';
-import { Repository as TypeORMRepository } from 'typeorm';
+import { Repository as ORMRepository } from 'typeorm';
 
 
 @RouteMapping('/users')
@@ -71,7 +71,12 @@ export class UserController {
     @Transactional()
     @RouteMapping('/', 'post')
     @RouteMapping('/', 'put')
-    async modify(user: User, @RequestParam({ nullable: true }) check?: boolean) {
+    async modify(@RequestBody() user: User, @RequestParam({ nullable: true }) check?: boolean) {
+        //will auto check user entity and user filed, throw MissingModelFieldError or ArgumentError missing pipe to transform property.
+        // if query user name lenght > 50, will throw ArgumentError "InvalidPipeArgument: 'name xxx' for pipe 'ParseStringPipe' more than max lenght: 50".
+
+        // RequestParam nullable will not throw MissingParameterError if request query has not check param.
+        // if query check param value as '1', will throw ArgumentError  "InvalidPipeArgument: '1' for pipe 'ParseBoolPipe'".
         this.logger.log(lang.getClassName(this.usrRep), user);
         let val = await this.usrRep.save(user);
         if(check) throw new Error('check');
@@ -83,6 +88,11 @@ export class UserController {
     @RouteMapping('/save', 'post')
     @RouteMapping('/save', 'put')
     async modify2(user: User, @Repository() userRepo: UserRepository, @RequestParam({ nullable: true }) check?: boolean) {
+        //will auto check user entity and user filed, throw MissingModelFieldError or ArgumentError missing pipe to transform property.
+        // if query user name lenght > 50, will throw ArgumentError "InvalidPipeArgument: 'name xxx' for pipe 'ParseStringPipe' more than max lenght: 50".
+
+        // RequestParam nullable will not throw MissingParameterError if request query has not check param.
+        // if query check param value as '1', will throw ArgumentError  "InvalidPipeArgument: '1' for pipe 'ParseBoolPipe'".
         this.logger.log(lang.getClassName(this.usrRep), user);
         let val = await userRepo.save(user);
         if(check) throw new Error('check');
@@ -92,7 +102,7 @@ export class UserController {
 
     @Transactional()
     @RouteMapping('/:id', 'delete')
-    async del(id: string) {
+    async del(id: string) { // if no path value id will throw MissingParameterError
         this.logger.log('id:', id);
         await this.usrRep.delete(id);
         return true;
@@ -104,7 +114,7 @@ export class UserController {
 @RouteMapping('/roles')
 export class RoleController {
 
-    constructor(@DBRepository(Role) private repo: TypeORMRepository<Role>, @Logger() private logger: ILogger) {
+    constructor(@Repository(Role) private repo: ORMRepository<Role>, @Logger() private logger: ILogger) {
 
     }
 
@@ -112,10 +122,14 @@ export class RoleController {
     @RouteMapping('/', 'post')
     @RouteMapping('/', 'put')
     async save(role: Role, @RequestParam({ nullable: true }) check?: boolean) {
+        //will auto check role entity and role filed, throw MissingModelFieldError or ArgumentError missing pipe to transform property.
+        // if query role name lenght > 50, will throw ArgumentError "InvalidPipeArgument: 'name xxx' for pipe 'ParseStringPipe' more than max lenght: 50".
+
+        // RequestParam nullable will not throw MissingParameterError if request query has not check param.
+        // if query check param value as '1', will throw ArgumentError "InvalidPipeArgument: '1' for pipe 'ParseBoolPipe'".
         this.logger.log(role);
-        console.log('save isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
         const value = await this.repo.save(role);
-        if (check) throw new Error('check');
+        if (check) throw new Error('check'); // if throw error will rollback transaction
         this.logger.info(value);
         return value;
     }
@@ -123,9 +137,13 @@ export class RoleController {
     @Transactional()
     @RouteMapping('/save2', 'post')
     @RouteMapping('/save2', 'put')
-    async save2(role: Role, @DBRepository(Role) roleRepo: Repository<Role>, @RequestParam({ nullable: true }) check?: boolean) {
+    async save2(role: Role, @Repository(Role) roleRepo: ORMRepository<Role>, @RequestParam({ nullable: true }) check?: boolean) {
+        //will auto check role entity and role filed, throw MissingModelFieldError or ArgumentError missing pipe to transform property.
+        // if query role name lenght > 50, will throw ArgumentError "InvalidPipeArgument: 'name xxx' for pipe 'ParseStringPipe' more than max lenght: 50".
+
+        // RequestParam nullable will not throw MissingParameterError if request query has not check param.
+        // if query check param value as '1', will throw ArgumentError "InvalidPipeArgument: '1' for pipe 'ParseBoolPipe'".
         this.logger.log(role);
-        console.log('save2 isTransactionActive:', roleRepo.queryRunner?.isTransactionActive);
         const value = await roleRepo.save(role);
         if (check) throw new Error('check');
         this.logger.info(value);
@@ -136,16 +154,14 @@ export class RoleController {
     @RouteMapping('/:name', 'get')
     async getRole(name: string) {
         this.logger.log('name:', name);
-        console.log('getRole isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
         return await this.repo.findOne({ where: { name } });
     }
 
 
     @Transactional()
     @RouteMapping('/:id', 'delete')
-    async del(id: string) {
+    async del(id: string) {  // if no path value id will throw MissingParameterError
         this.logger.log('id:', id);
-        console.log('del isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
         await this.repo.delete(id);
         return true;
     }
@@ -248,7 +264,7 @@ export class Role {
     @PrimaryGeneratedColumn('uuid')
     id!: string;
 
-    @Column()
+    @Column({ length: 50 })
     name!: string;
 
     @OneToMany(type => User, user => user.role, { nullable: true })
@@ -265,7 +281,7 @@ export class User {
     id!: string;
 
 
-    @Column()
+    @Column({ length: 50 })
     name!: string;
 
     @Column({
