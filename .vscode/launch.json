@@ -5,23 +5,31 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "pwa-node",
+            "type": "node",
             "request": "launch",
-            "name": "Launch Program",
-            "skipFiles": [
-                "<node_internals>/**"
+            "name": "Launch Core Sample",
+            "args": [
+                "${workspaceRoot}/simples/core/main.ts" 
             ],
-            "program": "${workspaceFolder}/packages/cli/src/cli.ts",
-            "outFiles": [
-                "${workspaceFolder}/**/*.js"
-            ]
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register",
+                "-r",
+                "tsconfig-paths/register"
+            ],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            "protocol": "inspector",
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
         },
         {
             "type": "node",
             "request": "launch",
-            "name": "Launch Sample",
+            "name": "Launch boot Sample",
             "args": [
-                "${workspaceRoot}/packages/simples/src/app.ts" 
+                "${workspaceRoot}/simples/boot/main.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",

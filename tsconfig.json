@@ -29,8 +29,8 @@
       "@tsdi/boot": [
         "packages/boot/src"
       ],
-      "@tsdi/typeorm-datapter": [
-        "packages/typeorm-datapter/src"
+      "@tsdi/typeorm-adapter": [
+        "packages/typeorm-adapter/src"
       ],
       "@tsdi/swagger": [
         "packages/swagger/src"
