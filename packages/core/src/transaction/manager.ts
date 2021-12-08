@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { TransactionalMetadata } from '../metadata/meta';
+import { TransactionalMetadata } from './metadata';
 import { TransactionStatus } from './status';
 
 

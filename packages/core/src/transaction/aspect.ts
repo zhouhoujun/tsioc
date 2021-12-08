@@ -1,6 +1,6 @@
 import { ArgumentError, lang, Singleton } from '@tsdi/ioc';
 import { Aspect, Joinpoint, Before, AfterReturning, AfterThrowing } from '@tsdi/aop';
-import { TransactionalMetadata } from '../metadata/meta';
+import { TransactionalMetadata } from './metadata';
 import { TransactionManager } from './manager';
 import { TransactionError } from './error';
 import { TransactionStatus } from './status';

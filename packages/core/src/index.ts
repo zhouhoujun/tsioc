@@ -21,7 +21,6 @@ export * from './context';
 export * from './pipes';
 
 
-
 // modules
 export * from './module.ref';
 export * from './module.factory';
@@ -32,6 +31,9 @@ export * from './module/runnable';
 export * from './context.impl';
 
 export * from './Application';
+
+// auth
+export * from './auth';
 
 // middlewares
 export * from './middlewares';

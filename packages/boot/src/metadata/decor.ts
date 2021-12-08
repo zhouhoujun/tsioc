@@ -106,6 +106,11 @@ export const RestController: RestController = createDecorator<RouteMappingMetada
     }
 });
 
+/**
+ * Controller decorator
+ * @alias of RestController
+ */
+export const Controller = RestController;
 
 /**
  * custom define Request method. route decorator type define.
