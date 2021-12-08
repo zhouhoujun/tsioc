@@ -1,4 +1,4 @@
-import { ApplicationContext, Boot, Headers, StartupService } from '@tsdi/core';
+import { ApplicationContext, StartupService } from '@tsdi/core';
 import { isArray, isDefined } from '@tsdi/ioc';
 import { Server, IncomingMessage, ServerResponse, createServer } from 'http';
 import { Socket } from 'net';
@@ -62,6 +62,12 @@ export class Http1Request extends HttpRequest {
 }
 
 export class Http1Response extends HttpResponse {
+    get error(): any {
+        throw new Error('Method not implemented.');
+    }
+    set error(err: any) {
+        throw new Error('Method not implemented.');
+    }
 
     constructor(protected resp: ServerResponse) {
         super();

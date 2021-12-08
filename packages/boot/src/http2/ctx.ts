@@ -1,4 +1,4 @@
-import { ApplicationContext, Boot, Headers, StartupService } from '@tsdi/core';
+import { ApplicationContext, StartupService } from '@tsdi/core';
 import { isDefined } from '@tsdi/ioc';
 import { Http2Server, Http2ServerRequest, Http2ServerResponse, createServer } from 'http2';
 import { Socket } from 'net';
@@ -28,20 +28,15 @@ export class Http2Request  extends HttpRequest {
         return this.req.url;
     }
     set url(url: string) {
-        this.req.url = url;
+        // this.req.url = url;
     }
     get method(): string {
         return this.req.method;
     }
     set method(val: string) {
-        this.req.method = val;
+        (this.req as any).method = val;
     }
-    get body(): any {
-        throw new Error('Method not implemented.');
-    }
-    set body(obj: any) {
-        throw new Error('Method not implemented.');
-    }
+
     getHeader(name: string): string | string[] {
         return this.req.headers[name] ?? '';
     }
@@ -57,6 +52,12 @@ export class Http2Request  extends HttpRequest {
 }
 
 export class Http2Response extends HttpResponse {
+    get error(): any {
+        throw new Error('Method not implemented.');
+    }
+    set error(err: any) {
+        throw new Error('Method not implemented.');
+    }
     
     constructor(protected resp: Http2ServerResponse) {
         super();
