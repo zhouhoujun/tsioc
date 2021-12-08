@@ -1,4 +1,4 @@
-import { Inject, isUndefined, Singleton, isString, isPlainObject, lang, Injector, ROOT_INJECTOR, EMPTY_OBJ, isMetadataObject } from '@tsdi/ioc';
+import { Inject, isUndefined, Singleton, isString, isPlainObject, lang, EMPTY_OBJ, isMetadataObject, ModuleLoader } from '@tsdi/ioc';
 import { Configuration, ConfigureLoader, ConfigureManager, ConfigureMerger } from './config';
 import { DEFAULT_CONFIG, PROCESS_ROOT } from '../metadata/tk';
 
@@ -12,15 +12,19 @@ import { DEFAULT_CONFIG, PROCESS_ROOT } from '../metadata/tk';
 @Singleton(ConfigureManager)
 export class DefaultConfigureManager implements ConfigureManager {
 
-    @Inject(ROOT_INJECTOR) injector!: Injector;
-    private config!: Configuration;
+    private inited = false;
     protected configs: (string | Configuration)[];
 
     /**
      * Creates an instance of ConfigureManager.
      * @param {string} [baseURL]
      */
-    constructor(@Inject(PROCESS_ROOT, { defaultValue: '' }) protected baseURL?: string) {
+    constructor(
+        @Inject(DEFAULT_CONFIG, { defaultValue: {} }) private config: Configuration,
+        @Inject() private moduleLoader: ModuleLoader,
+        @Inject({ nullable: true }) private merger?: ConfigureMerger,
+        @Inject({ nullable: true }) private configLoader?: ConfigureLoader,
+        @Inject(PROCESS_ROOT, { nullable: true }) protected baseURL?: string) {
         this.configs = [];
     }
     /**
@@ -50,7 +54,7 @@ export class DefaultConfigureManager implements ConfigureManager {
      * @returns {Promise<T>}
      */
     async getConfig<T extends Configuration>(): Promise<T> {
-        if (!this.config) {
+        if (!this.inited) {
             this.config = await this.initConfig();
         }
         return (this.config || EMPTY_OBJ) as T;
@@ -60,10 +64,8 @@ export class DefaultConfigureManager implements ConfigureManager {
      * init config.
      */
     protected async initConfig() {
-        let config = await this.getDefaultConfig();
-        if (this.configs.length < 1) {
-            this.configs.push(''); // load default loader config.
-        }
+        this.inited = true;
+        let config = this.config;
         let exts = await Promise.all(this.configs.map(cfg => {
             if (isString(cfg)) {
                 return this.loadConfig(cfg);
@@ -71,7 +73,7 @@ export class DefaultConfigureManager implements ConfigureManager {
                 return cfg;
             }
         }));
-        const merger = this.injector.get(ConfigureMerger);
+        const merger = this.merger;
         exts.forEach(exCfg => {
             if (exCfg) {
                 exCfg = isMetadataObject((exCfg as any)['default']) ? (exCfg as any)['default'] : exCfg;
@@ -89,28 +91,13 @@ export class DefaultConfigureManager implements ConfigureManager {
      * @returns {Promise<T>}
      */
     protected async loadConfig(src: string): Promise<Configuration> {
-        if (this.injector.has(ConfigureLoader)) {
-            let loader = this.injector.get(ConfigureLoader);
-            return await loader.load(src);
+        if (this.configLoader) {
+            return await this.configLoader.load(src);
         } else if (src) {
-            let cfg = await this.injector.getLoader().load([src])
+            let cfg = await this.moduleLoader.load([src])
             return lang.first(cfg) as Configuration;
         } else {
             return null!;
-        }
-    }
-
-    /**
-     * get default config.
-     *
-     * @protected
-     * @returns {Promise<T>}
-     */
-    protected async getDefaultConfig(): Promise<Configuration> {
-        if (this.injector.has(DEFAULT_CONFIG)) {
-            return this.injector.resolve(DEFAULT_CONFIG);
-        } else {
-            return {};
         }
     }
 }

@@ -27,7 +27,7 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Launch boot Sample",
+            "name": "Launch Boot Sample",
             "args": [
                 "${workspaceRoot}/simples/boot/main.ts" 
             ],
