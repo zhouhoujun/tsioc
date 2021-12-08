@@ -37,9 +37,9 @@ export class DefaultConfigureManager implements ConfigureManager {
         if (isUndefined(config)) {
             config = '';
         }
+        if(this.configs.indexOf(config)>=0) return this;
         // clean cached config.
-        this.config = null!;
-        lang.remove(this.configs, config);
+        this.inited = false;
         if (!this.baseURL && isPlainObject(config)) {
             this.baseURL = config.baseURL;
         }
