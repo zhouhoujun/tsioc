@@ -132,14 +132,14 @@ export class Application implements Disposable {
 
     protected createInjector(providers: ProviderType[], option: ApplicationOption) {
         const container = option.injector ?? Injector.create(providers);
+        if (option.baseURL) {
+            container.setValue(PROCESS_ROOT, option.baseURL);
+        }
         if (this.loader) {
             container.setValue(ModuleLoader, this.loader);
         }
         if (option.args && option.args.length) {
             container.get(ApplicationArguments)?.reset(option.args);
-        }
-        if (option.baseURL) {
-            container.setValue(PROCESS_ROOT, option.baseURL);
         }
         container.platform().onInstanceCreated((target, inj) => {
             if (isShutdown(target) || isDisposable(target)) {

@@ -25,170 +25,222 @@ npm install @tsdi/typeorm-adapter
 ### add orm for application
 
 ```ts
-import { BootApplication, DIModule }  from '@tsdi/boot';
+import { Application, Module, Transactional, TransactionModule, RouteMapping, Repository }  from '@tsdi/core';
+import { ILogger, Logger, LogModule } from '@tsdi/logs';
 import { TypeOrmModule }  from '@tsdi/typeorm-adapter';
-
-export class MyService extends Service {
-    @Inject()
-    dbhelper: TypeOrmHelper;
-
-    override async configureService(ctx: IBootContext): Promise<void> {
-        const resp = this.dbhelper.getRepository(Production);
-        // todo configuer service.
-    }
-    // ......
-}
-
-@EntityRepository(Production)
-export class ProductionRepository extends Repository<Production> {
-
-  async findById(id: string) {
-    return await this.findOne(id);
-  }
-
-  async removeById(id: string) {
-    const pdtline = await this.findOne(id);
-    return await this.remove(pdtline);
-  }
-
-  async serarch(...args) {
-      // do sth..
-  }
-  ...
-}
-
-@Injectable()
-export class SerachProduction {
-
-    @Inject() //or @Autowired()
-    resp: ProductionRepository;
+import { ServerBootstrapModule } from '@tsdi/platform-server';
+import { Repository as TypeORMRepository } from 'typeorm';
 
 
-    dosth(){
-        this.resp.search(...)
+@RouteMapping('/users')
+export class UserController {
+
+    // as property inject
+    // @Logger() logger!: ILogger;
+
+    constructor(private usrRep: UserRepository, @Logger() private logger: ILogger) {
+
     }
 
 
-} 
+    @RouteMapping('/:name', 'get')
+    getUser(name: string) {
+        this.logger.log('name:', name);
+        return this.usrRep.findByAccount(name);
+    }
 
-@DIModule({
+    @Transactional()
+    @RouteMapping('/', 'post')
+    @RouteMapping('/', 'put')
+    async modify(user: User, @RequestParam({ nullable: true }) check?: boolean) {
+        this.logger.log(lang.getClassName(this.usrRep), user);
+        let val = await this.usrRep.save(user);
+        if(check) throw new Error('check');
+        this.logger.log(val);
+        return val;
+    }
+
+    @Transactional()
+    @RouteMapping('/save', 'post')
+    @RouteMapping('/save', 'put')
+    async modify2(user: User, @Repository() userRepo: UserRepository, @RequestParam({ nullable: true }) check?: boolean) {
+        this.logger.log(lang.getClassName(this.usrRep), user);
+        let val = await userRepo.save(user);
+        if(check) throw new Error('check');
+        this.logger.log(val);
+        return val;
+    }
+
+    @Transactional()
+    @RouteMapping('/:id', 'delete')
+    async del(id: string) {
+        this.logger.log('id:', id);
+        await this.usrRep.delete(id);
+        return true;
+    }
+
+}
+
+
+@RouteMapping('/roles')
+export class RoleController {
+
+    constructor(@DBRepository(Role) private repo: TypeORMRepository<Role>, @Logger() private logger: ILogger) {
+
+    }
+
+    @Transactional()
+    @RouteMapping('/', 'post')
+    @RouteMapping('/', 'put')
+    async save(role: Role, @RequestParam({ nullable: true }) check?: boolean) {
+        this.logger.log(role);
+        console.log('save isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
+        const value = await this.repo.save(role);
+        if (check) throw new Error('check');
+        this.logger.info(value);
+        return value;
+    }
+
+    @Transactional()
+    @RouteMapping('/save2', 'post')
+    @RouteMapping('/save2', 'put')
+    async save2(role: Role, @DBRepository(Role) roleRepo: Repository<Role>, @RequestParam({ nullable: true }) check?: boolean) {
+        this.logger.log(role);
+        console.log('save2 isTransactionActive:', roleRepo.queryRunner?.isTransactionActive);
+        const value = await roleRepo.save(role);
+        if (check) throw new Error('check');
+        this.logger.info(value);
+        return value;
+    }
+
+
+    @RouteMapping('/:name', 'get')
+    async getRole(name: string) {
+        this.logger.log('name:', name);
+        console.log('getRole isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
+        return await this.repo.findOne({ where: { name } });
+    }
+
+
+    @Transactional()
+    @RouteMapping('/:id', 'delete')
+    async del(id: string) {
+        this.logger.log('id:', id);
+        console.log('del isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
+        await this.repo.delete(id);
+        return true;
+    }
+
+}
+
+
+@Module({
     // baseURL: __dirname,
     imports: [
+        LogModule,
+        ServerBootstrapModule,
+        // import TransactionModule can enable transaction by AOP.
+        TransactionModule, 
         TypeOrmModule
-        //...  you service, or controller, some extends module.
     ],
-    providers:[
-        SerachProduction
-    ],
-    bootstrap:  MyService
-    debug: true
+    providers: [
+        UserController,
+        RoleController
+    ]
 })
-export class MyApp {
-    constructor() {
-        console.log('boot my application');
-    }
+export class MockTransBootTest {
+
 }
 
-BootApplication.run(MyApp);
+Application.run({
+    type: MockTransBootTest,
+    baseURL: __dirname,
+    configures: [
+        {
+            models: ['./models/**/*.ts'],
+            repositories: ['./repositories/**/*.ts'],
+            connections: option
+        }
+    ]
+})
+
 ```
 
+```ts
+// model flies in  ./models/**/*.ts
+import { Entity, Column, ManyToOne, PrimaryGeneratedColumn, OneToMany, EntityRepository, Repository, Connection } from 'typeorm';
 
-### add orm for mvc application
+@Entity()
+export class Role {
+    @PrimaryGeneratedColumn('uuid')
+    id!: string;
+
+    @Column()
+    name!: string;
+
+    @OneToMany(type => User, user => user.role, { nullable: true })
+    users!: User[]
+}
+
+
+@Entity()
+export class User {
+    constructor() {
+    }
+
+    @PrimaryGeneratedColumn('uuid')
+    id!: string;
+
+
+    @Column()
+    name!: string;
+
+    @Column({
+        unique: true
+    })
+    account!: string;
+
+    @Column()
+    password!: string;
+
+    @Column({ nullable: true, length: 50 })
+    email!: string;
+
+    @Column({ nullable: true, length: 50 })
+    phone!: string;
+
+    @Column({ type: 'boolean', nullable: true })
+    gender!: boolean;
+
+    @Column({ type: 'int', nullable: true })
+    age!: number;
+
+    @ManyToOne(type => Role, role => role.users, { nullable: true })
+    role!: Role;
+
+}
+
+```
 
 ```ts
-import { MvcApplication, DefaultMvcMiddlewares, MvcModule, MvcServer } from '@mvx/mvc';
-import { TypeOrmModule }  from '@tsdi/typeorm-adapter';
+// repositories in  ./repositories/**/*.ts
+import { EntityRepository, Repository } from 'typeorm';
+import { User } from '../models';
 
-
-@Cors
-@Authorization()
-@Controller('/api/production')
-export class ProductionController {
-
-
-    @Inject()
-    rep: ProductionRepository;
-
-    @Post('/')
-    @Put('/')
-    async save(pdt: Production) {
-        const r = await this.rep.save(pdt);
-        return ResponseResult.success(r);
+@EntityRepository(User)
+export class UserRepository extends Repository<User> {
+    
+    async findByAccount(account: string) {
+        return await this.findOne({ where: { account } });
     }
 
-    @Delete('/:id')
-    async removeById(id: string) {
-        const r = await this.rep.removeById(id);
-        return ResponseResult.success(r);
-    }
-
-    @Get('/:id')
-    async get(id: string) {
-        const pdtline = await this.rep.findById(id);
-        return ResponseResult.success(pdtline);
-    }
-
-    @Get('/')
-    async query(keywords?: string, skip?: number, take?: number) {
-        const r = await this.rep.search(keywords, skip, take);
-        return ResponseResult.success(r[0], r[1]);
-    }
-}
-
-// 1. use MvcHostBuilder to boot application.
-MvcApplication.run();
-
-// 2. use bootstrap module to boot application
-
-@MvcModule({
-    // baseURL: __dirname,
-    imports: [
-        TypeOrmModule
-        //...  you service, or controller, some extends module.
-    ],
-    debug: true
-})
-class MvcApi {
-    constructor() {
-        console.log('boot application');
-    }
-}
-
-
-// 3. use MvcHostBuilder to boot application module.
-
-@MvcModule({
-    imports: [
-        TypeOrmModule
-        // ... /...  you service, or controller, some extends module.
-        // DebugLogAspect
-    ]
-    // bootstrap: MvcServer
-})
-class MvcApi {
-
-}
-
-MvcApplication.run(MvcApi);
-
-
-//4. use bootstrap module to boot application by main.
-@MvcModule({
-    imports: [
-        TypeOrmModule
-        // ...
-    ],
-    // bootstrap: MvcServer,
-    debug: true
-})
-class MvcApi {
-    constructor() {
-        console.log('boot application');
-    }
-
-    static main() {
-        console.log('run mvc api...');
-        MvcApplication.run(MvcApi);
+    search(key: string, skip?: number, take?: number) {
+        const keywords =  `%${key}%`;
+        return this.createQueryBuilder('usr')
+            .where('usr.name = :keywords OR usr.id = :key', { keywords, key })
+            .skip(skip)
+            .take(take)
+            .getManyAndCount();
     }
 }
 

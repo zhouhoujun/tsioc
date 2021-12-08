@@ -16,6 +16,7 @@ export class TransactionTest {
     async beforeInit() {
         this.ctx = await Application.run({
             type: MockTransBootTest,
+            baseURL: __dirname,
             configures: [
                 {
                     models: ['./models/**/*.ts'],

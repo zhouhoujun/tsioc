@@ -27,10 +27,9 @@ export class TypeormTransactionStatus extends TransactionStatus {
         const propagation = this.definition.propagation;
         const targetRef = refl.get(joinPoint.targetType);
 
-
-        this.logger.log('begin transaction of', joinPoint?.fullName, 'isolation:', isolation, 'propagation:', propagation);
-
         const runInTransaction = (entityManager: EntityManager) => {
+
+            this.logger.log('begin transaction of', joinPoint?.fullName, 'active:', entityManager.queryRunner?.isTransactionActive, 'isolation:', isolation, 'propagation:', propagation);
             joinPoint.setValue(EntityManager, entityManager);
 
             joinPoint.params?.length && targetRef.class.paramDecors.filter(dec => {

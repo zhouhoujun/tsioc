@@ -5,9 +5,9 @@ let processRoot = global.baseURL || '.';
 
 
 @Module({
-    providedIn: 'root',
+    providedIn: 'platform',
     providers: [
-        { provide: PROCESS_ROOT, useValue: processRoot }
+        { provide: PROCESS_ROOT, useValue: processRoot, asDefault: true }
     ]
 })
 export class BrowserBootstrapModule { }

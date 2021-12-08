@@ -36,7 +36,7 @@ export const option = <ConnectionOptions>{
 
 
 @Module({
-    baseURL: __dirname,
+    // baseURL: __dirname,
     imports: [
         LogModule,
         ServerBootstrapModule,
@@ -54,7 +54,7 @@ export class MockBootTest {
 
 
 @Module({
-    baseURL: __dirname,
+    // baseURL: __dirname,
     imports: [
         LogModule,
         ServerBootstrapModule,
@@ -62,7 +62,6 @@ export class MockBootTest {
         TypeOrmModule
     ],
     providers: [
-        // RouteStartup,
         UserController,
         RoleController
     ]

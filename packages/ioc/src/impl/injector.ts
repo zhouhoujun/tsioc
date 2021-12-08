@@ -226,6 +226,9 @@ export class DefaultInjector extends Injector {
     }
 
     protected registerProvider(platfrom: Platform, provider: StaticProviders) {
+        if (provider.asDefault && this.has(provider.provide)) {
+            return;
+        }
         if (provider.multi) {
             let multiPdr = this.records.get(provider.provide);
             if (!multiPdr) {
@@ -439,17 +442,6 @@ export class DefaultInjector extends Injector {
     }
 
     protected resolveStrategy<T>(platform: Platform, option: ResolveOption, context?: InvocationContext): T {
-        let targetToken: ClassType = null!;
-        if (option.target) {
-            if (isFunction(option.target)) {
-                targetToken = option.target;
-            } else if (isTypeReflect(option.target)) {
-                targetToken = option.target.type;
-            } else {
-                targetToken = isTypeObject(option.target) ? getClass(option.target) : null!;
-            }
-        }
-
         return this.get(option.token!, context)
             ?? context?.resolveArgument({ provider: option.token } as Parameter)
             ?? this.resolveFailed(platform, option.token!, context, option.regify, option.defaultToken);

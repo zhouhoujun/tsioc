@@ -7,7 +7,7 @@ This repo is for distribution on `npm`. The source for this module is in the
 
 old packages:
 [`tsioc`](https://www.npmjs.com/package/tsioc)
-# Install
+## Install
 
 ```shell
 
@@ -20,235 +20,306 @@ npm install @tsdi/platform-browser
 npm install @tsdi/platform-server
 ```
 
-## add extends modules
 
 
-## boot
+## Decorators
 Module manager, application bootstrap. base on AOP.
 
 *  `@Module` Module decorator, use to define class as ioc Module.
-*  `@Boot` Boot decorator, use to define class as startup service for application.
+*  `@ComponentScan`ComponentScan decorator, use to auto scan server or client for application.
 *  `@Configure` Configure decorator, define this class as configure register when bootstrap application.
 *  `@Handle`  Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
 *  `@RouteMapping` route mapping decorator, for class. use to define this class as message route.
+*  `@RequestPath` Request path parameter decorator for route mapping.
+*  `@RequestParam` Request query parameter decorator for route mapping.
+*  `@RequestBody` Request body parameter decorator for route mapping.
+*  `@Pipe` Pipe decorator, define for class. use to define the class. it can setting provider to some token, singleton or not. it will execute  [`PipeLifecycle`]
+*  `@Repository` Repository Decorator, to autowired repository for paramerter or filed.
+*  `@Transactional` Transactional Decorator, define transaction propagation behaviors.
 
 [mvc boot simple](https://github.com/zhouhoujun/type-mvc/tree/master/packages/simples)
 
 
-### use bootstrap
+## Application Sample
 
+### Quick start
+```ts
+import { Application, Module, Transactional, TransactionModule, RouteMapping, Repository }  from '@tsdi/core';
+import { ILogger, Logger, LogModule } from '@tsdi/logs';
+import { TypeOrmModule }  from '@tsdi/typeorm-adapter';
+import { ServerBootstrapModule } from '@tsdi/platform-server';
+import { Repository as TypeORMRepository } from 'typeorm';
+
+
+@RouteMapping('/users')
+export class UserController {
+
+    // as property inject
+    // @Logger() logger!: ILogger;
+
+    constructor(private usrRep: UserRepository, @Logger() private logger: ILogger) {
+
+    }
+
+
+    @RouteMapping('/:name', 'get')
+    getUser(name: string) {
+        this.logger.log('name:', name);
+        return this.usrRep.findByAccount(name);
+    }
+
+    @Transactional()
+    @RouteMapping('/', 'post')
+    @RouteMapping('/', 'put')
+    async modify(user: User, @RequestParam({ nullable: true }) check?: boolean) {
+        this.logger.log(lang.getClassName(this.usrRep), user);
+        let val = await this.usrRep.save(user);
+        if(check) throw new Error('check');
+        this.logger.log(val);
+        return val;
+    }
+
+    @Transactional()
+    @RouteMapping('/save', 'post')
+    @RouteMapping('/save', 'put')
+    async modify2(user: User, @Repository() userRepo: UserRepository, @RequestParam({ nullable: true }) check?: boolean) {
+        this.logger.log(lang.getClassName(this.usrRep), user);
+        let val = await userRepo.save(user);
+        if(check) throw new Error('check');
+        this.logger.log(val);
+        return val;
+    }
+
+    @Transactional()
+    @RouteMapping('/:id', 'delete')
+    async del(id: string) {
+        this.logger.log('id:', id);
+        await this.usrRep.delete(id);
+        return true;
+    }
+
+}
+
+
+@RouteMapping('/roles')
+export class RoleController {
+
+    constructor(@DBRepository(Role) private repo: TypeORMRepository<Role>, @Logger() private logger: ILogger) {
+
+    }
+
+    @Transactional()
+    @RouteMapping('/', 'post')
+    @RouteMapping('/', 'put')
+    async save(role: Role, @RequestParam({ nullable: true }) check?: boolean) {
+        this.logger.log(role);
+        console.log('save isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
+        const value = await this.repo.save(role);
+        if (check) throw new Error('check');
+        this.logger.info(value);
+        return value;
+    }
+
+    @Transactional()
+    @RouteMapping('/save2', 'post')
+    @RouteMapping('/save2', 'put')
+    async save2(role: Role, @DBRepository(Role) roleRepo: Repository<Role>, @RequestParam({ nullable: true }) check?: boolean) {
+        this.logger.log(role);
+        console.log('save2 isTransactionActive:', roleRepo.queryRunner?.isTransactionActive);
+        const value = await roleRepo.save(role);
+        if (check) throw new Error('check');
+        this.logger.info(value);
+        return value;
+    }
+
+
+    @RouteMapping('/:name', 'get')
+    async getRole(name: string) {
+        this.logger.log('name:', name);
+        console.log('getRole isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
+        return await this.repo.findOne({ where: { name } });
+    }
+
+
+    @Transactional()
+    @RouteMapping('/:id', 'delete')
+    async del(id: string) {
+        this.logger.log('id:', id);
+        console.log('del isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
+        await this.repo.delete(id);
+        return true;
+    }
+
+}
+
+```
+
+### In Server side.
 
 ```ts
-import { Module, Application } from '@tsdi/core';
-
-
-
-export class TestService {
-    testFiled = 'test';
-    test() {
-        console.log('this is test');
-    }
-}
+import { Application, Module, TransactionModule }  from '@tsdi/core';
+import { LogModule } from '@tsdi/logs';
+import { TypeOrmModule }  from '@tsdi/typeorm-adapter';
+import { ServerBootstrapModule } from '@tsdi/platform-server';
 
 @Module({
+    // baseURL: __dirname,
     imports: [
-        TestService
-    ],
-    exports: [
-        TestService
-    ]
-})
-export class ModuleCustom {
-
-}
-
-@Module({
-    imports: [
-        ModuleCustom
-    ],
-    providers: [
-        { provide: 'mark', useFactory: () => 'marked' }
-    ],
-    exports: [
-        ModuleCustom
-    ]
-})
-export class ModuleA {
-
-}
-
-@Injectable()
-export class ClassSevice extends Runner {
-
-    constructor(readonly targetRef: TargetRef) {
-        super()
-    }
-
-    get instance() {
-        return this.targetRef.instance;
-    }
-
-    @Inject('mark')
-    mark: string;
-
-    state: string;
-
-    async run(): Promise<any> {
-        console.log('ClassSevice running.....');
-        // console.log(refs.get(ClassSevice));
-
-        // console.log(this.container);
-    }
-
-}
-
-@Aspect()
-export class Logger {
-
-    @Around('execution(*.run)')
-    log(jp: Joinpoint) {
-        console.log(jp.fullName, jp.state, 'run........');
-    }
-
-    @Around('execution(*.test)')
-    logTest() {
-        console.log('test........');
-    }
-}
-
-@Message()
-export class SubMessageQueue extends MessageQueue {
-
-}
-
-@Module({
-    imports: [
-        AopModule,
         LogModule,
-        Logger,
-        ClassSevice,
-        ModuleA,
-        SubMessageQueue
-    ],
-    bootstrap: ClassSevice
-})
-export class ModuleB { }
-
-
-@Boot()
-export class SocketService extends StartupService {
-
-    public tcpServer: net.Server;
-    private context: ApplicationContext;
-    private init_times = 0;
-
-    async configureService(ctx: ApplicationContext): Promise<void> {
-        console.log('SocketService init...')
-        this.context = ctx;
-        const tcpServer = this.tcpServer = new net.Server();
-        tcpServer.listen(8801);
-        this.init_times++;
-        console.log('destroyed state', this.destroyed, 'init', this.init_times);
-    }
-
-    protected destroying() {
-        console.log('SocketService destroying...');
-        this.tcpServer.removeAllListeners();
-        this.tcpServer.close();
-    }
-
-}
-
-@Module({
-    providers: [
-        SocketService
-    ]
-})
-export class StatupModule { }
-
-
-@Module({
-    imports: [
-        AopModule,
-        LogModule,
-        Logger,
         ServerBootstrapModule,
-        ServerLogsModule
+        // import TransactionModule can enable transaction by AOP.
+        TransactionModule, 
+        TypeOrmModule
     ],
-    providers:[
-        ClassSevice,
-        StatupModule,
-        SubMessageQueue
-    ],
-    bootstrap: ClassSevice
+    providers: [
+        UserController,
+        RoleController
+    ]
 })
-export class ServerMainModule { }
+export class MockTransBootTest {
 
-export const configurtion = {
-    logConfig: <LogConfigure>{
-        // adapter: 'console',
-        // config: {
-        //     level: 'trace'
-        // },
-        adapter: 'log4js',
-        config: {
-            appenders: <any>{
-                focas: {
-                    type: 'dateFile',
-                    pattern: '-yyyyMMdd.log',
-                    filename: 'log-caches/focas',
-                    backups: 3,
-                    alwaysIncludePattern: true,
-                    category: 'focas'
-                },
-                console: { type: 'console' }
-            },
-            categories: {
-                default: {
-                    appenders: ['focas', 'console'],
-                    level: 'info'
-                },
-                focas: {
-                    appenders: ['focas', 'console'],
-                    level: 'info'
-                }
-            },
-            pm2: true
+}
+
+Application.run({
+    type: MockTransBootTest,
+    baseURL: __dirname,
+    configures: [
+        {
+            models: ['./models/**/*.ts'],
+            repositories: ['./repositories/**/*.ts'],
+            connections: option
         }
-    }
-} as Configuration;
-
-
-Application.run(ServerMainModule)
-
+    ]
+})
 
 ```
 
 
-* use @Bootstrap main to boot application
+### In Browser side.
 
 ```ts
+import { Application, Module, TransactionModule }  from '@tsdi/core';
+import { LogModule } from '@tsdi/logs';
+import { TypeOrmModule }  from '@tsdi/typeorm-adapter';
+import { BrowserBootstrapModule } from '@tsdi/platform-browser';
 
-@Bootstrap({
+@Module({
     imports: [
-        KoaModule
+        LogModule,
+        BrowserBootstrapModule,
+        // import TransactionModule can enable transaction by AOP.
+        TransactionModule, 
+        TypeOrmModule
     ],
-    bootstrap: MvcServerToken
+    providers: [
+        UserController,
+        RoleController
+    ]
 })
-class MvcApi {
+export class MockTransBootTest {
+
+}
+
+Application.run({
+    type: MockTransBootTest,
+    configures: [
+        {
+            connections: {
+                ...option,
+                entities: [
+                    Role,
+                    User
+                ]
+                repositories: [UserRepository]
+            }
+        }
+    ]
+})
+
+```
+
+
+```ts
+// model flies in  ./models/**/*.ts
+import { Entity, Column, ManyToOne, PrimaryGeneratedColumn, OneToMany, EntityRepository, Repository, Connection } from 'typeorm';
+
+@Entity()
+export class Role {
+    @PrimaryGeneratedColumn('uuid')
+    id!: string;
+
+    @Column()
+    name!: string;
+
+    @OneToMany(type => User, user => user.role, { nullable: true })
+    users!: User[]
+}
+
+
+@Entity()
+export class User {
     constructor() {
-        console.log('boot application');
     }
 
-    static main() {
-        console.log('run mvc api...');
-        // use your builder
-        Application.run(MvcApi);
+    @PrimaryGeneratedColumn('uuid')
+    id!: string;
+
+
+    @Column()
+    name!: string;
+
+    @Column({
+        unique: true
+    })
+    account!: string;
+
+    @Column()
+    password!: string;
+
+    @Column({ nullable: true, length: 50 })
+    email!: string;
+
+    @Column({ nullable: true, length: 50 })
+    phone!: string;
+
+    @Column({ type: 'boolean', nullable: true })
+    gender!: boolean;
+
+    @Column({ type: 'int', nullable: true })
+    age!: number;
+
+    @ManyToOne(type => Role, role => role.users, { nullable: true })
+    role!: Role;
+
+}
+
+```
+
+```ts
+// repositories in  ./repositories/**/*.ts
+import { EntityRepository, Repository } from 'typeorm';
+import { User } from '../models';
+
+@EntityRepository(User)
+export class UserRepository extends Repository<User> {
+    
+    async findByAccount(account: string) {
+        return await this.findOne({ where: { account } });
+    }
+
+    search(key: string, skip?: number, take?: number) {
+        const keywords =  `%${key}%`;
+        return this.createQueryBuilder('usr')
+            .where('usr.name = :keywords OR usr.id = :key', { keywords, key })
+            .skip(skip)
+            .take(take)
+            .getManyAndCount();
     }
 }
 
 
 ```
+
 
 ### message route
 

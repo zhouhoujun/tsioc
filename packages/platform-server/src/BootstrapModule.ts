@@ -16,7 +16,9 @@ import { NodeModuleLoader } from './NodeModuleLoader';
 export class ConfigureFileLoader implements ConfigureLoader {
 
     constructor(@Inject(PROCESS_ROOT, { nullable: true }) private baseURL: string) {
-        this.baseURL = this.baseURL || runMainPath();
+        if (!baseURL) {
+            this.baseURL = runMainPath();
+        }
     }
 
     async load<T extends Configuration>(uri?: string): Promise<T> {
@@ -158,7 +160,8 @@ export class ServerApplicationExit extends ApplicationExit {
         },
         {
             provide: PROCESS_ROOT,
-            useValue: runMainPath()
+            useValue: runMainPath(),
+            asDefault: true
         },
         {
             provide: ModuleLoader,

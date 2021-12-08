@@ -1,4 +1,4 @@
-import { Token, ProviderType, Type, isFunction, isBoolean, ModuleMetadata, DestroyCallback } from '@tsdi/ioc';
+import { Token, ProviderType, Type, isFunction, ModuleMetadata, DestroyCallback } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { CONFIGURATION, PROCESS_ROOT } from './metadata/tk';
 import { Configuration, ConfigureManager } from './configure/config';
