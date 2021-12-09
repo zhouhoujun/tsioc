@@ -1,2 +1,2 @@
 
-export * from './messaget';
+export * from './message';

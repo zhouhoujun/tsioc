@@ -172,7 +172,8 @@ export class Application implements Disposable {
     protected async configation(ctx: ApplicationContext): Promise<void> {
         const { baseURL, injector } = ctx;
         const mgr = ctx.getConfigureManager();
-        let config = await mgr.getConfig();
+        await mgr.load();
+        let config = mgr.getConfig();
 
         if (config.deps && config.deps.length) {
             await injector.load(config.deps);
@@ -184,9 +185,14 @@ export class Application implements Disposable {
 
         if (!baseURL && config.baseURL) {
             injector.setValue(PROCESS_ROOT, config.baseURL);
+        } else {
+            config.baseURL = baseURL;
         }
 
-        config = { ...config, baseURL, debug: injector.moduleReflect.annotation?.debug };
+        if (injector.moduleReflect.annotation?.debug) {
+            config.debug = injector.moduleReflect.annotation.debug;
+        }
+
         injector.setValue(CONFIGURATION, config);
 
         if (config.logConfig) {

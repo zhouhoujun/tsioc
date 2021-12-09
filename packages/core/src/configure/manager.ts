@@ -1,4 +1,4 @@
-import { Inject, isUndefined, Singleton, isString, isPlainObject, lang, EMPTY_OBJ, isMetadataObject, ModuleLoader } from '@tsdi/ioc';
+import { Inject, isUndefined, Singleton, isString, isPlainObject, lang, EMPTY_OBJ, isMetadataObject, ModuleLoader, EMPTY } from '@tsdi/ioc';
 import { Configuration, ConfigureLoader, ConfigureManager, ConfigureMerger } from './config';
 import { DEFAULT_CONFIG, PROCESS_ROOT } from '../metadata/tk';
 
@@ -25,19 +25,15 @@ export class DefaultConfigureManager implements ConfigureManager {
         @Inject({ nullable: true }) private merger?: ConfigureMerger,
         @Inject({ nullable: true }) private configLoader?: ConfigureLoader,
         @Inject(PROCESS_ROOT, { nullable: true }) protected baseURL?: string) {
+        this.config = { ...config };
         this.configs = [];
     }
-    /**
-     * use configuration.
-     *
-     * @param {(string | AppConfigure)} [config]
-     * @returns {this} this configure manager.
-     */
+
     useConfiguration(config?: string | Configuration): this {
         if (isUndefined(config)) {
             config = '';
         }
-        if(this.configs.indexOf(config)>=0) return this;
+        if (this.configs.indexOf(config) >= 0) return this;
         // clean cached config.
         this.inited = false;
         if (!this.baseURL && isPlainObject(config)) {
@@ -48,22 +44,14 @@ export class DefaultConfigureManager implements ConfigureManager {
         return this;
     }
 
-    /**
-     * get config.
-     *
-     * @returns {Promise<T>}
-     */
-    async getConfig<T extends Configuration>(): Promise<T> {
-        if (!this.inited) {
-            this.config = await this.initConfig();
-        }
-        return (this.config || EMPTY_OBJ) as T;
+    getConfig<T extends Configuration>(): T {
+        return this.config as T;
     }
 
-    /**
-     * init config.
-     */
-    protected async initConfig() {
+    async load(): Promise<void> {
+        if (this.inited) {
+            return;
+        }
         this.inited = true;
         let config = this.config;
         let exts = await Promise.all(this.configs.map(cfg => {
@@ -77,10 +65,15 @@ export class DefaultConfigureManager implements ConfigureManager {
         exts.forEach(exCfg => {
             if (exCfg) {
                 exCfg = isMetadataObject((exCfg as any)['default']) ? (exCfg as any)['default'] : exCfg;
-                config = (merger ? merger.merge(config, exCfg) : { ...config, ...exCfg });
+                if (merger) {
+                    config = merger.merge(config, exCfg);
+                } else {
+                    for (let n in exCfg) {
+                        config[n] = exCfg[n];
+                    }
+                }
             }
         });
-        return config;
     }
 
     /**
@@ -105,14 +98,44 @@ export class DefaultConfigureManager implements ConfigureManager {
 
 @Singleton(ConfigureMerger)
 export class ConfigureMergerImpl implements ConfigureMerger {
-    merge(config1: Configuration, config2: Configuration): Configuration {
-        let setting = { ...config1?.setting, ...config2?.setting };
-        let deps = [...config1?.deps || [], ...config2?.deps || []];
-        let providers = [...config1?.providers || [], ...config2?.providers || []];
-        let models = [...config1?.models || [], ...config2?.models || []];
-        let repositories = [...config1?.repositories || [], ...config2?.repositories || []];
 
-        return { ...config1, ...config2, setting, deps, providers, models, repositories };
+    merge(target: Configuration, source: Configuration): Configuration {
+        if (!source) return target;
+        for (let n in source) {
+            switch (n) {
+                case 'setting':
+                    target.setting = { ...target.setting, ...source.setting };
+                    break;
+                case 'deps':
+                    this.mergeArray(target, n, source.deps);
+                    break;
+                case 'providers':
+                    this.mergeArray(target, n, source.providers);
+                    break;
+                case 'models':
+                    this.mergeArray(target, n, source.models);
+                    break;
+                case 'repositories':
+                    this.mergeArray(target, n, source.repositories);
+                    break;
+                default:
+                    target[n] = source[n];
+            }
+        }
+
+        return target;
     }
 
+    protected mergeArray(target: Configuration, name: string, source?: any[]) {
+        if(!source || !source.length) return;
+        if (target[name]) {
+            source.forEach(d => {
+                if ((target[name].indexOf(d) || 0) < 0) {
+                    target[name]?.push(d);
+                }
+            })
+        } else {
+            target[name] = [...source];
+        }
+    }
 }

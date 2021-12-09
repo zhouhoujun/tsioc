@@ -30,7 +30,7 @@ export type IConnectionOptions = ConnectionOptions;
  * @interface Configuration
  * @extends {ProvidersMetadata}
  */
-export interface Configuration extends ProvidersMetadata {
+export interface Configuration extends ProvidersMetadata, Record<string, any> {
     /**
      * module base url.
      *
@@ -142,12 +142,12 @@ export abstract class ConfigureLoader {
 @Abstract()
 export abstract class ConfigureMerger {
     /**
-     * merge configure
-     * @param config1 config 1
-     * @param config2 coniig 2
-     * @returns merged config.
+     * merge source to target.
+     * @param target target configure.
+     * @param source source configure 
+     * @returns merged target configure.
      */
-    abstract merge(config1: Configuration, config2: Configuration): Configuration;
+    abstract merge(target: Configuration, source: Configuration): Configuration;
 }
 
 /**
@@ -157,16 +157,21 @@ export abstract class ConfigureMerger {
 export abstract class ConfigureManager {
     /**
      * use configuration.
-     *abstract 
-     * @param {(string | Configuration)} [config]
+     *
+     * @param {(string | Configuration)} [config] use config src or configuration.
      * @returns {this} this configure manager.
      */
     abstract useConfiguration(config?: string | Configuration): this;
 
     /**
+     * load used configuration.
+     */
+    abstract load(): Promise<void>;
+
+    /**
      * get config.
      *
-     * @returns {Promise<T>}
+     * @returns {T}
      */
-    abstract getConfig<T extends Configuration>(): Promise<T>;
+    abstract getConfig<T extends Configuration>(): T;
 }
