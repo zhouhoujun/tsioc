@@ -1,12 +1,10 @@
 import { Abstract, Injector, Inject } from '@tsdi/ioc';
 import { Joinpoint } from '@tsdi/aop';
 import { Level } from './Level';
-import { LoggerMetadata } from './metadata/Logger';
-import { LogConfigure } from './LogConfigure';
+import { Logger, LoggerMetadata } from './metadata/Logger';
 import { ILogger } from './ILogger';
 import { ConfigureLoggerManager } from './manager';
-import { ILoggerManager } from './ILoggerManager';
-import { LogConfigureToken } from './tk';
+import { LoggerManager } from './LoggerManager';
 
 
 
@@ -15,38 +13,16 @@ import { LogConfigureToken } from './tk';
  */
 @Abstract()
 export abstract class LogProcess {
-
-    private _logger!: ILogger;
-    private _logManger!: ILoggerManager;
-
-    constructor(@Inject() protected injector: Injector) {
-    }
-
-    get config(): LogConfigure {
-        return this.injector.get(LogConfigureToken);
-    }
-
-    get logger(): ILogger {
-        if (!this._logger) {
-            this._logger = this.getLogger();
-        }
-        return this._logger;
-    }
-
-    get logManger(): ILoggerManager {
-        if (!this._logManger) {
-            this._logManger = this.getLoggerManager();
-        }
-        return this._logManger;
-    }
-
-    protected getLoggerManager(): ILoggerManager {
-        return this.injector.resolve({ token: ConfigureLoggerManager, providers: [{ provide: 'config', useValue: this.config }] });
-    }
+    static ρNPT = true;
+    
+    @Logger() logger!: ILogger;
+    @Inject(ConfigureLoggerManager) logManger!: LoggerManager;
+    @Inject() protected injector!: Injector
 
     protected getLogger(): ILogger {
         return this.logManger.getLogger();
     }
+
     abstract processLog(joinPoint: Joinpoint, ...messages: any[]): void;
     abstract processLog(joinPoint: Joinpoint, level: Level, ...messages: any[]): void;
     abstract processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], ...messages: any[]): void;

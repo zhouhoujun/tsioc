@@ -2,7 +2,7 @@ import {
     ProviderType, LoadType, Injector, Abstract, Type, InvokeOption,
     ModuleLoader, Destroyable, Modules, DestroyCallback
 } from '@tsdi/ioc';
-import { ILoggerManager } from '@tsdi/logs';
+import { LoggerManager } from '@tsdi/logs';
 import { Configuration, ConfigureManager } from './configure/config';
 import { Request, RequestInit, RequestOption } from './middlewares/request';
 import { Response } from './middlewares/response';
@@ -95,7 +95,7 @@ export abstract class ApplicationContext implements Destroyable, Disposable {
     /**
      * get log manager.
      */
-    abstract getLogManager(): ILoggerManager;
+    abstract getLogManager(): LoggerManager;
     /**
      * boot base url.
      *

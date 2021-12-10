@@ -2,6 +2,7 @@ import { ModuleA, ModuleB, ClassSevice, SubMessageQueue, SocketService, StatupMo
 import { Application  } from '../src';
 import expect = require('expect');
 import * as net from 'net';
+import { ConfigureLoggerManager } from '@tsdi/logs';
 
 
 describe('di module', () => {

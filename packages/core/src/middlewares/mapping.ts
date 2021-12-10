@@ -251,7 +251,7 @@ const primitiveResolvers: TrasportArgumentResolver[] = [
                     return parameter.scope === 'query' && isDefined(ctx.arguments.query[parameter.field ?? parameter.paramName!]);
                 },
                 resolve(parameter, ctx) {
-                    const pipe = ctx.injector.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
+                    const pipe = ctx.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
                     if (!pipe) throw missingPipeError(parameter, ctx.target, ctx.method);
                     return pipe.transform(ctx.arguments.query[parameter.field ?? parameter.paramName!], ...parameter.args || EMPTY)
                 }
@@ -261,7 +261,7 @@ const primitiveResolvers: TrasportArgumentResolver[] = [
                     return parameter.scope === 'restful' && isDefined(ctx.arguments.restful[parameter.field ?? parameter.paramName!]);
                 },
                 resolve(parameter, ctx) {
-                    const pipe = ctx.injector.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
+                    const pipe = ctx.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
                     if (!pipe) throw missingPipeError(parameter, ctx.target, ctx.method);
                     return pipe.transform(ctx.arguments.restful[parameter.field ?? parameter.paramName!], ...parameter.args || EMPTY)
                 }
@@ -271,7 +271,7 @@ const primitiveResolvers: TrasportArgumentResolver[] = [
                     return parameter.scope === 'body' && isDefined(ctx.arguments.request.body[parameter.field ?? parameter.paramName!]);
                 },
                 resolve(parameter, ctx) {
-                    const pipe = ctx.injector.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
+                    const pipe = ctx.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
                     if (!pipe) throw missingPipeError(parameter, ctx.target, ctx.method);
                     return pipe.transform(ctx.arguments.request.body[parameter.field ?? parameter.paramName!], ...parameter.args || EMPTY)
                 }
@@ -284,7 +284,7 @@ const primitiveResolvers: TrasportArgumentResolver[] = [
                 },
                 resolve(parameter, ctx) {
                     const field = parameter.field ?? parameter.paramName!;
-                    const pipe = ctx.injector.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
+                    const pipe = ctx.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
                     if (!pipe) throw missingPipeError(parameter, ctx.target, ctx.method);
                     const args = ctx.arguments;
                     return pipe.transform(args.query[field] ?? args.restful[field] ?? args.request.body[field], ...parameter.args || EMPTY)
@@ -301,7 +301,7 @@ const primitiveResolvers: TrasportArgumentResolver[] = [
                 resolve(parameter, ctx) {
                     const value = ctx.arguments.request.body[parameter.field ?? parameter.paramName!];
                     const values: any[] = isString(value) ? value.split(',') : value;
-                    const pipe = ctx.injector.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase());
+                    const pipe = ctx.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase());
                     if (!pipe) throw missingPipeError(parameter, ctx.target, ctx.method);
                     return values.map(val => pipe.transform(val, ...parameter.args || EMPTY)) as any;
                 }
@@ -312,7 +312,7 @@ const primitiveResolvers: TrasportArgumentResolver[] = [
                 },
                 resolve(parameter, ctx) {
                     const value = (ctx.arguments.restful[parameter.field ?? parameter.paramName!] as string).split(',');
-                    const pipe = ctx.injector.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase());
+                    const pipe = ctx.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase());
                     if (!pipe) throw missingPipeError(parameter, ctx.target, ctx.method);
                     return value.map(val => pipe.transform(val, ...parameter.args || EMPTY)) as any;
                 }
@@ -323,7 +323,7 @@ const primitiveResolvers: TrasportArgumentResolver[] = [
                 },
                 resolve(parameter, ctx) {
                     const value: any[] = ctx.arguments.request.body[parameter.field ?? parameter.paramName!];
-                    const pipe = ctx.injector.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase());
+                    const pipe = ctx.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase());
                     if (!pipe) throw missingPipeError(parameter, ctx.target, ctx.method);
                     return value.map(val => pipe.transform(val, ...parameter.args || EMPTY)) as any;;
                 }
@@ -337,7 +337,7 @@ const primitiveResolvers: TrasportArgumentResolver[] = [
             },
             resolve(parameter, ctx) {
                 const value = parameter.field ? ctx.arguments.request.body[parameter.field] : ctx.arguments.request.body;
-                const pipe = ctx.injector.get<PipeTransform>(parameter.pipe!);
+                const pipe = ctx.get<PipeTransform>(parameter.pipe!);
                 if (!pipe) throw missingPipeError(parameter, ctx.target, ctx.method);
                 return pipe.transform(value, ...parameter.args || EMPTY);
             }

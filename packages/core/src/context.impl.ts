@@ -1,5 +1,5 @@
 import { Token, ProviderType, Type, isFunction, ModuleMetadata, DestroyCallback } from '@tsdi/ioc';
-import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
+import { ConfigureLoggerManager, LoggerManager } from '@tsdi/logs';
 import { CONFIGURATION, PROCESS_ROOT } from './metadata/tk';
 import { Configuration, ConfigureManager } from './configure/config';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from './context';
@@ -115,7 +115,7 @@ export class DefaultApplicationContext extends ApplicationContext {
     /**
      * get log manager.
      */
-    getLogManager(): ILoggerManager {
+    getLogManager(): LoggerManager {
         return this.injector.get(ConfigureLoggerManager);
     }
 

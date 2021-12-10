@@ -94,7 +94,7 @@ export interface Logger<T extends LoggerMetadata> {
 
 const loggerResolver = {
     canResolve: (pr: LoggerMetadata, ctx) => {
-        if (!ctx.injector.has(ConfigureLoggerManager)) {
+        if (!ctx.has(ConfigureLoggerManager)) {
             let local: string;
             if (pr.propertyKey && pr.paramName) {
                 local = ` method ${ctx.method} param ${pr.paramName} of class `
@@ -107,7 +107,7 @@ const loggerResolver = {
         }
         return !!pr.logname;
     },
-    resolve: (pr: LoggerMetadata, ctx) => ctx.injector.get(ConfigureLoggerManager).getLogger(pr.logname)
+    resolve: (pr: LoggerMetadata, ctx) => ctx.get(ConfigureLoggerManager).getLogger(pr.logname)
 } as OperationArgumentResolver;
 
 

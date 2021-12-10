@@ -88,7 +88,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
         };
 
         joinPoint.originProxy = () => {
-            const currTransaction = joinPoint.getValue(EntityManager);
+            const currTransaction = joinPoint.get(EntityManager);
             switch (propagation) {
                 case 'MANDATORY':
                     if (!currTransaction) {

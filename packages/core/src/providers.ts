@@ -12,6 +12,8 @@ import { Runnable, RunnableSet } from './runnable';
 
 
 abstract class AbstractScanSet<T = any> implements ScanSet<T> {
+    static ρNPT = true;
+
     private _rs: Resolver<T>[] = [];
     protected order = false;
     constructor() {

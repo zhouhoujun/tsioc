@@ -16,7 +16,6 @@ export * from './advices/Advicer';
 export * from './advices/Advices';
 
 
-export * from './IAdvisor';
 export * from './Advisor';
 export * from './AdviceMatcher';
 export * from './AopModule';

@@ -1,6 +1,6 @@
 export * from './Level';
 export * from './ILogger';
-export * from './ILoggerManager';
+export * from './LoggerManager';
 export * from './manager';
 export * from './LogConfigure';
 export * from './formater';
@@ -9,5 +9,4 @@ export * from './aspect';
 export * from './metadata/Logger';
 export * from './LogModule';
 export * from './debugs/aspect';
-export * from './tk';
 

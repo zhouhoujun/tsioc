@@ -1,10 +1,8 @@
 import { EMPTY_OBJ, getToken, Inject, Injectable, Injector, isFunction, isString, Singleton, Token, Type } from '@tsdi/ioc';
-import { NonePointcut } from '@tsdi/aop';
-import { LogConfigure } from './LogConfigure';
-import { ILoggerManager, LoggerConfig, IConfigureLoggerManager } from './ILoggerManager';
+import { LogConfigure, LogConfigureToken } from './LogConfigure';
 import { ILogger } from './ILogger';
 import { Level, Levels } from './Level';
-import { LogConfigureToken, LoggerManagerToken } from './tk';
+import { LoggerConfig, LoggerManager } from './LoggerManager';
 
 
 
@@ -12,17 +10,15 @@ import { LogConfigureToken, LoggerManagerToken } from './tk';
  * Configure logger manger. use to get configed logger manger.
  *
  * @export
- * @class LoggerManger
- * @implements {IConfigureLoggerManager}
  */
-@NonePointcut()
 @Injectable()
-export class ConfigureLoggerManager implements IConfigureLoggerManager {
+export class ConfigureLoggerManager implements LoggerManager {
+    static ρNPT = true;
 
     private _config!: LogConfigure;
-    private _logManger!: ILoggerManager;
+    private _logManger!: LoggerManager;
 
-    constructor(@Inject() protected injector: Injector)  {
+    constructor(@Inject() protected injector: Injector) {
     }
 
     get config(): LogConfigure {
@@ -42,7 +38,7 @@ export class ConfigureLoggerManager implements IConfigureLoggerManager {
         }
         if (isFunction(config)) {
             if (!this.injector.has(LogConfigureToken)) {
-                this.injector.register({ provide: LogConfigureToken, useClass: config});
+                this.injector.register({ provide: LogConfigureToken, useClass: config });
                 this._config = this.injector.get(LogConfigureToken);
             } else if (!this.injector.has(config)) {
                 this.injector.register(config);
@@ -56,17 +52,17 @@ export class ConfigureLoggerManager implements IConfigureLoggerManager {
     }
 
 
-    protected get logManger(): ILoggerManager {
+    protected get logManger(): LoggerManager {
         if (!this._logManger) {
             let cfg: LogConfigure = this.config || <LogConfigure>EMPTY_OBJ;
             let adapter = cfg.adapter || 'console';
             let token: Token;
             if (isString(adapter)) {
-                token = getToken(LoggerManagerToken, adapter);
+                token = getToken(LoggerManager, adapter);
             } else {
                 token = adapter;
             }
-            this._logManger = this.injector.get<ILoggerManager>(token);
+            this._logManger = this.injector.get<LoggerManager>(token);
             if (cfg.config) {
                 this._logManger.configure(cfg.config);
             }
@@ -103,10 +99,11 @@ export interface ConsoleLoggerConfig extends LoggerConfig {
  * @class ConsoleLogManager
  * @implements {ILoggerManager}
  */
-@NonePointcut()
 @Singleton()
-@Injectable(LoggerManagerToken, 'console')
-export class ConsoleLogManager implements ILoggerManager {
+@Injectable(LoggerManager, 'console')
+export class ConsoleLogManager implements LoggerManager {
+    static ρNPT = true;
+
     private logger: ILogger;
     constructor() {
         this.logger = new ConsoleLog();
@@ -172,3 +169,5 @@ class ConsoleLog implements ILogger {
         }
     }
 }
+
+

@@ -26,7 +26,7 @@ export abstract class Injector implements Destroyable {
     private _destroyed = false;
     protected _dsryCbs = new Set<DestroyCallback>();
 
-    readonly scope?: InjectorScope | string;
+    readonly scope?: InjectorScope;
     /**
      * parent injector.
      */

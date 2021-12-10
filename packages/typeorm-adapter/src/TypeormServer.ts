@@ -106,7 +106,7 @@ export class TypeormServer implements Server {
                     resolve: (prop, ctx, fields, target) => {
                         const value = fields[prop.propertyKey];
                         if (isNil(value)) return null;
-                        const pipe = ctx.injector.get<PipeTransform>('objectId');
+                        const pipe = ctx.get<PipeTransform>('objectId');
                         if (!pipe) throw missingPropPipeError(prop, target)
                         return pipe.transform(value, prop.enum);
                     }

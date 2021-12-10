@@ -1,4 +1,4 @@
-import { Inject, isUndefined, Singleton, isString, isPlainObject, lang, EMPTY_OBJ, isMetadataObject, ModuleLoader, EMPTY } from '@tsdi/ioc';
+import { Inject, isUndefined, Singleton, isString, isPlainObject, lang, isMetadataObject, ModuleLoader } from '@tsdi/ioc';
 import { Configuration, ConfigureLoader, ConfigureManager, ConfigureMerger } from './config';
 import { DEFAULT_CONFIG, PROCESS_ROOT } from '../metadata/tk';
 

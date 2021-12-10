@@ -2,7 +2,6 @@ import { Singleton } from '@tsdi/ioc';
 import { Aspect, Around, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LoggerAspect } from '../aspect';
 import { Level } from '../Level';
-import { ConsoleLogManager } from '../manager';
 
 /**
  * debug log aspect.
@@ -14,10 +13,6 @@ import { ConsoleLogManager } from '../manager';
 @Singleton()
 @Aspect()
 export class DebugLogAspect extends LoggerAspect {
-
-    protected getLoggerManager() {
-        return this.injector.get(ConsoleLogManager);
-    }
 
     @Around('execution(*.*)')
     logging(joinPoint: Joinpoint) {

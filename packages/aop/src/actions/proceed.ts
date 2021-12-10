@@ -1,5 +1,5 @@
 import {
-    Type, isFunction, lang, Platform, isNil, isPromise, refl, EMPTY, ctorName, IActionSetup,
+    Type, isFunction, lang, Platform, isNil, isPromise, refl, ctorName, IActionSetup,
     IocActions, ParameterMetadata, InvocationContext, Injector, chain, object2string
 } from '@tsdi/ioc';
 import { IPointcut } from '../joinpoints/IPointcut';
@@ -7,8 +7,8 @@ import { Joinpoint } from '../joinpoints/Joinpoint';
 import { JoinpointState } from '../joinpoints/state';
 import { Advices } from '../advices/Advices';
 import { Advicer } from '../advices/Advicer';
-import { ADVISOR } from '../metadata/tk';
 import { AroundMetadata } from '../metadata/meta';
+import { Advisor } from '../Advisor';
 
 const proxyFlag = '_proxy';
 const aExp = /^@/;
@@ -34,7 +34,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
 
 
     beforeConstr(targetType: Type, params: ParameterMetadata[] | undefined, args: any[] | undefined, injector: Injector, parent: InvocationContext | undefined) {
-        const advices = this.platform.getAction(ADVISOR).getAdvices(targetType, ctorName);
+        const advices = this.platform.getAction(Advisor).getAdvices(targetType, ctorName);
         if (!advices) {
             return;
         }
@@ -52,7 +52,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
     }
 
     afterConstr(target: any, targetType: Type, params: ParameterMetadata[] | undefined, args: any[] | undefined, injector: Injector, parent: InvocationContext | undefined) {
-        const advices = this.platform.getAction(ADVISOR).getAdvices(targetType, ctorName);
+        const advices = this.platform.getAction(Advisor).getAdvices(targetType, ctorName);
         if (!advices) {
             return;
         }
@@ -182,8 +182,11 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
         if (joinPoint.throwing && metadata.throwing) {
             joinPoint.setArgument(metadata.throwing, joinPoint.throwing);
         }
-
-        return joinPoint.injector.invoke(advicer.aspect, advicer.advice.propertyKey!, joinPoint);
+        let injector = advicer.aspect.injector;
+        if (injector) joinPoint.addRef(injector);
+        const returning = joinPoint.injector.invoke(advicer.aspect, advicer.advice.propertyKey!, joinPoint);
+        if (injector) joinPoint.removeRef(injector);
+        return returning;
     }
 
 }

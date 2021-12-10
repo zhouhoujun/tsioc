@@ -1,6 +1,5 @@
-import { Type, ProviderType, Injector, Resolver } from '@tsdi/ioc';
+import { Type, ProviderType, Injector, Resolver, lang } from '@tsdi/ioc';
 import { Advices } from './advices/Advices';
-import { IAdvisor } from './IAdvisor';
 
 /**
  * for global aop advisor.
@@ -8,7 +7,7 @@ import { IAdvisor } from './IAdvisor';
  * @export
  * @class Advisor
  */
-export class Advisor implements IAdvisor {
+export class Advisor {
     /**
      * method advices.
      *
@@ -72,8 +71,12 @@ export class Advisor implements IAdvisor {
         this.aspects.push(aspect);
     }
 
+    remove(aspect: Resolver) {
+        lang.remove(this.aspects, aspect);
+    }
+
     get(type: Type): Resolver | undefined {
-        return this.aspects.find(r=> r.type === type);
+        return this.aspects.find(r => r.type === type);
     }
 
     /**

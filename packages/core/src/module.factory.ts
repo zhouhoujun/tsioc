@@ -41,6 +41,7 @@ export abstract class ModuleFactory<T = any> {
  */
 @Abstract()
 export abstract class ModuleFactoryResolver {
+    static ρNPT = true;
     /**
      * resolve instance of {@link ModuleFactory}.
      * @param type 

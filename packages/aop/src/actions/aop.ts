@@ -2,8 +2,9 @@ import { Type, RuntimeContext, refl, AnnotationType, ctorName } from '@tsdi/ioc'
 import { ProceedingScope } from './proceed';
 import { Advicer } from '../advices/Advicer';
 import { Advices } from '../advices/Advices';
-import { ADVISOR, ADVICE_MATCHER } from '../metadata/tk';
+import { ADVICE_MATCHER } from '../metadata/tk';
 import { AopReflect } from '../metadata/ref';
+import { Advisor } from '..';
 
 
 /**
@@ -24,7 +25,7 @@ export const BindMthPointcutAction = function (ctx: RuntimeContext, next: () => 
 
     const className = ctx.reflect.class.className;
     const decorators = ctx.reflect.class.getPropertyDescriptors();
-    const advicesMap = platform.getActionValue(ADVISOR).getAdviceMap(targetType);
+    const advicesMap = platform.getActionValue(Advisor).getAdviceMap(targetType);
 
     if (advicesMap && advicesMap.size) {
         advicesMap.forEach((advices, name) => {
@@ -94,7 +95,7 @@ export const MatchPointcutAction = function (ctx: RuntimeContext, next: () => vo
     }
 
     const platform = ctx.injector.platform();
-    let advisor = platform.getActionValue(ADVISOR);
+    let advisor = platform.getActionValue(Advisor);
     let matcher = platform.getActionValue(ADVICE_MATCHER);
     let targetType = ctx.type;
 

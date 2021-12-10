@@ -5,8 +5,8 @@ import { isLevel, Level } from './Level';
 import { ILogger } from './ILogger';
 import { LogProcess } from './LogProcess';
 import { ILogFormater, LogFormaterToken } from './formater';
-import { IConfigureLoggerManager } from './ILoggerManager';
 import { LogConfigure } from './LogConfigure';
+import { ConfigureLoggerManager } from './manager';
 
 /**
  * base looger aspect. for extends your logger aspect.
@@ -84,7 +84,7 @@ export abstract class LoggerAspect extends LogProcess {
     private _formater!: ILogFormater;
     getFormater() {
         if (!this._formater) {
-            let config = (this.logManger as IConfigureLoggerManager).config || (EMPTY_OBJ as LogConfigure);
+            let config = (this.logManger as ConfigureLoggerManager).config || (EMPTY_OBJ as LogConfigure);
             let formater: ILogFormater = null!;
             config.format = config.format || LogFormaterToken;
             if (isToken(config.format)) {

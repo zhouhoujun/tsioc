@@ -1,5 +1,5 @@
 import { ClassType, Type } from './types';
-import { getClassName } from './utils/lang';
+import { getClassName, remove } from './utils/lang';
 import {
     EMPTY, isClassType, isDefined, isFunction, isObject, isPlainObject,
     isArray, isPromise, isString, isTypeObject, isTypeReflect
@@ -9,7 +9,7 @@ import { ParameterMetadata } from './metadata/meta';
 import { TypeReflect } from './metadata/type';
 import { ProviderType } from './providers';
 import { DestroyCallback, Destroyable } from './destroy';
-import { Token } from './tokens';
+import { InjectFlags, Token } from './tokens';
 import { Injector } from './injector';
 
 
@@ -83,9 +83,10 @@ export function composeResolver<T extends OperationArgumentResolver<any>, TP ext
  */
 export class InvocationContext<T = any> implements Destroyable {
     private _args: T;
-    private _values: Map<Token, any>;
     private _dsryCbs = new Set<DestroyCallback>();
     private _destroyed = false;
+    private _refs: Injector[];
+    private _values: Map<Token, any>;
     /**
      * the invocation arguments resolver.
      */
@@ -104,6 +105,16 @@ export class InvocationContext<T = any> implements Destroyable {
         this._args = args ?? {} as T;
         this._values = new Map(values);
         injector.onDestroy(this);
+        this._refs = [];
+    }
+
+
+    addRef(...injectors: Injector[]) {
+        injectors.forEach(j => j && j !==this.injector && this._refs.indexOf(j) < 0 && this._refs.push(j));
+    }
+
+    removeRef(injector: Injector) {
+        remove(this._refs, injector);
     }
 
     /**
@@ -119,6 +130,25 @@ export class InvocationContext<T = any> implements Destroyable {
 
     protected isSelf(token: Token) {
         return token === InvocationContext;
+    }
+
+    has(token: Token, flags?: InjectFlags): boolean {
+        if (this.isSelf(token)) return true;
+        return this.injector.has(token, flags) || this._refs.some(i => i.has(token, flags)); // || this.parent?.has(token, flags) === true;
+    }
+
+    get<T>(token: Token<T>, context?: InvocationContext<any>, flags?: InjectFlags): T {
+        if (this.isSelf(token)) return this as any;
+        return this.injector.get(token, context, flags) ?? this.getFormRef(token, context, flags)!; // ?? this.parent?.get(token, context, flags) as T;
+    }
+
+    protected getFormRef<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags): T | undefined {
+        let val: T | undefined;
+        this._refs.some(r => {
+            val = r.get(token, context, flags);
+            return isDefined(val);
+        });
+        return val;
     }
 
     /**
@@ -138,6 +168,7 @@ export class InvocationContext<T = any> implements Destroyable {
         if (this.isSelf(token)) return this as any;
         return this._values.get(token) ?? this.parent?.getValue(token);
     }
+
     /**
      * set value
      * @param token
@@ -189,9 +220,10 @@ export class InvocationContext<T = any> implements Destroyable {
                 this._dsryCbs.forEach(c => isFunction(c) ? c() : c?.destroy());
             } finally {
                 this._dsryCbs.clear();
+                this._values.clear();
                 this._args = null!;
                 this.resolvers = null!;
-                this._values.clear();
+                this._refs = [];
                 this.injector.destroy();
                 (this as any).parent = null;
                 (this as any).injector = null;
@@ -209,6 +241,7 @@ export class InvocationContext<T = any> implements Destroyable {
  */
 export interface Resolver<T = any> {
     get type(): Type<T>;
+    readonly injector?: Injector;
     resolve(ctx?: InvocationContext): T;
 }
 
@@ -314,9 +347,8 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
      * @param destroy destroy the context after invoked.
      */
     invoke(context: InvocationContext, destroy?: boolean) {
-        const injector = context.injector;
         const type = this.typeRef.type;
-        const instance = this.instance ?? injector.get(type, context);
+        const instance = this.instance ?? context.get(type, context);
         if (!instance || !isFunction(instance[this.method])) {
             throw new Error(`type: ${type} has no method ${this.method}.`);
         }

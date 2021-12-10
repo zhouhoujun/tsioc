@@ -3,7 +3,7 @@ import { BeforeCtorAdviceAction, AfterCtorAdviceAction, BindMthPointcutAction, M
 import { Advisor } from './Advisor';
 import { AdviceMatcher } from './AdviceMatcher';
 import { ProceedingScope } from './actions/proceed';
-import { ADVISOR, ADVICE_MATCHER } from './metadata/tk';
+import { ADVICE_MATCHER } from './metadata/tk';
 
 
 
@@ -24,7 +24,7 @@ export class AopModule {
 
         const platform = injector.platform();
 
-        platform.setActionValue(ADVISOR, new Advisor(injector), Advisor)
+        platform.setActionValue(Advisor, new Advisor(injector), Advisor)
             .setActionValue(ADVICE_MATCHER, new AdviceMatcher(injector), AdviceMatcher);
 
         platform.registerAction(ProceedingScope);

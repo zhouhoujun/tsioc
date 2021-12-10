@@ -79,9 +79,9 @@ export class TypeormTransactionResolver extends TransactionResolver {
                 },
                 resolve(param, ctx: Joinpoint): any {
                     if (ctx.hasValue(TransactionManager)) {
-                        return ctx.getValue(TransactionManager);
+                        return ctx.get(TransactionManager);
                     } else {
-                        const manager = ctx.injector.get(TransactionManager, ctx);
+                        const manager = ctx.get(TransactionManager, ctx);
                         ctx.setValue(TransactionManager, manager);
                         return manager;
                     }

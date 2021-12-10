@@ -9,7 +9,7 @@ import { cleanObj, deepForEach } from '../utils/lang';
 import { InjectorTypeWithProviders, ProviderType, StaticProvider, StaticProviders } from '../providers';
 import {
     isArray, isDefined, isFunction, isPlainObject, isPrimitiveType,
-    isNumber, isTypeObject, isTypeReflect, EMPTY, EMPTY_OBJ, getClass, isString, isPromise
+    isNumber, isTypeObject, isTypeReflect, EMPTY, EMPTY_OBJ, getClass, isString
 } from '../utils/chk';
 import { DesignContext } from '../actions/ctx';
 import { DesignLifeScope } from '../actions/design';
@@ -1004,10 +1004,10 @@ export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
         },
         {
             canResolve(parameter, ctx) {
-                return ctx.injector.has(parameter.provider as Token, parameter.flags);
+                return ctx.has(parameter.provider as Token, parameter.flags);
             },
             resolve(parameter, ctx) {
-                return ctx.injector.get(parameter.provider as Token, ctx, parameter.flags);
+                return ctx.get(parameter.provider as Token, ctx, parameter.flags);
             }
         },
         {
@@ -1018,7 +1018,7 @@ export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
             },
             resolve(parameter, ctx) {
                 const pdr = parameter.provider!;
-                const injector = ctx.injector;
+                const injector = ctx.injector?.parent ?? ctx.injector;
                 injector.register(pdr as Type);
                 return injector.get(pdr, ctx, parameter.flags);
             }
@@ -1044,10 +1044,10 @@ export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
         },
         {
             canResolve(parameter, ctx) {
-                return ctx.injector.has(parameter.paramName!, parameter.flags);
+                return ctx.has(parameter.paramName!, parameter.flags);
             },
             resolve(parameter, ctx) {
-                return ctx.injector.get(parameter.paramName!, ctx, parameter.flags);
+                return ctx.get(parameter.paramName!, ctx, parameter.flags);
             }
         }
     ),
@@ -1063,10 +1063,10 @@ export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
         },
         {
             canResolve(parameter, ctx) {
-                return ctx.injector.has(parameter.type!, parameter.flags);
+                return ctx.has(parameter.type!, parameter.flags);
             },
             resolve(parameter, ctx) {
-                return ctx.injector.get(parameter.type!, ctx, parameter.flags);
+                return ctx.get(parameter.type!, ctx, parameter.flags);
             }
         },
         {
@@ -1076,7 +1076,7 @@ export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
             },
             resolve(parameter, ctx) {
                 const ty = parameter.type!;
-                const injector = ctx.injector;
+                const injector = ctx.injector?.parent ?? ctx.injector;;
                 injector.register(ty as Type);
                 return injector.get(ty, ctx, parameter.flags);
             }

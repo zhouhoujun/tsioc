@@ -183,10 +183,10 @@ export class Application implements Disposable {
             injector.inject(config.providers);
         }
 
-        if (!baseURL && config.baseURL) {
-            injector.setValue(PROCESS_ROOT, config.baseURL);
-        } else {
+        if (baseURL) {
             config.baseURL = baseURL;
+        } else if (config.baseURL) {
+            injector.setValue(PROCESS_ROOT, config.baseURL);
         }
 
         if (injector.moduleReflect.annotation?.debug) {
@@ -196,7 +196,6 @@ export class Application implements Disposable {
         injector.setValue(CONFIGURATION, config);
 
         if (config.logConfig) {
-            injector.parent?.setValue(LogConfigureToken, config.logConfig);
             injector.setValue(LogConfigureToken, config.logConfig);
         }
         if (config.debug) {

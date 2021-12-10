@@ -156,7 +156,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
             resolve: (prop, ctx, args, target) => {
                 const value = args[prop.propertyKey] ?? prop.default;
                 if (isNil(value)) return null;
-                const pipe = ctx.injector.get<PipeTransform>('enum');
+                const pipe = ctx.get<PipeTransform>('enum');
                 if (!pipe) throw missingPropPipeError(prop, target)
                 return pipe.transform(value, prop.enum);
             }
@@ -166,7 +166,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
             resolve: (prop, ctx, args, target) => {
                 const value = args[prop.propertyKey];
                 if (isNil(value)) return null;
-                const pipe = ctx.injector.get<PipeTransform>(prop.dbtype!) ?? ctx.injector.get<PipeTransform>('boolean');
+                const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('boolean');
                 if (!pipe) throw missingPropPipeError(prop, target);
                 return pipe.transform(value);
             }
@@ -176,7 +176,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
             resolve: (prop, ctx, args, target) => {
                 const value = args[prop.propertyKey] ?? prop.default;
                 if (isNil(value)) return null;
-                const pipe = ctx.injector.get<PipeTransform>(prop.dbtype!) ?? ctx.injector.get<PipeTransform>('int');
+                const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('int');
                 if (!pipe) throw missingPropPipeError(prop, target);
                 return pipe.transform(value);
             }
@@ -186,7 +186,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
             resolve: (prop, ctx, args, target) => {
                 const value = args[prop.propertyKey] ?? prop.default;
                 if (isNil(value)) return null;
-                const pipe = ctx.injector.get<PipeTransform>(prop.dbtype!) ?? ctx.injector.get<PipeTransform>('float');
+                const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('float');
                 if (!pipe) throw missingPropPipeError(prop, target);
                 return pipe.transform(value, prop.precision);
             }
@@ -196,7 +196,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
             resolve: (prop, ctx, args, target) => {
                 const value = args[prop.propertyKey] ?? prop.default;
                 if (isNil(value)) return null;
-                const pipe = ctx.injector.get<PipeTransform>(prop.dbtype!) ?? ctx.injector.get<PipeTransform>('double');
+                const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('double');
                 if (!pipe) throw missingPropPipeError(prop, target);
                 return pipe.transform(value, prop.precision);
             }
@@ -206,7 +206,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
             resolve: (prop, ctx, args, target) => {
                 const value = args[prop.propertyKey] ?? prop.default;
                 if (isNil(value)) return null;
-                const pipe = ctx.injector.get<PipeTransform>(prop.dbtype!) ?? ctx.injector.get<PipeTransform>('number');
+                const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('number');
                 if (!pipe) throw missingPropPipeError(prop, target);
                 return pipe.transform(value, prop.precision);
             }
@@ -216,7 +216,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
             resolve: (prop, ctx, args, target) => {
                 const value = args[prop.propertyKey] ?? prop.default;
                 if (isNil(value)) return null;
-                const pipe = ctx.injector.get<PipeTransform>(prop.dbtype!) ?? ctx.injector.get<PipeTransform>('string');
+                const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('string');
                 if (!pipe) throw missingPropPipeError(prop, target);
                 return pipe.transform(value, prop.length);
             }
@@ -226,7 +226,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
             resolve: (prop, ctx, args, target) => {
                 const value = args[prop.propertyKey] ?? prop.default;
                 if (isNil(value)) return null;
-                const pipe = ctx.injector.get<PipeTransform>(prop.dbtype!) ?? ctx.injector.get<PipeTransform>('json');
+                const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('json');
                 if (!pipe) throw missingPropPipeError(prop, target);
                 return pipe.transform(value);
             }
@@ -248,7 +248,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
                     pipeName = 'clob';
                 }
 
-                const pipe = ctx.injector.get<PipeTransform>(dbtype) ?? ctx.injector.get<PipeTransform>(pipeName || 'buffer');
+                const pipe = ctx.get<PipeTransform>(dbtype) ?? ctx.get<PipeTransform>(pipeName || 'buffer');
                 if (!pipe) throw missingPropPipeError(prop, target);
                 return pipe.transform(value);
             }
@@ -258,7 +258,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
             resolve: (prop, ctx, args, target) => {
                 const value = args[prop.propertyKey] ?? prop.default;
                 if (isNil(value)) return null;
-                const pipe = ctx.injector.get<PipeTransform>(prop.dbtype!) ?? ctx.injector.get<PipeTransform>('date');
+                const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('date');
                 if (!pipe) throw missingPropPipeError(prop, target);
                 return pipe.transform(value);
             }
@@ -269,7 +269,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
         resolve: (prop, ctx, args, target) => {
             const value = args[prop.propertyKey] ?? prop.default;
             if (isNil(value)) return null;
-            const pipe = ctx.injector.get<PipeTransform>((prop.provider ?? prop.type)?.name.toLowerCase());
+            const pipe = ctx.get<PipeTransform>((prop.provider ?? prop.type)?.name.toLowerCase());
             if (!pipe) throw missingPropPipeError(prop, target);
             return pipe.transform(value);
         }
