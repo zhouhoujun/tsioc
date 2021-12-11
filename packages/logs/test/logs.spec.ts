@@ -48,7 +48,7 @@ class MethodTest2 {
 
     }
 
-    @Logger('Hanmm', 'it is test mesasge, for MethodTest2 sayHello invoked.')
+    @Logger('it is test mesasge, for MethodTest2 sayHello invoked.', 'Hanmm')
     sayHello(@Inject(Child) person: Person) {
         console.log(person.say());
         return person.say();
@@ -67,7 +67,7 @@ class MethodTest3 {
     }
 
     @Autowired()
-    @Logger('Test3', 'it is test mesasge, for MethodTest3 sayHello invoked.')
+    @Logger('it is test mesasge, for MethodTest3 sayHello invoked.', 'Test3')
     sayHello(@Inject(Child) personA: Person, personB: Person) {
         return personA.say() + ', ' + personB.say();
     }

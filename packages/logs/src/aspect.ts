@@ -31,7 +31,7 @@ export abstract class LoggerAspect extends LogProcess {
                 let canlog = logmeta.express? logmeta.express(joinPoint) : true;
                 if (canlog && logmeta.message) {
                     this.writeLog(
-                        logmeta.logname ? this.logManger.getLogger(logmeta.logname) : this.logger,
+                        this.getLogger(logmeta.logname),
                         joinPoint,
                         logmeta.level || level,
                         false,
@@ -54,7 +54,7 @@ export abstract class LoggerAspect extends LogProcess {
 
     protected writeLog(logger: ILogger, joinPoint: Joinpoint, level: Level, format: boolean, ...messages: any[]) {
         (async () => {
-            let formatMsgs = format ? this.formatMessage(joinPoint, ...messages) : messages;
+            let formatMsgs = format ? this.formatMessage(joinPoint, logger, level, ...messages) : messages;
             if (level) {
                 logger[level](...formatMsgs);
             } else {
@@ -78,7 +78,7 @@ export abstract class LoggerAspect extends LogProcess {
 
     protected formatTimestamp(formater: ILogFormater): any {
         let now = new Date();
-        return (formater && formater.timestamp) ? formater.timestamp(now) : `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()} ${now.getMilliseconds()}`;
+        return (formater && formater.timestamp) ? formater.timestamp(now) : `[${now.toISOString()}]`;
     }
 
     private _formater!: ILogFormater;
@@ -99,12 +99,17 @@ export abstract class LoggerAspect extends LogProcess {
         return this._formater;
     }
 
-    protected formatMessage(joinPoint: Joinpoint, ...messages: any[]): any[] {
+    protected formatMessage(joinPoint: Joinpoint, logger: ILogger, level: Level, ...messages: any[]): any[] {
         let formater = this.getFormater();
         if (formater) {
             messages = formater.format(joinPoint, ...messages);
         }
-
+        if(logger.name){
+            messages.unshift(logger.name + ' -')
+        }
+        if(level){
+            messages.unshift(`[${level.toUpperCase()}]`)
+        }
         let timestamp = this.formatTimestamp(formater);
         timestamp && messages.unshift(timestamp);
 

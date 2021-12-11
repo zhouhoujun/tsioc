@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { NonePointcut } from '@tsdi/aop';
-import { LoggerManager, ILogger } from '@tsdi/logs';
+import { LoggerManager, ILogger, LoggerConfig } from '@tsdi/logs';
 import * as log4js from 'log4js';
 
 /**
@@ -17,7 +17,7 @@ export class Log4jsAdapter implements LoggerManager {
         }
         return this._log4js;
     }
-    configure(config: any) {
+    configure(config: LoggerConfig) {
         this.getLog4js().configure(config);
     }
     getLogger(name?: string): ILogger {

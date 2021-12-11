@@ -14,13 +14,13 @@ import { LoggerManager } from './LoggerManager';
 @Abstract()
 export abstract class LogProcess {
     static ρNPT = true;
-    
+
     @Logger() logger!: ILogger;
     @Inject(ConfigureLoggerManager) logManger!: LoggerManager;
     @Inject() protected injector!: Injector
 
-    protected getLogger(): ILogger {
-        return this.logManger.getLogger();
+    protected getLogger(name?: string): ILogger {
+        return name ? this.logManger.getLogger(name) : this.logger;
     }
 
     abstract processLog(joinPoint: Joinpoint, ...messages: any[]): void;

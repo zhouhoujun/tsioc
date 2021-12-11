@@ -5,7 +5,10 @@
  * @interface ILogger
  */
 export interface ILogger {
-
+    /**
+     * logger name.
+     */
+    readonly name?: string;
     /**
      * logger level
      *

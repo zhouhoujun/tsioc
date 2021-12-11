@@ -40,7 +40,7 @@ export class LogFormater implements ILogFormater {
     constructor() { }
 
     timestamp(time: Date): any {
-        return `[${time.getHours()}:${time.getMinutes()}:${time.getSeconds()} ${time.getMilliseconds()}]`;
+        return `[${time.toISOString()}]`;
     }
 
     format(joinPoint: Joinpoint, ...messages: any[]): any[] {

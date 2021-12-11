@@ -97,7 +97,8 @@ describe('di module', () => {
         });
         let ser = ctx.injector.get(SocketService);
         expect(ser).toBeInstanceOf(SocketService);
-        expect(ser.tcpServer).toBeInstanceOf(net.Server)
+        expect(ser.tcpServer).toBeInstanceOf(net.Server);
+        expect(ctx.destroyed).toBeFalsy();
         await ctx.destroy();
         expect(ctx.destroyed).toBeTruthy();
     });
@@ -119,7 +120,9 @@ describe('di module', () => {
         let tsr = ctx.injector.get(TestService);
         expect(tsr).toBeInstanceOf(TestService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server);
+        expect(ctx.destroyed).toBeFalsy();
         await ctx.destroy();
+        expect(ctx.destroyed).toBeTruthy();
     })
 
 });

@@ -1,11 +1,11 @@
 import 'reflect-metadata';
 import { isUndefined, isNumber, isMetadataObject, isString } from '../utils/chk';
 import { AbstractMetadata, ClassMetadata, ParameterMetadata, PatternMetadata, PropertyMetadata } from './meta';
-import { Type } from '../types';
 import { getToken, Token } from '../tokens';
 import { DecoratorOption } from './refl';
 import * as refl from './refl';
 import { Decors, ActionTypes } from './type';
+import { Type } from '../types';
 
 /**
  * create dectorator for class params props methods.
@@ -103,11 +103,26 @@ export interface IClassDecorator {
     (provide: Token, alias: string, pattern?: PatternMetadata): ClassDecorator;
 }
 
+/**
+ * class method decorator.
+ */
 export type ClassMethodDecorator = (target: Object | Type, propertyKey?: string | symbol, descriptor?: TypedPropertyDescriptor<any>) => void;
 
+/**
+ * method property decorator.
+ */
 export type MethodPropDecorator = (target: Object, propertyKey: string | symbol, descriptor?: TypedPropertyDescriptor<any>) => void;
 
+/**
+ * property parameter decorator.
+ */
+export type PropParamDecorator = (target: Object, propertyKey: string | symbol, parameterIndex?: number | TypedPropertyDescriptor<any>) => void;
+
+/**
+ * method property parameter decorator.
+ */
 export type MethodPropParamDecorator = (target: Object, propertyKey: string | symbol, descriptor?: number | TypedPropertyDescriptor<any>) => void;
+
 
 /**
  * create parameter decorator.
@@ -131,11 +146,6 @@ export function createParamDecorator<T = ParameterMetadata>(name: string, option
         ...options
     });
 }
-
-/**
- * property parameter decorator.
- */
-export type PropParamDecorator = (target: Object, propertyKey: string | symbol, parameterIndex?: number | TypedPropertyDescriptor<any>) => void;
 
 
 /**

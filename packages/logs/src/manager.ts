@@ -66,12 +66,13 @@ export class ConfigureLoggerManager implements LoggerManager {
             if (cfg.config) {
                 this._logManger.configure(cfg.config);
             }
+
         }
         return this._logManger;
     }
 
 
-    configure(config: any) {
+    configure(config: LoggerConfig) {
         this.logManger.configure(config);
     }
 
@@ -89,7 +90,7 @@ export class ConfigureLoggerManager implements LoggerManager {
  * @extends {LoggerConfig}
  */
 export interface ConsoleLoggerConfig extends LoggerConfig {
-    level?: string;
+    level?: Level;
 }
 
 /**
@@ -99,22 +100,20 @@ export interface ConsoleLoggerConfig extends LoggerConfig {
  * @class ConsoleLogManager
  * @implements {ILoggerManager}
  */
-@Singleton()
 @Injectable(LoggerManager, 'console')
 export class ConsoleLogManager implements LoggerManager {
     static ρNPT = true;
+    private config: ConsoleLoggerConfig | undefined;
 
-    private logger: ILogger;
     constructor() {
-        this.logger = new ConsoleLog();
     }
+
     configure(config: ConsoleLoggerConfig) {
-        if (config && config.level) {
-            this.logger.level = config.level;
-        }
+        this.config = config;
     }
+
     getLogger(name?: string): ILogger {
-        return this.logger;
+        return new ConsoleLog(name, this.config?.level);
     }
 
 }
@@ -126,8 +125,11 @@ export class ConsoleLogManager implements LoggerManager {
  * @implements {ILogger}
  */
 class ConsoleLog implements ILogger {
+    static ρNPT = true;
 
-    level: Level = 'info';
+    constructor(readonly name?: string, public level: Level = 'info') {
+
+    }
 
     protected machLevel(level: Levels): boolean {
         return (Levels as any)[this.level] <= level;
@@ -155,7 +157,7 @@ class ConsoleLog implements ILogger {
     }
     warn(...args: any[]): void {
         if (this.machLevel(Levels.warn)) {
-            console.warn(...args);
+            console.warn(this.name, ...args);
         }
     }
     error(...args: any[]): void {
@@ -165,7 +167,7 @@ class ConsoleLog implements ILogger {
     }
     fatal(...args: any[]): void {
         if (this.machLevel(Levels.fatal)) {
-            console.error(...args);
+            console.error(this.name, ...args);
         }
     }
 }

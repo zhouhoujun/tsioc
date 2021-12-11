@@ -2,6 +2,8 @@ import { Singleton } from '@tsdi/ioc';
 import { Aspect, Around, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LoggerAspect } from '../aspect';
 import { Level } from '../Level';
+import { ILogger } from '../ILogger';
+import { Logger } from '../metadata/Logger';
 
 /**
  * debug log aspect.
@@ -13,6 +15,8 @@ import { Level } from '../Level';
 @Singleton()
 @Aspect()
 export class DebugLogAspect extends LoggerAspect {
+
+    @Logger({ level: 'trace' }) logger!: ILogger;
 
     @Around('execution(*.*)')
     logging(joinPoint: Joinpoint) {

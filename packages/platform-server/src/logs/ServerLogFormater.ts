@@ -10,7 +10,7 @@ import * as chalk from 'chalk';
 export class ServerLogFormater implements ILogFormater {
 
     timestamp(time: Date): any {
-        return '[' + chalk.gray(`${time.getHours()}:${time.getMinutes()}:${time.getSeconds()} ${time.getMilliseconds()}`) + ']'
+        return `[${time.toISOString()}]`
     }
 
     format(joinPoint: Joinpoint, ...messages: any[]): any[] {

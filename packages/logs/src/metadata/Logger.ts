@@ -2,6 +2,7 @@ import {
     TypeMetadata, ClassMethodDecorator, isFunction, createDecorator, EMPTY_OBJ,
     OperationArgumentResolver, Type, isString, lang, PropParamDecorator, ArgumentError, Decors, ActionTypes
 } from '@tsdi/ioc';
+import { LoggerConfig } from '..';
 import { isLevel, Level } from '../Level';
 import { ConfigureLoggerManager } from '../manager';
 
@@ -23,7 +24,10 @@ export interface LoggerMetadata extends TypeMetadata {
 
     paramName?: string;
     propertyKey?: string;
-
+    /**
+     * logger config.
+     */
+    config?: LoggerConfig;
     resolver?: OperationArgumentResolver;
 
     /**
@@ -59,36 +63,60 @@ export interface Logger<T extends LoggerMetadata> {
      * @Logger
      *
      * @param {string} name the logger name.  Default current class name.
+     * @param options the logger options.
      */
     (name?: string | Type): PropParamDecorator;
+    /**
+     * inject logger for property or parameter with the name in {@link ILoggerManager}.
+     * @Logger
+     *
+     * @param options the logger options.
+     */
+    (options: {
+        /**
+         * {string} name the logger name.  Default current class name.
+         */
+        logname?: string | Type,
+        /**
+         * [level] set the logger level.
+         */
+        level?: Level;
+        /**
+         * logger config.
+         */
+        config?: Record<string, any>;
+    }): PropParamDecorator;
 
     /**
      * define logger annotation pointcut to this class or method.
      * @Logger
      *
      * @param {string} message set special message to logging.
+     * @param {string} logname use the logger with name.  Default current class name.
      * @param {Level} [level] set log level to this message.
      */
-    (message: string, level: Level): ClassMethodDecorator;
+    (message: string, logname: string, level?: Level): MethodDecorator;
     /**
      * define logger annotation pointcut to this class or method.
      * @Logger
      *
-     * @param {string} logname set the special name to get logger from logger manager.
      * @param {string} message set special message to logging.
      * @param {Level} [level] set log level to this message.
      */
-    (logname: string, message: string, level?: Level): ClassMethodDecorator;
-    /**
-     * define logger annotation pointcut to this class or method.
-     * @Logger
-     *
-     * @param {string} logname set the special name to get logger from logger manager.
-     * @param {express: (item: any) => boolean} express only match express condition can do logging.
-     * @param {string} message set special message to logging.
-     * @param {Level} [level] set log level to this message.
-     */
-    (logname: string, express: (item: any) => boolean, message: string, level?: Level): ClassMethodDecorator;
+    (message: string, options: {
+        /**
+         * use the logger with name.  Default current class name.
+         */
+        logname?: string | Type,
+        /**
+         * set log level to this message.
+         */
+        level?: Level;
+        /**
+         * express only match express condition can do logging.
+         */
+        express?: (item: any) => boolean;
+    }): MethodDecorator;
 
 }
 
@@ -107,7 +135,19 @@ const loggerResolver = {
         }
         return !!pr.logname;
     },
-    resolve: (pr: LoggerMetadata, ctx) => ctx.get(ConfigureLoggerManager).getLogger(pr.logname)
+    resolve: (pr: LoggerMetadata, ctx) => {
+        const loggerManager = ctx.get(ConfigureLoggerManager);
+        let level = pr.level;
+        if (pr.config) {
+            if (!level) {
+                level = pr.config.level;
+            }
+            loggerManager.configure(pr.config);
+        }
+        const logger = loggerManager.getLogger(pr.logname);
+        if (level) logger.level = level;
+        return logger;
+    }
 } as OperationArgumentResolver;
 
 
@@ -135,21 +175,13 @@ export const Logger: Logger<LoggerMetadata> = createDecorator<LoggerMetadata>('L
                 logname,
                 resolver: loggerResolver
             };
-        } else if (args.length === 2) {
-            const [arg1, arg2] = args;
-            if (isLevel(arg2)) {
-                return { message: arg1, level: arg2 }
+        } else if (args.length >= 2) {
+            const [message, logname, level] = args;
+            if (isString(logname)) {
+                return { message, logname, level };
             } else {
-                return { logname: arg1, message: arg2 }
+                return { message, ...logname };
             }
-        } else if (args.length > 2) {
-            const [arg1, arg2, arg3, arg4] = args;
-            if (isFunction(arg2)) {
-                return { logname: arg1, express: arg2, message: arg3, level: arg4 };
-            } else {
-                return { logname: arg1, message: arg2, level: arg3 }
-            }
-
         }
         return EMPTY_OBJ;
     }
