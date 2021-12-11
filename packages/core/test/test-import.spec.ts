@@ -1,14 +1,12 @@
 import { ModuleA, ModuleB, ClassSevice, SubMessageQueue, SocketService, StatupModule, TestService } from './demo';
-import { Application  } from '../src';
+import { Application } from '../src';
 import expect = require('expect');
 import * as net from 'net';
-import { ConfigureLoggerManager } from '@tsdi/logs';
 
 
 describe('di module', () => {
 
     it('should has bootstrap, and auto wrid mark via inject.', async () => {
-        try {
         let ctx = await Application.run(ModuleB);
         expect(ctx.instance).not.toBeNull();
         expect(ctx.bootstraps[0]).not.toBeNull();
@@ -19,10 +17,8 @@ describe('di module', () => {
         // console.log(runner.instance);
         expect(runner.mark).toEqual('marked');
         // expect(md.state).eq('started');
-        ctx.destroy();
-        } catch (err) {
-            console.log(err);
-        }
+        await ctx.destroy();
+
     });
 
 
@@ -43,11 +39,11 @@ describe('di module', () => {
         expect(qb['handles'].length).toEqual(1);
         // has no parent.
         expect(ctx.getMessager().has(SubMessageQueue)).toBeFalsy();
-        const rep = await qb.send('test', { query: {hi: 'hello'} });
+        const rep = await qb.send('test', { query: { hi: 'hello' } });
         expect(rep.body).toEqual('hello');
         expect(rep.status).toEqual(200);
 
-        ctx.destroy();
+        await ctx.destroy();
     });
 
     it('options test.', async () => {
@@ -63,7 +59,7 @@ describe('di module', () => {
 
         expect(ctx.bootstraps[0]).toBeInstanceOf(ClassSevice);
         expect(ctx.injector.get('ttk')).toEqual('ccc');
-        ctx.destroy();
+        await ctx.destroy();
     });
 
 
@@ -79,7 +75,7 @@ describe('di module', () => {
         let ser = ctx.injector.get(SocketService);
         expect(ser).toBeInstanceOf(SocketService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server);
-        ctx.destroy();
+        await ctx.destroy();
         expect(ctx.destroyed).toBeTruthy();
     });
 
@@ -88,7 +84,7 @@ describe('di module', () => {
         let ser = ctx.injector.get(SocketService);
         expect(ser).toBeInstanceOf(SocketService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server);
-        ctx.destroy();
+        await ctx.destroy();
         expect(ctx.destroyed).toBeTruthy();
     });
 
@@ -102,7 +98,7 @@ describe('di module', () => {
         let ser = ctx.injector.get(SocketService);
         expect(ser).toBeInstanceOf(SocketService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server)
-        ctx.destroy();
+        await ctx.destroy();
         expect(ctx.destroyed).toBeTruthy();
     });
 
@@ -123,7 +119,7 @@ describe('di module', () => {
         let tsr = ctx.injector.get(TestService);
         expect(tsr).toBeInstanceOf(TestService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server);
-        ctx.destroy();
+        await ctx.destroy();
     })
 
 });

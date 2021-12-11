@@ -212,15 +212,20 @@ function runAdvicers(ctx: Joinpoint, invoker: (joinPoint: Joinpoint, advicer: Ad
         if (!ctx.returningDefer) {
             ctx.returningDefer = lang.defer();
         }
-        return lang.step(advicers.map(a => () => invoker(ctx, a)))
-            .then(() => {
-                next();
+        return Promise.all(advicers.map(a => invoker(ctx, a)))
+            .then(() => next())
+            .catch(err => {
+                ctx.throwing = err;
             });
     } else {
-        advicers.forEach(advicer => {
-            invoker(ctx, advicer);
-        });
-        next();
+        try {
+            advicers.forEach(advicer => {
+                invoker(ctx, advicer);
+            });
+            return next();
+        } catch (err) {
+            ctx.throwing = err;
+        }
     }
 }
 
@@ -323,37 +328,38 @@ export const AfterReturningAdvicesAction = function (ctx: Joinpoint, next: () =>
     if (ctx.throwing) {
         return next();
     }
-    if (!isNil(ctx.returning)) {
-        ctx.state = JoinpointState.AfterReturning;
-        const invoker = ctx.invokeHandle;
-        const isAsync = isPromise(ctx.returning);
-        if (isAsync && !ctx.returningDefer) {
-            ctx.returningDefer = lang.defer();
-        }
 
-        chain<Joinpoint, any>([
-            (ctx, rnext) => isAsync ?
-                (ctx.returning as Promise<any>).then(val => {
-                    const orgReturning = ctx.returning;
-                    return (rnext() as Promise<any>)
-                        .then(() => {
-                            if (orgReturning !== ctx.returning) {
-                                return ctx.returning;
-                            }
-                            return val;
-                        })
-                        .then(r => {
-                            ctx.returningDefer?.resolve(r)
-                        })
-                }).catch(err => {
-                    ctx.throwing = err;
-                    next();
-                }) : (ctx.returningDefer?.resolve(ctx.returning), rnext())
-            ,
-            (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.asyncAround || isAsync),
-            (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.AfterReturning, anext, ctx.advices.asyncAfterReturning || isAsync)
-        ], ctx);
+    ctx.state = JoinpointState.AfterReturning;
+    const invoker = ctx.invokeHandle;
+    const isAsync = isPromise(ctx.returning);
+    if (isAsync && !ctx.returningDefer) {
+        ctx.returningDefer = lang.defer();
     }
+
+    chain<Joinpoint, any>([
+        (ctx, rnext) => isAsync ?
+            (ctx.returning as Promise<any>).then(async val => {
+                const orgReturning = ctx.returning;
+                return (rnext() as Promise<any>)
+                    .then(() => {
+                        if (orgReturning !== ctx.returning) {
+                            return ctx.returning;
+                        }
+                        return val;
+                    })
+                    .then(r => {
+                        ctx.returningDefer?.resolve(r)
+                    })
+            }).catch(err => {
+                ctx.throwing = err;
+                next();
+            }) : rnext()
+        ,
+        (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.asyncAround || isAsync),
+        (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.AfterReturning, anext, ctx.advices.asyncAfterReturning || isAsync),
+        (ctx, anext) => isAsync ? anext() : ctx.returningDefer?.resolve(ctx.returning)
+    ], ctx);
+
 }
 
 export const AfterThrowingAdvicesAction = function (ctx: Joinpoint, next: () => void): void {
