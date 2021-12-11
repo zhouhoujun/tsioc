@@ -1,49 +1,42 @@
-import { Singleton, Token, tokenId } from '@tsdi/ioc';
+import { Abstract, Singleton, Token } from '@tsdi/ioc';
 import { Joinpoint, JoinpointState, NonePointcut } from '@tsdi/aop';
+import { Level } from './Level';
+import { ILogger } from './ILogger';
 
 
-/**
- * Log formater interface token.
- * it is a token id, you can register yourself formater for log.
- */
-export const LogFormaterToken: Token<ILogFormater> = tokenId<ILogFormater>('DI_LogFormater');
 
 /**
  * log formater logs
- *
- * @export
- * @interface ILogFormater
  */
-export interface ILogFormater {
+@Abstract()
+export abstract class LogFormater {
     /**
      * format message.
      *
-     * @param {Joinpoint} [joinPoint]
+     * @param {Joinpoint} joinPoint
+     * @param {Level} level
+     * @param {ILogger} logger
      * @param {...any[]} messages
      * @returns {string}
      */
-    format(joinPoint: Joinpoint, ...messages: any[]): any[];
-
-    timestamp?(time: Date): any;
+    abstract format(joinPoint: Joinpoint, level: Level, logger: ILogger, ...messages: any[]): any[];
 }
 
 /**
  * log formater
  */
-export type LOGFormater = ILogFormater | Token<ILogFormater> | ((joinPoint?: Joinpoint, ...messages: any[]) => any[]) | string;
+export type LOGFormater = LogFormater | Token<LogFormater> | ((joinPoint?: Joinpoint, ...messages: any[]) => any[]) | string;
 
 
 @NonePointcut()
-@Singleton(LogFormaterToken)
-export class LogFormater implements ILogFormater {
+@Singleton()
+export class DefaultLogFormater extends LogFormater {
 
-    constructor() { }
-
-    timestamp(time: Date): any {
+    protected timestamp(time: Date): any {
         return `[${time.toISOString()}]`;
     }
 
-    format(joinPoint: Joinpoint, ...messages: any[]): any[] {
+    format(joinPoint: Joinpoint, level: Level, logger: ILogger, ...messages: any[]): any[] {
         switch (joinPoint.state) {
             case JoinpointState.Before:
             case JoinpointState.Pointcut:
@@ -77,6 +70,14 @@ export class LogFormater implements ILogFormater {
                 break;
             default:
                 break;
+        }
+        if (logger.formatHeader) {
+            messages.unshift((logger.name || 'default') + ' -')
+            if (level) {
+                messages.unshift(`[${level.toUpperCase()}]`)
+            }
+            let timestamp = this.timestamp(new Date());
+            if (timestamp) messages.unshift(timestamp);
         }
         return messages;
     }

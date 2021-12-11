@@ -127,6 +127,8 @@ export class ConsoleLogManager implements LoggerManager {
 class ConsoleLog implements ILogger {
     static ρNPT = true;
 
+    formatHeader = true;
+
     constructor(readonly name?: string, public level: Level = 'info') {
 
     }

@@ -4,7 +4,7 @@ import { LoggerMetadata } from './metadata/Logger';
 import { isLevel, Level } from './Level';
 import { ILogger } from './ILogger';
 import { LogProcess } from './LogProcess';
-import { ILogFormater, LogFormaterToken } from './formater';
+import { LogFormater, DefaultLogFormater } from './formater';
 import { LogConfigure } from './LogConfigure';
 import { ConfigureLoggerManager } from './manager';
 
@@ -28,7 +28,7 @@ export abstract class LoggerAspect extends LogProcess {
                 !isNil(level) && messages.unshift(level);
             }
             annotation.forEach((logmeta: LoggerMetadata) => {
-                let canlog = logmeta.express? logmeta.express(joinPoint) : true;
+                let canlog = logmeta.express ? logmeta.express(joinPoint) : true;
                 if (canlog && logmeta.message) {
                     this.writeLog(
                         this.getLogger(logmeta.logname),
@@ -76,23 +76,23 @@ export abstract class LoggerAspect extends LogProcess {
         })();
     }
 
-    protected formatTimestamp(formater: ILogFormater): any {
+    protected formatTimestamp(): any {
         let now = new Date();
-        return (formater && formater.timestamp) ? formater.timestamp(now) : `[${now.toISOString()}]`;
+        return `[${now.toISOString()}]`;
     }
 
-    private _formater!: ILogFormater;
+    private _formater: LogFormater | undefined;
     getFormater() {
         if (!this._formater) {
             let config = (this.logManger as ConfigureLoggerManager).config || (EMPTY_OBJ as LogConfigure);
-            let formater: ILogFormater = null!;
-            config.format = config.format || LogFormaterToken;
-            if (isToken(config.format)) {
-                formater = this.injector.resolve({ token: config.format, target: this, defaultToken: LogFormaterToken });
-            } else if (isFunction(config.format)) {
-                formater = { format: config.format };
-            } else if (isObject(config.format) && isFunction(config.format.format)) {
-                formater = config.format;
+            let formater: LogFormater | undefined;
+            const format = config.format || LogFormater;
+            if (isToken(format)) {
+                formater = this.injector.resolve({ token: format, target: this, defaultToken: DefaultLogFormater });
+            } else if (isFunction(format)) {
+                formater = { format } as LogFormater;
+            } else if (isObject(format) && isFunction(format.format)) {
+                formater = format;
             }
             this._formater = formater;
         }
@@ -102,16 +102,15 @@ export abstract class LoggerAspect extends LogProcess {
     protected formatMessage(joinPoint: Joinpoint, logger: ILogger, level: Level, ...messages: any[]): any[] {
         let formater = this.getFormater();
         if (formater) {
-            messages = formater.format(joinPoint, ...messages);
+            messages = formater.format(joinPoint, level, logger, ...messages);
+        } else {
+            messages.unshift((logger.name ?? 'default') + ' -')
+            if (level) {
+                messages.unshift(`[${level.toUpperCase()}]`)
+            }
+            let timestamp = this.formatTimestamp();
+            if (timestamp) messages.unshift(timestamp);
         }
-        if(logger.name){
-            messages.unshift(logger.name + ' -')
-        }
-        if(level){
-            messages.unshift(`[${level.toUpperCase()}]`)
-        }
-        let timestamp = this.formatTimestamp(formater);
-        timestamp && messages.unshift(timestamp);
 
         return messages;
     }

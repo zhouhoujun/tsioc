@@ -2,6 +2,7 @@ import { ModuleA, ModuleB, ClassSevice, SubMessageQueue, SocketService, StatupMo
 import { Application } from '../src';
 import expect = require('expect');
 import * as net from 'net';
+import { ServerLogsModule } from '@tsdi/platform-server';
 
 
 describe('di module', () => {
@@ -93,6 +94,9 @@ describe('di module', () => {
             type: StatupModule,
             configures: [
                 { debug: true }
+            ],
+            deps:[
+                ServerLogsModule
             ]
         });
         let ser = ctx.injector.get(SocketService);

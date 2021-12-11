@@ -1,19 +1,19 @@
 import { Singleton, Refs } from '@tsdi/ioc';
 import { Joinpoint, JoinpointState, NonePointcut } from '@tsdi/aop';
-import { LoggerAspect, LogFormaterToken, ILogFormater } from '@tsdi/logs';
+import { LoggerAspect, LogFormater, Level, ILogger } from '@tsdi/logs';
 import * as chalk from 'chalk';
 
 
 @NonePointcut()
 @Singleton()
-@Refs(LoggerAspect, LogFormaterToken)
-export class ServerLogFormater implements ILogFormater {
+@Refs(LoggerAspect, LogFormater)
+export class ServerLogFormater extends LogFormater {
 
     timestamp(time: Date): any {
-        return `[${time.toISOString()}]`
+        return chalk.green(`[${time.toISOString()}]`)
     }
 
-    format(joinPoint: Joinpoint, ...messages: any[]): any[] {
+    format(joinPoint: Joinpoint, level: Level, logger: ILogger, ...messages: any[]): any[] {
 
         switch (joinPoint.state) {
             case JoinpointState.Before:
@@ -48,6 +48,14 @@ export class ServerLogFormater implements ILogFormater {
                 break;
             default:
                 break;
+        }
+        if (logger.formatHeader) {
+            messages.unshift(chalk.green((logger.name || 'default') + ' -'));
+            if (level) {
+                messages.unshift(chalk.green(`[${level.toUpperCase()}]`));
+            }
+            let timestamp = this.timestamp(new Date());
+            if (timestamp) messages.unshift(timestamp);
         }
         return messages;
     }

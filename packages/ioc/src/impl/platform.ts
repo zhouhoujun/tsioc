@@ -145,10 +145,15 @@ export class DefaultPlatform implements Platform {
      * @param type
      */
     getTypeProvider(type: ClassType | TypeReflect) {
-        if (isFunction(type)) {
-            return this._pdrs.has(type) ? [...get(type)?.class.providers, ...this._pdrs.get(type) || EMPTY] : get(type)?.class.providers;
-        }
-        return this._pdrs.has(type.type) ? [...type.class.providers, ...this._pdrs.get(type.type) || EMPTY] : type.class.providers;
+        const tyRef = isFunction(type) ? get(type) : type;
+        const pdrs = tyRef.class.providers.slice(0);
+        tyRef.class.extendTypes.forEach(t => {
+            let tpd = this._pdrs.get(t);
+            if (tpd) {
+                pdrs.push(...tpd);
+            }
+        })
+        return pdrs;
     }
 
     /**

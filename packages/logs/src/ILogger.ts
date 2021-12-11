@@ -16,6 +16,8 @@ export interface ILogger {
      */
     level: string;
 
+    formatHeader?: boolean;
+
     /**
      * log, base log.
      *
