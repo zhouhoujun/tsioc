@@ -1,9 +1,10 @@
 import {
-    TypeMetadata, ClassMethodDecorator, isFunction, createDecorator, EMPTY_OBJ,
-    OperationArgumentResolver, Type, isString, lang, PropParamDecorator, ArgumentError, Decors, ActionTypes
+    TypeMetadata, createDecorator, EMPTY_OBJ, OperationArgumentResolver, Type, isString,
+    lang, PropParamDecorator, ArgumentError, Decors, ActionTypes
 } from '@tsdi/ioc';
-import { LoggerConfig } from '..';
-import { isLevel, Level } from '../Level';
+import { LoggerManager, LOGGER_MANAGER } from '..';
+import { Level } from '../Level';
+import { LoggerConfig } from '../LoggerManager';
 import { ConfigureLoggerManager } from '../manager';
 
 
@@ -136,13 +137,16 @@ const loggerResolver = {
         return !!pr.logname;
     },
     resolve: (pr: LoggerMetadata, ctx) => {
-        const loggerManager = ctx.get(ConfigureLoggerManager);
+        let loggerManager: LoggerManager;
         let level = pr.level;
         if (pr.config) {
+            loggerManager = ctx.get(ConfigureLoggerManager);
             if (!level) {
                 level = pr.config.level;
             }
             loggerManager.configure(pr.config);
+        } else {
+            loggerManager = ctx.get(LOGGER_MANAGER) ?? ctx.get(ConfigureLoggerManager)
         }
         const logger = loggerManager.getLogger(pr.logname);
         if (level) logger.level = level;

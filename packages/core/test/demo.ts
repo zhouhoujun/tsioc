@@ -114,12 +114,10 @@ export class SocketService implements StartupService, Disposable {
     @Logger() logger!: ILogger;
 
     public tcpServer!: net.Server;
-    private context!: ApplicationContext;
     private init_times = 0;
 
     async configureService(ctx: ApplicationContext): Promise<void> {
-        this.logger.log('SocketService init...')
-        this.context = ctx;
+        this.logger.log('SocketService init...');
         const tcpServer = this.tcpServer = new net.Server();
         tcpServer.listen(8801);
         this.init_times++;

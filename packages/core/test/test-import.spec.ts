@@ -89,25 +89,6 @@ describe('di module', () => {
         expect(ctx.destroyed).toBeTruthy();
     });
 
-    it('can statup socket service in module with option', async () => {
-        let ctx = await Application.run({
-            type: StatupModule,
-            configures: [
-                { debug: true }
-            ],
-            deps:[
-                ServerLogsModule
-            ]
-        });
-        let ser = ctx.injector.get(SocketService);
-        expect(ser).toBeInstanceOf(SocketService);
-        expect(ser.tcpServer).toBeInstanceOf(net.Server);
-        expect(ctx.destroyed).toBeFalsy();
-        await ctx.destroy();
-        expect(ctx.destroyed).toBeTruthy();
-    });
-
-
     it('can get service via module deps with option', async () => {
         let ctx = await Application.run({
             type: StatupModule,
@@ -127,7 +108,25 @@ describe('di module', () => {
         expect(ctx.destroyed).toBeFalsy();
         await ctx.destroy();
         expect(ctx.destroyed).toBeTruthy();
-    })
+    });
+
+    it('can statup socket service in module with option', async () => {
+        let ctx = await Application.run({
+            type: StatupModule,
+            configures: [
+                { debug: true }
+            ],
+            deps:[
+                ServerLogsModule
+            ]
+        });
+        let ser = ctx.injector.get(SocketService);
+        expect(ser).toBeInstanceOf(SocketService);
+        expect(ser.tcpServer).toBeInstanceOf(net.Server);
+        expect(ctx.destroyed).toBeFalsy();
+        await ctx.destroy();
+        expect(ctx.destroyed).toBeTruthy();
+    });
 
 });
 

@@ -1,4 +1,4 @@
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, tokenId } from '@tsdi/ioc';
 import { ILogger } from './ILogger';
 
 /**
@@ -31,3 +31,8 @@ export abstract class LoggerManager {
     abstract getLogger(name?: string): ILogger
 }
 
+
+/**
+ * global default configuration.
+ */
+export const LOGGER_MANAGER = tokenId<LoggerManager>('LOGGER_MANAGER');
