@@ -1,4 +1,5 @@
-import { ObjectMap, isObject, isFunction, isObservable } from '@tsdi/ioc';
+import { ObjectMap, isObject, isFunction } from '@tsdi/ioc';
+import { isObservable } from 'rxjs';
 import { Stream } from 'stream';
 
 /**

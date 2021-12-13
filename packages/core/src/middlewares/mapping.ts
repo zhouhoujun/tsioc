@@ -2,8 +2,9 @@ import {
     AsyncHandler, DecorDefine, Type, TypeReflect, Injector, lang, chain,
     isPrimitiveType, isPromise, isString, isArray, isFunction, isDefined,
     composeResolver, Parameter, EMPTY, ClassType, isResolver, ArgumentError,
-    InvocationContext, OperationFactoryResolver, DestroyCallback, ReflectiveRef
+    InvocationContext, OperationFactoryResolver, DestroyCallback, ReflectiveRef, ObservableParser
 } from '@tsdi/ioc';
+import { EmptyError, isObservable, Observable } from 'rxjs';
 import { MODEL_RESOLVERS } from '../model/resolver';
 import { PipeTransform } from '../pipes/pipe';
 import { Context } from './context';
@@ -12,6 +13,8 @@ import { AbstractRouter, isMiddlware, MiddlewareType, Route } from './middleware
 import { TrasportArgumentResolver, TrasportParameter } from './resolver';
 import { ResultValue } from './result';
 import { AbstractRoute } from './route';
+
+
 
 /**
  * route mapping metadata.
@@ -148,8 +151,12 @@ export class RouteMappingRef<T> extends AbstractRoute {
                 ]
             });
 
+            const parser = injector.get(ObservableParser);
+
             if (isPromise(result)) {
                 result = await result;
+            } else if (parser && isObservable(result)) {
+                result = await parser.parse(result);
             }
 
             // middleware.

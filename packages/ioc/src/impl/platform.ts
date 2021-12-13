@@ -1,7 +1,7 @@
 import { Token } from '../tokens';
 import { ClassType, Type } from '../types';
 import { Handler } from '../utils/hdl';
-import { EMPTY, isFunction } from '../utils/chk';
+import { isFunction } from '../utils/chk';
 import { Action, IActionSetup } from '../action';
 import { get } from '../metadata/refl';
 import { TypeReflect } from '../metadata/type';

@@ -4,7 +4,7 @@ import { Advicer } from '../advices/Advicer';
 import { Advices } from '../advices/Advices';
 import { ADVICE_MATCHER } from '../metadata/tk';
 import { AopReflect } from '../metadata/ref';
-import { Advisor } from '..';
+import { Advisor } from '../Advisor';
 
 
 /**

@@ -1,6 +1,6 @@
 import {
-    Type, isFunction, lang, Platform, isNil, isPromise, refl, ctorName, IActionSetup,
-    IocActions, ParameterMetadata, InvocationContext, Injector, chain, object2string
+    Type, isFunction, lang, Platform, isNil, isPromise, refl, ctorName, chain, IActionSetup,
+    IocActions, ParameterMetadata, InvocationContext, Injector, object2string, isObservable, ObservableParser
 } from '@tsdi/ioc';
 import { IPointcut } from '../joinpoints/IPointcut';
 import { Joinpoint } from '../joinpoints/Joinpoint';
@@ -331,15 +331,23 @@ export const AfterReturningAdvicesAction = function (ctx: Joinpoint, next: () =>
 
     ctx.state = JoinpointState.AfterReturning;
     const invoker = ctx.invokeHandle;
-    const isAsync = isPromise(ctx.returning);
+    let isAsync = false;
+    let returning = ctx.returning;
+    const orgReturning = ctx.returning;
+    const parser = ctx.get(ObservableParser);
+    if (isPromise(returning)) {
+        isAsync = true;
+    } else if (parser && isObservable(returning)) {
+        isAsync = true;
+        returning = parser.parse(returning);
+    }
     if (isAsync && !ctx.returningDefer) {
         ctx.returningDefer = lang.defer();
     }
 
     chain<Joinpoint, any>([
         (ctx, rnext) => isAsync ?
-            (ctx.returning as Promise<any>).then(async val => {
-                const orgReturning = ctx.returning;
+            (returning as Promise<any>).then(async val => {
                 return (rnext() as Promise<any>)
                     .then(() => {
                         if (orgReturning !== ctx.returning) {

@@ -73,7 +73,7 @@ const obsTag = '[object Observable]';
  * @returns {boolean}
  */
 export function isObservable(target: any): boolean {
-    return toString.call(target) === obsTag || (target && typeof target.subscribe === funKey);
+    return toString.call(target) === obsTag || (target && typeof target.subscribe === funKey && target.lift === 'function');
 }
 
 const strKey = 'string';
