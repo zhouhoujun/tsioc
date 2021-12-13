@@ -4,7 +4,7 @@ import {
     composeResolver, Parameter, EMPTY, ClassType, isResolver, ArgumentError,
     InvocationContext, OperationFactoryResolver, DestroyCallback, ReflectiveRef, ObservableParser
 } from '@tsdi/ioc';
-import { EmptyError, isObservable, Observable } from 'rxjs';
+import { isObservable } from 'rxjs';
 import { MODEL_RESOLVERS } from '../model/resolver';
 import { PipeTransform } from '../pipes/pipe';
 import { Context } from './context';
@@ -156,7 +156,7 @@ export class RouteMappingRef<T> extends AbstractRoute {
             if (isPromise(result)) {
                 result = await result;
             } else if (parser && isObservable(result)) {
-                result = await parser.parse(result);
+                result = await parser.toPromise(result);
             }
 
             // middleware.
