@@ -33,6 +33,6 @@ export abstract class LoggerManager {
 
 
 /**
- * global default configuration.
+ * global default logger manager.
  */
 export const LOGGER_MANAGER = tokenId<LoggerManager>('LOGGER_MANAGER');

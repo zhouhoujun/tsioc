@@ -308,6 +308,15 @@ export class DefaultInjector extends Injector {
         return this;
     }
 
+    setSingleton<T>(token: Token<T>, value: T): this {
+        this.assertNotDestroyed();
+        const platform = this.platform();
+        if(!platform.hasSingleton(token)){
+            platform.registerSingleton(this, token, value);
+        }
+        return this;
+    }
+
     protected isself(token: Token): boolean {
         return this.isAlias ? this.isAlias(token) : false;
     }
@@ -647,11 +656,6 @@ export class DefaultInjector extends Injector {
     }
 
 
-    /**
-     * get module loader.
-     *
-     * @returns {IModuleLoader}
-     */
     getLoader(): ModuleLoader {
         return this.get(ModuleLoader);
     }

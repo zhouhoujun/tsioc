@@ -119,7 +119,7 @@ export class DefaultApplicationContext extends ApplicationContext {
         let logmgr = this.injector.get(LOGGER_MANAGER);
         if (!logmgr) {
             logmgr = this.injector.get(ConfigureLoggerManager);
-            this.injector.setValue(LOGGER_MANAGER, logmgr);
+            this.injector.setSingleton(LOGGER_MANAGER, logmgr);
         }
         return logmgr;
     }

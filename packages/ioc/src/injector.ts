@@ -160,13 +160,19 @@ export abstract class Injector implements Destroyable {
      * @returns {T}
      */
     abstract getService<T>(token: Token<T>, ...providers: ProviderType[]): T;
-
     /**
      * set value.
      * @param token provide key
      * @param value vaule
      */
     abstract setValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
+    /**
+     * set gloabl singleton.
+     * @param token provide key
+     * @param value singleton vaule
+     */
+    abstract setSingleton<T>(token: Token<T>, value: T): this;
+
     /**
      * get token implement class type.
      *
