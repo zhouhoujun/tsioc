@@ -48,7 +48,7 @@ export abstract class Injector implements Destroyable {
      *
      * @template T
      * @param {Token<T>} token the token.
-     * @param {InjectFlags} flags check strategy by inject flags.
+     * @param {InjectFlags} flags check strategy by inject flags {@link InjectFlags}.
      * @returns {boolean}
      */
     abstract has<T>(token: Token<T>, flags?: InjectFlags): boolean;
@@ -56,19 +56,19 @@ export abstract class Injector implements Destroyable {
      * get token factory resolve instace in current.
      *
      * @template T
-     * @param {Token<T>} token
-     * @param {InvocationContext} context 
-     * @param {InjectFlags} flags
-     * @returns {T} token value.
+     * @param {Token<T>} token token id.
+     * @param {InvocationContext} context invocation context. type of {@link InvocationContext}, use to resolve with token.
+     * @param {InjectFlags} flags check strategy by inject flags {@link InjectFlags}.
+     * @returns {T} the token value.
      */
     abstract get<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags): T;
     /**
      * get token factory resolve instace in current.
      *
      * @template T
-     * @param {Token<T>} token
-     * @param {T} notFoundValue 
-     * @param {InjectFlags} flags get token strategy.
+     * @param {Token<T>} token token id {@link Token}.
+     * @param {T} notFoundValue not found token, return this value.
+     * @param {InjectFlags} flags check strategy by inject flags {@link InjectFlags}.
      * @returns {T} token value.
      */
     abstract get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags): T;
@@ -76,7 +76,7 @@ export abstract class Injector implements Destroyable {
      * resolve token instance with token and param provider.
      *
      * @template T
-     * @param {ResolveOption<T>} option  resolve option
+     * @param {ResolveOption<T>} option resolve option {@link ResolveOption}
      * @returns {T}
      */
     abstract resolve<T>(option: ResolveOption<T>): T;
@@ -84,8 +84,8 @@ export abstract class Injector implements Destroyable {
      * resolve token instance with token and param provider.
      *
      * @template T
-     * @param {Token<T>} token the token to resolve.
-     * @param {option} option use to resolve and {@link InvocationContext}
+     * @param {Token<T>} token the resolve token {@link Token}.
+     * @param {option} option the option of type {@link ResolverOption}, use to resolve with token.
      * @returns {T}
      */
     abstract resolve<T>(token: Token<T>, option?: ResolverOption): T;
@@ -94,7 +94,7 @@ export abstract class Injector implements Destroyable {
      *
      * @template T
      * @param {Token<T>} token the token to resolve.
-     * @param {InvocationContext} context
+     * @param {InvocationContext} context invocation context type of {@link InvocationContext}, use to resolve with token.
      * @returns {T}
      */
     abstract resolve<T>(token: Token<T>, context?: InvocationContext): T;
@@ -102,8 +102,8 @@ export abstract class Injector implements Destroyable {
      * resolve token instance with token and param provider.
      *
      * @template T
-     * @param {Token<T>} token the token to resolve.
-     * @param {ProviderType[]} providers
+     * @param {Token<T>} token the resolve token {@link Token}.
+     * @param {ProviderType[]} providers the providers to resolve with token. array of {@link ProviderType}.
      * @returns {T}
      */
     abstract resolve<T>(token: Token<T>, providers?: ProviderType[]): T;
@@ -111,8 +111,8 @@ export abstract class Injector implements Destroyable {
      * resolve token instance with token and param provider.
      *
      * @template T
-     * @param {Token<T>} token the token to resolve.
-     * @param {...ProviderType[]} providers
+     * @param {Token<T>} token the resolve token {@link Token}.
+     * @param {...ProviderType[]} providers the providers {@link ProviderType} to resolve with token.
      * @returns {T}
      */
     abstract resolve<T>(token: Token<T>, ...providers: ProviderType[]): T;
@@ -120,7 +120,7 @@ export abstract class Injector implements Destroyable {
      * get service or target reference service in the injector.
      *
      * @template T
-     * @param {(ResolveOption<T>} option resolve option.
+     * @param {(ResolveOption<T>} option resolve option {@link ResolveOption}.
      * @returns {T}
      */
     abstract getService<T>(option: ResolveOption<T>): T;
@@ -128,8 +128,8 @@ export abstract class Injector implements Destroyable {
      * get service or target reference service in the injector.
      *
      * @template T
-     * @param {Token<T>} token the token to resolve.
-     * @param {option} option use to resolve and {@link InvocationContext}
+     * @param {Token<T>} token  the resolve token {@link Token}.
+     * @param {option} option the option of type {@link ResolverOption}, to resolve with token.
      * @returns {T}
      */
     abstract getService<T>(token: Token<T>, option?: ResolverOption): T;
@@ -137,8 +137,8 @@ export abstract class Injector implements Destroyable {
      * get service or target reference service in the injector.
      *
      * @template T
-     * @param {Token<T>} token the token to resolve.
-     * @param {InvocationContext} context
+     * @param {Token<T>} token  the resolve token {@link Token}.
+     * @param {InvocationContext} context invocation context type of {@link InvocationContext}, use to resolve with token.
      * @returns {T}
      */
     abstract getService<T>(token: Token<T>, context?: InvocationContext): T;
@@ -147,7 +147,7 @@ export abstract class Injector implements Destroyable {
      *
      * @template T
      * @param {Token<T> } token servive token.
-     * @param {ProviderType[]} providers
+     * @param {ProviderType[]} providers the providers to resolve with token. array of {@link ProviderType}.
      * @returns {T}
      */
     abstract getService<T>(token: Token<T>, providers?: ProviderType[]): T;
@@ -156,14 +156,15 @@ export abstract class Injector implements Destroyable {
      *
      * @template T
      * @param {Token<T> } token servive token.
-     * @param {...ProviderType[]} providers
+     * @param {...ProviderType[]} providers the providers {@link ProviderType} to resolve with token.
      * @returns {T}
      */
     abstract getService<T>(token: Token<T>, ...providers: ProviderType[]): T;
     /**
      * set value.
      * @param token provide key
-     * @param value vaule
+     * @param value the vaule provider for the token.
+     * @param provider the value type.
      */
     abstract setValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
     /**

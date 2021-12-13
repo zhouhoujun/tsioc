@@ -28,11 +28,7 @@ import { DestroyCallback } from '../destroy';
 
 
 /**
- * provider container.
- *
- * @export
- * @class Provider
- * @extends {Destoryable}
+ * Default Injector
  */
 export class DefaultInjector extends Injector {
 
@@ -98,22 +94,11 @@ export class DefaultInjector extends Injector {
         return Array.from(this.records.keys());
     }
 
-    /**
-     * plaform info.
-     */
     platform(): Platform {
         return this._plat ?? this.parent?.platform()!;
     }
 
-    /**
-     * register types.
-     * @param {Type<any>[]} types 
-     */
     register(types: (Type | RegisterOption)[]): this;
-    /**
-     * register types.
-     * @param types 
-     */
     register(...types: (Type | RegisterOption)[]): this;
     register(...args: any[]): this {
         this.assertNotDestroyed();
@@ -124,12 +109,6 @@ export class DefaultInjector extends Injector {
         return this;
     }
 
-    /**
-     * cache instance.
-     * @param token 
-     * @param instance 
-     * @param expires 
-     */
     cache<T>(token: Token<T>, cache: T, expires: number): this {
         this.assertNotDestroyed();
         const pd = this.records.get(token);
@@ -144,19 +123,7 @@ export class DefaultInjector extends Injector {
         return this;
     }
 
-    /**
-     * inject providers.
-     *
-     * @param {...ProviderType[]} providers
-     * @returns {this}
-     */
     inject(providers: ProviderType[]): this;
-    /**
-     * inject providers.
-     *
-     * @param {...ProviderType[]} providers
-     * @returns {this}
-     */
     inject(...providers: ProviderType[]): this;
     inject(...args: any[]): this {
         this.assertNotDestroyed();
@@ -247,19 +214,7 @@ export class DefaultInjector extends Injector {
 
 
 
-    /**
-     * use modules.
-     *
-     * @param {...Modules[]} modules
-     * @returns {this}
-     */
     use(modules: Modules[]): Type[];
-    /**
-     * use modules.
-     *
-     * @param {...Modules[]} modules
-     * @returns {this}
-     */
     use(...modules: Modules[]): Type[];
     use(...args: any[]): Type[] {
         this.assertNotDestroyed();
@@ -278,14 +233,6 @@ export class DefaultInjector extends Injector {
         return types;
     }
 
-    /**
-     * has register.
-     *
-     * @template T
-     * @param {Token<T>} token the token.
-     * @param {InjectFlags} flags.
-     * @returns {boolean}
-     */
     has<T>(token: Token<T>, flags = InjectFlags.Default): boolean {
         this.assertNotDestroyed();
         if (this.platform().hasSingleton(token)) return true;
@@ -321,25 +268,8 @@ export class DefaultInjector extends Injector {
         return this.isAlias ? this.isAlias(token) : false;
     }
 
-    /**
-     * get token factory resolve instace in current.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {T} notFoundValue 
-     * @param {InjectFlags} flags
-     * @returns {T} token value.
-     */
+
     get<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags): T;
-    /**
-     * get token factory resolve instace in current.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {T} notFoundValue 
-     * @param {InjectFlags} flags
-     * @returns {T} token value.
-     */
     get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags): T;
     get<T>(token: Token<T>, arg1?: InvocationContext | T, flags = InjectFlags.Default): T {
         this.assertNotDestroyed();
@@ -365,47 +295,10 @@ export class DefaultInjector extends Injector {
         return tryResolveToken(token, record, this.records, platform, parent, context, notFoundValue, flags, instanceCreated);
     }
 
-    /**
-     * resolve token instance with token and param provider.
-     *
-     * @template T
-     * @param {ResolveOption<T>} option  resolve option
-     * @returns {T}
-     */
     resolve<T>(option: ResolveOption<T>): T;
-    /**
-     * resolve token instance with token and param provider.
-     *
-     * @template T
-     * @param {Token<T>} token the token to resolve.
-     * @param {option} option use to resolve and {@link InvocationContext}
-     * @returns {T}
-     */
     resolve<T>(token: Token<T>, option?: ResolverOption): T;
-    /**
-     * resolve token instance with token and param provider.
-     *
-     * @template T
-     * @param {Token<T>} token the token to resolve.
-     * @param {InvocationContext} context
-     * @returns {T}
-     */
     resolve<T>(token: Token<T>, context?: InvocationContext): T;
-    /**
-     * resolve instance with token and param provider via resolve scope.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @returns {T}
-     */
     resolve<T>(token: Token<T>, providers?: ProviderType[]): T;
-    /**
-     * resolve instance with token and param provider via resolve scope.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @returns {T}
-     */
     resolve<T>(token: Token<T>, ...providers: ProviderType[]): T;
     resolve<T>(token: Token<T> | ResolveOption<T>, ...args: any[]) {
         this.assertNotDestroyed();
@@ -467,63 +360,15 @@ export class DefaultInjector extends Injector {
         return null!;
     }
 
-    /**
-     * get service or target reference service in the injector.
-     *
-     * @template T
-     * @param {(ResolveOption<T>} option resolve option.
-     * @returns {T}
-     */
     getService<T>(option: ResolveOption<T>): T;
-    /**
-     * get service or target reference service in the injector.
-     *
-     * @template T
-     * @param {Token<T>} token the token to resolve.
-     * @param {option} option use to resolve and {@link InvocationContext}
-     * @returns {T}
-     */
     getService<T>(token: Token<T>, option?: ResolverOption): T;
-    /**
-     * get service or target reference service in the injector.
-     *
-     * @template T
-     * @param {Token<T>} token the token to resolve.
-     * @param {InvocationContext} context
-     * @returns {T}
-     */
     getService<T>(token: Token<T>, context?: InvocationContext): T;
-    /**
-     * get service or target reference service in the injector.
-     *
-     * @template T
-     * @param {Token<T> } token servive token.
-     * @param {ProviderType[]} providers
-     * @returns {T}
-     */
     getService<T>(token: Token<T>, providers?: ProviderType[]): T;
-    /**
-     * get service or target reference service in the injector.
-     *
-     * @template T
-     * @param {Token<T> } token servive token.
-     * @param {...ProviderType[]} providers
-     * @returns {T}
-     */
     getService<T>(token: Token<T>, ...providers: ProviderType[]): T;
     getService<T>(target: Token<T> | ResolveOption<T>, ...args: any[]): T {
         return this.resolve<T>(target as any, ...args);
     }
 
-
-    /**
-     * get token provider class type.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {InjectFlags} flags
-     * @returns {Type<T>}
-     */
     getTokenProvider<T>(token: Token<T>, flags = InjectFlags.Default): Type<T> {
         this.assertNotDestroyed();
         let type: Type | undefined;
@@ -537,14 +382,6 @@ export class DefaultInjector extends Injector {
         return type ?? isFunction(token) ? token as Type : null!;
     }
 
-    /**
-     * unregister the token
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @returns {this}
-     * @memberof BaseInjector
-     */
     unregister<T>(token: Token<T>): this {
         const isp = this.records?.get(token);
         if (isp) {
@@ -556,46 +393,10 @@ export class DefaultInjector extends Injector {
         return this;
     }
 
-    /**
-     * invoke method.
-     *
-     * @template T
-     * @param {(T | Type<T>)} target type of class or instance
-     * @param {MethodType} propertyKey
-     * @param {T} [instance] instance of target type.
-     * @param {...ProviderType[]} providers
-     * @returns {TR}
-     */
+
     invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
-    /**
-     * invoke method.
-     *
-     * @template T
-     * @param {(T | Type<T> | TypeReflect<T>)} target type of class or instance
-     * @param {MethodType} propertyKey
-     * @param {InvocationContext} context ivacation context.
-     * @returns {TR}
-     */
     invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, option?: InvokeOption): TR;
-    /**
-     * invoke method.
-     *
-     * @template T
-     * @param {(T | Type<T> | TypeReflect<T>)} target type of class or instance
-     * @param {MethodType} propertyKey
-     * @param {InvocationContext} context ivacation context.
-     * @returns {TR}
-     */
     invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
-    /**
-     * invoke method.
-     *
-     * @template T
-     * @param {(T | Type<T>)} target type of class or instance
-     * @param {MethodType} propertyKey
-     * @param {ProviderType[]} providers
-     * @returns {TR}
-     */
     invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, providers: ProviderType[]): TR;
     invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
         this.assertNotDestroyed();

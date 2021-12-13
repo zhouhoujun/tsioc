@@ -110,7 +110,7 @@ export class InvocationContext<T = any> implements Destroyable {
 
 
     addRef(...injectors: Injector[]) {
-        injectors.forEach(j => j && j !==this.injector && this._refs.indexOf(j) < 0 && this._refs.push(j));
+        injectors.forEach(j => j && j !== this.injector && this._refs.indexOf(j) < 0 && this._refs.push(j));
     }
 
     removeRef(injector: Injector) {
@@ -504,16 +504,45 @@ export abstract class ReflectiveRef<T = any> implements Destroyable {
     abstract onDestroy(callback: DestroyCallback): void;
 }
 
+/**
+ * operation factory.
+ */
 @Abstract()
 export abstract class OperationFactory<T> {
+    /**
+     * target reflect.
+     */
     abstract get targetReflect(): TypeReflect<T>;
+    /**
+     * create RelectiveRef ot target.
+     * @param injector 
+     * @param option 
+     */
     abstract create(injector: Injector, option?: InvokeOption): ReflectiveRef<T>;
+    /**
+     * crate method invoker of target.
+     * @param method 
+     * @param instance 
+     */
     abstract createInvoker(method: string, instance?: T): OperationInvoker;
+    /**
+     * create invocation context of target.
+     * @param injector 
+     * @param option 
+     * @param root 
+     */
     abstract createContext(injector: Injector, option?: InvocationOption, root?: InvocationContext): InvocationContext;
 }
 
+/**
+ * operation factory resolver.
+ */
 @Abstract()
 export abstract class OperationFactoryResolver {
+    /**
+     * create operation factory of target type
+     * @param type target type or target type reflect.
+     */
     abstract create<T>(type: ClassType<T> | TypeReflect<T>): OperationFactory<T>;
 }
 
