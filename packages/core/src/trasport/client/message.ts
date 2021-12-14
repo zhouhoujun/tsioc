@@ -1,16 +1,17 @@
 import { Observable } from 'rxjs';
 import { Router } from '../../middlewares/router';
 import { Client } from '../../client';
+import { OnDispose } from '../../hooks';
 
 
-export class MessageClient implements Client {
+export class MessageClient implements Client, OnDispose {
 
     constructor(private router: Router) {
 
     }
 
-    connect(): void {
-        
+    async connect(): Promise<void> {
+
     }
 
     send<TResult = any, TInput = any>(pattern: any, data: TInput): Observable<TResult> {
@@ -24,7 +25,7 @@ export class MessageClient implements Client {
         throw new Error('Method not implemented.');
     }
 
-    dispose(): Promise<void> {
+    onDispose(): Promise<void> {
         throw new Error('Method not implemented.');
     }
 

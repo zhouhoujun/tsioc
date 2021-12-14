@@ -6,7 +6,7 @@ import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOpt
 import { Runner, RunnableFactory, RunnableFactoryResolver, RunnableSet } from './runnable';
 import { Response, Request, Context, MessageQueue, RequestInit, RequestOption, ROOT_QUEUE } from './middlewares';
 import { ModuleRef } from './module.ref';
-import { ApplicationArguments } from './shutdown';
+import { ApplicationArguments } from './args';
 import { ServerSet } from './server';
 import { ClientSet } from './client';
 import { ServiceSet } from './service';
@@ -148,9 +148,9 @@ export class DefaultApplicationContext extends ApplicationContext {
         return this.injector.get(ConfigureManager);
     }
 
-    async dispose(): Promise<void> {
+    async onDispose(): Promise<void> {
         const modules = Array.from(this.injector.platform().modules).reverse();
-        await Promise.all(modules.map(m => (m as ModuleRef)?.dispose()));
+        await Promise.all(modules.map(m => (m as ModuleRef)?.onDispose()));
         this.destroy();
     }
 
@@ -159,19 +159,16 @@ export class DefaultApplicationContext extends ApplicationContext {
     */
     destroy() {
         if (this._destroyed) return;
-        if (!this.injector.destroyed && !this.injector.shutdownHandlers.disposed) {
-            return this.dispose();
-        } else {
-            this._destroyed = true;
-            try {
-                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.destroy());
-            } finally {
-                this._dsryCbs.clear();
-                const parent = this.injector.parent;
-                this.injector.destroy();
-                if (parent) parent.destroy();
-            }
+        this._destroyed = true;
+        try {
+            this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy());
+        } finally {
+            this._dsryCbs.clear();
+            const parent = this.injector.parent;
+            this.injector.destroy();
+            if (parent) parent.destroy();
         }
+
     }
     /**
      * register callback on destory.

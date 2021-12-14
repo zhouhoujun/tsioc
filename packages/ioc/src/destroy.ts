@@ -1,26 +1,31 @@
-import { isFunction, isObject } from './utils/chk';
 
 
 /**
- * destory interface.
+ * destory hooks.
  */
-export interface Destroy {
+export interface OnDestroy {
     /**
      * destory this.
      */
-    destroy(): void;
+    onDestroy(): void;
 }
+
+
 
 /**
  * destroy callback type for {@link Destroyable}
  */
-export type DestroyCallback = Destroy | (() => void);
+export type DestroyCallback = OnDestroy | (() => void);
 
 /**
  * destroyable interface.
- * extends {@link Destroy}
+ * extends {@link OnDestroy}
  */
-export interface Destroyable extends Destroy {
+export interface Destroyable {
+    /**
+     * destory this.
+     */
+    destroy(): void;
     /**
      * destroyed or not.
      */
@@ -32,11 +37,11 @@ export interface Destroyable extends Destroy {
     onDestroy(callback: DestroyCallback): void;
 }
 
-/**
- * is target instanceof {@link Destroy} or not.
- * @param target 
- * @returns 
- */
-export function isDestroy(target: any): target is Destroy {
-    return isObject(target) && isFunction((target as Destroy).destroy);
-}
+// /**
+//  * is target implements {@link OnDestroy} hook or not.
+//  * @param target 
+//  * @returns 
+//  */
+// export function isOnDestroy(target: any): target is OnDestroy {
+//     return typeof target === 'object' && isFunction((target as OnDestroy).onDestroy);
+// }

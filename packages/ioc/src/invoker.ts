@@ -8,7 +8,7 @@ import { Abstract } from './metadata/fac';
 import { ParameterMetadata } from './metadata/meta';
 import { TypeReflect } from './metadata/type';
 import { ProviderType } from './providers';
-import { DestroyCallback, Destroyable } from './destroy';
+import { DestroyCallback, Destroyable, OnDestroy } from './destroy';
 import { InjectFlags, Token } from './tokens';
 import { Injector } from './injector';
 
@@ -81,7 +81,7 @@ export function composeResolver<T extends OperationArgumentResolver<any>, TP ext
 /**
  * The context for the {@link OperationInvoker invocation of an operation}.
  */
-export class InvocationContext<T = any> implements Destroyable {
+export class InvocationContext<T = any> implements Destroyable, OnDestroy {
     private _args: T;
     private _dsryCbs = new Set<DestroyCallback>();
     private _destroyed = false;
@@ -217,7 +217,7 @@ export class InvocationContext<T = any> implements Destroyable {
         if (!this._destroyed) {
             this._destroyed = true;
             try {
-                this._dsryCbs.forEach(c => isFunction(c) ? c() : c?.destroy());
+                this._dsryCbs.forEach(c => isFunction(c) ? c() : c?.onDestroy());
             } finally {
                 this._dsryCbs.clear();
                 this._values.clear();
@@ -231,7 +231,10 @@ export class InvocationContext<T = any> implements Destroyable {
         }
     }
 
-    onDestroy(callback: DestroyCallback): void {
+    onDestroy(callback?: DestroyCallback): void {
+        if (!callback) {
+            return this.destroy();
+        }
         this._dsryCbs.add(callback);
     }
 }

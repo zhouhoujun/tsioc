@@ -120,7 +120,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
         const self = this;
         const platform = this.platform;
         return (...args: any[]) => {
-            if (!platform || platform.destroyed) {
+            if (!platform || !platform.injector || platform.injector.destroyed) {
                 return propertyMethod.call(target, ...args);
             }
             const larg = lang.last(args);

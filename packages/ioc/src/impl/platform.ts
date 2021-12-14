@@ -7,7 +7,6 @@ import { get } from '../metadata/refl';
 import { TypeReflect } from '../metadata/type';
 import { ProviderType, StaticProvider } from '../providers';
 import { Injector, ModuleRef, Platform } from '../injector';
-import { DestroyCallback, isDestroy } from '../destroy';
 
 
 /**
@@ -15,13 +14,10 @@ import { DestroyCallback, isDestroy } from '../destroy';
  */
 export class DefaultPlatform implements Platform {
 
-    private _dsryCbs = new Set<DestroyCallback>();
-    private _destroyed = false;
     private _actions: Map<Token, any>;
     private _singls: Map<Token, any>;
     private _pdrs: Map<ClassType, ProviderType[]>;
     private _scopes: Map<string | ClassType, Injector>;
-    private _crtCbs: Set<(value: any, injector: Injector) => void>;
 
     readonly modules = new Set<ModuleRef>();
 
@@ -30,19 +26,10 @@ export class DefaultPlatform implements Platform {
         this._pdrs = new Map();
         this._actions = new Map();
         this._singls = new Map();
-        this._crtCbs = new Set([(value, inj) => isDestroy(value) && inj.onDestroy(value)]);
         injector.onDestroy(this);
     }
 
-    onInstanceCreated(callback: (value: any, injector: Injector) => void): void {
-        this._crtCbs.add(callback);
-    }
 
-    toCreatedHandle(injector: Injector): (value: any) => void {
-        return (value) => {
-            this._crtCbs.forEach(h => h(value, injector));
-        }
-    }
 
     /**
      * register singleton value
@@ -175,33 +162,12 @@ export class DefaultPlatform implements Platform {
         this._pdrs.delete(type);
     }
 
-    /**
-     * has destoryed or not.
-     */
-    get destroyed(): boolean {
-        return this._destroyed;
-    }
-
-    destroy(): void {
-        if (this.destroyed) {
-            return;
-        }
-        this._destroyed = true;
-        try {
-            this._dsryCbs.forEach(c => isFunction(c) ? c() : c?.destroy());
-        } finally {
-            this._dsryCbs.clear();
-            this._crtCbs.clear();
-            this._scopes.clear();
-            this.modules.clear();
-            this._pdrs.clear();
-            this._actions.clear();
-            this._singls.clear();
-        }
-    }
-
-    onDestroy(callback: DestroyCallback): void {
-        this._dsryCbs.add(callback);
+    onDestroy(): void {
+        this._scopes.clear();
+        this.modules.clear();
+        this._pdrs.clear();
+        this._actions.clear();
+        this._singls.clear();
     }
 
 }

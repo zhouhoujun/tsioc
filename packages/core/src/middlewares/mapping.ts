@@ -2,7 +2,7 @@ import {
     AsyncHandler, DecorDefine, Type, TypeReflect, Injector, lang, chain,
     isPrimitiveType, isPromise, isString, isArray, isFunction, isDefined,
     composeResolver, Parameter, EMPTY, ClassType, isResolver, ArgumentError,
-    InvocationContext, OperationFactoryResolver, DestroyCallback, ReflectiveRef, ObservableParser
+    InvocationContext, OperationFactoryResolver, DestroyCallback, ReflectiveRef, ObservableParser, Destroyable, OnDestroy
 } from '@tsdi/ioc';
 import { isObservable } from 'rxjs';
 import { MODEL_RESOLVERS } from '../model/resolver';
@@ -88,7 +88,7 @@ const restParms = /^\S*:/;
 /**
  * route mapping ref.
  */
-export class RouteMappingRef<T> extends AbstractRoute {
+export class RouteMappingRef<T> extends AbstractRoute implements Destroyable, OnDestroy {
 
     private reflectiveRef: ReflectiveRef<T>;
     constructor(readonly reflect: MappingReflect<T>, readonly injector: Injector, prefix: string | undefined) {
@@ -240,7 +240,10 @@ export class RouteMappingRef<T> extends AbstractRoute {
      * @param callback A handler function that cleans up developer-defined data
      * associated with this component. Called when the `destroy()` method is invoked.
      */
-    onDestroy(callback: DestroyCallback): void {
+    onDestroy(callback?: DestroyCallback): void {
+        if (!callback) {
+            return this.destroy();
+        }
         this.reflectiveRef.onDestroy(callback);
     }
 }

@@ -1,10 +1,10 @@
-import { Destroy, Resolver, Type } from '@tsdi/ioc';
+import { OnDestroy, Resolver, Type } from '@tsdi/ioc';
 import { ApplicationContext } from './context';
 
 /**
  * scan set.
  */
-export interface ScanSet<T = any> extends Destroy {
+export interface ScanSet<T = any> extends OnDestroy {
     /**
      * the scan count.
      */

@@ -1,4 +1,4 @@
-import { Destroy, Destroyable, DestroyCallback } from './destroy';
+import { OnDestroy, Destroyable, DestroyCallback } from './destroy';
 import { ClassType, LoadType, Modules, Type } from './types';
 import { ClassProvider, ExistingProvider, FactoryProvider, ProviderType, ValueProvider } from './providers';
 import { Token, InjectFlags } from './tokens';
@@ -10,6 +10,7 @@ import { Handler } from './utils/hdl';
 import { Action } from './action';
 import { InvocationContext, InvokeOption, Resolver } from './invoker';
 import { ModuleLoader } from './module.loader';
+import { LifecycleHooks } from './lifecycle';
 
 
 /**
@@ -17,7 +18,7 @@ import { ModuleLoader } from './module.loader';
  * implements {@link Destroyable}
  */
 @Abstract()
-export abstract class Injector implements Destroyable {
+export abstract class Injector implements Destroyable, OnDestroy {
     /**
      * none poincut for aop.
      */
@@ -35,6 +36,10 @@ export abstract class Injector implements Destroyable {
      * platform.
      */
     abstract platform(): Platform;
+    /**
+     * lifecycle hooks.
+     */
+    abstract get lifecycle(): LifecycleHooks;
     /**
      * registered tokens.
      */
@@ -308,18 +313,27 @@ export abstract class Injector implements Destroyable {
         if (!this._destroyed) {
             this._destroyed = true;
             try {
-                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.destroy());
+                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy());
             } finally {
                 this._dsryCbs.clear();
                 this.destroying();
             }
         }
     }
+
+    /**
+     * destroy hook.
+     */
+    onDestroy(): void;
     /**
      * register callback on destory.
      * @param callback destory callback
      */
-    onDestroy(callback: DestroyCallback): void {
+    onDestroy(callback: DestroyCallback): void;
+    onDestroy(callback?: DestroyCallback): void {
+        if(!callback){
+           return this.destroy();
+        }
         this._dsryCbs.add(callback);
     }
 
@@ -380,7 +394,7 @@ export abstract class ObservableParser {
  * platform of {@link Container}.
  */
 @Abstract()
-export abstract class Platform implements Destroyable {
+export abstract class Platform implements OnDestroy {
 
     abstract get modules(): Set<ModuleRef>;
     /**
@@ -463,21 +477,10 @@ export abstract class Platform implements Destroyable {
      */
     abstract setActionValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
     abstract getActionValue<T>(token: Token<T>, notFoundValue?: T): T;
-
     /**
-     * add instance created callback.
-     * @param callback 
+     * destroy hook.
      */
-    abstract onInstanceCreated(callback: (value: any, injector: Injector) => void): void;
-    /**
-     * parse instance created callback to create handle.
-     * @param injector 
-     */
-    abstract toCreatedHandle(injector: Injector): (value: any) => void;
-
-    abstract get destroyed(): boolean;
-    abstract destroy(): void;
-    abstract onDestroy(callback: Destroy | (() => void)): void;
+    abstract onDestroy(): void;
 }
 
 /**

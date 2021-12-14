@@ -1,10 +1,9 @@
 import {
     Abstract, Destroyable, DestroyCallback, Injector, InjectorTypeWithProviders,
-    isFunction, isPlainObject, lang, ModuleReflect, OperationFactoryResolver, Type
+    isFunction, isPlainObject, lang, ModuleReflect, OnDestroy, OperationFactoryResolver, Type
 } from '@tsdi/ioc';
-import { Disposable } from './dispose';
+import { OnDispose, ModuleLifecycleHooks } from './hooks';
 import { RunnableFactoryResolver } from './runnable';
-import { ApplicationShutdownHandlers } from './shutdown';
 
 
 /**
@@ -14,7 +13,7 @@ import { ApplicationShutdownHandlers } from './shutdown';
  * @publicApi
  */
 @Abstract()
-export abstract class ModuleRef<T = any> extends Injector implements Destroyable, Disposable {
+export abstract class ModuleRef<T = any> extends Injector implements Destroyable, OnDispose, OnDestroy {
     /**
      * module type
      */
@@ -28,9 +27,9 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
      *
      * @readonly
      * @abstract
-     * @type {ApplicationShutdownHandlers}
+     * @type {LifecycleHooks}
      */
-    abstract get shutdownHandlers(): ApplicationShutdownHandlers;
+    abstract get lifecycle(): ModuleLifecycleHooks;
     /**
      * operation factory resolver.
      */
@@ -50,11 +49,15 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
     /**
      * dispose.
      */
-    abstract dispose(): Promise<void>;
+    abstract onDispose(): Promise<void>;
     /**
      * destory.
      */
     abstract destroy(): void | Promise<void>;
+    /**
+     * destroy hook.
+     */
+    abstract onDestroy(): void;
     /**
      * register callback on destory.
      * @param callback destory callback

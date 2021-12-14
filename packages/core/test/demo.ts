@@ -1,5 +1,5 @@
-import { Module, Message, MessageQueue, StartupService, ApplicationContext, Configuration, Runner, ComponentScan, Disposable } from '../src';
-import { Injectable, Inject, Destroy, lang } from '@tsdi/ioc';
+import { Module, Message, MessageQueue, StartupService, ApplicationContext, Configuration, Runner, ComponentScan, OnDispose } from '../src';
+import { Injectable, Inject, OnDestroy, lang } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
 import { ILogger, LogConfigure, Logger, LogModule } from '@tsdi/logs';
 import * as net from 'net';
@@ -109,7 +109,7 @@ export class ModuleB { }
 
 
 @ComponentScan()
-export class SocketService implements StartupService, Disposable {
+export class SocketService implements StartupService, OnDispose {
 
     @Logger() logger!: ILogger;
 
@@ -124,7 +124,7 @@ export class SocketService implements StartupService, Disposable {
         this.logger.log('destroyed state', 'init', this.init_times);
     }
 
-    async dispose() {
+    async onDispose() {
         this.logger.log('SocketService destroying...');
         this.tcpServer.removeAllListeners();
         let defer = lang.defer();

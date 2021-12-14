@@ -14,9 +14,8 @@ import { ClientSet } from './client';
 import { ServerSet } from './server';
 import { ModuleOption } from './module.factory';
 import { ModuleRef } from './module.ref';
-import { ApplicationArguments } from './shutdown';
-import { Disposable } from './dispose';
-
+import { ApplicationArguments } from './args';
+import { OnDispose } from './hooks';
 
 
 /**
@@ -42,7 +41,7 @@ export interface BootstrapOption extends InvokeOption {
  * implements {@link Destroyable}, {@link Disposable}
  */
 @Abstract()
-export abstract class ApplicationContext implements Destroyable, Disposable {
+export abstract class ApplicationContext implements Destroyable, OnDispose {
     /**
      * application root module injector.
      */
@@ -151,7 +150,7 @@ export abstract class ApplicationContext implements Destroyable, Disposable {
     /**
      * dispose application.
      */
-    abstract dispose(): Promise<void>;
+    abstract onDispose(): Promise<void>;
     /**
      * destroyed or not.
      */

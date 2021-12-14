@@ -206,7 +206,7 @@ export abstract class Context implements Destroyable {
         if (!this._destroyed) {
             this._destroyed = true;
             try {
-                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.destroy());
+                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy());
             } finally {
                 this._dsryCbs.clear();
                 this.destroying();

@@ -1,7 +1,7 @@
-import { ProviderType, Resolver, lang, isNumber, Type, ObservableParser } from '@tsdi/ioc';
+import { ProviderType, Resolver, lang, isNumber, Type, ObservableParser, LifecycleHooksResolver } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory } from './context';
 import { ModuleFactoryResolver } from './module.factory';
-import { DefaultModuleFactoryResolver } from './module/module';
+import { DefaultModuleFactoryResolver, ModuleLifecycleHooksResolver } from './module/module';
 import { DefaultApplicationFactory } from './context.impl';
 import { Server, ServerSet } from './server';
 import { Client, ClientSet } from './client';
@@ -61,7 +61,7 @@ abstract class AbstractScanSet<T = any> implements ScanSet<T> {
 
     protected abstract run(resolver: Resolver<T>, ctx: ApplicationContext): any;
 
-    destroy(): void {
+    onDestroy(): void {
         this.clear();
     }
 
@@ -98,6 +98,7 @@ export const DEFAULTA_PROVIDERS: ProviderType[] = [
     { provide: ClientSet, useClass: ClientSetImpl, singleton: true },
     { provide: ServiceSet, useClass: ServiceSetImpl, singleton: true },
     { provide: RunnableSet, useClass: RunnableSetImpl, singleton: true },
+    { provide: LifecycleHooksResolver, useValue: new ModuleLifecycleHooksResolver() },
     { provide: ModuleFactoryResolver, useValue: new DefaultModuleFactoryResolver() },
     { provide: ApplicationFactory, useValue: new DefaultApplicationFactory() },
     {

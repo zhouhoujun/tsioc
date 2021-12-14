@@ -59,7 +59,7 @@ export abstract class RunnableSet implements ScanSet<Runnable> {
     /**
      * destory this.
      */
-    abstract destroy(): void
+    abstract onDestroy(): void
     /**
      * startup all service.
      */

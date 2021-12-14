@@ -2,12 +2,12 @@
 import {
     DefaultInjector, Injector, InjectorScope, InjectorTypeWithProviders, refl, isFunction,
     Platform, ModuleReflect, Modules, processInjectorType, ProviderType, Token, Type, ClassType,
-    OperationFactory, TypeReflect, DefaultOperationFactory, OperationFactoryResolver
+    OperationFactory, TypeReflect, DefaultOperationFactory, OperationFactoryResolver, LifecycleHooksResolver, LifecycleHooks
 } from '@tsdi/ioc';
+import { OnDispose, OnShutdown, ModuleLifecycleHooks, Hooks } from '../hooks';
 import { ModuleFactory, ModuleFactoryResolver, ModuleOption } from '../module.factory';
 import { ModuleRef } from '../module.ref';
 import { RunnableFactoryResolver } from '../runnable';
-import { ApplicationShutdownHandlers, Shutdown } from '../shutdown';
 import { DefaultRunnableFactoryResolver } from './runnable';
 
 
@@ -24,7 +24,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
     runnableFactoryResolver: RunnableFactoryResolver = new DefaultRunnableFactoryResolver(this);
     operationFactoryResolver = new ModuleOperationFactoryResolver();
-    shutdownHandlers = new DefaultApplicationShutdownHandlers();
+    lifecycle!: ModuleLifecycleHooks;
 
     constructor(moduleType: ModuleReflect, providers: ProviderType[] | undefined, readonly parent: Injector,
         readonly scope?: InjectorScope, deps?: Modules[]) {
@@ -33,12 +33,11 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         this._typeRefl = moduleType;
         this._type = moduleType.type as Type;
         this.inject(
-            { provide: ApplicationShutdownHandlers, useValue: this.shutdownHandlers },
             { provide: RunnableFactoryResolver, useValue: this.runnableFactoryResolver },
             { provide: OperationFactoryResolver, useValue: this.operationFactoryResolver }
         );
         if (scope === 'root') {
-            this.parent?.setValue(ApplicationShutdownHandlers, this.shutdownHandlers);
+            this.parent?.setValue(LifecycleHooks, this.lifecycle);
         }
         this.setValue(ModuleRef, this);
         const platfrom = this.platform();
@@ -57,6 +56,9 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         return this._typeRefl;
     }
 
+    protected createLifecycle(): LifecycleHooks {
+        return this.get(LifecycleHooksResolver)?.resolve() ?? new DefaultModuleLifecycleHooks();
+    }
 
     get injector(): Injector {
         return this;
@@ -80,22 +82,14 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     }
 
 
-    async dispose(): Promise<void> {
+    async onDispose(): Promise<void> {
+        if (!this.lifecycle.disposed) return;
         try {
-            await this.shutdownHandlers.run();
+            await this.lifecycle.runShutdown();
+            await this.lifecycle.runDisoise();
         } catch (err) {
             throw err;
         } finally {
-            super.destroy();
-        }
-    }
-
-
-    override destroy() {
-        if (this.destroyed) return;
-        if (!this.shutdownHandlers.disposed) {
-            return this.dispose();
-        } else {
             super.destroy();
         }
     }
@@ -105,8 +99,8 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         super.destroying();
         this._defs.clear();
         this._type = null!;
-        this.shutdownHandlers.clear();
-        this.shutdownHandlers = null!;
+        this.lifecycle.clear();
+        this.lifecycle = null!;
         this.operationFactoryResolver = null!;
         this.runnableFactoryResolver = null!;
         this._typeRefl = null!;
@@ -117,43 +111,70 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
 
 
-export class DefaultApplicationShutdownHandlers extends ApplicationShutdownHandlers {
-
-    private shutdowns: Shutdown[];
+export class DefaultModuleLifecycleHooks extends ModuleLifecycleHooks {
+    private _disposes = new Set<OnDispose>();
+    private _shutdowns = new Set<OnShutdown>();
     private _disposed = false;
-    constructor() {
-        super()
-        this.shutdowns = [];
+    private _shutdowned = false;
+
+    clear(): void {
+        this._disposes.clear();
+        this._shutdowns.clear();
+        super.clear();
     }
 
     get disposed(): boolean {
-        return this.shutdowns.length === 0 || this._disposed;
+        return this._disposed;
     }
 
-    async run(): Promise<void> {
+    get shutdown(): boolean {
+        return this._shutdowned;
+    }
+
+
+    async runDisoise(): Promise<void> {
+        this._disposed = true;
+        await Promise.all(Array.from(this._disposes.values()).map(s => s && s.onDispose()));
+    }
+
+    async runShutdown(): Promise<void> {
+        this._shutdowned = true;
+        await Promise.all(Array.from(this._shutdowns.values()).map(s => s && s.onApplicationShutdown()));
+    }
+
+    runDestroy(): any {
         if (!this._disposed) {
-            this._disposed = true;
-            await Promise.all(this.shutdowns.map(s => s && s.run()));
-            this.clear();
+            return this.runShutdown()
+                .then(() => {
+                    return this.runDisoise();
+                })
+                .then(() => {
+                    return super.runDestroy();
+                })
+        } else {
+            super.runDestroy();
         }
     }
 
-    has(shutdown: Shutdown | any): boolean {
-        return this.shutdowns.some(i => i === shutdown || i.target === shutdown.target);
+    register(target: any): void {
+        const { onDestroy, onDispose, onApplicationShutdown } = (target as Hooks);
+        if (isFunction(onDestroy)) {
+            this.regDestory(target);
+        }
+        if (isFunction(onDispose)) {
+            this.regDisoise(target);
+        }
+        if (isFunction(onApplicationShutdown)) {
+            this.regShutdown(target);
+        }
     }
-    add(shutdown: Shutdown): void {
-        if (this.shutdowns.some(i => i.target === shutdown.target)) return;
-        this.shutdowns.unshift(shutdown);
+
+    protected regDisoise(hook: OnDispose): void {
+        this._disposes.add(hook);
     }
-    clear(): void {
-        this.shutdowns = [];
-    }
-    forEach(callback: (value: any) => void): void {
-        this.shutdowns.forEach(callback);
-    }
-    remove(shutdown: Shutdown | any): void {
-        let idx = this.shutdowns.findIndex(i => i === shutdown || i.target === shutdown.target);
-        if (idx >= 0) this.shutdowns.splice(idx, 1);
+
+    protected regShutdown(hook: OnShutdown): void {
+        this._shutdowns.add(hook);
     }
 }
 
@@ -191,9 +212,16 @@ export class DefaultModuleFactoryResolver extends ModuleFactoryResolver {
     }
 }
 
-
 export class ModuleOperationFactoryResolver extends OperationFactoryResolver {
     create<T>(type: ClassType<T> | TypeReflect<T>): OperationFactory<T> {
         return new DefaultOperationFactory(type);
     }
+}
+
+
+export class ModuleLifecycleHooksResolver implements LifecycleHooksResolver {
+    resolve(): LifecycleHooks {
+        return new DefaultModuleLifecycleHooks();
+    }
+
 }

@@ -23,7 +23,8 @@ import {
 import { DefaultModuleLoader } from './loader';
 import { ModuleLoader } from '../module.loader';
 import { DefaultPlatform } from './platform';
-import { DestroyCallback } from '../destroy';
+import { DestroyCallback, OnDestroy } from '../destroy';
+import { LifecycleHooks, LifecycleHooksResolver } from '../lifecycle';
 
 
 
@@ -42,7 +43,7 @@ export class DefaultInjector extends Injector {
      */
     protected records: Map<Token, FactoryRecord>;
     private isAlias?: (token: Token) => boolean;
-    private _createdHandle?: (val: any) => void;
+    readonly lifecycle: LifecycleHooks;
 
     constructor(providers: ProviderType[] = EMPTY, readonly parent?: Injector, readonly scope?: InjectorScope) {
         super();
@@ -53,9 +54,14 @@ export class DefaultInjector extends Injector {
             scope = this.scope = 'platform';
         }
         this.initScope(scope);
+        this.lifecycle = this.createLifecycle();
+        this.inject({ provide: LifecycleHooks, useValue: this.lifecycle })
         this.inject(providers);
     }
 
+    protected createLifecycle(): LifecycleHooks {
+        return this.get(LifecycleHooksResolver)?.resolve() ?? new DestroyLifecycleHooks();
+    }
 
     protected initScope(scope?: InjectorScope) {
         const val = { value: this };
@@ -258,7 +264,7 @@ export class DefaultInjector extends Injector {
     setSingleton<T>(token: Token<T>, value: T): this {
         this.assertNotDestroyed();
         const platform = this.platform();
-        if(!platform.hasSingleton(token)){
+        if (!platform.hasSingleton(token)) {
             platform.registerSingleton(this, token, value);
         }
         return this;
@@ -284,15 +290,12 @@ export class DefaultInjector extends Injector {
             notFoundValue = arg1;
         }
 
-        if (!this._createdHandle) {
-            this._createdHandle = platform.toCreatedHandle(this);
-        }
-        return this.tryResolve(token, this.records.get(token), platform, this.parent, context, notFoundValue, flags, this._createdHandle);
+        return this.tryResolve(token, this.records.get(token), platform, this.parent, context, notFoundValue, flags, this.lifecycle);
     }
 
     protected tryResolve(token: Token, record: FactoryRecord | undefined, platform: Platform, parent: Injector | undefined,
-        context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, instanceCreated?: (value: any) => void) {
-        return tryResolveToken(token, record, this.records, platform, parent, context, notFoundValue, flags, instanceCreated);
+        context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, lifecycle: LifecycleHooks) {
+        return tryResolveToken(token, record, this.records, platform, parent, context, notFoundValue, flags, lifecycle);
     }
 
     resolve<T>(option: ResolveOption<T>): T;
@@ -493,7 +496,7 @@ export class DefaultInjector extends Injector {
         }
         this._plat = null!;
         this.isAlias = null!;
-        this._createdHandle = null!;
+        this.lifecycle.clear();
         (this as any).parent = null!;
         (this as any).strategy = null!;
     }
@@ -506,8 +509,8 @@ export class DefaultInjector extends Injector {
 export class StaticInjector extends DefaultInjector {
 
     protected override tryResolve(token: Token, record: FactoryRecord | undefined, platform: Platform, parent: Injector | undefined,
-        context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, created: (value: any) => void) {
-        return tryResolveToken(token, record, this.records, platform, parent, context, notFoundValue, flags, created, true);
+        context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, lifecycle: LifecycleHooks) {
+        return tryResolveToken(token, record, this.records, platform, parent, context, notFoundValue, flags, lifecycle, true);
     }
 }
 
@@ -690,11 +693,11 @@ export class NullInjectorError extends Error {
  * @returns 
  */
 export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Platform, parent: Injector | undefined,
-    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, instanceCreated?: (value: any) => void, isStatic?: boolean): any {
+    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, lifecycle: LifecycleHooks, isStatic?: boolean): any {
     try {
-        const value = resolveToken(token, rd, records, platform, parent, context, notFoundValue, flags, instanceCreated, isStatic);
-        if (rd && rd.fn !== IDENT && rd.fn !== MUTIL && instanceCreated && isDefined(value)) {
-            instanceCreated(value);
+        const value = resolveToken(token, rd, records, platform, parent, context, notFoundValue, flags, lifecycle, isStatic);
+        if (rd && rd.fn !== IDENT && rd.fn !== MUTIL && lifecycle && isDefined(value) && !(value instanceof LifecycleHooks)) {
+            lifecycle.register(value);
         }
         if (isStatic) {
             if (rd) {
@@ -721,7 +724,7 @@ const THROW_FLAGE = {};
  * @returns 
  */
 export function resolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Platform, parent: Injector | undefined,
-    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, instanceCreated?: (value: any) => void, isStatic?: boolean): any {
+    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, lifecycle: LifecycleHooks, isStatic?: boolean): any {
     if (rd && !(flags & InjectFlags.SkipSelf)) {
         let value = rd.value;
         if (value === CIRCULAR) {
@@ -747,7 +750,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                     context,
                     dep.options & OptionFlags.Optional ? null : THROW_FLAGE,
                     InjectFlags.Default,
-                    instanceCreated,
+                    lifecycle,
                     isStatic));
             }
         }
@@ -980,7 +983,7 @@ class ReflectiveRefImpl<T> extends ReflectiveRef<T> {
         if (!this._destroyed) {
             this._destroyed = true;
             try {
-                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.destroy());
+                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy());
             } finally {
                 this._dsryCbs.clear();
                 this.root.destroy();
@@ -994,6 +997,37 @@ class ReflectiveRefImpl<T> extends ReflectiveRef<T> {
 
     onDestroy(callback: DestroyCallback): void {
         this._dsryCbs.add(callback);
+    }
+
+}
+
+export class DestroyLifecycleHooks extends LifecycleHooks {
+
+    private _destrories: Set<OnDestroy>;
+    constructor() {
+        super();
+
+        this._destrories = new Set();
+    }
+
+    register(target: any): void {
+        const { onDestroy } = (target as OnDestroy);
+        if (isFunction(onDestroy)) {
+            this.regDestory(target);
+        }
+    }
+
+    clear(): void {
+        this._destrories.clear();
+    }
+
+    runDestroy(): void {
+        this._destrories.forEach(d => d?.onDestroy());
+    }
+
+
+    protected regDestory(hook: OnDestroy): void {
+        this._destrories.add(hook);
     }
 
 }

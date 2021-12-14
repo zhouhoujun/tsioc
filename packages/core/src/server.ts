@@ -48,5 +48,5 @@ export abstract class ServerSet implements ScanSet<Server> {
     /**
      * destory this.
      */
-    abstract destroy(): void
+    abstract onDestroy(): void
 }

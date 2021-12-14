@@ -11,7 +11,7 @@ export interface Client {
     /**
      * connect server
      */
-    connect(): void | Promise<void>;
+    connect(): Promise<void>;
 
     /**
      * send message.
@@ -58,7 +58,7 @@ export abstract class ClientSet implements ScanSet<Client> {
     /**
      * destory this.
      */
-    abstract destroy(): void
+    abstract onDestroy(): void
     /**
      * connect all client.
      */

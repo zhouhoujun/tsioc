@@ -9,8 +9,9 @@ export * from './metadata/meta';
 export * from './metadata/decor';
 export * from './metadata/tk';
 
-export * from './dispose';
-export * from './shutdown';
+export * from './args';
+export * from './exit';
+export * from './hooks';
 export * from './runnable';
 export * from './server';
 export * from './client';

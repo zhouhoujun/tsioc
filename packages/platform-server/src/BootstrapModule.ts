@@ -132,7 +132,7 @@ export class ServerApplicationExit extends ApplicationExit {
         const callback = async (signal: string) => {
             try {
                 usedsignls.forEach(si => process.removeListener(si, callback));
-                await this.context.dispose();
+                await this.context.onDispose();
                 process.kill(process.pid, signal);
             } catch (err) {
                 logger?.error(err);

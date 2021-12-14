@@ -2,6 +2,7 @@ export * from './types';
 export * from './tokens';
 export * from './action';
 export * from './destroy';
+export * from './lifecycle';
 export * from './injector';
 export * from './invoker';
 

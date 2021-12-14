@@ -2,8 +2,7 @@ import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, Injector, Modules 
 import { DebugLogAspect, LogConfigureToken, LogModule } from '@tsdi/logs';
 import { CONFIGURATION, PROCESS_ROOT } from './metadata/tk';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from './context';
-import { Disposable, isDisposable } from './dispose';
-import { ApplicationArguments, ApplicationExit, ApplicationShutdownHandlers, createShutdown, isShutdown } from './shutdown';
+import { OnDispose } from './hooks';
 import { ConfigureMergerImpl, DefaultConfigureManager } from './configure/manager';
 import { ServerSet } from './server';
 import { ClientSet } from './client';
@@ -13,6 +12,8 @@ import { DEFAULTA_PROVIDERS } from './providers';
 import { ModuleRef } from './module.ref';
 import { ModuleFactoryResolver } from './module.factory';
 import { RunnableSet } from './runnable';
+import { ApplicationExit } from './exit';
+import { ApplicationArguments } from './args';
 
 
 /**
@@ -21,7 +22,7 @@ import { RunnableSet } from './runnable';
  * @export
  * @class Application
  */
-export class Application implements Disposable {
+export class Application implements OnDispose {
 
     private _loads?: Type[];
     /**
@@ -110,7 +111,7 @@ export class Application implements Disposable {
             if (this.context) {
                 const logger = this.context.getLogManager()?.getLogger();
                 logger ? logger.error(err) : console.error(err);
-                await this.context.dispose();
+                await this.context.onDispose();
             } else {
                 console.error(err);
             }
@@ -118,8 +119,8 @@ export class Application implements Disposable {
         }
     }
 
-    dispose(): Promise<void> {
-        return this.context.dispose();
+    onDispose(): Promise<void> {
+        return this.context.onDispose();
     }
 
     get loadTypes(): Type[] {
@@ -141,14 +142,6 @@ export class Application implements Disposable {
         if (option.args && option.args.length) {
             container.get(ApplicationArguments)?.reset(option.args);
         }
-        container.platform().onInstanceCreated((target, inj) => {
-            if (isShutdown(target) || isDisposable(target)) {
-                const hdrs = inj.get(ApplicationShutdownHandlers);
-                if (hdrs && !hdrs.has(target)) {
-                    hdrs.add(createShutdown(target));
-                }
-            }
-        });
         option.platformDeps && container.use(...option.platformDeps);
         return container.resolve({ token: ModuleFactoryResolver, target: option.type }).resolve(option.type).create(container, option);
     }

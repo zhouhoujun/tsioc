@@ -47,7 +47,7 @@ export abstract class ServiceSet implements ScanSet<StartupService> {
     /**
      * destory this.
      */
-    abstract destroy(): void
+    abstract onDestroy(): void
     /**
      * startup all service.
      */
