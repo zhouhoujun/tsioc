@@ -2,7 +2,6 @@ import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, Injector, Modules 
 import { DebugLogAspect, LogConfigureToken, LogModule } from '@tsdi/logs';
 import { CONFIGURATION, PROCESS_ROOT } from './metadata/tk';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from './context';
-import { OnDispose } from './hooks';
 import { ConfigureMergerImpl, DefaultConfigureManager } from './configure/manager';
 import { ServerSet } from './server';
 import { ClientSet } from './client';
@@ -22,7 +21,7 @@ import { ApplicationArguments } from './args';
  * @export
  * @class Application
  */
-export class Application implements OnDispose {
+export class Application {
 
     private _loads?: Type[];
     /**
@@ -111,16 +110,12 @@ export class Application implements OnDispose {
             if (this.context) {
                 const logger = this.context.getLogManager()?.getLogger();
                 logger ? logger.error(err) : console.error(err);
-                await this.context.onDispose();
+                await this.context.destroy();
             } else {
                 console.error(err);
             }
             throw err;
         }
-    }
-
-    onDispose(): Promise<void> {
-        return this.context.onDispose();
     }
 
     get loadTypes(): Type[] {

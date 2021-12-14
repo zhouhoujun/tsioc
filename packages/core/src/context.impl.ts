@@ -148,12 +148,6 @@ export class DefaultApplicationContext extends ApplicationContext {
         return this.injector.get(ConfigureManager);
     }
 
-    async onDispose(): Promise<void> {
-        const modules = Array.from(this.injector.platform().modules).reverse();
-        await Promise.all(modules.map(m => (m as ModuleRef)?.onDispose()));
-        this.destroy();
-    }
-
     /**
     * destory this.
     */
@@ -164,11 +158,8 @@ export class DefaultApplicationContext extends ApplicationContext {
             this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy());
         } finally {
             this._dsryCbs.clear();
-            const parent = this.injector.parent;
-            this.injector.destroy();
-            if (parent) parent.destroy();
+            return this.injector.destroy();
         }
-
     }
     /**
      * register callback on destory.

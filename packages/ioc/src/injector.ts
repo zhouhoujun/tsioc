@@ -314,6 +314,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
             this._destroyed = true;
             try {
                 this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy());
+                this.lifecycle?.runDestroy();
             } finally {
                 this._dsryCbs.clear();
                 this.destroying();

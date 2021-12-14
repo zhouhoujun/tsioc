@@ -36,9 +36,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
             { provide: RunnableFactoryResolver, useValue: this.runnableFactoryResolver },
             { provide: OperationFactoryResolver, useValue: this.operationFactoryResolver }
         );
-        if (scope === 'root') {
-            this.parent?.setValue(LifecycleHooks, this.lifecycle);
-        }
+
         this.setValue(ModuleRef, this);
         const platfrom = this.platform();
         platfrom.modules.add(this);
@@ -81,16 +79,34 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
             }, moduleRefl);
     }
 
+    override destroy() {
+        if (!this.lifecycle.destroyable) {
+            return this.dispose()
+                .finally(() => {
+                    return super.destroy();
+                });
+        } else {
+            super.destroy();
+            if (this.scope === 'root') {
+                return this.parent?.destroy();
+            }
+        }
+    }
 
-    async onDispose(): Promise<void> {
-        if (!this.lifecycle.disposed) return;
-        try {
+    protected async dispose() {
+        if (this.scope === 'root') {
+            await Promise.all(Array.from(this.platform().modules.values())
+                .reverse()
+                .map(async m => {
+                    const mref = m as ModuleRef;
+                    if (mref.lifecycle) {
+                        await mref.lifecycle.runShutdown();
+                        await mref.lifecycle.runDisoise();
+                    }
+                }));
+        } else {
             await this.lifecycle.runShutdown();
             await this.lifecycle.runDisoise();
-        } catch (err) {
-            throw err;
-        } finally {
-            super.destroy();
         }
     }
 
@@ -114,8 +130,8 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 export class DefaultModuleLifecycleHooks extends ModuleLifecycleHooks {
     private _disposes = new Set<OnDispose>();
     private _shutdowns = new Set<OnShutdown>();
-    private _disposed = false;
-    private _shutdowned = false;
+    private _disposed = true;
+    private _shutdowned = true;
 
     clear(): void {
         this._disposes.clear();
@@ -131,6 +147,9 @@ export class DefaultModuleLifecycleHooks extends ModuleLifecycleHooks {
         return this._shutdowned;
     }
 
+    get destroyable(): boolean {
+        return this._shutdowned && this._disposed;
+    }
 
     async runDisoise(): Promise<void> {
         this._disposed = true;
@@ -143,15 +162,7 @@ export class DefaultModuleLifecycleHooks extends ModuleLifecycleHooks {
     }
 
     runDestroy(): any {
-        if (!this._disposed) {
-            return this.runShutdown()
-                .then(() => {
-                    return this.runDisoise();
-                })
-                .then(() => {
-                    return super.runDestroy();
-                })
-        } else {
+        if (this.destroyable) {
             super.runDestroy();
         }
     }
@@ -170,10 +181,12 @@ export class DefaultModuleLifecycleHooks extends ModuleLifecycleHooks {
     }
 
     protected regDisoise(hook: OnDispose): void {
+        this._disposed = false;
         this._disposes.add(hook);
     }
 
     protected regShutdown(hook: OnShutdown): void {
+        this._shutdowned = false;
         this._shutdowns.add(hook);
     }
 }

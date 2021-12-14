@@ -3,7 +3,7 @@ import { ILogger, Logger } from '@tsdi/logs';
 import { Type, isString, isArray, Injector, isFunction, EMPTY, isNil } from '@tsdi/ioc';
 import {
     ConnectionOptions, Configuration, ApplicationContext, ComponentScan, Server, createModelResolver,
-    DBPropertyMetadata, PipeTransform, missingPropPipeError, MODEL_RESOLVERS
+    DBPropertyMetadata, PipeTransform, missingPropPipeError, MODEL_RESOLVERS, OnDispose
 } from '@tsdi/core';
 import {
     getConnection, createConnection, ConnectionOptions as OrmConnOptions, Connection,
@@ -14,14 +14,14 @@ import { DEFAULT_CONNECTION, ObjectIDToken } from './objectid.pipe';
 
 
 @ComponentScan()
-export class TypeormServer implements Server {
+export class TypeormServer implements Server, OnDispose {
     /**
      * default connection options.
      */
     protected options!: ConnectionOptions;
-    
+
     @Logger() private logger!: ILogger;
-    
+
     constructor(protected ctx: ApplicationContext) {
 
     }
@@ -172,7 +172,7 @@ export class TypeormServer implements Server {
         }));
     }
 
-    async dispose(): Promise<void> {
+    async onDispose(): Promise<void> {
         await this.disconnect();
         this.logger = null!;
         this.ctx = null!;

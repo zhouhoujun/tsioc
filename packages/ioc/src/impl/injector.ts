@@ -24,7 +24,7 @@ import { DefaultModuleLoader } from './loader';
 import { ModuleLoader } from '../module.loader';
 import { DefaultPlatform } from './platform';
 import { DestroyCallback, OnDestroy } from '../destroy';
-import { LifecycleHooks, LifecycleHooksResolver } from '../lifecycle';
+import { LifecycleHooks } from '../lifecycle';
 
 
 
@@ -55,12 +55,12 @@ export class DefaultInjector extends Injector {
         }
         this.initScope(scope);
         this.lifecycle = this.createLifecycle();
-        this.inject({ provide: LifecycleHooks, useValue: this.lifecycle })
+        // this.inject({ provide: LifecycleHooks, useValue: this.lifecycle });
         this.inject(providers);
     }
 
     protected createLifecycle(): LifecycleHooks {
-        return this.get(LifecycleHooksResolver)?.resolve() ?? new DestroyLifecycleHooks();
+        return new DestroyLifecycleHooks();
     }
 
     protected initScope(scope?: InjectorScope) {

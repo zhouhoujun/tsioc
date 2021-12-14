@@ -1,9 +1,8 @@
 import { Abstract, DestroyLifecycleHooks, OnDestroy } from '@tsdi/ioc';
-import { LifecycleHooks } from 'packages/ioc/src/lifecycle';
 
 
 /**
- * OnDispose hooks.
+ * OnDispose hooks. use to dispose server client server ...
  */
 export interface OnDispose {
     /**
@@ -36,6 +35,10 @@ export abstract class ModuleLifecycleHooks extends DestroyLifecycleHooks {
      * invoked shutdown or not.
      */
     abstract get shutdown(): boolean;
+    /**
+     * can destroy or not.
+     */
+    abstract get destroyable(): boolean;
     /**
      * run all destroy hook hooks.
      */

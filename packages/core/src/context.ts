@@ -41,7 +41,7 @@ export interface BootstrapOption extends InvokeOption {
  * implements {@link Destroyable}, {@link Disposable}
  */
 @Abstract()
-export abstract class ApplicationContext implements Destroyable, OnDispose {
+export abstract class ApplicationContext implements Destroyable {
     /**
      * application root module injector.
      */
@@ -147,10 +147,6 @@ export abstract class ApplicationContext implements Destroyable, OnDispose {
      * application global bootstraps.
      */
     abstract get bootstraps(): Runnable[];
-    /**
-     * dispose application.
-     */
-    abstract onDispose(): Promise<void>;
     /**
      * destroyed or not.
      */
