@@ -1,6 +1,7 @@
 import { Application, MessageQueue, Context, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, AbstractMiddleware, Module } from '../src';
 import expect = require('expect');
 import { Injector, Injectable, lang, ArgumentError, MissingParameterError } from '@tsdi/ioc';
+import { of } from 'rxjs';
 
 @RouteMapping('/device')
 class DeviceController {
@@ -42,6 +43,13 @@ class DeviceController {
 
         return await defer.promise;
     }
+
+
+    @RouteMapping('/status', 'get')
+    getLastStatus() {
+        return of('working');
+    }
+
 
     @Handle({ cmd: 'xxx' })
     async subMessage() {
@@ -276,6 +284,11 @@ describe('app message queue', () => {
     })
 
 
+    it('response with Observable', async () => {
+        const r = await ctx.getMessager().send('/device/status', { method: 'get'});
+        expect(r.status).toEqual(200);
+        expect(r.body).toEqual('working');
+    })
 
 
     after(() => {

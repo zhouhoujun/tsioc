@@ -151,11 +151,12 @@ export class RouteMappingRef<T> extends AbstractRoute {
                 ]
             });
 
-            const parser = injector.get(ObservableParser);
 
             if (isPromise(result)) {
                 result = await result;
-            } else if (parser && isObservable(result)) {
+            } else if (isObservable(result)) {
+                const parser = injector.get(ObservableParser);
+                if (!parser) throw Error('has not register ObservableParser provider. can not support return Observable in route mapping.');
                 result = await parser.parse(result);
             }
 
