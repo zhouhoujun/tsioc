@@ -186,15 +186,23 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
         if (joinPoint.throwing && metadata.throwing) {
             joinPoint.setArgument(metadata.throwing, joinPoint.throwing);
         }
-        let injector = advicer.aspect.injector;
+
+        const injector = advicer.aspect.injector;
         if (injector) joinPoint.addRef(injector);
-        const returning = joinPoint.injector.invoke(advicer.aspect, advicer.advice.propertyKey!, joinPoint);
-        if (injector) joinPoint.removeRef(injector);
+        let returning = joinPoint.injector.invoke(advicer.aspect, advicer.advice.propertyKey!, joinPoint);
+
         if (sync && isObservable(returning)) {
             const parser = joinPoint.get(ObservableParser);
-            if (parser) return parser.toPromise(returning);
+            if (parser) {
+                returning = parser.toPromise(returning);
+            }
         }
-        return returning;
+        if (isPromise(returning)) {
+            return returning.finally(() => injector && joinPoint.removeRef(injector));
+        } else {
+            injector && joinPoint.removeRef(injector);
+            return returning;
+        }
     }
 
 }

@@ -359,6 +359,9 @@ export interface ModuleRef<T = any> extends Destroyable {
     get instance(): T;
 }
 
+/**
+ * transformation between `Observable` and `Promise`.
+ */
 @Abstract()
 export abstract class ObservableParser {
     /**
@@ -373,6 +376,9 @@ export abstract class ObservableParser {
     abstract toPromise(observable: any): Promise<any>;
 }
 
+/**
+ * platform of {@link Container}.
+ */
 @Abstract()
 export abstract class Platform implements Destroyable {
 
@@ -486,7 +492,7 @@ export function isInjector(target: any): target is Injector {
 }
 
 /**
-* platform container interface.
+* ioc container. 
 */
 @Abstract()
 export abstract class Container extends Injector { };
