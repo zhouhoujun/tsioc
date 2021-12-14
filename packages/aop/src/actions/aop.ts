@@ -125,43 +125,43 @@ export const MatchPointcutAction = function (ctx: RuntimeContext, next: () => vo
 
             if (advice.adviceName === 'Before') {
                 if (!advices.Before.some(a => equals(a, advicer))) {
-                    if (!advices.asyncBefore && advicer.advice.async) {
-                        advices.asyncBefore = true;
+                    if (!advices.syncBefore && advicer.advice.sync) {
+                        advices.syncBefore = true;
                     }
                     advices.Before.push(advicer);
                 }
             } else if (advice.adviceName === 'Pointcut') {
                 if (!advices.Pointcut.some(a => equals(a, advicer))) {
-                    if (!advices.asyncPointcut && advicer.advice.async) {
-                        advices.asyncPointcut = true;
+                    if (!advices.syncPointcut && advicer.advice.sync) {
+                        advices.syncPointcut = true;
                     }
                     advices.Pointcut.push(advicer);
                 }
             } else if (advice.adviceName === 'Around') {
                 if (!advices.Around.some(a => equals(a, advicer))) {
-                    if (!advices.asyncAround && advicer.advice.async) {
-                        advices.asyncAround = true;
+                    if (!advices.syncAround && advicer.advice.sync) {
+                        advices.syncAround = true;
                     }
                     advices.Around.push(advicer);
                 }
             } else if (advice.adviceName === 'After') {
                 if (!advices.After.some(a => equals(a, advicer))) {
-                    if (!advices.asyncAfter && advicer.advice.async) {
-                        advices.asyncAfter = true;
+                    if (!advices.syncAfter && advicer.advice.sync) {
+                        advices.syncAfter = true;
                     }
                     advices.After.push(advicer);
                 }
             } else if (advice.adviceName === 'AfterThrowing') {
                 if (!advices.AfterThrowing.some(a => equals(a, advicer))) {
-                    if (!advices.asyncAfterThrowing && advicer.advice.async) {
-                        advices.asyncAfterThrowing = true;
+                    if (!advices.syncAfterThrowing && advicer.advice.sync) {
+                        advices.syncAfterThrowing = true;
                     }
                     advices.AfterThrowing.push(advicer);
                 }
             } else if (advice.adviceName === 'AfterReturning') {
                 if (!advices.AfterReturning.some(a => equals(a, advicer))) {
-                    if (!advices.asyncAfterReturning && advicer.advice.async) {
-                        advices.asyncAfterReturning = true;
+                    if (!advices.syncAfterReturning && advicer.advice.sync) {
+                        advices.syncAfterReturning = true;
                     }
                     advices.AfterReturning.push(advicer);
                 }

@@ -362,10 +362,15 @@ export interface ModuleRef<T = any> extends Destroyable {
 @Abstract()
 export abstract class ObservableParser {
     /**
+     * parse promise to observable.
+     * @param promise 
+     */
+    abstract fromPromise(promise: Promise<any>): any;
+    /**
      * parse observable to promise.
      * @param observable 
      */
-    abstract parse(observable: any): Promise<any>;
+    abstract toPromise(observable: any): Promise<any>;
 }
 
 @Abstract()

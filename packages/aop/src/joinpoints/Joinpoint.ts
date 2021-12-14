@@ -34,13 +34,14 @@ export interface ReturnDefer {
  * Joinpoint of aop.
  */
 export class Joinpoint<T = any> extends InvocationContext<T> implements IocContext {
-    invokeHandle!: (joinPoint: Joinpoint, advicer: Advicer) => any;
+    invokeHandle!: (joinPoint: Joinpoint, advicer: Advicer, sync?: boolean) => any;
 
     /**
      * custom proxy invoke origin method.
      */
     originProxy?: (joinpoint: Joinpoint) => any;
 
+    readonly originReturning: any;
     returningDefer?: Defer;
     returning: any;
 

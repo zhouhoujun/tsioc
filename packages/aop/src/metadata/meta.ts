@@ -12,9 +12,9 @@ export type AdviceTypes = 'Before' | 'Pointcut' | 'After' | 'AfterReturning' | '
 export interface PointcutAnnotation {
 
     /**
-     * is advice async or not.
+     * is sync execute advice or not.
      */
-    async?: boolean;
+    sync?: boolean;
 
     /**
      * method with specail decortor.

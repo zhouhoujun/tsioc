@@ -28,7 +28,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
     }
 
     override execute(ctx: Joinpoint, next?: () => void) {
-        ctx.invokeHandle = (j, a) => this.invokeAdvice(j, a);
+        ctx.invokeHandle = (j, a, s) => this.invokeAdvice(j, a, s);
         super.execute(ctx, next);
     }
 
@@ -148,7 +148,11 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
 
             self.execute(joinPoint);
 
-            return joinPoint.returningDefer?.promise ?? joinPoint.returning;
+            if (joinPoint.returningDefer) {
+                return isObservable(joinPoint.originReturning) ? joinPoint.get(ObservableParser).fromPromise(joinPoint.returningDefer.promise) : joinPoint.returningDefer.promise;
+            } else {
+                return joinPoint.returning;
+            }
         }
     }
 
@@ -156,7 +160,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
         this.use(CtorAdvicesScope, MethodAdvicesScope);
     }
 
-    protected invokeAdvice(joinPoint: Joinpoint, advicer: Advicer) {
+    protected invokeAdvice(joinPoint: Joinpoint, advicer: Advicer, sync?: boolean) {
         if (joinPoint.destroyed) {
             throw new Error(`joinPoint is destroyed, when invoked advicer ${object2string(advicer)}.\n\njoinPoint object ${object2string(joinPoint, { fun: false, typeInst: true })}`);
         }
@@ -186,6 +190,10 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
         if (injector) joinPoint.addRef(injector);
         const returning = joinPoint.injector.invoke(advicer.aspect, advicer.advice.propertyKey!, joinPoint);
         if (injector) joinPoint.removeRef(injector);
+        if (sync && isObservable(returning)) {
+            const parser = joinPoint.get(ObservableParser);
+            if (parser) return parser.toPromise(returning);
+        }
         return returning;
     }
 
@@ -207,12 +215,12 @@ export class CtorAdvicesScope extends IocActions<Joinpoint> implements IActionSe
     }
 }
 
-function runAdvicers(ctx: Joinpoint, invoker: (joinPoint: Joinpoint, advicer: Advicer) => any, advicers: Advicer[], next: () => void, async: boolean | undefined) {
-    if (async) {
+function runAdvicers(ctx: Joinpoint, invoker: (joinPoint: Joinpoint, advicer: Advicer, sync?: boolean) => any, advicers: Advicer[], next: () => void, sync: boolean | undefined) {
+    if (sync) {
         if (!ctx.returningDefer) {
             ctx.returningDefer = lang.defer();
         }
-        return Promise.all(advicers.map(a => invoker(ctx, a)))
+        return Promise.all(advicers.map(a => invoker(ctx, a, sync)))
             .then(() => next())
             .catch(err => {
                 ctx.throwing = err;
@@ -233,9 +241,9 @@ export const CtorBeforeAdviceAction = function (ctx: Joinpoint, next: () => void
     if (ctx.state === JoinpointState.Before) {
         const invoker = ctx.invokeHandle;
         chain<Joinpoint>([
-            (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.Before, anext, ctx.advices.asyncBefore),
-            (ctx, pnext) => runAdvicers(ctx, invoker, ctx.advices.Pointcut, pnext, ctx.advices.asyncPointcut),
-            (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.asyncAround)
+            (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.Before, anext, ctx.advices.syncBefore),
+            (ctx, pnext) => runAdvicers(ctx, invoker, ctx.advices.Pointcut, pnext, ctx.advices.syncPointcut),
+            (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.syncAround)
         ], ctx, next)
     } else {
         next();
@@ -249,8 +257,8 @@ export const CtorAfterAdviceAction = function (ctx: Joinpoint, next: () => void)
     if (ctx.state === JoinpointState.After) {
         const invoker = ctx.invokeHandle;
         chain<Joinpoint>([
-            (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.After, anext, ctx.advices.asyncAfter),
-            (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.asyncAround)
+            (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.After, anext, ctx.advices.syncAfter),
+            (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.syncAround)
         ], ctx, next);
     } else {
         next();
@@ -281,8 +289,8 @@ export const BeforeAdvicesAction = function (ctx: Joinpoint, next: () => void): 
     const invoker = ctx.invokeHandle;
 
     chain<Joinpoint>([
-        (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.asyncAround),
-        (ctx, bnext) => runAdvicers(ctx, invoker, ctx.advices.Before, bnext, ctx.advices.asyncBefore)
+        (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.syncAround),
+        (ctx, bnext) => runAdvicers(ctx, invoker, ctx.advices.Before, bnext, ctx.advices.syncBefore)
     ], ctx, next);
 }
 
@@ -291,7 +299,7 @@ export const PointcutAdvicesAction = function (ctx: Joinpoint, next: () => void)
         return next();
     }
     ctx.state = JoinpointState.Pointcut;
-    runAdvicers(ctx, ctx.invokeHandle, ctx.advices.Pointcut, next, ctx.advices.asyncPointcut);
+    runAdvicers(ctx, ctx.invokeHandle, ctx.advices.Pointcut, next, ctx.advices.syncPointcut);
 }
 
 export const ExecuteOriginMethodAction = function (ctx: Joinpoint, next: () => void): void {
@@ -318,8 +326,8 @@ export const AfterAdvicesAction = function (ctx: Joinpoint, next: () => void): v
     const invoker = ctx.invokeHandle;
 
     chain<Joinpoint>([
-        (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.asyncAround),
-        (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.After, anext, ctx.advices.asyncAfter)
+        (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.syncAround),
+        (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.After, anext, ctx.advices.syncAfter)
     ], ctx, next);
 }
 
@@ -333,13 +341,13 @@ export const AfterReturningAdvicesAction = function (ctx: Joinpoint, next: () =>
     const invoker = ctx.invokeHandle;
     let isAsync = false;
     let returning = ctx.returning;
-    const orgReturning = ctx.returning;
+    const orgReturning = (ctx as any).originReturning = returning;
     const parser = ctx.get(ObservableParser);
     if (isPromise(returning)) {
         isAsync = true;
     } else if (parser && isObservable(returning)) {
         isAsync = true;
-        returning = parser.parse(returning);
+        returning = parser.toPromise(returning);
     }
     if (isAsync && !ctx.returningDefer) {
         ctx.returningDefer = lang.defer();
@@ -347,7 +355,7 @@ export const AfterReturningAdvicesAction = function (ctx: Joinpoint, next: () =>
 
     chain<Joinpoint, any>([
         (ctx, rnext) => isAsync ?
-            (returning as Promise<any>).then(async val => {
+            (returning as Promise<any>).then(val => {
                 return (rnext() as Promise<any>)
                     .then(() => {
                         if (orgReturning !== ctx.returning) {
@@ -363,8 +371,8 @@ export const AfterReturningAdvicesAction = function (ctx: Joinpoint, next: () =>
                 next();
             }) : rnext()
         ,
-        (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.asyncAround || isAsync),
-        (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.AfterReturning, anext, ctx.advices.asyncAfterReturning || isAsync),
+        (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.syncAround || isAsync),
+        (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.AfterReturning, anext, ctx.advices.syncAfterReturning || isAsync),
         (ctx, anext) => isAsync ? anext() : ctx.returningDefer?.resolve(ctx.returning)
     ], ctx);
 
@@ -376,8 +384,8 @@ export const AfterThrowingAdvicesAction = function (ctx: Joinpoint, next: () => 
     ctx.state = JoinpointState.AfterThrowing;
     const invoker = ctx.invokeHandle;
     chain<Joinpoint>([
-        (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.asyncAround),
-        (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.AfterThrowing, anext, ctx.advices.asyncAfterThrowing)
+        (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.syncAround),
+        (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.AfterThrowing, anext, ctx.advices.syncAfterThrowing)
     ], ctx, () => {
         ctx.returningDefer?.reject(ctx.throwing);
     });

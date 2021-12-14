@@ -8,7 +8,7 @@ import { Client, ClientSet } from './client';
 import { StartupService, ServiceSet } from './service';
 import { ScanSet } from './scan.set';
 import { Runnable, RunnableSet } from './runnable';
-import { EmptyError, Observable } from 'rxjs';
+import { EmptyError, Observable, from } from 'rxjs';
 
 
 
@@ -103,10 +103,13 @@ export const DEFAULTA_PROVIDERS: ProviderType[] = [
     {
         provide: ObservableParser,
         useValue: {
-            parse(obser: Observable<any>): Promise<any> {
+            fromPromise<T>(promise: Promise<T>): Observable<T> {
+                return from(promise);
+            },
+            toPromise<T>(obser: Observable<T>): Promise<T> {
                 return lastValueFrom(obser);
             }
-        }
+        } as ObservableParser
     }
 ]
 
