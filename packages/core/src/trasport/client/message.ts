@@ -1,32 +1,40 @@
+import { Inject } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { Router } from '../../middlewares/router';
-import { Client } from '../../client';
-import { OnDispose } from '../../lifecycle';
+import { ContextBase, RequestBase, ResponseBase } from '../../middlewares';
+import { RootRouter, Router } from '../../middlewares/router';
+import { ReadPacket, WritePacket } from '../packet';
+import { AbstractClient } from './abstract';
 
 
-export class MessageClient implements Client, OnDispose {
+export class MessageClient extends AbstractClient {
 
-    constructor(private router: Router) {
+    private router: Router | undefined;
 
-    }
+    @Inject() private root!: RootRouter;
 
     async connect(): Promise<void> {
-
+        if (!this.router) {
+            this.router = this.root.getRoot('msg:');
+        }
     }
 
-    send<TResult = any, TInput = any>(pattern: any, data: TInput): Observable<TResult> {
+    async onDispose(): Promise<void> {
+        this.router = null!;
+        this.root = null!;
+    }
+
+    protected publish(packet: ReadPacket<any>, callback: (packet: WritePacket<any>) => void): () => void {
+        // const req: Request = new RequestBase(packet);
+        // const headers = req.getHeaders();
+        // const rep = new ResponseBase({ headers });
+        // return new ContextBase(req, rep, injector);
+        // this.router?.execute()
         throw new Error('Method not implemented.');
-        // this.router.execute({
-        //     pattern,
-        //     data
-        // });
     }
-    emit<TResult = any, TInput = any>(pattern: any, data: TInput): Observable<TResult> {
+
+    protected dispatchEvent<T = any>(packet: ReadPacket<any>): Promise<T> {
         throw new Error('Method not implemented.');
     }
 
-    onDispose(): Promise<void> {
-        throw new Error('Method not implemented.');
-    }
-
+    
 }

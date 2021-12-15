@@ -5,7 +5,7 @@ import { HeadersOption } from './header';
  * abstract request.
  */
 @Abstract()
-export abstract class Request {
+export abstract class Request  {
     /**
      * Get request originalUrl.
      *
