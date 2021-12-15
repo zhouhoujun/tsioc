@@ -1,4 +1,5 @@
 import { Abstract, isNil } from '@tsdi/ioc';
+import { ILogger, Logger } from '@tsdi/logs';
 import { connectable, defer, Observable, Observer, Subject, throwError } from 'rxjs';
 import { Client } from '../../client';
 import { OnDispose } from '../../lifecycle';
@@ -10,6 +11,8 @@ import { ReadPacket, WritePacket } from '../packet';
 @Abstract()
 export abstract class AbstractClient implements Client, OnDispose {
 
+    @Logger() protected logger!: ILogger;
+    
     constructor() {
 
     }

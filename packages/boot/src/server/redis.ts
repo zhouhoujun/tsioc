@@ -1,12 +1,13 @@
-import { AbstractServer } from './server';
+import { AbstractServer } from '@tsdi/core';
 
 export class RedisServer extends AbstractServer {
-    startup(): void | Promise<void> {
-        throw new Error('Method not implemented.');
-    }
-    dispose(): Promise<void> {
+    
+    startup(): Promise<void> {
         throw new Error('Method not implemented.');
     }
 
+    onDispose(): Promise<void> {
+        throw new Error('Method not implemented.');
+    }
     
 }

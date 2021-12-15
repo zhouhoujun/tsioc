@@ -1,10 +1,12 @@
-import { AbstractServer } from './server';
+import { AbstractServer } from '@tsdi/core';
 
 export class KafkaServer extends AbstractServer {
-    startup(): void | Promise<void> {
+    
+    startup(): Promise<void> {
         throw new Error('Method not implemented.');
     }
-    dispose(): Promise<void> {
+
+    onDispose(): Promise<void> {
         throw new Error('Method not implemented.');
     }
 

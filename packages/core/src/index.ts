@@ -36,6 +36,8 @@ export * from './Application';
 // auth
 export * from './auth';
 
+export * from './trasport';
+
 // middlewares
 export * from './middlewares';
 export * from './middleware';
