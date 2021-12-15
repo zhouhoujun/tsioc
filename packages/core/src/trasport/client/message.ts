@@ -1,4 +1,4 @@
-import { Inject } from '@tsdi/ioc';
+import { Inject, Injectable } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { ContextBase, RequestBase, ResponseBase } from '../../middlewares';
 import { RootRouter, Router } from '../../middlewares/router';
@@ -6,6 +6,7 @@ import { ReadPacket, WritePacket } from '../packet';
 import { AbstractClient } from './abstract';
 
 
+@Injectable()
 export class MessageClient extends AbstractClient {
 
     private router: Router | undefined;

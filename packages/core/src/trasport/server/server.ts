@@ -1,7 +1,7 @@
 import { Abstract } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
-import { OnDispose } from '../lifecycle';
-import { Server } from '../server';
+import { OnDispose } from '../../lifecycle';
+import { Server } from '../../server';
 
 
 @Abstract()

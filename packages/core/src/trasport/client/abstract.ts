@@ -77,6 +77,7 @@ export abstract class AbstractClient implements Client, OnDispose {
     }
 
     protected serializeError(err: any): any {
+        this.logger.error(err);
         return err;
     }
 
