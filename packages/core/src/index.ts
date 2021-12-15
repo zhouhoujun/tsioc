@@ -11,7 +11,7 @@ export * from './metadata/tk';
 
 export * from './args';
 export * from './exit';
-export * from './hooks';
+export * from './lifecycle';
 export * from './runnable';
 export * from './server';
 export * from './client';

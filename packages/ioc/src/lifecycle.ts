@@ -2,10 +2,14 @@ import { Platform } from './injector';
 import { Abstract } from './metadata/fac';
 
 
-
+/**
+ * lifecycle hooks.
+ */
 @Abstract()
 export abstract class LifecycleHooks {
-
+    /**
+     * can destroy or not.
+     */
     abstract get destroyable(): boolean;
     /**
      * try dispose to enable destory.

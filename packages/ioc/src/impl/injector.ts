@@ -43,7 +43,7 @@ export class DefaultInjector extends Injector {
      */
     protected records: Map<Token, FactoryRecord>;
     private isAlias?: (token: Token) => boolean;
-    readonly lifecycle: LifecycleHooks;
+    lifecycle!: LifecycleHooks;
 
     constructor(providers: ProviderType[] = EMPTY, readonly parent?: Injector, readonly scope?: InjectorScope) {
         super();
@@ -54,13 +54,10 @@ export class DefaultInjector extends Injector {
             scope = this.scope = 'platform';
         }
         this.initScope(scope);
-        this.lifecycle = this.createLifecycle();
-        this.inject({ provide: LifecycleHooks, useValue: this.lifecycle });
         this.inject(providers);
     }
 
-    protected createLifecycle(): LifecycleHooks {
-        let platform = this.scope === 'root' ? this.platform() : undefined;
+    protected createLifecycle(platform?: Platform): LifecycleHooks {
         return this.get(LifecycleHooksResolver)?.resolve(platform) ?? new DestroyLifecycleHooks(platform);
     }
 
@@ -71,22 +68,27 @@ export class DefaultInjector extends Injector {
                 platformAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = isPlatformAlias;
                 this._plat = new DefaultPlatform(this);
+                this.lifecycle = this.createLifecycle();
                 registerCores(this);
                 break;
             case 'root':
                 this.platform().setInjector(scope, this);
                 rootAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = isRootAlias;
+                this.lifecycle = this.createLifecycle(this.platform());
                 break;
             case 'provider':
             case 'invocation':
+                this.lifecycle = this.createLifecycle();
                 break;
             default:
                 if (scope) this.platform().setInjector(scope, this);
                 injectAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = isInjectAlias;
+                this.lifecycle = this.createLifecycle();
                 break;
         }
+        this.inject({ provide: LifecycleHooks, useValue: this.lifecycle });
     }
 
     protected initParent(parent: Injector) {
@@ -295,7 +297,7 @@ export class DefaultInjector extends Injector {
     }
 
     protected tryResolve(token: Token, record: FactoryRecord | undefined, platform: Platform, parent: Injector | undefined,
-        context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, lifecycle: LifecycleHooks) {
+        context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, lifecycle?: LifecycleHooks) {
         return tryResolveToken(token, record, this.records, platform, parent, context, notFoundValue, flags, lifecycle);
     }
 
@@ -694,10 +696,10 @@ export class NullInjectorError extends Error {
  * @returns 
  */
 export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Platform, parent: Injector | undefined,
-    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, lifecycle: LifecycleHooks, isStatic?: boolean): any {
+    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, lifecycle?: LifecycleHooks, isStatic?: boolean): any {
     try {
         const value = resolveToken(token, rd, records, platform, parent, context, notFoundValue, flags, lifecycle, isStatic);
-        if (rd && rd.fn !== IDENT && rd.fn !== MUTIL && lifecycle && isDefined(value) && !(value instanceof LifecycleHooks)) {
+        if (rd && rd.fn !== IDENT && rd.fn !== MUTIL && lifecycle && isTypeObject(value)) {
             lifecycle.register(value);
         }
         if (isStatic) {
@@ -725,7 +727,7 @@ const THROW_FLAGE = {};
  * @returns 
  */
 export function resolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Platform, parent: Injector | undefined,
-    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, lifecycle: LifecycleHooks, isStatic?: boolean): any {
+    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, lifecycle?: LifecycleHooks, isStatic?: boolean): any {
     if (rd && !(flags & InjectFlags.SkipSelf)) {
         let value = rd.value;
         if (value === CIRCULAR) {

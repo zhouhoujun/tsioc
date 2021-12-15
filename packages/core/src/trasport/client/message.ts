@@ -1,7 +1,7 @@
 import { Observable } from 'rxjs';
 import { Router } from '../../middlewares/router';
 import { Client } from '../../client';
-import { OnDispose } from '../../hooks';
+import { OnDispose } from '../../lifecycle';
 
 
 export class MessageClient implements Client, OnDispose {

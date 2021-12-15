@@ -1,4 +1,4 @@
-import { Abstract, DestroyLifecycleHooks, OnDestroy } from '@tsdi/ioc';
+import { Abstract, LifecycleHooks, OnDestroy } from '@tsdi/ioc';
 
 
 /**
@@ -24,9 +24,11 @@ export interface OnShutdown {
 
 export type Hooks = OnDispose & OnShutdown & OnDestroy;
 
-
+/**
+ * module lifecycle hooks
+ */
 @Abstract()
-export abstract class ModuleLifecycleHooks extends DestroyLifecycleHooks {
+export abstract class ModuleLifecycleHooks extends LifecycleHooks {
     /** 
      * invoked dispose or not
      */
@@ -35,10 +37,6 @@ export abstract class ModuleLifecycleHooks extends DestroyLifecycleHooks {
      * invoked shutdown or not.
      */
     abstract get shutdown(): boolean;
-    /**
-     * can destroy or not.
-     */
-    abstract get destroyable(): boolean;
     /**
      * run all destroy hook hooks.
      */

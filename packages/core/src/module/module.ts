@@ -2,9 +2,9 @@
 import {
     DefaultInjector, Injector, InjectorScope, InjectorTypeWithProviders, refl, isFunction,
     Platform, ModuleReflect, Modules, processInjectorType, ProviderType, Token, Type, ClassType,
-    OperationFactory, TypeReflect, DefaultOperationFactory, OperationFactoryResolver, LifecycleHooksResolver, LifecycleHooks, lang
+    OperationFactory, TypeReflect, DefaultOperationFactory, OperationFactoryResolver, LifecycleHooksResolver, LifecycleHooks, lang, DestroyLifecycleHooks
 } from '@tsdi/ioc';
-import { OnDispose, OnShutdown, ModuleLifecycleHooks, Hooks } from '../hooks';
+import { OnDispose, OnShutdown, ModuleLifecycleHooks, Hooks } from '../lifecycle';
 import { ModuleFactory, ModuleFactoryResolver, ModuleOption } from '../module.factory';
 import { ModuleRef } from '../module.ref';
 import { RunnableFactoryResolver } from '../runnable';
@@ -97,7 +97,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
 
 
-export class DefaultModuleLifecycleHooks extends ModuleLifecycleHooks {
+export class DefaultModuleLifecycleHooks extends DestroyLifecycleHooks implements ModuleLifecycleHooks {
     private _disposes = new Set<OnDispose>();
     private _shutdowns = new Set<OnShutdown>();
     private _disposed = true;

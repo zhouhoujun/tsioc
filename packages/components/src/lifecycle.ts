@@ -1,7 +1,7 @@
 /**
  * change.
  */
- export interface Change {
+export interface Change {
     previousValue: any;
     currentValue: any;
     firstChange?: boolean;
@@ -148,7 +148,7 @@ export interface AfterViewChecked {
  * component destroy hooks.
  *
  * @export
- * @interface AfterContentInit
+ * @interface OnDestroy
  */
 export interface OnDestroy {
     /**
