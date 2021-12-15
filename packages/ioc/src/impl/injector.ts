@@ -24,7 +24,7 @@ import { DefaultModuleLoader } from './loader';
 import { ModuleLoader } from '../module.loader';
 import { DefaultPlatform } from './platform';
 import { DestroyCallback, OnDestroy } from '../destroy';
-import { LifecycleHooks } from '../lifecycle';
+import { LifecycleHooks, LifecycleHooksResolver } from '../lifecycle';
 
 
 
@@ -55,12 +55,13 @@ export class DefaultInjector extends Injector {
         }
         this.initScope(scope);
         this.lifecycle = this.createLifecycle();
-        // this.inject({ provide: LifecycleHooks, useValue: this.lifecycle });
+        this.inject({ provide: LifecycleHooks, useValue: this.lifecycle });
         this.inject(providers);
     }
 
     protected createLifecycle(): LifecycleHooks {
-        return new DestroyLifecycleHooks();
+        let platform = this.scope === 'root' ? this.platform() : undefined;
+        return this.get(LifecycleHooksResolver)?.resolve(platform) ?? new DestroyLifecycleHooks(platform);
     }
 
     protected initScope(scope?: InjectorScope) {
@@ -1003,8 +1004,25 @@ class ReflectiveRefImpl<T> extends ReflectiveRef<T> {
 
 export class DestroyLifecycleHooks extends LifecycleHooks {
 
+    get destroyable(): boolean {
+        return this.platform ? this.platform.modules.size < 1 : true;
+    }
+
+    async dispose(): Promise<void> {
+        if (this.destroyable) return;
+        if (this.platform) {
+            const platform = this.platform;
+            this.platform = null!;
+            await Promise.all(Array.from(platform.modules.values())
+                .reverse()
+                .map(m => {
+                    return m.lifecycle.dispose();
+                }));
+        }
+    }
+
     private _destrories: Set<OnDestroy>;
-    constructor() {
+    constructor(protected platform?: Platform) {
         super();
 
         this._destrories = new Set();

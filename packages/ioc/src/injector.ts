@@ -309,16 +309,33 @@ export abstract class Injector implements Destroyable, OnDestroy {
     /**
     * destory this.
     */
-    destroy(): void {
-        if (!this._destroyed) {
-            this._destroyed = true;
-            try {
-                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy());
-                this.lifecycle?.runDestroy();
-            } finally {
-                this._dsryCbs.clear();
-                this.destroying();
+    destroy(): void | Promise<void> {
+        if (!this.lifecycle.destroyable) {
+            return this.lifecycle.dispose()
+                .finally(() => {
+                    this.tryDestroy();
+                    if (this.scope === 'root') {
+                        return this.parent?.destroy();
+                    }
+                })
+        } else {
+            this.tryDestroy();
+            if (this.scope === 'root') {
+                return this.parent?.destroy();
             }
+        }
+
+    }
+
+    private tryDestroy() {
+        if (this._destroyed) return;
+        this._destroyed = true;
+        try {
+            this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy());
+            this.lifecycle?.runDestroy();
+        } finally {
+            this._dsryCbs.clear();
+            this.destroying();
         }
     }
 
@@ -332,10 +349,11 @@ export abstract class Injector implements Destroyable, OnDestroy {
      */
     onDestroy(callback: DestroyCallback): void;
     onDestroy(callback?: DestroyCallback): void {
-        if(!callback){
-           return this.destroy();
+        if (!callback) {
+            this.destroy();
+        } else {
+            this._dsryCbs.add(callback);
         }
-        this._dsryCbs.add(callback);
     }
 
     offDestroy(callback: DestroyCallback) {
@@ -369,6 +387,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
 }
 
 export interface ModuleRef<T = any> extends Destroyable {
+    get lifecycle(): LifecycleHooks;
     get injector(): Injector;
     get moduleType(): Type<T>;
     get instance(): T;

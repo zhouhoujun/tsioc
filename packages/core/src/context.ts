@@ -15,7 +15,6 @@ import { ServerSet } from './server';
 import { ModuleOption } from './module.factory';
 import { ModuleRef } from './module.ref';
 import { ApplicationArguments } from './args';
-import { OnDispose } from './hooks';
 
 
 /**

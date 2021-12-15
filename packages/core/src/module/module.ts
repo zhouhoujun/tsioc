@@ -2,7 +2,7 @@
 import {
     DefaultInjector, Injector, InjectorScope, InjectorTypeWithProviders, refl, isFunction,
     Platform, ModuleReflect, Modules, processInjectorType, ProviderType, Token, Type, ClassType,
-    OperationFactory, TypeReflect, DefaultOperationFactory, OperationFactoryResolver, LifecycleHooksResolver, LifecycleHooks
+    OperationFactory, TypeReflect, DefaultOperationFactory, OperationFactoryResolver, LifecycleHooksResolver, LifecycleHooks, lang
 } from '@tsdi/ioc';
 import { OnDispose, OnShutdown, ModuleLifecycleHooks, Hooks } from '../hooks';
 import { ModuleFactory, ModuleFactoryResolver, ModuleOption } from '../module.factory';
@@ -55,7 +55,8 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     }
 
     protected createLifecycle(): LifecycleHooks {
-        return this.get(LifecycleHooksResolver)?.resolve() ?? new DefaultModuleLifecycleHooks();
+        let platform = this.scope === 'root' ? this.platform() : undefined;
+        return this.get(LifecycleHooksResolver)?.resolve(platform) ?? new DefaultModuleLifecycleHooks(platform);
     }
 
     get injector(): Injector {
@@ -77,37 +78,6 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
                 this._defs.add(type);
                 this.registerReflect(platform, tyref);
             }, moduleRefl);
-    }
-
-    override destroy() {
-        if (!this.lifecycle.destroyable) {
-            return this.dispose()
-                .finally(() => {
-                    return super.destroy();
-                });
-        } else {
-            super.destroy();
-            if (this.scope === 'root') {
-                return this.parent?.destroy();
-            }
-        }
-    }
-
-    protected async dispose() {
-        if (this.scope === 'root') {
-            await Promise.all(Array.from(this.platform().modules.values())
-                .reverse()
-                .map(async m => {
-                    const mref = m as ModuleRef;
-                    if (mref.lifecycle) {
-                        await mref.lifecycle.runShutdown();
-                        await mref.lifecycle.runDisoise();
-                    }
-                }));
-        } else {
-            await this.lifecycle.runShutdown();
-            await this.lifecycle.runDisoise();
-        }
     }
 
     protected override destroying() {
@@ -133,6 +103,10 @@ export class DefaultModuleLifecycleHooks extends ModuleLifecycleHooks {
     private _disposed = true;
     private _shutdowned = true;
 
+    constructor(platform?: Platform) {
+        super(platform);
+    }
+
     clear(): void {
         this._disposes.clear();
         this._shutdowns.clear();
@@ -149,6 +123,23 @@ export class DefaultModuleLifecycleHooks extends ModuleLifecycleHooks {
 
     get destroyable(): boolean {
         return this._shutdowned && this._disposed;
+    }
+
+    override async dispose(): Promise<void> {
+        if (this.destroyable) return;
+        if (this.platform) {
+            await Promise.all(Array.from(this.platform.modules.values())
+                .reverse()
+                .map(m => {
+                    return m.lifecycle === this ? lang.step([
+                        () => this.runShutdown(),
+                        () => this.runDisoise()
+                    ]) : m.lifecycle.dispose();
+                }));
+        } else {
+            await this.runShutdown();
+            await this.runDisoise();
+        }
     }
 
     async runDisoise(): Promise<void> {
@@ -173,14 +164,14 @@ export class DefaultModuleLifecycleHooks extends ModuleLifecycleHooks {
             this.regDestory(target);
         }
         if (isFunction(onDispose)) {
-            this.regDisoise(target);
+            this.regDispise(target);
         }
         if (isFunction(onApplicationShutdown)) {
             this.regShutdown(target);
         }
     }
 
-    protected regDisoise(hook: OnDispose): void {
+    protected regDispise(hook: OnDispose): void {
         this._disposed = false;
         this._disposes.add(hook);
     }
@@ -233,8 +224,8 @@ export class ModuleOperationFactoryResolver extends OperationFactoryResolver {
 
 
 export class ModuleLifecycleHooksResolver implements LifecycleHooksResolver {
-    resolve(): LifecycleHooks {
-        return new DefaultModuleLifecycleHooks();
+    resolve(plaform?: Platform): LifecycleHooks {
+        return new DefaultModuleLifecycleHooks(plaform);
     }
 
 }

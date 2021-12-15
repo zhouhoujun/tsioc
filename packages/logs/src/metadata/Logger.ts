@@ -2,9 +2,8 @@ import {
     TypeMetadata, createDecorator, EMPTY_OBJ, OperationArgumentResolver, Type, isString,
     lang, PropParamDecorator, ArgumentError, Decors, ActionTypes
 } from '@tsdi/ioc';
-import { LoggerManager, LOGGER_MANAGER } from '..';
 import { Level } from '../Level';
-import { LoggerConfig } from '../LoggerManager';
+import { LoggerConfig, LoggerManager, LOGGER_MANAGER } from '../LoggerManager';
 import { ConfigureLoggerManager } from '../manager';
 
 

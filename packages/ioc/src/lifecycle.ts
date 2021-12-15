@@ -1,9 +1,16 @@
+import { Platform } from './injector';
 import { Abstract } from './metadata/fac';
 
 
 
 @Abstract()
 export abstract class LifecycleHooks {
+
+    abstract get destroyable(): boolean;
+    /**
+     * try dispose to enable destory.
+     */
+    abstract dispose(): Promise<void>;
     /**
      * register hooks
      * @param hook 
@@ -21,5 +28,5 @@ export abstract class LifecycleHooks {
 
 @Abstract()
 export abstract class LifecycleHooksResolver {
-    abstract resolve(): LifecycleHooks;
+    abstract resolve(plaform?: Platform): LifecycleHooks;
 } 
