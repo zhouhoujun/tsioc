@@ -25,7 +25,7 @@ export abstract class TransactionStatus {
 
     /**
 	 * Flush the underlying session to the datastore, if applicable:
-	 * for example, all affected TypeORM/Hibernate/JPA sessions.
+	 * for example, all affected TypeORM sessions.
 	 * <p>This is effectively just a hint and may be a no-op if the underlying
 	 * transaction manager does not have a flush concept. A flush signal may
 	 * get applied to the primary resource or to transaction synchronizations,

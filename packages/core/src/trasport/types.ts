@@ -2,6 +2,6 @@
 /**
  * transport type.
  */
-export type TransportType  =  'tcp' | 'mqtt' | 'grpc' | 'rmq' | 'kafka' | 'redis'
- | 'amqp' | 'msg';
+export type TransportType  =  'tcp' | 'grpc' | 'rmq' | 'kafka' | 'redis'
+ | 'amqp' | 'msg' | 'wss' | 'ws' | 'mqtt' | 'mqtts' | 'ssl' | 'wx' | 'wxs';
  

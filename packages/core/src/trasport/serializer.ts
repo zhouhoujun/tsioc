@@ -1,10 +1,13 @@
+import { Abstract } from '@tsdi/ioc';
+
 /**
  * serializer.
  */
-export interface Serializer<TInput = any, TOutput = any> {
+@Abstract()
+export abstract class Serializer<TInput = any, TOutput = any> {
     /**
      * serialize value
      * @param value 
      */
-    serialize(value: TInput): TOutput;
+    abstract serialize(value: TInput): TOutput;
 }

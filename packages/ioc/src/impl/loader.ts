@@ -1,6 +1,6 @@
 import { ChildModule, LoadType, Modules, PathModules, Type } from '../types';
 import { isArray, isFunction, isMetadataObject, isString } from '../utils/chk';
-import { first, getTypes } from '../utils/lang';
+import { getTypes } from '../utils/lang';
 import { ModuleLoader } from '../module.loader';
 import { Injector } from '../injector';
 
@@ -45,7 +45,7 @@ export class DefaultModuleLoader extends ModuleLoader {
 
     getMoudle(mdty: LoadType): Promise<Modules[]> {
         if (isString(mdty)) {
-            return this.isFile(mdty) ? this.loadFile(mdty) : this.loadModule(mdty).then(m => m ? [m] : []);
+            return this.isFile(mdty) ? this.loadFile(mdty) : this.require(mdty).then(m => m ? [m] : []);
         } else if (isPathModules(mdty)) {
             return this.loadPathModule(mdty);
         } else if (isChildModule(mdty)) {
@@ -77,8 +77,9 @@ export class DefaultModuleLoader extends ModuleLoader {
         return mdls.map(md => getTypes(md));
     }
 
-    async require(fileName: string): Promise<any> {
-        return first(await this.loadFile(fileName));
+    require(moduleName: string): Promise<any> {
+        let loader = this.getLoader();
+        return loader(moduleName);
     }
 
     protected loadFile(files: string | string[], basePath?: string): Promise<Modules[]> {
@@ -108,18 +109,12 @@ export class DefaultModuleLoader extends ModuleLoader {
         return str && fileChkExp.test(str.split('\\').join('/'));
     }
 
-
-    protected loadModule(moduleName: string): Promise<Modules> {
-        let loader = this.getLoader();
-        return loader(moduleName);
-    }
-
     protected async loadPathModule(pmd: PathModules): Promise<Modules[]> {
         let modules = pmd.files ? await this.loadFile(pmd.files, pmd.basePath) : [];
         if (pmd.modules) {
             await Promise.all(pmd.modules.map(async nmd => {
                 if (isString(nmd)) {
-                    modules.push(await this.loadModule(nmd));
+                    modules.push(await this.require(nmd));
                 } else {
                     modules.push(nmd);
                 }

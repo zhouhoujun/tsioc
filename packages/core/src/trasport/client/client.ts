@@ -1,18 +1,28 @@
-import { Abstract, isNil } from '@tsdi/ioc';
+import { Abstract, Inject, isNil, ModuleLoader } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { connectable, defer, Observable, Observer, Subject, throwError } from 'rxjs';
+import { mergeMap } from 'rxjs/operators';
 import { Client } from '../../client';
 import { OnDispose } from '../../lifecycle';
 import { InvalidMessageError } from '../error';
-import { mergeMap } from 'rxjs/operators';
-import { ReadPacket, WritePacket } from '../packet';
+import { IncomingResponse, OutgoingEvent, OutgoingRequest, ReadPacket, WritePacket } from '../packet';
+import { Deserializer } from '../deserializer';
+import { Serializer } from '../serializer';
 
 
 @Abstract()
 export abstract class AbstractClient implements Client, OnDispose {
 
-    @Logger() protected logger!: ILogger;
-    
+    @Logger() protected readonly logger!: ILogger;
+
+    @Inject() protected loader!: ModuleLoader;
+    @Inject({ provider: Serializer, nullable: true })
+    protected serializer: Serializer<OutgoingEvent | OutgoingRequest> | undefined;
+    @Inject({ provider: Deserializer, nullable: true })
+    protected deserializer: Deserializer<IncomingResponse> | undefined;
+
+    protected routing = new Map<string, Function>();
+
     constructor() {
 
     }
@@ -77,7 +87,6 @@ export abstract class AbstractClient implements Client, OnDispose {
     }
 
     protected serializeError(err: any): any {
-        this.logger.error(err);
         return err;
     }
 

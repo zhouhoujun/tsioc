@@ -1,5 +1,5 @@
-import { Module, Message, MessageQueue, StartupService, ApplicationContext, Configuration, Runner, ComponentScan } from '@tsdi/core';
-import { Injectable, Inject, Singleton, Destroy } from '@tsdi/ioc';
+import { Module, Message, MessageQueue, StartupService, ApplicationContext, Configuration, Runner, ComponentScan, OnDispose } from '@tsdi/core';
+import { Injectable, Inject, OnDestroy } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
 import { ILogger, LogConfigure, Logger, LogModule } from '@tsdi/logs';
 import * as net from 'net';
@@ -109,7 +109,7 @@ export class ModuleB { }
 
 
 @ComponentScan()
-export class SocketService implements StartupService, Destroy {
+export class SocketService implements StartupService, OnDestroy {
 
     @Logger() logger!: ILogger;
 
@@ -126,7 +126,7 @@ export class SocketService implements StartupService, Destroy {
         this.logger.log('destroyed state', 'init', this.init_times);
     }
 
-    destroy() {
+    onDestroy() {
         this.logger.log('SocketService destroying...');
         this.tcpServer.removeAllListeners();
         this.tcpServer.close();

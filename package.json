@@ -63,6 +63,8 @@
     "json-in-place": "^1.0.1",
     "liftoff": "^2.5.0",
     "lodash": "^4.13.1",
+    "log4js": "^6.3.0",
+    "mqtt": "^4.2.8",
     "minimatch": "^3.0.4",
     "minimist": "^1.2.5",
     "on-change": "^1.6.2",
@@ -85,8 +87,5 @@
     "vinyl-fs": "^3.0.3",
     "zone.js": "~0.11.4"
   },
-  "homepage": "https://github.com/zhouhoujun/tsioc#readme",
-  "dependencies": {
-    "log4js": "^6.3.0"
-  }
+  "homepage": "https://github.com/zhouhoujun/tsioc#readme"
 }

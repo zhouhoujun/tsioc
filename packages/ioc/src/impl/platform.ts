@@ -29,8 +29,6 @@ export class DefaultPlatform implements Platform {
         injector.onDestroy(this);
     }
 
-
-
     /**
      * register singleton value
      * @param token 
@@ -137,7 +135,7 @@ export class DefaultPlatform implements Platform {
         tyRef.class.extendTypes.forEach(t => {
             let tpd = this._pdrs.get(t);
             if (tpd) {
-                pdrs.push(...tpd);
+                pdrs.unshift(...tpd);
             }
         })
         return pdrs;

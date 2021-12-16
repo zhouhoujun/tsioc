@@ -8,7 +8,7 @@ import { Client, ClientSet } from './client';
 import { StartupService, ServiceSet } from './service';
 import { ScanSet } from './scan.set';
 import { Runnable, RunnableSet } from './runnable';
-import { EmptyError, Observable, from, lastValueFrom } from 'rxjs';
+import { Observable, from, lastValueFrom } from 'rxjs';
 
 
 

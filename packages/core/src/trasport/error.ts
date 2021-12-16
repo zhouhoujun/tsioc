@@ -9,4 +9,3 @@ export class InvalidMessageError extends Error  {
         Error.captureStackTrace(this);
     }
 }
-

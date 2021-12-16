@@ -1,10 +1,13 @@
+import { Abstract } from '@tsdi/ioc';
+
 /**
  * descrializer.
  */
-export interface Deserializer<TInput = any, TOutput = any> {
+@Abstract()
+export abstract class Deserializer<TOutput = any, TInput = any> {
     /**
      * deserialize value.
      * @param value 
      */
-    deserialize(value: TInput): TOutput | Promise<TOutput>;
+    abstract deserialize(value: TInput): TOutput | Promise<TOutput>;
 }

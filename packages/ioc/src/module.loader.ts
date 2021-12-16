@@ -23,12 +23,12 @@ export abstract class ModuleLoader {
      */
     abstract register(injecor: Injector, modules: LoadType[]): Promise<Type[]>;
     /**
-     * dynamic require file.
+     * dynamic require module.
      *
-     * @param {string} fileName
+     * @param {string} moduleName
      * @returns {Promise<any>}
      */
-    abstract require(fileName: string): Promise<any>;
+    abstract require(moduleName: string): Promise<any>;
     /**
      * get modules.
      * @param mdty
