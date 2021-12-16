@@ -22,22 +22,24 @@ export abstract class ServiceSet implements ScanSet<StartupService> {
      * the service count.
      */
     abstract get count(): number;
-    
+    /**
+     * get all service.
+     */
     abstract getAll(): Resolver<StartupService>[];
     /**
      * has the client type or not.
-     * @param type 
+     * @param type class type.
      */
      abstract has(type: Type<any>): boolean;
     /**
      * add service resolver.
      * @param resolver
-     * @param order 
+     * @param order the order insert to.
      */
     abstract add(resolver: Resolver<StartupService>, order?: number): void;
     /**
      * remove service resolver.
-     * @param resolver 
+     * @param resolver resolver instance.
      */
     abstract remove(resolver: Resolver<StartupService>): void;
     /**

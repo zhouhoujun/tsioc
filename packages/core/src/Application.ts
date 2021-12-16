@@ -66,12 +66,12 @@ export class Application {
     }
 
     /**
-    * run application.
-    *
-    * @static
-    * @param {ApplicationOption<M>)} target
-    * @returns {Promise<ApplicationContext<M>>}
-    */
+     * run application.
+     *
+     * @static
+     * @param {ApplicationOption<M>)} target
+     * @returns {Promise<ApplicationContext<M>>}
+     */
     static run(target: ApplicationOption): Promise<ApplicationContext>
     /**
      * run application.

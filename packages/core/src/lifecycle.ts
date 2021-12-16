@@ -29,7 +29,7 @@ export type Hooks = OnDispose & OnShutdown & OnDestroy;
  */
 @Abstract()
 export abstract class ModuleLifecycleHooks extends LifecycleHooks {
-    /** 
+    /**
      * invoked dispose or not
      */
     abstract get disposed(): boolean;

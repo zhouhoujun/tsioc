@@ -29,8 +29,8 @@ export abstract class ModuleFactory<T = any> {
     abstract get moduleType(): Type<T>;
     /**
      * create new instance of {@link ModuleRef} via the moduleType.
-     * @param parent 
-     * @param option 
+     * @param parent parent injector.
+     * @param option create option.
      * @returns  instance of {@link ModuleRef}
      */
     abstract create(parent: Injector, option?: ModuleOption): ModuleRef<T>;
@@ -44,7 +44,7 @@ export abstract class ModuleFactoryResolver {
     static ρNPT = true;
     /**
      * resolve instance of {@link ModuleFactory}.
-     * @param type 
+     * @param type module type or module reflect.
      */
     abstract resolve<T>(type: Type<T> | ModuleReflect<T>): ModuleFactory<T>;
 }

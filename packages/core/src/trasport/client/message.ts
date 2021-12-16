@@ -37,5 +37,4 @@ export class MessageClient extends AbstractClient {
         throw new Error('Method not implemented.');
     }
 
-    
 }

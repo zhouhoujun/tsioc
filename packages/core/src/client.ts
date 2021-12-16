@@ -15,14 +15,14 @@ export interface Client {
 
     /**
      * send message.
-     * @param pattern 
-     * @param data 
+     * @param pattern message pattern.
+     * @param data send data.
      */
     send<TResult = any, TInput = any>(pattern: any, data: TInput): Observable<TResult>;
     /**
      * emit message
-     * @param pattern 
-     * @param data 
+     * @param pattern event pattern.
+     * @param data event data.
      */
     emit<TResult = any, TInput = any>(pattern: any, data: TInput): Observable<TResult>;
 }
@@ -34,21 +34,23 @@ export abstract class ClientSet implements ScanSet<Client> {
      * the client count.
      */
     abstract get count(): number;
-    
+    /**
+     * get all client.
+     */
     abstract getAll(): Resolver<Client>[];
     /**
      * has the client type or not.
-     * @param type 
+     * @param type class type/
      */
     abstract has(type: Type<any>): boolean;
     /**
      * add client resolver.
-     * @param resolver 
+     * @param resolver resolver instance.
      */
     abstract add(resolver: Resolver<Client>, order?: number): void;
     /**
      * remove client resolver.
-     * @param resolver 
+     * @param resolver resolver instance.
      */
     abstract remove(resolver: Resolver<Client>): void;
     /**

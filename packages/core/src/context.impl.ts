@@ -59,11 +59,6 @@ export class DefaultApplicationContext extends ApplicationContext {
         return this._destroyed;
     }
 
-    /**
-     * bootstrap type
-     * @param type 
-     * @param opts 
-     */
     bootstrap<C>(type: Type<C> | RunnableFactory<C>, opts?: BootstrapOption): any {
         const factory = isFunction(type) ? this.injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type) : type;
         return factory.create({ injector: this.injector, ...opts }, this).run();

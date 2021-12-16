@@ -11,5 +11,5 @@ const __global = typeof global !== 'undefined' && global;
 
 // Check __global first, because in Node tests both __global and __window may be defined and _global
 // should be __global in that case.
-const _global: {[name: string]: any} = __global || __window || __self;
-export {_global as global};
+const _global: { [name: string]: any } = __global || __window || __self;
+export { _global as global };

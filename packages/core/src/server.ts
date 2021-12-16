@@ -19,22 +19,24 @@ export abstract class ServerSet implements ScanSet<Server> {
      * the server count.
      */
     abstract get count(): number;
-    
+    /**
+     * get all resolvers.
+     */
     abstract getAll(): Resolver<Server>[];
     /**
      * has the client type or not.
-     * @param type 
+     * @param type class type.
      */
      abstract has(type: Type<any>): boolean;
     /**
      * add server resolver.
-     * @param resolver
-     * @param order 
+     * @param resolver resolver instance.
+     * @param order the order insert to.
      */
     abstract add(resolver: Resolver<Server>, order?: number): void;
     /**
      * remove server resolver.
-     * @param resolver 
+     * @param resolver esolver instance.
      */
     abstract remove(resolver: Resolver<Server>): void;
     /**

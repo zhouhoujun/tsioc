@@ -7,7 +7,7 @@ import { Abstract } from '@tsdi/ioc';
 export abstract class Serializer<TInput = any, TOutput = any> {
     /**
      * serialize value
-     * @param value 
+     * @param value input value.
      */
     abstract serialize(value: TInput): TOutput;
 }

@@ -38,18 +38,18 @@ export abstract class RunnableSet implements ScanSet<Runnable> {
     abstract getAll(): Resolver<Runnable>[];
     /**
      * has the client type or not.
-     * @param type 
+     * @param type has resolver of the type or not.
      */
     abstract has(type: Type<any>): boolean;
     /**
      * add service resolver.
-     * @param resolver
-     * @param order 
+     * @param resolver resolver runnable.
+     * @param order order.
      */
     abstract add(resolver: Resolver<Runnable>, order?: number): void;
     /**
      * remove service resolver.
-     * @param resolver 
+     * @param resolver remove the resolver.
      */
     abstract remove(resolver: Resolver<Runnable>): void;
     /**
@@ -77,7 +77,8 @@ export abstract class RunnableFactory<T> {
     abstract get type(): Type<T>;
     /**
      * create new instance of {@link Runnable} via this type.
-     * @param option 
+     * @param option bootstrap option.
+     * @param context application context.
      */
     abstract create(option: BootstrapOption, context?: ApplicationContext): Runnable;
 }
@@ -87,5 +88,9 @@ export abstract class RunnableFactory<T> {
  */
 @Abstract()
 export abstract class RunnableFactoryResolver {
+    /**
+     * resolve runnable factory of type.
+     * @param type class type.
+     */
     abstract resolve<T>(type: Type<T>): RunnableFactory<T>;
 }

@@ -5,7 +5,7 @@ import { AbstractServer } from './server';
     order: 0
 })
 export class MessageQueue extends AbstractServer {
-    
+
     startup(): Promise<void> {
         throw new Error('Method not implemented.');
     }

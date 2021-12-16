@@ -20,13 +20,13 @@ export interface ScanSet<T = any> extends OnDestroy {
     has(type: Type): boolean;
     /**
      * add scan resolver.
-     * @param resolver
-     * @param order 
+     * @param resolver resolver instance.
+     * @param order the order insert to.
      */
     add(resolver: Resolver<T>, order?: number): void;
     /**
      * remove scan resolver.
-     * @param resolver 
+     * @param resolver resolver instance.
      */
     remove(resolver: Resolver<T>): void;
     /**

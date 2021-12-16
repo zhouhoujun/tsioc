@@ -51,8 +51,8 @@ export abstract class ApplicationContext implements Destroyable {
     abstract get instance(): any;
     /**
      * bootstrap type
-     * @param type 
-     * @param opts 
+     * @param type bootstrap type.
+     * @param opts bootstrap option.
      */
     abstract bootstrap<C>(type: Type<C> | RunnableFactory<C>, opts?: BootstrapOption): any;
     /**
@@ -120,25 +120,25 @@ export abstract class ApplicationContext implements Destroyable {
     abstract getConfigureManager(): ConfigureManager;
     /**
      * application global servers.
-     * 
+     *
      * type of {@link ServerSet}
      */
     abstract get servers(): ServerSet;
     /**
      * application global clients.
-     * 
+     *
      * type of {@link ClientSet}
      */
     abstract get clients(): ClientSet;
     /**
      * application global services.
-     * 
+     *
      * type of {@link ServiceSet}
      */
     abstract get services(): ServiceSet;
     /**
      * application global runnables.
-     * 
+     *
      * type of {@link RunnableSet}
      */
     abstract get runnables(): RunnableSet;
@@ -230,8 +230,8 @@ export interface ApplicationOption<T = any> extends ModuleOption {
 export abstract class ApplicationFactory {
     /**
      * create application context instance.
-     * @param root 
-     * @param option 
+     * @param root main module.
+     * @param option application option.
      * @returns instance of {@link ApplicationContext}
      */
     abstract create<T>(root: ModuleRef<T>, option?: ApplicationOption<T>): ApplicationContext;
