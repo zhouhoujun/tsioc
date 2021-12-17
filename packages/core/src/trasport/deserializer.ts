@@ -11,3 +11,9 @@ export abstract class Deserializer<TOutput = any, TInput = any> {
      */
     abstract deserialize(value: TInput): TOutput | Promise<TOutput>;
 }
+
+export class EmptyDeserializer implements Deserializer {
+    deserialize(value: any) {
+        return value;
+    }
+}

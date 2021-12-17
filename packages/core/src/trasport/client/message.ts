@@ -15,7 +15,7 @@ export class MessageClient extends AbstractClient {
 
     async connect(): Promise<void> {
         if (!this.router) {
-            this.router = this.root.getRoot('msg:');
+            this.router = this.root.getRoot('msg');
         }
     }
 

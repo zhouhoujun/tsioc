@@ -7,7 +7,7 @@ import { ScanSet } from './scan.set';
  */
 export interface Server {
     /**
-     * connect server
+     * startup server.
      */
     startup(): void | Promise<void>;
 }

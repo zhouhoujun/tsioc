@@ -6,11 +6,12 @@ import { AbstractServer } from './server';
 })
 export class MessageQueue extends AbstractServer {
 
-    startup(): Promise<void> {
-        throw new Error('Method not implemented.');
+    async startup(): Promise<void> {
+
     }
-    onDispose(): Promise<void> {
-        throw new Error('Method not implemented.');
+
+    async onDispose(): Promise<void> {
+
     }
 
 }

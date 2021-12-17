@@ -87,5 +87,10 @@
     "vinyl-fs": "^3.0.3",
     "zone.js": "~0.11.4"
   },
-  "homepage": "https://github.com/zhouhoujun/tsioc#readme"
+  "homepage": "https://github.com/zhouhoujun/tsioc#readme",
+  "dependencies": {
+    "kafkajs": "^1.15.0",
+    "modbus-serial": "^8.0.5",
+    "uuid": "^8.3.2"
+  }
 }

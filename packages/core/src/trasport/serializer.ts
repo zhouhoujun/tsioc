@@ -11,3 +11,10 @@ export abstract class Serializer<TInput = any, TOutput = any> {
      */
     abstract serialize(value: TInput): TOutput;
 }
+
+
+export class EmptySerializer implements Serializer {
+    serialize(value: any) {
+        return value;
+    }
+}

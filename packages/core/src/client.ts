@@ -11,7 +11,7 @@ export interface Client {
     /**
      * connect server
      */
-    connect(): Promise<void>;
+    connect(): Promise<any>;
 
     /**
      * send message.

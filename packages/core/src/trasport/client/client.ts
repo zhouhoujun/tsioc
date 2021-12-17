@@ -1,25 +1,30 @@
-import { Abstract, Inject, isNil, ModuleLoader } from '@tsdi/ioc';
+import { Abstract, Inject, isNil, Providers } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { connectable, defer, Observable, Observer, Subject, throwError } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
 import { Client } from '../../client';
 import { OnDispose } from '../../lifecycle';
 import { InvalidMessageError } from '../error';
-import { IncomingResponse, OutgoingEvent, OutgoingRequest, ReadPacket, WritePacket } from '../packet';
-import { Deserializer } from '../deserializer';
-import { Serializer } from '../serializer';
+import { TrasportResponse, TrasportEvent, TrasportRequest, ReadPacket, WritePacket } from '../packet';
+import { Deserializer, EmptyDeserializer } from '../deserializer';
+import { Serializer, EmptySerializer } from '../serializer';
+import { Pattern, stringify } from '../pattern';
 
 
+/**
+ * abstract clinent.
+ */
 @Abstract()
+@Providers([
+    { provide: Serializer, useClass: EmptySerializer },
+    { provide: Deserializer, useClass: EmptyDeserializer }
+])
 export abstract class AbstractClient implements Client, OnDispose {
 
     @Logger() protected readonly logger!: ILogger;
 
-    @Inject() protected loader!: ModuleLoader;
-    @Inject({ provider: Serializer, nullable: true })
-    protected serializer: Serializer<OutgoingEvent | OutgoingRequest> | undefined;
-    @Inject({ provider: Deserializer, nullable: true })
-    protected deserializer: Deserializer<IncomingResponse> | undefined;
+    @Inject() protected serializer!: Serializer<TrasportEvent | TrasportRequest>;
+    @Inject() protected deserializer!: Deserializer<TrasportResponse>;
 
     protected routing = new Map<string, Function>();
 
@@ -27,11 +32,11 @@ export abstract class AbstractClient implements Client, OnDispose {
 
     }
 
-    abstract connect(): Promise<void>;
+    abstract connect(): Promise<any>;
 
     abstract onDispose(): Promise<void>;
 
-    send<TResult = any, TInput = any>(pattern: any, data: TInput): Observable<TResult> {
+    send<TResult = any, TInput = any>(pattern: Pattern, data: TInput): Observable<TResult> {
         if (isNil(pattern) || isNil(data)) {
             return throwError(() => new InvalidMessageError());
         }
@@ -47,7 +52,7 @@ export abstract class AbstractClient implements Client, OnDispose {
 
     }
 
-    emit<TResult = any, TInput = any>(pattern: any, data: TInput): Observable<TResult> {
+    emit<TResult = any, TInput = any>(pattern: Pattern, data: TInput): Observable<TResult> {
         if (isNil(pattern) || isNil(data)) {
             return throwError(() => new InvalidMessageError());
         }
@@ -62,11 +67,20 @@ export abstract class AbstractClient implements Client, OnDispose {
         return connectableSource;
     }
 
+    /**
+     * publish handle.
+     * @param packet 
+     * @param callback 
+     */
     protected abstract publish(
         packet: ReadPacket,
         callback: (packet: WritePacket) => void,
     ): () => void;
 
+    /**
+     * dispatch event.
+     * @param packet 
+     */
     protected abstract dispatchEvent<T = any>(packet: ReadPacket): Promise<T>;
 
 
@@ -86,6 +100,10 @@ export abstract class AbstractClient implements Client, OnDispose {
         };
     }
 
+    protected normalizePattern(pattern: Pattern): string {
+        return stringify(pattern);
+    }
+
     protected serializeError(err: any): any {
         return err;
     }
@@ -93,5 +111,4 @@ export abstract class AbstractClient implements Client, OnDispose {
     protected serializeResponse(response: any): any {
         return response;
     }
-
 }

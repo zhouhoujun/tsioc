@@ -92,7 +92,7 @@ export class TypeDefine {
             this.paramDecors = [];
         }
         this.provides = [];
-        this.providers = [];
+        this.providers = parent ? parent.providers.slice(0) : [];
         this.resolvers = parent ? parent.resolvers.slice(0) : [];
         this.autoruns = parent ? parent.autoruns.filter(a => a.decorType !== 'class') : [];
         this.propMetadatas = new Map();
