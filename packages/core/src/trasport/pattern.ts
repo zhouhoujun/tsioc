@@ -6,7 +6,11 @@ import { isNumber, isPlainObject, isString } from '@tsdi/ioc';
  */
 export type Pattern = string | number | Record<string, string | number | Record<string, string | number>>;
 
-
+/**
+ * stringify pattern.
+ * @param pattern 
+ * @returns 
+ */
 export function stringify(pattern: Pattern): string {
     if (isString(pattern) || isNumber(pattern)) {
         return `${pattern}`;
