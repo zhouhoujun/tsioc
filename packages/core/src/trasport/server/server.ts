@@ -23,9 +23,9 @@ export abstract class AbstractServer implements Server, OnDispose {
 
     protected readonly handlers = new Map<string, MessageHandler>();
 
-    abstract startup(): Promise<void>
+    abstract startup(): Promise<void>;
 
-    abstract onDispose(): Promise<void>
+    abstract onDispose(): Promise<void>;
 
 
     public addHandler(

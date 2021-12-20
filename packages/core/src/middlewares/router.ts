@@ -70,7 +70,7 @@ export class Router<T extends Context = Context> extends MessageQueue<T> impleme
     }
 }
 
-
+const endColon = /:$/;
 /**
  * message queue.
  *
@@ -90,7 +90,7 @@ export class RootRouter extends Router {
     getRoot(protocol?: string): Router {
         if (!protocol) {
             protocol = 'msg:';
-        } else if (!/:$/.test(protocol)) {
+        } else if (!endColon.test(protocol)) {
             protocol = protocol + ':';
         }
         let router = this.handles.find(r => {
