@@ -5,7 +5,8 @@ import {
     BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerGroupJoinEvent, Producer,
     ConsumerRunConfig, ConsumerSubscribeTopic, EachMessagePayload, Kafka, KafkaConfig, KafkaHeaders,
     KafkaMessage, KafkaRequest, KafkaRequestSerializer, LogEntry, logLevel, PartitionAssigner,
-    ProducerConfig, ProducerRecord, KafkaResponseDeserializer, InvalidKafkaClientTopicError, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata, KafkaParser, DEFAULT_BROKERS
+    ProducerConfig, ProducerRecord, KafkaResponseDeserializer, InvalidKafkaClientTopicError, GroupMember,
+    GroupMemberAssignment, GroupState, MemberMetadata, KafkaParser, DEFAULT_BROKERS
 } from '../transforms/kafka';
 
 let kafkajs: any;
@@ -19,7 +20,7 @@ let uuid: any;
     ]
 })
 export class KafkaClient extends AbstractClient {
-    
+
     protected client: Kafka | undefined;
     protected consumer!: Consumer;
     protected producer!: Producer;
