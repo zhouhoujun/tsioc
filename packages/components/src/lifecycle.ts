@@ -1,3 +1,5 @@
+export { OnDestroy } from '@tsdi/ioc';
+
 /**
  * change.
  */
@@ -141,18 +143,4 @@ export interface AfterViewChecked {
      * for a component's view.
      */
     onAfterViewChecked(): void;
-}
-
-
-/**
- * component destroy hooks.
- *
- * @export
- * @interface OnDestroy
- */
-export interface OnDestroy {
-    /**
-     * component destroy hooks. invoke on component destory.
-     */
-    onDestroy(): void;
 }

@@ -1,5 +1,5 @@
 import { EMPTY_OBJ, Injector, Type } from '@tsdi/ioc';
-import { ModuleFactory, ModuleInjector } from '@tsdi/core';
+import { ModuleFactory, ModuleRef } from '@tsdi/core';
 import { Directive, Input } from '../metadata/decor';
 import { Change, Changes, OnChanges, OnDestroy } from '../lifecycle';
 import { ComponentRef } from '../refs/component';
@@ -157,7 +157,7 @@ export class DirComponentOutlet implements OnChanges, OnDestroy {
   @Input() componentOutletModuleFactory!: ModuleFactory;
 
   private _componentRef: ComponentRef<any> | null = null;
-  private _moduleRef: ModuleInjector<any> | null = null;
+  private _moduleRef: ModuleRef<any> | null = null;
 
   constructor(private _viewContainerRef: ViewContainerRef) { }
 
