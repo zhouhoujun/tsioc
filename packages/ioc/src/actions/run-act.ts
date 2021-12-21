@@ -1,6 +1,6 @@
 import { EMPTY, isDefined } from '../utils/chk';
 import { chain } from '../utils/hdl';
-import { IActionSetup } from '../action';
+import { ActionSetup } from '../action';
 import { RuntimeContext } from './ctx';
 import { IocRegAction, IocRegScope } from './reg';
 import { PropertyMetadata } from '../metadata/meta';
@@ -85,7 +85,7 @@ export const InjectPropAction = function (ctx: RuntimeContext, next: () => void)
  * ioc register actions scope run before constructor.
  *
  */
-export class BeforeCtorScope extends IocRegScope<RuntimeContext> implements IActionSetup {
+export class BeforeCtorScope extends IocRegScope<RuntimeContext> implements ActionSetup {
     setup() {
         this.use(BeforeCtorDecorHandle);
     }
@@ -114,7 +114,7 @@ export const BeforeCtorDecorHandle = function (ctx: RuntimeContext, next: () => 
  * @class IocAfterConstructorScope
  * @extends {IocRuntimeScopeAction}
  */
-export class AfterCtorScope extends IocRegScope<RuntimeContext> implements IActionSetup {
+export class AfterCtorScope extends IocRegScope<RuntimeContext> implements ActionSetup {
     setup() {
         this.use(AfterCtorDecorHandle);
     }
@@ -193,7 +193,7 @@ export const RegSingletionAction = function (ctx: RuntimeContext, next: () => vo
  * runtime annoation action scope.
  *
  */
-export class RuntimeAnnoScope extends IocRegScope<RuntimeContext> implements IActionSetup {
+export class RuntimeAnnoScope extends IocRegScope<RuntimeContext> implements ActionSetup {
     setup() {
         this.use(IocSetCacheAction, RegSingletionAction, RuntimeAnnoDecorHandle);
     }
@@ -212,7 +212,7 @@ export const RuntimeAnnoDecorHandle = function (ctx: RuntimeContext, next: () =>
 }
 
 
-export class RuntimeMthScope extends IocRegScope<RuntimeContext> implements IActionSetup {
+export class RuntimeMthScope extends IocRegScope<RuntimeContext> implements ActionSetup {
     setup() {
         this.use(RuntimeMthDecorHandle);
     }
@@ -227,7 +227,7 @@ export const RuntimeMthDecorHandle = function (ctx: RuntimeContext, next: () => 
 }
 
 
-export class RuntimePropScope extends IocRegScope<RuntimeContext> implements IActionSetup {
+export class RuntimePropScope extends IocRegScope<RuntimeContext> implements ActionSetup {
     setup() {
         this.use(InjectPropAction, RuntimePropDecorHandle);
     }

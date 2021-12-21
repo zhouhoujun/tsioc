@@ -1,5 +1,5 @@
 import {
-    Type, isFunction, lang, Platform, isNil, isPromise, refl, ctorName, chain, IActionSetup,
+    Type, isFunction, lang, Platform, isNil, isPromise, refl, ctorName, chain, ActionSetup,
     IocActions, ParameterMetadata, InvocationContext, Injector, object2string, isObservable, ObservableParser
 } from '@tsdi/ioc';
 import { IPointcut } from '../joinpoints/IPointcut';
@@ -20,7 +20,7 @@ const aExp = /^@/;
  * @class ProxyMethod
  * @implements {IProxyMethod}
  */
-export class ProceedingScope extends IocActions<Joinpoint> implements IActionSetup {
+export class ProceedingScope extends IocActions<Joinpoint> implements ActionSetup {
 
 
     constructor(private platform: Platform) {
@@ -208,7 +208,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
 }
 
 
-export class CtorAdvicesScope extends IocActions<Joinpoint> implements IActionSetup {
+export class CtorAdvicesScope extends IocActions<Joinpoint> implements ActionSetup {
 
     override handle(ctx: Joinpoint, next?: () => void) {
         if (ctx.method === ctorName) {
@@ -273,7 +273,7 @@ export const CtorAfterAdviceAction = function (ctx: Joinpoint, next: () => void)
     }
 }
 
-export class MethodAdvicesScope extends IocActions<Joinpoint> implements IActionSetup {
+export class MethodAdvicesScope extends IocActions<Joinpoint> implements ActionSetup {
 
     setup() {
         this.use(

@@ -2,7 +2,7 @@ import { Token } from '../tokens';
 import { ClassType, Type } from '../types';
 import { Handler } from '../utils/hdl';
 import { isFunction } from '../utils/chk';
-import { Action, IActionSetup } from '../action';
+import { Action, ActionSetup } from '../action';
 import { get } from '../metadata/refl';
 import { TypeReflect } from '../metadata/type';
 import { ProviderType, StaticProvider } from '../providers';
@@ -119,7 +119,7 @@ export class DefaultPlatform implements Platform {
 
     protected processAction(type: Type<Action>) {
         if (this._actions.has(type)) return true;
-        const instance = new type(this) as Action & IActionSetup;
+        const instance = new type(this) as Action & ActionSetup;
 
         this._actions.set(type, instance);
         if (isFunction(instance.setup)) instance.setup();

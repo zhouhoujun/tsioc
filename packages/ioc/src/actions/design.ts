@@ -1,5 +1,5 @@
 import { DesignContext } from './ctx';
-import { IActionSetup } from '../action';
+import { ActionSetup } from '../action';
 import { InitReflectAction } from './reg';
 import { RegisterLifeScope } from './lifescope';
 import * as da from './des-act';
@@ -12,7 +12,7 @@ import * as da from './des-act';
  * @class DesignLifeScope
  * @extends {LifeScope}
  */
-export class DesignLifeScope extends RegisterLifeScope<DesignContext> implements IActionSetup {
+export class DesignLifeScope extends RegisterLifeScope<DesignContext> implements ActionSetup {
 
     setup() {
         this.use(

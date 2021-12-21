@@ -4,7 +4,7 @@ import { chain } from '../utils/hdl';
 import { Type } from '../types';
 import { Token } from '../tokens';
 import { DesignContext, RuntimeContext } from './ctx';
-import { IActionSetup } from '../action';
+import { ActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
 import { FactoryRecord, FnType, Injector, Platform } from '../injector';
@@ -22,7 +22,7 @@ export abstract class IocDesignAction extends IocRegAction<DesignContext> { }
 /**
  * design class handle scope.
  */
-export class DesignClassScope extends IocRegScope<DesignContext> implements IActionSetup {
+export class DesignClassScope extends IocRegScope<DesignContext> implements ActionSetup {
 
     setup() {
         this.use(
@@ -105,7 +105,7 @@ export const DesignClassDecorHandle = function (ctx: DesignContext, next: () => 
     return next();
 }
 
-export class DesignPropScope extends IocRegScope<DesignContext> implements IActionSetup {
+export class DesignPropScope extends IocRegScope<DesignContext> implements ActionSetup {
     setup() {
         this.use(
             DesignPropDecorScope
@@ -148,7 +148,7 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
     next();
 };
 
-export class DesignMthScope extends IocRegScope<DesignContext> implements IActionSetup {
+export class DesignMthScope extends IocRegScope<DesignContext> implements ActionSetup {
     setup() {
         this.use(
             DesignMthDecorScope
@@ -191,7 +191,7 @@ export const IocAutorunAction = function (ctx: DesignContext, next: () => void) 
     return next();
 };
 
-export class AnnoScope extends IocRegScope<DesignContext> implements IActionSetup {
+export class AnnoScope extends IocRegScope<DesignContext> implements ActionSetup {
 
     setup() {
         this.use(AnnoDecorScope, AfterAnnoDecorScope, IocAutorunAction);

@@ -8,7 +8,7 @@ import { Platform } from './injector';
 /**
  * action setup.
  */
-export interface IActionSetup {
+export interface ActionSetup {
     /**
      * setup action.
      */

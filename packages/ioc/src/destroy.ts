@@ -1,5 +1,4 @@
 
-
 /**
  * destory hooks.
  */
@@ -9,8 +8,6 @@ export interface OnDestroy {
      */
     onDestroy(): void;
 }
-
-
 
 /**
  * destroy callback type for {@link Destroyable}
@@ -36,12 +33,3 @@ export interface Destroyable {
      */
     onDestroy(callback: DestroyCallback): void;
 }
-
-// /**
-//  * is target implements {@link OnDestroy} hook or not.
-//  * @param target 
-//  * @returns 
-//  */
-// export function isOnDestroy(target: any): target is OnDestroy {
-//     return typeof target === 'object' && isFunction((target as OnDestroy).onDestroy);
-// }
