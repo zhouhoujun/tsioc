@@ -23,7 +23,7 @@ export abstract class AbstractRoute<T extends Context = Context> extends Abstrac
     }
 
 
-    override async execute(ctx: T, next: () => Promise<void>): Promise<void> {
+    override async handle(ctx: T, next: () => Promise<void>): Promise<void> {
         if (await this.canActive(ctx)) {
             await this.navigate(ctx, next);
         } else {
@@ -54,6 +54,6 @@ export class RouteAdapter extends AbstractRoute {
     }
 
     protected override navigate(ctx: Context, next: () => Promise<void>): Promise<void> {
-        return this.factory(ctx.injector.get(InvocationContext))?.execute(ctx, next);
+        return this.factory(ctx.injector.get(InvocationContext))?.handle(ctx, next);
     }
 }

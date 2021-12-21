@@ -165,7 +165,7 @@ export class RouteMappingRef<T> extends AbstractRoute implements Destroyable, On
             if (isFunction(result)) {
                 await result(ctx);
             } else if (isMiddlware(result)) {
-                await result.execute(ctx, emptyNext);
+                await result.handle(ctx, emptyNext);
             } else if (result instanceof ResultValue) {
                 return await result.sendValue(ctx);
             } else if (isDefined(result)) {
@@ -213,10 +213,10 @@ export class RouteMappingRef<T> extends AbstractRoute implements Destroyable, On
     protected parseHandle(mdty: MiddlewareType, context?: InvocationContext): AsyncHandler<Context> | undefined {
         if (isFunction(mdty)) {
             return mdty;
-        } else if (isMiddlware(mdty)) {
-            return mdty.toHandle();
         } else if (isResolver(mdty)) {
-            return mdty.resolve(context)?.toHandle();
+            return mdty.resolve(context);
+        } else {
+            return mdty;
         }
     }
     get destroyed() {

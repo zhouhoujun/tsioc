@@ -81,10 +81,10 @@ class DeviceController {
 
 @Handle({ route: '/hdevice' })
 class DeviceQueue extends MessageQueue {
-    override async execute(ctx: Context, next?: () => Promise<void>): Promise<void> {
+    override async handle(ctx: Context, next?: () => Promise<void>): Promise<void> {
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
-        await super.execute(ctx, async () => {
+        await super.handle(ctx, async () => {
             ctx.setValue('device', 'device next');
         });
         console.log('device sub msg done.');
@@ -101,7 +101,7 @@ class DeviceStartQueue extends MessageQueue {
 @Handle(DeviceStartQueue)
 class DeviceStartupHandle extends AbstractMiddleware {
 
-    override async execute(ctx: Context, next: () => Promise<void>): Promise<void> {
+    override async handle(ctx: Context, next: () => Promise<void>): Promise<void> {
         console.log('DeviceStartupHandle.', 'resp:', ctx.type, 'req:', ctx.request.type)
         if (ctx.type === 'startup') {
             // todo sth.
@@ -114,7 +114,7 @@ class DeviceStartupHandle extends AbstractMiddleware {
 @Handle(DeviceStartQueue)
 class DeviceAStartupHandle extends AbstractMiddleware {
 
-    override async execute(ctx: Context, next: () => Promise<void>): Promise<void> {
+    override async handle(ctx: Context, next: () => Promise<void>): Promise<void> {
         console.log('DeviceAStartupHandle.', 'resp:', ctx.type, 'req:', ctx.request.type)
         if (ctx.type === 'startup') {
             // todo sth.

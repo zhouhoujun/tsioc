@@ -104,7 +104,7 @@ export class DefaultPlatform implements Platform {
     }
 
     getHandle<T extends Handler>(target: Token<Action>): T {
-        return this._actions.get(target)?.toHandler() as T ?? null;
+        return this._actions.get(target) as T ?? null;
     }
 
     setActionValue<T>(token: Token<T>, value: T, provider?: Type<T>) {

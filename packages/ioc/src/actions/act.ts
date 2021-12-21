@@ -1,6 +1,5 @@
-import { Actions, ActionType } from '../action';
+import { Actions } from '../action';
 import { IocContext } from './ctx';
-import { Handler } from '../utils/hdl';
 
 
 
@@ -12,7 +11,7 @@ import { Handler } from '../utils/hdl';
  * @extends {IocAction<T>}
  * @template T
  */
-export class IocActions<T extends IocContext = IocContext> extends Actions<T, ActionType, Handler, void> {
+export class IocActions<T extends IocContext = IocContext> extends Actions<T, void> {
 
     protected override getPlatform(ctx: T) {
         return ctx.injector.platform();

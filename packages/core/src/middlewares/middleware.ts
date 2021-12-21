@@ -11,11 +11,7 @@ export interface Middleware<T extends Context = Context> {
      * @param ctx 
      * @param next 
      */
-    execute(ctx: T, next: () => Promise<void>): Promise<void>;
-    /**
-     * parse this middleware to handler.
-     */
-    toHandle(): AsyncHandler<T>
+    handle(ctx: T, next: () => Promise<void>): Promise<void>;
 }
 
 /**
@@ -24,7 +20,7 @@ export interface Middleware<T extends Context = Context> {
  * @returns is instance of {@link Middleware} or not.
  */
 export function isMiddlware(target: any): target is Middleware {
-    return isObject(target) && isFunction((target as Middleware).execute) && isFunction((target as Middleware).toHandle);
+    return isObject(target) && isFunction((target as Middleware).handle);
 }
 
 
@@ -45,18 +41,7 @@ export abstract class AbstractMiddleware<T extends Context = Context> implements
      * @param {() => Promise<void>} next
      * @returns {Promise<void>}
      */
-    abstract execute(ctx: T, next: () => Promise<void>): Promise<void>;
-
-    private _hdl!: AsyncHandler<T>;
-    /**
-     * parse this middleware to handler.
-     */
-    toHandle(): AsyncHandler<T> {
-        if (!this._hdl) {
-            this._hdl = (ctx: T, next: () => Promise<void>) => this.execute(ctx, next);
-        }
-        return this._hdl;
-    }
+    abstract handle(ctx: T, next: () => Promise<void>): Promise<void>;
 }
 
 /**
@@ -71,7 +56,7 @@ export interface RouteResolver<T = any> extends Resolver<T> {
  * @param target 
  * @returns 
  */
- export function isRouteResolver(target: any): target is RouteResolver {
+export function isRouteResolver(target: any): target is RouteResolver {
     if (!isObject(target)) return false;
     return isFunction((target as Resolver).type) && (target as RouteResolver).route instanceof Route && isFunction((target as Resolver).resolve);
 }
@@ -159,7 +144,7 @@ export abstract class Middlewares<T extends Context = Context> extends AbstractM
         return this;
     }
 
-    override async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
+    override async handle(ctx: T, next?: () => Promise<void>): Promise<void> {
         if (!this.funcs) {
             this.funcs = this.handles.map(ac => this.parseHandle(ac)!).filter(f => f);
         }
@@ -178,10 +163,10 @@ export abstract class Middlewares<T extends Context = Context> extends AbstractM
     protected parseHandle(mdty: MiddlewareType): AsyncHandler<T> | undefined {
         if (isFunction(mdty)) {
             return mdty;
-        } else if (isMiddlware(mdty)) {
-            return mdty.toHandle();
         } else if (isResolver(mdty)) {
-            return mdty.resolve()?.toHandle();
+            return mdty.resolve();
+        } else {
+            return mdty;
         }
     }
 

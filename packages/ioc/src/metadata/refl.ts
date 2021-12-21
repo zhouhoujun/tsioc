@@ -365,13 +365,13 @@ export const ExecuteDecorHandle = (ctx: DecorContext, next: () => void) => {
 }
 
 
-class DecorActions extends Actions<DecorContext, Handler | Action> {
+class DecorActions extends Actions<DecorContext> {
     protected override getPlatform(ctx: DecorContext): Platform { return null!; }
     protected override parseHandler(provider: Platform, ac: any): Handler {
         if (isFunction(ac)) {
             return ac;
         } else if (ac instanceof Action) {
-            return ac.toHandler();
+            return ac;
         }
         return null!;
     }
@@ -415,7 +415,7 @@ function dispatch(actions: Actions<DecorContext>, target: any, type: ClassType, 
         reflect: get(type, true)
     };
     init && init(ctx);
-    actions.execute(ctx, () => {
+    actions.handle(ctx, () => {
         ctx.reflect.class.addDefine(define);
     });
     cleanObj(ctx);

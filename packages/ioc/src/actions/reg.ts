@@ -1,9 +1,6 @@
-import { Type } from '../types';
-import { Handler } from '../utils/hdl';
-import { DecoratorScope } from '../metadata/type';
 import { get } from '../metadata/refl';
 import { IocActions } from './act';
-import { Action, IocAction } from '../action';
+import { Action } from '../action';
 import { RegContext } from './ctx';
 
 
@@ -13,7 +10,7 @@ import { RegContext } from './ctx';
  * the register type class can only register in ioc as:
  * ` container.registerSingleton(SubRegisterAction, () => new SubRegisterAction(container));`
  */
-export abstract class IocRegAction<T extends RegContext> extends IocAction<T> { }
+export abstract class IocRegAction<T extends RegContext> extends Action<T> { }
 
 /**
  * register action scope.
@@ -22,11 +19,6 @@ export abstract class IocRegAction<T extends RegContext> extends IocAction<T> { 
  *
  */
 export abstract class IocRegScope<T extends RegContext = RegContext> extends IocActions<T> { }
-
-export interface IScopeAction<TAction extends Function = Handler> {
-    scope: DecoratorScope;
-    action: TAction | Type<Action> | (TAction | Type<Action>)[];
-}
 
 
 export const InitReflectAction = function (ctx: RegContext, next?: () => void): void {

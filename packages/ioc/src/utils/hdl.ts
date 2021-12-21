@@ -1,10 +1,30 @@
-/**
-*  action handle.
-*/
-export type Handler<T = any, TR = any> = (ctx: T, next: () => TR) => TR;
+import { isFunction } from './chk';
 
 /**
- * sync action.
+ * handler
+ */
+export interface DispatchHandler<T = any, TR = any> {
+    /**
+     * dispatch invoke handle.
+     * @param ctx invoke context.
+     * @param next next step.
+     */
+    handle(ctx: T, next: () => TR): TR;
+}
+
+/**
+ * dispatch invoke handle.
+ */
+export type Hanlde<T = any, TR = any> = (ctx: T, next: () => TR) => TR;
+
+/**
+*  handler.
+*/
+export type Handler<T = any, TR = any> = DispatchHandler<T, TR> | Hanlde<T, TR>;
+
+
+/**
+ * sync handler.
  */
 export type SyncHandler<T = any> = Handler<T, void>;
 
@@ -38,7 +58,8 @@ export function chain<T, TR = void>(handlers: Handler<T, TR>[], ctx: T, next?: (
         if (!handle) {
             return null!;
         }
-        return handle(ctx, dispatch.bind(null, idx + 1));
+        const gnext = dispatch.bind(null, idx + 1);
+        return isFunction(handle) ? handle(ctx,gnext) : handle.handle(ctx,gnext);
     }
     return dispatch(0);
 }

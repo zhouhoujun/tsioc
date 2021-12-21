@@ -29,11 +29,11 @@ export class MessageQueue<T extends Context = Context> extends Middlewares<T> {
 
     private completed!: ((ctx: T) => void)[];
 
-    override async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
+    override async handle(ctx: T, next?: () => Promise<void>): Promise<void> {
         try {
             if (this.canExecute(ctx)) {
                 this.beforeExec(ctx);
-                await super.execute(ctx);
+                await super.handle(ctx);
                 this.afterExec(ctx);
             }
             if (next) {
@@ -110,7 +110,7 @@ export class MessageQueue<T extends Context = Context> extends Middlewares<T> {
             const req: Request | RequestOption = isString(url) ? { ...request, url } : url;
             ctx = injector.resolve({ token: ContextFactory, target: req instanceof Request ? req : req.target || this }).create(req, injector) as T;
         }
-        await this.execute(ctx);
+        await this.handle(ctx);
         const resp = ctx.response;
         ctx.destroy();
         return resp;
