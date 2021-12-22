@@ -1,6 +1,6 @@
 import { Token } from '../tokens';
 import { ClassType, Type } from '../types';
-import { Handler } from '../utils/hdl';
+import { Handler } from '../handler';
 import { isFunction } from '../utils/chk';
 import { Action, ActionSetup } from '../action';
 import { get } from '../metadata/refl';

@@ -1,6 +1,6 @@
 import { Token } from './tokens';
 import { isBoolean, isFunction } from './utils/chk';
-import { chain, DispatchHandler, Handler } from './utils/hdl';
+import { chain, DispatchHandler, Handler } from './handler';
 import { isBaseOf } from './utils/lang';
 import { Platform } from './injector';
 

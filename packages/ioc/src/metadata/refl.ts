@@ -1,9 +1,9 @@
 import { Action, Actions } from '../action';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { AnnotationType, ClassType, Type } from '../types';
-import { chain, Handler } from '../utils/hdl';
 import { cleanObj, getParentClass } from '../utils/lang';
 import { EMPTY, isArray, isFunction } from '../utils/chk';
+import { chain, Handler } from '../handler';
 import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata, AutorunMetadata, InjectableMetadata } from './meta';
 import { ctorName, DecoratorType, DecorContext, DecorDefine, Decors, ActionTypes, TypeReflect } from './type';
 import { TypeDefine } from './typedef';

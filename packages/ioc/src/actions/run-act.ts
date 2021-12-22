@@ -1,5 +1,5 @@
 import { EMPTY, isDefined } from '../utils/chk';
-import { chain } from '../utils/hdl';
+import { chain } from '../handler';
 import { ActionSetup } from '../action';
 import { RuntimeContext } from './ctx';
 import { IocRegAction, IocRegScope } from './reg';

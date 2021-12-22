@@ -6,7 +6,7 @@ import { Abstract } from './metadata/fac';
 import { TypeReflect } from './metadata/type';
 import { ProvidedInMetadata } from './metadata/meta';
 import { EMPTY, isArray, isFunction } from './utils/chk';
-import { Handler } from './utils/hdl';
+import { Handler } from './handler';
 import { Action } from './action';
 import { InvocationContext, InvokeOption, Resolver } from './invoker';
 import { ModuleLoader } from './module.loader';

@@ -1,6 +1,6 @@
 import { isFunction } from '../utils/chk';
 import { cleanObj } from '../utils/lang';
-import { chain } from '../utils/hdl';
+import { chain } from '../handler';
 import { Type } from '../types';
 import { Token } from '../tokens';
 import { DesignContext, RuntimeContext } from './ctx';

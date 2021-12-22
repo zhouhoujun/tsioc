@@ -1,5 +1,6 @@
 export * from './types';
 export * from './tokens';
+export * from './handler';
 export * from './action';
 export * from './destroy';
 export * from './lifecycle';
@@ -11,7 +12,6 @@ export * from './module.loader';
 
 // utils
 export * from './utils/chk';
-export * from './utils/hdl';
 export * as lang from './utils/lang';
 export { Defer } from './utils/lang';
 

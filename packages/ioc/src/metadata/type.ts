@@ -1,8 +1,7 @@
-
+import { ClassType, Type } from '../types';
+import { Handler } from '../handler';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { InjectorTypeWithProviders, ProviderType } from '../providers';
-import { ClassType, Type } from '../types';
-import { Handler } from '../utils/hdl';
 import { PatternMetadata, ProvidersMetadata, ProvidedInMetadata, ModuleMetadata } from './meta';
 import { TypeDefine } from './typedef';
 

@@ -1,4 +1,4 @@
-import { isFunction } from './chk';
+import { isFunction } from './utils/chk';
 
 /**
  * handler
@@ -21,12 +21,6 @@ export type Hanlde<T = any, TR = any> = (ctx: T, next: () => TR) => TR;
 *  handler.
 */
 export type Handler<T = any, TR = any> = DispatchHandler<T, TR> | Hanlde<T, TR>;
-
-
-/**
- * sync handler.
- */
-export type SyncHandler<T = any> = Handler<T, void>;
 
 /**
  * async action.
