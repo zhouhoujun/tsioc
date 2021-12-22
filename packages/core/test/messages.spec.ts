@@ -1,4 +1,4 @@
-import { Application, MessageQueue, Context, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, AbstractMiddleware, Module } from '../src';
+import { Application, MessageQueue, Context, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Middleware, Module } from '../src';
 import expect = require('expect');
 import { Injector, Injectable, lang, ArgumentError, MissingParameterError } from '@tsdi/ioc';
 import { of } from 'rxjs';
@@ -99,7 +99,7 @@ class DeviceStartQueue extends MessageQueue {
 }
 
 @Handle(DeviceStartQueue)
-class DeviceStartupHandle extends AbstractMiddleware {
+class DeviceStartupHandle extends Middleware {
 
     override async handle(ctx: Context, next: () => Promise<void>): Promise<void> {
         console.log('DeviceStartupHandle.', 'resp:', ctx.type, 'req:', ctx.request.type)
@@ -112,9 +112,9 @@ class DeviceStartupHandle extends AbstractMiddleware {
 }
 
 @Handle(DeviceStartQueue)
-class DeviceAStartupHandle extends AbstractMiddleware {
+class DeviceAStartupHandle implements Middleware {
 
-    override async handle(ctx: Context, next: () => Promise<void>): Promise<void> {
+    async handle(ctx: Context, next: () => Promise<void>): Promise<void> {
         console.log('DeviceAStartupHandle.', 'resp:', ctx.type, 'req:', ctx.request.type)
         if (ctx.type === 'startup') {
             // todo sth.

@@ -1,38 +1,17 @@
-import { Abstract, AsyncHandler, chain, isFunction, isObject, isResolver, lang, Resolver, Type, TypeReflect } from '@tsdi/ioc';
+import { Abstract, AsyncHandler, chain, DispatchHandler, isFunction, isObject, isResolver, lang, Resolver, Type, TypeReflect } from '@tsdi/ioc';
 import { Context } from './context';
 import { CanActive } from './guard';
 
-/**
- * middleware interface.
- */
-export interface Middleware<T extends Context = Context> {
-    /**
-     * execute middleware.
-     * @param ctx 
-     * @param next 
-     */
-    handle(ctx: T, next: () => Promise<void>): Promise<void>;
-}
 
 /**
- * is target instance of {@link Middleware}.
- * @param target 
- * @returns is instance of {@link Middleware} or not.
- */
-export function isMiddlware(target: any): target is Middleware {
-    return isObject(target) && isFunction((target as Middleware).handle);
-}
-
-
-/**
- * abstract middleware implements {@link Middleware}.
+ * abstract middleware implements {@link DispatchHandler}.
  *
  * @export
  * @abstract
- * @class AbstractMiddleware
+ * @class Middleware
  */
 @Abstract()
-export abstract class AbstractMiddleware<T extends Context = Context> implements Middleware<T> {
+export abstract class Middleware<T extends Context = Context> implements DispatchHandler<T, Promise<void>> {
     /**
      * execute middleware.
      *
@@ -43,6 +22,16 @@ export abstract class AbstractMiddleware<T extends Context = Context> implements
      */
     abstract handle(ctx: T, next: () => Promise<void>): Promise<void>;
 }
+
+/**
+ * is target instance of {@link Middleware}.
+ * @param target 
+ * @returns is instance of {@link Middleware} or not.
+ */
+export function isMiddlware(target: any): target is Middleware {
+    return target instanceof Middleware || (isObject(target) && isFunction((target as Middleware).handle));
+}
+
 
 /**
  * route resolver.
@@ -71,7 +60,7 @@ export type MiddlewareType = AsyncHandler<Context> | Middleware | RouteResolver<
  * middlewares, compose of {@link Middleware}.
  */
 @Abstract()
-export abstract class Middlewares<T extends Context = Context> extends AbstractMiddleware<T> {
+export abstract class Middlewares<T extends Context = Context> extends Middleware<T> {
     protected handles: MiddlewareType[] = [];
     private funcs!: AsyncHandler<T>[];
 

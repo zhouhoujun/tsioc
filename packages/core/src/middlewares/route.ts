@@ -1,14 +1,14 @@
 import { Abstract, Type, lang, InvocationContext } from '@tsdi/ioc';
 import { Context } from './context';
 import { CanActive } from './guard';
-import { AbstractMiddleware, Middleware, AbstractRouter, Route } from './middleware';
+import { Middleware, AbstractRouter, Route } from './middleware';
 
 
 /**
  * route for {@link AbstractRouter}
  */
 @Abstract()
-export abstract class AbstractRoute<T extends Context = Context> extends AbstractMiddleware<T> {
+export abstract class AbstractRoute<T extends Context = Context> extends Middleware<T> {
 
     constructor(protected route: Route) {
         super();
