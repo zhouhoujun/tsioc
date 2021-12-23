@@ -30,9 +30,6 @@ export class Application {
     readonly root: ModuleRef;
     /**
      * application context.
-     *
-     * @type {T}
-     * @memberof BootApplication
      */
     protected context!: ApplicationContext;
 
@@ -58,8 +55,7 @@ export class Application {
     /**
      * get boot application context.
      *
-     * @returns {ApplicationContext}
-     * @memberof BootApplication
+     * @returns instance of {@link ApplicationContext}.
      */
     getContext(): ApplicationContext {
         return this.context;
@@ -69,17 +65,17 @@ export class Application {
      * run application.
      *
      * @static
-     * @param {ApplicationOption<M>)} target
-     * @returns {Promise<ApplicationContext<M>>}
+     * @param {ApplicationOption} option option of type {@link ApplicationOption}
+     * @returns async returnning instance of {@link ApplicationContext}.
      */
-    static run(target: ApplicationOption): Promise<ApplicationContext>
+    static run(option: ApplicationOption): Promise<ApplicationContext>
     /**
      * run application.
      *
      * @static
-     * @param {Type<T>} target
-     * @param {BootstrapOption)} [option]  application run depdences.
-     * @returns {Promise<IBootContext>}
+     * @param {Type<T>} target target class type.
+     * @param {BootstrapOption} [option] option {@link BootstrapOption} application run depdences.
+     * @returns async returnning instance of {@link ApplicationContext}.
      */
     static run(target: Type, option?: BootstrapOption): Promise<ApplicationContext>;
     static run(target: any, option?: BootstrapOption): Promise<ApplicationContext> {

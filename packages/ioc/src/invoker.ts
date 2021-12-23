@@ -108,11 +108,18 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
         this._refs = [];
     }
 
-
+    /**
+     * add reference resolver.
+     * @param injectors 
+     */
     addRef(...injectors: Injector[]) {
         injectors.forEach(j => j && j !== this.injector && this._refs.indexOf(j) < 0 && this._refs.push(j));
     }
 
+    /**
+     * remove reference resolver.
+     * @param injector 
+     */
     removeRef(injector: Injector) {
         remove(this._refs, injector);
     }
@@ -132,11 +139,24 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
         return token === InvocationContext;
     }
 
+    /**
+     * has token in the context or not.
+     * @param token the token to check.
+     * @param flags inject flags, type of {@link InjectFlags}.
+     * @returns boolean.
+     */
     has(token: Token, flags?: InjectFlags): boolean {
         if (this.isSelf(token)) return true;
         return this.injector.has(token, flags) || this._refs.some(i => i.has(token, flags)); // || this.parent?.has(token, flags) === true;
     }
 
+    /**
+     * get token value.
+     * @param token the token to get value.
+     * @param context invcation context, type of {@link InvocationContext}.
+     * @param flags inject flags, type of {@link InjectFlags}.
+     * @returns the instance of token.
+     */
     get<T>(token: Token<T>, context?: InvocationContext<any>, flags?: InjectFlags): T {
         if (this.isSelf(token)) return this as any;
         return this.injector.get(token, context, flags) ?? this.getFormRef(token, context, flags)!; // ?? this.parent?.get(token, context, flags) as T;
@@ -153,7 +173,7 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
 
     /**
      * has value to context
-     * @param token
+     * @param token the token to check has value.
      */
     hasValue<T>(token: Token): boolean {
         if (this.isSelf(token)) return true;
@@ -162,7 +182,7 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
 
     /**
      * get value to context
-     * @param token
+     * @param token the token to get value.
      */
     getValue<T>(token: Token<T>): T {
         if (this.isSelf(token)) return this as any;
@@ -170,21 +190,31 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
     }
 
     /**
-     * set value
-     * @param token
-     * @param value 
+     * set value.
+     * @param token token
+     * @param value value for the token.
      */
     setValue<T>(token: Token<T>, value: T) {
         this._values.set(token, value);
         return this;
     }
 
+    /**
+     * can resolve the parameter or not.
+     * @param meta property or parameter metadata type of {@link Parameter}.
+     * @returns 
+     */
     canResolve(meta: Parameter): boolean {
         return this.getMetaReolver(meta)?.canResolve(meta, this) === true
             || this.resolvers.some(r => r.canResolve(meta, this))
             || this.parent?.canResolve(meta) == true;
     }
 
+    /**
+     * get resolver in the property or parameter metadata. configured in class design.
+     * @param meta property or parameter metadata type of {@link Parameter}.
+     * @returns undefined or resolver of type {@link OperationArgumentResolver}.
+     */
     getMetaReolver(meta: Parameter): OperationArgumentResolver | undefined {
         if (isFunction(meta.resolver)) {
             return this.injector.get<OperationArgumentResolver>(meta.resolver);
@@ -192,6 +222,11 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
         return meta.resolver;
     }
 
+    /**
+     * resolve the parameter value.
+     * @param meta property or parameter metadata type of {@link Parameter}.
+     * @returns the parameter value in this context.
+     */
     resolveArgument<T>(meta: Parameter<T>): T | null {
         let result: T | undefined;
         const metaRvr = this.getMetaReolver(meta);

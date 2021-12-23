@@ -223,12 +223,12 @@ export abstract class Injector implements Destroyable, OnDestroy {
     abstract use(...modules: Modules[]): Type<any>[];
     /**
      * register types.
-     * @param {Type<any>[]} types 
+     * @param {Type<any>[]} types class type array.
      */
     abstract register(types: (Type | RegisterOption)[]): this;
     /**
      * register types.
-     * @param types 
+     * @param types class type params.
      */
     abstract register(...types: (Type | RegisterOption)[]): this;
     /**
@@ -236,38 +236,38 @@ export abstract class Injector implements Destroyable, OnDestroy {
      *
      * @template T
      * @param {Token<T>} token
-     * @returns {this}
+     * @returns {this} this self.
      */
     abstract unregister<T>(token: Token<T>): this;
     /**
      * invoke method.
      *
      * @template T
-     * @param {(T | Resolver<T> | Type<T> | TypeReflect<T>)} target type of class or instance
-     * @param {MethodType} propertyKey
+     * @param {(T | Resolver<T> | Type<T> | TypeReflect<T>)} target type of class or instance.
+     * @param {MethodType} propertyKey method name.
      * @param {T} [instance] instance of target type.
-     * @param {...ProviderType[]} providers
-     * @returns {TR}
+     * @param {...ProviderType[]} providers ...params of {@link ProviderType}.
+     * @returns {TR} the returnning of invoked method.
      */
     abstract invoke<T, TR = any>(target: T | Resolver<T> | Type<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
     /**
      * invoke method.
      *
      * @template T
-     * @param {(T | Resolver<T> | Type<T> | TypeReflect<T>)} target type of class or instance
-     * @param {MethodType} propertyKey
-     * @param {ProviderType[]} providers
-     * @returns {TR}
+     * @param {(T | Resolver<T> | Type<T> | TypeReflect<T>)} target type of class or instance.
+     * @param {MethodType} propertyKey method name.
+     * @param {ProviderType[]} providers array of {@link ProviderType}.
+     * @returns {TR} the returnning of invoked method.
      */
     abstract invoke<T, TR = any>(target: T | Resolver<T> | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, providers: ProviderType[]): TR;
     /**
      * invoke method.
      *
      * @template T
-     * @param {(T | Resolver<T> | Type<T> | TypeReflect<T>)} target type of class or instance
-     * @param {MethodType} propertyKey
-     * @param {any} option ivacation context option.
-     * @returns {TR}
+     * @param {(T | Resolver<T> | Type<T> | TypeReflect<T>)} target type of class or instance.
+     * @param {MethodType} propertyKey method name.
+     * @param {InvokeOption} option ivacation context option, type of {@link InvokeOption}.
+     * @returns {TR} the returnning of invoked method.
      */
     abstract invoke<T, TR = any>(target: T | Resolver<T> | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, option?: InvokeOption): TR;
     /**
@@ -275,29 +275,29 @@ export abstract class Injector implements Destroyable, OnDestroy {
      *
      * @template T
      * @param {(T | Type<T> | TypeReflect<T>)} target type of class or instance
-     * @param {MethodType} propertyKey
+     * @param {MethodType} propertyKey method name.
      * @param {InvocationContext} context ivacation context.
-     * @returns {TR}
+     * @returns {TR} the returnning of invoked method.
      */
     abstract invoke<T, TR = any>(target: T | Resolver<T> | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
     /**
      * get module loader.
      *
-     * @returns {ModuleLoader}
+     * @returns instance of {@link ModuleLoader}.
      */
     abstract getLoader(): ModuleLoader;
     /**
     * load modules.
     *
-    * @param {LoadType[]} modules load modules.
-    * @returns {Promise<Type[]>}  types loaded.
+    * @param {LoadType[]} modules load modules, array of {@link LoadType}.
+    * @returns {Promise<Type[]>} async returnning array of class type.
     */
     abstract load(modules: LoadType[]): Promise<Type[]>;
     /**
      * load modules.
      *
-     * @param {...LoadType[]} modules load modules.
-     * @returns {Promise<Type[]>}  types loaded.
+     * @param {...LoadType[]} modules load modules, ...params of {@link LoadType}.
+     * @returns {Promise<Type[]>} async returnning array of class type.
      */
     abstract load(...modules: LoadType[]): Promise<Type[]>;
     /**
@@ -415,7 +415,9 @@ export abstract class ObservableParser {
  */
 @Abstract()
 export abstract class Platform implements OnDestroy {
-
+    /**
+     * registered modules.
+     */
     abstract get modules(): Set<ModuleRef>;
     /**
      * platform injector.
@@ -474,6 +476,10 @@ export abstract class Platform implements OnDestroy {
     * @param types
     */
     abstract registerAction(...types: Type<Action>[]): this;
+    /**
+     * has action.
+     * @param token action token.
+     */
     abstract hasAction(token: Token): boolean;
     /**
      * get action instace in current .

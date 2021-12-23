@@ -28,14 +28,14 @@ export type Handler<T = any, TR = any> = DispatchHandler<T, TR> | Hanlde<T, TR>;
 export type AsyncHandler<T = any> = Handler<T, Promise<void>>;
 
 /**
- * execute action in chain.
+ * run handlers in chain.
  *
  * @export
- * @template T
- * @template TR
- * @param {ActionHandle<T>[]} handlers
- * @param {T} ctx
- * @param {() => TR} [next]
+ * @template T input context type.
+ * @template TR returnning type.
+ * @param {ActionHandle<T>[]} handlers to run handlers in chain. array of {@link Handler}.
+ * @param {T} ctx input context.
+ * @param {() => TR} [next] the next step.
  */
 export function chain<T, TR = void>(handlers: Handler<T, TR>[], ctx: T, next?: () => TR): TR {
     if (!handlers.length) return null!;
