@@ -86,16 +86,16 @@ export interface HandleMetadata extends TypeMetadata, PatternMetadata {
     /**
      * register this handle handle before this handle.
      *
-     * @type {Type<Middleware>}
+     * @type {Type<Middlewares>}
      */
-    before?: Type<Middleware>;
+    before?: Type<Middlewares>;
 
     /**
      * register this handle handle after this handle.
      *
-     * @type {Type<Middleware>}
+     * @type {Type<Middlewares>}
      */
-    after?: Type<Middleware>;
+    after?: Type<Middlewares>;
 }
 
 export interface HandlesMetadata extends HandleMetadata {

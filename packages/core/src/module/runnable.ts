@@ -20,7 +20,7 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
     override create(option: BootstrapOption, context?: ApplicationContext) {
         const injector = this.moduleRef ?? option.injector ?? context?.injector!;
         const runnableRef = injector.get(OperationFactoryResolver)
-            .create(this._refl)
+            .resolve(this._refl)
             .create(injector, context ? {
                 ...option,
                 values: [option?.values || EMPTY as any, [ApplicationContext, context]]

@@ -1,4 +1,4 @@
-import { ProviderType, Resolver, lang, isNumber, Type, ObservableParser, LifecycleHooksResolver } from '@tsdi/ioc';
+import { ProviderType, lang, isNumber, Type, ObservableParser, LifecycleHooksResolver, TypeRef } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory } from './context';
 import { ModuleFactoryResolver } from './module.factory';
 import { DefaultModuleFactoryResolver, ModuleLifecycleHooksResolver } from './module/module';
@@ -9,13 +9,15 @@ import { StartupService, ServiceSet } from './service';
 import { ScanSet } from './scan.set';
 import { Runnable, RunnableSet } from './runnable';
 import { Observable, from, lastValueFrom } from 'rxjs';
+import { RouterResolver } from './middlewares/middleware';
+import { MappingRouterResolver } from './middlewares/router';
 
 
 
 abstract class AbstractScanSet<T = any> implements ScanSet<T> {
     static ρNPT = true;
 
-    private _rs: Resolver<T>[] = [];
+    private _rs: TypeRef<T>[] = [];
     protected order = false;
     constructor() {
         this._rs = [];
@@ -26,24 +28,24 @@ abstract class AbstractScanSet<T = any> implements ScanSet<T> {
     }
 
 
-    getAll(): Resolver<T>[] {
+    getAll(): TypeRef<T>[] {
         return this._rs;
     }
 
     has(type: Type): boolean {
         return this._rs.some(i => i.type === type);
     }
-    add(resolver: Resolver<T>, order?: number): void {
-        if (this.has(resolver.type)) return;
+    add(typeRef: TypeRef<T>, order?: number): void {
+        if (this.has(typeRef.type)) return;
         if (isNumber(order)) {
             this.order = true;
-            this._rs.splice(order, 0, resolver);
+            this._rs.splice(order, 0, typeRef);
         } else {
-            this._rs.push(resolver);
+            this._rs.push(typeRef);
         }
     }
-    remove(resolver: Resolver<T> | Type<T>): void {
-        lang.remove(this._rs, resolver);
+    remove(typeRef: TypeRef<T> | Type<T>): void {
+        lang.remove(this._rs, typeRef);
     }
     clear(): void {
         this._rs = [];
@@ -59,7 +61,7 @@ abstract class AbstractScanSet<T = any> implements ScanSet<T> {
         }
     }
 
-    protected abstract run(resolver: Resolver<T>, ctx: ApplicationContext): any;
+    protected abstract run(typeRef: TypeRef<T>, ctx: ApplicationContext): any;
 
     onDestroy(): void {
         this.clear();
@@ -69,27 +71,27 @@ abstract class AbstractScanSet<T = any> implements ScanSet<T> {
 
 
 class ServiceSetImpl extends AbstractScanSet implements ServiceSet {
-    protected run(resolver: Resolver<StartupService>, ctx: ApplicationContext) {
-        return resolver.resolve()?.configureService(ctx);
+    protected run(typeRef: TypeRef<StartupService>, ctx: ApplicationContext) {
+        return typeRef.instance.configureService(ctx);
     }
 }
 
 class ClientSetImpl extends AbstractScanSet implements ClientSet {
-    protected run(resolver: Resolver<Client>, ctx: ApplicationContext) {
-        return resolver.resolve()?.connect();
+    protected run(typeRef: TypeRef<Client>, ctx: ApplicationContext) {
+        return typeRef.instance.connect();
     }
 
 }
 
 class ServerSetImpl extends AbstractScanSet implements ServerSet {
-    protected run(resolver: Resolver<Server>, ctx: ApplicationContext) {
-        return resolver.resolve()?.startup();
+    protected run(typeRef: TypeRef<Server>, ctx: ApplicationContext) {
+        return typeRef.instance.startup();
     }
 }
 
 class RunnableSetImpl extends AbstractScanSet implements RunnableSet {
-    protected run(resolver: Resolver<Runnable>, ctx: ApplicationContext) {
-        return resolver.resolve()?.run();
+    protected run(typeRef: TypeRef<Runnable>, ctx: ApplicationContext) {
+        return typeRef.instance.run();
     }
 }
 
@@ -101,6 +103,7 @@ export const DEFAULTA_PROVIDERS: ProviderType[] = [
     { provide: LifecycleHooksResolver, useValue: new ModuleLifecycleHooksResolver() },
     { provide: ModuleFactoryResolver, useValue: new DefaultModuleFactoryResolver() },
     { provide: ApplicationFactory, useValue: new DefaultApplicationFactory() },
+    { provide: RouterResolver, useValue: new MappingRouterResolver() },
     {
         provide: ObservableParser,
         useValue: {

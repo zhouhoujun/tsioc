@@ -1,111 +1,77 @@
-import { Injectable, isFunction, isString, Singleton } from '@tsdi/ioc';
+import { chain, isString, OnDestroy } from '@tsdi/ioc';
 import { Context } from './context';
-import { AbstractRouter, MiddlewareType, Route, isRouteResolver } from './middleware';
-import { MessageQueue } from './queue';
-import { AbstractRoute } from './route';
+import { Route, Router } from './middleware';
 
-
-@Injectable()
-export class Router<T extends Context = Context> extends MessageQueue<T> implements AbstractRouter<T> {
-
-    constructor(protected info: Route) {
-        super();
-    }
-
-    get url() {
-        return this.info.url;
-    }
-
-    get prefix() {
-        return this.info.prefix;
-    }
-
-    get protocols() {
-        return this.info.protocols;
-    }
-
-    private urlpath!: string;
-    getPath() {
-        if (!this.urlpath) {
-            this.urlpath = this.prefix ? `${this.prefix}/${this.url}` : this.url;
-        }
-        return this.urlpath;
-    }
-
-    private sorted = false;
-    protected override canExecute(ctx: T): boolean {
-        return this.match(ctx);
-    }
-
-    protected override beforeExec(ctx: T) {
-        if (!this.sorted) {
-            this.handles.sort((a, b) => this.getUrlFrom(b).length - this.getUrlFrom(a).length);
-            this.resetHandler();
-            this.sorted = true;
-        }
-    }
-
-    getUrlFrom(mddl: MiddlewareType) {
-        if (isRouteResolver(mddl)) {
-            return mddl.route?.url ?? '';
-        } else if (mddl instanceof Router) {
-            return mddl.url;
-        } else if (mddl instanceof AbstractRoute) {
-            return mddl.url;
-        }
-        return '';
-    }
-
-    protected match(ctx: T): boolean {
-        return (!ctx.status || ctx.status === 404) && this.matchProtocol(ctx.protocol) && ctx.vaild.isActiveRoute(ctx, this.url, this.prefix) === true;
-    }
-
-    protected matchProtocol(protocol: string) {
-        return this.protocols.indexOf(protocol) >= 0;
-    }
-
-    protected override resetHandler() {
-        super.resetHandler();
-        this.sorted = false;
-    }
-}
 
 const endColon = /:$/;
-/**
- * message queue.
- *
- * @export
- * @class RootRouter
- */
-@Singleton()
-export class RootRouter extends Router {
-    constructor() {
-        super(Route.create());
+
+
+export class MappingRouter extends Router implements OnDestroy {
+
+
+    readonly routes: Map<string, Route>;
+
+    readonly protocols: string[];
+
+    constructor(protocols: string | string[], readonly prefix = '') {
+        super();
+        this.routes = new Map<string, Route>();
+        this.protocols = isString(protocols) ? protocols.split(';') : protocols;
+    }
+
+    route(...route: Route[]): void {
+        route.forEach(r => {
+            this.routes.set(r.url, r);
+        });
+    }
+
+    remove(...route: Route[]): void {
+        route.forEach(r => {
+            this.routes.delete(r.url);
+        });
+    }
+
+    override handle(ctx: Context, next: () => Promise<void>): Promise<void> {
+        return chain([...this.befores, ...this.handles, (c, n) => this.execute(c, n), ...this.afters], ctx, next);
+    }
+
+    protected execute(ctx: Context, next: () => Promise<void>): Promise<void> {
+        const route = this.routes.get(ctx.url);
+        if (route) {
+            return route.handle(ctx, next);
+        } else {
+            return next();
+        }
     }
 
     protected match(ctx: Context): boolean {
         return isString(ctx.url);
     }
 
-    getRoot(protocol?: string): Router {
+    onDestroy(): void {
+        this.routes.clear();
+    }
+}
+
+
+export class MappingRouterResolver {
+
+    readonly routers: Map<string, Router>;
+    constructor() {
+        this.routers = new Map();
+    }
+
+    resolve(protocol?: string): Router {
         if (!protocol) {
             protocol = 'msg:';
         } else if (!endColon.test(protocol)) {
             protocol = protocol + ':';
         }
-        let router = this.handles.find(r => {
-            if (isRouteResolver(r)) {
-                return r.route?.protocols.includes(protocol!);
-            }
-            if (r instanceof Router) {
-                return r.protocols.includes(protocol!);
-            }
-            return false;
-        });
+        let router = this.routers.get(protocol);
         if (!router) {
-            router = this.injector.resolve(Router, { provide: Route, useValue: Route.createProtocol(protocol) });
-            this.use(router);
+            router = new MappingRouter(protocol);
+            this.routers.set(protocol, router);
         }
-        return isFunction(router) ? this.injector.resolve(router) : router;
+        return router;
     }
 }

@@ -1,7 +1,7 @@
 import { ClassType, Type } from './types';
 import { getClassName, remove } from './utils/lang';
 import {
-    EMPTY, isClassType, isDefined, isFunction, isObject, isPlainObject,
+    EMPTY, isClassType, isDefined, isFunction, isPlainObject,
     isArray, isPromise, isString, isTypeObject, isTypeReflect
 } from './utils/chk';
 import { Abstract } from './metadata/fac';
@@ -10,7 +10,7 @@ import { TypeReflect } from './metadata/type';
 import { ProviderType } from './providers';
 import { DestroyCallback, Destroyable, OnDestroy } from './destroy';
 import { InjectFlags, Token } from './tokens';
-import { Injector } from './injector';
+import { Injector, MethodType } from './injector';
 
 
 
@@ -274,24 +274,6 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
     }
 }
 
-/**
- * resolver of {@link Type}.
- */
-export interface Resolver<T = any> {
-    get type(): Type<T>;
-    readonly injector?: Injector;
-    resolve(ctx?: InvocationContext): T;
-}
-
-/**
- * is resolver or not.
- * @param target 
- * @returns 
- */
-export function isResolver(target: any): target is Resolver {
-    if (!isObject(target)) return false;
-    return isFunction((target as Resolver).type) && isFunction((target as Resolver).resolve);
-}
 
 /**
  * Interface to perform an operation invocation.
@@ -484,10 +466,10 @@ export interface InvocationOption extends InvokeOption {
 }
 
 /**
- * relective ref.
+ * type ref.
  */
 @Abstract()
-export abstract class ReflectiveRef<T = any> implements Destroyable {
+export abstract class TypeRef<T = any> implements Destroyable, OnDestroy {
     /**
      * injector.
      */
@@ -497,34 +479,23 @@ export abstract class ReflectiveRef<T = any> implements Destroyable {
      */
     abstract get root(): InvocationContext;
     /**
-     * instance of target
-     *
-     * @readonly
-     * @abstract
-     * @type {T}
+     * instance of target.
      */
     abstract get instance(): T;
     /**
      * target reflect.
-     *
-     * @readonly
-     * @abstract
      */
     abstract get reflect(): TypeReflect<T>;
     /**
      * execute target type.
-     *
-     * @readonly
-     * @abstract
-     * @type {Type<T>}
      */
     abstract get type(): Type<T>;
     /**
      * invoke target method.
-     * @param method 
-     * @param option 
+     * @param method method name.
+     * @param option invoke arguments.
      */
-    abstract invoke(method: string, option?: InvokeArguments): any;
+    abstract invoke(method: MethodType<T>, option?: InvokeArguments): any;
     /**
      * is destroyed or not.
      */
@@ -539,7 +510,7 @@ export abstract class ReflectiveRef<T = any> implements Destroyable {
      * @param callback A handler function that cleans up developer-defined data
      * associated with this component. Called when the `destroy()` method is invoked.
      */
-    abstract onDestroy(callback: DestroyCallback): void;
+    abstract onDestroy(callback?: DestroyCallback): void;
 }
 
 /**
@@ -552,24 +523,33 @@ export abstract class OperationFactory<T> {
      */
     abstract get targetReflect(): TypeReflect<T>;
     /**
-     * create RelectiveRef ot target.
-     * @param injector 
-     * @param option 
+     * create typeRef of target class.
+     * @param injector to resolver the type. type of {@link Injector}.
+     * @param option ext option. type of {@link InvokeOption}.
+     * @returns nstance of {@link TypeRef}.
      */
-    abstract create(injector: Injector, option?: InvokeOption): ReflectiveRef<T>;
+    abstract create(injector: Injector, option?: InvokeOption): TypeRef<T>;
     /**
-     * crate method invoker of target.
-     * @param method 
-     * @param instance 
+     * create method invoker of target type.
+     * @param method the method name of target.
+     * @param instance instance of target type.
+     * @returns instance of {@link OperationInvoker}.
      */
     abstract createInvoker(method: string, instance?: T): OperationInvoker;
     /**
      * create invocation context of target.
-     * @param injector 
-     * @param option 
-     * @param root 
+     * @param injector to resolver the type. type of {@link Injector}.
+     * @param option ext option. type of {@link InvocationOption}.
+     * @returns instance of {@link InvocationContext}.
      */
-    abstract createContext(injector: Injector, option?: InvocationOption, root?: InvocationContext): InvocationContext;
+    abstract createContext(injector: Injector, option?: InvocationOption): InvocationContext;
+    /**
+     * create invocation context of target.
+     * @param parant parent invocation context. type of {@link InvocationContext}.
+     * @param option ext option. type of {@link InvocationOption}.
+     * @returns instance of {@link InvocationContext}.
+     */
+    abstract createContext(parant: InvocationContext, option?: InvocationOption): InvocationContext;
 }
 
 /**
@@ -578,9 +558,10 @@ export abstract class OperationFactory<T> {
 @Abstract()
 export abstract class OperationFactoryResolver {
     /**
-     * create operation factory of target type
+     * resolve operation factory of target type
      * @param type target type or target type reflect.
+     * @returns instance of {@link OperationFactory}
      */
-    abstract create<T>(type: ClassType<T> | TypeReflect<T>): OperationFactory<T>;
+    abstract resolve<T>(type: ClassType<T> | TypeReflect<T>): OperationFactory<T>;
 }
 

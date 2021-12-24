@@ -1,14 +1,12 @@
 import {
     isUndefined, EMPTY_OBJ, isArray, isString, lang, Type, isRegExp, createDecorator,
-    ClassMethodDecorator, createParamDecorator, ParameterMetadata, Resolver, ProviderType,
-    ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes, OperationArgumentResolver
+    ClassMethodDecorator, createParamDecorator, ParameterMetadata, ProviderType,
+    ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes,
+    OperationArgumentResolver, OperationFactoryResolver
 } from '@tsdi/ioc';
 import { StartupService, ServiceSet } from '../service';
-import { Middleware, Middlewares, MiddlewareType, Route } from '../middlewares/middleware';
-import { ROOT_QUEUE } from '../middlewares/root';
+import { Middleware, MiddlewareRef, Middlewares, MiddlewareType, Route, Router, RouterResolver } from '../middlewares/middleware';
 import { CanActive } from '../middlewares/guard';
-import { AbstractRoute, RouteAdapter } from '../middlewares/route';
-import { RootRouter, Router } from '../middlewares/router';
 import { MappingReflect, RouteMappingRef, ProtocolRouteMappingMetadata } from '../middlewares/mapping';
 import { HandleMetadata, HandlesMetadata, PipeMetadata, HandleMessagePattern, ComponentScanMetadata, ScanReflect } from './meta';
 import { PipeTransform } from '../pipes/pipe';
@@ -166,8 +164,8 @@ export const ComponentScan: ComponentScan = createDecorator<ComponentScanMetadat
                 sets = injector.get(RunnableSet);
             }
             if (sets && !sets.has(type)) {
-                const resolver = { type, resolve: (ctx) => injector.get(type, ctx) } as Resolver;
-                sets.add(resolver, reflect.order);
+                const typeRef = injector.get(OperationFactoryResolver).resolve(type).create(injector);
+                sets.add(typeRef, reflect.order);
             }
             return next();
         }
@@ -247,6 +245,12 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
     actionType: [ActionTypes.annoation, ActionTypes.autorun],
     props: (parent?: Type<Middlewares> | string, options?: { guards?: Type<CanActive>[], parent?: Type<Middlewares> | string, before?: Type<Middleware> }) =>
         (isString(parent) || isRegExp(parent) ? ({ pattern: parent, ...options }) : ({ parent, ...options })) as HandleMetadata & HandleMessagePattern,
+    reflect: {
+        class: (ctx, next) => {
+            ctx.reflect.annotation = ctx.metadata;
+            return next();
+        }
+    },
     design: {
         afterAnnoation: (ctx, next) => {
             const reflect = ctx.reflect;
@@ -263,45 +267,40 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
                 return next();
             }
 
-            let queue: Middlewares = null!;
-            if (parent) {
-                queue = injector.get(parent);
-                if (!queue) {
-                    throw new Error(lang.getClassName(parent) + 'has not registered!')
-                }
-            }
+            let queue: Middlewares | undefined;
 
             const type = ctx.type;
-            if (isString(route) || reflect.class.isExtends(AbstractRoute) || reflect.class.isExtends(Router)) {
-                if (!queue) {
-                    let root = injector.get(RootRouter);
-                    queue = reflect.class.isExtends(Router) ? root : root.getRoot(protocol);
-                } else if (!(queue instanceof Router)) {
+            if (isString(route) || reflect.class.isExtends(Router)) {
+                queue = parent ? injector.get(parent) ?? injector.get(RouterResolver).resolve(protocol) : injector.get(RouterResolver).resolve(protocol);
+                if (!(queue instanceof Router)) {
                     throw new Error(lang.getClassName(queue) + 'is not message router!');
                 }
-                const prefix = (queue as Router).getPath();
-                let middl: MiddlewareType;
-                if (reflect.class.isExtends(AbstractRoute) || reflect.class.isExtends(Router)) {
-                    const rt = Route.create(route || '', prefix, guards, protocol);
-                    middl = { type, route: rt, resolve: (ctx) => injector.resolve(type, { values: [[Route, rt]], parent: ctx }) };
-                } else {
-                    middl = new RouteAdapter(route || '', prefix, (ctx) => injector.get(type, ctx), guards);
-                }
-                queue.use(middl);
-                injector.onDestroy(() => queue.unuse(middl));
+                let router = queue as Router;
+                const middlwareRef = injector.get(OperationFactoryResolver).resolve(reflect).create(injector) as MiddlewareRef;
+                middlwareRef.onDestroy(() => router.remove(middlwareRef));
+                router.route(middlwareRef);
             } else {
-                if (!queue) {
-                    queue = injector.get(ROOT_QUEUE);
-                }
-                let resolver: Resolver = { type, resolve: () => injector.get(type) };
+                const middlwareRef = injector.get(OperationFactoryResolver).resolve(reflect).create(injector) as MiddlewareRef;
                 if (before) {
-                    queue.useBefore(resolver, before);
+                    queue = injector.get(before);
+                    if (!queue) {
+                        throw new Error(lang.getClassName(before) + 'has not registered!')
+                    }
+                    queue.useBefore(middlwareRef);
                 } else if (after) {
-                    queue.useAfter(resolver, after);
-                } else {
-                    queue.use(resolver);
+                    queue = injector.get(after);
+                    if (!queue) {
+                        throw new Error(lang.getClassName(after) + 'has not registered!')
+                    }
+                    queue.useAfter(middlwareRef);
+                } else if (parent) {
+                    queue = injector.get(parent);
+                    if (!queue) {
+                        throw new Error(lang.getClassName(parent) + 'has not registered!')
+                    }
+                    queue.use(middlwareRef);
                 }
-                injector.onDestroy(() => queue.unuse(type));
+                middlwareRef.onDestroy(() => queue?.unuse(type));
             }
             next();
         },
@@ -504,19 +503,18 @@ export const RouteMapping: RouteMapping = createDecorator<ProtocolRouteMappingMe
             const reflect = ctx.reflect as MappingReflect;
             const { protocol, parent } = reflect.annotation;
             const injector = ctx.injector;
-            let queue: Middlewares;
+            let router: Router;
             if (parent) {
-                queue = injector.get(parent);
+                router = injector.get(parent);
             } else {
-                queue = injector.get(RootRouter).getRoot(protocol);
+                router = injector.get(RouterResolver).resolve(protocol);
             }
 
-            if (!queue) throw new Error(lang.getClassName(parent) + 'has not registered!');
-            if (!(queue instanceof Router)) throw new Error(lang.getClassName(queue) + 'is not message router!');
-
-            const mapping = new RouteMappingRef(reflect, injector, queue.getPath());
-            mapping.onDestroy(() => queue.unuse(mapping));
-            queue.use(mapping);
+            if (!router) throw new Error(lang.getClassName(parent) + 'has not registered!');
+            if (!(router instanceof Router)) throw new Error(lang.getClassName(router) + 'is not router!');
+            const mappingRef = injector.get(OperationFactoryResolver).resolve(reflect).create(injector) as RouteMappingRef<any>;
+            mappingRef.onDestroy(() => router.unuse(mappingRef));
+            router.use(mappingRef);
 
             next();
         }
@@ -595,30 +593,30 @@ export interface RequsetParameterDecorator {
         /**
          * define provider to resolve value to the parameter or property.
          */
-         provider?: Type;
-         /**
-          * pipes
-          */
-         pipe?: string | Type<PipeTransform>;
-         args?: any[],
-         /**
-         * custom resolver to resolve the value for the property or parameter.
+        provider?: Type;
+        /**
+         * pipes
          */
-         resolver?: OperationArgumentResolver;
-         /**
-          * is mutil provider or not
-          */
-         mutil?: boolean;
-         /**
-          * null able or not.
-          */
-         nullable?: boolean;
-         /**
-          * default value
-          *
-          * @type {any}
-          */
-         defaultValue?: any;
+        pipe?: string | Type<PipeTransform>;
+        args?: any[],
+        /**
+        * custom resolver to resolve the value for the property or parameter.
+        */
+        resolver?: OperationArgumentResolver;
+        /**
+         * is mutil provider or not
+         */
+        mutil?: boolean;
+        /**
+         * null able or not.
+         */
+        nullable?: boolean;
+        /**
+         * default value
+         *
+         * @type {any}
+         */
+        defaultValue?: any;
     }): ParameterDecorator;
 }
 

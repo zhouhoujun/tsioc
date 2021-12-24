@@ -8,7 +8,7 @@ import { ProvidedInMetadata } from './metadata/meta';
 import { EMPTY, isArray, isFunction } from './utils/chk';
 import { Handler } from './handler';
 import { Action } from './action';
-import { InvocationContext, InvokeOption, Resolver } from './invoker';
+import { InvocationContext, InvokeOption, TypeRef } from './invoker';
 import { ModuleLoader } from './module.loader';
 import { LifecycleHooks } from './lifecycle';
 
@@ -243,33 +243,33 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * invoke method.
      *
      * @template T
-     * @param {(T | Resolver<T> | Type<T> | TypeReflect<T>)} target type of class or instance.
+     * @param {(T | TypeRef<T> | Type<T> | TypeReflect<T>)} target type of class or instance.
      * @param {MethodType} propertyKey method name.
      * @param {T} [instance] instance of target type.
      * @param {...ProviderType[]} providers ...params of {@link ProviderType}.
      * @returns {TR} the returnning of invoked method.
      */
-    abstract invoke<T, TR = any>(target: T | Resolver<T> | Type<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
+    abstract invoke<T, TR = any>(target: T | TypeRef<T> | Type<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
     /**
      * invoke method.
      *
      * @template T
-     * @param {(T | Resolver<T> | Type<T> | TypeReflect<T>)} target type of class or instance.
+     * @param {(T | TypeRef<T> | Type<T> | TypeReflect<T>)} target type of class or instance.
      * @param {MethodType} propertyKey method name.
      * @param {ProviderType[]} providers array of {@link ProviderType}.
      * @returns {TR} the returnning of invoked method.
      */
-    abstract invoke<T, TR = any>(target: T | Resolver<T> | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, providers: ProviderType[]): TR;
+    abstract invoke<T, TR = any>(target: T | TypeRef<T> | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, providers: ProviderType[]): TR;
     /**
      * invoke method.
      *
      * @template T
-     * @param {(T | Resolver<T> | Type<T> | TypeReflect<T>)} target type of class or instance.
+     * @param {(T | TypeRef<T> | Type<T> | TypeReflect<T>)} target type of class or instance.
      * @param {MethodType} propertyKey method name.
      * @param {InvokeOption} option ivacation context option, type of {@link InvokeOption}.
      * @returns {TR} the returnning of invoked method.
      */
-    abstract invoke<T, TR = any>(target: T | Resolver<T> | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, option?: InvokeOption): TR;
+    abstract invoke<T, TR = any>(target: T | TypeRef<T> | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, option?: InvokeOption): TR;
     /**
      * invoke method.
      *
@@ -279,7 +279,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @param {InvocationContext} context ivacation context.
      * @returns {TR} the returnning of invoked method.
      */
-    abstract invoke<T, TR = any>(target: T | Resolver<T> | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
+    abstract invoke<T, TR = any>(target: T | TypeRef<T> | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
     /**
      * get module loader.
      *
@@ -686,4 +686,4 @@ export interface ResolveOption<T = any> extends ResolverOption {
 /**
  * method type.
  */
-export type MethodType<T> = string | ((tag: T) => Function);
+export type MethodType<T> = string | ((tag: T) => TypedPropertyDescriptor<any>);

@@ -1,6 +1,6 @@
 import {
-    Abstract, Destroyable, DestroyCallback, Injector, InjectorTypeWithProviders,
-    isFunction, isPlainObject, lang, ModuleReflect, OnDestroy, OperationFactoryResolver, Type
+    Abstract, Destroyable, DestroyCallback, Injector, InjectorTypeWithProviders, Type,
+    isFunction, isPlainObject, lang, ModuleReflect, OnDestroy, OperationFactoryResolver
 } from '@tsdi/ioc';
 import { ModuleLifecycleHooks } from './lifecycle';
 import { RunnableFactoryResolver } from './runnable';

@@ -217,7 +217,7 @@ export class DefaultModuleFactoryResolver extends ModuleFactoryResolver {
 }
 
 export class ModuleOperationFactoryResolver extends OperationFactoryResolver {
-    create<T>(type: ClassType<T> | TypeReflect<T>): OperationFactory<T> {
+    resolve<T>(type: ClassType<T> | TypeReflect<T>): OperationFactory<T> {
         return new DefaultOperationFactory(type);
     }
 }

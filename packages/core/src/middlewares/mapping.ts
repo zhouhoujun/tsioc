@@ -1,19 +1,17 @@
 import {
     AsyncHandler, DecorDefine, Type, TypeReflect, Injector, lang, chain,
     isPrimitiveType, isPromise, isString, isArray, isFunction, isDefined,
-    composeResolver, Parameter, EMPTY, ClassType, isResolver, ArgumentError,
-    InvocationContext, OperationFactoryResolver, DestroyCallback, ReflectiveRef,
-    ObservableParser, Destroyable, OnDestroy
+    composeResolver, Parameter, EMPTY, ClassType, ArgumentError, InvocationContext,
+    TypeRef, ObservableParser, OnDestroy, OperationFactory, DefaultTypeRef
 } from '@tsdi/ioc';
 import { isObservable } from 'rxjs';
 import { MODEL_RESOLVERS } from '../model/resolver';
 import { PipeTransform } from '../pipes/pipe';
 import { Context } from './context';
 import { CanActive } from './guard';
-import { AbstractRouter, isMiddlware, MiddlewareType, Route } from './middleware';
+import { MiddlewareType, Route, Router } from './middleware';
 import { TrasportArgumentResolver, TrasportParameter } from './resolver';
 import { ResultValue } from './result';
-import { AbstractRoute } from './route';
 
 
 
@@ -29,7 +27,7 @@ export interface RouteMappingMetadata {
      */
     route?: string;
 
-    parent?: Type<AbstractRouter>;
+    parent?: Type<Router>;
 
     /**
      * request method.
@@ -89,40 +87,64 @@ const restParms = /^\S*:/;
 /**
  * route mapping ref.
  */
-export class RouteMappingRef<T> extends AbstractRoute implements Destroyable, OnDestroy {
+export class RouteMappingRef<T> extends DefaultTypeRef<T> implements Route, OnDestroy {
 
-    private reflectiveRef: ReflectiveRef<T>;
-    constructor(readonly reflect: MappingReflect<T>, readonly injector: Injector, prefix: string | undefined) {
-        super(Route.create(reflect.annotation?.route, prefix, reflect.annotation?.guards))
-        this.reflectiveRef = injector.get(OperationFactoryResolver).create(reflect).create(injector);
-        injector.onDestroy(this);
+    private metadata: ProtocolRouteMappingMetadata;
+    protected sortRoutes: DecorDefine[] | undefined;
+
+    constructor(factory: OperationFactory<T>, injector: Injector, root: InvocationContext, instance?: T) {
+        super(factory, injector, root, instance);
+        this.metadata = factory.targetReflect.annotation as ProtocolRouteMappingMetadata;
     }
 
-    protected override async navigate(ctx: Context, next: () => Promise<void>): Promise<void> {
-        const meta = ctx.activeRouteMetadata || this.getRouteMetaData(ctx)!;
-        let middlewares = this.getRouteMiddleware(ctx, meta);
-        if (middlewares.length) {
-            await chain(middlewares.map(m => this.parseHandle(m)!).filter(f => !!f), ctx)
+    get url(): string {
+        return this.metadata.route ?? '';
+    }
+
+    get guards(): Type<CanActive>[] | undefined {
+        return this.metadata.guards;
+    }
+
+    private _protocols!: string[];
+    get protocols(): string[] {
+        if (!this._protocols) {
+            this._protocols = this.metadata.protocol?.split(';') ?? EMPTY;
         }
-        await this.response(ctx, meta);
-        return await next();
+        return this._protocols;
     }
 
-    protected override async canActive(ctx: Context) {
-        if (!await super.canActive(ctx)) return false;
+    async handle(ctx: Context, next: () => Promise<void>): Promise<void> {
+        const method = await this.getRoute(ctx);
+        if (method) {
+            let middlewares = this.getRouteMiddleware(ctx, method);
+            if (middlewares.length) {
+                await chain(middlewares.map(m => this.parseHandle(m)!).filter(f => !!f), ctx)
+            }
+            return await this.response(ctx, method);
+        } else {
+            return await next();
+        }
+    }
+
+    protected async getRoute(ctx: Context) {
+        if (!((!ctx.status || ctx.status === 404) && ctx.vaild.isActiveRoute(ctx, this.url) === true)) return null;
+        if (this.guards && this.guards.length) {
+            if (!(await lang.some(
+                this.guards.map(token => () => ctx.injector.resolve({ token, regify: true })?.canActivate(ctx)),
+                vaild => vaild === false))) return null;
+        }
         const meta = this.getRouteMetaData(ctx);
-        if (!meta) return false;
+        if (!meta) return null;
         let rmeta = meta.metadata as RouteMappingMetadata;
         if (rmeta.guards && rmeta.guards.length) {
             if (!(await lang.some(
                 rmeta.guards.map(token => () => this.injector.resolve({ token, regify: true })?.canActivate(ctx)),
                 vaild => vaild === false))) {
                 ctx.status = 403;
-                return false;
+                return null;
             }
         }
-        ctx.activeRouteMetadata = meta;
-        return true;
+        return meta;
     }
 
     async response(ctx: Context, meta: DecorDefine) {
@@ -144,7 +166,7 @@ export class RouteMappingRef<T> extends AbstractRoute implements Destroyable, On
                 });
             }
             ctx.restful = restParams;
-            let result = this.reflectiveRef.invoke(meta.propertyKey, {
+            let result = this.invoke(meta.propertyKey, {
                 arguments: ctx,
                 resolvers: [
                     ...primitiveResolvers,
@@ -164,8 +186,6 @@ export class RouteMappingRef<T> extends AbstractRoute implements Destroyable, On
             // middleware.
             if (isFunction(result)) {
                 await result(ctx);
-            } else if (isMiddlware(result)) {
-                await result.handle(ctx, emptyNext);
             } else if (result instanceof ResultValue) {
                 return await result.sendValue(ctx);
             } else if (isDefined(result)) {
@@ -183,15 +203,15 @@ export class RouteMappingRef<T> extends AbstractRoute implements Destroyable, On
 
     protected getRouteMetaData(ctx: Context) {
         const vaild = ctx.vaild;
-        let subRoute = vaild.vaildify(vaild.getReqRoute(ctx, this.prefix).replace(this.url, ''), true);
-        if (!this.reflect.sortRoutes) {
-            this.reflect.sortRoutes = this.reflect.class.methodDecors
+        let subRoute = vaild.vaildify(vaild.getReqRoute(ctx).replace(this.url, ''), true);
+        if (!this.sortRoutes) {
+            this.sortRoutes = this.reflect.class.methodDecors
                 .filter(m => m && isString(m.metadata.route))
                 .sort((ra, rb) => (rb.metadata.route || '').length - (ra.metadata.route || '').length);
 
         }
 
-        let allMethods = this.reflect.sortRoutes.filter(m => m && m.metadata.method === ctx.method);
+        let allMethods = this.sortRoutes.filter(m => m && m.metadata.method === ctx.method);
 
         let meta = allMethods.find(d => vaild.vaildify(d.metadata.route || '', true) === subRoute);
         if (!meta) {
@@ -210,42 +230,12 @@ export class RouteMappingRef<T> extends AbstractRoute implements Destroyable, On
         return meta;
     }
 
-    protected parseHandle(mdty: MiddlewareType, context?: InvocationContext): AsyncHandler<Context> | undefined {
-        if (isFunction(mdty)) {
-            return mdty;
-        } else if (isResolver(mdty)) {
-            return mdty.resolve(context);
+    protected parseHandle(mdty: MiddlewareType): AsyncHandler<Context> | undefined {
+        if (mdty instanceof TypeRef) {
+            return mdty.instance;
         } else {
             return mdty;
         }
-    }
-    get destroyed() {
-        return !this.reflectiveRef || this.reflectiveRef.destroyed;
-    }
-
-    /**
-     * Destroys the component instance and all of the data structures associated with it.
-     */
-    destroy(): void {
-        if (!this.destroyed) {
-            this.reflectiveRef.destroy();
-            this.reflectiveRef = null!;
-            (this as any).reflect = null;
-            (this as any).injector = null;
-        }
-    }
-
-    /**
-     * A lifecycle hook that provides additional developer-defined cleanup
-     * functionality for the component.
-     * @param callback A handler function that cleans up developer-defined data
-     * associated with this component. Called when the `destroy()` method is invoked.
-     */
-    onDestroy(callback?: DestroyCallback): void {
-        if (!callback) {
-            return this.destroy();
-        }
-        this.reflectiveRef.onDestroy(callback);
     }
 }
 

@@ -138,7 +138,7 @@ export class KafkaServer extends AbstractServer {
 
         const packet = await this.deserializer.deserialize(rawMessage);
         const kafkaContext = this.injector.get(OperationFactoryResolver)
-            .create(getClass(this))
+            .resolve(getClass(this))
             .createContext(this.injector, {
                 arguments: rawMessage
             });

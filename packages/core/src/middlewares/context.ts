@@ -261,11 +261,11 @@ export abstract class RouteVaildator {
      * @param route route.
      * @param routePrefix route prefix.
      */
-    abstract isActiveRoute(ctx: Context, route: string, routePrefix: string): boolean;
+    abstract isActiveRoute(ctx: Context, route: string): boolean;
     /**
      * get request route.
      * @param ctx context.
      * @param routePrefix route prefix.
      */
-    abstract getReqRoute(ctx: Context, routePrefix: string): string;
+    abstract getReqRoute(ctx: Context): string;
 }

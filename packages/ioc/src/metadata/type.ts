@@ -117,6 +117,7 @@ export interface TypeReflect<T = any> extends ProvidedInMetadata, PatternMetadat
      * annotation metadata.
      */
     annotation?: any;
+
 }
 
 

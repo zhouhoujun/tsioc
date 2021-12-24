@@ -15,7 +15,7 @@ import { Type } from '../types';
  * @param {string} name
  * @param {ArgsIteratorAction[]} [actions]  metadata iterator actions.
  * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
- * @returns {*}
+ * @returns {*} decorator.
  */
 export function createDecorator<T>(name: string, option: DecoratorOption<T>): any {
     const decor = `@${name}`;

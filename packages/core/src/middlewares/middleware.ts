@@ -1,4 +1,9 @@
-import { Abstract, AsyncHandler, chain, DispatchHandler, isFunction, isObject, isResolver, lang, Resolver, Type, TypeReflect } from '@tsdi/ioc';
+import {
+    Abstract, AsyncHandler, chain, DefaultTypeRef, DispatchHandler,
+    Injector, InvocationContext, isFunction, isObject, isUndefined,
+    EMPTY, lang, OperationFactory, Type, TypeRef
+} from '@tsdi/ioc';
+import { HandleMetadata } from '../metadata/meta';
 import { Context } from './context';
 import { CanActive } from './guard';
 
@@ -32,28 +37,83 @@ export function isMiddlware(target: any): target is Middleware {
     return target instanceof Middleware || (isObject(target) && isFunction((target as Middleware).handle));
 }
 
-
 /**
- * route resolver.
+ * route instance.
  */
-export interface RouteResolver<T = any> extends Resolver<T> {
-    route?: Route;
+@Abstract()
+export abstract class Route extends Middleware {
+    /**
+     * route url.
+     */
+    abstract get url(): string;
+    /**
+     * route guards.
+     */
+    abstract get guards(): Type<CanActive>[] | undefined;
+    /**
+     * protocols.
+     */
+    abstract get protocols(): string[];
 }
 
 /**
- * is resolver or not.
- * @param target 
- * @returns 
+ * middleware ref.
  */
-export function isRouteResolver(target: any): target is RouteResolver {
-    if (!isObject(target)) return false;
-    return isFunction((target as Resolver).type) && (target as RouteResolver).route instanceof Route && isFunction((target as Resolver).resolve);
+export class MiddlewareRef<T extends Middleware = Middleware> extends DefaultTypeRef<T> implements Route {
+    private metadata: HandleMetadata;
+    constructor(factory: OperationFactory<T>, injector: Injector, root: InvocationContext, readonly prefix: string = '', instance?: T) {
+        super(factory, injector, root, instance);
+        this.metadata = factory.targetReflect.annotation as HandleMetadata;
+    }
+
+    async handle(ctx: Context, next: () => Promise<void>): Promise<void> {
+        if (isUndefined(this.metadata.route)) {
+            return await this.execute(ctx, next);
+        }
+        if (await this.canActive(ctx)) {
+            return await this.execute(ctx, next);
+        } else {
+            return await next();
+        }
+    }
+
+    protected execute(ctx: Context, next: () => Promise<void>): Promise<void> {
+        return this.instance.handle(ctx, next);
+    }
+
+    get url() {
+        return this.metadata.route ?? '';
+    }
+
+    get guards(): Type<CanActive>[] | undefined {
+        return this.metadata.guards;
+    }
+
+    private _protocols!: string[];
+    get protocols(): string[] {
+        if (!this._protocols) {
+            this._protocols = this.metadata.protocol?.split(';') ?? EMPTY;
+        }
+        return this._protocols;
+    }
+
+
+    protected async canActive(ctx: Context): Promise<boolean> {
+        if (!((!ctx.status || ctx.status === 404) && ctx.vaild.isActiveRoute(ctx, this.url) === true)) return false;
+        if (this.guards && this.guards.length) {
+            if (!(await lang.some(
+                this.guards.map(token => () => ctx.injector.resolve({ token, regify: true })?.canActivate(ctx)),
+                vaild => vaild === false))) return false;
+        }
+        return true;
+    }
+
 }
 
 /**
  * message type for register in {@link Middlewares}.
  */
-export type MiddlewareType = AsyncHandler<Context> | Middleware | RouteResolver<Middleware>;
+export type MiddlewareType = AsyncHandler<Context> | Middleware | MiddlewareRef;
 
 
 /**
@@ -61,9 +121,9 @@ export type MiddlewareType = AsyncHandler<Context> | Middleware | RouteResolver<
  */
 @Abstract()
 export abstract class Middlewares<T extends Context = Context> extends Middleware<T> {
+    protected befores: MiddlewareType[] = [];
+    protected afters: MiddlewareType[] = [];
     protected handles: MiddlewareType[] = [];
-    private funcs!: AsyncHandler<T>[];
-
     /**
      * use handle.
      *
@@ -71,27 +131,28 @@ export abstract class Middlewares<T extends Context = Context> extends Middlewar
      * @returns {this}
      */
     use(...handles: MiddlewareType[]): this {
-        const len = this.handles.length;
         handles.forEach(handle => {
             if (this.has(handle)) return;
             this.handles.push(handle);
         });
-        if (this.handles.length !== len) this.resetHandler();
         return this;
     }
 
     unuse(...handles: (MiddlewareType | Type)[]) {
-        const len = this.handles.length;
-        handles.forEach(handle => {
-            lang.remove(this.handles, handle);
-        });
-        this.handles = this.handles.filter(h => handles.some(uh => this.equals(h, uh)));
-        if (this.handles.length !== len) this.resetHandler();
+        this.befores = this.filter(this.befores, handles);
+        this.handles = this.filter(this.handles, handles);
+        this.afters = this.filter(this.afters, handles);
         return this;
     }
 
+    protected filter(target: MiddlewareType[], source: (MiddlewareType | Type)[]) {
+        return target.filter(h => source.some(uh => this.equals(h, uh)));
+    }
+
     has(handle: MiddlewareType | Type): boolean {
-        return this.handles.some(h => this.equals(h, handle));
+        return this.befores.some(h => this.equals(h, handle))
+            || this.handles.some(h => this.equals(h, handle))
+            || this.afters.some(h => this.equals(h, handle));
     }
 
     /**
@@ -101,16 +162,11 @@ export abstract class Middlewares<T extends Context = Context> extends Middlewar
      * @param {MiddlewareType} before
      * @returns {this}
      */
-    useBefore(handle: MiddlewareType, before: MiddlewareType | Type): this {
+    useBefore(handle: MiddlewareType): this {
         if (this.has(handle)) {
             return this;
         }
-        if (before) {
-            this.handles.splice(this.handles.findIndex(h => this.equals(h, before)), 0, handle);
-        } else {
-            this.handles.unshift(handle);
-        }
-        this.resetHandler();
+        this.befores.push(handle);
         return this;
     }
     /**
@@ -120,52 +176,24 @@ export abstract class Middlewares<T extends Context = Context> extends Middlewar
      * @param {MiddlewareType} after
      * @returns {this}
      */
-    useAfter(handle: MiddlewareType, after?: MiddlewareType | Type): this {
+    useAfter(handle: MiddlewareType): this {
         if (this.has(handle)) {
             return this;
         }
-        if (after) {
-            this.handles.splice(this.handles.findIndex(h => this.equals(h, after)) + 1, 0, handle);
-        } else {
-            this.handles.push(handle);
-        }
-        this.resetHandler();
+        this.afters.push(handle);
         return this;
     }
 
-    override async handle(ctx: T, next?: () => Promise<void>): Promise<void> {
-        if (!this.funcs) {
-            this.funcs = this.handles.map(ac => this.parseHandle(ac)!).filter(f => f);
-        }
-        await chain(this.funcs, ctx, next);
-    }
-
-    protected resetHandler() {
-        this.funcs = null!;
-    }
-
-    /**
-     * pase middleware to handler.
-     * @param platform global platform.
-     * @param mdty mdiddleware type.
-     */
-    protected parseHandle(mdty: MiddlewareType): AsyncHandler<T> | undefined {
-        if (isFunction(mdty)) {
-            return mdty;
-        } else if (isResolver(mdty)) {
-            return mdty.resolve();
-        } else {
-            return mdty;
-        }
+    override handle(ctx: T, next?: () => Promise<void>): Promise<void> {
+        return chain([...this.befores, ...this.handles, ...this.afters], ctx, next);
     }
 
     protected equals(hd: MiddlewareType, hd2: MiddlewareType | Type) {
-        if (isFunction(hd2)) {
-            return isFunction(hd) ? hd === hd2 : (isResolver(hd) ? hd.type === hd2 : false);
-        } else if (isResolver(hd2)) {
-            return isResolver(hd) ? hd.type === hd2.type : false;
+        if (hd === hd2) return true;
+        if (hd instanceof TypeRef) {
+            return hd2 instanceof TypeRef ? hd.type === hd2.type : hd.type === hd2;
         }
-        return hd === hd2;
+        return false;
     }
 }
 
@@ -174,40 +202,35 @@ export abstract class Middlewares<T extends Context = Context> extends Middlewar
  * abstract router.
  */
 @Abstract()
-export abstract class AbstractRouter<T extends Context = Context> extends Middlewares<T> {
-    abstract get url(): string;
-    abstract getPath(): string;
-}
-
-
-/**
- * route data.
- */
-export class Route {
-    constructor(readonly url: string = '', readonly prefix: string = '', readonly guards?: Type<CanActive>[], readonly protocol: string = '') {
-
-    }
-
-    private _protocols!: string[];
-    get protocols(): string[] {
-        if (!this._protocols) {
-            this._protocols = this.protocol.split(';');
-        }
-        return this._protocols;
-    }
-
-    static create(url: string = '', prefix: string = '', guards?: Type<CanActive>[], protocol: string = '') {
-        return new Route(url, prefix, guards, protocol);
-    }
-
-    static createProtocol(protocol: string, prefix: string = '', guards?: Type<CanActive>[]) {
-        return new Route('', prefix, guards, protocol);
-    }
+export abstract class Router<T extends Context = Context> extends Middlewares<T> {
+    /**
+     * can hold protocols.
+     */
+    abstract get protocols(): string[];
+    /**
+     * routes.
+     */
+    abstract get routes(): Map<string, Route>;
+    /**
+     * add route.
+     * @param route 
+     */
+    abstract route(...route: Route[]): void;
+    /**
+     * remove route.
+     * @param route 
+     */
+    abstract remove(...route: Route[]): void;
 }
 
 /**
- * middleware handle route reflect.
+ * router resolver
  */
-export interface RouteReflect extends TypeReflect {
-    route?: Route;
+@Abstract()
+export abstract class RouterResolver {
+    /**
+     * resolve router.
+     * @param protocol the router protocal. 
+     */
+    abstract resolve(protocol?: string): Router;
 }

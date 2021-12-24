@@ -26,7 +26,7 @@ export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): 
     if (!ctx.params) {
         ctx.params = ctx.reflect.class.getParameters(ctorName);
     }
-    const factory = ctx.injector.get(OperationFactoryResolver).create(ctx.reflect);
+    const factory = ctx.injector.get(OperationFactoryResolver).resolve(ctx.reflect);
     const context = ctx.context = factory.createContext(ctx.context?.injector ?? ctx.injector, {
         invokerMethod: ctorName,
         parent: ctx.context
