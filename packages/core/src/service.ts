@@ -1,4 +1,4 @@
-import { Abstract, Resolver, Type } from '@tsdi/ioc';
+import { Abstract, TypeRef, Type } from '@tsdi/ioc';
 import { ApplicationContext } from './context';
 import { ScanSet } from './scan.set';
 
@@ -25,7 +25,7 @@ export abstract class ServiceSet implements ScanSet<StartupService> {
     /**
      * get all service.
      */
-    abstract getAll(): Resolver<StartupService>[];
+    abstract getAll(): TypeRef<StartupService>[];
     /**
      * has the client type or not.
      * @param type class type.
@@ -36,12 +36,12 @@ export abstract class ServiceSet implements ScanSet<StartupService> {
      * @param resolver
      * @param order the order insert to.
      */
-    abstract add(resolver: Resolver<StartupService>, order?: number): void;
+    abstract add(resolver: TypeRef<StartupService>, order?: number): void;
     /**
      * remove service resolver.
      * @param resolver resolver instance.
      */
-    abstract remove(resolver: Resolver<StartupService>): void;
+    abstract remove(resolver: TypeRef<StartupService>): void;
     /**
      * clear service resolver.
      */

@@ -2,12 +2,14 @@ import {
     isUndefined, EMPTY_OBJ, isArray, isString, lang, Type, isRegExp, createDecorator,
     ClassMethodDecorator, createParamDecorator, ParameterMetadata, ProviderType,
     ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes,
-    OperationArgumentResolver, OperationFactoryResolver
+    OperationArgumentResolver, OperationFactoryResolver, OperationTypeReflect
 } from '@tsdi/ioc';
 import { StartupService, ServiceSet } from '../service';
-import { Middleware, MiddlewareRef, Middlewares, MiddlewareType, Route, Router, RouterResolver } from '../middlewares/middleware';
+import { Middleware, MiddlewareRef, MiddlewareRefFactory } from '../middlewares/middleware';
+import { Middlewares, MiddlewareType } from '../middlewares/middlewares';
 import { CanActive } from '../middlewares/guard';
-import { MappingReflect, RouteMappingRef, ProtocolRouteMappingMetadata } from '../middlewares/mapping';
+import { RouteRef, RouteRefFactory } from '../middlewares/route';
+import { MappingReflect, ProtocolRouteMappingMetadata, Router, RouterResolver } from '../middlewares/router';
 import { HandleMetadata, HandlesMetadata, PipeMetadata, HandleMessagePattern, ComponentScanMetadata, ScanReflect } from './meta';
 import { PipeTransform } from '../pipes/pipe';
 import { Server, ServerSet } from '../server';
@@ -247,7 +249,9 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
         (isString(parent) || isRegExp(parent) ? ({ pattern: parent, ...options }) : ({ parent, ...options })) as HandleMetadata & HandleMessagePattern,
     reflect: {
         class: (ctx, next) => {
-            ctx.reflect.annotation = ctx.metadata;
+            const reflect = ctx.reflect as OperationTypeReflect;
+            reflect.annotation = ctx.metadata;
+            reflect.refFactory = MiddlewareRefFactory;
             return next();
         }
     },
@@ -494,7 +498,9 @@ export const RouteMapping: RouteMapping = createDecorator<ProtocolRouteMappingMe
     },
     reflect: {
         class: (ctx, next) => {
-            ctx.reflect.annotation = ctx.metadata;
+            const reflect = ctx.reflect as MappingReflect;
+            reflect.refFactory = RouteRefFactory;
+            reflect.annotation = ctx.metadata;
             return next();
         }
     },
@@ -512,7 +518,7 @@ export const RouteMapping: RouteMapping = createDecorator<ProtocolRouteMappingMe
 
             if (!router) throw new Error(lang.getClassName(parent) + 'has not registered!');
             if (!(router instanceof Router)) throw new Error(lang.getClassName(router) + 'is not router!');
-            const mappingRef = injector.get(OperationFactoryResolver).resolve(reflect).create(injector) as RouteMappingRef<any>;
+            const mappingRef = injector.get(OperationFactoryResolver).resolve(reflect).create(injector) as RouteRef;
             mappingRef.onDestroy(() => router.unuse(mappingRef));
             router.use(mappingRef);
 

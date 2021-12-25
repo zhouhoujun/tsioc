@@ -25,6 +25,7 @@ import { ModuleLoader } from '../module.loader';
 import { DefaultPlatform } from './platform';
 import { DestroyCallback, OnDestroy } from '../destroy';
 import { LifecycleHooks, LifecycleHooksResolver } from '../lifecycle';
+import { OperationTypeReflect } from '..';
 
 
 
@@ -1069,11 +1070,14 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
         this._tagRefl = isFunction(targetType) ? get(targetType) : targetType;
     }
 
-    get targetReflect(): TypeReflect<T> {
+    get targetReflect(): OperationTypeReflect<T> {
         return this._tagRefl;
     }
 
     create(injector: Injector, option?: InvokeOption): TypeRef<T> {
+        if (this.targetReflect.refFactory) {
+            return injector.get(this.targetReflect.refFactory).create(this, injector, option);
+        }
         return new DefaultTypeRef(this, injector, this.createContext(injector, option));
     }
 

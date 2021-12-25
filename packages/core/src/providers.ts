@@ -9,8 +9,7 @@ import { StartupService, ServiceSet } from './service';
 import { ScanSet } from './scan.set';
 import { Runnable, RunnableSet } from './runnable';
 import { Observable, from, lastValueFrom } from 'rxjs';
-import { RouterResolver } from './middlewares/middleware';
-import { MappingRouterResolver } from './middlewares/router';
+import { MappingRouterResolver, RouterResolver } from './middlewares/router';
 
 
 

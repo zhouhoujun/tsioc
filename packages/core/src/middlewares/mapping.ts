@@ -2,79 +2,19 @@ import {
     AsyncHandler, DecorDefine, Type, TypeReflect, Injector, lang, chain,
     isPrimitiveType, isPromise, isString, isArray, isFunction, isDefined,
     composeResolver, Parameter, EMPTY, ClassType, ArgumentError, InvocationContext,
-    TypeRef, ObservableParser, OnDestroy, OperationFactory, DefaultTypeRef
+    TypeRef, ObservableParser, OnDestroy, OperationFactory, DefaultTypeRef, isClass
 } from '@tsdi/ioc';
 import { isObservable } from 'rxjs';
+import { Middleware } from './middleware';
 import { MODEL_RESOLVERS } from '../model/resolver';
 import { PipeTransform } from '../pipes/pipe';
 import { Context } from './context';
 import { CanActive } from './guard';
-import { MiddlewareType, Route, Router } from './middleware';
+import { MiddlewareType } from './middlewares';
 import { TrasportArgumentResolver, TrasportParameter } from './resolver';
 import { ResultValue } from './result';
-
-
-
-/**
- * route mapping metadata.
- */
-export interface RouteMappingMetadata {
-    /**
-     * route.
-     *
-     * @type {string}
-     * @memberof RouteMetadata
-     */
-    route?: string;
-
-    parent?: Type<Router>;
-
-    /**
-     * request method.
-     */
-    method?: string;
-    /**
-     * http content type.
-     *
-     * @type {string}
-     * @memberof RouteMetadata
-     */
-    contentType?: string;
-    /**
-     * middlewares for the route.
-     *
-     * @type {MiddlewareType[]}
-     * @memberof RouteMetadata
-     */
-    middlewares?: MiddlewareType[];
-    /**
-     * pipes for the route.
-     */
-    pipes?: Type<PipeTransform>[];
-    /**
-     * route guards.
-     */
-    guards?: Type<CanActive>[];
-}
-
-/**
- * protocol route mapping metadata.
- */
-export interface ProtocolRouteMappingMetadata extends RouteMappingMetadata {
-    /**
-     * protocol type.
-     */
-    protocol?: string;
-}
-
-export interface MappingReflect<T = any> extends TypeReflect<T> {
-    /**
-     * protocol type.
-     */
-    annotation: ProtocolRouteMappingMetadata;
-
-    sortRoutes: DecorDefine[];
-}
+import { Route } from './route';
+import { ProtocolRouteMappingMetadata, RouteMappingMetadata, Router } from './router';
 
 const emptyNext = async () => { };
 
@@ -230,7 +170,10 @@ export class RouteMappingRef<T> extends DefaultTypeRef<T> implements Route, OnDe
         return meta;
     }
 
-    protected parseHandle(mdty: MiddlewareType): AsyncHandler<Context> | undefined {
+    protected parseHandle(mdty: MiddlewareType | Type<Middleware>): AsyncHandler<Context> | undefined {
+        if (isClass(mdty)) {
+            return this.injector.get(mdty);
+        }
         if (mdty instanceof TypeRef) {
             return mdty.instance;
         } else {

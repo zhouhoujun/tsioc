@@ -513,6 +513,21 @@ export abstract class TypeRef<T = any> implements Destroyable, OnDestroy {
     abstract onDestroy(callback?: DestroyCallback): void;
 }
 
+@Abstract()
+export abstract class TypeRefFactory<T = any> {
+    abstract create(factory: OperationFactory<T>, injector: Injector, option?: InvokeOption): TypeRef<T>;
+}
+
+/**
+ * opteration type reflect.
+ */
+export interface OperationTypeReflect<T = any> extends TypeReflect<T> {
+    /**
+     * typeref factory.
+     */
+    refFactory?: ClassType<TypeRefFactory>;
+}
+
 /**
  * operation factory.
  */
