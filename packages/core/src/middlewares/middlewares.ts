@@ -1,4 +1,4 @@
-import { Abstract, AsyncHandler, chain, Type, TypeRef } from '@tsdi/ioc';
+import { Abstract, AsyncHandler, chain, Type, OperationRef } from '@tsdi/ioc';
 import { Context } from './context';
 import { Middleware, MiddlewareRef } from './middleware';
 
@@ -83,8 +83,8 @@ import { Middleware, MiddlewareRef } from './middleware';
  
      protected equals(hd: MiddlewareType, hd2: MiddlewareType | Type) {
          if (hd === hd2) return true;
-         if (hd instanceof TypeRef) {
-             return hd2 instanceof TypeRef ? hd.type === hd2.type : hd.type === hd2;
+         if (hd instanceof OperationRef) {
+             return hd2 instanceof OperationRef ? hd.type === hd2.type : hd.type === hd2;
          }
          return false;
      }

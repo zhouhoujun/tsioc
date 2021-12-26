@@ -7,7 +7,6 @@ import { Configuration, ConfigureManager } from './configure/config';
 import { Request, RequestInit, RequestOption } from './middlewares/request';
 import { Response } from './middlewares/response';
 import { Context } from './middlewares/context';
-import { MessageQueue } from './middlewares/queue';
 import { Runnable, RunnableSet, RunnableFactory } from './runnable';
 import { ServiceSet } from './service';
 import { ClientSet } from './client';
@@ -55,10 +54,6 @@ export abstract class ApplicationContext implements Destroyable {
      * @param opts bootstrap option.
      */
     abstract bootstrap<C>(type: Type<C> | RunnableFactory<C>, opts?: BootstrapOption): any;
-    /**
-     * get message queue.
-     */
-    abstract getMessager(): MessageQueue;
     /**
      * send message
      *

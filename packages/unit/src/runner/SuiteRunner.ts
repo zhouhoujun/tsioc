@@ -1,4 +1,4 @@
-import { lang, Injectable, TypeRef, Decors } from '@tsdi/ioc';
+import { lang, Injectable, OperationRef, Decors } from '@tsdi/ioc';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata/decor';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata/meta';
 import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
@@ -18,7 +18,7 @@ export class SuiteRunner extends UnitRunner {
     timeout!: number;
     describe!: string;
 
-    constructor(private tgRef: TypeRef) {
+    constructor(private tgRef: OperationRef) {
         super()
     }
 

@@ -1,4 +1,4 @@
-import { ProviderType, lang, isNumber, Type, ObservableParser, LifecycleHooksResolver, TypeRef } from '@tsdi/ioc';
+import { ProviderType, lang, isNumber, Type, ObservableParser, LifecycleHooksResolver, OperationRef } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory } from './context';
 import { ModuleFactoryResolver } from './module.factory';
 import { DefaultModuleFactoryResolver, ModuleLifecycleHooksResolver } from './module/module';
@@ -16,7 +16,7 @@ import { MappingRouterResolver, RouterResolver } from './middlewares/router';
 abstract class AbstractScanSet<T = any> implements ScanSet<T> {
     static ρNPT = true;
 
-    private _rs: TypeRef<T>[] = [];
+    private _rs: OperationRef<T>[] = [];
     protected order = false;
     constructor() {
         this._rs = [];
@@ -27,14 +27,14 @@ abstract class AbstractScanSet<T = any> implements ScanSet<T> {
     }
 
 
-    getAll(): TypeRef<T>[] {
+    getAll(): OperationRef<T>[] {
         return this._rs;
     }
 
     has(type: Type): boolean {
         return this._rs.some(i => i.type === type);
     }
-    add(typeRef: TypeRef<T>, order?: number): void {
+    add(typeRef: OperationRef<T>, order?: number): void {
         if (this.has(typeRef.type)) return;
         if (isNumber(order)) {
             this.order = true;
@@ -43,7 +43,7 @@ abstract class AbstractScanSet<T = any> implements ScanSet<T> {
             this._rs.push(typeRef);
         }
     }
-    remove(typeRef: TypeRef<T> | Type<T>): void {
+    remove(typeRef: OperationRef<T> | Type<T>): void {
         lang.remove(this._rs, typeRef);
     }
     clear(): void {
@@ -60,7 +60,7 @@ abstract class AbstractScanSet<T = any> implements ScanSet<T> {
         }
     }
 
-    protected abstract run(typeRef: TypeRef<T>, ctx: ApplicationContext): any;
+    protected abstract run(typeRef: OperationRef<T>, ctx: ApplicationContext): any;
 
     onDestroy(): void {
         this.clear();
@@ -70,26 +70,26 @@ abstract class AbstractScanSet<T = any> implements ScanSet<T> {
 
 
 class ServiceSetImpl extends AbstractScanSet implements ServiceSet {
-    protected run(typeRef: TypeRef<StartupService>, ctx: ApplicationContext) {
+    protected run(typeRef: OperationRef<StartupService>, ctx: ApplicationContext) {
         return typeRef.instance.configureService(ctx);
     }
 }
 
 class ClientSetImpl extends AbstractScanSet implements ClientSet {
-    protected run(typeRef: TypeRef<Client>, ctx: ApplicationContext) {
+    protected run(typeRef: OperationRef<Client>, ctx: ApplicationContext) {
         return typeRef.instance.connect();
     }
 
 }
 
 class ServerSetImpl extends AbstractScanSet implements ServerSet {
-    protected run(typeRef: TypeRef<Server>, ctx: ApplicationContext) {
+    protected run(typeRef: OperationRef<Server>, ctx: ApplicationContext) {
         return typeRef.instance.startup();
     }
 }
 
 class RunnableSetImpl extends AbstractScanSet implements RunnableSet {
-    protected run(typeRef: TypeRef<Runnable>, ctx: ApplicationContext) {
+    protected run(typeRef: OperationRef<Runnable>, ctx: ApplicationContext) {
         return typeRef.instance.run();
     }
 }

@@ -18,14 +18,13 @@ import { ModuleReflect, TypeReflect } from '../metadata/type';
 import { get } from '../metadata/refl';
 import {
     InvocationContext, InvocationOption, InvokeOption, OperationArgumentResolver, Parameter, OperationFactory,
-    ReflectiveOperationInvoker, OperationFactoryResolver, OperationInvoker, InvokeArguments, TypeRef, composeResolver, ArgumentResolver
+    ReflectiveOperationInvoker, OperationFactoryResolver, OperationInvoker, InvokeArguments, OperationRef, composeResolver, ArgumentResolver, OperationTypeReflect
 } from '../invoker';
 import { DefaultModuleLoader } from './loader';
 import { ModuleLoader } from '../module.loader';
 import { DefaultPlatform } from './platform';
 import { DestroyCallback, OnDestroy } from '../destroy';
 import { LifecycleHooks, LifecycleHooksResolver } from '../lifecycle';
-import { OperationTypeReflect } from '..';
 
 
 
@@ -426,7 +425,7 @@ export class DefaultInjector extends Injector {
             providers = args;
         }
 
-        if (target instanceof TypeRef) {
+        if (target instanceof OperationRef) {
             return target.invoke(propertyKey, { ...option, providers });
         }
 
@@ -945,7 +944,7 @@ function createInvocationContext(injector: Injector, option?: InvocationOption &
         ...DEFAULT_RESOLVERS);
 }
 
-export class DefaultTypeRef<T> extends TypeRef<T> {
+export class DefaultTypeRef<T> extends OperationRef<T> {
 
     private _destroyed = false;
     private _dsryCbs = new Set<DestroyCallback>();
@@ -954,7 +953,7 @@ export class DefaultTypeRef<T> extends TypeRef<T> {
     constructor(protected factory: OperationFactory<T>, protected _injector: Injector, readonly root: InvocationContext, protected _instance?: T) {
         super()
         this._type = factory.targetReflect.type as Type;
-        this.root.setValue(TypeRef, this);
+        this.root.setValue(OperationRef, this);
         _injector.onDestroy(this);
     }
 
@@ -1074,7 +1073,7 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
         return this._tagRefl;
     }
 
-    create(injector: Injector, option?: InvokeOption): TypeRef<T> {
+    create(injector: Injector, option?: InvokeOption): OperationRef<T> {
         if (this.targetReflect.refFactory) {
             return injector.get(this.targetReflect.refFactory).create(this, injector, option);
         }

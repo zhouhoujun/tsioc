@@ -1,6 +1,6 @@
 import { PatternMetadata, ProviderMetadata, ProvidersMetadata, Type, TypeMetadata, TypeReflect } from '@tsdi/ioc';
 import { CanActive } from '../middlewares/guard';
-import { Middleware, Middlewares } from '../middlewares/middleware';
+import { Middlewares } from '../middlewares/middlewares';
 import { StartupService } from '../service';
 
 /**

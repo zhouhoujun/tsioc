@@ -1,4 +1,4 @@
-import { Abstract, DecorDefine, DefaultTypeRef, DispatchHandler, Injector, InvokeOption, OperationFactory, Type, TypeRefFactory, TypeReflect } from '@tsdi/ioc';
+import { Abstract, DecorDefine, DefaultTypeRef, DispatchHandler, Injector, InvokeOption, OperationFactory, Type, OperationRefFactory, TypeReflect } from '@tsdi/ioc';
 import { Context } from './context';
 import { CanActive } from './guard';
 
@@ -55,6 +55,6 @@ export abstract class RouteRef<T = any> extends DefaultTypeRef<T> implements Rou
 }
 
 @Abstract()
-export abstract class RouteRefFactory<T = any> extends TypeRefFactory<T> {
+export abstract class RouteRefFactory<T = any> extends OperationRefFactory<T> {
     abstract create(factory: OperationFactory<T>, injector: Injector, option?: InvokeOption): RouteRef<T>;
 }

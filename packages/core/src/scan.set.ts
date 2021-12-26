@@ -1,4 +1,4 @@
-import { OnDestroy, Type, TypeRef } from '@tsdi/ioc';
+import { OnDestroy, Type, OperationRef } from '@tsdi/ioc';
 import { ApplicationContext } from './context';
 
 /**
@@ -12,7 +12,7 @@ export interface ScanSet<T = any> extends OnDestroy {
     /**
      * get all.
      */
-    getAll(): TypeRef<T>[];
+    getAll(): OperationRef<T>[];
     /**
      * has register scan type.
      * @param type
@@ -23,12 +23,12 @@ export interface ScanSet<T = any> extends OnDestroy {
      * @param ref resolver instance.
      * @param order the order insert to.
      */
-    add(ref: TypeRef<T>, order?: number): void;
+    add(ref: OperationRef<T>, order?: number): void;
     /**
      * remove scan {@link TypeRef}.
      * @param ref resolver instance.
      */
-    remove(ref: TypeRef<T>): void;
+    remove(ref: OperationRef<T>): void;
     /**
      * clear scan refs.
      */

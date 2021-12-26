@@ -2,7 +2,7 @@ import {
     AsyncHandler, DecorDefine, Type, TypeReflect, Injector, lang, chain,
     isPrimitiveType, isPromise, isString, isArray, isFunction, isDefined,
     composeResolver, Parameter, EMPTY, ClassType, ArgumentError, InvocationContext,
-    TypeRef, ObservableParser, OnDestroy, OperationFactory, DefaultTypeRef, isClass
+    OperationRef, ObservableParser, OnDestroy, OperationFactory, DefaultTypeRef, isClass
 } from '@tsdi/ioc';
 import { isObservable } from 'rxjs';
 import { Middleware } from './middleware';
@@ -174,7 +174,7 @@ export class RouteMappingRef<T> extends DefaultTypeRef<T> implements Route, OnDe
         if (isClass(mdty)) {
             return this.injector.get(mdty);
         }
-        if (mdty instanceof TypeRef) {
+        if (mdty instanceof OperationRef) {
             return mdty.instance;
         } else {
             return mdty;

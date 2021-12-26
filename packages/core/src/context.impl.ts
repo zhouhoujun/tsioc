@@ -4,7 +4,7 @@ import { CONFIGURATION, PROCESS_ROOT } from './metadata/tk';
 import { Configuration, ConfigureManager } from './configure/config';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from './context';
 import { Runner, RunnableFactory, RunnableFactoryResolver, RunnableSet } from './runnable';
-import { Response, Request, Context, MessageQueue, RequestInit, RequestOption, ROOT_QUEUE } from './middlewares';
+import { Response, Request, Context, RequestInit, RequestOption } from './middlewares';
 import { ModuleRef } from './module.ref';
 import { ApplicationArguments } from './args';
 import { ServerSet } from './server';
@@ -68,9 +68,9 @@ export class DefaultApplicationContext extends ApplicationContext {
         return this.injector.instance;
     }
 
-    getMessager(): MessageQueue {
-        return this.injector.get(ROOT_QUEUE);
-    }
+    // getMessager(): MessageQueue {
+    //     return this.injector.get(ROOT_QUEUE);
+    // }
 
     /**
      * send message

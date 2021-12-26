@@ -1,4 +1,4 @@
-import { Abstract, DefaultTypeRef, DispatchHandler, Injector, OperationFactory, Type, TypeRefFactory, InvokeOption, isObject, isFunction } from '@tsdi/ioc';
+import { Abstract, DefaultTypeRef, DispatchHandler, Injector, OperationFactory, Type, OperationRefFactory, InvokeOption, isObject, isFunction } from '@tsdi/ioc';
 import { Context } from './context';
 import { CanActive } from './guard';
 import { Route } from './route';
@@ -47,6 +47,6 @@ export abstract class Middleware<T extends Context = Context> implements Dispatc
  }
  
  @Abstract()
- export abstract class MiddlewareRefFactory extends TypeRefFactory<Middleware> {
+ export abstract class MiddlewareRefFactory extends OperationRefFactory<Middleware> {
      abstract create(factory: OperationFactory<Middleware>, injector: Injector, option?: InvokeOption): MiddlewareRef;
  }

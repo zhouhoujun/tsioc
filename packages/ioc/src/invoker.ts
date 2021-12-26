@@ -466,10 +466,10 @@ export interface InvocationOption extends InvokeOption {
 }
 
 /**
- * type ref.
+ * type operation ref.
  */
 @Abstract()
-export abstract class TypeRef<T = any> implements Destroyable, OnDestroy {
+export abstract class OperationRef<T = any> implements Destroyable, OnDestroy {
     /**
      * injector.
      */
@@ -514,8 +514,8 @@ export abstract class TypeRef<T = any> implements Destroyable, OnDestroy {
 }
 
 @Abstract()
-export abstract class TypeRefFactory<T = any> {
-    abstract create(factory: OperationFactory<T>, injector: Injector, option?: InvokeOption): TypeRef<T>;
+export abstract class OperationRefFactory<T = any> {
+    abstract create(factory: OperationFactory<T>, injector: Injector, option?: InvokeOption): OperationRef<T>;
 }
 
 /**
@@ -523,9 +523,9 @@ export abstract class TypeRefFactory<T = any> {
  */
 export interface OperationTypeReflect<T = any> extends TypeReflect<T> {
     /**
-     * typeref factory.
+     * {@link OperationRef} factory. 
      */
-    refFactory?: ClassType<TypeRefFactory>;
+    refFactory?: ClassType<OperationRefFactory>;
 }
 
 /**
@@ -541,9 +541,9 @@ export abstract class OperationFactory<T> {
      * create typeRef of target class.
      * @param injector to resolver the type. type of {@link Injector}.
      * @param option ext option. type of {@link InvokeOption}.
-     * @returns nstance of {@link TypeRef}.
+     * @returns nstance of {@link OperationRef}.
      */
-    abstract create(injector: Injector, option?: InvokeOption): TypeRef<T>;
+    abstract create(injector: Injector, option?: InvokeOption): OperationRef<T>;
     /**
      * create method invoker of target type.
      * @param method the method name of target.
