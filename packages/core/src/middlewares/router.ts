@@ -1,74 +1,10 @@
-import { Abstract, chain, DecorDefine, isString, OnDestroy, OperationTypeReflect, Type } from '@tsdi/ioc';
+import { Abstract, chain, Injectable, isString, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
 import { Context } from './context';
 import { Route } from './route';
 import { Middlewares, MiddlewareType } from './middlewares';
 import { PipeTransform } from '../pipes/pipe';
 import { CanActive } from './guard';
-
-
-
-/**
- * route mapping metadata.
- */
-export interface RouteMappingMetadata {
-    /**
-     * route.
-     *
-     * @type {string}
-     * @memberof RouteMetadata
-     */
-    route?: string;
-
-    parent?: Type<Router>;
-
-    /**
-     * request method.
-     */
-    method?: string;
-    /**
-     * http content type.
-     *
-     * @type {string}
-     * @memberof RouteMetadata
-     */
-    contentType?: string;
-    /**
-     * middlewares for the route.
-     *
-     * @type {MiddlewareType[]}
-     * @memberof RouteMetadata
-     */
-    middlewares?: MiddlewareType[];
-    /**
-     * pipes for the route.
-     */
-    pipes?: Type<PipeTransform>[];
-    /**
-     * route guards.
-     */
-    guards?: Type<CanActive>[];
-}
-
-/**
- * protocol route mapping metadata.
- */
-export interface ProtocolRouteMappingMetadata extends RouteMappingMetadata {
-    /**
-     * protocol type.
-     */
-    protocol?: string;
-}
-
-export interface MappingReflect<T = any> extends OperationTypeReflect<T> {
-    /**
-     * protocol type.
-     */
-    annotation: ProtocolRouteMappingMetadata;
-
-    sortRoutes: DecorDefine[];
-}
-
-
+import { Middleware } from './middleware';
 
 
 /**
@@ -84,16 +20,6 @@ export abstract class Router<T extends Context = Context> extends Middlewares<T>
      * routes.
      */
     abstract get routes(): Map<string, Route>;
-    /**
-     * add route.
-     * @param route 
-     */
-    abstract route(...route: Route[]): void;
-    /**
-     * remove route.
-     * @param route 
-     */
-    abstract remove(...route: Route[]): void;
 }
 
 /**
@@ -112,7 +38,7 @@ export abstract class RouterResolver {
 
 const endColon = /:$/;
 
-
+@Injectable()
 export class MappingRouter extends Router implements OnDestroy {
 
 
@@ -126,20 +52,31 @@ export class MappingRouter extends Router implements OnDestroy {
         this.protocols = isString(protocols) ? protocols.split(';') : protocols;
     }
 
-    route(...route: Route[]): void {
-        route.forEach(r => {
-            this.routes.set(r.url, r);
+    override use(...handles: MiddlewareType[]): this {
+        handles.forEach(handle => {
+            if (this.has(handle)) return;
+            if (handle instanceof Route) {
+                this.routes.set(handle.url, handle);
+            } else {
+                this.handles.push(handle);
+            }
         });
+        return this;
     }
 
-    remove(...route: Route[]): void {
-        route.forEach(r => {
-            this.routes.delete(r.url);
+    override unuse(...handles: (MiddlewareType | Type)[]) {
+        handles.forEach(handle => {
+            if (handle instanceof Route) {
+                this.routes.delete(handle.url);
+            } else {
+                this.remove(this.handles, handle);
+            }
         });
+        return this;
     }
 
     override handle(ctx: Context, next: () => Promise<void>): Promise<void> {
-        return chain([...this.befores, ...this.handles, (c, n) => this.response(c, n), ...this.afters], ctx, next);
+        return chain([...this.handles, (c, n) => this.response(c, n)], ctx, next);
     }
 
     protected response(ctx: Context, next: () => Promise<void>): Promise<void> {
@@ -156,6 +93,7 @@ export class MappingRouter extends Router implements OnDestroy {
     }
 
     onDestroy(): void {
+        this.handles = [];
         this.routes.clear();
     }
 }
@@ -182,3 +120,67 @@ export class MappingRouterResolver {
         return router;
     }
 }
+
+
+/**
+ * route mapping metadata.
+ */
+export interface RouteMappingMetadata {
+    /**
+     * route.
+     *
+     * @type {string}
+     * @memberof RouteMetadata
+     */
+    route?: string;
+    /**
+     * parent router.
+     */
+    parent?: Type<Router>;
+
+    /**
+     * request method.
+     */
+    method?: string;
+    /**
+     * http content type.
+     *
+     * @type {string}
+     * @memberof RouteMetadata
+     */
+    contentType?: string;
+    /**
+     * middlewares for the route.
+     *
+     * @type {(MiddlewareType | Type<Middleware>)[]}
+     * @memberof RouteMetadata
+     */
+    middlewares?: (MiddlewareType | Type<Middleware>)[];
+    /**
+     * pipes for the route.
+     */
+    pipes?: Type<PipeTransform>[];
+    /**
+     * route guards.
+     */
+    guards?: Type<CanActive>[];
+}
+
+/**
+ * protocol route mapping metadata.
+ */
+export interface ProtocolRouteMappingMetadata extends RouteMappingMetadata {
+    /**
+     * protocol type.
+     */
+    protocol?: string;
+}
+
+export interface MappingReflect<T = any> extends TypeReflect<T> {
+    /**
+     * protocol type.
+     */
+    annotation: ProtocolRouteMappingMetadata;
+}
+
+

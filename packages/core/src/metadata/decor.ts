@@ -2,13 +2,13 @@ import {
     isUndefined, EMPTY_OBJ, isArray, isString, lang, Type, isRegExp, createDecorator,
     ClassMethodDecorator, createParamDecorator, ParameterMetadata, ProviderType,
     ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes,
-    OperationArgumentResolver, OperationFactoryResolver, OperationTypeReflect
+    OperationArgumentResolver, OperationFactoryResolver, OperationRefFactoryResolver
 } from '@tsdi/ioc';
 import { StartupService, ServiceSet } from '../service';
-import { Middleware, MiddlewareRef, MiddlewareRefFactory } from '../middlewares/middleware';
+import { Middleware, MiddlewareRef, MiddlewareRefFactory, MiddlewareRefFactoryResolver } from '../middlewares/middleware';
 import { Middlewares, MiddlewareType } from '../middlewares/middlewares';
 import { CanActive } from '../middlewares/guard';
-import { RouteRef, RouteRefFactory } from '../middlewares/route';
+import { RouteRef, RouteRefFactory, RouteRefFactoryResolver } from '../middlewares/route';
 import { MappingReflect, ProtocolRouteMappingMetadata, Router, RouterResolver } from '../middlewares/router';
 import { HandleMetadata, HandlesMetadata, PipeMetadata, HandleMessagePattern, ComponentScanMetadata, ScanReflect } from './meta';
 import { PipeTransform } from '../pipes/pipe';
@@ -166,7 +166,7 @@ export const ComponentScan: ComponentScan = createDecorator<ComponentScanMetadat
                 sets = injector.get(RunnableSet);
             }
             if (sets && !sets.has(type)) {
-                const typeRef = injector.get(OperationFactoryResolver).resolve(type).create(injector);
+                const typeRef = injector.get(OperationRefFactoryResolver).resolve(type).create(injector);
                 sets.add(typeRef, reflect.order);
             }
             return next();
@@ -249,9 +249,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
         (isString(parent) || isRegExp(parent) ? ({ pattern: parent, ...options }) : ({ parent, ...options })) as HandleMetadata & HandleMessagePattern,
     reflect: {
         class: (ctx, next) => {
-            const reflect = ctx.reflect as OperationTypeReflect;
-            reflect.annotation = ctx.metadata;
-            reflect.refFactory = MiddlewareRefFactory;
+            ctx.reflect.annotation = ctx.metadata;
             return next();
         }
     },
@@ -280,28 +278,20 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
                     throw new Error(lang.getClassName(queue) + 'is not message router!');
                 }
                 let router = queue as Router;
-                const middlwareRef = injector.get(OperationFactoryResolver).resolve(reflect).create(injector) as MiddlewareRef;
-                middlwareRef.onDestroy(() => router.remove(middlwareRef));
-                router.route(middlwareRef);
-            } else {
-                const middlwareRef = injector.get(OperationFactoryResolver).resolve(reflect).create(injector) as MiddlewareRef;
+                const middlwareRef = injector.get(MiddlewareRefFactoryResolver).resolve(reflect).create(injector);
+                middlwareRef.onDestroy(() => router.unuse(middlwareRef));
+                router.use(middlwareRef);
+            } else if (parent) {
+                queue = injector.get(parent);
+                if (!queue) {
+                    throw new Error(lang.getClassName(parent) + 'has not registered!')
+                }
+                const middlwareRef = injector.get(MiddlewareRefFactoryResolver).resolve(reflect).create(injector);
                 if (before) {
-                    queue = injector.get(before);
-                    if (!queue) {
-                        throw new Error(lang.getClassName(before) + 'has not registered!')
-                    }
-                    queue.useBefore(middlwareRef);
+                    queue.useBefore(middlwareRef, before);
                 } else if (after) {
-                    queue = injector.get(after);
-                    if (!queue) {
-                        throw new Error(lang.getClassName(after) + 'has not registered!')
-                    }
-                    queue.useAfter(middlwareRef);
-                } else if (parent) {
-                    queue = injector.get(parent);
-                    if (!queue) {
-                        throw new Error(lang.getClassName(parent) + 'has not registered!')
-                    }
+                    queue.useAfter(middlwareRef, after);
+                } else {
                     queue.use(middlwareRef);
                 }
                 middlwareRef.onDestroy(() => queue?.unuse(type));
@@ -498,9 +488,7 @@ export const RouteMapping: RouteMapping = createDecorator<ProtocolRouteMappingMe
     },
     reflect: {
         class: (ctx, next) => {
-            const reflect = ctx.reflect as MappingReflect;
-            reflect.refFactory = RouteRefFactory;
-            reflect.annotation = ctx.metadata;
+            ctx.reflect.annotation = ctx.metadata;
             return next();
         }
     },
@@ -518,9 +506,9 @@ export const RouteMapping: RouteMapping = createDecorator<ProtocolRouteMappingMe
 
             if (!router) throw new Error(lang.getClassName(parent) + 'has not registered!');
             if (!(router instanceof Router)) throw new Error(lang.getClassName(router) + 'is not router!');
-            const mappingRef = injector.get(OperationFactoryResolver).resolve(reflect).create(injector) as RouteRef;
-            mappingRef.onDestroy(() => router.unuse(mappingRef));
-            router.use(mappingRef);
+            const routeRef = injector.get(RouteRefFactoryResolver).resolve(reflect).create(injector);
+            routeRef.onDestroy(() => router.unuse(routeRef));
+            router.use(routeRef);
 
             next();
         }

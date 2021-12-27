@@ -18,7 +18,8 @@ import { ModuleReflect, TypeReflect } from '../metadata/type';
 import { get } from '../metadata/refl';
 import {
     InvocationContext, InvocationOption, InvokeOption, OperationArgumentResolver, Parameter, OperationFactory,
-    ReflectiveOperationInvoker, OperationFactoryResolver, OperationInvoker, InvokeArguments, OperationRef, composeResolver, ArgumentResolver, OperationTypeReflect
+    ReflectiveOperationInvoker, OperationFactoryResolver, OperationInvoker, InvokeArguments, OperationRef,
+    composeResolver, ArgumentResolver, OperationRefFactoryResolver, OperationRefFactory
 } from '../invoker';
 import { DefaultModuleLoader } from './loader';
 import { ModuleLoader } from '../module.loader';
@@ -949,10 +950,16 @@ export class DefaultTypeRef<T> extends OperationRef<T> {
     private _destroyed = false;
     private _dsryCbs = new Set<DestroyCallback>();
     private _type: Type<T>;
+    private _instance: T | undefined;
 
-    constructor(protected factory: OperationFactory<T>, protected _injector: Injector, readonly root: InvocationContext, protected _instance?: T) {
+    protected factory: OperationFactory<T>;
+    protected root: InvocationContext;
+
+    constructor(readonly reflect: TypeReflect<T>, protected _injector: Injector, options?: InvokeOption) {
         super()
-        this._type = factory.targetReflect.type as Type;
+        this._type = reflect.type as Type<T>;
+        this.factory = _injector.get(OperationFactoryResolver).resolve(reflect);
+        this.root = this.factory.createContext(this.injector, options);
         this.root.setValue(OperationRef, this);
         _injector.onDestroy(this);
     }
@@ -966,10 +973,6 @@ export class DefaultTypeRef<T> extends OperationRef<T> {
             this._instance = this._injector.resolve({ token: this.type, regify: true, context: this.root });
         }
         return this._instance;
-    }
-
-    get reflect(): TypeReflect<T> {
-        return this.factory.targetReflect;
     }
 
     get type(): Type<T> {
@@ -1059,7 +1062,6 @@ export class DestroyLifecycleHooks extends LifecycleHooks {
     }
 }
 
-
 export class DefaultOperationFactory<T> extends OperationFactory<T> {
 
     private _tagRefl: TypeReflect<T>;
@@ -1069,15 +1071,8 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
         this._tagRefl = isFunction(targetType) ? get(targetType) : targetType;
     }
 
-    get targetReflect(): OperationTypeReflect<T> {
+    get targetReflect(): TypeReflect<T> {
         return this._tagRefl;
-    }
-
-    create(injector: Injector, option?: InvokeOption): OperationRef<T> {
-        if (this.targetReflect.refFactory) {
-            return injector.get(this.targetReflect.refFactory).create(this, injector, option);
-        }
-        return new DefaultTypeRef(this, injector, this.createContext(injector, option));
     }
 
     createInvoker(method: string, instance?: T): OperationInvoker {
@@ -1122,11 +1117,30 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
     }
 }
 
+export class DefaultOperationRefFactory<T = any> extends OperationRefFactory<T> {
+
+    constructor(readonly reflect: TypeReflect<T>) {
+        super()
+    }
+
+    create(injector: Injector, option?: InvokeOption): OperationRef<any> {
+        return new DefaultTypeRef(this.reflect, injector, option);
+    }
+
+}
+
 class OperationFactoryResolverImpl extends OperationFactoryResolver {
     resolve<T>(type: ClassType<T> | TypeReflect<T>): OperationFactory<T> {
         return new DefaultOperationFactory(type);
     }
 }
+
+class OperationRefFactoryResolverImpl extends OperationRefFactoryResolver {
+    resolve<T>(type: Type<T> | TypeReflect<T>): OperationRefFactory<T> {
+        return new DefaultOperationRefFactory(isFunction(type) ? get(type) : type);
+    }
+}
+
 
 /**
  * register core for root.
@@ -1137,6 +1151,7 @@ class OperationFactoryResolverImpl extends OperationFactoryResolver {
 function registerCores(container: Container) {
     container.setValue(ModuleLoader, new DefaultModuleLoader());
     container.setValue(OperationFactoryResolver, new OperationFactoryResolverImpl());
+    container.setValue(OperationRefFactoryResolver, new OperationRefFactoryResolverImpl())
     // bing action.
     container.platform().registerAction(
         DesignLifeScope,

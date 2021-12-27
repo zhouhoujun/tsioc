@@ -475,10 +475,6 @@ export abstract class OperationRef<T = any> implements Destroyable, OnDestroy {
      */
     abstract get injector(): Injector;
     /**
-     * the type root invocation context.
-     */
-    abstract get root(): InvocationContext;
-    /**
      * instance of target.
      */
     abstract get instance(): T;
@@ -515,17 +511,26 @@ export abstract class OperationRef<T = any> implements Destroyable, OnDestroy {
 
 @Abstract()
 export abstract class OperationRefFactory<T = any> {
-    abstract create(factory: OperationFactory<T>, injector: Injector, option?: InvokeOption): OperationRef<T>;
+    /**
+     * target reflect.
+     */
+    abstract get reflect(): TypeReflect<T>;
+    /**
+     * create typeRef of target class.
+     * @param injector to resolver the type. type of {@link Injector}.
+     * @param option ext option. type of {@link InvokeOption}.
+     * @returns nstance of {@link OperationRef}.
+     */
+    abstract create(injector: Injector, option?: InvokeOption): OperationRef<T>;
 }
 
-/**
- * opteration type reflect.
- */
-export interface OperationTypeReflect<T = any> extends TypeReflect<T> {
+@Abstract()
+export abstract class OperationRefFactoryResolver {
     /**
-     * {@link OperationRef} factory. 
+     * resolve operation ref factory.
+     * @param type 
      */
-    refFactory?: ClassType<OperationRefFactory>;
+    abstract resolve<T>(type: Type<T> | TypeReflect<T>): OperationRefFactory<T>;
 }
 
 /**
@@ -537,13 +542,6 @@ export abstract class OperationFactory<T> {
      * target reflect.
      */
     abstract get targetReflect(): TypeReflect<T>;
-    /**
-     * create typeRef of target class.
-     * @param injector to resolver the type. type of {@link Injector}.
-     * @param option ext option. type of {@link InvokeOption}.
-     * @returns nstance of {@link OperationRef}.
-     */
-    abstract create(injector: Injector, option?: InvokeOption): OperationRef<T>;
     /**
      * create method invoker of target type.
      * @param method the method name of target.

@@ -1,8 +1,8 @@
 import {
-    AsyncHandler, DecorDefine, Type, TypeReflect, Injector, lang, chain,
+    AsyncHandler, DecorDefine, Type, Injector, lang, chain, EMPTY,
     isPrimitiveType, isPromise, isString, isArray, isFunction, isDefined,
-    composeResolver, Parameter, EMPTY, ClassType, ArgumentError, InvocationContext,
-    OperationRef, ObservableParser, OnDestroy, OperationFactory, DefaultTypeRef, isClass
+    composeResolver, Parameter, ClassType, ArgumentError,
+    OperationRef, ObservableParser, OnDestroy, isClass, InvokeOption, TypeReflect, refl
 } from '@tsdi/ioc';
 import { isObservable } from 'rxjs';
 import { Middleware } from './middleware';
@@ -13,10 +13,9 @@ import { CanActive } from './guard';
 import { MiddlewareType } from './middlewares';
 import { TrasportArgumentResolver, TrasportParameter } from './resolver';
 import { ResultValue } from './result';
-import { Route } from './route';
-import { ProtocolRouteMappingMetadata, RouteMappingMetadata, Router } from './router';
-
-const emptyNext = async () => { };
+import { RouteRef, RouteRefFactoryResolver } from './route';
+import { ProtocolRouteMappingMetadata, RouteMappingMetadata } from './router';
+import { RouteRefFactory } from '.';
 
 
 const isRest = /\/:/;
@@ -27,14 +26,14 @@ const restParms = /^\S*:/;
 /**
  * route mapping ref.
  */
-export class RouteMappingRef<T> extends DefaultTypeRef<T> implements Route, OnDestroy {
+export class RouteMappingRef<T> extends RouteRef<T> implements OperationRef<T>, OnDestroy {
 
     private metadata: ProtocolRouteMappingMetadata;
     protected sortRoutes: DecorDefine[] | undefined;
 
-    constructor(factory: OperationFactory<T>, injector: Injector, root: InvocationContext, instance?: T) {
-        super(factory, injector, root, instance);
-        this.metadata = factory.targetReflect.annotation as ProtocolRouteMappingMetadata;
+    constructor(reflect: TypeReflect<T>, injector: Injector, option?: InvokeOption) {
+        super(reflect, injector, option);
+        this.metadata = reflect.annotation as ProtocolRouteMappingMetadata;
     }
 
     get url(): string {
@@ -54,7 +53,7 @@ export class RouteMappingRef<T> extends DefaultTypeRef<T> implements Route, OnDe
     }
 
     async handle(ctx: Context, next: () => Promise<void>): Promise<void> {
-        const method = await this.getRoute(ctx);
+        const method = await this.canActivate(ctx);
         if (method) {
             let middlewares = this.getRouteMiddleware(ctx, method);
             if (middlewares.length) {
@@ -66,7 +65,7 @@ export class RouteMappingRef<T> extends DefaultTypeRef<T> implements Route, OnDe
         }
     }
 
-    protected async getRoute(ctx: Context) {
+    protected async canActivate(ctx: Context) {
         if (!((!ctx.status || ctx.status === 404) && ctx.vaild.isActiveRoute(ctx, this.url) === true)) return null;
         if (this.guards && this.guards.length) {
             if (!(await lang.some(
@@ -138,7 +137,10 @@ export class RouteMappingRef<T> extends DefaultTypeRef<T> implements Route, OnDe
     }
 
     protected getRouteMiddleware(ctx: Context, meta: DecorDefine) {
-        return [...this.reflect.annotation?.middlewares || EMPTY, ...(meta.metadata as RouteMappingMetadata).middlewares || EMPTY];
+        if (this.metadata.middlewares?.length || (meta.metadata as RouteMappingMetadata).middlewares?.length) {
+            return [...this.metadata.middlewares || EMPTY, ...(meta.metadata as RouteMappingMetadata).middlewares || EMPTY];
+        }
+        return EMPTY;
     }
 
     protected getRouteMetaData(ctx: Context) {
@@ -171,11 +173,10 @@ export class RouteMappingRef<T> extends DefaultTypeRef<T> implements Route, OnDe
     }
 
     protected parseHandle(mdty: MiddlewareType | Type<Middleware>): AsyncHandler<Context> | undefined {
-        if (isClass(mdty)) {
-            return this.injector.get(mdty);
-        }
         if (mdty instanceof OperationRef) {
             return mdty.instance;
+        } else if (isClass(mdty)) {
+            return this.injector.get(mdty);
         } else {
             return mdty;
         }
@@ -298,3 +299,17 @@ const primitiveResolvers: TrasportArgumentResolver[] = [
     )
 ]
 
+export class DefaultRouteRefFactory<T = any> extends RouteRefFactory<T> {
+    constructor(readonly reflect: TypeReflect<T>) {
+        super()
+    }
+    create(injector: Injector, option?: InvokeOption): RouteRef<T> {
+        return new RouteMappingRef(this.reflect, injector, option);
+    }
+}
+
+export class DefaultRouteRefFactoryResovler extends RouteRefFactoryResolver {
+    resolve<T>(type: Type<T> | TypeReflect<T>): RouteRefFactory<T> {
+        return new DefaultRouteRefFactory<T>(isFunction(type) ? refl.get(type) : type);
+    }
+}

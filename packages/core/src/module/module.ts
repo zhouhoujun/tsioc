@@ -9,7 +9,10 @@ import { ModuleFactory, ModuleFactoryResolver, ModuleOption } from '../module.fa
 import { ModuleRef } from '../module.ref';
 import { RunnableFactoryResolver } from '../runnable';
 import { DefaultRunnableFactoryResolver } from './runnable';
-
+import { RouteRefFactoryResolver } from '../middlewares/route';
+import { DefaultRouteRefFactoryResovler } from '../middlewares/route_ref';
+import { MiddlewareRefFactoryResolver } from '../middlewares/middleware';
+import { DefaultMiddlewareRefFactoryResolver } from '../middlewares/middleware_ref';
 
 
 /**
@@ -24,6 +27,8 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
     runnableFactoryResolver: RunnableFactoryResolver = new DefaultRunnableFactoryResolver(this);
     operationFactoryResolver = new ModuleOperationFactoryResolver();
+    routeRefFactoryResolver = new DefaultRouteRefFactoryResovler();
+    middleRefFactoryResolver = new DefaultMiddlewareRefFactoryResolver();
     lifecycle!: ModuleLifecycleHooks;
 
     constructor(moduleType: ModuleReflect, providers: ProviderType[] | undefined, readonly parent: Injector,
@@ -34,7 +39,9 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         this._type = moduleType.type as Type;
         this.inject(
             { provide: RunnableFactoryResolver, useValue: this.runnableFactoryResolver },
-            { provide: OperationFactoryResolver, useValue: this.operationFactoryResolver }
+            { provide: OperationFactoryResolver, useValue: this.operationFactoryResolver },
+            { provide: RouteRefFactoryResolver, useValue: this.routeRefFactoryResolver },
+            { provide: MiddlewareRefFactoryResolver, useValue: this.middleRefFactoryResolver }
         );
 
         this.setValue(ModuleRef, this);

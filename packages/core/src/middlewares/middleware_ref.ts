@@ -1,4 +1,5 @@
-import { DefaultTypeRef, EMPTY, Injectable, Injector, InvocationContext, InvokeOption, isUndefined, lang, OperationFactory, Type } from '@tsdi/ioc';
+import { EMPTY, Injector, InvokeOption, isFunction, isUndefined, lang, OperationRef, refl, Type, TypeReflect } from '@tsdi/ioc';
+import { MiddlewareRefFactoryResolver } from '.';
 import { HandleMetadata } from '../metadata/meta';
 import { Context } from './context';
 import { CanActive } from './guard';
@@ -7,11 +8,11 @@ import { Middleware, MiddlewareRef, MiddlewareRefFactory } from './middleware';
 /**
  * middleware ref.
  */
- export class DefaultMiddlewareRef<T extends Middleware = Middleware> extends DefaultTypeRef<T> implements MiddlewareRef {
+export class DefaultMiddlewareRef<T extends Middleware = Middleware> extends MiddlewareRef<T> implements OperationRef<T> {
     private metadata: HandleMetadata;
-    constructor(factory: OperationFactory<T>, injector: Injector, root: InvocationContext, readonly prefix: string = '', instance?: T) {
-        super(factory, injector, root, instance);
-        this.metadata = factory.targetReflect.annotation as HandleMetadata;
+    constructor(reflect: TypeReflect<T>, injector: Injector, option?: InvokeOption, readonly prefix: string = '') {
+        super(reflect, injector, option);
+        this.metadata = reflect.annotation as HandleMetadata;
     }
 
     async handle(ctx: Context, next: () => Promise<void>): Promise<void> {
@@ -58,10 +59,18 @@ import { Middleware, MiddlewareRef, MiddlewareRefFactory } from './middleware';
 
 }
 
-@Injectable()
-export class DefaultMiddlewareRefFactory extends MiddlewareRefFactory {
-    create(factory: OperationFactory<Middleware>, injector: Injector, option?: InvokeOption): MiddlewareRef {
-        return new DefaultMiddlewareRef(factory, injector, factory.createContext(injector, option));
+export class DefaultMiddlewareRefFactory<T extends Middleware> extends MiddlewareRefFactory<T> {
+    constructor(readonly reflect: TypeReflect<T>) {
+        super()
+    }
+    create(injector: Injector, option?: InvokeOption): MiddlewareRef<T> {
+        return new DefaultMiddlewareRef(this.reflect, injector, option) as MiddlewareRef<T>;
     }
 
+}
+
+export class DefaultMiddlewareRefFactoryResolver extends MiddlewareRefFactoryResolver {
+    resolve<T extends Middleware<Context>>(type: Type<T> | TypeReflect<T>): MiddlewareRefFactory<T> {
+        return new DefaultMiddlewareRefFactory(isFunction(type) ? refl.get(type) : type);
+    }
 }
