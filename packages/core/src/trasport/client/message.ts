@@ -1,7 +1,6 @@
 import { Inject, Injectable } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { ContextBase, RequestBase, ResponseBase } from '../../middlewares';
-import { RootRouter, Router } from '../../middlewares/router';
+import { Router, RouterResolver } from '../../middlewares/router';
 import { ReadPacket, WritePacket } from '../packet';
 import { AbstractClient } from './client';
 
@@ -10,18 +9,16 @@ import { AbstractClient } from './client';
 export class MessageClient extends AbstractClient {
 
     private router: Router | undefined;
-
-    @Inject() private root!: RootRouter;
-
+    @Inject()
+    private resolver!: RouterResolver;
     async connect(): Promise<void> {
         if (!this.router) {
-            this.router = this.root.getRoot('msg');
+            this.router = this.resolver.resolve('msg');
         }
     }
 
     async onDispose(): Promise<void> {
         this.router = null!;
-        this.root = null!;
     }
 
     protected publish(packet: ReadPacket<any>, callback: (packet: WritePacket<any>) => void): () => void {

@@ -427,7 +427,7 @@ export class DefaultInjector extends Injector {
         }
 
         if (target instanceof OperationRef) {
-            return target.invoke(propertyKey, { ...option, providers });
+            return target.invoke(propertyKey, context ?? { ...option, providers });
         }
 
         let targetClass: Type, instance: any, key: string;
@@ -979,8 +979,12 @@ export class DefaultTypeRef<T> extends OperationRef<T> {
         return this._type;
     }
 
-    invoke(method: MethodType<T>, option?: InvokeArguments) {
-        const context = this.factory.createContext(this.root, option);
+    getContext() {
+        return this.root;
+    }
+
+    invoke(method: MethodType<T>, option?: InvokeArguments | InvocationContext) {
+        const context = option instanceof InvocationContext ? option : this.factory.createContext(this.root, option);
         const key = isFunction(method) ? this.reflect.class.getPropertyName(method(this.reflect.class.getPropertyDescriptors() as any)) : method;
         return this.factory.createInvoker(key, this.instance).invoke(context, true);
     }

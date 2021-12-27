@@ -285,8 +285,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
                     throw new Error(lang.getClassName(queue) + 'is not message router!');
                 }
                 const router = queue as Router;
-                const prefix = router.prefix;
-                const middlwareRef = injector.get(MiddlewareRefFactoryResolver).resolve(reflect).create(injector, { prefix });
+                const middlwareRef = injector.get(MiddlewareRefFactoryResolver).resolve(reflect).create(injector, { prefix: router.prefix });
                 middlwareRef.onDestroy(() => router.unuse(middlwareRef));
                 router.use(middlwareRef);
             } else if (parent) {

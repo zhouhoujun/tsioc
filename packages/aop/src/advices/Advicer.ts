@@ -1,4 +1,4 @@
-import { Resolver } from '@tsdi/ioc';
+import { OperationRef } from '@tsdi/ioc';
 import { MatchPointcut } from '../joinpoints/MatchPointcut';
 
 /**
@@ -13,6 +13,6 @@ export interface Advicer extends MatchPointcut {
      *
      * @type {Type}
      */
-    aspect: Resolver;
+    aspect: OperationRef;
 }
 

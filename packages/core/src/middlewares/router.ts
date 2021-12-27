@@ -34,8 +34,9 @@ export abstract class RouterResolver {
     /**
      * resolve router.
      * @param protocol the router protocal. 
+     * @param prefix route prefix.
      */
-    abstract resolve(protocol?: string): Router;
+    abstract resolve(protocol?: string, prefix?: string): Router;
 }
 
 
@@ -134,7 +135,7 @@ export class MappingRouterResolver {
         this.routers = new Map();
     }
 
-    resolve(protocol?: string): Router {
+    resolve(protocol?: string, prefix?: string): Router {
         if (!protocol) {
             protocol = 'msg:';
         } else if (!endColon.test(protocol)) {
@@ -142,7 +143,7 @@ export class MappingRouterResolver {
         }
         let router = this.routers.get(protocol);
         if (!router) {
-            router = new MappingRouter(protocol);
+            router = new MappingRouter(protocol, prefix);
             this.routers.set(protocol, router);
         }
         return router;

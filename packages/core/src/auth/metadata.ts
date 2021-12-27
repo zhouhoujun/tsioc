@@ -1,6 +1,6 @@
 import { ClassMethodDecorator, createDecorator, Type, TypeMetadata } from '@tsdi/ioc';
 import { CanActive } from '../middlewares/guard';
-import { MiddlewareType } from '../middlewares/middleware';
+import { MiddlewareType } from '../middlewares/middlewares';
 import { PipeTransform } from '../pipes/pipe';
 
 

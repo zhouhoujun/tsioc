@@ -222,11 +222,3 @@ export abstract class Context implements Destroyable {
     }
 
 }
-
-/**
- * middleware context factory.
- */
-@Abstract()
-export abstract class ContextFactory {
-    abstract create(request: Request | RequestOption, injector: Injector): Context;
-}

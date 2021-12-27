@@ -1,4 +1,4 @@
-import { Abstract, Resolver, Type } from '@tsdi/ioc';
+import { Abstract, OperationRef, Type } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { ApplicationContext } from './context';
 import { ScanSet } from './scan.set';
@@ -37,7 +37,7 @@ export abstract class ClientSet implements ScanSet<Client> {
     /**
      * get all client.
      */
-    abstract getAll(): Resolver<Client>[];
+    abstract getAll(): OperationRef<Client>[];
     /**
      * has the client type or not.
      * @param type class type/
@@ -47,12 +47,12 @@ export abstract class ClientSet implements ScanSet<Client> {
      * add client resolver.
      * @param resolver resolver instance.
      */
-    abstract add(resolver: Resolver<Client>, order?: number): void;
+    abstract add(resolver: OperationRef<Client>, order?: number): void;
     /**
      * remove client resolver.
      * @param resolver resolver instance.
      */
-    abstract remove(resolver: Resolver<Client>): void;
+    abstract remove(resolver: OperationRef<Client>): void;
     /**
      * clear client resolver.
      */

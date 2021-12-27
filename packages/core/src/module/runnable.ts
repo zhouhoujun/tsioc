@@ -1,4 +1,4 @@
-import { Type, refl, lang, TypeReflect, OperationFactoryResolver, EMPTY } from '@tsdi/ioc';
+import { Type, refl, lang, TypeReflect, OperationFactoryResolver, EMPTY, OperationRefFactoryResolver } from '@tsdi/ioc';
 import { Runner, RunnableFactory, RunnableFactoryResolver, Runnable } from '../runnable';
 import { ApplicationContext, BootstrapOption } from '../context';
 import { ModuleRef } from '../module.ref';
@@ -19,7 +19,7 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
 
     override create(option: BootstrapOption, context?: ApplicationContext) {
         const injector = this.moduleRef ?? option.injector ?? context?.injector!;
-        const runnableRef = injector.get(OperationFactoryResolver)
+        const runnableRef = injector.get(OperationRefFactoryResolver)
             .resolve(this._refl)
             .create(injector, context ? {
                 ...option,
@@ -33,7 +33,7 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
         } else {
             runable = injector.resolve({
                 token: Runner,
-                context: runnableRef.root
+                context: runnableRef.getContext()
             });
         }
 

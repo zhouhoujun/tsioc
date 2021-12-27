@@ -1,15 +1,16 @@
-import { Token, ProviderType, Type, isFunction, ModuleMetadata, DestroyCallback } from '@tsdi/ioc';
+import { Token, Type, isFunction, ModuleMetadata, DestroyCallback } from '@tsdi/ioc';
 import { ConfigureLoggerManager, LoggerManager, LOGGER_MANAGER } from '@tsdi/logs';
 import { CONFIGURATION, PROCESS_ROOT } from './metadata/tk';
 import { Configuration, ConfigureManager } from './configure/config';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from './context';
 import { Runner, RunnableFactory, RunnableFactoryResolver, RunnableSet } from './runnable';
-import { Response, Request, Context, RequestInit, RequestOption } from './middlewares';
 import { ModuleRef } from './module.ref';
 import { ApplicationArguments } from './args';
 import { ServerSet } from './server';
-import { ClientSet } from './client';
+import { Client, ClientSet } from './client';
 import { ServiceSet } from './service';
+import { ClientFactory } from '.';
+import { Observable } from 'rxjs';
 
 
 
@@ -68,43 +69,19 @@ export class DefaultApplicationContext extends ApplicationContext {
         return this.injector.instance;
     }
 
-    // getMessager(): MessageQueue {
-    //     return this.injector.get(ROOT_QUEUE);
-    // }
-
+    private client: Client | undefined;
     /**
-     * send message
-     *
-     * @param {Context} context request context
-     * @returns {Promise<Response>}
+     * send message.
+     * @param pattern message pattern.
+     * @param data send data.
      */
-    send(context: Context): Promise<Response>;
-    /**
-     * send message
-     *
-     * @param {string} url route url
-     * @param {RequestInit} request request options data.
-     * @returns {Promise<Response>}
-     */
-    send(url: string, request: RequestInit, ...providers: ProviderType[]): Promise<Response>;
-    /**
-     * send message
-     *
-     * @param {Request} request request
-     * @param {() => Promise<void>} [next]
-     * @returns {Promise<Response>}
-     */
-    send(request: Request, ...providers: ProviderType[]): Promise<Response>;
-    /**
-     * send message
-     *
-     * @param {RequestOption} request request option
-     * @param {() => Promise<void>} [next]
-     * @returns {Promise<Response>}
-     */
-    send(request: RequestOption, ...providers: ProviderType[]): Promise<Response>;
-    async send(url: any, request?: any, ...providers: ProviderType[]): Promise<Response> {
-        return this.getMessager().send(url, request, ...providers);
+    send<TResult = any, TInput = any>(pattern: any, data: TInput): Observable<TResult> {
+        if(!this.client){
+            this.client = this.injector.get(ClientFactory).create({
+                transport: 'msg'
+            });
+        }
+        return this.client.send(pattern, data);
     }
 
     /**

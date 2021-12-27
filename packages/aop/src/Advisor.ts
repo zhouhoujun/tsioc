@@ -1,4 +1,4 @@
-import { Type, ProviderType, Injector, Resolver, lang } from '@tsdi/ioc';
+import { Type, lang, OperationRef, OnDestroy } from '@tsdi/ioc';
 import { Advices } from './advices/Advices';
 
 /**
@@ -7,7 +7,7 @@ import { Advices } from './advices/Advices';
  * @export
  * @class Advisor
  */
-export class Advisor {
+export class Advisor implements OnDestroy {
     /**
      * method advices.
      *
@@ -15,9 +15,9 @@ export class Advisor {
      */
     advices: Map<Type, Map<string, Advices>>;
 
-    aspects: Resolver[];
+    aspects: OperationRef[];
 
-    constructor(private readonly injector: Injector) {
+    constructor() {
         this.advices = new Map();
         this.aspects = [];
     }
@@ -67,27 +67,20 @@ export class Advisor {
      * @param {Type} aspect
      * @param {Container} raiseContainer
      */
-    add(aspect: Resolver): void {
+    add(aspect: OperationRef): void {
         this.aspects.push(aspect);
     }
 
-    remove(aspect: Resolver) {
+    remove(aspect: OperationRef) {
         lang.remove(this.aspects, aspect);
     }
 
-    get(type: Type): Resolver | undefined {
+    get(type: Type): OperationRef | undefined {
         return this.aspects.find(r => r.type === type);
     }
-
-    /**
-     * resolve aspect.
-     *
-     * @template T
-     * @param {Type<T>} aspect
-     * @param {...ProviderType[]} providers
-     * @returns {T}
-     */
-    resolve<T>(aspect: Type<T>, ...providers: ProviderType[]): T {
-        return this.injector.resolve(aspect, providers);
+    
+    onDestroy(): void {
+        this.aspects = [];
+        this.advices.clear();
     }
 }

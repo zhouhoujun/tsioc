@@ -4,9 +4,6 @@ import {
 } from '@tsdi/ioc';
 import { LoggerManager } from '@tsdi/logs';
 import { Configuration, ConfigureManager } from './configure/config';
-import { Request, RequestInit, RequestOption } from './middlewares/request';
-import { Response } from './middlewares/response';
-import { Context } from './middlewares/context';
 import { Runnable, RunnableSet, RunnableFactory } from './runnable';
 import { ServiceSet } from './service';
 import { ClientSet } from './client';
@@ -14,6 +11,7 @@ import { ServerSet } from './server';
 import { ModuleOption } from './module.factory';
 import { ModuleRef } from './module.ref';
 import { ApplicationArguments } from './args';
+import { Observable } from 'rxjs';
 
 
 /**
@@ -55,36 +53,11 @@ export abstract class ApplicationContext implements Destroyable {
      */
     abstract bootstrap<C>(type: Type<C> | RunnableFactory<C>, opts?: BootstrapOption): any;
     /**
-     * send message
-     *
-     * @param {Context} context request context
-     * @returns {Promise<Response>}
+     * send message.
+     * @param pattern message pattern.
+     * @param data send data.
      */
-    abstract send(context: Context): Promise<Response>;
-    /**
-     * send message
-     *
-     * @param {string} url route url
-     * @param {RequestInit} request request options data.
-     * @returns {Promise<Response>}
-     */
-    abstract send(url: string, request: RequestInit, ...providers: ProviderType[]): Promise<Response>;
-    /**
-     * send message
-     *
-     * @param {Request} request request
-     * @param {() => Promise<void>} [next]
-     * @returns {Promise<Response>}
-     */
-    abstract send(request: Request, ...providers: ProviderType[]): Promise<Response>;
-    /**
-     * send message
-     *
-     * @param {RequestOption} request request option
-     * @param {() => Promise<void>} [next]
-     * @returns {Promise<Response>}
-     */
-    abstract send(request: RequestOption, ...providers: ProviderType[]): Promise<Response>;
+    abstract send<TResult = any, TInput = any>(pattern: any, data: TInput): Observable<TResult>;
     /**
      * get log manager.
      */

@@ -487,11 +487,21 @@ export abstract class OperationRef<T = any> implements Destroyable, OnDestroy {
      */
     abstract get type(): Type<T>;
     /**
+     * the invcation context of target type.
+     */
+    abstract getContext(): InvocationContext;
+    /**
      * invoke target method.
      * @param method method name.
      * @param option invoke arguments.
      */
     abstract invoke(method: MethodType<T>, option?: InvokeArguments): any;
+    /**
+     * invoke target method.
+     * @param method method name.
+     * @param option invoke arguments.
+     */
+    abstract invoke(method: MethodType<T>, context?: InvocationContext): any;
     /**
      * is destroyed or not.
      */

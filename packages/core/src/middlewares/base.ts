@@ -1,5 +1,5 @@
 import { EMPTY_OBJ, Injectable, Injector, isArray, isDefined, isString, Singleton } from '@tsdi/ioc';
-import { Context, ContextFactory } from './context';
+import { Context } from './context';
 import { HeadersOption } from './header';
 import { RequestOption, Request } from './request';
 import { ResponseOption, Response } from './response';
@@ -350,11 +350,11 @@ export class ResponseBase extends Response {
     }
 }
 
-export const BASE_CONTEXT_FACTORY_IMPL: ContextFactory = {
-    create(request: Request | RequestOption, injector: Injector): Context {
-        const req: Request = request instanceof Request ? request : new RequestBase(request);
-        const headers = req.getHeaders();
-        const rep = new ResponseBase({ headers });
-        return new ContextBase(req, rep, injector);
-    }
-}
+// export const BASE_CONTEXT_FACTORY_IMPL: ContextFactory = {
+//     create(request: Request | RequestOption, injector: Injector): Context {
+//         const req: Request = request instanceof Request ? request : new RequestBase(request);
+//         const headers = req.getHeaders();
+//         const rep = new ResponseBase({ headers });
+//         return new ContextBase(req, rep, injector);
+//     }
+// }

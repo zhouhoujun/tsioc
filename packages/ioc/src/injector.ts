@@ -683,7 +683,9 @@ export interface ResolveOption<T = any> extends ResolverOption {
     token: Token<T>;
 }
 
+export interface MethodFunc extends Function, TypedPropertyDescriptor<any> {
+}
 /**
  * method type.
  */
-export type MethodType<T> = string | ((tag: T) => TypedPropertyDescriptor<any>);
+export type MethodType<T> = string | ((tag: T) => MethodFunc);
