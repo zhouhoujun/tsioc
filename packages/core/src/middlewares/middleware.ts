@@ -1,7 +1,7 @@
-import { Abstract, DefaultTypeRef, DispatchHandler, Injector, Type, InvokeOption, TypeReflect } from '@tsdi/ioc';
+import { Abstract, DefaultTypeRef, DispatchHandler, Injector, Type, TypeReflect } from '@tsdi/ioc';
 import { Context } from './context';
 import { CanActive } from './guard';
-import { Route } from './route';
+import { Route, RouteOption } from './route';
 
 
 /**
@@ -58,10 +58,10 @@ export abstract class MiddlewareRefFactory<T extends Middleware> {
     /**
      * create {@link MiddlewareRef}.
      * @param injector injector.
-     * @param option invoke option. {@link InvokeOption}.
+     * @param option invoke option. {@link RouteOption}.
      * @returns instance of {@link MiddlewareRef}.
      */
-    abstract create(injector: Injector, option?: InvokeOption): MiddlewareRef<T>;
+    abstract create(injector: Injector, option?: RouteOption): MiddlewareRef<T>;
 }
 
 @Abstract()

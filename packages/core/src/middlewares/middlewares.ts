@@ -1,12 +1,13 @@
 import { Abstract, AsyncHandler, chain, Type, OperationRef } from '@tsdi/ioc';
 import { Context } from './context';
-import { Middleware, MiddlewareRef } from './middleware';
+import { Middleware } from './middleware';
+import { Route } from './route';
 
 
 /**
  * message type for register in {@link Middlewares}.
  */
-export type MiddlewareType = AsyncHandler<Context> | Middleware | MiddlewareRef;
+export type MiddlewareType = AsyncHandler<Context> | Middleware | Route;
 
 
 /**

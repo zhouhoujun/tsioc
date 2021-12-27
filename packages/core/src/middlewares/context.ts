@@ -10,13 +10,6 @@ export abstract class Context implements Destroyable {
     activeRouteMetadata?: DecorDefine;
     private _destroyed = false;
     protected _dsryCbs = new Set<DestroyCallback>();
-    private _vaild!: RouteVaildator
-    get vaild(): RouteVaildator {
-        if (!this._vaild) {
-            this._vaild = this.injector.get(RouteVaildator);
-        }
-        return this._vaild;
-    }
 
     set error(err: Error) {
         this.response.error = err;
@@ -236,36 +229,4 @@ export abstract class Context implements Destroyable {
 @Abstract()
 export abstract class ContextFactory {
     abstract create(request: Request | RequestOption, injector: Injector): Context;
-}
-
-
-/**
- * route vaildator.
- */
-@Abstract()
-export abstract class RouteVaildator {
-    /**
-     * is route url or not.
-     * @param url 
-     */
-    abstract isRoute(url: string): boolean;
-    /**
-     * vaildify
-     * @param routePath route path. 
-     * @param foreNull fore null.
-     */
-    abstract vaildify(routePath: string, foreNull?: boolean): string;
-    /**
-     * is active route or not.
-     * @param ctx context.
-     * @param route route.
-     * @param routePrefix route prefix.
-     */
-    abstract isActiveRoute(ctx: Context, route: string): boolean;
-    /**
-     * get request route.
-     * @param ctx context.
-     * @param routePrefix route prefix.
-     */
-    abstract getReqRoute(ctx: Context): string;
 }

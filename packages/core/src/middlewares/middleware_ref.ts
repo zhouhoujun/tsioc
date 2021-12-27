@@ -1,18 +1,25 @@
 import { EMPTY, Injector, InvokeOption, isFunction, isUndefined, lang, OperationRef, refl, Type, TypeReflect } from '@tsdi/ioc';
-import { MiddlewareRefFactoryResolver } from '.';
+import { Middleware, MiddlewareRef, MiddlewareRefFactory, MiddlewareRefFactoryResolver } from './middleware';
 import { HandleMetadata } from '../metadata/meta';
 import { Context } from './context';
 import { CanActive } from './guard';
-import { Middleware, MiddlewareRef, MiddlewareRefFactory } from './middleware';
+import { joinprefix, RouteOption } from './route';
+
 
 /**
  * middleware ref.
  */
 export class DefaultMiddlewareRef<T extends Middleware = Middleware> extends MiddlewareRef<T> implements OperationRef<T> {
     private metadata: HandleMetadata;
-    constructor(reflect: TypeReflect<T>, injector: Injector, option?: InvokeOption, readonly prefix: string = '') {
+    private _url: string;
+    constructor(reflect: TypeReflect<T>, injector: Injector, option?: RouteOption) {
         super(reflect, injector, option);
         this.metadata = reflect.annotation as HandleMetadata;
+        this._url = (this.metadata.prefix || this.metadata.route) ?
+            joinprefix(option?.prefix, this.metadata.prefix, this.metadata.route) : '';
+        if (this._url) {
+            this.root.arguments['prefix'] = this._url;
+        }
     }
 
     async handle(ctx: Context, next: () => Promise<void>): Promise<void> {
@@ -26,12 +33,13 @@ export class DefaultMiddlewareRef<T extends Middleware = Middleware> extends Mid
         }
     }
 
+
     protected execute(ctx: Context, next: () => Promise<void>): Promise<void> {
         return this.instance.handle(ctx, next);
     }
 
     get url() {
-        return this.metadata.route ?? '';
+        return this._url;
     }
 
     get guards(): Type<CanActive>[] | undefined {
@@ -48,7 +56,9 @@ export class DefaultMiddlewareRef<T extends Middleware = Middleware> extends Mid
 
 
     protected async canActive(ctx: Context): Promise<boolean> {
-        if (!((!ctx.status || ctx.status === 404) && ctx.vaild.isActiveRoute(ctx, this.url) === true)) return false;
+        if (this.protocols.indexOf(ctx.protocol) < 0) return false;
+        if (ctx.status && ctx.status !== 404) return false;
+        if (!ctx.path.startsWith(this.url)) return false;
         if (this.guards && this.guards.length) {
             if (!(await lang.some(
                 this.guards.map(token => () => ctx.injector.resolve({ token, regify: true })?.canActivate(ctx)),

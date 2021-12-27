@@ -1,54 +1,54 @@
 import { EMPTY_OBJ, Injectable, Injector, isArray, isDefined, isString, Singleton } from '@tsdi/ioc';
-import { RouteVaildator, Context, ContextFactory } from './context';
+import { Context, ContextFactory } from './context';
 import { HeadersOption } from './header';
 import { RequestOption, Request } from './request';
 import { ResponseOption, Response } from './response';
 
-const urlReg = /\/((\w|%|\.))+\.\w+$/;
-const noParms = /\/\s*$/;
-const hasParms = /\?\S*$/;
-const subStart = /^\s*\/|\?/;
+// const urlReg = /\/((\w|%|\.))+\.\w+$/;
+// const noParms = /\/\s*$/;
+// const hasParms = /\?\S*$/;
+// const subStart = /^\s*\/|\?/;
 
-/**
- * route vaildator.
- */
-@Singleton()
-export class MsgRouteVaildator implements RouteVaildator {
+// /**
+//  * route vaildator.
+//  */
+// @Singleton()
+// export class MsgRouteVaildator implements RouteVaildator {
 
-    isRoute(url: string): boolean {
-        return !urlReg.test(url);
-    }
+//     isRoute(url: string): boolean {
+//         return !urlReg.test(url);
+//     }
 
-    vaildify(routePath: string, foreNull = false): string {
-        if (foreNull && routePath === '/') {
-            routePath = '';
-        }
-        if (noParms.test(routePath)) {
-            routePath = routePath.substring(0, routePath.lastIndexOf('/'));
-        }
-        if (hasParms.test(routePath)) {
-            routePath = routePath.substring(0, routePath.lastIndexOf('?'));
-        }
-        return routePath;
-    }
+//     vaildify(routePath: string, foreNull = false): string {
+//         if (foreNull && routePath === '/') {
+//             routePath = '';
+//         }
+//         if (noParms.test(routePath)) {
+//             routePath = routePath.substring(0, routePath.lastIndexOf('/'));
+//         }
+//         if (hasParms.test(routePath)) {
+//             routePath = routePath.substring(0, routePath.lastIndexOf('?'));
+//         }
+//         return routePath;
+//     }
 
-    isActiveRoute(ctx: Context, route: string, routePrefix: string) {
-        let routeUrl = this.getReqRoute(ctx, routePrefix);
-        if (route === '' || route === routeUrl) {
-            return true;
-        }
-        return routeUrl.startsWith(route) && subStart.test(routeUrl.substring(route.length));
-    }
+//     isActiveRoute(ctx: Context, route: string, routePrefix: string) {
+//         let routeUrl = this.getReqRoute(ctx, routePrefix);
+//         if (route === '' || route === routeUrl) {
+//             return true;
+//         }
+//         return routeUrl.startsWith(route) && subStart.test(routeUrl.substring(route.length));
+//     }
 
-    getReqRoute(ctx: Context, routePrefix: string): string {
-        let reqUrl = this.vaildify(ctx.url, true);
+//     getReqRoute(ctx: Context, routePrefix: string): string {
+//         let reqUrl = this.vaildify(ctx.url, true);
 
-        if (routePrefix) {
-            return reqUrl.replace(routePrefix, '');
-        }
-        return reqUrl;
-    }
-}
+//         if (routePrefix) {
+//             return reqUrl.replace(routePrefix, '');
+//         }
+//         return reqUrl;
+//     }
+// }
 
 @Injectable()
 export class ContextBase extends Context {

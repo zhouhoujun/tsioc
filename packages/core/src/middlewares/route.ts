@@ -1,7 +1,6 @@
-import { Abstract, DefaultTypeRef, DispatchHandler, Injector, InvokeOption, OperationFactory, Type, OperationRefFactory, TypeReflect } from '@tsdi/ioc';
+import { Abstract, DefaultTypeRef, DispatchHandler, Injector, InvokeOption, Type, TypeReflect } from '@tsdi/ioc';
 import { Context } from './context';
 import { CanActive } from './guard';
-
 
 
 /**
@@ -54,6 +53,17 @@ export abstract class RouteRef<T = any> extends DefaultTypeRef<T> implements Rou
     abstract get protocols(): string[];
 }
 
+
+/**
+ * route option.
+ */
+export interface RouteOption extends InvokeOption {
+    /**
+     * route prefix.
+     */
+    prefix?: string;
+}
+
 /**
  * routeRef factory.
  */
@@ -66,10 +76,10 @@ export abstract class RouteRefFactory<T = any> {
     /**
      * create {@link RouteRef}
      * @param injector injector.
-     * @param option invoke option
+     * @param option invoke option. type of {@link RouteOption}.
      * @returns instance of {@link RouteRef}
      */
-    abstract create(injector: Injector, option?: InvokeOption): RouteRef<T>;
+    abstract create(injector: Injector, option?: RouteOption): RouteRef<T>;
 }
 
 /**
@@ -83,4 +93,15 @@ export abstract class RouteRefFactoryResolver {
      * @returns instance of {@link RouteRefFactory}.
      */
     abstract resolve<T>(type: Type<T> | TypeReflect<T>): RouteRefFactory<T>;
+}
+
+
+const endExp = /\/$/;
+
+export function joinprefix(...paths: (string | undefined)[]) {
+    let joined = paths.filter(p => p)
+        .map(p => p && endExp.test(p) ? p.slice(0, p.length - 1) : p)
+        .join('/');
+
+    return endExp.test(joined) ? joined : joined + '/';
 }

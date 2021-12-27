@@ -2,13 +2,13 @@ import {
     isUndefined, EMPTY_OBJ, isArray, isString, lang, Type, isRegExp, createDecorator,
     ClassMethodDecorator, createParamDecorator, ParameterMetadata, ProviderType,
     ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes,
-    OperationArgumentResolver, OperationFactoryResolver, OperationRefFactoryResolver
+    OperationArgumentResolver, OperationRefFactoryResolver
 } from '@tsdi/ioc';
 import { StartupService, ServiceSet } from '../service';
-import { Middleware, MiddlewareRef, MiddlewareRefFactory, MiddlewareRefFactoryResolver } from '../middlewares/middleware';
+import { Middleware, MiddlewareRefFactoryResolver } from '../middlewares/middleware';
 import { Middlewares, MiddlewareType } from '../middlewares/middlewares';
 import { CanActive } from '../middlewares/guard';
-import { RouteRef, RouteRefFactory, RouteRefFactoryResolver } from '../middlewares/route';
+import { RouteRefFactoryResolver } from '../middlewares/route';
 import { MappingReflect, ProtocolRouteMappingMetadata, Router, RouterResolver } from '../middlewares/router';
 import { HandleMetadata, HandlesMetadata, PipeMetadata, HandleMessagePattern, ComponentScanMetadata, ScanReflect } from './meta';
 import { PipeTransform } from '../pipes/pipe';
@@ -203,7 +203,14 @@ export interface Handle {
      * @param [option] register this handle handle before this handle.
      */
     (parent: Type<Middlewares>, options?: {
+        /**
+         * handle route
+         */
         route?: string;
+        /**
+         * route prefix.
+         */
+        prefix?: string;
         /**
          * register this handle handle before the handle.
          */
@@ -262,7 +269,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
                     (metadata as HandlesMetadata).autorun = 'setup';
                 }
             }
-            const { route, protocol, parent, before, after, guards } = metadata;
+            const { route, protocol, parent, before, after } = metadata;
             const injector = ctx.injector;
 
             if (!isString(route) && !parent) {
@@ -277,8 +284,9 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
                 if (!(queue instanceof Router)) {
                     throw new Error(lang.getClassName(queue) + 'is not message router!');
                 }
-                let router = queue as Router;
-                const middlwareRef = injector.get(MiddlewareRefFactoryResolver).resolve(reflect).create(injector);
+                const router = queue as Router;
+                const prefix = router.prefix;
+                const middlwareRef = injector.get(MiddlewareRefFactoryResolver).resolve(reflect).create(injector, { prefix });
                 middlwareRef.onDestroy(() => router.unuse(middlwareRef));
                 router.use(middlwareRef);
             } else if (parent) {
@@ -506,7 +514,8 @@ export const RouteMapping: RouteMapping = createDecorator<ProtocolRouteMappingMe
 
             if (!router) throw new Error(lang.getClassName(parent) + 'has not registered!');
             if (!(router instanceof Router)) throw new Error(lang.getClassName(router) + 'is not router!');
-            const routeRef = injector.get(RouteRefFactoryResolver).resolve(reflect).create(injector);
+            const prefix = router.prefix;
+            const routeRef = injector.get(RouteRefFactoryResolver).resolve(reflect).create(injector, { prefix });
             routeRef.onDestroy(() => router.unuse(routeRef));
             router.use(routeRef);
 

@@ -65,12 +65,14 @@ export interface HandleMetadata extends TypeMetadata, PatternMetadata {
      * handle route
      */
     route?: string;
-
+    /**
+     * route prefix.
+     */
+    prefix?: string;
     /**
      * route protocol
      */
     protocol?: string;
-
     /**
      * route guards.
      */

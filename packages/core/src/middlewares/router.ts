@@ -1,10 +1,10 @@
 import { Abstract, chain, Injectable, isString, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
 import { Context } from './context';
-import { Route } from './route';
+import { Route, RouteRef } from './route';
 import { Middlewares, MiddlewareType } from './middlewares';
 import { PipeTransform } from '../pipes/pipe';
 import { CanActive } from './guard';
-import { Middleware } from './middleware';
+import { Middleware, MiddlewareRef } from './middleware';
 
 
 /**
@@ -13,13 +13,17 @@ import { Middleware } from './middleware';
 @Abstract()
 export abstract class Router<T extends Context = Context> extends Middlewares<T> {
     /**
+     * route prefix.
+     */
+    abstract get prefix(): string;
+    /**
      * can hold protocols.
      */
     abstract get protocols(): string[];
     /**
      * routes.
      */
-    abstract get routes(): Map<string, Route>;
+    abstract get routes(): Map<string, Route | Router>;
 }
 
 /**
@@ -41,7 +45,6 @@ const endColon = /:$/;
 @Injectable()
 export class MappingRouter extends Router implements OnDestroy {
 
-
     readonly routes: Map<string, Route>;
 
     readonly protocols: string[];
@@ -55,8 +58,14 @@ export class MappingRouter extends Router implements OnDestroy {
     override use(...handles: MiddlewareType[]): this {
         handles.forEach(handle => {
             if (this.has(handle)) return;
-            if (handle instanceof Route) {
+            if (handle instanceof RouteRef) {
                 this.routes.set(handle.url, handle);
+            } else if (handle instanceof MiddlewareRef) {
+                if (handle.url) {
+                    this.routes.set(handle.url, handle);
+                } else {
+                    this.handles.push(handle);
+                }
             } else {
                 this.handles.push(handle);
             }
@@ -66,8 +75,14 @@ export class MappingRouter extends Router implements OnDestroy {
 
     override unuse(...handles: (MiddlewareType | Type)[]) {
         handles.forEach(handle => {
-            if (handle instanceof Route) {
+            if (handle instanceof RouteRef) {
                 this.routes.delete(handle.url);
+            } else if (handle instanceof MiddlewareRef) {
+                if (handle.url) {
+                    this.routes.delete(handle.url);
+                } else {
+                    this.remove(this.handles, handle);
+                }
             } else {
                 this.remove(this.handles, handle);
             }
@@ -80,7 +95,7 @@ export class MappingRouter extends Router implements OnDestroy {
     }
 
     protected response(ctx: Context, next: () => Promise<void>): Promise<void> {
-        const route = this.routes.get(ctx.url);
+        const route = this.getRoute(ctx);
         if (route) {
             return route.handle(ctx, next);
         } else {
@@ -88,8 +103,21 @@ export class MappingRouter extends Router implements OnDestroy {
         }
     }
 
-    protected match(ctx: Context): boolean {
-        return isString(ctx.url);
+    protected getRoute(ctx: Context): Route | undefined {
+        if (this.protocols.indexOf(ctx.protocol) < 0) return;
+        if (ctx.status && ctx.status !== 404) return;
+        if (!ctx.path.startsWith(this.prefix)) return;
+        const url = ctx.path.replace(this.prefix, '') || '/';
+        return this.getRouteByUrl(url);
+
+    }
+
+    getRouteByUrl(url: string): Route | undefined {
+        let route = this.routes.get(url);
+        while (!route && url.lastIndexOf('/') > 1) {
+            route = this.getRouteByUrl(url.slice(0, url.lastIndexOf('/')));
+        }
+        return route;
     }
 
     onDestroy(): void {

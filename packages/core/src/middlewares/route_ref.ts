@@ -13,14 +13,14 @@ import { CanActive } from './guard';
 import { MiddlewareType } from './middlewares';
 import { TrasportArgumentResolver, TrasportParameter } from './resolver';
 import { ResultValue } from './result';
-import { RouteRef, RouteRefFactoryResolver } from './route';
+import { RouteRef, RouteOption, RouteRefFactory, RouteRefFactoryResolver, joinprefix } from './route';
 import { ProtocolRouteMappingMetadata, RouteMappingMetadata } from './router';
-import { RouteRefFactory } from '.';
+
 
 
 const isRest = /\/:/;
 const restParms = /^\S*:/;
-
+const noParms = /\/\s*$/;
 
 
 /**
@@ -31,13 +31,17 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OperationRef<T>, 
     private metadata: ProtocolRouteMappingMetadata;
     protected sortRoutes: DecorDefine[] | undefined;
 
-    constructor(reflect: TypeReflect<T>, injector: Injector, option?: InvokeOption) {
+    private _url: string;
+
+    constructor(reflect: TypeReflect<T>, injector: Injector, option?: RouteOption) {
         super(reflect, injector, option);
         this.metadata = reflect.annotation as ProtocolRouteMappingMetadata;
+        this._url = joinprefix(option?.prefix, this.metadata.route);
     }
 
+
     get url(): string {
-        return this.metadata.route ?? '';
+        return this._url;
     }
 
     get guards(): Type<CanActive>[] | undefined {
@@ -66,7 +70,8 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OperationRef<T>, 
     }
 
     protected async canActivate(ctx: Context) {
-        if (!((!ctx.status || ctx.status === 404) && ctx.vaild.isActiveRoute(ctx, this.url) === true)) return null;
+        if (ctx.status && ctx.status !== 404) return null;
+        if (!ctx.path.startsWith(this.url)) return null;
         if (this.guards && this.guards.length) {
             if (!(await lang.some(
                 this.guards.map(token => () => ctx.injector.resolve({ token, regify: true })?.canActivate(ctx)),
@@ -95,8 +100,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OperationRef<T>, 
             if (route && isRest.test(route)) {
                 let routes = route.split('/').map(r => r.trim());
                 let restParamNames = routes.filter(d => restParms.test(d));
-                let baseURL = ctx.vaild.vaildify(this.url, true);
-                let routeUrls = ctx.vaild.vaildify(ctx.url.replace(baseURL, '')).split('/');
+                let routeUrls = ctx.path.replace(this.url, '').split('/');
                 restParamNames.forEach(pname => {
                     let val = routeUrls[routes.indexOf(pname)];
                     if (val) {
@@ -144,8 +148,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OperationRef<T>, 
     }
 
     protected getRouteMetaData(ctx: Context) {
-        const vaild = ctx.vaild;
-        let subRoute = vaild.vaildify(vaild.getReqRoute(ctx).replace(this.url, ''), true);
+        let subRoute =  ctx.path.replace(this.url, '');
         if (!this.sortRoutes) {
             this.sortRoutes = this.reflect.class.methodDecors
                 .filter(m => m && isString(m.metadata.route))
@@ -155,10 +158,10 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OperationRef<T>, 
 
         let allMethods = this.sortRoutes.filter(m => m && m.metadata.method === ctx.method);
 
-        let meta = allMethods.find(d => vaild.vaildify(d.metadata.route || '', true) === subRoute);
+        let meta = allMethods.find(d => (d.metadata.route || '') === subRoute);
         if (!meta) {
             meta = allMethods.find(route => {
-                let uri = vaild.vaildify(route.metadata.route || '', true);
+                let uri = route.metadata.route || '';
                 if (isRest.test(uri)) {
                     let idex = uri.indexOf('/:');
                     let url = uri.substring(0, idex);
