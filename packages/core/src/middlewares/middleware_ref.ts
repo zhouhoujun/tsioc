@@ -1,4 +1,4 @@
-import { DestroyCallback, EMPTY, Injector, InvokeOption, isFunction, isUndefined, lang, OperationFactory, OperationFactoryResolver, refl, Type, TypeReflect } from '@tsdi/ioc';
+import { DestroyCallback, EMPTY, Injector, isFunction, isUndefined, lang, OperationFactory, OperationFactoryResolver, refl, Type, TypeReflect } from '@tsdi/ioc';
 import { Middleware, MiddlewareRef, MiddlewareRefFactory, MiddlewareRefFactoryResolver } from './middleware';
 import { HandleMetadata } from '../metadata/meta';
 import { Context } from './context';
@@ -15,16 +15,22 @@ export class DefaultMiddlewareRef<T extends Middleware = Middleware> extends Mid
 
     private metadata: HandleMetadata;
     private _url: string;
-    private factory: OperationFactory<T>;
-    constructor(public reflect: TypeReflect<T>, public injector: Injector, option?: RouteOption) {
+    private _instance: T | undefined;
+    constructor(private factory: OperationFactory<T>, prefix?: string) {
         super();
-        this.factory = injector.get(OperationFactoryResolver).resolve(reflect, injector, option);
-        this.metadata = reflect.annotation as HandleMetadata;
+        this.metadata = factory.reflect.annotation as HandleMetadata;
         this._url = (this.metadata.prefix || this.metadata.route) ?
-            joinprefix(option?.prefix, this.metadata.prefix, this.metadata.route) : '';
+            joinprefix(prefix, this.metadata.prefix, this.metadata.route) : '';
         if (this._url) {
-            this.factory.context.arguments['prefix'] = this._url;
+            this.factory.context.setArgument('prefix', this._url);
         }
+    }
+
+    get instance(): T {
+        if (!this._instance) {
+            this._instance = this.factory.resolve();
+        }
+        return this._instance;
     }
 
     async handle(ctx: Context, next: () => Promise<void>): Promise<void> {
@@ -40,11 +46,19 @@ export class DefaultMiddlewareRef<T extends Middleware = Middleware> extends Mid
 
 
     protected execute(ctx: Context, next: () => Promise<void>): Promise<void> {
-        return this.factory.resolve().handle(ctx, next);
+        return this.instance.handle(ctx, next);
     }
 
     get type() {
         return this.factory.type;
+    }
+
+    get reflect() {
+        return this.factory.reflect;
+    }
+
+    get injector() {
+        return this.factory.injector;
     }
 
     get url() {
@@ -89,9 +103,8 @@ export class DefaultMiddlewareRef<T extends Middleware = Middleware> extends Mid
                 this._dsryCbs.clear();
                 this.factory.onDestroy();
                 this.factory = null!;
-                this.metadata = null!
-                this.reflect = null!;
-                this.injector = null!;
+                this._instance = null!;
+                this.metadata = null!;
                 this._url = null!;
             }
         }
@@ -111,8 +124,13 @@ export class DefaultMiddlewareRefFactory<T extends Middleware> extends Middlewar
     constructor(readonly reflect: TypeReflect<T>) {
         super()
     }
-    create(injector: Injector, option?: InvokeOption): MiddlewareRef<T> {
-        return new DefaultMiddlewareRef(this.reflect, injector, option) as MiddlewareRef<T>;
+    create(injector: Injector, option?: RouteOption): MiddlewareRef<T> {
+        const factory = injector.get(OperationFactoryResolver).resolve(this.reflect, injector, option);
+        if (option?.prefix) {
+            factory.context.setArgument('prefix', option?.prefix);
+        }
+        return factory.context.resolveArgument({ provider: MiddlewareRef, nullable: true })
+            ?? new DefaultMiddlewareRef(factory, option?.prefix);
     }
 
 }

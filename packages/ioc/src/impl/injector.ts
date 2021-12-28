@@ -1018,8 +1018,7 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
         if (option instanceof InvocationContext) {
             context = option;
         } else {
-            (option as InvocationOption).invokerMethod = key;
-            context = this.createContext(option);
+            context = this.createContext({...option, invokerMethod: key});
             destroy = true;
         }
         return this.createInvoker(key, instance ?? this.resolve()).invoke(context, destroy);

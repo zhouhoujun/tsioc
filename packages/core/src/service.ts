@@ -17,7 +17,7 @@ export interface StartupService {
 
 
 @Abstract()
-export abstract class ServiceSet implements ScanSet<StartupService> {
+export abstract class ServiceSet implements ScanSet<OperationFactory<StartupService>> {
    /**
      * the service count.
      */

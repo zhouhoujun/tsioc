@@ -1,4 +1,5 @@
 import { lang, Injectable, OperationFactory, Decors } from '@tsdi/ioc';
+import { DefaultRunnableRef } from '@tsdi/core';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata/decor';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata/meta';
 import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
@@ -13,17 +14,13 @@ import { UnitRunner } from './Runner';
  * @implements {IRunner<any>}
  */
 @Injectable()
-export class SuiteRunner extends UnitRunner {
+export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitRunner<T> {
 
     timeout!: number;
     describe!: string;
 
-    constructor(private factory: OperationFactory) {
-        super()
-    }
-
-    override getInstanceType() {
-        return this.factory.type;
+    constructor(factory: OperationFactory<T>) {
+        super(factory)
     }
 
     override async run(): Promise<void> {
@@ -51,14 +48,14 @@ export class SuiteRunner extends UnitRunner {
         }
     }
 
-    override async runSuite(desc: SuiteDescribe): Promise<void> {
+    async runSuite(desc: SuiteDescribe): Promise<void> {
         await this.runBefore(desc);
         await this.runTest(desc);
         await this.runAfter(desc);
     }
 
     runTimeout(key: string, describe: string, timeout?: number): Promise<any> {
-        let instance = this.factory.resolve();
+        let instance = this.instance as any;
         let defer = lang.defer();
         const injector = this.factory.injector;
         let timer = setTimeout(() => {
@@ -79,7 +76,7 @@ export class SuiteRunner extends UnitRunner {
                 { provide: RunCaseToken, useValue: instance[key] },
                 { provide: RunSuiteToken, useValue: instance }
             ]
-        }))
+        }, instance))
             .then(r => {
                 clearTimeout(timer);
                 timer = null!;
@@ -156,7 +153,7 @@ export class SuiteRunner extends UnitRunner {
                 }));
     }
 
-    override async runCase(caseDesc: ICaseDescribe): Promise<ICaseDescribe> {
+    async runCase(caseDesc: ICaseDescribe): Promise<ICaseDescribe> {
         try {
             await this.runBeforeEach();
             await this.runTimeout(

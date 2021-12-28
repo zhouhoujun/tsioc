@@ -1,10 +1,10 @@
 import {
-    AsyncHandler, DecorDefine, Type, Injector, lang, chain, EMPTY,
+    AsyncHandler, DecorDefine, Type, Injector, lang, chain, EMPTY, refl,
     isPrimitiveType, isPromise, isString, isArray, isFunction, isDefined,
-    composeResolver, Parameter, ClassType, ArgumentError,
-    ObservableParser, OnDestroy, isClass, InvokeOption, TypeReflect, refl, OperationFactoryResolver, OperationFactory, DestroyCallback
+    composeResolver, Parameter, ClassType, ArgumentError, OperationFactoryResolver,
+    ObservableParser, OnDestroy, isClass, TypeReflect, OperationFactory, DestroyCallback
 } from '@tsdi/ioc';
-import { isObservable, timestamp } from 'rxjs';
+import { isObservable } from 'rxjs';
 import { Middleware } from './middleware';
 import { MODEL_RESOLVERS } from '../model/resolver';
 import { PipeTransform } from '../pipes/pipe';
@@ -33,18 +33,24 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
 
     private metadata: ProtocolRouteMappingMetadata;
     protected sortRoutes: DecorDefine[] | undefined;
-
     private _url: string;
-    private factory: OperationFactory<T>;
-    constructor(public reflect: TypeReflect<T>, public injector: Injector, option?: RouteOption) {
+
+    constructor(private factory: OperationFactory<T>, prefix?: string) {
         super();
-        this.factory = injector.get(OperationFactoryResolver).resolve(reflect, injector, option);
-        this.metadata = reflect.annotation as ProtocolRouteMappingMetadata;
-        this._url = joinprefix(option?.prefix, this.metadata.route);
+        this.metadata = factory.reflect.annotation as ProtocolRouteMappingMetadata;
+        this._url = joinprefix(prefix, this.metadata.route);
     }
 
     get type() {
         return this.factory.type;
+    }
+
+    get reflect() {
+        return this.factory.reflect;
+    }
+
+    get injector() {
+        return this.factory.injector;
     }
 
     get url(): string {
@@ -205,8 +211,6 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
                 this.factory = null!;
                 this.sortRoutes = null!;
                 this.metadata = null!
-                this.reflect = null!;
-                this.injector = null!;
                 this._url = null!;
             }
         }
@@ -341,8 +345,13 @@ export class DefaultRouteRefFactory<T = any> extends RouteRefFactory<T> {
     constructor(readonly reflect: TypeReflect<T>) {
         super()
     }
-    create(injector: Injector, option?: InvokeOption): RouteRef<T> {
-        return new RouteMappingRef(this.reflect, injector, option);
+    create(injector: Injector, option?: RouteOption): RouteRef<T> {
+        const factory = injector.get(OperationFactoryResolver).resolve(this.reflect, injector, option);
+        if (option?.prefix) {
+            factory.context.setArgument('prefix', option?.prefix);
+        }
+        return factory.context.resolveArgument({ provider: RouteRef, nullable: true }) ??
+            new RouteMappingRef(factory, option?.prefix);
     }
 }
 

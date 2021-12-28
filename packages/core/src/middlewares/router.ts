@@ -1,10 +1,10 @@
 import { Abstract, chain, Injectable, isString, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
 import { Context } from './context';
-import { Route, RouteRef } from './route';
+import { Route } from './route';
 import { Middlewares, MiddlewareType } from './middlewares';
 import { PipeTransform } from '../pipes/pipe';
 import { CanActive } from './guard';
-import { Middleware, MiddlewareRef } from './middleware';
+import { Middleware } from './middleware';
 
 
 /**
@@ -59,9 +59,7 @@ export class MappingRouter extends Router implements OnDestroy {
     override use(...handles: MiddlewareType[]): this {
         handles.forEach(handle => {
             if (this.has(handle)) return;
-            if (handle instanceof RouteRef) {
-                this.routes.set(handle.url, handle);
-            } else if (handle instanceof MiddlewareRef) {
+            if (handle instanceof Route) {
                 if (handle.url) {
                     this.routes.set(handle.url, handle);
                 } else {
@@ -76,9 +74,7 @@ export class MappingRouter extends Router implements OnDestroy {
 
     override unuse(...handles: (MiddlewareType | Type)[]) {
         handles.forEach(handle => {
-            if (handle instanceof RouteRef) {
-                this.routes.delete(handle.url);
-            } else if (handle instanceof MiddlewareRef) {
+            if (handle instanceof Route) {
                 if (handle.url) {
                     this.routes.delete(handle.url);
                 } else {

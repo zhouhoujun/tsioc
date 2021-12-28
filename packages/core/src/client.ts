@@ -29,7 +29,7 @@ export interface Client {
 
 
 @Abstract()
-export abstract class ClientSet implements ScanSet<Client> {
+export abstract class ClientSet implements ScanSet<OperationFactory<Client>> {
     /**
      * the client count.
      */

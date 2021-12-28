@@ -305,13 +305,9 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
             }
             next();
         },
-        method: (ctx, next) => {
-            // todo register message handle
-        }
-    },
-    appendProps: (meta) => {
-        if (meta.cmd || meta.pattern) return;
-        meta.singleton = true;
+        // method: (ctx, next) => {
+        //     // todo register message handle
+        // }
     }
 });
 

@@ -19,10 +19,6 @@ import { Observable } from 'rxjs';
  */
 export interface BootstrapOption extends InvokeOption {
     /**
-     * injector
-     */
-    injector?: Injector;
-    /**
      * providers.
      */
     providers?: ProviderType[];

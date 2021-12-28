@@ -6,17 +6,17 @@ import { DefaultApplicationFactory } from './context.impl';
 import { Server, ServerSet } from './server';
 import { Client, ClientSet } from './client';
 import { StartupService, ServiceSet } from './service';
-import { ScanSet } from './scan.set';
-import { Runnable, RunnableSet } from './runnable';
+import { ScanSet, TypeRef } from './scan.set';
+import { RunnableRef, RunnableSet } from './runnable';
 import { Observable, from, lastValueFrom } from 'rxjs';
 import { MappingRouterResolver, RouterResolver } from './middlewares/router';
 
 
 
-abstract class AbstractScanSet<T = any> implements ScanSet<T> {
+abstract class AbstractScanSet<T extends TypeRef> implements ScanSet<T> {
     static ρNPT = true;
 
-    private _rs: OperationFactory<T>[] = [];
+    private _rs: T[] = [];
     protected order = false;
     constructor() {
         this._rs = [];
@@ -27,14 +27,14 @@ abstract class AbstractScanSet<T = any> implements ScanSet<T> {
     }
 
 
-    getAll(): OperationFactory<T>[] {
+    getAll(): T[] {
         return this._rs;
     }
 
     has(type: Type): boolean {
         return this._rs.some(i => i.type === type);
     }
-    add(typeRef: OperationFactory<T>, order?: number): void {
+    add(typeRef: T, order?: number): void {
         if (this.has(typeRef.type)) return;
         if (isNumber(order)) {
             this.order = true;
@@ -43,9 +43,11 @@ abstract class AbstractScanSet<T = any> implements ScanSet<T> {
             this._rs.push(typeRef);
         }
     }
-    remove(typeRef: OperationFactory<T> | Type<T>): void {
+
+    remove(typeRef: T | Type<T>): void {
         lang.remove(this._rs, typeRef);
     }
+
     clear(): void {
         this._rs = [];
     }
@@ -60,7 +62,7 @@ abstract class AbstractScanSet<T = any> implements ScanSet<T> {
         }
     }
 
-    protected abstract run(typeRef: OperationFactory<T>, ctx: ApplicationContext): any;
+    protected abstract run(typeRef: T, ctx: ApplicationContext): any;
 
     onDestroy(): void {
         this.clear();
@@ -69,28 +71,28 @@ abstract class AbstractScanSet<T = any> implements ScanSet<T> {
 }
 
 
-class ServiceSetImpl extends AbstractScanSet implements ServiceSet {
+class ServiceSetImpl extends AbstractScanSet<OperationFactory<StartupService>> implements ServiceSet {
     protected run(typeRef: OperationFactory<StartupService>, ctx: ApplicationContext) {
         return typeRef.resolve().configureService(ctx);
     }
 }
 
-class ClientSetImpl extends AbstractScanSet implements ClientSet {
+class ClientSetImpl extends AbstractScanSet<OperationFactory<Client>> implements ClientSet {
     protected run(typeRef: OperationFactory<Client>, ctx: ApplicationContext) {
         return typeRef.resolve().connect();
     }
 
 }
 
-class ServerSetImpl extends AbstractScanSet implements ServerSet {
+class ServerSetImpl extends AbstractScanSet<OperationFactory<Server>> implements ServerSet {
     protected run(typeRef: OperationFactory<Server>, ctx: ApplicationContext) {
         return typeRef.resolve().startup();
     }
 }
 
-class RunnableSetImpl extends AbstractScanSet implements RunnableSet {
-    protected run(typeRef: OperationFactory<Runnable>, ctx: ApplicationContext) {
-        return typeRef.resolve().run();
+class RunnableSetImpl extends AbstractScanSet<RunnableRef> implements RunnableSet {
+    protected run(typeRef: RunnableRef, ctx: ApplicationContext) {
+        return typeRef.run();
     }
 }
 

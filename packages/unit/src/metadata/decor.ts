@@ -1,5 +1,5 @@
 import { ActionTypes, createDecorator, DecoratorOption, EMPTY_OBJ } from '@tsdi/ioc';
-import { Runner } from '@tsdi/core';
+import { RunnableRef } from '@tsdi/core';
 import { SuiteMetadata, SuiteReflect, TestCaseMetadata, TestMetadata } from './meta';
 import { UnitRunner } from '../runner/Runner';
 
@@ -48,7 +48,7 @@ export const Suite: Suite = createDecorator<SuiteMetadata>('Suite', {
         return metadata;
     },
     providers: [
-        { provide: Runner, useExisting: UnitRunner }
+        { provide: RunnableRef, useExisting: UnitRunner }
     ]
 });
 

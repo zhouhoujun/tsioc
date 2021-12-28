@@ -1,16 +1,16 @@
 import { Token, Type, isFunction, ModuleMetadata, DestroyCallback } from '@tsdi/ioc';
 import { ConfigureLoggerManager, LoggerManager, LOGGER_MANAGER } from '@tsdi/logs';
+import { Observable } from 'rxjs';
 import { CONFIGURATION, PROCESS_ROOT } from './metadata/tk';
 import { Configuration, ConfigureManager } from './configure/config';
+import { ClientFactory } from './trasport/client/factory';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from './context';
-import { Runner, RunnableFactory, RunnableFactoryResolver, RunnableSet } from './runnable';
+import { RunnableFactory, RunnableFactoryResolver, RunnableSet, RunnableRef } from './runnable';
 import { ModuleRef } from './module.ref';
 import { ApplicationArguments } from './args';
 import { ServerSet } from './server';
 import { Client, ClientSet } from './client';
 import { ServiceSet } from './service';
-import { ClientFactory } from '.';
-import { Observable } from 'rxjs';
 
 
 
@@ -26,7 +26,7 @@ export class DefaultApplicationContext extends ApplicationContext {
 
     private _destroyed = false;
     private _dsryCbs = new Set<DestroyCallback>();
-    readonly bootstraps: Runner[] = [];
+    readonly bootstraps: RunnableRef[] = [];
     readonly startups: Token[] = [];
 
     exit = true;
@@ -62,7 +62,7 @@ export class DefaultApplicationContext extends ApplicationContext {
 
     bootstrap<C>(type: Type<C> | RunnableFactory<C>, opts?: BootstrapOption): any {
         const factory = isFunction(type) ? this.injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type) : type;
-        return factory.create({ injector: this.injector, ...opts }, this).run();
+        return factory.create(this.injector, opts, this).run();
     }
 
     get instance() {

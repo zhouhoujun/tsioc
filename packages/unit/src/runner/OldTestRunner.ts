@@ -1,4 +1,5 @@
-import { lang, Singleton, isFunction, Injector } from '@tsdi/ioc';
+import { Runnable } from '@tsdi/core';
+import { lang, Singleton, isFunction, Injector, Type } from '@tsdi/ioc';
 import { Assert } from '../assert/assert';
 import { SuiteDescribe, ICaseDescribe } from '../reports/interface';
 import { UnitRunner } from './Runner';
@@ -31,24 +32,24 @@ const globals = typeof window !== 'undefined' ? window : global;
  * @implements {IRunner<any>}
  */
 @Singleton()
-export class OldTestRunner extends UnitRunner {
+export class OldTestRunner implements UnitRunner {
 
-    timeout: number;
+
     describe!: string;
-
+    private timeout: number;
     suites: SuiteDescribe[];
 
     constructor(private injector: Injector) {
-        super()
         this.suites = [];
-        this.timeout =  (3 * 60 * 60 * 1000);
+        this.timeout = (3 * 60 * 60 * 1000) as number;
     }
 
-    override getInstanceType() {
+    get type(): Type<any> {
         return null!;
     }
 
-    override async run(): Promise<void> {
+
+    async run(): Promise<void> {
         try {
             await lang.step(this.suites.map(desc => desc.cases.length ? () => this.runSuite(desc) : () => Promise.resolve()));
         } catch (err) {
@@ -173,7 +174,7 @@ export class OldTestRunner extends UnitRunner {
         });
     }
 
-    override async runSuite(desc: SuiteDescribe): Promise<void> {
+    async runSuite(desc: SuiteDescribe): Promise<void> {
         await this.runBefore(desc);
         await this.runTest(desc);
         await this.runAfter(desc);
@@ -238,7 +239,7 @@ export class OldTestRunner extends UnitRunner {
         await lang.step(desc.cases.map(caseDesc => () => this.runCase(caseDesc, desc)));
     }
 
-    override async runCase(caseDesc: ICaseDescribe, suiteDesc?: SuiteDescribe): Promise<ICaseDescribe> {
+    async runCase(caseDesc: ICaseDescribe, suiteDesc?: SuiteDescribe): Promise<ICaseDescribe> {
         try {
             await this.runBeforeEach(suiteDesc!);
             await this.runTimeout(

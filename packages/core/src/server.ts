@@ -14,7 +14,7 @@ export interface Server {
 
 
 @Abstract()
-export abstract class ServerSet implements ScanSet<Server> {
+export abstract class ServerSet implements ScanSet<OperationFactory<Server>> {
     /**
      * the server count.
      */

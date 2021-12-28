@@ -36,6 +36,8 @@ export abstract class MiddlewareRef<T extends Middleware = Middleware> extends R
 
     abstract get injector(): Injector;
 
+    abstract get instance(): T;
+
     abstract handle(ctx: Context, next: () => Promise<void>): Promise<void>;
     /**
      * route url.

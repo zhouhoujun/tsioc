@@ -1,49 +1,95 @@
-import { Type, refl, lang, TypeReflect, OperationFactoryResolver, EMPTY } from '@tsdi/ioc';
-import { Runner, RunnableFactory, RunnableFactoryResolver, Runnable } from '../runnable';
+import { Type, refl, TypeReflect, OperationFactoryResolver, EMPTY, isFunction, Injector, OperationFactory, DestroyCallback, lang } from '@tsdi/ioc';
+import { Runnable, RunnableFactory, RunnableFactoryResolver, RunnableRef } from '../runnable';
 import { ApplicationContext, BootstrapOption } from '../context';
 import { ModuleRef } from '../module.ref';
 
 
-/**
- * factory for {@link Runnable}.
- */
-export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
+export class DefaultRunnableRef<T> extends RunnableRef<T> {
+    private _destroyed = false;
+    private _dsryCbs = new Set<DestroyCallback>();
 
-    constructor(private _refl: TypeReflect<T>, private moduleRef?: ModuleRef) {
+    private _instance: T | undefined;
+    constructor(protected factory: OperationFactory<T>) {
         super();
     }
 
-    override get type() {
-        return this._refl.type as Type;
+    get type() {
+        return this.factory.type;
+    }
+    get reflect() {
+        return this.factory.reflect;
     }
 
-    override create(option: BootstrapOption, context?: ApplicationContext) {
-        const injector = this.moduleRef ?? option.injector ?? context?.injector!;
-        const factory = injector.get(OperationFactoryResolver)
-            .resolve(this._refl, injector,  context ? {
-                ...option,
-                values: [option?.values || EMPTY as any, [ApplicationContext, context]]
-            } : option);
+    get injector() {
+        return this.factory.injector;
+    }
 
-        const target = factory.resolve();
-        let runable: Runnable;
-        if (target instanceof Runner) {
-            runable = target;
-        } else {
-            runable = injector.resolve({
-                token: Runner,
-                context: factory.context
-            });
+    get instance(): T {
+        if (!this._instance) {
+            this._instance = this.factory.resolve();
         }
+        return this._instance;
+    }
+
+    async run() {
+        if (isFunction((this.instance as T & Runnable).run)) {
+            return await this.factory.invoke('run');
+        }
+    }
+
+    get destroyed() {
+        return this._destroyed;
+    }
+
+    destroy(): void {
+        if (!this._destroyed) {
+            this._destroyed = true;
+            try {
+                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy());
+            } finally {
+                this._dsryCbs.clear();
+                this.factory.onDestroy();
+                this.factory = null!;
+                this._instance = null!;
+            }
+        }
+    }
+
+    onDestroy(callback?: DestroyCallback): void {
+        if (callback) {
+            this._dsryCbs.add(callback);
+        } else {
+            return this.destroy();
+        }
+    }
+}
+
+/**
+ * factory for {@link RunnableRef}.
+ */
+export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
+
+    constructor(readonly reflect: TypeReflect<T>, private moduleRef?: ModuleRef) {
+        super();
+    }
+
+    override create(injector: Injector, option?: BootstrapOption, context?: ApplicationContext) {
+
+        const factory = injector.get(OperationFactoryResolver).resolve(this.reflect, injector, context ? {
+            ...option,
+            values: [option?.values || EMPTY as any, [ApplicationContext, context]]
+        } : option);
+
+        const runnableRef = factory.context.resolveArgument({ provider: RunnableRef, nullable: true }) ?? new DefaultRunnableRef(factory);
 
         if (context) {
-            // runnableRef.onDestroy(() => {
-            //     lang.remove(context.bootstraps, runable);
-            // });
-            context.bootstraps.push(runable);
+            runnableRef.onDestroy(() => {
+                lang.remove(context.bootstraps, runnableRef);
+            });
+            context.bootstraps.push(runnableRef);
         }
 
-        return runable;
+        return runnableRef;
     }
 }
 
@@ -52,12 +98,10 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
  * factory resolver for {@link RunnableFactory}.
  */
 export class DefaultRunnableFactoryResolver extends RunnableFactoryResolver {
-
     constructor(private moduleRef?: ModuleRef) {
         super();
     }
-
-    override resolve<T>(type: Type<T>) {
-        return new DefaultRunnableFactory(refl.get(type), this.moduleRef);
+    override resolve<T>(type: Type<T> | TypeReflect<T>) {
+        return new DefaultRunnableFactory(isFunction(type) ? refl.get(type) : type, this.moduleRef);
     }
 }

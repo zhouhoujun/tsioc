@@ -1,18 +1,18 @@
 import { Abstract, Type } from '@tsdi/ioc';
-import { Runner } from '@tsdi/core';
 import { SuiteDescribe, ICaseDescribe } from '../reports/interface';
 
 /**
  * suite runner interface.
- *
- * @export
- * @interface ISuiteRunner
- * @extends {IRunner<any>}
  */
 @Abstract()
-export abstract class UnitRunner extends Runner {
+export abstract class UnitRunner<T = any> {
 
-    abstract getInstanceType(): Type;
+    abstract get type(): Type<T>;
+
+    /**
+     * run test.
+     */
+    abstract run(): Promise<void>;
 
     /**
      * run suite.
