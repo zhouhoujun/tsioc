@@ -1,4 +1,4 @@
-import { Abstract, Type, OperationRef } from '@tsdi/ioc';
+import { Abstract, Type, OperationFactory } from '@tsdi/ioc';
 import { ApplicationContext, BootstrapOption } from './context';
 import { ScanSet } from './scan.set';
 
@@ -35,7 +35,7 @@ export abstract class RunnableSet implements ScanSet<Runnable> {
     /**
      * get all.
      */
-    abstract getAll(): OperationRef<Runnable>[];
+    abstract getAll(): OperationFactory<Runnable>[];
     /**
      * has the client type or not.
      * @param type has resolver of the type or not.
@@ -46,12 +46,12 @@ export abstract class RunnableSet implements ScanSet<Runnable> {
      * @param resolver resolver runnable.
      * @param order order.
      */
-    abstract add(resolver: OperationRef<Runnable>, order?: number): void;
+    abstract add(resolver: OperationFactory<Runnable>, order?: number): void;
     /**
      * remove service resolver.
      * @param resolver remove the resolver.
      */
-    abstract remove(resolver: OperationRef<Runnable>): void;
+    abstract remove(resolver: OperationFactory<Runnable>): void;
     /**
      * clear service resolver.
      */

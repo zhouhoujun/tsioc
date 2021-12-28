@@ -189,7 +189,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements ActionSetu
 
         const injector = advicer.aspect.injector;
         if (injector) joinPoint.addRef(injector);
-        let returning = joinPoint.injector.invoke(advicer.aspect, advicer.advice.propertyKey!, joinPoint);
+        let returning = advicer.aspect.invoke(advicer.advice.propertyKey!, joinPoint);
 
         if (sync && isObservable(returning)) {
             const parser = joinPoint.get(ObservableParser);

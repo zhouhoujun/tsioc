@@ -2,7 +2,7 @@ import {
     isUndefined, EMPTY_OBJ, isArray, isString, lang, Type, isRegExp, createDecorator,
     ClassMethodDecorator, createParamDecorator, ParameterMetadata, ProviderType,
     ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes,
-    OperationArgumentResolver, OperationRefFactoryResolver
+    OperationArgumentResolver, OperationFactoryResolver
 } from '@tsdi/ioc';
 import { StartupService, ServiceSet } from '../service';
 import { Middleware, MiddlewareRefFactoryResolver } from '../middlewares/middleware';
@@ -166,7 +166,7 @@ export const ComponentScan: ComponentScan = createDecorator<ComponentScanMetadat
                 sets = injector.get(RunnableSet);
             }
             if (sets && !sets.has(type)) {
-                const typeRef = injector.get(OperationRefFactoryResolver).resolve(type).create(injector);
+                const typeRef = injector.get(OperationFactoryResolver).resolve(type, injector);
                 sets.add(typeRef, reflect.order);
             }
             return next();

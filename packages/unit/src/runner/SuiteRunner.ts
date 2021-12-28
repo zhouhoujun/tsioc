@@ -1,4 +1,4 @@
-import { lang, Injectable, OperationRef, Decors } from '@tsdi/ioc';
+import { lang, Injectable, OperationFactory, Decors } from '@tsdi/ioc';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata/decor';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata/meta';
 import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
@@ -18,12 +18,12 @@ export class SuiteRunner extends UnitRunner {
     timeout!: number;
     describe!: string;
 
-    constructor(private tgRef: OperationRef) {
+    constructor(private factory: OperationFactory) {
         super()
     }
 
     override getInstanceType() {
-        return this.tgRef.type;
+        return this.factory.type;
     }
 
     override async run(): Promise<void> {
@@ -41,9 +41,9 @@ export class SuiteRunner extends UnitRunner {
      * @returns {SuiteDescribe}
      */
     getSuiteDescribe(): SuiteDescribe {
-        let meta = this.tgRef.reflect.annotation as SuiteMetadata;
+        let meta = this.factory.reflect.annotation as SuiteMetadata;
         this.timeout = (meta && meta.timeout) ? meta.timeout : (3 * 60 * 60 * 1000);
-        this.describe = meta.describe || this.tgRef.reflect.class.className;
+        this.describe = meta.describe || this.factory.reflect.class.className;
         return {
             timeout: this.timeout,
             describe: this.describe,
@@ -58,9 +58,9 @@ export class SuiteRunner extends UnitRunner {
     }
 
     runTimeout(key: string, describe: string, timeout?: number): Promise<any> {
-        let instance = this.tgRef.instance;
+        let instance = this.factory.resolve();
         let defer = lang.defer();
-        const injector = this.tgRef.injector;
+        const injector = this.factory.injector;
         let timer = setTimeout(() => {
             if (timer) {
                 clearTimeout(timer);
@@ -74,7 +74,7 @@ export class SuiteRunner extends UnitRunner {
             }
         }, timeout || this.timeout);
 
-        Promise.resolve(this.tgRef.invoke(key, {
+        Promise.resolve(this.factory.invoke(key, {
             providers: [
                 { provide: RunCaseToken, useValue: instance[key] },
                 { provide: RunSuiteToken, useValue: instance }
@@ -95,7 +95,7 @@ export class SuiteRunner extends UnitRunner {
     }
 
     async runBefore(describe: SuiteDescribe) {
-        let befores = this.tgRef.reflect.class.getDecorDefines<BeforeTestMetadata>(Before.toString(), Decors.method);
+        let befores = this.factory.reflect.class.getDecorDefines<BeforeTestMetadata>(Before.toString(), Decors.method);
         await lang.step(
             befores.map(df => () => {
                 return this.runTimeout(
@@ -106,7 +106,7 @@ export class SuiteRunner extends UnitRunner {
     }
 
     async runBeforeEach() {
-        let befores = this.tgRef.reflect.class.getDecorDefines<BeforeEachTestMetadata>(BeforeEach.toString(), Decors.method);
+        let befores = this.factory.reflect.class.getDecorDefines<BeforeEachTestMetadata>(BeforeEach.toString(), Decors.method);
         await lang.step(
             befores.map(df => () => {
                 return this.runTimeout(
@@ -117,7 +117,7 @@ export class SuiteRunner extends UnitRunner {
     }
 
     async runAfterEach() {
-        let afters = this.tgRef.reflect.class.getDecorDefines<BeforeEachTestMetadata>(AfterEach.toString(), Decors.method);
+        let afters = this.factory.reflect.class.getDecorDefines<BeforeEachTestMetadata>(AfterEach.toString(), Decors.method);
         await lang.step(afters.map(df => () => {
             return this.runTimeout(
                 df.propertyKey,
@@ -127,7 +127,7 @@ export class SuiteRunner extends UnitRunner {
     }
 
     async runAfter(describe: SuiteDescribe) {
-        let afters = this.tgRef.reflect.class.getDecorDefines<BeforeTestMetadata>(After.toString(), Decors.method);
+        let afters = this.factory.reflect.class.getDecorDefines<BeforeTestMetadata>(After.toString(), Decors.method);
         await lang.step(
             afters.map(df => () => {
                 return this.runTimeout(
@@ -138,7 +138,7 @@ export class SuiteRunner extends UnitRunner {
     }
 
     async runTest(desc: SuiteDescribe) {
-        let tests = this.tgRef.reflect.class.getDecorDefines<TestCaseMetadata>(Test.toString(), Decors.method);
+        let tests = this.factory.reflect.class.getDecorDefines<TestCaseMetadata>(Test.toString(), Decors.method);
         await lang.step(
             tests.map(df => {
                 return {
@@ -172,7 +172,7 @@ export class SuiteRunner extends UnitRunner {
     }
 
     protected destroying() {
-        this.tgRef = null!;
+        this.factory = null!;
         this.timeout = null!;
         this.describe = null!;
     }

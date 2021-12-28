@@ -1,4 +1,4 @@
-import { EMPTY, Injector, InvokeOption, isFunction, isUndefined, lang, OperationRef, refl, Type, TypeReflect } from '@tsdi/ioc';
+import { DestroyCallback, EMPTY, Injector, InvokeOption, isFunction, isUndefined, lang, OperationFactory, OperationFactoryResolver, refl, Type, TypeReflect } from '@tsdi/ioc';
 import { Middleware, MiddlewareRef, MiddlewareRefFactory, MiddlewareRefFactoryResolver } from './middleware';
 import { HandleMetadata } from '../metadata/meta';
 import { Context } from './context';
@@ -9,16 +9,21 @@ import { joinprefix, RouteOption } from './route';
 /**
  * middleware ref.
  */
-export class DefaultMiddlewareRef<T extends Middleware = Middleware> extends MiddlewareRef<T> implements OperationRef<T> {
+export class DefaultMiddlewareRef<T extends Middleware = Middleware> extends MiddlewareRef<T> {
+    private _destroyed = false;
+    private _dsryCbs = new Set<DestroyCallback>();
+
     private metadata: HandleMetadata;
     private _url: string;
-    constructor(reflect: TypeReflect<T>, injector: Injector, option?: RouteOption) {
-        super(reflect, injector, option);
+    private factory: OperationFactory<T>;
+    constructor(public reflect: TypeReflect<T>, public injector: Injector, option?: RouteOption) {
+        super();
+        this.factory = injector.get(OperationFactoryResolver).resolve(reflect, injector, option);
         this.metadata = reflect.annotation as HandleMetadata;
         this._url = (this.metadata.prefix || this.metadata.route) ?
             joinprefix(option?.prefix, this.metadata.prefix, this.metadata.route) : '';
         if (this._url) {
-            this.root.arguments['prefix'] = this._url;
+            this.factory.context.arguments['prefix'] = this._url;
         }
     }
 
@@ -35,7 +40,11 @@ export class DefaultMiddlewareRef<T extends Middleware = Middleware> extends Mid
 
 
     protected execute(ctx: Context, next: () => Promise<void>): Promise<void> {
-        return this.instance.handle(ctx, next);
+        return this.factory.resolve().handle(ctx, next);
+    }
+
+    get type() {
+        return this.factory.type;
     }
 
     get url() {
@@ -65,6 +74,35 @@ export class DefaultMiddlewareRef<T extends Middleware = Middleware> extends Mid
                 vaild => vaild === false))) return false;
         }
         return true;
+    }
+
+    get destroyed() {
+        return this._destroyed;
+    }
+
+    destroy(): void {
+        if (!this._destroyed) {
+            this._destroyed = true;
+            try {
+                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy());
+            } finally {
+                this._dsryCbs.clear();
+                this.factory.onDestroy();
+                this.factory = null!;
+                this.metadata = null!
+                this.reflect = null!;
+                this.injector = null!;
+                this._url = null!;
+            }
+        }
+    }
+
+    onDestroy(callback?: DestroyCallback): void {
+        if (callback) {
+            this._dsryCbs.add(callback);
+        } else {
+            return this.destroy();
+        }
     }
 
 }

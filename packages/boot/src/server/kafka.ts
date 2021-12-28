@@ -138,8 +138,8 @@ export class KafkaServer extends AbstractServer {
 
         const packet = await this.deserializer.deserialize(rawMessage);
         const kafkaContext = this.injector.get(OperationFactoryResolver)
-            .resolve(getClass(this))
-            .createContext(this.injector, {
+            .resolve(getClass(this), this.injector)
+            .createContext({
                 arguments: rawMessage
             });
         // if the correlation id or reply topic is not set

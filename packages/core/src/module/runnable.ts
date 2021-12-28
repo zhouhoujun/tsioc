@@ -1,4 +1,4 @@
-import { Type, refl, lang, TypeReflect, OperationFactoryResolver, EMPTY, OperationRefFactoryResolver } from '@tsdi/ioc';
+import { Type, refl, lang, TypeReflect, OperationFactoryResolver, EMPTY } from '@tsdi/ioc';
 import { Runner, RunnableFactory, RunnableFactoryResolver, Runnable } from '../runnable';
 import { ApplicationContext, BootstrapOption } from '../context';
 import { ModuleRef } from '../module.ref';
@@ -19,28 +19,27 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
 
     override create(option: BootstrapOption, context?: ApplicationContext) {
         const injector = this.moduleRef ?? option.injector ?? context?.injector!;
-        const runnableRef = injector.get(OperationRefFactoryResolver)
-            .resolve(this._refl)
-            .create(injector, context ? {
+        const factory = injector.get(OperationFactoryResolver)
+            .resolve(this._refl, injector,  context ? {
                 ...option,
                 values: [option?.values || EMPTY as any, [ApplicationContext, context]]
             } : option);
 
-        const target = runnableRef.instance;
+        const target = factory.resolve();
         let runable: Runnable;
         if (target instanceof Runner) {
             runable = target;
         } else {
             runable = injector.resolve({
                 token: Runner,
-                context: runnableRef.getContext()
+                context: factory.context
             });
         }
 
         if (context) {
-            runnableRef.onDestroy(() => {
-                lang.remove(context.bootstraps, runable);
-            });
+            // runnableRef.onDestroy(() => {
+            //     lang.remove(context.bootstraps, runable);
+            // });
             context.bootstraps.push(runable);
         }
 

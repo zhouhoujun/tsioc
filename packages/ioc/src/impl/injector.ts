@@ -18,13 +18,13 @@ import { ModuleReflect, TypeReflect } from '../metadata/type';
 import { get } from '../metadata/refl';
 import {
     InvocationContext, InvocationOption, InvokeOption, OperationArgumentResolver, Parameter, OperationFactory,
-    ReflectiveOperationInvoker, OperationFactoryResolver, OperationInvoker, InvokeArguments, OperationRef,
-    composeResolver, ArgumentResolver, OperationRefFactoryResolver, OperationRefFactory
+    ReflectiveOperationInvoker, OperationFactoryResolver, OperationInvoker, InvokeArguments,
+    composeResolver, ArgumentResolver
 } from '../invoker';
 import { DefaultModuleLoader } from './loader';
 import { ModuleLoader } from '../module.loader';
 import { DefaultPlatform } from './platform';
-import { DestroyCallback, OnDestroy } from '../destroy';
+import { OnDestroy } from '../destroy';
 import { LifecycleHooks, LifecycleHooksResolver } from '../lifecycle';
 
 
@@ -426,7 +426,7 @@ export class DefaultInjector extends Injector {
             providers = args;
         }
 
-        if (target instanceof OperationRef) {
+        if (target instanceof OperationFactory) {
             return target.invoke(propertyKey, context ?? { ...option, providers });
         }
 
@@ -439,7 +439,6 @@ export class DefaultInjector extends Injector {
         } else {
             if (isTypeReflect(target)) {
                 tgRefl = target;
-                instance = this.resolve(target.type, providers!);
                 targetClass = target.type as Type;
             } else {
                 instance = this.resolve(target as Token, providers!);
@@ -451,18 +450,17 @@ export class DefaultInjector extends Injector {
         }
 
         tgRefl = tgRefl ?? get(targetClass);
-        if (isFunction(propertyKey)) {
-            key = tgRefl.class.getPropertyName(propertyKey(tgRefl.class.getPropertyDescriptors() as any));
-        } else {
-            key = propertyKey;
-        }
+        // if (isFunction(propertyKey)) {
+        //     key = tgRefl.class.getPropertyName(propertyKey(tgRefl.class.getPropertyDescriptors() as any));
+        // } else {
+        //     key = propertyKey;
+        // }
 
-        const factory = this.get(OperationFactoryResolver).resolve(tgRefl);
+        const factory = this.get(OperationFactoryResolver).resolve(tgRefl, this, context ?? { ...option, providers });
         if (!context) {
-            context = factory.createContext(this, { ...option, providers, invokerMethod: key });
-            return factory.createInvoker(key, instance).invoke(context, true);
+            return factory.invoke(propertyKey, { ...option, providers }, instance);
         }
-        return factory.createInvoker(key, instance).invoke(context);
+        return factory.invoke(propertyKey, context, instance);
     }
 
 
@@ -945,80 +943,6 @@ function createInvocationContext(injector: Injector, option?: InvocationOption &
         ...DEFAULT_RESOLVERS);
 }
 
-export class DefaultTypeRef<T> extends OperationRef<T> {
-
-    private _destroyed = false;
-    private _dsryCbs = new Set<DestroyCallback>();
-    private _type: Type<T>;
-    private _instance: T | undefined;
-
-    protected factory: OperationFactory<T>;
-    protected root: InvocationContext;
-
-    constructor(readonly reflect: TypeReflect<T>, protected _injector: Injector, options?: InvokeOption) {
-        super()
-        this._type = reflect.type as Type<T>;
-        this.factory = _injector.get(OperationFactoryResolver).resolve(reflect);
-        this.root = this.factory.createContext(this.injector, options);
-        this.root.setValue(OperationRef, this);
-        _injector.onDestroy(this);
-    }
-
-    get injector(): Injector {
-        return this._injector;
-    }
-
-    get instance(): T {
-        if (!this._instance) {
-            this._instance = this._injector.resolve({ token: this.type, regify: true, context: this.root });
-        }
-        return this._instance;
-    }
-
-    get type(): Type<T> {
-        return this._type;
-    }
-
-    getContext() {
-        return this.root;
-    }
-
-    invoke(method: MethodType<T>, option?: InvokeArguments | InvocationContext) {
-        const context = option instanceof InvocationContext ? option : this.factory.createContext(this.root, option);
-        const key = isFunction(method) ? this.reflect.class.getPropertyName(method(this.reflect.class.getPropertyDescriptors() as any)) : method;
-        return this.factory.createInvoker(key, this.instance).invoke(context, true);
-    }
-
-    get destroyed() {
-        return this._destroyed;
-    }
-
-    destroy(): void {
-        if (!this._destroyed) {
-            this._destroyed = true;
-            try {
-                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy());
-            } finally {
-                this._dsryCbs.clear();
-                this.root.destroy();
-                this._instance = null!;
-                this._injector = null!;
-                this._type = null!;
-                this.factory = null!;
-            }
-        }
-    }
-
-    onDestroy(callback?: DestroyCallback): void {
-        if (callback) {
-            this._dsryCbs.add(callback);
-        } else {
-            return this.destroy();
-        }
-    }
-
-}
-
 export class DestroyLifecycleHooks extends LifecycleHooks {
 
     get destroyable(): boolean {
@@ -1068,82 +992,99 @@ export class DestroyLifecycleHooks extends LifecycleHooks {
 
 export class DefaultOperationFactory<T> extends OperationFactory<T> {
 
-    private _tagRefl: TypeReflect<T>;
     private _tagPdrs: ProviderType[] | undefined;
-    constructor(targetType: ClassType<T> | TypeReflect<T>) {
+    private _type: Type<T>;
+    readonly context: InvocationContext
+    constructor(readonly reflect: TypeReflect<T>, readonly injector: Injector, options?: InvokeOption) {
         super()
-        this._tagRefl = isFunction(targetType) ? get(targetType) : targetType;
+        this._type = reflect.type as Type<T>;
+        this.context = this.createContext(injector, options);
+        this.context.setValue(OperationFactory, this);
+        injector.onDestroy(this);
     }
 
-    get targetReflect(): TypeReflect<T> {
-        return this._tagRefl;
+    get type(): Type<T> {
+        return this._type;
+    }
+
+    resolve(): T {
+        return this.injector.resolve({ token: this.type, regify: true, context: this.context });
+    }
+
+    invoke(method: MethodType<T>, option?: InvokeArguments | InvocationContext, instance?: T) {
+        const key = isFunction(method) ? this.reflect.class.getPropertyName(method(this.reflect.class.getPropertyDescriptors() as any)) : method;
+        let context: InvocationContext;
+        let destroy: boolean | undefined;
+        if (option instanceof InvocationContext) {
+            context = option;
+        } else {
+            (option as InvocationOption).invokerMethod = key;
+            context = this.createContext(option);
+            destroy = true;
+        }
+        return this.createInvoker(key, instance ?? this.resolve()).invoke(context, destroy);
     }
 
     createInvoker(method: string, instance?: T): OperationInvoker {
-        return new ReflectiveOperationInvoker(this.targetReflect, method, instance);
+        return new ReflectiveOperationInvoker(this.reflect, method, instance);
     }
 
-    createContext(parent: Injector | InvocationContext, option?: InvocationOption): InvocationContext<any> {
+    createContext(parent?: Injector | InvocationContext | InvocationOption, option?: InvocationOption): InvocationContext<any> {
         let root: InvocationContext | undefined;
         let injector: Injector;
         if (parent instanceof Injector) {
             injector = parent;
-        } else {
+        } else if (parent instanceof InvocationContext) {
             injector = parent.injector;
             root = parent;
+        } else {
+            injector = this.injector;
+            root = this.context;
+            option = parent;
         }
 
         if (!this._tagPdrs) {
-            this._tagPdrs = injector.platform().getTypeProvider(this.targetReflect);
+            this._tagPdrs = injector.platform().getTypeProvider(this.reflect);
         }
         let methodProviders: ProviderType[] | undefined;
         let methodResolvers: ArgumentResolver[] | undefined;
         const method = option?.invokerMethod;
         if (method) {
-            methodProviders = this.targetReflect.class.getMethodProviders(method);
-            methodResolvers = this.targetReflect.class.getMethodResolvers(method);
+            methodProviders = this.reflect.class.getMethodProviders(method);
+            methodResolvers = this.reflect.class.getMethodResolvers(method);
         }
         return root ? createInvocationContext(injector, {
             ...option,
             parent: root,
-            invokerTarget: this.targetReflect.type,
+            invokerTarget: this.reflect.type,
             methodProviders,
             methodResolvers
         })
             : createInvocationContext(injector, {
                 ...option,
-                invokerTarget: this.targetReflect.type,
+                invokerTarget: this.reflect.type,
                 targetProviders: this._tagPdrs,
                 methodProviders,
-                targetResolvers: this.targetReflect.class.resolvers,
+                targetResolvers: this.reflect.class.resolvers,
                 methodResolvers
             });
     }
-}
 
-export class DefaultOperationRefFactory<T = any> extends OperationRefFactory<T> {
-
-    constructor(readonly reflect: TypeReflect<T>) {
-        super()
+    onDestroy(): void {
+        this.context.destroy();
+        this._type = null!;
+        this._tagPdrs = null!;
+        (this as any).injector = null!;
+        (this as any).reflect = null!;
     }
-
-    create(injector: Injector, option?: InvokeOption): OperationRef<any> {
-        return new DefaultTypeRef(this.reflect, injector, option);
-    }
-
 }
 
 class OperationFactoryResolverImpl extends OperationFactoryResolver {
-    resolve<T>(type: ClassType<T> | TypeReflect<T>): OperationFactory<T> {
-        return new DefaultOperationFactory(type);
+    resolve<T>(type: ClassType<T> | TypeReflect<T>, injector: Injector, option?: InvokeOption): OperationFactory<T> {
+        return new DefaultOperationFactory(isFunction(type) ? get(type) : type, injector, option);
     }
 }
 
-class OperationRefFactoryResolverImpl extends OperationRefFactoryResolver {
-    resolve<T>(type: Type<T> | TypeReflect<T>): OperationRefFactory<T> {
-        return new DefaultOperationRefFactory(isFunction(type) ? get(type) : type);
-    }
-}
 
 
 /**
@@ -1155,7 +1096,6 @@ class OperationRefFactoryResolverImpl extends OperationRefFactoryResolver {
 function registerCores(container: Container) {
     container.setValue(ModuleLoader, new DefaultModuleLoader());
     container.setValue(OperationFactoryResolver, new OperationFactoryResolverImpl());
-    container.setValue(OperationRefFactoryResolver, new OperationRefFactoryResolverImpl())
     // bing action.
     container.platform().registerAction(
         DesignLifeScope,

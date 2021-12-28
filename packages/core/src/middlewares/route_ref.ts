@@ -2,9 +2,9 @@ import {
     AsyncHandler, DecorDefine, Type, Injector, lang, chain, EMPTY,
     isPrimitiveType, isPromise, isString, isArray, isFunction, isDefined,
     composeResolver, Parameter, ClassType, ArgumentError,
-    OperationRef, ObservableParser, OnDestroy, isClass, InvokeOption, TypeReflect, refl
+    ObservableParser, OnDestroy, isClass, InvokeOption, TypeReflect, refl, OperationFactoryResolver, OperationFactory, DestroyCallback
 } from '@tsdi/ioc';
-import { isObservable } from 'rxjs';
+import { isObservable, timestamp } from 'rxjs';
 import { Middleware } from './middleware';
 import { MODEL_RESOLVERS } from '../model/resolver';
 import { PipeTransform } from '../pipes/pipe';
@@ -26,19 +26,26 @@ const noParms = /\/\s*$/;
 /**
  * route mapping ref.
  */
-export class RouteMappingRef<T> extends RouteRef<T> implements OperationRef<T>, OnDestroy {
+export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
+
+    private _destroyed = false;
+    private _dsryCbs = new Set<DestroyCallback>();
 
     private metadata: ProtocolRouteMappingMetadata;
     protected sortRoutes: DecorDefine[] | undefined;
 
     private _url: string;
-
-    constructor(reflect: TypeReflect<T>, injector: Injector, option?: RouteOption) {
-        super(reflect, injector, option);
+    private factory: OperationFactory<T>;
+    constructor(public reflect: TypeReflect<T>, public injector: Injector, option?: RouteOption) {
+        super();
+        this.factory = injector.get(OperationFactoryResolver).resolve(reflect, injector, option);
         this.metadata = reflect.annotation as ProtocolRouteMappingMetadata;
         this._url = joinprefix(option?.prefix, this.metadata.route);
     }
 
+    get type() {
+        return this.factory.type;
+    }
 
     get url(): string {
         return this._url;
@@ -109,7 +116,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OperationRef<T>, 
                 });
             }
             ctx.restful = restParams;
-            let result = this.invoke(meta.propertyKey, {
+            let result = this.factory.invoke(meta.propertyKey, {
                 arguments: ctx,
                 resolvers: [
                     ...primitiveResolvers,
@@ -148,7 +155,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OperationRef<T>, 
     }
 
     protected getRouteMetaData(ctx: Context) {
-        let subRoute =  ctx.path.replace(this.url, '');
+        let subRoute = ctx.path.replace(this.url, '');
         if (!this.sortRoutes) {
             this.sortRoutes = this.reflect.class.methodDecors
                 .filter(m => m && isString(m.metadata.route))
@@ -176,12 +183,40 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OperationRef<T>, 
     }
 
     protected parseHandle(mdty: MiddlewareType | Type<Middleware>): AsyncHandler<Context> | undefined {
-        if (mdty instanceof OperationRef) {
-            return mdty.instance;
-        } else if (isClass(mdty)) {
+        if (isClass(mdty)) {
             return this.injector.get(mdty);
         } else {
             return mdty;
+        }
+    }
+
+    get destroyed() {
+        return this._destroyed;
+    }
+
+    destroy(): void {
+        if (!this._destroyed) {
+            this._destroyed = true;
+            try {
+                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy());
+            } finally {
+                this._dsryCbs.clear();
+                this.factory.onDestroy();
+                this.factory = null!;
+                this.sortRoutes = null!;
+                this.metadata = null!
+                this.reflect = null!;
+                this.injector = null!;
+                this._url = null!;
+            }
+        }
+    }
+
+    onDestroy(callback?: DestroyCallback): void {
+        if (callback) {
+            this._dsryCbs.add(callback);
+        } else {
+            return this.destroy();
         }
     }
 }

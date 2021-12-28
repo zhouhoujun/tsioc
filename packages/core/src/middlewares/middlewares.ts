@@ -1,6 +1,6 @@
-import { Abstract, AsyncHandler, chain, Type, OperationRef } from '@tsdi/ioc';
+import { Abstract, AsyncHandler, chain, Type } from '@tsdi/ioc';
 import { Context } from './context';
-import { Middleware } from './middleware';
+import { Middleware, MiddlewareRef } from './middleware';
 import { Route } from './route';
 
 
@@ -91,8 +91,8 @@ export abstract class Middlewares<T extends Context = Context> extends Middlewar
 
     protected equals(hd: MiddlewareType, hd2: MiddlewareType | Type) {
         if (hd === hd2) return true;
-        if (hd instanceof OperationRef) {
-            return hd2 instanceof OperationRef ? hd.type === hd2.type : hd.type === hd2;
+        if (hd instanceof MiddlewareRef) {
+            return hd2 instanceof MiddlewareRef ? hd.type === hd2.type : hd.type === hd2;
         }
         return false;
     }

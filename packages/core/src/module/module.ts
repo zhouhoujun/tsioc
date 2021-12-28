@@ -26,7 +26,6 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     private _typeRefl: ModuleReflect;
 
     runnableFactoryResolver: RunnableFactoryResolver = new DefaultRunnableFactoryResolver(this);
-    operationFactoryResolver = new ModuleOperationFactoryResolver();
     routeRefFactoryResolver = new DefaultRouteRefFactoryResovler();
     middleRefFactoryResolver = new DefaultMiddlewareRefFactoryResolver();
     lifecycle!: ModuleLifecycleHooks;
@@ -39,7 +38,6 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         this._type = moduleType.type as Type;
         this.inject(
             { provide: RunnableFactoryResolver, useValue: this.runnableFactoryResolver },
-            { provide: OperationFactoryResolver, useValue: this.operationFactoryResolver },
             { provide: RouteRefFactoryResolver, useValue: this.routeRefFactoryResolver },
             { provide: MiddlewareRefFactoryResolver, useValue: this.middleRefFactoryResolver }
         );
@@ -94,8 +92,9 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         this._type = null!;
         this.lifecycle.clear();
         this.lifecycle = null!;
-        this.operationFactoryResolver = null!;
         this.runnableFactoryResolver = null!;
+        this.routeRefFactoryResolver = null!;
+        this.middleRefFactoryResolver = null!;
         this._typeRefl = null!;
         this._instance = null!;
     }
@@ -220,12 +219,6 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
 export class DefaultModuleFactoryResolver extends ModuleFactoryResolver {
     resolve<T>(type: Type<T> | ModuleReflect<T>): ModuleFactory<T> {
         return new DefaultModuleFactory(type);
-    }
-}
-
-export class ModuleOperationFactoryResolver extends OperationFactoryResolver {
-    resolve<T>(type: ClassType<T> | TypeReflect<T>): OperationFactory<T> {
-        return new DefaultOperationFactory(type);
     }
 }
 

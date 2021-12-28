@@ -1,4 +1,4 @@
-import { Type, lang, OperationRef, OnDestroy } from '@tsdi/ioc';
+import { Type, lang, OperationFactory, OnDestroy } from '@tsdi/ioc';
 import { Advices } from './advices/Advices';
 
 /**
@@ -15,7 +15,7 @@ export class Advisor implements OnDestroy {
      */
     advices: Map<Type, Map<string, Advices>>;
 
-    aspects: OperationRef[];
+    aspects: OperationFactory[];
 
     constructor() {
         this.advices = new Map();
@@ -67,15 +67,15 @@ export class Advisor implements OnDestroy {
      * @param {Type} aspect
      * @param {Container} raiseContainer
      */
-    add(aspect: OperationRef): void {
+    add(aspect: OperationFactory): void {
         this.aspects.push(aspect);
     }
 
-    remove(aspect: OperationRef) {
+    remove(aspect: OperationFactory) {
         lang.remove(this.aspects, aspect);
     }
 
-    get(type: Type): OperationRef | undefined {
+    get(type: Type): OperationFactory | undefined {
         return this.aspects.find(r => r.type === type);
     }
     

@@ -1,4 +1,4 @@
-import { isString, ClassType, ClassMetadata, DecoratorOption, createDecorator, EMPTY_OBJ, ActionTypes, lang, InvocationContext, OperationRefFactoryResolver } from '@tsdi/ioc';
+import { isString, ClassType, ClassMetadata, DecoratorOption, createDecorator, EMPTY_OBJ, ActionTypes, lang, OperationFactoryResolver } from '@tsdi/ioc';
 import { Advisor } from '../Advisor';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AspectMetadata, AroundMetadata, PointcutAnnotation, AdviceTypes } from './meta';
 import { AopReflect } from './ref';
@@ -52,12 +52,12 @@ export const Aspect: Aspect = createDecorator<AspectMetadata>('Aspect', {
             if (advisor) {
                 const { type, injector } = ctx;
                 
-                const resolver = injector.get(OperationRefFactoryResolver).resolve(type).create(injector);
+                const factory = injector.get(OperationFactoryResolver).resolve(type, injector);
                 injector.onDestroy(()=> {
-                    advisor.remove(resolver);
-                    lang.cleanObj(resolver);
+                    advisor.remove(factory);
+                    lang.cleanObj(factory);
                 });
-                advisor.add(resolver);
+                advisor.add(factory);
             } else {
                 console.error('aop module not registered. make sure register before', ctx.type);
             }

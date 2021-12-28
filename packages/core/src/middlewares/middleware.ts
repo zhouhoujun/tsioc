@@ -1,4 +1,4 @@
-import { Abstract, DefaultTypeRef, DispatchHandler, Injector, Type, TypeReflect } from '@tsdi/ioc';
+import { Abstract, Destroyable, DestroyCallback, DispatchHandler, Injector, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
 import { Context } from './context';
 import { CanActive } from './guard';
 import { Route, RouteOption } from './route';
@@ -28,7 +28,13 @@ export abstract class Middleware<T extends Context = Context> implements Dispatc
  * middleware ref.
  */
 @Abstract()
-export abstract class MiddlewareRef<T extends Middleware = Middleware> extends DefaultTypeRef<T> implements Route {
+export abstract class MiddlewareRef<T extends Middleware = Middleware> extends Route implements Destroyable, OnDestroy {
+
+    abstract get type(): Type<T>;
+
+    abstract get reflect(): TypeReflect<T>;
+
+    abstract get injector(): Injector;
 
     abstract handle(ctx: Context, next: () => Promise<void>): Promise<void>;
     /**
@@ -43,6 +49,22 @@ export abstract class MiddlewareRef<T extends Middleware = Middleware> extends D
      * protocols.
      */
     abstract get protocols(): string[];
+
+    /**
+     * is destroyed or not.
+     */
+     abstract get destroyed(): boolean;
+     /**
+      * Destroys the component instance and all of the data structures associated with it.
+      */
+     abstract destroy(): void;
+     /**
+      * A lifecycle hook that provides additional developer-defined cleanup
+      * functionality for the component.
+      * @param callback A handler function that cleans up developer-defined data
+      * associated with this component. Called when the `destroy()` method is invoked.
+      */
+     abstract onDestroy(callback?: DestroyCallback): void;
 
 }
 

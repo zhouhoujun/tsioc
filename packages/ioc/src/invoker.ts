@@ -466,10 +466,10 @@ export interface InvocationOption extends InvokeOption {
 }
 
 /**
- * type operation ref.
+ * operation factory.
  */
 @Abstract()
-export abstract class OperationRef<T = any> implements Destroyable, OnDestroy {
+export abstract class OperationFactory<T = any> implements OnDestroy {
     /**
      * injector.
      */
@@ -477,7 +477,7 @@ export abstract class OperationRef<T = any> implements Destroyable, OnDestroy {
     /**
      * instance of target.
      */
-    abstract get instance(): T;
+    abstract resolve(): T;
     /**
      * target reflect.
      */
@@ -489,69 +489,21 @@ export abstract class OperationRef<T = any> implements Destroyable, OnDestroy {
     /**
      * the invcation context of target type.
      */
-    abstract getContext(): InvocationContext;
+    abstract get context(): InvocationContext;
     /**
      * invoke target method.
      * @param method method name.
      * @param option invoke arguments.
+     * @param instance target instance.
      */
-    abstract invoke(method: MethodType<T>, option?: InvokeArguments): any;
+    abstract invoke(method: MethodType<T>, option?: InvokeArguments, instance?: T): any;
     /**
      * invoke target method.
      * @param method method name.
      * @param option invoke arguments.
+     * @param instance target instance.
      */
-    abstract invoke(method: MethodType<T>, context?: InvocationContext): any;
-    /**
-     * is destroyed or not.
-     */
-    abstract get destroyed(): boolean;
-    /**
-     * Destroys the component instance and all of the data structures associated with it.
-     */
-    abstract destroy(): void;
-    /**
-     * A lifecycle hook that provides additional developer-defined cleanup
-     * functionality for the component.
-     * @param callback A handler function that cleans up developer-defined data
-     * associated with this component. Called when the `destroy()` method is invoked.
-     */
-    abstract onDestroy(callback?: DestroyCallback): void;
-}
-
-@Abstract()
-export abstract class OperationRefFactory<T = any> {
-    /**
-     * target reflect.
-     */
-    abstract get reflect(): TypeReflect<T>;
-    /**
-     * create typeRef of target class.
-     * @param injector to resolver the type. type of {@link Injector}.
-     * @param option ext option. type of {@link InvokeOption}.
-     * @returns nstance of {@link OperationRef}.
-     */
-    abstract create(injector: Injector, option?: InvokeOption): OperationRef<T>;
-}
-
-@Abstract()
-export abstract class OperationRefFactoryResolver {
-    /**
-     * resolve operation ref factory.
-     * @param type 
-     */
-    abstract resolve<T>(type: Type<T> | TypeReflect<T>): OperationRefFactory<T>;
-}
-
-/**
- * operation factory.
- */
-@Abstract()
-export abstract class OperationFactory<T> {
-    /**
-     * target reflect.
-     */
-    abstract get targetReflect(): TypeReflect<T>;
+    abstract invoke(method: MethodType<T>, context?: InvocationContext, instance?: T): any;
     /**
      * create method invoker of target type.
      * @param method the method name of target.
@@ -559,6 +511,12 @@ export abstract class OperationFactory<T> {
      * @returns instance of {@link OperationInvoker}.
      */
     abstract createInvoker(method: string, instance?: T): OperationInvoker;
+    /**
+     * create invocation context of target.
+     * @param option ext option. type of {@link InvocationOption}.
+     * @returns instance of {@link InvocationContext}.
+     */
+    abstract createContext(option?: InvocationOption): InvocationContext;
     /**
      * create invocation context of target.
      * @param injector to resolver the type. type of {@link Injector}.
@@ -573,6 +531,8 @@ export abstract class OperationFactory<T> {
      * @returns instance of {@link InvocationContext}.
      */
     abstract createContext(parant: InvocationContext, option?: InvocationOption): InvocationContext;
+
+    abstract onDestroy(): void;
 }
 
 /**
@@ -583,8 +543,10 @@ export abstract class OperationFactoryResolver {
     /**
      * resolve operation factory of target type
      * @param type target type or target type reflect.
+     * @param injector injector.
+     * @param option target type invoke option {@link InvokeOption}
      * @returns instance of {@link OperationFactory}
      */
-    abstract resolve<T>(type: ClassType<T> | TypeReflect<T>): OperationFactory<T>;
+    abstract resolve<T>(type: ClassType<T> | TypeReflect<T>, injector: Injector, option?: InvokeOption): OperationFactory<T>;
 }
 
