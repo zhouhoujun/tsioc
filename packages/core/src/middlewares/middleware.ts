@@ -29,16 +29,22 @@ export abstract class Middleware<T extends Context = Context> implements Dispatc
  */
 @Abstract()
 export abstract class MiddlewareRef<T extends Middleware = Middleware> extends Route implements Destroyable, OnDestroy {
-
+    /**
+     * middleware type.
+     */
     abstract get type(): Type<T>;
-
+    /**
+     * middleware type reflect.
+     */
     abstract get reflect(): TypeReflect<T>;
-
+    /**
+     * middleware injector. the middleware registered in.
+     */
     abstract get injector(): Injector;
-
+    /**
+     * middleware instance.
+     */
     abstract get instance(): T;
-
-    abstract handle(ctx: Context, next: () => Promise<void>): Promise<void>;
     /**
      * route url.
      */

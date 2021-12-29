@@ -475,9 +475,13 @@ export abstract class OperationFactory<T = any> implements OnDestroy {
      */
     abstract get injector(): Injector;
     /**
-     * instance of target.
+     * instance of this target type.
      */
     abstract resolve(): T;
+    /**
+     * resolve token in this invcation context.
+     */
+    abstract resolve<R>(token: Token<R>): R;
     /**
      * target reflect.
      */

@@ -1007,8 +1007,14 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
         return this._type;
     }
 
-    resolve(): T {
-        return this.injector.resolve({ token: this.type, regify: true, context: this.context });
+    resolve(): T;
+    resolve<R>(token: Token<R>): R;
+    resolve(token?: Token<any>): any {
+        if (token) {
+            this.context.resolveArgument({ provider: token, nullable: true });
+        } else {
+            return this.injector.resolve({ token: this.type, regify: true, context: this.context });
+        }
     }
 
     invoke(method: MethodType<T>, option?: InvokeArguments | InvocationContext, instance?: T) {
@@ -1018,7 +1024,7 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
         if (option instanceof InvocationContext) {
             context = option;
         } else {
-            context = this.createContext({...option, invokerMethod: key});
+            context = this.createContext({ ...option, invokerMethod: key });
             destroy = true;
         }
         return this.createInvoker(key, instance ?? this.resolve()).invoke(context, destroy);

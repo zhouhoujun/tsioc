@@ -87,13 +87,13 @@ export abstract class AbstractClient implements Client, OnDispose {
     protected createObserver<T>(
         observer: Observer<T>,
     ): (packet: WritePacket) => void {
-        return ({ err, response, isDisposed }: WritePacket) => {
+        return ({ err, response, disposed }: WritePacket) => {
             if (err) {
                 return observer.error(this.serializeError(err));
-            } else if (response !== undefined && isDisposed) {
+            } else if (response !== undefined && disposed) {
                 observer.next(this.serializeResponse(response));
                 return observer.complete();
-            } else if (isDisposed) {
+            } else if (disposed) {
                 return observer.complete();
             }
             observer.next(this.serializeResponse(response));

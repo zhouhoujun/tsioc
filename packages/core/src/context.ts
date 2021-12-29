@@ -3,6 +3,7 @@ import {
     ModuleLoader, Destroyable, Modules, DestroyCallback
 } from '@tsdi/ioc';
 import { LoggerManager } from '@tsdi/logs';
+import { Observable } from 'rxjs';
 import { Configuration, ConfigureManager } from './configure/config';
 import { Runnable, RunnableSet, RunnableFactory } from './runnable';
 import { ServiceSet } from './service';
@@ -11,7 +12,8 @@ import { ServerSet } from './server';
 import { ModuleOption } from './module.factory';
 import { ModuleRef } from './module.ref';
 import { ApplicationArguments } from './args';
-import { Observable } from 'rxjs';
+import { Pattern } from './trasport/pattern';
+import { TrasportResponse } from './trasport/packet';
 
 
 /**
@@ -53,7 +55,7 @@ export abstract class ApplicationContext implements Destroyable {
      * @param pattern message pattern.
      * @param data send data.
      */
-    abstract send<TResult = any, TInput = any>(pattern: any, data: TInput): Observable<TResult>;
+    abstract send<TResult = TrasportResponse, TInput = Pattern>(pattern: any, data: TInput): Observable<TResult>;
     /**
      * get log manager.
      */

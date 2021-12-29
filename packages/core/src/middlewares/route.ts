@@ -9,7 +9,7 @@ import { CanActive } from './guard';
 @Abstract()
 export abstract class Route<T extends Context = Context> implements DispatchHandler<T, Promise<void>> {
     /**
-    * execute middleware.
+    * route handle.
     *
     * @abstract
     * @param {T} ctx
@@ -37,14 +37,22 @@ export abstract class Route<T extends Context = Context> implements DispatchHand
  */
 @Abstract()
 export abstract class RouteRef<T = any> extends Route implements Destroyable, OnDestroy {
-    
+    /**
+     * controller type.
+     */
     abstract get type(): Type<T>;
-
+    /**
+     * controller type reflect.
+     */
     abstract get reflect(): TypeReflect<T>;
-
+    /**
+     * controller injector. the controller registered in.
+     */
     abstract get injector(): Injector;
-
-    abstract handle(ctx: Context, next: () => Promise<void>): Promise<void>;
+    /**
+     * controller instance.
+     */
+    abstract get instance(): T;
     /**
      * route url.
      */

@@ -7,8 +7,8 @@ export interface ReadPacket<T = any> {
 export interface WritePacket<T = any> {
     err?: any;
     response?: T;
-    isDisposed?: boolean;
-    status?: string;
+    disposed?: boolean;
+    status?: string | number;
 }
 
 export type TrasportEvent = ReadPacket;

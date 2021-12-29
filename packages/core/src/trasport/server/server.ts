@@ -68,10 +68,10 @@ export abstract class AbstractServer implements Server, OnDispose {
                     }
                     dataBuffer = null!;
                 });
-            } else if (!data.isDisposed) {
+            } else if (!data.disposed) {
                 dataBuffer = dataBuffer.concat(data);
             } else {
-                dataBuffer[dataBuffer.length - 1].isDisposed = data.isDisposed;
+                dataBuffer[dataBuffer.length - 1].disposed = data.disposed;
             }
         };
         return stream
@@ -80,7 +80,7 @@ export abstract class AbstractServer implements Server, OnDispose {
                     scheduleOnNextTick({ err });
                     return EMPTY;
                 }),
-                finalize(() => scheduleOnNextTick({ isDisposed: true })),
+                finalize(() => scheduleOnNextTick({ disposed: true })),
             )
             .subscribe((response: any) => scheduleOnNextTick({ response }));
     }

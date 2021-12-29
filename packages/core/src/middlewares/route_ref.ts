@@ -20,7 +20,7 @@ import { ProtocolRouteMappingMetadata, RouteMappingMetadata } from './router';
 
 const isRest = /\/:/;
 const restParms = /^\S*:/;
-const noParms = /\/\s*$/;
+// const noParms = /\/\s*$/;
 
 
 /**
@@ -34,6 +34,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     private metadata: ProtocolRouteMappingMetadata;
     protected sortRoutes: DecorDefine[] | undefined;
     private _url: string;
+    private _instance: T | undefined;
 
     constructor(private factory: OperationFactory<T>, prefix?: string) {
         super();
@@ -51,6 +52,13 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
 
     get injector() {
         return this.factory.injector;
+    }
+
+    get instance(): T {
+        if (!this._instance) {
+            this._instance = this.factory.resolve();
+        }
+        return this._instance;
     }
 
     get url(): string {
@@ -87,7 +95,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         if (!ctx.path.startsWith(this.url)) return null;
         if (this.guards && this.guards.length) {
             if (!(await lang.some(
-                this.guards.map(token => () => ctx.injector.resolve({ token, regify: true })?.canActivate(ctx)),
+                this.guards.map(token => () => this.factory.resolve(token)?.canActivate(ctx)),
                 vaild => vaild === false))) return null;
         }
         const meta = this.getRouteMetaData(ctx);
@@ -95,7 +103,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         let rmeta = meta.metadata as RouteMappingMetadata;
         if (rmeta.guards && rmeta.guards.length) {
             if (!(await lang.some(
-                rmeta.guards.map(token => () => this.injector.resolve({ token, regify: true })?.canActivate(ctx)),
+                rmeta.guards.map(token => () => this.factory.resolve(token)?.canActivate(ctx)),
                 vaild => vaild === false))) {
                 ctx.status = 403;
                 return null;
@@ -128,7 +136,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
                     ...primitiveResolvers,
                     ...injector.get(MODEL_RESOLVERS) ?? EMPTY,
                 ]
-            });
+            }, this.instance);
 
 
             if (isPromise(result)) {
