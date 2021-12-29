@@ -33,6 +33,10 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
      */
     abstract get lifecycle(): ModuleLifecycleHooks;
     /**
+     * operaton factory resolver.
+     */
+    abstract get operationFactoryResolver(): OperationFactoryResolver;
+    /**
      * middleware factory resolver.
      */
     abstract get middleRefFactoryResolver(): MiddlewareRefFactoryResolver;

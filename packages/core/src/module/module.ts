@@ -2,7 +2,8 @@
 import {
     DefaultInjector, Injector, InjectorScope, InjectorTypeWithProviders, refl, isFunction,
     Platform, ModuleReflect, Modules, processInjectorType, ProviderType, Token, Type, lang,
-    LifecycleHooksResolver, LifecycleHooks, DestroyLifecycleHooks
+    LifecycleHooksResolver, LifecycleHooks, DestroyLifecycleHooks, OperationFactoryResolver,
+    DefaultOperationFactoryResolver
 } from '@tsdi/ioc';
 import { OnDispose, OnShutdown, ModuleLifecycleHooks, Hooks } from '../lifecycle';
 import { ModuleFactory, ModuleFactoryResolver, ModuleOption } from '../module.factory';
@@ -25,6 +26,8 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     private _type: Type;
     private _typeRefl: ModuleReflect;
 
+
+    operationFactoryResolver = new DefaultOperationFactoryResolver();
     runnableFactoryResolver: RunnableFactoryResolver = new DefaultRunnableFactoryResolver(this);
     routeRefFactoryResolver = new DefaultRouteRefFactoryResovler();
     middleRefFactoryResolver = new DefaultMiddlewareRefFactoryResolver();
@@ -37,6 +40,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         this._typeRefl = moduleType;
         this._type = moduleType.type as Type;
         this.inject(
+            { provide: OperationFactoryResolver, useValue: this.operationFactoryResolver },
             { provide: RunnableFactoryResolver, useValue: this.runnableFactoryResolver },
             { provide: RouteRefFactoryResolver, useValue: this.routeRefFactoryResolver },
             { provide: MiddlewareRefFactoryResolver, useValue: this.middleRefFactoryResolver }
@@ -221,7 +225,6 @@ export class DefaultModuleFactoryResolver extends ModuleFactoryResolver {
         return new DefaultModuleFactory(type);
     }
 }
-
 
 export class ModuleLifecycleHooksResolver implements LifecycleHooksResolver {
     resolve(plaform?: Platform): LifecycleHooks {

@@ -1078,7 +1078,7 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
     }
 }
 
-class OperationFactoryResolverImpl extends OperationFactoryResolver {
+export class DefaultOperationFactoryResolver extends OperationFactoryResolver {
     resolve<T>(type: ClassType<T> | TypeReflect<T>, injector: Injector, option?: InvokeOption): OperationFactory<T> {
         return new DefaultOperationFactory(isFunction(type) ? get(type) : type, injector, option);
     }
@@ -1094,7 +1094,7 @@ class OperationFactoryResolverImpl extends OperationFactoryResolver {
  */
 function registerCores(container: Container) {
     container.setValue(ModuleLoader, new DefaultModuleLoader());
-    container.setValue(OperationFactoryResolver, new OperationFactoryResolverImpl());
+    container.setValue(OperationFactoryResolver, new DefaultOperationFactoryResolver());
     // bing action.
     container.platform().registerAction(
         DesignLifeScope,
