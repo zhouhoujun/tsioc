@@ -84,7 +84,7 @@ export class DefaultMiddlewareRef<T extends Middleware = Middleware> extends Mid
         if (!ctx.path.startsWith(this.url)) return false;
         if (this.guards && this.guards.length) {
             if (!(await lang.some(
-                this.guards.map(token => () => ctx.injector.resolve({ token, regify: true })?.canActivate(ctx)),
+                this.guards.map(token => () => this.factory.resolve(token)?.canActivate(ctx)),
                 vaild => vaild === false))) return false;
         }
         return true;
@@ -131,8 +131,7 @@ export class DefaultMiddlewareRefFactory<T extends Middleware> extends Middlewar
         if (option?.prefix) {
             factory.context.setArgument('prefix', option?.prefix);
         }
-        return factory.context.resolveArgument({ provider: MiddlewareRef, nullable: true })
-            ?? new DefaultMiddlewareRef(factory, option?.prefix);
+        return factory.resolve(MiddlewareRef) ?? new DefaultMiddlewareRef(factory, option?.prefix);
     }
 
 }

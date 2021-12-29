@@ -33,7 +33,7 @@ export class DefaultRunnableRef<T> extends RunnableRef<T> {
 
     async run() {
         if (isFunction((this.instance as T & Runnable).run)) {
-            return await this.factory.invoke('run');
+            return await this.factory.invoke('run', undefined, this.instance);
         }
     }
 
@@ -80,7 +80,7 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
             values: [option?.values || EMPTY as any, [ApplicationContext, context]]
         } : option);
 
-        const runnableRef = factory.context.resolveArgument({ provider: RunnableRef, nullable: true }) ?? new DefaultRunnableRef(factory);
+        const runnableRef = factory.resolve(RunnableRef) ?? new DefaultRunnableRef(factory);
 
         if (context) {
             runnableRef.onDestroy(() => {
