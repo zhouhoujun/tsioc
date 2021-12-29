@@ -883,7 +883,7 @@ export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
         },
         {
             canResolve(parameter, ctx) {
-                if (isPrimitiveType(parameter.type) || get(parameter.type!)?.class.abstract) return false;
+                if (!isFunction(parameter.type) || isPrimitiveType(parameter.type) || get(parameter.type!)?.class.abstract) return false;
                 return isDefined(parameter.flags) ? !ctx.injector.has(parameter.type!, InjectFlags.Default) : true;
             },
             resolve(parameter, ctx) {
@@ -1010,11 +1010,7 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
     resolve(): T;
     resolve<R>(token: Token<R>): R;
     resolve(token?: Token<any>): any {
-        if (token) {
-            this.context.resolveArgument({ provider: token, nullable: true });
-        } else {
-            return this.injector.resolve({ token: this.type, regify: true, context: this.context });
-        }
+        return this.context.resolveArgument({ provider: token ?? this.type, nullable: true });
     }
 
     invoke(method: MethodType<T>, option?: InvokeArguments | InvocationContext, instance?: T) {
