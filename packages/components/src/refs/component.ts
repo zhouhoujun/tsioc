@@ -70,13 +70,13 @@ export abstract class ComponentRef<C = any> extends Runner {
     abstract render(): void;
 
     /**
-    * destory this.
+    * destroy this.
     */
     abstract destroy(): void;
 
     /**
-     * register callback on destory.
-     * @param callback destory callback
+     * register callback on destroy.
+     * @param callback destroy callback
      */
     abstract onDestroy(callback: () => void): void;
 }

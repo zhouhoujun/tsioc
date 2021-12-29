@@ -1075,12 +1075,12 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
             });
     }
 
-    onDestroy(): void {
-        this.context.destroy();
+    onDestroy(): void | Promise<void> {
         this._type = null!;
         this._tagPdrs = null!;
         (this as any).injector = null!;
         (this as any).reflect = null!;
+        return this.context?.destroy();
     }
 }
 

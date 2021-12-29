@@ -86,7 +86,7 @@ export class SuiteTest {
     }
 
     @After()
-    destory(){
+    destroy(){
 
     }
 }

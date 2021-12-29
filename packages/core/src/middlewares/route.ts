@@ -72,14 +72,14 @@ export abstract class RouteRef<T = any> extends Route implements Destroyable, On
     /**
      * Destroys the component instance and all of the data structures associated with it.
      */
-    abstract destroy(): void;
+    abstract destroy(): void | Promise<void>;
     /**
      * A lifecycle hook that provides additional developer-defined cleanup
      * functionality for the component.
      * @param callback A handler function that cleans up developer-defined data
      * associated with this component. Called when the `destroy()` method is invoked.
      */
-    abstract onDestroy(callback?: DestroyCallback): void;
+    abstract onDestroy(callback?: DestroyCallback): void | Promise<void>;
 }
 
 

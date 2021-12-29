@@ -57,7 +57,7 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
      */
     abstract get instance(): T;
     /**
-     * destory.
+     * destroy.
      */
     abstract destroy(): void | Promise<void>;
     /**
@@ -65,8 +65,8 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
      */
     abstract onDestroy(): void;
     /**
-     * register callback on destory.
-     * @param callback destory callback
+     * register callback on destroy.
+     * @param callback destroy callback
      */
     abstract onDestroy(callback: DestroyCallback): void
 }

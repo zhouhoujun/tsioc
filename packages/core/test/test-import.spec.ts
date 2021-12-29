@@ -64,7 +64,7 @@ describe('di module', () => {
     });
 
 
-    it('can destory service', async () => {
+    it('can destroy service', async () => {
         let ctx = await Application.run({
             type: ModuleB,
             // deps: [

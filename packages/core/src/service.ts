@@ -47,7 +47,7 @@ export abstract class ServiceSet implements ScanSet<OperationFactory<StartupServ
      */
     abstract clear(): void;
     /**
-     * destory this.
+     * destroy this.
      */
     abstract onDestroy(): void
     /**

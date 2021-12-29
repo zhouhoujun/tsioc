@@ -48,7 +48,7 @@ export abstract class ServerSet implements ScanSet<OperationFactory<Server>> {
      */
     abstract startup(ctx: ApplicationContext): Promise<void>;
     /**
-     * destory this.
+     * destroy this.
      */
     abstract onDestroy(): void
 }

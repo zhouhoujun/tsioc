@@ -58,7 +58,7 @@ export abstract class ClientSet implements ScanSet<OperationFactory<Client>> {
      */
     abstract clear(): void;
     /**
-     * destory this.
+     * destroy this.
      */
     abstract onDestroy(): void
     /**

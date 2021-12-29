@@ -17,13 +17,13 @@ export abstract class ViewRef extends ChangeDetectorRef implements Destroyable {
    */
   abstract get destroyed(): boolean;
   /**
-  * destory this.
+  * destroy this.
   */
   abstract destroy(): void;
 
   /**
-   * register callback on destory.
-   * @param callback destory callback
+   * register callback on destroy.
+   * @param callback destroy callback
    */
   abstract onDestroy(callback: () => void): void;
 

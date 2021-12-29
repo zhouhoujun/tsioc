@@ -193,7 +193,7 @@ export abstract class Context implements Destroyable {
         return this._destroyed;
     }
     /**
-    * destory this.
+    * destroy this.
     */
     destroy(): void {
         if (!this._destroyed) {
@@ -207,8 +207,8 @@ export abstract class Context implements Destroyable {
         }
     }
     /**
-     * register callback on destory.
-     * @param callback destory callback
+     * register callback on destroy.
+     * @param callback destroy callback
      */
     onDestroy(callback: DestroyCallback): void {
         this._dsryCbs.add(callback);

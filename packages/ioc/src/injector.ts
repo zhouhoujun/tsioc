@@ -307,7 +307,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
         return this._destroyed;
     }
     /**
-    * destory this.
+    * destroy this.
     */
     destroy(): void | Promise<void> {
         if (!this.lifecycle.destroyable) {
@@ -344,8 +344,8 @@ export abstract class Injector implements Destroyable, OnDestroy {
      */
     onDestroy(): void;
     /**
-     * register callback on destory.
-     * @param callback destory callback
+     * register callback on destroy.
+     * @param callback destroy callback
      */
     onDestroy(callback: DestroyCallback): void;
     onDestroy(callback?: DestroyCallback): void {

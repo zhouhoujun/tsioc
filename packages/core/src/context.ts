@@ -55,7 +55,7 @@ export abstract class ApplicationContext implements Destroyable {
      * @param pattern message pattern.
      * @param data send data.
      */
-    abstract send<TResult = TrasportResponse, TInput = Pattern>(pattern: any, data: TInput): Observable<TResult>;
+    abstract send<TResult = TrasportResponse, TInput = any>(pattern: Pattern, data: TInput): Observable<TResult>;
     /**
      * get log manager.
      */

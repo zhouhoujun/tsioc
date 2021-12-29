@@ -12,7 +12,7 @@ export abstract class LifecycleHooks {
      */
     abstract get destroyable(): boolean;
     /**
-     * try dispose to enable destory.
+     * try dispose to enable destroy.
      */
     abstract dispose(): Promise<void>;
     /**

@@ -1,4 +1,4 @@
-import { Abstract, chain, Injectable, isString, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
+import { Abstract, chain, isString, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
 import { Context } from './context';
 import { Route } from './route';
 import { Middlewares, MiddlewareType } from './middlewares';
@@ -43,7 +43,6 @@ export abstract class RouterResolver {
 
 const endColon = /:$/;
 
-@Injectable()
 export class MappingRouter extends Router implements OnDestroy {
 
     readonly routes: Map<string, Route>;

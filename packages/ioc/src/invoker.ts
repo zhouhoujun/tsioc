@@ -248,7 +248,7 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
         return this._destroyed;
     }
 
-    destroy(): void {
+    destroy(): void | Promise<void> {
         if (!this._destroyed) {
             this._destroyed = true;
             try {
@@ -259,14 +259,15 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
                 this._args = null!;
                 this.resolvers = null!;
                 this._refs = [];
-                this.injector.destroy();
+                const injector = this.injector;
                 (this as any).parent = null;
                 (this as any).injector = null;
+                return injector.destroy();
             }
         }
     }
 
-    onDestroy(callback?: DestroyCallback): void {
+    onDestroy(callback?: DestroyCallback): void | Promise<void> {
         if (!callback) {
             return this.destroy();
         }
@@ -535,8 +536,10 @@ export abstract class OperationFactory<T = any> implements OnDestroy {
      * @returns instance of {@link InvocationContext}.
      */
     abstract createContext(parant: InvocationContext, option?: InvocationOption): InvocationContext;
-
-    abstract onDestroy(): void;
+    /**
+     * destroy invocation context.
+     */
+    abstract onDestroy(): void | Promise<void>;
 }
 
 /**

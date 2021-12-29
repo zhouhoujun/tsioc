@@ -80,7 +80,7 @@ export abstract class RunnableSet implements ScanSet<RunnableRef> {
      */
     abstract clear(): void;
     /**
-     * destory this.
+     * destroy this.
      */
     abstract onDestroy(): void
     /**

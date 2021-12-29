@@ -11,6 +11,8 @@ import { ApplicationArguments } from './args';
 import { ServerSet } from './server';
 import { Client, ClientSet } from './client';
 import { ServiceSet } from './service';
+import { Pattern } from './trasport/pattern';
+import { TrasportResponse } from './trasport/packet';
 
 
 
@@ -75,7 +77,7 @@ export class DefaultApplicationContext extends ApplicationContext {
      * @param pattern message pattern.
      * @param data send data.
      */
-    send<TResult = any, TInput = any>(pattern: any, data: TInput): Observable<TResult> {
+    send<TResult = TrasportResponse, TInput = any>(pattern: Pattern, data: TInput): Observable<TResult> {
         if(!this.client){
             this.client = this.injector.get(ClientFactory).create({
                 transport: 'msg'
@@ -121,7 +123,7 @@ export class DefaultApplicationContext extends ApplicationContext {
     }
 
     /**
-    * destory this.
+    * destroy this.
     */
     destroy() {
         if (this._destroyed) return;
@@ -134,8 +136,8 @@ export class DefaultApplicationContext extends ApplicationContext {
         }
     }
     /**
-     * register callback on destory.
-     * @param callback destory callback
+     * register callback on destroy.
+     * @param callback destroy callback
      */
     onDestroy(callback: DestroyCallback): void {
         this._dsryCbs.add(callback);

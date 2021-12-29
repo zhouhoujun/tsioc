@@ -208,23 +208,26 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         return this._destroyed;
     }
 
-    destroy(): void {
+    destroy(): void | Promise<void> {
         if (!this._destroyed) {
             this._destroyed = true;
             try {
                 this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy());
             } finally {
                 this._dsryCbs.clear();
-                this.factory.onDestroy();
-                this.factory = null!;
                 this.sortRoutes = null!;
                 this.metadata = null!
                 this._url = null!;
+                this._instance = null!;
+                const factory = this.factory;
+                this.factory = null!;
+
+                return factory.onDestroy();
             }
         }
     }
 
-    onDestroy(callback?: DestroyCallback): void {
+    onDestroy(callback?: DestroyCallback): void | Promise<void> {
         if (callback) {
             this._dsryCbs.add(callback);
         } else {

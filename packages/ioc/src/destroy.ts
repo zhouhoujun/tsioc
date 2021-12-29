@@ -1,10 +1,10 @@
 
 /**
- * destory hooks.
+ * destroy hooks.
  */
 export interface OnDestroy {
     /**
-     * destory this.
+     * destroy this.
      */
     onDestroy(): void;
 }
@@ -20,7 +20,7 @@ export type DestroyCallback = OnDestroy | (() => void);
  */
 export interface Destroyable {
     /**
-     * destory this.
+     * destroy this.
      */
     destroy(): void;
     /**
@@ -28,8 +28,8 @@ export interface Destroyable {
      */
     destroyed?: boolean;
     /**
-     * register callback on destory.
-     * @param callback destory callback
+     * register callback on destroy.
+     * @param callback destroy callback
      */
     onDestroy(callback: DestroyCallback): void;
 }
