@@ -17,13 +17,41 @@ export interface Runnable {
  */
 @Abstract()
 export abstract class RunnableRef<T = any> implements Runnable, Destroyable, OnDestroy {
-
+    /**
+     * runnable target type.
+     *
+     * @readonly
+     * @abstract
+     * @type {Type<T>}
+     * @memberof RunnableRef
+     */
     abstract get type(): Type<T>;
-
+    /**
+     * runnable target type reflect.
+     *
+     * @readonly
+     * @abstract
+     * @type {TypeReflect<T>}
+     * @memberof RunnableRef
+     */
     abstract get reflect(): TypeReflect<T>;
-
+    /**
+     * injector. instance of {@link Injector}.
+     *
+     * @readonly
+     * @abstract
+     * @type {Injector}
+     * @memberof RunnableRef
+     */
     abstract get injector(): Injector;
-
+    /**
+     * target instance.
+     *
+     * @readonly
+     * @abstract
+     * @type {T}
+     * @memberof RunnableRef
+     */
     abstract get instance(): T;
     /**
      * run.

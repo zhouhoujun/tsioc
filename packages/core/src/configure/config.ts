@@ -1,28 +1,6 @@
 import { Type, LoadType, ProvidersMetadata, Abstract } from '@tsdi/ioc';
 
 /**
- * connection options
- */
-export interface ConnectionOptions extends Record<string, any> {
-    asDefault?: boolean;
-    name?: string;
-    /**
-     * db type.
-     */
-    type: string;
-    host: string;
-    port: number;
-    username?: string;
-    password?: string;
-    database: string;
-    entities?: Type[];
-}
-/**
- * connection options
- */
-export type IConnectionOptions = ConnectionOptions;
-
-/**
  * application Configuration.
  *
  * @export
@@ -117,6 +95,32 @@ export interface Configuration extends ProvidersMetadata, Record<string, any> {
      * object.passphrase if provided, or options.passphrase if it is not.
      */
     serverOptions?: Record<string, any> | { key?: any, cert?: any };
+}
+
+/**
+ * connection options
+ */
+export interface ConnectionOptions extends Record<string, any> {
+    asDefault?: boolean;
+    name?: string;
+    /**
+     * db type.
+     */
+    type: string;
+    host: string;
+    port: number;
+    username?: string;
+    password?: string;
+    database: string;
+    entities?: (string | Type)[];
+    /**
+     * models of boot application.
+     */
+    models?: (string | Type)[];
+    /**
+     * repositories of orm.
+     */
+    repositories?: (string | Type)[];
 }
 
 
