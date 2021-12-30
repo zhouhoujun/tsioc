@@ -20,7 +20,7 @@ export class DefaultMiddlewareRef<T extends Middleware = Middleware> extends Mid
         super();
         this.metadata = factory.reflect.annotation as HandleMetadata;
         this._url = (this.metadata.prefix || this.metadata.route) ?
-            joinprefix(prefix, this.metadata.prefix, this.metadata.route) : '';
+            joinprefix(prefix, this.metadata.version, this.metadata.prefix, this.metadata.route) : '';
         if (this._url) {
             this.factory.context.setArgument('prefix', this._url);
         }

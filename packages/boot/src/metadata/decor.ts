@@ -1,7 +1,7 @@
 import { ClassMethodDecorator, createDecorator, isArray, isString, lang, Type } from '@tsdi/ioc';
 import {
-    MappingReflect, RouteMappingRef, Middlewares, MiddlewareType, RouteMappingMetadata,
-    Router, PipeTransform, CanActive, ProtocolRouteMappingMetadata
+    MappingReflect, MiddlewareType, RouteMappingMetadata, ProtocolRouteMappingMetadata,
+    Router, PipeTransform, CanActive, RouteRefFactoryResolver
 } from '@tsdi/core';
 import { HttpRouter } from '../router';
 import { RequestMethod } from '../status';
@@ -87,19 +87,20 @@ export const RestController: RestController = createDecorator<RouteMappingMetada
             const reflect = ctx.reflect as MappingReflect;
             const { parent } = reflect.annotation;
             const injector = ctx.injector;
-            let queue: Middlewares;
+            let router: Router;
             if (parent) {
-                queue = injector.get(parent);
+                router = injector.get(parent);
             } else {
-                queue = injector.get(HttpRouter);
+                router = injector.get(HttpRouter);
             }
 
-            if (!queue) throw new Error(lang.getClassName(parent) + 'has not registered!');
-            if (!(queue instanceof Router)) throw new Error(lang.getClassName(queue) + 'is not message router!');
+            if (!router) throw new Error(lang.getClassName(parent) + 'has not registered!');
+            if (!(router instanceof Router)) throw new Error(lang.getClassName(router) + 'is not message router!');
 
-            const mapping = new RouteMappingRef(reflect, injector, queue.getPath());
-            mapping.onDestroy(() => queue.unuse(mapping));
-            queue.use(mapping);
+            const prefix = router.prefix;
+            const routeRef = injector.get(RouteRefFactoryResolver).resolve(reflect).create(injector, { prefix });
+            routeRef.onDestroy(() => router.unuse(routeRef));
+            router.use(routeRef);
 
             next();
         }

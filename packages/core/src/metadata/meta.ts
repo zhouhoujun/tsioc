@@ -1,5 +1,6 @@
 import { PatternMetadata, ProviderMetadata, ProvidersMetadata, Type, TypeMetadata, TypeReflect } from '@tsdi/ioc';
 import { CanActive } from '../middlewares/guard';
+import { Middleware } from '../middlewares/middleware';
 import { Middlewares } from '../middlewares/middlewares';
 import { StartupService } from '../service';
 
@@ -29,7 +30,7 @@ export interface HandleMessagePattern {
     /**
      * message handle pattern for route mapping.
      */
-    pattern?: string | RegExp;
+    route?: string | RegExp;
     /**
      * message handle command for route mapping.
      */
@@ -66,6 +67,10 @@ export interface HandleMetadata extends TypeMetadata, PatternMetadata {
      */
     route?: string;
     /**
+     * version of api.
+     */
+    version?: string;
+    /**
      * route prefix.
      */
     prefix?: string;
@@ -81,23 +86,22 @@ export interface HandleMetadata extends TypeMetadata, PatternMetadata {
     /**
      * handle parent.
      * default register in root handle queue.
-     * @type {boolean}
      */
     parent?: Type<Middlewares>;
 
     /**
      * register this handle handle before this handle.
      *
-     * @type {Type<Middlewares>}
+     * @type {Type<Middleware>}
      */
-    before?: Type<Middlewares>;
+    before?: Type<Middleware>;
 
     /**
      * register this handle handle after this handle.
      *
-     * @type {Type<Middlewares>}
+     * @type {Type<Middleware>}
      */
-    after?: Type<Middlewares>;
+    after?: Type<Middleware>;
 }
 
 export interface HandlesMetadata extends HandleMetadata {

@@ -1,6 +1,6 @@
 import {
-    Type, isFunction, lang, Platform, isNil, isPromise, refl, ctorName, chain, ActionSetup,
-    IocActions, ParameterMetadata, InvocationContext, Injector, object2string, isObservable, ObservableParser
+    Type, isFunction, lang, Platform, isNil, isPromise, refl, ctorName, chain, ActionSetup, IocActions,
+    ParameterMetadata, InvocationContext, Injector, object2string, isObservable, ObservableParser
 } from '@tsdi/ioc';
 import { IPointcut } from '../joinpoints/IPointcut';
 import { Joinpoint } from '../joinpoints/Joinpoint';
@@ -350,12 +350,15 @@ export const AfterReturningAdvicesAction = function (ctx: Joinpoint, next: () =>
     let isAsync = false;
     let returning = ctx.returning;
     const orgReturning = (ctx as any).originReturning = returning;
-    const parser = ctx.get(ObservableParser);
+
     if (isPromise(returning)) {
         isAsync = true;
-    } else if (parser && isObservable(returning)) {
-        isAsync = true;
-        returning = parser.toPromise(returning);
+    } else if (isObservable(returning)) {
+        const parser = ctx.get(ObservableParser);
+        if (parser) {
+            isAsync = true;
+            returning = parser.toPromise(returning);
+        }
     }
     if (isAsync && !ctx.returningDefer) {
         ctx.returningDefer = lang.defer();

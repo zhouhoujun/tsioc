@@ -402,7 +402,7 @@ export abstract class ObservableParser {
      * parse promise to observable.
      * @param promise 
      */
-    abstract fromPromise(promise: Promise<any>): any;
+    abstract fromPromise(promise: Promise<any>): { subscribe: Function; lift: Function };
     /**
      * parse observable to promise.
      * @param observable 

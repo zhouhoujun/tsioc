@@ -15,7 +15,7 @@ export class IncomingResponseDeserializer implements Deserializer<TrasportRespon
         if (
             !isUndefined((value as TrasportResponse).err) ||
             !isUndefined((value as TrasportResponse).response) ||
-            !isUndefined((value as TrasportResponse).isDisposed)
+            !isUndefined((value as TrasportResponse).disposed)
         ) {
             return false;
         }
@@ -26,7 +26,7 @@ export class IncomingResponseDeserializer implements Deserializer<TrasportRespon
         return {
             id: value && value.id,
             response: value,
-            isDisposed: true,
+            disposed: true,
         };
     }
 }

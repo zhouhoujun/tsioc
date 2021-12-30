@@ -52,20 +52,20 @@ export class KafkaResponseDeserializer implements Deserializer<any, TrasportResp
             return {
                 id,
                 err: message.headers[KafkaHeaders.NEST_ERR],
-                isDisposed: true,
+                disposed: true,
             };
         }
         if (!isUndefined(message.headers[KafkaHeaders.NEST_IS_DISPOSED])) {
             return {
                 id,
                 response: message.value,
-                isDisposed: true,
+                disposed: true,
             };
         }
         return {
             id,
             response: message.value,
-            isDisposed: false,
+            disposed: false,
         };
     }
 }

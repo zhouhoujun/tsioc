@@ -25,11 +25,6 @@ export abstract class HttpRequest extends Request {
     abstract getHeaders(): Record<string, string | string[]>;
 }
 
-const empty: any = {
-    204: true,
-    205: true,
-    304: true
-};
 
 @Abstract()
 export abstract class HttpResponse extends Response {

@@ -2,9 +2,9 @@ import {
     AsyncHandler, DecorDefine, Type, Injector, lang, chain, EMPTY, refl,
     isPrimitiveType, isPromise, isString, isArray, isFunction, isDefined,
     composeResolver, Parameter, ClassType, ArgumentError, OperationFactoryResolver,
-    ObservableParser, OnDestroy, isClass, TypeReflect, OperationFactory, DestroyCallback
+    OnDestroy, isClass, TypeReflect, OperationFactory, DestroyCallback
 } from '@tsdi/ioc';
-import { isObservable } from 'rxjs';
+import { isObservable, lastValueFrom } from 'rxjs';
 import { Middleware } from './middleware';
 import { MODEL_RESOLVERS } from '../model/resolver';
 import { PipeTransform } from '../pipes/pipe';
@@ -39,7 +39,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     constructor(private factory: OperationFactory<T>, prefix?: string) {
         super();
         this.metadata = factory.reflect.annotation as ProtocolRouteMappingMetadata;
-        this._url = joinprefix(prefix, this.metadata.route);
+        this._url = joinprefix(prefix, this.metadata.version, this.metadata.route);
     }
 
     get type() {
@@ -142,9 +142,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
             if (isPromise(result)) {
                 result = await result;
             } else if (isObservable(result)) {
-                const parser = injector.get(ObservableParser);
-                if (!parser) throw Error('has not register ObservableParser provider. can not support return Observable in route mapping.');
-                result = await parser.toPromise(result);
+                result = await lastValueFrom(result);
             }
 
             // middleware.

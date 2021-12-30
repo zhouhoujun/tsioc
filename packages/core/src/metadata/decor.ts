@@ -8,7 +8,7 @@ import { StartupService, ServiceSet } from '../service';
 import { Middleware, MiddlewareRefFactoryResolver } from '../middlewares/middleware';
 import { Middlewares, MiddlewareType } from '../middlewares/middlewares';
 import { CanActive } from '../middlewares/guard';
-import { RouteRefFactoryResolver } from '../middlewares/route';
+import { Route, RouteRefFactoryResolver } from '../middlewares/route';
 import { MappingReflect, ProtocolRouteMappingMetadata, Router, RouterResolver } from '../middlewares/router';
 import { HandleMetadata, HandlesMetadata, PipeMetadata, HandleMessagePattern, ComponentScanMetadata, ScanReflect } from './meta';
 import { PipeTransform } from '../pipes/pipe';
@@ -182,6 +182,7 @@ export const ComponentScan: ComponentScan = createDecorator<ComponentScanMetadat
 
 export type HandleDecorator = <TFunction extends Type<Middleware>>(target: TFunction) => TFunction | void;
 
+
 /**
  * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
  *
@@ -195,6 +196,32 @@ export interface Handle {
      */
     (): HandleDecorator;
     /**
+     * Handle decorator, for class. use to define the class as route.
+     *
+     * @RegisterFor
+     *
+     * @param {route} route the route url.
+     * @param [option] route option.
+     */
+    (route: string, options?: {
+        /**
+         * route prefix.
+         */
+        prefix?: string;
+        /**
+         * version of route api.
+         */
+        version?: string;
+        /**
+         * parent router.
+         */
+        parent?: Router;
+        /**
+        * route guards.
+        */
+        guards?: Type<CanActive>[];
+    }): HandleDecorator;
+    /**
      * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
      *
      * @RegisterFor
@@ -204,17 +231,13 @@ export interface Handle {
      */
     (parent: Type<Middlewares>, options?: {
         /**
-         * handle route
-         */
-        route?: string;
-        /**
-         * route prefix.
-         */
-        prefix?: string;
-        /**
          * register this handle handle before the handle.
          */
         before?: Type<Middleware>;
+        /**
+         * register this handle handle before the handle.
+         */
+        after?: Type<Middleware>;
         /**
         * route guards.
         */
@@ -252,8 +275,8 @@ export interface Handle {
  */
 export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePattern>('Handle', {
     actionType: [ActionTypes.annoation, ActionTypes.autorun],
-    props: (parent?: Type<Middlewares> | string, options?: { guards?: Type<CanActive>[], parent?: Type<Middlewares> | string, before?: Type<Middleware> }) =>
-        (isString(parent) || isRegExp(parent) ? ({ pattern: parent, ...options }) : ({ parent, ...options })) as HandleMetadata & HandleMessagePattern,
+    props: (parent?: Type<Middlewares> | string | RegExp, options?: { guards?: Type<CanActive>[], parent?: Type<Middlewares> | string, before?: Type<Middleware> }) =>
+        (isString(parent) || isRegExp(parent) ? ({ route: parent, ...options }) : ({ parent, ...options })) as HandleMetadata & HandleMessagePattern,
     reflect: {
         class: (ctx, next) => {
             ctx.reflect.annotation = ctx.metadata;
@@ -390,9 +413,9 @@ export interface RouteMapping {
      * route decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
-     * @param {MiddlewareType[]} [middlewares] the middlewares for the route.
+     * @param {Type<CanActive>[]} [guards] the guards for the route.
      */
-    (route: string, middlewares?: MiddlewareType[]): ClassMethodDecorator;
+    (route: string, guards?: Type<CanActive>[]): ClassMethodDecorator;
 
     /**
      * route decorator. define the controller method as an route.
@@ -403,6 +426,10 @@ export interface RouteMapping {
      *  [middlewares] the middlewares for the route.
      */
     (route: string, options: {
+        /**
+         * version of api.
+         */
+        version?: string;
         /**
          * protocol type.
          */
@@ -443,25 +470,29 @@ export interface RouteMapping {
      */
     (route: string, options: {
         /**
+         * version of api.
+         */
+        version?: string;
+        /**
          * route guards.
          */
-        guards?: Type<CanActive>[],
+        guards?: Type<CanActive>[];
         /**
          * middlewares for the route.
          */
-        middlewares: MiddlewareType[],
+        middlewares: MiddlewareType[];
         /**
          * pipes for the route.
          */
-        pipes?: Type<PipeTransform>[],
+        pipes?: Type<PipeTransform>[];
         /**
          * request contentType
          */
-        contentType?: string,
+        contentType?: string;
         /**
          * request method.
          */
-        method?: string
+        method?: string;
     }): MethodDecorator;
 
     /**
@@ -498,7 +529,7 @@ export const RouteMapping: RouteMapping = createDecorator<ProtocolRouteMappingMe
     design: {
         afterAnnoation: (ctx, next) => {
             const reflect = ctx.reflect as MappingReflect;
-            const { protocol, parent } = reflect.annotation;
+            const { protocol, version, parent } = reflect.annotation;
             const injector = ctx.injector;
             let router: Router;
             if (parent) {

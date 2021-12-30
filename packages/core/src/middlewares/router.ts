@@ -161,7 +161,6 @@ export interface RouteMappingMetadata {
      * parent router.
      */
     parent?: Type<Router>;
-
     /**
      * request method.
      */
@@ -198,6 +197,10 @@ export interface ProtocolRouteMappingMetadata extends RouteMappingMetadata {
      * protocol type.
      */
     protocol?: string;
+    /**
+     * version of api.
+     */
+    version?: string;
 }
 
 export interface MappingReflect<T = any> extends TypeReflect<T> {

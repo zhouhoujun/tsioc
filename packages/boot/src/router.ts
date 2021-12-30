@@ -1,10 +1,10 @@
-import { Handle, RootRouter, Router } from '@tsdi/core'
+import { Context, Handle, Route, Router } from '@tsdi/core'
 
 
 @Handle({
-    parent: RootRouter,
     protocol: 'http:;https:'
 })
 export class HttpRouter extends Router {
+
 
 }
