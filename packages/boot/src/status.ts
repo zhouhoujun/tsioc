@@ -73,7 +73,7 @@ export const enum HttpStatusCode {
   NetworkAuthenticationRequired = 511
 }
 
-export type RequestMethod =
+export type HttpRequestMethod =
   /**
    * Get method.
    */
