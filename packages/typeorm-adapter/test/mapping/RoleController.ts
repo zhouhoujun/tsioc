@@ -11,8 +11,8 @@ export class RoleController {
     }
 
     @Transactional()
-    @RouteMapping('/', 'post')
-    @RouteMapping('/', 'put')
+    @RouteMapping('/', 'POST')
+    @RouteMapping('/', 'PUT')
     async save(role: Role, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(role);
         console.log('save isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
@@ -23,8 +23,8 @@ export class RoleController {
     }
 
     @Transactional()
-    @RouteMapping('/save2', 'post')
-    @RouteMapping('/save2', 'put')
+    @RouteMapping('/save2', 'POST')
+    @RouteMapping('/save2', 'PUT')
     async save2(role: Role, @DBRepository(Role) roleRepo: Repository<Role>, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(role);
         console.log('save2 isTransactionActive:', roleRepo.queryRunner?.isTransactionActive);
@@ -35,7 +35,7 @@ export class RoleController {
     }
 
 
-    @RouteMapping('/:name', 'get')
+    @RouteMapping('/:name', 'GET')
     async getRole(name: string) {
         this.logger.log('name:', name);
         console.log('getRole isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
@@ -44,7 +44,7 @@ export class RoleController {
 
 
     @Transactional()
-    @RouteMapping('/:id', 'delete')
+    @RouteMapping('/:id', 'DELETE')
     async del(id: string) {
         this.logger.log('id:', id);
         console.log('del isTransactionActive:', this.repo.queryRunner?.isTransactionActive);

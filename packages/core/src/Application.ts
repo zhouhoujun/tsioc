@@ -1,5 +1,5 @@
 import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, Injector, Modules } from '@tsdi/ioc';
-import { DebugLogAspect, LogConfigureToken, LogModule } from '@tsdi/logs';
+import { DebugLogAspect, LogConfigure, LogModule } from '@tsdi/logs';
 import { CONFIGURATION, PROCESS_ROOT } from './metadata/tk';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from './context';
 import { ConfigureMergerImpl, DefaultConfigureManager } from './configure/manager';
@@ -180,7 +180,7 @@ export class Application {
         injector.setValue(CONFIGURATION, config);
 
         if (config.logConfig) {
-            injector.setValue(LogConfigureToken, config.logConfig);
+            injector.setValue(LogConfigure, config.logConfig);
         }
         if (config.debug) {
             // make sure log module registered.

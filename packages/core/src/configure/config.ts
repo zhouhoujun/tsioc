@@ -16,7 +16,6 @@ export interface ConnectionOptions extends Record<string, any> {
     password?: string;
     database: string;
     entities?: Type[];
-    initDb?(connect: any): Promise<void>;
 }
 /**
  * connection options

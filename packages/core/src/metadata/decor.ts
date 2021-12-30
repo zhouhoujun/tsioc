@@ -8,8 +8,8 @@ import { StartupService, ServiceSet } from '../service';
 import { Middleware, MiddlewareRefFactoryResolver } from '../middlewares/middleware';
 import { Middlewares, MiddlewareType } from '../middlewares/middlewares';
 import { CanActive } from '../middlewares/guard';
-import { Route, RouteRefFactoryResolver } from '../middlewares/route';
-import { MappingReflect, ProtocolRouteMappingMetadata, Router, RouterResolver } from '../middlewares/router';
+import { RouteRefFactoryResolver } from '../middlewares/route';
+import { MappingReflect, ProtocolRouteMappingMetadata, RequestMethod, Router, RouterResolver } from '../middlewares/router';
 import { HandleMetadata, HandlesMetadata, PipeMetadata, HandleMessagePattern, ComponentScanMetadata, ScanReflect } from './meta';
 import { PipeTransform } from '../pipes/pipe';
 import { Server, ServerSet } from '../server';
@@ -177,7 +177,6 @@ export const ComponentScan: ComponentScan = createDecorator<ComponentScanMetadat
         return meta;
     }
 });
-
 
 
 export type HandleDecorator = <TFunction extends Type<Middleware>>(target: TFunction) => TFunction | void;
@@ -457,7 +456,7 @@ export interface RouteMapping {
      * @param {string} route route sub path.
      * @param {RequestMethod} [method] set request method.
      */
-    (route: string, method: string): MethodDecorator;
+    (route: string, method: RequestMethod): MethodDecorator;
 
     /**
      * route decorator. define the controller method as an route.
@@ -492,7 +491,7 @@ export interface RouteMapping {
         /**
          * request method.
          */
-        method?: string;
+        method?: RequestMethod;
     }): MethodDecorator;
 
     /**
@@ -509,11 +508,11 @@ export interface RouteMapping {
  * @exports  {@link RouteMapping}
  */
 export const RouteMapping: RouteMapping = createDecorator<ProtocolRouteMappingMetadata>('RouteMapping', {
-    props: (route: string, arg2?: Type<Router> | MiddlewareType[] | string | { protocol?: string, middlewares: MiddlewareType[], contentType?: string, method?: string }) => {
+    props: (route: string, arg2?: Type<Router> | MiddlewareType[] | string | { protocol?: string, middlewares: MiddlewareType[], contentType?: string, method?: RequestMethod }) => {
         if (isArray(arg2)) {
             return { route, middlewares: arg2 };
         } else if (isString(arg2)) {
-            return { route, method: arg2 };
+            return { route, method: arg2 as RequestMethod };
         } else if (lang.isBaseOf(arg2, Router)) {
             return { route, parent: arg2 };
         } else {

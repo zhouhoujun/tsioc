@@ -15,15 +15,15 @@ export class UserController {
     }
 
 
-    @RouteMapping('/:name', 'get')
+    @RouteMapping('/:name', 'GET')
     getUser(name: string) {
         this.logger.log('name:', name);
         return this.usrRep.findByAccount(name);
     }
 
     @Transactional()
-    @RouteMapping('/', 'post')
-    @RouteMapping('/', 'put')
+    @RouteMapping('/', 'POST')
+    @RouteMapping('/', 'PUT')
     async modify(user: User, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(lang.getClassName(this.usrRep), user);
         let val = await this.usrRep.save(user);
@@ -33,8 +33,8 @@ export class UserController {
     }
 
     @Transactional()
-    @RouteMapping('/save', 'post')
-    @RouteMapping('/save', 'put')
+    @RouteMapping('/save', 'POST')
+    @RouteMapping('/save', 'PUT')
     async modify2(user: User, @Repository() userRepo: UserRepository, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(lang.getClassName(this.usrRep), user);
         let val = await userRepo.save(user);
@@ -44,7 +44,7 @@ export class UserController {
     }
 
     @Transactional()
-    @RouteMapping('/:id', 'delete')
+    @RouteMapping('/:id', 'DELETE')
     async del(id: string) {
         this.logger.log('id:', id);
         await this.usrRep.delete(id);

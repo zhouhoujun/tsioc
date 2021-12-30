@@ -6,9 +6,12 @@ export interface ReadPacket<T = any> {
 
 export interface WritePacket<T = any> {
     err?: any;
+    error?: Error;
     response?: T;
     disposed?: boolean;
     status?: string | number;
+    ok?: boolean;
+    body?: any;
 }
 
 export type TrasportEvent = ReadPacket;

@@ -192,7 +192,7 @@ export class KafkaServer extends AbstractServer {
         outgoingResponse: TrasportResponse,
         outgoingMessage: Message,
     ) {
-        if (!outgoingResponse.isDisposed || !outgoingMessage.headers) {
+        if (!outgoingResponse.disposed || !outgoingMessage.headers) {
             return;
         }
         outgoingMessage.headers[KafkaHeaders.NEST_IS_DISPOSED] = Buffer.alloc(1);

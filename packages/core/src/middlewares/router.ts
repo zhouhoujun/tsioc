@@ -145,6 +145,10 @@ export class MappingRouterResolver {
     }
 }
 
+/**
+ * request method.
+ */
+export type RequestMethod = 'HEAD' | 'OPTIONS' | 'GET' | 'DELETE' | 'PATCH' | 'POST' | 'PUT';
 
 /**
  * route mapping metadata.
@@ -164,7 +168,7 @@ export interface RouteMappingMetadata {
     /**
      * request method.
      */
-    method?: string;
+    method?: RequestMethod;
     /**
      * http content type.
      *

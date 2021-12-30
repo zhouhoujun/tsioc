@@ -1,12 +1,12 @@
 import { ApplicationContext, Application } from '@tsdi/core';
+import * as expect from 'expect';
+import { lastValueFrom } from 'rxjs';
 
 import { Role, User } from './models/models';
 import { Suite, Before, Test, After } from '@tsdi/unit';
 import { TypeOrmHelper } from '../src';
-import * as expect from 'expect';
 import { UserRepository } from './repositories/UserRepository';
 import { option, MockBootTest } from './app';
-
 
 @Suite('load Repository test')
 export class LoadReposTest {
@@ -59,7 +59,7 @@ export class LoadReposTest {
     async getUser0() {
         const usrRep = this.ctx.injector.get(UserRepository);
         expect(usrRep).toBeInstanceOf(UserRepository);
-        const rep = await this.ctx.send('/users/admin----test', { method: 'get' });
+        const rep = await lastValueFrom(this.ctx.send('/users/admin----test', { method: 'GET' }));
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeInstanceOf(User);
         expect(rep.body.account).toEqual('admin----test');
@@ -80,7 +80,7 @@ export class LoadReposTest {
 
     @Test()
     async postUser() {
-        const rep = await this.ctx.send('/users', { method: 'post', body: { name: 'post_test', account: 'post_test', password: '111111' } });
+        const rep = await lastValueFrom(this.ctx.send('/users', { method: 'POST', body: { name: 'post_test', account: 'post_test', password: '111111' } }));
         rep.error && console.log(rep.error)
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeInstanceOf(User);
@@ -89,7 +89,7 @@ export class LoadReposTest {
 
     @Test()
     async getUser() {
-        const rep = await this.ctx.send('/users/post_test', { method: 'get' });
+        const rep = await lastValueFrom(this.ctx.send('/users/post_test', { method: 'GET' }));
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeInstanceOf(User);
         expect(rep.body.account).toEqual('post_test');
@@ -97,17 +97,17 @@ export class LoadReposTest {
 
     @Test()
     async detUser() {
-        const rep1 = await this.ctx.send('/users/post_test', { method: 'get' });
+        const rep1 = await lastValueFrom(this.ctx.send('/users/post_test', { method: 'GET' }));
         expect(rep1.status).toEqual(200);
         expect(rep1.body).toBeInstanceOf(User);
-        const rep = await this.ctx.send('/users/' + rep1.body.id, { method: 'delete' });
+        const rep = await lastValueFrom(this.ctx.send('/users/' + rep1.body.id, { method: 'DELETE' }));
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeTruthy();
     }
 
     @Test()
     async postRole() {
-        const rep = await this.ctx.send('/roles', { method: 'post', body: { name: 'opter' } });
+        const rep = await lastValueFrom(this.ctx.send('/roles', { method: 'POST', body: { name: 'opter' } }));
         rep.error && console.log(rep.error)
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeInstanceOf(Role);
@@ -116,7 +116,7 @@ export class LoadReposTest {
 
     @Test()
     async getRole() {
-        const rep = await this.ctx.send('/roles/opter', { method: 'get' });
+        const rep = await lastValueFrom(this.ctx.send('/roles/opter', { method: 'GET' }));
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeInstanceOf(Role);
         expect(rep.body.name).toEqual('opter');
@@ -124,10 +124,10 @@ export class LoadReposTest {
 
     @Test()
     async detRole() {
-        const rep1 = await this.ctx.send('/roles/opter', { method: 'get' });
+        const rep1 = await lastValueFrom(this.ctx.send('/roles/opter', { method: 'GET' }));
         expect(rep1.status).toEqual(200);
         expect(rep1.body).toBeInstanceOf(Role);
-        const rep = await this.ctx.send('/roles/' + rep1.body.id, { method: 'delete' });
+        const rep = await lastValueFrom(this.ctx.send('/roles/' + rep1.body.id, { method: 'DELETE' }));
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeTruthy();
     }

@@ -1,37 +1,37 @@
 import { Application, Context, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Middleware, Module, Middlewares } from '../src';
 import expect = require('expect');
 import { Injector, Injectable, lang, ArgumentError, MissingParameterError } from '@tsdi/ioc';
-import { of } from 'rxjs';
+import { lastValueFrom, of } from 'rxjs';
 
 @RouteMapping('/device')
 class DeviceController {
 
-    @RouteMapping('/init', 'post')
+    @RouteMapping('/init', 'POST')
     req(name: string) {
         console.log('DeviceController init:', name);
         return { name };
     }
 
-    @RouteMapping('/usage', 'post')
+    @RouteMapping('/usage', 'POST')
     age(id: string, @RequestBody('age', { pipe: 'int' }) year: number, @RequestBody({ pipe: 'date' }) createAt: Date) {
         console.log('usage:', id, year, createAt);
         return { id, year, createAt };
     }
 
-    @RouteMapping('/usege/find', 'get')
+    @RouteMapping('/usege/find', 'GET')
     agela(@RequestParam('age', { pipe: 'int' }) limit: number) {
         console.log('limit:', limit);
         return limit;
     }
 
-    @RouteMapping('/:age/used', 'get')
+    @RouteMapping('/:age/used', 'GET')
     resfulquery(@RequestPath('age', { pipe: 'int' }) age1: number) {
         console.log('age1:', age1);
         return age1;
     }
 
 
-    @RouteMapping('/update', 'post')
+    @RouteMapping('/update', 'POST')
     async update(version: string) {
         // do smth.
         console.log('update version:', version);
@@ -45,7 +45,7 @@ class DeviceController {
     }
 
 
-    @RouteMapping('/status', 'get')
+    @RouteMapping('/status', 'GET')
     getLastStatus() {
         return of('working');
     }
@@ -71,7 +71,7 @@ class DeviceController {
 
 //     @Inject() mapAdapter: MapAdapter;
 
-//     @RouteMapping('/mark', 'post')
+//     @RouteMapping('/mark', 'POST')
 //     drawMark(name: string, @Inject(CONTEXT) ctx: MessageContext ) {
 //         ctx.body;
 //         this.mapAdapter.drow(ctx.body);
@@ -197,19 +197,23 @@ describe('app message queue', () => {
     it('msg work', async () => {
         const a = injector.get(DeviceQueue);
         let device, aState, bState;
-        a.done(ctx => {
+
+        const defer = lang.defer();
+        ctx.send('/hdevice', { type: 'startup' })
+        .subscribe((rep)=> {
             device = ctx.getValue('device');
             aState = ctx.getValue('deviceA_state');
             bState = ctx.getValue('deviceB_state');
-        })
-        await ctx.send('/hdevice', { type: 'startup' });
+            defer.resolve();
+        });
+        await defer.promise;
         expect(device).toBe('device next');
         expect(aState).toBe('startuped');
         expect(bState).toBe('startuped');
     });
 
     it('post route response object', async () => {
-        const a = await ctx.send('/device/init', { method: 'post', query: { name: 'test' } });
+        const a = await lastValueFrom(ctx.send('/device/init', { method: 'POST', query: { name: 'test' } }));
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toBeDefined();
@@ -217,14 +221,14 @@ describe('app message queue', () => {
     });
 
     it('post route response string', async () => {
-        const b = await ctx.send('/device/update', { method: 'post', query: { version: '1.0.0' } });
+        const b = await lastValueFrom(ctx.send('/device/update', { method: 'POST', query: { version: '1.0.0' } }));
         expect(b.status).toEqual(200);
         expect(b.ok).toBeTruthy();
         expect(b.body).toEqual('1.0.0');
     });
 
     it('route with request body pipe', async () => {
-        const a = await ctx.send('/device/usage', { method: 'post', body: { id: 'test1', age: '50', createAt: '2021-10-01' } });
+        const a = await lastValueFrom(ctx.send('/device/usage', { method: 'POST', body: { id: 'test1', age: '50', createAt: '2021-10-01' } }));
         a.error && console.log(a.error);
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
@@ -234,58 +238,58 @@ describe('app message queue', () => {
     })
 
     it('route with request body pipe throw missing argument err', async () => {
-        const r = await ctx.send('/device/usage', { method: 'post', body: {} });
+        const r = await lastValueFrom(ctx.send('/device/usage', { method: 'POST', body: {} }));
         expect(r.status).toEqual(500);
         expect(r.error).toBeInstanceOf(MissingParameterError)
     })
 
     it('route with request body pipe throw argument err', async () => {
-        const r = await ctx.send('/device/usage', { method: 'post', body: { id: 'test1', age: 'test', createAt: '2021-10-01' } });
+        const r = await lastValueFrom(ctx.send('/device/usage', { method: 'POST', body: { id: 'test1', age: 'test', createAt: '2021-10-01' } }));
         expect(r.status).toEqual(500);
         expect(r.error).toBeInstanceOf(ArgumentError)
     })
 
     it('route with request param pipe', async () => {
-        const a = await ctx.send('/device/usege/find', { method: 'get', query: { age: '20' } });
+        const a = await lastValueFrom(ctx.send('/device/usege/find', { method: 'GET', query: { age: '20' } }));
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toStrictEqual(20);
     })
 
     it('route with request param pipe throw missing argument err', async () => {
-        const r = await ctx.send('/device/usege/find', { method: 'get', body: { age: '50' } });
+        const r = await lastValueFrom(ctx.send('/device/usege/find', { method: 'GET', body: { age: '50' } }));
         expect(r.status).toEqual(500);
         expect(r.error).toBeInstanceOf(MissingParameterError)
     })
 
     it('route with request param pipe throw argument err', async () => {
-        const r = await ctx.send('/device/usege/find', { method: 'get', query: { age: 'test' } });
+        const r = await lastValueFrom(ctx.send('/device/usege/find', { method: 'GET', query: { age: 'test' } }));
         expect(r.status).toEqual(500);
         expect(r.error).toBeInstanceOf(ArgumentError)
     })
 
     it('route with request param pipe', async () => {
-        const a = await ctx.send('/device/30/used', { method: 'get', query: { age: '20' } });
+        const a = await lastValueFrom(ctx.send('/device/30/used', { method: 'GET', query: { age: '20' } }));
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toStrictEqual(30);
     })
 
     it('route with request restful param pipe throw missing argument err', async () => {
-        const r = await ctx.send('/device//used', { method: 'get', body: { age: '20' } });
+        const r = await lastValueFrom(ctx.send('/device//used', { method: 'GET', body: { age: '20' } }));
         expect(r.status).toEqual(500);
         expect(r.error).toBeInstanceOf(MissingParameterError);
     })
 
     it('route with request restful param pipe throw argument err', async () => {
-        const r = await ctx.send('/device/age1/used', { method: 'get', body: { age: '20' } });
+        const r = await lastValueFrom(ctx.send('/device/age1/used', { method: 'GET', body: { age: '20' } }));
         expect(r.status).toEqual(500);
         expect(r.error).toBeInstanceOf(ArgumentError);
     })
 
 
     it('response with Observable', async () => {
-        const r = await ctx.send('/device/status', { method: 'get'});
+        const r = await lastValueFrom(ctx.send('/device/status', { method: 'GET'}));
         expect(r.status).toEqual(200);
         expect(r.body).toEqual('working');
     })

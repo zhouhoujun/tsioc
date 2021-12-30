@@ -1,4 +1,4 @@
-import { Token, tokenId } from '@tsdi/ioc';
+import { Abstract, Token } from '@tsdi/ioc';
 import { LOGFormater } from './formater';
 import { LoggerManager } from './LoggerManager';
 
@@ -8,29 +8,24 @@ import { LoggerManager } from './LoggerManager';
  * @export
  * @interface LogConfigure
  */
-export interface LogConfigure {
+@Abstract()
+export abstract class LogConfigure {
     /**
      * log adapter
      *
      * @type {Token<LoggerManager>)}
      */
-    adapter: Token<LoggerManager>,
+    abstract get adapter(): Token<LoggerManager>;
 
     /**
      * logger config options.
      *
      * @type {Record<string, any>}
      */
-    config?: Record<string, any>;
+    abstract config?: Record<string, any>;
 
     /**
      * format
      */
-    format?: LOGFormater;
+    abstract format?: LOGFormater;
 }
-
-/**
- * Log configure interface symbol.
- * it is a symbol id, you can register yourself LogConfigure for this.
- */
- export const LogConfigureToken: Token<LogConfigure> = tokenId<LogConfigure>('DI_LogConfigure');

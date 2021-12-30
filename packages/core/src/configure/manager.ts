@@ -10,7 +10,7 @@ import { DEFAULT_CONFIG, PROCESS_ROOT } from '../metadata/tk';
  * @class ConfigureManager
  */
 @Singleton(ConfigureManager)
-export class DefaultConfigureManager implements ConfigureManager {
+export class DefaultConfigureManager extends ConfigureManager {
 
     private inited = false;
     protected configs: (string | Configuration)[];
@@ -25,6 +25,7 @@ export class DefaultConfigureManager implements ConfigureManager {
         @Inject({ nullable: true }) private merger?: ConfigureMerger,
         @Inject({ nullable: true }) private configLoader?: ConfigureLoader,
         @Inject(PROCESS_ROOT, { nullable: true }) protected baseURL?: string) {
+        super();
         this.config = { ...config };
         this.configs = [];
     }
@@ -97,7 +98,7 @@ export class DefaultConfigureManager implements ConfigureManager {
 
 
 @Singleton(ConfigureMerger)
-export class ConfigureMergerImpl implements ConfigureMerger {
+export class ConfigureMergerImpl extends ConfigureMerger {
 
     merge(target: Configuration, source: Configuration): Configuration {
         if (!source) return target;
@@ -127,7 +128,7 @@ export class ConfigureMergerImpl implements ConfigureMerger {
     }
 
     protected mergeArray(target: Configuration, name: string, source?: any[]) {
-        if(!source || !source.length) return;
+        if (!source || !source.length) return;
         if (target[name]) {
             source.forEach(d => {
                 if ((target[name].indexOf(d) || 0) < 0) {

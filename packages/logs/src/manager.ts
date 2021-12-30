@@ -1,5 +1,5 @@
-import { EMPTY_OBJ, getToken, Inject, Injectable, Injector, isFunction, isString, Token, tokenId, Type } from '@tsdi/ioc';
-import { LogConfigure, LogConfigureToken } from './LogConfigure';
+import { EMPTY_OBJ, getToken, Inject, Injectable, Injector, isFunction, isString, Token, Type } from '@tsdi/ioc';
+import { LogConfigure } from './LogConfigure';
 import { ILogger } from './ILogger';
 import { Level, Levels } from './Level';
 import { LoggerConfig, LoggerManager } from './LoggerManager';
@@ -22,8 +22,8 @@ export class ConfigureLoggerManager implements LoggerManager {
 
     get config(): LogConfigure {
         if (!this._config) {
-            if (this.injector.has(LogConfigureToken)) {
-                this._config = this.injector.resolve(LogConfigureToken);
+            if (this.injector.has(LogConfigure)) {
+                this._config = this.injector.resolve(LogConfigure);
             } else {
                 this._config = { adapter: 'console' };
             }
@@ -36,9 +36,9 @@ export class ConfigureLoggerManager implements LoggerManager {
             return;
         }
         if (isFunction(config)) {
-            if (!this.injector.has(LogConfigureToken)) {
-                this.injector.register({ provide: LogConfigureToken, useClass: config });
-                this._config = this.injector.get(LogConfigureToken);
+            if (!this.injector.has(LogConfigure)) {
+                this.injector.register({ provide: LogConfigure, useClass: config });
+                this._config = this.injector.get(LogConfigure);
             } else if (!this.injector.has(config)) {
                 this.injector.register(config);
                 this._config = this.injector.get<LogConfigure>(config);
