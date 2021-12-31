@@ -1,6 +1,5 @@
 import { tokenId, Token } from '@tsdi/ioc';
 import { Configuration } from '../configure/config';
-import { Context } from '../middlewares/context';
 
 
 
@@ -19,7 +18,3 @@ export const DEFAULT_CONFIG: Token<Configuration> = tokenId<Configuration>('DEFA
  */
 export const PROCESS_ROOT: Token<string> = tokenId<string>('PROCESS_ROOT');
 
-/**
- * middleware context.
- */
-export const CONTEXT = Context;

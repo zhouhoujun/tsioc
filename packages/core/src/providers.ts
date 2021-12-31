@@ -9,8 +9,6 @@ import { StartupService, ServiceSet } from './service';
 import { ScanSet, TypeRef } from './scan.set';
 import { RunnableRef, RunnableSet } from './runnable';
 import { Observable, from, lastValueFrom } from 'rxjs';
-import { MappingRouterResolver, RouterResolver } from './middlewares/router';
-
 
 
 abstract class AbstractScanSet<T extends TypeRef> implements ScanSet<T> {
@@ -104,7 +102,6 @@ export const DEFAULTA_PROVIDERS: ProviderType[] = [
     { provide: LifecycleHooksResolver, useValue: new ModuleLifecycleHooksResolver() },
     { provide: ModuleFactoryResolver, useValue: new DefaultModuleFactoryResolver() },
     { provide: ApplicationFactory, useValue: new DefaultApplicationFactory() },
-    { provide: RouterResolver, useValue: new MappingRouterResolver() },
     {
         provide: ObservableParser,
         useValue: {

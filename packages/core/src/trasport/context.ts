@@ -222,3 +222,10 @@ export abstract class Context implements Destroyable {
     }
 
 }
+
+
+/**
+ * middleware context.
+ */
+ export const CONTEXT = Context;
+ 

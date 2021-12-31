@@ -1,5 +1,5 @@
 import { Abstract, AsyncHandler, chain, Type } from '@tsdi/ioc';
-import { Context } from './context';
+import { Context } from '../context';
 import { Middleware, MiddlewareRef } from './middleware';
 import { Route } from './route';
 

@@ -6,7 +6,6 @@ import { ConfigureMergerImpl, DefaultConfigureManager } from './configure/manage
 import { ServerSet } from './server';
 import { ClientSet } from './client';
 import { ServiceSet } from './service';
-import { MiddlewareModule } from './middleware';
 import { DEFAULTA_PROVIDERS } from './providers';
 import { ModuleRef } from './module.ref';
 import { ModuleFactoryResolver } from './module.factory';
@@ -119,7 +118,7 @@ export class Application {
     }
 
     protected getDeps(): Modules[] {
-        return [MiddlewareModule];
+        return [];
     }
 
     protected createInjector(providers: ProviderType[], option: ApplicationOption) {

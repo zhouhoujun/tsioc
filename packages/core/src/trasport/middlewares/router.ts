@@ -1,9 +1,9 @@
 import { Abstract, chain, isString, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
-import { Context } from './context';
+import { Context } from '../context';
 import { Route } from './route';
 import { Middlewares, MiddlewareType } from './middlewares';
-import { PipeTransform } from '../pipes/pipe';
-import { CanActive } from './guard';
+import { PipeTransform } from '../../pipes/pipe';
+import { CanActive } from '../guard';
 import { Middleware } from './middleware';
 
 

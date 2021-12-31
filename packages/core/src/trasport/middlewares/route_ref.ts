@@ -7,12 +7,12 @@ import {
 import { isObservable, lastValueFrom } from 'rxjs';
 import { Middleware } from './middleware';
 import { MODEL_RESOLVERS } from '../model/resolver';
-import { PipeTransform } from '../pipes/pipe';
-import { Context } from './context';
-import { CanActive } from './guard';
+import { PipeTransform } from '../../pipes/pipe';
+import { Context } from '../context';
+import { CanActive } from '../guard';
 import { MiddlewareType } from './middlewares';
-import { TrasportArgumentResolver, TrasportParameter } from './resolver';
-import { ResultValue } from './result';
+import { TrasportArgumentResolver, TrasportParameter } from '../resolver';
+import { ResultValue } from '../result';
 import { RouteRef, RouteOption, RouteRefFactory, RouteRefFactoryResolver, joinprefix } from './route';
 import { ProtocolRouteMappingMetadata, RouteMappingMetadata } from './router';
 

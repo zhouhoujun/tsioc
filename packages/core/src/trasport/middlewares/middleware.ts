@@ -1,6 +1,6 @@
 import { Abstract, Destroyable, DestroyCallback, DispatchHandler, Injector, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
-import { Context } from './context';
-import { CanActive } from './guard';
+import { Context } from '../context';
+import { CanActive } from '../guard';
 import { Route, RouteOption } from './route';
 
 

@@ -1,5 +1,5 @@
 import { Observable } from 'rxjs';
-import { Context } from '../middlewares/context';
+import { Context } from './context';
 
 /**
  * Trasport handler.

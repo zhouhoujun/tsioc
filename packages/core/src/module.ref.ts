@@ -3,8 +3,6 @@ import {
     isFunction, isPlainObject, lang, ModuleReflect, OnDestroy, OperationFactoryResolver
 } from '@tsdi/ioc';
 import { ModuleLifecycleHooks } from './lifecycle';
-import { MiddlewareRefFactoryResolver } from './middlewares/middleware';
-import { RouteRefFactoryResolver } from './middlewares/route';
 import { RunnableFactoryResolver } from './runnable';
 
 
@@ -36,14 +34,6 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
      * operaton factory resolver.
      */
     abstract get operationFactoryResolver(): OperationFactoryResolver;
-    /**
-     * middleware factory resolver.
-     */
-    abstract get middleRefFactoryResolver(): MiddlewareRefFactoryResolver;
-    /**
-     * route factory resolver.
-     */
-    abstract get routeRefFactoryResolver(): RouteRefFactoryResolver;
     /**
      * runnable factory resolver.
      */

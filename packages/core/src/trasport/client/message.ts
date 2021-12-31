@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { Router, RouterResolver } from '../../middlewares/router';
+import { Router, RouterResolver } from '../middlewares/router';
 import { ReadPacket, WritePacket } from '../packet';
 import { AbstractClient } from './client';
 

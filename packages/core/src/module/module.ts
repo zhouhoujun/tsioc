@@ -10,10 +10,6 @@ import { ModuleFactory, ModuleFactoryResolver, ModuleOption } from '../module.fa
 import { ModuleRef } from '../module.ref';
 import { RunnableFactoryResolver } from '../runnable';
 import { DefaultRunnableFactoryResolver } from './runnable';
-import { RouteRefFactoryResolver } from '../middlewares/route';
-import { DefaultRouteRefFactoryResovler } from '../middlewares/route_ref';
-import { MiddlewareRefFactoryResolver } from '../middlewares/middleware';
-import { DefaultMiddlewareRefFactoryResolver } from '../middlewares/middleware_ref';
 
 
 /**
@@ -29,8 +25,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
     operationFactoryResolver = new DefaultOperationFactoryResolver();
     runnableFactoryResolver: RunnableFactoryResolver = new DefaultRunnableFactoryResolver(this);
-    routeRefFactoryResolver = new DefaultRouteRefFactoryResovler();
-    middleRefFactoryResolver = new DefaultMiddlewareRefFactoryResolver();
+    
     lifecycle!: ModuleLifecycleHooks;
 
     constructor(moduleType: ModuleReflect, providers: ProviderType[] | undefined, readonly parent: Injector,
@@ -41,9 +36,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         this._type = moduleType.type as Type;
         this.inject(
             { provide: OperationFactoryResolver, useValue: this.operationFactoryResolver },
-            { provide: RunnableFactoryResolver, useValue: this.runnableFactoryResolver },
-            { provide: RouteRefFactoryResolver, useValue: this.routeRefFactoryResolver },
-            { provide: MiddlewareRefFactoryResolver, useValue: this.middleRefFactoryResolver }
+            { provide: RunnableFactoryResolver, useValue: this.runnableFactoryResolver }
         );
 
         this.setValue(ModuleRef, this);
@@ -96,9 +89,8 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         this._type = null!;
         this.lifecycle.clear();
         this.lifecycle = null!;
+        this.operationFactoryResolver = null!;
         this.runnableFactoryResolver = null!;
-        this.routeRefFactoryResolver = null!;
-        this.middleRefFactoryResolver = null!;
         this._typeRefl = null!;
         this._instance = null!;
     }

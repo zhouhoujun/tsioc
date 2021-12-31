@@ -1,6 +1,6 @@
 import { EMPTY, Type } from '@tsdi/ioc';
 import { DBPropertyMetadata, ModelArgumentResolver, ModelFieldResolver, AbstractModelArgumentResolver } from './resolver';
-import { Context } from '../middlewares/context';
+import { Context } from '../context';
 
 class ModelResolver<C extends Context = Context> extends AbstractModelArgumentResolver<C> {
     constructor(private option: {
