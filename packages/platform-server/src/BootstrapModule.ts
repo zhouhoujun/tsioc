@@ -1,5 +1,5 @@
 import { Injectable, Singleton, ModuleLoader, Inject, isString, EMPTY } from '@tsdi/ioc';
-import { Module, ConfigureLoader, PROCESS_ROOT, Configuration, ApplicationExit, ApplicationContext, ApplicationArguments } from '@tsdi/core';
+import { Module, ConfigureLoader, PROCESS_ROOT, ApplicationConfiguration, ApplicationExit, ApplicationContext, ApplicationArguments } from '@tsdi/core';
 import * as path from 'path';
 import * as fs from 'fs';
 import { runMainPath } from './toAbsolute';
@@ -21,7 +21,7 @@ export class ConfigureFileLoader implements ConfigureLoader {
         }
     }
 
-    async load<T extends Configuration>(uri?: string): Promise<T> {
+    async load<T extends ApplicationConfiguration>(uri?: string): Promise<T> {
         if (uri) {
             if (fs.existsSync(uri)) {
                 return await import(uri) as T;

@@ -7,7 +7,7 @@ import { Type, LoadType, ProvidersMetadata, Abstract } from '@tsdi/ioc';
  * @interface Configuration
  * @extends {ProvidersMetadata}
  */
-export interface Configuration extends ProvidersMetadata, Record<string, any> {
+export interface ApplicationConfiguration extends ProvidersMetadata, Record<string, any> {
     /**
      * module base url.
      *
@@ -135,7 +135,7 @@ export abstract class ConfigureLoader {
      * @param {string} [uri]
      * @returns {Promise<T>}
      */
-    abstract load<T extends Configuration>(uri?: string): Promise<T>;
+    abstract load<T extends ApplicationConfiguration>(uri?: string): Promise<T>;
 }
 
 
@@ -150,7 +150,7 @@ export abstract class ConfigureMerger {
      * @param source source configure 
      * @returns merged target configure.
      */
-    abstract merge(target: Configuration, source: Configuration): Configuration;
+    abstract merge(target: ApplicationConfiguration, source: ApplicationConfiguration): ApplicationConfiguration;
 }
 
 /**
@@ -161,10 +161,10 @@ export abstract class ConfigureManager {
     /**
      * use configuration.
      *
-     * @param {(string | Configuration)} [config] use config src or configuration.
+     * @param {(string | ApplicationConfiguration)} [config] use config src or configuration.
      * @returns {this} this configure manager.
      */
-    abstract useConfiguration(config?: string | Configuration): this;
+    abstract useConfiguration(config?: string | ApplicationConfiguration): this;
 
     /**
      * load used configuration.
@@ -176,5 +176,5 @@ export abstract class ConfigureManager {
      *
      * @returns {T}
      */
-    abstract getConfig<T extends Configuration>(): T;
+    abstract getConfig<T extends ApplicationConfiguration>(): T;
 }

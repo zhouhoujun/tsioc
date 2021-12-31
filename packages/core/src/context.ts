@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { LoggerManager } from '@tsdi/logs';
 import { Observable } from 'rxjs';
-import { Configuration, ConfigureManager } from './configure/config';
+import { ApplicationConfiguration, ConfigureManager } from './configure/config';
 import { Runnable, RunnableSet, RunnableFactory } from './runnable';
 import { ServiceSet } from './service';
 import { ClientSet } from './client';
@@ -77,7 +77,7 @@ export abstract class ApplicationContext implements Destroyable {
     /**
      * get application global configuration of type {@link Configuration}.
      */
-    abstract getConfiguration(): Configuration;
+    abstract getConfiguration(): ApplicationConfiguration;
 
     /**
      * get configure manager of type {@link ConfigureManager}.
@@ -171,9 +171,9 @@ export interface ApplicationOption<T = any> extends ModuleOption {
     /**
      * custom configures
      *
-     * @type {((string | Configuration)[])}
+     * @type {((string | ApplicationConfiguration)[])}
      */
-    configures?: (string | Configuration)[];
+    configures?: (string | ApplicationConfiguration)[];
     /**
      * application dependencies.
      *

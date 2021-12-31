@@ -1,5 +1,5 @@
 import { Inject, isUndefined, Singleton, isString, isPlainObject, lang, isMetadataObject, ModuleLoader } from '@tsdi/ioc';
-import { Configuration, ConfigureLoader, ConfigureManager, ConfigureMerger } from './config';
+import { ApplicationConfiguration, ConfigureLoader, ConfigureManager, ConfigureMerger } from './config';
 import { DEFAULT_CONFIG, PROCESS_ROOT } from '../metadata/tk';
 
 
@@ -13,14 +13,14 @@ import { DEFAULT_CONFIG, PROCESS_ROOT } from '../metadata/tk';
 export class DefaultConfigureManager extends ConfigureManager {
 
     private inited = false;
-    protected configs: (string | Configuration)[];
+    protected configs: (string | ApplicationConfiguration)[];
 
     /**
      * Creates an instance of ConfigureManager.
      * @param {string} [baseURL]
      */
     constructor(
-        @Inject(DEFAULT_CONFIG, { defaultValue: {} }) private config: Configuration,
+        @Inject(DEFAULT_CONFIG, { defaultValue: {} }) private config: ApplicationConfiguration,
         @Inject() private moduleLoader: ModuleLoader,
         @Inject({ nullable: true }) private merger?: ConfigureMerger,
         @Inject({ nullable: true }) private configLoader?: ConfigureLoader,
@@ -30,7 +30,7 @@ export class DefaultConfigureManager extends ConfigureManager {
         this.configs = [];
     }
 
-    useConfiguration(config?: string | Configuration): this {
+    useConfiguration(config?: string | ApplicationConfiguration): this {
         if (isUndefined(config)) {
             config = '';
         }
@@ -45,7 +45,7 @@ export class DefaultConfigureManager extends ConfigureManager {
         return this;
     }
 
-    getConfig<T extends Configuration>(): T {
+    getConfig<T extends ApplicationConfiguration>(): T {
         return this.config as T;
     }
 
@@ -84,12 +84,12 @@ export class DefaultConfigureManager extends ConfigureManager {
      * @param {string} src
      * @returns {Promise<T>}
      */
-    protected async loadConfig(src: string): Promise<Configuration> {
+    protected async loadConfig(src: string): Promise<ApplicationConfiguration> {
         if (this.configLoader) {
             return await this.configLoader.load(src);
         } else if (src) {
             let cfg = await this.moduleLoader.load([src])
-            return lang.first(cfg) as Configuration;
+            return lang.first(cfg) as ApplicationConfiguration;
         } else {
             return null!;
         }
@@ -100,7 +100,7 @@ export class DefaultConfigureManager extends ConfigureManager {
 @Singleton(ConfigureMerger)
 export class ConfigureMergerImpl extends ConfigureMerger {
 
-    merge(target: Configuration, source: Configuration): Configuration {
+    merge(target: ApplicationConfiguration, source: ApplicationConfiguration): ApplicationConfiguration {
         if (!source) return target;
         for (let n in source) {
             switch (n) {
@@ -127,7 +127,7 @@ export class ConfigureMergerImpl extends ConfigureMerger {
         return target;
     }
 
-    protected mergeArray(target: Configuration, name: string, source?: any[]) {
+    protected mergeArray(target: ApplicationConfiguration, name: string, source?: any[]) {
         if (!source || !source.length) return;
         if (target[name]) {
             source.forEach(d => {

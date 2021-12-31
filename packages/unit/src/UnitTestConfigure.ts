@@ -1,5 +1,5 @@
 import { Type } from '@tsdi/ioc';
-import { Configuration } from '@tsdi/core';
+import { ApplicationConfiguration } from '@tsdi/core';
 import { TestReport } from './reports/interface';
 
 /**
@@ -20,7 +20,7 @@ export interface UnitTestOptions {
  * @interface UnitTestConfigure
  * @extends {AppConfigure}
  */
-export interface UnitTestConfigure extends Configuration {
+export interface UnitTestConfigure extends ApplicationConfiguration {
     /**
      * test source
      *

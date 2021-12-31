@@ -1,17 +1,16 @@
 import {
     isUndefined, EMPTY_OBJ, isArray, lang, Type, createDecorator, ProviderType,
     ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes,
-    OperationFactoryResolver
+    OperationFactoryResolver, PatternMetadata, MethodPropDecorator, Token, PropertyMetadata
 } from '@tsdi/ioc';
 import { StartupService, ServiceSet } from '../service';
-import { PipeMetadata, ComponentScanMetadata, ScanReflect } from './meta';
+import { PipeMetadata, ComponentScanMetadata, ScanReflect, BeanMetadata } from './meta';
 import { PipeTransform } from '../pipes/pipe';
 import { Server, ServerSet } from '../server';
 import { getModuleType } from '../module.ref';
 import { Client, ClientSet } from '../client';
 import { Runnable, RunnableSet } from '../runnable';
 import { ScanSet } from '../scan.set';
-
 
 
 
@@ -222,6 +221,59 @@ export const Pipe: Pipe = createDecorator<PipeMetadata>('Pipe', {
         if (isUndefined(meta.pure)) {
             meta.pure = true;
         }
+    }
+});
+
+/**
+ * Bean decorator. bean provider, provider the value of the method or property for Confgiuration.
+ */
+export interface Bean {
+    /**
+     * Bean decorator. bean provider, provider the value of the method or property for Confgiuration.
+     */
+    (): PropertyDecorator;
+    /**
+     * Bean decorator. bean provider, provider the value of the method or property for Confgiuration.
+     */
+    (provider: Token): MethodPropDecorator;
+}
+
+export const Bean: Bean = createDecorator<BeanMetadata>('Bean', {
+    props: (provider: Token) => ({ provider }),
+    afterInit: (ctx) => {
+        let metadata = ctx.metadata as BeanMetadata & PropertyMetadata;
+        if (!metadata.provider) {
+            metadata.provider = metadata.type as any;
+        }
+    }
+});
+
+/**
+ * Configuartion decorator, define the class as auto Configuration provider.
+ */
+export interface Configuration {
+    /**
+     * Configuartion decorator, define the class as auto Configuration provider.
+     * @Configuartion
+     */
+    (): ClassDecorator;
+}
+
+/**
+ * Configuartion decorator, define the class as auto Configuration provider.
+ * @Configuartion
+ */
+export const Configuration: Configuration = createDecorator<PatternMetadata>('Configuration', {
+    actionType: [ActionTypes.annoation, ActionTypes.autorun],
+    design: {
+        afterAnnoation: (ctx, next) => {
+            const reflect = ctx.reflect;
+
+            next();
+        }
+    },
+    appendProps: (meta) => {
+        meta.singleton = true;
     }
 });
 

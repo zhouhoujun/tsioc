@@ -126,6 +126,10 @@ export interface MetadataFactory<T> {
      * init decor context.
      */
     init?: (ctx: DecorContext) => void;
+    /**
+     * after init decor context.
+     */
+    afterInit?: (ctx: DecorContext) => void;
 }
 
 /**
@@ -408,39 +412,40 @@ paramDecorActions.use(
     ExecuteDecorHandle
 );
 
-function dispatch(actions: Actions<DecorContext>, target: any, type: ClassType, define: DecorDefine, init?: (ctx: DecorContext) => void) {
+function dispatch(actions: Actions<DecorContext>, target: any, type: ClassType, define: DecorDefine, options: DecoratorOption<any>) {
     const ctx = {
         ...define,
         target,
         reflect: get(type, true)
     };
-    init && init(ctx);
+    options.init && options.init(ctx);
     actions.handle(ctx, () => {
         ctx.reflect.class.addDefine(define);
     });
+    options.afterInit && options.afterInit(ctx);
     cleanObj(ctx);
 }
 
-export function dispatchTypeDecor(type: ClassType, define: DecorDefine, init?: (ctx: DecorContext) => void) {
-    dispatch(typeDecorActions, type, type, define, init);
+export function dispatchTypeDecor(type: ClassType, define: DecorDefine, options: DecoratorOption<any>) {
+    dispatch(typeDecorActions, type, type, define, options);
 }
 
-export function dispatchPorpDecor(type: any, define: DecorDefine, init?: (ctx: DecorContext) => void) {
-    dispatch(propDecorActions, type, type.constructor, define, init);
+export function dispatchPorpDecor(type: any, define: DecorDefine, options: DecoratorOption<any>) {
+    dispatch(propDecorActions, type, type.constructor, define, options);
 }
 
-export function dispatchMethodDecor(type: any, define: DecorDefine, init?: (ctx: DecorContext) => void) {
-    dispatch(methodDecorActions, type, type.constructor, define, init);
+export function dispatchMethodDecor(type: any, define: DecorDefine, options: DecoratorOption<any>) {
+    dispatch(methodDecorActions, type, type.constructor, define, options);
 }
 
-export function dispatchParamDecor(type: any, define: DecorDefine, init?: (ctx: DecorContext) => void) {
+export function dispatchParamDecor(type: any, define: DecorDefine, options: DecoratorOption<any>) {
     let target = type;
     if (!define.propertyKey) {
         define.propertyKey = ctorName;
     } else {
         type = type.constructor;
     }
-    dispatch(paramDecorActions, target, type, define, init);
+    dispatch(paramDecorActions, target, type, define, options);
 }
 
 /**

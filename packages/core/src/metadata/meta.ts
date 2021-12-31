@@ -1,4 +1,4 @@
-import { PatternMetadata, ProviderMetadata, ProvidersMetadata, Type, TypeMetadata, TypeReflect } from '@tsdi/ioc';
+import { PatternMetadata, ProviderMetadata, ProvidersMetadata, Token, Type, TypeMetadata, TypeReflect } from '@tsdi/ioc';
 import { StartupService } from '../service';
 
 /**
@@ -60,4 +60,11 @@ export interface PipeMetadata extends ProviderMetadata {
      * If Pipe is pure (its output depends only on its input.)
      */
     pure?: boolean;
+}
+
+/**
+ * bean provider metadata.
+ */
+export interface BeanMetadata {
+    provider: Token;
 }

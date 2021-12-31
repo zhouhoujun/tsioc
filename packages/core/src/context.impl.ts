@@ -2,7 +2,7 @@ import { Token, Type, isFunction, ModuleMetadata, DestroyCallback } from '@tsdi/
 import { ConfigureLoggerManager, LoggerManager, LOGGER_MANAGER } from '@tsdi/logs';
 import { Observable } from 'rxjs';
 import { CONFIGURATION, PROCESS_ROOT } from './metadata/tk';
-import { Configuration, ConfigureManager } from './configure/config';
+import { ApplicationConfiguration, ConfigureManager } from './configure/config';
 import { ClientFactory } from './transport/client/factory';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from './context';
 import { RunnableFactory, RunnableFactoryResolver, RunnableSet, RunnableRef } from './runnable';
@@ -109,7 +109,7 @@ export class DefaultApplicationContext extends ApplicationContext {
     /**
      * configuration merge metadata config and all application config.
      */
-    getConfiguration(): Configuration {
+    getConfiguration(): ApplicationConfiguration {
         return this.injector.get(CONFIGURATION);
     }
 

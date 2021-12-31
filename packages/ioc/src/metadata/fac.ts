@@ -50,25 +50,25 @@ function storeMetadata<T>(name: string, decor: string, args: any[], metadata: an
         case 1:
             target = args[0];
             if (target) {
-                refl.dispatchTypeDecor(target, refl.toDefine(name, decor, metadata, Decors.CLASS, option), option.init)
+                refl.dispatchTypeDecor(target, refl.toDefine(name, decor, metadata, Decors.CLASS, option), option)
                 return target;
             }
             break;
         case 2:
             target = args[0];
             propertyKey = args[1];
-            refl.dispatchPorpDecor(target, refl.toDefine(name, decor, metadata, Decors.property, option, propertyKey), option.init)
+            refl.dispatchPorpDecor(target, refl.toDefine(name, decor, metadata, Decors.property, option, propertyKey), option)
             break;
         case 3:
             if (isNumber(args[2])) {
                 target = args[0];
                 propertyKey = args[1];
                 let parameterIndex = args[2];
-                refl.dispatchParamDecor(target, refl.toDefine(name, decor, metadata, Decors.parameter, option, propertyKey, parameterIndex), option.init);
+                refl.dispatchParamDecor(target, refl.toDefine(name, decor, metadata, Decors.parameter, option, propertyKey, parameterIndex), option);
             } else if (isUndefined(args[2])) {
                 target = args[0];
                 propertyKey = args[1];
-                refl.dispatchPorpDecor(target, refl.toDefine(name, decor, metadata, Decors.property, option, propertyKey), option.init);
+                refl.dispatchPorpDecor(target, refl.toDefine(name, decor, metadata, Decors.property, option, propertyKey), option);
             } else {
                 target = args[0];
                 propertyKey = args[1];
@@ -78,9 +78,9 @@ function storeMetadata<T>(name: string, decor: string, args: any[], metadata: an
                 }
                 // is set get or not.
                 if (descriptor.set || descriptor.get) {
-                    refl.dispatchPorpDecor(target, refl.toDefine(name, decor, metadata, Decors.property, option, propertyKey), option.init);
+                    refl.dispatchPorpDecor(target, refl.toDefine(name, decor, metadata, Decors.property, option, propertyKey), option);
                 } else {
-                    refl.dispatchMethodDecor(target, refl.toDefine(name, decor, metadata, Decors.method, option, propertyKey), option.init);
+                    refl.dispatchMethodDecor(target, refl.toDefine(name, decor, metadata, Decors.method, option, propertyKey), option);
                 }
                 return descriptor;
             }
