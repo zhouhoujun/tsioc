@@ -66,5 +66,5 @@ export interface PipeMetadata extends ProviderMetadata {
  * bean provider metadata.
  */
 export interface BeanMetadata {
-    provider: Token;
+    provide: Token;
 }

@@ -1,7 +1,7 @@
 import {
     isUndefined, EMPTY_OBJ, isArray, lang, Type, createDecorator, ProviderType,
     ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes,
-    OperationFactoryResolver, PatternMetadata, MethodPropDecorator, Token, PropertyMetadata
+    OperationFactoryResolver, PatternMetadata, MethodPropDecorator, Token, PropertyMetadata, ArgumentError, object2string
 } from '@tsdi/ioc';
 import { StartupService, ServiceSet } from '../service';
 import { PipeMetadata, ComponentScanMetadata, ScanReflect, BeanMetadata } from './meta';
@@ -234,16 +234,21 @@ export interface Bean {
     (): PropertyDecorator;
     /**
      * Bean decorator. bean provider, provider the value of the method or property for Confgiuration.
+     * @param {Token} provide the value of the method or property for the provide token.
      */
-    (provider: Token): MethodPropDecorator;
+    (provide: Token): MethodPropDecorator;
 }
 
 export const Bean: Bean = createDecorator<BeanMetadata>('Bean', {
-    props: (provider: Token) => ({ provider }),
+    props: (provide: Token) => ({ provide }),
     afterInit: (ctx) => {
         let metadata = ctx.metadata as BeanMetadata & PropertyMetadata;
-        if (!metadata.provider) {
-            metadata.provider = metadata.type as any;
+        if (!metadata.provide) {
+            if (metadata.type !== Object) {
+                metadata.provide = metadata.type as any;
+            } else {
+                throw new ArgumentError(`the property has no design Type, named ${ctx.propertyKey} with @Bean decorator in type ${object2string(ctx.reflect.type)}`)
+            }
         }
     }
 });
@@ -264,11 +269,30 @@ export interface Configuration {
  * @Configuartion
  */
 export const Configuration: Configuration = createDecorator<PatternMetadata>('Configuration', {
-    actionType: [ActionTypes.annoation, ActionTypes.autorun],
+    actionType: [ActionTypes.annoation],
     design: {
         afterAnnoation: (ctx, next) => {
-            const reflect = ctx.reflect;
+            const { reflect, type, injector } = ctx;
 
+            const pdrs = reflect.class.decors.filter(d => d.decor === '@Bean')
+                .map(d => {
+                    const key = d.propertyKey;
+                    const { provide } = d.metadata as BeanMetadata;
+                    if (d.decorType === 'method') {
+                        return {
+                            provide,
+                            useFactory: () => injector.invoke(type, key),
+                            singleton: true
+                        } as ProviderType
+                    } else {
+                        return {
+                            provide,
+                            useFactory: () => injector.get(type)[key],
+                            singleton: true
+                        } as ProviderType
+                    }
+                })
+            injector.inject(pdrs);
             next();
         }
     },
