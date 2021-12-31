@@ -808,14 +808,6 @@ export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
         },
         {
             canResolve(parameter, ctx) {
-                return isString(parameter.provider) && isDefined(ctx.arguments[parameter.provider]);
-            },
-            resolve(parameter, ctx) {
-                return ctx.arguments[parameter.provider as string];
-            }
-        },
-        {
-            canResolve(parameter, ctx) {
                 return ctx.has(parameter.provider as Token, parameter.flags);
             },
             resolve(parameter, ctx) {
@@ -840,18 +832,10 @@ export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
         (parameter, ctx) => isDefined(parameter.paramName),
         {
             canResolve(parameter, ctx) {
-                return isDefined(ctx.arguments[parameter.paramName!]);
-            },
-            resolve(parameter, ctx) {
-                return ctx.arguments[parameter.paramName!];
-            }
-        },
-        {
-            canResolve(parameter, ctx) {
                 return ctx.hasValue(parameter.paramName!);
             },
             resolve(parameter, ctx) {
-                return ctx.getValue(parameter.paramName!);
+                return ctx.getValue(parameter.paramName!) as any;
             }
         },
         {

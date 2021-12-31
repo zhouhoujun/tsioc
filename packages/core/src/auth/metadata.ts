@@ -10,16 +10,10 @@ import { PipeTransform } from '../pipes/pipe';
 export interface AuthorizationMetadata extends TypeMetadata {
     /**
      * role
-     *
-     * @type {string}
-     * @memberof AuthorizationMetadata
      */
     role?: string;
     /**
      * middleware to auth.
-     *
-     * @type {MiddlewareType[]}
-     * @memberof AuthorizationMetadata
      */
     middlewares?: MiddlewareType[];
     /**

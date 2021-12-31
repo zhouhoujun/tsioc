@@ -85,7 +85,7 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
     private _args: T;
     private _dsryCbs = new Set<DestroyCallback>();
     private _destroyed = false;
-    private _refs: (Injector | InvocationContext)[];
+    private _refs: InvocationContext[];
     private _values: Map<Token, any>;
     /**
      * the invocation arguments resolver.
@@ -112,8 +112,12 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
      * add reference resolver.
      * @param resolvers the list instance of {@link Injector} or {@link InvocationContext}.
      */
-    addRef(...resolvers: (Injector | InvocationContext)[]) {
-        resolvers.forEach(j => j && j !== this.injector && this._refs.indexOf(j) < 0 && this._refs.push(j));
+    addRef(...resolvers: InvocationContext[]) {
+        resolvers.forEach(j => {
+            if (this._refs.indexOf(j) < 0) {
+                this._refs.push(j);
+            }
+        });
     }
 
     /**
@@ -168,6 +172,7 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
             val = r.get(token, context, flags);
             return isDefined(val);
         });
+
         return val;
     }
 
@@ -177,7 +182,10 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
      */
     hasValue<T>(token: Token): boolean {
         if (this.isSelf(token)) return true;
-        return this._values.has(token) || this.parent?.hasValue(token) === true;
+        return this.hasArg(token)
+            || this._values.has(token)
+            || this._refs.some(c => c.hasValue(token))
+            || this.parent?.hasValue(token) === true;
     }
 
     /**
@@ -186,7 +194,27 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
      */
     getValue<T>(token: Token<T>): T {
         if (this.isSelf(token)) return this as any;
-        return this._values.get(token) ?? this.parent?.getValue(token);
+        return this.getArg(token)
+            ?? this._values.get(token)
+            ?? this.getRefValue(token)
+            ?? this.parent?.getValue(token);
+    }
+
+    protected hasArg(token: Token) {
+        return isString(token) ? isDefined((this._args as any)[token]) : false;
+    }
+
+    protected getArg(token: Token) {
+        return isString(token) ? (this._args as any)[token] : null;
+    }
+
+    protected getRefValue(token: Token) {
+        let val: T | undefined;
+        this._refs.some(r => {
+            val = r.getValue(token);
+            return isDefined(val);
+        });
+        return val;
     }
 
     /**

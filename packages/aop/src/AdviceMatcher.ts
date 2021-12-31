@@ -13,7 +13,7 @@ export type MatchExpress = (method?: string, fullName?: string, targetType?: Cla
 
 /**
  * advice matcher, use to match advice when a registered create instance.
- *
+ * implements {@link IAdviceMatcher}.
  * @export
  * @class AdviceMatcher
  * @implements {IAdviceMatcher}
