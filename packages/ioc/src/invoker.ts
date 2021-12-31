@@ -85,7 +85,7 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
     private _args: T;
     private _dsryCbs = new Set<DestroyCallback>();
     private _destroyed = false;
-    private _refs: Injector[];
+    private _refs: (Injector | InvocationContext)[];
     private _values: Map<Token, any>;
     /**
      * the invocation arguments resolver.
@@ -110,18 +110,18 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
 
     /**
      * add reference resolver.
-     * @param injectors 
+     * @param resolvers the list instance of {@link Injector} or {@link InvocationContext}.
      */
-    addRef(...injectors: Injector[]) {
-        injectors.forEach(j => j && j !== this.injector && this._refs.indexOf(j) < 0 && this._refs.push(j));
+    addRef(...resolvers: (Injector | InvocationContext)[]) {
+        resolvers.forEach(j => j && j !== this.injector && this._refs.indexOf(j) < 0 && this._refs.push(j));
     }
 
     /**
      * remove reference resolver.
-     * @param injector 
+     * @param resolver instance of {@link Injector} or {@link InvocationContext}.
      */
-    removeRef(injector: Injector) {
-        remove(this._refs, injector);
+    removeRef(resolver: Injector | InvocationContext) {
+        remove(this._refs, resolver);
     }
 
     /**

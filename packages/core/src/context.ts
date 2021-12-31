@@ -32,7 +32,7 @@ export interface BootstrapOption extends InvokeOption {
 
 /**
  * application context for global.
- * implements {@link Destroyable}, {@link Disposable}
+ * implements {@link Destroyable}.
  */
 @Abstract()
 export abstract class ApplicationContext implements Destroyable {
@@ -52,8 +52,9 @@ export abstract class ApplicationContext implements Destroyable {
     abstract bootstrap<C>(type: Type<C> | RunnableFactory<C>, opts?: BootstrapOption): any;
     /**
      * send message.
-     * @param pattern message pattern.
+     * @param pattern message pattern. type of {@link Pattern}.
      * @param data send data.
+     * @returns instance of {@link TrasportResponse}.
      */
     abstract send<TResult = TrasportResponse, TInput = any>(pattern: Pattern, data: TInput): Observable<TResult>;
     /**

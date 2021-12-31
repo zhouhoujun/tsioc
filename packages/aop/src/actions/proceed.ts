@@ -187,8 +187,8 @@ export class ProceedingScope extends IocActions<Joinpoint> implements ActionSetu
             joinPoint.setArgument(metadata.throwing, joinPoint.throwing);
         }
 
-        const injector = advicer.aspect.injector;
-        if (injector) joinPoint.addRef(injector);
+        const context = advicer.aspect.context;
+        if (context) joinPoint.addRef(context);
         let returning = advicer.aspect.invoke(advicer.advice.propertyKey!, joinPoint);
 
         if (sync && isObservable(returning)) {
@@ -198,9 +198,9 @@ export class ProceedingScope extends IocActions<Joinpoint> implements ActionSetu
             }
         }
         if (isPromise(returning)) {
-            return returning.finally(() => injector && joinPoint.removeRef(injector));
+            return returning.finally(() => context && joinPoint.removeRef(context));
         } else {
-            injector && joinPoint.removeRef(injector);
+            context && joinPoint.removeRef(context);
             return returning;
         }
     }

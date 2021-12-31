@@ -994,7 +994,7 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
 
     private _tagPdrs: ProviderType[] | undefined;
     private _type: Type<T>;
-    readonly context: InvocationContext
+    readonly context: InvocationContext;
     constructor(readonly reflect: TypeReflect<T>, readonly injector: Injector, options?: InvokeOption) {
         super()
         this._type = reflect.type as Type<T>;

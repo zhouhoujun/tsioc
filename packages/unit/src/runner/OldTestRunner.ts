@@ -1,4 +1,3 @@
-import { Runnable } from '@tsdi/core';
 import { lang, Singleton, isFunction, Injector, Type } from '@tsdi/ioc';
 import { Assert } from '../assert/assert';
 import { SuiteDescribe, ICaseDescribe } from '../reports/interface';
