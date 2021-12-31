@@ -157,16 +157,16 @@ export class KafkaClient extends AbstractClient {
             if (isUndefined(rawMessage.headers?.[KafkaHeaders.CORRELATION_ID])) {
                 return;
             }
-            const { err, response, isDisposed, id } = await this.deserializer.deserialize(rawMessage);
+            const { err, response, disposed, id } = await this.deserializer.deserialize(rawMessage);
             const callback = this.routing.get(id);
             if (!callback) {
                 return;
             }
-            if (err || isDisposed) {
+            if (err || disposed) {
                 return callback({
                     err,
                     response,
-                    isDisposed,
+                    disposed,
                 });
             }
             callback({

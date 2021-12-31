@@ -79,17 +79,17 @@ export class MQTTClient extends AbstractClient {
     public createResponseCallback(): (channel: string, buffer: Buffer) => any {
         return async (channel: string, buffer: Buffer) => {
             const packet = JSON.parse(buffer.toString());
-            const { err, response, isDisposed, id } = await this.deserializer.deserialize(packet);
+            const { err, response, disposed, id } = await this.deserializer.deserialize(packet);
 
             const callback = this.routing.get(id);
             if (!callback) {
                 return undefined;
             }
-            if (isDisposed || err) {
+            if (disposed || err) {
                 return callback({
                     err,
                     response,
-                    isDisposed: true,
+                    disposed: true,
                 });
             }
             callback({

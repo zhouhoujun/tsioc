@@ -177,7 +177,7 @@ export class KafkaServer extends AbstractServer {
         this.assignReplyPartition(replyPartition, response);
         this.assignCorrelationIdHeader(correlationId, response);
         this.assignErrorHeader(message, response);
-        this.assignIsDisposedHeader(message, response);
+        this.assigndisposedHeader(message, response);
         const messages = [response];
 
         return this.producer.send({
@@ -188,7 +188,7 @@ export class KafkaServer extends AbstractServer {
     }
 
 
-    public assignIsDisposedHeader(
+    public assigndisposedHeader(
         outgoingResponse: TrasportResponse,
         outgoingMessage: Message,
     ) {

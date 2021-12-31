@@ -207,6 +207,9 @@ export interface ProtocolRouteMappingMetadata extends RouteMappingMetadata {
     version?: string;
 }
 
+/**
+ * mapping type reflect.
+ */
 export interface MappingReflect<T = any> extends TypeReflect<T> {
     /**
      * protocol type.
