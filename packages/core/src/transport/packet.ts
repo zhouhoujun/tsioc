@@ -14,6 +14,6 @@ export interface WritePacket<T = any> {
     body?: any;
 }
 
-export type TrasportEvent = ReadPacket;
-export type TrasportRequest = Required<{ id: string }> & ReadPacket;
-export type TrasportResponse = Required<{ id: string }> & WritePacket;
+export type TransportEvent = ReadPacket;
+export type TransportRequest = Required<{ id: string }> & ReadPacket;
+export type TransportResponse = Required<{ id: string }> & WritePacket;

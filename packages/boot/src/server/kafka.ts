@@ -1,5 +1,5 @@
 import { Inject, Injectable, isNil, ModuleLoader, OperationFactoryResolver, Injector, getClass } from '@tsdi/ioc';
-import { AbstractServer, Deserializer, Serializer, TrasportResponse } from '@tsdi/core';
+import { AbstractServer, Deserializer, Serializer, TransportResponse } from '@tsdi/core';
 import { Level } from '@tsdi/logs';
 import { Observable } from 'rxjs';
 
@@ -168,7 +168,7 @@ export class KafkaServer extends AbstractServer {
     }
 
     public sendMessage(
-        message: TrasportResponse,
+        message: TransportResponse,
         topic: string,
         replyPartition: string,
         correlationId: string,
@@ -189,7 +189,7 @@ export class KafkaServer extends AbstractServer {
 
 
     public assigndisposedHeader(
-        outgoingResponse: TrasportResponse,
+        outgoingResponse: TransportResponse,
         outgoingMessage: Message,
     ) {
         if (!outgoingResponse.disposed || !outgoingMessage.headers) {
@@ -199,7 +199,7 @@ export class KafkaServer extends AbstractServer {
     }
 
     public assignErrorHeader(
-        outgoingResponse: TrasportResponse,
+        outgoingResponse: TransportResponse,
         outgoingMessage: Message,
     ) {
         if (!outgoingResponse.err || !outgoingMessage.headers) {

@@ -1,13 +1,13 @@
-import { AbstractServer, Deserializer, TrasportEvent, TrasportRequest } from '@tsdi/core';
+import { AbstractServer, Deserializer, TransportEvent, TransportRequest } from '@tsdi/core';
 import { isUndefined, ProviderIn } from '@tsdi/ioc';
 
 
 @ProviderIn(AbstractServer, Deserializer)
-export class IncomingRequestDeserializer implements Deserializer<TrasportRequest | TrasportEvent> {
+export class IncomingRequestDeserializer implements Deserializer<TransportRequest | TransportEvent> {
     deserialize(
         value: any,
         options?: Record<string, any>,
-    ): TrasportRequest | TrasportEvent {
+    ): TransportRequest | TransportEvent {
         return this.isExternal(value) ? this.mapToSchema(value, options) : value;
     }
 
@@ -16,8 +16,8 @@ export class IncomingRequestDeserializer implements Deserializer<TrasportRequest
             return true;
         }
         if (
-            !isUndefined((value as TrasportRequest).pattern) ||
-            !isUndefined((value as TrasportRequest).data)
+            !isUndefined((value as TransportRequest).pattern) ||
+            !isUndefined((value as TransportRequest).data)
         ) {
             return false;
         }
@@ -27,7 +27,7 @@ export class IncomingRequestDeserializer implements Deserializer<TrasportRequest
     mapToSchema(
         value: any,
         options?: Record<string, any>,
-    ): TrasportRequest | TrasportEvent {
+    ): TransportRequest | TransportEvent {
         if (!options) {
             return {
                 pattern: undefined,

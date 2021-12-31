@@ -5,7 +5,7 @@ import { mergeMap } from 'rxjs/operators';
 import { Client } from '../../client';
 import { OnDispose } from '../../lifecycle';
 import { InvalidMessageError } from '../error';
-import { TrasportResponse, TrasportEvent, TrasportRequest, ReadPacket, WritePacket } from '../packet';
+import { TransportResponse, TransportEvent, TransportRequest, ReadPacket, WritePacket } from '../packet';
 import { Deserializer, EmptyDeserializer } from '../deserializer';
 import { Serializer, EmptySerializer } from '../serializer';
 import { Pattern, stringify } from '../pattern';
@@ -23,8 +23,8 @@ export abstract class AbstractClient implements Client, OnDispose {
 
     @Logger() protected readonly logger!: ILogger;
 
-    @Inject() protected serializer!: Serializer<TrasportEvent | TrasportRequest>;
-    @Inject() protected deserializer!: Deserializer<TrasportResponse>;
+    @Inject() protected serializer!: Serializer<TransportEvent | TransportRequest>;
+    @Inject() protected deserializer!: Deserializer<TransportResponse>;
 
     protected routing = new Map<string, Function>();
 

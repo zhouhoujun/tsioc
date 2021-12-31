@@ -33,7 +33,7 @@ export * from './context.impl';
 
 export * from './Application';
 
-export * from './trasport';
+export * from './transport';
 
 // auth
 export * from './auth';

@@ -3,9 +3,9 @@ import { Context } from './context';
 import { PipeTransform } from '../pipes/pipe';
 
 /**
- * trasport parameter argument of an {@link TrasportArgumentResolver}.
+ * transport parameter argument of an {@link TransportArgumentResolver}.
  */
-export interface TrasportParameter<T = any> extends Parameter<T> {
+export interface TransportParameter<T = any> extends Parameter<T> {
     /**
      * field scope.
      */
@@ -25,19 +25,19 @@ export interface TrasportParameter<T = any> extends Parameter<T> {
 }
 
 /**
- * Resolver for an trasport argument of an {@link OperationInvoker}.
+ * Resolver for an transport argument of an {@link OperationInvoker}.
  */
-export interface TrasportArgumentResolver<C extends Context = Context> extends OperationArgumentResolver<C> {
+export interface TransportArgumentResolver<C extends Context = Context> extends OperationArgumentResolver<C> {
     /**
      * Return whether an argument of the given {@code parameter} can be resolved.
      * @param parameter argument type
      * @param ctx InvocationContext
      */
-    canResolve(parameter: TrasportParameter, ctx: InvocationContext<C>): boolean;
+    canResolve(parameter: TransportParameter, ctx: InvocationContext<C>): boolean;
     /**
      * Resolves an argument of the given {@code parameter}.
      * @param parameter argument type
      * @param ctx InvocationContext
      */
-    resolve<T>(parameter: TrasportParameter<T>, ctx: InvocationContext<C>): T;
+    resolve<T>(parameter: TransportParameter<T>, ctx: InvocationContext<C>): T;
 }

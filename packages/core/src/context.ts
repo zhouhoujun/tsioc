@@ -12,8 +12,8 @@ import { ServerSet } from './server';
 import { ModuleOption } from './module.factory';
 import { ModuleRef } from './module.ref';
 import { ApplicationArguments } from './args';
-import { Pattern } from './trasport/pattern';
-import { TrasportResponse } from './trasport/packet';
+import { Pattern } from './transport/pattern';
+import { TransportResponse } from './transport/packet';
 
 
 /**
@@ -54,9 +54,9 @@ export abstract class ApplicationContext implements Destroyable {
      * send message.
      * @param pattern message pattern. type of {@link Pattern}.
      * @param data send data.
-     * @returns instance of {@link TrasportResponse}.
+     * @returns instance of {@link TransportResponse}.
      */
-    abstract send<TResult = TrasportResponse, TInput = any>(pattern: Pattern, data: TInput): Observable<TResult>;
+    abstract send<TResult = TransportResponse, TInput = any>(pattern: Pattern, data: TInput): Observable<TResult>;
     /**
      * get log manager.
      */

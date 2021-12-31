@@ -1,4 +1,4 @@
-import { Module, Message, StartupService, ApplicationContext, Configuration, ComponentScan, OnDispose, Runnable, Middlewares } from '../src';
+import { Module, Message, StartupService, ApplicationContext, Configuration, ComponentScan, OnDispose, Runnable, Middlewares, TransportModule } from '../src';
 import { Injectable, Inject, OnDestroy, lang } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
 import { ILogger, LogConfigure, Logger, LogModule } from '@tsdi/logs';
@@ -85,7 +85,8 @@ export class SubMessageQueue extends Middlewares {
 @Module({
     exports: [
         AopModule,
-        LogModule
+        LogModule,
+        TransportModule
     ]
 })
 export class SharedModule {
@@ -149,6 +150,7 @@ export class StatupModule { }
 
 @Module({
     imports: [
+        TransportModule,
         SharedModule,
         StatupModule,
         ServerBootstrapModule,

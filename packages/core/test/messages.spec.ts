@@ -1,4 +1,4 @@
-import { Application, Context, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Middleware, Module, Middlewares } from '../src';
+import { Application, Context, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Middleware, Module, Middlewares, TransportModule } from '../src';
 import expect = require('expect');
 import { Injector, Injectable, lang, ArgumentError, MissingParameterError } from '@tsdi/ioc';
 import { lastValueFrom, of } from 'rxjs';
@@ -154,6 +154,7 @@ class DeviceAModule {
 
 @Module({
     imports: [
+        TransportModule,
         DeviceManageModule,
         DeviceAModule
     ],

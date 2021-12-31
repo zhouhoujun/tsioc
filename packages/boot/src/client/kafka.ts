@@ -1,5 +1,5 @@
 import { Inject, Injectable, isUndefined, ModuleLoader } from '@tsdi/ioc';
-import { AbstractClient, Deserializer, TrasportRequest, TrasportEvent, ReadPacket, Serializer, WritePacket } from '@tsdi/core';
+import { AbstractClient, Deserializer, TransportRequest, TransportEvent, ReadPacket, Serializer, WritePacket } from '@tsdi/core';
 import { Level } from '@tsdi/logs';
 import {
     BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerGroupJoinEvent, Producer,
@@ -214,7 +214,7 @@ export class KafkaClient extends AbstractClient {
         }
     }
 
-    protected assignPacketId(packet: ReadPacket): TrasportRequest {
+    protected assignPacketId(packet: ReadPacket): TransportRequest {
         const id = uuid();
         return { ...packet, id };
     }
@@ -231,7 +231,7 @@ export class KafkaClient extends AbstractClient {
         return `${pattern}.reply`;
     }
 
-    protected dispatchEvent(packet: TrasportEvent): Promise<any> {
+    protected dispatchEvent(packet: TransportEvent): Promise<any> {
         const topic = this.normalizePattern(packet.pattern);
         const messages = [this.serializer.serialize(packet.data)];
         return this.producer.send({

@@ -11,7 +11,7 @@ import { DefaultRouteRefFactoryResovler } from './middlewares/route_ref';
 import { DefaultMiddlewareRefFactoryResolver } from './middlewares/middleware_ref';
 
 /*
- * trasport module.
+ * transport module.
  */
 @Module({
     providedIn: 'root',
@@ -23,6 +23,6 @@ import { DefaultMiddlewareRefFactoryResolver } from './middlewares/middleware_re
         ParseStringPipe, ParseBoolPipe, ParseEnumPipe, ParseFloatPipe, ParseIntPipe, ParseNumberPipe
     ]
 })
-export class TrasportModule {
+export class TransportModule {
 
 }

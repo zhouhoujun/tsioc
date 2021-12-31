@@ -2,14 +2,14 @@ import {
     Abstract, EMPTY, InvocationContext, isArray, isDefined, isFunction, isNil,
     PropertyMetadata, tokenId, Type, OperationInvoker, ArgumentError, object2string
 } from '@tsdi/ioc';
-import { TrasportArgumentResolver, TrasportParameter } from '../resolver';
+import { TransportArgumentResolver, TransportParameter } from '../resolver';
 import { Context } from '../context';
 import { PipeTransform } from '../../pipes/pipe';
 
 /**
  * model parameter argument of an {@link OperationInvoker}.
  */
-export interface ModelArgumentResolver<C extends Context = Context> extends TrasportArgumentResolver<C> { }
+export interface ModelArgumentResolver<C extends Context = Context> extends TransportArgumentResolver<C> { }
 
 /**
  * db property metadata. model parameter of {@link ModelFieldResolver} 
@@ -294,11 +294,11 @@ export abstract class AbstractModelArgumentResolver<C extends Context = Context>
 
     abstract get resolvers(): ModelFieldResolver[];
 
-    canResolve(parameter: TrasportParameter<any>, ctx: InvocationContext<C>): boolean {
+    canResolve(parameter: TransportParameter<any>, ctx: InvocationContext<C>): boolean {
         return this.isModel(parameter.provider as Type ?? parameter.type);
     }
 
-    resolve<T>(parameter: TrasportParameter<T>, ctx: InvocationContext<C>): T {
+    resolve<T>(parameter: TransportParameter<T>, ctx: InvocationContext<C>): T {
         const classType = (parameter.provider ?? parameter.type) as Type;
         const fields = parameter.field ? ctx.arguments.request.body[parameter.field] : ctx.arguments.request.body;
         if (!fields) {

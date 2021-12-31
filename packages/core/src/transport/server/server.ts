@@ -3,7 +3,7 @@ import { ILogger, Logger } from '@tsdi/logs';
 import { catchError, finalize, Observable, Subscription, EMPTY, isObservable, connectable, Subject, from, of } from 'rxjs';
 import { OnDispose } from '../../lifecycle';
 import { Server } from '../../server';
-import { TrasportEvent, TrasportRequest, TrasportResponse, ReadPacket, WritePacket } from '../packet';
+import { TransportEvent, TransportRequest, TransportResponse, ReadPacket, WritePacket } from '../packet';
 import { Deserializer, EmptyDeserializer } from '../deserializer';
 import { EmptySerializer, Serializer } from '../serializer';
 import { Pattern, stringify } from '../pattern';
@@ -18,8 +18,8 @@ export abstract class AbstractServer implements Server, OnDispose {
 
     @Logger() protected readonly logger!: ILogger;
 
-    @Inject() protected serializer!: Serializer<TrasportResponse>;
-    @Inject() protected deserializer!: Deserializer<TrasportRequest | TrasportEvent>;
+    @Inject() protected serializer!: Serializer<TransportResponse>;
+    @Inject() protected deserializer!: Deserializer<TransportRequest | TransportEvent>;
 
     protected readonly handlers = new Map<string, MessageHandler>();
 

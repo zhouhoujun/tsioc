@@ -11,7 +11,7 @@ import { PipeTransform } from '../../pipes/pipe';
 import { Context } from '../context';
 import { CanActive } from '../guard';
 import { MiddlewareType } from './middlewares';
-import { TrasportArgumentResolver, TrasportParameter } from '../resolver';
+import { TransportArgumentResolver, TransportParameter } from '../resolver';
 import { ResultValue } from '../result';
 import { RouteRef, RouteOption, RouteRefFactory, RouteRefFactoryResolver, joinprefix } from './route';
 import { ProtocolRouteMappingMetadata, RouteMappingMetadata } from './router';
@@ -238,10 +238,10 @@ export function missingPipeError(parameter: Parameter, type?: ClassType, method?
     return new ArgumentError(`missing pipe to transform argument ${parameter.paramName} type, method ${method} of class ${type}`);
 }
 
-const primitiveResolvers: TrasportArgumentResolver[] = [
-    composeResolver<TrasportArgumentResolver, TrasportParameter>(
+const primitiveResolvers: TransportArgumentResolver[] = [
+    composeResolver<TransportArgumentResolver, TransportParameter>(
         (parameter, ctx) => ctx.arguments instanceof Context && isDefined(parameter.field ?? parameter.paramName),
-        composeResolver<TrasportArgumentResolver>(
+        composeResolver<TransportArgumentResolver>(
             (parameter, ctx) => isPrimitiveType(parameter.type),
             {
                 canResolve(parameter, ctx) {
@@ -288,7 +288,7 @@ const primitiveResolvers: TrasportArgumentResolver[] = [
                 }
             }
         ),
-        composeResolver<TrasportArgumentResolver, TrasportParameter>(
+        composeResolver<TransportArgumentResolver, TransportParameter>(
             (parameter) => isPrimitiveType(parameter.provider) && (parameter.mutil === true || parameter.type === Array),
             {
                 canResolve(parameter, ctx) {

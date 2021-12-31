@@ -2,9 +2,9 @@ import { Observable } from 'rxjs';
 import { Context } from './context';
 
 /**
- * Trasport handler.
+ * Transport handler.
  */
-export interface TrasportHandler<T> {
+export interface TransportHandler<T> {
     /**
      * route handler.
      */
@@ -12,14 +12,14 @@ export interface TrasportHandler<T> {
 }
 
 /**
- * Trasport interceptor.
+ * Transport interceptor.
  */
-export interface TrasportInterceptor<T = any, Re = any> {
+export interface TransportInterceptor<T = any, Re = any> {
     /**
      * the method to implemet interceptor.
      * @param context context.
      * @param next route handler.
      */
-    intercept(context: Context, next: TrasportHandler<T>): Observable<Re>;
+    intercept(context: Context, next: TransportHandler<T>): Observable<Re>;
 }
 

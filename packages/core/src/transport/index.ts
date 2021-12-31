@@ -13,7 +13,7 @@ export * from './result';
 export * from './model';
 export * from './middlewares';
 export * from './metadata';
-export * from './trasport';
+export * from './transport';
 
 export * from './client';
 export * from './server';

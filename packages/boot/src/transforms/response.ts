@@ -1,10 +1,10 @@
-import { AbstractClient, Deserializer, TrasportResponse } from '@tsdi/core';
+import { AbstractClient, Deserializer, TransportResponse } from '@tsdi/core';
 import { isUndefined, ProviderIn } from '@tsdi/ioc';
 
 
 @ProviderIn(AbstractClient, Deserializer)
-export class IncomingResponseDeserializer implements Deserializer<TrasportResponse> {
-    deserialize(value: any, options?: Record<string, any>): TrasportResponse {
+export class IncomingResponseDeserializer implements Deserializer<TransportResponse> {
+    deserialize(value: any, options?: Record<string, any>): TransportResponse {
         return this.isExternal(value) ? this.mapToSchema(value) : value;
     }
 
@@ -13,16 +13,16 @@ export class IncomingResponseDeserializer implements Deserializer<TrasportRespon
             return true;
         }
         if (
-            !isUndefined((value as TrasportResponse).err) ||
-            !isUndefined((value as TrasportResponse).response) ||
-            !isUndefined((value as TrasportResponse).disposed)
+            !isUndefined((value as TransportResponse).err) ||
+            !isUndefined((value as TransportResponse).response) ||
+            !isUndefined((value as TransportResponse).disposed)
         ) {
             return false;
         }
         return true;
     }
 
-    mapToSchema(value: any): TrasportResponse {
+    mapToSchema(value: any): TransportResponse {
         return {
             id: value && value.id,
             response: value,
