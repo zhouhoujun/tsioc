@@ -1,5 +1,5 @@
 import { Type } from '@tsdi/ioc';
-import { Application, ApplicationContext, ApplicationOption, BootstrapOption } from '@tsdi/core';
+import { Application, ApplicationContext, ApplicationOption, BootstrapOption, TransportModule } from '@tsdi/core';
 
 
 
@@ -12,7 +12,7 @@ import { Application, ApplicationContext, ApplicationOption, BootstrapOption } f
 export class BootApplication extends Application {
 
     protected override getDeps() {
-        return [...super.getDeps()];
+        return [TransportModule, ...super.getDeps()];
     }
 
     protected override initRoot() {

@@ -150,7 +150,6 @@ export class StatupModule { }
 
 @Module({
     imports: [
-        TransportModule,
         SharedModule,
         StatupModule,
         ServerBootstrapModule,

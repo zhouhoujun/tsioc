@@ -1,8 +1,8 @@
 import { ApplicationContext, Application, formatDate } from '../src';
 import { After, Before, Suite, Test } from '@tsdi/unit';
+import { ConfigureLoggerManager } from '@tsdi/logs';
 import expect = require('expect');
 import { ServerMainModule, configurtion } from './demo';
-import { ConfigureLoggerManager } from '@tsdi/logs';
 import * as log4js from 'log4js';
 import * as fs from 'fs';
 import * as path from 'path';

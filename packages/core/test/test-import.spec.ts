@@ -1,8 +1,8 @@
-import { ModuleA, ModuleB, ClassSevice, SubMessageQueue, SocketService, StatupModule, TestService } from './demo';
-import { Application } from '../src';
+import { ServerLogsModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import * as net from 'net';
-import { ServerLogsModule } from '@tsdi/platform-server';
+import { ModuleA, ModuleB, ClassSevice, SubMessageQueue, SocketService, StatupModule, TestService } from './demo';
+import { Application } from '../src';
 
 
 describe('di module', () => {
