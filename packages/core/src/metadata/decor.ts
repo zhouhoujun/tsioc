@@ -1,7 +1,7 @@
 import {
     isUndefined, EMPTY_OBJ, isArray, lang, Type, createDecorator, ProviderType,
     ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes,
-    OperationFactoryResolver, PatternMetadata, MethodPropDecorator, Token, PropertyMetadata, ArgumentError, object2string
+    OperationFactoryResolver, PatternMetadata, MethodPropDecorator, Token, PropertyMetadata, ArgumentError, object2string, ClassMetadata, InjectableMetadata
 } from '@tsdi/ioc';
 import { StartupService, ServiceSet } from '../service';
 import { PipeMetadata, ComponentScanMetadata, ScanReflect, BeanMetadata } from './meta';
@@ -230,13 +230,9 @@ export const Pipe: Pipe = createDecorator<PipeMetadata>('Pipe', {
 export interface Bean {
     /**
      * Bean decorator. bean provider, provider the value of the method or property for Confgiuration.
-     */
-    (): PropertyDecorator;
-    /**
-     * Bean decorator. bean provider, provider the value of the method or property for Confgiuration.
      * @param {Token} provide the value of the method or property for the provide token.
      */
-    (provide: Token): MethodPropDecorator;
+    (provide?: Token): MethodPropDecorator;
 }
 
 export const Bean: Bean = createDecorator<BeanMetadata>('Bean', {
@@ -268,7 +264,7 @@ export interface Configuration {
  * Configuartion decorator, define the class as auto Configuration provider.
  * @Configuartion
  */
-export const Configuration: Configuration = createDecorator<PatternMetadata>('Configuration', {
+export const Configuration: Configuration = createDecorator<InjectableMetadata>('Configuration', {
     actionType: [ActionTypes.annoation],
     design: {
         afterAnnoation: (ctx, next) => {
@@ -281,14 +277,12 @@ export const Configuration: Configuration = createDecorator<PatternMetadata>('Co
                     if (d.decorType === 'method') {
                         return {
                             provide,
-                            useFactory: () => injector.invoke(type, key),
-                            singleton: true
+                            useFactory: () => injector.invoke(type, key)
                         } as ProviderType
                     } else {
                         return {
                             provide,
-                            useFactory: () => injector.get(type)[key],
-                            singleton: true
+                            useFactory: () => injector.get(type)[key]
                         } as ProviderType
                     }
                 })
@@ -297,6 +291,7 @@ export const Configuration: Configuration = createDecorator<PatternMetadata>('Co
         }
     },
     appendProps: (meta) => {
+        // meta.providedIn = 'configuration';
         meta.singleton = true;
     }
 });

@@ -51,6 +51,9 @@ export interface ScanReflect extends TypeReflect {
  * @extends {TypeMetadata}
  */
 export interface PipeMetadata extends ProviderMetadata {
+    /**
+     * pipe class type.
+     */
     type?: Type;
     /**
      * name of pipe.

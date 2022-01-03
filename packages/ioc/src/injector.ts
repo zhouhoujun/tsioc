@@ -444,17 +444,17 @@ export abstract class Platform implements OnDestroy {
      * @param scope 
      * @param injector 
      */
-    abstract setInjector(scope: ClassType | string, injector: Injector): void;
+    abstract setInjector(scope: InjectorScope, injector: Injector): void;
     /**
      * get injector the type registered in.
      * @param scope
      */
-    abstract getInjector(scope: ClassType | 'root' | 'platform' | string): Injector;
+    abstract getInjector(scope: InjectorScope): Injector;
     /**
      * remove injector of scope.
      * @param scope 
      */
-    abstract removeInjector(scope: ClassType | 'root' | 'platform' | string): void;
+    abstract removeInjector(scope: InjectorScope): void;
     /**
      * get the type private providers.
      * @param type
@@ -537,7 +537,7 @@ export const INJECT_IMPL = {
      * @param parent 
      * @param scope 
      */
-    create(providers: ProviderType[], parent?: Injector, scope?: string | InjectorScope): Injector {
+    create(providers: ProviderType[], parent?: Injector, scope?: InjectorScope): Injector {
         throw new Error('not implemented.');
     }
 };
@@ -587,7 +587,7 @@ export const enum FnType {
 /**
  * injector scope.
  */
-export type InjectorScope = Type | 'platform' | 'root' | 'provider' | 'invocation';
+export type InjectorScope = ClassType | 'platform' | 'root' | 'provider' | 'invocation' | 'configuration';
 
 export const enum OptionFlags {
     Optional = 1 << 4,

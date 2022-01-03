@@ -82,6 +82,10 @@ export class DefaultInjector extends Injector {
             case 'invocation':
                 this.lifecycle = this.createLifecycle();
                 break;
+            case 'configuration':
+                this.platform().setInjector(scope, this);
+                this.lifecycle = this.createLifecycle();
+                break;
             default:
                 if (scope) this.platform().setInjector(scope, this);
                 injectAlias.forEach(tk => this.records.set(tk, val));
@@ -527,7 +531,7 @@ const isRootAlias = (token: any) => token === Injector || token === INJECTOR || 
 const isInjectAlias = (token: any) => token === Injector || token === INJECTOR;
 
 INJECT_IMPL.create = (providers: ProviderType[], parent?: Injector, scope?: InjectorScope) => {
-    if (scope === 'invocation') {
+    if (scope === 'invocation' || scope === 'configuration') {
         return new StaticInjector(providers, parent, scope);
     }
     return new DefaultInjector(providers, parent!, scope);

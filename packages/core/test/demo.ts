@@ -1,4 +1,7 @@
-import { Module, Message, StartupService, ApplicationContext, Configuration, ComponentScan, OnDispose, Runnable, Middlewares, TransportModule } from '../src';
+import {
+    Module, Message, StartupService, ApplicationContext, Configuration, ComponentScan, OnDispose,
+    Runnable, Middlewares, TransportModule, ApplicationConfiguration, Bean, Settings
+} from '../src';
 import { Injectable, Inject, OnDestroy, lang } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
 import { ILogger, LogConfigure, Logger, LogModule } from '@tsdi/logs';
@@ -165,7 +168,7 @@ export class StatupModule { }
 export class ServerMainModule { }
 
 export const configurtion = {
-    logConfig: <LogConfigure>{
+    logConfig: {
         // adapter: 'console',
         // config: {
         //     level: 'trace'
@@ -195,5 +198,17 @@ export const configurtion = {
             },
             pm2: true
         }
+    } as LogConfigure
+} as ApplicationConfiguration;
+
+@Configuration()
+export class ConfiguraionManger {
+
+    @Bean()
+    settings(): Settings {
+        return {
+            
+        };
     }
-} as Configuration;
+
+}

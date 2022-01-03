@@ -4,7 +4,7 @@ import { AnnotationType, ClassType, Type } from '../types';
 import { cleanObj, getParentClass } from '../utils/lang';
 import { EMPTY, isArray, isFunction } from '../utils/chk';
 import { chain, Handler } from '../handler';
-import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata, AutorunMetadata, InjectableMetadata } from './meta';
+import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata, AutorunMetadata, InjectableMetadata, MethodMetadata } from './meta';
 import { ctorName, DecoratorType, DecorContext, DecorDefine, Decors, ActionTypes, TypeReflect } from './type';
 import { TypeDefine } from './typedef';
 import { Platform } from '../injector';
@@ -346,13 +346,16 @@ export const InitMethodDesignParams = (ctx: DecorContext, next: () => void) => {
         ctx.reflect.class.setParameters(ctx.propertyKey,
             (Reflect.getMetadata('design:paramtypes', ctx.target, ctx.propertyKey) as Type[]).map((type, idx) => ({ type, paramName: names[idx] })));
     }
+    if(!(ctx.metadata as MethodMetadata).type) {
+        (ctx.metadata as MethodMetadata).type = Reflect.getMetadata('design:returntype', ctx.target, ctx.propertyKey);
+    }
     return next();
 }
 
 const methodProvidersDecors: Record<string, boolean> = { '@Providers': true, '@Autowired': true };
 export const MethodProvidersAction = (ctx: DecorContext, next: () => void) => {
     if (methodProvidersDecors[ctx.decor]) {
-        const mpdrs = (ctx.metadata as ProvidersMetadata).providers;
+        const mpdrs = (ctx.metadata as MethodMetadata).providers;
         if (mpdrs) {
             ctx.reflect.class.setMethodProviders(ctx.propertyKey, mpdrs)
         }

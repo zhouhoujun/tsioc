@@ -165,6 +165,10 @@ export interface PropertyMetadata extends ProvideMetadata {
  */
 export interface MethodMetadata {
     /**
+     * method returnning type.
+     */
+    type?: ClassType;
+    /**
      * param providers
      *
      * @type {ProviderType[]}
@@ -235,7 +239,7 @@ export interface ProvidedInMetadata {
     /**
      * the token provided in.
      */
-    providedIn?: Type | 'root' | 'platform';
+    providedIn?: Type | 'root' | 'platform' | 'configuration';
 }
 
 

@@ -1,4 +1,4 @@
-import { Type, LoadType, ProvidersMetadata, Abstract } from '@tsdi/ioc';
+import { Type, LoadType, ProvidersMetadata, Abstract, Injector } from '@tsdi/ioc';
 
 /**
  * application Configuration.
@@ -37,7 +37,7 @@ export interface ApplicationConfiguration extends ProvidersMetadata, Record<stri
      *
      * @type {*}
      */
-    logConfig?: any;
+    logConfig?: Record<string, any>;
     /**
      * custom config key value setting.
      *
@@ -98,25 +98,34 @@ export interface ApplicationConfiguration extends ProvidersMetadata, Record<stri
 }
 
 /**
+ * application settings.
+ */
+@Abstract()
+export abstract class Settings implements Record<string, any> {
+
+}
+
+/**
  * connection options
  */
-export interface ConnectionOptions extends Record<string, any> {
+ @Abstract()
+export abstract class ConnectionOptions implements Record<string, any> {
     asDefault?: boolean;
     name?: string;
     /**
      * db type.
      */
-    type: string;
-    host: string;
-    port: number;
+    abstract get type(): string;
+    abstract get host(): string;
+    abstract get database(): string;
+
+    port?: number;
     username?: string;
     password?: string;
-    database: string;
-    entities?: (string | Type)[];
     /**
-     * models of boot application.
+     * orm modles.
      */
-    models?: (string | Type)[];
+    entities?: (string | Type)[];
     /**
      * repositories of orm.
      */
@@ -158,6 +167,15 @@ export abstract class ConfigureMerger {
  */
 @Abstract()
 export abstract class ConfigureManager {
+    // /**
+    //  * configuration injctor.
+    //  *
+    //  * @readonly
+    //  * @abstract
+    //  * @type {Injector}
+    //  * @memberof ConfigureManager
+    //  */
+    // abstract get injector(): Injector;
     /**
      * use configuration.
      *

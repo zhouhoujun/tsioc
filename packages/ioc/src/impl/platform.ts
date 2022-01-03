@@ -6,7 +6,7 @@ import { Action, ActionSetup } from '../action';
 import { get } from '../metadata/refl';
 import { TypeReflect } from '../metadata/type';
 import { ProviderType, StaticProvider } from '../providers';
-import { Injector, ModuleRef, Platform } from '../injector';
+import { Injector, InjectorScope, ModuleRef, Platform } from '../injector';
 
 
 /**
@@ -61,7 +61,7 @@ export class DefaultPlatform implements Platform {
         this._scopes.set(scope, injector);
     }
 
-    removeInjector(scope: ClassType | 'root' | 'platform'): void {
+    removeInjector(scope: InjectorScope): void {
         this._scopes.delete(scope);
     }
 
@@ -69,7 +69,7 @@ export class DefaultPlatform implements Platform {
      * get injector
      * @param type
      */
-    getInjector<T extends Injector = Injector>(scope: ClassType | 'root' | 'platform'): T {
+    getInjector<T extends Injector = Injector>(scope: InjectorScope): T {
         if (scope === 'platform') {
             return this.injector as T;
         }
