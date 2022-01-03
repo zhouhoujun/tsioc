@@ -1,5 +1,5 @@
 import { PatternMetadata, Type, TypeMetadata } from '@tsdi/ioc';
-import { CanActive } from '../guard';
+import { CanActivate } from '../guard';
 import { Middleware } from '../middlewares/middleware';
 import { Middlewares } from '../middlewares/middlewares';
 
@@ -41,7 +41,7 @@ export interface HandleMetadata extends TypeMetadata, PatternMetadata {
     /**
      * route guards.
      */
-    guards?: Type<CanActive>[],
+    guards?: Type<CanActivate>[],
 
     /**
      * handle parent.

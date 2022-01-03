@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { Middleware, MiddlewareRefFactoryResolver } from '../middlewares/middleware';
 import { Middlewares, MiddlewareType } from '../middlewares/middlewares';
-import { CanActive } from '../guard';
+import { CanActivate } from '../guard';
 import { RouteRefFactoryResolver } from '../middlewares/route';
 import { MappingReflect, ProtocolRouteMappingMetadata, RequestMethod, Router, RouterResolver } from '../middlewares/router';
 import { HandleMetadata, HandlesMetadata, HandleMessagePattern } from './meta';
@@ -50,7 +50,7 @@ export interface Handle {
         /**
         * route guards.
         */
-        guards?: Type<CanActive>[];
+        guards?: Type<CanActivate>[];
     }): HandleDecorator;
     /**
      * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
@@ -72,7 +72,7 @@ export interface Handle {
         /**
         * route guards.
         */
-        guards?: Type<CanActive>[],
+        guards?: Type<CanActivate>[],
     }): HandleDecorator;
     /**
      * RegisterFor decorator, for class. use to define the class as handle register in global handle queue or parent.
@@ -106,7 +106,7 @@ export interface Handle {
  */
 export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePattern>('Handle', {
     actionType: [ActionTypes.annoation, ActionTypes.autorun],
-    props: (parent?: Type<Middlewares> | string | RegExp, options?: { guards?: Type<CanActive>[], parent?: Type<Middlewares> | string, before?: Type<Middleware> }) =>
+    props: (parent?: Type<Middlewares> | string | RegExp, options?: { guards?: Type<CanActivate>[], parent?: Type<Middlewares> | string, before?: Type<Middleware> }) =>
         (isString(parent) || isRegExp(parent) ? ({ route: parent, ...options }) : ({ parent, ...options })) as HandleMetadata & HandleMessagePattern,
     reflect: {
         class: (ctx, next) => {
@@ -192,9 +192,9 @@ export interface RouteMapping {
      * route decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
-     * @param {Type<CanActive>[]} [guards] the guards for the route.
+     * @param {Type<CanActivate>[]} [guards] the guards for the route.
      */
-    (route: string, guards?: Type<CanActive>[]): ClassMethodDecorator;
+    (route: string, guards?: Type<CanActivate>[]): ClassMethodDecorator;
 
     /**
      * route decorator. define the controller method as an route.
@@ -220,7 +220,7 @@ export interface RouteMapping {
         /**
          * route guards.
          */
-        guards?: Type<CanActive>[],
+        guards?: Type<CanActivate>[],
         /**
          * middlewares for the route.
          */
@@ -255,7 +255,7 @@ export interface RouteMapping {
         /**
          * route guards.
          */
-        guards?: Type<CanActive>[];
+        guards?: Type<CanActivate>[];
         /**
          * middlewares for the route.
          */

@@ -1,7 +1,7 @@
 import { ClassMethodDecorator, createDecorator, isArray, isString, lang, Type } from '@tsdi/ioc';
 import {
     MappingReflect, MiddlewareType, RouteMappingMetadata, ProtocolRouteMappingMetadata,
-    Router, PipeTransform, CanActive, RouteRefFactoryResolver
+    Router, PipeTransform, CanActivate, RouteRefFactoryResolver
 } from '@tsdi/core';
 import { HttpRouter } from '../router';
 import { HttpRequestMethod } from '../status';
@@ -139,7 +139,7 @@ export interface RouteMethodDecorator {
         /**
          * route guards.
          */
-        guards?: Type<CanActive>[],
+        guards?: Type<CanActivate>[],
         /**
          * middlewares for the route.
          */
@@ -167,7 +167,7 @@ export function createRouteDecorator(method: HttpRequestMethod) {
     return createDecorator<ProtocolRouteMappingMetadata>('Route', {
         props: (
             route: string,
-            arg2?: string | { protocol?: string, middlewares: MiddlewareType[], guards?: Type<CanActive>[], contentType?: string, method?: string }
+            arg2?: string | { protocol?: string, middlewares: MiddlewareType[], guards?: Type<CanActivate>[], contentType?: string, method?: string }
         ) => (isString(arg2) ? { route, contentType: arg2 } : { route, ...arg2, method })
     });
 }
@@ -205,7 +205,7 @@ export interface HeadDecorator {
         /**
          * route guards.
          */
-        guards?: Type<CanActive>[],
+        guards?: Type<CanActivate>[],
         /**
          * middlewares for the route.
          */
@@ -257,7 +257,7 @@ export interface OptionsDecorator {
         /**
          * route guards.
          */
-        guards?: Type<CanActive>[],
+        guards?: Type<CanActivate>[],
         /**
          * middlewares for the route.
          */
@@ -308,7 +308,7 @@ export interface GetDecorator {
         /**
          * route guards.
          */
-        guards?: Type<CanActive>[],
+        guards?: Type<CanActivate>[],
         /**
          * middlewares for the route.
          */
@@ -360,7 +360,7 @@ export interface DeleteDecorator {
         /**
          * route guards.
          */
-        guards?: Type<CanActive>[],
+        guards?: Type<CanActivate>[],
         /**
          * middlewares for the route.
          */
@@ -412,7 +412,7 @@ export interface PatchDecorator {
         /**
          * route guards.
          */
-        guards?: Type<CanActive>[],
+        guards?: Type<CanActivate>[],
         /**
          * middlewares for the route.
          */
@@ -464,7 +464,7 @@ export interface PostDecorator {
         /**
          * route guards.
          */
-        guards?: Type<CanActive>[],
+        guards?: Type<CanActivate>[],
         /**
          * middlewares for the route.
          */
@@ -515,7 +515,7 @@ export interface PutDecorator {
         /**
          * route guards.
          */
-        guards?: Type<CanActive>[],
+        guards?: Type<CanActivate>[],
         /**
          * middlewares for the route.
          */

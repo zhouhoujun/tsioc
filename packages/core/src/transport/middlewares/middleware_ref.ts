@@ -2,8 +2,9 @@ import { DestroyCallback, EMPTY, Injector, isFunction, isUndefined, lang, Operat
 import { Middleware, MiddlewareRef, MiddlewareRefFactory, MiddlewareRefFactoryResolver } from './middleware';
 import { HandleMetadata } from '../metadata/meta';
 import { Context } from '../context';
-import { CanActive } from '../guard';
+import { CanActivate } from '../guard';
 import { joinprefix, RouteOption } from './route';
+import { promisify } from '../pattern';
 
 
 /**
@@ -65,7 +66,7 @@ export class DefaultMiddlewareRef<T extends Middleware = Middleware> extends Mid
         return this._url;
     }
 
-    get guards(): Type<CanActive>[] | undefined {
+    get guards(): Type<CanActivate>[] | undefined {
         return this.metadata.guards;
     }
 
@@ -84,7 +85,7 @@ export class DefaultMiddlewareRef<T extends Middleware = Middleware> extends Mid
         if (!ctx.path.startsWith(this.url)) return false;
         if (this.guards && this.guards.length) {
             if (!(await lang.some(
-                this.guards.map(token => () => this.factory.resolve(token)?.canActivate(ctx)),
+                this.guards.map(token => () => promisify(this.factory.resolve(token)?.canActivate(ctx))),
                 vaild => vaild === false))) return false;
         }
         return true;

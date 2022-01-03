@@ -1,4 +1,5 @@
-import { isNumber, isPlainObject, isString } from '@tsdi/ioc';
+import { isNumber, isPlainObject, isPromise, isString } from '@tsdi/ioc';
+import { isObservable, lastValueFrom, Observable } from 'rxjs';
 
 
 /**
@@ -16,7 +17,7 @@ export function stringify(pattern: Pattern): string {
         return `${pattern}`;
     }
 
-    if(!isPlainObject(pattern)) return pattern;
+    if (!isPlainObject(pattern)) return pattern;
 
     const sortedKeys = Object.keys(pattern).sort((a, b) =>
         ('' + a).localeCompare(b),
@@ -32,4 +33,13 @@ export function stringify(pattern: Pattern): string {
 
     const route = sortedPatternParams.join(',');
     return `{${route}}`;
+}
+
+export function promisify<T>(target: T | Observable<T> | Promise<T>): Promise<T> {
+    if (isObservable(target)) {
+        return lastValueFrom(target);
+    } else if (isPromise(target)) {
+        return target;
+    }
+    return Promise.resolve(target);
 }

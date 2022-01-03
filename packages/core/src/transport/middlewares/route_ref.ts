@@ -9,12 +9,13 @@ import { Middleware } from './middleware';
 import { MODEL_RESOLVERS } from '../model/resolver';
 import { PipeTransform } from '../../pipes/pipe';
 import { Context } from '../context';
-import { CanActive } from '../guard';
+import { CanActivate } from '../guard';
 import { MiddlewareType } from './middlewares';
 import { TransportArgumentResolver, TransportParameter } from '../resolver';
 import { ResultValue } from '../result';
 import { RouteRef, RouteOption, RouteRefFactory, RouteRefFactoryResolver, joinprefix } from './route';
 import { ProtocolRouteMappingMetadata, RouteMappingMetadata } from './router';
+import { promisify } from '../pattern';
 
 
 
@@ -65,7 +66,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         return this._url;
     }
 
-    get guards(): Type<CanActive>[] | undefined {
+    get guards(): Type<CanActivate>[] | undefined {
         return this.metadata.guards;
     }
 
@@ -95,7 +96,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         if (!ctx.path.startsWith(this.url)) return null;
         if (this.guards && this.guards.length) {
             if (!(await lang.some(
-                this.guards.map(token => () => this.factory.resolve(token)?.canActivate(ctx)),
+                this.guards.map(token => () => promisify(this.factory.resolve(token)?.canActivate(ctx))),
                 vaild => vaild === false))) return null;
         }
         const meta = this.getRouteMetaData(ctx);
@@ -103,7 +104,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         let rmeta = meta.metadata as RouteMappingMetadata;
         if (rmeta.guards && rmeta.guards.length) {
             if (!(await lang.some(
-                rmeta.guards.map(token => () => this.factory.resolve(token)?.canActivate(ctx)),
+                rmeta.guards.map(token => () => promisify(this.factory.resolve(token)?.canActivate(ctx))),
                 vaild => vaild === false))) {
                 ctx.status = 403;
                 return null;

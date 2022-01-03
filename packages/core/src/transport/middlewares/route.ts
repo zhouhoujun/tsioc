@@ -1,6 +1,6 @@
 import { Abstract, Destroyable, DestroyCallback, DispatchHandler, Injector, InvokeOption, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
 import { Context } from '../context';
-import { CanActive } from '../guard';
+import { CanActivate } from '../guard';
 
 
 /**
@@ -24,7 +24,7 @@ export abstract class Route<T extends Context = Context> implements DispatchHand
     /**
      * route guards.
      */
-    abstract get guards(): Type<CanActive>[] | undefined;
+    abstract get guards(): Type<CanActivate>[] | undefined;
     /**
      * protocols.
      */
@@ -60,7 +60,7 @@ export abstract class RouteRef<T = any> extends Route implements Destroyable, On
     /**
      * route guards.
      */
-    abstract get guards(): Type<CanActive>[] | undefined;
+    abstract get guards(): Type<CanActivate>[] | undefined;
     /**
      * protocols.
      */

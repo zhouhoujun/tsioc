@@ -3,7 +3,7 @@ import { Context } from '../context';
 import { Route } from './route';
 import { Middlewares, MiddlewareType } from './middlewares';
 import { PipeTransform } from '../../pipes/pipe';
-import { CanActive } from '../guard';
+import { CanActivate } from '../guard';
 import { Middleware } from './middleware';
 
 
@@ -190,7 +190,7 @@ export interface RouteMappingMetadata {
     /**
      * route guards.
      */
-    guards?: Type<CanActive>[];
+    guards?: Type<CanActivate>[];
 }
 
 /**

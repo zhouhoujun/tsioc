@@ -1,6 +1,6 @@
 import { Abstract, Destroyable, DestroyCallback, DispatchHandler, Injector, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
 import { Context } from '../context';
-import { CanActive } from '../guard';
+import { CanActivate } from '../guard';
 import { Route, RouteOption } from './route';
 
 
@@ -52,7 +52,7 @@ export abstract class MiddlewareRef<T extends Middleware = Middleware> extends R
     /**
      * route guards.
      */
-    abstract get guards(): Type<CanActive>[] | undefined;
+    abstract get guards(): Type<CanActivate>[] | undefined;
     /**
      * protocols.
      */

@@ -1,12 +1,13 @@
+import { Observable } from 'rxjs';
 import { Context } from './context';
 
 /**
  * route Guard.
  */
-export interface CanActive<T extends Context = Context> {
+export interface CanActivate<T extends Context = Context> {
     /**
      * guard.
      * @param ctx 
      */
-    canActivate(ctx: T): boolean | Promise<boolean>
+    canActivate(ctx: T): boolean | Promise<boolean> | Observable<boolean>
 }
