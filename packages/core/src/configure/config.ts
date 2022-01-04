@@ -167,15 +167,15 @@ export abstract class ConfigureMerger {
  */
 @Abstract()
 export abstract class ConfigureManager {
-    // /**
-    //  * configuration injctor.
-    //  *
-    //  * @readonly
-    //  * @abstract
-    //  * @type {Injector}
-    //  * @memberof ConfigureManager
-    //  */
-    // abstract get injector(): Injector;
+    /**
+     * configuration injctor.
+     *
+     * @readonly
+     * @abstract
+     * @type {Injector}
+     * @memberof ConfigureManager
+     */
+    abstract get injector(): Injector;
     /**
      * use configuration.
      *
