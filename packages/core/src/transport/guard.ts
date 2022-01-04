@@ -9,5 +9,5 @@ export interface CanActivate<T extends Context = Context> {
      * guard.
      * @param ctx 
      */
-    canActivate(ctx: T): boolean | Promise<boolean> | Observable<boolean>
+    canActivate(ctx: T): boolean | Promise<boolean> | Observable<boolean>;
 }

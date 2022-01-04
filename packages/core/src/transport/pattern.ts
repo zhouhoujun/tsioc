@@ -35,6 +35,11 @@ export function stringify(pattern: Pattern): string {
     return `{${route}}`;
 }
 
+/**
+ * to promise.
+ * @param target 
+ * @returns 
+ */
 export function promisify<T>(target: T | Observable<T> | Promise<T>): Promise<T> {
     if (isObservable(target)) {
         return lastValueFrom(target);

@@ -1,9 +1,14 @@
-
+/**
+ * read packet.
+ */
 export interface ReadPacket<T = any> {
     pattern: any;
     data: T;
 }
 
+/**
+ * write packet.
+ */
 export interface WritePacket<T = any> {
     err?: any;
     error?: Error;

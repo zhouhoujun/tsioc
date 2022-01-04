@@ -18,7 +18,6 @@ export abstract class ResultValue {
      *
      * @abstract
      * @param {Context} ctx
-
      * @returns {Promise<any>}
      * @memberof ResultValue
      */

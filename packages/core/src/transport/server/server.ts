@@ -51,7 +51,7 @@ export abstract class AbstractServer implements Server, OnDispose {
 
     public getHandlerByPattern(pattern: string): MessageHandler | undefined {
         const route = this.getRouteFromPattern(pattern);
-        return this.handlers.get(route)
+        return this.handlers.get(route);
     }
 
     public send(
