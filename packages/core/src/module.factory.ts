@@ -21,7 +21,7 @@ export interface ModuleOption {
 /**
  * module factory to create instace {@link ModuleRef}.
  */
-@Abstract()
+@Abstract() 
 export abstract class ModuleFactory<T = any> {
     /**
      * module type.
