@@ -1,9 +1,9 @@
 import 'reflect-metadata';
 import { ILogger, Logger } from '@tsdi/logs';
-import { Type, isString, isArray, Injector, isFunction, EMPTY, isNil } from '@tsdi/ioc';
+import { Type, isString, isArray, Injector, isFunction, EMPTY, isNil, InvocationContext } from '@tsdi/ioc';
 import {
-    ConnectionOptions, Configuration, ApplicationContext, ComponentScan, Server, createModelResolver,
-    DBPropertyMetadata, PipeTransform, missingPropPipeError, MODEL_RESOLVERS, OnDispose
+    ConnectionOptions, ApplicationConfiguration, ApplicationContext, ComponentScan, Server, createModelResolver,
+    DBPropertyMetadata, PipeTransform, missingPropPipeError, MODEL_RESOLVERS, OnDispose, TransportParameter, Context
 } from '@tsdi/core';
 import {
     getConnection, createConnection, ConnectionOptions as OrmConnOptions, Connection,
@@ -87,7 +87,7 @@ export class TypeormServer implements Server, OnDispose {
     }
 
 
-    async statupConnection(injector: Injector, options: ConnectionOptions, config: Configuration) {
+    async statupConnection(injector: Injector, options: ConnectionOptions, config: ApplicationConfiguration) {
         if (options.type == 'mongodb') {
             const mgd = await injector.getLoader().require('mongodb');
             if (mgd.ObjectID) {
@@ -100,6 +100,9 @@ export class TypeormServer implements Server, OnDispose {
         const resovler = createModelResolver({
             isModel: (type) => entities.indexOf(type) >= 0,
             getPropertyMeta: (type) => this.getModelPropertyMetadata(type),
+            isUpdate: (ctx: InvocationContext<Context>) => ctx.arguments.method.toLowerCase() === 'put',
+            hasField: (parameter, ctx) => ctx.arguments instanceof Context && ctx.arguments.body,
+            getFields: (parameter: TransportParameter, ctx: InvocationContext<Context>) => parameter.field ? ctx.arguments.request.body[parameter.field] : ctx.arguments.request.body,
             fieldResolvers: [
                 {
                     canResolve: (prop, ctx, fields) => prop.dbtype === 'objectId',
@@ -121,9 +124,9 @@ export class TypeormServer implements Server, OnDispose {
             }
         });
 
-        if (options.initDb) {
-            await options.initDb(connection);
-        }
+        // if (options.initDb) {
+        //     await options.initDb(connection);
+        // }
     }
 
     /**
@@ -131,7 +134,7 @@ export class TypeormServer implements Server, OnDispose {
      * @param options connenction options.
      * @param config config
      */
-    async createConnection(options: ConnectionOptions, config: Configuration) {
+    async createConnection(options: ConnectionOptions, config: ApplicationConfiguration) {
         if (options.asDefault && !options.entities) {
             let entities: Type[] = [];
             if (config?.models?.some(m => isString(m))) {

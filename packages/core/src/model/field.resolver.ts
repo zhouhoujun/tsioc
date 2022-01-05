@@ -1,15 +1,5 @@
-import {
-    Abstract, EMPTY, InvocationContext, isArray, isDefined, isFunction, isNil,
-    PropertyMetadata, tokenId, Type, OperationInvoker, ArgumentError, object2string
-} from '@tsdi/ioc';
-import { TransportArgumentResolver, TransportParameter } from '../resolver';
-import { Context } from '../context';
-import { PipeTransform } from '../../pipes/pipe';
-
-/**
- * model parameter argument of an {@link OperationInvoker}.
- */
-export interface ModelArgumentResolver<C extends Context = Context> extends TransportArgumentResolver<C> { }
+import { InvocationContext, isDefined, isFunction, isNil, PropertyMetadata, Type, ArgumentError, object2string } from '@tsdi/ioc';
+import { PipeTransform } from '../pipes/pipe';
 
 /**
  * db property metadata. model parameter of {@link ModelFieldResolver} 
@@ -73,9 +63,9 @@ export interface DBPropertyMetadata<T = any> extends PropertyMetadata {
 }
 
 /**
- * Resolver for an model filed of an {@link ModelArgumentResolver}
+ * Resolver filed of an model.
  */
-export interface ModelFieldResolver<C extends Context = Context> {
+export interface ModelFieldResolver<C = any> {
     /**
      * Return whether an argument of the given {@code prop} can be resolved.
      * @param prop argument type
@@ -102,7 +92,7 @@ export class MissingModelFieldError extends Error {
 }
 
 /**
- * compose resolver for an field of an {@link ModelArgumentResolver}.
+ * compose resolver for an field of an model.
  * @param filter compose fiter
  * @param resolvers resolves of the group.
  * @returns 
@@ -285,94 +275,3 @@ export function missingPropError(type?: Type) {
     return new ArgumentError(`missing modle properties of class ${type}`);
 }
 
-
-/**
- * abstract model argument resolver. base implements {@link ModelArgumentResolver}
- */
-@Abstract()
-export abstract class AbstractModelArgumentResolver<C extends Context = Context> implements ModelArgumentResolver {
-
-    abstract get resolvers(): ModelFieldResolver[];
-
-    canResolve(parameter: TransportParameter<any>, ctx: InvocationContext<C>): boolean {
-        return this.isModel(parameter.provider as Type ?? parameter.type);
-    }
-
-    resolve<T>(parameter: TransportParameter<T>, ctx: InvocationContext<C>): T {
-        const classType = (parameter.provider ?? parameter.type) as Type;
-        const fields = parameter.field ? ctx.arguments.request.body[parameter.field] : ctx.arguments.request.body;
-        if (!fields) {
-            throw missingPropError(classType);
-        }
-        if (parameter.mutil && isArray(fields)) {
-            return fields.map(arg => this.resolveModel(classType, ctx, arg)) as any;
-        }
-        return this.resolveModel(classType, ctx, fields);
-    }
-
-    canResolveModel(modelType: Type, ctx: InvocationContext<C>, args: Record<string, any>, nullable?: boolean): boolean {
-        return nullable || !this.getPropertyMeta(modelType).some(p => {
-            if (this.isModel(p.provider ?? p.type)) {
-                return !this.canResolveModel(p.provider ?? p.type, ctx, args[p.propertyKey], p.nullable);
-            }
-            return !this.fieldResolver.canResolve(p, ctx, args, modelType);
-        })
-    }
-
-    resolveModel(modelType: Type, ctx: InvocationContext<C>, fields: Record<string, any>, nullable?: boolean): any {
-        if (nullable && (!fields || Object.keys(fields).length < 1)) {
-            return null;
-        }
-        if (!fields) {
-            throw missingPropError(modelType);
-        }
-
-        const props = this.getPropertyMeta(modelType);
-        const missings = props.filter(p => !(this.isModel(p.provider ?? p.type) ?
-            this.canResolveModel(p.provider ?? p.type, ctx, fields[p.propertyKey], p.nullable)
-            : this.fieldResolver.canResolve(p, ctx, fields, modelType)));
-        if (missings.length) {
-            throw new MissingModelFieldError(missings, modelType);
-        }
-
-        const model = this.createInstance(modelType);
-        props.forEach(prop => {
-            let val: any;
-            if (this.isModel(prop.provider ?? prop.type)) {
-                val = this.resolveModel(prop.provider ?? prop.type, ctx, fields[prop.propertyKey], prop.nullable);
-            } else {
-                val = this.fieldResolver.resolve(prop, ctx, fields, modelType);
-            }
-            if (isDefined(val)) {
-                model[prop.propertyKey] = val;
-            }
-        });
-        return model;
-    }
-
-    protected createInstance(model: Type) {
-        return new model();
-    }
-
-    private _resolver!: ModelFieldResolver;
-    protected get fieldResolver(): ModelFieldResolver {
-        if (!this._resolver) {
-            this._resolver = composeFieldResolver(
-                (p, ctx, fields) => p.nullable === true
-                    || (fields && isDefined(fields[p.propertyKey] ?? p.default))
-                    || (ctx.method?.toLowerCase() !== 'put' && p.primary === true),
-                ...this.resolvers ?? EMPTY,
-                ...MODEL_FIELD_RESOLVERS);
-        }
-        return this._resolver;
-    }
-
-    protected abstract isModel(type: Type | undefined): boolean;
-    protected abstract getPropertyMeta(type: Type): DBPropertyMetadata[];
-}
-
-/**
- * model argument resolvers mutil token.
- * provider instances of {@link ModelArgumentResolver}
- */
-export const MODEL_RESOLVERS = tokenId<ModelArgumentResolver[]>('MODEL_RESOLVERS');

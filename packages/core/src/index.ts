@@ -33,6 +33,8 @@ export * from './context.impl';
 
 export * from './Application';
 
+export * from './model';
+
 export * from './transport';
 
 // auth

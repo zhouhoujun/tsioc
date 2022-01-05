@@ -3,6 +3,7 @@ export * from './packet';
 export * from './serializer';
 export * from './deserializer';
 export * from './interceptor';
+export * from './resolver';
 export * from './context';
 export * from './header';
 export * from './request';
@@ -10,7 +11,7 @@ export * from './response';
 export * from './guard';
 export * from './result';
 
-export * from './model';
+
 export * from './middlewares';
 export * from './metadata';
 export * from './transport';

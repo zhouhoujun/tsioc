@@ -6,7 +6,7 @@ import {
 } from '@tsdi/ioc';
 import { isObservable, lastValueFrom } from 'rxjs';
 import { Middleware } from './middleware';
-import { MODEL_RESOLVERS } from '../model/resolver';
+import { MODEL_RESOLVERS } from '../../model/model.resolver';
 import { PipeTransform } from '../../pipes/pipe';
 import { Context } from '../context';
 import { CanActivate } from '../guard';
