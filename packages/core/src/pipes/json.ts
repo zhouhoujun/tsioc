@@ -11,4 +11,3 @@ export class ParseJsonPipe implements PipeTransform {
   }
 
 }
-

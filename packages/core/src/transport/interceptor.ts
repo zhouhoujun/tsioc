@@ -22,4 +22,3 @@ export interface TransportInterceptor<T = any, Re = any> {
      */
     intercept(context: Context, next: TransportHandler<T>): Observable<Re>;
 }
-

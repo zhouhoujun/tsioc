@@ -33,7 +33,7 @@ export class DateFormatPipe implements PipeTransform<string> {
         }
 
         if (isDate(value)) {
-            return formatDate(date as Date, args.length ? args[0] : 'yyyy-MM-dd')
+            return formatDate(date as Date, args.length ? args[0] : 'yyyy-MM-dd');
         } else {
 
             throw invalidPipeArgumentError(this, value);

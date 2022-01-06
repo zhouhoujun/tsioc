@@ -22,7 +22,7 @@ export interface ModelArgumentResolver<C = any> {
 }
 
 /**
- * abstract model argument resolver. base implements {@link ModelArgumentResolver}
+ * abstract model argument resolver. base implements {@link ModelArgumentResolver}.
  */
 @Abstract()
 export abstract class AbstractModelArgumentResolver<C = any> implements ModelArgumentResolver<C> {
@@ -102,10 +102,28 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
         return this._resolver;
     }
 
+    /**
+     * the type is model or not.
+     * @param type class type.
+     * @returns boolean.
+     */
     protected abstract isModel(type: Type | undefined): boolean;
+    /**
+     * get db property metadatas.
+     */
     protected abstract getPropertyMeta(type: Type): DBPropertyMetadata[];
+    /**
+     * has model fields in context or not.
+     */
     protected abstract hasFields(parameter: Parameter, ctx: InvocationContext<C>): boolean;
+    /**
+     * get model fields in context.
+     */
     protected abstract getFields(parameter: Parameter, ctx: InvocationContext<C>): Record<string, any>;
+    /**
+     * is update module or not.
+     * @param ctx 
+     */
     protected abstract isUpdate(ctx: InvocationContext<C>): boolean;
 }
 
@@ -150,14 +168,40 @@ class ModelResolver<C = any> extends AbstractModelArgumentResolver<C> {
     }
 }
 
-
+/**
+ * model resolve option.
+ */
 export interface ModelResolveOption<C> {
+    /**
+     * the type is model or not.
+     * @param type class type.
+     * @returns boolean.
+     */
     isModel(type: Type): boolean;
+    /**
+     * create model instance.
+     */
     createInstance?<T>(model: Type<T>): T;
+    /**
+     * get db property metadatas.
+     */
     getPropertyMeta: (type: Type) => DBPropertyMetadata[];
+    /**
+     * has model fields in context or not.
+     */
     hasField?: (parameter: Parameter<any>, ctx: InvocationContext<C>) => boolean;
+    /**
+     * get model fields in context.
+     */
     getFields: (parameter: Parameter<any>, ctx: InvocationContext<C>) => Record<string, any>;
+    /**
+     * is update module or not.
+     * @param ctx 
+     */
     isUpdate(ctx: InvocationContext<C>): boolean;
+    /**
+     * custom field resolvers.
+     */
     fieldResolvers?: ModelFieldResolver[];
 }
 

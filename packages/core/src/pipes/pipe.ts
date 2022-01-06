@@ -18,8 +18,13 @@ export interface PipeTransform<TReturn = any, T = any> {
     transform(value: T, ...args: any[]): TReturn;
 }
 
-
+/**
+ * invalid pipe argument error.
+ * @param type 
+ * @param value 
+ * @param message 
+ * @returns 
+ */
 export function invalidPipeArgumentError(type: any, value: Object, message?: string) {
     return new ArgumentError(`InvalidPipeArgument: '${value}' for pipe '${lang.getClassName(type)}'${message || ''}`);
 }
-

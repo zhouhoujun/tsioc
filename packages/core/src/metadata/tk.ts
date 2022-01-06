@@ -14,7 +14,7 @@ export const CONFIGURATION = tokenId<ApplicationConfiguration>('CONFIGURATION');
 export const DEFAULT_CONFIG: Token<ApplicationConfiguration> = tokenId<ApplicationConfiguration>('DEFAULT_CONFIG');
 
 /**
- *  appliaction boot process root path.
+ * appliaction boot process root path.
  */
 export const PROCESS_ROOT: Token<string> = tokenId<string>('PROCESS_ROOT');
 
