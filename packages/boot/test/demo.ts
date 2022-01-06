@@ -1,9 +1,10 @@
-import { Module, Message, MessageQueue, StartupService, ApplicationContext, Configuration, Runner, ComponentScan, OnDispose } from '@tsdi/core';
+import { Module, Message, StartupService, ApplicationContext, ComponentScan, OnDispose, Runnable, Handle, Middlewares, ApplicationConfiguration } from '@tsdi/core';
 import { Injectable, Inject, OnDestroy } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
 import { ILogger, LogConfigure, Logger, LogModule } from '@tsdi/logs';
 import * as net from 'net';
 import { ServerBootstrapModule, ServerLogsModule } from '@tsdi/platform-server';
+
 
 export class TestService {
     testFiled = 'test';
@@ -40,7 +41,7 @@ export class ModuleA {
 }
 
 @Injectable()
-export class ClassSevice extends Runner {
+export class ClassSevice implements Runnable {
 
     @Logger() logger!: ILogger;
 
@@ -49,7 +50,7 @@ export class ClassSevice extends Runner {
 
     state!: string;
 
-    override async run(): Promise<any> {
+    async run(): Promise<any> {
         this.logger.log('ClassSevice running.....');
         // console.log(refs.get(ClassSevice));
 
@@ -77,8 +78,8 @@ export class LoggerAspect {
     }
 }
 
-@Message()
-export class SubMessageQueue extends MessageQueue {
+@Handle()
+export class SubMessageQueue extends Middlewares {
 
 }
 
@@ -192,4 +193,4 @@ export const configurtion = {
             pm2: true
         }
     }
-} as Configuration;
+} as ApplicationConfiguration;

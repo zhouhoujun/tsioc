@@ -1,23 +1,24 @@
-import { Module, Message, MessageQueue, Context, RouteMapping, ApplicationContext, Handle, Middleware } from '@tsdi/core';
+import { Module, Message, Middlewares, Context, RouteMapping, ApplicationContext, Handle, Middleware } from '@tsdi/core';
 import expect = require('expect');
 import { Injector, Injectable, lang } from '@tsdi/ioc';
 import { BootApplication } from '../src';
+import { lastValueFrom, map } from 'rxjs';
 
 @RouteMapping('/device')
 class DeviceController {
 
-    @RouteMapping('/init', 'post')
+    @RouteMapping('/init', 'POST')
     req(name: string) {
         return { name };
     }
 
-    @RouteMapping('/update', 'post')
+    @RouteMapping('/update', 'POST')
     async update(version: string) {
         // do smth.
         console.log('update version:', version);
         let defer = lang.defer();
 
-        setTimeout(()=> {
+        setTimeout(() => {
             defer.resolve(version);
         }, 10);
 
@@ -32,7 +33,7 @@ class DeviceController {
 
 //     @Inject() mapAdapter: MapAdapter;
 
-//     @RouteMapping('/mark', 'post')
+//     @RouteMapping('/mark', 'POST')
 //     drawMark(name: string, @Inject(CONTEXT) ctx: MessageContext ) {
 //         ctx.body;
 //         this.mapAdapter.drow(ctx.body);
@@ -40,12 +41,12 @@ class DeviceController {
 
 // }
 
-@Handle({route: '/hdevice'})
-class DeviceQueue extends MessageQueue {
-    override async execute(ctx: Context, next?: () => Promise<void>): Promise<void> {
+@Handle({ route: '/hdevice' })
+class DeviceQueue extends Middlewares {
+    override async handle(ctx: Context, next?: () => Promise<void>): Promise<void> {
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
-        await super.execute(ctx, async () => {
+        await super.handle(ctx, async () => {
             ctx.setValue('device', 'device next');
         });
         console.log('device sub msg done.');
@@ -55,14 +56,14 @@ class DeviceQueue extends MessageQueue {
 @Handle({
     parent: DeviceQueue
 })
-class DeviceStartQueue extends MessageQueue {
+class DeviceStartQueue extends Middlewares {
 
 }
 
 @Handle(DeviceStartQueue)
 class DeviceStartupHandle extends Middleware {
 
-    override async execute(ctx: Context, next: () => Promise<void>): Promise<void> {
+    override async handle(ctx: Context, next: () => Promise<void>): Promise<void> {
         console.log('DeviceStartupHandle.')
         if (ctx.type === 'startup') {
             // todo sth.
@@ -75,7 +76,7 @@ class DeviceStartupHandle extends Middleware {
 @Handle(DeviceStartQueue)
 class DeviceAStartupHandle extends Middleware {
 
-    override async execute(ctx: Context, next: () => Promise<void>): Promise<void> {
+    override async handle(ctx: Context, next: () => Promise<void>): Promise<void> {
         console.log('DeviceAStartupHandle.')
         if (ctx.type === 'startup') {
             // todo sth.
@@ -155,25 +156,32 @@ describe('app message queue', () => {
     it('msg work', async () => {
         const a = injector.get(DeviceQueue);
         let device, aState, bState;
-        a.done(ctx => {
-            device = ctx.getValue('device');
-            aState = ctx.getValue('deviceA_state');
-            bState = ctx.getValue('deviceB_state');
-        })
-        await ctx.getMessager().send('/hdevice', { type: 'startup' });
+        // a.s(ctx => {
+        //     device = ctx.getValue('device');
+        //     aState = ctx.getValue('deviceA_state');
+        //     bState = ctx.getValue('deviceB_state');
+        // })
+        await lastValueFrom(ctx.send('/hdevice', { type: 'startup' }).pipe(
+            map(v => {
+                device = ctx.getValue('device');
+                aState = ctx.getValue('deviceA_state');
+                bState = ctx.getValue('deviceB_state');
+                return v;
+            })
+        ));
         expect(device).toBe('device next');
         expect(aState).toBe('startuped');
         expect(bState).toBe('startuped');
     });
 
     it('route response', async () => {
-        const a = await ctx.getMessager().send('/device/init', { method: 'post', query: { name: 'test' } });
+        const a = await lastValueFrom(ctx.send('/device/init', { method: 'POST', query: { name: 'test' } }));
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toBeDefined();
         expect(a.body.name).toEqual('test');
 
-        const b = await ctx.getMessager().send('/device/update', { method: 'post', query: { version: '1.0.0' } });
+        const b = await lastValueFrom(ctx.send('/device/update', { method: 'POST', query: { version: '1.0.0' } }));
         expect(b.status).toEqual(200);
         expect(b.ok).toBeTruthy();
         expect(b.body).toEqual('1.0.0');
