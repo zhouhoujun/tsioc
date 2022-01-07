@@ -1,6 +1,6 @@
 import { EMPTY_OBJ, Injectable, Injector, isArray, isDefined, isString } from '@tsdi/ioc';
 import { Context } from '../context';
-import { HeadersOption } from '../header';
+import { HeadersOption } from '../packet';
 import { RequestOption, Request } from '../request';
 import { ResponseOption, Response } from '../response';
 

@@ -1,5 +1,5 @@
 import { Abstract, isArray, isString } from '@tsdi/ioc';
-import { HeadersOption } from './header';
+import { HeadersOption } from './packet';
 
 /**
  * abstract request.

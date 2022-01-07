@@ -1,3 +1,4 @@
+import { tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Context } from './context';
 
@@ -22,3 +23,9 @@ export interface TransportInterceptor<T = any, Re = any> {
      */
     intercept(context: Context, next: TransportHandler<T>): Observable<Re>;
 }
+
+/**
+ * global mutil transport interceptors.
+ */
+export const TRANSPORT_INTERCEPTORS = tokenId<TransportInterceptor[]>('TRANSPORT_INTERCEPTORS');
+

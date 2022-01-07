@@ -22,3 +22,5 @@ export interface WritePacket<T = any> {
 export type TransportEvent = ReadPacket;
 export type TransportRequest = Required<{ id: string }> & ReadPacket;
 export type TransportResponse = Required<{ id: string }> & WritePacket;
+
+export type HeadersOption = string[][] | Record<string, string | string[] | number> | string;
