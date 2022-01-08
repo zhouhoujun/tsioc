@@ -9,6 +9,8 @@ import { TransportResponse, TransportEvent, TransportRequest, ReadPacket, WriteP
 import { Deserializer, EmptyDeserializer } from '../deserializer';
 import { Serializer, EmptySerializer } from '../serializer';
 import { Pattern, stringify } from '../pattern';
+import { TransportHandler } from '../handler';
+import { InterceptingHandler } from '../intercepting';
 
 
 /**
@@ -17,18 +19,21 @@ import { Pattern, stringify } from '../pattern';
 @Abstract()
 @Providers([
     { provide: Serializer, useClass: EmptySerializer },
-    { provide: Deserializer, useClass: EmptyDeserializer }
+    { provide: Deserializer, useClass: EmptyDeserializer },
+    { provide: TransportHandler, useClass: InterceptingHandler }
 ])
 export abstract class AbstractClient implements Client, OnDispose {
 
-    @Logger() protected readonly logger!: ILogger;
-
-    @Inject() protected serializer!: Serializer<TransportEvent | TransportRequest>;
-    @Inject() protected deserializer!: Deserializer<TransportResponse>;
+    @Logger()
+    protected readonly logger!: ILogger;
+    @Inject()
+    protected serializer!: Serializer<TransportEvent | TransportRequest>;
+    @Inject()
+    protected deserializer!: Deserializer<TransportResponse>;
 
     protected routing = new Map<string, Function>();
 
-    constructor() {
+    constructor(protected handler: TransportHandler) {
 
     }
 

@@ -7,21 +7,31 @@ import { TransportEvent, TransportRequest, TransportResponse, ReadPacket, WriteP
 import { Deserializer, EmptyDeserializer } from '../deserializer';
 import { EmptySerializer, Serializer } from '../serializer';
 import { Pattern, stringify } from '../pattern';
+import { TransportHandler } from '../handler';
+import { InterceptingHandler } from '../intercepting';
 
 
 @Abstract()
 @Providers([
     { provide: Serializer, useClass: EmptySerializer },
-    { provide: Deserializer, useClass: EmptyDeserializer }
+    { provide: Deserializer, useClass: EmptyDeserializer },
+    { provide: TransportHandler, useClass: InterceptingHandler }
 ])
 export abstract class AbstractServer implements Server, OnDispose {
 
-    @Logger() protected readonly logger!: ILogger;
+    @Logger()
+    protected readonly logger!: ILogger;
 
-    @Inject() protected serializer!: Serializer<TransportResponse>;
-    @Inject() protected deserializer!: Deserializer<TransportRequest | TransportEvent>;
+    @Inject()
+    protected serializer!: Serializer<TransportResponse>;
+    @Inject()
+    protected deserializer!: Deserializer<TransportRequest | TransportEvent>;
 
     protected readonly handlers = new Map<string, MessageHandler>();
+
+    constructor(protected handler: TransportHandler) {
+
+    }
 
     abstract startup(): Promise<void>;
 
