@@ -288,9 +288,9 @@ export interface RouteMapping {
  * @exports  {@link RouteMapping}
  */
 export const RouteMapping: RouteMapping = createDecorator<ProtocolRouteMappingMetadata>('RouteMapping', {
-    props: (route: string, arg2?: Type<Router> | MiddlewareType[] | string | { protocol?: string, middlewares: MiddlewareType[], contentType?: string, method?: RequestMethod }) => {
+    props: (route: string, arg2?: Type<Router> | Type<CanActivate>[] | string | { protocol?: string, middlewares: MiddlewareType[], contentType?: string, method?: RequestMethod }) => {
         if (isArray(arg2)) {
-            return { route, middlewares: arg2 };
+            return { route, guards: arg2 };
         } else if (isString(arg2)) {
             return { route, method: arg2 as RequestMethod };
         } else if (lang.isBaseOf(arg2, Router)) {

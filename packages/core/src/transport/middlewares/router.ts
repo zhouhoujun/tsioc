@@ -123,7 +123,7 @@ export class MappingRouter extends Router implements OnDestroy {
 }
 
 
-export class MappingRouterResolver {
+export class MappingRouterResolver implements RouterResolver {
 
     readonly routers: Map<string, Router>;
     constructor() {

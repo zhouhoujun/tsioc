@@ -1,5 +1,5 @@
 import { Inject, Injectable, ModuleLoader, Type } from '@tsdi/ioc';
-import { AbstractClient, Deserializer, ReadPacket, WritePacket } from '@tsdi/core';
+import { AbstractClient, Deserializer, ReadPacket, TransportHandler, WritePacket } from '@tsdi/core';
 
 let modbusPackage: { default: Type<ModbusRTU> };
 
@@ -14,8 +14,8 @@ export class ModbusClient extends AbstractClient {
 
     protected client: ModbusRTU | undefined;
 
-    constructor(private url: string, private options: SerialPortOptions) {
-        super()
+    constructor(handler: TransportHandler, private url: string, private options: SerialPortOptions) {
+        super(handler);
     }
 
     async connect(): Promise<void> {

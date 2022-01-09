@@ -1,5 +1,5 @@
 import { Inject, Injectable, isUndefined, ModuleLoader } from '@tsdi/ioc';
-import { AbstractClient, Deserializer, TransportRequest, TransportEvent, ReadPacket, Serializer, WritePacket } from '@tsdi/core';
+import { AbstractClient, Deserializer, TransportRequest, TransportEvent, ReadPacket, Serializer, WritePacket, TransportHandler } from '@tsdi/core';
 import { Level } from '@tsdi/logs';
 import {
     BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerGroupJoinEvent, Producer,
@@ -34,7 +34,7 @@ export class KafkaClient extends AbstractClient {
     @Inject() protected loader!: ModuleLoader;
 
 
-    constructor(private options: {
+    constructor(handler: TransportHandler, private options: {
         postfixId?: string;
         client?: KafkaConfig;
         consumer?: ConsumerConfig;
@@ -44,7 +44,7 @@ export class KafkaClient extends AbstractClient {
         send?: Omit<ProducerRecord, 'topic' | 'messages'>;
         keepBinary?: boolean;
     }) {
-        super()
+        super(handler)
         this.brokers = options.client?.brokers ?? DEFAULT_BROKERS;
         const postfixId = this.options.postfixId ?? '-client';
         this.clientId = (options.client?.clientId ?? 'boot-consumer') + postfixId;

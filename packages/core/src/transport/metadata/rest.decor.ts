@@ -1,11 +1,9 @@
 import { ClassMethodDecorator, createDecorator, isArray, isString, lang, Type } from '@tsdi/ioc';
-import {
-    MappingReflect, MiddlewareType, RouteMappingMetadata, ProtocolRouteMappingMetadata,
-    Router, PipeTransform, CanActivate, RouteRefFactoryResolver
-} from '@tsdi/core';
-import { HttpRouter } from '../router';
-import { HttpRequestMethod } from '../status';
-
+import { PipeTransform } from '../../pipes/pipe';
+import { CanActivate } from '../guard';
+import { MiddlewareType } from '../middlewares/middlewares';
+import { RouteRefFactoryResolver } from '../middlewares/route';
+import { MappingReflect, ProtocolRouteMappingMetadata, RequestMethod, Router, RouterResolver } from '../middlewares/router';
 
 
 /**
@@ -26,9 +24,9 @@ export interface RestController {
      * route decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
-     * @param {MiddlewareType[]} [middlewares] the middlewares for the route.
+     * @param {Type<CanActivate>[]} [guards] the guards for the route.
      */
-    (route: string, middlewares?: MiddlewareType[]): ClassMethodDecorator;
+    (route: string, guards?: Type<CanActivate>[]): ClassMethodDecorator;
 
     /**
      * route decorator. define the controller method as an route.
@@ -38,44 +36,48 @@ export interface RestController {
      *  [parent] set parent route.
      *  [middlewares] the middlewares for the route.
      */
-    (route: string, options: { parent?: Type<Router>, middlewares: MiddlewareType[] }): ClassDecorator;
-    /**
-     * route decorator. define the controller method as an route.
-     *
-     * @param {string} route route sub path.
-     * @param {HttpRequestMethod} [method] set request method.
-     */
-    (route: string, method: string): MethodDecorator;
-
-    /**
-     * route decorator. define the controller method as an route.
-     *
-     * @param {string} route route sub path.
-     * @param {{ middlewares?: MiddlewareType[], contentType?: string, method?: string}} options
-     *  [middlewares] the middlewares for the route.
-     *  [contentType] set request contentType.
-     *  [method] set request method.
-     */
-    (route: string, options: { middlewares: MiddlewareType[], contentType?: string, method?: string }): MethodDecorator;
-
+    (route: string, options: {
+        /**
+         * version of api.
+         */
+        version?: string;
+        /**
+         * protocol type.
+         */
+        protocol?: string,
+        /**
+         * parent router.
+         */
+        parent?: Type<Router>,
+        /**
+         * route guards.
+         */
+        guards?: Type<CanActivate>[],
+        /**
+         * middlewares for the route.
+         */
+        middlewares: MiddlewareType[],
+        /**
+        * pipes for the route.
+        */
+        pipes?: Type<PipeTransform>[]
+    }): ClassDecorator;
     /**
      * route decorator. define the controller method as an route.
      *
      * @param {RouteMetadata} [metadata] route metadata.
      */
-    (metadata: RouteMappingMetadata): ClassMethodDecorator;
+    (metadata: ProtocolRouteMappingMetadata): ClassMethodDecorator;
 }
 
 
 /**
  * RestController decorator
  */
-export const RestController: RestController = createDecorator<RouteMappingMetadata>('RestController', {
-    props: (route: string, arg2?: Type<Router> | MiddlewareType[] | string | { middlewares: MiddlewareType[], contentType?: string, method?: HttpRequestMethod }) => {
+export const RestController: RestController = createDecorator<ProtocolRouteMappingMetadata>('RestController', {
+    props: (route: string, arg2?: Type<Router> | Type<CanActivate>[] | { guards?: Type<CanActivate>[], middlewares?: MiddlewareType[], pipes?: Type<PipeTransform>[] }) => {
         if (isArray(arg2)) {
-            return { route, middlewares: arg2 };
-        } else if (isString(arg2)) {
-            return { route, method: arg2 as HttpRequestMethod };
+            return { route, guards: arg2 };
         } else if (lang.isBaseOf(arg2, Router)) {
             return { route, parent: arg2 };
         } else {
@@ -85,13 +87,13 @@ export const RestController: RestController = createDecorator<RouteMappingMetada
     design: {
         afterAnnoation: (ctx, next) => {
             const reflect = ctx.reflect as MappingReflect;
-            const { parent } = reflect.annotation;
+            const { protocol, parent } = reflect.annotation;
             const injector = ctx.injector;
             let router: Router;
             if (parent) {
                 router = injector.get(parent);
             } else {
-                router = injector.get(HttpRouter);
+                router = injector.get(RouterResolver).resolve(protocol);
             }
 
             if (!router) throw new Error(lang.getClassName(parent) + 'has not registered!');
@@ -160,10 +162,10 @@ export interface RouteMethodDecorator {
  *
  * @export
  * @template T
- * @param {HttpRequestMethod} [method]
+ * @param {RequestMethod} [method]
  * @param { MetadataExtends<T>} [metaExtends]
  */
-export function createRouteDecorator(method: HttpRequestMethod) {
+export function createRouteDecorator(method: RequestMethod) {
     return createDecorator<ProtocolRouteMappingMetadata>('Route', {
         props: (
             route: string,
