@@ -52,7 +52,8 @@ export abstract class AbstractClient implements Client, OnDispose {
                     const callback = this.createObserver(observer);
                     return this.publish({ pattern, data }, callback);
                 })
-            )
+            ),
+            input => this.handler.handle(input)
         );
 
     }
@@ -69,7 +70,7 @@ export abstract class AbstractClient implements Client, OnDispose {
             resetOnDisconnect: false,
         });
         connectableSource.connect();
-        return connectableSource;
+        return connectableSource.pipe(input => this.handler.handle(input));
     }
 
     /**
