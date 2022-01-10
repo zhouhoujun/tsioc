@@ -25,15 +25,15 @@ export const TRANSPORT_INTERCEPTORS = tokenId<TransportInterceptor<TransportRequ
 export class InterceptingHandler implements TransportHandler {
     private chain!: TransportHandler;
 
-    constructor(private backend: TransportBackend, private ctx: InvocationContext) { }
+    constructor(private backend: TransportBackend) { }
 
-    handle(req: TransportRequest): Observable<TransportResponse> {
+    handle(ctx: InvocationContext<TransportRequest>): Observable<TransportResponse> {
         if (!this.chain) {
-            const interceptors = this.ctx.get(TRANSPORT_INTERCEPTORS);
+            const interceptors = ctx.get(TRANSPORT_INTERCEPTORS);
             this.chain = interceptors.reduceRight(
                 (next, interceptor) => new InterceptorHandler(next, interceptor), this.backend);
         }
-        return this.chain.handle(req);
+        return this.chain.handle(ctx);
     }
 }
 
@@ -41,7 +41,7 @@ export class InterceptingHandler implements TransportHandler {
 export class InterceptorHandler<TInput = any, TOutput = any> implements TransportHandler<TInput, TOutput> {
     constructor(private next: TransportHandler, private interceptor: TransportInterceptor) { }
 
-    handle(input: TInput): Observable<TOutput> {
+    handle(input: InvocationContext<TInput>): Observable<TOutput> {
         return this.interceptor.intercept(input, this.next);
     }
 }

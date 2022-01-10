@@ -1,4 +1,4 @@
-import { Abstract, isArray } from '@tsdi/ioc';
+import { Abstract, InvocationContext, isArray } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 
 /**
@@ -10,7 +10,7 @@ export abstract class TransportHandler<TInput = any, TOutput = any> {
      * transport handler.
      * @param input 
      */
-    abstract handle(input: TInput): Observable<TOutput>;
+    abstract handle(input: InvocationContext<TInput>): Observable<TOutput>;
 }
 
 /**
@@ -27,7 +27,7 @@ export abstract class TransportBackend<TInput = any, TOutput = any> implements T
      * transport handler.
      * @param input 
      */
-    abstract handle(input: TInput): Observable<TOutput>;
+    abstract handle(input: InvocationContext<TInput>): Observable<TOutput>;
 }
 
 /**
@@ -39,7 +39,7 @@ export abstract class EventHandler<TInput = any, TOutput = any> implements Trans
      * transport event handler.
      * @param input 
      */
-    abstract handle(input: TInput): Observable<TOutput>;
+    abstract handle(input: InvocationContext<TInput>): Observable<TOutput>;
 }
 
 

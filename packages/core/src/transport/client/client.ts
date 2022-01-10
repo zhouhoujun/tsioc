@@ -70,7 +70,7 @@ export abstract class AbstractClient implements Client, OnDispose {
             resetOnDisconnect: false,
         });
         connectableSource.connect();
-        return connectableSource.pipe(input => this.handler.handle(input));
+        return connectableSource.pipe(input => this.handler.handle( input));
     }
 
     /**
