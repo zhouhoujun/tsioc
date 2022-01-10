@@ -9,8 +9,8 @@ import { TransportHandler } from './handler';
 export interface TransportInterceptor<TInput = any, TOutput = any> {
     /**
      * the method to implemet interceptor.
-     * @param ctx context.
+     * @param input input.
      * @param next route handler.
      */
-    intercept(ctx: TInput, next: TransportHandler<TInput, TOutput>): Observable<TOutput>;
+    intercept(input: TInput, next: TransportHandler<TInput, TOutput>): Observable<TOutput>;
 }

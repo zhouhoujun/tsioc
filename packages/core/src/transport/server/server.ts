@@ -6,16 +6,15 @@ import { Server } from '../../server';
 import { TransportEvent, TransportRequest, TransportResponse, ReadPacket, WritePacket } from '../packet';
 import { Deserializer, EmptyDeserializer } from '../deserializer';
 import { EmptySerializer, Serializer } from '../serializer';
-import { Pattern, stringify } from '../pattern';
-import { TransportHandler } from '../handler';
-import { InterceptingHandler } from '../intercepting';
+import { ServerHandler, TransportHandlers } from '../handlers';
+
 
 
 @Abstract()
 @Providers([
     { provide: Serializer, useClass: EmptySerializer },
     { provide: Deserializer, useClass: EmptyDeserializer },
-    { provide: TransportHandler, useClass: InterceptingHandler }
+    { provide: TransportHandlers, useClass: ServerHandler }
 ])
 export abstract class AbstractServer implements Server, OnDispose {
 
@@ -27,9 +26,7 @@ export abstract class AbstractServer implements Server, OnDispose {
     @Inject()
     protected deserializer!: Deserializer<TransportRequest | TransportEvent>;
 
-    protected readonly handlers = new Map<string, MessageHandler>();
-
-    constructor(protected handler: TransportHandler) {
+    constructor(protected handlers: TransportHandlers) {
 
     }
 
@@ -37,32 +34,6 @@ export abstract class AbstractServer implements Server, OnDispose {
 
     abstract onDispose(): Promise<void>;
 
-
-    public addHandler(
-        pattern: any,
-        callback: MessageHandler,
-        isEventHandler = false,
-    ) {
-        const normalizedPattern = this.normalizePattern(pattern);
-        callback.isEventHandler = isEventHandler;
-
-        if (this.handlers.has(normalizedPattern) && isEventHandler) {
-            const headRef = this.handlers.get(normalizedPattern)!;
-            const tailRef = tail(headRef);
-            tailRef.next = callback;
-        } else {
-            this.handlers.set(normalizedPattern, callback);
-        }
-    }
-
-    public getHandlers(): Map<string, MessageHandler> {
-        return this.handlers;
-    }
-
-    public getHandlerByPattern(pattern: string): MessageHandler | undefined {
-        const route = this.getRouteFromPattern(pattern);
-        return this.handlers.get(route);
-    }
 
     public send(
         stream: Observable<any>,
@@ -72,7 +43,7 @@ export abstract class AbstractServer implements Server, OnDispose {
         const scheduleOnNextTick = (data: WritePacket) => {
             if (!dataBuffer) {
                 dataBuffer = [data];
-                process.nextTick(async () => {
+                (typeof process === 'undefined' ? setTimeout : process.nextTick)(async () => {
                     for (const item of dataBuffer) {
                         await respond(item);
                     }
@@ -96,15 +67,13 @@ export abstract class AbstractServer implements Server, OnDispose {
     }
 
     public async handleEvent(
-        pattern: string,
-        packet: ReadPacket,
-        context: InvocationContext,
+        context: InvocationContext<ReadPacket>,
     ): Promise<any> {
-        const handler = this.getHandlerByPattern(pattern);
+        const handler = this.handlers.getHandlerByPattern(context.arguments.pattern);
         if (!handler) {
-            return this.logger.error(`There is no matching event handler defined in the remote service. Event pattern: ${JSON.stringify(pattern)}.`);
+            return this.logger.error(`There is no matching event handler defined in the remote service. Event pattern: ${JSON.stringify(context.arguments.pattern)}.`);
         }
-        const resultOrStream = await handler(packet.data, context);
+        const resultOrStream = await handler.handle(context);
         if (isObservable(resultOrStream)) {
             const connectableSource = connectable(resultOrStream, {
                 connector: () => new Subject(),
@@ -123,31 +92,5 @@ export abstract class AbstractServer implements Server, OnDispose {
         return of(value);
     }
 
-    protected getRouteFromPattern(pattern: string): string {
-        let validPattern: Pattern;
-
-        try {
-            validPattern = JSON.parse(pattern);
-        } catch (error) {
-            // Uses a fundamental object (`pattern` variable without any conversion)
-            validPattern = pattern;
-        }
-        return this.normalizePattern(validPattern);
-    }
-
-    protected normalizePattern(pattern: Pattern): string {
-        return stringify(pattern);
-    }
-
 }
 
-
-function tail(handler: MessageHandler): MessageHandler {
-    return handler?.next ? tail(handler.next) : handler;
-}
-
-export interface MessageHandler<TInput = any, TContext = any, TResult = any> {
-    (data: TInput, ctx?: TContext): Promise<Observable<TResult>>;
-    next?: (data: TInput, ctx?: TContext) => Promise<Observable<TResult>>;
-    isEventHandler?: boolean;
-}

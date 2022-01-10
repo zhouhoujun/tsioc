@@ -1,8 +1,10 @@
+import { Pattern } from './pattern';
+
 /**
  * read packet.
  */
 export interface ReadPacket<T = any> {
-    pattern: any;
+    pattern: Pattern;
     data: T;
 }
 

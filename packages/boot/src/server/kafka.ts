@@ -1,5 +1,5 @@
 import { Inject, Injectable, isNil, ModuleLoader, OperationFactoryResolver, Injector, getClass } from '@tsdi/ioc';
-import { AbstractServer, Deserializer, Serializer, TransportResponse } from '@tsdi/core';
+import { AbstractServer, Deserializer, Serializer, TransportHandler, TransportHandlers, TransportResponse } from '@tsdi/core';
 import { Level } from '@tsdi/logs';
 import { Observable } from 'rxjs';
 
@@ -29,10 +29,9 @@ export class KafkaServer extends AbstractServer {
     protected clientId: string;
     protected groupId: string;
 
-    ;
-
     constructor(
-        @Inject() private injector: Injector,
+        handler: TransportHandlers,
+        private injector: Injector,
         private options: {
             postfixId?: string;
             client?: KafkaConfig;
@@ -43,7 +42,7 @@ export class KafkaServer extends AbstractServer {
             send?: Omit<ProducerRecord, 'topic' | 'messages'>;
             keepBinary?: boolean;
         }) {
-        super()
+        super(handler)
         this.brokers = options.client?.brokers ?? DEFAULT_BROKERS;
         const postfixId = this.options.postfixId ?? '-server';
         this.clientId = (options.client?.clientId ?? 'boot-consumer') + postfixId;
@@ -140,12 +139,12 @@ export class KafkaServer extends AbstractServer {
         const kafkaContext = this.injector.get(OperationFactoryResolver)
             .resolve(getClass(this), this.injector)
             .createContext({
-                arguments: rawMessage
+                arguments: packet
             });
         // if the correlation id or reply topic is not set
         // then this is an event (events could still have correlation id)
         if (!correlationId || !replyTopic) {
-            return this.handleEvent(packet.pattern, packet, kafkaContext);
+            return this.handleEvent(kafkaContext);
         }
 
         const publish = this.getPublisher(
@@ -153,17 +152,16 @@ export class KafkaServer extends AbstractServer {
             replyPartition,
             correlationId,
         );
-        const handler = this.getHandlerByPattern(packet.pattern);
-        if (!handler) {
-            return publish({
-                id: correlationId,
-                err: `There is no matching message handler defined in the remote service.`,
-            });
-        }
 
-        const response = this.toObservable(
-            await handler(packet.data, kafkaContext),
-        ) as Observable<any>;
+        // const handler = this.handlers.getHandlerByPattern(packet.pattern);
+        // if (!handler) {
+        //     return publish({
+        //         id: correlationId,
+        //         err: `There is no matching message handler defined in the remote service.`,
+        //     });
+        // }
+        
+        const response = this.handlers.handle(kafkaContext);
         response && this.send(response, publish);
     }
 

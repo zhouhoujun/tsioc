@@ -10,6 +10,7 @@ export * from './middlewares';
 export * from './metadata';
 
 export * from './handler';
+export * from './handlers';
 export * from './interceptor';
 export * from './intercepting';
 export * from './transport';
