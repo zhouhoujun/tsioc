@@ -2,6 +2,7 @@ import { EMPTY, Injectable, InjectFlags, Injector, isNumber, tokenId } from '@ts
 import expect = require('expect');
 import { CollegeStudent, MiddleSchoolStudent, Student } from './debug';
 
+
 class Person {
     constructor(public name: string, public age: number) { }
 }

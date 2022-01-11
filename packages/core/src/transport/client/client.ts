@@ -1,4 +1,4 @@
-import { Abstract, Inject, isNil, Providers } from '@tsdi/ioc';
+import { Abstract, Inject, InvocationContext, isNil, Providers } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { connectable, defer, Observable, Observer, Subject, throwError } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
@@ -33,7 +33,7 @@ export abstract class AbstractClient implements Client, OnDispose {
 
     protected routing = new Map<string, Function>();
 
-    constructor(protected handler: TransportHandler) {
+    constructor(protected handler: TransportHandler, protected context: InvocationContext) {
 
     }
 
@@ -53,7 +53,7 @@ export abstract class AbstractClient implements Client, OnDispose {
                     return this.publish({ pattern, data }, callback);
                 })
             ),
-            input => this.handler.handle(input)
+            input => this.handler.handle(this.createContext(input))
         );
 
     }
@@ -70,7 +70,7 @@ export abstract class AbstractClient implements Client, OnDispose {
             resetOnDisconnect: false,
         });
         connectableSource.connect();
-        return connectableSource.pipe(input => this.handler.handle( input));
+        return connectableSource.pipe(input => this.handler.handle(this.createContext(input)));
     }
 
     /**
@@ -89,6 +89,9 @@ export abstract class AbstractClient implements Client, OnDispose {
      */
     protected abstract dispatchEvent<T = any>(packet: ReadPacket): Promise<T>;
 
+    protected createContext<T>(input: T) {
+        return InvocationContext.create(this.context.injector, { parent: this.context, arguments: input });
+    }
 
     protected createObserver<T>(
         observer: Observer<T>,

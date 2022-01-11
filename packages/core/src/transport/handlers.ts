@@ -20,8 +20,8 @@ export class EventChain<TInput = any, TOutput = any> extends EventHandler<TInput
     constructor(private handler: TransportHandler, private next: TransportHandler) {
         super()
     }
-    handle(input: TInput): Observable<TOutput> {
-        return this.handler.handle(input).pipe(mergeMap(v => this.next.handle(v)));
+    handle(ctx: InvocationContext<TInput>): Observable<TOutput> {
+        return this.handler.handle(ctx).pipe(mergeMap(v => this.next.handle(v)));
     }
 }
 

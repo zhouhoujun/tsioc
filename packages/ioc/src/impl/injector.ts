@@ -19,7 +19,7 @@ import { get } from '../metadata/refl';
 import {
     InvocationContext, InvocationOption, InvokeOption, OperationArgumentResolver, Parameter, OperationFactory,
     ReflectiveOperationInvoker, OperationFactoryResolver, OperationInvoker, InvokeArguments,
-    composeResolver, ArgumentResolver
+    composeResolver, ArgumentResolver, DEFAULT_RESOLVERS
 } from '../invoker';
 import { DefaultModuleLoader } from './loader';
 import { ModuleLoader } from '../module.loader';
@@ -320,16 +320,16 @@ export class DefaultInjector extends Injector {
             let context = option.context;
             const platform = this.platform();
             if (option.target || option.providers || option.resolvers || option.arguments || option.values) {
-                let targetProviders: ProviderType[] | undefined;
+                let providers = option.providers;
                 if (option.target) {
                     if (isFunction(option.target) || isTypeReflect(option.target)) {
-                        targetProviders = platform.getTypeProvider(option.target);
+                        providers = [...providers || EMPTY, ...platform.getTypeProvider(option.target)];
                     } else if (isTypeObject(option.target)) {
-                        targetProviders = platform.getTypeProvider(getClass(option.target));
+                        providers = [...providers || EMPTY, ...platform.getTypeProvider(getClass(option.target))];
                     }
                     option.values = [...option.values || EMPTY, [TARGET, option.target]];
                 }
-                context = context ? createInvocationContext(this, { parent: context, ...option, targetProviders }) : createInvocationContext(this, targetProviders ? { ...option, targetProviders } : option);
+                context = context ? InvocationContext.create(this, { parent: context, ...option, providers }) : InvocationContext.create(this, providers ? { ...option, providers } : option);
                 isnew = true;
             }
             inst = this.resolveStrategy(platform, option, context);
@@ -747,7 +747,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
 
                 let val: any;
                 if (context) {
-                    val = context.resolveArgument(isString(dep.token) ? { paramName: dep.token } : { provider: dep.token } as any);
+                    val = context.resolveArgument(isString(dep.token) ? { paramName: dep.token } : { provider: dep.token });
                 }
                 deps.push(val ?? tryResolveToken(
                     dep.token,
@@ -799,7 +799,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
 }
 
 
-export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
+const BASE_RESOLVERS: OperationArgumentResolver[] = [
     composeResolver(
         (parameter, ctx) => isDefined(parameter.provider),
         {
@@ -901,35 +901,6 @@ export const DEFAULT_RESOLVERS: OperationArgumentResolver[] = [
     }
 ];
 
-function createInvocationContext(injector: Injector, option?: InvocationOption & {
-    /**
-     * invocation invoker target.
-     */
-    invokerTarget?: ClassType;
-    targetProviders?: ProviderType[],
-    methodProviders?: ProviderType[],
-    targetResolvers?: ArgumentResolver[],
-    methodResolvers?: ArgumentResolver[]
-}) {
-    option = option || EMPTY_OBJ;
-    let providers: ProviderType[] = option.providers ?? EMPTY;
-    if (option.targetProviders || option.methodProviders) {
-        providers = [...providers, ...option.targetProviders || EMPTY, ...option.methodProviders || EMPTY]
-    }
-
-    injector = new StaticInjector(providers, injector, 'invocation');
-    return new InvocationContext(
-        injector,
-        option.parent ?? injector.get(InvocationContext),
-        option.invokerTarget,
-        option.invokerMethod,
-        option.arguments || EMPTY_OBJ,
-        option.values,
-        ...option.resolvers ?? EMPTY,
-        ...option.targetResolvers ?? EMPTY,
-        ...option.methodResolvers ?? EMPTY,
-        ...DEFAULT_RESOLVERS);
-}
 
 export class DestroyLifecycleHooks extends LifecycleHooks {
 
@@ -1035,28 +1006,28 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
         if (!this._tagPdrs) {
             this._tagPdrs = injector.platform().getTypeProvider(this.reflect);
         }
-        let methodProviders: ProviderType[] | undefined;
-        let methodResolvers: ArgumentResolver[] | undefined;
+        let providers = option?.providers;
+        let resolvers = option?.resolvers;
+        if (!root) {
+            providers = providers ? this._tagPdrs.concat(providers) : this._tagPdrs;
+            resolvers = resolvers ? this.reflect.class.resolvers.concat(resolvers) : this.reflect.class.resolvers;
+        }
         const method = option?.invokerMethod;
         if (method) {
-            methodProviders = this.reflect.class.getMethodProviders(method);
-            methodResolvers = this.reflect.class.getMethodResolvers(method);
+            const mthpdrs = this.reflect.class.getMethodProviders(method);
+            providers = (providers && mthpdrs) ? providers.concat(mthpdrs) : (providers ?? mthpdrs);
+
+            const mthrsv = this.reflect.class.getMethodResolvers(method);
+            resolvers = (resolvers && mthrsv) ? resolvers.concat(mthrsv) : (resolvers ?? mthrsv);
         }
-        return root ? createInvocationContext(injector, {
+
+        return InvocationContext.create(injector, {
             ...option,
-            parent: root,
+            parent: root ?? option?.parent,
             invokerTarget: this.reflect.type,
-            methodProviders,
-            methodResolvers
-        })
-            : createInvocationContext(injector, {
-                ...option,
-                invokerTarget: this.reflect.type,
-                targetProviders: this._tagPdrs,
-                methodProviders,
-                targetResolvers: this.reflect.class.resolvers,
-                methodResolvers
-            });
+            providers,
+            resolvers
+        });
     }
 
     onDestroy(): void | Promise<void> {
@@ -1083,6 +1054,7 @@ export class DefaultOperationFactoryResolver extends OperationFactoryResolver {
  * @param {IContainer} container
  */
 function registerCores(container: Container) {
+    container.setValue(DEFAULT_RESOLVERS, BASE_RESOLVERS);
     container.setValue(ModuleLoader, new DefaultModuleLoader());
     container.setValue(OperationFactoryResolver, new DefaultOperationFactoryResolver());
     // bing action.

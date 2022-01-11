@@ -8,9 +8,9 @@ import { Observable } from 'rxjs';
 export abstract class TransportHandler<TInput = any, TOutput = any> {
     /**
      * transport handler.
-     * @param input 
+     * @param ctx invocation context with input.
      */
-    abstract handle(input: InvocationContext<TInput>): Observable<TOutput>;
+    abstract handle(ctx: InvocationContext<TInput>): Observable<TOutput>;
 }
 
 /**
@@ -25,9 +25,9 @@ export abstract class TransportHandler<TInput = any, TOutput = any> {
 export abstract class TransportBackend<TInput = any, TOutput = any> implements TransportHandler<TInput, TOutput> {
     /**
      * transport handler.
-     * @param input 
+     * @param ctx invocation context with input.
      */
-    abstract handle(input: InvocationContext<TInput>): Observable<TOutput>;
+    abstract handle(ctx: InvocationContext<TInput>): Observable<TOutput>;
 }
 
 /**
@@ -37,9 +37,9 @@ export abstract class TransportBackend<TInput = any, TOutput = any> implements T
 export abstract class EventHandler<TInput = any, TOutput = any> implements TransportHandler<TInput, TOutput> {
     /**
      * transport event handler.
-     * @param input 
+     * @param ctx 
      */
-    abstract handle(input: InvocationContext<TInput>): Observable<TOutput>;
+    abstract handle(ctx: InvocationContext<TInput>): Observable<TOutput>;
 }
 
 

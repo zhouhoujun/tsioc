@@ -2,7 +2,7 @@ import { ClassType, Type } from './types';
 import { getClassName, remove } from './utils/lang';
 import {
     EMPTY, isClassType, isDefined, isFunction, isPlainObject,
-    isArray, isPromise, isString, isTypeObject, isTypeReflect
+    isArray, isPromise, isString, isTypeObject, isTypeReflect, EMPTY_OBJ
 } from './utils/chk';
 import { Abstract } from './metadata/fac';
 import { ParameterMetadata } from './metadata/meta';
@@ -11,6 +11,7 @@ import { ProviderType } from './providers';
 import { DestroyCallback, Destroyable, OnDestroy } from './destroy';
 import { InjectFlags, Token } from './tokens';
 import { Injector, MethodType } from './injector';
+import { tokenId } from '.';
 
 
 
@@ -78,6 +79,8 @@ export function composeResolver<T extends OperationArgumentResolver<any>, TP ext
     }
 }
 
+export const DEFAULT_RESOLVERS = tokenId<OperationArgumentResolver[]>('DEFAULT_RESOLVERS');
+
 /**
  * The context for the {@link OperationInvoker invocation of an operation}.
  */
@@ -93,17 +96,22 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
     protected resolvers: OperationArgumentResolver[];
     propertyKey?: string;
 
+    readonly parent?: InvocationContext;
+    readonly injector: Injector;
+    readonly target?: ClassType;
+    readonly method?: string;
+
     constructor(
-        readonly injector: Injector,
-        readonly parent?: InvocationContext,
-        readonly target?: ClassType,
-        readonly method?: string,
-        args?: T,
-        values?: TokenValue[],
-        ...argumentResolvers: ArgumentResolver[]) {
-        this.resolvers = argumentResolvers.map(r => isFunction(r) ? injector.get<OperationArgumentResolver>(r) : r);
-        this._args = args ?? {} as T;
-        this._values = new Map(values);
+        injector: Injector,
+        options: InvocationOption = EMPTY_OBJ) {
+        this.injector = Injector.create(options.providers, injector, 'invocation');
+        const defsRvs = this.injector.get(DEFAULT_RESOLVERS, EMPTY);
+        this.resolvers = (options.resolvers ? options.resolvers.concat(defsRvs) : defsRvs).map(r => isFunction(r) ? this.injector.get<OperationArgumentResolver>(r) : r);
+        this._args = (options.arguments ?? {}) as T;
+        this._values = new Map(options.values);
+        this.parent = options.parent ?? injector.get(InvocationContext);
+        this.target = options.invokerTarget;
+        this.method = options.invokerMethod;
         injector.onDestroy(this);
         this._refs = [];
     }
@@ -151,7 +159,7 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
      */
     has(token: Token, flags?: InjectFlags): boolean {
         if (this.isSelf(token)) return true;
-        return this.injector.has(token, flags) || this._refs.some(i => i.has(token, flags)); // || this.parent?.has(token, flags) === true;
+        return this.injector.has(token, flags) || this._refs.some(i => i.has(token, flags)); // || (flags != InjectFlags.Self && this.parent?.has(token, flags) === true);
     }
 
     /**
@@ -163,7 +171,7 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
      */
     get<T>(token: Token<T>, context?: InvocationContext<any>, flags?: InjectFlags): T {
         if (this.isSelf(token)) return this as any;
-        return this.injector.get(token, context, flags) ?? this.getFormRef(token, context, flags)!; // ?? this.parent?.get(token, context, flags) as T;
+        return this.injector.get(token, context, flags) ?? this.getFormRef(token, context, flags) as T; //?? (flags != InjectFlags.Self? this.parent?.get(token, context, flags) : null) as T;
     }
 
     protected getFormRef<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags): T | undefined {
@@ -300,6 +308,10 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
             return this.destroy();
         }
         this._dsryCbs.add(callback);
+    }
+
+    static create(injector: Injector, options?: InvocationOption) {
+        return new InvocationContext(injector, options);
     }
 }
 
@@ -488,6 +500,10 @@ export interface InvokeOption extends InvokeArguments {
  * invocation option.
  */
 export interface InvocationOption extends InvokeOption {
+    /**
+     * invocation invoker target.
+     */
+    invokerTarget?: ClassType;
     /**
      * invocation target method.
      */

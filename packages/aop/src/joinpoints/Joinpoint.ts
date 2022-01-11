@@ -1,6 +1,6 @@
 import {
-    Type, ParameterMetadata, tokenId, Injector, EMPTY, Token, IocContext, InvocationContext,
-    lang, ClassType, OperationArgumentResolver, DEFAULT_RESOLVERS, InvokeOption, TokenValue, DecorDefine, Defer
+    Type, ParameterMetadata, tokenId, Injector, Token, IocContext, InvocationContext,
+    lang, ClassType, InvokeOption, DecorDefine, Defer, InvocationOption, EMPTY_OBJ
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advices } from '../advices/Advices';
@@ -59,11 +59,8 @@ export class Joinpoint<T = any> extends InvocationContext<T> implements IocConte
         readonly params?: ParameterMetadata[],
         readonly args?: any[],
         readonly annotations?: DecorDefine[],
-        parent?: InvocationContext,
-        data?: T,
-        values?: TokenValue[],
-        ...argumentResolvers: OperationArgumentResolver[]) {
-        super(injector, parent, target, method, data, values, ...argumentResolvers, ...DEFAULT_RESOLVERS);
+        options: InvocationOption = EMPTY_OBJ) {
+        super(injector, options);
     }
 
     get fullName(): string {
@@ -84,8 +81,7 @@ export class Joinpoint<T = any> extends InvocationContext<T> implements IocConte
      * @returns 
      */
     static parse(injector: Injector, options: JoinpointOption) {
-        return new Joinpoint(
-            Injector.create([], injector, 'invocation'),
+        return new Joinpoint(injector,
             options.target,
             options.targetType,
             options.name,
@@ -96,16 +92,10 @@ export class Joinpoint<T = any> extends InvocationContext<T> implements IocConte
             options.params,
             options.args,
             options.annotations,
-            options.parent,
             {
-                // method: options.name,
-                // params: options.params,
-                // args: options.args,
-                // advices: options.advices,
-                // originMethod: options.originMethod,
-                // annotations: options.annotations
-            },
-            options.values,
-            ...options.resolvers || EMPTY)
+                ...options,
+                invokerMethod: options.name,
+                invokerTarget: options.targetType
+            })
     }
 }
