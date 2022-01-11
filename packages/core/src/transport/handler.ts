@@ -37,7 +37,7 @@ export abstract class TransportBackend<TInput = any, TOutput = any> implements T
 export abstract class EventHandler<TInput = any, TOutput = any> implements TransportHandler<TInput, TOutput> {
     /**
      * transport event handler.
-     * @param ctx 
+     * @param ctx invocation context with input.
      */
     abstract handle(ctx: InvocationContext<TInput>): Observable<TOutput>;
 }

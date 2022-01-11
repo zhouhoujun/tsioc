@@ -1,7 +1,7 @@
 import { Abstract, Inject, InvocationContext, isNil, Providers } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { connectable, defer, Observable, Observer, Subject, throwError } from 'rxjs';
-import { mergeMap } from 'rxjs/operators';
+import { map, mergeMap } from 'rxjs/operators';
 import { Client } from '../../client';
 import { OnDispose } from '../../lifecycle';
 import { InvalidMessageError } from '../error';
@@ -30,10 +30,12 @@ export abstract class AbstractClient implements Client, OnDispose {
     protected serializer!: Serializer<TransportEvent | TransportRequest>;
     @Inject()
     protected deserializer!: Deserializer<TransportResponse>;
+    @Inject()
+    protected context!: InvocationContext;
 
     protected routing = new Map<string, Function>();
 
-    constructor(protected handler: TransportHandler, protected context: InvocationContext) {
+    constructor(protected handler: TransportHandler) {
 
     }
 
@@ -53,7 +55,12 @@ export abstract class AbstractClient implements Client, OnDispose {
                     return this.publish({ pattern, data }, callback);
                 })
             ),
-            input => this.handler.handle(this.createContext(input))
+            mergeMap(input => this.handler.handle(this.createContext(input))),
+            mergeMap(async ctx => {
+                const response = ctx.response;
+                await ctx.destroy();
+                return response;
+            })
         );
 
     }
@@ -70,7 +77,14 @@ export abstract class AbstractClient implements Client, OnDispose {
             resetOnDisconnect: false,
         });
         connectableSource.connect();
-        return connectableSource.pipe(input => this.handler.handle(this.createContext(input)));
+        return connectableSource.pipe(
+            mergeMap(input => this.handler.handle(this.createContext(input))),
+            mergeMap(async ctx => {
+                const response = ctx.response;
+                await ctx.destroy();
+                return response;
+            })
+        );
     }
 
     /**

@@ -1,3 +1,4 @@
+import { InvocationContext } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { TransportHandler } from './handler';
 
@@ -9,8 +10,8 @@ import { TransportHandler } from './handler';
 export interface TransportInterceptor<TInput = any, TOutput = any> {
     /**
      * the method to implemet interceptor.
-     * @param input input.
+     * @param ctx invocation context with input.
      * @param next route handler.
      */
-    intercept(input: TInput, next: TransportHandler<TInput, TOutput>): Observable<TOutput>;
+    intercept(ctx: InvocationContext<TInput>, next: TransportHandler<TInput, TOutput>): Observable<TOutput>;
 }
