@@ -9,11 +9,6 @@ import { ScanSet } from './scan.set';
  */
 export interface Client {
     /**
-     * connect server
-     */
-    connect(): Promise<any>;
-
-    /**
      * send message.
      * @param pattern message pattern.
      * @param data send data.

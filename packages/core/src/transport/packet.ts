@@ -6,6 +6,7 @@ import { Pattern } from './pattern';
 export interface ReadPacket<T = any> {
     pattern: Pattern;
     data: T;
+    event?: boolean;
 }
 
 /**

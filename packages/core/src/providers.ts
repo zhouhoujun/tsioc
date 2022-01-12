@@ -77,7 +77,7 @@ class ServiceSetImpl extends AbstractScanSet<OperationFactory<StartupService>> i
 
 class ClientSetImpl extends AbstractScanSet<OperationFactory<Client>> implements ClientSet {
     protected run(typeRef: OperationFactory<Client>, ctx: ApplicationContext) {
-        return typeRef.resolve().connect();
+        return typeRef.resolve();
     }
 
 }
