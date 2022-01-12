@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { TransportType } from '../types';
+import { Protocol } from '../types';
 import { AbstractServer } from './server';
 
 /**
@@ -9,7 +9,7 @@ export interface ServerOption extends Record<string, any> {
     /**
      * transport type.
      */
-    transport: TransportType;
+    transport: Protocol;
 }
 
 /**

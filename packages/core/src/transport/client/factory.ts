@@ -1,6 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
-import { AbstractClient } from './client';
-import { TransportType } from '../types';
+import { TransportClient } from './client';
+import { Protocol } from '../types';
 
 /**
  * client option.
@@ -9,7 +9,7 @@ export interface ClientOption extends Record<string, any> {
     /**
      * transport type.
      */
-    transport: TransportType;
+    protocol: Protocol;
 }
 
 /**
@@ -21,5 +21,5 @@ export abstract class ClientFactory {
      * create by options.
      * @param options 
      */
-    abstract create(options: ClientOption): AbstractClient;
+    abstract create(options: ClientOption): TransportClient;
 }

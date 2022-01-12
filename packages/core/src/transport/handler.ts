@@ -1,6 +1,7 @@
 import { Abstract, Injector, InvocationContext, InvocationOption, isArray } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { TransportType } from './types';
+import { Pattern } from './pattern';
+import { Protocol } from './types';
 
 
 /**
@@ -26,9 +27,9 @@ export abstract class TransportHandler<TInput = any, TOutput = any> {
 @Abstract()
 export abstract class TransportBackend<TInput = any, TOutput = any> implements TransportHandler<TInput, TOutput> {
     /**
-     * transport type.
+     * transport Protocol type.
      */
-    abstract get transport(): TransportType;
+    abstract get protocol(): Protocol;
     /**
      * transport handler.
      * @param ctx invocation context with input.
@@ -52,25 +53,28 @@ export abstract class EventHandler<TInput = any, TOutput = any> implements Trans
  * transport option.
  */
 export interface TransportOption<T = any> extends InvocationOption {
-    transport: TransportType;
-    request: T;
+    protocol?: Protocol;
+    pattern: Pattern;
+    data: T;
+    event?: boolean;
 }
 
 /**
  * transport context.
  */
 export class TransportContext<T = any> extends InvocationContext<T> {
-    private _request: T;
-    readonly transport: TransportType;
+    readonly data: T;
+    readonly protocol: Protocol;
+    readonly pattern: Pattern;
+    readonly event: boolean;
+
     constructor(injector: Injector, options: TransportOption<T>) {
         super(injector, options);
-        this.transport = options.transport;
-        this._request = options.request;
+        this.protocol = options.protocol!;
+        this.pattern = options.pattern;
+        this.event = options.event === true;
+        this.data = options.data;
         this.injector.setValue(TransportContext, this);
-    }
-
-    get request(): T {
-        return this._request;
     }
 
     static create<T>(injector: Injector, options: TransportOption<T>): TransportContext<T> {

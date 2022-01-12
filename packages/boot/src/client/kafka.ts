@@ -1,5 +1,5 @@
 import { Inject, Injectable, isUndefined, ModuleLoader } from '@tsdi/ioc';
-import { AbstractClient, Deserializer, TransportRequest, TransportEvent, ReadPacket, Serializer, WritePacket, TransportHandler } from '@tsdi/core';
+import { TransportClient, Deserializer, TransportRequest, TransportEvent, ReadPacket, Serializer, WritePacket, TransportHandler } from '@tsdi/core';
 import { Level } from '@tsdi/logs';
 import {
     BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerGroupJoinEvent, Producer,
@@ -19,7 +19,7 @@ let uuid: any;
         { provide: Deserializer, useClass: KafkaResponseDeserializer }
     ]
 })
-export class KafkaClient extends AbstractClient {
+export class KafkaClient extends TransportClient {
 
     protected client: Kafka | undefined;
     protected consumer!: Consumer;

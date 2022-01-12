@@ -1,8 +1,8 @@
-import { AbstractClient, Deserializer, TransportResponse } from '@tsdi/core';
+import { TransportClient, Deserializer, TransportResponse } from '@tsdi/core';
 import { isUndefined, ProviderIn } from '@tsdi/ioc';
 
 
-@ProviderIn(AbstractClient, Deserializer)
+@ProviderIn(TransportClient, Deserializer)
 export class IncomingResponseDeserializer implements Deserializer<TransportResponse> {
     deserialize(value: any, options?: Record<string, any>): TransportResponse {
         return this.isExternal(value) ? this.mapToSchema(value) : value;

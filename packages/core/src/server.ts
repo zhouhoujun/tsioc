@@ -27,7 +27,7 @@ export abstract class ServerSet implements ScanSet<OperationFactory<Server>> {
      * has the client type or not.
      * @param type class type.
      */
-     abstract has(type: Type<any>): boolean;
+    abstract has(type: Type<any>): boolean;
     /**
      * add server resolver.
      * @param resolver resolver instance.

@@ -1,5 +1,5 @@
 import { Inject, Injectable, ModuleLoader, Type } from '@tsdi/ioc';
-import { AbstractClient, Deserializer, ReadPacket, TransportHandler, WritePacket } from '@tsdi/core';
+import { TransportClient, Deserializer, ReadPacket, TransportHandler, WritePacket } from '@tsdi/core';
 
 let modbusPackage: { default: Type<ModbusRTU> };
 
@@ -8,7 +8,7 @@ let modbusPackage: { default: Type<ModbusRTU> };
         // {provide: Deserializer}
     ]
 })
-export class ModbusClient extends AbstractClient {
+export class ModbusClient extends TransportClient {
     
     @Inject() protected loader!: ModuleLoader;
 

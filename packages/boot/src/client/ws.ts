@@ -1,7 +1,7 @@
-import { AbstractClient, ReadPacket, WritePacket } from '@tsdi/core';
+import { TransportClient, ReadPacket, WritePacket } from '@tsdi/core';
 
 
-export class WSClient extends AbstractClient {
+export class WSClient extends TransportClient {
     
     connect(): Promise<void> {
         throw new Error('Method not implemented.');

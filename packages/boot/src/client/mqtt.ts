@@ -1,5 +1,5 @@
 import { Injectable, lang } from '@tsdi/ioc';
-import { AbstractClient, Deserializer, ReadPacket, Serializer, TransportHandler, WritePacket } from '@tsdi/core';
+import { TransportClient, Deserializer, ReadPacket, Serializer, TransportHandler, WritePacket } from '@tsdi/core';
 import { MqttClient, connect, IClientOptions } from 'mqtt';
 import { EmptyError, first, fromEvent, lastValueFrom, map, merge, share, take, tap } from 'rxjs';
 import { MqttRecordSerializer } from '../transforms/mqtt';
@@ -12,7 +12,7 @@ import { IncomingResponseDeserializer } from '../transforms/response';
         { provide: Deserializer, useClass: IncomingResponseDeserializer}
     ]
 })
-export class MQTTClient extends AbstractClient {
+export class MQTTClient extends TransportClient {
     protected mqttClient: MqttClient | undefined;
     protected connection: Promise<any> | undefined;
     constructor(
