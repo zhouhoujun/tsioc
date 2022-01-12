@@ -1,6 +1,6 @@
 import { Abstract, EMPTY, Injectable, InvocationContext, isString } from '@tsdi/ioc';
 import { mergeMap, Observable, throwError } from 'rxjs';
-import { EventHandler, TransportError, TransportHandler } from './handler';
+import { EventHandler, TransportContext, TransportError, TransportHandler } from './handler';
 import { InterceptorHandler, TRANSPORT_INTERCEPTORS } from './intercepting';
 import { TransportRequest, TransportResponse } from './packet';
 import { Pattern, stringify } from './pattern';
@@ -20,7 +20,7 @@ export class EventChain<TInput = any, TOutput = any> extends EventHandler<TInput
     constructor(private handler: TransportHandler, private next: TransportHandler) {
         super()
     }
-    handle(ctx: InvocationContext<TInput>): Observable<TOutput> {
+    handle(ctx: TransportContext<TInput>): Observable<TOutput> {
         return this.handler.handle(ctx).pipe(mergeMap(v => this.next.handle(v)));
     }
 }
@@ -56,7 +56,7 @@ export class ServerHandler implements TransportHandlers {
         return this.handlers.get(route)!;
     }
 
-    handle(ctx: InvocationContext<TransportRequest>): Observable<TransportResponse> {
+    handle(ctx: TransportContext<TransportRequest>): Observable<TransportResponse> {
         const route = this.getHandlerByPattern(ctx.arguments.pattern);
         if (!route) throwError(()=> new NotFoundError());
 

@@ -1,6 +1,6 @@
 import { Injectable, InvocationContext, tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { TransportBackend, TransportHandler } from './handler';
+import { TransportBackend, TransportContext, TransportHandler } from './handler';
 import { TransportInterceptor } from './interceptor';
 import { TransportRequest, TransportResponse } from './packet';
 
@@ -27,11 +27,11 @@ export class InterceptingHandler implements TransportHandler {
 
     constructor(private backend: TransportBackend, private context: InvocationContext) { }
 
-    handle(ctx: InvocationContext<TransportRequest>): Observable<TransportResponse> {
+    handle(ctx: TransportContext<TransportRequest>): Observable<TransportResponse> {
         if (!this.chain) {
             const interceptors = this.context.get(TRANSPORT_INTERCEPTORS);
             this.chain = interceptors.reduceRight(
-                (next, interceptor) => new InterceptorHandler(next, interceptor), this.backend);
+                (next, interceptor) => new InterceptorHandler(next, interceptor), this.backend as TransportHandler);
         }
         return this.chain.handle(ctx);
     }
@@ -41,7 +41,7 @@ export class InterceptingHandler implements TransportHandler {
 export class InterceptorHandler<TInput = any, TOutput = any> implements TransportHandler<TInput, TOutput> {
     constructor(private next: TransportHandler, private interceptor: TransportInterceptor) { }
 
-    handle(ctx: InvocationContext<TInput>): Observable<TOutput> {
+    handle(ctx: TransportContext<TInput>): Observable<TOutput> {
         return this.interceptor.intercept(ctx, this.next);
     }
 }

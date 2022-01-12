@@ -6,22 +6,15 @@ import { Client } from '../../client';
 import { OnDispose } from '../../lifecycle';
 import { InvalidMessageError } from '../error';
 import { TransportResponse, TransportEvent, TransportRequest, ReadPacket, WritePacket } from '../packet';
-import { Deserializer, EmptyDeserializer } from '../deserializer';
-import { Serializer, EmptySerializer } from '../serializer';
+import { Deserializer } from '../deserializer';
+import { Serializer } from '../serializer';
 import { Pattern, stringify } from '../pattern';
-import { TransportHandler } from '../handler';
-import { InterceptingHandler } from '../intercepting';
-
+import { TransportContext, TransportHandler } from '../handler';
 
 /**
  * abstract clinent.
  */
 @Abstract()
-@Providers([
-    { provide: Serializer, useClass: EmptySerializer },
-    { provide: Deserializer, useClass: EmptyDeserializer },
-    { provide: TransportHandler, useClass: InterceptingHandler }
-])
 export abstract class AbstractClient implements Client, OnDispose {
 
     @Logger()
@@ -55,13 +48,23 @@ export abstract class AbstractClient implements Client, OnDispose {
                     return this.publish({ pattern, data }, callback);
                 })
             ),
-            mergeMap(input => this.handler.handle(this.createContext(input))),
-            mergeMap(async ctx => {
-                const response = ctx.response;
-                await ctx.destroy();
-                return response;
-            })
-        );
+            mergeMap(input => {
+                const ctx = this.createContext(input);
+                return this.handler.handle(ctx)
+                    .pipe(
+                        mergeMap(async r => {
+                            await ctx.destroy();
+                            return r;
+                        })
+                        // catchError((err, caught) => {
+                        //     ctx.destroy();
+                        //     return throwError(err);
+                        // })
+                    )
+                    .pipe(
+                        
+                    );
+            }));
 
     }
 
@@ -77,14 +80,7 @@ export abstract class AbstractClient implements Client, OnDispose {
             resetOnDisconnect: false,
         });
         connectableSource.connect();
-        return connectableSource.pipe(
-            mergeMap(input => this.handler.handle(this.createContext(input))),
-            mergeMap(async ctx => {
-                const response = ctx.response;
-                await ctx.destroy();
-                return response;
-            })
-        );
+        return connectableSource.pipe(mergeMap(input => this.handler.handle(this.createContext(input))));
     }
 
     /**
@@ -104,7 +100,7 @@ export abstract class AbstractClient implements Client, OnDispose {
     protected abstract dispatchEvent<T = any>(packet: ReadPacket): Promise<T>;
 
     protected createContext<T>(input: T) {
-        return InvocationContext.create(this.context.injector, { parent: this.context, arguments: input });
+        return TransportContext.create(this.context.injector, { parent: this.context, request: input, transport: 'grpc' });
     }
 
     protected createObserver<T>(

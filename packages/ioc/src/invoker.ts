@@ -79,6 +79,9 @@ export function composeResolver<T extends OperationArgumentResolver<any>, TP ext
     }
 }
 
+/**
+ * default resolvers {@link OperationArgumentResolver}. 
+ */
 export const DEFAULT_RESOLVERS = tokenId<OperationArgumentResolver[]>('DEFAULT_RESOLVERS');
 
 /**
@@ -96,9 +99,21 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
     protected resolvers: OperationArgumentResolver[];
     propertyKey?: string;
 
+    /**
+     * parent {@link InvocationContext}.
+     */
     readonly parent?: InvocationContext;
+    /**
+     * invocation static injector. 
+     */
     readonly injector: Injector;
+    /**
+     * invocation target.
+     */
     readonly target?: ClassType;
+    /**
+     * invocation method.
+     */
     readonly method?: string;
 
     constructor(
@@ -143,6 +158,11 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
         return this._args;
     }
 
+    /**
+     * set argument.
+     * @param name 
+     * @param value 
+     */
     setArgument(name: string, value: any): void {
         (this._args as any)[name] = value;
     }

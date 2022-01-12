@@ -8,17 +8,17 @@ export type TransportType = 'tcp' | 'grpc' | 'rmq' | 'kafka' | 'redis'
 
 
 
-/**
- * transport option.
- */
-@Abstract()
-export abstract class TransportOption {
-    /**
-     * transport type.
-     */
-    abstract get transport(): TransportType;
-    /**
-     * options setting of the transport.
-     */
-    abstract get options(): Record<string, any>;
-}
+// /**
+//  * transport option.
+//  */
+// @Abstract()
+// export abstract class TransportOption {
+//     /**
+//      * transport type.
+//      */
+//     abstract get transport(): TransportType;
+//     /**
+//      * options setting of the transport.
+//      */
+//     abstract get options(): Record<string, any>;
+// }

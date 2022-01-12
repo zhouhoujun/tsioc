@@ -1,21 +1,16 @@
-import { Abstract, Inject, InvocationContext, isPromise, Providers } from '@tsdi/ioc';
+import { Abstract, Inject, isPromise, Providers } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { catchError, finalize, Observable, Subscription, EMPTY, isObservable, connectable, Subject, from, of } from 'rxjs';
 import { OnDispose } from '../../lifecycle';
 import { Server } from '../../server';
 import { TransportEvent, TransportRequest, TransportResponse, ReadPacket, WritePacket } from '../packet';
-import { Deserializer, EmptyDeserializer } from '../deserializer';
-import { EmptySerializer, Serializer } from '../serializer';
-import { ServerHandler, TransportHandlers } from '../handlers';
-
+import { Deserializer } from '../deserializer';
+import { Serializer } from '../serializer';
+import { TransportContext } from '../handler';
+import { TransportHandlers } from '../handlers';
 
 
 @Abstract()
-@Providers([
-    { provide: Serializer, useClass: EmptySerializer },
-    { provide: Deserializer, useClass: EmptyDeserializer },
-    { provide: TransportHandlers, useClass: ServerHandler }
-])
 export abstract class AbstractServer implements Server, OnDispose {
 
     @Logger()
@@ -67,7 +62,7 @@ export abstract class AbstractServer implements Server, OnDispose {
     }
 
     public async handleEvent(
-        context: InvocationContext<ReadPacket>,
+        context: TransportContext<ReadPacket>,
     ): Promise<any> {
         const handler = this.handlers.getHandlerByPattern(context.arguments.pattern);
         if (!handler) {
