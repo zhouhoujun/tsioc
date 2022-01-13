@@ -1,6 +1,6 @@
-import { AbstractServer } from '@tsdi/core';
+import { TransportServer } from '@tsdi/core';
 
-export class MQTTServer extends AbstractServer {
+export class MQTTServer extends TransportServer {
     
     startup(): Promise<void> {
         throw new Error('Method not implemented.');

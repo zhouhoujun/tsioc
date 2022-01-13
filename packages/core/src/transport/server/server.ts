@@ -11,7 +11,7 @@ import { TransportHandlers } from '../handlers';
 
 
 @Abstract()
-export abstract class AbstractServer implements Server, OnDispose {
+export abstract class TransportServer implements Server, OnDispose {
 
     @Logger()
     protected readonly logger!: ILogger;
@@ -21,7 +21,7 @@ export abstract class AbstractServer implements Server, OnDispose {
     @Inject()
     protected deserializer!: Deserializer<TransportRequest | TransportEvent>;
 
-    constructor(protected handlers: TransportHandlers) {
+    constructor(readonly handlers: TransportHandlers) {
 
     }
 
@@ -88,4 +88,3 @@ export abstract class AbstractServer implements Server, OnDispose {
     }
 
 }
-

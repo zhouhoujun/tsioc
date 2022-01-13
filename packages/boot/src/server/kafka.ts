@@ -1,5 +1,5 @@
 import { Inject, Injectable, isNil, ModuleLoader, OperationFactoryResolver, Injector, getClass } from '@tsdi/ioc';
-import { AbstractServer, Deserializer, Serializer, TransportHandler, TransportHandlers, TransportResponse } from '@tsdi/core';
+import { TransportServer, Deserializer, Serializer, TransportHandler, TransportHandlers, TransportResponse } from '@tsdi/core';
 import { Level } from '@tsdi/logs';
 import { Observable } from 'rxjs';
 
@@ -18,7 +18,7 @@ let kafkajs: any;
         { provide: Deserializer, useClass: KafkaResponseDeserializer }
     ]
 })
-export class KafkaServer extends AbstractServer {
+export class KafkaServer extends TransportServer {
 
     protected client: Kafka | undefined;
     protected consumer!: Consumer;

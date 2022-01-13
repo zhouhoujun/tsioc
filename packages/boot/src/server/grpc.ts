@@ -1,6 +1,6 @@
-import { AbstractServer } from '@tsdi/core';
+import { TransportServer } from '@tsdi/core';
 
-export class GrpcServer extends AbstractServer {
+export class GrpcServer extends TransportServer {
     
     startup(): Promise<void> {
         throw new Error('Method not implemented.');
