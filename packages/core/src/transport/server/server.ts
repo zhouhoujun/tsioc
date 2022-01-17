@@ -1,4 +1,4 @@
-import { Abstract, Inject, isPromise, Providers } from '@tsdi/ioc';
+import { Abstract, Inject, isFunction, isPromise, Providers } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { catchError, finalize, Observable, Subscription, EMPTY, isObservable, connectable, Subject, from, of } from 'rxjs';
 import { OnDispose } from '../../lifecycle';
@@ -27,7 +27,11 @@ export abstract class TransportServer implements Server, OnDispose {
 
     abstract startup(): Promise<void>;
 
-    abstract onDispose(): Promise<void>;
+    async onDispose(): Promise<void> {
+        if (isFunction((this.handlers as TransportHandlers & OnDispose).onDispose)) {
+            await (this.handlers as TransportHandlers & OnDispose).onDispose();
+        }
+    }
 
 
     public send(

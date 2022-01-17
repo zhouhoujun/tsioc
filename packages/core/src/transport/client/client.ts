@@ -1,4 +1,4 @@
-import { Abstract, Inject, Injectable, InvocationContext, InvocationOption, isNil } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, InvocationContext, InvocationOption, isFunction, isNil } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { Observable, throwError } from 'rxjs';
 import { catchError, mergeMap } from 'rxjs/operators';
@@ -60,7 +60,9 @@ export class DefaultTransportClient extends TransportClient {
     }
 
     async onDispose(): Promise<void> {
-        await (this.handler as TransportHandler & OnDispose).onDispose?.()
+        if (isFunction((this.handler as TransportHandler & OnDispose).onDispose)) {
+            await (this.handler as TransportHandler & OnDispose).onDispose();
+        }
         await this.context.onDestroy();
     }
 

@@ -133,7 +133,9 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
  */
 export const MODEL_RESOLVERS = tokenId<ModelArgumentResolver[]>('MODEL_RESOLVERS');
 
-
+/**
+ * model resolver.
+ */
 class ModelResolver<C = any> extends AbstractModelArgumentResolver<C> {
 
 

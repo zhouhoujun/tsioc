@@ -130,6 +130,12 @@ const clob = /^\w*clob$/;
 
 const jsonExp = /^(\s|\w)*json(b)?$/;
 
+/**
+ * missing pipe error.
+ * @param prop property metadata.
+ * @param type target type.
+ * @returns instance of {@link ArgumentError}
+ */
 export function missingPropPipeError(prop: DBPropertyMetadata, type?: Type) {
     return new ArgumentError(`missing pipe to transform property ${prop.propertyKey} of class ${type}`);
 }

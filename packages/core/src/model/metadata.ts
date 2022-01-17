@@ -7,7 +7,6 @@ export interface RepositoryMetadata extends ParamPropMetadata {
     connection?: string;
 }
 
-
 /**
  * Repository Decorator, to autowired repository for paramerter or filed.
  */

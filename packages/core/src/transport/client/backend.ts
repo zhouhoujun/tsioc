@@ -10,10 +10,6 @@ import { TransportBackend, TransportContext } from '../handler';
 export abstract class ClientTransportBackend<TInput = any, TOutput extends WritePacket = WritePacket>
     extends TransportBackend<TInput, TOutput>  {
 
-    constructor(private context: InvocationContext) {
-        super();
-    }
-
     abstract connect(): Promise<any>;
 
     handle(ctx: TransportContext<TInput>): Observable<TOutput> {
