@@ -62,24 +62,30 @@ export interface TransportOption<T = any> extends InvocationOption {
 /**
  * transport context.
  */
-export class TransportContext<T = any> extends InvocationContext<T> {
-    readonly data: T;
-    readonly protocol: Protocol;
-    readonly pattern: Pattern;
-    readonly event: boolean;
+@Abstract()
+export abstract class TransportContext<T = any> extends InvocationContext<T> {
+
+    abstract get request(): T;
+    abstract get protocol(): Protocol;
+    abstract get pattern(): string;
+    abstract get isEvent(): boolean;
 
     constructor(injector: Injector, options: TransportOption<T>) {
         super(injector, options);
-        this.protocol = options.protocol!;
-        this.pattern = options.pattern;
-        this.event = options.event === true;
-        this.data = options.data;
         this.injector.setValue(TransportContext, this);
     }
 
-    static create<T>(injector: Injector, options: TransportOption<T>): TransportContext<T> {
-        return new TransportContext(injector, options);
-    }
+    // static create<T>(injector: Injector, options: TransportOption<T>): TransportContext<T> {
+    //     return new TransportContext(injector, options);
+    // }
+}
+
+/**
+ * transport context factory.
+ */
+@Abstract()
+export abstract class TransportContextFactory {
+    abstract create<T>(parent: Injector | InvocationContext, options: TransportOption<T>): TransportContext<T>;
 }
 
 /**

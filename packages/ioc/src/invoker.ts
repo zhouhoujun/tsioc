@@ -278,6 +278,10 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
         return meta.resolver;
     }
 
+    resolve<T>(token: Token<T>): T | null {
+        return this.resolveArgument({ provider: token });
+    }
+
     /**
      * resolve the parameter value.
      * @param meta property or parameter metadata type of {@link Parameter}.

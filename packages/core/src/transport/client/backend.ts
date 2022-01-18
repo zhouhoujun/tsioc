@@ -1,4 +1,4 @@
-import { Abstract, InvocationContext } from '@tsdi/ioc';
+import { Abstract } from '@tsdi/ioc';
 import { connectable, defer, Observable, Observer, Subject } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
 import { ReadPacket, WritePacket } from '../packet';
@@ -13,7 +13,7 @@ export abstract class ClientTransportBackend<TInput = any, TOutput extends Write
     abstract connect(): Promise<any>;
 
     handle(ctx: TransportContext<TInput>): Observable<TOutput> {
-        if (ctx.event) {
+        if (ctx.isEvent) {
             const source = defer(async () => this.connect()).pipe(
                 mergeMap(() => this.dispatchEvent(ctx)),
             );

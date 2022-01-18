@@ -2,7 +2,7 @@ import { Abstract, Inject, Injectable, InvocationContext, InvocationOption, isFu
 import { ILogger, Logger } from '@tsdi/logs';
 import { Observable, throwError } from 'rxjs';
 import { catchError, mergeMap } from 'rxjs/operators';
-import { TransportContext, TransportHandler, TransportOption } from '../handler';
+import { TransportContext, TransportContextFactory, TransportHandler, TransportOption } from '../handler';
 import { Client } from '../../client';
 import { OnDispose } from '../../lifecycle';
 import { InvalidMessageError } from '../error';
@@ -94,7 +94,7 @@ export class DefaultTransportClient extends TransportClient {
     }
 
     protected createContext(option: TransportOption) {
-        return TransportContext.create(this.context.injector, { ...option, parent: this.context, protocol: this.protocol });
+        return this.context.resolve(TransportContextFactory)?.create(this.context, { ...option, parent: this.context, protocol: this.protocol })!;
     }
 
 }
