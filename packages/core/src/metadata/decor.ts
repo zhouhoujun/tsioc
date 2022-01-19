@@ -285,7 +285,7 @@ export const Configuration: Configuration = createDecorator<InjectableMetadata>(
                             useFactory: () => injector.get(type)[key]
                         } as ProviderType
                     }
-                })
+                });
             injector.inject(pdrs);
             next();
         }

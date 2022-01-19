@@ -1,10 +1,9 @@
 import { DestroyCallback, EMPTY, Injector, isFunction, isUndefined, lang, OperationFactory, OperationFactoryResolver, refl, Type, TypeReflect } from '@tsdi/ioc';
 import { Middleware, MiddlewareRef, MiddlewareRefFactory, MiddlewareRefFactoryResolver } from './middleware';
 import { HandleMetadata } from '../metadata/meta';
-import { Context } from '../context';
 import { CanActivate } from '../guard';
 import { joinprefix, RouteOption } from './route';
-import { promisify } from '../pattern';
+import { TransportContext, promisify } from '../context';
 
 
 /**
@@ -34,7 +33,7 @@ export class DefaultMiddlewareRef<T extends Middleware = Middleware> extends Mid
         return this._instance;
     }
 
-    async handle(ctx: Context, next: () => Promise<void>): Promise<void> {
+    async handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         if (isUndefined(this.metadata.route)) {
             return await this.execute(ctx, next);
         }
@@ -46,7 +45,7 @@ export class DefaultMiddlewareRef<T extends Middleware = Middleware> extends Mid
     }
 
 
-    protected execute(ctx: Context, next: () => Promise<void>): Promise<void> {
+    protected execute(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         return this.instance.handle(ctx, next);
     }
 
@@ -79,10 +78,10 @@ export class DefaultMiddlewareRef<T extends Middleware = Middleware> extends Mid
     }
 
 
-    protected async canActive(ctx: Context): Promise<boolean> {
+    protected async canActive(ctx: TransportContext): Promise<boolean> {
         if (this.protocols.indexOf(ctx.protocol) < 0) return false;
         if (ctx.status && ctx.status !== 404) return false;
-        if (!ctx.path.startsWith(this.url)) return false;
+        if (!ctx.pattern.startsWith(this.url)) return false;
         if (this.guards && this.guards.length) {
             if (!(await lang.some(
                 this.guards.map(token => () => promisify(this.factory.resolve(token)?.canActivate(ctx))),
@@ -138,7 +137,7 @@ export class DefaultMiddlewareRefFactory<T extends Middleware> extends Middlewar
 }
 
 export class DefaultMiddlewareRefFactoryResolver extends MiddlewareRefFactoryResolver {
-    resolve<T extends Middleware<Context>>(type: Type<T> | TypeReflect<T>): MiddlewareRefFactory<T> {
+    resolve<T extends Middleware<TransportContext>>(type: Type<T> | TypeReflect<T>): MiddlewareRefFactory<T> {
         return new DefaultMiddlewareRefFactory(isFunction(type) ? refl.get(type) : type);
     }
 }

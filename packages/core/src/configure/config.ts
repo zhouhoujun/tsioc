@@ -58,7 +58,6 @@ export interface ApplicationConfiguration extends ProvidersMetadata, Record<stri
      * repositories of orm.
      */
     repositories?: (string | Type)[];
-
     /**
      * service port
      */
@@ -67,7 +66,9 @@ export interface ApplicationConfiguration extends ProvidersMetadata, Record<stri
      * service hostname
      */
     hostname?: string;
-
+    /**
+     * subdomain offset.
+     */
     subdomainOffset?: number;
     /**
      * server options

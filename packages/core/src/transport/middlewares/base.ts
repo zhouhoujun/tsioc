@@ -1,8 +1,6 @@
 import { EMPTY_OBJ, Injectable, Injector, isArray, isDefined, isString } from '@tsdi/ioc';
-import { Context } from '../context';
 import { HeadersOption } from '../packet';
-import { RequestOption, Request } from '../request';
-import { ResponseOption, Response } from '../response';
+import { Context, RequestOption, Request, ResponseOption, Response   } from './context';
 
 @Injectable()
 export class ContextBase extends Context {

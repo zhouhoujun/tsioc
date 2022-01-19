@@ -1,17 +1,17 @@
 import { Abstract, chain, isString, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
-import { Context } from '../context';
-import { Route } from './route';
-import { Middlewares, MiddlewareType } from './middlewares';
-import { PipeTransform } from '../../pipes/pipe';
+import { TransportContext } from '../context';
 import { CanActivate } from '../guard';
 import { Middleware } from './middleware';
+import { Middlewares, MiddlewareType } from './middlewares';
+import { PipeTransform } from '../../pipes/pipe';
+import { Route } from './route';
 
 
 /**
  * abstract router.
  */
 @Abstract()
-export abstract class Router<T extends Context = Context> extends Middlewares<T> {
+export abstract class Router<T extends TransportContext = TransportContext> extends Middlewares<T> {
     /**
      * route prefix.
      */
@@ -86,11 +86,11 @@ export class MappingRouter extends Router implements OnDestroy {
         return this;
     }
 
-    override handle(ctx: Context, next: () => Promise<void>): Promise<void> {
+    override handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         return chain([...this.handles, (c, n) => this.response(c, n)], ctx, next);
     }
 
-    protected response(ctx: Context, next: () => Promise<void>): Promise<void> {
+    protected response(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         const route = this.getRoute(ctx);
         if (route) {
             return route.handle(ctx, next);
@@ -99,11 +99,11 @@ export class MappingRouter extends Router implements OnDestroy {
         }
     }
 
-    protected getRoute(ctx: Context): Route | undefined {
+    protected getRoute(ctx: TransportContext): Route | undefined {
         if (this.protocols.indexOf(ctx.protocol) < 0) return;
         if (ctx.status && ctx.status !== 404) return;
-        if (!ctx.path.startsWith(this.prefix)) return;
-        const url = ctx.path.replace(this.prefix, '') || '/';
+        if (!ctx.pattern.startsWith(this.prefix)) return;
+        const url = ctx.pattern.replace(this.prefix, '') || '/';
         return this.getRouteByUrl(url);
 
     }

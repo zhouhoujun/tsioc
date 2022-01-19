@@ -8,14 +8,13 @@ import { isObservable, lastValueFrom } from 'rxjs';
 import { Middleware } from './middleware';
 import { MODEL_RESOLVERS } from '../../model/model.resolver';
 import { PipeTransform } from '../../pipes/pipe';
-import { Context } from '../context';
+import { TransportContext, promisify } from '../context';
 import { CanActivate } from '../guard';
 import { MiddlewareType } from './middlewares';
 import { TransportArgumentResolver, TransportParameter } from '../resolver';
 import { ResultValue } from '../result';
 import { RouteRef, RouteOption, RouteRefFactory, RouteRefFactoryResolver, joinprefix } from './route';
 import { ProtocolRouteMappingMetadata, RouteMappingMetadata } from './router';
-import { promisify } from '../pattern';
 
 
 
@@ -78,7 +77,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         return this._protocols;
     }
 
-    async handle(ctx: Context, next: () => Promise<void>): Promise<void> {
+    async handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         const method = await this.canActivate(ctx);
         if (method) {
             let middlewares = this.getRouteMiddleware(ctx, method);
@@ -91,9 +90,9 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         }
     }
 
-    protected async canActivate(ctx: Context) {
+    protected async canActivate(ctx: TransportContext) {
         if (ctx.status && ctx.status !== 404) return null;
-        if (!ctx.path.startsWith(this.url)) return null;
+        if (!ctx.pattern.startsWith(this.url)) return null;
         if (this.guards && this.guards.length) {
             if (!(await lang.some(
                 this.guards.map(token => () => promisify(this.factory.resolve(token)?.canActivate(ctx))),
@@ -113,7 +112,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         return meta;
     }
 
-    async response(ctx: Context, meta: DecorDefine) {
+    async response(ctx: TransportContext, meta: DecorDefine) {
         const injector = this.injector;
         if (meta && meta.propertyKey) {
 
@@ -122,7 +121,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
             if (route && isRest.test(route)) {
                 let routes = route.split('/').map(r => r.trim());
                 let restParamNames = routes.filter(d => restParms.test(d));
-                let routeUrls = ctx.path.replace(this.url, '').split('/');
+                let routeUrls = ctx.pattern.replace(this.url, '').split('/');
                 restParamNames.forEach(pname => {
                     let val = routeUrls[routes.indexOf(pname)];
                     if (val) {
@@ -131,13 +130,16 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
                 });
             }
             ctx.restful = restParams;
-            let result = this.factory.invoke(meta.propertyKey, {
-                arguments: ctx,
-                resolvers: [
-                    ...primitiveResolvers,
-                    ...injector.get(MODEL_RESOLVERS) ?? EMPTY,
-                ]
-            }, this.instance);
+            let result = this.factory.invoke(
+                meta.propertyKey,
+                {
+                    context: ctx,
+                    resolvers: [
+                        ...primitiveResolvers,
+                        ...injector.get(MODEL_RESOLVERS) ?? EMPTY,
+                    ]
+                },
+                this.instance);
 
 
             if (isPromise(result)) {
@@ -160,15 +162,15 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         }
     }
 
-    protected getRouteMiddleware(ctx: Context, meta: DecorDefine) {
+    protected getRouteMiddleware(ctx: TransportContext, meta: DecorDefine) {
         if (this.metadata.middlewares?.length || (meta.metadata as RouteMappingMetadata).middlewares?.length) {
             return [...this.metadata.middlewares || EMPTY, ...(meta.metadata as RouteMappingMetadata).middlewares || EMPTY];
         }
         return EMPTY;
     }
 
-    protected getRouteMetaData(ctx: Context) {
-        let subRoute = ctx.path.replace(this.url, '');
+    protected getRouteMetaData(ctx: TransportContext) {
+        let subRoute = ctx.pattern.replace(this.url, '');
         if (!this.sortRoutes) {
             this.sortRoutes = this.reflect.class.methodDecors
                 .filter(m => m && isString(m.metadata.route))
@@ -195,7 +197,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         return meta;
     }
 
-    protected parseHandle(mdty: MiddlewareType | Type<Middleware>): AsyncHandler<Context> | undefined {
+    protected parseHandle(mdty: MiddlewareType | Type<Middleware>): AsyncHandler<TransportContext> | undefined {
         if (isClass(mdty)) {
             return this.injector.get(mdty);
         } else {
@@ -241,51 +243,49 @@ export function missingPipeError(parameter: Parameter, type?: ClassType, method?
 
 const primitiveResolvers: TransportArgumentResolver[] = [
     composeResolver<TransportArgumentResolver, TransportParameter>(
-        (parameter, ctx) => ctx.arguments instanceof Context && isDefined(parameter.field ?? parameter.paramName),
+        (parameter, ctx) => ctx instanceof TransportContext && isDefined(parameter.field ?? parameter.paramName),
         composeResolver<TransportArgumentResolver>(
             (parameter, ctx) => isPrimitiveType(parameter.type),
             {
                 canResolve(parameter, ctx) {
-                    return parameter.scope === 'query' && isDefined(ctx.arguments.query[parameter.field ?? parameter.paramName!]);
+                    return parameter.scope === 'query' && isDefined(ctx.query[parameter.field ?? parameter.paramName!]);
                 },
                 resolve(parameter, ctx) {
                     const pipe = ctx.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
                     if (!pipe) throw missingPipeError(parameter, ctx.target, ctx.method);
-                    return pipe.transform(ctx.arguments.query[parameter.field ?? parameter.paramName!], ...parameter.args || EMPTY)
+                    return pipe.transform(ctx.query[parameter.field ?? parameter.paramName!], ...parameter.args || EMPTY)
                 }
             },
             {
                 canResolve(parameter, ctx) {
-                    return parameter.scope === 'restful' && isDefined(ctx.arguments.restful[parameter.field ?? parameter.paramName!]);
+                    return parameter.scope === 'restful' && isDefined(ctx.restful[parameter.field ?? parameter.paramName!]);
                 },
                 resolve(parameter, ctx) {
                     const pipe = ctx.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
                     if (!pipe) throw missingPipeError(parameter, ctx.target, ctx.method);
-                    return pipe.transform(ctx.arguments.restful[parameter.field ?? parameter.paramName!], ...parameter.args || EMPTY)
+                    return pipe.transform(ctx.restful[parameter.field ?? parameter.paramName!], ...parameter.args || EMPTY)
                 }
             },
             {
                 canResolve(parameter, ctx) {
-                    return parameter.scope === 'body' && isDefined(ctx.arguments.request.body[parameter.field ?? parameter.paramName!]);
+                    return parameter.scope === 'body' && isDefined(ctx.request.body[parameter.field ?? parameter.paramName!]);
                 },
                 resolve(parameter, ctx) {
                     const pipe = ctx.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
                     if (!pipe) throw missingPipeError(parameter, ctx.target, ctx.method);
-                    return pipe.transform(ctx.arguments.request.body[parameter.field ?? parameter.paramName!], ...parameter.args || EMPTY)
+                    return pipe.transform(ctx.request.body[parameter.field ?? parameter.paramName!], ...parameter.args || EMPTY)
                 }
             },
             {
                 canResolve(parameter, ctx) {
                     const field = parameter.field ?? parameter.paramName!;
-                    const args = ctx.arguments;
-                    return !parameter.scope && isDefined(args.query[field] ?? args.restful[field] ?? args.request.body[field])
+                    return !parameter.scope && isDefined(ctx.query[field] ?? ctx.restful[field] ?? ctx.request.body[field])
                 },
                 resolve(parameter, ctx) {
                     const field = parameter.field ?? parameter.paramName!;
                     const pipe = ctx.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
                     if (!pipe) throw missingPipeError(parameter, ctx.target, ctx.method);
-                    const args = ctx.arguments;
-                    return pipe.transform(args.query[field] ?? args.restful[field] ?? args.request.body[field], ...parameter.args || EMPTY)
+                    return pipe.transform(ctx.query[field] ?? ctx.restful[field] ?? ctx.request.body[field], ...parameter.args || EMPTY)
                 }
             }
         ),
@@ -294,10 +294,10 @@ const primitiveResolvers: TransportArgumentResolver[] = [
             {
                 canResolve(parameter, ctx) {
                     const field = parameter.field ?? parameter.paramName!;
-                    return parameter.scope === 'query' && (isArray(ctx.arguments.request.query[field]) || isString(ctx.arguments.request.query[field]));
+                    return parameter.scope === 'query' && (isArray(ctx.query[field]) || isString(ctx.request.query[field]));
                 },
                 resolve(parameter, ctx) {
-                    const value = ctx.arguments.request.body[parameter.field ?? parameter.paramName!];
+                    const value = ctx.request.body[parameter.field ?? parameter.paramName!];
                     const values: any[] = isString(value) ? value.split(',') : value;
                     const pipe = ctx.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase());
                     if (!pipe) throw missingPipeError(parameter, ctx.target, ctx.method);
@@ -306,10 +306,10 @@ const primitiveResolvers: TransportArgumentResolver[] = [
             },
             {
                 canResolve(parameter, ctx) {
-                    return parameter.scope === 'restful' && isDefined(ctx.arguments.restful[parameter.field ?? parameter.paramName!]);
+                    return parameter.scope === 'restful' && isDefined(ctx.restful[parameter.field ?? parameter.paramName!]);
                 },
                 resolve(parameter, ctx) {
-                    const value = (ctx.arguments.restful[parameter.field ?? parameter.paramName!] as string).split(',');
+                    const value = (ctx.restful[parameter.field ?? parameter.paramName!] as string).split(',');
                     const pipe = ctx.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase());
                     if (!pipe) throw missingPipeError(parameter, ctx.target, ctx.method);
                     return value.map(val => pipe.transform(val, ...parameter.args || EMPTY)) as any;
@@ -317,10 +317,10 @@ const primitiveResolvers: TransportArgumentResolver[] = [
             },
             {
                 canResolve(parameter, ctx) {
-                    return isArray(ctx.arguments.request.body[parameter.field ?? parameter.paramName!]);
+                    return isArray(ctx.request.body[parameter.field ?? parameter.paramName!]);
                 },
                 resolve(parameter, ctx) {
-                    const value: any[] = ctx.arguments.request.body[parameter.field ?? parameter.paramName!];
+                    const value: any[] = ctx.request.body[parameter.field ?? parameter.paramName!];
                     const pipe = ctx.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase());
                     if (!pipe) throw missingPipeError(parameter, ctx.target, ctx.method);
                     return value.map(val => pipe.transform(val, ...parameter.args || EMPTY)) as any;;
@@ -331,10 +331,10 @@ const primitiveResolvers: TransportArgumentResolver[] = [
 
             canResolve(parameter, ctx) {
                 return isDefined(parameter.pipe) && parameter.scope === 'body'
-                    && (parameter.field ? ctx.arguments.request.body[parameter.field] : Object.keys(ctx.arguments.request.body).length > 0);
+                    && (parameter.field ? ctx.request.body[parameter.field] : Object.keys(ctx.request.body).length > 0);
             },
             resolve(parameter, ctx) {
-                const value = parameter.field ? ctx.arguments.request.body[parameter.field] : ctx.arguments.request.body;
+                const value = parameter.field ? ctx.request.body[parameter.field] : ctx.request.body;
                 const pipe = ctx.get<PipeTransform>(parameter.pipe!);
                 if (!pipe) throw missingPipeError(parameter, ctx.target, ctx.method);
                 return pipe.transform(value, ...parameter.args || EMPTY);

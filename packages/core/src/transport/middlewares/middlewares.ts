@@ -1,5 +1,5 @@
 import { Abstract, AsyncHandler, chain, Type } from '@tsdi/ioc';
-import { Context } from '../context';
+import { TransportContext } from '../context';
 import { Middleware, MiddlewareRef } from './middleware';
 import { Route } from './route';
 
@@ -7,14 +7,14 @@ import { Route } from './route';
 /**
  * message type for register in {@link Middlewares}.
  */
-export type MiddlewareType = AsyncHandler<Context> | Middleware | Route;
+export type MiddlewareType = AsyncHandler<TransportContext> | Middleware | Route;
 
 
 /**
  * middlewares, compose of {@link Middleware}.
  */
 @Abstract()
-export abstract class Middlewares<T extends Context = Context> extends Middleware<T> {
+export abstract class Middlewares<T extends TransportContext = TransportContext> extends Middleware<T> {
     protected handles: MiddlewareType[] = [];
     /**
      * use handle.

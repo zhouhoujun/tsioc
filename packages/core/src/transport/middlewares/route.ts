@@ -1,5 +1,5 @@
 import { Abstract, Destroyable, DestroyCallback, DispatchHandler, Injector, InvokeOption, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
-import { Context } from '../context';
+import { TransportContext } from '../context';
 import { CanActivate } from '../guard';
 
 
@@ -7,7 +7,7 @@ import { CanActivate } from '../guard';
  * route instance.
  */
 @Abstract()
-export abstract class Route<T extends Context = Context> implements DispatchHandler<T, Promise<void>> {
+export abstract class Route<T extends TransportContext = TransportContext> implements DispatchHandler<T, Promise<void>> {
     /**
     * route handle.
     *

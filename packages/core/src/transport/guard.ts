@@ -1,10 +1,10 @@
 import { Observable } from 'rxjs';
-import { Context } from './context';
+import { TransportContext } from './context';
 
 /**
  * route Guard.
  */
-export interface CanActivate<T extends Context = Context> {
+export interface CanActivate<T extends TransportContext = TransportContext> {
     /**
      * guard.
      * @param ctx context of route.

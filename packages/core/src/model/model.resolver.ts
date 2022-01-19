@@ -138,7 +138,6 @@ export const MODEL_RESOLVERS = tokenId<ModelArgumentResolver[]>('MODEL_RESOLVERS
  */
 class ModelResolver<C = any> extends AbstractModelArgumentResolver<C> {
 
-
     constructor(private option: ModelResolveOption<C>) {
         super();
     }

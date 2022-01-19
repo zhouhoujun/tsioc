@@ -975,12 +975,27 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
     invoke(method: MethodType<T>, option?: InvokeArguments | InvocationContext, instance?: T) {
         const key = isFunction(method) ? this.reflect.class.getPropertyName(method(this.reflect.class.getPropertyDescriptors() as any)) : method;
         let context: InvocationContext;
-        let destroy: boolean | undefined;
+        let destroy: boolean | Function | undefined;
         if (option instanceof InvocationContext) {
             context = option;
+            const refctx = this.createContext({ ...option, invokerMethod: key });
+            context.addRef(refctx);
+            destroy = () => {
+                context.removeRef(refctx);
+                refctx.destroy();
+            }
         } else {
-            context = this.createContext({ ...option, invokerMethod: key });
-            destroy = true;
+            context = option?.context ? option.context : this.createContext({ ...option, invokerMethod: key });
+            if (option?.context) {
+                const refctx = this.createContext({ ...option, invokerMethod: key });
+                context.addRef(refctx);
+                destroy = () => {
+                    context.removeRef(refctx);
+                    refctx.destroy();
+                }
+            } else {
+                destroy = true;
+            }
         }
         return this.createInvoker(key, instance ?? this.resolve()).invoke(context, destroy);
     }

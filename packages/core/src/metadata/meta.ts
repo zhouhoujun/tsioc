@@ -23,7 +23,9 @@ export interface BootMetadata extends TypeMetadata, PatternMetadata {
     after?: Type<StartupService> | 'all';
 }
 
-
+/**
+ * component scan metadata.
+ */
 export interface ComponentScanMetadata extends TypeMetadata, ProvidersMetadata {
     /**
      * order in set.
@@ -37,11 +39,12 @@ export interface ComponentScanMetadata extends TypeMetadata, ProvidersMetadata {
     singleton?: boolean;
 }
 
+/**
+ * scan reflect.
+ */
 export interface ScanReflect extends TypeReflect {
     order?: number;
 }
-
-
 
 /**
  * pipe metadata.

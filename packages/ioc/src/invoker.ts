@@ -9,10 +9,8 @@ import { ParameterMetadata } from './metadata/meta';
 import { TypeReflect } from './metadata/type';
 import { ProviderType } from './providers';
 import { DestroyCallback, Destroyable, OnDestroy } from './destroy';
-import { InjectFlags, Token } from './tokens';
+import { InjectFlags, Token, tokenId } from './tokens';
 import { Injector, MethodType } from './injector';
-import { tokenId } from '.';
-
 
 
 /**
@@ -349,7 +347,7 @@ export interface OperationInvoker {
      * @param context the context to use to invoke the operation
      * @param destroy try destroy the context after invoked.
      */
-    invoke(context: InvocationContext, destroy?: boolean): any;
+    invoke(context: InvocationContext, destroy?: boolean | Function): any;
 
     /**
      * resolve args. 
@@ -431,7 +429,7 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
      * @param context the context to use to invoke the operation
      * @param destroy destroy the context after invoked.
      */
-    invoke(context: InvocationContext, destroy?: boolean) {
+    invoke(context: InvocationContext, destroy?: boolean | Function) {
         const type = this.typeRef.type;
         const instance = this.instance ?? context.get(type, context);
         if (!instance || !isFunction(instance[this.method])) {
@@ -446,11 +444,11 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
         if (destroy && !hasPointcut) {
             if (isPromise(result)) {
                 return result.then(val => {
-                    context?.destroy();
+                    isFunction(destroy) ? destroy() : context?.destroy();
                     return val;
                 }) as any;
             } else {
-                context.destroy();
+                isFunction(destroy) ? destroy() : context?.destroy();
             }
         }
         return result;
@@ -492,6 +490,10 @@ export type TokenValue<T = any> = [Token<T>, T];
  * invoke arguments.
  */
 export interface InvokeArguments {
+    /**
+     * main context
+     */
+    context?: InvocationContext;
     /**
      * invocation arguments data.
      */

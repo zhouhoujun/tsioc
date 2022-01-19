@@ -1,6 +1,6 @@
-import { Abstract, Injector, InvocationContext, InvocationOption, isArray } from '@tsdi/ioc';
+import { Abstract, isArray } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { Pattern } from './pattern';
+import { TransportContext } from './context';
 import { Protocol } from './types';
 
 
@@ -49,44 +49,7 @@ export abstract class EventHandler<TInput = any, TOutput = any> implements Trans
     abstract handle(ctx: TransportContext<TInput>): Observable<TOutput>;
 }
 
-/**
- * transport option.
- */
-export interface TransportOption<T = any> extends InvocationOption {
-    protocol?: Protocol;
-    pattern: Pattern;
-    data: T;
-    event?: boolean;
-}
 
-/**
- * transport context.
- */
-@Abstract()
-export abstract class TransportContext<T = any> extends InvocationContext<T> {
-
-    abstract get request(): T;
-    abstract get protocol(): Protocol;
-    abstract get pattern(): string;
-    abstract get isEvent(): boolean;
-
-    constructor(injector: Injector, options: TransportOption<T>) {
-        super(injector, options);
-        this.injector.setValue(TransportContext, this);
-    }
-
-    // static create<T>(injector: Injector, options: TransportOption<T>): TransportContext<T> {
-    //     return new TransportContext(injector, options);
-    // }
-}
-
-/**
- * transport context factory.
- */
-@Abstract()
-export abstract class TransportContextFactory {
-    abstract create<T>(parent: Injector | InvocationContext, options: TransportOption<T>): TransportContext<T>;
-}
 
 /**
  * Transport error
