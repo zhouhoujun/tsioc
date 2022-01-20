@@ -294,7 +294,7 @@ const primitiveResolvers: TransportArgumentResolver[] = [
             {
                 canResolve(parameter, ctx) {
                     const field = parameter.field ?? parameter.paramName!;
-                    return parameter.scope === 'query' && (isArray(ctx.query[field]) || isString(ctx.request.query[field]));
+                    return parameter.scope === 'query' && (isArray(ctx.query[field]) || isString(ctx.query[field]));
                 },
                 resolve(parameter, ctx) {
                     const value = ctx.request.body[parameter.field ?? parameter.paramName!];

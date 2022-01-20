@@ -1,5 +1,6 @@
 import { Abstract, Injector, InvocationContext, InvocationOption, isNumber, isPlainObject, isPromise, isString } from '@tsdi/ioc';
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
+import { ReadPacket, WritePacket } from './packet';
 import { Pattern } from './pattern';
 import { Protocol } from './types';
 
@@ -17,7 +18,7 @@ export interface TransportOption<T = any> extends InvocationOption {
  * transport context.
  */
 @Abstract()
-export abstract class TransportContext<TRequest = any, TRepsonse = any> extends InvocationContext<TRequest> {
+export abstract class TransportContext<TRequest extends ReadPacket = ReadPacket, TRepsonse extends WritePacket = WritePacket> extends InvocationContext<any> {
     /**
      * transport request.
      */
@@ -39,16 +40,50 @@ export abstract class TransportContext<TRequest = any, TRepsonse = any> extends 
      */
     abstract get isEvent(): boolean;
 
+    /**
+     * get query params
+     */
     abstract get query(): any;
-    abstract set query(params: any);
 
+    /**
+     * get resetful value. 
+     */
     abstract get restful(): Record<string, string | number>;
+    /**
+     * set resetful value. 
+     */
     abstract set restful(value: Record<string, string | number>);
 
+    /**
+     * Get response status code.
+     */
     abstract get status(): number | string;
+    /**
+     * Set response status code.
+     */
     abstract set status(value: number | string);
-    
+
+    /**
+      * get response error
+      */
+    abstract get error(): any;
+    /**
+     * set response error
+     */
+    abstract set error(err: any);
+
+    /**
+     * is response status ok or not.
+     */
+    abstract get ok(): boolean;
+
+    /**
+     * Get response status message.
+     */
     abstract get message(): string;
+    /**
+     * Set response status message.
+     */
     abstract set message(msg: string);
 
     /**
@@ -77,7 +112,7 @@ export abstract class TransportContextFactory {
      * @param parent parent injector or parent invocation context.
      * @param options transport options. typeof {@link TransportOption}.
      */
-    abstract create<TRequest, TRepsonse>(parent: Injector | InvocationContext, options: TransportOption<TRequest>): TransportContext<TRequest, TRepsonse>;
+    abstract create<TRequest extends ReadPacket = ReadPacket, TRepsonse extends WritePacket = WritePacket>(parent: Injector | InvocationContext, options: TransportOption<TRequest>): TransportContext<TRequest, TRepsonse>;
 }
 
 /**

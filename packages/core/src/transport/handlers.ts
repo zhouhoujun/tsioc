@@ -3,13 +3,14 @@ import { mergeMap, Observable } from 'rxjs';
 import { Pattern } from './pattern';
 import { TransportContext } from './context';
 import { EventHandler, TransportError, TransportHandler } from './handler';
+import { ReadPacket, WritePacket } from './packet';
 
 
 /**
  * transport handlers.
  */
 @Abstract()
-export abstract class TransportHandlers<TInput = any, TOutput = any> extends TransportHandler<TInput, TOutput> {
+export abstract class TransportHandlers<TRequest extends ReadPacket = ReadPacket, TRepsonse extends WritePacket = WritePacket> extends TransportHandler<TRequest, TRepsonse> {
     abstract keys(): string[];
     abstract getHandlers(): Map<string, TransportHandler>;
     abstract addHandler(pattern: Pattern, handler: TransportHandler): void;
@@ -19,12 +20,12 @@ export abstract class TransportHandlers<TInput = any, TOutput = any> extends Tra
 /**
  * event chain.
  */
-export class EventChain<TInput = any, TOutput = any> extends EventHandler<TInput, TOutput> {
+export class EventChain extends EventHandler {
     constructor(private handler: TransportHandler, private next: TransportHandler) {
         super()
     }
-    handle(ctx: TransportContext<TInput>): Observable<TOutput> {
-        return this.handler.handle(ctx).pipe(mergeMap(v => this.next.handle(v)));
+    handle(ctx: TransportContext): Observable<WritePacket> {
+        return this.handler.handle(ctx).pipe(mergeMap(v => this.next.handle(ctx)));
     }
 }
 

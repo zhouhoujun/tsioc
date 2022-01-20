@@ -1,6 +1,7 @@
 import { Abstract, isArray } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { TransportContext } from './context';
+import { ReadPacket, WritePacket } from './packet';
 import { Protocol } from './types';
 
 
@@ -8,12 +9,12 @@ import { Protocol } from './types';
  * Transport handler.
  */
 @Abstract()
-export abstract class TransportHandler<TInput = any, TOutput = any> {
+export abstract class TransportHandler<TRequest extends ReadPacket = ReadPacket, TRepsonse extends WritePacket = WritePacket> {
     /**
      * transport handler.
      * @param ctx invocation context with input.
      */
-    abstract handle(ctx: TransportContext<TInput>): Observable<TOutput>;
+    abstract handle(ctx: TransportContext<TRequest, TRepsonse>): Observable<TRepsonse>;
 }
 
 /**
@@ -25,7 +26,7 @@ export abstract class TransportHandler<TInput = any, TOutput = any> {
  * through the interceptor chain.
  */
 @Abstract()
-export abstract class TransportBackend<TInput = any, TOutput = any> implements TransportHandler<TInput, TOutput> {
+export abstract class TransportBackend<TRequest extends ReadPacket = ReadPacket, TRepsonse extends WritePacket = WritePacket> implements TransportHandler<TRequest, TRepsonse> {
     /**
      * transport Protocol type.
      */
@@ -34,19 +35,19 @@ export abstract class TransportBackend<TInput = any, TOutput = any> implements T
      * transport handler.
      * @param ctx invocation context with input.
      */
-    abstract handle(ctx: TransportContext<TInput>): Observable<TOutput>;
+    abstract handle(ctx: TransportContext<TRequest, TRepsonse>): Observable<TRepsonse>;
 }
 
 /**
  * event handler.
  */
 @Abstract()
-export abstract class EventHandler<TInput = any, TOutput = any> implements TransportHandler<TInput, TOutput> {
+export abstract class EventHandler<TRequest extends ReadPacket = ReadPacket, TRepsonse extends WritePacket = WritePacket> implements TransportHandler<TRequest, TRepsonse> {
     /**
      * transport event handler.
      * @param ctx invocation context with input.
      */
-    abstract handle(ctx: TransportContext<TInput>): Observable<TOutput>;
+    abstract handle(ctx: TransportContext<TRequest>): Observable<TRepsonse>;
 }
 
 

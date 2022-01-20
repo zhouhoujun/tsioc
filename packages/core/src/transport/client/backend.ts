@@ -8,12 +8,12 @@ import { TransportBackend } from '../handler';
 
 
 @Abstract()
-export abstract class ClientTransportBackend<TInput = any, TOutput extends WritePacket = WritePacket>
-    extends TransportBackend<TInput, TOutput>  {
+export abstract class ClientTransportBackend<TRequest extends ReadPacket = ReadPacket, TRepsonse extends WritePacket = WritePacket>
+    extends TransportBackend<TRequest, TRepsonse>  {
 
     abstract connect(): Promise<any>;
 
-    handle(ctx: TransportContext<TInput>): Observable<TOutput> {
+    handle(ctx: TransportContext<TRequest>): Observable<TRepsonse> {
         if (ctx.isEvent) {
             const source = defer(async () => this.connect()).pipe(
                 mergeMap(() => this.dispatchEvent(ctx)),
@@ -27,7 +27,7 @@ export abstract class ClientTransportBackend<TInput = any, TOutput extends Write
         } else {
             return defer(async () => this.connect()).pipe(
                 mergeMap(
-                    () => new Observable<TOutput>((observer) => {
+                    () => new Observable<TRepsonse>((observer) => {
                         const callback = this.createObserver(observer);
                         return this.publish(ctx, callback);
                     })
@@ -37,17 +37,17 @@ export abstract class ClientTransportBackend<TInput = any, TOutput extends Write
 
     protected createObserver<T>(
         observer: Observer<T>,
-    ): (packet: TOutput) => void {
-        return ({ err, response, disposed }: TOutput) => {
-            if (err) {
-                return observer.error(this.serializeError(err));
-            } else if (response !== undefined && disposed) {
-                observer.next(this.serializeResponse(response));
+    ): (packet: TRepsonse) => void {
+        return ({ error, body, disposed }: TRepsonse) => {
+            if (error) {
+                return observer.error(this.serializeError(error));
+            } else if (body !== undefined && disposed) {
+                observer.next(this.serializeResponse(body));
                 return observer.complete();
             } else if (disposed) {
                 return observer.complete();
             }
-            observer.next(this.serializeResponse(response));
+            observer.next(this.serializeResponse(body));
         };
     }
 
@@ -57,15 +57,15 @@ export abstract class ClientTransportBackend<TInput = any, TOutput extends Write
      * @param callback 
      */
     protected abstract publish(
-        ctx: TransportContext<TInput>,
-        callback: (packet: TOutput) => void,
+        ctx: TransportContext<TRequest>,
+        callback: (packet: TRepsonse) => void,
     ): () => void;
 
     /**
      * dispatch event.
      * @param packet 
      */
-    protected abstract dispatchEvent<T = any>(ctx: TransportContext<TInput>): Promise<T>;
+    protected abstract dispatchEvent<T = any>(ctx: TransportContext<TRequest>): Promise<T>;
 
     protected normalizePattern(pattern: Pattern): string {
         return stringify(pattern);

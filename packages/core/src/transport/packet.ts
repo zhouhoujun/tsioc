@@ -4,8 +4,14 @@ import { Pattern } from './pattern';
  * read packet.
  */
 export interface ReadPacket<T = any> {
+    /**
+     * request pattern.
+     */
     pattern: Pattern;
-    data: T;
+    /**
+     * packet data.
+     */
+    body: T;
     event?: boolean;
 }
 
@@ -13,13 +19,11 @@ export interface ReadPacket<T = any> {
  * write packet.
  */
 export interface WritePacket<T = any> {
-    err?: any;
     error?: Error;
-    response?: T;
     disposed?: boolean;
-    status?: string | number;
+    status: string | number;
     ok?: boolean;
-    body?: any;
+    body: T;
 }
 
 export type TransportEvent = ReadPacket;
