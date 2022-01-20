@@ -18,7 +18,7 @@ export interface TransportOption<T = any> extends InvocationOption {
  * transport context.
  */
 @Abstract()
-export abstract class TransportContext<TRequest extends ReadPacket = ReadPacket, TRepsonse extends WritePacket = WritePacket> extends InvocationContext<any> {
+export abstract class TransportContext<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket> extends InvocationContext<any> {
     /**
      * transport request.
      */
@@ -26,7 +26,7 @@ export abstract class TransportContext<TRequest extends ReadPacket = ReadPacket,
     /**
      * transport response.
      */
-    abstract get response(): TRepsonse;
+    abstract get response(): TResponse;
     /**
      * transport protocol.
      */
@@ -112,7 +112,7 @@ export abstract class TransportContextFactory {
      * @param parent parent injector or parent invocation context.
      * @param options transport options. typeof {@link TransportOption}.
      */
-    abstract create<TRequest extends ReadPacket = ReadPacket, TRepsonse extends WritePacket = WritePacket>(parent: Injector | InvocationContext, options: TransportOption<TRequest>): TransportContext<TRequest, TRepsonse>;
+    abstract create<TRequest extends ReadPacket, TResponse extends WritePacket>(parent: Injector | InvocationContext, options: TransportOption<TRequest>): TransportContext<TRequest, TResponse>;
 }
 
 /**

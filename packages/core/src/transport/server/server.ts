@@ -56,21 +56,21 @@ export abstract class TransportServer implements Server, OnDispose {
         };
         return stream
             .pipe(
-                catchError((err: any) => {
-                    scheduleOnNextTick({ err });
+                catchError((error: any) => {
+                    scheduleOnNextTick({ error });
                     return EMPTY;
                 }),
                 finalize(() => scheduleOnNextTick({ disposed: true })),
             )
-            .subscribe((response: any) => scheduleOnNextTick({ response }));
+            .subscribe((body: any) => scheduleOnNextTick({ body }));
     }
 
     public async handleEvent(
-        context: TransportContext<ReadPacket>,
+        context: TransportContext,
     ): Promise<any> {
-        const handler = this.handlers.getHandlerByPattern(context.arguments.pattern);
+        const handler = this.handlers.getHandlerByPattern(context.pattern);
         if (!handler) {
-            return this.logger.error(`There is no matching event handler defined in the remote service. Event pattern: ${JSON.stringify(context.arguments.pattern)}.`);
+            return this.logger.error(`There is no matching event handler defined in the remote service. Event pattern: ${JSON.stringify(context.pattern)}.`);
         }
         const resultOrStream = await handler.handle(context);
         if (isObservable(resultOrStream)) {

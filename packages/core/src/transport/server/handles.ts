@@ -2,13 +2,14 @@ import { EMPTY, Injectable, isString } from '@tsdi/ioc';
 import { Observable, throwError } from 'rxjs';
 import { Pattern } from '../pattern';
 import { stringify, TransportContext } from '../context';
-import { TransportRequest, TransportResponse } from '../packet';
+import { ReadPacket, WritePacket } from '../packet';
 import { EventHandler, TransportHandler } from '../handler';
 import { EventChain, NotFoundError, TransportHandlers } from '../handlers';
 import { InterceptorHandler, TRANSPORT_INTERCEPTORS } from '../intercepting';
 
 @Injectable()
-export class TransportServerHandlers implements TransportHandlers {
+export class TransportServerHandlers<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket>
+    implements TransportHandlers<TRequest, TResponse> {
 
     protected readonly handlers = new Map<string, TransportHandler>();
     constructor() { }
@@ -37,13 +38,13 @@ export class TransportServerHandlers implements TransportHandlers {
         return this.handlers.get(route)!;
     }
 
-    handle(ctx: TransportContext<TransportRequest>): Observable<TransportResponse> {
+    handle(ctx: TransportContext<TRequest, TResponse>): Observable<TResponse> {
         const route = this.getHandlerByPattern(ctx.arguments.pattern);
-        if (!route) throwError(()=> new NotFoundError());
+        if (!route) throwError(() => new NotFoundError());
 
         const interceptors = ctx.get(TRANSPORT_INTERCEPTORS) ?? EMPTY;
-        let hanlder = interceptors.length ? interceptors.reduceRight(
-            (next, interceptor) => new InterceptorHandler(next, interceptor), route) : route;
+        let hanlder = (interceptors.length ? interceptors.reduceRight(
+            (next, interceptor) => new InterceptorHandler(next, interceptor), route) : route) as TransportHandler<TRequest, TResponse>;
 
         return hanlder.handle(ctx);
     }

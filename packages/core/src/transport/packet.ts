@@ -21,9 +21,9 @@ export interface ReadPacket<T = any> {
 export interface WritePacket<T = any> {
     error?: Error;
     disposed?: boolean;
-    status: string | number;
+    status?: string | number;
     ok?: boolean;
-    body: T;
+    body?: T;
 }
 
 export type TransportEvent = ReadPacket;

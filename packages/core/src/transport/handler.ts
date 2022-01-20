@@ -9,12 +9,12 @@ import { Protocol } from './types';
  * Transport handler.
  */
 @Abstract()
-export abstract class TransportHandler<TRequest extends ReadPacket = ReadPacket, TRepsonse extends WritePacket = WritePacket> {
+export abstract class TransportHandler<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket> {
     /**
      * transport handler.
      * @param ctx invocation context with input.
      */
-    abstract handle(ctx: TransportContext<TRequest, TRepsonse>): Observable<TRepsonse>;
+    abstract handle(ctx: TransportContext<TRequest, TResponse>): Observable<TResponse>;
 }
 
 /**
@@ -26,7 +26,7 @@ export abstract class TransportHandler<TRequest extends ReadPacket = ReadPacket,
  * through the interceptor chain.
  */
 @Abstract()
-export abstract class TransportBackend<TRequest extends ReadPacket = ReadPacket, TRepsonse extends WritePacket = WritePacket> implements TransportHandler<TRequest, TRepsonse> {
+export abstract class TransportBackend<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket> implements TransportHandler<TRequest, TResponse> {
     /**
      * transport Protocol type.
      */
@@ -35,19 +35,19 @@ export abstract class TransportBackend<TRequest extends ReadPacket = ReadPacket,
      * transport handler.
      * @param ctx invocation context with input.
      */
-    abstract handle(ctx: TransportContext<TRequest, TRepsonse>): Observable<TRepsonse>;
+    abstract handle(ctx: TransportContext<TRequest, TResponse>): Observable<TResponse>;
 }
 
 /**
  * event handler.
  */
 @Abstract()
-export abstract class EventHandler<TRequest extends ReadPacket = ReadPacket, TRepsonse extends WritePacket = WritePacket> implements TransportHandler<TRequest, TRepsonse> {
+export abstract class EventHandler<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket> implements TransportHandler<TRequest, TResponse> {
     /**
      * transport event handler.
      * @param ctx invocation context with input.
      */
-    abstract handle(ctx: TransportContext<TRequest>): Observable<TRepsonse>;
+    abstract handle(ctx: TransportContext<TRequest>): Observable<TResponse>;
 }
 
 

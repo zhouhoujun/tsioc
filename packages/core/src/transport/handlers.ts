@@ -10,7 +10,7 @@ import { ReadPacket, WritePacket } from './packet';
  * transport handlers.
  */
 @Abstract()
-export abstract class TransportHandlers<TRequest extends ReadPacket = ReadPacket, TRepsonse extends WritePacket = WritePacket> extends TransportHandler<TRequest, TRepsonse> {
+export abstract class TransportHandlers<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket> extends TransportHandler<TRequest, TResponse> {
     abstract keys(): string[];
     abstract getHandlers(): Map<string, TransportHandler>;
     abstract addHandler(pattern: Pattern, handler: TransportHandler): void;

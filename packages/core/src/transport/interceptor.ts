@@ -8,11 +8,11 @@ import { TransportHandler } from './handler';
 /**
  * Transport interceptor.
  */
-export interface TransportInterceptor<TRequest extends ReadPacket = ReadPacket, TRepsonse extends WritePacket = WritePacket> {
+export interface TransportInterceptor<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket> {
     /**
      * the method to implemet interceptor.
      * @param ctx invocation context with input.
      * @param next route handler.
      */
-    intercept(ctx: TransportContext<TRequest, TRepsonse>, next: TransportHandler<TRequest, TRepsonse>): Observable<TRepsonse>;
+    intercept(ctx: TransportContext<TRequest, TResponse>, next: TransportHandler<TRequest, TResponse>): Observable<TResponse>;
 }

@@ -8,12 +8,12 @@ import { TransportBackend } from '../handler';
 
 
 @Abstract()
-export abstract class ClientTransportBackend<TRequest extends ReadPacket = ReadPacket, TRepsonse extends WritePacket = WritePacket>
-    extends TransportBackend<TRequest, TRepsonse>  {
+export abstract class ClientTransportBackend<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket>
+    extends TransportBackend<TRequest, TResponse>  {
 
     abstract connect(): Promise<any>;
 
-    handle(ctx: TransportContext<TRequest>): Observable<TRepsonse> {
+    handle(ctx: TransportContext<TRequest>): Observable<TResponse> {
         if (ctx.isEvent) {
             const source = defer(async () => this.connect()).pipe(
                 mergeMap(() => this.dispatchEvent(ctx)),
@@ -27,7 +27,7 @@ export abstract class ClientTransportBackend<TRequest extends ReadPacket = ReadP
         } else {
             return defer(async () => this.connect()).pipe(
                 mergeMap(
-                    () => new Observable<TRepsonse>((observer) => {
+                    () => new Observable<TResponse>((observer) => {
                         const callback = this.createObserver(observer);
                         return this.publish(ctx, callback);
                     })
@@ -37,8 +37,8 @@ export abstract class ClientTransportBackend<TRequest extends ReadPacket = ReadP
 
     protected createObserver<T>(
         observer: Observer<T>,
-    ): (packet: TRepsonse) => void {
-        return ({ error, body, disposed }: TRepsonse) => {
+    ): (packet: TResponse) => void {
+        return ({ error, body, disposed }: TResponse) => {
             if (error) {
                 return observer.error(this.serializeError(error));
             } else if (body !== undefined && disposed) {
@@ -58,7 +58,7 @@ export abstract class ClientTransportBackend<TRequest extends ReadPacket = ReadP
      */
     protected abstract publish(
         ctx: TransportContext<TRequest>,
-        callback: (packet: TRepsonse) => void,
+        callback: (packet: TResponse) => void,
     ): () => void;
 
     /**
