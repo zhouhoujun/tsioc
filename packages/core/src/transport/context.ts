@@ -1,4 +1,4 @@
-import { Abstract, Injector, InvocationContext, InvocationOption, isNumber, isPlainObject, isPromise, isString } from '@tsdi/ioc';
+import { Abstract, Injector, InvocationContext, InvokeArguments, isNumber, isPlainObject, isPromise, isString } from '@tsdi/ioc';
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
 import { ReadPacket, WritePacket } from './packet';
 import { Pattern } from './pattern';
@@ -7,10 +7,10 @@ import { Protocol } from './types';
 /**
  * transport option.
  */
-export interface TransportOption<T = any> extends InvocationOption {
+export interface TransportOption<T = any> extends InvokeArguments {
     protocol?: Protocol;
     pattern: Pattern;
-    data: T;
+    body: T;
     event?: boolean;
 }
 
@@ -71,6 +71,11 @@ export abstract class TransportContext<TRequest extends ReadPacket = ReadPacket,
      * set response error
      */
     abstract set error(err: any);
+
+    /**
+     * responsed or not.
+     */
+    abstract get sent(): boolean;
 
     /**
      * is response status ok or not.

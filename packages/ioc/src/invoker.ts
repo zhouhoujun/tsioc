@@ -491,9 +491,9 @@ export type TokenValue<T = any> = [Token<T>, T];
  */
 export interface InvokeArguments {
     /**
-     * main context
+     * parent InvocationContext,
      */
-    context?: InvocationContext;
+    parent?: InvocationContext;
     /**
      * invocation arguments data.
      */
@@ -517,15 +517,15 @@ export interface InvokeArguments {
  */
 export interface InvokeOption extends InvokeArguments {
     /**
-     * parent InvocationContext,
+     * main context
      */
-    parent?: InvocationContext;
+    context?: InvocationContext;
 }
 
 /**
  * invocation option.
  */
-export interface InvocationOption extends InvokeOption {
+export interface InvocationOption extends InvokeArguments {
     /**
      * invocation invoker target.
      */
@@ -571,7 +571,7 @@ export abstract class OperationFactory<T = any> implements OnDestroy {
      * @param option invoke arguments.
      * @param instance target instance.
      */
-    abstract invoke(method: MethodType<T>, option?: InvokeArguments, instance?: T): any;
+    abstract invoke(method: MethodType<T>, option?: InvokeOption, instance?: T): any;
     /**
      * invoke target method.
      * @param method method name.
@@ -621,9 +621,9 @@ export abstract class OperationFactoryResolver {
      * resolve operation factory of target type
      * @param type target type or target type reflect.
      * @param injector injector.
-     * @param option target type invoke option {@link InvokeOption}
+     * @param option target type invoke option {@link InvokeArguments}
      * @returns instance of {@link OperationFactory}
      */
-    abstract resolve<T>(type: ClassType<T> | TypeReflect<T>, injector: Injector, option?: InvokeOption): OperationFactory<T>;
+    abstract resolve<T>(type: ClassType<T> | TypeReflect<T>, injector: Injector, option?: InvokeArguments): OperationFactory<T>;
 }
 

@@ -434,7 +434,7 @@ export class DefaultInjector extends Injector {
             return target.invoke(propertyKey, context ?? { ...option, providers });
         }
 
-        let targetClass: Type, instance: any, key: string;
+        let targetClass: Type, instance: any;
         let tgRefl: TypeReflect | undefined;
 
         if (isTypeObject(target)) {
@@ -454,11 +454,6 @@ export class DefaultInjector extends Injector {
         }
 
         tgRefl = tgRefl ?? get(targetClass);
-        // if (isFunction(propertyKey)) {
-        //     key = tgRefl.class.getPropertyName(propertyKey(tgRefl.class.getPropertyDescriptors() as any));
-        // } else {
-        //     key = propertyKey;
-        // }
 
         const factory = this.get(OperationFactoryResolver).resolve(tgRefl, this, context ?? { ...option, providers });
         if (!context) {
@@ -954,7 +949,7 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
     private _tagPdrs: ProviderType[] | undefined;
     private _type: Type<T>;
     readonly context: InvocationContext;
-    constructor(readonly reflect: TypeReflect<T>, readonly injector: Injector, options?: InvokeOption) {
+    constructor(readonly reflect: TypeReflect<T>, readonly injector: Injector, options?: InvokeArguments) {
         super()
         this._type = reflect.type as Type<T>;
         this.context = this.createContext(injector, options);
@@ -972,13 +967,13 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
         return this.context.resolveArgument({ provider: token ?? this.type, nullable: true });
     }
 
-    invoke(method: MethodType<T>, option?: InvokeArguments | InvocationContext, instance?: T) {
+    invoke(method: MethodType<T>, option?: InvokeOption | InvocationContext, instance?: T) {
         const key = isFunction(method) ? this.reflect.class.getPropertyName(method(this.reflect.class.getPropertyDescriptors() as any)) : method;
         let context: InvocationContext;
         let destroy: boolean | Function | undefined;
         if (option instanceof InvocationContext) {
             context = option;
-            const refctx = this.createContext({ ...option, invokerMethod: key });
+            const refctx = this.createContext({ invokerMethod: key });
             context.addRef(refctx);
             destroy = () => {
                 context.removeRef(refctx);
@@ -1055,7 +1050,7 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
 }
 
 export class DefaultOperationFactoryResolver extends OperationFactoryResolver {
-    resolve<T>(type: ClassType<T> | TypeReflect<T>, injector: Injector, option?: InvokeOption): OperationFactory<T> {
+    resolve<T>(type: ClassType<T> | TypeReflect<T>, injector: Injector, option?: InvokeArguments): OperationFactory<T> {
         return new DefaultOperationFactory(isFunction(type) ? get(type) : type, injector, option);
     }
 }

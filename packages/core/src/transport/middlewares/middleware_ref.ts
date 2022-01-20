@@ -80,7 +80,7 @@ export class DefaultMiddlewareRef<T extends Middleware = Middleware> extends Mid
 
     protected async canActive(ctx: TransportContext): Promise<boolean> {
         if (this.protocols.indexOf(ctx.protocol) < 0) return false;
-        if (ctx.status && ctx.status !== 404) return false;
+        if (ctx.sent) return false;
         if (!ctx.pattern.startsWith(this.url)) return false;
         if (this.guards && this.guards.length) {
             if (!(await lang.some(

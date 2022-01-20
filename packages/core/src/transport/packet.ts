@@ -12,7 +12,6 @@ export interface ReadPacket<T = any> {
      * packet data.
      */
     body: T;
-    event?: boolean;
 }
 
 /**

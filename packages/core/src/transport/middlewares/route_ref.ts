@@ -91,7 +91,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     }
 
     protected async canActivate(ctx: TransportContext) {
-        if (ctx.status && ctx.status !== 404) return null;
+        if (ctx.sent) return null;
         if (!ctx.pattern.startsWith(this.url)) return null;
         if (this.guards && this.guards.length) {
             if (!(await lang.some(

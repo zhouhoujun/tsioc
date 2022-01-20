@@ -27,15 +27,15 @@ export abstract class TransportClient implements Client, OnDispose {
     /**
      * send message.
      * @param pattern message pattern.
-     * @param data send data.
+     * @param body send data.
      */
-    abstract send<TResult = any, TInput = any>(pattern: Pattern, data: TInput, options?: InvocationOption): Observable<TResult>;
+    abstract send<TResult = any, TInput = any>(pattern: Pattern, body: TInput, options?: InvocationOption): Observable<TResult>;
     /**
      * emit message
      * @param pattern event pattern.
-     * @param data event data.
+     * @param body event data.
      */
-    abstract emit<TResult = any, TInput = any>(pattern: Pattern, data: TInput, options?: InvocationOption): Observable<TResult>;
+    abstract emit<TResult = any, TInput = any>(pattern: Pattern, body: TInput, options?: InvocationOption): Observable<TResult>;
     /**
      * request with option.
      * @param option 
@@ -67,16 +67,16 @@ export class DefaultTransportClient extends TransportClient {
         await this.context.onDestroy();
     }
 
-    send<TResult = any, TInput = any>(pattern: Pattern, data: TInput, options?: InvocationOption): Observable<TResult> {
-        return this.request({ ...options, pattern, data })
+    send<TResult = any, TInput = any>(pattern: Pattern, body: TInput, options?: InvocationOption): Observable<TResult> {
+        return this.request({ ...options, pattern, body })
     }
 
-    emit<TResult = any, TInput = any>(pattern: Pattern, data: TInput, options?: InvocationOption): Observable<TResult> {
-        return this.request({ ...options, pattern, data, event: true })
+    emit<TResult = any, TInput = any>(pattern: Pattern, body: TInput, options?: InvocationOption): Observable<TResult> {
+        return this.request({ ...options, pattern, body, event: true })
     }
 
     request<TResult = any>(option: TransportOption): Observable<TResult> {
-        if (isNil(option.pattern) || isNil(option.data)) {
+        if (isNil(option.pattern) || isNil(option.body)) {
             return throwError(() => new InvalidMessageError());
         }
         const ctx = this.createContext(option);
