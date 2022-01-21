@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { Protocol } from '../types';
+import { Protocol } from '../packet';
 import { TransportServer } from './server';
 
 /**

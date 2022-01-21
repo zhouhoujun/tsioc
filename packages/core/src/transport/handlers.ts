@@ -1,9 +1,8 @@
 import { Abstract } from '@tsdi/ioc';
 import { mergeMap, Observable } from 'rxjs';
-import { Pattern } from './pattern';
 import { TransportContext } from './context';
 import { EventHandler, TransportError, TransportHandler } from './handler';
-import { ReadPacket, WritePacket } from './packet';
+import { Pattern, ReadPacket, WritePacket } from './packet';
 
 
 /**

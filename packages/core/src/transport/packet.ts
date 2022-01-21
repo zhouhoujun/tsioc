@@ -1,4 +1,7 @@
-import { Pattern } from './pattern';
+/**
+ * pattern type.
+ */
+export type Pattern = string | number | Record<string, string | number | Record<string, string | number>>;
 
 /**
  * read packet.
@@ -13,6 +16,12 @@ export interface ReadPacket<T = any> {
      */
     body: T;
 }
+
+/**
+ * transport protocol.
+ */
+ export type Protocol = 'tcp' | 'grpc' | 'rmq' | 'kafka' | 'redis'
+ | 'amqp' | 'msg' | 'wss' | 'ws' | 'mqtt' | 'mqtts' | 'ssl' | 'wx' | 'wxs';
 
 /**
  * write packet.

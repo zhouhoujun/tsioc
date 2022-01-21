@@ -3,8 +3,7 @@ import { ConfigureLoggerManager, LoggerManager, LOGGER_MANAGER } from '@tsdi/log
 import { Observable } from 'rxjs';
 import { CONFIGURATION, PROCESS_ROOT } from './metadata/tk';
 import { ApplicationConfiguration, ConfigureManager } from './configure/config';
-import { Pattern } from './transport/pattern';
-import { TransportResponse } from './transport/packet';
+import { Pattern, WritePacket } from './transport/packet';
 import { ClientFactory } from './transport/client/factory';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from './context';
 import { RunnableFactory, RunnableFactoryResolver, RunnableSet, RunnableRef } from './runnable';
@@ -77,7 +76,7 @@ export class DefaultApplicationContext extends ApplicationContext {
      * @param pattern message pattern.
      * @param data send data.
      */
-    send<TResult = TransportResponse, TInput = any>(pattern: Pattern, data: TInput): Observable<TResult> {
+    send<TResult = WritePacket, TInput = any>(pattern: Pattern, data: TInput): Observable<TResult> {
         if(!this.client){
             this.client = this.injector.get(ClientFactory).create({
                 protocol: 'msg'

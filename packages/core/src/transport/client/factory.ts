@@ -1,6 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { TransportClient } from './client';
-import { Protocol } from '../types';
+import { Protocol } from '../packet';
 
 /**
  * client option.

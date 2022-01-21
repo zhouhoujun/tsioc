@@ -1,8 +1,7 @@
 import { Abstract, isArray } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
+import { ReadPacket, Protocol, WritePacket } from './packet';
 import { TransportContext } from './context';
-import { ReadPacket, WritePacket } from './packet';
-import { Protocol } from './types';
 
 
 /**
