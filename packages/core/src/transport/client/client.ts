@@ -94,7 +94,7 @@ export class DefaultTransportClient extends TransportClient {
     }
 
     protected createContext(option: TransportOption) {
-        return this.context.resolve(TransportContextFactory)?.create(this.context, { ...option, parent: this.context, protocol: this.protocol })!;
+        return this.context.resolve(TransportContextFactory)?.create(this.context, { ...option, protocol: this.protocol })!;
     }
 
 }

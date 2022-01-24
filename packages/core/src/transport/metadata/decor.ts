@@ -212,23 +212,23 @@ export interface RouteMapping {
         /**
          * protocol type.
          */
-        protocol?: string,
+        protocol?: string;
         /**
          * parent router.
          */
-        parent?: Type<Router>,
+        parent?: Type<Router>;
         /**
          * route guards.
          */
-        guards?: Type<CanActivate>[],
+        guards?: Type<CanActivate>[];
         /**
          * middlewares for the route.
          */
-        middlewares: MiddlewareType[],
+        middlewares: MiddlewareType[];
         /**
         * pipes for the route.
         */
-        pipes?: Type<PipeTransform>[]
+        pipes?: Type<PipeTransform>[];
     }): ClassDecorator;
     /**
      * route decorator. define the controller method as an route.
@@ -336,7 +336,7 @@ export interface RequsetParameterMetadata extends ParameterMetadata {
     /**
      * field scope.
      */
-    scope?: 'body' | 'query' | 'restful'
+    scope?: 'body' | 'query' | 'restful';
     /**
      * field of request query params or body.
      */
@@ -368,7 +368,7 @@ export interface RequsetParameterDecorator {
          * pipes
          */
         pipe?: string | Type<PipeTransform>;
-        args?: any[],
+        args?: any[];
         /**
         * custom resolver to resolve the value for the property or parameter.
         */
@@ -397,7 +397,7 @@ export interface RequsetParameterDecorator {
         /**
          * field of request query params or body.
          */
-        field?: string,
+        field?: string;
         /**
          * define provider to resolve value to the parameter or property.
          */
@@ -406,7 +406,7 @@ export interface RequsetParameterDecorator {
          * pipes
          */
         pipe?: string | Type<PipeTransform>;
-        args?: any[],
+        args?: any[];
         /**
         * custom resolver to resolve the value for the property or parameter.
         */

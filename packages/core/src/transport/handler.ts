@@ -46,7 +46,7 @@ export abstract class EventHandler<TRequest extends ReadPacket = ReadPacket, TRe
      * transport event handler.
      * @param ctx invocation context with input.
      */
-    abstract handle(ctx: TransportContext<TRequest>): Observable<TResponse>;
+    abstract handle(ctx: TransportContext<TRequest, TResponse>): Observable<TResponse>;
 }
 
 

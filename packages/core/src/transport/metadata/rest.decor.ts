@@ -44,23 +44,23 @@ export interface RestController {
         /**
          * protocol type.
          */
-        protocol?: string,
+        protocol?: string;
         /**
          * parent router.
          */
-        parent?: Type<Router>,
+        parent?: Type<Router>;
         /**
          * route guards.
          */
-        guards?: Type<CanActivate>[],
+        guards?: Type<CanActivate>[];
         /**
          * middlewares for the route.
          */
-        middlewares: MiddlewareType[],
+        middlewares: MiddlewareType[];
         /**
         * pipes for the route.
         */
-        pipes?: Type<PipeTransform>[]
+        pipes?: Type<PipeTransform>[];
     }): ClassDecorator;
     /**
      * route decorator. define the controller method as an route.
@@ -259,19 +259,19 @@ export interface OptionsDecorator {
         /**
          * route guards.
          */
-        guards?: Type<CanActivate>[],
+        guards?: Type<CanActivate>[];
         /**
          * middlewares for the route.
          */
-        middlewares: MiddlewareType[],
+        middlewares: MiddlewareType[];
         /**
          * pipes for the route.
          */
-        pipes?: Type<PipeTransform>[],
+        pipes?: Type<PipeTransform>[];
         /**
          * request contentType
          */
-        contentType?: string
+        contentType?: string;
     }): MethodDecorator;
 }
 
@@ -310,19 +310,19 @@ export interface GetDecorator {
         /**
          * route guards.
          */
-        guards?: Type<CanActivate>[],
+        guards?: Type<CanActivate>[];
         /**
          * middlewares for the route.
          */
-        middlewares: MiddlewareType[],
+        middlewares: MiddlewareType[];
         /**
          * pipes for the route.
          */
-        pipes?: Type<PipeTransform>[],
+        pipes?: Type<PipeTransform>[];
         /**
          * request contentType
          */
-        contentType?: string
+        contentType?: string;
     }): MethodDecorator;
 }
 
@@ -362,19 +362,19 @@ export interface DeleteDecorator {
         /**
          * route guards.
          */
-        guards?: Type<CanActivate>[],
+        guards?: Type<CanActivate>[];
         /**
          * middlewares for the route.
          */
-        middlewares: MiddlewareType[],
+        middlewares: MiddlewareType[];
         /**
          * pipes for the route.
          */
-        pipes?: Type<PipeTransform>[],
+        pipes?: Type<PipeTransform>[];
         /**
          * request contentType
          */
-        contentType?: string
+        contentType?: string;
     }): MethodDecorator;
 
 }
@@ -414,19 +414,19 @@ export interface PatchDecorator {
         /**
          * route guards.
          */
-        guards?: Type<CanActivate>[],
+        guards?: Type<CanActivate>[];
         /**
          * middlewares for the route.
          */
-        middlewares: MiddlewareType[],
+        middlewares: MiddlewareType[];
         /**
          * pipes for the route.
          */
-        pipes?: Type<PipeTransform>[],
+        pipes?: Type<PipeTransform>[];
         /**
          * request contentType
          */
-        contentType?: string
+        contentType?: string;
     }): MethodDecorator;
 }
 /**
@@ -466,19 +466,19 @@ export interface PostDecorator {
         /**
          * route guards.
          */
-        guards?: Type<CanActivate>[],
+        guards?: Type<CanActivate>[];
         /**
          * middlewares for the route.
          */
-        middlewares: MiddlewareType[],
+        middlewares: MiddlewareType[];
         /**
          * pipes for the route.
          */
-        pipes?: Type<PipeTransform>[],
+        pipes?: Type<PipeTransform>[];
         /**
          * request contentType
          */
-        contentType?: string
+        contentType?: string;
     }): MethodDecorator;
 }
 /**
@@ -517,19 +517,19 @@ export interface PutDecorator {
         /**
          * route guards.
          */
-        guards?: Type<CanActivate>[],
+        guards?: Type<CanActivate>[];
         /**
          * middlewares for the route.
          */
-        middlewares: MiddlewareType[],
+        middlewares: MiddlewareType[];
         /**
          * pipes for the route.
          */
-        pipes?: Type<PipeTransform>[],
+        pipes?: Type<PipeTransform>[];
         /**
          * request contentType
          */
-        contentType?: string
+        contentType?: string;
     }): MethodDecorator;
 }
 /**

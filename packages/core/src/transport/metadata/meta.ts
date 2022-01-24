@@ -41,7 +41,7 @@ export interface HandleMetadata extends TypeMetadata, PatternMetadata {
     /**
      * route guards.
      */
-    guards?: Type<CanActivate>[],
+    guards?: Type<CanActivate>[];
 
     /**
      * handle parent.
