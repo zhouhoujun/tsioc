@@ -368,6 +368,9 @@ export interface RequsetParameterDecorator {
          * pipes
          */
         pipe?: string | Type<PipeTransform>;
+        /**
+         * pipe extends args.
+         */
         args?: any[];
         /**
         * custom resolver to resolve the value for the property or parameter.
@@ -406,6 +409,9 @@ export interface RequsetParameterDecorator {
          * pipes
          */
         pipe?: string | Type<PipeTransform>;
+        /**
+         * pipe extends args.
+         */
         args?: any[];
         /**
         * custom resolver to resolve the value for the property or parameter.

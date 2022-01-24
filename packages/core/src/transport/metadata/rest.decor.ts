@@ -61,6 +61,10 @@ export interface RestController {
         * pipes for the route.
         */
         pipes?: Type<PipeTransform>[];
+        /**
+         * pipe extends args.
+         */
+        args?: any[];
     }): ClassDecorator;
     /**
      * route decorator. define the controller method as an route.
@@ -141,15 +145,19 @@ export interface RouteMethodDecorator {
         /**
          * route guards.
          */
-        guards?: Type<CanActivate>[],
+        guards?: Type<CanActivate>[];
         /**
          * middlewares for the route.
          */
-        middlewares: MiddlewareType[],
+        middlewares: MiddlewareType[];
         /**
          * pipes for the route.
          */
-        pipes?: Type<PipeTransform>[],
+        pipes?: Type<PipeTransform>[];
+        /**
+         * pipe extends args.
+         */
+         args?: any[];
         /**
          * request contentType
          */
@@ -207,15 +215,19 @@ export interface HeadDecorator {
         /**
          * route guards.
          */
-        guards?: Type<CanActivate>[],
+        guards?: Type<CanActivate>[];
         /**
          * middlewares for the route.
          */
-        middlewares: MiddlewareType[],
+        middlewares: MiddlewareType[];
         /**
          * pipes for the route.
          */
-        pipes?: Type<PipeTransform>[],
+        pipes?: Type<PipeTransform>[];
+        /**
+         * pipe extends args.
+         */
+        args?: any[];
         /**
          * request contentType
          */
@@ -269,6 +281,10 @@ export interface OptionsDecorator {
          */
         pipes?: Type<PipeTransform>[];
         /**
+         * pipe extends args.
+         */
+        args?: any[];
+        /**
          * request contentType
          */
         contentType?: string;
@@ -319,6 +335,10 @@ export interface GetDecorator {
          * pipes for the route.
          */
         pipes?: Type<PipeTransform>[];
+        /**
+         * pipe extends args.
+         */
+        args?: any[];
         /**
          * request contentType
          */
@@ -372,6 +392,10 @@ export interface DeleteDecorator {
          */
         pipes?: Type<PipeTransform>[];
         /**
+         * pipe extends args.
+         */
+        args?: any[];
+        /**
          * request contentType
          */
         contentType?: string;
@@ -423,6 +447,10 @@ export interface PatchDecorator {
          * pipes for the route.
          */
         pipes?: Type<PipeTransform>[];
+        /**
+         * pipe extends args.
+         */
+        args?: any[];
         /**
          * request contentType
          */
@@ -476,6 +504,10 @@ export interface PostDecorator {
          */
         pipes?: Type<PipeTransform>[];
         /**
+         * pipe extends args.
+         */
+        args?: any[];
+        /**
          * request contentType
          */
         contentType?: string;
@@ -526,6 +558,10 @@ export interface PutDecorator {
          * pipes for the route.
          */
         pipes?: Type<PipeTransform>[];
+        /**
+         * pipe extends args.
+         */
+        args?: any[];
         /**
          * request contentType
          */

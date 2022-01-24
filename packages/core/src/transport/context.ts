@@ -1,5 +1,6 @@
 import { Abstract, Injector, InvocationContext, InvokeArguments, isNumber, isPlainObject, isPromise, isString } from '@tsdi/ioc';
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
+import { TransportStatus } from './error';
 import { Pattern, Protocol, ReadPacket, WritePacket } from './packet';
 
 /**
@@ -11,6 +12,7 @@ export interface TransportOption<T = any> extends InvokeArguments {
     body: T;
     event?: boolean;
 }
+
 
 /**
  * transport context.
@@ -55,11 +57,11 @@ export abstract class TransportContext<TRequest extends ReadPacket = ReadPacket,
     /**
      * Get response status code.
      */
-    abstract get status(): number | string;
+    abstract get status(): TransportStatus;
     /**
      * Set response status code.
      */
-    abstract set status(value: number | string);
+    abstract set status(value: TransportStatus);
 
     /**
       * get response error
@@ -76,9 +78,13 @@ export abstract class TransportContext<TRequest extends ReadPacket = ReadPacket,
     abstract get sent(): boolean;
 
     /**
-     * is response status ok or not.
+     * get response status ok or not.
      */
     abstract get ok(): boolean;
+    /**
+     * set response status ok or not.
+     */
+    abstract set ok(value: boolean);
 
     /**
      * Get response status message.

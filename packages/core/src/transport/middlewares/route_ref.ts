@@ -105,7 +105,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
             if (!(await lang.some(
                 rmeta.guards.map(token => () => promisify(this.factory.resolve(token)?.canActivate(ctx))),
                 vaild => vaild === false))) {
-                ctx.status = 403;
+                ctx.status = 'Forbidden';
                 return null;
             }
         }
@@ -156,7 +156,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
             } else if (isDefined(result)) {
                 ctx.body = result;
             } else {
-                ctx.status = 200;
+                ctx.ok = true;
             }
 
         }
