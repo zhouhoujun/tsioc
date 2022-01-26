@@ -22,7 +22,9 @@ export interface Client {
     emit<TResult = any, TInput = any>(pattern: any, data: TInput): Observable<TResult>;
 }
 
-
+/**
+ * client set.
+ */
 @Abstract()
 export abstract class ClientSet implements ScanSet<OperationFactory<Client>> {
     /**

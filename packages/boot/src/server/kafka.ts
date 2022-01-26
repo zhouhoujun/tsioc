@@ -1,5 +1,5 @@
 import { Inject, Injectable, isNil, ModuleLoader, OperationFactoryResolver, Injector, getClass } from '@tsdi/ioc';
-import { TransportServer, Deserializer, Serializer, TransportHandler, TransportHandlers, TransportResponse } from '@tsdi/core';
+import { TransportServer, Deserializer, Serializer, TransportHandler, TransportRouter, TransportResponse } from '@tsdi/core';
 import { Level } from '@tsdi/logs';
 import { Observable } from 'rxjs';
 
@@ -30,7 +30,7 @@ export class KafkaServer extends TransportServer {
     protected groupId: string;
 
     constructor(
-        handler: TransportHandlers,
+        router: TransportRouter,
         private injector: Injector,
         private options: {
             postfixId?: string;
@@ -42,7 +42,7 @@ export class KafkaServer extends TransportServer {
             send?: Omit<ProducerRecord, 'topic' | 'messages'>;
             keepBinary?: boolean;
         }) {
-        super(handler)
+        super(router)
         this.brokers = options.client?.brokers ?? DEFAULT_BROKERS;
         const postfixId = this.options.postfixId ?? '-server';
         this.clientId = (options.client?.clientId ?? 'boot-consumer') + postfixId;
@@ -107,7 +107,7 @@ export class KafkaServer extends TransportServer {
     }
 
     public async bindEvents(consumer: Consumer) {
-        const registeredPatterns = [...this.handlers.keys()];
+        const registeredPatterns = [...this.router.keys()];
         const consumerSubscribeOptions = this.options.subscribe || {};
         const subscribeToPattern = async (pattern: string) =>
             consumer.subscribe({
@@ -161,7 +161,7 @@ export class KafkaServer extends TransportServer {
         //     });
         // }
         
-        const response = this.handlers.handle(kafkaContext);
+        const response = this.router.handle(kafkaContext);
         response && this.send(response, publish);
     }
 

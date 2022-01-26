@@ -1,13 +1,11 @@
-import { Abstract, Inject, isFunction, isPromise } from '@tsdi/ioc';
+import { Abstract, isFunction, isPromise } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { catchError, finalize, Observable, Subscription, EMPTY, isObservable, connectable, Subject, from, of } from 'rxjs';
 import { OnDispose } from '../../lifecycle';
 import { Server } from '../../server';
+import { WritePacket } from '../packet';
 import { TransportContext } from '../context';
-import { TransportEvent, TransportRequest, TransportResponse, ReadPacket, WritePacket } from '../packet';
-import { Deserializer } from '../deserializer';
-import { Serializer } from '../serializer';
-import { TransportHandlers } from '../handlers';
+import { TransportRouter } from './router';
 
 
 @Abstract()
@@ -16,20 +14,16 @@ export abstract class TransportServer implements Server, OnDispose {
     @Logger()
     protected readonly logger!: ILogger;
 
-    @Inject()
-    protected serializer!: Serializer<TransportResponse>;
-    @Inject()
-    protected deserializer!: Deserializer<TransportRequest | TransportEvent>;
 
-    constructor(readonly handlers: TransportHandlers) {
+    constructor(readonly router: TransportRouter) {
 
     }
 
     abstract startup(): Promise<void>;
 
     async onDispose(): Promise<void> {
-        if (isFunction((this.handlers as TransportHandlers & OnDispose).onDispose)) {
-            await (this.handlers as TransportHandlers & OnDispose).onDispose();
+        if (isFunction((this.router as TransportRouter & OnDispose).onDispose)) {
+            await (this.router as TransportRouter & OnDispose).onDispose();
         }
     }
 
@@ -68,7 +62,7 @@ export abstract class TransportServer implements Server, OnDispose {
     public async handleEvent(
         context: TransportContext,
     ): Promise<any> {
-        const handler = this.handlers.getHandlerByPattern(context.pattern);
+        const handler = this.router.getHandlerByPattern(context.pattern);
         if (!handler) {
             return this.logger.error(`There is no matching event handler defined in the remote service. Event pattern: ${JSON.stringify(context.pattern)}.`);
         }

@@ -1,7 +1,8 @@
 import { Abstract, Injector, InvocationContext, InvokeArguments, isNumber, isPlainObject, isPromise, isString } from '@tsdi/ioc';
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
-import { TransportStatus } from './error';
 import { Pattern, Protocol, ReadPacket, WritePacket } from './packet';
+import { TransportStatus } from './handler';
+import { TransportError } from './error';
 
 /**
  * transport option.
@@ -103,6 +104,13 @@ export abstract class TransportContext<TRequest extends ReadPacket = ReadPacket,
      * Set response body.
      */
     abstract set body(body: any);
+    /**
+     * create error instance of {@link TransportError}.
+     * @param status transport status
+     * @param messages transport messages.
+     * @returns instance of {@link TransportError}
+     */
+    abstract throwError(status: TransportStatus, ...messages: string[]): TransportError;
 
     constructor(injector: Injector, options: TransportOption<TRequest>) {
         super(injector, options);

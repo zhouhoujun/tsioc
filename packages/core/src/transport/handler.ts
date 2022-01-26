@@ -49,28 +49,8 @@ export abstract class EventHandler<TRequest extends ReadPacket = ReadPacket, TRe
     abstract handle(ctx: TransportContext<TRequest, TResponse>): Observable<TResponse>;
 }
 
-
-
 /**
- * Transport error
- *
- * @export
- * @class TransportError
- * @extends {Error}
+ * transport status.
  */
-export class TransportError extends Error {
-    constructor(readonly status: string | number, message?: string | string[]) {
-        super(isArray(message) ? message.join('\n') : message || '');
-        Object.setPrototypeOf(this, TransportError.prototype);
-        Error.captureStackTrace(this);
-    }
+export type TransportStatus = 'Bad Request' | 'Forbidden' | 'Internal Server Error' | 'Not Acceptable' | 'Not Found' | 'Unauthorized' | 'Method Not Allowed' | number;
 
-    get statusCode() {
-        return this.status;
-    }
-
-    toString() {
-        return `Transport Error: ${this.status}, ${this.message}`;
-    }
-
-}
