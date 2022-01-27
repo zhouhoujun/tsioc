@@ -21,20 +21,26 @@ export interface LoggerMetadata extends TypeMetadata {
      * @type {string}
      */
     logname?: string;
-
+    /**
+     * param name.
+     */
     paramName?: string;
+    /**
+     * property key.
+     */
     propertyKey?: string;
     /**
      * logger config.
      */
     config?: LoggerConfig;
+    /**
+     * operation argument resolver.
+     */
     resolver?: OperationArgumentResolver;
-
     /**
      * log level
      */
     level?: Level;
-
     /**
      * only match express condition can do loging.
      */

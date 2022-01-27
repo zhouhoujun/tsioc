@@ -33,7 +33,6 @@ export interface DesignAnnotation {
      * @memberof DesignAnnotation
      */
     params: Record<string, string[]>;
-
     /**
      * abstract or not.
      */
