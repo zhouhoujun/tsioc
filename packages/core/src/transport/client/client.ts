@@ -1,12 +1,11 @@
 import { Abstract, Inject, Injectable, InvocationContext, InvocationOption, isFunction, isNil } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { Observable, throwError } from 'rxjs';
-import { catchError, mergeMap } from 'rxjs/operators';
 import { Client } from '../../client';
 import { OnDispose } from '../../lifecycle';
 import { InvalidMessageError } from '../error';
 import { Pattern, Protocol } from '../packet';
-import { TransportContextFactory, TransportOption } from '../context';
+import { TransportOption } from '../context';
 import { TransportHandler } from '../handler';
 
 
@@ -78,23 +77,7 @@ export class DefaultTransportClient extends TransportClient {
         if (isNil(option.pattern) || isNil(option.body)) {
             return throwError(() => new InvalidMessageError());
         }
-        const ctx = this.createContext(option);
-        return this.handler.handle(ctx)
-            .pipe(
-                mergeMap(async r => {
-                    await ctx.destroy();
-                    return r;
-                }),
-                catchError(async err => {
-                    await ctx.destroy();
-                    return err;
-                })
-            );
-
-    }
-
-    protected createContext(option: TransportOption) {
-        return this.context.resolve(TransportContextFactory)?.create(this.context, { ...option, protocol: this.protocol })!;
+        return this.handler.handle(option) as Observable<TResult>;
     }
 
 }

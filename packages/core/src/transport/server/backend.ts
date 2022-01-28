@@ -2,7 +2,7 @@ import { Abstract } from '@tsdi/ioc';
 import { connectable, defer, Observable, Observer, Subject } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
 import { Pattern, ReadPacket, WritePacket } from '../packet';
-import { TransportContext, stringify } from '../context';
+import { stringify } from '../context';
 import { TransportBackend } from '../handler';
 
 
@@ -10,14 +10,14 @@ import { TransportBackend } from '../handler';
 export abstract class ServerTransportBackend<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket>
     extends TransportBackend<TRequest, TResponse>  {
 
-    
-
     abstract startup(): Promise<any>;
 
-    handle(ctx: TransportContext<TRequest>): Observable<TResponse> {
-        if (ctx.isEvent) {
+    abstract isEvent(req: TRequest): boolean;
+
+    handle(req: TRequest): Observable<TResponse> {
+        if (this.isEvent(req)) {
             const source = defer(async () => this.startup()).pipe(
-                mergeMap(() => this.dispatchEvent(ctx)),
+                mergeMap(() => this.dispatchEvent(req)),
             );
             const connectableSource = connectable(source, {
                 connector: () => new Subject(),
@@ -30,7 +30,7 @@ export abstract class ServerTransportBackend<TRequest extends ReadPacket = ReadP
                 mergeMap(
                     () => new Observable<TResponse>((observer) => {
                         const callback = this.createObserver(observer);
-                        return this.publish(ctx, callback);
+                        return this.publish(req, callback);
                     })
                 ));
         }
@@ -58,7 +58,7 @@ export abstract class ServerTransportBackend<TRequest extends ReadPacket = ReadP
      * @param callback 
      */
     protected abstract publish(
-        ctx: TransportContext<TRequest>,
+        req: TRequest,
         callback: (packet: TResponse) => void,
     ): () => void;
 
@@ -66,7 +66,7 @@ export abstract class ServerTransportBackend<TRequest extends ReadPacket = ReadP
      * dispatch event.
      * @param packet 
      */
-    protected abstract dispatchEvent<T = any>(ctx: TransportContext<TRequest>): Promise<T>;
+    protected abstract dispatchEvent<T = any>(ctx: TRequest): Promise<T>;
 
     protected normalizePattern(pattern: Pattern): string {
         return stringify(pattern);

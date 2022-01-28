@@ -1,7 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { ReadPacket, Protocol, WritePacket } from './packet';
-import { TransportContext } from './context';
 
 
 /**
@@ -11,9 +10,9 @@ import { TransportContext } from './context';
 export abstract class TransportHandler<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket> {
     /**
      * transport handler.
-     * @param ctx invocation context with input.
+     * @param req request input.
      */
-    abstract handle(ctx: TransportContext<TRequest, TResponse>): Observable<TResponse>;
+    abstract handle(req: TRequest): Observable<TResponse>;
 }
 
 /**
@@ -32,9 +31,9 @@ export abstract class TransportBackend<TRequest extends ReadPacket = ReadPacket,
     abstract get protocol(): Protocol;
     /**
      * transport handler.
-     * @param ctx invocation context with input.
+     * @param req request input.
      */
-    abstract handle(ctx: TransportContext<TRequest, TResponse>): Observable<TResponse>;
+    abstract handle(req: TRequest): Observable<TResponse>;
 }
 
 /**
@@ -44,9 +43,9 @@ export abstract class TransportBackend<TRequest extends ReadPacket = ReadPacket,
 export abstract class EventHandler<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket> implements TransportHandler<TRequest, TResponse> {
     /**
      * transport event handler.
-     * @param ctx invocation context with input.
+     * @param req request data.
      */
-    abstract handle(ctx: TransportContext<TRequest, TResponse>): Observable<TResponse>;
+    abstract handle(req: TRequest): Observable<TResponse>;
 }
 
 /**

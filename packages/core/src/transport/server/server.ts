@@ -3,8 +3,7 @@ import { ILogger, Logger } from '@tsdi/logs';
 import { catchError, finalize, Observable, Subscription, EMPTY, isObservable, connectable, Subject, from, of } from 'rxjs';
 import { OnDispose } from '../../lifecycle';
 import { Server } from '../../server';
-import { Protocol, WritePacket } from '../packet';
-import { TransportContext } from '../context';
+import { Protocol, ReadPacket, WritePacket } from '../packet';
 import { TransportHandler } from '../handler';
 
 
@@ -60,13 +59,13 @@ export abstract class TransportServer implements Server, OnDispose {
     }
 
     public async handleEvent(
-        context: TransportContext,
+        packet: ReadPacket
     ): Promise<any> {
         // const handler = this.handler.getHandlerByPattern(context.pattern);
         // if (!handler) {
         //     return this.logger.error(`There is no matching event handler defined in the remote service. Event pattern: ${JSON.stringify(context.pattern)}.`);
         // }
-        const resultOrStream = await this.handler.handle(context);
+        const resultOrStream = await this.handler.handle(packet);
         if (isObservable(resultOrStream)) {
             const connectableSource = connectable(resultOrStream, {
                 connector: () => new Subject(),

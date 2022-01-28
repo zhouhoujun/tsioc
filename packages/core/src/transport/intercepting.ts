@@ -1,7 +1,6 @@
 import { Injectable, InvocationContext, tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { ReadPacket, WritePacket } from './packet';
-import { TransportContext } from './context';
 import { TransportBackend, TransportHandler } from './handler';
 import { TransportInterceptor } from './interceptor';
 
@@ -29,13 +28,13 @@ export class InterceptingHandler<TRequest extends ReadPacket = ReadPacket, TResp
 
     constructor(private backend: TransportBackend, private context: InvocationContext) { }
 
-    handle(ctx: TransportContext<TRequest, TResponse>): Observable<TResponse> {
+    handle(req: TRequest): Observable<TResponse> {
         if (!this.chain) {
             const interceptors = this.context.get(TRANSPORT_INTERCEPTORS);
             this.chain = interceptors.reduceRight(
                 (next, interceptor) => new InterceptorHandler(next, interceptor), this.backend as TransportHandler) as TransportHandler<TRequest, TResponse>;
         }
-        return this.chain.handle(ctx);
+        return this.chain.handle(req);
     }
 }
 
@@ -43,7 +42,7 @@ export class InterceptingHandler<TRequest extends ReadPacket = ReadPacket, TResp
 export class InterceptorHandler<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket> implements TransportHandler<TRequest, TResponse> {
     constructor(private next: TransportHandler<TRequest, TResponse>, private interceptor: TransportInterceptor<TRequest, TResponse>) { }
 
-    handle(ctx: TransportContext<TRequest, TResponse>): Observable<TResponse> {
-        return this.interceptor.intercept(ctx, this.next);
+    handle(req: TRequest): Observable<TResponse> {
+        return this.interceptor.intercept(req, this.next);
     }
 }
