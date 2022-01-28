@@ -3,9 +3,9 @@ import { ILogger, Logger } from '@tsdi/logs';
 import { catchError, finalize, Observable, Subscription, EMPTY, isObservable, connectable, Subject, from, of } from 'rxjs';
 import { OnDispose } from '../../lifecycle';
 import { Server } from '../../server';
-import { WritePacket } from '../packet';
+import { Protocol, WritePacket } from '../packet';
 import { TransportContext } from '../context';
-import { TransportRouter } from './router';
+import { TransportHandler } from '../handler';
 
 
 @Abstract()
@@ -15,15 +15,15 @@ export abstract class TransportServer implements Server, OnDispose {
     protected readonly logger!: ILogger;
 
 
-    constructor(readonly router: TransportRouter) {
+    constructor(readonly handler: TransportHandler, readonly protocol: Protocol) {
 
     }
 
     abstract startup(): Promise<void>;
 
     async onDispose(): Promise<void> {
-        if (isFunction((this.router as TransportRouter & OnDispose).onDispose)) {
-            await (this.router as TransportRouter & OnDispose).onDispose();
+        if (isFunction((this.handler as TransportHandler & OnDispose).onDispose)) {
+            await (this.handler as TransportHandler & OnDispose).onDispose();
         }
     }
 
@@ -62,11 +62,11 @@ export abstract class TransportServer implements Server, OnDispose {
     public async handleEvent(
         context: TransportContext,
     ): Promise<any> {
-        const handler = this.router.getHandlerByPattern(context.pattern);
-        if (!handler) {
-            return this.logger.error(`There is no matching event handler defined in the remote service. Event pattern: ${JSON.stringify(context.pattern)}.`);
-        }
-        const resultOrStream = await handler.handle(context);
+        // const handler = this.handler.getHandlerByPattern(context.pattern);
+        // if (!handler) {
+        //     return this.logger.error(`There is no matching event handler defined in the remote service. Event pattern: ${JSON.stringify(context.pattern)}.`);
+        // }
+        const resultOrStream = await this.handler.handle(context);
         if (isObservable(resultOrStream)) {
             const connectableSource = connectable(resultOrStream, {
                 connector: () => new Subject(),
