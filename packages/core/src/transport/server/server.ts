@@ -1,12 +1,15 @@
-import { Abstract, isFunction, isPromise } from '@tsdi/ioc';
+import { Abstract, isFunction } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
-import { catchError, finalize, Observable, Subscription, EMPTY, isObservable, connectable, Subject, from, of } from 'rxjs';
+import { catchError, finalize, Observable, Subscription, EMPTY, isObservable, connectable, Subject } from 'rxjs';
 import { OnDispose } from '../../lifecycle';
 import { Server } from '../../server';
 import { Protocol, ReadPacket, WritePacket } from '../packet';
 import { TransportHandler } from '../handler';
 
 
+/**
+ * abstract transport server.
+ */
 @Abstract()
 export abstract class TransportServer implements Server, OnDispose {
 
@@ -73,15 +76,6 @@ export abstract class TransportServer implements Server, OnDispose {
             });
             connectableSource.connect();
         }
-    }
-
-    protected toObservable<T>(value: T | Promise<T> | Observable<T>): Observable<T> {
-        if (isPromise(value)) {
-            return from(value);
-        } else if (isObservable(value)) {
-            return value;
-        }
-        return of(value);
     }
 
 }

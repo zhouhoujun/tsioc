@@ -10,7 +10,7 @@ import { TransportHandler } from '../handler';
 
 
 /**
- * abstract clinent.
+ * abstract transport client.
  */
 @Abstract()
 export abstract class TransportClient implements Client, OnDispose {
@@ -45,7 +45,9 @@ export abstract class TransportClient implements Client, OnDispose {
     abstract onDispose(): Promise<void>
 }
 
-
+/**
+ * default transport client.
+ */
 @Injectable()
 export class DefaultTransportClient extends TransportClient {
 

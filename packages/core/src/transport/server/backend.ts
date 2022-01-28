@@ -1,4 +1,4 @@
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, isString } from '@tsdi/ioc';
 import { connectable, defer, Observable, Observer, Subject } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
 import { Pattern, ReadPacket, WritePacket } from '../packet';
@@ -54,11 +54,11 @@ export abstract class ServerTransportBackend<TRequest extends ReadPacket = ReadP
 
     /**
      * publish handle.
-     * @param ctx transport context.
+     * @param packet packet.
      * @param callback 
      */
     protected abstract publish(
-        req: TRequest,
+        packet: TRequest,
         callback: (packet: TResponse) => void,
     ): () => void;
 
@@ -66,11 +66,25 @@ export abstract class ServerTransportBackend<TRequest extends ReadPacket = ReadP
      * dispatch event.
      * @param packet 
      */
-    protected abstract dispatchEvent<T = any>(ctx: TRequest): Promise<T>;
+    protected abstract dispatchEvent<T = any>(packet: TRequest): Promise<T>;
 
     protected normalizePattern(pattern: Pattern): string {
         return stringify(pattern);
     }
+
+    protected getRouteFromPattern(pattern: Pattern): string {
+        let validPattern: Pattern | undefined;
+        if (isString(pattern)) {
+            try {
+                validPattern = JSON.parse(pattern);
+            } catch (error) {
+                // Uses a fundamental object (`pattern` variable without any conversion)
+                validPattern = pattern;
+            }
+        }
+        return this.normalizePattern(validPattern ?? pattern);
+    }
+
 
     protected serializeError(err: any): any {
         return err;

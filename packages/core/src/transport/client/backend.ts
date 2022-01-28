@@ -66,7 +66,7 @@ export abstract class ClientTransportBackend<TRequest extends ReadPacket = ReadP
      * dispatch event.
      * @param packet 
      */
-    protected abstract dispatchEvent<T = any>(ctx: TRequest): Promise<T>;
+    protected abstract dispatchEvent<T = any>(packet: TRequest): Promise<T>;
 
     protected normalizePattern(pattern: Pattern): string {
         return stringify(pattern);
