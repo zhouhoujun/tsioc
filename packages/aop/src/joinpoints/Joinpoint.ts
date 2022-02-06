@@ -1,5 +1,5 @@
 import {
-    Type, ParameterMetadata, tokenId, Injector, Token, IocContext, InvocationContext,
+    Type, ParameterMetadata, tokenId, Injector, Token, IocContext, InvocationContext, DefaultInvocationContext,
     lang, ClassType, InvokeOption, DecorDefine, Defer, InvocationOption, EMPTY_OBJ
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
@@ -33,7 +33,7 @@ export interface ReturnDefer {
 /**
  * Joinpoint of aop.
  */
-export class Joinpoint<T = any> extends InvocationContext<T> implements IocContext {
+export class Joinpoint<T = any> extends DefaultInvocationContext<T> implements IocContext {
     invokeHandle!: (joinPoint: Joinpoint, advicer: Advicer, sync?: boolean) => any;
 
     /**
@@ -80,7 +80,7 @@ export class Joinpoint<T = any> extends InvocationContext<T> implements IocConte
      * @param options 
      * @returns 
      */
-    static parse(injector: Injector, options: JoinpointOption) {
+    static override create(injector: Injector, options: JoinpointOption) {
         return new Joinpoint(injector,
             options.target,
             options.targetType,

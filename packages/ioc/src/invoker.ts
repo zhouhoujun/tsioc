@@ -82,92 +82,51 @@ export function composeResolver<T extends OperationArgumentResolver<any>, TP ext
  */
 export const DEFAULT_RESOLVERS = tokenId<OperationArgumentResolver[]>('DEFAULT_RESOLVERS');
 
-/**
- * The context for the {@link OperationInvoker invocation of an operation}.
- */
-export class InvocationContext<T = any> implements Destroyable, OnDestroy {
-    private _args: T;
+@Abstract()
+export abstract class InvocationContext<T = any> implements Destroyable, OnDestroy {
+
     private _dsryCbs = new Set<DestroyCallback>();
     private _destroyed = false;
-    private _refs: InvocationContext[];
-    private _values: Map<Token, any>;
-    /**
-     * the invocation arguments resolver.
-     */
-    protected resolvers: OperationArgumentResolver[];
-    propertyKey?: string;
-
     /**
      * parent {@link InvocationContext}.
      */
-    readonly parent?: InvocationContext;
+    abstract get parent(): InvocationContext | undefined;
     /**
      * invocation static injector. 
      */
-    readonly injector: Injector;
+    abstract get injector(): Injector;
     /**
      * invocation target.
      */
-    readonly target?: ClassType;
+    abstract get target(): ClassType | undefined;
     /**
      * invocation method.
      */
-    readonly method?: string;
-
-    constructor(
-        injector: Injector,
-        options: InvocationOption = EMPTY_OBJ) {
-        this.injector = Injector.create(options.providers, injector, 'invocation');
-        const defsRvs = this.injector.get(DEFAULT_RESOLVERS, EMPTY);
-        this.resolvers = (options.resolvers ? options.resolvers.concat(defsRvs) : defsRvs).map(r => isFunction(r) ? this.injector.get<OperationArgumentResolver>(r) : r);
-        this._args = (options.arguments ?? {}) as T;
-        this._values = new Map(options.values);
-        this.parent = options.parent ?? injector.get(InvocationContext);
-        this.target = options.invokerTarget;
-        this.method = options.invokerMethod;
-        injector.onDestroy(this);
-        this._refs = [];
-    }
+    abstract get method(): string | undefined;
 
     /**
      * add reference resolver.
      * @param resolvers the list instance of {@link Injector} or {@link InvocationContext}.
      */
-    addRef(...resolvers: InvocationContext[]) {
-        resolvers.forEach(j => {
-            if (this._refs.indexOf(j) < 0) {
-                this._refs.push(j);
-            }
-        });
-    }
+    abstract addRef(...resolvers: InvocationContext[]): void;
 
     /**
      * remove reference resolver.
      * @param resolver instance of {@link Injector} or {@link InvocationContext}.
      */
-    removeRef(resolver: Injector | InvocationContext) {
-        remove(this._refs, resolver);
-    }
+    abstract removeRef(resolver: Injector | InvocationContext): void;
 
     /**
      * the invocation arguments.
      */
-    get arguments(): T {
-        return this._args;
-    }
+    abstract get arguments(): T;
 
     /**
      * set argument.
      * @param name 
      * @param value 
      */
-    setArgument(name: string, value: any): void {
-        (this._args as any)[name] = value;
-    }
-
-    protected isSelf(token: Token) {
-        return token === InvocationContext;
-    }
+    abstract setArgument(name: string, value: any): void;
 
     /**
      * has token in the context or not.
@@ -175,10 +134,7 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
      * @param flags inject flags, type of {@link InjectFlags}.
      * @returns boolean.
      */
-    has(token: Token, flags?: InjectFlags): boolean {
-        if (this.isSelf(token)) return true;
-        return this.injector.has(token, flags) || this._refs.some(i => i.has(token, flags)); // || (flags != InjectFlags.Self && this.parent?.has(token, flags) === true);
-    }
+    abstract has(token: Token, flags?: InjectFlags): boolean;
 
     /**
      * get token value.
@@ -187,120 +143,54 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
      * @param flags inject flags, type of {@link InjectFlags}.
      * @returns the instance of token.
      */
-    get<T>(token: Token<T>, context?: InvocationContext<any>, flags?: InjectFlags): T {
-        if (this.isSelf(token)) return this as any;
-        return this.injector.get(token, context, flags) ?? this.getFormRef(token, context, flags) as T; //?? (flags != InjectFlags.Self? this.parent?.get(token, context, flags) : null) as T;
-    }
+    abstract get<T>(token: Token<T>, context?: InvocationContext<any>, flags?: InjectFlags): T;
 
-    protected getFormRef<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags): T | undefined {
-        let val: T | undefined;
-        this._refs.some(r => {
-            val = r.get(token, context, flags);
-            return isDefined(val);
-        });
-
-        return val;
-    }
 
     /**
      * has value to context
      * @param token the token to check has value.
      */
-    hasValue<T>(token: Token): boolean {
-        if (this.isSelf(token)) return true;
-        return this.hasArg(token)
-            || this._values.has(token)
-            || this._refs.some(c => c.hasValue(token))
-            || this.parent?.hasValue(token) === true;
-    }
+    abstract hasValue<T>(token: Token): boolean;
 
     /**
      * get value to context
      * @param token the token to get value.
      */
-    getValue<T>(token: Token<T>): T {
-        if (this.isSelf(token)) return this as any;
-        return this.getArg(token)
-            ?? this._values.get(token)
-            ?? this.getRefValue(token)
-            ?? this.parent?.getValue(token);
-    }
-
-    protected hasArg(token: Token) {
-        return isString(token) ? isDefined((this._args as any)[token]) : false;
-    }
-
-    protected getArg(token: Token) {
-        return isString(token) ? (this._args as any)[token] : null;
-    }
-
-    protected getRefValue(token: Token) {
-        let val: T | undefined;
-        this._refs.some(r => {
-            val = r.getValue(token);
-            return isDefined(val);
-        });
-        return val;
-    }
+    abstract getValue<T>(token: Token<T>): T;
 
     /**
      * set value.
      * @param token token
      * @param value value for the token.
      */
-    setValue<T>(token: Token<T>, value: T) {
-        this._values.set(token, value);
-        return this;
-    }
+    abstract setValue<T>(token: Token<T>, value: T): this;
 
     /**
      * can resolve the parameter or not.
      * @param meta property or parameter metadata type of {@link Parameter}.
      * @returns 
      */
-    canResolve(meta: Parameter): boolean {
-        return this.getMetaReolver(meta)?.canResolve(meta, this) === true
-            || this.resolvers.some(r => r.canResolve(meta, this))
-            || this.parent?.canResolve(meta) == true;
-    }
+    abstract canResolve(meta: Parameter): boolean;
 
     /**
      * get resolver in the property or parameter metadata. configured in class design.
      * @param meta property or parameter metadata type of {@link Parameter}.
      * @returns undefined or resolver of type {@link OperationArgumentResolver}.
      */
-    getMetaReolver(meta: Parameter): OperationArgumentResolver | undefined {
-        if (isFunction(meta.resolver)) {
-            return this.injector.get<OperationArgumentResolver>(meta.resolver);
-        }
-        return meta.resolver;
-    }
+    abstract getMetaReolver(meta: Parameter): OperationArgumentResolver | undefined;
 
-    resolve<T>(token: Token<T>): T | null {
-        return this.resolveArgument({ provider: token });
-    }
+    /**
+     * resolve token in context.
+     * @param token 
+     */
+    abstract resolve<T>(token: Token<T>): T | null;
 
     /**
      * resolve the parameter value.
      * @param meta property or parameter metadata type of {@link Parameter}.
      * @returns the parameter value in this context.
      */
-    resolveArgument<T>(meta: Parameter<T>): T | null {
-        let result: T | undefined;
-        const metaRvr = this.getMetaReolver(meta);
-        if (metaRvr?.canResolve(meta, this)) {
-            result = metaRvr.resolve(meta, this);
-            if (isDefined(result)) return result;
-        }
-        this.resolvers.some(r => {
-            if (r.canResolve(meta, this)) {
-                result = r.resolve(meta, this);
-                return isDefined(result);
-            }
-            return false;
-        });
-        return result ?? this.parent?.resolveArgument(meta) ?? null;
-    }
+    abstract resolveArgument<T>(meta: Parameter<T>): T | null;
 
     get destroyed() {
         return this._destroyed;
@@ -313,10 +203,7 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
                 this._dsryCbs.forEach(c => isFunction(c) ? c() : c?.onDestroy());
             } finally {
                 this._dsryCbs.clear();
-                this._values.clear();
-                this._args = null!;
-                this.resolvers = null!;
-                this._refs = [];
+                this.clear();
                 const injector = this.injector;
                 (this as any).parent = null;
                 (this as any).injector = null;
@@ -332,10 +219,37 @@ export class InvocationContext<T = any> implements Destroyable, OnDestroy {
         this._dsryCbs.add(callback);
     }
 
-    static create(injector: Injector, options?: InvocationOption) {
-        return new InvocationContext(injector, options);
+    /**
+     * finally clear.
+     */
+    protected abstract clear(): void;
+
+    /**
+     * create invocation context.
+     * @param injector 
+     * @param options 
+     * @returns 
+     */
+    static create(injector: Injector, options?: InvocationOption): InvocationContext {
+        return INVOCATIONCONTEXT_IMPL.create(injector, options);
     }
 }
+
+/**
+ * injector factory implement.
+ */
+export const INVOCATIONCONTEXT_IMPL = {
+    /**
+     * create injector
+     * @param providers 
+     * @param parent 
+     * @param scope 
+     */
+    create(injector: Injector, options?: InvocationOption): InvocationContext {
+        throw new Error('not implemented.');
+    }
+};
+
 
 
 /**
