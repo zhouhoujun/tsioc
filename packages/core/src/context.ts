@@ -1,6 +1,6 @@
 import {
     ProviderType, LoadType, Injector, Abstract, Type, InvokeOption,
-    ModuleLoader, Destroyable, Modules, DestroyCallback, InvocationContext, ClassType, InjectFlags, OperationArgumentResolver, Parameter, Token
+    ModuleLoader, Destroyable, Modules, DestroyCallback, InvocationContext, InvokeArguments
 } from '@tsdi/ioc';
 import { LoggerManager } from '@tsdi/logs';
 import { Observable } from 'rxjs';
@@ -34,9 +34,8 @@ export interface BootstrapOption extends InvokeOption {
  * implements {@link Destroyable}.
  */
 @Abstract()
-export abstract class ApplicationContext implements Destroyable {
+export abstract class ApplicationContext extends InvocationContext implements Destroyable {
  
-    
     /**
      * application root module injector.
      */
@@ -140,7 +139,7 @@ export const BootContext = ApplicationContext;
 /**
  * application option.
  */
-export interface ApplicationOption<T = any> extends ModuleOption {
+export interface ApplicationOption<T = any> extends ModuleOption, InvokeArguments {
     /**
      * boot base url.
      *

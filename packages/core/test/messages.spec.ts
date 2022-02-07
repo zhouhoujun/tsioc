@@ -1,7 +1,7 @@
 import { Injector, Injectable, lang, ArgumentError, MissingParameterError } from '@tsdi/ioc';
 import { lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
-import { Application, Context, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Middleware, Module, Middlewares, TransportModule } from '../src';
+import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Middleware, Module, Middlewares, TransportModule, TransportContext } from '../src';
 
 
 @RouteMapping('/device')
@@ -82,7 +82,7 @@ class DeviceController {
 
 @Handle({ route: '/hdevice' })
 class DeviceQueue extends Middlewares {
-    override async handle(ctx: Context, next?: () => Promise<void>): Promise<void> {
+    override async handle(ctx: TransportContext, next?: () => Promise<void>): Promise<void> {
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
         await super.handle(ctx, async () => {
@@ -102,7 +102,7 @@ class DeviceStartQueue extends Middlewares {
 @Handle(DeviceStartQueue)
 class DeviceStartupHandle extends Middleware {
 
-    override async handle(ctx: Context, next: () => Promise<void>): Promise<void> {
+    override async handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         console.log('DeviceStartupHandle.', 'resp:', ctx.type, 'req:', ctx.request.type)
         if (ctx.type === 'startup') {
             // todo sth.
@@ -115,7 +115,7 @@ class DeviceStartupHandle extends Middleware {
 @Handle(DeviceStartQueue)
 class DeviceAStartupHandle implements Middleware {
 
-    async handle(ctx: Context, next: () => Promise<void>): Promise<void> {
+    async handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         console.log('DeviceAStartupHandle.', 'resp:', ctx.type, 'req:', ctx.request.type)
         if (ctx.type === 'startup') {
             // todo sth.
