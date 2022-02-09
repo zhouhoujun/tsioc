@@ -1,9 +1,9 @@
-import { Destroyable, OnDestroy } from '../destroy';
-import { InjectFlags, Token } from '../tokens';
 import { ClassType } from '../types';
+import { Destroyable, OnDestroy } from '../destroy';
 import { remove } from '../utils/lang';
-import { Injector } from '../injector';
 import { EMPTY, EMPTY_OBJ,  isDefined, isFunction, isString } from '../utils/chk';
+import { InjectFlags, Token } from '../tokens';
+import { Injector } from '../injector';
 import { DEFAULT_RESOLVERS, InvocationContext, INVOCATION_CONTEXT_IMPL, InvocationOption, OperationArgumentResolver, Parameter } from '../invoker';
 
 

@@ -1,7 +1,7 @@
 import {
-    isUndefined, EMPTY_OBJ, isArray, lang, Type, createDecorator, ProviderType,
-    ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes,
-    OperationFactoryResolver, PatternMetadata, MethodPropDecorator, Token, PropertyMetadata, ArgumentError, object2string, ClassMetadata, InjectableMetadata
+    isUndefined, EMPTY_OBJ, isArray, lang, Type, createDecorator, ProviderType, InjectableMetadata,
+    PropertyMetadata, ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes,
+    OperationFactoryResolver, MethodPropDecorator, Token, ArgumentError, object2string
 } from '@tsdi/ioc';
 import { StartupService, ServiceSet } from '../service';
 import { PipeMetadata, ComponentScanMetadata, ScanReflect, BeanMetadata } from './meta';

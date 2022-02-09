@@ -1,6 +1,6 @@
 import {
-    ProviderType, LoadType, Injector, Abstract, Type, InvokeOption,
-    ModuleLoader, Destroyable, Modules, DestroyCallback, InvocationContext, InvokeArguments
+    ProviderType, LoadType, Injector, Abstract, Type, InvokeOption, InvokeArguments,
+    ModuleLoader, Destroyable, Modules, DestroyCallback, InvocationContext
 } from '@tsdi/ioc';
 import { LoggerManager } from '@tsdi/logs';
 import { Observable } from 'rxjs';
@@ -12,7 +12,7 @@ import { ServerSet } from './server';
 import { ModuleOption } from './module.factory';
 import { ModuleRef } from './module.ref';
 import { ApplicationArguments } from './args';
-import { Pattern, WritePacket } from './transport/packet';
+import { Pattern, Protocol, WritePacket } from './transport/packet';
 
 
 /**
@@ -56,7 +56,7 @@ export abstract class ApplicationContext extends InvocationContext implements De
      * @param data send data.
      * @returns instance of {@link WritePacket}.
      */
-    abstract send<TResult = WritePacket, TInput = any>(pattern: Pattern, data: TInput): Observable<TResult>;
+    abstract send<TResult = WritePacket, TInput = any>(pattern: Pattern, data: TInput, protocol?: Protocol): Observable<TResult>;
     /**
      * get log manager.
      */

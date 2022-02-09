@@ -1,16 +1,17 @@
 import { ClassType, LoadType, Modules, Type } from '../types';
+import { OnDestroy } from '../destroy';
+import { cleanObj, deepForEach } from '../utils/lang';
+import { InjectFlags, Token } from '../tokens';
+import {
+    isArray, isDefined, isFunction, isPlainObject, isPrimitiveType,
+    isNumber, isTypeObject, isTypeReflect, EMPTY, getClass, isString
+} from '../utils/chk';
 import {
     ResolveOption, MethodType, FnType, InjectorScope, ResolverOption, RegisterOption, FactoryRecord,
     Platform, Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption
 } from '../injector';
-import { InjectFlags, Token } from '../tokens';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR, TARGET } from '../metadata/tk';
-import { cleanObj, deepForEach } from '../utils/lang';
 import { InjectorTypeWithProviders, ProviderType, StaticProvider, StaticProviders } from '../providers';
-import {
-    isArray, isDefined, isFunction, isPlainObject, isPrimitiveType,
-    isNumber, isTypeObject, isTypeReflect, EMPTY, EMPTY_OBJ, getClass, isString
-} from '../utils/chk';
 import { DesignContext } from '../actions/ctx';
 import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
@@ -23,7 +24,6 @@ import {
 import { DefaultModuleLoader } from './loader';
 import { ModuleLoader } from '../module.loader';
 import { DefaultPlatform } from './platform';
-import { OnDestroy } from '../destroy';
 import { LifecycleHooks, LifecycleHooksResolver } from '../lifecycle';
 import { ReflectiveOperationInvoker } from './invoker';
 

@@ -25,7 +25,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
     operationFactoryResolver = new DefaultOperationFactoryResolver();
     runnableFactoryResolver: RunnableFactoryResolver = new DefaultRunnableFactoryResolver(this);
-    
+
     lifecycle!: ModuleLifecycleHooks;
 
     constructor(moduleType: ModuleReflect, providers: ProviderType[] | undefined, readonly parent: Injector,
