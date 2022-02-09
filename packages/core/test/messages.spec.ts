@@ -88,6 +88,17 @@ class DeviceQueue extends Middlewares {
         await super.handle(ctx, async () => {
             ctx.setValue('device', 'device next');
         });
+
+        const device = ctx.getValue('device');
+        const deviceA_state = ctx.getValue('deviceA_state');
+        const deviceB_state = ctx.getValue('deviceB_state');
+
+        ctx.body = {
+            device,
+            deviceA_state,
+            deviceB_state
+        };
+
         console.log('device sub msg done.');
     }
 }
@@ -103,8 +114,8 @@ class DeviceStartQueue extends Middlewares {
 class DeviceStartupHandle extends Middleware {
 
     override async handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
-        console.log('DeviceStartupHandle.', 'resp:', ctx.type, 'req:', ctx.request.type)
-        if (ctx.type === 'startup') {
+        console.log('DeviceStartupHandle.', 'resp:', ctx.request.body.type, 'req:', ctx.request.body.type)
+        if (ctx.body.type === 'startup') {
             // todo sth.
             let ret = ctx.injector.get(MyService).dosth();
             ctx.setValue('deviceB_state', ret);
@@ -116,8 +127,8 @@ class DeviceStartupHandle extends Middleware {
 class DeviceAStartupHandle implements Middleware {
 
     async handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
-        console.log('DeviceAStartupHandle.', 'resp:', ctx.type, 'req:', ctx.request.type)
-        if (ctx.type === 'startup') {
+        console.log('DeviceAStartupHandle.', 'resp:', ctx.body.type, 'req:', ctx.request.body.type)
+        if (ctx.body.type === 'startup') {
             // todo sth.
             let ret = ctx.injector.get(MyService).dosth();
             ctx.setValue('deviceA_state', ret);
@@ -181,7 +192,7 @@ describe('app message queue', () => {
     });
 
     it('make sure singleton', async () => {
-        // ctx.send('msg:://decice/init', { body: {mac: 'xxx-xx-xx-xxxx'}, query: {name:'xxx'} })
+        // ctx.send('msg://decice/init', { body: {mac: 'xxx-xx-xx-xxxx'}, query: {name:'xxx'} })
         // console.log(ctx.getMessager());
         const a = injector.get(DeviceQueue);
         const b = injector.get(DeviceQueue);
@@ -201,13 +212,13 @@ describe('app message queue', () => {
         let device, aState, bState;
 
         const defer = lang.defer();
-        ctx.send('/hdevice', { type: 'startup' })
-        .subscribe((rep)=> {
-            device = ctx.getValue('device');
-            aState = ctx.getValue('deviceA_state');
-            bState = ctx.getValue('deviceB_state');
-            defer.resolve();
-        });
+        ctx.send('/hdevice', { body: { type: 'startup' } })
+            .subscribe(rep => {
+                device = rep.body['device'];
+                aState = rep.body['deviceA_state'];
+                bState = rep.body['deviceB_state'];
+                defer.resolve()
+            });
         await defer.promise;
         expect(device).toBe('device next');
         expect(aState).toBe('startuped');
@@ -291,7 +302,7 @@ describe('app message queue', () => {
 
 
     it('response with Observable', async () => {
-        const r = await lastValueFrom(ctx.send('/device/status', { method: 'GET'}));
+        const r = await lastValueFrom(ctx.send('/device/status', { method: 'GET' }));
         expect(r.status).toEqual(200);
         expect(r.body).toEqual('working');
     })

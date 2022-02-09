@@ -6,7 +6,7 @@ export type Pattern = string | number | Record<string, string | number | Record<
 /**
  * read packet.
  */
-export interface ReadPacket<T = any> {
+export interface ReadPacket<T = any> extends Record<string, any> {
     /**
      * request pattern.
      */
@@ -26,7 +26,7 @@ export interface ReadPacket<T = any> {
 /**
  * write packet.
  */
-export interface WritePacket<T = any> {
+export interface WritePacket<T = any> extends Record<string, any> {
     error?: Error;
     disposed?: boolean;
     status?: string | number;

@@ -2,7 +2,8 @@ import { ServerLogsModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import * as net from 'net';
 import { ModuleA, ModuleB, ClassSevice, SubMessageQueue, SocketService, StatupModule, TestService } from './demo';
-import { Application } from '../src';
+import { Application, Router } from '../src';
+import { lastValueFrom } from 'rxjs';
 
 
 describe('di module', () => {
@@ -25,22 +26,19 @@ describe('di module', () => {
 
     it('message test.', async () => {
         let ctx = await Application.run(ModuleB);
-        let q = ctx.injector.get(SubMessageQueue);
-        q.subscribe((ctx, next) => {
-            console.log('ctx.url:', ctx.url);
-            if (ctx.url.startsWith('/test')) {
+        let router = ctx.resolve(Router);
+        router?.use((ctx, next) => {
+            console.log('ctx.pattern:', ctx.pattern);
+            if (ctx.pattern.startsWith('/test')) {
                 console.log('message queue test: ' + ctx.request.body);
                 ctx.body = ctx.request.query.hi;
                 console.log(ctx.body, ctx.request.query);
             }
             return next()
         });
-        let qb = ctx.injector.get(SubMessageQueue);
-        expect(q === qb).toBeTruthy();
-        expect(qb['handles'].length).toEqual(1);
+
         // has no parent.
-        expect(ctx.getMessager().has(SubMessageQueue)).toBeFalsy();
-        const rep = await qb.send('test', { query: { hi: 'hello' } });
+        const rep = await lastValueFrom(ctx.send('test', { query: { hi: 'hello' } }));
         expect(rep.body).toEqual('hello');
         expect(rep.status).toEqual(200);
 
