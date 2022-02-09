@@ -3,7 +3,7 @@ import { ILogger, Logger } from '@tsdi/logs';
 import { Type, isString, isArray, Injector, isFunction, EMPTY, isNil, InvocationContext } from '@tsdi/ioc';
 import {
     ConnectionOptions, ApplicationConfiguration, ApplicationContext, ComponentScan, Server, createModelResolver,
-    DBPropertyMetadata, PipeTransform, missingPropPipeError, MODEL_RESOLVERS, OnDispose, TransportParameter, Context
+    DBPropertyMetadata, PipeTransform, missingPropPipeError, MODEL_RESOLVERS, OnDispose, TransportParameter, TransportContext
 } from '@tsdi/core';
 import {
     getConnection, createConnection, ConnectionOptions as OrmConnOptions, Connection,
@@ -100,9 +100,8 @@ export class TypeormServer implements Server, OnDispose {
         const resovler = createModelResolver({
             isModel: (type) => entities.indexOf(type) >= 0,
             getPropertyMeta: (type) => this.getModelPropertyMetadata(type),
-            isUpdate: (ctx: InvocationContext<Context>) => ctx.arguments.method.toLowerCase() === 'put',
-            hasField: (parameter, ctx) => ctx.arguments instanceof Context && ctx.arguments.body,
-            getFields: (parameter: TransportParameter, ctx: InvocationContext<Context>) => parameter.field ? ctx.arguments.request.body[parameter.field] : ctx.arguments.request.body,
+            hasField: (parameter, ctx) => ctx instanceof TransportContext && ctx.body,
+            getFields: (parameter: TransportParameter, ctx: TransportContext) => parameter.field ? ctx.request.body[parameter.field] : ctx.request.body,
             fieldResolvers: [
                 {
                     canResolve: (prop, ctx, fields) => prop.dbtype === 'objectId',

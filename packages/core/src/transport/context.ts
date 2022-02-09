@@ -40,7 +40,10 @@ export abstract class TransportContext<TRequest extends ReadPacket = ReadPacket,
      * is event or not.
      */
     abstract get isEvent(): boolean;
-
+    /**
+     * is update modle resquest.
+     */
+    abstract isUpdate(): boolean;
     /**
      * get query params
      */

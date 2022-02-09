@@ -1,4 +1,5 @@
 import { Abstract, EMPTY, InvocationContext, isArray, isDefined, tokenId, Type, OperationInvoker, Parameter } from '@tsdi/ioc';
+import { TransportContext } from '..';
 import { composeFieldResolver, DBPropertyMetadata, MissingModelFieldError, missingPropError, ModelFieldResolver, MODEL_FIELD_RESOLVERS } from './field.resolver';
 
 
@@ -12,13 +13,13 @@ export interface ModelArgumentResolver<C = any> {
      * @param parameter argument type
      * @param ctx InvocationContext
      */
-    canResolve(parameter: Parameter, ctx: InvocationContext<C>): boolean;
+    canResolve(parameter: Parameter, ctx: TransportContext): boolean;
     /**
      * Resolves an argument of the given {@code parameter}.
      * @param parameter argument type
      * @param ctx InvocationContext
      */
-    resolve<T>(parameter: Parameter<T>, ctx: InvocationContext<C>): T;
+    resolve<T>(parameter: Parameter<T>, ctx: TransportContext): T;
 }
 
 /**
@@ -29,11 +30,11 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
 
     abstract get resolvers(): ModelFieldResolver[];
 
-    canResolve(parameter: Parameter, ctx: InvocationContext<C>): boolean {
+    canResolve(parameter: Parameter, ctx: TransportContext): boolean {
         return this.isModel(parameter.provider as Type ?? parameter.type) && this.hasFields(parameter, ctx);
     }
 
-    resolve<T>(parameter: Parameter<T>, ctx: InvocationContext<C>): T {
+    resolve<T>(parameter: Parameter<T>, ctx: TransportContext): T {
         const classType = (parameter.provider ?? parameter.type) as Type;
         const fields = this.getFields(parameter, ctx);
         if (!fields) {
@@ -45,7 +46,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
         return this.resolveModel(classType, ctx, fields);
     }
 
-    canResolveModel(modelType: Type, ctx: InvocationContext<C>, args: Record<string, any>, nullable?: boolean): boolean {
+    canResolveModel(modelType: Type, ctx: TransportContext, args: Record<string, any>, nullable?: boolean): boolean {
         return nullable || !this.getPropertyMeta(modelType).some(p => {
             if (this.isModel(p.provider ?? p.type)) {
                 return !this.canResolveModel(p.provider ?? p.type, ctx, args[p.propertyKey], p.nullable);
@@ -54,7 +55,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
         })
     }
 
-    resolveModel(modelType: Type, ctx: InvocationContext<C>, fields: Record<string, any>, nullable?: boolean): any {
+    resolveModel(modelType: Type, ctx: TransportContext, fields: Record<string, any>, nullable?: boolean): any {
         if (nullable && (!fields || Object.keys(fields).length < 1)) {
             return null;
         }
@@ -95,7 +96,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
             this._resolver = composeFieldResolver(
                 (p, ctx, fields) => p.nullable === true
                     || (fields && isDefined(fields[p.propertyKey] ?? p.default))
-                    || (!this.isUpdate(ctx) && p.primary === true),
+                    || ((ctx as TransportContext).isUpdate?.() === false && p.primary === true),
                 ...this.resolvers ?? EMPTY,
                 ...MODEL_FIELD_RESOLVERS);
         }
@@ -115,16 +116,11 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
     /**
      * has model fields in context or not.
      */
-    protected abstract hasFields(parameter: Parameter, ctx: InvocationContext<C>): boolean;
+    protected abstract hasFields(parameter: Parameter, ctx: TransportContext): boolean;
     /**
      * get model fields in context.
      */
-    protected abstract getFields(parameter: Parameter, ctx: InvocationContext<C>): Record<string, any>;
-    /**
-     * is update module or not.
-     * @param ctx 
-     */
-    protected abstract isUpdate(ctx: InvocationContext<C>): boolean;
+    protected abstract getFields(parameter: Parameter, ctx: TransportContext): Record<string, any>;
 }
 
 /**
@@ -156,15 +152,11 @@ class ModelResolver<C = any> extends AbstractModelArgumentResolver<C> {
         return this.option.getPropertyMeta(type);
     }
 
-    protected isUpdate(ctx: InvocationContext<C>): boolean {
-        return this.option.isUpdate(ctx);
-    }
-
-    protected hasFields(parameter: Parameter<any>, ctx: InvocationContext<C>): boolean {
+    protected hasFields(parameter: Parameter<any>, ctx: TransportContext): boolean {
         return this.option.hasField ? this.option.hasField(parameter, ctx) : !!this.getFields(parameter, ctx);
     }
 
-    protected getFields(parameter: Parameter<any>, ctx: InvocationContext<C>): Record<string, any> {
+    protected getFields(parameter: Parameter<any>, ctx: TransportContext): Record<string, any> {
         return this.option.getFields(parameter, ctx);
     }
 }
@@ -190,16 +182,11 @@ export interface ModelResolveOption<C> {
     /**
      * has model fields in context or not.
      */
-    hasField?: (parameter: Parameter<any>, ctx: InvocationContext<C>) => boolean;
+    hasField?: (parameter: Parameter<any>, ctx: TransportContext) => boolean;
     /**
      * get model fields in context.
      */
-    getFields: (parameter: Parameter<any>, ctx: InvocationContext<C>) => Record<string, any>;
-    /**
-     * is update module or not.
-     * @param ctx 
-     */
-    isUpdate(ctx: InvocationContext<C>): boolean;
+    getFields: (parameter: Parameter<any>, ctx: TransportContext) => Record<string, any>;
     /**
      * custom field resolvers.
      */

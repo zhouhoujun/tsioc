@@ -78,6 +78,9 @@ export function composeResolver<T extends OperationArgumentResolver<any>, TP ext
  */
 export const DEFAULT_RESOLVERS = tokenId<OperationArgumentResolver[]>('DEFAULT_RESOLVERS');
 
+/**
+ * The context for the {@link OperationInvoker invocation of an operation}.
+ */
 @Abstract()
 export abstract class InvocationContext<T = any> implements Destroyable, OnDestroy {
 
