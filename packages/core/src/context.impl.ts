@@ -1,4 +1,4 @@
-import { Token, Type, isFunction, ModuleMetadata, DefaultInvocationContext, EMPTY_OBJ, InvokeArguments } from '@tsdi/ioc';
+import { Token, Type, isFunction, ModuleMetadata, DefaultInvocationContext, EMPTY_OBJ, InvokeArguments, InvocationContext } from '@tsdi/ioc';
 import { ConfigureLoggerManager, LoggerManager, LOGGER_MANAGER } from '@tsdi/logs';
 import { Observable } from 'rxjs';
 import { CONFIGURATION, PROCESS_ROOT } from './metadata/tk';
@@ -32,6 +32,7 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
 
     constructor(readonly injector: ModuleRef, options: InvokeArguments = EMPTY_OBJ) {
         super(injector, options);
+        injector.setValue(InvocationContext, this);
         injector.setValue(ApplicationContext, this);
     }
 
@@ -57,7 +58,7 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
 
     bootstrap<C>(type: Type<C> | RunnableFactory<C>, opts?: BootstrapOption): any {
         const factory = isFunction(type) ? this.injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type) : type;
-        return factory.create(this.injector, opts, this).run();
+        return factory.create(this.injector, opts).run();
     }
 
     get instance() {

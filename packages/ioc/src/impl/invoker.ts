@@ -1,8 +1,12 @@
-import { ClassType } from '../types';
+import { ClassType, Type } from '../types';
 import { TypeReflect } from '../metadata/type';
 import { EMPTY, isArray, isClassType, isFunction, isPlainObject, isPromise, isString, isTypeObject, isTypeReflect } from '../utils/chk';
 import { getClassName } from '../utils/lang';
-import { InvocationContext, OperationInvoker, Parameter } from '../invoker';
+import { InvocationContext, InvocationOption, InvokeArguments, InvokeOption, OperationFactory, OperationFactoryResolver, OperationInvoker, Parameter } from '../invoker';
+import { Injector, MethodType } from '../injector';
+import { get } from '../metadata/refl';
+import { Token } from '../tokens';
+import { ProviderType } from '../providers';
 
 /**
  * reflective operation invoker.
@@ -122,3 +126,120 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
     }
     return `${obj}`;
 }
+
+
+export class DefaultOperationFactory<T> extends OperationFactory<T> {
+
+    private _tagPdrs: ProviderType[] | undefined;
+    private _type: Type<T>;
+    readonly context: InvocationContext;
+    constructor(readonly reflect: TypeReflect<T>, readonly injector: Injector, options?: InvokeArguments) {
+        super()
+        this._type = reflect.type as Type<T>;
+        this.context = this.createContext(injector, options);
+        this.context.setValue(OperationFactory, this);
+        injector.onDestroy(this);
+    }
+
+    get type(): Type<T> {
+        return this._type;
+    }
+
+    resolve(): T;
+    resolve<R>(token: Token<R>): R;
+    resolve(token?: Token<any>): any {
+        return this.context.resolveArgument({ provider: token ?? this.type, nullable: true });
+    }
+
+    invoke(method: MethodType<T>, option?: InvokeOption | InvocationContext, instance?: T) {
+        const key = isFunction(method) ? this.reflect.class.getPropertyName(method(this.reflect.class.getPropertyDescriptors() as any)) : method;
+        let context: InvocationContext;
+        let destroy: boolean | Function | undefined;
+        if (option instanceof InvocationContext) {
+            context = option;
+            const refctx = this.createContext({ invokerMethod: key });
+            context.addRef(refctx);
+            destroy = () => {
+                context.removeRef(refctx);
+                refctx.destroy();
+            }
+        } else {
+            context = option?.context ? option.context : this.createContext({ ...option, invokerMethod: key });
+            if (option?.context) {
+                const refctx = this.createContext({ ...option, invokerMethod: key });
+                context.addRef(refctx);
+                destroy = () => {
+                    context.removeRef(refctx);
+                    refctx.destroy();
+                }
+            } else {
+                destroy = true;
+            }
+        }
+        return this.createInvoker(key, instance ?? this.resolve()).invoke(context, destroy);
+    }
+
+    createInvoker(method: string, instance?: T): OperationInvoker {
+        return new ReflectiveOperationInvoker(this.reflect, method, instance);
+    }
+
+    createContext(parent?: Injector | InvocationContext | InvocationOption, option?: InvocationOption): InvocationContext<any> {
+        let root: InvocationContext | undefined;
+        let injector: Injector;
+        if (parent instanceof Injector) {
+            injector = parent;
+        } else if (parent instanceof InvocationContext) {
+            injector = parent.injector;
+            root = parent;
+        } else {
+            injector = this.injector;
+            root = this.context;
+            option = parent;
+        }
+
+        if (!this._tagPdrs) {
+            this._tagPdrs = injector.platform().getTypeProvider(this.reflect);
+        }
+        let providers = option?.providers;
+        let resolvers = option?.resolvers;
+        if (!root) {
+            providers = providers ? this._tagPdrs.concat(providers) : this._tagPdrs;
+            resolvers = resolvers ? this.reflect.class.resolvers.concat(resolvers) : this.reflect.class.resolvers;
+        }
+        const method = option?.invokerMethod;
+        if (method) {
+            const mthpdrs = this.reflect.class.getMethodProviders(method);
+            providers = (providers && mthpdrs) ? providers.concat(mthpdrs) : (providers ?? mthpdrs);
+
+            const mthrsv = this.reflect.class.getMethodResolvers(method);
+            resolvers = (resolvers && mthrsv) ? resolvers.concat(mthrsv) : (resolvers ?? mthrsv);
+        }
+
+        return InvocationContext.create(injector, {
+            ...option,
+            parent: root ?? option?.parent,
+            invokerTarget: this.reflect.type,
+            providers,
+            resolvers
+        });
+    }
+
+    onDestroy(): void | Promise<void> {
+        this._type = null!;
+        this._tagPdrs = null!;
+        (this as any).injector = null!;
+        (this as any).reflect = null!;
+        return this.context?.destroy();
+    }
+}
+
+export class DefaultOperationFactoryResolver extends OperationFactoryResolver {
+    constructor(private parent?: (injector?: Injector) => InvocationContext) {
+        super();
+    }
+    resolve<T>(type: ClassType<T> | TypeReflect<T>, injector: Injector, option?: InvokeArguments): OperationFactory<T> {
+        return new DefaultOperationFactory(isFunction(type) ? get(type) : type, injector, this.parent ? { parent: this.parent(injector), ...option } : option);
+    }
+}
+
+

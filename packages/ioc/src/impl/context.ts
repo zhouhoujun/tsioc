@@ -1,10 +1,11 @@
-import { ClassType } from '../types';
+import { ClassType, Type } from '../types';
 import { Destroyable, OnDestroy } from '../destroy';
 import { remove } from '../utils/lang';
-import { EMPTY, EMPTY_OBJ,  isDefined, isFunction, isString } from '../utils/chk';
+import { EMPTY, EMPTY_OBJ,  isDefined, isFunction, isPrimitiveType, isString } from '../utils/chk';
 import { InjectFlags, Token } from '../tokens';
 import { Injector } from '../injector';
-import { DEFAULT_RESOLVERS, InvocationContext, INVOCATION_CONTEXT_IMPL, InvocationOption, OperationArgumentResolver, Parameter } from '../invoker';
+import { DEFAULT_RESOLVERS, InvocationContext, INVOCATION_CONTEXT_IMPL, InvocationOption, OperationArgumentResolver, Parameter, composeResolver } from '../invoker';
+import { get } from '../metadata/refl';
 
 
 
@@ -240,3 +241,105 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
 INVOCATION_CONTEXT_IMPL.create = (injector, option) => new DefaultInvocationContext(injector, option);
 
+
+export const BASE_RESOLVERS: OperationArgumentResolver[] = [
+    composeResolver(
+        (parameter, ctx) => isDefined(parameter.provider),
+        {
+            canResolve(parameter, ctx) {
+                return ctx.hasValue(parameter.provider!);
+            },
+            resolve(parameter, ctx) {
+                return ctx.getValue<any>(parameter.provider!);
+            }
+        },
+        {
+            canResolve(parameter, ctx) {
+                return ctx.has(parameter.provider as Token, parameter.flags);
+            },
+            resolve(parameter, ctx) {
+                return ctx.get(parameter.provider as Token, ctx, parameter.flags);
+            }
+        },
+        {
+            canResolve(parameter, ctx) {
+                if (parameter.mutil || !isFunction(parameter.provider) || isPrimitiveType(parameter.provider)
+                    || get(parameter.provider)?.class.abstract) return false;
+                return isDefined(parameter.flags) ? !ctx.injector.has(parameter.provider!, InjectFlags.Default) : true;
+            },
+            resolve(parameter, ctx) {
+                const pdr = parameter.provider!;
+                const injector = ctx.injector?.parent ?? ctx.injector;
+                injector.register(pdr as Type);
+                return injector.get(pdr, ctx, parameter.flags);
+            }
+        }
+    ),
+    composeResolver(
+        (parameter, ctx) => isDefined(parameter.paramName),
+        {
+            canResolve(parameter, ctx) {
+                return ctx.hasValue(parameter.paramName!);
+            },
+            resolve(parameter, ctx) {
+                return ctx.getValue(parameter.paramName!) as any;
+            }
+        },
+        {
+            canResolve(parameter, ctx) {
+                return ctx.has(parameter.paramName!, parameter.flags);
+            },
+            resolve(parameter, ctx) {
+                return ctx.get(parameter.paramName!, ctx, parameter.flags);
+            }
+        }
+    ),
+    composeResolver(
+        (parameter, ctx) => isDefined(parameter.type),
+        {
+            canResolve(parameter, ctx) {
+                return ctx.hasValue(parameter.type!);
+            },
+            resolve(parameter, ctx) {
+                return ctx.getValue<any>(parameter.type!);
+            }
+        },
+        {
+            canResolve(parameter, ctx) {
+                return ctx.has(parameter.type!, parameter.flags);
+            },
+            resolve(parameter, ctx) {
+                return ctx.get(parameter.type!, ctx, parameter.flags);
+            }
+        },
+        {
+            canResolve(parameter, ctx) {
+                if (!isFunction(parameter.type) || isPrimitiveType(parameter.type) || get(parameter.type!)?.class.abstract) return false;
+                return isDefined(parameter.flags) ? !ctx.injector.has(parameter.type!, InjectFlags.Default) : true;
+            },
+            resolve(parameter, ctx) {
+                const ty = parameter.type!;
+                const injector = ctx.injector?.parent ?? ctx.injector;;
+                injector.register(ty as Type);
+                return injector.get(ty, ctx, parameter.flags);
+            }
+        }
+    ),
+    // default value
+    {
+        canResolve(parameter) {
+            return isDefined(parameter.defaultValue);
+        },
+        resolve(parameter) {
+            return parameter.defaultValue as any;
+        }
+    },
+    {
+        canResolve(parameter) {
+            return parameter.nullable === true;
+        },
+        resolve(parameter) {
+            return undefined;
+        }
+    }
+];

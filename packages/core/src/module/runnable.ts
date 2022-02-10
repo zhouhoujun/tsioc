@@ -73,15 +73,13 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
         super();
     }
 
-    override create(injector: Injector, option?: BootstrapOption, context?: ApplicationContext) {
+    override create(injector: Injector, option?: BootstrapOption) {
 
-        const factory = injector.get(OperationFactoryResolver).resolve(this.reflect, injector, context ? {
-            ...option,
-            values: [option?.values || EMPTY as any, [ApplicationContext, context]]
-        } : option);
+        const factory = injector.get(OperationFactoryResolver).resolve(this.reflect, injector, option);
 
         const runnableRef = factory.resolve(RunnableRef) ?? new DefaultRunnableRef(factory);
 
+        const context = injector.get(ApplicationContext);
         if (context) {
             runnableRef.onDestroy(() => {
                 lang.remove(context.bootstraps, runnableRef);

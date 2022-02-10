@@ -26,16 +26,23 @@ export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): 
     if (!ctx.params) {
         ctx.params = ctx.reflect.class.getParameters(ctorName);
     }
-    const factory = ctx.injector.get(OperationFactoryResolver).resolve(ctx.reflect, ctx.context?.injector ?? ctx.injector);
-    const context = ctx.context = factory.createContext({
-        invokerMethod: ctorName,
-        parent: ctx.context
+    const factory = ctx.injector.get(OperationFactoryResolver).resolve(ctx.reflect, ctx.injector, {});
+    const newCtx = factory.createContext({
+        invokerMethod: ctorName
     });
+    const custCtx = ctx.context;
+    custCtx?.addRef(newCtx);
+
+    const context = ctx.context = custCtx ?? newCtx;
+
     if (!ctx.args) {
         ctx.args = factory.createInvoker(ctorName).resolveArguments(context);
     }
+
     next();
-    context.destroy();
+    // after create.
+    custCtx?.removeRef(newCtx);
+    newCtx.destroy();
 };
 
 

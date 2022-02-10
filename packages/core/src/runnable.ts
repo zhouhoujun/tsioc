@@ -130,10 +130,9 @@ export abstract class RunnableFactory<T> {
      * create new instance of {@link RunnableRef} via this type.
      * @param injector injector.
      * @param option bootstrap option.
-     * @param context application context.
      * @returns instance of {@link RunnableRef}.
      */
-    abstract create(injector: Injector, option?: BootstrapOption, context?: ApplicationContext): RunnableRef<T>;
+    abstract create(injector: Injector, option?: BootstrapOption): RunnableRef<T>;
 }
 
 /**
