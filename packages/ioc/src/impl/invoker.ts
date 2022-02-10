@@ -234,12 +234,7 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
 }
 
 export class DefaultOperationFactoryResolver extends OperationFactoryResolver {
-    constructor(private parent?: (injector?: Injector) => InvocationContext) {
-        super();
-    }
     resolve<T>(type: ClassType<T> | TypeReflect<T>, injector: Injector, option?: InvokeArguments): OperationFactory<T> {
-        return new DefaultOperationFactory(isFunction(type) ? get(type) : type, injector, this.parent ? { parent: this.parent(injector), ...option } : option);
+        return new DefaultOperationFactory(isFunction(type) ? get(type) : type, injector, option);
     }
 }
-
-
