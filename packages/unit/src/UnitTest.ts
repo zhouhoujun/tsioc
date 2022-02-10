@@ -8,6 +8,7 @@ import { UnitTestRunner } from './runner/UnitTestRunner';
 import { RunAspect } from './aop/RunAspect';
 import { OldTestRunner } from './runner/OldTestRunner';
 import { DefaultTestReport } from './reports/TestReport';
+import { SuiteRunner } from './runner/SuiteRunner';
 
 
 @Module({
@@ -18,6 +19,7 @@ import { DefaultTestReport } from './reports/TestReport';
    providers: [
       UnitTestStartup,
       RunAspect,
+      SuiteRunner,
       OldTestRunner,
       UnitTestRunner,
       DefaultTestReport

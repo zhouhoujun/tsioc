@@ -1,5 +1,5 @@
-import { lang, Injectable, OperationFactory, Decors } from '@tsdi/ioc';
-import { DefaultRunnableRef } from '@tsdi/core';
+import { lang, Injectable, OperationFactory, Decors, Type, TypeReflect, isFunction, refl } from '@tsdi/ioc';
+import { DefaultRunnableFactory, DefaultRunnableRef, RunnableFactory, RunnableFactoryResolver, RunnableRef } from '@tsdi/core';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata/decor';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata/meta';
 import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
@@ -174,4 +174,17 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
         this.describe = null!;
     }
 
+}
+
+class SuiteRunnableFactory<T> extends DefaultRunnableFactory<T> {
+    protected override createInstance(factory: OperationFactory<T>): RunnableRef<T> {
+        return factory.resolve(SuiteRunner);
+    }
+}
+
+@Injectable()
+export class SuiteRunnableFactoryResolver extends RunnableFactoryResolver {
+    resolve<T>(type: Type<T> | TypeReflect<T>): RunnableFactory<T> {
+        return new SuiteRunnableFactory(isFunction(type) ? refl.get(type) : type)
+    }
 }

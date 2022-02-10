@@ -339,7 +339,7 @@ export class DefaultInjector extends Injector {
     protected toOption(token: Token | ResolveOption, args: any[]): ResolveOption | undefined {
         if (isPlainObject(token)) return token as ResolveOption;
         if (args.length) {
-            if (args.length > 1 || args.length === 1 && isArray(args)) return { token, providers: args };
+            if (args.length > 1 || (args.length === 1 && isArray(args))) return { token, providers: args };
             if (args[0] instanceof InvocationContext) {
                 return { token, context: args[0] };
             }
@@ -349,8 +349,8 @@ export class DefaultInjector extends Injector {
     }
 
     protected resolveStrategy<T>(platform: Platform, option: ResolveOption, context?: InvocationContext): T {
-        return this.get(option.token!, context)
-            ?? context?.resolveArgument({ provider: option.token } as Parameter)
+        return context?.resolve(option.token)
+            ?? this.get(option.token!, context)
             ?? this.resolveFailed(platform, option.token!, context, option.regify, option.defaultToken);
     }
 

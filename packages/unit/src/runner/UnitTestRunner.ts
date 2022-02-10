@@ -1,4 +1,4 @@
-import { Injectable, isString, isClass, isArray, lang, refl, OperationFactory } from '@tsdi/ioc';
+import { Injectable, isString, isClass, isArray, lang, refl } from '@tsdi/ioc';
 import { ApplicationContext, Runnable } from '@tsdi/core';
 import { OldTestRunner } from './OldTestRunner';
 import { DefaultTestReport } from '../reports/TestReport';
