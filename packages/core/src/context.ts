@@ -19,14 +19,7 @@ import { Pattern, Protocol, WritePacket } from './transport/packet';
  * bootstrap option for {@link Runnable}.
  */
 export interface BootstrapOption extends InvokeOption {
-    /**
-     * providers.
-     */
-    providers?: ProviderType[];
-    /**
-     * args.
-     */
-    args?: string[];
+
 }
 
 /**
@@ -35,7 +28,7 @@ export interface BootstrapOption extends InvokeOption {
  */
 @Abstract()
 export abstract class ApplicationContext extends InvocationContext implements Destroyable {
- 
+
     /**
      * application root module injector.
      */
@@ -47,9 +40,9 @@ export abstract class ApplicationContext extends InvocationContext implements De
     /**
      * bootstrap type
      * @param type bootstrap type.
-     * @param opts bootstrap option.
+     * @param option bootstrap option.
      */
-    abstract bootstrap<C>(type: Type<C> | RunnableFactory<C>, opts?: BootstrapOption): any;
+    abstract bootstrap<C>(type: Type<C> | RunnableFactory<C>, option?: BootstrapOption): any;
     /**
      * send message.
      * @param pattern message pattern. type of {@link Pattern}.
@@ -72,7 +65,7 @@ export abstract class ApplicationContext extends InvocationContext implements De
      *
      * @type {ApplicationArguments}
      */
-    abstract get args(): ApplicationArguments;
+    abstract get arguments(): ApplicationArguments;
 
     /**
      * get application global configuration of type {@link Configuration}.
@@ -137,9 +130,9 @@ export const BootContext = ApplicationContext;
 
 
 /**
- * application option.
+ * Environment option.
  */
-export interface ApplicationOption<T = any> extends ModuleOption, InvokeArguments {
+export interface EnvironmentOption extends ModuleOption, InvokeArguments {
     /**
      * boot base url.
      *
@@ -147,21 +140,9 @@ export interface ApplicationOption<T = any> extends ModuleOption, InvokeArgument
      */
     baseURL?: string;
     /**
-     * boot run env args.
-     *
-     * @type {string[]}
-     */
-    args?: string[];
-    /**
      * injector.
      */
     injector?: Injector;
-    /**
-     * target module type.
-     *
-     * @type {ClassType}
-     */
-    type: Type<T>;
     /**
      * module loader
      *
@@ -191,6 +172,18 @@ export interface ApplicationOption<T = any> extends ModuleOption, InvokeArgument
 }
 
 /**
+ * ApplicationOption option.
+ */
+export interface ApplicationOption<T = any> extends EnvironmentOption {
+    /**
+     * target module type.
+     *
+     * @type {ClassType}
+     */
+    type: Type<T>;
+}
+
+/**
  * application context factory, to create instance of {@link ApplicationContext}.
  */
 @Abstract()
@@ -199,7 +192,7 @@ export abstract class ApplicationFactory {
      * create application context instance.
      * @param root main module.
      * @param option application option.
-     * @returns instance of {@link ApplicationContext}
+     * @returns instance of {@link EnvironmentOption}
      */
-    abstract create<T>(root: ModuleRef<T>, option?: ApplicationOption<T>): ApplicationContext;
+    abstract create<T>(root: ModuleRef<T>, option?: EnvironmentOption): ApplicationContext;
 }

@@ -1,7 +1,7 @@
 import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, Injector, Modules } from '@tsdi/ioc';
 import { DebugLogAspect, LogConfigure, LogModule } from '@tsdi/logs';
 import { CONFIGURATION, PROCESS_ROOT } from './metadata/tk';
-import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from './context';
+import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption } from './context';
 import { ConfigureMergerImpl, DefaultConfigureManager } from './configure/manager';
 import { ServerSet } from './server';
 import { ClientSet } from './client';
@@ -11,8 +11,6 @@ import { ModuleRef } from './module.ref';
 import { ModuleFactoryResolver } from './module.factory';
 import { RunnableSet } from './runnable';
 import { ApplicationExit } from './exit';
-import { ApplicationArguments } from './args';
-
 
 /**
  * application.
@@ -73,11 +71,11 @@ export class Application {
      *
      * @static
      * @param {Type<T>} target target class type.
-     * @param {BootstrapOption} [option] option {@link BootstrapOption} application run depdences.
+     * @param {EnvironmentOption} [option] option {@link EnvironmentOption} application run depdences.
      * @returns async returnning instance of {@link ApplicationContext}.
      */
-    static run(target: Type, option?: BootstrapOption): Promise<ApplicationContext>;
-    static run(target: any, option?: BootstrapOption): Promise<ApplicationContext> {
+    static run(target: Type, option?: EnvironmentOption): Promise<ApplicationContext>;
+    static run(target: any, option?: EnvironmentOption): Promise<ApplicationContext> {
         return new Application(option ? { type: target, ...option } as ApplicationOption : target).run();
     }
 
@@ -91,10 +89,8 @@ export class Application {
         try {
             const ctx = await this.createContext();
             await this.configation(ctx);
-            const exit = this.root.get(ApplicationExit);
-            if (exit) {
-                exit.register();
-            }
+            this.prepareContext(ctx);
+            this.refreshContext(ctx);
             await this.statupServers(ctx.servers);
             await this.statupClients(ctx.clients);
             await this.statupServices(ctx.services);
@@ -128,9 +124,6 @@ export class Application {
         }
         if (this.loader) {
             container.setValue(ModuleLoader, this.loader);
-        }
-        if (option.args && option.args.length) {
-            container.get(ApplicationArguments)?.reset(option.args);
         }
         option.platformDeps && container.use(...option.platformDeps);
         return container.resolve({ token: ModuleFactoryResolver, target: option.type }).resolve(option.type).create(container, option);
@@ -184,6 +177,16 @@ export class Application {
         if (config.debug) {
             // make sure log module registered.
             injector.register(LogModule, DebugLogAspect);
+        }
+    }
+
+    protected prepareContext(ctx: ApplicationContext): void {
+    }
+
+    protected refreshContext(ctx: ApplicationContext): void {
+        const exit = ctx.injector.get(ApplicationExit);
+        if (exit) {
+            exit.register();
         }
     }
 

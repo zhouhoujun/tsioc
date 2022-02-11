@@ -280,7 +280,7 @@ export interface InvokeArguments {
     /**
      * invocation arguments data.
      */
-    arguments?: Record<string, any>;
+    arguments?: any;
     /**
      * token values.
      */

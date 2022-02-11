@@ -1,17 +1,17 @@
-import { Token, Type, isFunction, ModuleMetadata, DefaultInvocationContext, EMPTY_OBJ, InvokeArguments, InvocationContext } from '@tsdi/ioc';
+import { Token, Type, isFunction, ModuleMetadata, DefaultInvocationContext, EMPTY_OBJ, InvokeArguments, InvocationContext, lang } from '@tsdi/ioc';
 import { ConfigureLoggerManager, LoggerManager, LOGGER_MANAGER } from '@tsdi/logs';
 import { Observable } from 'rxjs';
 import { CONFIGURATION, PROCESS_ROOT } from './metadata/tk';
 import { ApplicationConfiguration, ConfigureManager } from './configure/config';
 import { Pattern, Protocol, WritePacket } from './transport/packet';
 import { ClientFactory } from './transport/client/factory';
-import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from './context';
+import { ApplicationContext, ApplicationFactory, BootstrapOption, EnvironmentOption } from './context';
 import { RunnableFactory, RunnableFactoryResolver, RunnableSet, RunnableRef } from './runnable';
 import { ModuleRef } from './module.ref';
-import { ApplicationArguments } from './args';
 import { ServerSet } from './server';
 import { Client, ClientSet } from './client';
 import { ServiceSet } from './service';
+import { ApplicationArguments } from './args';
 
 
 
@@ -32,12 +32,12 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
 
     constructor(readonly injector: ModuleRef, options: InvokeArguments = EMPTY_OBJ) {
         super(injector, options);
+        this._args = injector.get(ApplicationArguments);
+        if(options.arguments){
+            lang.forIn(options.arguments, (v,k)=> this.setArgument(k, v));
+        }
         injector.setValue(InvocationContext, this);
         injector.setValue(ApplicationContext, this);
-    }
-
-    get args() {
-        return this.injector.get(ApplicationArguments)
     }
 
     get services() {
@@ -56,9 +56,9 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         return this.injector.get(ClientSet);
     }
 
-    bootstrap<C>(type: Type<C> | RunnableFactory<C>, opts?: BootstrapOption): any {
+    bootstrap<C>(type: Type<C> | RunnableFactory<C>, option?: BootstrapOption): any {
         const factory = isFunction(type) ? this.injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type) : type;
-        return factory.create(this.injector, opts).run();
+        return factory.create(this.injector, option).run();
     }
 
     get instance() {
@@ -123,7 +123,7 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
  */
 export class DefaultApplicationFactory extends ApplicationFactory {
 
-    create<T>(root: ModuleRef<T>, option?: ApplicationOption<T>): ApplicationContext {
+    create<T>(root: ModuleRef<T>, option?: EnvironmentOption): ApplicationContext {
         if (root.moduleReflect.annotation?.baseURL) {
             root.setValue(PROCESS_ROOT, root.moduleReflect.annotation.baseURL);
         }
@@ -132,7 +132,7 @@ export class DefaultApplicationFactory extends ApplicationFactory {
         return ctx;
     }
 
-    initOption<T>(ctx: ApplicationContext, option?: ApplicationOption<T>) {
+    initOption<T>(ctx: ApplicationContext, option?: EnvironmentOption) {
         if (!option) return;
 
         const mgr = ctx.getConfigureManager();

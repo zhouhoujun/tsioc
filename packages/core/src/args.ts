@@ -5,7 +5,7 @@ import { Abstract } from '@tsdi/ioc';
  * application arguments.
  */
 @Abstract()
-export abstract class ApplicationArguments {
+export abstract class ApplicationArguments implements Record<string, any> {
     /**
      * process args source
      */

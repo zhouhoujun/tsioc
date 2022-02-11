@@ -13,9 +13,9 @@ import { get } from '../metadata/refl';
  * The context for the {@link OperationInvoker invocation of an operation}.
  */
 export class DefaultInvocationContext<T = any> extends InvocationContext implements Destroyable, OnDestroy {
-    private _args: T;
-    private _refs: InvocationContext[];
-    private _values: Map<Token, any>;
+    protected _args: T;
+    protected _refs: InvocationContext[];
+    protected _values: Map<Token, any>;
     /**
      * the invocation arguments resolver.
      */

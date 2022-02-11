@@ -125,8 +125,8 @@ export class ServerApplicationExit extends ApplicationExit {
     }
 
     override register(): void {
-        const usedsignls = this.context.args.signls;
-        if (!usedsignls.length) return;
+        const usedsignls = this.context.arguments.signls;
+        if (!usedsignls?.length) return;
 
         const logger = this.context.getLogManager()?.getLogger();
         const callback = async (signal: string) => {
