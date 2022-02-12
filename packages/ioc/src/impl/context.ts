@@ -1,7 +1,7 @@
 import { ClassType, Type } from '../types';
 import { Destroyable, OnDestroy } from '../destroy';
 import { remove } from '../utils/lang';
-import { EMPTY, EMPTY_OBJ,  isDefined, isFunction, isPrimitiveType, isString } from '../utils/chk';
+import { EMPTY, EMPTY_OBJ, isDefined, isFunction, isNumber, isPrimitiveType, isString } from '../utils/chk';
 import { InjectFlags, Token } from '../tokens';
 import { Injector } from '../injector';
 import { DEFAULT_RESOLVERS, InvocationContext, INVOCATION_CONTEXT_IMPL, InvocationOption, OperationArgumentResolver, Parameter, composeResolver } from '../invoker';
@@ -109,12 +109,27 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     /**
      * get token value.
      * @param token the token to get value.
+     * @param flags inject flags, type of {@link InjectFlags}.
+     * @returns the instance of token.
+     */
+    get<T>(token: Token<T>, flags?: InjectFlags): T;
+    /**
+     * get token value.
+     * @param token the token to get value.
      * @param context invcation context, type of {@link InvocationContext}.
      * @param flags inject flags, type of {@link InjectFlags}.
      * @returns the instance of token.
      */
-    get<T>(token: Token<T>, context?: InvocationContext<any>, flags?: InjectFlags): T {
+    get<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags): T;
+    get<T>(token: Token<T>, contextOrFlag?: InvocationContext | InjectFlags, flags?: InjectFlags): T {
         if (this.isSelf(token)) return this as any;
+        let context: InvocationContext;
+        if (isNumber(contextOrFlag)) {
+            flags = contextOrFlag;
+            context = this;
+        } else {
+            context = contextOrFlag ?? this;
+        }
         return this.injector.get(token, context, flags) ?? this.getFormRef(token, context, flags) as T; //?? (flags != InjectFlags.Self? this.parent?.get(token, context, flags) : null) as T;
     }
 
