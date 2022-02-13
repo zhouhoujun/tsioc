@@ -3,9 +3,9 @@ import { ApplicationContext } from './context';
 import { ScanSet } from './scan.set';
 
 /**
- * server.
+ * Startup server.
  */
-export interface Server {
+export interface Startup {
     /**
      * startup server.
      */
@@ -14,15 +14,15 @@ export interface Server {
 
 
 @Abstract()
-export abstract class ServerSet implements ScanSet<OperationFactory<Server>> {
+export abstract class StartupSet implements ScanSet<OperationFactory<Startup>> {
     /**
-     * the server count.
+     * the Startup server count.
      */
     abstract get count(): number;
     /**
      * get all resolvers.
      */
-    abstract getAll(): OperationFactory<Server>[];
+    abstract getAll(): OperationFactory<Startup>[];
     /**
      * has the client type or not.
      * @param type class type.
@@ -33,12 +33,12 @@ export abstract class ServerSet implements ScanSet<OperationFactory<Server>> {
      * @param resolver resolver instance.
      * @param order the order insert to.
      */
-    abstract add(resolver: OperationFactory<Server>, order?: number): void;
+    abstract add(resolver: OperationFactory<Startup>, order?: number): void;
     /**
      * remove server resolver.
      * @param resolver esolver instance.
      */
-    abstract remove(resolver: OperationFactory<Server>): void;
+    abstract remove(resolver: OperationFactory<Startup>): void;
     /**
      * clear server resolver.
      */

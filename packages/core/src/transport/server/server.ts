@@ -2,7 +2,7 @@ import { Abstract, isFunction } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { catchError, finalize, Observable, Subscription, EMPTY, isObservable, connectable, Subject } from 'rxjs';
 import { OnDispose } from '../../lifecycle';
-import { Server } from '../../server';
+import { Startup } from '../../startup';
 import { Protocol, ReadPacket, WritePacket } from '../packet';
 import { TransportHandler } from '../handler';
 
@@ -11,7 +11,7 @@ import { TransportHandler } from '../handler';
  * abstract transport server.
  */
 @Abstract()
-export abstract class TransportServer implements Server, OnDispose {
+export class TransportServer implements OnDispose {
 
     @Logger()
     protected readonly logger!: ILogger;
@@ -20,8 +20,6 @@ export abstract class TransportServer implements Server, OnDispose {
     constructor(readonly handler: TransportHandler, readonly protocol: Protocol) {
 
     }
-
-    abstract startup(): Promise<void>;
 
     async onDispose(): Promise<void> {
         if (isFunction((this.handler as TransportHandler & OnDispose).onDispose)) {

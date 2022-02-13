@@ -1,4 +1,4 @@
-import { ApplicationContext, StartupService } from '@tsdi/core';
+import { ApplicationContext, ConfigureService } from '@tsdi/core';
 import { isArray, isDefined } from '@tsdi/ioc';
 import { Server, IncomingMessage, ServerResponse, createServer } from 'http';
 import { Socket } from 'net';

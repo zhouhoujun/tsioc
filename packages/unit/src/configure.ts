@@ -1,5 +1,5 @@
 import { lang, ProviderType } from '@tsdi/ioc';
-import { Application, ApplicationContext, ComponentScan, StartupService } from '@tsdi/core';
+import { Application, ApplicationContext, ComponentScan, ConfigureService } from '@tsdi/core';
 import { UnitTestConfigure } from './UnitTestConfigure';
 import { Assert } from './assert/assert';
 import * as assert from 'assert';
@@ -15,7 +15,7 @@ import { AbstractReporter, UNIT_REPORTES } from './reports/Reporter';
  * @extends {ConfigureRegister}
  */
 @ComponentScan()
-export class UnitTestStartup implements StartupService {
+export class UnitTestConfigureService implements ConfigureService {
 
     async configureService(ctx: ApplicationContext): Promise<void> {
         const config = ctx.getConfiguration() as UnitTestConfigure;

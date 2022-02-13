@@ -4,7 +4,7 @@ import { ApplicationContext } from './context';
 /**
  * scan set.
  */
-export interface ScanSet<T extends TypeRef = TypeRef> extends OnDestroy {
+export interface ScanSet<T = any> extends OnDestroy {
     /**
      * the scan count.
      */
@@ -38,9 +38,4 @@ export interface ScanSet<T extends TypeRef = TypeRef> extends OnDestroy {
      * @param ctx
      */
     startup(ctx: ApplicationContext): Promise<void>;
-}
-
-
-export interface TypeRef<T = any> {
-    get type(): Type<T>;
 }

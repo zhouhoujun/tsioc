@@ -8,10 +8,10 @@ import { ClientFactory } from './transport/client/factory';
 import { ApplicationContext, ApplicationFactory, BootstrapOption, EnvironmentOption } from './context';
 import { RunnableFactory, RunnableFactoryResolver, RunnableSet, RunnableRef } from './runnable';
 import { ModuleRef } from './module.ref';
-import { ServerSet } from './server';
-import { Client, ClientSet } from './client';
+import { StartupSet } from './startup';
 import { ServiceSet } from './service';
 import { ApplicationArguments } from './args';
+import { TransportClient } from './transport/client';
 
 
 
@@ -26,7 +26,6 @@ import { ApplicationArguments } from './args';
 export class DefaultApplicationContext extends DefaultInvocationContext implements ApplicationContext {
 
     readonly bootstraps: RunnableRef[] = [];
-    readonly startups: Token[] = [];
 
     exit = true;
 
@@ -48,12 +47,8 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         return this.injector.get(RunnableSet);
     }
 
-    get servers() {
-        return this.injector.get(ServerSet);
-    }
-
-    get clients() {
-        return this.injector.get(ClientSet);
+    get startups() {
+        return this.injector.get(StartupSet);
     }
 
     bootstrap<C>(type: Type<C> | RunnableFactory<C>, option?: BootstrapOption): any {
@@ -65,7 +60,7 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         return this.injector.instance;
     }
 
-    private client: Client | undefined;
+    private client: TransportClient | undefined;
     /**
      * send message.
      * @param pattern message pattern.

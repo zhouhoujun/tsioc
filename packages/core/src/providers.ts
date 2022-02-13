@@ -3,15 +3,14 @@ import { ApplicationContext, ApplicationFactory } from './context';
 import { ModuleFactoryResolver } from './module.factory';
 import { DefaultModuleFactoryResolver, ModuleLifecycleHooksResolver } from './module/module';
 import { DefaultApplicationFactory } from './context.impl';
-import { Server, ServerSet } from './server';
-import { Client, ClientSet } from './client';
-import { StartupService, ServiceSet } from './service';
-import { ScanSet, TypeRef } from './scan.set';
+import { Startup, StartupSet } from './startup';
+import { ConfigureService, ServiceSet } from './service';
+import { ScanSet } from './scan.set';
 import { RunnableRef, RunnableSet } from './runnable';
 import { Observable, from, lastValueFrom } from 'rxjs';
 
 
-abstract class AbstractScanSet<T extends TypeRef> implements ScanSet<T> {
+abstract class AbstractScanSet<T extends { type: Type}> implements ScanSet<T> {
     static ρNPT = true;
 
     private _rs: T[] = [];
@@ -69,21 +68,14 @@ abstract class AbstractScanSet<T extends TypeRef> implements ScanSet<T> {
 }
 
 
-class ServiceSetImpl extends AbstractScanSet<OperationFactory<StartupService>> implements ServiceSet {
-    protected run(typeRef: OperationFactory<StartupService>, ctx: ApplicationContext) {
+class ServiceSetImpl extends AbstractScanSet<OperationFactory<ConfigureService>> implements ServiceSet {
+    protected run(typeRef: OperationFactory<ConfigureService>, ctx: ApplicationContext) {
         return typeRef.resolve().configureService(ctx);
     }
 }
 
-class ClientSetImpl extends AbstractScanSet<OperationFactory<Client>> implements ClientSet {
-    protected run(typeRef: OperationFactory<Client>, ctx: ApplicationContext) {
-        return typeRef.resolve();
-    }
-
-}
-
-class ServerSetImpl extends AbstractScanSet<OperationFactory<Server>> implements ServerSet {
-    protected run(typeRef: OperationFactory<Server>, ctx: ApplicationContext) {
+class ServerSetImpl extends AbstractScanSet<OperationFactory<Startup>> implements StartupSet {
+    protected run(typeRef: OperationFactory<Startup>, ctx: ApplicationContext) {
         return typeRef.resolve().startup();
     }
 }
@@ -95,8 +87,7 @@ class RunnableSetImpl extends AbstractScanSet<RunnableRef> implements RunnableSe
 }
 
 export const DEFAULTA_PROVIDERS: ProviderType[] = [
-    { provide: ServerSet, useClass: ServerSetImpl, singleton: true },
-    { provide: ClientSet, useClass: ClientSetImpl, singleton: true },
+    { provide: StartupSet, useClass: ServerSetImpl, singleton: true },
     { provide: ServiceSet, useClass: ServiceSetImpl, singleton: true },
     { provide: RunnableSet, useClass: RunnableSetImpl, singleton: true },
     { provide: LifecycleHooksResolver, useValue: new ModuleLifecycleHooksResolver() },

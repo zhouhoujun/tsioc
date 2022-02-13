@@ -1,5 +1,5 @@
 import {
-    Module, Message, StartupService, ApplicationContext, Configuration, ComponentScan, OnDispose,
+    Module, Message, ConfigureService, ApplicationContext, Configuration, ComponentScan, OnDispose,
     Runnable, Middlewares, TransportModule, ApplicationConfiguration, Bean, Settings
 } from '../src';
 import { Injectable, Inject, OnDestroy, lang } from '@tsdi/ioc';
@@ -113,7 +113,7 @@ export class ModuleB { }
 
 
 @ComponentScan()
-export class SocketService implements StartupService, OnDispose {
+export class SocketService implements ConfigureService, OnDispose {
 
     @Logger() logger!: ILogger;
 

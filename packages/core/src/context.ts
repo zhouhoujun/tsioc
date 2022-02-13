@@ -7,8 +7,7 @@ import { Observable } from 'rxjs';
 import { ApplicationConfiguration, ConfigureManager } from './configure/config';
 import { Runnable, RunnableSet, RunnableFactory } from './runnable';
 import { ServiceSet } from './service';
-import { ClientSet } from './client';
-import { ServerSet } from './server';
+import { StartupSet } from './startup';
 import { ModuleOption } from './module.factory';
 import { ModuleRef } from './module.ref';
 import { ApplicationArguments } from './args';
@@ -79,17 +78,11 @@ export abstract class ApplicationContext extends InvocationContext implements De
      */
     abstract getConfigureManager(): ConfigureManager;
     /**
-     * application global servers.
+     * application global startups.
      *
-     * type of {@link ServerSet}
+     * type of {@link StartupSet}
      */
-    abstract get servers(): ServerSet;
-    /**
-     * application global clients.
-     *
-     * type of {@link ClientSet}
-     */
-    abstract get clients(): ClientSet;
+    abstract get startups(): StartupSet;
     /**
      * application global services.
      *

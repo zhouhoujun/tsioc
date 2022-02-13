@@ -1,5 +1,5 @@
 import { PatternMetadata, ProviderMetadata, ProvidersMetadata, Token, Type, TypeMetadata, TypeReflect } from '@tsdi/ioc';
-import { StartupService } from '../service';
+import { ConfigureService } from '../service';
 
 /**
  * Boot metadata.
@@ -12,15 +12,15 @@ export interface BootMetadata extends TypeMetadata, PatternMetadata {
     /**
      * the startup service dependencies.
      */
-    deps?: Type<StartupService>[];
+    deps?: Type<ConfigureService>[];
     /**
      * this service startup before the service, or at first
      */
-    before?: Type<StartupService> | 'all';
+    before?: Type<ConfigureService> | 'all';
     /**
      * this service startup after the service, or last.
      */
-    after?: Type<StartupService> | 'all';
+    after?: Type<ConfigureService> | 'all';
 }
 
 /**

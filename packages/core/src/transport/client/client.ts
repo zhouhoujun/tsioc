@@ -1,7 +1,6 @@
 import { Abstract, Inject, Injectable, InvocationContext, InvocationOption, isFunction, isNil } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { Observable, throwError } from 'rxjs';
-import { Client } from '../../client';
 import { OnDispose } from '../../lifecycle';
 import { InvalidMessageError } from '../error';
 import { Pattern, Protocol } from '../packet';
@@ -13,7 +12,7 @@ import { TransportHandler } from '../handler';
  * abstract transport client.
  */
 @Abstract()
-export abstract class TransportClient implements Client, OnDispose {
+export abstract class TransportClient implements OnDispose {
     /**
      * transport protocol type.
      */

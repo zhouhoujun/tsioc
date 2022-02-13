@@ -1,9 +1,9 @@
 import { Injector, lang } from '@tsdi/ioc';
 import expect = require('expect');
-import { Module, Application, StartupService, ApplicationContext, ComponentScan } from '../src';
+import { Module, Application, ConfigureService, ApplicationContext, ComponentScan } from '../src';
 
 @ComponentScan()
-export class MyStartupService implements StartupService {
+export class MyStartupService implements ConfigureService {
     async configureService(ctx: ApplicationContext): Promise<void> {
         let defer = lang.defer<void>();
         setTimeout(() => {
@@ -18,7 +18,7 @@ export class MyStartupService implements StartupService {
 @ComponentScan({
     order: 0
 })
-export class MyStartupService1 implements StartupService {
+export class MyStartupService1 implements ConfigureService {
     async configureService(ctx: ApplicationContext): Promise<void> {
         ctx.injector.setValue('MyStartup1', 'start');
     }
@@ -28,7 +28,7 @@ export class MyStartupService1 implements StartupService {
 @ComponentScan({
     order: 1,
 })
-export class DeviceConnectionService implements StartupService {
+export class DeviceConnectionService implements ConfigureService {
 
     connention: any;
     async configureService(ctx: ApplicationContext): Promise<void> {
@@ -45,7 +45,7 @@ export class DeviceConnectionService implements StartupService {
 @ComponentScan({
     order: 2
 })
-export class DeviceInitService implements StartupService {
+export class DeviceInitService implements ConfigureService {
 
     connid!: string;
     id = 0;
@@ -59,7 +59,7 @@ export class DeviceInitService implements StartupService {
 @ComponentScan({
     order: 3
 })
-export class DeviceAService implements StartupService {
+export class DeviceAService implements ConfigureService {
 
     data: any;
     async configureService(ctx: ApplicationContext): Promise<void> {

@@ -3,13 +3,12 @@ import {
     PropertyMetadata, ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes,
     OperationFactoryResolver, MethodPropDecorator, Token, ArgumentError, object2string
 } from '@tsdi/ioc';
-import { StartupService, ServiceSet } from '../service';
+import { ConfigureService, ServiceSet } from '../service';
 import { PipeMetadata, ComponentScanMetadata, ScanReflect, BeanMetadata } from './meta';
 import { PipeTransform } from '../pipes/pipe';
-import { Server, ServerSet } from '../server';
+import { Startup, StartupSet } from '../startup';
 import { getModuleType } from '../module.ref';
-import { Client, ClientSet } from '../client';
-import { Runnable, RunnableSet } from '../runnable';
+import { Runnable, RunnableFactoryResolver, RunnableSet } from '../runnable';
 import { ScanSet } from '../scan.set';
 
 
@@ -103,7 +102,7 @@ export const DIModule = Module;
 /**
  * ComponentScan decorator.
  */
-export type ComponentScanDecorator = <TFunction extends Type<Server | Client | StartupService | Runnable>>(target: TFunction) => TFunction | void;
+export type ComponentScanDecorator = <TFunction extends Type<Startup | ConfigureService | Runnable>>(target: TFunction) => TFunction | void;
 
 /**
  * ComponentScan decorator, use to auto scan server or client for application.
@@ -149,18 +148,23 @@ export const ComponentScan: ComponentScan = createDecorator<ComponentScanMetadat
             const { type, injector } = ctx;
             const reflect = ctx.reflect as ScanReflect;
             let sets: ScanSet | undefined;
-            if (reflect.class.hasMethod('connect', 'send', 'emit')) {
-                sets = injector.get(ClientSet)
-            } else if (reflect.class.hasMethod('startup')) {
-                sets = injector.get(ServerSet);
+            let isRunner = false;
+            if (reflect.class.hasMethod('startup')) {
+                sets = injector.get(StartupSet);
             } else if (reflect.class.hasMethod('configureService')) {
                 sets = injector.get(ServiceSet);
             } else if (reflect.class.hasMetadata('run')) {
                 sets = injector.get(RunnableSet);
+                isRunner = true;
             }
             if (sets && !sets.has(type)) {
-                const typeRef = injector.get(OperationFactoryResolver).resolve(type, injector);
-                sets.add(typeRef, reflect.order);
+                if (isRunner) {
+                    const typeRef = injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type).create(injector);
+                    sets.add(typeRef, reflect.order);
+                } else {
+                    const factory = injector.resolve({ token: OperationFactoryResolver, target: type }).resolve(type, injector);
+                    sets.add(factory, reflect.order);
+                }
             }
             return next();
         }

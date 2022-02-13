@@ -3,8 +3,7 @@ import { DebugLogAspect, LogConfigure, LogModule } from '@tsdi/logs';
 import { CONFIGURATION, PROCESS_ROOT } from './metadata/tk';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption } from './context';
 import { ConfigureMergerImpl, DefaultConfigureManager } from './configure/manager';
-import { ServerSet } from './server';
-import { ClientSet } from './client';
+import { StartupSet } from './startup';
 import { ServiceSet } from './service';
 import { DEFAULTA_PROVIDERS } from './providers';
 import { ModuleRef } from './module.ref';
@@ -91,8 +90,7 @@ export class Application {
             await this.configation(ctx);
             this.prepareContext(ctx);
             this.refreshContext(ctx);
-            await this.statupServers(ctx.servers);
-            await this.statupClients(ctx.clients);
+            await this.statupServers(ctx.startups);
             await this.statupServices(ctx.services);
             await this.statupRunnable(ctx.runnables);
             await this.bootstraps(this.root.moduleReflect.bootstrap);
@@ -190,15 +188,9 @@ export class Application {
         }
     }
 
-    protected async statupServers(servers: ServerSet): Promise<void> {
+    protected async statupServers(servers: StartupSet): Promise<void> {
         if (servers?.count) {
             await servers.startup(this.context);
-        }
-    }
-
-    protected async statupClients(clients: ClientSet): Promise<void> {
-        if (clients?.count) {
-            await clients.startup(this.context);
         }
     }
 

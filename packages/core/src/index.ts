@@ -13,8 +13,7 @@ export * from './args';
 export * from './exit';
 export * from './lifecycle';
 export * from './runnable';
-export * from './server';
-export * from './client';
+export * from './startup';
 export * from './service';
 
 export * from './context';

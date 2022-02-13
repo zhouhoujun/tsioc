@@ -5,7 +5,7 @@ import { ScanSet } from './scan.set';
 /**
  * configure services for application.
  */
-export interface StartupService {
+export interface ConfigureService {
     /**
      * config service of application.
      *
@@ -17,7 +17,7 @@ export interface StartupService {
 
 
 @Abstract()
-export abstract class ServiceSet implements ScanSet<OperationFactory<StartupService>> {
+export abstract class ServiceSet implements ScanSet<OperationFactory<ConfigureService>> {
    /**
      * the service count.
      */
@@ -25,7 +25,7 @@ export abstract class ServiceSet implements ScanSet<OperationFactory<StartupServ
     /**
      * get all service.
      */
-    abstract getAll(): OperationFactory<StartupService>[];
+    abstract getAll(): OperationFactory<ConfigureService>[];
     /**
      * has the client type or not.
      * @param type class type.
@@ -36,12 +36,12 @@ export abstract class ServiceSet implements ScanSet<OperationFactory<StartupServ
      * @param resolver
      * @param order the order insert to.
      */
-    abstract add(resolver: OperationFactory<StartupService>, order?: number): void;
+    abstract add(resolver: OperationFactory<ConfigureService>, order?: number): void;
     /**
      * remove service resolver.
      * @param resolver resolver instance.
      */
-    abstract remove(resolver: OperationFactory<StartupService>): void;
+    abstract remove(resolver: OperationFactory<ConfigureService>): void;
     /**
      * clear service resolver.
      */
