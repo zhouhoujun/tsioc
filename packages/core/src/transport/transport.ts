@@ -1,11 +1,11 @@
 import { Module } from '../metadata/decor';
-import { MappingRouterResolver, Router, RouterResolver } from './middlewares/router';
+import { MappingRouterResolver, RouterResolver } from './middlewares/router';
 import {
     SlicePipe, SortPipe, LowerCasePipe, UpperCasePipe, JsonPipe, DateFormatPipe, ParseStringPipe,
     ParseBoolPipe, ParseEnumPipe, ParseFloatPipe, ParseIntPipe, ParseNumberPipe, DatePipe
 } from '../pipes'
 
-import { MiddlewareRefFactoryResolver } from './middlewares/middleware';
+import { MiddlewareRefFactoryResolver } from './middlewares/middlewares';
 import { RouteRefFactoryResolver } from './middlewares/route';
 import { DefaultRouteRefFactoryResovler } from './middlewares/route_ref';
 import { DefaultMiddlewareRefFactoryResolver } from './middlewares/middleware_ref';

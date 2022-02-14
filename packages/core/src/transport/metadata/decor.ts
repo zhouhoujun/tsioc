@@ -2,8 +2,8 @@ import {
     isArray, isString, lang, Type, isRegExp, createDecorator, OperationArgumentResolver,
     ClassMethodDecorator, createParamDecorator, ParameterMetadata, ActionTypes
 } from '@tsdi/ioc';
-import { Middleware, MiddlewareRefFactoryResolver } from '../middlewares/middleware';
-import { Middlewares, MiddlewareType } from '../middlewares/middlewares';
+import { Middleware } from '../middlewares/middleware';
+import { MiddlewareRefFactoryResolver, Middlewares, MiddlewareType } from '../middlewares/middlewares';
 import { CanActivate } from '../guard';
 import { RouteRefFactoryResolver } from '../middlewares/route';
 import { MappingReflect, ProtocolRouteMappingMetadata, RequestMethod, Router, RouterResolver } from '../middlewares/router';
@@ -134,7 +134,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
 
             const type = ctx.type;
             if (isString(route) || reflect.class.isExtends(Router)) {
-                queue = parent ? injector.get(parent) ?? injector.get(RouterResolver).resolve(protocol) : injector.get(RouterResolver).resolve(protocol);
+                queue = parent ? (injector.get(parent) ?? injector.get(RouterResolver).resolve(protocol)) : injector.get(RouterResolver).resolve(protocol);
                 if (!(queue instanceof Router)) {
                     throw new Error(lang.getClassName(queue) + 'is not message router!');
                 }
@@ -162,6 +162,9 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
         // method: (ctx, next) => {
         //     // todo register message handle
         // }
+    },
+    appendProps: (meta) => {
+        meta.singleton = true;
     }
 });
 

@@ -2,7 +2,7 @@ import { ClassType, Type } from '../types';
 import { TypeReflect } from '../metadata/type';
 import { EMPTY, isArray, isClassType, isFunction, isPlainObject, isPromise, isString, isTypeObject, isTypeReflect } from '../utils/chk';
 import { getClassName } from '../utils/lang';
-import { InvocationContext, InvocationOption, InvokeArguments, InvokeOption, OperationFactory, OperationFactoryResolver, OperationInvoker, Parameter } from '../invoker';
+import { InvocationContext, InvocationOption, InvokeArguments, InvokeOption, OperationFactory, OperationFactoryResolver, OperationInvoker, Parameter } from '../operation';
 import { Injector, MethodType } from '../injector';
 import { get } from '../metadata/refl';
 import { Token } from '../tokens';

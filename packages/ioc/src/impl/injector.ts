@@ -14,7 +14,7 @@ import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
 import { ModuleReflect, TypeReflect } from '../metadata/type';
 import { get } from '../metadata/refl';
-import { InvocationContext, InvokeOption, Parameter, OperationFactory, OperationFactoryResolver, DEFAULT_RESOLVERS } from '../invoker';
+import { InvocationContext, InvokeOption, Parameter, OperationFactory, OperationFactoryResolver, DEFAULT_RESOLVERS } from '../operation';
 import { DefaultModuleLoader } from './loader';
 import { ModuleLoader } from '../module.loader';
 import { DefaultPlatform } from './platform';

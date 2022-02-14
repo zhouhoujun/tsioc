@@ -359,7 +359,7 @@ export class DefaultRouteRefFactory<T = any> extends RouteRefFactory<T> {
         if (option?.prefix) {
             factory.context.setArgument('prefix', option?.prefix);
         }
-        return factory.resolve(RouteRef) ?? new RouteMappingRef(factory, option?.prefix);
+        return new RouteMappingRef(factory, option?.prefix);
     }
 }
 

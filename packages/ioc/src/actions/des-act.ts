@@ -8,7 +8,7 @@ import { ActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
 import { FactoryRecord, FnType, Injector, Platform } from '../injector';
-import { InvocationContext } from '../invoker';
+import { InvocationContext } from '../operation';
 import { Decors } from '../metadata/type';
 
 

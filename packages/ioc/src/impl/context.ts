@@ -4,7 +4,7 @@ import { remove } from '../utils/lang';
 import { EMPTY, EMPTY_OBJ, isDefined, isFunction, isNumber, isPrimitiveType, isString } from '../utils/chk';
 import { InjectFlags, Token } from '../tokens';
 import { Injector } from '../injector';
-import { DEFAULT_RESOLVERS, InvocationContext, INVOCATION_CONTEXT_IMPL, InvocationOption, OperationArgumentResolver, Parameter, composeResolver } from '../invoker';
+import { DEFAULT_RESOLVERS, InvocationContext, INVOCATION_CONTEXT_IMPL, InvocationOption, OperationArgumentResolver, Parameter, composeResolver } from '../operation';
 import { get } from '../metadata/refl';
 
 

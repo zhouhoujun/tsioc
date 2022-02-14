@@ -5,7 +5,7 @@ export * from './action';
 export * from './destroy';
 export * from './lifecycle';
 export * from './injector';
-export * from './invoker';
+export * from './operation';
 
 // module
 export * from './module.loader';

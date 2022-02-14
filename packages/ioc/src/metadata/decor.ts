@@ -8,7 +8,7 @@ import {
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
 import { ProviderType, StaticProvider } from '../providers';
 import { Injector } from '../injector';
-import { OperationArgumentResolver } from '../invoker';
+import { OperationArgumentResolver } from '../operation';
 
 
 

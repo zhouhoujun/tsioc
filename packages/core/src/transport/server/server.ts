@@ -1,8 +1,7 @@
-import { Abstract, isFunction } from '@tsdi/ioc';
+import { Abstract, Injectable, isFunction } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { catchError, finalize, Observable, Subscription, EMPTY, isObservable, connectable, Subject } from 'rxjs';
 import { OnDispose } from '../../lifecycle';
-import { Startup } from '../../startup';
 import { Protocol, ReadPacket, WritePacket } from '../packet';
 import { TransportHandler } from '../handler';
 
@@ -11,14 +10,46 @@ import { TransportHandler } from '../handler';
  * abstract transport server.
  */
 @Abstract()
-export class TransportServer implements OnDispose {
+export abstract class TransportServer implements OnDispose {
+    /**
+     * transport protocol type.
+     */
+    abstract get protocol(): Protocol;
+    /**
+     * transport handler.
+     */
+    abstract get handler(): TransportHandler;
+    /**
+     * send message.
+     * @param stream send stream. 
+     * @param respond respond.
+     */
+    abstract send(stream: Observable<any>, respond: (data: WritePacket) => void | Promise<void>): Subscription;
+    /**
+     * handle event.
+     * @param packet 
+     */
+    abstract handleEvent(packet: ReadPacket): Promise<any>;
+    /**
+     * on dispose.
+     */
+    abstract onDispose(): Promise<void>;
+
+}
+
+
+/**
+ * transport server.
+ */
+@Injectable()
+export class DefaultTransportServer extends TransportServer implements OnDispose {
 
     @Logger()
     protected readonly logger!: ILogger;
 
 
     constructor(readonly handler: TransportHandler, readonly protocol: Protocol) {
-
+        super();
     }
 
     async onDispose(): Promise<void> {

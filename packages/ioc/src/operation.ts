@@ -1,11 +1,11 @@
 import { ClassType, Type } from './types';
+import { InjectFlags, Token, tokenId } from './tokens';
 import { isDefined, isFunction, isArray } from './utils/chk';
 import { Abstract } from './metadata/fac';
 import { ParameterMetadata } from './metadata/meta';
 import { TypeReflect } from './metadata/type';
 import { ProviderType } from './providers';
 import { DestroyCallback, Destroyable, OnDestroy } from './destroy';
-import { InjectFlags, Token, tokenId } from './tokens';
 import { Injector, MethodType } from './injector';
 
 
@@ -166,12 +166,12 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
      * @returns 
      */
     abstract canResolve(meta: Parameter): boolean;
-    /**
-     * get resolver in the property or parameter metadata. configured in class design.
-     * @param meta property or parameter metadata type of {@link Parameter}.
-     * @returns undefined or resolver of type {@link OperationArgumentResolver}.
-     */
-    abstract getMetaReolver(meta: Parameter): OperationArgumentResolver | undefined;
+    // /**
+    //  * get resolver in the property or parameter metadata. configured in class design.
+    //  * @param meta property or parameter metadata type of {@link Parameter}.
+    //  * @returns undefined or resolver of type {@link OperationArgumentResolver}.
+    //  */
+    // abstract getMetaReolver(meta: Parameter): OperationArgumentResolver | undefined;
     /**
      * resolve token in context.
      * @param token 
@@ -241,25 +241,6 @@ export const INVOCATION_CONTEXT_IMPL = {
 };
 
 
-
-/**
- * Interface to perform an operation invocation.
- */
-export interface OperationInvoker {
-    /**
-     * Invoke the underlying operation using the given {@code context}.
-     * @param context the context to use to invoke the operation
-     * @param destroy try destroy the context after invoked.
-     */
-    invoke(context: InvocationContext, destroy?: boolean | Function): any;
-
-    /**
-     * resolve args. 
-     * @param context 
-     */
-    resolveArguments(context: InvocationContext): any[];
-}
-
 /**
  * argument errror.
  */
@@ -324,6 +305,24 @@ export interface InvocationOption extends InvokeArguments {
      * invocation target method.
      */
     invokerMethod?: string;
+}
+
+/**
+ * Interface to perform an operation invocation.
+ */
+export interface OperationInvoker {
+    /**
+     * Invoke the underlying operation using the given {@code context}.
+     * @param context the context to use to invoke the operation
+     * @param destroy try destroy the context after invoked.
+     */
+    invoke(context: InvocationContext, destroy?: boolean | Function): any;
+
+    /**
+     * resolve args. 
+     * @param context 
+     */
+    resolveArguments(context: InvocationContext): any[];
 }
 
 /**

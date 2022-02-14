@@ -4,11 +4,12 @@ import { mergeMap } from 'rxjs/operators';
 import { Pattern, ReadPacket, WritePacket } from '../packet';
 import { stringify } from '../context';
 import { TransportBackend } from '../handler';
+import { Startup } from '../../startup';
 
 
 @Abstract()
 export abstract class ServerTransportBackend<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket>
-    extends TransportBackend<TRequest, TResponse>  {
+    extends TransportBackend<TRequest, TResponse> implements Startup {
 
     abstract startup(): Promise<any>;
 

@@ -1,10 +1,10 @@
-import { DestroyCallback, EMPTY, Injector, isFunction, isUndefined, lang, OperationFactory, OperationFactoryResolver, refl, Type, TypeReflect } from '@tsdi/ioc';
-import { Middleware, MiddlewareRef, MiddlewareRefFactory, MiddlewareRefFactoryResolver } from './middleware';
+import { chain, DestroyCallback, EMPTY, Injector, isFunction, isUndefined, lang, OperationFactory, OperationFactoryResolver, refl, Type, TypeReflect } from '@tsdi/ioc';
+import { Middleware } from './middleware';
+import { MiddlewareRef, MiddlewareRefFactory, MiddlewareRefFactoryResolver } from './middlewares';
 import { HandleMetadata } from '../metadata/meta';
 import { CanActivate } from '../guard';
 import { joinprefix, RouteOption } from './route';
 import { TransportContext, promisify } from '../context';
-
 
 /**
  * middleware ref.
@@ -46,7 +46,7 @@ export class DefaultMiddlewareRef<T extends Middleware = Middleware> extends Mid
 
 
     protected execute(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
-        return this.instance.handle(ctx, next);
+        return chain([(ctx, next) => this.instance.handle(ctx, next), ...this.handles], ctx, next);
     }
 
     get type() {
@@ -131,7 +131,7 @@ export class DefaultMiddlewareRefFactory<T extends Middleware> extends Middlewar
         if (option?.prefix) {
             factory.context.setArgument('prefix', option?.prefix);
         }
-        return factory.resolve(MiddlewareRef) ?? new DefaultMiddlewareRef(factory, option?.prefix);
+        return new DefaultMiddlewareRef(factory, option?.prefix);
     }
 
 }

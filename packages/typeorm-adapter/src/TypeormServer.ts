@@ -1,8 +1,8 @@
 import 'reflect-metadata';
 import { ILogger, Logger } from '@tsdi/logs';
-import { Type, isString, isArray, Injector, isFunction, EMPTY, isNil, InvocationContext } from '@tsdi/ioc';
+import { Type, isString, isArray, Injector, isFunction, EMPTY, isNil } from '@tsdi/ioc';
 import {
-    ConnectionOptions, ApplicationConfiguration, ApplicationContext, ComponentScan, Server, createModelResolver,
+    ConnectionOptions, ApplicationConfiguration, ApplicationContext, ComponentScan, Startup, createModelResolver,
     DBPropertyMetadata, PipeTransform, missingPropPipeError, MODEL_RESOLVERS, OnDispose, TransportParameter, TransportContext
 } from '@tsdi/core';
 import {
@@ -14,7 +14,7 @@ import { DEFAULT_CONNECTION, ObjectIDToken } from './objectid.pipe';
 
 
 @ComponentScan()
-export class TypeormServer implements Server, OnDispose {
+export class TypeormServer implements Startup, OnDispose {
     /**
      * default connection options.
      */
