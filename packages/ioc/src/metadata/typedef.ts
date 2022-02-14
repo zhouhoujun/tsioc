@@ -7,7 +7,7 @@ import { AutorunDefine, ctorName, DecoratorType, DecorDefine, DecorMemberType, D
 import { Token } from '../tokens';
 import { ProviderType } from '../providers';
 import { ParameterMetadata, PropertyMetadata } from './meta';
-import { ArgumentResolver } from '../operation';
+import { ArgumentResolver } from '../resolver';
 
 
 interface DefineDescriptor<T = any> extends TypedPropertyDescriptor<T> {

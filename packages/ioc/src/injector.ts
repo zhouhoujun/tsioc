@@ -8,7 +8,7 @@ import { ProvidedInMetadata } from './metadata/meta';
 import { EMPTY, isArray, isFunction } from './utils/chk';
 import { Handler } from './handler';
 import { Action } from './action';
-import { InvocationContext, InvokeOption } from './operation';
+import { InvocationContext, InvokeOption } from './context';
 import { ModuleLoader } from './module.loader';
 import { LifecycleHooks } from './lifecycle';
 

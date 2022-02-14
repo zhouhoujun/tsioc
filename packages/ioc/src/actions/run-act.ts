@@ -4,8 +4,9 @@ import { ActionSetup } from '../action';
 import { RuntimeContext } from './ctx';
 import { IocRegAction, IocRegScope } from './reg';
 import { PropertyMetadata } from '../metadata/meta';
-import { ArgumentError, OperationFactoryResolver, Parameter } from '../operation';
+import { ArgumentError, OperationFactoryResolver } from '../operation';
 import { ctorName, Decors } from '../metadata/type';
+import { Parameter } from '../resolver';
 
 
 /**

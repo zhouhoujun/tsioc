@@ -5,6 +5,8 @@ export * from './action';
 export * from './destroy';
 export * from './lifecycle';
 export * from './injector';
+export * from './context';
+export * from './resolver';
 export * from './operation';
 
 // module

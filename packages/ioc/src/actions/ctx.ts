@@ -3,7 +3,7 @@ import { Type } from '../types';
 import { ParameterMetadata, ProvidedInMetadata } from '../metadata/meta';
 import { TypeReflect } from '../metadata/type';
 import { FactoryRecord, Injector, Platform } from '../injector';
-import { InvocationContext } from '../operation';
+import { InvocationContext } from '../context';
 
 
 
