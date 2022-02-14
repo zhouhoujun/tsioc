@@ -1,6 +1,7 @@
 import {
     Abstract, Destroyable, DestroyCallback, Injector, InjectorTypeWithProviders, Type,
-    isFunction, isPlainObject, lang, ModuleReflect, OnDestroy, OperationFactoryResolver
+    isFunction, isPlainObject, lang, ModuleReflect, OnDestroy, OperationFactoryResolver,
+    ModuleRef as ModRef
 } from '@tsdi/ioc';
 import { ModuleLifecycleHooks } from './lifecycle';
 import { RunnableFactoryResolver } from './runnable';
@@ -13,7 +14,7 @@ import { RunnableFactoryResolver } from './runnable';
  * @publicApi
  */
 @Abstract()
-export abstract class ModuleRef<T = any> extends Injector implements Destroyable, OnDestroy {
+export abstract class ModuleRef<T = any> extends Injector implements ModRef<T>, Destroyable, OnDestroy {
     /**
      * module type
      */

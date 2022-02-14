@@ -19,7 +19,7 @@ import { DefaultModuleLoader } from './loader';
 import { ModuleLoader } from '../module.loader';
 import { DefaultPlatform } from './platform';
 import { LifecycleHooks, LifecycleHooksResolver } from '../lifecycle';
-import { DefaultOperationFactoryResolver } from './invoker';
+import { DefaultOperationFactoryResolver } from './operation';
 import { BASE_RESOLVERS } from './context';
 import { InvocationContext, InvokeOption } from '../context';
 import { DEFAULT_RESOLVERS } from '../resolver';
