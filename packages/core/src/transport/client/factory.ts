@@ -1,4 +1,4 @@
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, Injector } from '@tsdi/ioc';
 import { TransportClient } from './client';
 import { Protocol } from '../packet';
 

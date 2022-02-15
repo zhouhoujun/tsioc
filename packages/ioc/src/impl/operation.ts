@@ -136,13 +136,11 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
     private _tagPdrs: ProviderType[] | undefined;
     private _type: Type<T>;
     readonly context: InvocationContext;
-    protected reflective: Reflective;
-    constructor(readonly reflect: TypeReflect<T>, readonly injector: Injector, options?: InvokeArguments) {
+    constructor(readonly reflect: TypeReflect<T>, readonly injector: Injector, options?: InvokeArguments, protected reflective: Reflective = REFLECTIVE) {
         super()
         this._type = reflect.type as Type<T>;
         this.context = this.createContext(injector, options);
         this.context.setValue(OperationFactory, this);
-        this.reflective = this.createReflective();
         injector.onDestroy(this);
     }
 
@@ -254,6 +252,7 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
     onDestroy(): void | Promise<void> {
         this._type = null!;
         this._tagPdrs = null!;
+        this.reflective = null!;
         (this as any).injector = null!;
         (this as any).reflect = null!;
         return this.context?.destroy();

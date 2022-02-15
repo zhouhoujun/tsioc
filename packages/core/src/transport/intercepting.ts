@@ -1,4 +1,4 @@
-import { Injectable, InvocationContext, tokenId } from '@tsdi/ioc';
+import { Injectable, InvocationContext, OnDestroy, tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { ReadPacket, WritePacket } from './packet';
 import { TransportBackend, TransportHandler } from './handler';
@@ -23,7 +23,7 @@ export const TRANSPORT_INTERCEPTORS = tokenId<TransportInterceptor<ReadPacket, W
  */
 @Injectable()
 export class InterceptingHandler<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket>
- implements TransportHandler<TRequest, TResponse> {
+ implements TransportHandler<TRequest, TResponse>, OnDestroy {
     private chain!: TransportHandler<TRequest, TResponse>;
 
     constructor(private backend: TransportBackend, private context: InvocationContext) { }
@@ -35,6 +35,14 @@ export class InterceptingHandler<TRequest extends ReadPacket = ReadPacket, TResp
                 (next, interceptor) => new InterceptorHandler(next, interceptor), this.backend as TransportHandler) as TransportHandler<TRequest, TResponse>;
         }
         return this.chain.handle(req);
+    }
+
+    onDestroy() {
+        const backend = this.backend;
+        this.chain = null!;
+        this.backend = null!;
+        this.context = null!
+        return backend.close();
     }
 }
 

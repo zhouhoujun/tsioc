@@ -13,6 +13,8 @@ export abstract class ServerTransportBackend<TRequest extends ReadPacket = ReadP
 
     abstract startup(): Promise<any>;
 
+    abstract close(): Promise<any>;
+
     abstract isEvent(req: TRequest): boolean;
 
     handle(req: TRequest): Observable<TResponse> {

@@ -34,6 +34,10 @@ export abstract class TransportBackend<TRequest extends ReadPacket = ReadPacket,
      * @param req request input.
      */
     abstract handle(req: TRequest): Observable<TResponse>;
+    /**
+     * close backend.
+     */
+    abstract close(): Promise<any>;
 }
 
 /**

@@ -100,7 +100,7 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
      * resolve token in context.
      * @param token 
      */
-    abstract resolve<T>(token: Token<T>): T | null;
+    abstract resolve<T>(token: Token<T>): T;
     /**
      * resolve the parameter value.
      * @param meta property or parameter metadata type of {@link Parameter}.

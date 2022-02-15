@@ -52,8 +52,6 @@ export class DefaultTransportClient extends TransportClient {
 
     @Logger()
     protected readonly logger!: ILogger;
-    @Inject()
-    protected context!: InvocationContext;
 
     constructor(readonly handler: TransportHandler, readonly protocol: Protocol) {
         super();
@@ -78,7 +76,6 @@ export class DefaultTransportClient extends TransportClient {
         if (isFunction((this.handler as TransportHandler & OnDispose).onDispose)) {
             await (this.handler as TransportHandler & OnDispose).onDispose();
         }
-        await this.context.onDestroy();
     }
 
 
