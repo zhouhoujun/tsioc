@@ -37,7 +37,7 @@ export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): 
     const context = ctx.context = custCtx ?? newCtx;
 
     if (!ctx.args) {
-        ctx.args = factory.createInvoker(ctorName).resolveArguments(context);
+        ctx.args = factory.resolveArguments(ctorName, context);
     }
 
     next();

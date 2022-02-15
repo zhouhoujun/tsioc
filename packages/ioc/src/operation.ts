@@ -81,6 +81,12 @@ export abstract class OperationFactory<T = any> implements OnDestroy {
      */
     abstract invoke(method: MethodType<T>, context?: InvocationContext, instance?: T): any;
     /**
+     * resolve arguments.
+     * @param method 
+     * @param context 
+     */
+    abstract resolveArguments(method: MethodType<T>, context?: InvocationContext): any[];
+    /**
      * create method invoker of target type.
      * @param method the method name of target.
      * @param instance instance of target type.
