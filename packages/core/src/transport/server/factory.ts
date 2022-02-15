@@ -6,6 +6,9 @@ import { TransportServer } from './server';
  * server option.
  */
 export interface ServerOption extends Record<string, any> {
+    url?: string;
+    host?: string;
+    port?: number;
     /**
      * transport protocol type.
      */

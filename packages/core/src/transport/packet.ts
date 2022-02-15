@@ -18,10 +18,14 @@ export interface ReadPacket<T = any> extends Record<string, any> {
 }
 
 /**
+ * mqtt protocol.
+ */
+export type MqttProtocol = 'wss' | 'ws' | 'mqtt' | 'mqtts' | 'ssl' | 'wx' | 'wxs';
+/**
  * transport protocol.
  */
  export type Protocol = 'tcp' | 'grpc' | 'rmq' | 'kafka' | 'redis'
- | 'amqp' | 'msg' | 'wss' | 'ws' | 'mqtt' | 'mqtts' | 'ssl' | 'wx' | 'wxs';
+ | 'amqp' | 'msg' | MqttProtocol;
 
 /**
  * write packet.

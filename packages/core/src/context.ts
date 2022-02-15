@@ -5,13 +5,13 @@ import {
 import { LoggerManager } from '@tsdi/logs';
 import { Observable } from 'rxjs';
 import { ApplicationConfiguration, ConfigureManager } from './configure/config';
-import { Runnable, RunnableSet, RunnableFactory } from './runnable';
+import { RunnableRef, RunnableSet, RunnableFactory } from './runnable';
 import { ServiceSet } from './service';
 import { StartupSet } from './startup';
 import { ModuleOption } from './module.factory';
 import { ModuleRef } from './module.ref';
 import { ApplicationArguments } from './args';
-import { Pattern, Protocol, WritePacket } from './transport/packet';
+import { Pattern, WritePacket } from './transport/packet';
 
 
 /**
@@ -48,7 +48,7 @@ export abstract class ApplicationContext extends InvocationContext implements De
      * @param data send data.
      * @returns instance of {@link WritePacket}.
      */
-    abstract send<TResult = WritePacket, TInput = any>(pattern: Pattern, data: TInput, protocol?: Protocol): Observable<TResult>;
+    abstract send<TResult = WritePacket, TInput = any>(pattern: Pattern, data: TInput): Observable<TResult>;
     /**
      * get log manager.
      */
@@ -98,7 +98,7 @@ export abstract class ApplicationContext extends InvocationContext implements De
     /**
      * application global bootstraps.
      */
-    abstract get bootstraps(): Runnable[];
+    abstract get bootstraps(): RunnableRef[];
     /**
      * destroyed or not.
      */

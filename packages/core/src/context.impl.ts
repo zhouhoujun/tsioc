@@ -3,7 +3,7 @@ import { ConfigureLoggerManager, LoggerManager, LOGGER_MANAGER } from '@tsdi/log
 import { Observable } from 'rxjs';
 import { CONFIGURATION, PROCESS_ROOT } from './metadata/tk';
 import { ApplicationConfiguration, ConfigureManager } from './configure/config';
-import { Pattern, Protocol, WritePacket } from './transport/packet';
+import { Pattern, WritePacket } from './transport/packet';
 import { ClientFactory } from './transport/client/factory';
 import { ApplicationContext, ApplicationFactory, BootstrapOption, EnvironmentOption } from './context';
 import { RunnableFactory, RunnableFactoryResolver, RunnableSet, RunnableRef } from './runnable';
@@ -32,9 +32,9 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
     constructor(readonly injector: ModuleRef, options: InvokeArguments = EMPTY_OBJ) {
         super(injector, options);
         const args = injector.get(ApplicationArguments);
-        if(args){
+        if (args) {
             this._args = args;
-            options.arguments && lang.forIn(options.arguments, (v,k)=> this.setArgument(k, v));
+            options.arguments && lang.forIn(options.arguments, (v, k) => this.setArgument(k, v));
         }
         injector.setValue(InvocationContext, this);
         injector.setValue(ApplicationContext, this);
@@ -67,10 +67,10 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
      * @param pattern message pattern.
      * @param data send data.
      */
-    send<TResult = WritePacket, TInput = any>(pattern: Pattern, data: TInput, protocol: Protocol ='msg'): Observable<TResult> {
+    send<TResult = WritePacket, TInput = any>(pattern: Pattern, data: TInput): Observable<TResult> {
         if (!this.client) {
             this.client = this.injector.get(ClientFactory).create({
-                protocol
+                protocol: 'msg'
             });
         }
         return this.client.send(pattern, data);

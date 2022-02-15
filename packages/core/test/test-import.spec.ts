@@ -12,13 +12,9 @@ describe('di module', () => {
         let ctx = await Application.run(ModuleB);
         expect(ctx.instance).not.toBeNull();
         expect(ctx.bootstraps[0]).not.toBeNull();
-        // expect(md.bootstrap).to.eq(ClassSevice);
-        // expect(md.container).to.not.undefined;
-        // expect(md.container.has('mark')).to.true;
-        const runner = ctx.bootstraps[0] as ClassSevice;
+        const runner = ctx.bootstraps[0];
         // console.log(runner.instance);
-        expect(runner.mark).toEqual('marked');
-        // expect(md.state).eq('started');
+        expect(runner.instance.mark).toEqual('marked');
         await ctx.destroy();
 
     });
@@ -56,7 +52,7 @@ describe('di module', () => {
             ]
         });
 
-        expect(ctx.bootstraps[0]).toBeInstanceOf(ClassSevice);
+        expect(ctx.bootstraps[0].instance).toBeInstanceOf(ClassSevice);
         expect(ctx.injector.get('ttk')).toEqual('ccc');
         await ctx.destroy();
     });

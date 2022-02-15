@@ -7,6 +7,10 @@ import { Protocol } from '../packet';
  */
 export interface ClientOption extends Record<string, any> {
     /**
+     * client url
+     */
+    url?: string;
+    /**
      * transport type.
      */
     protocol: Protocol;

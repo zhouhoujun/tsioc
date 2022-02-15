@@ -58,14 +58,7 @@ export class DefaultTransportClient extends TransportClient {
     constructor(readonly handler: TransportHandler, readonly protocol: Protocol) {
         super();
     }
-
-    async onDispose(): Promise<void> {
-        if (isFunction((this.handler as TransportHandler & OnDispose).onDispose)) {
-            await (this.handler as TransportHandler & OnDispose).onDispose();
-        }
-        await this.context.onDestroy();
-    }
-
+    
     send<TResult = any, TInput = any>(pattern: Pattern, body: TInput, options?: InvocationOption): Observable<TResult> {
         return this.request({ ...options, pattern, body })
     }
@@ -80,5 +73,13 @@ export class DefaultTransportClient extends TransportClient {
         }
         return this.handler.handle(option) as Observable<TResult>;
     }
+
+    async onDispose(): Promise<void> {
+        if (isFunction((this.handler as TransportHandler & OnDispose).onDispose)) {
+            await (this.handler as TransportHandler & OnDispose).onDispose();
+        }
+        await this.context.onDestroy();
+    }
+
 
 }

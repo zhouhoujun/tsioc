@@ -1,5 +1,5 @@
 import { Type, refl, TypeReflect, OperationFactoryResolver, isFunction, Injector, OperationFactory, DestroyCallback, lang } from '@tsdi/ioc';
-import { Runnable, RunnableFactory, RunnableFactoryResolver, RunnableRef } from '../runnable';
+import { RunnableFactory, RunnableFactoryResolver, RunnableRef } from '../runnable';
 import { ApplicationContext, BootstrapOption } from '../context';
 import { ModuleRef } from '../module.ref';
 
@@ -31,10 +31,12 @@ export class DefaultRunnableRef<T> extends RunnableRef<T> {
         return this._instance;
     }
 
-    async run() {
-        if (isFunction((this.instance as T & Runnable).run)) {
-            return await this.factory.invoke('run', undefined, this.instance);
-        }
+    run() {
+        return this.factory.invoke(this.getInvokeMethod(), undefined, this.instance);
+    }
+
+    protected getInvokeMethod(): string {
+        return 'run';
     }
 
     get destroyed() {

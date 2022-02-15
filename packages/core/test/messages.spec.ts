@@ -208,7 +208,7 @@ describe('app message queue', () => {
 
 
     it('msg work', async () => {
-        const a = injector.get(DeviceQueue);
+        // const a = injector.get(DeviceQueue);
         let device, aState, bState;
 
         const defer = lang.defer();
