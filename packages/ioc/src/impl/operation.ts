@@ -83,6 +83,11 @@ export class Reflective {
 }
 
 /**
+ * global Reflective. instance of {@link Reflective}
+ */
+export const REFLECTIVE = new Reflective();
+
+/**
  * reflective operation invoker.
  * implements {@link OperationInvoker}
  */
@@ -92,7 +97,7 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
         private typeRef: TypeReflect,
         private method: string,
         private instance?: any,
-        private reflective: Reflective = new Reflective()) {
+        private reflective: Reflective = REFLECTIVE) {
     }
 
     /**
@@ -142,7 +147,7 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
     }
 
     protected createReflective(): Reflective {
-        return new Reflective();
+        return REFLECTIVE;
     }
 
     get type(): Type<T> {
