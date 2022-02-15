@@ -1,23 +1,35 @@
 import { Injectable, Injector, InvocationContext } from '@tsdi/ioc';
-import { Observable } from 'rxjs';
 import { ClientFactory, ClientOption } from './factory';
 import { TransportBackend } from '../handler';
 import { Protocol, ReadPacket, WritePacket } from '../packet';
 import { TransportClient } from './client';
+import { ClientTransportBackend } from './backend';
 
 @Injectable()
-export class MessageTransportBackend extends TransportBackend<ReadPacket, WritePacket> {
+export class MessageClinetTransportBackend extends ClientTransportBackend<ReadPacket, WritePacket> {
+    
+    connect(): Promise<any> {
+        throw new Error('Method not implemented.');
+    }
+
+    isEvent(req: ReadPacket<any>): boolean {
+        throw new Error('Method not implemented.');
+    }
+
+    protected publish(req: ReadPacket<any>, callback: (packet: WritePacket<any>) => void): () => void {
+        throw new Error('Method not implemented.');
+    }
+
+    protected dispatchEvent<T = any>(packet: ReadPacket<any>): Promise<T> {
+        throw new Error('Method not implemented.');
+    }
 
     get protocol(): Protocol {
-        throw new Error('Method not implemented.');
+        return 'msg';
     }
 
-    handle(req: ReadPacket<any>): Observable<WritePacket<any>> {
-        throw new Error('Method not implemented.');
-    }
-
-    close(): Promise<any> {
-        throw new Error('Method not implemented.');
+    async close(): Promise<any> {
+        
     }
 
 }
@@ -31,7 +43,7 @@ export class MessageClientFactory extends ClientFactory {
     create(options: ClientOption): TransportClient {
         const context = InvocationContext.create(this.injector, {
             providers: [
-                { provide: TransportBackend, useClass: MessageTransportBackend }
+                { provide: TransportBackend, useClass: MessageClinetTransportBackend }
             ],
             ...options
         });
