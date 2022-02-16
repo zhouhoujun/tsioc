@@ -1,5 +1,5 @@
 import { Inject, Injectable, isUndefined, ModuleLoader } from '@tsdi/ioc';
-import { TransportClient, Deserializer, TransportRequest, TransportEvent, ReadPacket, Serializer, WritePacket, TransportHandler } from '@tsdi/core';
+import { TransportClient, Deserializer, TransportRequest, TransportEvent, ReadPacket, Serializer, WritePacket, TransportHandler, ClientTransportBackend } from '@tsdi/core';
 import { Level } from '@tsdi/logs';
 import {
     BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerGroupJoinEvent, Producer,
@@ -19,7 +19,7 @@ let uuid: any;
         { provide: Deserializer, useClass: KafkaResponseDeserializer }
     ]
 })
-export class KafkaClient extends TransportClient {
+export class KafkaClient extends ClientTransportBackend {
 
     protected client: Kafka | undefined;
     protected consumer!: Consumer;
@@ -34,7 +34,7 @@ export class KafkaClient extends TransportClient {
     @Inject() protected loader!: ModuleLoader;
 
 
-    constructor(handler: TransportHandler, private options: {
+    constructor(private options: {
         postfixId?: string;
         client?: KafkaConfig;
         consumer?: ConsumerConfig;
@@ -44,7 +44,7 @@ export class KafkaClient extends TransportClient {
         send?: Omit<ProducerRecord, 'topic' | 'messages'>;
         keepBinary?: boolean;
     }) {
-        super(handler)
+        super()
         this.brokers = options.client?.brokers ?? DEFAULT_BROKERS;
         const postfixId = this.options.postfixId ?? '-client';
         this.clientId = (options.client?.clientId ?? 'boot-consumer') + postfixId;
@@ -158,7 +158,7 @@ export class KafkaClient extends TransportClient {
                 return;
             }
             const { err, response, disposed, id } = await this.deserializer.deserialize(rawMessage);
-            const callback = this.routing.get(id);
+            const callback = this.get(id);
             if (!callback) {
                 return;
             }

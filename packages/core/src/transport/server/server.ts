@@ -52,13 +52,6 @@ export class DefaultTransportServer extends TransportServer implements OnDispose
         super();
     }
 
-    async onDispose(): Promise<void> {
-        if (isFunction((this.handler as TransportHandler & OnDispose).onDispose)) {
-            await (this.handler as TransportHandler & OnDispose).onDispose();
-        }
-    }
-
-
     public send(
         stream: Observable<any>,
         respond: (data: WritePacket) => unknown | Promise<unknown>,
@@ -93,11 +86,7 @@ export class DefaultTransportServer extends TransportServer implements OnDispose
     public async handleEvent(
         packet: ReadPacket
     ): Promise<any> {
-        // const handler = this.handler.getHandlerByPattern(context.pattern);
-        // if (!handler) {
-        //     return this.logger.error(`There is no matching event handler defined in the remote service. Event pattern: ${JSON.stringify(context.pattern)}.`);
-        // }
-        const resultOrStream = await this.handler.handle(packet);
+        const resultOrStream = this.handler.handle(packet);
         if (isObservable(resultOrStream)) {
             const connectableSource = connectable(resultOrStream, {
                 connector: () => new Subject(),
@@ -106,5 +95,12 @@ export class DefaultTransportServer extends TransportServer implements OnDispose
             connectableSource.connect();
         }
     }
+
+    async onDispose(): Promise<void> {
+        if (isFunction((this.handler as TransportHandler & OnDispose).onDispose)) {
+            await (this.handler as TransportHandler & OnDispose).onDispose();
+        }
+    }
+
 
 }

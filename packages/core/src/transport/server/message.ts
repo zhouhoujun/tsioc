@@ -13,9 +13,10 @@ export class MessageServerTransportBackend extends ServerTransportBackend<ReadPa
         throw new Error('Method not implemented.');
     }
 
-    isEvent(req: ReadPacket<any>): boolean {
-        throw new Error('Method not implemented.');
+    protected isEvent(req: ReadPacket<any>): boolean {
+        return req.event === true;
     }
+
     protected publish(packet: ReadPacket<any>, callback: (packet: WritePacket<any>) => void): () => void {
         throw new Error('Method not implemented.');
     }

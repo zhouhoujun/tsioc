@@ -12,8 +12,6 @@ export abstract class ClientTransportBackend<TRequest extends ReadPacket = ReadP
 
     abstract connect(): Promise<any>;
 
-    abstract isEvent(req: TRequest): boolean;
-
     handle(req: TRequest): Observable<TResponse> {
         if (this.isEvent(req)) {
             const source = defer(async () => this.connect()).pipe(
@@ -67,6 +65,12 @@ export abstract class ClientTransportBackend<TRequest extends ReadPacket = ReadP
      * @param packet 
      */
     protected abstract dispatchEvent<T = any>(packet: TRequest): Promise<T>;
+    
+    /**
+     * is event request or not.
+     * @param req 
+     */
+    protected abstract isEvent(req: TRequest): boolean;
 
     protected normalizePattern(pattern: Pattern): string {
         return stringify(pattern);
