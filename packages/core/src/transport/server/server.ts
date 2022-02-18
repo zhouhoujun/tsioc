@@ -1,4 +1,4 @@
-import { Abstract, Injectable, isFunction } from '@tsdi/ioc';
+import { Abstract } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { catchError, finalize, Observable, Subscription, EMPTY, isObservable, connectable, Subject } from 'rxjs';
 import { OnDispose } from '../../lifecycle';
@@ -10,7 +10,11 @@ import { TransportHandler } from '../handler';
  * abstract transport server.
  */
 @Abstract()
-export abstract class TransportServer implements OnDispose {
+export abstract class TransportServer<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket> implements OnDispose {
+
+    @Logger()
+    protected readonly logger!: ILogger;
+
     /**
      * transport protocol type.
      */
@@ -18,46 +22,18 @@ export abstract class TransportServer implements OnDispose {
     /**
      * transport handler.
      */
-    abstract get handler(): TransportHandler;
+    abstract get handler(): TransportHandler<TRequest, TResponse>;
     /**
      * send message.
      * @param stream send stream. 
      * @param respond respond.
      */
-    abstract send(stream: Observable<any>, respond: (data: WritePacket) => void | Promise<void>): Subscription;
-    /**
-     * handle event.
-     * @param packet 
-     */
-    abstract handleEvent(packet: ReadPacket): Promise<any>;
-    /**
-     * on dispose.
-     */
-    abstract onDispose(): Promise<void>;
-
-}
-
-
-/**
- * transport server.
- */
-@Injectable()
-export class DefaultTransportServer extends TransportServer implements OnDispose {
-
-    @Logger()
-    protected readonly logger!: ILogger;
-
-
-    constructor(readonly handler: TransportHandler, readonly protocol: Protocol) {
-        super();
-    }
-
     public send(
         stream: Observable<any>,
-        respond: (data: WritePacket) => unknown | Promise<unknown>,
+        respond: (data: TResponse) => unknown | Promise<unknown>,
     ): Subscription {
-        let dataBuffer: WritePacket[];
-        const scheduleOnNextTick = (data: WritePacket) => {
+        let dataBuffer: TResponse[];
+        const scheduleOnNextTick = (data: TResponse) => {
             if (!dataBuffer) {
                 dataBuffer = [data];
                 (typeof process === 'undefined' ? setTimeout : process.nextTick)(async () => {
@@ -75,16 +51,20 @@ export class DefaultTransportServer extends TransportServer implements OnDispose
         return stream
             .pipe(
                 catchError((error: any) => {
-                    scheduleOnNextTick({ error });
+                    scheduleOnNextTick({ error } as TResponse);
                     return EMPTY;
                 }),
-                finalize(() => scheduleOnNextTick({ disposed: true })),
+                finalize(() => scheduleOnNextTick({ disposed: true } as TResponse )),
             )
-            .subscribe((body: any) => scheduleOnNextTick({ body }));
+            .subscribe((body: any) => scheduleOnNextTick({ body } as TResponse));
     }
 
+    /**
+     * handle event.
+     * @param packet 
+     */
     public async handleEvent(
-        packet: ReadPacket
+        packet: TRequest
     ): Promise<any> {
         const resultOrStream = this.handler.handle(packet);
         if (isObservable(resultOrStream)) {
@@ -96,11 +76,17 @@ export class DefaultTransportServer extends TransportServer implements OnDispose
         }
     }
 
+    /**
+     * close server.
+     */
+    abstract close(): Promise<void>;
+
+    /**
+     * on dispose.
+     */
     async onDispose(): Promise<void> {
-        if (isFunction((this.handler as TransportHandler & OnDispose).onDispose)) {
-            await (this.handler as TransportHandler & OnDispose).onDispose();
-        }
+        await this.close();
     }
 
-
 }
+

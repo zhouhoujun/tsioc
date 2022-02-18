@@ -1,4 +1,4 @@
-import { ApplicationContext, ComponentScan, Repository, RequestParam, RouteMapping, StartupService, Transactional } from '@tsdi/core';
+import { Repository, RequestParam, RouteMapping, Transactional } from '@tsdi/core';
 import { lang } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { User } from '../models/models';
@@ -53,12 +53,3 @@ export class UserController {
 
 }
 
-
-@ComponentScan()
-export class RouteStartup implements StartupService {
-
-    async configureService(ctx: ApplicationContext): Promise<void> {
-        ctx.injector.register(UserController);
-    }
-
-}

@@ -26,18 +26,10 @@ export abstract class TransportHandler<TRequest extends ReadPacket = ReadPacket,
 @Abstract()
 export abstract class TransportBackend<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket> implements TransportHandler<TRequest, TResponse> {
     /**
-     * transport Protocol type.
-     */
-    abstract get protocol(): Protocol;
-    /**
      * transport handler.
      * @param req request input.
      */
     abstract handle(req: TRequest): Observable<TResponse>;
-    /**
-     * close backend.
-     */
-    abstract close(): Promise<any>;
 }
 
 /**

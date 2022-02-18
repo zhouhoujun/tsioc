@@ -1,14 +1,20 @@
+
 import { Injectable, Injector, InvocationContext } from '@tsdi/ioc';
-import { ClientFactory, ClientOption } from './factory';
-import { TransportBackend } from '../handler';
+import { ServerFactory, ServerOption } from '../server/factory';
+import { TransportBackend, TransportHandler } from '../handler';
 import { Protocol, ReadPacket, WritePacket } from '../packet';
-import { TransportClient } from './client';
-import { ClientTransportBackend } from './backend';
+import { TransportServer } from '../server/server';
+import { InterceptingHandler } from '../intercepting';
 
 @Injectable()
-export class MessageClinetTransportBackend extends ClientTransportBackend<ReadPacket, WritePacket> {
+export class MessageServer extends TransportServer<ReadPacket, WritePacket> {
     
-    connect(): Promise<any> {
+    constructor(readonly handler: TransportHandler) {
+        super();
+    }
+    
+    
+    startup(): Promise<any> {
         throw new Error('Method not implemented.');
     }
 
@@ -16,7 +22,7 @@ export class MessageClinetTransportBackend extends ClientTransportBackend<ReadPa
         return req.event === true;
     }
 
-    protected publish(req: ReadPacket<any>, callback: (packet: WritePacket<any>) => void): () => void {
+    protected publish(packet: ReadPacket<any>, callback: (packet: WritePacket<any>) => void): () => void {
         throw new Error('Method not implemented.');
     }
 
@@ -35,19 +41,20 @@ export class MessageClinetTransportBackend extends ClientTransportBackend<ReadPa
 }
 
 @Injectable()
-export class MessageClientFactory extends ClientFactory {
+export class MessageServerFactory extends ServerFactory {
 
     constructor(private injector: Injector) {
         super();
     }
-    create(options: ClientOption): TransportClient {
+    create(options: ServerOption): TransportServer {
         const context = InvocationContext.create(this.injector, {
             providers: [
-                { provide: TransportBackend, useClass: MessageClinetTransportBackend }
+                // { provide: TransportBackend, useClass: },
+                { provide: TransportHandler, useClass: InterceptingHandler }
             ],
             ...options
         });
-        return context.resolve(TransportClient);
+        return context.resolve(TransportServer);
     }
 
 }

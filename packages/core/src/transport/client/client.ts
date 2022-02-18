@@ -1,10 +1,11 @@
-import { Abstract, Inject, Injectable, InvocationContext, InvocationOption, isFunction, isNil } from '@tsdi/ioc';
+import { Abstract, InvocationOption, isNil } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
-import { Observable, throwError } from 'rxjs';
+import { connectable, defer, Observable, Observer, Subject, throwError } from 'rxjs';
+import { mergeMap } from 'rxjs/operators';
 import { OnDispose } from '../../lifecycle';
-import { InvalidMessageError } from '../error';
-import { Pattern, Protocol } from '../packet';
-import { TransportOption } from '../context';
+import { InvalidMessageError, TransportError } from '../error';
+import { Pattern, Protocol, ReadPacket, WritePacket } from '../packet';
+import { stringify, TransportOption } from '../context';
 import { TransportHandler } from '../handler';
 
 
@@ -12,7 +13,11 @@ import { TransportHandler } from '../handler';
  * abstract transport client.
  */
 @Abstract()
-export abstract class TransportClient implements OnDispose {
+export abstract class TransportClient<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket> implements OnDispose {
+
+    @Logger()
+    protected readonly logger!: ILogger;
+
     /**
      * transport protocol type.
      */
@@ -20,63 +25,111 @@ export abstract class TransportClient implements OnDispose {
     /**
      * transport handler.
      */
-    abstract get handler(): TransportHandler;
+    abstract get handler(): TransportHandler<TRequest, TResponse>;
+
+    /**
+     * connect.
+     */
+    abstract connect(): Promise<any>;
     /**
      * send message.
      * @param pattern message pattern.
      * @param body send data.
      */
-    abstract send<TResult = any, TInput = any>(pattern: Pattern, body: TInput, options?: InvocationOption): Observable<TResult>;
+    send<TInput>(pattern: Pattern, body: TInput, options?: InvocationOption): Observable<TResponse> {
+        if (isNil(pattern) || isNil(body)) {
+            return throwError(() => new InvalidMessageError());
+        }
+        return defer(async () => this.connect()).pipe(
+            mergeMap(
+                () => new Observable<TResponse>((observer) => {
+                    const callback = this.createObserver(observer);
+                    return this.publish(this.serializeRequest(pattern, body), callback);
+                })
+            ));
+    }
+
     /**
      * emit message
      * @param pattern event pattern.
      * @param body event data.
      */
-    abstract emit<TResult = any, TInput = any>(pattern: Pattern, body: TInput, options?: InvocationOption): Observable<TResult>;
+    emit<TInput = any>(pattern: Pattern, body: TInput, options?: InvocationOption): Observable<TResponse> {
+        if (isNil(pattern) || isNil(body)) {
+            return throwError(() => new InvalidMessageError());
+        }
+        const source = defer(async () => this.connect()).pipe(
+            mergeMap(() => this.dispatchEvent(this.serializeRequest(pattern, body))),
+        );
+        const connectableSource = connectable(source, {
+            connector: () => new Subject(),
+            resetOnDisconnect: false,
+        });
+        connectableSource.connect();
+        return connectableSource;
+    }
+
     /**
-     * request with option.
-     * @param option 
+     * publish handle.
+     * @param ctx transport context.
+     * @param callback 
      */
-    abstract request<TResult = any>(option: TransportOption): Observable<TResult>;
+    protected abstract publish(
+        req: TRequest,
+        callback: (packet: TResponse) => void,
+    ): () => void;
+
+    /**
+     * dispatch event.
+     * @param packet 
+     */
+    protected abstract dispatchEvent<T = any>(packet: TRequest): Promise<T>;
+
+
+    /**
+     * close client.
+     */
+    abstract close(): Promise<void>;
+
+
+    protected createObserver(
+        observer: Observer<TResponse>,
+    ): (packet: TResponse) => void {
+        return (response: TResponse) => {
+            if (response.error) {
+                return observer.error(this.serializeError(response.error));
+            } else if (response.body !== undefined && response.disposed) {
+                observer.next(this.serializeResponse(response));
+                return observer.complete();
+            } else if (response.disposed) {
+                return observer.complete();
+            }
+            observer.next(this.serializeResponse(response));
+        };
+
+    }
+
+    protected normalizePattern(pattern: Pattern): string {
+        return stringify(pattern);
+    }
+
+    protected serializeError(err: any): TransportError {
+        return err;
+    }
+
+    protected serializeRequest<T = any>(pattern: Pattern, body: T): TRequest {
+        return { pattern, body } as TRequest;
+    }
+
+    protected serializeResponse(response: any): TResponse {
+        return response;
+    }
+
     /**
      * on dispose.
      */
-    abstract onDispose(): Promise<void>
-}
-
-/**
- * default transport client.
- */
-@Injectable()
-export class DefaultTransportClient extends TransportClient {
-
-    @Logger()
-    protected readonly logger!: ILogger;
-
-    constructor(readonly handler: TransportHandler, readonly protocol: Protocol) {
-        super();
-    }
-    
-    send<TResult = any, TInput = any>(pattern: Pattern, body: TInput, options?: InvocationOption): Observable<TResult> {
-        return this.request({ ...options, pattern, body })
-    }
-
-    emit<TResult = any, TInput = any>(pattern: Pattern, body: TInput, options?: InvocationOption): Observable<TResult> {
-        return this.request({ ...options, pattern, body, event: true })
-    }
-
-    request<TResult = any>(option: TransportOption): Observable<TResult> {
-        if (isNil(option.pattern) || isNil(option.body)) {
-            return throwError(() => new InvalidMessageError());
-        }
-        return this.handler.handle(option) as Observable<TResult>;
-    }
-
     async onDispose(): Promise<void> {
-        if (isFunction((this.handler as TransportHandler & OnDispose).onDispose)) {
-            await (this.handler as TransportHandler & OnDispose).onDispose();
-        }
+        await this.close();
     }
-
 
 }

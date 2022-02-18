@@ -43,7 +43,6 @@ export const option = <ConnectionOptions>{
         TypeOrmModule
     ],
     declarations: [
-        // RouteStartup,
         UserController,
         RoleController
     ]
