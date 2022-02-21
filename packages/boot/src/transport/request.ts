@@ -1,8 +1,8 @@
-import { AbstractServer, Deserializer, TransportEvent, TransportRequest } from '@tsdi/core';
+import { TransportServer, Deserializer, TransportEvent, TransportRequest } from '@tsdi/core';
 import { isUndefined, ProviderIn } from '@tsdi/ioc';
 
 
-@ProviderIn(AbstractServer, Deserializer)
+@ProviderIn(TransportServer, Deserializer)
 export class IncomingRequestDeserializer implements Deserializer<TransportRequest | TransportEvent> {
     deserialize(
         value: any,

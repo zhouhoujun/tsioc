@@ -1,10 +1,10 @@
-export * from './grpc';
+export * from '../transport/grpc/grpc.server';
 export * from './kafka';
-export * from './modbus';
-export * from './mqtt';
-export * from './nats';
+export * from '../transport/modbus/modbus.server';
+export * from '../transport/mqtt/mqtt.server';
+export * from '../transport/nats/nats.server';
 export * from './redis';
-export * from './rmq';
+export * from '../transport/rmq/rmq.server';
 export * from './tcp';
 export * from './ws';
 

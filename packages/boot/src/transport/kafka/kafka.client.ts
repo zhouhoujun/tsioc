@@ -1,5 +1,5 @@
 import { Inject, Injectable, isUndefined, ModuleLoader } from '@tsdi/ioc';
-import { TransportClient, Deserializer, TransportRequest, TransportEvent, ReadPacket, Serializer, WritePacket, TransportHandler, ClientTransportBackend } from '@tsdi/core';
+import { TransportClient, Deserializer, TransportRequest, TransportEvent, ReadPacket, Serializer, WritePacket, TransportHandler, ClientTransportBackend, Protocol } from '@tsdi/core';
 import { Level } from '@tsdi/logs';
 import {
     BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerGroupJoinEvent, Producer,
@@ -7,7 +7,7 @@ import {
     KafkaMessage, KafkaRequest, KafkaRequestSerializer, LogEntry, logLevel, PartitionAssigner,
     ProducerConfig, ProducerRecord, KafkaResponseDeserializer, InvalidKafkaClientTopicError, GroupMember,
     GroupMemberAssignment, GroupState, MemberMetadata, KafkaParser, DEFAULT_BROKERS
-} from '../transforms/kafka';
+} from './kafka.transform';
 
 let kafkajs: any;
 let uuid: any;
@@ -19,7 +19,13 @@ let uuid: any;
         { provide: Deserializer, useClass: KafkaResponseDeserializer }
     ]
 })
-export class KafkaClient extends ClientTransportBackend {
+export class KafkaClient extends TransportClient {
+    get protocol(): Protocol {
+        throw new Error('Method not implemented.');
+    }
+    get handler(): TransportHandler<ReadPacket<any>, WritePacket<any>> {
+        throw new Error('Method not implemented.');
+    }
 
     protected client: Kafka | undefined;
     protected consumer!: Consumer;
@@ -180,7 +186,7 @@ export class KafkaClient extends ClientTransportBackend {
         return this.consumerAssignments;
     }
 
-    async onDispose(): Promise<void> {
+    async colse(): Promise<void> {
         this.producer && (await this.producer.disconnect());
         this.consumer && (await this.consumer.disconnect());
         this.producer = null!;

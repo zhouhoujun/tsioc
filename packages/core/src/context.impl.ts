@@ -73,7 +73,7 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
                 protocol: 'msg'
             });
         }
-        return this.client.send(pattern, data);
+        return this.client.send(pattern, data) as Observable<TResult>;
     }
 
     /**
