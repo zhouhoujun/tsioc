@@ -6,7 +6,7 @@ export class RedisClient extends TransportClient {
     connect(): Promise<void> {
         throw new Error('Method not implemented.');
     }
-    onDispose(): Promise<void> {
+    close(): Promise<void> {
         throw new Error('Method not implemented.');
     }
     protected publish(packet: ReadPacket<any>, callback: (packet: WritePacket<any>) => void): () => void {

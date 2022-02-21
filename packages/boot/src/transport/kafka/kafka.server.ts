@@ -8,7 +8,7 @@ import {
     ConsumerSubscribeTopic, EachMessagePayload, Kafka, KafkaConfig, KafkaHeaders, KafkaMessage,
     KafkaRequestSerializer, KafkaResponseDeserializer, LogEntry, logLevel, Message, Producer,
     ProducerConfig, ProducerRecord, RecordMetadata
-} from '../transforms/kafka';
+} from './kafka.transform';
 
 let kafkajs: any;
 

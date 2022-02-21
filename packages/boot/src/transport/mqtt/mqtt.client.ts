@@ -1,9 +1,9 @@
 import { Injectable, lang } from '@tsdi/ioc';
-import { TransportClient, Deserializer, ReadPacket, Serializer, TransportHandler, WritePacket } from '@tsdi/core';
+import { TransportClient, Deserializer, ReadPacket, Serializer, TransportHandler, WritePacket, Protocol } from '@tsdi/core';
 import { MqttClient, connect, IClientOptions } from 'mqtt';
 import { EmptyError, first, fromEvent, lastValueFrom, map, merge, share, take, tap } from 'rxjs';
 import { MqttRecordSerializer } from './mqtt.transform';
-import { IncomingResponseDeserializer } from '../../transforms/response';
+import { IncomingResponseDeserializer } from '../response';
 
 
 @Injectable({
@@ -13,13 +13,16 @@ import { IncomingResponseDeserializer } from '../../transforms/response';
     ]
 })
 export class MQTTClient extends TransportClient {
+    get protocol(): Protocol {
+        throw new Error('Method not implemented.');
+    }
     protected mqttClient: MqttClient | undefined;
     protected connection: Promise<any> | undefined;
     constructor(
-        handler: TransportHandler,
+        readonly handler: TransportHandler,
         private url: string,
         private options: IClientOptions) {
-        super(handler)
+        super()
     }
 
     async connect(): Promise<void> {
@@ -60,7 +63,7 @@ export class MQTTClient extends TransportClient {
 
     }
 
-    async onDispose(): Promise<void> {
+    async close(): Promise<void> {
         const defer = lang.defer();
         this.mqttClient?.end(undefined, undefined, err => err ? defer.reject(err) : defer.resolve);
         await defer.promise;

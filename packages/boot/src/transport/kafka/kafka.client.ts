@@ -20,6 +20,7 @@ let uuid: any;
     ]
 })
 export class KafkaClient extends TransportClient {
+
     get protocol(): Protocol {
         throw new Error('Method not implemented.');
     }
@@ -186,7 +187,7 @@ export class KafkaClient extends TransportClient {
         return this.consumerAssignments;
     }
 
-    async colse(): Promise<void> {
+    async close(): Promise<void> {
         this.producer && (await this.producer.disconnect());
         this.consumer && (await this.consumer.disconnect());
         this.producer = null!;

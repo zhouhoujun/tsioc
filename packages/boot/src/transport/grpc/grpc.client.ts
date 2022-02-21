@@ -1,13 +1,19 @@
-import { TransportClient, ReadPacket, WritePacket } from '@tsdi/core';
+import { TransportClient, ReadPacket, WritePacket, Protocol, TransportHandler } from '@tsdi/core';
 import { Observable } from 'rxjs';
 
 
 export class GrpcClient extends TransportClient {
+    get protocol(): Protocol {
+        throw new Error('Method not implemented.');
+    }
+    get handler(): TransportHandler<ReadPacket<any>, WritePacket<any>> {
+        throw new Error('Method not implemented.');
+    }
     
     connect(): Promise<void> {
         throw new Error('Method not implemented.');
     }
-    onDispose(): Promise<void> {
+    close(): Promise<void> {
         throw new Error('Method not implemented.');
     }
     protected publish(packet: ReadPacket<any>, callback: (packet: WritePacket<any>) => void): () => void {
