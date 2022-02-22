@@ -15,8 +15,8 @@ import { Injector, MethodType } from '../injector';
  * reflective.
  */
 export class Reflective {
-    constructor() {
-    }
+
+    constructor() { }
 
     /**
      * Invoke the underlying operation using the given {@code context}.
