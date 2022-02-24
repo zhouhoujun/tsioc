@@ -41,7 +41,7 @@ export interface WritePacket<T = any> extends Record<string, any> {
     body?: T;
 }
 
-export type TransportEvent = ReadPacket;
+export type TransportEvent<T = any> = ReadPacket<T>;
 export type TransportRequest = Required<{ id: string }> & ReadPacket;
 export type TransportResponse = Required<{ id: string }> & WritePacket;
 

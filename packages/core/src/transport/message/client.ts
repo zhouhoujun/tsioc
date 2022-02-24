@@ -6,7 +6,7 @@ import { TransportClient } from '../client/client';
 import { InterceptingHandler } from '../intercepting';
 
 @Injectable()
-export class MessageClinet extends TransportClient<ReadPacket, WritePacket> {
+export class MessageClinet extends TransportClient {
 
     constructor(readonly handler: TransportHandler) {
         super();
@@ -14,10 +14,6 @@ export class MessageClinet extends TransportClient<ReadPacket, WritePacket> {
 
     connect(): Promise<any> {
         throw new Error('Method not implemented.');
-    }
-
-    protected isEvent(req: ReadPacket<any>): boolean {
-        return req.event === true;
     }
 
     protected publish(req: ReadPacket<any>, callback: (packet: WritePacket<any>) => void): () => void {
