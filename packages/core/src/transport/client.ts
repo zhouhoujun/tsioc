@@ -4,7 +4,7 @@ import { connectable, defer, Observable, Observer, Subject, throwError } from 'r
 import { mergeMap } from 'rxjs/operators';
 import { OnDispose } from '../lifecycle';
 import { InvalidMessageError, TransportError } from './error';
-import { Pattern, Protocol, ReadPacket, RequestMethod, TransportEvent, WritePacket } from './packet';
+import { Pattern, Protocol, TransportRequest, TransportResponse, RequestMethod, TransportEvent } from './packet';
 import { stringify, TransportContext } from './context';
 import { TransportHandler } from './handler';
 
@@ -19,7 +19,7 @@ export abstract class TransportClient implements OnDispose {
     /**
      * transport handler.
      */
-    abstract get handler(): TransportHandler<ReadPacket, WritePacket>;
+    abstract get handler(): TransportHandler<TransportRequest, TransportResponse>;
     /**
      * connect.
      */
@@ -82,7 +82,7 @@ export abstract class TransportClient implements OnDispose {
 
     /**
      * Constructs a request which interprets the body as an `ArrayBuffer`
-     * and returns the full {@link WritePacket}.
+     * and returns the full {@link TransportResponse}.
      * @param pattern 
      * @param options  The options to send with the request.
      * 
@@ -98,7 +98,7 @@ export abstract class TransportClient implements OnDispose {
         reportProgress?: boolean,
         responseType?: 'arraybuffer',
         withCredentials?: boolean,
-    }): Observable<WritePacket<ArrayBuffer>>;
+    }): Observable<TransportResponse<ArrayBuffer>>;
 
     /**
      * Constructs a request which interprets the body as a `Blob` and returns the full `HttpResponse`.
@@ -106,7 +106,7 @@ export abstract class TransportClient implements OnDispose {
      * @param pattern 
      * @param options the options to send with the request.
      * 
-     * @return An `Observable` of the {@link WritePacket}, with the response body of type `Blob`. 
+     * @return An `Observable` of the {@link TransportResponse}, with the response body of type `Blob`. 
      */
     send(pattern: Pattern, options?: {
         body?: any,
@@ -118,7 +118,7 @@ export abstract class TransportClient implements OnDispose {
         reportProgress?: boolean,
         responseType?: 'blob',
         withCredentials?: boolean,
-    }): Observable<WritePacket<Blob>>;
+    }): Observable<TransportResponse<Blob>>;
 
     /**
      * send request.
@@ -135,7 +135,7 @@ export abstract class TransportClient implements OnDispose {
         reportProgress?: boolean,
         responseType?: 'text',
         withCredentials?: boolean,
-    }): Observable<WritePacket<string>>;
+    }): Observable<TransportResponse<string>>;
 
     /**
      * send request.
@@ -175,7 +175,7 @@ export abstract class TransportClient implements OnDispose {
         }
         return defer(async () => this.connect()).pipe(
             mergeMap(
-                () => new Observable<WritePacket>((observer) => {
+                () => new Observable<TransportResponse>((observer) => {
                     const callback = this.createObserver(observer);
                     return this.publish(this.serializeRequest(pattern, options), callback);
                 })
@@ -187,7 +187,7 @@ export abstract class TransportClient implements OnDispose {
      * @param pattern event pattern.
      * @param body event data.
      */
-    emit<TInput = any>(pattern: Pattern, body: TInput): Observable<WritePacket> {
+    emit<TInput = any>(pattern: Pattern, body: TInput): Observable<TransportResponse> {
         if (isNil(pattern) || isNil(body)) {
             return throwError(() => new InvalidMessageError());
         }
@@ -208,15 +208,15 @@ export abstract class TransportClient implements OnDispose {
      * @param callback 
      */
     protected abstract publish(
-        req: ReadPacket,
-        callback: (packet: WritePacket) => void,
+        req: TransportRequest,
+        callback: (packet: TransportResponse) => void,
     ): () => void;
 
     /**
      * dispatch event.
      * @param packet 
      */
-    protected abstract dispatchEvent<T = any>(packet: WritePacket): Promise<T>;
+    protected abstract dispatchEvent<T = any>(packet: TransportResponse): Promise<T>;
 
     /**
      * create observer.
@@ -224,9 +224,9 @@ export abstract class TransportClient implements OnDispose {
      * @returns 
      */
     protected createObserver(
-        observer: Observer<WritePacket>,
-    ): (packet: WritePacket) => void {
-        return (response: WritePacket) => {
+        observer: Observer<TransportResponse>,
+    ): (packet: TransportResponse) => void {
+        return (response: TransportResponse) => {
             if (response.error) {
                 return observer.error(this.serializeError(response.error));
             } else if (response.body !== undefined && response.disposed) {
@@ -262,11 +262,11 @@ export abstract class TransportClient implements OnDispose {
         reportProgress?: boolean,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean
-    }): ReadPacket {
-        return { pattern, ...options } as ReadPacket;
+    }): TransportRequest {
+        return { pattern, ...options } as TransportRequest;
     }
 
-    protected serializeResponse(response: any): WritePacket {
+    protected serializeResponse(response: any): TransportResponse {
         return response;
     }
 

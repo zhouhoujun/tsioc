@@ -1,10 +1,10 @@
 import { TransportClient } from '../client';
 import { TransportHandler } from '../handler';
-import { ReadPacket, WritePacket } from '../packet';
+import { TransportRequest, TransportResponse } from '../packet';
 
 
 export class RedisClient extends TransportClient {
-    get handler(): TransportHandler<ReadPacket<any>, WritePacket<any>> {
+    get handler(): TransportHandler<TransportRequest<any>, TransportResponse<any>> {
         throw new Error('Method not implemented.');
     }
     
@@ -14,10 +14,10 @@ export class RedisClient extends TransportClient {
     close(): Promise<void> {
         throw new Error('Method not implemented.');
     }
-    protected publish(packet: ReadPacket<any>, callback: (packet: WritePacket<any>) => void): () => void {
+    protected publish(packet: TransportRequest<any>, callback: (packet: TransportResponse<any>) => void): () => void {
         throw new Error('Method not implemented.');
     }
-    protected dispatchEvent<T = any>(packet: ReadPacket<any>): Promise<T> {
+    protected dispatchEvent<T = any>(packet: TransportRequest<any>): Promise<T> {
         throw new Error('Method not implemented.');
     }
 

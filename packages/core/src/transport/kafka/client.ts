@@ -1,5 +1,5 @@
 import { Inject, Injectable, isUndefined, ModuleLoader } from '@tsdi/ioc';
-import { TransportClient, Deserializer, TransportRequest, TransportEvent, ReadPacket, Serializer, WritePacket, TransportHandler, Protocol } from '@tsdi/core';
+import { TransportClient, Deserializer, TransportRequest, TransportEvent, TransportRequest, Serializer, TransportResponse, TransportHandler, Protocol } from '@tsdi/core';
 import { Level } from '@tsdi/logs';
 import {
     BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerGroupJoinEvent, Producer,
@@ -24,7 +24,7 @@ export class KafkaClient extends TransportClient {
     get protocol(): Protocol {
         throw new Error('Method not implemented.');
     }
-    get handler(): TransportHandler<ReadPacket<any>, WritePacket<any>> {
+    get handler(): TransportHandler<TransportRequest<any>, TransportResponse<any>> {
         throw new Error('Method not implemented.');
     }
 
@@ -195,7 +195,7 @@ export class KafkaClient extends TransportClient {
         this.client = null!;
     }
 
-    protected publish(partialPacket: ReadPacket<any>, callback: (packet: WritePacket<any>) => void): () => void {
+    protected publish(partialPacket: TransportRequest<any>, callback: (packet: TransportResponse<any>) => void): () => void {
         const packet = this.assignPacketId(partialPacket);
         try {
             const pattern = this.normalizePattern(partialPacket.pattern);
@@ -221,7 +221,7 @@ export class KafkaClient extends TransportClient {
         }
     }
 
-    protected assignPacketId(packet: ReadPacket): TransportRequest {
+    protected assignPacketId(packet: TransportRequest): TransportRequest {
         const id = uuid();
         return { ...packet, id };
     }

@@ -1,9 +1,9 @@
-import { ReadPacket, Serializer } from '@tsdi/core';
+import { TransportRequest, Serializer } from '@tsdi/core';
 import { IClientPublishOptions } from 'mqtt';
 
 
-export class MqttRecordSerializer implements Serializer<ReadPacket, ReadPacket & Partial<MqttRecord>>{
-    serialize(packet: ReadPacket | any): ReadPacket & Partial<MqttRecord> {
+export class MqttRecordSerializer implements Serializer<TransportRequest, TransportRequest & Partial<MqttRecord>>{
+    serialize(packet: TransportRequest | any): TransportRequest & Partial<MqttRecord> {
         if (
             packet?.data &&
             typeof packet.data === 'object' &&

@@ -1,9 +1,9 @@
 import { TransportHandler } from '../handler';
-import { ReadPacket, WritePacket } from '../packet';
+import { TransportRequest, TransportResponse } from '../packet';
 import { TransportServer } from '../server';
 
 export class RedisServer extends TransportServer {
-    get handler(): TransportHandler<ReadPacket<any>, WritePacket<any>> {
+    get handler(): TransportHandler<TransportRequest<any>, TransportResponse<any>> {
         throw new Error('Method not implemented.');
     }
     close(): Promise<void> {

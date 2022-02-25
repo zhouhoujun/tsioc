@@ -1,6 +1,6 @@
 import { Abstract, DefaultInvocationContext, Injector, InvocationContext, InvokeArguments, isNumber, isPlainObject, isPromise, isString } from '@tsdi/ioc';
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
-import { Pattern, Protocol, ReadPacket, WritePacket } from './packet';
+import { Pattern, Protocol, TransportRequest, TransportResponse } from './packet';
 import { TransportStatus } from './handler';
 import { TransportError } from './error';
 
@@ -19,7 +19,7 @@ export interface TransportOption<T = any> extends InvokeArguments {
  * transport context.
  */
 @Abstract()
-export abstract class TransportContext<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket> extends DefaultInvocationContext<any> {
+export abstract class TransportContext<TRequest extends TransportRequest = TransportRequest, TResponse extends TransportResponse = TransportResponse> extends DefaultInvocationContext<any> {
     /**
      * transport request.
      */
@@ -132,7 +132,7 @@ export abstract class TransportContextFactory {
      * @param parent parent injector or parent invocation context.
      * @param options transport options. typeof {@link TransportOption}.
      */
-    abstract create<TRequest extends ReadPacket, TResponse extends WritePacket>(parent: Injector | InvocationContext, options: TransportOption<TRequest>): TransportContext<TRequest, TResponse>;
+    abstract create<TRequest extends TransportRequest, TResponse extends TransportResponse>(parent: Injector | InvocationContext, options: TransportOption<TRequest>): TransportContext<TRequest, TResponse>;
 }
 
 /**

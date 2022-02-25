@@ -11,7 +11,7 @@ import { StartupSet } from './startup';
 import { ModuleOption } from './module.factory';
 import { ModuleRef } from './module.ref';
 import { ApplicationArguments } from './args';
-import { Pattern, WritePacket } from './transport/packet';
+import { Pattern, TransportResponse } from './transport/packet';
 
 
 /**
@@ -48,7 +48,7 @@ export abstract class ApplicationContext extends InvocationContext implements De
      * @param data send data.
      * @returns instance of {@link WritePacket}.
      */
-    abstract send<TResult = WritePacket, TInput = any>(pattern: Pattern, data: TInput): Observable<TResult>;
+    abstract send<TResult = TransportResponse, TInput = any>(pattern: Pattern, data: TInput): Observable<TResult>;
     /**
      * get log manager.
      */

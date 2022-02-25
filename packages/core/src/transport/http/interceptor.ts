@@ -1,6 +1,6 @@
 import { Injectable, InvocationContext, tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { ReadPacket, WritePacket } from '../packet';
+import { TransportRequest, TransportResponse } from '../packet';
 import { TransportHandler } from '../handler';
 import { InterceptorHandler, TransportInterceptor } from '../interceptor';
 import { HttpBackend } from './handler';
@@ -10,12 +10,12 @@ import { HttpBackend } from './handler';
 /**
  * http transport interceptors.
  */
-export const HTTP_INTERCEPTORS = tokenId<TransportInterceptor<ReadPacket, WritePacket>[]>('HTTP_INTERCEPTORS');
+export const HTTP_INTERCEPTORS = tokenId<TransportInterceptor<TransportRequest, TransportResponse>[]>('HTTP_INTERCEPTORS');
 
 
 /**
  * An injectable {@link HttpHandler} that applies multiple interceptors
- * to a request before passing it to the given `TransportBackend`.
+ * to a request before passing it to the given {@link HttpBackend}.
  *
  * The interceptors are loaded lazily from the injector, to allow
  * interceptors to themselves inject classes depending indirectly
@@ -23,7 +23,7 @@ export const HTTP_INTERCEPTORS = tokenId<TransportInterceptor<ReadPacket, WriteP
  * @see `TransportInterceptor`
  */
 @Injectable()
-export class HttpInterceptingHandler<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket>
+export class HttpInterceptingHandler<TRequest extends TransportRequest = TransportRequest, TResponse extends TransportResponse = TransportResponse>
  implements TransportHandler<TRequest, TResponse> {
     private chain!: TransportHandler<TRequest, TResponse>;
 

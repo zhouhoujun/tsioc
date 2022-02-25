@@ -1,7 +1,7 @@
 import { Injectable, Injector, InvocationContext } from '@tsdi/ioc';
 import { TransportClient, ClientFactory, ClientOption } from '../client';
 import { TransportBackend, TransportHandler } from '../handler';
-import { Protocol, ReadPacket, WritePacket } from '../packet';
+import { Protocol, TransportRequest, TransportResponse } from '../packet';
 
 @Injectable()
 export class MessageClinet extends TransportClient {
@@ -14,11 +14,11 @@ export class MessageClinet extends TransportClient {
         throw new Error('Method not implemented.');
     }
 
-    protected publish(req: ReadPacket<any>, callback: (packet: WritePacket<any>) => void): () => void {
+    protected publish(req: TransportRequest<any>, callback: (packet: TransportResponse<any>) => void): () => void {
         throw new Error('Method not implemented.');
     }
 
-    protected dispatchEvent<T = any>(packet: ReadPacket<any>): Promise<T> {
+    protected dispatchEvent<T = any>(packet: TransportRequest<any>): Promise<T> {
         throw new Error('Method not implemented.');
     }
 

@@ -2,7 +2,7 @@ import { Abstract } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { catchError, finalize, Observable, Subscription, EMPTY, isObservable, connectable, Subject } from 'rxjs';
 import { OnDispose } from '../lifecycle';
-import { Protocol, ReadPacket, WritePacket } from './packet';
+import { Protocol, TransportRequest, TransportResponse } from './packet';
 import { TransportHandler } from './handler';
 
 
@@ -10,7 +10,7 @@ import { TransportHandler } from './handler';
  * abstract transport server.
  */
 @Abstract()
-export abstract class TransportServer<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket> implements OnDispose {
+export abstract class TransportServer<TRequest extends TransportRequest = TransportRequest, TResponse extends TransportResponse = TransportResponse> implements OnDispose {
 
     @Logger()
     protected readonly logger!: ILogger;

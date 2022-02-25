@@ -3,19 +3,6 @@
  */
 export type Pattern = string | number | Record<string, string | number | Record<string, string | number>>;
 
-/**
- * read packet.
- */
-export interface ReadPacket<T = any> extends Record<string, any> {
-    /**
-     * request pattern.
-     */
-    pattern: Pattern;
-    /**
-     * packet data.
-     */
-    body: T;
-}
 
 /**
  * request method.
@@ -35,19 +22,38 @@ export type HttpProtocol = 'http' | 'https';
  */
 export type Protocol = 'tcp' | 'grpc' | 'rmq' | 'kafka' | 'redis' | 'amqp' | 'ssl' | 'msg' | HttpProtocol | MqttProtocol;
 
+
 /**
- * write packet.
+ * Transport Request.
  */
-export interface WritePacket<T = any> extends Record<string, any> {
+ export interface TransportRequest<T = any> {
+    /**
+     * request pattern.
+     */
+    pattern: Pattern;
+    /**
+     * request headers
+     */
+    headers?: Record<string, string | string[] | number>;
+    /**
+     * packet data.
+     */
+    body?: T;
+}
+
+
+/**
+ * Transport esponse.
+ */
+ export interface TransportResponse<T = any>{
     error?: Error;
+    type?: number;
     disposed?: boolean;
     status?: string | number;
     ok?: boolean;
     body?: T;
 }
 
-export type TransportEvent<T = any> = ReadPacket<T>;
-export type TransportRequest = Required<{ id: string }> & ReadPacket;
-export type TransportResponse = Required<{ id: string }> & WritePacket;
+export type TransportEvent<T = any> = TransportResponse<T>;
 
 export type HeadersOption = string[][] | Record<string, string | string[] | number> | string;

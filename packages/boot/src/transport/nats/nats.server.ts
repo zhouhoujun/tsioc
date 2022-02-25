@@ -1,10 +1,10 @@
-import { Protocol, ReadPacket, TransportHandler, TransportServer, WritePacket } from '@tsdi/core';
+import { Protocol, TransportRequest, TransportHandler, TransportServer, TransportResponse } from '@tsdi/core';
 
 export class NATSServer extends TransportServer {
     get protocol(): Protocol {
         throw new Error('Method not implemented.');
     }
-    get handler(): TransportHandler<ReadPacket<any>, WritePacket<any>> {
+    get handler(): TransportHandler<TransportRequest<any>, TransportResponse<any>> {
         throw new Error('Method not implemented.');
     }
     
