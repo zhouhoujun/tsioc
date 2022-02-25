@@ -1,7 +1,7 @@
 import { Injectable } from '@tsdi/ioc';
-import { TransportHandler } from '../handler';
 import { TransportClient } from '../client';
 import { TransportRequest, TransportResponse } from '../packet';
+import { HttpHandler } from './handler';
 
 
 
@@ -21,7 +21,7 @@ export class HttpClient extends TransportClient {
         throw new Error('Method not implemented.');
     }
 
-    constructor(readonly handler: TransportHandler) {
+    constructor(readonly handler: HttpHandler) {
         super();
     }
 

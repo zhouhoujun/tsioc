@@ -8,7 +8,7 @@ import { HttpResponse } from './response';
  * http handler.
  */
 @Abstract()
-export abstract class HttpHandler implements TransportHandler {
+export abstract class HttpHandler implements TransportHandler<HttpRequest, HttpResponse> {
     /**
      * http transport handler.
      * @param req http request input.
@@ -20,7 +20,7 @@ export abstract class HttpHandler implements TransportHandler {
  * http backend.
  */
 @Abstract()
-export abstract class HttpBackend implements TransportBackend {
+export abstract class HttpBackend implements TransportBackend<HttpRequest, HttpResponse> {
     /**
      * http transport handler.
      * @param req http request input.

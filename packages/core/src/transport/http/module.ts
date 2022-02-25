@@ -25,8 +25,7 @@ export class HttpClientModule {
         HttpClientModule
     ],
     providers: [
-        HttpServer,
-        { provide: HttpHandler, useClass: HttpInterceptingHandler }
+        HttpServer
     ]
 })
 export class HttpModule {

@@ -1,16 +1,18 @@
 import { Injectable, InvocationContext, tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { TransportRequest, TransportResponse } from '../packet';
 import { TransportHandler } from '../handler';
 import { InterceptorHandler, TransportInterceptor } from '../interceptor';
-import { HttpBackend } from './handler';
+import { HttpHandler, HttpBackend } from './handler';
+import { HttpRequest } from './request';
+import { HttpResponse } from './response';
+
 
 
 
 /**
  * http transport interceptors.
  */
-export const HTTP_INTERCEPTORS = tokenId<TransportInterceptor<TransportRequest, TransportResponse>[]>('HTTP_INTERCEPTORS');
+export const HTTP_INTERCEPTORS = tokenId<TransportInterceptor<HttpRequest, HttpResponse>[]>('HTTP_INTERCEPTORS');
 
 
 /**
@@ -23,17 +25,17 @@ export const HTTP_INTERCEPTORS = tokenId<TransportInterceptor<TransportRequest, 
  * @see `TransportInterceptor`
  */
 @Injectable()
-export class HttpInterceptingHandler<TRequest extends TransportRequest = TransportRequest, TResponse extends TransportResponse = TransportResponse>
- implements TransportHandler<TRequest, TResponse> {
-    private chain!: TransportHandler<TRequest, TResponse>;
+export class HttpInterceptingHandler
+ implements TransportHandler<HttpRequest, HttpResponse> {
+    private chain!: HttpHandler;
 
     constructor(private backend: HttpBackend, private context: InvocationContext) { }
 
-    handle(req: TRequest): Observable<TResponse> {
+    handle(req: HttpRequest): Observable<HttpResponse> {
         if (!this.chain) {
             const interceptors = this.context.get(HTTP_INTERCEPTORS);
             this.chain = interceptors.reduceRight(
-                (next, interceptor) => new InterceptorHandler(next, interceptor), this.backend as TransportHandler) as TransportHandler<TRequest, TResponse>;
+                (next, interceptor) => new InterceptorHandler(next, interceptor), this.backend);
         }
         return this.chain.handle(req);
     }

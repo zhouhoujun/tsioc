@@ -7,7 +7,7 @@ import { TransportHandler } from './handler';
 /**
  * Transport interceptor.
  */
-export interface TransportInterceptor<TRequest extends TransportRequest = TransportRequest, TResponse extends TransportResponse = TransportResponse> {
+export interface TransportInterceptor<TRequest extends TransportRequest, TResponse extends TransportResponse> {
     /**
      * the method to implemet interceptor.
      * @param req request.
@@ -16,8 +16,10 @@ export interface TransportInterceptor<TRequest extends TransportRequest = Transp
     intercept(req: TRequest, next: TransportHandler<TRequest, TResponse>): Observable<TResponse>;
 }
 
-
-export class InterceptorHandler<TRequest extends TransportRequest = TransportRequest, TResponse extends TransportResponse = TransportResponse> implements TransportHandler {
+/**
+ * Interceptor Handler.
+ */
+export class InterceptorHandler<TRequest extends TransportRequest, TResponse extends TransportResponse> implements TransportHandler<TRequest, TResponse> {
     constructor(private next: TransportHandler<TRequest, TResponse>, private interceptor: TransportInterceptor<TRequest, TResponse>) { }
 
     handle(req: TRequest): Observable<TResponse> {
