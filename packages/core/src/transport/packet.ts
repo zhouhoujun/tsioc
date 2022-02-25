@@ -18,6 +18,11 @@ export interface ReadPacket<T = any> extends Record<string, any> {
 }
 
 /**
+ * request method.
+ */
+export type RequestMethod = 'HEAD' | 'OPTIONS' | 'GET' | 'DELETE' | 'PATCH' | 'POST' | 'PUT';
+
+/**
  * mqtt protocol.
  */
 export type MqttProtocol = 'mqtt' | 'mqtts' | 'tls' | 'ws' | 'wss' | 'wxs' | 'alis';

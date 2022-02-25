@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { CONFIGURATION, PROCESS_ROOT } from './metadata/tk';
 import { ApplicationConfiguration, ConfigureManager } from './configure/config';
 import { Pattern, WritePacket } from './transport/packet';
-import { ClientFactory } from './transport/client/factory';
+import { ClientFactory } from './transport/client';
 import { ApplicationContext, ApplicationFactory, BootstrapOption, EnvironmentOption } from './context';
 import { RunnableFactory, RunnableFactoryResolver, RunnableSet, RunnableRef } from './runnable';
 import { ModuleRef } from './module.ref';

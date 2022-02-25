@@ -5,6 +5,7 @@ import { Middleware } from './middleware';
 import { Middlewares, MiddlewareType } from './middlewares';
 import { PipeTransform } from '../../pipes/pipe';
 import { Route } from './route';
+import { RequestMethod } from '../packet';
 
 
 /**
@@ -145,10 +146,6 @@ export class MappingRouterResolver implements RouterResolver {
     }
 }
 
-/**
- * request method.
- */
-export type RequestMethod = 'HEAD' | 'OPTIONS' | 'GET' | 'DELETE' | 'PATCH' | 'POST' | 'PUT';
 
 /**
  * route mapping metadata.

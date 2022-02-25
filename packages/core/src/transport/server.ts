@@ -1,9 +1,9 @@
 import { Abstract } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { catchError, finalize, Observable, Subscription, EMPTY, isObservable, connectable, Subject } from 'rxjs';
-import { OnDispose } from '../../lifecycle';
-import { Protocol, ReadPacket, WritePacket } from '../packet';
-import { TransportHandler } from '../handler';
+import { OnDispose } from '../lifecycle';
+import { Protocol, ReadPacket, WritePacket } from './packet';
+import { TransportHandler } from './handler';
 
 
 /**
@@ -14,11 +14,6 @@ export abstract class TransportServer<TRequest extends ReadPacket = ReadPacket, 
 
     @Logger()
     protected readonly logger!: ILogger;
-
-    /**
-     * transport protocol type.
-     */
-    abstract get protocol(): Protocol;
     /**
      * transport handler.
      */
@@ -90,3 +85,27 @@ export abstract class TransportServer<TRequest extends ReadPacket = ReadPacket, 
 
 }
 
+/**
+ * server option.
+ */
+ export interface ServerOption extends Record<string, any> {
+    url?: string;
+    host?: string;
+    port?: number;
+    /**
+     * transport protocol type.
+     */
+    protocol: Protocol;
+}
+
+/**
+ * server abstract factory.
+ */
+@Abstract()
+export abstract class ServerFactory {
+    /**
+     * create by options.
+     * @param options 
+     */
+    abstract create(options: ServerOption): TransportServer;
+}

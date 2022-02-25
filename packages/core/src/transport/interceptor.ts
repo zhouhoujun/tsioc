@@ -15,3 +15,12 @@ export interface TransportInterceptor<TRequest extends ReadPacket = ReadPacket, 
      */
     intercept(req: TRequest, next: TransportHandler<TRequest, TResponse>): Observable<TResponse>;
 }
+
+
+export class InterceptorHandler<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket> implements TransportHandler {
+    constructor(private next: TransportHandler<TRequest, TResponse>, private interceptor: TransportInterceptor<TRequest, TResponse>) { }
+
+    handle(req: TRequest): Observable<TResponse> {
+        return this.interceptor.intercept(req, this.next);
+    }
+}

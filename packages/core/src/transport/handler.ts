@@ -1,18 +1,16 @@
-import { Abstract } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { ReadPacket, Protocol, WritePacket } from './packet';
+import { ReadPacket, WritePacket } from './packet';
 
 
 /**
  * Transport handler.
  */
-@Abstract()
-export abstract class TransportHandler<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket> {
+export interface TransportHandler<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket> {
     /**
      * transport handler.
      * @param req request input.
      */
-    abstract handle(req: TRequest): Observable<TResponse>;
+    handle(req: TRequest): Observable<TResponse>;
 }
 
 /**
@@ -23,26 +21,14 @@ export abstract class TransportHandler<TRequest extends ReadPacket = ReadPacket,
  * When injected, `TransportBackend` dispatches requests directly to the backend, without going
  * through the interceptor chain.
  */
-@Abstract()
-export abstract class TransportBackend<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket> implements TransportHandler<TRequest, TResponse> {
+export interface TransportBackend<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket> extends TransportHandler<TRequest, TResponse> {
     /**
      * transport handler.
      * @param req request input.
      */
-    abstract handle(req: TRequest): Observable<TResponse>;
+    handle(req: TRequest): Observable<TResponse>;
 }
 
-/**
- * event handler.
- */
-@Abstract()
-export abstract class EventHandler<TRequest extends ReadPacket = ReadPacket, TResponse extends WritePacket = WritePacket> implements TransportHandler<TRequest, TResponse> {
-    /**
-     * transport event handler.
-     * @param req request data.
-     */
-    abstract handle(req: TRequest): Observable<TResponse>;
-}
 
 /**
  * transport status.

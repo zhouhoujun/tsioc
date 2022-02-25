@@ -2,13 +2,11 @@ import { Abstract, isNil } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { connectable, defer, Observable, Observer, Subject, throwError } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
-import { OnDispose } from '../../lifecycle';
-import { InvalidMessageError, TransportError } from '../error';
-import { Pattern, Protocol, ReadPacket, TransportEvent, WritePacket } from '../packet';
-import { stringify } from '../context';
-import { TransportHandler } from '../handler';
-import { RequestMethod, TransportContext } from '..';
-
+import { OnDispose } from '../lifecycle';
+import { InvalidMessageError, TransportError } from './error';
+import { Pattern, Protocol, ReadPacket, RequestMethod, TransportEvent, WritePacket } from './packet';
+import { stringify, TransportContext } from './context';
+import { TransportHandler } from './handler';
 
 /**
  * abstract transport client.
@@ -18,16 +16,10 @@ export abstract class TransportClient implements OnDispose {
 
     @Logger()
     protected readonly logger!: ILogger;
-
-    /**
-     * transport protocol type.
-     */
-    abstract get protocol(): Protocol;
     /**
      * transport handler.
      */
     abstract get handler(): TransportHandler<ReadPacket, WritePacket>;
-
     /**
      * connect.
      */
@@ -51,7 +43,6 @@ export abstract class TransportClient implements OnDispose {
      * Constructs a request which interprets the body as a JSON object and returns the full event
      * stream.
      *
-     * @param method  The HTTP method.
      * @param url     The endpoint URL.
      * @param options The HTTP options to send with the request.
      *
@@ -68,10 +59,34 @@ export abstract class TransportClient implements OnDispose {
         responseType?: 'json',
         withCredentials?: boolean,
     }): Observable<TransportEvent<R>>;
+
     /**
-     * send request.
+     * Constructs a request which interprets the body as a JSON object and returns the full event
+     * stream.
+     *
+     * @param url     The endpoint URL.
+     * @param options The options to send with the request.
+     *
+     * @return An `Observable` of the response, with the response body of type string.
+     */
+    send<R>(pattern: Pattern, options: {
+        body?: any,
+        method?: RequestMethod,
+        headers?: { [header: string]: string | string[] },
+        context?: TransportContext,
+        reportProgress?: boolean, observe: 'events',
+        params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
+        responseType?: 'text',
+        withCredentials?: boolean,
+    }): Observable<TransportEvent<string>>;
+
+    /**
+     * Constructs a request which interprets the body as an `ArrayBuffer`
+     * and returns the full {@link WritePacket}.
      * @param pattern 
-     * @param options 
+     * @param options  The options to send with the request.
+     * 
+     * @return An `Observable` of the `HttpResponse`, with the response body as an `ArrayBuffer`. 
      */
     send(pattern: Pattern, options?: {
         body?: any,
@@ -84,6 +99,27 @@ export abstract class TransportClient implements OnDispose {
         responseType?: 'arraybuffer',
         withCredentials?: boolean,
     }): Observable<WritePacket<ArrayBuffer>>;
+
+    /**
+     * Constructs a request which interprets the body as a `Blob` and returns the full `HttpResponse`.
+     * 
+     * @param pattern 
+     * @param options the options to send with the request.
+     * 
+     * @return An `Observable` of the {@link WritePacket}, with the response body of type `Blob`. 
+     */
+    send(pattern: Pattern, options?: {
+        body?: any,
+        method?: RequestMethod,
+        headers?: { [header: string]: string | string[] },
+        context?: TransportContext,
+        params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
+        observe?: 'response',
+        reportProgress?: boolean,
+        responseType?: 'blob',
+        withCredentials?: boolean,
+    }): Observable<WritePacket<Blob>>;
+
     /**
      * send request.
      * @param pattern 
@@ -97,9 +133,10 @@ export abstract class TransportClient implements OnDispose {
         params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         observe?: 'response',
         reportProgress?: boolean,
-        responseType?: 'blob',
+        responseType?: 'text',
         withCredentials?: boolean,
-    }): Observable<WritePacket<Blob>>;
+    }): Observable<WritePacket<string>>;
+
     /**
      * send request.
      * @param pattern 
@@ -240,4 +277,30 @@ export abstract class TransportClient implements OnDispose {
         await this.close();
     }
 
+}
+
+/**
+ * client option.
+ */
+export interface ClientOption extends Record<string, any> {
+    /**
+     * client url
+     */
+    url?: string;
+    /**
+     * transport type.
+     */
+    protocol: Protocol;
+}
+
+/**
+ * client abstract factory.
+ */
+@Abstract()
+export abstract class ClientFactory {
+    /**
+     * create by options.
+     * @param options 
+     */
+    abstract create(options: ClientOption): TransportClient;
 }

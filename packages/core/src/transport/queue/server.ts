@@ -1,10 +1,9 @@
 
 import { Injectable, Injector, InvocationContext } from '@tsdi/ioc';
-import { ServerFactory, ServerOption } from '../server/factory';
+import { ServerFactory, ServerOption } from '../server';
 import { TransportBackend, TransportHandler } from '../handler';
 import { Protocol, ReadPacket, WritePacket } from '../packet';
-import { TransportServer } from '../server/server';
-import { InterceptingHandler } from '../intercepting';
+import { TransportServer } from '../server';
 
 @Injectable()
 export class MessageServer extends TransportServer<ReadPacket, WritePacket> {
@@ -36,25 +35,6 @@ export class MessageServer extends TransportServer<ReadPacket, WritePacket> {
 
     async close(): Promise<any> {
         
-    }
-
-}
-
-@Injectable()
-export class MessageServerFactory extends ServerFactory {
-
-    constructor(private injector: Injector) {
-        super();
-    }
-    create(options: ServerOption): TransportServer {
-        const context = InvocationContext.create(this.injector, {
-            providers: [
-                // { provide: TransportBackend, useClass: },
-                { provide: TransportHandler, useClass: InterceptingHandler }
-            ],
-            ...options
-        });
-        return context.resolve(TransportServer);
     }
 
 }
