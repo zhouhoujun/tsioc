@@ -35,6 +35,7 @@ export type Protocol = 'tcp' | 'grpc' | 'rmq' | 'kafka' | 'redis' | 'amqp' | 'ss
      * request headers
      */
     headers?: Record<string, string | string[] | number>;
+    query?: any;
     /**
      * packet data.
      */

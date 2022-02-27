@@ -1,9 +1,10 @@
 import { ClassMethodDecorator, createDecorator, isArray, isString, lang, Type } from '@tsdi/ioc';
 import { PipeTransform } from '../../pipes/pipe';
 import { CanActivate } from '../guard';
+import { RequestMethod } from '../packet';
 import { MiddlewareType } from '../middlewares/middlewares';
 import { RouteRefFactoryResolver } from '../middlewares/route';
-import { MappingReflect, ProtocolRouteMappingMetadata, RequestMethod, Router, RouterResolver } from '../middlewares/router';
+import { MappingReflect, ProtocolRouteMappingMetadata, Router, RouterResolver } from '../middlewares/router';
 
 
 /**
@@ -157,7 +158,7 @@ export interface RouteMethodDecorator {
         /**
          * pipe extends args.
          */
-         args?: any[];
+        args?: any[];
         /**
          * request contentType
          */

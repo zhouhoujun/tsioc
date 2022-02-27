@@ -1,12 +1,12 @@
 import {
     Module, Message, ConfigureService, ApplicationContext, Configuration, ComponentScan, OnDispose,
-    Runnable, Middlewares, TransportModule, ApplicationConfiguration, Bean, Settings
+    Runnable, Middlewares, ApplicationConfiguration, Bean, Settings, HttpModule
 } from '../src';
 import { Injectable, Inject, OnDestroy, lang } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
 import { ILogger, LogConfigure, Logger, LogModule } from '@tsdi/logs';
 import * as net from 'net';
-import { ServerBootstrapModule, ServerLogsModule } from '@tsdi/platform-server';;
+import { ServerBootstrapModule, ServerLogsModule } from '@tsdi/platform-server';
 
 export class TestService {
     testFiled = 'test';
@@ -89,7 +89,7 @@ export class SubMessageQueue extends Middlewares {
     exports: [
         AopModule,
         LogModule,
-        TransportModule
+        HttpModule
     ]
 })
 export class SharedModule {
