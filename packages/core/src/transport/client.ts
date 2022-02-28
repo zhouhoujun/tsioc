@@ -1,7 +1,7 @@
 import { Abstract, isNil } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
-import { connectable, defer, Observable, Observer, Subject, throwError } from 'rxjs';
-import { mergeMap } from 'rxjs/operators';
+import { defer, Observable, throwError } from 'rxjs';
+import { concatMap } from 'rxjs/operators';
 import { OnDispose } from '../lifecycle';
 import { InvalidMessageError, TransportError } from './error';
 import { Pattern, Protocol, TransportRequest, TransportResponse, RequestMethod, TransportEvent } from './packet';
@@ -173,70 +173,13 @@ export abstract class TransportClient implements OnDispose {
         if (isNil(pattern)) {
             return throwError(() => new InvalidMessageError());
         }
+        return this.request(this.serializeRequest(this.normalizePattern(pattern), options));
+    }
+
+    protected request(req: TransportRequest) {
         return defer(async () => this.connect()).pipe(
-            mergeMap(
-                () => new Observable<TransportResponse>((observer) => {
-                    const callback = this.createObserver(observer);
-                    return this.publish(this.serializeRequest(pattern, options), callback);
-                })
-            ));
-    }
-
-    /**
-     * emit message
-     * @param pattern event pattern.
-     * @param body event data.
-     */
-    emit<TInput = any>(pattern: Pattern, body: TInput): Observable<TransportResponse> {
-        if (isNil(pattern) || isNil(body)) {
-            return throwError(() => new InvalidMessageError());
-        }
-        const source = defer(async () => this.connect()).pipe(
-            mergeMap(() => this.dispatchEvent(this.serializeRequest(pattern, body))),
+            concatMap(() => this.serializeResponse(this.handler.handle(req)))
         );
-        const connectableSource = connectable(source, {
-            connector: () => new Subject(),
-            resetOnDisconnect: false,
-        });
-        connectableSource.connect();
-        return connectableSource;
-    }
-
-    /**
-     * publish handle.
-     * @param ctx transport context.
-     * @param callback 
-     */
-    protected abstract publish(
-        req: TransportRequest,
-        callback: (packet: TransportResponse) => void,
-    ): () => void;
-
-    /**
-     * dispatch event.
-     * @param packet 
-     */
-    protected abstract dispatchEvent<T = any>(packet: TransportResponse): Promise<T>;
-
-    /**
-     * create observer.
-     * @param observer 
-     * @returns 
-     */
-    protected createObserver(
-        observer: Observer<TransportResponse>,
-    ): (packet: TransportResponse) => void {
-        return (response: TransportResponse) => {
-            if (response.error) {
-                return observer.error(this.serializeError(response.error));
-            } else if (response.body !== undefined && response.disposed) {
-                observer.next(this.serializeResponse(response));
-                return observer.complete();
-            } else if (response.disposed) {
-                return observer.complete();
-            }
-            observer.next(this.serializeResponse(response));
-        };
     }
 
     /**
@@ -246,10 +189,6 @@ export abstract class TransportClient implements OnDispose {
 
     protected normalizePattern(pattern: Pattern): string {
         return stringify(pattern);
-    }
-
-    protected serializeError(err: any): TransportError {
-        return err;
     }
 
     protected serializeRequest(pattern: Pattern, options?: {
@@ -266,7 +205,7 @@ export abstract class TransportClient implements OnDispose {
         return { pattern, ...options } as TransportRequest;
     }
 
-    protected serializeResponse(response: any): TransportResponse {
+    protected serializeResponse(response: Observable<TransportResponse>): Observable<TransportResponse> {
         return response;
     }
 

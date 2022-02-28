@@ -1,6 +1,7 @@
 import { Injectable, lang } from '@tsdi/ioc';
 import { MqttClient, connect, IClientOptions } from 'mqtt';
 import { EmptyError, first, fromEvent, lastValueFrom, map, merge, share, take, tap } from 'rxjs';
+import { TransportRequest, TransportResponse } from '../packet';
 import { TransportClient } from '../client';
 import { MqttHandler } from './handler';
 
@@ -63,10 +64,10 @@ export class MQTTClient extends TransportClient {
     }
 
 
-    protected publish(packet: ReadPacket<any>, callback: (packet: WritePacket<any>) => void): () => void {
+    protected publish(packet: TransportRequest<any>, callback: (packet: TransportResponse<any>) => void): () => void {
         throw new Error('Method not implemented.');
     }
-    protected dispatchEvent<T = any>(packet: ReadPacket<any>): Promise<T> {
+    protected dispatchEvent<T = any>(packet: TransportRequest<any>): Promise<T> {
         throw new Error('Method not implemented.');
     }
 
