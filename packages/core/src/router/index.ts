@@ -1,11 +1,9 @@
 export * from './route';
-export * from './middleware';
-export * from './middlewares';
-export * from './middleware_ref';
+export * from './middleware.ref';
+export * from './middleware.factory';
 export * from './router';
 export * from './route_ref';
 
 export * from './metadata';
-export * from './context';
 export * from './module';
 

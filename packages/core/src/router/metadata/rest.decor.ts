@@ -2,7 +2,7 @@ import { ClassMethodDecorator, createDecorator, isArray, isString, lang, Type } 
 import { PipeTransform } from '../../pipes/pipe';
 import { CanActivate } from '../../transport/guard';
 import { RequestMethod } from '../../transport/packet';
-import { MiddlewareType } from '../middlewares';
+import { MiddlewareType } from '../../transport/middlewares';
 import { RouteRefFactoryResolver } from '../route';
 import { MappingReflect, ProtocolRouteMappingMetadata, Router, RouterResolver } from '../router';
 

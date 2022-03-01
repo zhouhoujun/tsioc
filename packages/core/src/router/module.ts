@@ -1,8 +1,8 @@
 import { Module } from '../metadata/decor';
-import { MiddlewareRefFactoryResolver } from './middlewares';
+import { MiddlewareRefFactoryResolver } from './middleware.ref';
 import { RouteRefFactoryResolver } from './route';
 import { DefaultRouteRefFactoryResovler } from './route_ref';
-import { DefaultMiddlewareRefFactoryResolver } from './middleware_ref';
+import { DefaultMiddlewareRefFactoryResolver } from './middleware.factory';
 import { MappingRouterResolver, RouterResolver } from './router';
 
 /*

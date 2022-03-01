@@ -5,14 +5,13 @@ import {
     OnDestroy, isClass, TypeReflect, OperationFactory, DestroyCallback
 } from '@tsdi/ioc';
 import { isObservable, lastValueFrom } from 'rxjs';
-import { Middleware } from './middleware';
+import { CanActivate } from '../transport/guard';
+import { ResultValue } from '../transport/result';
+import { TransportArgumentResolver, TransportParameter } from '../transport/resolver';
+import { Middleware } from '../transport/middleware';
+import { TransportContext, promisify } from '../transport/context';
 import { MODEL_RESOLVERS } from '../model/model.resolver';
 import { PipeTransform } from '../pipes/pipe';
-import { TransportContext, promisify } from './context';
-import { CanActivate } from '../transport/guard';
-import { MiddlewareType } from './middlewares';
-import { TransportArgumentResolver, TransportParameter } from '../transport/resolver';
-import { ResultValue } from '../transport/result';
 import { RouteRef, RouteOption, RouteRefFactory, RouteRefFactoryResolver, joinprefix } from './route';
 import { ProtocolRouteMappingMetadata, RouteMappingMetadata } from './router';
 
@@ -196,7 +195,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         return meta;
     }
 
-    protected parseHandle(mdty: MiddlewareType | Type<Middleware>): AsyncHandler<TransportContext> | undefined {
+    protected parseHandle(mdty: Type<Middleware>): AsyncHandler<TransportContext> | undefined {
         if (isClass(mdty)) {
             return this.injector.get(mdty);
         } else {

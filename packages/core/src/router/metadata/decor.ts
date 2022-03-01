@@ -4,12 +4,13 @@ import {
 } from '@tsdi/ioc';
 import { RequestMethod } from '../../transport/packet';
 import { CanActivate } from '../../transport/guard';
-import { Middleware } from '../middleware';
-import { MiddlewareRefFactoryResolver, Middlewares, MiddlewareType } from '../middlewares';
+import { Middleware } from '../../transport/middleware';
+import { Middlewares, MiddlewareType } from '../../transport/middlewares';
 import { RouteRefFactoryResolver } from '../route';
 import { MappingReflect, ProtocolRouteMappingMetadata, Router, RouterResolver } from '../router';
 import { HandleMetadata, HandlesMetadata, HandleMessagePattern } from './meta';
 import { PipeTransform } from '../../pipes/pipe';
+import { MiddlewareRefFactoryResolver } from '../middleware.ref';
 
 
 export type HandleDecorator = <TFunction extends Type<Middleware>>(target: TFunction) => TFunction | void;
