@@ -2,7 +2,6 @@ import { isArray } from '@tsdi/ioc';
 import { TransportStatus } from './handler';
 
 
-
 /**
  * Transport error
  *
@@ -10,14 +9,14 @@ import { TransportStatus } from './handler';
  * @class TransportError
  * @extends {Error}
  */
-export class TransportError extends Error {
-    constructor(readonly status: TransportStatus, message?: string | string[]) {
+export class TransportError<T = TransportStatus> extends Error {
+    constructor(readonly status: T, message?: string | string[]) {
         super(isArray(message) ? message.join('\n') : message || '');
         Object.setPrototypeOf(this, TransportError.prototype);
         Error.captureStackTrace(this);
     }
 
-    get statusCode() {
+    get statusCode(): T {
         return this.status;
     }
 
@@ -30,7 +29,7 @@ export class TransportError extends Error {
 /**
  * invalid message error.
  */
-export class InvalidMessageError extends TransportError {
+ export class InvalidMessageError extends TransportError {
     constructor(message?: string) {
         super('Bad Request', message || 'Invalid message');
         Object.setPrototypeOf(this, InvalidMessageError.prototype);
@@ -38,10 +37,3 @@ export class InvalidMessageError extends TransportError {
     }
 }
 
-
-
-export class NotFoundError extends TransportError {
-    constructor(message = 'Not Found') {
-        super(404, message);
-    }
-}

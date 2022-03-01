@@ -1,4 +1,4 @@
-import { Module } from '../../metadata/decor';
+import { Module } from '../metadata/decor';
 import { MiddlewareRefFactoryResolver } from './middlewares';
 import { RouteRefFactoryResolver } from './route';
 import { DefaultRouteRefFactoryResovler } from './route_ref';

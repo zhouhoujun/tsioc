@@ -1,7 +1,7 @@
 import { Module } from '../../metadata/decor';
 import { HttpInterceptingHandler, HTTP_INTERCEPTORS, NoopInterceptor } from './interceptor';
 import { TransformModule } from '../../pipes/module';
-import { MiddlewareModule } from '../middlewares';
+import { MiddlewareModule } from '../../middlewares';
 import { HttpClient } from './client';
 import { HttpBackend, HttpHandler } from './handler';
 import { HttpServer } from './server';

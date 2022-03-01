@@ -1,7 +1,7 @@
 import { Injectable } from '@tsdi/ioc';
 import { concatMap, filter, map, Observable, of } from 'rxjs';
 import { TransportClient } from '../client';
-import { TransportContext } from '../context';
+import { TransportContext } from '../../middlewares/context';
 import { HttpHandler } from './handler';
 import { HttpHeaders } from './headers';
 import { HttpParams, HttpParamsOptions } from './params';

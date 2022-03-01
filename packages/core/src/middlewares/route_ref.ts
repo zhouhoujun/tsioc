@@ -6,13 +6,13 @@ import {
 } from '@tsdi/ioc';
 import { isObservable, lastValueFrom } from 'rxjs';
 import { Middleware } from './middleware';
-import { MODEL_RESOLVERS } from '../../model/model.resolver';
-import { PipeTransform } from '../../pipes/pipe';
-import { TransportContext, promisify } from '../context';
-import { CanActivate } from '../guard';
+import { MODEL_RESOLVERS } from '../model/model.resolver';
+import { PipeTransform } from '../pipes/pipe';
+import { TransportContext, promisify } from './context';
+import { CanActivate } from '../transport/guard';
 import { MiddlewareType } from './middlewares';
-import { TransportArgumentResolver, TransportParameter } from '../resolver';
-import { ResultValue } from '../result';
+import { TransportArgumentResolver, TransportParameter } from '../transport/resolver';
+import { ResultValue } from '../transport/result';
 import { RouteRef, RouteOption, RouteRefFactory, RouteRefFactoryResolver, joinprefix } from './route';
 import { ProtocolRouteMappingMetadata, RouteMappingMetadata } from './router';
 

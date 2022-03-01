@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { TransportContext } from './context';
+import { TransportContext } from '../middlewares/context';
 
 /**
  * route mapping return result. 

@@ -5,7 +5,7 @@ import { concatMap } from 'rxjs/operators';
 import { OnDispose } from '../lifecycle';
 import { InvalidMessageError } from './error';
 import { TransportRequest, TransportResponse, RequestMethod, TransportEvent } from './packet';
-import { TransportContext } from './context';
+import { TransportContext } from '../middlewares/context';
 import { TransportHandler } from './handler';
 
 /**

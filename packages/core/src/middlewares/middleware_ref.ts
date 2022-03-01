@@ -1,10 +1,10 @@
 import { chain, DestroyCallback, EMPTY, Injector, isFunction, isUndefined, lang, OperationFactory, OperationFactoryResolver, refl, Type, TypeReflect } from '@tsdi/ioc';
 import { Middleware } from './middleware';
 import { MiddlewareRef, MiddlewareRefFactory, MiddlewareRefFactoryResolver } from './middlewares';
-import { HandleMetadata } from '../metadata/meta';
-import { CanActivate } from '../guard';
+import { HandleMetadata } from './metadata/meta';
+import { CanActivate } from '../transport/guard';
 import { joinprefix, RouteOption } from './route';
-import { TransportContext, promisify } from '../context';
+import { TransportContext, promisify } from './context';
 
 /**
  * middleware ref.

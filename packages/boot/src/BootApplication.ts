@@ -1,5 +1,5 @@
 import { Type } from '@tsdi/ioc';
-import { Application, ApplicationContext, ApplicationOption, BootstrapOption, TransportModule } from '@tsdi/core';
+import { Application, ApplicationContext, ApplicationOption, BootstrapOption } from '@tsdi/core';
 
 
 
