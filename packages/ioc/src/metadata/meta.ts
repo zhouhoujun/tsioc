@@ -1,6 +1,6 @@
 import { ClassType, Modules, Type } from '../types';
 import { InjectFlags, Token } from '../tokens';
-import { InjectorTypeWithProviders, ProviderType } from '../providers';
+import { ModuleWithProviders, ProviderType } from '../providers';
 import { ArgumentResolver } from '../resolver';
 
 /**
@@ -314,7 +314,7 @@ export interface ModuleMetadata extends ProvidedInMetadata, ProvidersMetadata {
      *
      * @type {Modules[]}
      */
-    imports?: (Modules | InjectorTypeWithProviders)[];
+    imports?: (Modules | ModuleWithProviders)[];
     /**
      * exports modules
      *

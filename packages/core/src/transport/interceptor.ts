@@ -1,5 +1,4 @@
 import { Observable } from 'rxjs';
-import { TransportRequest, TransportResponse } from './packet';
 import { TransportHandler } from './handler';
 
 
@@ -7,7 +6,7 @@ import { TransportHandler } from './handler';
 /**
  * Transport interceptor.
  */
-export interface TransportInterceptor<TRequest extends TransportRequest, TResponse extends TransportResponse> {
+export interface TransportInterceptor<TRequest, TResponse> {
     /**
      * the method to implemet interceptor.
      * @param req request.
@@ -19,7 +18,7 @@ export interface TransportInterceptor<TRequest extends TransportRequest, TRespon
 /**
  * Interceptor Handler.
  */
-export class InterceptorHandler<TRequest extends TransportRequest, TResponse extends TransportResponse> implements TransportHandler<TRequest, TResponse> {
+export class InterceptorHandler<TRequest, TResponse> implements TransportHandler<TRequest, TResponse> {
     constructor(private next: TransportHandler<TRequest, TResponse>, private interceptor: TransportInterceptor<TRequest, TResponse>) { }
 
     handle(req: TRequest): Observable<TResponse> {

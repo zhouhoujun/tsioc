@@ -164,9 +164,9 @@ export type StaticProvider<T = any> = TypeProvider<T> | ClassProvider<T> | Value
 export type ProviderType = Type | Modules[] | StaticProvider;
 
 /**
- * injector type with providers.
+ * type module with providers.
  */
-export interface InjectorTypeWithProviders<T = any> {
+export interface ModuleWithProviders<T = any> {
     module: Type<T>;
     providers: ProviderType[]
 }

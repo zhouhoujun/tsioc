@@ -1,11 +1,11 @@
-import { Abstract, isNil } from '@tsdi/ioc';
+import { Abstract, isNil, isString } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { defer, Observable, throwError } from 'rxjs';
 import { concatMap } from 'rxjs/operators';
 import { OnDispose } from '../lifecycle';
-import { InvalidMessageError, TransportError } from './error';
-import { Pattern, Protocol, TransportRequest, TransportResponse, RequestMethod, TransportEvent } from './packet';
-import { stringify, TransportContext } from './context';
+import { InvalidMessageError } from './error';
+import { TransportRequest, TransportResponse, RequestMethod, TransportEvent } from './packet';
+import { TransportContext } from './context';
 import { TransportHandler } from './handler';
 
 /**
@@ -25,11 +25,18 @@ export abstract class TransportClient implements OnDispose {
      */
     abstract connect(): Promise<any>;
     /**
+     * Sends an `HttpRequest` and returns a stream of `HttpEvent`s.
+     *
+     * @return An `Observable` of the response, with the response body as a stream of `HttpEvent`s.
+     */
+    send<R>(req: TransportRequest<any>): Observable<TransportResponse<R>>;
+
+    /**
      * send request.
      * @param pattern request pattern.
      * @param body send data.
      */
-    send<R>(pattern: Pattern, options: {
+    send<R>(pattern: string, options: {
         body?: any;
         method?: RequestMethod,
         observe?: 'body',
@@ -49,7 +56,7 @@ export abstract class TransportClient implements OnDispose {
      * @return An `Observable` of all `HttpEvent`s for the request,
      * with the response body of type `R`.
      */
-    send<R>(pattern: Pattern, options: {
+    send<R>(pattern: string, options: {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] },
@@ -69,7 +76,7 @@ export abstract class TransportClient implements OnDispose {
      *
      * @return An `Observable` of the response, with the response body of type string.
      */
-    send<R>(pattern: Pattern, options: {
+    send<R>(pattern: string, options: {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] },
@@ -88,7 +95,7 @@ export abstract class TransportClient implements OnDispose {
      * 
      * @return An `Observable` of the `HttpResponse`, with the response body as an `ArrayBuffer`. 
      */
-    send(pattern: Pattern, options?: {
+    send(pattern: string, options?: {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] },
@@ -108,7 +115,7 @@ export abstract class TransportClient implements OnDispose {
      * 
      * @return An `Observable` of the {@link TransportResponse}, with the response body of type `Blob`. 
      */
-    send(pattern: Pattern, options?: {
+    send(pattern: string, options?: {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] },
@@ -125,7 +132,7 @@ export abstract class TransportClient implements OnDispose {
      * @param pattern 
      * @param options 
      */
-    send(pattern: Pattern, options?: {
+    send(pattern: string, options?: {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] },
@@ -142,7 +149,7 @@ export abstract class TransportClient implements OnDispose {
      * @param pattern 
      * @param options 
      */
-    send(pattern: Pattern, options?: {
+    send(pattern: string, options?: {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] },
@@ -159,7 +166,7 @@ export abstract class TransportClient implements OnDispose {
      * @param pattern request pattern.
      * @param body send data.
      */
-    send(pattern: Pattern, options?: {
+    send(pattern: string|TransportRequest, options?: {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] },
@@ -173,10 +180,11 @@ export abstract class TransportClient implements OnDispose {
         if (isNil(pattern)) {
             return throwError(() => new InvalidMessageError());
         }
-        return this.request(this.serializeRequest(this.normalizePattern(pattern), options));
+        const req = isString(pattern)? this.serializeRequest(this.normalizePattern(pattern), options) : pattern;
+        return this.sendRequest(req);
     }
 
-    protected request(req: TransportRequest) {
+    protected sendRequest(req: TransportRequest): Observable<TransportResponse> {
         return defer(async () => this.connect()).pipe(
             concatMap(() => this.serializeResponse(this.handler.handle(req)))
         );
@@ -187,11 +195,11 @@ export abstract class TransportClient implements OnDispose {
      */
     abstract close(): Promise<void>;
 
-    protected normalizePattern(pattern: Pattern): string {
-        return stringify(pattern);
+    protected normalizePattern(pattern: string): string {
+        return pattern;
     }
 
-    protected serializeRequest(pattern: Pattern, options?: {
+    protected serializeRequest(pattern: string, options?: {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] },
@@ -216,30 +224,4 @@ export abstract class TransportClient implements OnDispose {
         await this.close();
     }
 
-}
-
-/**
- * client option.
- */
-export interface ClientOption extends Record<string, any> {
-    /**
-     * client url
-     */
-    url?: string;
-    /**
-     * transport type.
-     */
-    protocol: Protocol;
-}
-
-/**
- * client abstract factory.
- */
-@Abstract()
-export abstract class ClientFactory {
-    /**
-     * create by options.
-     * @param options 
-     */
-    abstract create(options: ClientOption): TransportClient;
 }

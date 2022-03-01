@@ -1,7 +1,7 @@
 import { ClassType, Type } from '../types';
 import { Handler } from '../handler';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
-import { InjectorTypeWithProviders, ProviderType } from '../providers';
+import { ModuleWithProviders, ProviderType } from '../providers';
 import { PatternMetadata, ProvidersMetadata, ProvidedInMetadata, ModuleMetadata } from './meta';
 import { TypeDefine } from './typedef';
 
@@ -134,7 +134,7 @@ export interface ModuleReflect<T = any> extends TypeReflect<T> {
     /**
      * imports types.
      */
-    imports?: (Type | InjectorTypeWithProviders)[];
+    imports?: (Type | ModuleWithProviders)[];
     /**
      * exports.
      */

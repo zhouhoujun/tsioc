@@ -1,4 +1,4 @@
-import { Abstract, DefaultInvocationContext, Injector, InvocationContext, InvokeArguments, isNumber, isPlainObject, isPromise, isString } from '@tsdi/ioc';
+import { Abstract, DefaultInvocationContext, Injector, InvocationContext, InvokeArguments, isPromise, isString, isNumber, isPlainObject } from '@tsdi/ioc';
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
 import { Pattern, Protocol, TransportRequest, TransportResponse } from './packet';
 import { TransportStatus } from './handler';
@@ -36,10 +36,6 @@ export abstract class TransportContext<TRequest extends TransportRequest = Trans
      * transport pattern.
      */
     abstract get pattern(): string;
-    /**
-     * is event or not.
-     */
-    abstract get isEvent(): boolean;
     /**
      * is update modle resquest.
      */
@@ -141,33 +137,34 @@ export abstract class TransportContextFactory {
 export const CONTEXT = TransportContext;
 
 
-/**
- * stringify pattern.
- * @param pattern 
- * @returns 
- */
-export function stringify(pattern: Pattern): string {
-    if (isString(pattern) || isNumber(pattern)) {
-        return `${pattern}`;
-    }
+// /**
+//  * stringify pattern.
+//  * @param pattern 
+//  * @returns 
+//  */
+// export function stringify(pattern: Pattern): string {
+//     if(isString(pattern)) return pattern;
+//     if (isNumber(pattern)) {
+//         return `${pattern}`;
+//     }
 
-    if (!isPlainObject(pattern)) return pattern;
+//     if (!isPlainObject(pattern)) return pattern;
 
-    const sortedKeys = Object.keys(pattern).sort((a, b) =>
-        ('' + a).localeCompare(b),
-    );
+//     const sortedKeys = Object.keys(pattern).sort((a, b) =>
+//         ('' + a).localeCompare(b),
+//     );
 
-    const sortedPatternParams = sortedKeys.map(key => {
-        let partialRoute = `"${key}":`;
-        partialRoute += isString(pattern[key])
-            ? `"${stringify(pattern[key])}"`
-            : stringify(pattern[key]);
-        return partialRoute;
-    });
+//     const sortedPatternParams = sortedKeys.map(key => {
+//         let partialRoute = `"${key}":`;
+//         partialRoute += isString(pattern[key])
+//             ? `"${stringify(pattern[key])}"`
+//             : stringify(pattern[key]);
+//         return partialRoute;
+//     });
 
-    const route = sortedPatternParams.join(',');
-    return `{${route}}`;
-}
+//     const route = sortedPatternParams.join(',');
+//     return `{${route}}`;
+// }
 
 /**
  * to promise.

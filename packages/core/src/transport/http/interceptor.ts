@@ -1,18 +1,27 @@
 import { Injectable, InvocationContext, tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { TransportHandler } from '../handler';
 import { InterceptorHandler, TransportInterceptor } from '../interceptor';
 import { HttpHandler, HttpBackend } from './handler';
 import { HttpRequest } from './request';
-import { HttpResponse } from './response';
+import { HttpEvent } from './response';
 
-
+/**
+ * http interceptor.
+ */
+export interface HttpInterceptor extends TransportInterceptor<HttpRequest, HttpEvent> {
+    /**
+     * the method to implemet interceptor.
+     * @param req request.
+     * @param next route handler.
+     */
+    intercept(req: HttpRequest, next: HttpHandler): Observable<HttpEvent>;
+}
 
 
 /**
  * http transport interceptors.
  */
-export const HTTP_INTERCEPTORS = tokenId<TransportInterceptor<HttpRequest, HttpResponse>[]>('HTTP_INTERCEPTORS');
+export const HTTP_INTERCEPTORS = tokenId<HttpInterceptor[]>('HTTP_INTERCEPTORS');
 
 
 /**
@@ -25,13 +34,12 @@ export const HTTP_INTERCEPTORS = tokenId<TransportInterceptor<HttpRequest, HttpR
  * @see `TransportInterceptor`
  */
 @Injectable()
-export class HttpInterceptingHandler
- implements TransportHandler<HttpRequest, HttpResponse> {
+export class HttpInterceptingHandler implements HttpHandler {
     private chain!: HttpHandler;
 
     constructor(private backend: HttpBackend, private context: InvocationContext) { }
 
-    handle(req: HttpRequest): Observable<HttpResponse> {
+    handle(req: HttpRequest): Observable<HttpEvent> {
         if (!this.chain) {
             const interceptors = this.context.get(HTTP_INTERCEPTORS);
             this.chain = interceptors.reduceRight(
@@ -41,5 +49,11 @@ export class HttpInterceptingHandler
     }
 }
 
+@Injectable()
+export class NoopInterceptor implements HttpInterceptor {
+    intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent> {
+        return next.handle(req);
+    }
+}
 
 

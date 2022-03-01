@@ -1,11 +1,10 @@
 import { Observable } from 'rxjs';
-import { TransportRequest, TransportResponse } from './packet';
 
 
 /**
  * Transport handler.
  */
-export interface TransportHandler<TRequest extends TransportRequest, TResponse extends TransportResponse> {
+export interface TransportHandler<TRequest, TResponse> {
     /**
      * transport handler.
      * @param req request input.
@@ -21,7 +20,7 @@ export interface TransportHandler<TRequest extends TransportRequest, TResponse e
  * When injected, `TransportBackend` dispatches requests directly to the backend, without going
  * through the interceptor chain.
  */
-export interface TransportBackend<TRequest extends TransportRequest, TResponse extends TransportResponse> extends TransportHandler<TRequest, TResponse> {
+export interface TransportBackend<TRequest, TResponse> extends TransportHandler<TRequest, TResponse> {
     /**
      * transport handler.
      * @param req request input.

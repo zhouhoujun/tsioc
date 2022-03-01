@@ -1,6 +1,6 @@
 
 import {
-    DefaultInjector, Injector, InjectorScope, InjectorTypeWithProviders, refl, isFunction,
+    DefaultInjector, Injector, InjectorScope, ModuleWithProviders, refl, isFunction,
     Platform, ModuleReflect, Modules, processInjectorType, ProviderType, Token, Type, lang,
     LifecycleHooksResolver, LifecycleHooks, DestroyLifecycleHooks, OperationFactoryResolver,
     DefaultOperationFactoryResolver
@@ -73,7 +73,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         return token === ModuleRef || super.isself(token);
     }
 
-    protected processInjectorType(platform: Platform, typeOrDef: Type | InjectorTypeWithProviders, dedupStack: Type[], moduleRefl?: ModuleReflect) {
+    protected processInjectorType(platform: Platform, typeOrDef: Type | ModuleWithProviders, dedupStack: Type[], moduleRefl?: ModuleReflect) {
         processInjectorType(typeOrDef, dedupStack,
             (pdr, pdrs) => this.processProvider(platform, pdr, pdrs),
             (tyref, type) => {

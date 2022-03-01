@@ -30,17 +30,18 @@ export type Protocol = 'tcp' | 'grpc' | 'rmq' | 'kafka' | 'redis' | 'amqp' | 'ss
     /**
      * request pattern.
      */
-    pattern: Pattern;
+    pattern?: Pattern;
     /**
      * request headers
      */
-    headers?: Record<string, string | string[] | number>;
+    headers?: any;
     query?: any;
     /**
      * packet data.
      */
-    body?: T;
+    body: T | null;
 }
+
 
 
 /**
@@ -48,6 +49,8 @@ export type Protocol = 'tcp' | 'grpc' | 'rmq' | 'kafka' | 'redis' | 'amqp' | 'ss
  */
  export interface TransportResponse<T = any>{
     error?: Error;
+    text?: string;
+
     type?: number;
     disposed?: boolean;
     status?: string | number;

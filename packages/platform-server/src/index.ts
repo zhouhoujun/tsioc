@@ -1,4 +1,4 @@
 export * from './NodeModuleLoader';
 export * from './toAbsolute';
-export * from './BootstrapModule';
-export * from './logs/ServerLogsModule';
+export { ServerBootstrapModule } from './BootstrapModule';
+export { ServerLogsModule } from './logs/ServerLogsModule';

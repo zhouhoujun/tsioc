@@ -1,5 +1,5 @@
 import {
-    Abstract, Destroyable, DestroyCallback, Injector, InjectorTypeWithProviders, Type,
+    Abstract, Destroyable, DestroyCallback, Injector, ModuleWithProviders, Type,
     isFunction, isPlainObject, lang, ModuleReflect, OnDestroy, OperationFactoryResolver,
     ModuleRef as ModRef
 } from '@tsdi/ioc';
@@ -63,12 +63,12 @@ export abstract class ModuleRef<T = any> extends Injector implements ModRef<T>, 
 }
 
 
-export function getModuleType(input: any[]): (Type | InjectorTypeWithProviders)[] {
-    const types: (Type | InjectorTypeWithProviders)[] = [];
-    lang.deepForEach<Type | InjectorTypeWithProviders>(input, ty => {
-        if (isFunction(ty) || (ty as InjectorTypeWithProviders).module) {
+export function getModuleType(input: any[]): (Type | ModuleWithProviders)[] {
+    const types: (Type | ModuleWithProviders)[] = [];
+    lang.deepForEach<Type | ModuleWithProviders>(input, ty => {
+        if (isFunction(ty) || (ty as ModuleWithProviders).module) {
             types.push(ty);
         }
-    }, v => isPlainObject(v) && !(v as InjectorTypeWithProviders).module);
+    }, v => isPlainObject(v) && !(v as ModuleWithProviders).module);
     return types;
 }
