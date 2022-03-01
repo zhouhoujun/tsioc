@@ -35,7 +35,7 @@ export * from './Application';
 export * from './model';
 
 export * from './transport';
-export * from './middlewares';
+export * from './router';
 
 // auth
 export * from './auth';

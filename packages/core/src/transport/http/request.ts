@@ -8,7 +8,7 @@
 
 
 import { TransportRequest } from '../packet';
-import { TransportContext } from '../../middlewares/context';
+import { TransportContext } from '../../router/context';
 import { HttpHeaders } from './headers';
 import { HttpParams } from './params';
 

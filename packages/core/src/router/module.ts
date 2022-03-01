@@ -15,6 +15,6 @@ import { MappingRouterResolver, RouterResolver } from './router';
         { provide: MiddlewareRefFactoryResolver, useValue: new DefaultMiddlewareRefFactoryResolver() },
     ]
 })
-export class MiddlewareModule {
+export class RouterModule {
 
 }
