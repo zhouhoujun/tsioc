@@ -6,9 +6,8 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-
+import { InvocationContext } from '@tsdi/ioc';
 import { TransportRequest } from '../packet';
-import { TransportContext } from '../context';
 import { HttpHeaders } from './headers';
 import { HttpParams } from './params';
 
@@ -20,7 +19,7 @@ import { HttpParams } from './params';
  */
 interface HttpRequestInit {
     headers?: HttpHeaders;
-    context?: TransportContext;
+    context?: InvocationContext;
     reportProgress?: boolean;
     params?: HttpParams;
     responseType?: 'arraybuffer' | 'blob' | 'json' | 'text';
@@ -107,7 +106,7 @@ export class HttpRequest<T = any> implements TransportRequest<T> {
     /**
      * Shared and mutable context that can be used by interceptors
      */
-    readonly context!: TransportContext;
+    readonly context!: InvocationContext;
 
     /**
      * Whether this request should be made in a way that exposes progress events.
@@ -155,7 +154,7 @@ export class HttpRequest<T = any> implements TransportRequest<T> {
 
     constructor(method: 'DELETE' | 'GET' | 'HEAD' | 'JSONP' | 'OPTIONS', url: string, init?: {
         headers?: HttpHeaders,
-        context?: TransportContext,
+        context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -163,7 +162,7 @@ export class HttpRequest<T = any> implements TransportRequest<T> {
     });
     constructor(method: 'POST' | 'PUT' | 'PATCH', url: string, body: T | null, init?: {
         headers?: HttpHeaders,
-        context?: TransportContext,
+        context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -171,7 +170,7 @@ export class HttpRequest<T = any> implements TransportRequest<T> {
     });
     constructor(method: string, url: string, body: T | null, init?: {
         headers?: HttpHeaders,
-        context?: TransportContext,
+        context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -180,7 +179,7 @@ export class HttpRequest<T = any> implements TransportRequest<T> {
     constructor(
         method: string, readonly url: string, third?: T | {
             headers?: HttpHeaders,
-            context?: TransportContext,
+            context?: InvocationContext,
             reportProgress?: boolean,
             params?: HttpParams,
             responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -188,7 +187,7 @@ export class HttpRequest<T = any> implements TransportRequest<T> {
         } | null,
         fourth?: {
             headers?: HttpHeaders,
-            context?: TransportContext,
+            context?: InvocationContext,
             reportProgress?: boolean,
             params?: HttpParams,
             responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -240,9 +239,9 @@ export class HttpRequest<T = any> implements TransportRequest<T> {
             this.headers = new HttpHeaders();
         }
 
-        // If no context have been passed in, construct a new TransportContext instance.
+        // If no context have been passed in, construct a new InvocationContext instance.
         // if (!this.context) {
-        //     this.context = new TransportContext();
+        //     this.context = new InvocationContext();
         // }
 
         // If no parameters have been passed in, construct a new HttpUrlEncodedParams instance.
@@ -344,7 +343,7 @@ export class HttpRequest<T = any> implements TransportRequest<T> {
     clone(): HttpRequest<T>;
     clone(update: {
         headers?: HttpHeaders,
-        context?: TransportContext,
+        context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -357,7 +356,7 @@ export class HttpRequest<T = any> implements TransportRequest<T> {
     }): HttpRequest<T>;
     clone<V>(update: {
         headers?: HttpHeaders,
-        context?: TransportContext,
+        context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -370,7 +369,7 @@ export class HttpRequest<T = any> implements TransportRequest<T> {
     }): HttpRequest<V>;
     clone(update: {
         headers?: HttpHeaders,
-        context?: TransportContext,
+        context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',

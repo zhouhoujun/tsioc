@@ -1,11 +1,10 @@
-import { Abstract, isNil, isString } from '@tsdi/ioc';
+import { Abstract, InvocationContext, isNil, isString } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { defer, Observable, throwError } from 'rxjs';
 import { concatMap } from 'rxjs/operators';
 import { OnDispose } from '../lifecycle';
 import { InvalidMessageError } from './error';
 import { TransportRequest, TransportResponse, RequestMethod, TransportEvent } from './packet';
-import { TransportContext } from './context';
 import { TransportHandler } from './handler';
 
 /**
@@ -60,7 +59,7 @@ export abstract class TransportClient implements OnDispose {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         reportProgress?: boolean, observe: 'events',
         params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         responseType?: 'json',
@@ -80,7 +79,7 @@ export abstract class TransportClient implements OnDispose {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         reportProgress?: boolean, observe: 'events',
         params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         responseType?: 'text',
@@ -99,7 +98,7 @@ export abstract class TransportClient implements OnDispose {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         observe?: 'response',
         reportProgress?: boolean,
@@ -119,7 +118,7 @@ export abstract class TransportClient implements OnDispose {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         observe?: 'response',
         reportProgress?: boolean,
@@ -136,7 +135,7 @@ export abstract class TransportClient implements OnDispose {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         observe?: 'response',
         reportProgress?: boolean,
@@ -153,7 +152,7 @@ export abstract class TransportClient implements OnDispose {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         observe?: 'body' | 'events' | 'response',
         reportProgress?: boolean,
@@ -170,7 +169,7 @@ export abstract class TransportClient implements OnDispose {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         observe?: 'body' | 'events' | 'response',
         reportProgress?: boolean,
@@ -203,7 +202,7 @@ export abstract class TransportClient implements OnDispose {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         observe?: 'body' | 'events' | 'response',
         reportProgress?: boolean,

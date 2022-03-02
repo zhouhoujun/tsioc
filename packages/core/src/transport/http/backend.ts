@@ -1,10 +1,11 @@
 import { Injectable } from '@tsdi/ioc';
 import { Observable, Observer } from 'rxjs';
+import { HttpStatusCode } from './status';
 import { HttpBackend, XhrFactory } from './handler';
 import { HttpHeaders } from './headers';
 import { HttpRequest } from './request';
 import { HttpDownloadProgressEvent, HttpErrorResponse, HttpEvent, HttpEventType, HttpHeaderResponse, HttpJsonParseError, HttpResponse, HttpUploadProgressEvent } from './response';
-import { HttpStatusCode } from './status';
+
 
 
 

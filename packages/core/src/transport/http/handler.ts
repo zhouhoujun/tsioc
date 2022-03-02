@@ -29,8 +29,14 @@ export abstract class HttpBackend implements TransportBackend<HttpRequest, HttpE
      abstract handle(req: HttpRequest): Observable<HttpEvent>;
 }
 
+/**
+ * xhr factory.
+ */
 @Abstract()
 export abstract class XhrFactory {
+    /**
+     * build xhr request.
+     */
     abstract build(): XMLHttpRequest;
 }
 

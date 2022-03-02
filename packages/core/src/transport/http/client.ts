@@ -1,7 +1,6 @@
-import { Injectable } from '@tsdi/ioc';
+import { Injectable, InvocationContext } from '@tsdi/ioc';
 import { concatMap, filter, map, Observable, of } from 'rxjs';
 import { TransportClient } from '../client';
-import { TransportContext } from '../context';
 import { HttpHandler } from './handler';
 import { HttpHeaders } from './headers';
 import { HttpParams, HttpParamsOptions } from './params';
@@ -46,7 +45,7 @@ export class HttpClient extends TransportClient {
     request(method: string, url: string, options: {
         body?: any,
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -67,7 +66,7 @@ export class HttpClient extends TransportClient {
     request(method: string, url: string, options: {
         body?: any,
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -88,7 +87,7 @@ export class HttpClient extends TransportClient {
     request(method: string, url: string, options: {
         body?: any,
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -110,7 +109,7 @@ export class HttpClient extends TransportClient {
     request(method: string, url: string, options: {
         body?: any,
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         observe: 'events',
@@ -132,7 +131,7 @@ export class HttpClient extends TransportClient {
     request(method: string, url: string, options: {
         body?: any,
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
@@ -153,7 +152,7 @@ export class HttpClient extends TransportClient {
     request(method: string, url: string, options: {
         body?: any,
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
@@ -174,7 +173,7 @@ export class HttpClient extends TransportClient {
     request(method: string, url: string, options: {
         body?: any,
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         reportProgress?: boolean, observe: 'events',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -196,7 +195,7 @@ export class HttpClient extends TransportClient {
     request<R>(method: string, url: string, options: {
         body?: any,
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         reportProgress?: boolean, observe: 'events',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -217,7 +216,7 @@ export class HttpClient extends TransportClient {
     request(method: string, url: string, options: {
         body?: any,
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
@@ -236,7 +235,7 @@ export class HttpClient extends TransportClient {
     request(method: string, url: string, options: {
         body?: any,
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
@@ -256,7 +255,7 @@ export class HttpClient extends TransportClient {
     request(method: string, url: string, options: {
         body?: any,
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
@@ -277,7 +276,7 @@ export class HttpClient extends TransportClient {
     request(method: string, url: string, options: {
         body?: any,
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         reportProgress?: boolean, observe: 'response',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -298,7 +297,7 @@ export class HttpClient extends TransportClient {
     request<R>(method: string, url: string, options: {
         body?: any,
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         reportProgress?: boolean, observe: 'response',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -319,7 +318,7 @@ export class HttpClient extends TransportClient {
     request(method: string, url: string, options?: {
         body?: any,
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -341,7 +340,7 @@ export class HttpClient extends TransportClient {
     request<R>(method: string, url: string, options?: {
         body?: any,
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -362,7 +361,7 @@ export class HttpClient extends TransportClient {
     request(method: string, url: string, options?: {
         body?: any,
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         observe?: 'body' | 'events' | 'response',
@@ -400,7 +399,7 @@ export class HttpClient extends TransportClient {
     request(first: string | HttpRequest<any>, url?: string, options: {
         body?: any,
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -528,7 +527,7 @@ export class HttpClient extends TransportClient {
    */
     delete(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -549,7 +548,7 @@ export class HttpClient extends TransportClient {
      */
     delete(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -569,7 +568,7 @@ export class HttpClient extends TransportClient {
      */
     delete(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -590,7 +589,7 @@ export class HttpClient extends TransportClient {
      */
     delete(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
@@ -610,7 +609,7 @@ export class HttpClient extends TransportClient {
      */
     delete(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
@@ -630,7 +629,7 @@ export class HttpClient extends TransportClient {
      */
     delete(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
@@ -650,7 +649,7 @@ export class HttpClient extends TransportClient {
      */
     delete(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -671,7 +670,7 @@ export class HttpClient extends TransportClient {
      */
     delete<T>(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | (string | number | boolean)[] },
         reportProgress?: boolean,
@@ -691,7 +690,7 @@ export class HttpClient extends TransportClient {
      */
     delete(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
@@ -710,7 +709,7 @@ export class HttpClient extends TransportClient {
      */
     delete(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
@@ -729,7 +728,7 @@ export class HttpClient extends TransportClient {
      */
     delete(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
@@ -749,7 +748,7 @@ export class HttpClient extends TransportClient {
      */
     delete(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -769,7 +768,7 @@ export class HttpClient extends TransportClient {
      */
     delete<T>(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -789,7 +788,7 @@ export class HttpClient extends TransportClient {
      */
     delete(url: string, options?: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -810,7 +809,7 @@ export class HttpClient extends TransportClient {
      */
     delete<T>(url: string, options?: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -831,7 +830,7 @@ export class HttpClient extends TransportClient {
      */
     delete(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -855,7 +854,7 @@ export class HttpClient extends TransportClient {
      */
     get(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -874,7 +873,7 @@ export class HttpClient extends TransportClient {
      */
     get(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -893,7 +892,7 @@ export class HttpClient extends TransportClient {
      */
     get(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -913,7 +912,7 @@ export class HttpClient extends TransportClient {
      */
     get(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
@@ -931,7 +930,7 @@ export class HttpClient extends TransportClient {
      */
     get(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
@@ -949,7 +948,7 @@ export class HttpClient extends TransportClient {
      */
     get(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
@@ -967,7 +966,7 @@ export class HttpClient extends TransportClient {
      */
     get(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -986,7 +985,7 @@ export class HttpClient extends TransportClient {
      */
     get<T>(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -1006,7 +1005,7 @@ export class HttpClient extends TransportClient {
      */
     get(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
@@ -1025,7 +1024,7 @@ export class HttpClient extends TransportClient {
      */
     get(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
@@ -1044,7 +1043,7 @@ export class HttpClient extends TransportClient {
      */
     get(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
@@ -1063,7 +1062,7 @@ export class HttpClient extends TransportClient {
      */
     get(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -1083,7 +1082,7 @@ export class HttpClient extends TransportClient {
      */
     get<T>(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -1103,7 +1102,7 @@ export class HttpClient extends TransportClient {
      */
     get(url: string, options?: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1123,7 +1122,7 @@ export class HttpClient extends TransportClient {
      */
     get<T>(url: string, options?: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1139,7 +1138,7 @@ export class HttpClient extends TransportClient {
      */
     get(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1162,7 +1161,7 @@ export class HttpClient extends TransportClient {
      */
     head(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1182,7 +1181,7 @@ export class HttpClient extends TransportClient {
 
     head(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1201,7 +1200,7 @@ export class HttpClient extends TransportClient {
      */
     head(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1221,7 +1220,7 @@ export class HttpClient extends TransportClient {
      */
     head(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
@@ -1240,7 +1239,7 @@ export class HttpClient extends TransportClient {
      */
     head(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
@@ -1259,7 +1258,7 @@ export class HttpClient extends TransportClient {
      */
     head(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
@@ -1278,7 +1277,7 @@ export class HttpClient extends TransportClient {
      */
     head(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -1298,7 +1297,7 @@ export class HttpClient extends TransportClient {
      */
     head<T>(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -1318,7 +1317,7 @@ export class HttpClient extends TransportClient {
      */
     head(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
@@ -1337,7 +1336,7 @@ export class HttpClient extends TransportClient {
      */
     head(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
@@ -1356,7 +1355,7 @@ export class HttpClient extends TransportClient {
      */
     head(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
@@ -1375,7 +1374,7 @@ export class HttpClient extends TransportClient {
      */
     head(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -1395,7 +1394,7 @@ export class HttpClient extends TransportClient {
      */
     head<T>(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -1414,7 +1413,7 @@ export class HttpClient extends TransportClient {
      */
     head(url: string, options?: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1435,7 +1434,7 @@ export class HttpClient extends TransportClient {
      */
     head<T>(url: string, options?: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1453,7 +1452,7 @@ export class HttpClient extends TransportClient {
      */
     head(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1525,7 +1524,7 @@ export class HttpClient extends TransportClient {
      */
     options(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1544,7 +1543,7 @@ export class HttpClient extends TransportClient {
      */
     options(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1563,7 +1562,7 @@ export class HttpClient extends TransportClient {
      */
     options(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1583,7 +1582,7 @@ export class HttpClient extends TransportClient {
      */
     options(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
@@ -1602,7 +1601,7 @@ export class HttpClient extends TransportClient {
      */
     options(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
@@ -1621,7 +1620,7 @@ export class HttpClient extends TransportClient {
      */
     options(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
@@ -1640,7 +1639,7 @@ export class HttpClient extends TransportClient {
      */
     options(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -1660,7 +1659,7 @@ export class HttpClient extends TransportClient {
      */
     options<T>(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -1680,7 +1679,7 @@ export class HttpClient extends TransportClient {
      */
     options(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
@@ -1699,7 +1698,7 @@ export class HttpClient extends TransportClient {
      */
     options(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
@@ -1718,7 +1717,7 @@ export class HttpClient extends TransportClient {
      */
     options(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
@@ -1737,7 +1736,7 @@ export class HttpClient extends TransportClient {
      */
     options(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -1757,7 +1756,7 @@ export class HttpClient extends TransportClient {
      */
     options<T>(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -1776,7 +1775,7 @@ export class HttpClient extends TransportClient {
      */
     options(url: string, options?: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1796,7 +1795,7 @@ export class HttpClient extends TransportClient {
      */
     options<T>(url: string, options?: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1814,7 +1813,7 @@ export class HttpClient extends TransportClient {
      */
     options(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1837,7 +1836,7 @@ export class HttpClient extends TransportClient {
      */
     patch(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1857,7 +1856,7 @@ export class HttpClient extends TransportClient {
      */
     patch(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1877,7 +1876,7 @@ export class HttpClient extends TransportClient {
      */
     patch(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1899,7 +1898,7 @@ export class HttpClient extends TransportClient {
 
     patch(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
@@ -1919,7 +1918,7 @@ export class HttpClient extends TransportClient {
      */
     patch(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
@@ -1939,7 +1938,7 @@ export class HttpClient extends TransportClient {
      */
     patch(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
@@ -1959,7 +1958,7 @@ export class HttpClient extends TransportClient {
      */
     patch(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -1980,7 +1979,7 @@ export class HttpClient extends TransportClient {
      */
     patch<T>(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -2001,7 +2000,7 @@ export class HttpClient extends TransportClient {
      */
     patch(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
@@ -2021,7 +2020,7 @@ export class HttpClient extends TransportClient {
      */
     patch(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
@@ -2041,7 +2040,7 @@ export class HttpClient extends TransportClient {
      */
     patch(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
@@ -2061,7 +2060,7 @@ export class HttpClient extends TransportClient {
      */
     patch(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -2082,7 +2081,7 @@ export class HttpClient extends TransportClient {
      */
     patch<T>(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -2102,7 +2101,7 @@ export class HttpClient extends TransportClient {
      */
     patch(url: string, body: any | null, options?: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2124,7 +2123,7 @@ export class HttpClient extends TransportClient {
      */
     patch<T>(url: string, body: any | null, options?: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2140,7 +2139,7 @@ export class HttpClient extends TransportClient {
      */
     patch(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2163,7 +2162,7 @@ export class HttpClient extends TransportClient {
      */
     post(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2183,7 +2182,7 @@ export class HttpClient extends TransportClient {
      */
     post(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2203,7 +2202,7 @@ export class HttpClient extends TransportClient {
      */
     post(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2224,7 +2223,7 @@ export class HttpClient extends TransportClient {
      */
     post(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
@@ -2243,7 +2242,7 @@ export class HttpClient extends TransportClient {
      */
     post(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
@@ -2263,7 +2262,7 @@ export class HttpClient extends TransportClient {
      */
     post(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
@@ -2283,7 +2282,7 @@ export class HttpClient extends TransportClient {
      */
     post(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -2304,7 +2303,7 @@ export class HttpClient extends TransportClient {
      */
     post<T>(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -2325,7 +2324,7 @@ export class HttpClient extends TransportClient {
      */
     post(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
@@ -2345,7 +2344,7 @@ export class HttpClient extends TransportClient {
      */
     post(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
@@ -2365,7 +2364,7 @@ export class HttpClient extends TransportClient {
      */
     post(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
@@ -2385,7 +2384,7 @@ export class HttpClient extends TransportClient {
      */
     post(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -2407,7 +2406,7 @@ export class HttpClient extends TransportClient {
      */
     post<T>(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -2427,7 +2426,7 @@ export class HttpClient extends TransportClient {
      */
     post(url: string, body: any | null, options?: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2449,7 +2448,7 @@ export class HttpClient extends TransportClient {
      */
     post<T>(url: string, body: any | null, options?: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2466,7 +2465,7 @@ export class HttpClient extends TransportClient {
      */
     post(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2489,7 +2488,7 @@ export class HttpClient extends TransportClient {
      */
     put(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2509,7 +2508,7 @@ export class HttpClient extends TransportClient {
      */
     put(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2529,7 +2528,7 @@ export class HttpClient extends TransportClient {
      */
     put(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2550,7 +2549,7 @@ export class HttpClient extends TransportClient {
      */
     put(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
@@ -2570,7 +2569,7 @@ export class HttpClient extends TransportClient {
      */
     put(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
@@ -2590,7 +2589,7 @@ export class HttpClient extends TransportClient {
      */
     put(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
@@ -2610,7 +2609,7 @@ export class HttpClient extends TransportClient {
      */
     put(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -2631,7 +2630,7 @@ export class HttpClient extends TransportClient {
      */
     put<T>(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -2652,7 +2651,7 @@ export class HttpClient extends TransportClient {
      */
     put(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
@@ -2672,7 +2671,7 @@ export class HttpClient extends TransportClient {
      */
     put(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
@@ -2692,7 +2691,7 @@ export class HttpClient extends TransportClient {
      */
     put(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
@@ -2712,7 +2711,7 @@ export class HttpClient extends TransportClient {
      */
     put(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -2733,7 +2732,7 @@ export class HttpClient extends TransportClient {
      */
     put<T>(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
-        context?: TransportContext,
+        context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -2753,7 +2752,7 @@ export class HttpClient extends TransportClient {
      */
     put(url: string, body: any | null, options?: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2774,7 +2773,7 @@ export class HttpClient extends TransportClient {
      */
     put<T>(url: string, body: any | null, options?: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2791,7 +2790,7 @@ export class HttpClient extends TransportClient {
      */
     put(url: string, body: any | null, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2807,7 +2806,7 @@ export class HttpClient extends TransportClient {
 function addBody<T>(
     options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: TransportContext,
+        context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
