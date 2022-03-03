@@ -1,3 +1,4 @@
+/// <reference path="./type.d.ts" />
 import { Injectable } from '@tsdi/ioc';
 import { XhrFactory } from '@tsdi/core';
 import * as xhr2 from 'xhr2';

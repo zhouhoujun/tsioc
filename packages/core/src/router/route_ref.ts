@@ -68,14 +68,6 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         return this.metadata.guards;
     }
 
-    private _protocols!: string[];
-    get protocols(): string[] {
-        if (!this._protocols) {
-            this._protocols = this.metadata.protocol?.split(';') ?? EMPTY;
-        }
-        return this._protocols;
-    }
-
     async handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         const method = await this.canActivate(ctx);
         if (method) {
@@ -195,9 +187,9 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         return meta;
     }
 
-    protected parseHandle(mdty: Type<Middleware>): AsyncHandler<TransportContext> | undefined {
+    protected parseHandle(mdty: Middleware): AsyncHandler<TransportContext> | undefined {
         if (isClass(mdty)) {
-            return this.injector.get(mdty);
+            return this.factory.resolve(mdty);
         } else {
             return mdty;
         }

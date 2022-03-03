@@ -1,13 +1,14 @@
-import { Abstract, Destroyable, DestroyCallback, DispatchHandler, Injector, InvokeOption, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
+import { Abstract, Destroyable, DestroyCallback, Injector, InvokeOption, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
 import { TransportContext } from '../transport/context';
 import { CanActivate } from '../transport/guard';
+import { Endpoint } from '../transport/middleware';
 
 
 /**
  * route instance.
  */
 @Abstract()
-export abstract class Route<T extends TransportContext = TransportContext> implements DispatchHandler<T, Promise<void>> {
+export abstract class Route<T extends TransportContext = TransportContext> implements Endpoint<T> {
     /**
     * route handle.
     *
@@ -25,10 +26,6 @@ export abstract class Route<T extends TransportContext = TransportContext> imple
      * route guards.
      */
     abstract get guards(): Type<CanActivate>[] | undefined;
-    /**
-     * protocols.
-     */
-    abstract get protocols(): string[];
 }
 
 
@@ -61,10 +58,6 @@ export abstract class RouteRef<T = any> extends Route implements Destroyable, On
      * route guards.
      */
     abstract get guards(): Type<CanActivate>[] | undefined;
-    /**
-     * protocols.
-     */
-    abstract get protocols(): string[];
     /**
      * is destroyed or not.
      */

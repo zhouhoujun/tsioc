@@ -1,26 +1,22 @@
-import { AsyncHandler, chain, Type } from '@tsdi/ioc';
+import { chain, isClass, Type } from '@tsdi/ioc';
 import { TransportContext } from './context';
-import { Middleware } from './middleware';
+import { Middleware, Endpoint } from './middleware';
 
 
-/**
- * message type for register in {@link Middlewares}.
- */
-export type MiddlewareType = AsyncHandler<TransportContext> | Middleware;
 
 
 /**
  * middlewares, compose of {@link Middleware}.
  */
-export class Middlewares<T extends TransportContext = TransportContext> extends Middleware<T> {
-    protected handles: MiddlewareType[] = [];
+export class Middlewares<T extends TransportContext = TransportContext> implements Endpoint<T> {
+    protected handles: Middleware<T>[] = [];
     /**
      * use handle.
      *
-     * @param {MiddlewareType} handle
+     * @param {Middleware<T>} handle
      * @returns {this}
      */
-    use(...handles: MiddlewareType[]): this {
+    use(...handles: Middleware<T>[]): this {
         handles.forEach(handle => {
             if (this.has(handle)) return;
             this.handles.push(handle);
@@ -28,7 +24,7 @@ export class Middlewares<T extends TransportContext = TransportContext> extends 
         return this;
     }
 
-    unuse(...handles: (MiddlewareType | Type)[]) {
+    unuse(...handles: Middleware<T>[]) {
         handles.forEach(handle => {
             this.remove(this.handles, handle);
         });
@@ -38,11 +34,11 @@ export class Middlewares<T extends TransportContext = TransportContext> extends 
     /**
      * use handle before
      *
-     * @param {MiddlewareType} handle
-     * @param {MiddlewareType} before
+     * @param {Middleware<T>} handle
+     * @param {Middleware<T>} before
      * @returns {this}
      */
-    useBefore(handle: MiddlewareType, before: MiddlewareType | Type): this {
+    useBefore(handle: Middleware<T>, before: Middleware<T>): this {
         if (this.has(handle)) {
             return this;
         }
@@ -56,11 +52,11 @@ export class Middlewares<T extends TransportContext = TransportContext> extends 
     /**
      * use handle after.
      *
-     * @param {MiddlewareType} handle
-     * @param {MiddlewareType} after
+     * @param {Middleware<T>} handle
+     * @param {Middleware<T>} after
      * @returns {this}
      */
-    useAfter(handle: MiddlewareType, after?: MiddlewareType | Type): this {
+    useAfter(handle: Middleware<T>, after?: Middleware<T>): this {
         if (this.has(handle)) {
             return this;
         }
@@ -72,22 +68,22 @@ export class Middlewares<T extends TransportContext = TransportContext> extends 
         return this;
     }
 
-    protected remove(target: MiddlewareType[], handle: MiddlewareType | Type): void {
+    protected remove(target: Middleware<T>[], handle: Middleware<T>): void {
         const idx = target.findIndex(h => this.equals(h, handle));
         if (idx >= 0) {
             target.splice(idx, 1);
         }
     }
 
-    has(handle: MiddlewareType | Type): boolean {
+    has(handle: Middleware<T>): boolean {
         return this.handles.some(h => this.equals(h, handle));
     }
 
-    override handle(ctx: T, next?: () => Promise<void>): Promise<void> {
-        return chain(this.handles, ctx, next);
+    handle(ctx: T, next?: () => Promise<void>): Promise<void> {
+        return chain(this.handles.map(c => isClass(c) ? ctx.resolve(c) : c), ctx, next);
     }
 
-    protected equals(hd: MiddlewareType, hd2: MiddlewareType | Type) {
+    protected equals(hd: Middleware<T>, hd2: Middleware<T> | Type) {
         if (hd === hd2) return true;
         return;
     }

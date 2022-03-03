@@ -1,9 +1,9 @@
-import { Abstract, chain, isString, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
+import { Abstract, chain, isClass, isString, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
 import { RequestMethod } from '../transport/packet';
 import { TransportContext } from '../transport/context';
 import { CanActivate } from '../transport/guard';
 import { Middleware } from '../transport/middleware';
-import { Middlewares, MiddlewareType } from '../transport/middlewares';
+import { Middlewares } from '../transport/middlewares';
 import { PipeTransform } from '../pipes/pipe';
 import { Route } from './route';
 
@@ -56,7 +56,7 @@ export class MappingRouter extends Router implements OnDestroy {
         this.protocols = isString(protocols) ? protocols.split(';') : protocols;
     }
 
-    override use(...handles: MiddlewareType[]): this {
+    override use(...handles: Middleware[]): this {
         handles.forEach(handle => {
             if (this.has(handle)) return;
             if (handle instanceof Route) {
@@ -72,7 +72,7 @@ export class MappingRouter extends Router implements OnDestroy {
         return this;
     }
 
-    override unuse(...handles: (MiddlewareType | Type)[]) {
+    override unuse(...handles: Middleware[]) {
         handles.forEach(handle => {
             if (handle instanceof Route) {
                 if (handle.url) {
@@ -88,7 +88,7 @@ export class MappingRouter extends Router implements OnDestroy {
     }
 
     override handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
-        return chain([...this.handles, (c, n) => this.response(c, n)], ctx, next);
+        return chain([...this.handles.map(x=> isClass(x)? ctx.resolve(x) : x), (c, n) => this.response(c, n)], ctx, next);
     }
 
     protected response(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
@@ -176,10 +176,10 @@ export interface RouteMappingMetadata {
     /**
      * middlewares for the route.
      *
-     * @type {(MiddlewareType | Type<Middleware>)[]}
+     * @type {Middleware[]}
      * @memberof RouteMetadata
      */
-    middlewares?: (MiddlewareType | Type<Middleware>)[];
+    middlewares?: Middleware[];
     /**
      * pipes for the route.
      */

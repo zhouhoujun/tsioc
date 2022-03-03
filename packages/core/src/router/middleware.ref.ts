@@ -1,6 +1,7 @@
 import { Abstract, Destroyable, DestroyCallback, Injector, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
+import { TransportContext } from '../transport/context';
 import { CanActivate } from '../transport/guard';
-import { Middleware } from '../transport/middleware';
+import { Endpoint } from '../transport/middleware';
 import { RouteOption } from './route';
 
 
@@ -8,7 +9,7 @@ import { RouteOption } from './route';
  * middleware ref.
  */
  @Abstract()
- export abstract class MiddlewareRef<T extends Middleware = Middleware> extends Middleware implements Destroyable, OnDestroy {
+ export abstract class MiddlewareRef<T extends Endpoint = Endpoint> implements Endpoint, Destroyable, OnDestroy {
      /**
       * middleware type.
       */
@@ -37,6 +38,13 @@ import { RouteOption } from './route';
       * protocols.
       */
      abstract get protocols(): string[];
+
+     /**
+      * 
+      * @param ctx 
+      * @param next 
+      */
+     abstract handle(ctx: TransportContext, next: () => Promise<void>): Promise<void>;
  
      /**
       * is destroyed or not.
@@ -61,7 +69,7 @@ import { RouteOption } from './route';
   * middleware ref factory.
   */
  @Abstract()
- export abstract class MiddlewareRefFactory<T extends Middleware> {
+ export abstract class MiddlewareRefFactory<T extends Endpoint> {
      /**
       * middleware reflect.
       */
@@ -82,6 +90,6 @@ import { RouteOption } from './route';
       * @param type
       * @returns instance of {@link MiddlewareRefFactory}.
       */
-     abstract resolve<T extends Middleware>(type: Type<T> | TypeReflect<T>): MiddlewareRefFactory<T>;
+     abstract resolve<T extends Endpoint>(type: Type<T> | TypeReflect<T>): MiddlewareRefFactory<T>;
  }
  

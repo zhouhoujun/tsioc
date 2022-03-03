@@ -1,5 +1,5 @@
 import { chain, DestroyCallback, EMPTY, Injector, isFunction, isUndefined, lang, OperationFactory, OperationFactoryResolver, refl, Type, TypeReflect } from '@tsdi/ioc';
-import { Middleware } from '../transport/middleware';
+import { Endpoint, Middleware } from '../transport/middleware';
 import { MiddlewareRef, MiddlewareRefFactory, MiddlewareRefFactoryResolver } from './middleware.ref';
 import { HandleMetadata } from './metadata/meta';
 import { CanActivate } from '../transport/guard';
@@ -9,7 +9,7 @@ import { TransportContext, promisify } from '../transport/context';
 /**
  * middleware ref.
  */
-export class DefaultMiddlewareRef<T extends Middleware = Middleware> extends MiddlewareRef<T> {
+export class DefaultMiddlewareRef<T extends Endpoint = Endpoint> extends MiddlewareRef<T> {
     private _destroyed = false;
     private _dsryCbs = new Set<DestroyCallback>();
 
@@ -123,7 +123,7 @@ export class DefaultMiddlewareRef<T extends Middleware = Middleware> extends Mid
 
 }
 
-export class DefaultMiddlewareRefFactory<T extends Middleware> extends MiddlewareRefFactory<T> {
+export class DefaultMiddlewareRefFactory<T extends Endpoint> extends MiddlewareRefFactory<T> {
     constructor(readonly reflect: TypeReflect<T>) {
         super()
     }
@@ -138,7 +138,7 @@ export class DefaultMiddlewareRefFactory<T extends Middleware> extends Middlewar
 }
 
 export class DefaultMiddlewareRefFactoryResolver extends MiddlewareRefFactoryResolver {
-    resolve<T extends Middleware<TransportContext>>(type: Type<T> | TypeReflect<T>): MiddlewareRefFactory<T> {
+    resolve<T extends Endpoint>(type: Type<T> | TypeReflect<T>): MiddlewareRefFactory<T> {
         return new DefaultMiddlewareRefFactory(isFunction(type) ? refl.get(type) : type);
     }
 }

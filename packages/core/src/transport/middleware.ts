@@ -1,23 +1,26 @@
-import { Abstract,  DispatchHandler } from '@tsdi/ioc';
+import { AsyncHandler, DispatchHandler, Type } from '@tsdi/ioc';
 import { TransportContext } from './context';
 
 
 /**
- * abstract middleware implements {@link DispatchHandler}.
+ * Endpoint implements {@link DispatchHandler}.
  *
  * @export
- * @abstract
- * @class Middleware
  */
-@Abstract()
-export abstract class Middleware<T extends TransportContext = TransportContext> implements DispatchHandler<T, Promise<void>> {
+export interface Endpoint<T extends TransportContext = TransportContext> extends DispatchHandler<T, Promise<void>> {
     /**
-     * execute middleware.
+     * middleware handle.
      *
      * @abstract
      * @param {T} ctx
      * @param {() => Promise<void>} next
      * @returns {Promise<void>}
      */
-    abstract handle(ctx: T, next: () => Promise<void>): Promise<void>;
+    handle(ctx: T, next: () => Promise<void>): Promise<void>;
 }
+
+ 
+/**
+* message type for register in {@link Middlewares}.
+*/
+export type Middleware<T extends TransportContext = TransportContext> = AsyncHandler<TransportContext> | Endpoint<T> | Type<Endpoint>;

@@ -42,13 +42,13 @@ export abstract class ApplicationContext extends InvocationContext implements De
      * @param option bootstrap option.
      */
     abstract bootstrap<C>(type: Type<C> | RunnableFactory<C>, option?: BootstrapOption): any;
-    /**
-     * send message.
-     * @param pattern message pattern. type of {@link Pattern}.
-     * @param data send data.
-     * @returns instance of {@link WritePacket}.
-     */
-    abstract send<TResult = TransportResponse, TInput = any>(pattern: Pattern, data: TInput): Observable<TResult>;
+    // /**
+    //  * send message.
+    //  * @param pattern message pattern. type of {@link Pattern}.
+    //  * @param data send data.
+    //  * @returns instance of {@link WritePacket}.
+    //  */
+    // abstract send<TResult = TransportResponse, TInput = any>(pattern: Pattern, data: TInput): Observable<TResult>;
     /**
      * get log manager.
      */
