@@ -1,13 +1,10 @@
+import { ModuleWithProviders } from '@tsdi/ioc';
 import { Module } from '../../metadata/decor';
-import { HttpInterceptingHandler, HTTP_INTERCEPTORS, NoopInterceptor } from './interceptor';
-import { TransformModule } from '../../pipes/module';
-import { RouterModule } from '../../router';
-import { HttpClient } from './client';
 import { HttpBackend, HttpHandler } from './handler';
-import { HttpServer } from './server';
+import { HttpInterceptingHandler, HTTP_INTERCEPTORS, NoopInterceptor } from './interceptor';
+import { HttpClient } from './client';
 import { JsonpCallbackContext, JsonpClientBackend, JsonpInterceptor } from './jsonp';
 import { HttpXhrBackend } from './backend';
-import { ModuleWithProviders } from '@tsdi/ioc';
 import { HttpXsrfCookieExtractor, HttpXsrfInterceptor, HttpXsrfTokenExtractor, XSRF_COOKIE_NAME, XSRF_HEADER_NAME } from './xsrf';
 
 
@@ -68,6 +65,12 @@ export class HttpClientXsrfModule {
     }
 }
 
+/**
+ * http client module, Configures the module injector for {@link HttpClient}.
+ * 
+ * You can add interceptors to the chain behind `HttpClient` by binding them to the
+ * multiprovider for built-in {@link HTTP_INTERCEPTORS}.
+ */
 @Module({
     /**
     * Optional configuration for XSRF protection.
@@ -90,13 +93,13 @@ export class HttpClientModule {
 }
 
 /**
- * Configures the [dependency injector](guide/glossary#injector) for `HttpClient`
+ * Configures the module injector for {@link HttpClient}
  * with supporting services for JSONP.
  * Without this module, Jsonp requests reach the backend
  * with method JSONP, where they are rejected.
  *
  * You can add interceptors to the chain behind `HttpClient` by binding them to the
- * multiprovider for built-in [DI token](guide/glossary#di-token) `HTTP_INTERCEPTORS`.
+ * multiprovider for built-in {@link HTTP_INTERCEPTORS}.
  *
  * @publicApi
  */
@@ -115,18 +118,4 @@ export function jsonpCallbackContext(): Object {
         return window;
     }
     return {};
-}
-
-
-@Module({
-    imports: [
-        TransformModule,
-        RouterModule
-    ],
-    providers: [
-        HttpServer
-    ]
-})
-export class HttpServerModule {
-
 }
