@@ -5,7 +5,7 @@ import { CanActivate } from '../transport/guard';
 import { Middleware } from '../transport/middleware';
 import { Middlewares } from '../transport/middlewares';
 import { PipeTransform } from '../pipes/pipe';
-import { Route } from './route';
+import { Route, RouteRef } from './route';
 
 
 /**
@@ -46,20 +46,20 @@ const endColon = /:$/;
 
 export class MappingRouter extends Router implements OnDestroy {
 
-    readonly routes: Map<string, Route>;
+    readonly routes: Map<string, RouteRef>;
 
     readonly protocols: string[];
 
     constructor(protocols: string | string[], readonly prefix = '') {
         super();
-        this.routes = new Map<string, Route>();
+        this.routes = new Map<string, RouteRef>();
         this.protocols = isString(protocols) ? protocols.split(';') : protocols;
     }
 
     override use(...handles: Middleware[]): this {
         handles.forEach(handle => {
             if (this.has(handle)) return;
-            if (handle instanceof Route) {
+            if (handle instanceof RouteRef) {
                 if (handle.url) {
                     this.routes.set(handle.url, handle);
                 } else {
@@ -74,7 +74,7 @@ export class MappingRouter extends Router implements OnDestroy {
 
     override unuse(...handles: Middleware[]) {
         handles.forEach(handle => {
-            if (handle instanceof Route) {
+            if (handle instanceof RouteRef) {
                 if (handle.url) {
                     this.routes.delete(handle.url);
                 } else {
@@ -100,7 +100,7 @@ export class MappingRouter extends Router implements OnDestroy {
         }
     }
 
-    protected getRoute(ctx: TransportContext): Route | undefined {
+    protected getRoute(ctx: TransportContext): RouteRef | undefined {
         if (this.protocols.indexOf(ctx.protocol) < 0) return;
         if (ctx.status && ctx.status !== 404) return;
         if (!ctx.pattern.startsWith(this.prefix)) return;
@@ -109,7 +109,7 @@ export class MappingRouter extends Router implements OnDestroy {
 
     }
 
-    getRouteByUrl(url: string): Route | undefined {
+    getRouteByUrl(url: string): RouteRef | undefined {
         let route = this.routes.get(url);
         while (!route && url.lastIndexOf('/') > 1) {
             route = this.getRouteByUrl(url.slice(0, url.lastIndexOf('/')));

@@ -3,7 +3,6 @@ import {
     ModuleLoader, Destroyable, Modules, DestroyCallback, InvocationContext
 } from '@tsdi/ioc';
 import { LoggerManager } from '@tsdi/logs';
-import { Observable } from 'rxjs';
 import { ApplicationConfiguration, ConfigureManager } from './configure/config';
 import { RunnableRef, RunnableSet, RunnableFactory } from './runnable';
 import { ServiceSet } from './service';
@@ -11,7 +10,6 @@ import { StartupSet } from './startup';
 import { ModuleOption } from './module.factory';
 import { ModuleRef } from './module.ref';
 import { ApplicationArguments } from './args';
-import { Pattern, TransportResponse } from './transport/packet';
 
 
 /**
@@ -42,13 +40,6 @@ export abstract class ApplicationContext extends InvocationContext implements De
      * @param option bootstrap option.
      */
     abstract bootstrap<C>(type: Type<C> | RunnableFactory<C>, option?: BootstrapOption): any;
-    // /**
-    //  * send message.
-    //  * @param pattern message pattern. type of {@link Pattern}.
-    //  * @param data send data.
-    //  * @returns instance of {@link WritePacket}.
-    //  */
-    // abstract send<TResult = TransportResponse, TInput = any>(pattern: Pattern, data: TInput): Observable<TResult>;
     /**
      * get log manager.
      */

@@ -1,9 +1,10 @@
 import { Module } from '../metadata/decor';
 import { MiddlewareRefFactoryResolver } from './middleware.ref';
-import { RouteRefFactoryResolver } from './route';
+import { RouteRefFactoryResolver, ROUTES, Routes } from './route';
 import { DefaultRouteRefFactoryResovler } from './route_ref';
 import { DefaultMiddlewareRefFactoryResolver } from './middleware.factory';
 import { MappingRouterResolver, RouterResolver } from './router';
+import { ModuleWithProviders } from '@tsdi/ioc';
 
 /*
  * Middleware module.
@@ -16,5 +17,30 @@ import { MappingRouterResolver, RouterResolver } from './router';
     ]
 })
 export class RouterModule {
+
+    /**
+     * Creates a module with all the router directives and a provider registering routes,
+     * without creating a new Router service.
+     * When registering for submodules and lazy-loaded submodules, create the Module as follows:
+     *
+     * ```
+     * @Module({
+     *   imports: [RouterModule.forChild(ROUTES)]
+     * })
+     * class MyNgModule {}
+     * ```
+     *
+     * @param routes An array of `Route` objects that define the navigation paths for the submodule.
+     * @return The new Module.
+     *
+     */
+    static forChild(routes: Routes): ModuleWithProviders<RouterModule> {
+        return {
+            module: RouterModule,
+            providers: [
+                { provide: ROUTES, multi: true, useValue: routes }
+            ],
+        };
+    }
 
 }

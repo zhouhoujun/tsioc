@@ -1,39 +1,87 @@
-import { Abstract, Destroyable, DestroyCallback, Injector, InvokeOption, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
+import { Abstract, Destroyable, DestroyCallback, Injector, InvokeArguments, InvokeOption, OnDestroy, tokenId, Type, TypeReflect } from '@tsdi/ioc';
 import { TransportContext } from '../transport/context';
 import { CanActivate } from '../transport/guard';
 import { Endpoint } from '../transport/middleware';
 
 
-/**
- * route instance.
- */
-@Abstract()
-export abstract class Route<T extends TransportContext = TransportContext> implements Endpoint<T> {
+export interface Route extends InvokeArguments {
     /**
-    * route handle.
-    *
-    * @abstract
-    * @param {T} ctx
-    * @param {() => Promise<void>} next
-    * @returns {Promise<void>}
-    */
-    abstract handle(ctx: T, next: () => Promise<void>): Promise<void>;
-    /**
-     * route url.
+     * The path to match against. Cannot be used together with a custom `matcher` function.
+     * A URL string that uses router matching notation.
+     * Can be a wild card (`**`) that matches any URL (see Usage Notes below).
+     * Default is "/" (the root path).
+     *
      */
-    abstract get url(): string;
+    path?: string;
     /**
-     * route guards.
+     * A URL to redirect to when the path matches.
+     *
+     * Absolute if the URL begins with a slash (/), otherwise relative to the path URL.
+     * Note that no further redirects are evaluated after an absolute redirect.
+     *
+     * When not present, router does not redirect.
      */
-    abstract get guards(): Type<CanActivate>[] | undefined;
+    redirectTo?: string;
+    /**
+     * An array of dependency-injection tokens used to look up `CanActivate()`
+     * handlers, in order to determine if the current user is allowed to
+     * activate the component. By default, any user can activate.
+     */
+    guards?: Type<CanActivate>[];
+
+    /**
+     * An array of child `Route` objects that specifies a nested route
+     * configuration.
+     */
+    children?: Routes;
+    /**
+     * An object specifying lazy-loaded child routes.
+     */
+    loadChildren?: LoadChildren;
+
+    /**
+     * The component to instantiate when the path matches.
+     * Can be empty if child routes specify components.
+     */
+    endpoint?: Type<Endpoint> | Endpoint;
+
 }
+
+export type LoadChildren = () => any;
+export type Routes = Route[];
+
+export const ROUTES = tokenId<Routes>('ROUTES');
+
+// /**
+//  * route instance.
+//  */
+// @Abstract()
+// export abstract class Route<T extends TransportContext = TransportContext> implements Endpoint<T> {
+//     /**
+//     * route handle.
+//     *
+//     * @abstract
+//     * @param {T} ctx
+//     * @param {() => Promise<void>} next
+//     * @returns {Promise<void>}
+//     */
+//     abstract handle(ctx: T, next: () => Promise<void>): Promise<void>;
+//     /**
+//      * route url.
+//      */
+//     abstract get url(): string;
+//     /**
+//      * route guards.
+//      */
+//     abstract get guards(): Type<CanActivate>[] | undefined;
+// }
 
 
 /**
  * middleware ref.
  */
 @Abstract()
-export abstract class RouteRef<T = any> extends Route implements Destroyable, OnDestroy {
+export abstract class RouteRef<T = any> implements Endpoint, Destroyable, OnDestroy {
     /**
      * controller type.
      */
@@ -58,6 +106,15 @@ export abstract class RouteRef<T = any> extends Route implements Destroyable, On
      * route guards.
      */
     abstract get guards(): Type<CanActivate>[] | undefined;
+    /**
+     * route handle.
+     *
+     * @abstract
+     * @param {TransportContext} ctx
+     * @param {() => Promise<void>} next
+     * @returns {Promise<void>}
+     */
+    abstract handle(ctx: TransportContext, next: () => Promise<void>): Promise<void>;
     /**
      * is destroyed or not.
      */

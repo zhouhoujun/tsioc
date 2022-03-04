@@ -1,7 +1,7 @@
 import { Injector, Injectable, lang, ArgumentError, MissingParameterError } from '@tsdi/ioc';
 import { lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
-import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Middleware, Module, Middlewares, TransportContext, HttpModule } from '../src';
+import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Middleware, Module, Middlewares, TransportContext, HttpClientModule, HttpServerModule, Endpoint, HttpClient } from '../src';
 
 
 @RouteMapping('/device')
@@ -111,9 +111,9 @@ class DeviceStartQueue extends Middlewares {
 }
 
 @Handle(DeviceStartQueue)
-class DeviceStartupHandle extends Middleware {
+class DeviceStartupHandle implements Endpoint {
 
-    override async handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    async handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         console.log('DeviceStartupHandle.', 'resp:', ctx.request.body.type, 'req:', ctx.request.body.type)
         if (ctx.body.type === 'startup') {
             // todo sth.
@@ -124,7 +124,7 @@ class DeviceStartupHandle extends Middleware {
 }
 
 @Handle(DeviceStartQueue)
-class DeviceAStartupHandle implements Middleware {
+class DeviceAStartupHandle implements Endpoint {
 
     async handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         console.log('DeviceAStartupHandle.', 'resp:', ctx.body.type, 'req:', ctx.request.body.type)
@@ -166,7 +166,8 @@ class DeviceAModule {
 
 @Module({
     imports: [
-        HttpModule,
+        HttpClientModule,
+        HttpServerModule,
         DeviceManageModule,
         DeviceAModule
     ],
@@ -212,7 +213,8 @@ describe('app message queue', () => {
         let device, aState, bState;
 
         const defer = lang.defer();
-        ctx.send('/hdevice', { body: { type: 'startup' } })
+        const client = ctx.resolve(HttpClient);
+        client.send('/hdevice', { observe: 'response', body: { type: 'startup' } })
             .subscribe(rep => {
                 device = rep.body['device'];
                 aState = rep.body['deviceA_state'];
@@ -226,7 +228,7 @@ describe('app message queue', () => {
     });
 
     it('post route response object', async () => {
-        const a = await lastValueFrom(ctx.send('/device/init', { method: 'POST', query: { name: 'test' } }));
+        const a = await lastValueFrom(ctx.resolve(HttpClient).post('/device/init', { observe: 'response', params: { name: 'test' } }));
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toBeDefined();

@@ -57,21 +57,6 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         return this.injector.instance;
     }
 
-    // private client: TransportClient | undefined;
-    // /**
-    //  * send message.
-    //  * @param pattern message pattern.
-    //  * @param data send data.
-    //  */
-    // send<TResult = TransportResponse, TInput = any>(pattern: Pattern, data: TInput): Observable<TResult> {
-    //     if (!this.client) {
-    //         this.client = this.injector.get(ClientFactory).create({
-    //             protocol: 'msg'
-    //         });
-    //     }
-    //     return this.client.send(pattern, data) as Observable<TResult>;
-    // }
-
     /**
      * get log manager.
      */
