@@ -1,4 +1,4 @@
-export * from './global';
+export * from './platform';
 
 // annotations
 export * from './configure/config';

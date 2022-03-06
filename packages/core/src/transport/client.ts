@@ -39,8 +39,8 @@ export abstract class TransportClient implements OnDispose {
         body?: any;
         method?: RequestMethod,
         observe?: 'body',
-        headers?: { [header: string]: string | string[] },
-        params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
+        headers?: { [header: string]: string | string[] } | any,
+        params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> } | any,
         responseType?: 'json',
         withCredentials?: boolean
     }): Observable<R>;
@@ -58,10 +58,10 @@ export abstract class TransportClient implements OnDispose {
     send<R>(pattern: string, options: {
         body?: any,
         method?: RequestMethod,
-        headers?: { [header: string]: string | string[] },
+        headers?: { [header: string]: string | string[] } | any,
         context?: InvocationContext,
         reportProgress?: boolean, observe: 'events',
-        params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
+        params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> } | any,
         responseType?: 'json',
         withCredentials?: boolean,
     }): Observable<TransportEvent<R>>;
@@ -78,10 +78,10 @@ export abstract class TransportClient implements OnDispose {
     send<R>(pattern: string, options: {
         body?: any,
         method?: RequestMethod,
-        headers?: { [header: string]: string | string[] },
+        headers?: { [header: string]: string | string[] } | any,
         context?: InvocationContext,
         reportProgress?: boolean, observe: 'events',
-        params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
+        params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> } | any,
         responseType?: 'text',
         withCredentials?: boolean,
     }): Observable<TransportEvent<string>>;
@@ -94,12 +94,12 @@ export abstract class TransportClient implements OnDispose {
      * 
      * @return An `Observable` of the `HttpResponse`, with the response body as an `ArrayBuffer`. 
      */
-     send<T>(pattern: string, options?: {
+    send<T>(pattern: string, options?: {
         body?: any,
         method?: RequestMethod,
-        headers?: { [header: string]: string | string[] },
+        headers?: { [header: string]: string | string[] } | any,
         context?: InvocationContext,
-        params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
+        params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> } | any,
         observe?: 'response',
         reportProgress?: boolean,
         responseType?: 'json',
@@ -116,9 +116,9 @@ export abstract class TransportClient implements OnDispose {
     send(pattern: string, options?: {
         body?: any,
         method?: RequestMethod,
-        headers?: { [header: string]: string | string[] },
+        headers?: { [header: string]: string | string[] } | any,
         context?: InvocationContext,
-        params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
+        params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> } | any,
         observe?: 'response',
         reportProgress?: boolean,
         responseType?: 'arraybuffer',
@@ -136,9 +136,9 @@ export abstract class TransportClient implements OnDispose {
     send(pattern: string, options?: {
         body?: any,
         method?: RequestMethod,
-        headers?: { [header: string]: string | string[] },
+        headers?: { [header: string]: string | string[] } | any,
         context?: InvocationContext,
-        params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
+        params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> } | any,
         observe?: 'response',
         reportProgress?: boolean,
         responseType?: 'blob',
@@ -153,9 +153,9 @@ export abstract class TransportClient implements OnDispose {
     send(pattern: string, options?: {
         body?: any,
         method?: RequestMethod,
-        headers?: { [header: string]: string | string[] },
+        headers?: { [header: string]: string | string[] } | any,
         context?: InvocationContext,
-        params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
+        params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> } | any,
         observe?: 'response',
         reportProgress?: boolean,
         responseType?: 'text',
@@ -170,9 +170,9 @@ export abstract class TransportClient implements OnDispose {
     send(pattern: string, options?: {
         body?: any,
         method?: RequestMethod,
-        headers?: { [header: string]: string | string[] },
+        headers?: { [header: string]: string | string[] } | any,
         context?: InvocationContext,
-        params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
+        params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> } | any,
         observe?: 'body' | 'events' | 'response',
         reportProgress?: boolean,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -184,12 +184,12 @@ export abstract class TransportClient implements OnDispose {
      * @param pattern request pattern.
      * @param body send data.
      */
-    send(pattern: string|TransportRequest, options?: {
+    send(pattern: string | TransportRequest, options?: {
         body?: any,
         method?: RequestMethod,
-        headers?: { [header: string]: string | string[] },
+        headers?: { [header: string]: string | string[] } | any,
         context?: InvocationContext,
-        params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
+        params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> } | any,
         observe?: 'body' | 'events' | 'response',
         reportProgress?: boolean,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -198,14 +198,25 @@ export abstract class TransportClient implements OnDispose {
         if (isNil(pattern)) {
             return throwError(() => new InvalidMessageError());
         }
-        const req = isString(pattern)? this.serializeRequest(this.normalizePattern(pattern), options) : pattern;
-        return this.sendRequest(req);
+
+        return defer(async () => this.connect()).pipe(
+            concatMap(() => this.sendRequest(pattern, options))
+        );
     }
 
-    protected sendRequest(req: TransportRequest): Observable<TransportResponse> {
-        return defer(async () => this.connect()).pipe(
-            concatMap(() => this.serializeResponse(this.handler.handle(req)))
-        );
+    protected sendRequest(pattern: string | TransportRequest, options?: {
+        body?: any,
+        method?: RequestMethod,
+        headers?: { [header: string]: string | string[] } | any,
+        context?: InvocationContext,
+        params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> } | any,
+        observe?: 'body' | 'events' | 'response',
+        reportProgress?: boolean,
+        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
+        withCredentials?: boolean,
+    }): Observable<any> {
+        const req = isString(pattern) ? this.serializeRequest(this.normalizePattern(pattern), options) : pattern;
+        return this.handler.handle(req);
     }
 
     /**
@@ -229,10 +240,6 @@ export abstract class TransportClient implements OnDispose {
         withCredentials?: boolean
     }): TransportRequest {
         return { pattern, ...options } as TransportRequest;
-    }
-
-    protected serializeResponse(response: Observable<TransportResponse>): Observable<TransportResponse> {
-        return response;
     }
 
     /**

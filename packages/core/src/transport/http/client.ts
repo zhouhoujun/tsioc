@@ -1,6 +1,7 @@
-import { Injectable, InvocationContext } from '@tsdi/ioc';
+import { EMPTY_OBJ, Injectable, InvocationContext } from '@tsdi/ioc';
 import { concatMap, filter, map, Observable, of } from 'rxjs';
 import { TransportClient } from '../client';
+import { TransportRequest, RequestMethod, TransportResponse } from '../packet';
 import { HttpHandler } from './handler';
 import { HttpHeaders } from './headers';
 import { HttpParams, HttpParamsOptions } from './params';
@@ -396,7 +397,7 @@ export class HttpClient extends TransportClient {
      *   * An `observe` value of body returns an observable of `<T>` with the same `T` body type.
      *
      */
-    request(first: string | HttpRequest<any>, url?: string, options: {
+    request(first: string | HttpRequest<any>, url?: string, options?: {
         body?: any,
         headers?: HttpHeaders | { [header: string]: string | string[] },
         context?: InvocationContext,
@@ -406,7 +407,31 @@ export class HttpClient extends TransportClient {
         reportProgress?: boolean,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
-    } = {}): Observable<any> {
+    }): Observable<any> {
+        if(first instanceof HttpRequest){
+            return this.sendRequest(first, options);
+        } else {
+            return this.sendRequest(url!, {
+                method: (first ?? 'GET') as RequestMethod,
+                ...options
+            });
+        }
+        
+    }
+
+    protected override sendRequest(first: string | HttpRequest<any>, options: {
+        body?: any,
+        method?: RequestMethod,
+        headers?: HttpHeaders | { [header: string]: string | string[] },
+        context?: InvocationContext,
+        observe?: 'body' | 'events' | 'response',
+        params?: HttpParams |
+        { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
+        reportProgress?: boolean,
+        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
+        withCredentials?: boolean
+    }={}): Observable<any>  {
+
         let req: HttpRequest<any>;
         // First, check whether the primary argument is an instance of `HttpRequest`.
         if (first instanceof HttpRequest) {
@@ -418,6 +443,7 @@ export class HttpClient extends TransportClient {
             // and incorporate the remaining arguments (assuming `GET` unless a method is
             // provided.
 
+            let url = first as string;
             // Figure out the headers.
             let headers: HttpHeaders | undefined = undefined;
             if (options.headers instanceof HttpHeaders) {
@@ -437,7 +463,7 @@ export class HttpClient extends TransportClient {
             }
 
             // Construct the request.
-            req = new HttpRequest(first, url!, (options.body !== undefined ? options.body : null), {
+            req = new HttpRequest(options.method?? 'GET', url, (options.body !== undefined ? options.body : null), {
                 headers,
                 context: options.context,
                 params,
@@ -517,14 +543,14 @@ export class HttpClient extends TransportClient {
 
 
     /**
-   * Constructs a `DELETE` request that interprets the body as an `ArrayBuffer`
-   *  and returns the response as an `ArrayBuffer`.
-   *
-   * @param url     The endpoint URL.
-   * @param options The HTTP options to send with the request.
-   *
-   * @return  An `Observable` of the response body as an `ArrayBuffer`.
-   */
+     * Constructs a `DELETE` request that interprets the body as an `ArrayBuffer`
+     *  and returns the response as an `ArrayBuffer`.
+     *
+     * @param url     The endpoint URL.
+     * @param options The HTTP options to send with the request.
+     *
+     * @return  An `Observable` of the response body as an `ArrayBuffer`.
+     */
     delete(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] },
         context?: InvocationContext,

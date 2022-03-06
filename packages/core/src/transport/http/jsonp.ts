@@ -7,7 +7,7 @@
  */
 import { Inject, Injectable } from '@tsdi/ioc';
 import { Observable, Observer } from 'rxjs';
-import { DOCUMENT } from '../../global';
+import { DOCUMENT } from '../../platform';
 import { HttpBackend, HttpHandler } from './handler';
 import { HttpRequest } from './request';
 import { HttpErrorResponse, HttpEvent, HttpEventType, HttpResponse } from './response';
