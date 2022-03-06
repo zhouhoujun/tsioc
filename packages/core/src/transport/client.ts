@@ -94,6 +94,25 @@ export abstract class TransportClient implements OnDispose {
      * 
      * @return An `Observable` of the `HttpResponse`, with the response body as an `ArrayBuffer`. 
      */
+     send<T>(pattern: string, options?: {
+        body?: any,
+        method?: RequestMethod,
+        headers?: { [header: string]: string | string[] },
+        context?: InvocationContext,
+        params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
+        observe?: 'response',
+        reportProgress?: boolean,
+        responseType?: 'json',
+        withCredentials?: boolean,
+    }): Observable<TransportResponse<T>>;
+    /**
+     * Constructs a request which interprets the body as an `ArrayBuffer`
+     * and returns the full {@link TransportResponse}.
+     * @param pattern 
+     * @param options  The options to send with the request.
+     * 
+     * @return An `Observable` of the `HttpResponse`, with the response body as an `ArrayBuffer`. 
+     */
     send(pattern: string, options?: {
         body?: any,
         method?: RequestMethod,

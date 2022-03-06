@@ -2,7 +2,7 @@ import { ServerLogsModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import * as net from 'net';
 import { ModuleA, ModuleB, ClassSevice, SubMessageQueue, SocketService, StatupModule, TestService } from './demo';
-import { Application, Router } from '../src';
+import { Application, HttpClient, Router } from '../src';
 import { lastValueFrom } from 'rxjs';
 
 
@@ -34,7 +34,7 @@ describe('di module', () => {
         });
 
         // has no parent.
-        const rep = await lastValueFrom(ctx.send('test', { query: { hi: 'hello' } }));
+        const rep = await lastValueFrom(ctx.resolve(HttpClient).send('test', { observe: 'response', params: { hi: 'hello' } }));
         expect(rep.body).toEqual('hello');
         expect(rep.status).toEqual(200);
 

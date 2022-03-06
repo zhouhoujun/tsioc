@@ -4,6 +4,9 @@ import { TransformModule } from '../../pipes/module';
 import { RouterModule } from '../../router';
 import { HttpServer } from './server';
 
+/**
+ * http server module.
+ */
 @Module({
     imports: [
         TransformModule,
@@ -13,6 +16,6 @@ import { HttpServer } from './server';
         HttpServer
     ]
 })
-export class HttpServerModule {
+export class HttpModule {
 
 }

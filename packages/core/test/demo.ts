@@ -1,6 +1,6 @@
 import {
     Module, Message, ConfigureService, ApplicationContext, Configuration, ComponentScan, OnDispose,
-    Runnable, Middlewares, ApplicationConfiguration, Bean, Settings, HttpModule
+    Runnable, Middlewares, ApplicationConfiguration, Bean, Settings, HttpClientModule, HttpModule
 } from '../src';
 import { Injectable, Inject, OnDestroy, lang } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
@@ -89,6 +89,7 @@ export class SubMessageQueue extends Middlewares {
     exports: [
         AopModule,
         LogModule,
+        HttpClientModule,
         HttpModule
     ]
 })
