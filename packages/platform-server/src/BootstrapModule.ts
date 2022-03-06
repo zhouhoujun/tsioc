@@ -1,13 +1,13 @@
 import { Injectable, Singleton, ModuleLoader, Inject, isString, EMPTY } from '@tsdi/ioc';
 import {
     Module, ConfigureLoader, PROCESS_ROOT, ApplicationConfiguration, ApplicationExit,
-    ApplicationContext, ApplicationArguments, PLATFORM_ID, PLATFORM_SERVER_ID, XhrFactory
+    ApplicationContext, ApplicationArguments, PLATFORM_ID, PLATFORM_SERVER_ID
 } from '@tsdi/core';
 import * as path from 'path';
 import * as fs from 'fs';
 import { runMainPath } from './toAbsolute';
 import { NodeModuleLoader } from './NodeModuleLoader';
-import { ServerXhr } from './xhr';
+import { HTTP_PROVIDERS } from './xhr';
 
 
 /**
@@ -158,12 +158,12 @@ export class ServerApplicationExit extends ApplicationExit {
     providedIn: 'platform',
     providers: [
         { provide: PLATFORM_ID, useValue: PLATFORM_SERVER_ID },
-        { provide: XhrFactory, useClass: ServerXhr },
         ConfigureFileLoader,
         { provide: ApplicationArguments, useValue: new ServerApplicationArguments(process.env, process.argv.slice(2)) },
         { provide: PROCESS_ROOT, useValue: runMainPath(), asDefault: true },
         { provide: ModuleLoader, useValue: new NodeModuleLoader() },
-        { provide: ApplicationExit, useClass: ServerApplicationExit }
+        { provide: ApplicationExit, useClass: ServerApplicationExit },
+        ...HTTP_PROVIDERS
     ]
 })
 export class ServerBootstrapModule { }

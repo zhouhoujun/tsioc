@@ -4,7 +4,10 @@ import { HttpStatusCode } from './status';
 import { HttpBackend, XhrFactory } from './handler';
 import { HttpHeaders } from './headers';
 import { HttpRequest } from './request';
-import { HttpDownloadProgressEvent, HttpErrorResponse, HttpEvent, HttpEventType, HttpHeaderResponse, HttpJsonParseError, HttpResponse, HttpUploadProgressEvent } from './response';
+import {
+    HttpDownloadProgressEvent, HttpErrorResponse, HttpEvent, HttpEventType,
+    HttpHeaderResponse, HttpJsonParseError, HttpResponse, HttpUploadProgressEvent
+} from './response';
 
 
 
