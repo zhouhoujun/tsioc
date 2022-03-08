@@ -1,19 +1,26 @@
 import { Abstract } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
+import { Runner } from '../metadata/decor';
 import { catchError, finalize, Observable, Subscription, EMPTY, isObservable, connectable, Subject } from 'rxjs';
 import { OnDispose } from '../lifecycle';
 import { Protocol, TransportRequest, TransportResponse } from './packet';
 import { TransportHandler } from './handler';
+import { Startup } from '../startup';
 
 
 /**
  * abstract transport server.
  */
 @Abstract()
-export abstract class TransportServer<TRequest extends TransportRequest = TransportRequest, TResponse extends TransportResponse = TransportResponse> implements OnDispose {
+@Runner('startup')
+export abstract class TransportServer<TRequest extends TransportRequest = TransportRequest, TResponse extends TransportResponse = TransportResponse> implements Startup, OnDispose {
 
     @Logger()
     protected readonly logger!: ILogger;
+    /**
+     * startup server.
+     */
+    abstract startup(): Promise<void>;
     /**
      * transport handler.
      */

@@ -4,13 +4,31 @@ import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { ModuleWithProviders, ProviderType } from '../providers';
 import { PatternMetadata, ProvidersMetadata, ProvidedInMetadata, ModuleMetadata } from './meta';
 import { TypeDefine } from './typedef';
+import { InvokeArguments } from '../context';
 
 /**
  * auto run define.
  */
-export interface AutorunDefine {
-    autorun: string;
+export interface RunableDefine {
+    /**
+     * the method as runnable.
+     */
+    method: string;
+    /**
+     * run order.
+     */
     order?: number;
+    /**
+     * runnable invoke args.
+     */
+    args?: InvokeArguments;
+    /**
+     * is auto run when created instance.
+     */
+    auto?: boolean;
+    /**
+     * decorator type.
+     */
     decorType?: DecoratorType;
 }
 
@@ -43,7 +61,7 @@ export namespace ActionTypes {
     export const propInject = 'propInject';
     export const paramInject = 'paramInject';
     export const annoation = 'annoation';
-    export const autorun = 'autorun';
+    export const runnable = 'runnable';
     export const typeProviders = 'typeProviders';
     export const methodProviders = 'methodProviders';
 }

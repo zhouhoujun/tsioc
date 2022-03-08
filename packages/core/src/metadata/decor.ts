@@ -1,7 +1,7 @@
 import {
     isUndefined, EMPTY_OBJ, isArray, lang, Type, createDecorator, ProviderType, InjectableMetadata,
     PropertyMetadata, ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes,
-    OperationFactoryResolver, MethodPropDecorator, Token, ArgumentError, object2string
+    OperationFactoryResolver, MethodPropDecorator, Token, ArgumentError, object2string, InvokeArguments, isString
 } from '@tsdi/ioc';
 import { ConfigureService, ServiceSet } from '../service';
 import { PipeMetadata, ComponentScanMetadata, ScanReflect, BeanMetadata } from './meta';
@@ -97,6 +97,34 @@ export const Module: Module<ModuleMetadata> = createModuleDecorator<ModuleMetada
  * @alias
  */
 export const DIModule = Module;
+
+/**
+ * Runner decorator, use to define the method of class as application Runner.
+ */
+export interface Runner {
+    /**
+     * Runner decorator, use to define the method of class as application Runner.
+     *
+     * @Module
+     *
+     * @param {string} runable the method of the class to run.
+     * @param {InvokeArguments} [args] the method invoke arguments {@link InvokeArguments}.
+     */
+    (runable: string, args?: InvokeArguments): ClassDecorator;
+
+    /**
+     * Runner decorator, use to define the method of class as application Runner.
+     * 
+     * @param {InvokeArguments} [args] the method invoke arguments {@link InvokeArguments}.
+     */
+    (args?: InvokeArguments): MethodDecorator;
+}
+
+export const Runner: Runner = createDecorator('Runner', {
+    actionType: 'runnable',
+    props: (method: string | InvokeArguments, args?: InvokeArguments) =>
+        (isString(method) ? { method, args } : { args: method })
+})
 
 
 /**

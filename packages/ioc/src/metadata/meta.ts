@@ -2,6 +2,7 @@ import { ClassType, Modules, Type } from '../types';
 import { InjectFlags, Token } from '../tokens';
 import { ModuleWithProviders, ProviderType } from '../providers';
 import { ArgumentResolver } from '../resolver';
+import { InvokeArguments } from '../context';
 
 /**
  * type metadata
@@ -338,14 +339,28 @@ export interface AutoWiredMetadata extends MethodParamPropMetadata { }
 
 
 /**
- * Autowired metadata.
+ * Runnable metadata.
  *
  * @export
- * @interface AutorunMetadata
+ * @interface RunnableMetadata
  * @extends {TypeMetadata}
  */
-export interface AutorunMetadata extends TypeMetadata, PatternMetadata, ProvidedInMetadata {
-    autorun?: string;
-    order?: number;
+export interface RunnableMetadata extends TypeMetadata, PatternMetadata, ProvidedInMetadata {
+    /**
+     * the method as runnable.
+     */
+     method?: string;
+     /**
+      * run order.
+      */
+     order?: number;
+     /**
+      * runnable invoke args.
+      */
+     args?: InvokeArguments;
+     /**
+      * is auto run when created instance.
+      */
+     auto?: boolean;
 }
 

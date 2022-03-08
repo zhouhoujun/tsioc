@@ -2,13 +2,14 @@ import { ClassType, Type } from '../types';
 import { isString, isArray } from '../utils/chk';
 import { Token, getToken, InjectFlags } from '../tokens';
 import {
-    ClassMetadata, AutorunMetadata, AutoWiredMetadata, InjectMetadata, PatternMetadata,
+    ClassMetadata, RunnableMetadata, AutoWiredMetadata, InjectMetadata, PatternMetadata,
     InjectableMetadata, ParameterMetadata, ProvidersMetadata, ProviderInMetadata
 } from './meta';
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
 import { ProviderType, StaticProvider } from '../providers';
 import { Injector } from '../injector';
 import { OperationArgumentResolver } from '../resolver';
+import { InvokeArguments } from '../context';
 
 
 
@@ -717,10 +718,11 @@ export interface IocExt {
  *
  * @IocExt()
  */
-export const IocExt: IocExt = createDecorator<AutorunMetadata>('IocExt', {
+export const IocExt: IocExt = createDecorator<RunnableMetadata>('IocExt', {
     appendProps: (metadata) => {
-        metadata.autorun = 'setup';
+        metadata.method = 'setup';
         metadata.singleton = true;
+        metadata.auto = true;
         metadata.providedIn = 'platform';
     }
 });
@@ -739,23 +741,25 @@ export interface Autorun {
      * @Autorun
      *
      * @param {string} [autorun] the special method name when define to class.
+     * @param {InvokeArguments} [args] invoke arguments {@link InvokeArguments}.
      */
-    (autorun: string): ClassDecorator;
+    (autorun: string, args?: InvokeArguments): ClassDecorator;
     /**
      * Autorun decorator, for class or method. use to define the class auto run (via a method or not) after registered.
      * @Autorun
      *
-     * @param {AutorunMetadata} [metadata] metadata map.
+     * @param {RunnableMetadata} [metadata] metadata map.
      */
-    (metadata: AutorunMetadata): ClassMethodDecorator;
+    (metadata: RunnableMetadata): ClassMethodDecorator;
 
     /**
      * Autorun decorator, for method.  use to define the method auto run (via a method or not) after registered.
      * @Autorun
      *
      * @param {string} [autorun] the special method name when define to class.
+     * @param {InvokeArguments} [args] invoke arguments {@link InvokeArguments}.
      */
-    (order?: number): MethodDecorator;
+    (order?: number, args?: InvokeArguments): MethodDecorator;
 }
 
 /**
@@ -763,14 +767,15 @@ export interface Autorun {
  *
  * @Autorun
  */
-export const Autorun: Autorun = createDecorator<AutorunMetadata>('Autorun', {
-    props: (arg: string | number) => {
+export const Autorun: Autorun = createDecorator<RunnableMetadata>('Autorun', {
+    props: (arg: string | number, args?: InvokeArguments) => {
         if (isString(arg)) {
-            return { autorun: arg };
+            return { method: arg, args };
         }
-        return { order: arg }
+        return { order: arg, args }
     },
     appendProps: (meta) => {
+        meta.auto = true;
         meta.singleton = true;
     }
 });

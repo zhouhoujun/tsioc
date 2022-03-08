@@ -170,10 +170,10 @@ export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void
  * @extends {IocRuntimeAction}
  */
 export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void) {
-    if (ctx.reflect.class.autoruns.length) {
+    if (ctx.reflect.class.runnables.length) {
         const { injector: injector, type, instance, context } = ctx;
-        ctx.reflect.class.autoruns.forEach(aut => {
-            injector.invoke(instance || type, aut.autorun, context);
+        ctx.reflect.class.runnables.forEach(aut => {
+            injector.invoke(instance || type, aut.method, context);
         });
     }
 

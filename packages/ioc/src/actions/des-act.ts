@@ -174,17 +174,17 @@ export const DesignMthDecorScope = function (ctx: DesignContext, next: () => voi
  * @extends {IocDesignAction}
  */
 export const IocAutorunAction = function (ctx: DesignContext, next: () => void) {
-    if (ctx.reflect.class.autoruns.length < 1) {
+    if (ctx.reflect.class.runnables.length < 1) {
         return next();
     }
 
     const injector = ctx.injector;
     const instance = injector.get(ctx.provide || ctx.type);
     if (!instance) return;
-    ctx.reflect.class.autoruns.forEach(meta => {
-        if (meta && meta.autorun) {
-            if (isFunction(instance[meta.autorun])) {
-                injector.invoke(instance, meta.autorun);
+    ctx.reflect.class.runnables.forEach(meta => {
+        if (meta && meta.method && meta.auto) {
+            if (isFunction(instance[meta.method])) {
+                injector.invoke(instance, meta.method);
             }
         }
     });

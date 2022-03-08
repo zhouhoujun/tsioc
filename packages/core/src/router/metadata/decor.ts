@@ -107,7 +107,7 @@ export interface Handle {
  * @exports {@link Handle}
  */
 export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePattern>('Handle', {
-    actionType: [ActionTypes.annoation, ActionTypes.autorun],
+    actionType: [ActionTypes.annoation, ActionTypes.runnable],
     props: (parent?: Type<Middlewares> | string | RegExp, options?: { guards?: Type<CanActivate>[], parent?: Type<Middlewares> | string, before?: Type<Middleware> }) =>
         (isString(parent) || isRegExp(parent) ? ({ route: parent, ...options }) : ({ parent, ...options })) as HandleMetadata & HandleMessagePattern,
     reflect: {

@@ -16,6 +16,7 @@ export class DefaultRunnableRef<T> extends RunnableRef<T> {
     get type() {
         return this.factory.type;
     }
+
     get reflect() {
         return this.factory.reflect;
     }
@@ -32,11 +33,16 @@ export class DefaultRunnableRef<T> extends RunnableRef<T> {
     }
 
     run() {
-        return this.factory.invoke(this.getInvokeMethod(), undefined, this.instance);
-    }
-
-    protected getInvokeMethod(): string {
-        return 'run';
+        const runnables = this.reflect.class.runnables.filter(r => !r.auto);
+        if (runnables.length) {
+            if (runnables.length === 1) {
+                let runable = runnables[0];
+                return this.factory.invoke(runable.method, runable.args, this.instance);
+            }
+            return lang.step(runnables.map(r => () => this.factory.invoke(r.method, r.args, this.instance)));
+        } else {
+            return this.factory.invoke('run', undefined, this.instance);
+        }
     }
 
     get destroyed() {

@@ -3,7 +3,7 @@ import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { EMPTY, isFunction, isString } from '../utils/chk';
 import { getClassAnnotation } from '../utils/util';
 import { forIn } from '../utils/lang';
-import { AutorunDefine, ctorName, DecoratorType, DecorDefine, DecorMemberType, Decors } from './type';
+import { RunableDefine, ctorName, DecoratorType, DecorDefine, DecorMemberType, Decors } from './type';
 import { Token } from '../tokens';
 import { ProviderType } from '../providers';
 import { ParameterMetadata, PropertyMetadata } from './meta';
@@ -72,9 +72,9 @@ export class TypeDefine {
      */
     private methodResolvers: Map<string, ArgumentResolver[]>;
     /**
-     * auto run defines.
+     * runnable defines.
      */
-    readonly autoruns: AutorunDefine[];
+    readonly runnables: RunableDefine[];
 
     constructor(public readonly type: ClassType, private parent?: TypeDefine) {
         this.annotation = getClassAnnotation(type)!;
@@ -94,7 +94,7 @@ export class TypeDefine {
         this.provides = [];
         this.providers = parent ? parent.providers.slice(0) : [];
         this.resolvers = parent ? parent.resolvers.slice(0) : [];
-        this.autoruns = parent ? parent.autoruns.filter(a => a.decorType !== 'class') : [];
+        this.runnables = parent ? parent.runnables.slice(0) : [];
         this.propMetadatas = new Map();
         this.methodParams = new Map();
         this.methodProviders = new Map();

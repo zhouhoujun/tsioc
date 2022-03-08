@@ -4,14 +4,14 @@ import { AnnotationType, ClassType, Type } from '../types';
 import { cleanObj, getParentClass } from '../utils/lang';
 import { EMPTY, isArray, isFunction } from '../utils/chk';
 import { chain, Handler } from '../handler';
-import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata, AutorunMetadata, InjectableMetadata, MethodMetadata } from './meta';
+import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata, RunnableMetadata, InjectableMetadata, MethodMetadata } from './meta';
 import { ctorName, DecoratorType, DecorContext, DecorDefine, Decors, ActionTypes, TypeReflect } from './type';
 import { TypeDefine } from './typedef';
 import { Platform } from '../injector';
 
 
 
-export type ActionType = 'propInject' | 'paramInject' | 'annoation' | 'autorun' | 'typeProviders' | 'methodProviders';
+export type ActionType = 'propInject' | 'paramInject' | 'annoation' | 'runnable' | 'typeProviders' | 'methodProviders';
 
 
 /**
@@ -201,8 +201,8 @@ function regActionType(decor: string, type: ActionType) {
         case ActionTypes.propInject:
             propInjectDecors[decor] = true;
             break;
-        case ActionTypes.autorun:
-            autorunDecors[decor] = true;
+        case ActionTypes.runnable:
+            runnableDecors[decor] = true;
             break;
         case ActionTypes.typeProviders:
             typeProvidersDecors[decor] = true;
@@ -317,15 +317,17 @@ export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
     return next();
 };
 
-const autorunDecors: Record<string, boolean> = { '@Autorun': true, '@IocExt': true };
-export const AutorunAction = (ctx: DecorContext, next: () => void) => {
-    if (autorunDecors[ctx.decor]) {
-        ctx.reflect.class.autoruns.push({
+const runnableDecors: Record<string, boolean> = { '@Autorun': true, '@IocExt': true };
+export const RunnableAction = (ctx: DecorContext, next: () => void) => {
+    if (runnableDecors[ctx.decor]) {
+        ctx.reflect.class.runnables.push({
             decorType: ctx.decorType,
-            autorun: (ctx.metadata as AutorunMetadata).autorun!,
-            order: ctx.decorType === Decors.CLASS ? 0 : (ctx.metadata as AutorunMetadata).order
+            args: (ctx.metadata as RunnableMetadata).args,
+            auto: (ctx.metadata as RunnableMetadata).auto,
+            method: (ctx.metadata as RunnableMetadata).method ?? ctx.propertyKey,
+            order: ctx.decorType === Decors.CLASS ? 0 : (ctx.metadata as RunnableMetadata).order
         });
-        ctx.reflect.class.autoruns.sort((au1, au2) => au1.order! - au2.order!);
+        ctx.reflect.class.runnables.sort((au1, au2) => au1.order! - au2.order!);
     }
     return next();
 }
@@ -394,14 +396,14 @@ typeDecorActions.use(
     InitCtorDesignParams,
     TypeAnnoAction,
     TypeProvidersAction,
-    AutorunAction,
+    RunnableAction,
     ExecuteDecorHandle
 );
 
 methodDecorActions.use(
     InitMethodDesignParams,
     MethodProvidersAction,
-    AutorunAction,
+    RunnableAction,
     ExecuteDecorHandle
 );
 

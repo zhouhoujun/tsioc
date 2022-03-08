@@ -35,8 +35,6 @@ export class HttpClientBackend implements HttpBackend {
         request = req;
       }
       this.backend.handle(request).subscribe(observer);
-
-
     }));
   }
 
@@ -51,4 +49,4 @@ function interceptingHandler(backend: HttpBackend, context: InvocationContext) {
 export const HTTP_PROVIDERS: ProviderType[] = [
   { provide: XhrFactory, useClass: ServerXhr },
   { provide: HttpHandler, useFactory: interceptingHandler, deps: [HttpBackend, InvocationContext] }
-]
+];
