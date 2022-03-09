@@ -20,11 +20,17 @@
       "@tsdi/ioc": [
         "packages/ioc/src"
       ],
+      "@tsdi/aop": [
+        "packages/aop/src"
+      ],
       "@tsdi/core": [
         "packages/core/src"
       ],
-      "@tsdi/aop": [
-        "packages/aop/src"
+      "@tsdi/transport": [
+        "packages/transport/src"
+      ],
+      "@tsdi/authorization": [
+        "packages/authorization/src"
       ],
       "@tsdi/boot": [
         "packages/boot/src"

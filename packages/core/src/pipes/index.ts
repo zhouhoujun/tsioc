@@ -16,3 +16,6 @@ export * from './parses/int.pipe';
 export * from './parses/number.pipe';
 export * from './parses/string.pipe';
 export * from './parses/json.pipe';
+
+export * from './module';
+

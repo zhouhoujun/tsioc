@@ -32,6 +32,8 @@ export * from './context.impl';
 
 export * from './Application';
 
+export { Application as BootApplication } from './Application';
+
 export * from './model';
 
 export * from './transport';

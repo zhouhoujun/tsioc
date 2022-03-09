@@ -1,9 +1,8 @@
 import { Module } from '@tsdi/core';
 
-
 @Module({
-    providers: [
 
-    ]
 })
-export class Http2Module { }
+export class BasicAuthorizationModule {
+
+}

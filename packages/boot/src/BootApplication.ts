@@ -11,10 +11,6 @@ import { Application, ApplicationContext, ApplicationOption, BootstrapOption } f
  */
 export class BootApplication extends Application {
 
-    protected override getDeps() {
-        return [TransportModule, ...super.getDeps()];
-    }
-
     protected override initRoot() {
         super.initRoot();
         this.root.setValue(BootApplication, this);

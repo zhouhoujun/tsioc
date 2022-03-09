@@ -7,8 +7,9 @@ export * from './nats/nats.client';
 export * from './redis/redis.client';
 export * from './rmq/rmq.client';
 export * from './tcp/tcp.clinet';
-export * from './ws/ws.client';
 
+
+export * from './http';
 
 export * from './grpc/grpc.server';
 export * from './kafka/kafka.server';
