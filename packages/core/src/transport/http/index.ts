@@ -10,6 +10,4 @@ export * from './response';
 export * from './client';
 export * from './client.module';
 
-export * from './server';
-export * from './server.module';
 
