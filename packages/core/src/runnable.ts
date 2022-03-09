@@ -1,4 +1,4 @@
-import { Abstract, Type, Destroyable, OnDestroy, TypeReflect, Injector, DestroyCallback, InvokeArguments } from '@tsdi/ioc';
+import { Abstract, Type, Destroyable, OnDestroy, TypeReflect, Injector, DestroyCallback } from '@tsdi/ioc';
 import { ApplicationContext, BootstrapOption } from './context';
 import { ScanSet } from './scan.set';
 

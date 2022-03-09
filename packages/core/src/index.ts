@@ -24,8 +24,8 @@ export * from './pipes';
 // modules
 export * from './module.ref';
 export * from './module.factory';
-export * from './module/module';
-export * from './module/runnable';
+export * from './impl/module';
+export * from './impl/runnable';
 
 // applications
 export * from './context.impl';

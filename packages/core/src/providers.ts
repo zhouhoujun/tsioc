@@ -1,7 +1,7 @@
 import { ProviderType, lang, isNumber, Type, ObservableParser, LifecycleHooksResolver, OperationFactory } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory } from './context';
 import { ModuleFactoryResolver } from './module.factory';
-import { DefaultModuleFactoryResolver, ModuleLifecycleHooksResolver } from './module/module';
+import { DefaultModuleFactoryResolver, ModuleLifecycleHooksResolver } from './impl/module';
 import { DefaultApplicationFactory } from './context.impl';
 import { Startup, StartupSet } from './startup';
 import { ConfigureService, ServiceSet } from './service';

@@ -181,7 +181,7 @@ export const ComponentScan: ComponentScan = createDecorator<ComponentScanMetadat
                 sets = injector.get(StartupSet);
             } else if (reflect.class.hasMethod('configureService')) {
                 sets = injector.get(ServiceSet);
-            } else if (reflect.class.hasMetadata('run')) {
+            } else if (reflect.class.runnables.length || reflect.class.hasMetadata('run')) {
                 sets = injector.get(RunnableSet);
                 isRunner = true;
             }

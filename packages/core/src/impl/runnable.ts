@@ -3,7 +3,9 @@ import { RunnableFactory, RunnableFactoryResolver, RunnableRef } from '../runnab
 import { ApplicationContext, BootstrapOption } from '../context';
 import { ModuleRef } from '../module.ref';
 
-
+/**
+ * runnableRef implement
+ */
 export class DefaultRunnableRef<T> extends RunnableRef<T> {
     private _destroyed = false;
     private _dsryCbs = new Set<DestroyCallback>();
