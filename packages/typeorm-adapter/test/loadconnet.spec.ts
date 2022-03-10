@@ -17,14 +17,7 @@ export class LoadReposTest {
     async beforeInit() {
         this.ctx = await Application.run({
             type: MockBootTest,
-            baseURL: __dirname,
-            configures: [
-                {
-                    models: ['./models/**/*.ts'],
-                    repositories: ['./repositories/**/*.ts'],
-                    connections: option
-                }
-            ]
+            baseURL: __dirname
         });
 
     }

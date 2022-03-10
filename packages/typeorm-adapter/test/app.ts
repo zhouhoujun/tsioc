@@ -3,7 +3,7 @@ import { LogModule } from '@tsdi/logs';
 import { ServerBootstrapModule } from '@tsdi/platform-server';
 import { Connection } from 'typeorm';
 import { TypeOrmModule } from '../src';
-import { User } from './models/models';
+import { Role, User } from './models/models';
 import { UserController } from './mapping/UserController';
 import { RoleController } from './mapping/RoleController';
 
@@ -40,7 +40,13 @@ export const option = <ConnectionOptions>{
     imports: [
         LogModule,
         ServerBootstrapModule,
-        TypeOrmModule
+        TypeOrmModule.withConnection({
+            ...option,
+            entities: [
+                Role,
+                User
+            ]
+        })
     ],
     declarations: [
         UserController,
@@ -53,12 +59,38 @@ export class MockBootTest {
 
 
 @Module({
+    baseURL: __dirname,
+    imports: [
+        LogModule,
+        ServerBootstrapModule,
+        TypeOrmModule.withConnection({
+            ...option,
+            models: ['./models/**/*.ts'],
+            repositories: ['./repositories/**/*.ts']
+        })
+    ],
+    declarations: [
+        UserController,
+        RoleController
+    ]
+})
+export class MockBootLoadTest {
+
+}
+
+
+
+@Module({
     // baseURL: __dirname,
     imports: [
         LogModule,
         ServerBootstrapModule,
         TransactionModule,
-        TypeOrmModule
+        TypeOrmModule.withConnection({
+            ...option,
+            models: ['./models/**/*.ts'],
+            repositories: ['./repositories/**/*.ts']
+        })
     ],
     providers: [
         UserController,

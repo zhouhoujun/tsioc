@@ -1,3 +1,4 @@
+import { ConnectionOptions } from '@tsdi/core';
 import { Type, LoadType, ProvidersMetadata, Abstract, Injector, tokenId, Token } from '@tsdi/ioc';
 
 /**
@@ -115,33 +116,6 @@ export const DEFAULT_CONFIG: Token<ApplicationConfiguration> = tokenId<Applicati
 @Abstract()
 export abstract class Settings implements Record<string, any> {
 
-}
-
-/**
- * connection options
- */
- @Abstract()
-export abstract class ConnectionOptions implements Record<string, any> {
-    asDefault?: boolean;
-    name?: string;
-    /**
-     * db type.
-     */
-    abstract get type(): string;
-    abstract get host(): string;
-    abstract get database(): string;
-
-    port?: number;
-    username?: string;
-    password?: string;
-    /**
-     * orm modles.
-     */
-    entities?: (string | Type)[];
-    /**
-     * repositories of orm.
-     */
-    repositories?: (string | Type)[];
 }
 
 

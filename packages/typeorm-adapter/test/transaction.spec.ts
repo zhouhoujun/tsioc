@@ -3,7 +3,7 @@ import { After, Before, Suite, Test } from '@tsdi/unit';
 import expect = require('expect');
 import { lastValueFrom } from 'rxjs';
 import { TypeOrmHelper } from '../src';
-import { MockTransBootTest, option } from './app';
+import { MockBootLoadTest } from './app';
 import { Role, User } from './models/models';
 import { UserRepository } from './repositories/UserRepository';
 
@@ -16,15 +16,8 @@ export class TransactionTest {
     @Before()
     async beforeInit() {
         this.ctx = await Application.run({
-            type: MockTransBootTest,
-            baseURL: __dirname,
-            configures: [
-                {
-                    models: ['./models/**/*.ts'],
-                    repositories: ['./repositories/**/*.ts'],
-                    connections: option
-                }
-            ]
+            type: MockBootLoadTest,
+            baseURL: __dirname
         });
 
 

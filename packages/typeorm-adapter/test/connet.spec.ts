@@ -17,20 +17,7 @@ export class ReposTest {
 
     @Before()
     async beforeInit() {
-        this.ctx = await Application.run({
-            type: MockBootTest,
-            configures: [
-                {
-                    connections: {
-                        ...option,
-                        entities: [
-                            Role,
-                            User
-                        ]
-                    }
-                }
-            ]
-        });
+        this.ctx = await Application.run(MockBootTest);
     }
 
     @Test()

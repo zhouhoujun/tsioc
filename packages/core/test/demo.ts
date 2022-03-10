@@ -1,6 +1,6 @@
 import {
     Module, Message, ConfigureService, ApplicationContext, Configuration, ComponentScan, OnDispose,
-    Runnable, Middlewares, ApplicationConfiguration, Bean, Settings, HttpClientModule
+    Runnable, Middlewares, Bean, HttpClientModule
 } from '../src';
 import { Injectable, Inject, OnDestroy, lang } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';

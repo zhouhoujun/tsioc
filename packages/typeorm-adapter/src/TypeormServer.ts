@@ -2,8 +2,8 @@ import 'reflect-metadata';
 import { ILogger, Logger } from '@tsdi/logs';
 import { Type, isString, isArray, Injector, isFunction, EMPTY, isNil } from '@tsdi/ioc';
 import {
-    ConnectionOptions, ApplicationConfiguration, ApplicationContext, ComponentScan, Startup, createModelResolver,
-    DBPropertyMetadata, PipeTransform, missingPropPipeError, MODEL_RESOLVERS, OnDispose, TransportParameter, TransportContext
+    ConnectionOptions, ApplicationContext, ComponentScan, Startup, createModelResolver,
+    DBPropertyMetadata, PipeTransform, missingPropPipeError, MODEL_RESOLVERS, OnDispose, TransportParameter, TransportContext, CONNECTIONS
 } from '@tsdi/core';
 import {
     getConnection, createConnection, ConnectionOptions as OrmConnOptions, Connection,
@@ -32,21 +32,21 @@ export class TypeormServer implements Startup, OnDispose {
     async startup(): Promise<void> {
         let ctx = this.ctx;
         this.logger.info('startup db connections');
-        const config = this.ctx.getConfiguration();
+        const connections = this.ctx.resolve(CONNECTIONS);
         const injector = ctx.injector;
 
-        if (config.repositories && config.repositories.some(r => isString(r))) {
-            let loader = this.ctx.injector.getLoader();
-            // preload repositories for typeorm.
-            await loader.loadType({ files: config.repositories.filter(r => isString(r)), basePath: this.ctx.baseURL });
-        }
-        if (isArray(config.connections)) {
-            await Promise.all(config.connections.map((options) => this.statupConnection(injector, options, config)));
-        } else if (config.connections) {
-            let options = config.connections;
+        // if (connections.repositories && connections.repositories.some(r => isString(r))) {
+        //     let loader = this.ctx.injector.getLoader();
+        //     // preload repositories for typeorm.
+        //     await loader.loadType({ files: connections.repositories.filter(r => isString(r)), basePath: this.ctx.baseURL });
+        // }
+        if (connections.length > 1) {
+            await Promise.all(connections.map((options) => this.statupConnection(injector, options, connections)));
+        } else if (connections.length === 1) {
+            let options = connections[0];
             options.asDefault = true;
             options.name && injector.setValue(DEFAULT_CONNECTION, options.name);
-            await this.statupConnection(injector, options, config);
+            await this.statupConnection(injector, options, connections);
         }
     }
 
@@ -87,7 +87,7 @@ export class TypeormServer implements Startup, OnDispose {
     }
 
 
-    async statupConnection(injector: Injector, options: ConnectionOptions, config: ApplicationConfiguration) {
+    async statupConnection(injector: Injector, options: ConnectionOptions, config: ConnectionOptions[]) {
         if (options.type == 'mongodb') {
             const mgd = await injector.getLoader().require('mongodb');
             if (mgd.ObjectID) {
@@ -133,21 +133,26 @@ export class TypeormServer implements Startup, OnDispose {
      * @param options connenction options.
      * @param config config
      */
-    async createConnection(options: ConnectionOptions, config: ApplicationConfiguration) {
-        if (options.asDefault && !options.entities) {
-            let entities: Type[] = [];
-            if (config?.models?.some(m => isString(m))) {
-                let loader = this.ctx.injector.getLoader();
-                let models = await loader.loadType({ files: config.models.filter(m => isString(m)), basePath: this.ctx.baseURL });
-                models.forEach(mdl => {
-                    if (mdl && entities.indexOf(mdl) < 0) {
-                        entities.push(mdl);
-                    }
-                });
-            } else {
-                entities = config.models as Type[];
-            }
-            options.entities = entities;
+    async createConnection(options: ConnectionOptions, config: ConnectionOptions[]) {
+
+        let entities: Type[] = [];
+        if (options.entities?.some(m => isString(m))) {
+            let loader = this.ctx.injector.getLoader();
+            let models = await loader.loadType({ files: options.entities?.filter(m => isString(m)), basePath: this.ctx.baseURL });
+            models.forEach(mdl => {
+                if (mdl && entities.indexOf(mdl) < 0) {
+                    entities.push(mdl);
+                }
+            });
+        } else {
+            entities = options.entries as Type[];
+        }
+        options.entities = entities;
+
+        if (options.repositories && options.repositories.some(r => isString(r))) {
+            let loader = this.ctx.injector.getLoader();
+            // preload repositories for typeorm.
+            await loader.loadType({ files: options.repositories.filter(r => isString(r)), basePath: this.ctx.baseURL });
         }
         if (options.asDefault) {
             this.options = options;
