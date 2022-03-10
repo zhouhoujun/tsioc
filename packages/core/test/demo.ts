@@ -1,10 +1,11 @@
 import {
     Module, Message, ConfigureService, ApplicationContext, Configuration, ComponentScan, OnDispose,
-    Runnable, Middlewares, ApplicationConfiguration, Bean, Settings, HttpClientModule, HttpModule
+    Runnable, Middlewares, ApplicationConfiguration, Bean, Settings, HttpClientModule
 } from '../src';
 import { Injectable, Inject, OnDestroy, lang } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
 import { ILogger, LogConfigure, Logger, LogModule } from '@tsdi/logs';
+import { HttpModule } from '@tsdi/transport';
 import * as net from 'net';
 import { ServerBootstrapModule, ServerLogsModule } from '@tsdi/platform-server';
 

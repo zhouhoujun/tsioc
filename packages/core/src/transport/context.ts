@@ -1,17 +1,21 @@
-import { Abstract, DefaultInvocationContext, Injector, InvocationContext, InvokeArguments, isPromise, isString, isNumber, isPlainObject } from '@tsdi/ioc';
+import { Abstract, DefaultInvocationContext, Injector, InvocationContext, InvokeArguments, isPromise } from '@tsdi/ioc';
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
-import { Pattern, Protocol, TransportRequest, TransportResponse } from './packet';
+import { Protocol, TransportRequest, TransportResponse } from './packet';
 import { TransportStatus } from './handler';
 import { TransportError } from './error';
+import { ServerOption } from './server';
+
 
 /**
  * transport option.
  */
-export interface TransportOption<T = any> extends InvokeArguments {
-    protocol?: Protocol;
-    pattern: Pattern;
-    body: T;
-    event?: boolean;
+export interface TransportOption<T extends ServerOption = ServerOption> extends InvokeArguments {
+    request: TransportRequest;
+    reponse: TransportResponse;
+    /**
+     * server option arguments data extends {@link ServerOption}.
+     */
+    arguments: T;
 }
 
 
@@ -19,15 +23,21 @@ export interface TransportOption<T = any> extends InvokeArguments {
  * transport context.
  */
 @Abstract()
-export abstract class TransportContext<TRequest extends TransportRequest = TransportRequest, TResponse extends TransportResponse = TransportResponse> extends DefaultInvocationContext<any> {
+export abstract class TransportContext<T extends ServerOption = ServerOption> extends DefaultInvocationContext<T> {
+
+    constructor(injector: Injector, options: TransportOption<T>) {
+        super(injector, options);
+        this.injector.setValue(TransportContext, this);
+    }
+
     /**
      * transport request.
      */
-    abstract get request(): TRequest;
+    abstract get request(): TransportRequest;
     /**
      * transport response.
      */
-    abstract get response(): TResponse;
+    abstract get response(): TransportResponse;
     /**
      * transport protocol.
      */
@@ -111,11 +121,6 @@ export abstract class TransportContext<TRequest extends TransportRequest = Trans
      */
     abstract throwError(status: TransportStatus, ...messages: string[]): TransportError;
 
-    constructor(injector: Injector, options: TransportOption<TRequest>) {
-        super(injector, options);
-        this.injector.setValue(TransportContext, this);
-    }
-
 }
 
 /**
@@ -128,7 +133,7 @@ export abstract class TransportContextFactory {
      * @param parent parent injector or parent invocation context.
      * @param options transport options. typeof {@link TransportOption}.
      */
-    abstract create<TRequest extends TransportRequest, TResponse extends TransportResponse>(parent: Injector | InvocationContext, options: TransportOption<TRequest>): TransportContext<TRequest, TResponse>;
+    abstract create<T extends ServerOption>(parent: Injector | InvocationContext, options: TransportOption<T>): TransportContext<T>;
 }
 
 /**

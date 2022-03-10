@@ -55,7 +55,7 @@ export class FileResult extends ResultValue {
 
     async sendValue(ctx: HttpContext) {
         let file = this.file;
-        ctx.type = this.contentType;
+        ctx.contentType = this.contentType;
         if (this.options && this.options.filename) {
             ctx.attachment(this.options.filename, this.options.disposition);
         }

@@ -154,29 +154,30 @@ export abstract class HttpResponseBase {
     /**
      * Response status code.
      */
-    readonly status: number;
+    status: number;
 
     /**
      * Textual description of response status code, defaults to OK.
      *
      * Do not depend on this.
      */
-    readonly statusText: string;
+    statusText: string;
 
     /**
      * URL of the resource retrieved, or null if not available.
      */
-    readonly url: string | null;
+    url: string | null;
 
     /**
      * Whether the status code falls in the 2xx range.
      */
-    readonly ok: boolean;
+    get ok(): boolean {
+        return this.status >= 200 && this.status < 300
+    }
 
     /**
      * Type of the response, narrowed to either the full response or the header.
      */
-    // TODO(issue/24571): remove '!'.
     readonly type!: HttpEventType.Response | HttpEventType.ResponseHeader;
 
     /**
@@ -199,9 +200,6 @@ export abstract class HttpResponseBase {
         this.status = init.status !== undefined ? init.status : defaultStatus;
         this.statusText = init.statusText || defaultStatusText;
         this.url = init.url || null;
-
-        // Cache the ok value to avoid defining a getter.
-        this.ok = this.status >= 200 && this.status < 300;
     }
 }
 
@@ -255,11 +253,11 @@ export class HttpHeaderResponse extends HttpResponseBase {
  *
  * @publicApi
  */
-export class HttpResponse<T> extends HttpResponseBase {
+export class HttpResponse<T = any> extends HttpResponseBase {
     /**
      * The response body, or `null` if one was not returned.
      */
-    readonly body: T | null;
+    body: T | null;
 
     /**
      * Construct a new `HttpResponse`.
@@ -321,11 +319,6 @@ export class HttpErrorResponse extends HttpResponseBase implements Error {
     readonly name = 'HttpErrorResponse';
     readonly message: string;
     readonly error: any | null;
-
-    /**
-     * Errors are never okay, even when the status code is in the 2xx success range.
-     */
-    override readonly ok = false;
 
     constructor(init: {
         error?: any;
