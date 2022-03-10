@@ -1,21 +1,21 @@
-import { ApplicationContext, formatDate } from "@tsdi/core";
-import { After, Before, Suite, Test } from "@tsdi/unit";
-import expect = require("expect");
-import { ServerMainModule, configurtion } from "./demo";
-import { ConfigureLoggerManager } from "@tsdi/logs";
+import { BootApplicationContext, BootApplication } from '../src';
+import { After, Before, Suite, Test } from '@tsdi/unit';
+import { ConfigureLoggerManager } from '@tsdi/logs';
+import expect = require('expect');
+import { ServerMainModule, configurtion } from './demo';
 import * as log4js from 'log4js';
 import * as fs from 'fs';
 import * as path from 'path';
 const del = require('del');
-import { isString, lang } from "@tsdi/ioc";
-import { BootApplication } from "../src";
+import { isString, lang } from '@tsdi/ioc';
+import { formatDate } from '@tsdi/core';
 
 const logdir = path.join(__dirname, '../log-caches')
 
 @Suite()
 export class ServerBootTest {
 
-    private ctx!: ApplicationContext;
+    private ctx!: BootApplicationContext;
     private logfile!: string;
     @Before()
     async init() {

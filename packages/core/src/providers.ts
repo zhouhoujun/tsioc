@@ -2,7 +2,7 @@ import { ProviderType, lang, isNumber, Type, ObservableParser, LifecycleHooksRes
 import { ApplicationContext, ApplicationFactory } from './context';
 import { ModuleFactoryResolver } from './module.factory';
 import { DefaultModuleFactoryResolver, ModuleLifecycleHooksResolver } from './impl/module';
-import { DefaultApplicationFactory } from './context.impl';
+import { DefaultApplicationFactory } from './impl/context';
 import { Startup, StartupSet } from './startup';
 import { ConfigureService, ServiceSet } from './service';
 import { ScanSet } from './scan.set';

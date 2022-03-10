@@ -1,4 +1,4 @@
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, tokenId } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { Runner } from '../metadata/decor';
 import { catchError, finalize, Observable, Subscription, EMPTY, isObservable, connectable, Subject } from 'rxjs';
@@ -104,6 +104,8 @@ export abstract class TransportServer<TRequest extends TransportRequest = Transp
      */
     protocol: Protocol;
 }
+
+export const SERVEROPTION = tokenId<ServerOption>('SERVEROPTION');
 
 /**
  * server abstract factory.

@@ -13,6 +13,7 @@ export class DefaultRunnableRef<T> extends RunnableRef<T> {
     private _instance: T | undefined;
     constructor(protected factory: OperationFactory<T>) {
         super();
+        this.factory.context.setValue(RunnableRef, this);
     }
 
     get type() {

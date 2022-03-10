@@ -1,10 +1,14 @@
-import { Module, Message, StartupService, ApplicationContext, ComponentScan, OnDispose, Runnable, Handle, Middlewares, ApplicationConfiguration } from '@tsdi/core';
-import { Injectable, Inject, OnDestroy } from '@tsdi/ioc';
+import {
+    Module, Message, ConfigureService, ApplicationContext, Configuration, ComponentScan, OnDispose,
+    Runnable, Middlewares, Bean, HttpClientModule
+} from '@tsdi/core';
+import { Injectable, Inject, OnDestroy, lang } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
 import { ILogger, LogConfigure, Logger, LogModule } from '@tsdi/logs';
+import { HttpModule } from '@tsdi/transport';
 import * as net from 'net';
 import { ServerBootstrapModule, ServerLogsModule } from '@tsdi/platform-server';
-
+import { ApplicationConfiguration, Settings } from '../src';
 
 export class TestService {
     testFiled = 'test';
@@ -45,7 +49,7 @@ export class ClassSevice implements Runnable {
 
     @Logger() logger!: ILogger;
 
-    @Inject('mark', { nullable:true })
+    @Inject('mark', { defaultValue: '' })
     mark!: string;
 
     state!: string;
@@ -78,7 +82,7 @@ export class LoggerAspect {
     }
 }
 
-@Handle()
+@Message()
 export class SubMessageQueue extends Middlewares {
 
 }
@@ -86,7 +90,9 @@ export class SubMessageQueue extends Middlewares {
 @Module({
     exports: [
         AopModule,
-        LogModule
+        LogModule,
+        HttpClientModule,
+        HttpModule
     ]
 })
 export class SharedModule {
@@ -110,27 +116,30 @@ export class ModuleB { }
 
 
 @ComponentScan()
-export class SocketService implements StartupService, OnDestroy {
+export class SocketService implements ConfigureService, OnDispose {
 
     @Logger() logger!: ILogger;
 
     public tcpServer!: net.Server;
-    private context!: ApplicationContext;
     private init_times = 0;
 
     async configureService(ctx: ApplicationContext): Promise<void> {
-        this.logger.log('SocketService init...')
-        this.context = ctx;
+        this.logger.log('SocketService init...');
         const tcpServer = this.tcpServer = new net.Server();
         tcpServer.listen(8801);
         this.init_times++;
         this.logger.log('destroyed state', 'init', this.init_times);
     }
 
-    onDestroy() {
+    async onDispose() {
         this.logger.log('SocketService destroying...');
         this.tcpServer.removeAllListeners();
-        this.tcpServer.close();
+        let defer = lang.defer();
+        this.tcpServer.close(() => {
+            this.logger.log('tcpServer closed...');
+            defer.resolve();
+        });
+        await defer.promise;
     }
 
 }
@@ -162,7 +171,7 @@ export class StatupModule { }
 export class ServerMainModule { }
 
 export const configurtion = {
-    logConfig: <LogConfigure>{
+    logConfig: {
         // adapter: 'console',
         // config: {
         //     level: 'trace'
@@ -192,5 +201,17 @@ export const configurtion = {
             },
             pm2: true
         }
-    }
+    } as LogConfigure
 } as ApplicationConfiguration;
+
+@Configuration()
+export class ConfiguraionManger {
+
+    @Bean()
+    settings(): Settings {
+        return {
+            
+        };
+    }
+
+}

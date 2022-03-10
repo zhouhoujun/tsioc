@@ -1,8 +1,5 @@
 export * from './platform';
 
-// annotations
-export * from './configure/config';
-export * from './configure/manager';
 
 // metadata
 export * from './metadata/meta';
@@ -28,11 +25,10 @@ export * from './impl/module';
 export * from './impl/runnable';
 
 // applications
-export * from './context.impl';
+export * from './impl/context';
 
+export { DEFAULTA_PROVIDERS as APPLICTION_DEFAULTA_PROVIDERS } from './providers';
 export * from './Application';
-
-export { Application as BootApplication } from './Application';
 
 export * from './model';
 

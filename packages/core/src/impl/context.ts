@@ -1,13 +1,12 @@
 import { Type, isFunction, ModuleMetadata, DefaultInvocationContext, EMPTY_OBJ, InvokeArguments, InvocationContext, lang } from '@tsdi/ioc';
 import { ConfigureLoggerManager, LoggerManager, LOGGER_MANAGER } from '@tsdi/logs';
-import { CONFIGURATION, PROCESS_ROOT } from './metadata/tk';
-import { ApplicationConfiguration, ConfigureManager } from './configure/config';
-import { ApplicationContext, ApplicationFactory, BootstrapOption, EnvironmentOption } from './context';
-import { RunnableFactory, RunnableFactoryResolver, RunnableSet, RunnableRef } from './runnable';
-import { ModuleRef } from './module.ref';
-import { StartupSet } from './startup';
-import { ServiceSet } from './service';
-import { ApplicationArguments } from './args';
+import { PROCESS_ROOT } from '../metadata/tk';
+import { ApplicationContext, ApplicationFactory, BootstrapOption, EnvironmentOption } from '../context';
+import { RunnableFactory, RunnableFactoryResolver, RunnableSet, RunnableRef } from '../runnable';
+import { ModuleRef } from '../module.ref';
+import { StartupSet } from '../startup';
+import { ServiceSet } from '../service';
+import { ApplicationArguments } from '../args';
 
 
 
@@ -77,22 +76,6 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         return this.injector.moduleReflect?.annotation as TM;
     }
 
-    /**
-     * configuration merge metadata config and all application config.
-     */
-    getConfiguration(): ApplicationConfiguration {
-        return this.injector.get(CONFIGURATION);
-    }
-
-    /**
-     * get configure manager.
-     *
-     * @returns {ConfigureManager}
-     */
-    getConfigureManager(): ConfigureManager {
-        return this.injector.get(ConfigureManager);
-    }
-
 }
 
 /**
@@ -105,22 +88,7 @@ export class DefaultApplicationFactory extends ApplicationFactory {
             root.setValue(PROCESS_ROOT, root.moduleReflect.annotation.baseURL);
         }
         const ctx = this.createInstance(root, option);
-        this.initOption(ctx, option);
         return ctx;
-    }
-
-    initOption<T>(ctx: ApplicationContext, option?: EnvironmentOption) {
-        if (!option) return;
-
-        const mgr = ctx.getConfigureManager();
-        if (option.configures && option.configures.length) {
-            option.configures.forEach(cfg => {
-                mgr.useConfiguration(cfg);
-            });
-        } else {
-            // load default config.
-            mgr.useConfiguration();
-        }
     }
 
     protected createInstance(inj: ModuleRef, option?: InvokeArguments) {

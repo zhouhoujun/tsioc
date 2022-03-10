@@ -1,47 +1,12 @@
-import { Injectable, Singleton, ModuleLoader, Inject, isString, EMPTY } from '@tsdi/ioc';
+import { Singleton, ModuleLoader, isString, EMPTY } from '@tsdi/ioc';
 import {
-    Module, ConfigureLoader, PROCESS_ROOT, ApplicationConfiguration, ApplicationExit,
-    ApplicationContext, ApplicationArguments, PLATFORM_ID, PLATFORM_SERVER_ID
+    Module, PROCESS_ROOT, ApplicationExit, ApplicationArguments, 
+    ApplicationContext, PLATFORM_ID, PLATFORM_SERVER_ID
 } from '@tsdi/core';
-import * as path from 'path';
-import * as fs from 'fs';
 import { runMainPath } from './toAbsolute';
 import { NodeModuleLoader } from './NodeModuleLoader';
 import { HTTP_PROVIDERS } from './xhr';
 
-
-/**
- * configure file loader.
- *
- * @export
- * @class ConfigureFileLoader
- */
-@Injectable(ConfigureLoader)
-export class ConfigureFileLoader implements ConfigureLoader {
-
-    constructor(@Inject(PROCESS_ROOT, { nullable: true }) private baseURL: string) {
-        if (!baseURL) {
-            this.baseURL = runMainPath();
-        }
-    }
-
-    async load<T extends ApplicationConfiguration>(uri?: string): Promise<T> {
-        if (uri) {
-            if (fs.existsSync(uri)) {
-                return await import(uri) as T;
-            } else if (fs.existsSync(path.join(this.baseURL, uri))) {
-                return await import(path.join(this.baseURL, uri)) as T;
-            } else {
-                console.log(`config file: ${uri} not exists.`)
-                return null!;
-            }
-        } else {
-            const cfgpath = path.join(this.baseURL, './config');
-            const file = ['.js', '.ts', '.json'].map(ext => cfgpath + ext).find(f => fs.existsSync(f))!;
-            return file ? await import(file) as T : null!;
-        }
-    }
-}
 
 const signls = [
     'SIGHUP',
@@ -158,7 +123,6 @@ export class ServerApplicationExit extends ApplicationExit {
     providedIn: 'platform',
     providers: [
         { provide: PLATFORM_ID, useValue: PLATFORM_SERVER_ID },
-        ConfigureFileLoader,
         { provide: ApplicationArguments, useValue: new ServerApplicationArguments(process.env, process.argv.slice(2)) },
         { provide: PROCESS_ROOT, useValue: runMainPath(), asDefault: true },
         { provide: ModuleLoader, useValue: new NodeModuleLoader() },

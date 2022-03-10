@@ -1,11 +1,11 @@
-import { Module, StartupService, ApplicationContext, ComponentScan } from '@tsdi/core';
-import expect = require('expect');
 import { Injector, lang } from '@tsdi/ioc';
-import { BootApplication } from '../src';
+import expect = require('expect');
+import { Module, ConfigureService, ComponentScan } from '@tsdi/core';
+import { BootApplication, BootApplicationContext } from '../src';
 
 @ComponentScan()
-export class MyStartupService implements StartupService {
-    async configureService(ctx: ApplicationContext): Promise<void> {
+export class MyStartupService implements ConfigureService {
+    async configureService(ctx: BootApplicationContext): Promise<void> {
         let defer = lang.defer<void>();
         setTimeout(() => {
             ctx.injector.setValue('MyStartup', 'start');
@@ -19,8 +19,8 @@ export class MyStartupService implements StartupService {
 @ComponentScan({
     order: 0
 })
-export class MyStartupService1 implements StartupService {
-    async configureService(ctx: ApplicationContext): Promise<void> {
+export class MyStartupService1 implements ConfigureService {
+    async configureService(ctx: BootApplicationContext): Promise<void> {
         ctx.injector.setValue('MyStartup1', 'start');
     }
 }
@@ -29,14 +29,13 @@ export class MyStartupService1 implements StartupService {
 @ComponentScan({
     order: 1,
 })
-export class DeviceConnectionService implements StartupService {
+export class DeviceConnectionService implements ConfigureService {
 
     connention: any;
-    async configureService(ctx: ApplicationContext): Promise<void> {
+    async configureService(ctx: BootApplicationContext): Promise<void> {
         let defer = lang.defer<void>();
         setTimeout(() => {
             this.connention = { name: 'device_connect' };
-            console.log(this.connention);
             defer.resolve();
         }, 50);
         return defer.promise;
@@ -47,12 +46,11 @@ export class DeviceConnectionService implements StartupService {
 @ComponentScan({
     order: 2
 })
-export class DeviceInitService implements StartupService {
+export class DeviceInitService implements ConfigureService {
 
     connid!: string;
     id = 0;
-    async configureService(ctx: ApplicationContext): Promise<void> {
-        console.log(ctx.services.getAll().map(i=> i.type))
+    async configureService(ctx: BootApplicationContext): Promise<void> {
         let connention = ctx.injector.get(DeviceConnectionService).connention;
         this.connid = connention.name + this.id++;
     }
@@ -62,10 +60,10 @@ export class DeviceInitService implements StartupService {
 @ComponentScan({
     order: 3
 })
-export class DeviceAService implements StartupService {
+export class DeviceAService implements ConfigureService {
 
     data: any;
-    async configureService(ctx: ApplicationContext): Promise<void> {
+    async configureService(ctx: BootApplicationContext): Promise<void> {
         let connid = ctx.injector.get(DeviceInitService).connid;
         this.data = { connid };
     }
@@ -109,7 +107,7 @@ class MainApp {
 }
 
 describe('app message queue', () => {
-    let ctx: ApplicationContext;
+    let ctx: BootApplicationContext;
     let injector: Injector;
 
     before(async () => {

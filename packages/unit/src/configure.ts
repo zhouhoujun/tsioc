@@ -1,4 +1,4 @@
-import { lang, ProviderType } from '@tsdi/ioc';
+import { lang, ProviderType, tokenId } from '@tsdi/ioc';
 import { Application, ApplicationContext, ComponentScan, ConfigureService } from '@tsdi/core';
 import { UnitTestConfigure } from './UnitTestConfigure';
 import { Assert } from './assert/assert';
@@ -7,6 +7,8 @@ import * as expect from 'expect';
 import { ExpectToken } from './assert/expects';
 import { AbstractReporter, UNIT_REPORTES } from './reports/Reporter';
 
+
+export const UNITTESTCONFIGURE = tokenId<UnitTestConfigure>('UNITTESTCONFIGURE');
 /**
  * unit test configure register.
  *
@@ -18,7 +20,7 @@ import { AbstractReporter, UNIT_REPORTES } from './reports/Reporter';
 export class UnitTestConfigureService implements ConfigureService {
 
     async configureService(ctx: ApplicationContext): Promise<void> {
-        const config = ctx.getConfiguration() as UnitTestConfigure;
+        const config = ctx.get(UNITTESTCONFIGURE);
         const inj = ctx.injector;
         if (!inj.has(Assert)) {
             inj.setValue(Assert, assert);

@@ -3,7 +3,6 @@ import {
     ModuleLoader, Destroyable, Modules, DestroyCallback, InvocationContext
 } from '@tsdi/ioc';
 import { LoggerManager } from '@tsdi/logs';
-import { ApplicationConfiguration, ConfigureManager } from './configure/config';
 import { RunnableRef, RunnableSet, RunnableFactory } from './runnable';
 import { ServiceSet } from './service';
 import { StartupSet } from './startup';
@@ -57,17 +56,6 @@ export abstract class ApplicationContext extends InvocationContext implements De
      */
     abstract get arguments(): ApplicationArguments;
 
-    /**
-     * get application global configuration of type {@link Configuration}.
-     */
-    abstract getConfiguration(): ApplicationConfiguration;
-
-    /**
-     * get configure manager of type {@link ConfigureManager}.
-     *
-     * @returns {ConfigureManager}
-     */
-    abstract getConfigureManager(): ConfigureManager;
     /**
      * application global startups.
      *
@@ -133,12 +121,6 @@ export interface EnvironmentOption extends ModuleOption, InvokeArguments {
      * @type {ModuleLoader}
      */
     loader?: ModuleLoader;
-    /**
-     * custom configures
-     *
-     * @type {((string | ApplicationConfiguration)[])}
-     */
-    configures?: (string | ApplicationConfiguration)[];
     /**
      * application dependencies.
      *

@@ -1,6 +1,7 @@
+import { PROCESS_ROOT } from '@tsdi/core';
 import { isUndefined, Singleton, isString, isPlainObject, lang, isMetadataObject, Injector } from '@tsdi/ioc';
-import { ApplicationConfiguration, ConfigureLoader, ConfigureManager, ConfigureMerger } from './config';
-import { DEFAULT_CONFIG, PROCESS_ROOT } from '../metadata/tk';
+import { ApplicationConfiguration, ConfigureLoader, ConfigureManager, ConfigureMerger, DEFAULT_CONFIG } from './config';
+
 
 
 /**

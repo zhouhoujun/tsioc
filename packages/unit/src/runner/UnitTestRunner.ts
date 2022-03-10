@@ -4,6 +4,7 @@ import { OldTestRunner } from './OldTestRunner';
 import { DefaultTestReport } from '../reports/TestReport';
 import { UnitTestConfigure } from '../UnitTestConfigure';
 import { SuiteReflect } from '../metadata/meta';
+import { UNITTESTCONFIGURE } from '../configure';
 
 
 /**
@@ -19,7 +20,7 @@ export class UnitTestRunner<T = any> implements Runnable {
     async run(): Promise<void> {
         const ctx = this.ctx;
         const injector = ctx.injector;
-        const config = ctx.getConfiguration() as UnitTestConfigure;
+        const config = ctx.resolve(UNITTESTCONFIGURE);
         const src = config.src;
         let suites: any[] = [];
         const oldRunner = injector.resolve(OldTestRunner);

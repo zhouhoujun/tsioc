@@ -1,4 +1,4 @@
-import { Type, LoadType, ProvidersMetadata, Abstract, Injector } from '@tsdi/ioc';
+import { Type, LoadType, ProvidersMetadata, Abstract, Injector, tokenId, Token } from '@tsdi/ioc';
 
 /**
  * application Configuration.
@@ -97,6 +97,17 @@ export interface ApplicationConfiguration extends ProvidersMetadata, Record<stri
      */
     serverOptions?: Record<string, any> | { key?: any, cert?: any };
 }
+
+/**
+ * config token.
+ */
+export const CONFIGURATION = tokenId<ApplicationConfiguration>('CONFIGURATION');
+
+/**
+ * default configuration token.
+ */
+export const DEFAULT_CONFIG: Token<ApplicationConfiguration> = tokenId<ApplicationConfiguration>('DEFAULT_CONFIG');
+
 
 /**
  * application settings.

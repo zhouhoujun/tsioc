@@ -1,6 +1,6 @@
 /// <reference path="./type.d.ts" />
 import { Injectable, InvocationContext, ProviderType } from '@tsdi/ioc';
-import { CONFIGURATION, HttpBackend, HttpEvent, HttpHandler, HttpInterceptingHandler, HttpRequest, XhrFactory } from '@tsdi/core';
+import { HttpBackend, HttpEvent, HttpHandler, HttpInterceptingHandler, HttpRequest, SERVEROPTION, XhrFactory } from '@tsdi/core';
 import * as xhr2 from 'xhr2';
 import { Observable } from 'rxjs';
 
@@ -23,7 +23,7 @@ export class HttpClientBackend implements HttpBackend {
 
   handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
     return new Observable(observer => process.nextTick(() => {
-      const { protocol, hostname, port } = this.context.resolve(CONFIGURATION);
+      const { protocol, hostname, port } = this.context.resolve(SERVEROPTION);
 
       let request: HttpRequest;
       if (!isAbsoluteUrl.test(req.url)) {

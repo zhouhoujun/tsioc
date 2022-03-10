@@ -1,8 +1,6 @@
 import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, Injector, Modules } from '@tsdi/ioc';
-import { DebugLogAspect, LogConfigure, LogModule } from '@tsdi/logs';
-import { CONFIGURATION, PROCESS_ROOT } from './metadata/tk';
+import { PROCESS_ROOT } from './metadata/tk';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption } from './context';
-import { ConfigureMergerImpl, DefaultConfigureManager } from './configure/manager';
 import { StartupSet } from './startup';
 import { ServiceSet } from './service';
 import { DEFAULTA_PROVIDERS } from './providers';
@@ -17,7 +15,7 @@ import { ApplicationExit } from './exit';
  * @export
  * @class Application
  */
-export class Application {
+export class Application<T extends ApplicationContext = ApplicationContext> {
 
     private _loads?: Type[];
     /**
@@ -27,29 +25,32 @@ export class Application {
     /**
      * application context.
      */
-    protected context!: ApplicationContext;
+    protected context!: T;
 
     constructor(protected target: Type | ApplicationOption, protected loader?: ModuleLoader) {
         if (!isFunction(target)) {
             if (!this.loader) this.loader = target.loader;
-            const providers = (target.platformProviders && target.platformProviders.length) ? [...DEFAULTA_PROVIDERS, ...target.platformProviders] : DEFAULTA_PROVIDERS;
+            const providers = (target.platformProviders && target.platformProviders.length) ? [...this.getDefaultProviders(), ...target.platformProviders] : this.getDefaultProviders();
             target.deps = target.deps?.length ? [...this.getDeps(), ...target.deps] : this.getDeps();
             target.scope = 'root';
             this.root = this.createInjector(providers, target);
         } else {
             const option = { type: target, deps: this.getDeps(), scope: 'root' };
-            this.root = this.createInjector(DEFAULTA_PROVIDERS, option);
+            this.root = this.createInjector(this.getDefaultProviders(), option);
         }
         this.initRoot();
     }
 
+    protected getDefaultProviders(): ProviderType[] {
+        return DEFAULTA_PROVIDERS;
+    }
+
     protected initRoot() {
-        this.root.register(DefaultConfigureManager, ConfigureMergerImpl);
         this.root.setValue(Application, this);
     }
 
     /**
-     * get boot application context.
+     * get application context.
      *
      * @returns instance of {@link ApplicationContext}.
      */
@@ -84,7 +85,7 @@ export class Application {
      * @param {...string[]} args
      * @returns {Promise<T>}
      */
-    async run(): Promise<ApplicationContext> {
+    async run(): Promise<T> {
         try {
             const ctx = await this.createContext();
             await this.configation(ctx);
@@ -127,61 +128,29 @@ export class Application {
         return container.resolve({ token: ModuleFactoryResolver, target: option.type }).resolve(option.type).create(container, option);
     }
 
-    protected async createContext(): Promise<ApplicationContext> {
+    protected async createContext(): Promise<T> {
         if (!this.context) {
             const target = this.target;
             const root = this.root;
             if (isFunction(target)) {
-                this.context = root.resolve({ token: ApplicationFactory, target: target }).create(root);
+                this.context = root.resolve({ token: ApplicationFactory, target: target }).create(root) as T;
             } else {
                 if (target.loads) {
                     this._loads = await this.root.load(target.loads);
                 }
-                this.context = root.resolve({ token: ApplicationFactory, target: target.type }).create(root, target);
+                this.context = root.resolve({ token: ApplicationFactory, target: target.type }).create(root, target) as T;
             }
         }
         return this.context;
     }
 
-    protected async configation(ctx: ApplicationContext): Promise<void> {
-        const { baseURL, injector } = ctx;
-        const mgr = ctx.getConfigureManager();
-        await mgr.load();
-        let config = mgr.getConfig();
-
-        if (config.deps && config.deps.length) {
-            await injector.load(config.deps);
-        }
-
-        if (config.providers && config.providers.length) {
-            injector.inject(config.providers);
-        }
-
-        if (baseURL) {
-            config.baseURL = baseURL;
-        } else if (config.baseURL) {
-            injector.setValue(PROCESS_ROOT, config.baseURL);
-        }
-
-        if (injector.moduleReflect.annotation?.debug) {
-            config.debug = injector.moduleReflect.annotation.debug;
-        }
-
-        injector.setValue(CONFIGURATION, config);
-
-        if (config.logConfig) {
-            injector.setValue(LogConfigure, config.logConfig);
-        }
-        if (config.debug) {
-            // make sure log module registered.
-            injector.register(LogModule, DebugLogAspect);
-        }
+    protected async configation(ctx: T): Promise<void> {
     }
 
-    protected prepareContext(ctx: ApplicationContext): void {
+    protected prepareContext(ctx: T): void {
     }
 
-    protected refreshContext(ctx: ApplicationContext): void {
+    protected refreshContext(ctx: T): void {
         const exit = ctx.injector.get(ApplicationExit);
         if (exit) {
             exit.register();
