@@ -1,4 +1,4 @@
-import { AsyncHandler, DispatchHandler, Type } from '@tsdi/ioc';
+import { AsyncHandler, DispatchHandler, tokenId, Type } from '@tsdi/ioc';
 import { TransportContext } from './context';
 
 
@@ -24,3 +24,8 @@ export interface Endpoint<T extends TransportContext = TransportContext> extends
 * message type for register in {@link Middlewares}.
 */
 export type Middleware<T extends TransportContext = TransportContext> = AsyncHandler<TransportContext> | Endpoint<T> | Type<Endpoint>;
+
+/**
+ * middlewares token.
+ */
+export const MIDDLEWARES = tokenId<Middleware[]>('MIDDLEWARES');

@@ -8,10 +8,10 @@ import { BootApplicationFactory } from './impl/context';
 import { ConfigureFileLoader } from './configure/loader';
 
 
-const DEFAULTA_PROVIDERS: ProviderType[] = [
+const BOOT_DEFAULTA_PROVIDERS: ProviderType[] = [
     ConfigureFileLoader,
-    { provide: ApplicationFactory, useClass: BootApplicationFactory},
-    ... APPLICTION_DEFAULTA_PROVIDERS.filter(p=> (p as StaticProviders).provide !== ApplicationFactory)
+    { provide: ApplicationFactory, useClass: BootApplicationFactory },
+    ...APPLICTION_DEFAULTA_PROVIDERS.filter(p => (p as StaticProviders).provide !== ApplicationFactory)
 ];
 /**
  * boot application.
@@ -26,7 +26,7 @@ export class BootApplication extends Application<BootApplicationContext> {
     }
 
     protected override getDefaultProviders(): ProviderType[] {
-        return DEFAULTA_PROVIDERS;
+        return BOOT_DEFAULTA_PROVIDERS;
     }
 
     protected override initRoot() {

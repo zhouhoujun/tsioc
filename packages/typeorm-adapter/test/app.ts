@@ -9,7 +9,8 @@ import { RoleController } from './mapping/RoleController';
 
 
 
-export const option = <ConnectionOptions>{
+export const option = {
+    entities:[],
     async initDb(connection: Connection) {
         let userRep = connection.getRepository(User);
         let c = await userRep.count();
@@ -31,7 +32,7 @@ export const option = <ConnectionOptions>{
     // useNewUrlParser: true,
     synchronize: true, // 同步数据库
     logging: false  // 日志
-}
+} as ConnectionOptions;
 
 
 
