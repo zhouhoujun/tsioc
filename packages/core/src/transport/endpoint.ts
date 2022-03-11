@@ -1,13 +1,13 @@
-import { Abstract, chain, Injectable, InvocationContext } from "@tsdi/ioc";
-import { Observable, switchMap } from "rxjs";
-import { TransportContext, TransportContextFactory } from "./context";
-import { TransportHandler } from "./handler";
-import { Endpoint, Middleware, MIDDLEWARES } from "./middleware";
-import { TransportRequest, TransportResponse } from "./packet";
-import { SERVEROPTION } from "./server";
+import { Abstract, chain, Injectable, InvocationContext } from '@tsdi/ioc';
+import { Observable, switchMap } from 'rxjs';
+import { TransportRequest, TransportResponse } from './packet';
+import { TransportContext, TransportContextFactory } from './context';
+import { TransportHandler } from './handler';
+import { Endpoint, Middleware, MIDDLEWARES } from './middleware';
+import { SERVEROPTION } from './server';
 
 /**
- * http server side handler.
+ * http server endpoint handler.
  */
 @Abstract()
 export abstract class TransportEndpoint<TRequest, TResponse> implements TransportHandler<TRequest, TResponse>  {
@@ -17,8 +17,6 @@ export abstract class TransportEndpoint<TRequest, TResponse> implements Transpor
      */
     abstract handle(req: TRequest): Observable<TResponse>;
 }
-
-
 
 
 /**
@@ -58,6 +56,9 @@ export class EndpointInterceptingHandler<TRequest extends TransportRequest, TRes
     }
 }
 
+/**
+ * compose endpoint.
+ */
 export class ComposeEndpoint<T extends TransportContext = TransportContext> implements Endpoint<T> {
     constructor(private endpoints: Middleware[]) { }
     handle(ctx: T, next: () => Promise<void>): Promise<void> {

@@ -14,7 +14,7 @@ export class JsonResult extends ResultValue {
         super('application/json');
     }
     async sendValue(ctx: HttpContext) {
-        ctx.type = this.contentType;
+        ctx.contentType = this.contentType;
         ctx.body = this.data || {};
     }
 }

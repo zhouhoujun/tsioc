@@ -13,9 +13,6 @@ import { Observable } from 'rxjs';
       */
       abstract handle(req: HttpRequest): Observable<HttpEvent>;
  }
-
-
-
  
 
 /**

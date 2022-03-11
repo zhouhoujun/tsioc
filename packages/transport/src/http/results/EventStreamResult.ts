@@ -13,6 +13,7 @@ export class EventStreamResult extends ResultValue {
         super('text/event-stream');
     }
     async sendValue(ctx: HttpContext) {
+        ctx.contentType = this.contentType;
         await ctx.write(this.message);
     }
 }

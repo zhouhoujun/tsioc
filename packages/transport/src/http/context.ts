@@ -50,11 +50,11 @@ export class HttpContext extends TransportContext {
     }
 
     get contentType(): string {
-        return this.response.headers.get('contentType') ?? '';
+        return this.response.headers.get('Content-Type') ?? '';
     }
 
     set contentType(contentType: string) {
-        this.response.headers.set('contentType', contentType);
+        this.response.headers.set('Content-Type', contentType);
     }
 
     get status(): HttpStatusCode {

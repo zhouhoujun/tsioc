@@ -24,7 +24,7 @@ export class ViewResult extends ResultValue {
         if (!renderer) {
             return Promise.reject('view engin middleware no configed!');
         } else {
-            ctx.type = this.contentType;
+            ctx.contentType = this.contentType;
             return await renderer.render(ctx, this.name, this.model);
         }
     }
