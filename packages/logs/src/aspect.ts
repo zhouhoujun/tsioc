@@ -1,8 +1,8 @@
 import { Abstract, isFunction, isToken, isObject, isArray, Singleton, isNil, EMPTY_OBJ } from '@tsdi/ioc';
 import { Aspect, Joinpoint, JoinpointState, Pointcut } from '@tsdi/aop';
+import { ILogger } from '@tsdi/core';
 import { LoggerMetadata } from './metadata/Logger';
 import { isLevel, Level } from './Level';
-import { ILogger } from './ILogger';
 import { LogProcess } from './LogProcess';
 import { LogFormater, DefaultLogFormater } from './formater';
 import { LogConfigure } from './LogConfigure';

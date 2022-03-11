@@ -1,6 +1,7 @@
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { ILogger } from './ILogger';
+import { ILogger, LoggerFactory } from '@tsdi/core';
 
+export { ILogger } from '@tsdi/core';
 /**
  * logger configuation.
  *
@@ -10,11 +11,13 @@ import { ILogger } from './ILogger';
  */
 export interface LoggerConfig extends Record<string, any> { }
 
+
+
 /**
  * logger manager.
  */
 @Abstract()
-export abstract class LoggerManager {
+export abstract class LoggerManager implements LoggerFactory {
     static ρNPT = true;
     /**
      * config logger context.

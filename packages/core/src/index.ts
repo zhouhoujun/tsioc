@@ -13,8 +13,8 @@ export * from './runnable';
 export * from './startup';
 export * from './service';
 
+export * from './logger';
 export * from './context';
-
 export * from './pipes';
 
 

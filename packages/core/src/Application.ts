@@ -98,7 +98,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
             return ctx;
         } catch (err) {
             if (this.context) {
-                const logger = this.context.getLogManager()?.getLogger();
+                const logger = this.context.getLogger();
                 logger ? logger.error(err) : console.error(err);
                 await this.context.destroy();
             } else {

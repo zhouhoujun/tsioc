@@ -169,8 +169,7 @@ export class StatupModule { }
 })
 export class ServerMainModule { }
 
-export const configurtion = {
-    logConfig: {
+export const logConfig = {
         // adapter: 'console',
         // config: {
         //     level: 'trace'
@@ -201,13 +200,13 @@ export const configurtion = {
             pm2: true
         }
     } as LogConfigure
-} as ApplicationConfiguration;
+
 
 @Configuration()
 export class ConfiguraionManger {
 
     @Bean()
-    settings(): Settings {
+    settings(): Record<string, any> {
         return {
             
         };

@@ -73,6 +73,10 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         return token === ModuleRef || super.isself(token);
     }
 
+    import(typeOrDef: Type | ModuleWithProviders) {
+        this.processInjectorType(this.platform(), typeOrDef, [], this.moduleReflect);
+    }
+
     protected processInjectorType(platform: Platform, typeOrDef: Type | ModuleWithProviders, dedupStack: Type[], moduleRefl?: ModuleReflect) {
         processInjectorType(typeOrDef, dedupStack,
             (pdr, pdrs) => this.processProvider(platform, pdr, pdrs),

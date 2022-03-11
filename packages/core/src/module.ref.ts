@@ -48,6 +48,11 @@ export abstract class ModuleRef<T = any> extends Injector implements ModRef<T>, 
      */
     abstract get instance(): T;
     /**
+     * import module.
+     * @param modle 
+     */
+    abstract import<M>(modle: Type<M> | ModuleWithProviders<M>): void;
+    /**
      * destroy.
      */
     abstract destroy(): void | Promise<void>;

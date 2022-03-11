@@ -1,25 +1,46 @@
-import { Inject, IocExt, Injector } from '@tsdi/ioc';
+import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { AnnotationLoggerAspect } from './aspect';
 import { ConsoleLogManager, ConfigureLoggerManager } from './manager';
 import { DefaultLogFormater } from './formater';
+import { LoggerFactory, Module } from '@tsdi/core';
+import { LogConfigure } from './LogConfigure';
+import { DebugLogAspect } from './debugs/aspect';
 
 /**
  * aop logs ext for Ioc. auto run setup after registered.
  * @export
  * @class LogModule
  */
-@IocExt()
+@Module({
+    imports: [
+        AopModule
+    ],
+    providers: [
+        ConfigureLoggerManager,
+        AnnotationLoggerAspect,
+        DefaultLogFormater,
+        ConsoleLogManager,
+        { provide: LoggerFactory, useExisting: ConfigureLoggerManager }
+    ]
+})
 export class LogModule {
 
     /**
-     * register aop for container.
+     * LogModule with options.
+     * @param config 
+     * @param debug 
+     * @returns 
      */
-    setup(@Inject() injector: Injector) {
-        if (!injector.has(AopModule)) {
-            injector.register(AopModule);
+    static withOptions(config: LogConfigure, debug?: boolean): ModuleWithProviders<LogModule> {
+        const providers: ProviderType[] = [{ provide: LogConfigure, useValue: config }];
+        if (debug) {
+            providers.push(DebugLogAspect);
         }
 
-        injector.inject(ConfigureLoggerManager, AnnotationLoggerAspect, DefaultLogFormater, ConsoleLogManager);
+        return {
+            module: LogModule,
+            providers
+        }
     }
 }

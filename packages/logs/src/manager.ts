@@ -1,9 +1,8 @@
 import { EMPTY_OBJ, getToken, Inject, Injectable, Injector, isFunction, isString, Token, Type } from '@tsdi/ioc';
+import { ILogger } from '@tsdi/core';
 import { LogConfigure } from './LogConfigure';
-import { ILogger } from './ILogger';
 import { Level, Levels } from './Level';
 import { LoggerConfig, LoggerManager } from './LoggerManager';
-
 
 /**
  * Configure logger manger. use to get configed logger manger.

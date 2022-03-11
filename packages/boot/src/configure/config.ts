@@ -1,5 +1,6 @@
 import { ConnectionOptions } from '@tsdi/core';
 import { Type, LoadType, ProvidersMetadata, Abstract, Injector, tokenId, Token } from '@tsdi/ioc';
+import { LogConfigure } from '@tsdi/logs';
 
 /**
  * application Configuration.
@@ -38,7 +39,7 @@ export interface ApplicationConfiguration extends ProvidersMetadata, Record<stri
      *
      * @type {*}
      */
-    logConfig?: Record<string, any>;
+    logConfig?: LogConfigure;
     /**
      * custom config key value setting.
      *

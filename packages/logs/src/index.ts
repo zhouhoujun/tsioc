@@ -1,5 +1,4 @@
 export * from './Level';
-export * from './ILogger';
 export * from './LoggerManager';
 export * from './manager';
 export * from './LogConfigure';

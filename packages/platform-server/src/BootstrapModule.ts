@@ -97,7 +97,7 @@ export class ServerApplicationExit extends ApplicationExit {
         const usedsignls = this.context.arguments.signls;
         if (!usedsignls?.length) return;
 
-        const logger = this.context.getLogManager()?.getLogger();
+        const logger = this.context.getLogger();
         const callback = async (signal: string) => {
             try {
                 usedsignls.forEach(si => process.removeListener(si, callback));

@@ -2,13 +2,13 @@ import {
     ProviderType, LoadType, Injector, Abstract, Type, InvokeOption, InvokeArguments,
     ModuleLoader, Destroyable, Modules, DestroyCallback, InvocationContext
 } from '@tsdi/ioc';
-import { LoggerManager } from '@tsdi/logs';
 import { RunnableRef, RunnableSet, RunnableFactory } from './runnable';
 import { ServiceSet } from './service';
 import { StartupSet } from './startup';
 import { ModuleOption } from './module.factory';
 import { ModuleRef } from './module.ref';
 import { ApplicationArguments } from './args';
+import { ILogger } from './logger';
 
 
 /**
@@ -18,13 +18,13 @@ export interface BootstrapOption extends InvokeOption {
 
 }
 
+
 /**
  * application context for global.
  * implements {@link Destroyable}.
  */
 @Abstract()
 export abstract class ApplicationContext extends InvocationContext implements Destroyable {
-
     /**
      * application root module injector.
      */
@@ -39,10 +39,12 @@ export abstract class ApplicationContext extends InvocationContext implements De
      * @param option bootstrap option.
      */
     abstract bootstrap<C>(type: Type<C> | RunnableFactory<C>, option?: BootstrapOption): any;
+
     /**
-     * get log manager.
+     * get logger.
+     * @param name 
      */
-    abstract getLogManager(): LoggerManager;
+    abstract getLogger(name?: string): ILogger;
     /**
      * boot base url.
      *

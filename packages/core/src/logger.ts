@@ -1,10 +1,12 @@
+import { Abstract } from "@tsdi/ioc";
+
 /**
  * logger interface
  *
  * @export
  * @interface ILogger
  */
-export interface ILogger {
+ export interface ILogger {
     /**
      * logger name.
      */
@@ -72,5 +74,13 @@ export interface ILogger {
      * @param {...any[]} messages
      */
     fatal(...messages: any[]): void;
+}
 
+@Abstract()
+export abstract class LoggerFactory {
+    /**
+     * get logger.
+     * @param name 
+     */
+    abstract getLogger(name?: string): ILogger;
 }

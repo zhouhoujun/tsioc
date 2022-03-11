@@ -1,8 +1,8 @@
 import { ApplicationContext, Application, formatDate } from '../src';
 import { After, Before, Suite, Test } from '@tsdi/unit';
-import { ConfigureLoggerManager } from '@tsdi/logs';
+import { ConfigureLoggerManager, LogConfigure } from '@tsdi/logs';
 import expect = require('expect');
-import { ServerMainModule, configurtion } from './demo';
+import { ServerMainModule } from './demo';
 import * as log4js from 'log4js';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -19,16 +19,21 @@ export class ServerBootTest {
     @Before()
     async init() {
         await del(logdir);
-        this.ctx = await Application.run({ type: ServerMainModule, configures: [configurtion] }); //{debug: true},
+        this.ctx = await Application.run({
+            type: ServerMainModule, 
+            providers: [
+                { provide: LogConfigure, useValue: LogConfigure }
+            ]
+        }); 
         const now = new Date();
         this.logfile = path.join(this.ctx.baseURL, `/log-caches/focas.-${formatDate(now).replace(/(-|\/)/g, '')}.log`);
     }
 
     @Test()
     isLog4js() {
-        const cfg = this.ctx.getConfiguration();
-        expect(cfg.logConfig).toBeDefined();
-        const loggerMgr = this.ctx.getLogManager();
+        const cfg = this.ctx.resolve(LogConfigure);
+        expect(cfg).toBeDefined();
+        const loggerMgr = this.ctx.resolve(ConfigureLoggerManager);
         expect(loggerMgr).toBeInstanceOf(ConfigureLoggerManager);
         const logger = loggerMgr.getLogger();
         expect(logger).toBeDefined();
@@ -39,7 +44,7 @@ export class ServerBootTest {
     @Test()
     async canWriteLogFile() {
         const msg = 'log file test';
-        this.ctx.getLogManager().getLogger().info(msg);
+        this.ctx.resolve(ConfigureLoggerManager).getLogger().info(msg);
         let defer = lang.defer();
         setTimeout(() => {
             expect(fs.existsSync(this.logfile)).toBeTruthy();

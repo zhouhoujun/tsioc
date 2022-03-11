@@ -1,7 +1,7 @@
 import { Abstract, Singleton, Token } from '@tsdi/ioc';
 import { Joinpoint, JoinpointState, NonePointcut } from '@tsdi/aop';
+import { ILogger } from '@tsdi/core';
 import { Level } from './Level';
-import { ILogger } from './ILogger';
 
 
 

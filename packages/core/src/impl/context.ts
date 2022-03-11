@@ -1,5 +1,4 @@
 import { Type, isFunction, ModuleMetadata, DefaultInvocationContext, EMPTY_OBJ, InvokeArguments, InvocationContext, lang } from '@tsdi/ioc';
-import { ConfigureLoggerManager, LoggerManager, LOGGER_MANAGER } from '@tsdi/logs';
 import { PROCESS_ROOT } from '../metadata/tk';
 import { ApplicationContext, ApplicationFactory, BootstrapOption, EnvironmentOption } from '../context';
 import { RunnableFactory, RunnableFactoryResolver, RunnableSet, RunnableRef } from '../runnable';
@@ -7,6 +6,7 @@ import { ModuleRef } from '../module.ref';
 import { StartupSet } from '../startup';
 import { ServiceSet } from '../service';
 import { ApplicationArguments } from '../args';
+import { ILogger, LoggerFactory } from '../logger';
 
 
 
@@ -56,16 +56,8 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         return this.injector.instance;
     }
 
-    /**
-     * get log manager.
-     */
-    getLogManager(): LoggerManager {
-        let logmgr = this.injector.get(LOGGER_MANAGER);
-        if (!logmgr) {
-            logmgr = this.injector.get(ConfigureLoggerManager);
-            this.injector.setSingleton(LOGGER_MANAGER, logmgr);
-        }
-        return logmgr;
+    getLogger(name?: string): ILogger {
+        return this.injector.get(LoggerFactory)?.getLogger(name);
     }
 
     get baseURL(): string {
