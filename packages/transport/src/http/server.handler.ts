@@ -1,12 +1,12 @@
-import { Abstract, Injectable, InvocationContext, tokenId } from '@tsdi/ioc';
-import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest, InterceptorHandler, TransportHandler } from '@tsdi/core';
+import { Abstract, Injectable, InvocationContext } from '@tsdi/ioc';
+import { HttpEvent, HttpHandler, HttpRequest, HTTP_INTERCEPTORS, InterceptorHandler } from '@tsdi/core';
 import { Observable } from 'rxjs';
 
 /**
  * http server side handler.
  */
  @Abstract()
- export abstract class HttpRoute implements TransportHandler<HttpRequest, HttpEvent> {
+ export abstract class HttpEndpoint implements HttpHandler {
      /**
       * http transport handler.
       * @param req http request input.
@@ -14,14 +14,9 @@ import { Observable } from 'rxjs';
       abstract handle(req: HttpRequest): Observable<HttpEvent>;
  }
 
+
+
  
-
- /**
- * http server transport interceptors.
- */
-export const HTTP_SERVER_INTERCEPTORS = tokenId<HttpInterceptor[]>('HTTP_SERVER_INTERCEPTORS');
-
-
 
 /**
  * An injectable {@link HttpHandler} that applies multiple interceptors
@@ -36,11 +31,11 @@ export const HTTP_SERVER_INTERCEPTORS = tokenId<HttpInterceptor[]>('HTTP_SERVER_
 export class HttpRouteInterceptingHandler implements HttpHandler {
     private chain!: HttpHandler;
 
-    constructor(private router: HttpRoute, private context: InvocationContext) { }
+    constructor(private router: HttpEndpoint, private context: InvocationContext) { }
 
     handle(req: HttpRequest): Observable<HttpEvent> {
         if (!this.chain) {
-            const interceptors = this.context.get(HTTP_SERVER_INTERCEPTORS);
+            const interceptors = this.context.resolve(HTTP_INTERCEPTORS);
             this.chain = interceptors.reduceRight(
                 (next, interceptor) => new InterceptorHandler(next, interceptor), this.router);
         }

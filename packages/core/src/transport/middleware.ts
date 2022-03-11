@@ -16,14 +16,14 @@ export interface Endpoint<T extends TransportContext = TransportContext> extends
      * @param {() => Promise<void>} next
      * @returns {Promise<void>}
      */
-    handle(ctx: T, next: () => Promise<void>): Promise<void>;
+    handle(ctx: T, next?: () => Promise<void>): Promise<void>;
 }
 
  
 /**
 * message type for register in {@link Middlewares}.
 */
-export type Middleware<T extends TransportContext = TransportContext> = AsyncHandler<TransportContext> | Endpoint<T> | Type<Endpoint>;
+export type Middleware<T extends TransportContext = TransportContext> = AsyncHandler<TransportContext> | Endpoint<T>;
 
 /**
  * middlewares token.
