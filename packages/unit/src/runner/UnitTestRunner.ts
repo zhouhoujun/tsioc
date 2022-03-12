@@ -1,8 +1,7 @@
 import { Injectable, isString, isClass, isArray, lang, refl } from '@tsdi/ioc';
-import { ApplicationContext, Runnable } from '@tsdi/core';
+import { ApplicationContext, Runner } from '@tsdi/core';
 import { OldTestRunner } from './OldTestRunner';
 import { DefaultTestReport } from '../reports/TestReport';
-import { UnitTestConfigure } from '../UnitTestConfigure';
 import { SuiteReflect } from '../metadata/meta';
 import { UNITTESTCONFIGURE } from '../configure';
 
@@ -11,14 +10,10 @@ import { UNITTESTCONFIGURE } from '../configure';
  * Suite runner.
  */
 @Injectable()
-export class UnitTestRunner<T = any> implements Runnable {
+export class UnitTestRunner {
 
-    constructor(private ctx: ApplicationContext) {
-
-    }
-
-    async run(): Promise<void> {
-        const ctx = this.ctx;
+    @Runner()
+    async run(ctx: ApplicationContext): Promise<void> {
         const injector = ctx.injector;
         const config = ctx.resolve(UNITTESTCONFIGURE);
         const src = config.src;

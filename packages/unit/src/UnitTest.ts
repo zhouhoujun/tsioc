@@ -13,7 +13,6 @@ import { SuiteRunner } from './runner/SuiteRunner';
 
 @Module({
    imports: [
-      AopModule,
       LogModule
    ],
    providers: [
@@ -41,14 +40,13 @@ export class UnitTest { }
  */
 export async function runTest(src: string | Type | (string | Type)[], config?: UnitTestConfigure, ...loads: LoadType[]): Promise<any> {
    await Application.run({
-      type: UnitTest, loads, providers: [
+      type: UnitTest,
+      loads,
+      providers: [
          {
             provide: UNITTESTCONFIGURE,
-            useValue: {
-               ...config,
-               src,
-
-            }
-         }]
+            useValue: { ...config, src }
+         }
+      ]
    } as ApplicationOption)
 }

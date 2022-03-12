@@ -144,11 +144,9 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
         return this.context;
     }
 
-    protected async configation(ctx: T): Promise<void> {
-    }
+    protected configation(ctx: T): any { }
 
-    protected prepareContext(ctx: T): void {
-    }
+    protected prepareContext(ctx: T): void { }
 
     protected refreshContext(ctx: T): void {
         const exit = ctx.injector.get(ApplicationExit);
