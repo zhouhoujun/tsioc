@@ -1,5 +1,5 @@
 import { Inject, Injectable, isUndefined, ModuleLoader } from '@tsdi/ioc';
-import { TransportClient, Deserializer, TransportRequest, TransportEvent, TransportRequest, Serializer, TransportResponse, TransportHandler, ClientTransportBackend, Protocol } from '@tsdi/core';
+import { TransportClient, Deserializer, TransportRequest, TransportEvent, Serializer, TransportResponse, TransportHandler, Protocol } from '@tsdi/core';
 import { Level } from '@tsdi/logs';
 import {
     BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerGroupJoinEvent, Producer,

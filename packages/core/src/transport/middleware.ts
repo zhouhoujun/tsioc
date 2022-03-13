@@ -3,11 +3,11 @@ import { TransportContext } from './context';
 
 
 /**
- * Endpoint implements {@link DispatchHandler}.
+ * Middlewarable implements {@link DispatchHandler}.
  *
  * @export
  */
-export interface Endpoint<T extends TransportContext = TransportContext> extends DispatchHandler<T, Promise<void>> {
+export interface Middlewarable<T extends TransportContext = TransportContext> extends DispatchHandler<T, Promise<void>> {
     /**
      * middleware handle.
      *
@@ -23,7 +23,7 @@ export interface Endpoint<T extends TransportContext = TransportContext> extends
 /**
 * message type for register in {@link Middlewares}.
 */
-export type Middleware<T extends TransportContext = TransportContext> = AsyncHandler<TransportContext> | Endpoint<T>;
+export type Middleware<T extends TransportContext = TransportContext> = AsyncHandler<TransportContext> | Middlewarable<T>;
 
 /**
  * middlewares token.

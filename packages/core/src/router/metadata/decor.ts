@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { RequestMethod } from '../../transport/packet';
 import { CanActivate } from '../../transport/guard';
-import { Endpoint, Middleware } from '../../transport/middleware';
+import { Middlewarable, Middleware } from '../../transport/middleware';
 import { Middlewares } from '../../transport/middlewares';
 import { RouteRefFactoryResolver } from '../route';
 import { MappingReflect, ProtocolRouteMappingMetadata, Router, RouterResolver } from '../router';
@@ -13,7 +13,7 @@ import { PipeTransform } from '../../pipes/pipe';
 import { MiddlewareRefFactoryResolver } from '../middleware.ref';
 
 
-export type HandleDecorator = <TFunction extends Type<Endpoint>>(target: TFunction) => TFunction | void;
+export type HandleDecorator = <TFunction extends Type<Middlewarable>>(target: TFunction) => TFunction | void;
 
 
 /**
@@ -132,7 +132,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
                 return next();
             }
 
-            let queue: Endpoint | undefined;
+            let queue: Middlewarable | undefined;
 
             const type = ctx.type;
             if (isString(route) || reflect.class.isExtends(Router)) {

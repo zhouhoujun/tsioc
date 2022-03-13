@@ -1,6 +1,6 @@
 import { chain, isClass, Type } from '@tsdi/ioc';
 import { TransportContext } from './context';
-import { Middleware, Endpoint } from './middleware';
+import { Middleware, Middlewarable } from './middleware';
 
 
 
@@ -8,7 +8,7 @@ import { Middleware, Endpoint } from './middleware';
 /**
  * middlewares, compose of {@link Middleware}.
  */
-export class Middlewares<T extends TransportContext = TransportContext> implements Endpoint<T> {
+export class Middlewares<T extends TransportContext = TransportContext> implements Middlewarable<T> {
     protected handles: Middleware<T>[] = [];
     /**
      * use handle.

@@ -1,7 +1,7 @@
 import { Abstract, Destroyable, DestroyCallback, Injector, InvokeArguments, InvokeOption, OnDestroy, tokenId, Type, TypeReflect } from '@tsdi/ioc';
 import { TransportContext } from '../transport/context';
 import { CanActivate } from '../transport/guard';
-import { Endpoint } from '../transport/middleware';
+import { Middlewarable } from '../transport/middleware';
 
 
 export interface Route extends InvokeArguments {
@@ -43,7 +43,7 @@ export interface Route extends InvokeArguments {
      * The component to instantiate when the path matches.
      * Can be empty if child routes specify components.
      */
-    endpoint?: Type<Endpoint> | Endpoint;
+    endpoint?: Type<Middlewarable> | Middlewarable;
 
 }
 
@@ -81,7 +81,7 @@ export const ROUTES = tokenId<Routes>('ROUTES');
  * middleware ref.
  */
 @Abstract()
-export abstract class RouteRef<T = any> implements Endpoint, Destroyable, OnDestroy {
+export abstract class RouteRef<T = any> implements Middlewarable, Destroyable, OnDestroy {
     /**
      * controller type.
      */

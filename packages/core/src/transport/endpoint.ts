@@ -3,11 +3,11 @@ import { Observable, switchMap } from 'rxjs';
 import { TransportRequest, TransportResponse } from './packet';
 import { TransportContext, TransportContextFactory } from './context';
 import { TransportHandler } from './handler';
-import { Endpoint, Middleware, MIDDLEWARES } from './middleware';
+import { Middlewarable, Middleware, MIDDLEWARES } from './middleware';
 import { SERVEROPTION } from './server';
 
 /**
- * http server endpoint handler.
+ * transport server endpoint handler.
  */
 @Abstract()
 export abstract class TransportEndpoint<TRequest, TResponse> implements TransportHandler<TRequest, TResponse>  {
@@ -20,17 +20,17 @@ export abstract class TransportEndpoint<TRequest, TResponse> implements Transpor
 
 
 /**
- * An injectable {@link TransportHandler} that applies multiple interceptors
+ * An injectable {@link TransportEndpoint} that applies multiple interceptors
  * to a request before passing it to the given {@link TransportEndpoint}.
  *
  * The interceptors are loaded lazily from the injector, to allow
  * interceptors to themselves inject classes depending indirectly
  * on `EndpointInterceptingHandler` itself.
- * @see `EndpointInterceptingHandler`
+ * @see `InterceptingEndpoint`
  */
 @Injectable()
-export class EndpointInterceptingHandler<TRequest extends TransportRequest, TResponse extends TransportResponse> implements TransportHandler<TRequest, TResponse>  {
-    private chain!: Endpoint;
+export class InterceptingEndpoint<TRequest extends TransportRequest, TResponse extends TransportResponse> implements TransportHandler<TRequest, TResponse>  {
+    private chain!: Middlewarable;
 
     constructor(private endpoint: TransportEndpoint<TRequest, TResponse>, private context: InvocationContext) { }
 
@@ -59,7 +59,7 @@ export class EndpointInterceptingHandler<TRequest extends TransportRequest, TRes
 /**
  * compose endpoint.
  */
-export class ComposeEndpoint<T extends TransportContext = TransportContext> implements Endpoint<T> {
+export class ComposeEndpoint<T extends TransportContext = TransportContext> implements Middlewarable<T> {
     constructor(private endpoints: Middleware[]) { }
     handle(ctx: T, next: () => Promise<void>): Promise<void> {
         return chain(this.endpoints, ctx, next);

@@ -2,9 +2,9 @@ import { Abstract, tokenId } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
-import { Protocol, TransportRequest, TransportResponse } from './packet';
-import { TransportHandler } from './handler';
 import { Startup } from '../startup';
+import { Protocol, TransportRequest, TransportResponse } from './packet';
+import { TransportEndpoint } from './endpoint';
 
 
 /**
@@ -23,7 +23,7 @@ export abstract class TransportServer<TRequest extends TransportRequest = Transp
     /**
      * transport handler.
      */
-    abstract get handler(): TransportHandler<TRequest, TResponse>;
+    abstract get handler(): TransportEndpoint<TRequest, TResponse>;
     /**
      * close server.
      */

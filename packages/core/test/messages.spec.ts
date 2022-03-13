@@ -1,7 +1,7 @@
 import { Injector, Injectable, lang, ArgumentError, MissingParameterError } from '@tsdi/ioc';
 import { lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
-import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Middleware, Module, Middlewares, TransportContext, HttpClientModule, Endpoint, HttpClient } from '../src';
+import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Middleware, Module, Middlewares, TransportContext, HttpClientModule, Middlewarable, HttpClient } from '../src';
 import { HttpModule } from '@tsdi/transport';
 
 @RouteMapping('/device')
@@ -111,7 +111,7 @@ class DeviceStartQueue extends Middlewares {
 }
 
 @Handle(DeviceStartQueue)
-class DeviceStartupHandle implements Endpoint {
+class DeviceStartupHandle implements Middlewarable {
 
     async handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         console.log('DeviceStartupHandle.', 'resp:', ctx.request.body.type, 'req:', ctx.request.body.type)
@@ -124,7 +124,7 @@ class DeviceStartupHandle implements Endpoint {
 }
 
 @Handle(DeviceStartQueue)
-class DeviceAStartupHandle implements Endpoint {
+class DeviceAStartupHandle implements Middlewarable {
 
     async handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         console.log('DeviceAStartupHandle.', 'resp:', ctx.body.type, 'req:', ctx.request.body.type)

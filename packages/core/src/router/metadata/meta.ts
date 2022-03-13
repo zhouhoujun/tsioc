@@ -1,6 +1,6 @@
 import { PatternMetadata, Type, TypeMetadata } from '@tsdi/ioc';
 import { CanActivate } from '../../transport/guard';
-import { Endpoint } from '../../transport/middleware';
+import { Middlewarable } from '../../transport/middleware';
 
 export interface HandleMessagePattern {
     /**
@@ -46,21 +46,21 @@ export interface HandleMetadata extends TypeMetadata, PatternMetadata {
      * handle parent.
      * default register in root handle queue.
      */
-    parent?: Type<Endpoint>;
+    parent?: Type<Middlewarable>;
 
     /**
      * register this handle handle before this handle.
      *
-     * @type {Type<Endpoint>}
+     * @type {Type<Middlewarable>}
      */
-    before?: Type<Endpoint>;
+    before?: Type<Middlewarable>;
 
     /**
      * register this handle handle after this handle.
      *
-     * @type {Type<Endpoint>}
+     * @type {Type<Middlewarable>}
      */
-    after?: Type<Endpoint>;
+    after?: Type<Middlewarable>;
 }
 
 export interface HandlesMetadata extends HandleMetadata {
