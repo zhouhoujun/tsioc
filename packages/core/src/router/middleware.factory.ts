@@ -1,5 +1,5 @@
 import { chain, DestroyCallback, EMPTY, Injector, isFunction, isUndefined, lang, OperationFactory, OperationFactoryResolver, refl, Type, TypeReflect } from '@tsdi/ioc';
-import { Middlewarable, Middleware } from '../transport/middleware';
+import { Middlewarable, Middleware } from '../transport/endpoint';
 import { MiddlewareRef, MiddlewareRefFactory, MiddlewareRefFactoryResolver } from './middleware.ref';
 import { HandleMetadata } from './metadata/meta';
 import { CanActivate } from '../transport/guard';

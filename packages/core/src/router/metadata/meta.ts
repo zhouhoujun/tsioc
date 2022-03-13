@@ -1,6 +1,6 @@
 import { PatternMetadata, Type, TypeMetadata } from '@tsdi/ioc';
 import { CanActivate } from '../../transport/guard';
-import { Middlewarable } from '../../transport/middleware';
+import { Middlewarable } from '../../transport/endpoint';
 
 export interface HandleMessagePattern {
     /**

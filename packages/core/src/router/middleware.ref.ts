@@ -1,7 +1,7 @@
 import { Abstract, Destroyable, DestroyCallback, Injector, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
 import { TransportContext } from '../transport/context';
 import { CanActivate } from '../transport/guard';
-import { Middlewarable } from '../transport/middleware';
+import { Middlewarable } from '../transport/endpoint';
 import { RouteOption } from './route';
 
 

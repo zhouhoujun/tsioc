@@ -1,6 +1,6 @@
 import { chain, isClass, Type } from '@tsdi/ioc';
 import { TransportContext } from './context';
-import { Middleware, Middlewarable } from './middleware';
+import { Middleware, Middlewarable } from './endpoint';
 
 
 

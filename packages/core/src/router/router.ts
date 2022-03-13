@@ -2,7 +2,7 @@ import { Abstract, chain, isClass, isString, OnDestroy, Type, TypeReflect } from
 import { RequestMethod } from '../transport/packet';
 import { TransportContext } from '../transport/context';
 import { CanActivate } from '../transport/guard';
-import { Middleware } from '../transport/middleware';
+import { Middleware } from '../transport/endpoint';
 import { Middlewares } from '../transport/middlewares';
 import { PipeTransform } from '../pipes/pipe';
 import { Route, RouteRef } from './route';

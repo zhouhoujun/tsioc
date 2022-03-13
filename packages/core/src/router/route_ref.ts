@@ -8,7 +8,7 @@ import { isObservable, lastValueFrom } from 'rxjs';
 import { CanActivate } from '../transport/guard';
 import { ResultValue } from '../transport/result';
 import { TransportArgumentResolver, TransportParameter } from '../transport/resolver';
-import { Middleware } from '../transport/middleware';
+import { Middleware } from '../transport/endpoint';
 import { TransportContext, promisify } from '../transport/context';
 import { MODEL_RESOLVERS } from '../model/model.resolver';
 import { PipeTransform } from '../pipes/pipe';

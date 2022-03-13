@@ -1,67 +1,48 @@
-import { Abstract, chain, Injectable, InvocationContext } from '@tsdi/ioc';
-import { Observable, switchMap } from 'rxjs';
-import { TransportRequest, TransportResponse } from './packet';
-import { TransportContext, TransportContextFactory } from './context';
-import { TransportHandler } from './handler';
-import { Middlewarable, Middleware, MIDDLEWARES } from './middleware';
-import { SERVEROPTION } from './server';
+import { AsyncHandler, chain, DispatchHandler } from '@tsdi/ioc';
+import { Observable } from 'rxjs';
+import { TransportContext } from './context';
 
 /**
  * transport server endpoint handler.
  */
-@Abstract()
-export abstract class TransportEndpoint<TRequest, TResponse> implements TransportHandler<TRequest, TResponse>  {
+export interface TransportEndpoint<TRequest, TResponse> {
     /**
-     * http transport handler.
-     * @param req http request input.
+     * transport server endpoint.
+     * @param req request input.
      */
-    abstract handle(req: TRequest): Observable<TResponse>;
+    handle(req: TRequest): Observable<TResponse>;
 }
 
 
 /**
- * An injectable {@link TransportEndpoint} that applies multiple interceptors
- * to a request before passing it to the given {@link TransportEndpoint}.
+ * Middlewarable implements {@link DispatchHandler}.
  *
- * The interceptors are loaded lazily from the injector, to allow
- * interceptors to themselves inject classes depending indirectly
- * on `EndpointInterceptingHandler` itself.
- * @see `InterceptingEndpoint`
+ * @export
  */
-@Injectable()
-export class InterceptingEndpoint<TRequest extends TransportRequest, TResponse extends TransportResponse> implements TransportHandler<TRequest, TResponse>  {
-    private chain!: Middlewarable;
-
-    constructor(private endpoint: TransportEndpoint<TRequest, TResponse>, private context: InvocationContext) { }
-
-    handle(request: TRequest): Observable<TResponse> {
-        if (!this.chain) {
-            const middlewares = this.context.resolve(MIDDLEWARES);
-            this.chain = new ComposeEndpoint(middlewares);
-        }
-        return this.endpoint.handle(request)
-            .pipe(
-                switchMap(async reponse=> {
-                    const args = this.context.resolve(SERVEROPTION);
-                    const ctx = this.context.resolve(TransportContextFactory).create(this.context, {
-                        reponse,
-                        request,
-                        arguments: args
-                    });
-                    await this.chain.handle(ctx);
-                    return ctx.response as TResponse;
-                })
-            )
-        
-    }
+export interface Middlewarable<T extends TransportContext = TransportContext> extends DispatchHandler<T, Promise<void>> {
+    /**
+     * middleware handle.
+     *
+     * @abstract
+     * @param {T} ctx
+     * @param {() => Promise<void>} next
+     * @returns {Promise<void>}
+     */
+    handle(ctx: T, next?: () => Promise<void>): Promise<void>;
 }
 
+
 /**
- * compose endpoint.
+* message type for register in {@link Middlewares}.
+*/
+export type Middleware<T extends TransportContext = TransportContext> = AsyncHandler<TransportContext> | Middlewarable<T>;
+
+/**
+ * middleware chain.
  */
-export class ComposeEndpoint<T extends TransportContext = TransportContext> implements Middlewarable<T> {
-    constructor(private endpoints: Middleware[]) { }
+export class Chain<T extends TransportContext = TransportContext> implements Middlewarable<T> {
+    constructor(private middlewares: Middleware[]) { }
     handle(ctx: T, next: () => Promise<void>): Promise<void> {
-        return chain(this.endpoints, ctx, next);
+        return chain(this.middlewares, ctx, next);
     }
 }

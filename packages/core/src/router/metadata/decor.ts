@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { RequestMethod } from '../../transport/packet';
 import { CanActivate } from '../../transport/guard';
-import { Middlewarable, Middleware } from '../../transport/middleware';
+import { Middlewarable, Middleware } from '../../transport/endpoint';
 import { Middlewares } from '../../transport/middlewares';
 import { RouteRefFactoryResolver } from '../route';
 import { MappingReflect, ProtocolRouteMappingMetadata, Router, RouterResolver } from '../router';

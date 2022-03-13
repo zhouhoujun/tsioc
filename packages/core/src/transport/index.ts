@@ -3,7 +3,7 @@ export * from './serializer';
 export * from './deserializer';
 
 export * from './context';
-export * from './middleware';
+export * from './endpoint';
 export * from './middlewares';
 export * from './guard';
 export * from './result';
