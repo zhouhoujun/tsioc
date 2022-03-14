@@ -52,7 +52,7 @@ export interface Route extends InvokeArguments {
      * The middlewarable to instantiate when the path matches.
      * Can be empty if child routes specify middlewarable.
      */
-    handle?: Middleware;
+    middleware?: Middleware;
 
 }
 
@@ -60,7 +60,6 @@ export type LoadChildren = () => any;
 export type Routes = Route[];
 
 export const ROUTES = tokenId<Routes>('ROUTES');
-
 
 
 /**
@@ -91,7 +90,7 @@ export abstract class RouteRef<T = any> implements Middlewarable, Destroyable, O
     /**
      * route guards.
      */
-    abstract get guards(): Type<CanActivate>[] | undefined;
+    abstract get guards(): CanActivate[];
     /**
      * route handle.
      *

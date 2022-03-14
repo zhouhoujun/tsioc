@@ -64,8 +64,12 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         return this._url;
     }
 
-    get guards(): Type<CanActivate>[] | undefined {
-        return this.metadata.guards;
+    private _guards?: CanActivate[];
+    get guards(): CanActivate[] {
+        if(!this._guards){
+            this._guards = this.metadata.guards?.map(token => () => this.factory.resolve(token)) ?? EMPTY;
+        }
+        return this._guards;
     }
 
     async handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
@@ -83,16 +87,16 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
 
     protected async canActivate(ctx: TransportContext) {
         if (ctx.sent) return null;
-        if (!ctx.pattern.startsWith(this.path)) return null;
+        // if (!ctx.pattern.startsWith(this.path)) return null;
         if (this.guards && this.guards.length) {
             if (!(await lang.some(
-                this.guards.map(token => () => promisify(this.factory.resolve(token)?.canActivate(ctx))),
+                this.guards.map(guard => () => promisify(guard.canActivate(ctx))),
                 vaild => vaild === false))) return null;
         }
         const meta = this.getRouteMetaData(ctx);
         if (!meta) return null;
         let rmeta = meta.metadata as RouteMappingMetadata;
-        if (rmeta.guards && rmeta.guards.length) {
+        if (rmeta.guards?.length) {
             if (!(await lang.some(
                 rmeta.guards.map(token => () => promisify(this.factory.resolve(token)?.canActivate(ctx))),
                 vaild => vaild === false))) {

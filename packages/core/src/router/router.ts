@@ -1,11 +1,13 @@
-import { Abstract, chain, isClass, isFunction, isString, OnDestroy, refl, Type, TypeReflect } from '@tsdi/ioc';
+import { Abstract, EMPTY, isFunction, isString, lang, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
 import { RequestMethod } from '../transport/packet';
-import { TransportContext } from '../transport/context';
+import { promisify, TransportContext } from '../transport/context';
 import { CanActivate } from '../transport/guard';
 import { Middlewarable, Middleware } from '../transport/endpoint';
 import { PipeTransform } from '../pipes/pipe';
-import { Route, RouteFactoryResolver, RouteRef } from './route';
+import { Route, RouteFactoryResolver } from './route';
 import { ModuleRef } from '../module.ref';
+
+
 
 
 /**
@@ -24,7 +26,7 @@ export abstract class Router<T extends TransportContext = TransportContext> impl
     /**
      * routes.
      */
-    abstract get routes(): Map<string, Route | Router>;
+    abstract get routes(): Map<string, Middleware>;
     /**
      * middleware handle.
      *
@@ -37,17 +39,22 @@ export abstract class Router<T extends TransportContext = TransportContext> impl
      * has route or not.
      * @param route route
      */
-    abstract has(route: Route): boolean;
+    abstract has(route: string): boolean;
     /**
      * use route.
      * @param route 
      */
-    abstract use(...route: Route[]): void;
+    abstract use(route: Route): this;
+    /**
+     * use route.
+     * @param route 
+     */
+    abstract use(route: string, middleware: Middleware): this;
     /**
      * unuse route.
      * @param route 
      */
-    abstract unuse(...route: Route[]): void;
+    abstract unuse(route: string): this;
 }
 
 /**
@@ -64,56 +71,47 @@ export abstract class RouterResolver {
 }
 
 
+export class MappingRoute implements Middlewarable {
 
-const endColon = /:$/;
+    private _guards!: CanActivate[];
+    private router?: Router;
+    constructor(private route: Route, private protocols: string | string[]) {
 
-export class MappingRouter extends Router implements OnDestroy {
-
-    readonly routes: Map<string, Route>;
-
-    readonly protocols: string[];
-
-    constructor(protocols: string | string[], readonly prefix = '') {
-        super();
-        this.routes = new Map<string, RouteRef>();
-        this.protocols = isString(protocols) ? protocols.split(';') : protocols;
     }
 
-    has(route: string | Route): boolean {
-        return this.routes.has(isString(route) ? route : route.path);
+    get path() {
+        return this.route.path;
     }
 
-    use(...routes: Route[]): this {
-        routes.forEach(route => {
-            if (this.has(route)) return;
-            this.routes.set(route.path, route);
-        });
-        return this;
+    async handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+        if (await this.canActive(ctx)) {
+            return await this.navigate(this.route, ctx, next);
+        } else {
+            throw ctx.throwError('Forbidden');
+        }
     }
 
-    unuse(...routes: Route[]) {
-        routes.forEach(route => {
-            if (route.path) {
-                this.routes.delete(route.path);
+    protected canActive(ctx: TransportContext) {
+        if (!this._guards) {
+            this._guards = this.route.guards?.map(token => ctx.resolve(token)) ?? EMPTY;
+        }
+        return lang.some(this._guards.map(guard => () => promisify(guard.canActivate(ctx))), vaild => vaild === false);
+    }
+
+    protected navigate(route: Route & { router?: Router }, ctx: TransportContext, next: () => Promise<void>) {
+        if (route.middleware) {
+            return isFunction(route.middleware) ? route.middleware(ctx, next) : route.middleware.handle(ctx, next);
+        } else if (route.redirectTo) {
+            return this.redirect(ctx, route.redirectTo);
+        } else if (route.controller) {
+            return this.routeController(ctx, route.controller, next);
+        } else if (route.children) {
+            if (!this.router) {
+                this.router = new MappingRouter(this.protocols, route.path);
             }
-        });
-        return this;
-    }
-
-    handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
-        const route = this.getRoute(ctx);
-        if (route) {
-            if (route.handle) {
-                return isFunction(route.handle) ? route.handle(ctx, next) : route.handle.handle(ctx, next);
-            } else if (route.loadChildren) {
-                return this.routeChildren(ctx, route.loadChildren);
-            } else if (route.redirectTo) {
-                return this.redirect(ctx, route.redirectTo);
-            } else if (route.controller) {
-                return this.routeController(ctx, route.controller, next);
-            } else {
-                return next();
-            }
+            return this.router.handle(ctx);
+        } else if (route.loadChildren) {
+            return this.routeChildren(ctx, route.loadChildren, route.path);
         } else {
             return next();
         }
@@ -127,16 +125,76 @@ export class MappingRouter extends Router implements OnDestroy {
         return await ctx.injector.get(RouteFactoryResolver).resolve(controller).last()?.handle(ctx, next);
     }
 
-    protected async routeChildren(ctx: TransportContext, loadChildren: () => any): Promise<void> {
-        const module = await loadChildren();
-        const platform = ctx.injector.platform();
-        if (!platform.modules.has(module)) {
-            ctx.injector.get(ModuleRef).import(module);
+    protected async routeChildren(ctx: TransportContext, loadChildren: () => any, prefix?: string): Promise<void> {
+        if (!this.router) {
+            const module = await loadChildren();
+            const platform = ctx.injector.platform();
+            if (!platform.modules.has(module)) {
+                ctx.injector.get(ModuleRef).import(module);
+            }
+            this.router = platform.modules.get(module)?.injector.get(RouterResolver).resolve(ctx.protocol, prefix);
         }
-        return platform.modules.get(module)?.injector.get(RouterResolver).resolve(ctx.protocol).handle(ctx);
+        return this.router?.handle(ctx);
     }
 
-    protected getRoute(ctx: TransportContext): Route | undefined {
+}
+
+
+const endColon = /:$/;
+
+export class MappingRouter extends Router implements OnDestroy {
+
+    readonly routes: Map<string, Middleware>;
+
+    readonly protocols: string[];
+
+    constructor(protocols: string | string[], readonly prefix = '') {
+        super();
+        this.routes = new Map<string, Middleware>();
+        this.protocols = isString(protocols) ? protocols.split(';') : protocols;
+    }
+
+    has(route: string | Route): boolean {
+        return this.routes.has(isString(route) ? route : route.path);
+    }
+
+    /**
+     * use route.
+     * @param route 
+     */
+    use(route: Route): this;
+    /**
+     * use route.
+     * @param route 
+     */
+    use(route: string, middleware: Middleware): this;
+    use(route: Route | string, middleware?: Middleware): this {
+        if (isString(route)) {
+            if (this.has(route)) return this;
+            this.routes.set(route, middleware as Middleware);
+        } else {
+            if (this.has(route.path)) return this;
+            this.routes.set(route.path, new MappingRoute(route, this.protocols));
+        }
+
+        return this;
+    }
+
+    unuse(route: string) {
+        this.routes.delete(route);
+        return this;
+    }
+
+    handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+        const route = this.getRoute(ctx);
+        if (route) {
+            return isFunction(route) ? route(ctx, next) : route.handle(ctx, next);
+        } else {
+            return next();
+        }
+    }
+
+    protected getRoute(ctx: TransportContext): Middleware | undefined {
         if (this.protocols.indexOf(ctx.protocol) < 0) return;
         if (ctx.status && ctx.status !== 404) return;
         if (!ctx.pattern.startsWith(this.prefix)) return;
@@ -145,7 +203,7 @@ export class MappingRouter extends Router implements OnDestroy {
 
     }
 
-    getRouteByUrl(url: string): Route | undefined {
+    getRouteByUrl(url: string): Middleware | undefined {
         let route = this.routes.get(url);
         while (!route && url.lastIndexOf('/') > 1) {
             route = this.getRouteByUrl(url.slice(0, url.lastIndexOf('/')));

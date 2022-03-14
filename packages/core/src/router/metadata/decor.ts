@@ -2,14 +2,13 @@ import {
     isArray, isString, lang, Type, isRegExp, createDecorator, OperationArgumentResolver,
     ClassMethodDecorator, createParamDecorator, ParameterMetadata, ActionTypes
 } from '@tsdi/ioc';
+import { PipeTransform } from '../../pipes/pipe';
 import { RequestMethod } from '../../transport/packet';
 import { CanActivate } from '../../transport/guard';
 import { Middlewarable, Middleware } from '../../transport/endpoint';
-import { Middlewares } from '../../transport/middlewares';
 import { RouteFactoryResolver } from '../route';
 import { MappingReflect, ProtocolRouteMappingMetadata, Router, RouterResolver } from '../router';
-import { HandleMetadata, HandlesMetadata, HandleMessagePattern } from './meta';
-import { PipeTransform } from '../../pipes/pipe';
+import { HandleMetadata, HandleMessagePattern } from './meta';
 
 
 export type HandleDecorator = <TFunction extends Type<Middlewarable>>(target: TFunction) => TFunction | void;
@@ -107,7 +106,7 @@ export interface Handle {
  */
 export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePattern>('Handle', {
     actionType: [ActionTypes.annoation, ActionTypes.runnable],
-    props: (parent?: Type<Middlewares> | string | RegExp, options?: { guards?: Type<CanActivate>[], parent?: Type<Middlewares> | string, before?: Type<Middleware> }) =>
+    props: (parent?: Type<Router> | string | RegExp, options?: { guards?: Type<CanActivate>[], parent?: Type<Router> | string, before?: Type<Middleware> }) =>
         (isString(parent) || isRegExp(parent) ? ({ route: parent, ...options }) : ({ parent, ...options })) as HandleMetadata & HandleMessagePattern,
     reflect: {
         class: (ctx, next) => {
@@ -119,12 +118,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
         afterAnnoation: (ctx, next) => {
             const reflect = ctx.reflect;
             const metadata = reflect.class.getMetadata<HandleMetadata>(ctx.currDecor);
-            if (reflect.class.isExtends(Middlewares)) {
-                if (!(metadata as HandlesMetadata).autorun) {
-                    (metadata as HandlesMetadata).autorun = 'setup';
-                }
-            }
-            const { route, protocol, parent, before, after } = metadata;
+            const { route, protocol, parent } = metadata;
             const injector = ctx.injector;
 
             if (!isString(route) && !parent) {
@@ -139,8 +133,9 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
                 }
                 const router = queue as Router;
                 const routeRef = injector.get(RouteFactoryResolver).resolve(reflect).create(injector, { prefix: router.prefix });
-                routeRef.onDestroy(() => router.unuse(routeRef));
-                router.use(routeRef);
+                const path = routeRef.path;
+                routeRef.onDestroy(() => router.unuse(path));
+                router.use(path, routeRef);
             }
             next();
         },
@@ -306,8 +301,9 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
                 if (!(router instanceof Router)) throw new Error(lang.getClassName(router) + 'is not router!');
                 const prefix = router.prefix;
                 const routeRef = injector.get(RouteFactoryResolver).resolve(reflect).create(injector, { prefix });
-                routeRef.onDestroy(() => router.unuse(routeRef));
-                router.use(routeRef);
+                const path = routeRef.path;
+                routeRef.onDestroy(() => router.unuse(path));
+                router.use(path, routeRef);
 
                 next();
             }
@@ -471,7 +467,7 @@ export const RequestBody: RequsetParameterDecorator = createParamDecorator('Requ
  * @export
  * @interface RestController
  */
- export interface RestController {
+export interface RestController {
     /**
      * route decorator. define the controller method as an route.
      *

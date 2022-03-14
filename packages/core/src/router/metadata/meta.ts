@@ -47,20 +47,6 @@ export interface HandleMetadata extends TypeMetadata, PatternMetadata {
      * default register in root handle queue.
      */
     parent?: Type<Middlewarable>;
-
-    /**
-     * register this handle handle before this handle.
-     *
-     * @type {Type<Middlewarable>}
-     */
-    before?: Type<Middlewarable>;
-
-    /**
-     * register this handle handle after this handle.
-     *
-     * @type {Type<Middlewarable>}
-     */
-    after?: Type<Middlewarable>;
 }
 
 export interface HandlesMetadata extends HandleMetadata {
