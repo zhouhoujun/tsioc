@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { TransportHandler } from '../handler';
+import { TransportEndpoint } from '../endpoint';
 import { TransportRequest, TransportResponse } from '../packet';
 import { TransportServer } from '../server';
 
@@ -7,7 +7,7 @@ import { TransportServer } from '../server';
 @Injectable()
 export class WSServer extends TransportServer {
 
-    get handler(): TransportHandler<TransportRequest<any>, TransportResponse<any>> {
+    get handler(): TransportEndpoint<TransportRequest, TransportResponse> {
         throw new Error('Method not implemented.');
     }
     close(): Promise<void> {
