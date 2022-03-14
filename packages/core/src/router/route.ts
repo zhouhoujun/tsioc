@@ -1,9 +1,12 @@
 import { Abstract, Destroyable, DestroyCallback, Injector, InvokeArguments, InvokeOption, OnDestroy, tokenId, Type, TypeReflect } from '@tsdi/ioc';
 import { TransportContext } from '../transport/context';
 import { CanActivate } from '../transport/guard';
-import { Middlewarable } from '../transport/endpoint';
+import { Middlewarable, Middleware } from '../transport/endpoint';
 
 
+/**
+ * Route.
+ */
 export interface Route extends InvokeArguments {
     /**
      * The path to match against. Cannot be used together with a custom `matcher` function.
@@ -12,7 +15,7 @@ export interface Route extends InvokeArguments {
      * Default is "/" (the root path).
      *
      */
-    path?: string;
+    path: string;
     /**
      * A URL to redirect to when the path matches.
      *
@@ -40,10 +43,16 @@ export interface Route extends InvokeArguments {
     loadChildren?: LoadChildren;
 
     /**
-     * The component to instantiate when the path matches.
-     * Can be empty if child routes specify components.
+     * The controller to instantiate when the path matches.
+     * Can be empty if child routes specify controller.
      */
-    endpoint?: Type<Middlewarable> | Middlewarable;
+    controller?: Type;
+
+    /**
+     * The middlewarable to instantiate when the path matches.
+     * Can be empty if child routes specify middlewarable.
+     */
+    handle?: Middleware;
 
 }
 
@@ -52,29 +61,6 @@ export type Routes = Route[];
 
 export const ROUTES = tokenId<Routes>('ROUTES');
 
-// /**
-//  * route instance.
-//  */
-// @Abstract()
-// export abstract class Route<T extends TransportContext = TransportContext> implements Endpoint<T> {
-//     /**
-//     * route handle.
-//     *
-//     * @abstract
-//     * @param {T} ctx
-//     * @param {() => Promise<void>} next
-//     * @returns {Promise<void>}
-//     */
-//     abstract handle(ctx: T, next: () => Promise<void>): Promise<void>;
-//     /**
-//      * route url.
-//      */
-//     abstract get url(): string;
-//     /**
-//      * route guards.
-//      */
-//     abstract get guards(): Type<CanActivate>[] | undefined;
-// }
 
 
 /**
@@ -99,9 +85,9 @@ export abstract class RouteRef<T = any> implements Middlewarable, Destroyable, O
      */
     abstract get instance(): T;
     /**
-     * route url.
+     * route path.
      */
-    abstract get url(): string;
+    abstract get path(): string;
     /**
      * route guards.
      */
@@ -144,10 +130,10 @@ export interface RouteOption extends InvokeOption {
 }
 
 /**
- * routeRef factory.
+ * route factory.
  */
 @Abstract()
-export abstract class RouteRefFactory<T = any> {
+export abstract class RouteFactory<T = any> {
     /**
      * route reflect.
      */
@@ -159,19 +145,23 @@ export abstract class RouteRefFactory<T = any> {
      * @returns instance of {@link RouteRef}
      */
     abstract create(injector: Injector, option?: RouteOption): RouteRef<T>;
+    /**
+     * get the last route ref instance.
+     */
+    abstract last(): RouteRef<T> | undefined;
 }
 
 /**
  * routeRef factory resovler.
  */
 @Abstract()
-export abstract class RouteRefFactoryResolver {
+export abstract class RouteFactoryResolver {
     /**
-     * resolve {@link RouteRefFactory}
+     * resolve {@link RouteFactory}
      * @param type route class type.
-     * @returns instance of {@link RouteRefFactory}.
+     * @returns instance of {@link RouteFactory}.
      */
-    abstract resolve<T>(type: Type<T> | TypeReflect<T>): RouteRefFactory<T>;
+    abstract resolve<T>(type: Type<T> | TypeReflect<T>): RouteFactory<T>;
 }
 
 

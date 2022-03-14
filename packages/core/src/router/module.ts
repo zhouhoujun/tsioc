@@ -1,8 +1,6 @@
 import { Module } from '../metadata/decor';
-import { MiddlewareRefFactoryResolver } from './middleware.ref';
-import { RouteRefFactoryResolver, ROUTES, Routes } from './route';
-import { DefaultRouteRefFactoryResovler } from './route_ref';
-import { DefaultMiddlewareRefFactoryResolver } from './middleware.factory';
+import { RouteFactoryResolver, ROUTES, Routes } from './route';
+import { DefaultRouteFactoryResovler } from './route_ref';
 import { MappingRouterResolver, RouterResolver } from './router';
 import { ModuleWithProviders } from '@tsdi/ioc';
 
@@ -12,8 +10,7 @@ import { ModuleWithProviders } from '@tsdi/ioc';
 @Module({
     providers: [
         { provide: RouterResolver, useValue: new MappingRouterResolver() },
-        { provide: RouteRefFactoryResolver, useValue: new DefaultRouteRefFactoryResovler() },
-        { provide: MiddlewareRefFactoryResolver, useValue: new DefaultMiddlewareRefFactoryResolver() },
+        { provide: RouteFactoryResolver, useValue: new DefaultRouteFactoryResovler() },
     ]
 })
 export class RouterModule {

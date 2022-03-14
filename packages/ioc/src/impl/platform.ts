@@ -19,7 +19,7 @@ export class DefaultPlatform implements Platform {
     private _pdrs: Map<ClassType, ProviderType[]>;
     private _scopes: Map<string | ClassType, Injector>;
 
-    readonly modules = new Set<ModuleRef>();
+    readonly modules = new Map<Type, ModuleRef>();
 
     constructor(readonly injector: Injector) {
         this._scopes = new Map();

@@ -418,7 +418,7 @@ export abstract class Platform implements OnDestroy {
     /**
      * registered modules.
      */
-    abstract get modules(): Set<ModuleRef>;
+    abstract get modules(): Map<Type, ModuleRef>;
     /**
      * platform injector.
      */

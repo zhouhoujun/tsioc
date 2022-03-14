@@ -12,7 +12,7 @@ import { Middleware } from '../transport/endpoint';
 import { TransportContext, promisify } from '../transport/context';
 import { MODEL_RESOLVERS } from '../model/model.resolver';
 import { PipeTransform } from '../pipes/pipe';
-import { RouteRef, RouteOption, RouteRefFactory, RouteRefFactoryResolver, joinprefix } from './route';
+import { RouteRef, RouteOption, RouteFactory, RouteFactoryResolver, joinprefix } from './route';
 import { ProtocolRouteMappingMetadata, RouteMappingMetadata } from './router';
 
 
@@ -60,7 +60,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         return this._instance;
     }
 
-    get url(): string {
+    get path(): string {
         return this._url;
     }
 
@@ -83,7 +83,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
 
     protected async canActivate(ctx: TransportContext) {
         if (ctx.sent) return null;
-        if (!ctx.pattern.startsWith(this.url)) return null;
+        if (!ctx.pattern.startsWith(this.path)) return null;
         if (this.guards && this.guards.length) {
             if (!(await lang.some(
                 this.guards.map(token => () => promisify(this.factory.resolve(token)?.canActivate(ctx))),
@@ -111,7 +111,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
             if (route && isRest.test(route)) {
                 let routes = route.split('/').map(r => r.trim());
                 let restParamNames = routes.filter(d => restParms.test(d));
-                let routeUrls = ctx.pattern.replace(this.url, '').split('/');
+                let routeUrls = ctx.pattern.replace(this.path, '').split('/');
                 restParamNames.forEach(pname => {
                     let val = routeUrls[routes.indexOf(pname)];
                     if (val) {
@@ -160,7 +160,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     }
 
     protected getRouteMetaData(ctx: TransportContext) {
-        let subRoute = ctx.pattern.replace(this.url, '');
+        let subRoute = ctx.pattern.replace(this.path, '');
         if (!this.sortRoutes) {
             this.sortRoutes = this.reflect.class.methodDecors
                 .filter(m => m && isString(m.metadata.route))
@@ -341,7 +341,8 @@ const primitiveResolvers: TransportArgumentResolver[] = [
     )
 ]
 
-export class DefaultRouteRefFactory<T = any> extends RouteRefFactory<T> {
+export class DefaultRouteFactory<T = any> extends RouteFactory<T> {
+    private routeRef?: RouteRef<T>;
     constructor(readonly reflect: TypeReflect<T>) {
         super()
     }
@@ -350,12 +351,16 @@ export class DefaultRouteRefFactory<T = any> extends RouteRefFactory<T> {
         if (option?.prefix) {
             factory.context.setArgument('prefix', option?.prefix);
         }
-        return new RouteMappingRef(factory, option?.prefix);
+        return this.routeRef = new RouteMappingRef(factory, option?.prefix);
+    }
+
+    last(): RouteRef<T> | undefined {
+        return this.routeRef;
     }
 }
 
-export class DefaultRouteRefFactoryResovler extends RouteRefFactoryResolver {
-    resolve<T>(type: Type<T> | TypeReflect<T>): RouteRefFactory<T> {
-        return new DefaultRouteRefFactory<T>(isFunction(type) ? refl.get(type) : type);
+export class DefaultRouteFactoryResovler extends RouteFactoryResolver {
+    resolve<T>(type: Type<T> | TypeReflect<T>): RouteFactory<T> {
+        return new DefaultRouteFactory<T>(isFunction(type) ? refl.get(type) : type);
     }
 }

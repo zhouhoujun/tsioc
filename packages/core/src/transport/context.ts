@@ -106,6 +106,26 @@ export abstract class TransportContext<T extends ServerOption = ServerOption> ex
     abstract set message(msg: string);
 
     /**
+     * Perform a 302 redirect to `url`.
+     *
+     * The string "back" is special-cased
+     * to provide Referrer support, when Referrer
+     * is not present `alt` or "/" is used.
+     *
+     * Examples:
+     *
+     *    this.redirect('back');
+     *    this.redirect('back', '/index.html');
+     *    this.redirect('/login');
+     *    this.redirect('http://google.com');
+     *
+     * @param {String} url
+     * @param {String} [alt]
+     * @api public
+     */
+    abstract redirect(url: string, alt?: string): void;
+
+    /**
      * Get response body.
      */
     abstract get body(): any;

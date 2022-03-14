@@ -41,7 +41,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
         this.setValue(ModuleRef, this);
         const platfrom = this.platform();
-        platfrom.modules.add(this);
+        platfrom.modules.set(this._type, this);
         deps && this.use(deps);
         providers && this.inject(providers);
         this.processInjectorType(platfrom, this._type, dedupStack, this.moduleReflect);
@@ -87,7 +87,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     }
 
     protected override destroying() {
-        this.platform()?.modules.delete(this);
+        this.platform()?.modules.delete(this._type);
         super.destroying();
         this._defs.clear();
         this._type = null!;

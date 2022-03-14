@@ -6,11 +6,10 @@ import { RequestMethod } from '../../transport/packet';
 import { CanActivate } from '../../transport/guard';
 import { Middlewarable, Middleware } from '../../transport/endpoint';
 import { Middlewares } from '../../transport/middlewares';
-import { RouteRefFactoryResolver } from '../route';
+import { RouteFactoryResolver } from '../route';
 import { MappingReflect, ProtocolRouteMappingMetadata, Router, RouterResolver } from '../router';
 import { HandleMetadata, HandlesMetadata, HandleMessagePattern } from './meta';
 import { PipeTransform } from '../../pipes/pipe';
-import { MiddlewareRefFactoryResolver } from '../middleware.ref';
 
 
 export type HandleDecorator = <TFunction extends Type<Middlewarable>>(target: TFunction) => TFunction | void;
@@ -23,11 +22,11 @@ export type HandleDecorator = <TFunction extends Type<Middlewarable>>(target: TF
  * @interface Handle
  */
 export interface Handle {
-    /**
-     * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
-     *
-     */
-    (): HandleDecorator;
+    // /**
+    //  * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
+    //  *
+    //  */
+    // (): HandleDecorator;
     /**
      * Handle decorator, for class. use to define the class as route.
      *
@@ -54,36 +53,36 @@ export interface Handle {
         */
         guards?: Type<CanActivate>[];
     }): HandleDecorator;
-    /**
-     * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
-     *
-     * @RegisterFor
-     *
-     * @param {Type<Middlewares>} parent the handle reg in the handle queue. default register in root handle queue.
-     * @param [option] register this handle handle before this handle.
-     */
-    (parent: Type<Middlewares>, options?: {
-        /**
-         * register this handle handle before the handle.
-         */
-        before?: Type<Middleware>;
-        /**
-         * register this handle handle before the handle.
-         */
-        after?: Type<Middleware>;
-        /**
-        * route guards.
-        */
-        guards?: Type<CanActivate>[],
-    }): HandleDecorator;
-    /**
-     * RegisterFor decorator, for class. use to define the class as handle register in global handle queue or parent.
-     *
-     * @RegisterFor
-     *
-     * @param {ClassMetadata} [metadata] metadata map.
-     */
-    (metadata: HandleMetadata): HandleDecorator;
+    // /**
+    //  * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
+    //  *
+    //  * @RegisterFor
+    //  *
+    //  * @param {Type<Middlewares>} parent the handle reg in the handle queue. default register in root handle queue.
+    //  * @param [option] register this handle handle before this handle.
+    //  */
+    // (parent: Type<Middlewares>, options?: {
+    //     /**
+    //      * register this handle handle before the handle.
+    //      */
+    //     before?: Type<Middleware>;
+    //     /**
+    //      * register this handle handle before the handle.
+    //      */
+    //     after?: Type<Middleware>;
+    //     /**
+    //     * route guards.
+    //     */
+    //     guards?: Type<CanActivate>[],
+    // }): HandleDecorator;
+    // /**
+    //  * RegisterFor decorator, for class. use to define the class as handle register in global handle queue or parent.
+    //  *
+    //  * @RegisterFor
+    //  *
+    //  * @param {ClassMetadata} [metadata] metadata map.
+    //  */
+    // (metadata: HandleMetadata): HandleDecorator;
 
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
@@ -133,31 +132,15 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
             }
 
             let queue: Middlewarable | undefined;
-
-            const type = ctx.type;
             if (isString(route) || reflect.class.isExtends(Router)) {
                 queue = parent ? (injector.get(parent) ?? injector.get(RouterResolver).resolve(protocol)) : injector.get(RouterResolver).resolve(protocol);
                 if (!(queue instanceof Router)) {
                     throw new Error(lang.getClassName(queue) + 'is not message router!');
                 }
                 const router = queue as Router;
-                const middlwareRef = injector.get(MiddlewareRefFactoryResolver).resolve(reflect).create(injector, { prefix: router.prefix });
-                middlwareRef.onDestroy(() => router.unuse(middlwareRef));
-                router.use(middlwareRef);
-            } else if (parent) {
-                // queue = injector.get(parent);
-                // if (!queue) {
-                //     throw new Error(lang.getClassName(parent) + 'has not registered!')
-                // }
-                // const middlwareRef = injector.get(MiddlewareRefFactoryResolver).resolve(reflect).create(injector);
-                // if (before) {
-                //     queue.useBefore(middlwareRef, before);
-                // } else if (after) {
-                //     queue.useAfter(middlwareRef, after);
-                // } else {
-                //     queue.use(middlwareRef);
-                // }
-                // middlwareRef.onDestroy(() => queue?.unuse(type));
+                const routeRef = injector.get(RouteFactoryResolver).resolve(reflect).create(injector, { prefix: router.prefix });
+                routeRef.onDestroy(() => router.unuse(routeRef));
+                router.use(routeRef);
             }
             next();
         },
@@ -322,7 +305,7 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
                 if (!router) throw new Error(lang.getClassName(parent) + 'has not registered!');
                 if (!(router instanceof Router)) throw new Error(lang.getClassName(router) + 'is not router!');
                 const prefix = router.prefix;
-                const routeRef = injector.get(RouteRefFactoryResolver).resolve(reflect).create(injector, { prefix });
+                const routeRef = injector.get(RouteFactoryResolver).resolve(reflect).create(injector, { prefix });
                 routeRef.onDestroy(() => router.unuse(routeRef));
                 router.use(routeRef);
 

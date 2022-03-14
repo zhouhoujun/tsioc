@@ -1,18 +1,18 @@
-import { Abstract, chain, isClass, isString, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
+import { Abstract, chain, isClass, isFunction, isString, OnDestroy, refl, Type, TypeReflect } from '@tsdi/ioc';
 import { RequestMethod } from '../transport/packet';
 import { TransportContext } from '../transport/context';
 import { CanActivate } from '../transport/guard';
-import { Middleware } from '../transport/endpoint';
-import { Middlewares } from '../transport/middlewares';
+import { Middlewarable, Middleware } from '../transport/endpoint';
 import { PipeTransform } from '../pipes/pipe';
-import { Route, RouteRef } from './route';
+import { Route, RouteFactoryResolver, RouteRef } from './route';
+import { ModuleRef } from '../module.ref';
 
 
 /**
  * abstract router.
  */
 @Abstract()
-export abstract class Router<T extends TransportContext = TransportContext> extends Middlewares<T> {
+export abstract class Router<T extends TransportContext = TransportContext> implements Middlewarable<T> {
     /**
      * route prefix.
      */
@@ -25,6 +25,29 @@ export abstract class Router<T extends TransportContext = TransportContext> exte
      * routes.
      */
     abstract get routes(): Map<string, Route | Router>;
+    /**
+     * middleware handle.
+     *
+     * @param {T} ctx
+     * @param {() => Promise<void>} next
+     * @returns {Promise<void>}
+     */
+    abstract handle(ctx: T, next?: () => Promise<void>): Promise<void>;
+    /**
+     * has route or not.
+     * @param route route
+     */
+    abstract has(route: Route): boolean;
+    /**
+     * use route.
+     * @param route 
+     */
+    abstract use(...route: Route[]): void;
+    /**
+     * unuse route.
+     * @param route 
+     */
+    abstract unuse(...route: Route[]): void;
 }
 
 /**
@@ -46,7 +69,7 @@ const endColon = /:$/;
 
 export class MappingRouter extends Router implements OnDestroy {
 
-    readonly routes: Map<string, RouteRef>;
+    readonly routes: Map<string, Route>;
 
     readonly protocols: string[];
 
@@ -56,51 +79,64 @@ export class MappingRouter extends Router implements OnDestroy {
         this.protocols = isString(protocols) ? protocols.split(';') : protocols;
     }
 
-    override use(...handles: Middleware[]): this {
-        handles.forEach(handle => {
-            if (this.has(handle)) return;
-            if (handle instanceof RouteRef) {
-                if (handle.url) {
-                    this.routes.set(handle.url, handle);
-                } else {
-                    this.handles.push(handle);
-                }
-            } else {
-                this.handles.push(handle);
+    has(route: string | Route): boolean {
+        return this.routes.has(isString(route) ? route : route.path);
+    }
+
+    use(...routes: Route[]): this {
+        routes.forEach(route => {
+            if (this.has(route)) return;
+            this.routes.set(route.path, route);
+        });
+        return this;
+    }
+
+    unuse(...routes: Route[]) {
+        routes.forEach(route => {
+            if (route.path) {
+                this.routes.delete(route.path);
             }
         });
         return this;
     }
 
-    override unuse(...handles: Middleware[]) {
-        handles.forEach(handle => {
-            if (handle instanceof RouteRef) {
-                if (handle.url) {
-                    this.routes.delete(handle.url);
-                } else {
-                    this.remove(this.handles, handle);
-                }
-            } else {
-                this.remove(this.handles, handle);
-            }
-        });
-        return this;
-    }
-
-    override handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
-        return chain([...this.handles.map(x=> isClass(x)? ctx.resolve(x) : x), (c, n) => this.response(c, n)], ctx, next);
-    }
-
-    protected response(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         const route = this.getRoute(ctx);
         if (route) {
-            return route.handle(ctx, next);
+            if (route.handle) {
+                return isFunction(route.handle) ? route.handle(ctx, next) : route.handle.handle(ctx, next);
+            } else if (route.loadChildren) {
+                return this.routeChildren(ctx, route.loadChildren);
+            } else if (route.redirectTo) {
+                return this.redirect(ctx, route.redirectTo);
+            } else if (route.controller) {
+                return this.routeController(ctx, route.controller, next);
+            } else {
+                return next();
+            }
         } else {
             return next();
         }
     }
 
-    protected getRoute(ctx: TransportContext): RouteRef | undefined {
+    protected async redirect(ctx: TransportContext, url: string, alt?: string) {
+        ctx.redirect(url, alt);
+    }
+
+    protected async routeController(ctx: TransportContext, controller: Type, next: () => Promise<void>) {
+        return await ctx.injector.get(RouteFactoryResolver).resolve(controller).last()?.handle(ctx, next);
+    }
+
+    protected async routeChildren(ctx: TransportContext, loadChildren: () => any): Promise<void> {
+        const module = await loadChildren();
+        const platform = ctx.injector.platform();
+        if (!platform.modules.has(module)) {
+            ctx.injector.get(ModuleRef).import(module);
+        }
+        return platform.modules.get(module)?.injector.get(RouterResolver).resolve(ctx.protocol).handle(ctx);
+    }
+
+    protected getRoute(ctx: TransportContext): Route | undefined {
         if (this.protocols.indexOf(ctx.protocol) < 0) return;
         if (ctx.status && ctx.status !== 404) return;
         if (!ctx.pattern.startsWith(this.prefix)) return;
@@ -109,7 +145,7 @@ export class MappingRouter extends Router implements OnDestroy {
 
     }
 
-    getRouteByUrl(url: string): RouteRef | undefined {
+    getRouteByUrl(url: string): Route | undefined {
         let route = this.routes.get(url);
         while (!route && url.lastIndexOf('/') > 1) {
             route = this.getRouteByUrl(url.slice(0, url.lastIndexOf('/')));
@@ -118,7 +154,6 @@ export class MappingRouter extends Router implements OnDestroy {
     }
 
     onDestroy(): void {
-        this.handles = [];
         this.routes.clear();
     }
 }
