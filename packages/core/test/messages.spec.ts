@@ -1,7 +1,7 @@
-import { Injector, Injectable, lang, ArgumentError, MissingParameterError } from '@tsdi/ioc';
+import { Injector, Injectable, lang, ArgumentError, MissingParameterError, tokenId, chain } from '@tsdi/ioc';
 import { lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
-import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Middleware, Module, Middlewares, TransportContext, HttpClientModule, Middlewarable, HttpClient } from '../src';
+import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Middleware, Module, TransportContext, HttpClientModule, Middlewarable, HttpClient, Chain } from '../src';
 import { HttpModule } from '@tsdi/transport';
 
 @RouteMapping('/device')
@@ -80,14 +80,13 @@ class DeviceController {
 
 // }
 
-@Handle({ route: '/hdevice' })
-class DeviceQueue extends Middlewares {
-    override async handle(ctx: TransportContext, next?: () => Promise<void>): Promise<void> {
+@Handle('/hdevice')
+class DeviceQueue {
+    async handle(ctx: TransportContext, next?: () => Promise<void>): Promise<void> {
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
-        await super.handle(ctx, async () => {
-            ctx.setValue('device', 'device next');
-        });
+        await new Chain(ctx.resolve(DEVICE_MIDDLEWARES)).handle(ctx);
+        ctx.setValue('device', 'device next');
 
         const device = ctx.getValue('device');
         const deviceA_state = ctx.getValue('deviceA_state');
@@ -100,17 +99,12 @@ class DeviceQueue extends Middlewares {
         };
 
         console.log('device sub msg done.');
+        return await next?.();
     }
 }
 
-@Handle({
-    parent: DeviceQueue
-})
-class DeviceStartQueue extends Middlewares {
 
-}
-
-@Handle(DeviceStartQueue)
+@Injectable()
 class DeviceStartupHandle implements Middlewarable {
 
     async handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
@@ -123,7 +117,7 @@ class DeviceStartupHandle implements Middlewarable {
     }
 }
 
-@Handle(DeviceStartQueue)
+@Injectable()
 class DeviceAStartupHandle implements Middlewarable {
 
     async handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
@@ -137,10 +131,14 @@ class DeviceAStartupHandle implements Middlewarable {
     }
 }
 
+export const DEVICE_MIDDLEWARES = tokenId<Middlewarable[]>('DEVICE_MIDDLEWARES');
+
 @Module({
     providers: [
         DeviceQueue,
-        DeviceStartQueue
+        {provide: DEVICE_MIDDLEWARES, useClass: DeviceStartupHandle, multi: true },
+        {provide: DEVICE_MIDDLEWARES, useClass: DeviceAStartupHandle, multi: true },
+
     ]
 })
 class DeviceManageModule {
@@ -202,9 +200,9 @@ describe('app message queue', () => {
     });
 
     it('has registered', async () => {
-        const a = injector.get(DeviceQueue);
-        expect(a.has(DeviceStartQueue)).toBeTruthy();
-        expect(injector.get(DeviceStartQueue).has(DeviceStartupHandle)).toBeTruthy();
+        const a = injector.get(DEVICE_MIDDLEWARES);
+        expect(a[0]).toBeInstanceOf(DeviceStartupHandle);
+        expect(a[1]).toBeInstanceOf(DeviceAStartupHandle);
     });
 
 

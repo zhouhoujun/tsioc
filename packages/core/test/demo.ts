@@ -1,6 +1,6 @@
 import {
-    Module, Message, ConfigureService, ApplicationContext, Configuration, ComponentScan, OnDispose,
-    Runnable, Middlewares, Bean, HttpClientModule
+    Module, ConfigureService, ApplicationContext, Configuration, ComponentScan, OnDispose,
+    Runnable, Bean, HttpClientModule
 } from '../src';
 import { Injectable, Inject, OnDestroy, lang } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
@@ -81,10 +81,6 @@ export class LoggerAspect {
     }
 }
 
-@Message()
-export class SubMessageQueue extends Middlewares {
-
-}
 
 @Module({
     exports: [
@@ -106,8 +102,7 @@ export class SharedModule {
     ],
     providers: [
         LoggerAspect,
-        ClassSevice,
-        SubMessageQueue
+        ClassSevice
     ],
     bootstrap: ClassSevice
 })
@@ -162,8 +157,7 @@ export class StatupModule { }
     ],
     providers: [
         LoggerAspect,
-        ClassSevice,
-        SubMessageQueue
+        ClassSevice
     ],
     bootstrap: ClassSevice
 })

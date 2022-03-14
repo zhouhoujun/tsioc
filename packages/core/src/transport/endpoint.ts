@@ -42,7 +42,7 @@ export type Middleware<T extends TransportContext = TransportContext> = AsyncHan
  */
 export class Chain<T extends TransportContext = TransportContext> implements Middlewarable<T> {
     constructor(private middlewares: Middleware[]) { }
-    handle(ctx: T, next: () => Promise<void>): Promise<void> {
+    handle(ctx: T, next?: () => Promise<void>): Promise<void> {
         return chain(this.middlewares, ctx, next);
     }
 }

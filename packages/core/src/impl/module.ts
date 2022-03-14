@@ -3,11 +3,11 @@ import {
     DefaultInjector, Injector, InjectorScope, ModuleWithProviders, refl, isFunction,
     Platform, ModuleReflect, Modules, processInjectorType, ProviderType, Token, Type, lang,
     LifecycleHooksResolver, LifecycleHooks, DestroyLifecycleHooks, OperationFactoryResolver,
-    DefaultOperationFactoryResolver
+    DefaultOperationFactoryResolver, isPlainObject, isArray
 } from '@tsdi/ioc';
 import { OnDispose, OnShutdown, ModuleLifecycleHooks, Hooks } from '../lifecycle';
 import { ModuleFactory, ModuleFactoryResolver, ModuleOption } from '../module.factory';
-import { ModuleRef } from '../module.ref';
+import { ModuleRef, ModuleType } from '../module.ref';
 import { RunnableFactoryResolver } from '../runnable';
 import { DefaultRunnableFactoryResolver } from './runnable';
 
@@ -29,7 +29,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     lifecycle!: ModuleLifecycleHooks;
 
     constructor(moduleType: ModuleReflect, providers: ProviderType[] | undefined, readonly parent: Injector,
-        readonly scope?: InjectorScope, deps?: Modules[]) {
+        readonly scope?: InjectorScope, deps?: (Modules | ModuleWithProviders)[]) {
         super(undefined, parent, scope ?? moduleType.type as Type);
         const dedupStack: Type[] = [];
         this._typeRefl = moduleType;
@@ -75,6 +75,28 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
     import(typeOrDef: Type | ModuleWithProviders) {
         this.processInjectorType(this.platform(), typeOrDef, [], this.moduleReflect);
+    }
+
+    override use(modules: ModuleType[]): Type[];
+    override use(...modules: ModuleType[]): Type[];
+    override use(...args: any[]): Type[] {
+        this.assertNotDestroyed();
+        let types: Type[] = [];
+        const platform = this.platform();
+        lang.deepForEach(args, ty => {
+            if (isFunction(ty)) {
+                const mdref = refl.get<ModuleReflect>(ty);
+                if (mdref) {
+                    types.push(ty);
+                    this.registerReflect(platform, mdref, { injectorType: mdref.module });
+
+                }
+            } else if (isFunction(ty.module) && isArray(ty.providers)) {
+                types.push(ty.module);
+                this.import(ty);
+            }
+        }, v => isPlainObject(v) && !(isFunction(v.module) && isArray(v.providers)));
+        return types;
     }
 
     protected processInjectorType(platform: Platform, typeOrDef: Type | ModuleWithProviders, dedupStack: Type[], moduleRefl?: ModuleReflect) {

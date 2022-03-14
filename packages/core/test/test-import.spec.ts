@@ -1,9 +1,10 @@
 import { ServerLogsModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import * as net from 'net';
-import { ModuleA, ModuleB, ClassSevice, SubMessageQueue, SocketService, StatupModule, TestService } from './demo';
+import { ModuleA, ModuleB, ClassSevice, SocketService, StatupModule, TestService } from './demo';
 import { Application, HttpClient, Router } from '../src';
 import { lastValueFrom } from 'rxjs';
+import { LogModule } from '@tsdi/logs';
 
 
 describe('di module', () => {
@@ -86,10 +87,8 @@ describe('di module', () => {
     it('can get service via module deps with option', async () => {
         let ctx = await Application.run({
             type: StatupModule,
-            configures: [
-                { debug: true }
-            ],
             deps: [
+                LogModule.withOptions(null, true),
                 ModuleA
             ]
         });
@@ -107,10 +106,8 @@ describe('di module', () => {
     it('can statup socket service in module with option', async () => {
         let ctx = await Application.run({
             type: StatupModule,
-            configures: [
-                { debug: true }
-            ],
             deps:[
+                LogModule.withOptions(null, true),
                 ServerLogsModule
             ]
         });

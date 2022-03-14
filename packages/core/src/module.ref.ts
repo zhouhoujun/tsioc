@@ -1,11 +1,13 @@
 import {
     Abstract, Destroyable, DestroyCallback, Injector, ModuleWithProviders, Type,
     isFunction, isPlainObject, lang, ModuleReflect, OnDestroy, OperationFactoryResolver,
-    ModuleRef as ModRef
+    ModuleRef as ModRef, Modules
 } from '@tsdi/ioc';
 import { ModuleLifecycleHooks } from './lifecycle';
 import { RunnableFactoryResolver } from './runnable';
 
+
+export type ModuleType = Modules | ModuleWithProviders;
 
 /**
  * Represents an instance of an `Module` created by an `ModuleFactory`.
@@ -52,6 +54,16 @@ export abstract class ModuleRef<T = any> extends Injector implements ModRef<T>, 
      * @param modle 
      */
     abstract import<M>(modle: Type<M> | ModuleWithProviders<M>): void;
+    /**
+     * use modules.
+     * @param modules 
+     */
+    abstract use(modules: ModuleType[]): Type[];
+    /**
+     * use modules.
+     * @param modules 
+     */
+    abstract use(...modules: ModuleType[]): Type[];
     /**
      * destroy.
      */

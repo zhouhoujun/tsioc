@@ -148,14 +148,6 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
     }
 });
 
-/**
- * message handle decorator.
- * @deprecated use {@link Handle} instead.
- */
-export const Message = Handle;
-
-
-
 
 /**
  * decorator used to define Request route mapping.

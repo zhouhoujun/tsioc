@@ -28,11 +28,11 @@ export class LogModule {
 
     /**
      * LogModule with options.
-     * @param config 
+     * @param config
      * @param debug 
      * @returns 
      */
-    static withOptions(config: LogConfigure, debug?: boolean): ModuleWithProviders<LogModule> {
+    static withOptions(config: LogConfigure | null, debug?: boolean): ModuleWithProviders<LogModule> {
         const providers: ProviderType[] = [{ provide: LogConfigure, useValue: config }];
         if (debug) {
             providers.push(DebugLogAspect);

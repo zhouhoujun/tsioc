@@ -1,5 +1,5 @@
-import { Abstract, Injector, ModuleReflect, Modules, ProviderType, Type } from '@tsdi/ioc';
-import { ModuleRef } from './module.ref';
+import { Abstract, Injector, ModuleReflect, ProviderType, Type } from '@tsdi/ioc';
+import { ModuleRef, ModuleType } from './module.ref';
 
 
 /**
@@ -13,15 +13,17 @@ export interface ModuleOption {
     /**
      * dependence types.
      */
-    deps?: Modules[];
-
+    deps?: ModuleType[];
+    /**
+     * moduel scope.
+     */
     scope?: 'root' | string;
 }
 
 /**
  * module factory to create instace {@link ModuleRef}.
  */
-@Abstract() 
+@Abstract()
 export abstract class ModuleFactory<T = any> {
     /**
      * module type.
