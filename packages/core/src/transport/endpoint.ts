@@ -33,8 +33,8 @@ export interface Middlewarable<T extends TransportContext = TransportContext> ex
 
 
 /**
-* message type for register in {@link Middlewares}.
-*/
+ * middleware for server endpoint {@link TransportEndpoint}.
+ */
 export type Middleware<T extends TransportContext = TransportContext> = AsyncHandler<TransportContext> | Middlewarable<T>;
 
 /**

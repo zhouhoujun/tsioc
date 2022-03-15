@@ -21,7 +21,7 @@ export abstract class TransportServer<TRequest extends TransportRequest = Transp
      */
     abstract startup(): Promise<void>;
     /**
-     * transport handler.
+     * transport endpoint.
      */
     abstract get handler(): TransportEndpoint<TRequest, TResponse>;
     /**
