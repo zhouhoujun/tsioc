@@ -300,8 +300,9 @@ export const Configuration: Configuration = createDecorator<InjectableMetadata>(
     actionType: [ActionTypes.annoation],
     design: {
         afterAnnoation: (ctx, next) => {
-            const { reflect, type, injector } = ctx;
+            const { reflect, injector } = ctx;
 
+            const factory = injector.get(OperationFactoryResolver).resolve(reflect, injector);
             const pdrs = reflect.class.decors.filter(d => d.decor === '@Bean')
                 .map(d => {
                     const key = d.propertyKey;
@@ -309,12 +310,12 @@ export const Configuration: Configuration = createDecorator<InjectableMetadata>(
                     if (d.decorType === 'method') {
                         return {
                             provide,
-                            useFactory: () => injector.invoke(type, key)
+                            useFactory: () => factory.invoke(key)
                         } as ProviderType
                     } else {
                         return {
                             provide,
-                            useFactory: () => injector.get(type)[key]
+                            useFactory: () => factory.resolve()[key]
                         } as ProviderType
                     }
                 });

@@ -6,9 +6,6 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-
-
-export * from './EventEmitter';
 export * from './type';
 export * from './renderer';
 

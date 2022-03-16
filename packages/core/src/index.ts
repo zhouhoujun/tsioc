@@ -9,6 +9,7 @@ export * from './metadata/tk';
 export * from './args';
 export * from './exit';
 export * from './lifecycle';
+export * from './EventEmitter';
 export * from './runnable';
 export * from './startup';
 export * from './service';
@@ -21,10 +22,10 @@ export * from './pipes';
 // modules
 export * from './module.ref';
 export * from './module.factory';
+
+// impl
 export * from './impl/module';
 export * from './impl/runnable';
-
-// applications
 export * from './impl/context';
 
 export { DEFAULTA_PROVIDERS as APPLICTION_DEFAULTA_PROVIDERS } from './providers';

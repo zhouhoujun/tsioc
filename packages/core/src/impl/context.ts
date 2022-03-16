@@ -1,6 +1,7 @@
-import { Type, isFunction, ModuleMetadata, DefaultInvocationContext, EMPTY_OBJ, InvokeArguments, InvocationContext, lang } from '@tsdi/ioc';
+import { Type, isFunction, ModuleMetadata, DefaultInvocationContext, EMPTY_OBJ, InvokeArguments, InvocationContext, lang, ArgumentError, getClass } from '@tsdi/ioc';
 import { PROCESS_ROOT } from '../metadata/tk';
-import { ApplicationContext, ApplicationFactory, BootstrapOption, EnvironmentOption } from '../context';
+import { EventEmitter } from '../EventEmitter';
+import { ApplicationContext, ApplicationEvent, ApplicationFactory, BootstrapOption, EnvironmentOption } from '../context';
 import { RunnableFactory, RunnableFactoryResolver, RunnableSet, RunnableRef } from '../runnable';
 import { ModuleRef } from '../module.ref';
 import { StartupSet } from '../startup';
@@ -21,7 +22,7 @@ import { ILogger, LoggerFactory } from '../logger';
 export class DefaultApplicationContext extends DefaultInvocationContext implements ApplicationContext {
 
     readonly bootstraps: RunnableRef[] = [];
-
+    private _eventEmitter: EventEmitter<ApplicationEvent>;
     exit = true;
 
     constructor(readonly injector: ModuleRef, options: InvokeArguments = EMPTY_OBJ) {
@@ -31,8 +32,17 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
             this._args = args;
             options.arguments && lang.forIn(options.arguments, (v, k) => this.setArgument(k, v));
         }
+        this._eventEmitter = new EventEmitter();
         injector.setValue(InvocationContext, this);
         injector.setValue(ApplicationContext, this);
+    }
+
+    get baseURL(): string {
+        return this.injector.get(PROCESS_ROOT);
+    }
+
+    get instance() {
+        return this.injector.instance;
     }
 
     get services() {
@@ -52,22 +62,51 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         return factory.create(this.injector, option).run();
     }
 
-    get instance() {
-        return this.injector.instance;
-    }
 
     getLogger(name?: string): ILogger {
         return this.injector.get(LoggerFactory)?.getLogger(name);
     }
 
-    get baseURL(): string {
-        return this.injector.get(PROCESS_ROOT);
+    publishEvent(event: ApplicationEvent): void;
+    publishEvent(event: Object): void;
+    publishEvent(obj: ApplicationEvent | Object): void {
+        if (!obj) throw new ArgumentError('Event must not be null');
+
+        // Decorate event as an ApplicationEvent if necessary
+        let event: ApplicationEvent;
+        if (obj instanceof ApplicationEvent) {
+            event = obj;
+        }
+        else {
+            event = new PayloadApplicationEvent(this, obj);
+        }
+
+        this._eventEmitter.emit(event);
+
+        // Publish event via parent context as well...
+        if (this.parent != null) {
+            if (this.parent instanceof ApplicationContext) {
+                (this.parent as ApplicationContext).publishEvent(event);
+            }
+        }
     }
+
 
     getAnnoation<TM extends ModuleMetadata>(): TM {
         return this.injector.moduleReflect?.annotation as TM;
     }
 
+}
+
+export class PayloadApplicationEvent<T = any> extends ApplicationEvent {
+
+    constructor(source: Object, public playload: T) {
+        super(source);
+    }
+
+    getPayloadType() {
+        return getClass(this.playload);
+    }
 }
 
 /**
