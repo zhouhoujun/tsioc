@@ -72,7 +72,7 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
     /**
      * application root module injector.
      */
-    abstract get injector(): ModuleRef;
+     abstract get injector(): ModuleRef;
     /**
      * module instance.
      */

@@ -7,6 +7,7 @@ import { Injector } from '../injector';
 import { OperationArgumentResolver, Parameter, composeResolver, DEFAULT_RESOLVERS } from '../resolver';
 import { InvocationContext, INVOCATION_CONTEXT_IMPL, InvocationOption } from '../context';
 import { get } from '../metadata/refl';
+import { ProviderType } from '../providers';
 
 
 
@@ -44,7 +45,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         injector: Injector,
         options: InvocationOption = EMPTY_OBJ) {
         super();
-        this.injector = Injector.create(options.providers, injector, 'invocation');
+        this.injector = this.createInvocationInjector(injector, options.providers);
         const defsRvs = this.injector.get(DEFAULT_RESOLVERS, EMPTY);
         this.resolvers = (options.resolvers ? options.resolvers.concat(defsRvs) : defsRvs).map(r => isFunction(r) ? this.injector.get<OperationArgumentResolver>(r) : r);
         this._args = (options.arguments ?? {}) as T;
@@ -54,6 +55,10 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         this.method = options.invokerMethod;
         injector.onDestroy(this);
         this._refs = [];
+    }
+
+    protected createInvocationInjector(injector: Injector, providers?: ProviderType[]) {
+        return Injector.create(providers, injector, 'invocation');
     }
 
     /**

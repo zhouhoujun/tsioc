@@ -1,4 +1,7 @@
-import { Type, isFunction, ModuleMetadata, DefaultInvocationContext, EMPTY_OBJ, InvokeArguments, InvocationContext, lang, ArgumentError, getClass } from '@tsdi/ioc';
+import {
+    Type, lang, isFunction, ModuleMetadata, DefaultInvocationContext, EMPTY_OBJ, InvokeArguments,
+    InvocationContext, ArgumentError, getClass, Injector, ProviderType
+} from '@tsdi/ioc';
 import { PROCESS_ROOT } from '../metadata/tk';
 import { EventEmitter } from '../EventEmitter';
 import { ApplicationContext, ApplicationEvent, ApplicationFactory, BootstrapOption, EnvironmentOption } from '../context';
@@ -35,6 +38,11 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         this._eventEmitter = new EventEmitter();
         injector.setValue(InvocationContext, this);
         injector.setValue(ApplicationContext, this);
+    }
+
+    protected override createInvocationInjector(injector: Injector, providers?: ProviderType[]): Injector {
+        if (providers) injector.inject(providers);
+        return injector;
     }
 
     get baseURL(): string {
@@ -84,8 +92,9 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         this._eventEmitter.emit(event);
 
         // Publish event via parent context as well...
-        if (this.parent != null) {
-            if (this.parent instanceof ApplicationContext) {
+        if (this.parent) {
+            if (this.parent instanceof ApplicationContext
+                || this.parent instanceof DefaultApplicationContext) {
                 (this.parent as ApplicationContext).publishEvent(event);
             }
         }
