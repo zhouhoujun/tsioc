@@ -29,8 +29,8 @@
       "@tsdi/transport": [
         "packages/transport/src"
       ],
-      "@tsdi/authorization": [
-        "packages/authorization/src"
+      "@tsdi/security": [
+        "packages/security/src"
       ],
       "@tsdi/boot": [
         "packages/boot/src"
