@@ -167,6 +167,12 @@ export type ProviderType = Type | Modules[] | StaticProvider;
  * type module with providers.
  */
 export interface ModuleWithProviders<T = any> {
+    /**
+     * module type
+     */
     module: Type<T>;
-    providers: ProviderType[]
+    /**
+     * providers for the module
+     */
+    providers: ProviderType[];
 }

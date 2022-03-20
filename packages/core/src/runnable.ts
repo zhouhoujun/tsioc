@@ -62,14 +62,14 @@ export abstract class RunnableRef<T = any> implements Runnable, Destroyable, OnD
     */
     abstract get destroyed(): boolean;
     /**
-     * Destroys the component instance and all of the data structures associated with it.
+     * Destroys the runnable instance and all of the data structures associated with it.
      */
     abstract destroy(): void;
     /**
      * A lifecycle hook that provides additional developer-defined cleanup
-     * functionality for the component.
+     * functionality for the runnable.
      * @param callback A handler function that cleans up developer-defined data
-     * associated with this component. Called when the `destroy()` method is invoked.
+     * associated with this runnable. Called when the `destroy()` method is invoked.
      */
     abstract onDestroy(callback?: DestroyCallback): void;
 }

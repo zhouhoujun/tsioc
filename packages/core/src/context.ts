@@ -132,7 +132,7 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
      */
     abstract get runnables(): RunnableSet;
     /**
-     * application global bootstraps.
+     * application bootstraps.
      */
     abstract get bootstraps(): RunnableRef[];
     /**
