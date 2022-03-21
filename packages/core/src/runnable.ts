@@ -1,6 +1,5 @@
 import { Abstract, Type, Destroyable, OnDestroy, TypeReflect, Injector, DestroyCallback } from '@tsdi/ioc';
-import { ApplicationContext, BootstrapOption } from './context';
-import { ScanSet } from './scan.set';
+import { BootstrapOption } from './context';
 
 /**
  * runnable
@@ -78,7 +77,7 @@ export abstract class RunnableRef<T = any> implements Runnable, Destroyable, OnD
  * runnable scan set.
  */
 @Abstract()
-export abstract class RunnableSet implements ScanSet<RunnableRef> {
+export abstract class RunnableSet<T = any> {
     /**
      * the service count.
      */
@@ -86,23 +85,23 @@ export abstract class RunnableSet implements ScanSet<RunnableRef> {
     /**
      * get all.
      */
-    abstract getAll(): RunnableRef[];
+    abstract getAll(): RunnableRef<T>[];
     /**
      * has the client type or not.
      * @param type has resolver of the type or not.
      */
-    abstract has(type: Type<any>): boolean;
+    abstract has(type: Type<T>): boolean;
     /**
      * add service resolver.
      * @param resolver resolver runnable.
      * @param order order.
      */
-    abstract add(resolver: RunnableRef, order?: number): void;
+    abstract add(resolver: RunnableRef<T>, order?: number): void;
     /**
      * remove service resolver.
      * @param resolver remove the resolver.
      */
-    abstract remove(resolver: RunnableRef): void;
+    abstract remove(resolver: RunnableRef<T>): void;
     /**
      * clear service resolver.
      */
@@ -112,9 +111,9 @@ export abstract class RunnableSet implements ScanSet<RunnableRef> {
      */
     abstract onDestroy(): void
     /**
-     * startup all service.
+     * startup scans runables.
      */
-    abstract startup(ctx: ApplicationContext): Promise<void>;
+    abstract run(): Promise<void>;
 }
 
 /**

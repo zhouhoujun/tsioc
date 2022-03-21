@@ -1,21 +1,21 @@
 import {
     ProviderType, LoadType, Injector, Abstract, Type, InvokeOption, InvokeArguments,
-    ModuleLoader, Destroyable, Modules, DestroyCallback, InvocationContext
+    ModuleLoader, Destroyable, Modules, DestroyCallback, InvocationContext, tokenId
 } from '@tsdi/ioc';
 import { RunnableRef, RunnableSet, RunnableFactory } from './runnable';
-import { ServiceSet } from './service';
-import { StartupSet } from './startup';
 import { ModuleOption } from './module.factory';
 import { ModuleRef } from './module.ref';
 import { ApplicationArguments } from './args';
 import { ILogger } from './logger';
+import { Startup } from './startup';
+import { ConfigureService } from './service';
 
 
 /**
  * bootstrap option for {@link Runnable}.
  */
 export interface BootstrapOption extends InvokeOption {
-
+    invokeMethod?: string;
 }
 
 /**
@@ -118,13 +118,13 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
      *
      * type of {@link StartupSet}
      */
-    abstract get startups(): StartupSet;
+    abstract get startups(): RunnableSet<Startup>;
     /**
      * application global services.
      *
      * type of {@link ServiceSet}
      */
-    abstract get services(): ServiceSet;
+    abstract get services(): RunnableSet<ConfigureService>;
     /**
      * application global runnables.
      *
@@ -219,3 +219,7 @@ export abstract class ApplicationFactory {
      */
     abstract create<T>(root: ModuleRef<T>, option?: EnvironmentOption): ApplicationContext;
 }
+
+
+export const STARUP_RUNNABLES = tokenId<RunnableSet<Startup>>('STARUP_RUNNABLES');
+export const SERVICE_RUNNABLES = tokenId<RunnableSet<ConfigureService>>('SERVICE_RUNNABLES');

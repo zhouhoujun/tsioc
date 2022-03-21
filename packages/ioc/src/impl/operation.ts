@@ -7,7 +7,7 @@ import { get } from '../metadata/refl';
 import { ProviderType } from '../providers';
 import { Parameter } from '../resolver';
 import { InvocationContext, InvocationOption, InvokeArguments, InvokeOption } from '../context';
-import { OperationFactory, OperationFactoryResolver, OperationInvoker } from '../operation';
+import { ArgumentError, OperationFactory, OperationFactoryResolver, OperationInvoker } from '../operation';
 import { Injector, MethodType } from '../injector';
 
 
@@ -122,11 +122,10 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
 /**
  * Missing argument errror.
  */
-export class MissingParameterError extends Error {
+export class MissingParameterError extends ArgumentError {
     constructor(parameters: Parameter[], type: ClassType, method: string) {
         super(`ailed to invoke operation because the following required parameters were missing: [ ${parameters.map(p => object2string(p)).join(',\n')} ], method ${method} of class ${object2string(type)}`);
         Object.setPrototypeOf(this, MissingParameterError.prototype);
-        Error.captureStackTrace(this);
     }
 }
 

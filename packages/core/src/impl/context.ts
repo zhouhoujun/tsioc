@@ -4,11 +4,9 @@ import {
 } from '@tsdi/ioc';
 import { PROCESS_ROOT } from '../metadata/tk';
 import { EventEmitter } from '../EventEmitter';
-import { ApplicationContext, ApplicationEvent, ApplicationFactory, BootstrapOption, EnvironmentOption } from '../context';
+import { ApplicationContext, ApplicationEvent, ApplicationFactory, BootstrapOption, EnvironmentOption, SERVICE_RUNNABLES, STARUP_RUNNABLES } from '../context';
 import { RunnableFactory, RunnableFactoryResolver, RunnableSet, RunnableRef } from '../runnable';
 import { ModuleRef } from '../module.ref';
-import { StartupSet } from '../startup';
-import { ServiceSet } from '../service';
 import { ApplicationArguments } from '../args';
 import { ILogger, LoggerFactory } from '../logger';
 
@@ -53,17 +51,16 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         return this.injector.instance;
     }
 
-    get services() {
-        return this.injector.get(ServiceSet);
+    get startups() {
+        return this.injector.get(STARUP_RUNNABLES);
     }
-
+    get services() {
+        return this.injector.get(SERVICE_RUNNABLES);
+    }
     get runnables() {
         return this.injector.get(RunnableSet);
     }
 
-    get startups() {
-        return this.injector.get(StartupSet);
-    }
 
     bootstrap<C>(type: Type<C> | RunnableFactory<C>, option?: BootstrapOption): any {
         const factory = isFunction(type) ? this.injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type) : type;

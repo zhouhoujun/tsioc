@@ -1,21 +1,19 @@
-import { ProviderType, lang, isNumber, Type, ObservableParser, LifecycleHooksResolver, OperationFactory } from '@tsdi/ioc';
-import { ApplicationContext, ApplicationFactory } from './context';
+import { ProviderType, lang, isNumber, Type, ObservableParser, LifecycleHooksResolver } from '@tsdi/ioc';
+import { ApplicationFactory, SERVICE_RUNNABLES, STARUP_RUNNABLES } from './context';
 import { ModuleFactoryResolver } from './module.factory';
 import { DefaultModuleFactoryResolver, ModuleLifecycleHooksResolver } from './impl/module';
 import { DefaultApplicationFactory } from './impl/context';
-import { Startup, StartupSet } from './startup';
-import { ConfigureService, ServiceSet } from './service';
-import { ScanSet } from './scan.set';
 import { RunnableRef, RunnableSet } from './runnable';
 import { Observable, from, lastValueFrom } from 'rxjs';
 
 
-abstract class AbstractScanSet<T extends { type: Type}> implements ScanSet<T> {
+class DefaultScanSet<T> extends RunnableSet<T> {
     static ρNPT = true;
 
-    private _rs: T[] = [];
+    private _rs: RunnableRef<T>[] = [];
     protected order = false;
     constructor() {
+        super();
         this._rs = [];
     }
 
@@ -24,14 +22,14 @@ abstract class AbstractScanSet<T extends { type: Type}> implements ScanSet<T> {
     }
 
 
-    getAll(): T[] {
+    getAll(): RunnableRef<T>[] {
         return this._rs;
     }
 
     has(type: Type): boolean {
         return this._rs.some(i => i.type === type);
     }
-    add(typeRef: T, order?: number): void {
+    add(typeRef: RunnableRef, order?: number): void {
         if (this.has(typeRef.type)) return;
         if (isNumber(order)) {
             this.order = true;
@@ -41,7 +39,7 @@ abstract class AbstractScanSet<T extends { type: Type}> implements ScanSet<T> {
         }
     }
 
-    remove(typeRef: T | Type<T>): void {
+    remove(typeRef: RunnableRef | Type<T>): void {
         lang.remove(this._rs, typeRef);
     }
 
@@ -49,17 +47,16 @@ abstract class AbstractScanSet<T extends { type: Type}> implements ScanSet<T> {
         this._rs = [];
     }
 
-    async startup(ctx: ApplicationContext): Promise<void> {
+    async run(): Promise<void> {
         if (this._rs.length) {
             if (this.order) {
-                await lang.step(Array.from(this._rs).map(svr => () => this.run(svr, ctx)));
+                await lang.step(Array.from(this._rs).map(svr => () => svr.run()));
             } else {
-                await Promise.all(this._rs.map(svr => this.run(svr, ctx)));
+                await Promise.all(this._rs.map(svr => svr.run()));
             }
         }
     }
 
-    protected abstract run(typeRef: T, ctx: ApplicationContext): any;
 
     onDestroy(): void {
         this.clear();
@@ -68,28 +65,10 @@ abstract class AbstractScanSet<T extends { type: Type}> implements ScanSet<T> {
 }
 
 
-class ServiceSetImpl extends AbstractScanSet<OperationFactory<ConfigureService>> implements ServiceSet {
-    protected run(typeRef: OperationFactory<ConfigureService>, ctx: ApplicationContext) {
-        return typeRef.resolve().configureService(ctx);
-    }
-}
-
-class ServerSetImpl extends AbstractScanSet<OperationFactory<Startup>> implements StartupSet {
-    protected run(typeRef: OperationFactory<Startup>, ctx: ApplicationContext) {
-        return typeRef.resolve().startup();
-    }
-}
-
-class RunnableSetImpl extends AbstractScanSet<RunnableRef> implements RunnableSet {
-    protected run(typeRef: RunnableRef, ctx: ApplicationContext) {
-        return typeRef.run();
-    }
-}
-
 export const DEFAULTA_PROVIDERS: ProviderType[] = [
-    { provide: StartupSet, useClass: ServerSetImpl, singleton: true },
-    { provide: ServiceSet, useClass: ServiceSetImpl, singleton: true },
-    { provide: RunnableSet, useClass: RunnableSetImpl, singleton: true },
+    { provide: STARUP_RUNNABLES, useValue: new DefaultScanSet() },
+    { provide: SERVICE_RUNNABLES, useValue: new DefaultScanSet() },
+    { provide: RunnableSet, useValue: new DefaultScanSet() },
     { provide: LifecycleHooksResolver, useValue: new ModuleLifecycleHooksResolver() },
     { provide: ModuleFactoryResolver, useValue: new DefaultModuleFactoryResolver() },
     { provide: ApplicationFactory, useValue: new DefaultApplicationFactory() },

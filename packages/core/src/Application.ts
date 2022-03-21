@@ -1,13 +1,13 @@
 import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, Injector, Modules } from '@tsdi/ioc';
 import { PROCESS_ROOT } from './metadata/tk';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption } from './context';
-import { StartupSet } from './startup';
-import { ServiceSet } from './service';
 import { DEFAULTA_PROVIDERS } from './providers';
 import { ModuleRef } from './module.ref';
 import { ModuleFactoryResolver } from './module.factory';
 import { RunnableSet } from './runnable';
 import { ApplicationExit } from './exit';
+import { Startup } from './startup';
+import { ConfigureService } from './service';
 
 /**
  * application.
@@ -155,21 +155,21 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
         }
     }
 
-    protected async statupServers(servers: StartupSet): Promise<void> {
+    protected async statupServers(servers: RunnableSet<Startup>): Promise<void> {
         if (servers?.count) {
-            await servers.startup(this.context);
+            await servers.run();
         }
     }
 
-    protected async statupServices(services: ServiceSet): Promise<void> {
+    protected async statupServices(services: RunnableSet<ConfigureService>): Promise<void> {
         if (services?.count) {
-            await services.startup(this.context);
+            await services.run();
         }
     }
 
     protected async statupRunnable(runnables: RunnableSet): Promise<void> {
         if (runnables?.count) {
-            await runnables.startup(this.context);
+            await runnables.run();
         }
     }
 

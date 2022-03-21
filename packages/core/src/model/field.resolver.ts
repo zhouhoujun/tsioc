@@ -83,11 +83,10 @@ export interface ModelFieldResolver<C = any> {
 /**
  * Missing model field errror.
  */
-export class MissingModelFieldError extends Error {
+export class MissingModelFieldError extends ArgumentError {
     constructor(fields: DBPropertyMetadata[], type: Type) {
         super(`ailed to resolve model class ${object2string(type)} because the following required fields were missing: [ ${fields.map(p => object2string(p)).join(',\n')} ]`);
         Object.setPrototypeOf(this, MissingModelFieldError.prototype);
-        Error.captureStackTrace(this);
     }
 }
 

@@ -3,13 +3,13 @@ import {
     PropertyMetadata, ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes,
     OperationFactoryResolver, MethodPropDecorator, Token, ArgumentError, object2string, InvokeArguments, isString
 } from '@tsdi/ioc';
-import { ConfigureService, ServiceSet } from '../service';
+import { ConfigureService } from '../service';
 import { PipeMetadata, ComponentScanMetadata, ScanReflect, BeanMetadata } from './meta';
 import { PipeTransform } from '../pipes/pipe';
-import { Startup, StartupSet } from '../startup';
+import { Startup } from '../startup';
 import { getModuleType } from '../module.ref';
 import { Runnable, RunnableFactoryResolver, RunnableSet } from '../runnable';
-import { ScanSet } from '../scan.set';
+import { STARUP_RUNNABLES } from '../context';
 
 
 
@@ -175,30 +175,24 @@ export const ComponentScan: ComponentScan = createDecorator<ComponentScanMetadat
         afterAnnoation: (ctx, next) => {
             const { type, injector } = ctx;
             const reflect = ctx.reflect as ScanReflect;
-            let sets: ScanSet | undefined;
-            let isRunner = false;
-            if (reflect.class.hasMethod('startup')) {
-                sets = injector.get(StartupSet);
-            } else if (reflect.class.hasMethod('configureService')) {
-                sets = injector.get(ServiceSet);
-            } else if (reflect.class.runnables.length || reflect.class.hasMetadata('run')) {
+            let sets: RunnableSet | undefined;
+            if (reflect.class.runnables.length || reflect.class.hasMetadata('run')) {
                 sets = injector.get(RunnableSet);
-                isRunner = true;
-            }
-            if (sets && !sets.has(type)) {
-                if (isRunner) {
-                    const typeRef = injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type).create(injector);
-                    sets.add(typeRef, reflect.order);
-                } else {
-                    const factory = injector.resolve({ token: OperationFactoryResolver, target: type }).resolve(type, injector);
-                    sets.add(factory, reflect.order);
-                }
+                const typeRef = injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type).create(injector);
+                sets.add(typeRef, reflect.order);
+            } else if (reflect.class.hasMethod('startup')) {
+                sets = injector.get(STARUP_RUNNABLES);
+                const typeRef = injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type).create(injector, { invokeMethod: 'startup' });
+                sets.add(typeRef, reflect.order);
+            } else if (reflect.class.hasMethod('configureService')) {
+                sets = injector.get(STARUP_RUNNABLES);
+                const typeRef = injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type).create(injector, { invokeMethod: 'configureService' });
+                sets.add(typeRef, reflect.order);
             }
             return next();
         }
     },
     appendProps: (meta) => {
-        meta.singleton = true;
         return meta;
     }
 });
