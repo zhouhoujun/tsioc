@@ -9,7 +9,7 @@ import { PipeTransform } from '../pipes/pipe';
 import { Startup } from '../startup';
 import { getModuleType } from '../module.ref';
 import { Runnable, RunnableFactoryResolver, RunnableSet } from '../runnable';
-import { ApplicationContext, STARUP_RUNNABLES } from '../context';
+import { ApplicationContext, SERVICE_RUNNABLES, STARUP_RUNNABLES } from '../context';
 
 
 
@@ -185,7 +185,7 @@ export const ComponentScan: ComponentScan = createDecorator<ComponentScanMetadat
                 const typeRef = injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type).create(injector, { invokeMethod: 'startup' });
                 sets.add(typeRef, reflect.order);
             } else if (reflect.class.hasMethod('configureService')) {
-                sets = injector.get(STARUP_RUNNABLES);
+                sets = injector.get(SERVICE_RUNNABLES);
                 if (!reflect.class.hasParameters('configureService')) {
                     reflect.class.setParameters('configureService', [{ provider: ApplicationContext }])
                 }
