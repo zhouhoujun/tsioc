@@ -8,8 +8,7 @@ import { PipeMetadata, ComponentScanMetadata, ScanReflect, BeanMetadata } from '
 import { PipeTransform } from '../pipes/pipe';
 import { Startup } from '../startup';
 import { getModuleType } from '../module.ref';
-import { Runnable, RunnableFactoryResolver, RunnableSet } from '../runnable';
-import { ApplicationContext, SERVICE_RUNNABLES, STARUP_RUNNABLES } from '../context';
+import { Runnable, RunnableFactoryResolver, ApplicationRunners } from '../runnable';
 
 
 
@@ -175,22 +174,16 @@ export const ComponentScan: ComponentScan = createDecorator<ComponentScanMetadat
         afterAnnoation: (ctx, next) => {
             const { type, injector } = ctx;
             const reflect = ctx.reflect as ScanReflect;
-            let sets: RunnableSet | undefined;
+            let runners = injector.get(ApplicationRunners);
             if (reflect.class.runnables.length || reflect.class.hasMetadata('run')) {
-                sets = injector.get(RunnableSet);
                 const typeRef = injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type).create(injector);
-                sets.add(typeRef, reflect.order);
+                runners.add(typeRef, reflect.order);
             } else if (reflect.class.hasMethod('startup')) {
-                sets = injector.get(STARUP_RUNNABLES);
                 const typeRef = injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type).create(injector, { invokeMethod: 'startup' });
-                sets.add(typeRef, reflect.order);
+                runners.addStartup(typeRef, reflect.order);
             } else if (reflect.class.hasMethod('configureService')) {
-                sets = injector.get(SERVICE_RUNNABLES);
-                if (!reflect.class.hasParameters('configureService')) {
-                    reflect.class.setParameters('configureService', [{ provider: ApplicationContext }])
-                }
                 const typeRef = injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type).create(injector, { invokeMethod: 'configureService' });
-                sets.add(typeRef, reflect.order);
+                runners.addConfigureService(typeRef, reflect.order);
             }
             return next();
         }

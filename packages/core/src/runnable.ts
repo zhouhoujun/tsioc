@@ -1,5 +1,7 @@
 import { Abstract, Type, Destroyable, OnDestroy, TypeReflect, Injector, DestroyCallback } from '@tsdi/ioc';
 import { BootstrapOption } from './context';
+import { ConfigureService } from './service';
+import { Startup } from './startup';
 
 /**
  * runnable
@@ -74,6 +76,36 @@ export abstract class RunnableRef<T = any> implements Runnable, Destroyable, OnD
 }
 
 /**
+ * runnable factory.
+ */
+@Abstract()
+export abstract class RunnableFactory<T> {
+    /**
+     * runnbale reflect.
+     */
+    abstract get reflect(): TypeReflect<T>;
+    /**
+     * create new instance of {@link RunnableRef} via this type.
+     * @param injector injector.
+     * @param option bootstrap option.
+     * @returns instance of {@link RunnableRef}.
+     */
+    abstract create(injector: Injector, option?: BootstrapOption): RunnableRef<T>;
+}
+
+/**
+ * runnable factory resolver.
+ */
+@Abstract()
+export abstract class RunnableFactoryResolver {
+    /**
+     * resolve runnable factory of type.
+     * @param type class type.
+     */
+    abstract resolve<T>(type: Type<T> | TypeReflect<T>): RunnableFactory<T>;
+}
+
+/**
  * runnable scan set.
  */
 @Abstract()
@@ -116,32 +148,49 @@ export abstract class RunnableSet<T = any> {
     abstract run(): Promise<void>;
 }
 
-/**
- * runnable factory.
- */
-@Abstract()
-export abstract class RunnableFactory<T> {
-    /**
-     * runnbale reflect.
-     */
-    abstract get reflect(): TypeReflect<T>;
-    /**
-     * create new instance of {@link RunnableRef} via this type.
-     * @param injector injector.
-     * @param option bootstrap option.
-     * @returns instance of {@link RunnableRef}.
-     */
-    abstract create(injector: Injector, option?: BootstrapOption): RunnableRef<T>;
-}
 
-/**
- * runnable factory resolver.
- */
 @Abstract()
-export abstract class RunnableFactoryResolver {
+export abstract class ApplicationRunners {
+
     /**
-     * resolve runnable factory of type.
-     * @param type class type.
+     * get startup runners.
      */
-    abstract resolve<T>(type: Type<T> | TypeReflect<T>): RunnableFactory<T>;
+    abstract get startups(): RunnableSet<Startup>;
+    /**
+     * get configure service runners.
+     */
+    abstract get services(): RunnableSet<ConfigureService>;
+    /**
+     * get general runners.
+     */
+    abstract get runners(): RunnableSet;
+    /**
+     * add runner.
+     * @param runner runn
+     * @param order order to run. 
+     */
+    abstract add(runner: RunnableRef, order?: number): void;
+    /**
+     * add startup runner.
+     * @param runner startup runner.
+     * @param order order to run.
+     */
+    abstract addStartup(runner: RunnableRef<Startup>, order?: number): void;
+    /**
+     * add configure service runner.
+     * @param runner configure service runner.
+     * @param order order to run.
+     */
+    abstract addConfigureService(runner: RunnableRef<ConfigureService>, order?: number): void;
+
+    /**
+     * run all runners.
+     */
+    abstract run(): Promise<void>;
+
+    /**
+      * destroy this.
+      */
+    abstract onDestroy(): void
+
 }

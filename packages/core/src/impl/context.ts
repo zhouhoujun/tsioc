@@ -4,8 +4,8 @@ import {
 } from '@tsdi/ioc';
 import { PROCESS_ROOT } from '../metadata/tk';
 import { EventEmitter } from '../EventEmitter';
-import { ApplicationContext, ApplicationEvent, ApplicationFactory, BootstrapOption, EnvironmentOption, SERVICE_RUNNABLES, STARUP_RUNNABLES } from '../context';
-import { RunnableFactory, RunnableFactoryResolver, RunnableSet, RunnableRef } from '../runnable';
+import { ApplicationContext, ApplicationEvent, ApplicationFactory, BootstrapOption, EnvironmentOption } from '../context';
+import { RunnableFactory, RunnableFactoryResolver, RunnableRef, ApplicationRunners } from '../runnable';
 import { ModuleRef } from '../module.ref';
 import { ApplicationArguments } from '../args';
 import { ILogger, LoggerFactory } from '../logger';
@@ -26,6 +26,8 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
     private _eventEmitter: EventEmitter<ApplicationEvent>;
     exit = true;
 
+    private _runners: ApplicationRunners;
+
     constructor(readonly injector: ModuleRef, options: InvokeArguments = EMPTY_OBJ) {
         super(injector, options);
         const args = injector.get(ApplicationArguments);
@@ -36,6 +38,8 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         this._eventEmitter = new EventEmitter();
         injector.setValue(InvocationContext, this);
         injector.setValue(ApplicationContext, this);
+        this._runners = injector.get(ApplicationRunners);
+        this.onDestroy(this._runners);
     }
 
     protected override createInvocationInjector(injector: Injector, providers?: ProviderType[]): Injector {
@@ -51,14 +55,8 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         return this.injector.instance;
     }
 
-    get startups() {
-        return this.injector.get(STARUP_RUNNABLES);
-    }
-    get services() {
-        return this.injector.get(SERVICE_RUNNABLES);
-    }
-    get runnables() {
-        return this.injector.get(RunnableSet);
+    get runners() {
+        return this._runners;
     }
 
 

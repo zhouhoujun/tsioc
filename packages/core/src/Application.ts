@@ -91,10 +91,8 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
             await this.configation(ctx);
             this.prepareContext(ctx);
             this.refreshContext(ctx);
-            await this.statupServers(ctx.startups);
-            await this.statupServices(ctx.services);
-            await this.statupRunnable(ctx.runnables);
-            await this.bootstraps(this.root.moduleReflect.bootstrap);
+            await this.callRunners(ctx);
+            await this.bootstraps(ctx, this.root.moduleReflect.bootstrap);
             return ctx;
         } catch (err) {
             if (this.context) {
@@ -167,15 +165,13 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
         }
     }
 
-    protected async statupRunnable(runnables: RunnableSet): Promise<void> {
-        if (runnables?.count) {
-            await runnables.run();
-        }
+    protected callRunners(ctx: ApplicationContext): Promise<void> {
+        return ctx.runners.run()
     }
 
-    protected async bootstraps(bootstraps?: Type[]): Promise<void> {
+    protected async bootstraps(ctx: ApplicationContext, bootstraps?: Type[]): Promise<void> {
         if (bootstraps && bootstraps.length) {
-            await Promise.all(bootstraps.map(b => this.context.bootstrap(b)));
+            await Promise.all(bootstraps.map(b => ctx.bootstrap(b)));
         }
     }
 }
