@@ -153,20 +153,8 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
         }
     }
 
-    protected async statupServers(servers: RunnableSet<Startup>): Promise<void> {
-        if (servers?.count) {
-            await servers.run();
-        }
-    }
-
-    protected async statupServices(services: RunnableSet<ConfigureService>): Promise<void> {
-        if (services?.count) {
-            await services.run();
-        }
-    }
-
     protected callRunners(ctx: ApplicationContext): Promise<void> {
-        return ctx.runners.run()
+        return ctx.runners.run();
     }
 
     protected async bootstraps(ctx: ApplicationContext, bootstraps?: Type[]): Promise<void> {

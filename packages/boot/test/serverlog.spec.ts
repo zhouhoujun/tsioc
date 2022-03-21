@@ -29,9 +29,7 @@ export class ServerBootTest {
     isLog4js() {
         const cfg = this.ctx.getConfiguration();
         expect(cfg.logConfig).toBeDefined();
-        const loggerMgr = this.ctx.getLogManager();
-        expect(loggerMgr).toBeInstanceOf(ConfigureLoggerManager);
-        const logger = loggerMgr.getLogger();
+        const logger = this.ctx.getLogger();
         expect(logger).toBeDefined();
         expect((logger as log4js.Logger).category).toEqual('default');
     }
@@ -40,7 +38,7 @@ export class ServerBootTest {
     @Test()
     async canWriteLogFile() {
         const msg = 'log file test';
-        this.ctx.getLogManager().getLogger().info(msg);
+        this.ctx.getLogger().info(msg);
         let defer = lang.defer();
         setTimeout(() => {
             expect(fs.existsSync(this.logfile)).toBeTruthy();
