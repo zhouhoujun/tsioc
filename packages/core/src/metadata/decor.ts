@@ -177,7 +177,7 @@ export const ComponentScan: ComponentScan = createDecorator<ComponentScanMetadat
             let runners = injector.get(ApplicationRunners);
             if (reflect.class.runnables.length || reflect.class.hasMetadata('run')) {
                 const typeRef = injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type).create(injector);
-                runners.add(typeRef, reflect.order);
+                runners.addRunnable(typeRef, reflect.order);
             } else if (reflect.class.hasMethod('startup')) {
                 const typeRef = injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type).create(injector, { invokeMethod: 'startup' });
                 runners.addStartup(typeRef, reflect.order);

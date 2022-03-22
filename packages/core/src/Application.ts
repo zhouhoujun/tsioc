@@ -4,10 +4,8 @@ import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentO
 import { DEFAULTA_PROVIDERS } from './providers';
 import { ModuleRef } from './module.ref';
 import { ModuleFactoryResolver } from './module.factory';
-import { RunnableSet } from './runnable';
 import { ApplicationExit } from './exit';
-import { Startup } from './startup';
-import { ConfigureService } from './service';
+import { RunnableFactoryResolver } from './runnable';
 
 /**
  * application.
@@ -88,11 +86,9 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
     async run(): Promise<T> {
         try {
             const ctx = await this.createContext();
-            await this.configation(ctx);
-            this.prepareContext(ctx);
-            this.refreshContext(ctx);
+            await this.prepareContext(ctx);
+            await this.refreshContext(ctx);
             await this.callRunners(ctx);
-            await this.bootstraps(ctx, this.root.moduleReflect.bootstrap);
             return ctx;
         } catch (err) {
             if (this.context) {
@@ -142,11 +138,18 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
         return this.context;
     }
 
-    protected configation(ctx: T): any { }
+    protected prepareContext(ctx: T): any {
+        const bootstraps = this.root.moduleReflect.bootstrap;
+        if (bootstraps && bootstraps.length) {
+            const injector = ctx.injector;
+            bootstraps.forEach(type => {
+                const runner = injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type).create(injector);
+                ctx.runners.addBootstrap(runner);
+            });
+        }
+    }
 
-    protected prepareContext(ctx: T): void { }
-
-    protected refreshContext(ctx: T): void {
+    protected refreshContext(ctx: T): any {
         const exit = ctx.injector.get(ApplicationExit);
         if (exit) {
             exit.register();
@@ -157,9 +160,4 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
         return ctx.runners.run();
     }
 
-    protected async bootstraps(ctx: ApplicationContext, bootstraps?: Type[]): Promise<void> {
-        if (bootstraps && bootstraps.length) {
-            await Promise.all(bootstraps.map(b => ctx.bootstrap(b)));
-        }
-    }
 }

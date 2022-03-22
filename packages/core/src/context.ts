@@ -119,10 +119,6 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
      */
     abstract get runners(): ApplicationRunners;
     /**
-     * application bootstraps.
-     */
-    abstract get bootstraps(): RunnableRef[];
-    /**
      * destroyed or not.
      */
     abstract get destroyed(): boolean;

@@ -5,7 +5,7 @@ import {
 import { PROCESS_ROOT } from '../metadata/tk';
 import { EventEmitter } from '../EventEmitter';
 import { ApplicationContext, ApplicationEvent, ApplicationFactory, BootstrapOption, EnvironmentOption } from '../context';
-import { RunnableFactory, RunnableFactoryResolver, RunnableRef, ApplicationRunners } from '../runnable';
+import { RunnableFactory, RunnableFactoryResolver, ApplicationRunners } from '../runnable';
 import { ModuleRef } from '../module.ref';
 import { ApplicationArguments } from '../args';
 import { ILogger, LoggerFactory } from '../logger';
@@ -22,7 +22,6 @@ import { ILogger, LoggerFactory } from '../logger';
  */
 export class DefaultApplicationContext extends DefaultInvocationContext implements ApplicationContext {
 
-    readonly bootstraps: RunnableRef[] = [];
     private _eventEmitter: EventEmitter<ApplicationEvent>;
     exit = true;
 

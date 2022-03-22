@@ -1,5 +1,5 @@
 import { Type, refl, TypeReflect, OperationFactoryResolver, isFunction, Injector, OperationFactory, DestroyCallback, lang } from '@tsdi/ioc';
-import { RunnableFactory, RunnableFactoryResolver, RunnableRef } from '../runnable';
+import { ApplicationRunners, RunnableFactory, RunnableFactoryResolver, RunnableRef } from '../runnable';
 import { ApplicationContext, BootstrapOption } from '../context';
 import { ModuleRef } from '../module.ref';
 
@@ -89,14 +89,8 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
 
         const runnableRef = this.createInstance(factory, option?.invokeMethod);
 
-        const context = injector.get(ApplicationContext);
-        if (context) {
-            runnableRef.onDestroy(() => {
-                lang.remove(context.bootstraps, runnableRef);
-            });
-            context.bootstraps.push(runnableRef);
-        }
-
+        const runners = injector.get(ApplicationRunners);
+        runners.attach(runnableRef);
         return runnableRef;
     }
 

@@ -35,7 +35,7 @@ export class BootApplication extends Application<BootApplicationContext> {
         this.root.setValue(BootApplication, this);
     }
 
-    protected async configation(ctx: BootApplicationContext): Promise<void> {
+    protected async prepareContext(ctx: BootApplicationContext): Promise<void> {
         const { baseURL, injector } = ctx;
         const mgr = ctx.getConfigureManager();
         await mgr.load();
@@ -69,6 +69,8 @@ export class BootApplication extends Application<BootApplicationContext> {
         //     // make sure log module registered.
         //     injector.register(LogModule, DebugLogAspect);
         // }
+
+        await super.prepareContext(ctx);
     }
 
     /**
