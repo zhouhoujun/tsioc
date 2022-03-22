@@ -11,7 +11,7 @@ export class DefaultRunnableRef<T> extends RunnableRef<T> {
     private _dsryCbs = new Set<DestroyCallback>();
 
     private _instance: T | undefined;
-    constructor(protected factory: OperationFactory<T>, private invokeMethod = 'run') {
+    constructor(protected factory: OperationFactory<T>, private defaultInvoke = 'run') {
         super();
         this.factory.context.setValue(RunnableRef, this);
     }
@@ -43,7 +43,7 @@ export class DefaultRunnableRef<T> extends RunnableRef<T> {
         } else if (runnables.length) {
             return lang.step(runnables.map(r => () => this.factory.invoke(r.method, r.args, this.instance)));
         } else {
-            return this.factory.invoke(this.invokeMethod, undefined, this.instance);
+            return this.factory.invoke(this.defaultInvoke, undefined, this.instance);
         }
     }
 
@@ -87,7 +87,7 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
 
         const factory = injector.get(OperationFactoryResolver).resolve(this.reflect, injector, option);
 
-        const runnableRef = this.createInstance(factory, option?.invokeMethod);
+        const runnableRef = this.createInstance(factory, option?.defaultInvoke);
 
         const runners = injector.get(ApplicationRunners);
         runners.attach(runnableRef);

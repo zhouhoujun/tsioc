@@ -4,11 +4,12 @@ import {
 } from '@tsdi/ioc';
 import { PROCESS_ROOT } from '../metadata/tk';
 import { EventEmitter } from '../EventEmitter';
-import { ApplicationContext, ApplicationEvent, ApplicationFactory, EnvironmentOption } from '../context';
+import { ApplicationContext, ApplicationFactory, EnvironmentOption } from '../context';
 import { RunnableFactory, RunnableFactoryResolver, BootstrapOption } from '../runnable';
 import { ApplicationRunners } from '../runners';
 import { ModuleRef } from '../module.ref';
 import { ApplicationArguments } from '../args';
+import { ApplicationEvent } from '../events';
 import { ILogger, LoggerFactory } from '../logger';
 
 

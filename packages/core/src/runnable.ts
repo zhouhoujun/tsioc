@@ -78,9 +78,10 @@ export abstract class RunnableRef<T = any> implements Runnable, Destroyable, OnD
  */
 export interface BootstrapOption extends InvokeOption {
     /**
-     * the method invoked as runnable.
+     * set the method as default invoked as runnable.
+     * when has no `@Runner` in this class, will run this method as default. default value `run`.
      */
-    invokeMethod?: string;
+    defaultInvoke?: string;
 }
 
 /**

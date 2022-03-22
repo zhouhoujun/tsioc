@@ -180,10 +180,10 @@ export const ComponentScan: ComponentScan = createDecorator<ComponentScanMetadat
                 const typeRef = injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type).create(injector);
                 runners.addRunnable(typeRef, reflect.order);
             } else if (reflect.class.hasMethod('startup')) {
-                const typeRef = injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type).create(injector, { invokeMethod: 'startup' });
+                const typeRef = injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type).create(injector, { defaultInvoke: 'startup' });
                 runners.addStartup(typeRef, reflect.order);
             } else if (reflect.class.hasMethod('configureService')) {
-                const typeRef = injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type).create(injector, { invokeMethod: 'configureService' });
+                const typeRef = injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type).create(injector, { defaultInvoke: 'configureService' });
                 runners.addConfigureService(typeRef, reflect.order);
             }
             return next();

@@ -7,6 +7,7 @@ export * from './metadata/decor';
 export * from './metadata/tk';
 
 export * from './args';
+export * from './events';
 export * from './exit';
 export * from './lifecycle';
 export * from './EventEmitter';
