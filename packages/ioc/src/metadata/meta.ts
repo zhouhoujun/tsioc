@@ -363,4 +363,3 @@ export interface RunnableMetadata extends TypeMetadata, PatternMetadata, Provide
       */
      auto?: boolean;
 }
-

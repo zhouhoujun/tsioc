@@ -3,10 +3,11 @@ import { ApplicationContext, ApplicationFactory } from './context';
 import { ModuleFactoryResolver } from './module.factory';
 import { DefaultModuleFactoryResolver, ModuleLifecycleHooksResolver } from './impl/module';
 import { DefaultApplicationFactory } from './impl/context';
-import { ApplicationRunners, RunnableRef, RunnableSet } from './runnable';
+import { RunnableRef, RunnableSet } from './runnable';
 import { Observable, from, lastValueFrom } from 'rxjs';
 import { ConfigureService } from './service';
 import { Startup } from './startup';
+import { ApplicationRunners } from './runners';
 
 
 export class DefaultScanSet<T> extends RunnableSet<T> {

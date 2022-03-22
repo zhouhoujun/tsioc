@@ -13,6 +13,7 @@ export * from './EventEmitter';
 export * from './runnable';
 export * from './startup';
 export * from './service';
+export * from './runners';
 
 export * from './logger';
 export * from './context';

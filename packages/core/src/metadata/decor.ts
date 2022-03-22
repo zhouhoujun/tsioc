@@ -8,7 +8,8 @@ import { PipeMetadata, ComponentScanMetadata, ScanReflect, BeanMetadata } from '
 import { PipeTransform } from '../pipes/pipe';
 import { Startup } from '../startup';
 import { getModuleType } from '../module.ref';
-import { Runnable, RunnableFactoryResolver, ApplicationRunners } from '../runnable';
+import { Runnable, RunnableFactoryResolver } from '../runnable';
+import { ApplicationRunners } from '../runners';
 
 
 

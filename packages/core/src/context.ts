@@ -2,7 +2,8 @@ import {
     ProviderType, LoadType, Injector, Abstract, Type, InvokeArguments,
     ModuleLoader, Destroyable, Modules, DestroyCallback, InvocationContext
 } from '@tsdi/ioc';
-import { RunnableFactory, ApplicationRunners, BootstrapOption } from './runnable';
+import { RunnableFactory, BootstrapOption } from './runnable';
+import { ApplicationRunners } from './runners';
 import { ModuleOption } from './module.factory';
 import { ModuleRef } from './module.ref';
 import { ApplicationArguments } from './args';
