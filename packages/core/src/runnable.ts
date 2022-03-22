@@ -1,5 +1,4 @@
-import { Abstract, Type, Destroyable, OnDestroy, TypeReflect, Injector, DestroyCallback } from '@tsdi/ioc';
-import { BootstrapOption } from './context';
+import { Abstract, Type, Destroyable, OnDestroy, TypeReflect, Injector, DestroyCallback, InvokeOption } from '@tsdi/ioc';
 import { ConfigureService } from './service';
 import { Startup } from './startup';
 
@@ -73,6 +72,17 @@ export abstract class RunnableRef<T = any> implements Runnable, Destroyable, OnD
      * associated with this runnable. Called when the `destroy()` method is invoked.
      */
     abstract onDestroy(callback?: DestroyCallback): void;
+}
+
+
+/**
+ * bootstrap option for {@link Runnable}.
+ */
+export interface BootstrapOption extends InvokeOption {
+    /**
+     * the method invoked as runnable.
+     */
+    invokeMethod?: string;
 }
 
 /**

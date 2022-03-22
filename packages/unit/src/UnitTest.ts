@@ -40,7 +40,7 @@ export class UnitTest { }
  */
 export async function runTest(src: string | Type | (string | Type)[], config?: UnitTestConfigure, ...loads: LoadType[]): Promise<any> {
    await Application.run({
-      type: UnitTest,
+      module: UnitTest,
       loads,
       providers: [
          {

@@ -39,5 +39,5 @@ export interface BootApplicationOption<T = any> extends BootEnvironmentOption {
      *
      * @type {ClassType}
      */
-    type: Type<T>;
+    module: Type<T>;
 }

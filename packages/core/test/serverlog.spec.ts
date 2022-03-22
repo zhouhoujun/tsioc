@@ -20,7 +20,7 @@ export class ServerBootTest {
     async init() {
         await del(logdir);
         this.ctx = await Application.run({
-            type: ServerMainModule, 
+            module: ServerMainModule, 
             providers: [
                 { provide: LogConfigure, useValue: LogConfigure }
             ]

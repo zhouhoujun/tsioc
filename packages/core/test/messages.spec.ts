@@ -2,7 +2,7 @@ import { Injector, Injectable, lang, ArgumentError, MissingParameterError, token
 import { lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Middleware, Module, TransportContext, HttpClientModule, Middlewarable, HttpClient, Chain } from '../src';
-import { HttpModule } from '@tsdi/transport';
+
 
 @RouteMapping('/device')
 class DeviceController {
@@ -165,7 +165,6 @@ class DeviceAModule {
 @Module({
     imports: [
         HttpClientModule,
-        HttpModule,
         DeviceManageModule,
         DeviceAModule
     ],

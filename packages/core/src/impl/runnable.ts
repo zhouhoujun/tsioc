@@ -1,6 +1,5 @@
 import { Type, refl, TypeReflect, OperationFactoryResolver, isFunction, Injector, OperationFactory, DestroyCallback, lang } from '@tsdi/ioc';
-import { ApplicationRunners, RunnableFactory, RunnableFactoryResolver, RunnableRef } from '../runnable';
-import { ApplicationContext, BootstrapOption } from '../context';
+import { ApplicationRunners, BootstrapOption, RunnableFactory, RunnableFactoryResolver, RunnableRef } from '../runnable';
 import { ModuleRef } from '../module.ref';
 
 /**

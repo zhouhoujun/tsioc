@@ -91,7 +91,7 @@ export class BootApplication extends Application<BootApplicationContext> {
      */
     static override run(target: Type, option?: BootstrapOption): Promise<BootApplicationContext>;
     static override run(target: any, option?: BootstrapOption): Promise<BootApplicationContext> {
-        return new BootApplication(option ? { type: target, ...option } as ApplicationOption : target).run();
+        return new BootApplication(option ? { module: target, ...option } as ApplicationOption : target).run();
     }
 }
 

@@ -12,8 +12,8 @@ describe('di module', () => {
     it('should has bootstrap, and auto wrid mark via inject.', async () => {
         let ctx = await BootApplication.run(ModuleB);
         expect(ctx.instance).not.toBeNull();
-        expect(ctx.bootstraps[0]).not.toBeNull();
-        const runner = ctx.bootstraps[0];
+        expect(ctx.runners.bootstraps[0]).not.toBeNull();
+        const runner = ctx.runners.bootstraps[0];
         // console.log(runner.instance);
         expect(runner.instance.mark).toEqual('marked');
         await ctx.destroy();
@@ -44,7 +44,7 @@ describe('di module', () => {
 
     it('options test.', async () => {
         let ctx = await BootApplication.run({
-            type: ModuleB,
+            module: ModuleB,
             providers: [
                 {
                     provide: 'ttk',
@@ -53,7 +53,7 @@ describe('di module', () => {
             ]
         });
 
-        expect(ctx.bootstraps[0].instance).toBeInstanceOf(ClassSevice);
+        expect(ctx.runners.bootstraps[0].instance).toBeInstanceOf(ClassSevice);
         expect(ctx.injector.get('ttk')).toEqual('ccc');
         await ctx.destroy();
     });
@@ -61,7 +61,7 @@ describe('di module', () => {
 
     it('can destroy service', async () => {
         let ctx = await BootApplication.run({
-            type: ModuleB,
+            module: ModuleB,
             // deps: [
             //     SocketService
             // ]
@@ -86,7 +86,7 @@ describe('di module', () => {
 
     it('can get service via module deps with option', async () => {
         let ctx = await BootApplication.run({
-            type: StatupModule,
+            module: StatupModule,
             configures: [
                 { debug: true }
             ],
@@ -107,7 +107,7 @@ describe('di module', () => {
 
     it('can statup socket service in module with option', async () => {
         let ctx = await BootApplication.run({
-            type: StatupModule,
+            module: StatupModule,
             configures: [
                 { debug: true }
             ],

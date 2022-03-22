@@ -257,6 +257,9 @@ export interface Bean {
     (provide?: Token): MethodPropDecorator;
 }
 
+/**
+ * Bean decorator. bean provider, provider the value of the method or property for Confgiuration.
+ */
 export const Bean: Bean = createDecorator<BeanMetadata>('Bean', {
     props: (provide: Token) => ({ provide }),
     afterInit: (ctx) => {

@@ -1,22 +1,14 @@
 import {
-    ProviderType, LoadType, Injector, Abstract, Type, InvokeOption, InvokeArguments,
+    ProviderType, LoadType, Injector, Abstract, Type, InvokeArguments,
     ModuleLoader, Destroyable, Modules, DestroyCallback, InvocationContext
 } from '@tsdi/ioc';
-import { RunnableRef, RunnableSet, RunnableFactory, ApplicationRunners } from './runnable';
+import { RunnableFactory, ApplicationRunners, BootstrapOption } from './runnable';
 import { ModuleOption } from './module.factory';
 import { ModuleRef } from './module.ref';
 import { ApplicationArguments } from './args';
 import { ILogger } from './logger';
-import { Startup } from './startup';
-import { ConfigureService } from './service';
 
 
-/**
- * bootstrap option for {@link Runnable}.
- */
-export interface BootstrapOption extends InvokeOption {
-    invokeMethod?: string;
-}
 
 /**
  * Class to be extended by all application events. Abstract as it
@@ -186,7 +178,7 @@ export interface ApplicationOption<T = any> extends EnvironmentOption {
      *
      * @type {ClassType}
      */
-    type: Type<T>;
+    module: Type<T>;
 }
 
 /**

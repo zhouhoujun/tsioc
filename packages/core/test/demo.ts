@@ -2,10 +2,9 @@ import {
     Module, ConfigureService, ApplicationContext, Configuration, ComponentScan, OnDispose,
     Runnable, Bean, HttpClientModule
 } from '../src';
-import { Injectable, Inject, OnDestroy, lang } from '@tsdi/ioc';
+import { Injectable, Inject, OnDestroy, lang, Abstract } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
 import { ILogger, LogConfigure, Logger, LogModule } from '@tsdi/logs';
-import { HttpModule } from '@tsdi/transport';
 import * as net from 'net';
 import { ServerBootstrapModule, ServerLogsModule } from '@tsdi/platform-server';
 
@@ -86,8 +85,7 @@ export class LoggerAspect {
     exports: [
         AopModule,
         LogModule,
-        HttpClientModule,
-        HttpModule
+        HttpClientModule
     ]
 })
 export class SharedModule {
@@ -164,45 +162,49 @@ export class StatupModule { }
 export class ServerMainModule { }
 
 export const logConfig = {
-        // adapter: 'console',
-        // config: {
-        //     level: 'trace'
-        // },
-        adapter: 'log4js',
-        config: {
-            appenders: <any>{
-                focas: {
-                    type: 'dateFile',
-                    pattern: '-yyyyMMdd.log',
-                    filename: 'log-caches/focas',
-                    backups: 3,
-                    alwaysIncludePattern: true,
-                    category: 'focas'
-                },
-                console: { type: 'console' }
+    // adapter: 'console',
+    // config: {
+    //     level: 'trace'
+    // },
+    adapter: 'log4js',
+    config: {
+        appenders: <any>{
+            focas: {
+                type: 'dateFile',
+                pattern: '-yyyyMMdd.log',
+                filename: 'log-caches/focas',
+                backups: 3,
+                alwaysIncludePattern: true,
+                category: 'focas'
             },
-            categories: {
-                default: {
-                    appenders: ['focas', 'console'],
-                    level: 'info'
-                },
-                focas: {
-                    appenders: ['focas', 'console'],
-                    level: 'info'
-                }
+            console: { type: 'console' }
+        },
+        categories: {
+            default: {
+                appenders: ['focas', 'console'],
+                level: 'info'
             },
-            pm2: true
-        }
-    } as LogConfigure
+            focas: {
+                appenders: ['focas', 'console'],
+                level: 'info'
+            }
+        },
+        pm2: true
+    }
+} as LogConfigure;
 
 
+@Abstract()
+export abstract class Settings implements Record<string, any> {
+
+}
 @Configuration()
 export class ConfiguraionManger {
 
     @Bean()
-    settings(): Record<string, any> {
+    settings(): Settings {
         return {
-            
+
         };
     }
 

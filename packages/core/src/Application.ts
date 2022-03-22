@@ -33,7 +33,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
             target.scope = 'root';
             this.root = this.createInjector(providers, target);
         } else {
-            const option = { type: target, deps: this.getDeps(), scope: 'root' };
+            const option = { module: target, deps: this.getDeps(), scope: 'root' };
             this.root = this.createInjector(this.getDefaultProviders(), option);
         }
         this.initRoot();
@@ -74,7 +74,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
      */
     static run(target: Type, option?: EnvironmentOption): Promise<ApplicationContext>;
     static run(target: any, option?: EnvironmentOption): Promise<ApplicationContext> {
-        return new Application(option ? { type: target, ...option } as ApplicationOption : target).run();
+        return new Application(option ? { module: target, ...option } as ApplicationOption : target).run();
     }
 
     /**
@@ -119,7 +119,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
             container.setValue(ModuleLoader, this.loader);
         }
         option.platformDeps && container.use(...option.platformDeps);
-        return container.resolve({ token: ModuleFactoryResolver, target: option.type }).resolve(option.type).create(container, option);
+        return container.resolve({ token: ModuleFactoryResolver, target: option.module }).resolve(option.module).create(container, option);
     }
 
     protected async createContext(): Promise<T> {
@@ -132,7 +132,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
                 if (target.loads) {
                     this._loads = await this.root.load(target.loads);
                 }
-                this.context = root.resolve({ token: ApplicationFactory, target: target.type }).create(root, target) as T;
+                this.context = root.resolve({ token: ApplicationFactory, target: target.module }).create(root, target) as T;
             }
         }
         return this.context;
