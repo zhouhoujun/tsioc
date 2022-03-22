@@ -1,6 +1,6 @@
 import {
-    Type, lang, isFunction, ModuleMetadata, DefaultInvocationContext, EMPTY_OBJ, InvokeArguments,
-    InvocationContext, ArgumentError, getClass, Injector, ProviderType
+    Type, lang, isFunction, ModuleMetadata, getClass, Injector, ProviderType, EMPTY_OBJ,
+     DefaultInvocationContext, InvokeArguments, InvocationContext, ArgumentError
 } from '@tsdi/ioc';
 import { PROCESS_ROOT } from '../metadata/tk';
 import { EventEmitter } from '../EventEmitter';
@@ -58,12 +58,10 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         return this._runners;
     }
 
-
     bootstrap<C>(type: Type<C> | RunnableFactory<C>, option?: BootstrapOption): any {
         const factory = isFunction(type) ? this.injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type) : type;
         return factory.create(this.injector, option).run();
     }
-
 
     getLogger(name?: string): ILogger {
         return this.injector.get(LoggerFactory)?.getLogger(name);
@@ -93,7 +91,6 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
             }
         }
     }
-
 
     getAnnoation<TM extends ModuleMetadata>(): TM {
         return this.injector.moduleReflect?.annotation as TM;
