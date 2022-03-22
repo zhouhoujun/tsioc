@@ -2,7 +2,7 @@ import { LoadType, Modules, Type } from '../types';
 import { OnDestroy } from '../destroy';
 import { cleanObj, deepForEach } from '../utils/lang';
 import { InjectFlags, Token } from '../tokens';
-import { isArray, isDefined, isFunction, isPlainObject, isNumber, isTypeObject, isTypeReflect, EMPTY, getClass, isString } from '../utils/chk';
+import { isArray, isDefined, isFunction, isPlainObject, isNumber, isTypeObject, isTypeReflect, EMPTY, getClass, isString, isUndefined, isNil } from '../utils/chk';
 import {
     ResolveOption, MethodType, FnType, InjectorScope, ResolverOption, RegisterOption, FactoryRecord,
     Platform, Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption
@@ -279,21 +279,22 @@ export class DefaultInjector extends Injector {
         return this.isAlias ? this.isAlias(token) : false;
     }
 
-
-    get<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags): T;
     get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags): T;
-    get<T>(token: Token<T>, arg1?: InvocationContext | T, flags = InjectFlags.Default): T {
+    get<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags, notFoundValue?: T): T;
+    get<T>(token: Token<T>, arg1?: InvocationContext, flags = InjectFlags.Default, notFoundValue?: T): T {
         this.assertNotDestroyed();
         if (this.isself(token)) return this as any;
         const platform = this.platform();
-        if (platform.hasSingleton(token)) return platform.getSingleton(token);
         let context: InvocationContext | undefined;
-        let notFoundValue: T | undefined;
-        if (arg1 instanceof InvocationContext) {
+        if (arg1 instanceof InvocationContext || !isUndefined(notFoundValue)) {
             context = arg1;
+            if (isUndefined(notFoundValue)) {
+                notFoundValue = THROW_FLAGE as T;
+            }
         } else {
-            notFoundValue = arg1;
+            notFoundValue = (isUndefined(arg1) ? THROW_FLAGE : arg1) as T;
         }
+        if (platform.hasSingleton(token)) return platform.getSingleton(token);
         return this.tryResolve(token, this.records.get(token), platform, this.parent, context, notFoundValue, flags, this.lifecycle);
     }
 
@@ -778,13 +779,16 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                 return rd.fn?.(...deps)
         }
     } else if (!(flags & InjectFlags.Self)) {
-        return parent?.get(token, context ?? notFoundValue, InjectFlags.Default) ?? notFoundValue;
+        return parent?.get(token, context, InjectFlags.Default, notFoundValue);
     } else if (!(flags & InjectFlags.Optional)) {
         if (notFoundValue === THROW_FLAGE) {
             throw new NullInjectorError(token);
         }
         return notFoundValue ?? null;
     } else {
+        if (notFoundValue === THROW_FLAGE) {
+            throw new NullInjectorError(token);
+        }
         return notFoundValue ?? null;
     }
 }

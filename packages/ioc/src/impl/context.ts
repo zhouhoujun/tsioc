@@ -136,7 +136,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         } else {
             context = contextOrFlag ?? this;
         }
-        return this.injector.get(token, context, flags) ?? this.getFormRef(token, context, flags) as T; //?? (flags != InjectFlags.Self? this.parent?.get(token, context, flags) : null) as T;
+        return this.injector.get(token, context, flags, null) ?? this.getFormRef(token, context, flags) as T; //?? (flags != InjectFlags.Self? this.parent?.get(token, context, flags) : null) as T;
     }
 
     protected getFormRef<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags): T | undefined {

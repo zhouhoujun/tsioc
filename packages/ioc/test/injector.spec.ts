@@ -124,7 +124,7 @@ describe('Injector test', () => {
         it('resolve self flags', () => {
             let subinj = Injector.create([], inj);
             expect(subinj.get(Students, EMPTY, InjectFlags.Self)).toEqual(EMPTY);
-            expect(subinj.get(Students, undefined, InjectFlags.Self)).toBeNull();
+            expect(subinj.get(Students, null, InjectFlags.Self)).toBeNull();
             subinj.destroy();
         })
 

@@ -61,22 +61,23 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * get token factory resolve instace in current.
      *
      * @template T
-     * @param {Token<T>} token token id.
-     * @param {InvocationContext} context invocation context. type of {@link InvocationContext}, use to resolve with token.
-     * @param {InjectFlags} flags check strategy by inject flags {@link InjectFlags}.
-     * @returns {T} the token value.
-     */
-    abstract get<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags): T;
-    /**
-     * get token factory resolve instace in current.
-     *
-     * @template T
      * @param {Token<T>} token token id {@link Token}.
      * @param {T} notFoundValue not found token, return this value.
      * @param {InjectFlags} flags check strategy by inject flags {@link InjectFlags}.
      * @returns {T} token value.
      */
     abstract get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags): T;
+    /**
+     * get token factory resolve instace in current.
+     *
+     * @template T
+     * @param {Token<T>} token token id.
+     * @param {InvocationContext} context invocation context. type of {@link InvocationContext}, use to resolve with token.
+     * @param {InjectFlags} flags check strategy by inject flags {@link InjectFlags}.
+     * @param {T} notFoundValue not found token, return this value.
+     * @returns {T} the token value.
+     */
+    abstract get<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags, notFoundValue?: T): T;
     /**
      * resolve token instance with token and param provider.
      *
