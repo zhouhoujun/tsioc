@@ -25,9 +25,9 @@ export interface BootEnvironmentOption extends EnvironmentOption {
     /**
      * custom configures
      *
-     * @type {((string | ApplicationConfiguration)[])}
+     * @type {Array<string | ApplicationConfiguration>}
      */
-    configures?: (string | ApplicationConfiguration)[];
+    configures?: Array<string | ApplicationConfiguration>;
 }
 
 /**
@@ -35,7 +35,7 @@ export interface BootEnvironmentOption extends EnvironmentOption {
  */
 export interface BootApplicationOption<T = any> extends BootEnvironmentOption {
     /**
-     * target module type.
+     * module type.
      *
      * @type {ClassType}
      */

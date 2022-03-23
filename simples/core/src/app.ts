@@ -3,13 +3,14 @@ import { LogModule } from '@tsdi/logs';
 import { ServerBootstrapModule } from '@tsdi/platform-server';
 import { Connection } from 'typeorm';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
-import { User } from './models/models';
+import { Role, User } from './models/models';
 import { UserController } from './mapping/UserController';
 import { RoleController } from './mapping/RoleController';
+import { UserRepository } from './repositories/UserRepository';
 
 
 
-export const connections = <ConnectionOptions>{
+export const connections = {
     async initDb(connection: Connection) {
         let userRep = connection.getRepository(User);
         let c = await userRep.count();
@@ -28,10 +29,17 @@ export const connections = <ConnectionOptions>{
     username: 'postgres',
     password: 'postgres',
     database: 'testdb',
+    entities: [
+        User,
+        Role
+    ],
+    repositories: [
+        UserRepository
+    ],
     // useNewUrlParser: true,
     synchronize: true, // 同步数据库
     logging: false  // 日志
-}
+} as ConnectionOptions;
 
 
 @Module({
@@ -40,7 +48,7 @@ export const connections = <ConnectionOptions>{
         LogModule,
         ServerBootstrapModule,
         TransactionModule,
-        TypeOrmModule
+        TypeOrmModule.withConnection(connections)
     ],
     providers: [
         UserController,

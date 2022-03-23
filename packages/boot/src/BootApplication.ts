@@ -3,7 +3,7 @@ import { Application, ApplicationFactory, ApplicationOption, APPLICTION_DEFAULTA
 import { ConfigureMergerImpl, DefaultConfigureManager } from './configure/manager';
 import { CONFIGURATION } from './configure/config';
 import { DebugLogAspect, LogConfigure, LogModule } from '@tsdi/logs';
-import { BootApplicationContext, BootApplicationOption } from './context';
+import { BootApplicationContext, BootApplicationOption, BootEnvironmentOption } from './context';
 import { BootApplicationFactory } from './impl/context';
 import { ConfigureFileLoader } from './configure/loader';
 
@@ -80,18 +80,18 @@ export class BootApplication extends Application<BootApplicationContext> {
     * @param {BootApplicationOption<M>)} target
     * @returns {Promise<ApplicationContext<M>>}
     */
-    static override run(target: BootApplicationOption): Promise<BootApplicationContext>
+    static run(target: BootApplicationOption): Promise<BootApplicationContext>
     /**
      * run application.
      *
      * @static
      * @param {Type<T>} target
-     * @param {BootstrapOption)} [option]  application run depdences.
+     * @param {BootApplicationOption} [option]  application run depdences.
      * @returns {Promise<IBootContext>}
      */
-    static override run(target: Type, option?: BootstrapOption): Promise<BootApplicationContext>;
-    static override run(target: any, option?: BootstrapOption): Promise<BootApplicationContext> {
-        return new BootApplication(option ? { module: target, ...option } as ApplicationOption : target).run();
+    static run(target: Type, option?: BootEnvironmentOption): Promise<BootApplicationContext>;
+    static override run(target: Type | BootApplicationOption, option?: BootEnvironmentOption): Promise<BootApplicationContext> {
+        return new BootApplication(option ? { module: target, ...option } as BootApplicationOption : target).run();
     }
 }
 

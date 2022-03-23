@@ -24,9 +24,9 @@ export interface ConnectionOptions extends Record<string, any> {
     /**
      * orm modles.
      */
-    entities: (string | Type)[];
+    entities: Array<string | Type>;
     /**
      * repositories of orm.
      */
-    repositories?: (string | Type)[];
+    repositories?: Array<string | Type>;
 }

@@ -2,9 +2,9 @@ import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, Injector, Modules 
 import { PROCESS_ROOT } from './metadata/tk';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption } from './context';
 import { DEFAULTA_PROVIDERS } from './providers';
+import { ApplicationExit } from './exit';
 import { ModuleRef } from './module.ref';
 import { ModuleFactoryResolver } from './module.factory';
-import { ApplicationExit } from './exit';
 import { RunnableFactoryResolver } from './runnable';
 
 /**
@@ -91,13 +91,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
             await this.callRunners(ctx);
             return ctx;
         } catch (err) {
-            if (this.context) {
-                const logger = this.context.getLogger();
-                logger ? logger.error(err) : console.error(err);
-                await this.context.destroy();
-            } else {
-                console.error(err);
-            }
+            await this.handleRunFailure(this.context, err);
             throw err;
         }
     }
@@ -158,6 +152,16 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
 
     protected callRunners(ctx: ApplicationContext): Promise<void> {
         return ctx.runners.run();
+    }
+
+    protected async handleRunFailure(ctx: ApplicationContext, error: Error|any): Promise<void> {
+        if (ctx) {
+            const logger = ctx.getLogger();
+            logger ? logger.error(error) : console.error(error);
+            await ctx.destroy();
+        } else {
+            console.error(error);
+        }
     }
 
 }

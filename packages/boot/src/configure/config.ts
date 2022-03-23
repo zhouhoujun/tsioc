@@ -53,13 +53,9 @@ export interface ApplicationConfiguration extends ProvidersMetadata, Record<stri
      */
     connections?: ConnectionOptions | ConnectionOptions[];
     /**
-     * models of boot application.
+     * application controllers.
      */
-    models?: (string | Type)[];
-    /**
-     * repositories of orm.
-     */
-    repositories?: (string | Type)[];
+    controllers?: Array<string | Type>;
     /**
      * service port
      */
