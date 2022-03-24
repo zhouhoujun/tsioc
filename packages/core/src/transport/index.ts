@@ -1,6 +1,4 @@
 export * from './packet';
-export * from './serializer';
-export * from './deserializer';
 
 export * from './context';
 export * from './endpoint';

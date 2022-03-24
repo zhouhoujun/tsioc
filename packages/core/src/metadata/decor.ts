@@ -1,7 +1,7 @@
 import {
     isUndefined, EMPTY_OBJ, isArray, lang, Type, createDecorator, ProviderType, InjectableMetadata,
     PropertyMetadata, ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes,
-    OperationFactoryResolver, MethodPropDecorator, Token, ArgumentError, object2string, InvokeArguments, isString
+    OperationFactoryResolver, MethodPropDecorator, Token, ArgumentError, object2string, InvokeArguments, isString, Parameter
 } from '@tsdi/ioc';
 import { ConfigureService } from '../service';
 import { PipeMetadata, ComponentScanMetadata, ScanReflect, BeanMetadata } from './meta';
@@ -98,6 +98,12 @@ export const Module: Module<ModuleMetadata> = createModuleDecorator<ModuleMetada
  */
 export const DIModule = Module;
 
+export interface RunnerOption extends InvokeArguments {
+    /**
+     * custom provider parmeters as default. if not has design parameters.
+     */
+    parameters?: Parameter[];
+}
 /**
  * Runner decorator, use to define the method of class as application Runner.
  */
@@ -108,9 +114,9 @@ export interface Runner {
      * @Module
      *
      * @param {string} runable the method of the class to run.
-     * @param {InvokeArguments} [args] the method invoke arguments {@link InvokeArguments}.
+     * @param {RunnerOption} [args] the method invoke arguments {@link RunnerOption}.
      */
-    (runable: string, args?: InvokeArguments): ClassDecorator;
+    (runable: string, args?: RunnerOption): ClassDecorator;
 
     /**
      * Runner decorator, use to define the method of class as application Runner.
@@ -122,9 +128,16 @@ export interface Runner {
 
 export const Runner: Runner = createDecorator('Runner', {
     actionType: 'runnable',
-    props: (method: string | InvokeArguments, args?: InvokeArguments) =>
-        (isString(method) ? { method, args } : { args: method })
-})
+    props: (method: string | RunnerOption, args?: RunnerOption) =>
+        (isString(method) ? { method, args } : { args: method }),
+
+    afterInit: (ctx) => {
+        const meta = ctx.metadata as { method: string, args: RunnerOption };
+        if (meta.args?.parameters) {
+            ctx.reflect.class.setParameters(meta.method, meta.args.parameters);
+        }
+    }
+});
 
 
 /**
