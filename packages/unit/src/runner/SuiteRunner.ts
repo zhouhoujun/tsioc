@@ -160,10 +160,14 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
                 caseDesc.key,
                 caseDesc.title,
                 caseDesc.timeout);
-            await this.runAfterEach();
-
         } catch (err) {
             caseDesc.error = err as Error;
+        } finally {
+            try {
+                await this.runAfterEach();
+            } catch (err) {
+                caseDesc.error = err as Error;
+            }
         }
         return caseDesc;
     }

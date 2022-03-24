@@ -245,11 +245,14 @@ export class OldTestRunner implements UnitRunner {
                 caseDesc.fn,
                 caseDesc.title,
                 caseDesc.timeout);
-
-            await this.runAfterEach(suiteDesc!);
-
         } catch (err) {
             caseDesc.error = err as Error;
+        } finally {
+            try {
+                await this.runAfterEach(suiteDesc!);
+            } catch (err) {
+                caseDesc.error = err as Error;
+            }
         }
         return caseDesc;
     }

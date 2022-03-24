@@ -1,5 +1,5 @@
 import { lang, Inject, Container, CONTAINER } from '@tsdi/ioc';
-import { Suite, BeforeEach, Test, Assert, Expect, ExpectToken, BeforeAll, Before } from '../src';
+import { Suite, BeforeEach, Test, Assert, Expect, ExpectToken, BeforeAll, Before, AfterEach } from '../src';
 
 
 
@@ -7,33 +7,40 @@ import { Suite, BeforeEach, Test, Assert, Expect, ExpectToken, BeforeAll, Before
 export class SuiteTest {
 
     // testContainer: AnyApplicationBuilder;
+    private idx = 0;
     @BeforeAll()
     async init1() {
-        console.log('---------beofre all init1-----------');
+        console.log('---------before all init1-----------');
     }
 
     @Before()
     init2() {
-        console.log('---------beofre all init2-----------');
+        console.log('---------before all init2-----------');
     }
 
     @BeforeEach()
     async initTest() {
-        console.log('---------beofre test-----------');
+        console.log('---------before test case ' + (++this.idx) + '-----------');
     }
 
-    @Test('assert test timeout', 10)
+    @AfterEach()
+    async afterTest() {
+        console.log('---------after  test case ' + this.idx + '-----------');
+    }
+
+    @Test('assert test timeout', 5)
     testTimeout() {
         console.log('---------assert test timeout------');
         let def = lang.defer();
+        console.log('before out time do...');
         setTimeout(() => {
             console.log('out time do...');
-            def.resolve('out time do...')
-        }, 10)
+            def.resolve('out time do...');
+        }, 5)
         return def.promise;
     }
 
-    @Test('assert test in time', 11)
+    @Test('assert test in time', 5)
     testInTime(assert: Assert) {
         console.log('---------assert test in time------');
         let def = lang.defer();
@@ -41,7 +48,7 @@ export class SuiteTest {
         setTimeout(() => {
             console.log('in time do...');
             def.resolve('in time do...')
-        }, 10)
+        }, 1)
         return def.promise;
     }
 
