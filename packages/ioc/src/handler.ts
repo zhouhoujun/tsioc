@@ -1,7 +1,7 @@
 import { isFunction } from './utils/chk';
 
 /**
- * handler
+ * dispatch handler.
  */
 export interface DispatchHandler<T = any, TR = any> {
     /**
@@ -13,14 +13,14 @@ export interface DispatchHandler<T = any, TR = any> {
 }
 
 /**
- * dispatch invoke handle.
+ * dispatch handle function.
  */
-export type Hanlde<T = any, TR = any> = (ctx: T, next: () => TR) => TR;
+export type HandleFn<T = any, TR = any> = (ctx: T, next: () => TR) => TR;
 
 /**
 *  handler.
 */
-export type Handler<T = any, TR = any> = DispatchHandler<T, TR> | Hanlde<T, TR>;
+export type Handler<T = any, TR = any> = DispatchHandler<T, TR> | HandleFn<T, TR>;
 
 /**
  * async action.

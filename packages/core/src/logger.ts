@@ -5,22 +5,18 @@ import { Module } from './metadata/decor';
 
 
 /**
- * aop logs ext for Ioc. auto run setup after registered.
- * @export
- * @class LogModule
+ * LoggerModule. for application log.
  */
 @Module({
     imports: [
         AopModule
     ],
-    providers: [
-        ...LOGGER_PROVIDERS
-    ]
+    providers: [...LOGGER_PROVIDERS]
 })
 export class LoggerModule {
 
     /**
-     * LogModule with options.
+     * LoggerModule with options.
      * @param config
      * @param debug 
      * @returns 
