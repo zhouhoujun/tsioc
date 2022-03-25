@@ -380,7 +380,7 @@ class DecorActions extends Actions<DecorContext> {
         if (isFunction(ac)) {
             return ac;
         } else if (ac instanceof Action) {
-            return ac;
+            return ac.getHandler();
         }
         return null!;
     }

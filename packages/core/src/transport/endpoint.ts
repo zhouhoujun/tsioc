@@ -1,4 +1,4 @@
-import { AsyncHandler, chain, DispatchHandler, isFunction } from '@tsdi/ioc';
+import { Handler, isFunction } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { TransportContext } from './context';
 
@@ -72,7 +72,7 @@ export interface TransportEndpoint<TRequest, TResponse> {
  *
  * @export
  */
-export interface Middlewarable<T extends TransportContext = TransportContext> extends DispatchHandler<T, Promise<void>> {
+export interface Middlewarable<T extends TransportContext = TransportContext> {
     /**
      * middleware handle.
      *
@@ -88,14 +88,14 @@ export interface Middlewarable<T extends TransportContext = TransportContext> ex
 /**
  * middleware for server endpoint {@link TransportEndpoint}.
  */
-export type Middleware<T extends TransportContext = TransportContext> = AsyncHandler<TransportContext> | Middlewarable<T>;
+export type Middleware<T extends TransportContext = TransportContext> = Handler<TransportContext, Promise<void>> | Middlewarable<T>;
 
 /**
  * middleware chain.
  */
 export class Chain<T extends TransportContext = TransportContext> implements Middlewarable<T> {
     constructor(private middlewares: Middleware[]) { }
-    handle(ctx: T, next?: () => Promise<void>): Promise<void> {
-        return chain(this.middlewares, ctx, next);
+    async handle(ctx: T, next?: () => Promise<void>): Promise<void> {
+        // return chain(this.middlewares, ctx, next);
     }
 }

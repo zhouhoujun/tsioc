@@ -1,8 +1,8 @@
 import {
-    AsyncHandler, DecorDefine, Type, Injector, lang, chain, EMPTY, refl,
+    DecorDefine, Type, Injector, lang, chain, EMPTY, refl,
     isPrimitiveType, isPromise, isString, isArray, isFunction, isDefined,
     composeResolver, Parameter, ClassType, ArgumentError, OperationFactoryResolver,
-    OnDestroy, isClass, TypeReflect, OperationFactory, DestroyCallback
+    OnDestroy, isClass, TypeReflect, OperationFactory, DestroyCallback, Handler
 } from '@tsdi/ioc';
 import { isObservable, lastValueFrom } from 'rxjs';
 import { CanActivate } from '../transport/guard';
@@ -191,11 +191,11 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         return meta;
     }
 
-    protected parseHandle(mdty: Middleware): AsyncHandler<TransportContext> | undefined {
+    protected parseHandle(mdty: Middleware): Handler<TransportContext> | undefined {
         if (isClass(mdty)) {
             return this.factory.resolve(mdty);
         } else {
-            return mdty;
+            return mdty as Handler;
         }
     }
 

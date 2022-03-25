@@ -1,6 +1,6 @@
 import { Token } from './tokens';
 import { isBoolean, isFunction } from './utils/chk';
-import { chain, DispatchHandler, Handler } from './handler';
+import { chain, Handler } from './handler';
 import { isBaseOf } from './utils/lang';
 import { Platform } from './injector';
 
@@ -18,7 +18,7 @@ export interface ActionSetup {
 /**
  * ioc action type.
  */
- export type ActionType<T = any> = Token<DispatchHandler<T, void>> | Handler<T, void>;
+export type ActionType<T = any> = Token<Action<T, void>> | Handler<T, void>;
 
 
 /**
@@ -27,14 +27,13 @@ export interface ActionSetup {
  * @export
  * @abstract
  */
-export abstract class Action<T = any, TR = void> implements DispatchHandler<T, TR> {
-
+export abstract class Action<T = any, TR = void> {
     /**
      * action handle.
      * @param ctx
      * @param next 
      */
-    abstract handle(ctx: T, next?: () => TR): TR;
+    abstract getHandler(): Handler<T, TR>;
 
 }
 
@@ -55,11 +54,14 @@ export abstract class Actions<T, TR = void> extends Action<T, TR> {
     private _afts: ActionType[];
     private _hdlrs: Handler[] | undefined;
 
+    private _handler: Handler;
+
     constructor() {
         super();
         this._befs = [];
         this._acts = [];
         this._afts = [];
+        this._handler = (ctx, next)=> this.handle(ctx, next);
     }
 
     has(action: ActionType) {
@@ -149,13 +151,18 @@ export abstract class Actions<T, TR = void> extends Action<T, TR> {
         return this;
     }
 
-    override handle(ctx: T, next?: () => TR): TR {
+    handle(ctx: T, next?: () => TR): TR {
         if (!this._hdlrs) {
             const pdr = this.getPlatform(ctx);
             this._hdlrs = [...this._befs, ...this._acts, ...this._afts].map(ac => this.parseHandler(pdr, ac)).filter(f => f);
         }
         return chain(this._hdlrs, ctx, next);
     }
+
+    getHandler(): Handler<T, TR> {
+        return this._handler;
+    }
+
 
     /**
      * get action provider from context.
@@ -173,11 +180,11 @@ export abstract class Actions<T, TR = void> extends Action<T, TR> {
             if (!provider.hasAction(ac)) {
                 provider.registerAction(ac);
             }
-            return provider.getHandle(ac)
+            return provider.getHandle(ac);
         } else if (isFunction(ac)) {
             return ac;
         }
-        return ac instanceof Action ? ac : null!;
+        return ac instanceof Action ? ac.getHandler() : null!;
     }
 
     protected resetHandler() {
