@@ -1,6 +1,6 @@
 import { Abstract, isFunction, isToken, isObject, isArray, Singleton, isNil, EMPTY_OBJ } from '@tsdi/ioc';
 import { Aspect, Joinpoint, JoinpointState, Pointcut } from '@tsdi/aop';
-import { ILogger } from '@tsdi/core';
+import { ILogger } from './logger';
 import { LoggerMetadata } from './metadata/Logger';
 import { isLevel, Level } from './Level';
 import { LogProcess } from './LogProcess';

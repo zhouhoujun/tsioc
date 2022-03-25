@@ -2,6 +2,7 @@ import {
     Type, lang, isFunction, ModuleMetadata, getClass, Injector, ProviderType, EMPTY_OBJ,
      DefaultInvocationContext, InvokeArguments, InvocationContext, ArgumentError
 } from '@tsdi/ioc';
+import { ILogger, LoggerFactory } from '@tsdi/logs';
 import { PROCESS_ROOT } from '../metadata/tk';
 import { EventEmitter } from '../EventEmitter';
 import { ApplicationContext, ApplicationFactory, EnvironmentOption } from '../context';
@@ -10,7 +11,6 @@ import { ApplicationRunners } from '../runners';
 import { ModuleRef } from '../module.ref';
 import { ApplicationArguments } from '../args';
 import { ApplicationEvent } from '../events';
-import { ILogger, LoggerFactory } from '../logger';
 
 
 

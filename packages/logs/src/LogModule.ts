@@ -1,46 +1,38 @@
-import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
+import { Inject, IocExt, Injector, ProviderType } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { AnnotationLoggerAspect } from './aspect';
 import { ConsoleLogManager, ConfigureLoggerManager } from './manager';
 import { DefaultLogFormater } from './formater';
-import { LoggerFactory, Module } from '@tsdi/core';
-import { LogConfigure } from './LogConfigure';
-import { DebugLogAspect } from './debugs/aspect';
+import { LoggerFactory } from './factory';
+
+
+/**
+ * logger providers.
+ */
+export const LOGGER_PROVIDERS: ProviderType[] = [
+    ConfigureLoggerManager,
+    AnnotationLoggerAspect,
+    DefaultLogFormater,
+    ConsoleLogManager,
+    { provide: LoggerFactory, useExisting: ConfigureLoggerManager }
+];
 
 /**
  * aop logs ext for Ioc. auto run setup after registered.
  * @export
  * @class LogModule
  */
-@Module({
-    imports: [
-        AopModule
-    ],
-    providers: [
-        ConfigureLoggerManager,
-        AnnotationLoggerAspect,
-        DefaultLogFormater,
-        ConsoleLogManager,
-        { provide: LoggerFactory, useExisting: ConfigureLoggerManager }
-    ]
-})
+@IocExt()
 export class LogModule {
-
     /**
-     * LogModule with options.
-     * @param config
-     * @param debug 
-     * @returns 
+     * register aop for container.
      */
-    static withOptions(config: LogConfigure | null, debug?: boolean): ModuleWithProviders<LogModule> {
-        const providers: ProviderType[] = [{ provide: LogConfigure, useValue: config }];
-        if (debug) {
-            providers.push(DebugLogAspect);
+    setup(@Inject() injector: Injector) {
+        if (!injector.has(AopModule)) {
+            injector.register(AopModule);
         }
 
-        return {
-            module: LogModule,
-            providers
-        }
+        injector.inject(LOGGER_PROVIDERS);
+
     }
 }

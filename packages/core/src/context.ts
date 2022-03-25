@@ -2,13 +2,13 @@ import {
     ProviderType, LoadType, Injector, Abstract, Type, InvokeArguments,
     ModuleLoader, Destroyable, Modules, DestroyCallback, InvocationContext
 } from '@tsdi/ioc';
+import { ILogger } from '@tsdi/logs';
 import { RunnableFactory, BootstrapOption } from './runnable';
 import { ApplicationRunners } from './runners';
 import { ModuleOption } from './module.factory';
 import { ModuleRef } from './module.ref';
 import { ApplicationEvent, ApplicationEventPublisher } from './events';
 import { ApplicationArguments } from './args';
-import { ILogger } from './logger';
 
 /**
  * application context for global.

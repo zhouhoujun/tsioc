@@ -1,6 +1,6 @@
 import { Abstract, Injector, Inject } from '@tsdi/ioc';
 import { Joinpoint } from '@tsdi/aop';
-import { ILogger } from '@tsdi/core';
+import { ILogger } from './logger';
 import { Level } from './Level';
 import { Logger, LoggerMetadata } from './metadata/Logger';
 import { ConfigureLoggerManager } from './manager';

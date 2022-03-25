@@ -1,4 +1,6 @@
 export * from './Level';
+export * from './logger';
+export * from './factory';
 export * from './LoggerManager';
 export * from './manager';
 export * from './LogConfigure';

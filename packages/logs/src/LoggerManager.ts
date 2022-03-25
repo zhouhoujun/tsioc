@@ -1,7 +1,7 @@
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { ILogger, LoggerFactory } from '@tsdi/core';
+import { ILogger } from './logger';
+import { LoggerFactory } from './factory';
 
-export { ILogger } from '@tsdi/core';
 /**
  * logger configuation.
  *

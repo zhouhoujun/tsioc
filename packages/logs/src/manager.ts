@@ -1,5 +1,5 @@
 import { EMPTY_OBJ, getToken, Inject, Injectable, Injector, isFunction, isString, Token, Type } from '@tsdi/ioc';
-import { ILogger } from '@tsdi/core';
+import { ILogger } from './logger';
 import { LogConfigure } from './LogConfigure';
 import { Level, Levels } from './Level';
 import { LoggerConfig, LoggerManager } from './LoggerManager';

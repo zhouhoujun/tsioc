@@ -1,86 +1,39 @@
-import { Abstract } from '@tsdi/ioc';
+import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
+import { AopModule } from '@tsdi/aop';
+import { LogConfigure, DebugLogAspect, LOGGER_PROVIDERS } from '@tsdi/logs';
+import { Module } from './metadata/decor';
+
 
 /**
- * logger interface
- *
+ * aop logs ext for Ioc. auto run setup after registered.
  * @export
- * @interface ILogger
+ * @class LogModule
  */
- export interface ILogger {
-    /**
-     * logger name.
-     */
-    readonly name?: string;
-    /**
-     * logger level
-     *
-     * @type {string}
-     */
-    level: string;
-
-    formatHeader?: boolean;
+@Module({
+    imports: [
+        AopModule
+    ],
+    providers: [
+        ...LOGGER_PROVIDERS
+    ]
+})
+export class LoggerModule {
 
     /**
-     * log, base log.
-     *
-     * @param {...any[]} messages
+     * LogModule with options.
+     * @param config
+     * @param debug 
+     * @returns 
      */
-    log(...messages: any[]): void;
+    static withOptions(config: LogConfigure | null, debug?: boolean): ModuleWithProviders<LoggerModule> {
+        const providers: ProviderType[] = [{ provide: LogConfigure, useValue: config }];
+        if (debug) {
+            providers.push(DebugLogAspect);
+        }
 
-    /**
-     * trace log.
-     *
-     * @param {...any[]} messages
-     */
-    trace(...messages: any[]): void;
-
-    /**
-     * debg log.
-     *
-     * @param {...any[]} messages
-     */
-    debug(...messages: any[]): void;
-    /**
-     * debg log.
-     *
-     * @param {...any[]} messages
-     */
-    debug(...messages: any[]): void;
-
-    /**
-     * info log.
-     *
-     * @param {...any[]} messages
-     */
-    info(...messages: any[]): void;
-
-    /**
-     * warn log.
-     *
-     * @param {...any[]} messages
-     */
-    warn(...messages: any[]): void;
-
-    /**
-     * error log.
-     *
-     * @param {...any[]} messages
-     */
-    error(...messages: any[]): void;
-
-    /**
-     * fatal error log.
-     *
-     * @param {...any[]} messages
-     */
-    fatal(...messages: any[]): void;
-}
-
-@Abstract()
-export abstract class LoggerFactory {
-    /**
-     * get logger.
-     * @param name 
-     */
-    abstract getLogger(name?: string): ILogger;
+        return {
+            module: LoggerModule,
+            providers
+        }
+    }
 }
