@@ -2,9 +2,8 @@ import { ServerLogsModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import * as net from 'net';
 import { ModuleA, ModuleB, ClassSevice, SocketService, StatupModule, TestService } from './demo';
-import { Application, HttpClient, Router } from '../src';
+import { Application, HttpClient, LoggerModule, Router } from '../src';
 import { lastValueFrom } from 'rxjs';
-import { LogModule } from '@tsdi/logs';
 
 
 describe('di module', () => {
@@ -88,7 +87,7 @@ describe('di module', () => {
         let ctx = await Application.run({
             module: StatupModule,
             deps: [
-                LogModule.withOptions(null, true),
+                LoggerModule.withOptions(null, true),
                 ModuleA
             ]
         });
@@ -107,7 +106,7 @@ describe('di module', () => {
         let ctx = await Application.run({
             module: StatupModule,
             deps:[
-                LogModule.withOptions(null, true),
+                LoggerModule.withOptions(null, true),
                 ServerLogsModule
             ]
         });
