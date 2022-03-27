@@ -1,6 +1,12 @@
-import { chain, Handler, isFunction } from '@tsdi/ioc';
+import { chain, Handler, InvocationContext, isFunction } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { TransportContext } from './context';
+
+
+
+export type Endpoint2<TRequest = any, TResponse = any> = (ctx: InvocationContext, request: TRequest) => Observable<TResponse>;
+
+export type Middleware2<TRequest = any, TResponse = any> = (next: Endpoint2<TRequest, TResponse>) => Endpoint2<TRequest, TResponse>;
 
 
 /**

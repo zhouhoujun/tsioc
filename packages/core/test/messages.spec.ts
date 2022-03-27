@@ -82,7 +82,7 @@ class DeviceController {
 
 @Handle('/hdevice')
 class DeviceQueue {
-    async handle(ctx: TransportContext, next?: () => Promise<void>): Promise<void> {
+    async middleware(ctx: TransportContext, next?: () => Promise<void>): Promise<void> {
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
         await new Chain(ctx.resolve(DEVICE_MIDDLEWARES)).middleware(ctx);
