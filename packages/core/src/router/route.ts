@@ -99,7 +99,7 @@ export abstract class RouteRef<T = any> implements Middlewarable, Destroyable, O
      * @param {() => Promise<void>} next
      * @returns {Promise<void>}
      */
-    abstract handle(ctx: TransportContext, next: () => Promise<void>): Promise<void>;
+    abstract middleware(ctx: TransportContext, next: () => Promise<void>): Promise<void>;
     /**
      * is destroyed or not.
      */

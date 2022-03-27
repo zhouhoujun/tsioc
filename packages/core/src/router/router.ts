@@ -34,7 +34,7 @@ export abstract class Router<T extends TransportContext = TransportContext> impl
      * @param {() => Promise<void>} next
      * @returns {Promise<void>}
      */
-    abstract handle(ctx: T, next?: () => Promise<void>): Promise<void>;
+    abstract middleware(ctx: T, next?: () => Promise<void>): Promise<void>;
     /**
      * has route or not.
      * @param route route
@@ -83,7 +83,7 @@ export class MappingRoute implements Middlewarable {
         return this.route.path;
     }
 
-    async handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    async middleware(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         if (await this.canActive(ctx)) {
             return await this.navigate(this.route, ctx, next);
         } else {
@@ -100,7 +100,7 @@ export class MappingRoute implements Middlewarable {
 
     protected navigate(route: Route & { router?: Router }, ctx: TransportContext, next: () => Promise<void>) {
         if (route.middleware) {
-            return isFunction(route.middleware) ? route.middleware(ctx, next) : route.middleware.handle(ctx, next);
+            return isFunction(route.middleware) ? route.middleware(ctx, next) : route.middleware.middleware(ctx, next);
         } else if (route.redirectTo) {
             return this.redirect(ctx, route.redirectTo);
         } else if (route.controller) {
@@ -109,7 +109,7 @@ export class MappingRoute implements Middlewarable {
             if (!this.router) {
                 this.router = new MappingRouter(this.protocols, route.path);
             }
-            return this.router.handle(ctx);
+            return this.router.middleware(ctx);
         } else if (route.loadChildren) {
             return this.routeChildren(ctx, route.loadChildren, route.path);
         } else {
@@ -122,7 +122,7 @@ export class MappingRoute implements Middlewarable {
     }
 
     protected async routeController(ctx: TransportContext, controller: Type, next: () => Promise<void>) {
-        return await ctx.injector.get(RouteFactoryResolver).resolve(controller).last()?.handle(ctx, next);
+        return await ctx.injector.get(RouteFactoryResolver).resolve(controller).last()?.middleware(ctx, next);
     }
 
     protected async routeChildren(ctx: TransportContext, loadChildren: () => any, prefix?: string): Promise<void> {
@@ -134,7 +134,7 @@ export class MappingRoute implements Middlewarable {
             }
             this.router = platform.modules.get(module)?.injector.get(RouterResolver).resolve(ctx.protocol, prefix);
         }
-        return this.router?.handle(ctx);
+        return this.router?.middleware(ctx);
     }
 
 }
@@ -185,10 +185,10 @@ export class MappingRouter extends Router implements OnDestroy {
         return this;
     }
 
-    handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    middleware(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         const route = this.getRoute(ctx);
         if (route) {
-            return isFunction(route) ? route(ctx, next) : route.handle(ctx, next);
+            return isFunction(route) ? route(ctx, next) : route.middleware(ctx, next);
         } else {
             return next();
         }

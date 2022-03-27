@@ -72,7 +72,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         return this._guards;
     }
 
-    async handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    async middleware(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         const method = await this.canActivate(ctx);
         if (method) {
             let middlewares = this.getRouteMiddleware(ctx, method);

@@ -85,7 +85,7 @@ class DeviceQueue {
     async handle(ctx: TransportContext, next?: () => Promise<void>): Promise<void> {
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
-        await new Chain(ctx.resolve(DEVICE_MIDDLEWARES)).handle(ctx);
+        await new Chain(ctx.resolve(DEVICE_MIDDLEWARES)).middleware(ctx);
         ctx.setValue('device', 'device next');
 
         const device = ctx.getValue('device');
@@ -107,7 +107,7 @@ class DeviceQueue {
 @Injectable()
 class DeviceStartupHandle implements Middlewarable {
 
-    async handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    async middleware(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         console.log('DeviceStartupHandle.', 'resp:', ctx.request.body.type, 'req:', ctx.request.body.type)
         if (ctx.body.type === 'startup') {
             // todo sth.
@@ -120,7 +120,7 @@ class DeviceStartupHandle implements Middlewarable {
 @Injectable()
 class DeviceAStartupHandle implements Middlewarable {
 
-    async handle(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    async middleware(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         console.log('DeviceAStartupHandle.', 'resp:', ctx.body.type, 'req:', ctx.request.body.type)
         if (ctx.body.type === 'startup') {
             // todo sth.
