@@ -8,7 +8,7 @@ import { ApplicationRunners } from '../runners';
  */
 export class DefaultRunnableRef<T> extends RunnableRef<T> {
     private _destroyed = false;
-    private _dsryCbs = new Set<() => void>();
+    private _dsryCbs = new Set<DestroyCallback>();
 
     private _instance: T | undefined;
     constructor(protected factory: OperationFactory<T>, private defaultInvoke = 'run') {
@@ -55,7 +55,7 @@ export class DefaultRunnableRef<T> extends RunnableRef<T> {
         if (!this._destroyed) {
             this._destroyed = true;
             try {
-                this._dsryCbs.forEach(cb => cb());
+                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy());
             } finally {
                 this._dsryCbs.clear();
                 this.factory.onDestroy();
@@ -67,7 +67,7 @@ export class DefaultRunnableRef<T> extends RunnableRef<T> {
 
     onDestroy(callback?: DestroyCallback): void {
         if (callback) {
-            this._dsryCbs.add(isFunction(callback) ? callback : () => callback.onDestroy());
+            this._dsryCbs.add(callback);
         } else {
             return this.destroy();
         }

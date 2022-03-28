@@ -14,7 +14,7 @@ import { ProviderType } from './providers';
 @Abstract()
 export abstract class InvocationContext<T = any> implements Destroyable, OnDestroy {
 
-    private _dsryCbs = new Set<() => void>();
+    private _dsryCbs = new Set<DestroyCallback>();
     private _destroyed = false;
     /**
      * parent {@link InvocationContext}.
@@ -120,7 +120,7 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
         if (!this._destroyed) {
             this._destroyed = true;
             try {
-                this._dsryCbs.forEach(c => c());
+                this._dsryCbs.forEach(c => isFunction(c) ? c() : c?.onDestroy());
             } finally {
                 this._dsryCbs.clear();
                 this.clear();
@@ -136,7 +136,7 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
         if (!callback) {
             return this.destroy();
         }
-        this._dsryCbs.add(isFunction(callback) ? callback : () => callback.onDestroy());
+        this._dsryCbs.add(callback);
     }
 
     /**
