@@ -24,8 +24,10 @@ export function chain<T, TR = void>(handlers: Handler<T, TR>[], ctx: T, next?: (
             throw new Error('next called mutiple times.');
         }
         index = idx;
-        let handle = idx < handlers.length ? handlers[idx] : null;
-        if (idx === handlers.length) {
+        let handle: Handler<T, TR> | undefined;
+        if (idx < handlers.length) {
+            handle = handlers[idx];
+        } else if (idx === handlers.length) {
             handle = next!;
         }
         if (!handle) {

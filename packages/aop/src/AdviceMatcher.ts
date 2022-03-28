@@ -42,7 +42,7 @@ export class AdviceMatcher implements IAdviceMatcher {
                 }
             }
             if (aspectMeta.annotation) {
-                let annotation = isFunction(aspectMeta.annotation) ? aspectMeta.annotation.toString() : aspectMeta.annotation;
+                let annotation = aspectMeta.annotation.toString();
                 let anno = (annPreChkExp.test(annotation) ? '' : '@') + annotation;
                 if (!tagref.class.decors.some(d => d.decor === anno)) {
                     return [];
