@@ -2,10 +2,11 @@ import { Abstract, EMPTY, isFunction, isString, lang, OnDestroy, Type, TypeRefle
 import { RequestMethod } from '../transport/packet';
 import { promisify, TransportContext } from '../transport/context';
 import { CanActivate } from '../transport/guard';
-import { Middlewarable, Middleware } from '../transport/endpoint';
+import { Endpoint, Middleware, MiddlewareFn } from '../transport/endpoint';
 import { PipeTransform } from '../pipes/pipe';
 import { Route, RouteFactoryResolver } from './route';
 import { ModuleRef } from '../module.ref';
+import { from, map, mergeMap, Observable, of, throwError } from 'rxjs';
 
 
 
@@ -14,7 +15,7 @@ import { ModuleRef } from '../module.ref';
  * abstract router.
  */
 @Abstract()
-export abstract class Router<T extends TransportContext = TransportContext> implements Middlewarable<T> {
+export abstract class Router<T extends TransportContext = TransportContext> implements Middleware<T> {
     /**
      * route prefix.
      */
@@ -31,10 +32,10 @@ export abstract class Router<T extends TransportContext = TransportContext> impl
      * middleware handle.
      *
      * @param {T} ctx
-     * @param {() => Promise<void>} next
-     * @returns {Promise<void>}
+     * @param {Endpoint<T>} next
+     * @returns {Observable<T>}
      */
-    abstract middleware(ctx: T, next?: () => Promise<void>): Promise<void>;
+    abstract middleware(ctx: T, next: Endpoint<T>): Observable<T>;
     /**
      * has route or not.
      * @param route route
@@ -71,7 +72,7 @@ export abstract class RouterResolver {
 }
 
 
-export class MappingRoute implements Middlewarable {
+export class MappingRoute<T extends TransportContext = TransportContext> implements Middleware<T> {
 
     private _guards!: CanActivate[];
     private router?: Router;
@@ -83,22 +84,27 @@ export class MappingRoute implements Middlewarable {
         return this.route.path;
     }
 
-    async middleware(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
-        if (await this.canActive(ctx)) {
-            return await this.navigate(this.route, ctx, next);
-        } else {
-            throw ctx.throwError('Forbidden');
-        }
+    middleware(ctx: T, next: Endpoint<T>): Observable<T> {
+        return from(this.canActive(ctx))
+            .pipe(
+                mergeMap(can => {
+                    if (can) {
+                        return this.navigate(this.route, ctx, next);
+                    } else {
+                        return throwError(() => ctx.throwError('Forbidden'));
+                    }
+                })
+            );
     }
 
-    protected canActive(ctx: TransportContext) {
+    protected canActive(ctx: T) {
         if (!this._guards) {
             this._guards = this.route.guards?.map(token => ctx.resolve(token)) ?? EMPTY;
         }
         return lang.some(this._guards.map(guard => () => promisify(guard.canActivate(ctx))), vaild => vaild === false);
     }
 
-    protected navigate(route: Route & { router?: Router }, ctx: TransportContext, next: () => Promise<void>) {
+    protected navigate(route: Route & { router?: Router }, ctx: T, next: Endpoint<T>): Promise<T> | Observable<T> {
         if (route.middleware) {
             return isFunction(route.middleware) ? route.middleware(ctx, next) : route.middleware.middleware(ctx, next);
         } else if (route.redirectTo) {
@@ -109,23 +115,37 @@ export class MappingRoute implements Middlewarable {
             if (!this.router) {
                 this.router = new MappingRouter(this.protocols, route.path);
             }
-            return this.router.middleware(ctx);
+            return this.router.middleware(ctx, next) as Observable<T>;
         } else if (route.loadChildren) {
-            return this.routeChildren(ctx, route.loadChildren, route.path);
+            return from(this.loadChildren(ctx, route.loadChildren, route.path))
+                .pipe(
+                    mergeMap(router => {
+                        if (router) {
+                            return router.middleware(ctx, next) as Observable<T>;
+                        } else {
+                            return throwError(() => ctx.throwError('Not Found'));
+                        }
+                    }));
         } else {
-            return next();
+            return throwError(() => ctx.throwError('Not Found'));
         }
     }
 
-    protected async redirect(ctx: TransportContext, url: string, alt?: string) {
+    protected redirect(ctx: T, url: string, alt?: string): Observable<T> {
         ctx.redirect(url, alt);
+        return of(ctx);
     }
 
-    protected async routeController(ctx: TransportContext, controller: Type, next: () => Promise<void>) {
-        return await ctx.injector.get(RouteFactoryResolver).resolve(controller).last()?.middleware(ctx, next);
+    protected routeController(ctx: T, controller: Type, next: Endpoint<T>): Observable<T> {
+        const route = ctx.injector.get(RouteFactoryResolver).resolve(controller).last();
+        if (route) {
+            return route.middleware(ctx, next) as Observable<T>;
+        } else {
+            return throwError(() => ctx.throwError('Not Found'));
+        }
     }
 
-    protected async routeChildren(ctx: TransportContext, loadChildren: () => any, prefix?: string): Promise<void> {
+    protected async loadChildren(ctx: TransportContext, loadChildren: () => any, prefix?: string): Promise<Router | undefined> {
         if (!this.router) {
             const module = await loadChildren();
             const platform = ctx.injector.platform();
@@ -134,7 +154,7 @@ export class MappingRoute implements Middlewarable {
             }
             this.router = platform.modules.get(module)?.injector.get(RouterResolver).resolve(ctx.protocol, prefix);
         }
-        return this.router?.middleware(ctx);
+        return this.router;
     }
 
 }
@@ -167,11 +187,11 @@ export class MappingRouter extends Router implements OnDestroy {
      * use route.
      * @param route 
      */
-    use(route: string, middleware: Middleware): this;
-    use(route: Route | string, middleware?: Middleware): this {
+    use(route: string, middleware: Middleware | MiddlewareFn): this;
+    use(route: Route | string, middleware?: Middleware | MiddlewareFn): this {
         if (isString(route)) {
-            if (this.has(route)) return this;
-            this.routes.set(route, middleware as Middleware);
+            if (!middleware || this.has(route)) return this;
+            this.routes.set(route, isFunction(middleware) ? { middleware } : middleware);
         } else {
             if (this.has(route.path)) return this;
             this.routes.set(route.path, new MappingRoute(route, this.protocols));
@@ -185,12 +205,12 @@ export class MappingRouter extends Router implements OnDestroy {
         return this;
     }
 
-    middleware(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    middleware(ctx: TransportContext, next: Endpoint): Observable<TransportContext> {
         const route = this.getRoute(ctx);
         if (route) {
-            return isFunction(route) ? route(ctx, next) : route.middleware(ctx, next);
+            return route.middleware(ctx, next);
         } else {
-            return next();
+            return next.endpoint(ctx);
         }
     }
 

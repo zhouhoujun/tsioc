@@ -4,11 +4,11 @@ import {
     composeResolver, Parameter, ClassType, ArgumentError, OperationFactoryResolver,
     OnDestroy, isClass, TypeReflect, OperationFactory, DestroyCallback, Handler
 } from '@tsdi/ioc';
-import { isObservable, lastValueFrom } from 'rxjs';
+import { from, isObservable, lastValueFrom, mergeMap, Observable } from 'rxjs';
 import { CanActivate } from '../transport/guard';
 import { ResultValue } from '../transport/result';
 import { TransportArgumentResolver, TransportParameter } from '../transport/resolver';
-import { Middleware } from '../transport/endpoint';
+import { Endpoint, Middleware } from '../transport/endpoint';
 import { TransportContext, promisify } from '../transport/context';
 import { MODEL_RESOLVERS } from '../model/model.resolver';
 import { PipeTransform } from '../pipes/pipe';
@@ -66,23 +66,28 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
 
     private _guards?: CanActivate[];
     get guards(): CanActivate[] {
-        if(!this._guards){
+        if (!this._guards) {
             this._guards = this.metadata.guards?.map(token => () => this.factory.resolve(token)) ?? EMPTY;
         }
         return this._guards;
     }
 
-    async middleware(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
-        const method = await this.canActivate(ctx);
-        if (method) {
-            let middlewares = this.getRouteMiddleware(ctx, method);
-            if (middlewares.length) {
-                await chain(middlewares.map(m => this.parseHandle(m)!).filter(f => !!f), ctx)
-            }
-            return await this.response(ctx, method);
-        } else {
-            return await next();
-        }
+    middleware(ctx: TransportContext, next: Endpoint): Observable<TransportContext> {
+
+        return from(this.canActivate(ctx))
+            .pipe(
+                mergeMap(method => {
+                    if (method) {
+                        // let middlewares = this.getRouteMiddleware(ctx, method);
+                        // if (middlewares.length) {
+                        //     return chain(middlewares.map(m => this.parseHandle(m)!).filter(f => !!f), ctx)
+                        // }
+                        return this.response(ctx, method);
+                    } else {
+                        return next.endpoint(ctx);
+                    }
+                })
+            );
     }
 
     protected async canActivate(ctx: TransportContext) {
@@ -154,6 +159,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
             }
 
         }
+        return ctx;
     }
 
     protected getRouteMiddleware(ctx: TransportContext, meta: DecorDefine) {
@@ -189,14 +195,6 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
             });
         }
         return meta;
-    }
-
-    protected parseHandle(mdty: Middleware): Handler<TransportContext> | undefined {
-        if (isClass(mdty)) {
-            return this.factory.resolve(mdty);
-        } else {
-            return mdty as Handler;
-        }
     }
 
     get destroyed() {

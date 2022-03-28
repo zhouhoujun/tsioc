@@ -1,7 +1,8 @@
 import { Abstract, Destroyable, DestroyCallback, Injector, InvokeArguments, InvokeOption, OnDestroy, tokenId, Type, TypeReflect } from '@tsdi/ioc';
 import { TransportContext } from '../transport/context';
 import { CanActivate } from '../transport/guard';
-import { Middlewarable, Middleware } from '../transport/endpoint';
+import { Endpoint, Middleware } from '../transport/endpoint';
+import { Observable } from 'rxjs';
 
 
 /**
@@ -66,7 +67,7 @@ export const ROUTES = tokenId<Routes>('ROUTES');
  * middleware ref.
  */
 @Abstract()
-export abstract class RouteRef<T = any> implements Middlewarable, Destroyable, OnDestroy {
+export abstract class RouteRef<T = any> implements Middleware, Destroyable, OnDestroy {
     /**
      * controller type.
      */
@@ -99,7 +100,7 @@ export abstract class RouteRef<T = any> implements Middlewarable, Destroyable, O
      * @param {() => Promise<void>} next
      * @returns {Promise<void>}
      */
-    abstract middleware(ctx: TransportContext, next: () => Promise<void>): Promise<void>;
+    abstract middleware(ctx: TransportContext, next: Endpoint): Observable<TransportContext>;
     /**
      * is destroyed or not.
      */
