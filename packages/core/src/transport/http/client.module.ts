@@ -1,4 +1,4 @@
-import { ModuleWithProviders } from '@tsdi/ioc';
+import { ModuleWithProviders, type_obj } from '@tsdi/ioc';
 import { Module } from '../../metadata/decor';
 import { HttpBackend, HttpHandler } from './handler';
 import { HttpInterceptingHandler, HTTP_INTERCEPTORS, NoopInterceptor } from './interceptor';
@@ -114,7 +114,7 @@ export class HttpClientJsonpModule {
 }
 
 export function jsonpCallbackContext(): Object {
-    if (typeof window === 'object') {
+    if (typeof window === type_obj) {
         return window;
     }
     return {};

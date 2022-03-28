@@ -1,4 +1,4 @@
-import { lang, Singleton, isFunction, Injector, Type } from '@tsdi/ioc';
+import { lang, Singleton, isFunction, Injector, Type, type_undef } from '@tsdi/ioc';
 import { Assert } from '../assert/assert';
 import { SuiteDescribe, ICaseDescribe } from '../reports/interface';
 import { UnitRunner } from './Runner';
@@ -21,7 +21,7 @@ const gls = {
 } as any;
 const testkeys = Object.keys(gls);
 
-const globals = typeof window !== 'undefined' ? window : global;
+const globals = typeof window !== type_undef ? window : global;
 
 /**
  * Suite runner.

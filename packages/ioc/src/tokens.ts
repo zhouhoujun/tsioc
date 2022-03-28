@@ -1,5 +1,5 @@
 import { AbstractType, Type, ClassType } from './types';
-import { isClassType, isFunction } from './utils/chk';
+import { isClassType, isFunction, type_func, type_str, type_symbol } from './utils/chk';
 import { getClassName } from './utils/lang';
 
 
@@ -81,11 +81,11 @@ export function isToken(target: any): target is Token {
     }
     const type = typeof target;
     switch (type) {
-        case 'function':
+        case type_func:
             return isClassType(target);
-        case 'string':
+        case type_str:
             return true;
-        case 'symbol':
+        case type_symbol:
             return true;
     }
 

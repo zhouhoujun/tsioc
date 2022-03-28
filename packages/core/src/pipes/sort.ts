@@ -1,4 +1,4 @@
-import { isString } from '@tsdi/ioc';
+import { isString, type_str, type_undef } from '@tsdi/ioc';
 import { Pipe } from '../metadata/decor';
 import { PipeTransform } from './pipe';
 
@@ -22,18 +22,18 @@ export class SortPipe implements PipeTransform {
         if (!value || value.length < 1) return [];
         const { sort, order } = (isString(option) ? { order: option, sort: orderby } : option) as { sort: string, order: 'asc' | 'desc' };
         let type = sort ? typeof value[0]?.[sort] : typeof value[0];
-        if (type === 'undefined') {
+        if (type === type_undef) {
             value.some(i => {
                 if (i[sort] == null) return false;
                 type = typeof i[sort];
-                if (type === 'undefined') {
+                if (type === type_undef) {
                     return false;
                 }
                 return type;
             });
         }
 
-        if (type === 'string') {
+        if (type === type_str) {
             return value.sort((a, b) => {
                 let x: string = sort ? a[sort] : a;
                 let y: string = sort ? b[sort] : b;

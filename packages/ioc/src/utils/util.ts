@@ -1,5 +1,7 @@
 import { AnnotationType } from '../types';
 
+
+const type_func = 'function';
 /**
  * get class design annotation.
  *
@@ -9,7 +11,7 @@ import { AnnotationType } from '../types';
  */
 export function getClassAnnotation(target: AnnotationType) {
     const annf = target.ρAnn || target.getClassAnnations;
-    return typeof annf === 'function' ? annf.call(target) : null;
+    return typeof annf === type_func ? (annf as Function).call(target) : null;
 }
 
 /**
@@ -20,5 +22,5 @@ export function getClassAnnotation(target: AnnotationType) {
  * @returns {boolean}
  */
 export function hasClassAnnotation(target: AnnotationType): boolean {
-    return typeof (target.ρAnn || target.getClassAnnations) === 'function';
+    return typeof (target.ρAnn || target.getClassAnnations) === type_func;
 }

@@ -7,10 +7,15 @@ import { getClassAnnotation } from './util';
 
 
 declare let process: any;
-const toString = Object.prototype.toString;
-
-const funKey = 'function';
-const undefKey = 'undefined';
+export const toString = Object.prototype.toString;
+export const type_func = 'function';
+export const type_undef = 'undefined';
+export const type_str = 'string';
+export const type_bool = 'boolean';
+export const type_num = 'number';
+export const type_symbol = 'symbol';
+export const type_bigint = 'bigint';
+export const type_obj = 'object';
 
 /**
  * empty array.
@@ -30,7 +35,7 @@ export const EMPTY_OBJ: Record<string, any> = {};
  * @returns
  */
 export function isFunction(target: any): target is Function {
-    return typeof target === funKey;
+    return typeof target === type_func;
 }
 
 /**
@@ -49,7 +54,7 @@ export function isTypeReflect(target: any): target is TypeReflect {
  * @returns {boolean}
  */
 export function isNodejsEnv(): boolean {
-    return (typeof process !== undefKey) && (typeof process.versions.node !== undefKey)
+    return (typeof process !== type_undef) && (typeof process.versions.node !== type_undef)
 }
 
 const promiseTag = '[object Promise]';
@@ -61,7 +66,7 @@ const promiseTag = '[object Promise]';
  * @returns {target is Promise<any>}
  */
 export function isPromise(target: any): target is Promise<any> {
-    return toString.call(target) === promiseTag || target instanceof Promise || (target && typeof target.then === funKey && typeof target.catch === funKey);
+    return toString.call(target) === promiseTag || target instanceof Promise || (target && typeof target.then === type_func && typeof target.catch === type_func);
 }
 
 const obsTag = '[object Observable]';
@@ -73,10 +78,10 @@ const obsTag = '[object Observable]';
  * @returns {boolean}
  */
 export function isObservable(target: any): boolean {
-    return toString.call(target) === obsTag || (target && typeof target.subscribe === funKey && target.lift === 'function');
+    return toString.call(target) === obsTag || (target && typeof target.subscribe === type_func && target.lift === type_func);
 }
 
-const strKey = 'string';
+
 /**
  * check target is string or not.
  *
@@ -85,11 +90,10 @@ const strKey = 'string';
  * @returns {target is string}
  */
 export function isString(target: any): target is string {
-    return typeof target === strKey;
+    return typeof target === type_str;
 }
 
 
-const boolKey = 'boolean';
 /**
  * check target is boolean or not.
  *
@@ -98,10 +102,9 @@ const boolKey = 'boolean';
  * @returns {target is boolean}
  */
 export function isBoolean(target: any): target is boolean {
-    return typeof target === boolKey;
+    return typeof target === type_bool;
 }
 
-const numKey = 'number';
 /**
  * check target is number or not.
  *
@@ -110,7 +113,8 @@ const numKey = 'number';
  * @returns {target is number}
  */
 export function isNumber(target: any): target is number {
-    return typeof target === numKey;
+    const type = typeof target;
+    return type === type_num || type === type_bigint;
 }
 
 /**
@@ -121,7 +125,7 @@ export function isNumber(target: any): target is number {
  * @returns {target is undefined}
  */
 export function isUndefined(target: any): target is undefined {
-    return typeof target === undefKey;
+    return typeof target === type_undef;
 }
 
 
@@ -174,8 +178,6 @@ export function isArray(target: any): target is Array<any> {
     return Array.isArray(target);
 }
 
-const objectKey = 'object';
-
 /**
  * check target is object or not.
  *
@@ -186,7 +188,7 @@ const objectKey = 'object';
 export function isObject(target: any): target is object {
     if (isNull(target)) return false;
     const type = typeof target;
-    return (type === objectKey || type === funKey);
+    return (type === type_obj || type === type_func);
 }
 
 
@@ -261,7 +263,6 @@ export function isDate(target: any): target is Date {
 }
 
 const symbolTag = '[object Symbol]';
-const symKey = 'symbol';
 /**
  * check target is symbol or not.
  *
@@ -270,7 +271,7 @@ const symKey = 'symbol';
  * @returns {target is symbol}
  */
 export function isSymbol(target: any): target is symbol {
-    return typeof target === symKey || toString.call(target) === symbolTag;
+    return typeof target === type_symbol || toString.call(target) === symbolTag;
 }
 
 const regTag = '[object RegExp]';

@@ -1,4 +1,4 @@
-import { Injectable, InvocationContext } from '@tsdi/ioc';
+import { Injectable, InvocationContext, type_str } from '@tsdi/ioc';
 import { concatMap, filter, map, Observable, of } from 'rxjs';
 import { RequestMethod } from '../packet';
 import { HttpHandler } from './handler';
@@ -490,7 +490,7 @@ export class HttpClient {
                     case 'text':
                         return res$.pipe(map((res: HttpResponse<any>) => {
                             // Validate that the body is a string.
-                            if (res.body !== null && typeof res.body !== 'string') {
+                            if (res.body !== null && typeof res.body !== type_str) {
                                 throw new Error('Response is not a string.');
                             }
                             return res.body;

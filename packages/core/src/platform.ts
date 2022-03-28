@@ -1,4 +1,4 @@
-import { tokenId } from '@tsdi/ioc';
+import { tokenId, type_undef } from '@tsdi/ioc';
 
 export const PLATFORM_BROWSER_ID = 'browser';
 export const PLATFORM_SERVER_ID = 'server';
@@ -34,10 +34,10 @@ export function isPlatformServer(platformId: Object): boolean {
 declare var global: any;
 declare var WorkerGlobalScope: any;
 
-const __window = typeof window !== 'undefined' && window;
-const __self = typeof self !== 'undefined' && typeof WorkerGlobalScope !== 'undefined' &&
+const __window = typeof window !== type_undef && window;
+const __self = typeof self !== type_undef && typeof WorkerGlobalScope !== type_undef &&
     self instanceof WorkerGlobalScope && self;
-const __global = typeof global !== 'undefined' && global;
+const __global = typeof global !== type_undef && global;
 
 // Check __global first, because in Node tests both __global and __window may be defined and _global
 // should be __global in that case.

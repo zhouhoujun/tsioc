@@ -1,4 +1,4 @@
-import { Injectable } from '@tsdi/ioc';
+import { Injectable, type_str, type_undef } from '@tsdi/ioc';
 import { Observable, Observer } from 'rxjs';
 import { HttpStatusCode } from './status';
 import { HttpBackend, XhrFactory } from './handler';
@@ -122,7 +122,7 @@ export class HttpXhrBackend implements HttpBackend {
 
                 if (status !== HttpStatusCode.NoContent) {
                     // Use XMLHttpRequest.response if set, responseText otherwise.
-                    body = (typeof xhr.response === 'undefined') ? xhr.responseText : xhr.response;
+                    body = (typeof xhr.response ===  type_undef) ? xhr.responseText : xhr.response;
                 }
 
                 // Normalize another potential bug (this one comes from CORS).
@@ -138,7 +138,7 @@ export class HttpXhrBackend implements HttpBackend {
 
                 // Check whether the body needs to be parsed as JSON (in many cases the browser
                 // will have done that already).
-                if (req.responseType === 'json' && typeof body === 'string') {
+                if (req.responseType === 'json' && typeof body === type_str) {
                     // Save the original body, before attempting XSSI prefix stripping.
                     const originalBody = body;
                     body = body.replace(XSSI_PREFIX, '');

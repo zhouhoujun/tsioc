@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import { InvocationContext } from '@tsdi/ioc';
+import { InvocationContext, isString, type_bool, type_num, type_obj, type_undef } from '@tsdi/ioc';
 import { TransportRequest } from '../packet';
 import { HttpHeaders } from './headers';
 import { HttpParams } from './params';
@@ -48,7 +48,7 @@ function mightHaveBody(method: string): boolean {
  * In some execution environments ArrayBuffer is not defined.
  */
 function isArrayBuffer(value: any): value is ArrayBuffer {
-    return typeof ArrayBuffer !== 'undefined' && value instanceof ArrayBuffer;
+    return typeof ArrayBuffer !== type_undef && value instanceof ArrayBuffer;
 }
 
 /**
@@ -57,7 +57,7 @@ function isArrayBuffer(value: any): value is ArrayBuffer {
  * In some execution environments Blob is not defined.
  */
 function isBlob(value: any): value is Blob {
-    return typeof Blob !== 'undefined' && value instanceof Blob;
+    return typeof Blob !== type_undef && value instanceof Blob;
 }
 
 /**
@@ -66,7 +66,7 @@ function isBlob(value: any): value is Blob {
  * In some execution environments FormData is not defined.
  */
 function isFormData(value: any): value is FormData {
-    return typeof FormData !== 'undefined' && value instanceof FormData;
+    return typeof FormData !== type_undef && value instanceof FormData;
 }
 
 /**
@@ -75,7 +75,7 @@ function isFormData(value: any): value is FormData {
  * In some execution environments URLSearchParams is not defined.
  */
 function isUrlSearchParams(value: any): value is URLSearchParams {
-    return typeof URLSearchParams !== 'undefined' && value instanceof URLSearchParams;
+    return typeof URLSearchParams !== type_undef && value instanceof URLSearchParams;
 }
 
 /**
@@ -282,7 +282,7 @@ export class HttpRequest<T = any> implements TransportRequest<T> {
         // Check whether the body is already in a serialized form. If so,
         // it can just be returned directly.
         if (isArrayBuffer(this.body) || isBlob(this.body) || isFormData(this.body) ||
-            isUrlSearchParams(this.body) || typeof this.body === 'string') {
+            isUrlSearchParams(this.body) || isString(this.body)) {
             return this.body;
         }
         // Check whether the body is an instance of HttpUrlEncodedParams.
@@ -290,7 +290,7 @@ export class HttpRequest<T = any> implements TransportRequest<T> {
             return this.body.toString();
         }
         // Check whether the body is an object or array, and serialize with JSON if so.
-        if (typeof this.body === 'object' || typeof this.body === 'boolean' ||
+        if (typeof this.body === type_obj || typeof this.body === type_bool ||
             Array.isArray(this.body)) {
             return JSON.stringify(this.body);
         }
@@ -324,7 +324,7 @@ export class HttpRequest<T = any> implements TransportRequest<T> {
         }
         // Technically, strings could be a form of JSON data, but it's safe enough
         // to assume they're plain strings.
-        if (typeof this.body === 'string') {
+        if (isString(this.body)) {
             return 'text/plain';
         }
         // `HttpUrlEncodedParams` has its own content-type.
@@ -332,8 +332,9 @@ export class HttpRequest<T = any> implements TransportRequest<T> {
             return 'application/x-www-form-urlencoded;charset=UTF-8';
         }
         // Arrays, objects, boolean and numbers will be encoded as JSON.
-        if (typeof this.body === 'object' || typeof this.body === 'number' ||
-            typeof this.body === 'boolean') {
+        const type = typeof this.body;
+        if (type === type_obj || type === type_num ||
+            type === type_bool) {
             return 'application/json';
         }
         // No type could be inferred.

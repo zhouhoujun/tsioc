@@ -6,6 +6,8 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import { isString } from "@tsdi/ioc";
+
  interface Update {
     name: string;
     value?: string|string[];
@@ -48,7 +50,7 @@
     constructor(headers?: string|{[name: string]: string | string[]}) {
       if (!headers) {
         this.headers = new Map<string, string[]>();
-      } else if (typeof headers === 'string') {
+      } else if (isString(headers)) {
         this.lazyInit = () => {
           this.headers = new Map<string, string[]>();
           headers.split('\n').forEach(line => {
@@ -72,7 +74,7 @@
           Object.keys(headers).forEach(name => {
             let values: string|string[] = headers[name];
             const key = name.toLowerCase();
-            if (typeof values === 'string') {
+            if (isString(values)) {
               values = [values];
             }
             if (values.length > 0) {
@@ -216,7 +218,7 @@
         case 'a':
         case 's':
           let value = update.value!;
-          if (typeof value === 'string') {
+          if (isString(value)) {
             value = [value];
           }
           if (value.length === 0) {
