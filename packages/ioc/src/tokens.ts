@@ -1,5 +1,5 @@
 import { AbstractType, Type, ClassType } from './types';
-import { isFunction, isClassType, isSymbol, isString } from './utils/chk';
+import { isClassType, isFunction } from './utils/chk';
 import { getClassName } from './utils/lang';
 
 
@@ -79,10 +79,17 @@ export function isToken(target: any): target is Token {
     if (!target) {
         return false;
     }
-    if (!isFunction(target)) {
-        return isString(target) || isSymbol(target) || isInjectToken(target);
+    const type = typeof target;
+    switch (type) {
+        case 'function':
+            return isClassType(target);
+        case 'string':
+            return true;
+        case 'symbol':
+            return true;
     }
-    return isClassType(target);
+
+    return isInjectToken(target);
 }
 
 export function isInjectToken<T>(target: any): target is InjectToken<T> {
