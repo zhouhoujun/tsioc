@@ -1,6 +1,5 @@
 import { Injectable, InvocationContext } from '@tsdi/ioc';
 import { concatMap, filter, map, Observable, of } from 'rxjs';
-import { TransportClient } from '../client';
 import { RequestMethod } from '../packet';
 import { HttpHandler } from './handler';
 import { HttpHeaders } from './headers';
@@ -11,19 +10,11 @@ import { HttpEvent, HttpResponse } from './response';
 
 
 @Injectable()
-export class HttpClient extends TransportClient {
+export class HttpClient {
 
     constructor(readonly handler: HttpHandler) {
-        super();
-    }
-
-    async connect(): Promise<any> {
-    }
-
-    async close(): Promise<void> {
 
     }
-
 
     /**
      * Sends an `HttpRequest` and returns a stream of `HttpEvent`s.
@@ -397,7 +388,7 @@ export class HttpClient extends TransportClient {
      *   * An `observe` value of body returns an observable of `<T>` with the same `T` body type.
      *
      */
-    request(first: string | HttpRequest<any>, url?: string, options?: {
+    request(first: string | HttpRequest<any>, url?: string, options: {
         body?: any,
         headers?: HttpHeaders | { [header: string]: string | string[] },
         context?: InvocationContext,
@@ -407,30 +398,7 @@ export class HttpClient extends TransportClient {
         reportProgress?: boolean,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
-    }): Observable<any> {
-        if(first instanceof HttpRequest){
-            return this.sendRequest(first, options);
-        } else {
-            return this.sendRequest(url!, {
-                method: (first ?? 'GET') as RequestMethod,
-                ...options
-            });
-        }
-        
-    }
-
-    protected override sendRequest(first: string | HttpRequest<any>, options: {
-        body?: any,
-        method?: RequestMethod,
-        headers?: HttpHeaders | { [header: string]: string | string[] },
-        context?: InvocationContext,
-        observe?: 'body' | 'events' | 'response',
-        params?: HttpParams |
-        { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
-        reportProgress?: boolean,
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
-        withCredentials?: boolean
-    }={}): Observable<any>  {
+    } = {}): Observable<any> {
 
         let req: HttpRequest<any>;
         // First, check whether the primary argument is an instance of `HttpRequest`.
@@ -443,7 +411,7 @@ export class HttpClient extends TransportClient {
             // and incorporate the remaining arguments (assuming `GET` unless a method is
             // provided.
 
-            let url = first as string;
+            let method = first as string;
             // Figure out the headers.
             let headers: HttpHeaders | undefined = undefined;
             if (options.headers instanceof HttpHeaders) {
@@ -463,7 +431,7 @@ export class HttpClient extends TransportClient {
             }
 
             // Construct the request.
-            req = new HttpRequest(options.method?? 'GET', url, (options.body !== undefined ? options.body : null), {
+            req = new HttpRequest(method ?? 'GET', url!, (options.body !== undefined ? options.body : null), {
                 headers,
                 context: options.context,
                 params,

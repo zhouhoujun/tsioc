@@ -1,7 +1,9 @@
 import { Injector, Injectable, lang, ArgumentError, MissingParameterError, tokenId, chain } from '@tsdi/ioc';
-import { lastValueFrom, of } from 'rxjs';
+import { defer, lastValueFrom, Observable, of } from 'rxjs';
+import { mergeMap } from 'rxjs/operators';
 import expect = require('expect');
-import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Middleware, Module, TransportContext, HttpClientModule, Middlewarable, HttpClient, Chain } from '../src';
+import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module, TransportContext, HttpClientModule, Middleware, HttpClient, Chain, Endpoint, HttpErrorResponse, HttpResponseBase } from '../src';
+
 
 
 @RouteMapping('/device')
@@ -81,63 +83,69 @@ class DeviceController {
 // }
 
 @Handle('/hdevice')
-class DeviceQueue {
-    async middleware(ctx: TransportContext, next?: () => Promise<void>): Promise<void> {
-        console.log('device msg start.');
-        ctx.setValue('device', 'device data')
-        await new Chain(ctx.resolve(DEVICE_MIDDLEWARES)).middleware(ctx);
-        ctx.setValue('device', 'device next');
+class DeviceQueue implements Middleware {
+    middleware(ctx: TransportContext, next: Endpoint): Observable<TransportContext> {
 
-        const device = ctx.getValue('device');
-        const deviceA_state = ctx.getValue('deviceA_state');
-        const deviceB_state = ctx.getValue('deviceB_state');
+        return defer(async () => {
+            console.log('device msg start.');
+            ctx.setValue('device', 'device data')
+            await lastValueFrom(new Chain(ctx => of(ctx), ctx.resolve(DEVICE_MIDDLEWARES)).endpoint(ctx));
+            ctx.setValue('device', 'device next');
 
-        ctx.body = {
-            device,
-            deviceA_state,
-            deviceB_state
-        };
+            const device = ctx.getValue('device');
+            const deviceA_state = ctx.getValue('deviceA_state');
+            const deviceB_state = ctx.getValue('deviceB_state');
 
-        console.log('device sub msg done.');
-        return await next?.();
+            ctx.body = {
+                device,
+                deviceA_state,
+                deviceB_state
+            };
+
+            console.log('device sub msg done.');
+            return ctx;
+        }).pipe(
+            mergeMap(c => next.endpoint(ctx))
+        )
     }
 }
 
 
 @Injectable()
-class DeviceStartupHandle implements Middlewarable {
+class DeviceStartupHandle implements Middleware {
 
-    async middleware(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    middleware(ctx: TransportContext, next: Endpoint): Observable<TransportContext> {
         console.log('DeviceStartupHandle.', 'resp:', ctx.request.body.type, 'req:', ctx.request.body.type)
         if (ctx.body.type === 'startup') {
             // todo sth.
             let ret = ctx.injector.get(MyService).dosth();
             ctx.setValue('deviceB_state', ret);
         }
+        return of(ctx);
     }
 }
 
 @Injectable()
-class DeviceAStartupHandle implements Middlewarable {
+class DeviceAStartupHandle implements Middleware {
 
-    async middleware(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    middleware(ctx: TransportContext, next: Endpoint): Observable<TransportContext> {
         console.log('DeviceAStartupHandle.', 'resp:', ctx.body.type, 'req:', ctx.request.body.type)
         if (ctx.body.type === 'startup') {
             // todo sth.
             let ret = ctx.injector.get(MyService).dosth();
             ctx.setValue('deviceA_state', ret);
         }
-        return next()
+        return next.endpoint(ctx);
     }
 }
 
-export const DEVICE_MIDDLEWARES = tokenId<Middlewarable[]>('DEVICE_MIDDLEWARES');
+export const DEVICE_MIDDLEWARES = tokenId<Middleware[]>('DEVICE_MIDDLEWARES');
 
 @Module({
     providers: [
         DeviceQueue,
-        {provide: DEVICE_MIDDLEWARES, useClass: DeviceStartupHandle, multi: true },
-        {provide: DEVICE_MIDDLEWARES, useClass: DeviceAStartupHandle, multi: true },
+        { provide: DEVICE_MIDDLEWARES, useClass: DeviceStartupHandle, multi: true },
+        { provide: DEVICE_MIDDLEWARES, useClass: DeviceAStartupHandle, multi: true },
 
     ]
 })
@@ -211,7 +219,7 @@ describe('app message queue', () => {
 
         const defer = lang.defer();
         const client = ctx.resolve(HttpClient);
-        client.send<any>('/hdevice', { method: 'POST', observe: 'response', body: { type: 'startup' } })
+        client.request<any>('POST', '/hdevice', { observe: 'response', body: { type: 'startup' } })
             .subscribe(rep => {
                 device = rep.body['device'];
                 aState = rep.body['deviceA_state'];
@@ -250,58 +258,58 @@ describe('app message queue', () => {
     })
 
     it('route with request body pipe throw missing argument err', async () => {
-        const r = await lastValueFrom(ctx.resolve(HttpClient).send('/device/usage', { method: 'POST', observe:'response', body: {} }));
+        const r = await lastValueFrom(ctx.resolve(HttpClient).post('/device/usage', {}, { observe: 'response' }));
         expect(r.status).toEqual(500);
         expect(r.error).toBeInstanceOf(MissingParameterError)
     })
 
     it('route with request body pipe throw argument err', async () => {
-        const r = await lastValueFrom(ctx.resolve(HttpClient).send('/device/usage', { method: 'POST', observe:'response', body: { id: 'test1', age: 'test', createAt: '2021-10-01' } }));
+        const r = await lastValueFrom(ctx.resolve(HttpClient).post('/device/usage', { id: 'test1', age: 'test', createAt: '2021-10-01' }, { observe: 'response' }));
         expect(r.status).toEqual(500);
         expect(r.error).toBeInstanceOf(ArgumentError)
     })
 
     it('route with request param pipe', async () => {
-        const a = await lastValueFrom(ctx.resolve(HttpClient).send('/device/usege/find', { method: 'GET', observe:'response', params: { age: '20' } }));
+        const a = await lastValueFrom(ctx.resolve(HttpClient).get('/device/usege/find', { observe: 'response', params: { age: '20' } }));
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toStrictEqual(20);
     })
 
     it('route with request param pipe throw missing argument err', async () => {
-        const r = await lastValueFrom(ctx.resolve(HttpClient).send('/device/usege/find', { method: 'GET', observe:'response', body: { age: '50' } }));
+        const r = await lastValueFrom(ctx.resolve(HttpClient).get('/device/usege/find', { observe: 'response', params: { age: '50' } }));
         expect(r.status).toEqual(500);
         expect(r.error).toBeInstanceOf(MissingParameterError)
     })
 
     it('route with request param pipe throw argument err', async () => {
-        const r = await lastValueFrom(ctx.resolve(HttpClient).send('/device/usege/find', { method: 'GET', observe:'response', params: { age: 'test' } }));
+        const r = await lastValueFrom(ctx.resolve(HttpClient).get('/device/usege/find', { observe: 'response', params: { age: 'test' } }));
         expect(r.status).toEqual(500);
         expect(r.error).toBeInstanceOf(ArgumentError)
     })
 
     it('route with request param pipe', async () => {
-        const a = await lastValueFrom(ctx.resolve(HttpClient).send('/device/30/used', { method: 'GET', observe:'response', params: { age: '20' } }));
+        const a = await lastValueFrom(ctx.resolve(HttpClient).get('/device/30/used', { observe: 'response', params: { age: '20' } }));
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toStrictEqual(30);
     })
 
     it('route with request restful param pipe throw missing argument err', async () => {
-        const r = await lastValueFrom(ctx.resolve(HttpClient).send('/device//used', { method: 'GET', observe:'response', body: { age: '20' } }));
+        const r = await lastValueFrom(ctx.resolve(HttpClient).get('/device//used', { observe: 'response', params: { age: '20' } }));
         expect(r.status).toEqual(500);
         expect(r.error).toBeInstanceOf(MissingParameterError);
     })
 
     it('route with request restful param pipe throw argument err', async () => {
-        const r = await lastValueFrom(ctx.resolve(HttpClient).send('/device/age1/used', { method: 'GET', observe:'response',  body: { age: '20' } }));
+        const r = await lastValueFrom(ctx.resolve(HttpClient).get('/device/age1/used', { observe: 'response', params: { age: '20' } }));
         expect(r.status).toEqual(500);
         expect(r.error).toBeInstanceOf(ArgumentError);
     })
 
 
     it('response with Observable', async () => {
-        const r = await lastValueFrom(ctx.resolve(HttpClient).send('/device/status', { method: 'GET', observe:'response' }));
+        const r = await lastValueFrom(ctx.resolve(HttpClient).get('/device/status', { observe: 'response' }));
         expect(r.status).toEqual(200);
         expect(r.body).toEqual('working');
     })

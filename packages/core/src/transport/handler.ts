@@ -28,9 +28,3 @@ export interface TransportBackend<TRequest, TResponse> extends TransportHandler<
     handle(req: TRequest): Observable<TResponse>;
 }
 
-
-/**
- * transport status.
- */
-export type TransportStatus = 'Bad Request' | 'Forbidden' | 'Internal Server Error' | 'Not Acceptable' | 'Not Found' | 'Unauthorized' | 'Method Not Allowed' | number;
-

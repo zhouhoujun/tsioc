@@ -34,7 +34,7 @@ describe('di module', () => {
         // });
 
         // has no parent.
-        const rep = await lastValueFrom(ctx.resolve(HttpClient).send('test', { observe: 'response', params: { hi: 'hello' } }));
+        const rep = await lastValueFrom(ctx.resolve(HttpClient).request('GET', 'test', { observe: 'response', params: { hi: 'hello' } }));
         expect(rep.body).toEqual('hello');
         expect(rep.status).toEqual(200);
 

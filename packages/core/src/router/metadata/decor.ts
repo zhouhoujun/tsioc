@@ -5,13 +5,13 @@ import {
 import { PipeTransform } from '../../pipes/pipe';
 import { RequestMethod } from '../../transport/packet';
 import { CanActivate } from '../../transport/guard';
-import { Middlewarable, Middleware } from '../../transport/endpoint';
+import { Middleware, MiddlewareFn } from '../../transport/endpoint';
 import { RouteFactoryResolver } from '../route';
 import { MappingReflect, ProtocolRouteMappingMetadata, Router, RouterResolver } from '../router';
 import { HandleMetadata, HandleMessagePattern } from './meta';
 
 
-export type HandleDecorator = <TFunction extends Type<Middlewarable>>(target: TFunction) => TFunction | void;
+export type HandleDecorator = <TFunction extends Type<Middleware>>(target: TFunction) => TFunction | void;
 
 
 /**
@@ -125,7 +125,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
                 return next();
             }
 
-            let queue: Middlewarable | undefined;
+            let queue: Middleware | undefined;
             if (isString(route) || reflect.class.isExtends(Router)) {
                 queue = parent ? (injector.get(parent) ?? injector.get(RouterResolver).resolve(protocol)) : injector.get(RouterResolver).resolve(protocol);
                 if (!(queue instanceof Router)) {
@@ -199,7 +199,7 @@ export interface RouteMapping {
         /**
          * middlewares for the route.
          */
-        middlewares: Middleware[];
+        middlewares: Array<Middleware | MiddlewareFn>;
         /**
         * pipes for the route.
         */
@@ -234,7 +234,7 @@ export interface RouteMapping {
         /**
          * middlewares for the route.
          */
-        middlewares: Middleware[];
+        middlewares: Array<Middleware | MiddlewareFn>;
         /**
          * pipes for the route.
          */
@@ -503,7 +503,7 @@ export interface RestController {
         /**
          * middlewares for the route.
          */
-        middlewares: Middleware[];
+        middlewares: Array<Middleware | MiddlewareFn>[];
         /**
         * pipes for the route.
         */
@@ -563,7 +563,7 @@ export interface RouteMethodDecorator {
         /**
          * middlewares for the route.
          */
-        middlewares: Middleware[];
+        middlewares: Array<Middleware | MiddlewareFn>;
         /**
          * pipes for the route.
          */

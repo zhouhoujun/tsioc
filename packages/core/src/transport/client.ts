@@ -1,24 +1,25 @@
-import { Abstract, InvocationContext, isNil, isString } from '@tsdi/ioc';
+import { Abstract, InvocationContext, isNil } from '@tsdi/ioc';
 import { ILogger, Logger } from '@tsdi/logs';
 import { defer, Observable, throwError } from 'rxjs';
 import { concatMap } from 'rxjs/operators';
 import { OnDispose } from '../lifecycle';
 import { InvalidMessageError } from './error';
 import { TransportRequest, TransportResponse, RequestMethod, TransportEvent } from './packet';
-import { TransportHandler } from './handler';
+import { Endpoint } from './endpoint';
+import { TransportContext } from './context';
 
 /**
  * abstract transport client.
  */
 @Abstract()
-export abstract class TransportClient implements OnDispose {
+export abstract class TransportClient<T extends TransportContext> implements OnDispose {
 
     @Logger()
     protected readonly logger!: ILogger;
     /**
      * transport handler.
      */
-    abstract get handler(): TransportHandler<TransportRequest, TransportResponse>;
+    abstract get endpoint(): Endpoint<T>;
     /**
      * connect.
      */
@@ -215,32 +216,25 @@ export abstract class TransportClient implements OnDispose {
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
     }): Observable<any> {
-        const req = isString(pattern) ? this.serializeRequest(this.normalizePattern(pattern), options) : pattern;
-        return this.handler.handle(req);
+        return this.endpoint.endpoint(this.createContext(pattern, options));
     }
+
+    protected abstract createContext(pattern: string | TransportRequest, options?: {
+        body?: any,
+        method?: RequestMethod,
+        headers?: { [header: string]: string | string[] } | any,
+        context?: InvocationContext,
+        params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> } | any,
+        observe?: 'body' | 'events' | 'response',
+        reportProgress?: boolean,
+        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
+        withCredentials?: boolean,
+    }): T;
 
     /**
      * close client.
      */
     abstract close(): Promise<void>;
-
-    protected normalizePattern(pattern: string): string {
-        return pattern;
-    }
-
-    protected serializeRequest(pattern: string, options?: {
-        body?: any,
-        method?: RequestMethod,
-        headers?: { [header: string]: string | string[] },
-        context?: InvocationContext,
-        params?: { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
-        observe?: 'body' | 'events' | 'response',
-        reportProgress?: boolean,
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
-        withCredentials?: boolean
-    }): TransportRequest {
-        return { pattern, ...options } as TransportRequest;
-    }
 
     /**
      * on dispose.

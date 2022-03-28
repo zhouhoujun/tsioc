@@ -3,8 +3,9 @@ import { ILogger, Logger } from '@tsdi/logs';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
 import { Startup } from '../startup';
-import { Protocol, TransportRequest, TransportResponse } from './packet';
-import { TransportEndpoint } from './endpoint';
+import { Protocol } from './packet';
+import { Endpoint } from './endpoint';
+import { TransportContext } from './context';
 
 
 /**
@@ -12,7 +13,7 @@ import { TransportEndpoint } from './endpoint';
  */
 @Abstract()
 @Runner('startup')
-export abstract class TransportServer<TRequest extends TransportRequest = TransportRequest, TResponse extends TransportResponse = TransportResponse> implements Startup, OnDispose {
+export abstract class TransportServer<T extends TransportContext = TransportContext> implements Startup, OnDispose {
 
     @Logger()
     protected readonly logger!: ILogger;
@@ -23,7 +24,7 @@ export abstract class TransportServer<TRequest extends TransportRequest = Transp
     /**
      * transport endpoint.
      */
-    abstract get handler(): TransportEndpoint<TRequest, TResponse>;
+    abstract get endpoint(): Endpoint<T>;
     /**
      * close server.
      */
@@ -40,7 +41,7 @@ export abstract class TransportServer<TRequest extends TransportRequest = Transp
 /**
  * server option.
  */
- export interface ServerOption extends Record<string, any> {
+export interface ServerOption extends Record<string, any> {
     url?: string;
     host?: string;
     port?: number;

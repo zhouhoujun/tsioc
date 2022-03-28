@@ -8,7 +8,7 @@ import { from, isObservable, lastValueFrom, mergeMap, Observable } from 'rxjs';
 import { CanActivate } from '../transport/guard';
 import { ResultValue } from '../transport/result';
 import { TransportArgumentResolver, TransportParameter } from '../transport/resolver';
-import { Endpoint, Middleware } from '../transport/endpoint';
+import { Chain, Endpoint } from '../transport/endpoint';
 import { TransportContext, promisify } from '../transport/context';
 import { MODEL_RESOLVERS } from '../model/model.resolver';
 import { PipeTransform } from '../pipes/pipe';
@@ -34,11 +34,13 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     protected sortRoutes: DecorDefine[] | undefined;
     private _url: string;
     private _instance: T | undefined;
+    private _endpoints: Map<string, Endpoint>;
 
     constructor(private factory: OperationFactory<T>, prefix?: string) {
         super();
         this.metadata = factory.reflect.annotation as ProtocolRouteMappingMetadata;
         this._url = joinprefix(prefix, this.metadata.version, this.metadata.route);
+        this._endpoints = new Map();
     }
 
     get type() {
@@ -73,16 +75,26 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     }
 
     middleware(ctx: TransportContext, next: Endpoint): Observable<TransportContext> {
-
         return from(this.canActivate(ctx))
             .pipe(
                 mergeMap(method => {
                     if (method) {
-                        // let middlewares = this.getRouteMiddleware(ctx, method);
-                        // if (middlewares.length) {
-                        //     return chain(middlewares.map(m => this.parseHandle(m)!).filter(f => !!f), ctx)
-                        // }
-                        return this.response(ctx, method);
+                        const metadate = method.metadata;
+                        const key = `${metadate.method ?? ctx.method} ${method.propertyKey}`;
+                        let endpoint = this._endpoints.get(key);
+                        if (!endpoint) {
+                            let middlewares = this.getRouteMiddleware(ctx, method);
+                            const backend = { endpoint: (c) => from(this.response(c, method)) } as Endpoint;
+                            if (middlewares.length) {
+                                endpoint = new Chain(
+                                    backend,
+                                    middlewares.map(m => isClass(m) ? this.factory.resolve(m) : m));
+                            } else {
+                                endpoint = backend;
+                            }
+                            this._endpoints.set(key, endpoint);
+                        }
+                        return endpoint.endpoint(ctx);
                     } else {
                         return next.endpoint(ctx);
                     }
@@ -98,9 +110,9 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
                 this.guards.map(guard => () => promisify(guard.canActivate(ctx))),
                 vaild => vaild === false))) return null;
         }
-        const meta = this.getRouteMetaData(ctx);
+        const meta = this.getRouteMetaData(ctx) as DecorDefine<RouteMappingMetadata>;
         if (!meta) return null;
-        let rmeta = meta.metadata as RouteMappingMetadata;
+        let rmeta = meta.metadata;
         if (rmeta.guards?.length) {
             if (!(await lang.some(
                 rmeta.guards.map(token => () => promisify(this.factory.resolve(token)?.canActivate(ctx))),

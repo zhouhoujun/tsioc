@@ -24,6 +24,12 @@ export type Protocol = 'tcp' | 'grpc' | 'rmq' | 'kafka' | 'redis' | 'amqp' | 'ss
 
 
 /**
+ * transport status.
+ */
+ export type TransportStatus = 'Bad Request' | 'Forbidden' | 'Internal Server Error' | 'Not Acceptable' | 'Not Found' | 'Unauthorized' | 'Method Not Allowed' | number;
+
+
+/**
  * Transport Request.
  */
  export interface TransportRequest<T = any> {

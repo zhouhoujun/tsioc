@@ -1,8 +1,9 @@
+import { ModuleWithProviders } from '@tsdi/ioc';
 import { Module } from '../metadata/decor';
 import { RouteFactoryResolver, ROUTES, Routes } from './route';
 import { DefaultRouteFactoryResovler } from './route_ref';
 import { MappingRouterResolver, RouterResolver } from './router';
-import { ModuleWithProviders } from '@tsdi/ioc';
+
 
 /*
  * Middleware module.

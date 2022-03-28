@@ -1,5 +1,5 @@
 import { isArray } from '@tsdi/ioc';
-import { TransportStatus } from './handler';
+import { TransportStatus } from './packet';
 
 
 /**

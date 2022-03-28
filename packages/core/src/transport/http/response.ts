@@ -167,6 +167,8 @@ export abstract class HttpResponseBase {
      * URL of the resource retrieved, or null if not available.
      */
     url: string | null;
+    
+    readonly error?: any;
 
     /**
      * Whether the status code falls in the 2xx range.
