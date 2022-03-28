@@ -61,7 +61,7 @@ export abstract class Actions<T, TR = void> extends Action<T, TR> {
         this._befs = [];
         this._acts = [];
         this._afts = [];
-        this._handler = (ctx, next)=> this.handle(ctx, next);
+        this._handler = (ctx, next) => this.handle(ctx, next);
     }
 
     has(action: ActionType) {
@@ -181,10 +181,8 @@ export abstract class Actions<T, TR = void> extends Action<T, TR> {
                 provider.registerAction(ac);
             }
             return provider.getHandle(ac);
-        } else if (isFunction(ac)) {
-            return ac;
         }
-        return ac instanceof Action ? ac.getHandler() : null!;
+        return ac instanceof Action ? ac.getHandler() : ac;
     }
 
     protected resetHandler() {
