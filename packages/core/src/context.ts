@@ -86,11 +86,6 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
     abstract onDestroy(callback: DestroyCallback): void;
 }
 
-/**
- * boot context.
- */
-export const BootContext = ApplicationContext;
-
 
 /**
  * Environment option.

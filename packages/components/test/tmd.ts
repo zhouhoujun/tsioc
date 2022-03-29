@@ -1,5 +1,5 @@
-import { DIModule } from '@tsdi/boot';
 import { Binding, CompilerFacade, Component, Directive, ElementRef, EventEmitter, HostMapping, Input, OnInit, Output, ViewChild, ViewChildren, ViewRef } from '@tsdi/components';
+import { Module } from '@tsdi/core';
 import { Inject, Injectable, Injector } from '@tsdi/ioc';
 
 
@@ -121,7 +121,7 @@ export class Components {
 }
 
 
-@DIModule({
+@Module({
     providers: [
         CustomeService
     ],
@@ -140,7 +140,7 @@ export class SubModule {
 
 }
 
-@DIModule({
+@Module({
     imports:[
         SubModule
     ],

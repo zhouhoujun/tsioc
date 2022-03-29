@@ -17,6 +17,12 @@ export abstract class BootApplicationContext extends ApplicationContext {
     abstract getConfigureManager(): ConfigureManager;
 }
 
+
+/**
+ * boot context.
+ */
+ export const BootContext = BootApplicationContext;
+
 /**
  * BootApplication Environment option.
  */
