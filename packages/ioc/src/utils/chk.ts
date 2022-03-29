@@ -5,8 +5,8 @@ import { clsNameExp } from './exps';
 import { getClassAnnotation } from './util';
 
 
-
 declare let process: any;
+
 export const toString = Object.prototype.toString;
 export const type_func = 'function';
 export const type_undef = 'undefined';

@@ -10,7 +10,6 @@ export * from './args';
 export * from './events';
 export * from './exit';
 export * from './lifecycle';
-export * from './EventEmitter';
 export * from './runnable';
 export * from './startup';
 export * from './service';

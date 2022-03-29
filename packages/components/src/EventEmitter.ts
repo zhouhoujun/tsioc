@@ -21,12 +21,9 @@ export class EventEmitter<T extends any> extends Subject<T | undefined> {
     /**
      * Registers handlers for events emitted by this instance.
      * @param next When supplied, a custom handler for emitted events.
-     * @param error When supplied, a custom handler for an error notification
-     * from this emitter.
-     * @param complete When supplied, a custom handler for a completion
      * notification from this emitter.
      */
-    subscribe(next?: any, error?: any, complete?: any): Subscription {
+    override subscribe(next?: any): Subscription {
         let schedulerFn: (t: any) => any;
         let errorFn = (err: any): any => null;
         let completeFn = (): any => null;
@@ -48,17 +45,9 @@ export class EventEmitter<T extends any> extends Subject<T | undefined> {
         } else {
             schedulerFn = this.async ? (value: any) => { setTimeout(() => next(value)); } :
                 (value: any) => { next(value); };
-
-            if (error) {
-                errorFn = this.async ? (err) => { setTimeout(() => error(err)); } : (err) => { error(err); };
-            }
-
-            if (complete) {
-                completeFn = this.async ? () => { setTimeout(() => complete()); } : () => { complete(); };
-            }
         }
 
-        const sink = super.subscribe(schedulerFn, errorFn, completeFn);
+        const sink = super.subscribe({next: schedulerFn, error: errorFn, complete: completeFn});
 
         if (next instanceof Subscription) {
             next.add(sink);
