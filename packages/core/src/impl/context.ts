@@ -1,16 +1,16 @@
 import {
     Type, lang, isFunction, ModuleMetadata, getClass, Injector, ProviderType, EMPTY_OBJ,
-     DefaultInvocationContext, InvokeArguments, InvocationContext, ArgumentError
+    DefaultInvocationContext, InvokeArguments, InvocationContext, ArgumentError
 } from '@tsdi/ioc';
 import { ILogger, LoggerFactory } from '@tsdi/logs';
 import { PROCESS_ROOT } from '../metadata/tk';
-import { EventEmitter } from '../EventEmitter';
 import { ApplicationContext, ApplicationFactory, EnvironmentOption } from '../context';
 import { RunnableFactory, RunnableFactoryResolver, BootstrapOption } from '../runnable';
 import { ApplicationRunners } from '../runners';
 import { ModuleRef } from '../module.ref';
 import { ApplicationArguments } from '../args';
-import { ApplicationEvent } from '../events';
+import { ApplicationEvent, ApplicationEventMulticaster } from '../events';
+
 
 
 
@@ -24,7 +24,7 @@ import { ApplicationEvent } from '../events';
  */
 export class DefaultApplicationContext extends DefaultInvocationContext implements ApplicationContext {
 
-    private _eventEmitter: EventEmitter<ApplicationEvent>;
+    private _multicaster: ApplicationEventMulticaster;
     exit = true;
 
     private _runners: ApplicationRunners;
@@ -36,7 +36,11 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
             this._args = args;
             options.arguments && lang.forIn(options.arguments, (v, k) => this.setArgument(k, v));
         }
-        this._eventEmitter = new EventEmitter();
+        this._multicaster = injector.get(ApplicationEventMulticaster);
+        if (!this._multicaster) {
+            this._multicaster = new DefaultEventMulticaster();
+            injector.setValue(ApplicationEventMulticaster, this._multicaster);
+        }
         injector.setValue(InvocationContext, this);
         injector.setValue(ApplicationContext, this);
         this._runners = injector.get(ApplicationRunners);
@@ -83,7 +87,7 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
             event = new PayloadApplicationEvent(this, obj);
         }
 
-        this._eventEmitter.emit(event);
+        this._multicaster.emit(event);
 
         // Publish event via parent context as well...
         if (this.parent) {
@@ -94,10 +98,20 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         }
     }
 
+    /**
+     * refresh context.
+     */
+    refresh(): void {
+        // this._multicaster.unsubscribe();
+    }
+
     getAnnoation<TM extends ModuleMetadata>(): TM {
         return this.injector.moduleReflect?.annotation as TM;
     }
+}
 
+export class DefaultEventMulticaster extends ApplicationEventMulticaster {
+    emit(value: ApplicationEvent) { super.next(value); }
 }
 
 export class PayloadApplicationEvent<T = any> extends ApplicationEvent {
@@ -110,6 +124,7 @@ export class PayloadApplicationEvent<T = any> extends ApplicationEvent {
         return getClass(this.playload);
     }
 }
+
 
 /**
  * default application factory.

@@ -5,6 +5,8 @@ import {
     LifecycleHooksResolver, LifecycleHooks, DestroyLifecycleHooks, OperationFactoryResolver,
     DefaultOperationFactoryResolver, isPlainObject, isArray
 } from '@tsdi/ioc';
+import { Subscription } from 'rxjs';
+import { ApplicationEventMulticaster } from '../events';
 import { OnDispose, OnShutdown, ModuleLifecycleHooks, Hooks } from '../lifecycle';
 import { ModuleFactory, ModuleFactoryResolver, ModuleOption } from '../module.factory';
 import { ModuleRef, ModuleType } from '../module.ref';
@@ -56,9 +58,11 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         return this._typeRefl;
     }
 
-    protected createLifecycle(): LifecycleHooks {
+    protected override createLifecycle(): LifecycleHooks {
         let platform = this.scope === 'root' ? this.platform() : undefined;
-        return this.get(LifecycleHooksResolver)?.resolve(platform) ?? new DefaultModuleLifecycleHooks(platform);
+        const lifecycle = this.get(LifecycleHooksResolver)?.resolve(platform) ?? new DefaultModuleLifecycleHooks(platform);
+        (lifecycle as DefaultModuleLifecycleHooks).eventMulticaster = this.get(ApplicationEventMulticaster);
+        return lifecycle;
     }
 
     get injector(): Injector {
@@ -130,6 +134,8 @@ export class DefaultModuleLifecycleHooks extends DestroyLifecycleHooks implement
     private _shutdowns = new Set<OnShutdown>();
     private _disposed = true;
     private _shutdowned = true;
+    private _appEventSubs: Subscription[] = [];
+    eventMulticaster!: ApplicationEventMulticaster;
 
     constructor(platform?: Platform) {
         super(platform);
@@ -171,6 +177,8 @@ export class DefaultModuleLifecycleHooks extends DestroyLifecycleHooks implement
     }
 
     async runDisoise(): Promise<void> {
+        this._appEventSubs?.forEach(e=> e && e.unsubscribe());
+        this._appEventSubs = [];
         this._disposed = true;
         await Promise.all(Array.from(this._disposes.values()).map(s => s && s.onDispose()));
     }
@@ -187,19 +195,23 @@ export class DefaultModuleLifecycleHooks extends DestroyLifecycleHooks implement
     }
 
     register(target: any): void {
-        const { onDestroy, onDispose, onApplicationShutdown } = (target as Hooks);
+        const { onDestroy, onDispose, onApplicationEvent, onApplicationShutdown } = (target as Hooks);
         if (isFunction(onDestroy)) {
             this.regDestory(target);
         }
         if (isFunction(onDispose)) {
-            this.regDispise(target);
+            this.regDispose(target);
+        }
+        if (isFunction(onApplicationEvent)) {
+            this._appEventSubs.push(target.onApplicationEvent(this.eventMulticaster));
         }
         if (isFunction(onApplicationShutdown)) {
             this.regShutdown(target);
         }
+
     }
 
-    protected regDispise(hook: OnDispose): void {
+    protected regDispose(hook: OnDispose): void {
         this._disposed = false;
         this._disposes.add(hook);
     }

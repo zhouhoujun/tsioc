@@ -48,6 +48,10 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
      */
     abstract publishEvent(event: ApplicationEvent | Object): void;
     /**
+     * refresh context.
+     */
+    abstract refresh(): void;
+    /**
      * boot base url.
      *
      * @type {string}

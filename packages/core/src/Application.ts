@@ -148,6 +148,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
         if (exit) {
             exit.register();
         }
+        ctx.refresh();
     }
 
     protected callRunners(ctx: ApplicationContext): Promise<void> {
