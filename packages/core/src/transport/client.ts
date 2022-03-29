@@ -12,7 +12,7 @@ import { TransportContext } from './context';
  * abstract transport client.
  */
 @Abstract()
-export abstract class TransportClient<T extends TransportContext> implements OnDispose {
+export abstract class TransportClient<T extends TransportContext = TransportContext> implements OnDispose {
 
     @Logger()
     protected readonly logger!: ILogger;
