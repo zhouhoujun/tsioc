@@ -1,10 +1,10 @@
-import { HttpRequest, HttpResponse, HttpStatusCode, Protocol, TransportContext, TransportError, TransportOption, TransportStatus } from '@tsdi/core';
+import { HttpEvent, HttpRequest, HttpResponse, HttpStatusCode, Protocol, TransportContext, TransportError, TransportOption, TransportStatus } from '@tsdi/core';
 import { Injector } from '@tsdi/ioc';
 
 
 export class HttpContext extends TransportContext {
 
-    constructor(readonly request: HttpRequest, readonly response: HttpResponse, injector: Injector, options: TransportOption) {
+    constructor(readonly request: HttpRequest, readonly response: HttpEvent, injector: Injector, options: TransportOption) {
         super(injector, options);
     }
 
