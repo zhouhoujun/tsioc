@@ -15,11 +15,7 @@ export abstract class HttpEndpoint implements Endpoint<HttpContext> {
     abstract endpoint(ctx: HttpContext): Observable<HttpContext>;
 }
 
-
-
 /**
  * http middlewares token.
  */
 export const HTTP_MIDDLEWARES = tokenId<(Middleware<HttpContext> | MiddlewareFn<HttpContext>)[]>('MIDDLEWARES');
-
-

@@ -45,17 +45,21 @@ export class HttpClient extends TransportClient<HttpContext> {
         if (this.options.version === 'http2') {
             const listener = this.http2Listener.bind(this);
             http2.connect(this.options.url, this.options.options, listener);
-        } else if(this.options.version === 'http1.1') {
+        } else if (this.options.version === 'http1.1') {
             const url = this.options.url;
             const listener = this.http1Listener.bind(this);
             const secure = (this.options.options?.protocol && protocolChk.test(this.options.options?.protocol)) || protocolChk.test(url);
-            if(secure) {
-               return this.options.options? https.request(url, this.options.options, listener) : https.request(url, listener);
+            if (secure) {
+                return this.options.options ? https.request(url, this.options.options, listener) : https.request(url, listener);
             } else {
-                return this.options.options? http.request(url, this.options.options, listener) : http.request(url, listener);
+                return this.options.options ? http.request(url, this.options.options, listener) : http.request(url, listener);
             }
-            
+
         }
+    }
+
+    protected createContext(pattern: string | TransportRequest<any>, options?: { body?: any; method?: RequestMethod | undefined; headers?: any; context?: InvocationContext<any> | undefined; params?: any; observe?: 'body' | 'events' | 'response' | undefined; reportProgress?: boolean | undefined; responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | undefined; withCredentials?: boolean | undefined; }): HttpContext {
+        throw new Error('Method not implemented.');
     }
 
     protected http1Listener(res: http.IncomingMessage): void {
