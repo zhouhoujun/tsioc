@@ -154,14 +154,14 @@ export abstract class HttpResponseBase {
     /**
      * Response status code.
      */
-    status: number;
+    readonly status: number;
 
     /**
      * Textual description of response status code, defaults to OK.
      *
      * Do not depend on this.
      */
-    statusText: string;
+    readonly statusText: string;
 
     /**
      * URL of the resource retrieved, or null if not available.
@@ -259,7 +259,7 @@ export class HttpResponse<T = any> extends HttpResponseBase {
     /**
      * The response body, or `null` if one was not returned.
      */
-    body: T | null;
+    readonly body: T | null;
 
     /**
      * Construct a new `HttpResponse`.

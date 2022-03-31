@@ -21,7 +21,6 @@ export interface Http2ServerOptions {
 
 export type HttpServerOptions = Http1ServerOptions | Http2ServerOptions;
 
-
 export const HTTP_SERVEROPTIONS = tokenId<HttpServerOptions>('HTTP_SERVEROPTIONS');
 
 @Injectable()
@@ -42,25 +41,28 @@ export class HttpServer extends TransportServer {
     async startup(): Promise<void> {
         let backend: Endpoint<HttpContext>;
         if (this.options.version === 'http2') {
+            const handler = this.http2RequestHandler.bind(this);
             if (this.options.secureOptions) {
-                this._server = http2.createSecureServer(this.options.secureOptions, (req, res)=> {
-
-                });
+                this._server = http2.createSecureServer(this.options.secureOptions, handler);
             } else if (this.options.options) {
-                this._server = http2.createServer(this.options.options);
+                this._server = http2.createServer(this.options.options, handler);
             }
         } else {
+            const handler = this.http1RequestHandler.bind(this);
             if (this.options.secureOptions) {
-                this._server = https.createServer(this.options.secureOptions);
+                this._server = https.createServer(this.options.secureOptions, handler);
             } else if (this.options.options) {
-                this._server = http.createServer(this.options.options);
+                this._server = http.createServer(this.options.options, handler);
             }
         }
         this._endpoint = new Chain(backend, this.middlewares);
     }
 
-    createContext() {
-        
+    protected http1RequestHandler(req: http.IncomingMessage, res: http.ServerResponse) {
+        HttpContext.create()
+    }
+    protected http2RequestHandler(req: http2.Http2ServerRequest, res: http2.Http2ServerResponse) {
+
     }
 
     async close(): Promise<void> {

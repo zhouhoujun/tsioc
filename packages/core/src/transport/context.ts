@@ -1,20 +1,15 @@
-import { Abstract, DefaultInvocationContext, Injector, InvocationContext, InvokeArguments, isPromise } from '@tsdi/ioc';
+import { Abstract, DefaultInvocationContext, Injector, InvokeArguments, isPromise } from '@tsdi/ioc';
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
 import { Protocol, TransportRequest, TransportResponse, TransportStatus } from './packet';
 import { TransportError } from './error';
-import { ServerOption } from './server';
 
 
 /**
  * transport option.
  */
-export interface TransportOption<T extends ServerOption = ServerOption> extends InvokeArguments {
+export interface TransportOption extends InvokeArguments {
     request: TransportRequest;
     reponse: TransportResponse;
-    /**
-     * server option arguments data extends {@link ServerOption}.
-     */
-    arguments: T;
 }
 
 
@@ -22,9 +17,9 @@ export interface TransportOption<T extends ServerOption = ServerOption> extends 
  * transport context.
  */
 @Abstract()
-export abstract class TransportContext<T extends ServerOption = ServerOption> extends DefaultInvocationContext<T> {
+export abstract class TransportContext extends DefaultInvocationContext<any> {
 
-    constructor(injector: Injector, options: TransportOption<T>) {
+    constructor(injector: Injector, options: TransportOption) {
         super(injector, options);
         this.injector.setValue(TransportContext, this);
     }
@@ -140,25 +135,24 @@ export abstract class TransportContext<T extends ServerOption = ServerOption> ex
      */
     abstract throwError(status: TransportStatus, ...messages: string[]): TransportError;
 
+    static create(injector: Injector, options?: TransportOption): TransportContext {
+        throw new Error('Method not implemented.');
+    }
 }
 
 /**
- * transport context factory.
+ * to promise.
+ * @param target 
+ * @returns 
  */
-@Abstract()
-export abstract class TransportContextFactory {
-    /**
-     * create context, instance of {@link TransportContext}.
-     * @param parent parent injector or parent invocation context.
-     * @param options transport options. typeof {@link TransportOption}.
-     */
-    abstract create<T extends ServerOption>(parent: Injector | InvocationContext, options: TransportOption<T>): TransportContext<T>;
+export function promisify<T>(target: T | Observable<T> | Promise<T>): Promise<T> {
+    if (isObservable(target)) {
+        return lastValueFrom(target);
+    } else if (isPromise(target)) {
+        return target;
+    }
+    return Promise.resolve(target);
 }
-
-/**
- * middleware context.
- */
-export const CONTEXT = TransportContext;
 
 
 // /**
@@ -189,17 +183,3 @@ export const CONTEXT = TransportContext;
 //     const route = sortedPatternParams.join(',');
 //     return `{${route}}`;
 // }
-
-/**
- * to promise.
- * @param target 
- * @returns 
- */
-export function promisify<T>(target: T | Observable<T> | Promise<T>): Promise<T> {
-    if (isObservable(target)) {
-        return lastValueFrom(target);
-    } else if (isPromise(target)) {
-        return target;
-    }
-    return Promise.resolve(target);
-}

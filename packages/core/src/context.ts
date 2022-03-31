@@ -1,6 +1,6 @@
 import {
     ProviderType, LoadType, Injector, Abstract, Type, InvokeArguments,
-    ModuleLoader, Destroyable, Modules, DestroyCallback, InvocationContext
+    ModuleLoader, Destroyable, Modules, DestroyCallback, InvocationContext, InvocationOption
 } from '@tsdi/ioc';
 import { ILogger } from '@tsdi/logs';
 import { RunnableFactory, BootstrapOption } from './runnable';
@@ -19,7 +19,7 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
     /**
      * application root module injector.
      */
-     abstract get injector(): ModuleRef;
+    abstract get injector(): ModuleRef;
     /**
      * module instance.
      */
@@ -84,8 +84,17 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
      * associated with this component. Called when the `destroy()` method is invoked.
      */
     abstract onDestroy(callback: DestroyCallback): void;
+
+    static override create(injector: ModuleRef, options?: EnvironmentOption): ApplicationContext {
+        return APP_CONTEXT_IMPL.create(injector, options);
+    }
 }
 
+export const APP_CONTEXT_IMPL = {
+    create(injector: ModuleRef, options?: EnvironmentOption): ApplicationContext {
+        throw new Error('Method not implemented.');
+    }
+}
 
 /**
  * Environment option.

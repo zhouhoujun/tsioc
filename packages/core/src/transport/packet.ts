@@ -55,11 +55,9 @@ export type Protocol = 'tcp' | 'grpc' | 'rmq' | 'kafka' | 'redis' | 'amqp' | 'ss
  */
  export interface TransportResponse<T = any>{
     error?: Error;
-    text?: string;
-
     type?: number;
-    disposed?: boolean;
-    status?: string | number;
+    status?: any;
+    statusText?: string;
     ok?: boolean;
     body?: T;
 }

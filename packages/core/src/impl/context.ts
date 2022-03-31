@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { ILogger, LoggerFactory } from '@tsdi/logs';
 import { PROCESS_ROOT } from '../metadata/tk';
-import { ApplicationContext, ApplicationFactory, EnvironmentOption } from '../context';
+import { ApplicationContext, ApplicationFactory, APP_CONTEXT_IMPL, EnvironmentOption } from '../context';
 import { RunnableFactory, RunnableFactoryResolver, BootstrapOption } from '../runnable';
 import { ApplicationRunners } from '../runners';
 import { ModuleRef } from '../module.ref';
@@ -130,6 +130,11 @@ export class PayloadApplicationEvent<T = any> extends ApplicationEvent {
  * default application factory.
  */
 export class DefaultApplicationFactory extends ApplicationFactory {
+
+    constructor() {
+        super();
+        APP_CONTEXT_IMPL.create = this.create.bind(this);
+    }
 
     create<T>(root: ModuleRef<T>, option?: EnvironmentOption): ApplicationContext {
         if (root.moduleReflect.annotation?.baseURL) {
