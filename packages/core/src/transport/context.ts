@@ -1,6 +1,6 @@
 import { Abstract, DefaultInvocationContext, Injector, InvokeArguments, isPromise } from '@tsdi/ioc';
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
-import { Protocol, TransportRequest, TransportResponse, TransportStatus } from './packet';
+import { Protocol, TransportStatus } from './packet';
 import { TransportError } from './error';
 
 
@@ -8,8 +8,8 @@ import { TransportError } from './error';
  * transport option.
  */
 export interface TransportOption extends InvokeArguments {
-    request: TransportRequest;
-    reponse: TransportResponse;
+    request: any;
+    reponse: any;
 }
 
 
@@ -27,11 +27,11 @@ export abstract class TransportContext extends DefaultInvocationContext<any> {
     /**
      * transport request.
      */
-    abstract get request(): TransportRequest;
+    abstract get request(): any;
     /**
      * transport response.
      */
-    abstract get response(): TransportResponse;
+    abstract get response(): any;
     /**
      * transport protocol.
      */

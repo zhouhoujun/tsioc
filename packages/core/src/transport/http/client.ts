@@ -1,6 +1,5 @@
 import { Injectable, InvocationContext, type_str } from '@tsdi/ioc';
 import { concatMap, filter, map, Observable, of } from 'rxjs';
-import { RequestMethod } from '../packet';
 import { HttpHandler } from './handler';
 import { HttpHeaders } from './headers';
 import { HttpParams, HttpParamsOptions } from './params';

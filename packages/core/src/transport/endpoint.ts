@@ -40,6 +40,7 @@ export interface Middleware<T extends TransportContext = TransportContext> {
     middleware(ctx: T, next: Endpoint<T>): Observable<T>;
 }
 
+export type TransportMiddleware<T extends TransportContext = TransportContext> = Middleware<T> | MiddlewareFn<T>;
 
 /**
  * middleware chain. for composing middlewares. Requests will
@@ -49,7 +50,7 @@ export interface Middleware<T extends TransportContext = TransportContext> {
 export class Chain<T extends TransportContext = TransportContext> implements Endpoint<T> {
 
     private chain!: Endpoint<T>;
-    constructor(private backend: EndpointFn<T> | Endpoint<T>, private middlewares: (Middleware<T> | MiddlewareFn<T>)[]) {
+    constructor(private backend: EndpointFn<T> | Endpoint<T>, private middlewares: TransportMiddleware<T>[]) {
 
     }
 
@@ -70,7 +71,7 @@ export class Chain<T extends TransportContext = TransportContext> implements End
 export class InterceptorEndpoint<T extends TransportContext = TransportContext> implements Endpoint<T> {
     private middle: Middleware<T>;
     private next: Endpoint<T>;
-    constructor(endpoint: Endpoint<T> | EndpointFn<T>, middleware: MiddlewareFn<T> | Middleware<T>) {
+    constructor(endpoint: Endpoint<T> | EndpointFn<T>, middleware: TransportMiddleware<T>) {
         this.next = isFunction(endpoint) ? { endpoint } : endpoint;
         this.middle = isFunction(middleware) ? { middleware } : middleware;
     }

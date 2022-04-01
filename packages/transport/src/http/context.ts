@@ -1,52 +1,26 @@
-import { HttpEvent, HttpRequest, HttpResponse, HttpStatusCode, Protocol, TransportContext, TransportError, TransportOption, TransportStatus } from '@tsdi/core';
-import { Injector } from '@tsdi/ioc';
+import { HttpStatusCode, Protocol, TransportContext, TransportError, TransportMiddleware, TransportOption, TransportStatus } from '@tsdi/core';
+import { Abstract, Injector } from '@tsdi/ioc';
 
 
-export class HttpContext extends TransportContext {
+export type HttpMiddleware = TransportMiddleware<HttpContext>;
 
-    constructor(readonly request: HttpRequest, readonly response: HttpEvent, injector: Injector, options: TransportOption) {
+@Abstract()
+export abstract class HttpContext extends TransportContext {
+
+    constructor(injector: Injector, options: TransportOption) {
         super(injector, options);
     }
 
-    get protocol(): Protocol {
-        throw new Error('Method not implemented.');
-    }
-    get pattern(): string {
-        throw new Error('Method not implemented.');
-    }
-    isUpdate(): boolean {
-        throw new Error('Method not implemented.');
-    }
-    get query(): any {
-        throw new Error('Method not implemented.');
-    }
-    get restful(): Record<string, string | number> {
-        throw new Error('Method not implemented.');
-    }
-    set restful(value: Record<string, string | number>) {
-        throw new Error('Method not implemented.');
-    }
-
-    get sent(): boolean {
-        throw new Error('Method not implemented.');
-    }
-    get ok(): boolean {
-        throw new Error('Method not implemented.');
-    }
-    set ok(value: boolean) {
-        throw new Error('Method not implemented.');
-    }
-    get message(): string {
-        throw new Error('Method not implemented.');
-    }
-    set message(msg: string) {
-        throw new Error('Method not implemented.');
-    }
-    get body(): any {
-        throw new Error('Method not implemented.');
-    }
-    set body(body: any) {
-        throw new Error('Method not implemented.');
+    /**
+     * Short-hand for:
+     *
+     *    this.protocol == 'https'
+     *
+     * @return {Boolean}
+     * @api public
+     */
+    get secure(): boolean {
+        return this.protocol === 'https';
     }
 
     get contentType(): string {
@@ -63,19 +37,6 @@ export class HttpContext extends TransportContext {
 
     set status(code: HttpStatusCode) {
         this.response.status = code;
-    }
-
-
-    /**
-     * Short-hand for:
-     *
-     *    this.protocol == 'https'
-     *
-     * @return {Boolean}
-     * @api public
-     */
-    get secure(): boolean {
-        return this.protocol === 'https';
     }
 
 
@@ -110,9 +71,7 @@ export class HttpContext extends TransportContext {
      * @param {String} [alt]
      * @api public
      */
-    redirect(url: string, alt?: string): void {
-        throw new Error('Method not implemented.');
-    }
+    abstract redirect(url: string, alt?: string): void;
 
 
     /**
@@ -122,7 +81,7 @@ export class HttpContext extends TransportContext {
      * @param options content disposition.
      * @api public
      */
-    attachment(filename: string, options?: {
+    abstract attachment(filename: string, options?: {
         /**
         * Specifies the disposition type.
         * This can also be "inline", or any other value (all values except `inline` are treated like attachment,
@@ -138,18 +97,14 @@ export class HttpContext extends TransportContext {
          * @default true
          */
         fallback?: string | boolean | undefined;
-    }): void {
+    }): void;
+
+    abstract write(chunk: string | Uint8Array, cb?: (error: Error | null | undefined) => void): boolean;
+    abstract write(chunk: string | Uint8Array, encoding: BufferEncoding, cb?: (error: Error | null | undefined) => void): boolean;
+
+    abstract throwError(status: TransportStatus, ...messages: string[]): TransportError<TransportStatus>;
+
+    static create(injector: Injector, options?: TransportOption): HttpContext {
         throw new Error('Method not implemented.');
     }
-
-    write(chunk: string | Uint8Array, cb?: (error: Error | null | undefined) => void): boolean;
-    write(chunk: string | Uint8Array, encoding: BufferEncoding, cb?: (error: Error | null | undefined) => void): boolean;
-    write(chunk: string | Uint8Array, arg1?: BufferEncoding | ((error: Error | null | undefined) => void), cb?: (error: Error | null | undefined) => void): boolean {
-        throw new Error('Method not implemented.');
-    }
-
-    throwError(status: TransportStatus, ...messages: string[]): TransportError<TransportStatus> {
-        throw new Error('Method not implemented.');
-    }
-
 }

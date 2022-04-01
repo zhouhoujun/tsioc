@@ -1,4 +1,4 @@
-import { Endpoint, Middleware, MiddlewareFn, RequestMethod, ServerOption, TransportClient, TransportContext, TransportRequest } from '@tsdi/core';
+import { Chain, Endpoint, Middleware, MiddlewareFn, RequestMethod, ServerOption, TransportClient, TransportContext, TransportRequest } from '@tsdi/core';
 import { Inject, Injectable, InvocationContext, lang, tokenId } from '@tsdi/ioc';
 import * as http from 'http';
 import * as https from 'https';
@@ -6,7 +6,8 @@ import * as http2 from 'http2';
 import { Socket } from 'net';
 import { TLSSocket } from 'tls';
 import { HTTP_MIDDLEWARES } from './endpoint';
-import { HttpContext } from './context';
+import { HttpContext, HttpMiddleware } from './context';
+import { Observable } from 'rxjs';
 
 
 
@@ -30,31 +31,45 @@ export const HTTP_CLIENTOPTIONS = tokenId<HttpClientOptions>('HTTP_CLIENTOPTIONS
 @Injectable()
 export class HttpClient extends TransportClient<HttpContext> {
 
+    private http2client?: http2.ClientHttp2Session;
+    private _endpoint!: Endpoint<HttpContext>;
+
     constructor(
-        @Inject(HTTP_MIDDLEWARES) private middlewares: (Middleware<HttpContext> | MiddlewareFn<HttpContext>)[],
+        @Inject() private context: InvocationContext,
+        @Inject(HTTP_MIDDLEWARES) private middlewares: HttpMiddleware[],
         @Inject(HTTP_CLIENTOPTIONS) private options: HttpClientOptions) {
         super()
     }
 
 
     get endpoint(): Endpoint<HttpContext> {
-        throw new Error('Method not implemented.');
+        return this._endpoint;
     }
 
     async connect(): Promise<any> {
+
         if (this.options.version === 'http2') {
-            const listener = this.http2Listener.bind(this);
-            http2.connect(this.options.url, this.options.options, listener);
+            if (this.http2client && !this.http2client.closed) {
+                return;
+            }
+            this.http2client = http2.connect(this.options.url, this.options.options);
+            this._endpoint = new Chain(new Http2BackEndpoint(this.http2client), this.middlewares);
         } else if (this.options.version === 'http1.1') {
             const url = this.options.url;
-            const listener = this.http1Listener.bind(this);
+            let client: http.ClientRequest;
             const secure = (this.options.options?.protocol && protocolChk.test(this.options.options?.protocol)) || protocolChk.test(url);
             if (secure) {
-                return this.options.options ? https.request(url, this.options.options, listener) : https.request(url, listener);
+                client = this.options.options ? https.request(url, this.options.options) : https.request(url);
             } else {
-                return this.options.options ? http.request(url, this.options.options, listener) : http.request(url, listener);
+                client = this.options.options ? http.request(url, this.options.options) : http.request(url);
             }
-
+            const defer = lang.defer();
+            client.on('connect', (res, socket) => {
+                this._endpoint = new Chain(new Http1BackEndpoint(client), this.middlewares);
+                defer.resolve(res);
+            });
+            client.on('error', defer.reject);
+            await defer.promise;
         }
     }
 
@@ -73,5 +88,43 @@ export class HttpClient extends TransportClient<HttpContext> {
         throw new Error('Method not implemented.');
     }
 
+}
+
+export class HttpBackEndpoint implements Endpoint<HttpContext> {
+    constructor(private options: http.RequestOptions) {
+
+    }
+
+    endpoint(ctx: HttpContext): Observable<HttpContext> {
+        const client = this.options ? http.request(ctx.pattern, this.options) : http.request(ctx.pattern);
+    }
+
+}
+
+
+export class Http2BackEndpoint implements Endpoint<HttpContext> {
+    constructor(private client: http2.ClientHttp2Session) {
+
+    }
+    endpoint(ctx: HttpContext): Observable<HttpContext> {
+        const req = this.client.request({
+            path: ctx.pattern
+        });
+
+        req.on('response', (headers, flags) => {
+            for (const name in headers) {
+                console.log(`${name}: ${headers[name]}`);
+            }
+        });
+
+        req.setEncoding('utf8');
+        let data = '';
+        req.on('data', (chunk) => { data += chunk; });
+        req.on('end', () => {
+            console.log(`\n${data}`);
+            this.client.close();
+        });
+        req.end();
+    }
 
 }
