@@ -1,4 +1,3 @@
-
 export * from './EventStreamResult';
 export * from './FileResult';
 export * from './JsonResult';
