@@ -1,6 +1,6 @@
 import { ApplicationContext, Application, formatDate } from '../src';
 import { After, Before, Suite, Test } from '@tsdi/unit';
-import { ConfigureLoggerManager, LogConfigure } from '@tsdi/logs';
+import { ConfigureLoggerManager, ILogger, LogConfigure } from '@tsdi/logs';
 import expect = require('expect');
 import { ServerMainModule } from './demo';
 import * as log4js from 'log4js';
@@ -35,7 +35,7 @@ export class ServerBootTest {
         expect(cfg).toBeDefined();
         const loggerMgr = this.ctx.resolve(ConfigureLoggerManager);
         expect(loggerMgr).toBeInstanceOf(ConfigureLoggerManager);
-        const logger = loggerMgr.getLogger();
+        const logger = loggerMgr.getLogger() as ILogger;
         expect(logger).toBeDefined();
         expect((logger as log4js.Logger).category).toEqual('default');
     }

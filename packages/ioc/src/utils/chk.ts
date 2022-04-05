@@ -228,6 +228,13 @@ export function isPlainObject(target: any): target is Record<string, any> {
  */
 export const isBaseObject = isPlainObject;
 
+
+const hasOwnProperty = Object.hasOwnProperty;
+
+export function hasOwn(target: any, property: string) {
+    return hasOwnProperty.call(target, property);
+}
+
 /**
  * is metadata object or not.
  *

@@ -39,8 +39,27 @@ export abstract class HttpContext extends TransportContext {
         return this.response.getHeader('Content-Type')?.toString() ?? '';
     }
 
-    set contentType(contentType: string) {
-        this.response.setHeader('Content-Type', contentType);
+    /**
+     * Set Content-Type response header with `type` through `mime.lookup()`
+     * when it does not contain a charset.
+     *
+     * Examples:
+     *
+     *     this.type = '.html';
+     *     this.type = 'html';
+     *     this.type = 'json';
+     *     this.type = 'application/json';
+     *     this.type = 'png';
+     *
+     * @param {String} type
+     * @api public
+     */
+    set contentType(type: string) {
+        if (type) {
+            this.response.setHeader('Content-Type', type);
+        } else {
+            this.response.removeHeader('Content-Type');
+        }
     }
 
     get status(): HttpStatusCode {

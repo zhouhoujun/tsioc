@@ -1,6 +1,6 @@
 import { BootApplicationContext, BootApplication } from '../src';
 import { After, Before, Suite, Test } from '@tsdi/unit';
-import { ConfigureLoggerManager } from '@tsdi/logs';
+import { ConfigureLoggerManager, ILogger } from '@tsdi/logs';
 import expect = require('expect');
 import { ServerMainModule, configurtion } from './demo';
 import * as log4js from 'log4js';
@@ -29,7 +29,7 @@ export class ServerBootTest {
     isLog4js() {
         const cfg = this.ctx.getConfiguration();
         expect(cfg.logConfig).toBeDefined();
-        const logger = this.ctx.getLogger();
+        const logger = this.ctx.getLogger() as ILogger;
         expect(logger).toBeDefined();
         expect((logger as log4js.Logger).category).toEqual('default');
     }
