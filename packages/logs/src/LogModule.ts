@@ -1,6 +1,6 @@
 import { Inject, IocExt, Injector, ProviderType } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
-import { AnnotationLoggerAspect } from './aspect';
+import { AnnotationLogAspect } from './aspect';
 import { ConsoleLogManager, ConfigureLoggerManager } from './manager';
 import { DefaultLogFormater } from './formater';
 import { LoggerFactory } from './factory';
@@ -11,7 +11,7 @@ import { LoggerFactory } from './factory';
  */
 export const LOGGER_PROVIDERS: ProviderType[] = [
     ConfigureLoggerManager,
-    AnnotationLoggerAspect,
+    AnnotationLogAspect,
     DefaultLogFormater,
     ConsoleLogManager,
     { provide: LoggerFactory, useExisting: ConfigureLoggerManager }

@@ -2,7 +2,7 @@ import {
     ProviderType, LoadType, Injector, Abstract, Type, InvokeArguments,
     ModuleLoader, Destroyable, Modules, DestroyCallback, InvocationContext, InvocationOption
 } from '@tsdi/ioc';
-import { ILogger } from '@tsdi/logs';
+import { Logger } from '@tsdi/logs';
 import { RunnableFactory, BootstrapOption } from './runnable';
 import { ApplicationRunners } from './runners';
 import { ModuleOption } from './module.factory';
@@ -34,7 +34,7 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
      * get logger.
      * @param name 
      */
-    abstract getLogger(name?: string): ILogger;
+    abstract getLogger(name?: string): Logger;
     /**
      * Notify all <strong>matching</strong> listeners registered with this
      * application of an application event. Events may be framework events

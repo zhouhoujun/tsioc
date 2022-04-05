@@ -1,10 +1,10 @@
 import { Singleton } from '@tsdi/ioc';
 import { Aspect, Around, Joinpoint } from '@tsdi/aop';
-import { LoggerAspect } from '../src';
+import { LogAspect } from '../src';
 
 @Singleton()
 @Aspect()
-export class DebugLogAspect extends LoggerAspect {
+export class DebugLogAspect extends LogAspect {
 
     @Around('execution(*.*)')
     logging(joinPoint: Joinpoint) {

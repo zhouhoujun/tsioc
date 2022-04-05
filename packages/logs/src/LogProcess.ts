@@ -1,8 +1,8 @@
 import { Abstract, Injector, Inject } from '@tsdi/ioc';
 import { Joinpoint } from '@tsdi/aop';
-import { ILogger } from './logger';
+import { Logger } from './logger';
 import { Level } from './Level';
-import { Logger, LoggerMetadata } from './metadata/Logger';
+import { Log, LogMetadata } from './metadata/log';
 import { ConfigureLoggerManager } from './manager';
 import { LoggerManager } from './LoggerManager';
 
@@ -15,16 +15,16 @@ import { LoggerManager } from './LoggerManager';
 export abstract class LogProcess {
     static ρNPT = true;
 
-    @Logger() logger!: ILogger;
+    @Log() logger!: Logger;
     @Inject(ConfigureLoggerManager) logManger!: LoggerManager;
     @Inject() protected injector!: Injector
 
-    protected getLogger(name?: string): ILogger {
+    protected getLogger(name?: string): Logger {
         return name ? this.logManger.getLogger(name) : this.logger;
     }
 
     abstract processLog(joinPoint: Joinpoint, ...messages: any[]): void;
     abstract processLog(joinPoint: Joinpoint, level: Level, ...messages: any[]): void;
-    abstract processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], ...messages: any[]): void;
-    abstract processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], level: Level, ...messages: any[]): void;
+    abstract processLog(joinPoint: Joinpoint, annotation: LogMetadata[], ...messages: any[]): void;
+    abstract processLog(joinPoint: Joinpoint, annotation: LogMetadata[], level: Level, ...messages: any[]): void;
 }

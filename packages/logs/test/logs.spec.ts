@@ -1,5 +1,5 @@
 import { Injectable, Inject, Autowired, Container, Injector, refl } from '@tsdi/ioc';
-import { LogModule, Logger, ILogger } from '../src';
+import { LogModule, Log, Logger } from '../src';
 import { DebugLogAspect } from './DebugLogAspect';
 import { AnntotationLogAspect } from './AnntotationLogAspect';
 import expect = require('expect');
@@ -25,11 +25,11 @@ class Child extends Person {
 }
 
 class MethodTest {
-    constructor(@Logger() readonly logger1: ILogger) {
+    constructor(@Log() readonly logger1: Logger) {
 
     }
 
-    @Logger() readonly logger2!: ILogger
+    @Log() readonly logger2!: Logger
 
     @Autowired()
     sayHello(person: Person) {
@@ -44,11 +44,11 @@ class MethodTest2 {
     @Inject()
     testAt!: Date;
 
-    constructor(@Logger(MethodTest2) readonly logger: ILogger) {
+    constructor(@Log(MethodTest2) readonly logger: Logger) {
 
     }
 
-    @Logger('it is test mesasge, for MethodTest2 sayHello invoked.', 'Hanmm')
+    @Log('it is test mesasge, for MethodTest2 sayHello invoked.', 'Hanmm')
     sayHello(@Inject(Child) person: Person) {
         console.log(person.say());
         return person.say();
@@ -59,15 +59,15 @@ class MethodTest2 {
 @Injectable('Test3')
 class MethodTest3 {
 
-    @Logger(MethodTest3)
-    logger!: ILogger;
+    @Log(MethodTest3)
+    logger!: Logger;
 
     constructor() {
 
     }
 
     @Autowired()
-    @Logger('it is test mesasge, for MethodTest3 sayHello invoked.', 'Test3')
+    @Log('it is test mesasge, for MethodTest3 sayHello invoked.', 'Test3')
     sayHello(@Inject(Child) personA: Person, personB: Person) {
         return personA.say() + ', ' + personB.say();
     }

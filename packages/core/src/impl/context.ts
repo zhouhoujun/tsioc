@@ -2,7 +2,7 @@ import {
     Type, lang, isFunction, ModuleMetadata, getClass, Injector, ProviderType, EMPTY_OBJ,
     DefaultInvocationContext, InvokeArguments, InvocationContext, ArgumentError
 } from '@tsdi/ioc';
-import { ILogger, LoggerFactory } from '@tsdi/logs';
+import { Logger, LoggerFactory } from '@tsdi/logs';
 import { PROCESS_ROOT } from '../metadata/tk';
 import { ApplicationContext, ApplicationFactory, APP_CONTEXT_IMPL, EnvironmentOption } from '../context';
 import { RunnableFactory, RunnableFactoryResolver, BootstrapOption } from '../runnable';
@@ -69,7 +69,7 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         return factory.create(this.injector, option).run();
     }
 
-    getLogger(name?: string): ILogger {
+    getLogger(name?: string): Logger {
         return this.injector.get(LoggerFactory)?.getLogger(name);
     }
 

@@ -7,7 +7,7 @@ export * from './LogConfigure';
 export * from './formater';
 export * from './LogProcess';
 export * from './aspect';
-export * from './metadata/Logger';
+export * from './metadata/log';
 export * from './LogModule';
 export * from './debugs/aspect';
 

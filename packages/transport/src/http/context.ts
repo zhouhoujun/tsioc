@@ -1,5 +1,8 @@
 import { HttpStatusCode, Protocol, TransportContext, TransportError, TransportMiddleware, TransportOption, TransportStatus } from '@tsdi/core';
-import { Abstract, Injector } from '@tsdi/ioc';
+import { Abstract, Injector, tokenId } from '@tsdi/ioc';
+import * as http from 'http';
+import * as https from 'https';
+import * as http2 from 'http2';
 
 
 export type HttpMiddleware = TransportMiddleware<HttpContext>;
@@ -10,6 +13,15 @@ export abstract class HttpContext extends TransportContext {
     constructor(injector: Injector, options: TransportOption) {
         super(injector, options);
     }
+
+    /**
+     * transport request.
+     */
+    abstract get request(): http.IncomingMessage | http2.Http2ServerRequest;
+    /**
+     * transport response.
+     */
+    abstract get response(): http.ServerResponse | http2.Http2ServerResponse;
 
     /**
      * Short-hand for:
@@ -24,21 +36,28 @@ export abstract class HttpContext extends TransportContext {
     }
 
     get contentType(): string {
-        return this.response.headers.get('Content-Type') ?? '';
+        return this.response.getHeader('Content-Type')?.toString() ?? '';
     }
 
     set contentType(contentType: string) {
-        this.response.headers.set('Content-Type', contentType);
+        this.response.setHeader('Content-Type', contentType);
     }
 
     get status(): HttpStatusCode {
-        return this.response.status;
+        return this.response.statusCode;
     }
 
     set status(code: HttpStatusCode) {
-        this.response.status = code;
+        this.response.statusCode = code;
     }
 
+    get message() {
+        return this.response.statusMessage;
+    }
+
+    set message(msg: string) {
+        this.response.statusMessage = msg;
+    }
 
     private _err!: Error;
     set error(err: Error) {
@@ -108,3 +127,8 @@ export abstract class HttpContext extends TransportContext {
         throw new Error('Method not implemented.');
     }
 }
+
+/**
+ * http middlewares token.
+ */
+export const HTTP_MIDDLEWARES = tokenId<HttpMiddleware[]>('MIDDLEWARES');

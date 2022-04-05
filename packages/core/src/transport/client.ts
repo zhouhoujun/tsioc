@@ -1,5 +1,5 @@
 import { Abstract, InvocationContext, isNil } from '@tsdi/ioc';
-import { ILogger, Logger } from '@tsdi/logs';
+import { Logger, Log } from '@tsdi/logs';
 import { defer, Observable, throwError } from 'rxjs';
 import { concatMap } from 'rxjs/operators';
 import { OnDispose } from '../lifecycle';
@@ -14,8 +14,8 @@ import { TransportContext } from './context';
 @Abstract()
 export abstract class TransportClient<T extends TransportContext = TransportContext> implements OnDispose {
 
-    @Logger()
-    protected readonly logger!: ILogger;
+    @Log()
+    protected readonly logger!: Logger;
     /**
      * transport handler.
      */

@@ -1,5 +1,5 @@
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { ILogger, Logger } from '@tsdi/logs';
+import { Logger, Log } from '@tsdi/logs';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
 import { Startup } from '../startup';
@@ -15,8 +15,8 @@ import { TransportContext } from './context';
 @Runner('startup')
 export abstract class TransportServer<T extends TransportContext = TransportContext> implements Startup, OnDispose {
 
-    @Logger()
-    protected readonly logger!: ILogger;
+    @Log()
+    protected readonly logger!: Logger;
     /**
      * startup server.
      */

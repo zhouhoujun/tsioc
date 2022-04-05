@@ -1,5 +1,5 @@
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { ILogger } from './logger';
+import { Logger } from './logger';
 import { LoggerFactory } from './factory';
 
 /**
@@ -29,9 +29,9 @@ export abstract class LoggerManager implements LoggerFactory {
      * get logger.
      *
      * @param {string} [name]
-     * @returns {ILogger}
+     * @returns {Logger}
      */
-    abstract getLogger(name?: string): ILogger
+    abstract getLogger(name?: string): Logger
 }
 
 

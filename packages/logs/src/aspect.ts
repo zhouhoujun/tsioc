@@ -1,7 +1,7 @@
 import { Abstract, isFunction, isToken, isObject, isArray, Singleton, isNil, EMPTY_OBJ } from '@tsdi/ioc';
 import { Aspect, Joinpoint, JoinpointState, Pointcut } from '@tsdi/aop';
-import { ILogger } from './logger';
-import { LoggerMetadata } from './metadata/Logger';
+import { Logger } from './logger';
+import { LogMetadata } from './metadata/log';
 import { isLevel, Level } from './Level';
 import { LogProcess } from './LogProcess';
 import { LogFormater, DefaultLogFormater } from './formater';
@@ -9,25 +9,25 @@ import { LogConfigure } from './LogConfigure';
 import { ConfigureLoggerManager } from './manager';
 
 /**
- * base looger aspect. for extends your logger aspect.
+ * base log aspect. for extends your log aspect.
  *
  * @export
- * @class LoggerAspect
+ * @class LogAspect
  */
 @Abstract()
-export abstract class LoggerAspect extends LogProcess {
+export abstract class LogAspect extends LogProcess {
 
     processLog(joinPoint: Joinpoint, ...messages: any[]): void;
     processLog(joinPoint: Joinpoint, level: Level, ...messages: any[]): void;
     processLog(joinPoint: Joinpoint, level: Level, ...messages: any[]): void;
-    processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], ...messages: any[]): void;
-    processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], level: Level, ...messages: any[]): void
+    processLog(joinPoint: Joinpoint, annotation: LogMetadata[], ...messages: any[]): void;
+    processLog(joinPoint: Joinpoint, annotation: LogMetadata[], level: Level, ...messages: any[]): void
     processLog(joinPoint: Joinpoint, annotation: any, level: any, ...messages: any[]): void {
         if (isArray(annotation)) {
             if (!isLevel(level)) {
                 !isNil(level) && messages.unshift(level);
             }
-            annotation.forEach((logmeta: LoggerMetadata) => {
+            annotation.forEach((logmeta: LogMetadata) => {
                 let canlog = logmeta.express ? logmeta.express(joinPoint) : true;
                 if (canlog && logmeta.message) {
                     this.writeLog(
@@ -52,7 +52,7 @@ export abstract class LoggerAspect extends LogProcess {
         }
     }
 
-    protected writeLog(logger: ILogger, joinPoint: Joinpoint, level: Level, format: boolean, ...messages: any[]) {
+    protected writeLog(logger: Logger, joinPoint: Joinpoint, level: Level, format: boolean, ...messages: any[]) {
         (async () => {
             let formatMsgs = format ? this.formatMessage(joinPoint, logger, level, ...messages) : messages;
             if (level) {
@@ -99,7 +99,7 @@ export abstract class LoggerAspect extends LogProcess {
         return this._formater;
     }
 
-    protected formatMessage(joinPoint: Joinpoint, logger: ILogger, level: Level, ...messages: any[]): any[] {
+    protected formatMessage(joinPoint: Joinpoint, logger: Logger, level: Level, ...messages: any[]): any[] {
         let formater = this.getFormater();
         if (formater) {
             messages = formater.format(joinPoint, level, logger, ...messages);
@@ -118,18 +118,18 @@ export abstract class LoggerAspect extends LogProcess {
 
 
 /**
- * Annotation logger aspect. log for class or method with @Logger decorator.
+ * Annotation log aspect. log for class or method with @Log decorator.
  *
  * @export
- * @class AnnotationLogerAspect
- * @extends {LoggerAspect}
+ * @class AnnotationLogAspect
+ * @extends {LogAspect}
  */
 @Singleton()
 @Aspect()
-export class AnnotationLoggerAspect extends LoggerAspect {
+export class AnnotationLogAspect extends LogAspect {
 
-    @Pointcut('@annotation(Logger)', 'annotation')
-    logging(joinPoint: Joinpoint, annotation: LoggerMetadata[]) {
+    @Pointcut('@annotation(Log)', 'annotation')
+    logging(joinPoint: Joinpoint, annotation: LogMetadata[]) {
         this.processLog(joinPoint, annotation);
     }
 }

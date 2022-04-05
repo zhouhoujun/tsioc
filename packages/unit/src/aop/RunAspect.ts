@@ -1,6 +1,6 @@
 import { EMPTY_OBJ } from '@tsdi/ioc';
 import { Aspect, Around, Joinpoint, JoinpointState, AfterThrowing } from '@tsdi/aop';
-import { LoggerAspect } from '@tsdi/logs';
+import { LogAspect } from '@tsdi/logs';
 import { DefaultTestReport } from '../reports/TestReport';
 import { TestReport, SuiteDescribe, ICaseDescribe } from '../reports/interface';
 import { UnitRunner } from '../runner/Runner';
@@ -11,7 +11,7 @@ import { OldTestRunner } from '../runner/OldTestRunner';
     within: [SuiteRunner, OldTestRunner],
     singleton: true
 })
-export class RunAspect extends LoggerAspect {
+export class RunAspect extends LogAspect {
 
     report!: TestReport;
     getReport(): TestReport {

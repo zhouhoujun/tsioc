@@ -1,5 +1,5 @@
 import { EMPTY_OBJ, getToken, Inject, Injectable, Injector, isFunction, isString, Token, Type } from '@tsdi/ioc';
-import { ILogger } from './logger';
+import { Logger } from './logger';
 import { LogConfigure } from './LogConfigure';
 import { Level, Levels } from './Level';
 import { LoggerConfig, LoggerManager } from './LoggerManager';
@@ -74,7 +74,7 @@ export class ConfigureLoggerManager implements LoggerManager {
         this.logManger.configure(config);
     }
 
-    getLogger(name?: string): ILogger {
+    getLogger(name?: string): Logger {
         return this.logManger.getLogger(name);
     }
 }
@@ -110,7 +110,7 @@ export class ConsoleLogManager implements LoggerManager {
         this.config = config;
     }
 
-    getLogger(name?: string): ILogger {
+    getLogger(name?: string): Logger {
         return new ConsoleLog(name, this.config?.level);
     }
 
@@ -120,15 +120,15 @@ export class ConsoleLogManager implements LoggerManager {
  * console log.
  *
  * @class ConsoleLog
- * @implements {ILogger}
+ * @implements {Logger}
  */
-class ConsoleLog implements ILogger {
+class ConsoleLog implements Logger {
     static ρNPT = true;
-
+    readonly name: string | undefined;
     formatHeader = true;
 
-    constructor(readonly name?: string, public level: Level = 'info') {
-
+    constructor(name?: string, public level: Level = 'info') {
+        this.name = name;
     }
 
     protected machLevel(level: Levels): boolean {

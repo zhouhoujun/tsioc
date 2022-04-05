@@ -4,7 +4,7 @@ import {
 } from '../src';
 import { Injectable, Inject, OnDestroy, lang, Abstract } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
-import { ILogger, LogConfigure, Logger, LogModule } from '@tsdi/logs';
+import { Logger, LogConfigure, Log, LogModule } from '@tsdi/logs';
 import * as net from 'net';
 import { ServerBootstrapModule, ServerLogsModule } from '@tsdi/platform-server';
 
@@ -45,7 +45,7 @@ export class ModuleA {
 @Injectable()
 export class ClassSevice implements Runnable {
 
-    @Logger() logger!: ILogger;
+    @Logger() logger!: Logger;
 
     @Inject('mark', { defaultValue: '' })
     mark!: string;
@@ -110,7 +110,7 @@ export class ModuleB { }
 @ComponentScan()
 export class SocketService implements ConfigureService, OnDispose {
 
-    @Logger() logger!: ILogger;
+    @Logger() logger!: Logger;
 
     public tcpServer!: net.Server;
     private init_times = 0;

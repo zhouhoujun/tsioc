@@ -1,6 +1,6 @@
 import { Abstract, Singleton, Token } from '@tsdi/ioc';
 import { Joinpoint, JoinpointState, NonePointcut } from '@tsdi/aop';
-import { ILogger } from './logger';
+import { Logger } from './logger';
 import { Level } from './Level';
 
 
@@ -15,11 +15,11 @@ export abstract class LogFormater {
      *
      * @param {Joinpoint} joinPoint
      * @param {Level} level
-     * @param {ILogger} logger
+     * @param {Logger} logger
      * @param {...any[]} messages
      * @returns {string}
      */
-    abstract format(joinPoint: Joinpoint, level: Level, logger: ILogger, ...messages: any[]): any[];
+    abstract format(joinPoint: Joinpoint, level: Level, logger: Logger, ...messages: any[]): any[];
 }
 
 /**
@@ -36,7 +36,7 @@ export class DefaultLogFormater extends LogFormater {
         return `[${time.toISOString()}]`;
     }
 
-    format(joinPoint: Joinpoint, level: Level, logger: ILogger, ...messages: any[]): any[] {
+    format(joinPoint: Joinpoint, level: Level, logger: Logger, ...messages: any[]): any[] {
         switch (joinPoint.state) {
             case JoinpointState.Before:
             case JoinpointState.Pointcut:

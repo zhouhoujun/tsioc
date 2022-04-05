@@ -1,11 +1,11 @@
 import { Inject, Injectable, InvocationContext, lang, tokenId } from '@tsdi/ioc';
 import { Chain, Endpoint, TransportServer } from '@tsdi/core';
+import { Logger } from '@tsdi/logs';
 import { of } from 'rxjs';
 import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
-import { HttpContext } from './context';
-import { HTTP_MIDDLEWARES } from './endpoint';
+import { HttpContext, HTTP_MIDDLEWARES } from './context';
 
 
 export type HttpVersion = 'http1.1' | 'http2';
@@ -39,6 +39,7 @@ export class HttpServer extends TransportServer {
     }
 
     async startup(): Promise<void> {
+        this.context.setValue(Logger, this.logger);
         this._endpoint = new Chain((ctx) => of(ctx), this.context.resolve(HTTP_MIDDLEWARES));
         const options = this.context.resolve(HTTP_SERVEROPTIONS);
         if (options.version === 'http2') {

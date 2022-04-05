@@ -1,13 +1,13 @@
-import { Chain, Endpoint, Middleware, MiddlewareFn, RequestMethod, ServerOption, TransportClient, TransportContext, TransportRequest } from '@tsdi/core';
+import { Chain, Endpoint, RequestMethod, TransportClient, TransportRequest } from '@tsdi/core';
 import { Inject, Injectable, InvocationContext, lang, tokenId } from '@tsdi/ioc';
+import { Observable } from 'rxjs';
+import { Logger } from '@tsdi/logs';
 import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
 import { Socket } from 'net';
 import { TLSSocket } from 'tls';
-import { HTTP_MIDDLEWARES } from './endpoint';
-import { HttpContext, HttpMiddleware } from './context';
-import { Observable } from 'rxjs';
+import { HttpContext, HttpMiddleware, HTTP_MIDDLEWARES } from './context';
 
 
 
@@ -47,7 +47,7 @@ export class HttpClient extends TransportClient<HttpContext> {
     }
 
     async connect(): Promise<any> {
-
+        this.context.setValue(Logger, this.logger);
         if (this.options.version === 'http2') {
             if (this.http2client && !this.http2client.closed) {
                 return;

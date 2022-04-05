@@ -8,13 +8,13 @@ import { ConfigureLoggerManager } from '../manager';
 
 
 /**
- * logger metadata.
+ * log metadata.
  *
  * @export
  * @interface LoggerMetadata
  * @extends {TypeMetadata}
  */
-export interface LoggerMetadata extends TypeMetadata {
+export interface LogMetadata extends TypeMetadata {
     /**
      * set the special name to get logger from logger manager.
      *
@@ -54,16 +54,16 @@ export interface LoggerMetadata extends TypeMetadata {
 }
 
 /**
- * Logger decorator, for method or class.
+ * Log decorator, for method or class.
  * inject logger for property or parameter with the name in {@link ILoggerManager}.
  *
- * @Logger
+ * @Log
  *
  * @export
- * @interface ILoggerDecorator
+ * @interface Log Decorator
  * @template T
  */
-export interface Logger<T extends LoggerMetadata> {
+export interface Log<T extends LogMetadata> {
     /**
      * inject logger for property or parameter with the name in {@link ILoggerManager}.
      * @Logger
@@ -127,7 +127,7 @@ export interface Logger<T extends LoggerMetadata> {
 }
 
 const loggerResolver = {
-    canResolve: (pr: LoggerMetadata, ctx) => {
+    canResolve: (pr: LogMetadata, ctx) => {
         if (!ctx.has(ConfigureLoggerManager)) {
             let local: string;
             if (pr.propertyKey && pr.paramName) {
@@ -141,7 +141,7 @@ const loggerResolver = {
         }
         return !!pr.logname;
     },
-    resolve: (pr: LoggerMetadata, ctx) => {
+    resolve: (pr: LogMetadata, ctx) => {
         let loggerManager: LoggerManager;
         let level = pr.level;
         if (pr.config) {
@@ -165,11 +165,11 @@ const loggerResolver = {
  *
  * @Logger
  */
-export const Logger: Logger<LoggerMetadata> = createDecorator<LoggerMetadata>('Logger', {
+export const Log: Log<LogMetadata> = createDecorator<LogMetadata>('Log', {
     actionType: [ActionTypes.paramInject, ActionTypes.propInject],
     init: (ctx) => {
         if (ctx.decorType === Decors.parameter || ctx.decorType === Decors.property) {
-            const metadata = ctx.metadata as LoggerMetadata;
+            const metadata = ctx.metadata as LogMetadata;
             if (!metadata.logname) {
                 metadata.logname = lang.getClassName(ctx.reflect.type);
                 metadata.resolver = loggerResolver;

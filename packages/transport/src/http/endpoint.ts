@@ -1,7 +1,7 @@
-import { Abstract, tokenId } from '@tsdi/ioc';
+import { Abstract } from '@tsdi/ioc';
 import { Endpoint } from '@tsdi/core';
 import { Observable } from 'rxjs';
-import { HttpContext, HttpMiddleware } from './context';
+import { HttpContext } from './context';
 
 /**
  * http server side handler.
@@ -15,7 +15,3 @@ export abstract class HttpEndpoint implements Endpoint<HttpContext> {
     abstract endpoint(ctx: HttpContext): Observable<HttpContext>;
 }
 
-/**
- * http middlewares token.
- */
-export const HTTP_MIDDLEWARES = tokenId<HttpMiddleware[]>('MIDDLEWARES');
