@@ -89,7 +89,9 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
+    "@types/content-disposition": "^0.5.4",
     "axios": "^0.26.0",
+    "content-disposition": "^0.5.4",
     "kafkajs": "^1.15.0",
     "modbus-serial": "^8.0.5",
     "uuid": "^8.3.2",

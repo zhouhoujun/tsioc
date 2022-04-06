@@ -33,10 +33,10 @@ export abstract class TransportClient<T extends TransportContext = TransportCont
 
     /**
      * send request.
-     * @param pattern request pattern.
+     * @param url request url.
      * @param body send data.
      */
-    send<R>(pattern: string, options: {
+    send<R>(url: string, options: {
         body?: any;
         method?: RequestMethod,
         observe?: 'body',
@@ -56,7 +56,7 @@ export abstract class TransportClient<T extends TransportContext = TransportCont
      * @return An `Observable` of all `HttpEvent`s for the request,
      * with the response body of type `R`.
      */
-    send<R>(pattern: string, options: {
+    send<R>(url: string, options: {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] } | any,
@@ -76,7 +76,7 @@ export abstract class TransportClient<T extends TransportContext = TransportCont
      *
      * @return An `Observable` of the response, with the response body of type string.
      */
-    send<R>(pattern: string, options: {
+    send<R>(url: string, options: {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] } | any,
@@ -90,12 +90,12 @@ export abstract class TransportClient<T extends TransportContext = TransportCont
     /**
      * Constructs a request which interprets the body as an `ArrayBuffer`
      * and returns the full {@link TransportResponse}.
-     * @param pattern 
+     * @param url 
      * @param options  The options to send with the request.
      * 
      * @return An `Observable` of the `HttpResponse`, with the response body as an `ArrayBuffer`. 
      */
-    send<T>(pattern: string, options?: {
+    send<T>(url: string, options?: {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] } | any,
@@ -109,12 +109,12 @@ export abstract class TransportClient<T extends TransportContext = TransportCont
     /**
      * Constructs a request which interprets the body as an `ArrayBuffer`
      * and returns the full {@link TransportResponse}.
-     * @param pattern 
+     * @param url 
      * @param options  The options to send with the request.
      * 
      * @return An `Observable` of the `HttpResponse`, with the response body as an `ArrayBuffer`. 
      */
-    send(pattern: string, options?: {
+    send(url: string, options?: {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] } | any,
@@ -129,12 +129,12 @@ export abstract class TransportClient<T extends TransportContext = TransportCont
     /**
      * Constructs a request which interprets the body as a `Blob` and returns the full `HttpResponse`.
      * 
-     * @param pattern 
+     * @param url 
      * @param options the options to send with the request.
      * 
      * @return An `Observable` of the {@link TransportResponse}, with the response body of type `Blob`. 
      */
-    send(pattern: string, options?: {
+    send(url: string, options?: {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] } | any,
@@ -148,10 +148,10 @@ export abstract class TransportClient<T extends TransportContext = TransportCont
 
     /**
      * send request.
-     * @param pattern 
+     * @param url 
      * @param options 
      */
-    send(pattern: string, options?: {
+    send(url: string, options?: {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] } | any,
@@ -165,10 +165,10 @@ export abstract class TransportClient<T extends TransportContext = TransportCont
 
     /**
      * send request.
-     * @param pattern 
+     * @param url 
      * @param options 
      */
-    send(pattern: string, options?: {
+    send(url: string, options?: {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] } | any,
@@ -182,10 +182,10 @@ export abstract class TransportClient<T extends TransportContext = TransportCont
 
     /**
      * send request.
-     * @param pattern request pattern.
+     * @param url request url.
      * @param body send data.
      */
-    send(pattern: string | TransportRequest, options?: {
+    send(url: string | TransportRequest, options?: {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] } | any,
@@ -196,16 +196,16 @@ export abstract class TransportClient<T extends TransportContext = TransportCont
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
     }): Observable<any> {
-        if (isNil(pattern)) {
+        if (isNil(url)) {
             return throwError(() => new InvalidMessageError());
         }
 
         return defer(async () => this.connect()).pipe(
-            concatMap(() => this.sendRequest(pattern, options))
+            concatMap(() => this.sendRequest(url, options))
         );
     }
 
-    protected sendRequest(pattern: string | TransportRequest, options?: {
+    protected sendRequest(url: string | TransportRequest, options?: {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] } | any,
@@ -216,10 +216,10 @@ export abstract class TransportClient<T extends TransportContext = TransportCont
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
     }): Observable<any> {
-        return this.endpoint.endpoint(this.createContext(pattern, options));
+        return this.endpoint.endpoint(this.createContext(url, options));
     }
 
-    protected abstract createContext(pattern: string | TransportRequest, options?: {
+    protected abstract createContext(url: string | TransportRequest, options?: {
         body?: any,
         method?: RequestMethod,
         headers?: { [header: string]: string | string[] } | any,

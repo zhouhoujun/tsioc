@@ -132,7 +132,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
             if (route && isRest.test(route)) {
                 let routes = route.split('/').map(r => r.trim());
                 let restParamNames = routes.filter(d => restParms.test(d));
-                let routeUrls = ctx.pattern.replace(this.path, '').split('/');
+                let routeUrls = ctx.url.replace(this.path, '').split('/');
                 restParamNames.forEach(pname => {
                     let val = routeUrls[routes.indexOf(pname)];
                     if (val) {
@@ -182,7 +182,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     }
 
     protected getRouteMetaData(ctx: TransportContext) {
-        let subRoute = ctx.pattern.replace(this.path, '');
+        let subRoute = ctx.url.replace(this.path, '');
         if (!this.sortRoutes) {
             this.sortRoutes = this.reflect.class.methodDecors
                 .filter(m => m && isString(m.metadata.route))

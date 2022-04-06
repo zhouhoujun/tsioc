@@ -55,9 +55,11 @@ export class FileResult extends ResultValue {
 
     async sendValue(ctx: HttpContext) {
         let file = this.file;
-        ctx.contentType = this.contentType;
+        const contentType = this.contentType;
         if (this.options && this.options.filename) {
-            ctx.attachment(this.options.filename, this.options.disposition);
+            ctx.attachment(this.options.filename, { contentType, ...this.options.disposition });
+        } else {
+            ctx.contentType = contentType;
         }
         const baseURL = ctx.injector.get(ApplicationContext).baseURL;
         if (isString(file)) {

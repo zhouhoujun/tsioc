@@ -42,7 +42,7 @@ export class HttpEncodeJsonMiddleware implements Middleware<HttpContext> {
                     let pretty = this.pretty || hasOwn(ctx.query, this.paramName);
 
                     if (strm) {
-                        ctx.contentType = 'json';
+                        ctx.contentType = 'application/json';
                         ctx.body = new JsonStreamStringify(body, undefined, pretty ? this.spaces : 2);
                     } else if (json && pretty) {
                         ctx.body = JSON.stringify(body, null, this.spaces);

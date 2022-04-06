@@ -217,8 +217,8 @@ export class MappingRouter extends Router implements OnDestroy {
     protected getRoute(ctx: TransportContext): Middleware | undefined {
         if (this.protocols.indexOf(ctx.protocol) < 0) return;
         if (ctx.status && ctx.status !== 404) return;
-        if (!ctx.pattern.startsWith(this.prefix)) return;
-        const url = ctx.pattern.replace(this.prefix, '') || '/';
+        if (!ctx.url.startsWith(this.prefix)) return;
+        const url = ctx.url.replace(this.prefix, '') || '/';
         return this.getRouteByUrl(url);
 
     }
