@@ -10,7 +10,8 @@ import { Advicer } from '../advices/Advicer';
  * joinpoint option.
  */
 export interface JoinpointOption extends InvokeOption {
-    name: string;
+    invokerTarget: Type;
+    invokerMethod: string;
     fullName?: string;
     provJoinpoint?: Joinpoint;
     params?: ParameterMetadata[];
@@ -20,7 +21,6 @@ export interface JoinpointOption extends InvokeOption {
     advices: Advices;
     annotations?: DecorDefine[];
     target?: any;
-    targetType: Type;
 }
 
 
@@ -47,20 +47,29 @@ export class Joinpoint<T = any> extends DefaultInvocationContext<T> implements I
 
     throwing: any;
 
-    constructor(
-        injector: Injector,
-        readonly target: any,
-        readonly targetType: ClassType,
-        readonly method: string,
-        private _fullName: string | undefined,
-        public state: JoinpointState,
-        readonly advices: Advices,
-        readonly originMethod?: Function,
-        readonly params?: ParameterMetadata[],
-        readonly args?: any[],
-        readonly annotations?: DecorDefine[],
-        options: InvocationOption = EMPTY_OBJ) {
+
+    private _fullName: string | undefined;
+
+    readonly target: any;
+    readonly targetType: ClassType;
+    readonly advices: Advices;
+    readonly originMethod?: Function;
+    readonly params?: ParameterMetadata[];
+    readonly args?: any[];
+    readonly annotations?: DecorDefine[];
+
+    public state: JoinpointState;
+
+    constructor(injector: Injector, options: JoinpointOption) {
         super(injector, options);
+        this.target = options.target;
+        this.targetType = options.invokerTarget;
+        this.advices = options.advices;
+        this.originMethod = options.originMethod;
+        this.params = options.params;
+        this.args = options.args;
+        this.annotations = options.annotations;
+        this.state = options.state ?? JoinpointState.Before;
     }
 
     get fullName(): string {
@@ -81,21 +90,6 @@ export class Joinpoint<T = any> extends DefaultInvocationContext<T> implements I
      * @returns 
      */
     static override create(injector: Injector, options: JoinpointOption) {
-        return new Joinpoint(injector,
-            options.target,
-            options.targetType,
-            options.name,
-            options.fullName,
-            options.state ?? JoinpointState.Before,
-            options.advices,
-            options.originMethod,
-            options.params,
-            options.args,
-            options.annotations,
-            {
-                ...options,
-                invokerMethod: options.name,
-                invokerTarget: options.targetType
-            })
+        return new Joinpoint(injector, options);
     }
 }
