@@ -25,12 +25,6 @@ export type HttpProtocol = 'http' | 'https';
 export type Protocol = 'tcp' | 'grpc' | 'rmq' | 'kafka' | 'redis' | 'amqp' | 'ssl' | 'msg' | HttpProtocol | MqttProtocol;
 
 
-/**
- * transport status.
- */
- export type TransportStatus = 'Bad Request' | 'Forbidden' | 'Internal Server Error' | 'Not Acceptable' | 'Not Found' | 'Unauthorized' | 'Method Not Allowed' | number;
-
-
 // /**
 //  * Request packet.
 //  */

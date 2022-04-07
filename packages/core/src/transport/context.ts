@@ -1,7 +1,6 @@
 import { Abstract, DefaultInvocationContext, Injector, InvokeArguments, isNumber, isPlainObject, isPromise, isString } from '@tsdi/ioc';
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
-import { Pattern, Protocol, TransportStatus } from './packet';
-import { TransportError } from './error';
+import { Pattern, Protocol } from './packet';
 
 
 /**
@@ -74,11 +73,11 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
     /**
      * Get response status code.
      */
-    abstract get status(): TransportStatus;
+    abstract get status(): number;
     /**
      * Set response status code.
      */
-    abstract set status(value: TransportStatus);
+    abstract set status(value: number);
 
     /**
       * get response error
@@ -146,7 +145,20 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
      * @param messages transport messages.
      * @returns instance of {@link TransportError}
      */
-    abstract throwError(status: TransportStatus, ...messages: string[]): TransportError;
+    abstract throwError(status: number, message?: string): Error;
+    /**
+     * create error instance of {@link TransportError}.
+     * @param status transport status
+     * @param messages transport messages.
+     * @returns instance of {@link TransportError}
+     */
+    abstract throwError(message: string): Error;
+    /**
+     * create error instance of {@link TransportError}.
+     * @param error error 
+     * @returns instance of {@link TransportError}
+     */
+    abstract throwError(error: Error): Error;
 
     static create(injector: Injector, options?: TransportOption): TransportContext {
         throw new Error('Method not implemented.');

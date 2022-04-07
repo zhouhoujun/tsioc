@@ -1,4 +1,4 @@
-import { ApplicationContext, HttpStatusCode, Protocol, RequestMethod, TransportContext, TransportError, TransportMiddleware, TransportOption, TransportStatus } from '@tsdi/core';
+import { ApplicationContext, HttpStatusCode, Middleware, Protocol, RequestMethod, TransportContext, TransportError, TransportOption, TransportStatus } from '@tsdi/core';
 import { Abstract, Injector, isNumber, isString, tokenId } from '@tsdi/ioc';
 import * as assert from 'assert';
 import * as http from 'http';
@@ -17,8 +17,7 @@ export interface HttpContextOption extends TransportOption {
 
 export type HttpResponse = http.ServerResponse | http2.Http2ServerResponse;
 
-@Abstract()
-export abstract class HttpContext extends TransportContext {
+export class HttpContext extends TransportContext {
 
     protected _body: any;
     private _explicitStatus?: boolean;
@@ -196,6 +195,21 @@ export abstract class HttpContext extends TransportContext {
 
     get method(): RequestMethod | undefined {
         return this.request.method as RequestMethod;
+    }
+
+    isUpdate(): boolean {
+        return this.method === 'PUT';
+    }
+
+    get query(): any {
+        throw new Error('Method not implemented.');
+    }
+
+    get restful(): Record<string, string | number> {
+        throw new Error('Method not implemented.');
+    }
+    set restful(value: Record<string, string | number>) {
+        throw new Error('Method not implemented.');
     }
 
     // /**
@@ -395,6 +409,16 @@ export abstract class HttpContext extends TransportContext {
      */
     set type(type: string) {
         this.contentType = type;
+    }
+
+    get sent(): boolean {
+        throw new Error('Method not implemented.');
+    }
+    get ok(): boolean {
+        throw new Error('Method not implemented.');
+    }
+    set ok(value: boolean) {
+        throw new Error('Method not implemented.');
     }
 
     get status(): HttpStatusCode {
@@ -742,7 +766,10 @@ export abstract class HttpContext extends TransportContext {
         }
     }
 
-    abstract throwError(status: TransportStatus, ...messages: string[]): TransportError<TransportStatus>;
+
+    throwError(status: TransportStatus, ...messages: string[]): TransportError<TransportStatus> {
+        
+    }
 
     static create(injector: Injector, options?: TransportOption): HttpContext {
         throw new Error('Method not implemented.');
@@ -750,7 +777,7 @@ export abstract class HttpContext extends TransportContext {
 }
 
 
-export type HttpMiddleware = TransportMiddleware<HttpContext>;
+export type HttpMiddleware = Middleware<HttpContext>;
 
 /**
  * http middlewares token.

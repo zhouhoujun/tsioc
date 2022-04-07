@@ -1,6 +1,10 @@
 import { isArray } from '@tsdi/ioc';
-import { TransportStatus } from './packet';
+import { TransportContext } from './context';
 
+
+export interface ErrorHandler<TRequest extends TransportContext = TransportContext> {
+    handle(ctx: TRequest, err: Error): void;
+}
 
 /**
  * Transport error
@@ -9,7 +13,7 @@ import { TransportStatus } from './packet';
  * @class TransportError
  * @extends {Error}
  */
-export class TransportError<T = TransportStatus> extends Error {
+export class TransportError<T = number|string> extends Error {
     constructor(readonly status: T, message?: string | string[]) {
         super(isArray(message) ? message.join('\n') : message || '');
         Object.setPrototypeOf(this, TransportError.prototype);
