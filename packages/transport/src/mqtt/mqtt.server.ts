@@ -1,4 +1,4 @@
-import { Protocol, TransportRequest, TransportHandler, TransportServer, TransportResponse } from '@tsdi/core';
+import { Protocol, RequestPacket, TransportHandler, TransportServer, ResponsePacket } from '@tsdi/core';
 
 export class MQTTServer extends TransportServer {
 
@@ -6,7 +6,7 @@ export class MQTTServer extends TransportServer {
         throw new Error('Method not implemented.');
     }
 
-    get handler(): TransportHandler<TransportRequest<any>, TransportResponse<any>> {
+    get handler(): TransportHandler<RequestPacket<any>, ResponsePacket<any>> {
         throw new Error('Method not implemented.');
     }
 

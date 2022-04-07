@@ -26,7 +26,7 @@ export type HttpServerOptions = Http1ServerOptions | Http2ServerOptions;
 export const HTTP_SERVEROPTIONS = tokenId<HttpServerOptions>('HTTP_SERVEROPTIONS');
 
 @Injectable()
-export class HttpServer extends TransportServer {
+export class HttpServer extends TransportServer<HttpContext> {
 
     private _endpoint!: Endpoint<HttpContext>;
     private _server!: http2.Http2Server | http.Server | https.Server;
@@ -37,7 +37,7 @@ export class HttpServer extends TransportServer {
         super();
     }
 
-    get endpoint(): Endpoint<HttpContext> {
+    get endpoint(): Endpoint {
         return this._endpoint;
     }
 
@@ -81,20 +81,22 @@ export class HttpServer extends TransportServer {
         }
     }
 
-    protected http1RequestHandler(request: http.IncomingMessage, reponse: http.ServerResponse) {
+    protected http1RequestHandler(request: http.IncomingMessage, response: http.ServerResponse) {
         const ctx = HttpContext.create(this.context.injector, {
+            target: this,
             parent: this.context,
             request,
-            reponse
+            response
         });
 
         this._endpoint.endpoint(ctx);
     }
-    protected http2RequestHandler(request: http2.Http2ServerRequest, reponse: http2.Http2ServerResponse) {
+    protected http2RequestHandler(request: http2.Http2ServerRequest, response: http2.Http2ServerResponse) {
         const ctx = HttpContext.create(this.context.injector, {
+            target: this,
             parent: this.context,
             request,
-            reponse
+            response
         });
         this._endpoint.endpoint(ctx);
     }

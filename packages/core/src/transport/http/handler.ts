@@ -1,6 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { TransportBackend, TransportHandler } from '../handler';
 import { HttpRequest } from './request';
 import { HttpEvent } from './response';
 
@@ -9,7 +8,7 @@ import { HttpEvent } from './response';
  * http handler.
  */
 @Abstract()
-export abstract class HttpHandler implements TransportHandler<HttpRequest, HttpEvent> {
+export abstract class HttpHandler {
     /**
      * http transport handler.
      * @param req http request input.
@@ -21,7 +20,7 @@ export abstract class HttpHandler implements TransportHandler<HttpRequest, HttpE
  * http backend.
  */
 @Abstract()
-export abstract class HttpBackend implements TransportBackend<HttpRequest, HttpEvent> {
+export abstract class HttpBackend {
     /**
      * http transport handler.
      * @param req http request input.

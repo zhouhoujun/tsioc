@@ -29,7 +29,7 @@ export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): 
     }
     const factory = ctx.injector.get(OperationFactoryResolver).resolve(ctx.reflect, ctx.injector);
     const newCtx = factory.createContext({
-        invokerMethod: ctorName
+        methodName: ctorName
     });
     const custCtx = ctx.context;
     custCtx?.addRef(newCtx);

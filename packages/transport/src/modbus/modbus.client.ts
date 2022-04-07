@@ -1,5 +1,5 @@
 import { Inject, Injectable, ModuleLoader, Type } from '@tsdi/ioc';
-import { TransportClient, Deserializer, TransportRequest, TransportHandler, TransportResponse } from '@tsdi/core';
+import { TransportClient, Deserializer, RequestPacket, TransportHandler, ResponsePacket } from '@tsdi/core';
 import { ModbusRTU } from './modbus.transform';
 
 let modbusPackage: { default: Type<ModbusRTU> };
@@ -34,10 +34,10 @@ export class ModbusClient extends TransportClient {
         await this.client?.close();
     }
 
-    protected publish(packet: TransportRequest<any>, callback: (packet: TransportResponse<any>) => void): () => void {
+    protected publish(packet: RequestPacket<any>, callback: (packet: ResponsePacket<any>) => void): () => void {
         throw new Error('Method not implemented.');
     }
-    protected dispatchEvent<T = any>(packet: TransportRequest<any>): Promise<T> {
+    protected dispatchEvent<T = any>(packet: RequestPacket<any>): Promise<T> {
         throw new Error('Method not implemented.');
     }
 }

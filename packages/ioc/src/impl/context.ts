@@ -18,7 +18,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     protected _args: T;
     protected _refs: InvocationContext[];
     protected _values: Map<Token, any>;
-    protected _method?: string;
+    protected _methodName?: string;
     /**
      * the invocation arguments resolver.
      */
@@ -34,9 +34,14 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      */
     readonly injector: Injector;
     /**
-     * invocation target.
+     * invocation target type.
      */
-    readonly target: ClassType | undefined;
+    readonly targetType: ClassType | undefined;
+
+    /**
+     * named of invocation method.
+     */
+    readonly methodName: string | undefined
 
     constructor(
         injector: Injector,
@@ -48,18 +53,12 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         this._args = (options.arguments ?? {}) as T;
         this._values = new Map(options.values);
         this.parent = options.parent ?? injector.get(InvocationContext);
-        this.target = options.invokerTarget;
-        this._method = options.invokerMethod;
+        this.targetType = options.targetType;
+        this.methodName = options.methodName;
         injector.onDestroy(this);
         this._refs = [];
     }
 
-    /**
-     * invocation method.
-     */
-    get method(): string | undefined {
-        return this._method;
-    }
 
     protected createInvocationInjector(injector: Injector, providers?: ProviderType[]) {
         return Injector.create(providers, injector, 'invocation');

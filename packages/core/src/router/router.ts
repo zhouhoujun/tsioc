@@ -3,7 +3,7 @@ import { from, mergeMap, Observable, of, throwError } from 'rxjs';
 import { RequestMethod } from '../transport/packet';
 import { promisify, TransportContext } from '../transport/context';
 import { CanActivate } from '../transport/guard';
-import { Endpoint, Middleware, MiddlewareFn } from '../transport/endpoint';
+import { Endpoint, Middleware } from '../transport/endpoint';
 import { PipeTransform } from '../pipes/pipe';
 import { Route, RouteFactoryResolver } from './route';
 import { ModuleRef } from '../module.ref';
@@ -15,7 +15,7 @@ import { ModuleRef } from '../module.ref';
  * abstract router.
  */
 @Abstract()
-export abstract class Router<T extends TransportContext = TransportContext> implements Middleware<T> {
+export abstract class Router implements Middleware {
     /**
      * route prefix.
      */
@@ -29,13 +29,13 @@ export abstract class Router<T extends TransportContext = TransportContext> impl
      */
     abstract get routes(): Map<string, Middleware>;
     /**
-     * middleware handle.
+     * intercept handle.
      *
-     * @param {T} ctx
+     * @param {TransportContext} ctx request with context.
      * @param {Endpoint<T>} next
      * @returns {Observable<T>}
      */
-    abstract middleware(ctx: T, next: Endpoint<T>): Observable<T>;
+    abstract intercept(ctx: TransportContext, next: Endpoint): Observable<any>;
     /**
      * has route or not.
      * @param route route
@@ -72,7 +72,7 @@ export abstract class RouterResolver {
 }
 
 
-export class MappingRoute<T extends TransportContext = TransportContext> implements Middleware<T> {
+export class MappingRoute implements Middleware {
 
     private _guards!: CanActivate[];
     private router?: Router;
@@ -84,7 +84,7 @@ export class MappingRoute<T extends TransportContext = TransportContext> impleme
         return this.route.path;
     }
 
-    middleware(ctx: T, next: Endpoint<T>): Observable<T> {
+    intercept(ctx: TransportContext, next: Endpoint): Observable<any> {
         return from(this.canActive(ctx))
             .pipe(
                 mergeMap(can => {
@@ -97,16 +97,16 @@ export class MappingRoute<T extends TransportContext = TransportContext> impleme
             );
     }
 
-    protected canActive(ctx: T) {
+    protected canActive(ctx: TransportContext) {
         if (!this._guards) {
             this._guards = this.route.guards?.map(token => ctx.resolve(token)) ?? EMPTY;
         }
         return lang.some(this._guards.map(guard => () => promisify(guard.canActivate(ctx))), vaild => vaild === false);
     }
 
-    protected navigate(route: Route & { router?: Router }, ctx: T, next: Endpoint<T>): Promise<T> | Observable<T> {
+    protected navigate(route: Route & { router?: Router }, ctx: TransportContext, next: Endpoint): Promise<any> | Observable<any> {
         if (route.middleware) {
-            return isFunction(route.middleware) ? route.middleware(ctx, next) : route.middleware.middleware(ctx, next);
+            return route.middleware.intercept(ctx, next);
         } else if (route.redirectTo) {
             return this.redirect(ctx, route.redirectTo);
         } else if (route.controller) {
@@ -115,13 +115,13 @@ export class MappingRoute<T extends TransportContext = TransportContext> impleme
             if (!this.router) {
                 this.router = new MappingRouter(this.protocols, route.path);
             }
-            return this.router.middleware(ctx, next) as Observable<T>;
+            return this.router.intercept(ctx, next);
         } else if (route.loadChildren) {
             return from(this.loadChildren(ctx, route.loadChildren, route.path))
                 .pipe(
                     mergeMap(router => {
                         if (router) {
-                            return router.middleware(ctx, next) as Observable<T>;
+                            return router.intercept(ctx, next);
                         } else {
                             return throwError(() => ctx.throwError('Not Found'));
                         }
@@ -131,15 +131,15 @@ export class MappingRoute<T extends TransportContext = TransportContext> impleme
         }
     }
 
-    protected redirect(ctx: T, url: string, alt?: string): Observable<T> {
+    protected redirect(ctx: TransportContext, url: string, alt?: string): Observable<any> {
         ctx.redirect(url, alt);
-        return of(ctx);
+        return of(ctx.response);
     }
 
-    protected routeController(ctx: T, controller: Type, next: Endpoint<T>): Observable<T> {
+    protected routeController(ctx: TransportContext, controller: Type, next: Endpoint): Observable<any> {
         const route = ctx.injector.get(RouteFactoryResolver).resolve(controller).last();
         if (route) {
-            return route.middleware(ctx, next) as Observable<T>;
+            return route.intercept(ctx, next);
         } else {
             return throwError(() => ctx.throwError('Not Found'));
         }
@@ -187,11 +187,11 @@ export class MappingRouter extends Router implements OnDestroy {
      * use route.
      * @param route 
      */
-    use(route: string, middleware: Middleware | MiddlewareFn): this;
-    use(route: Route | string, middleware?: Middleware | MiddlewareFn): this {
+    use(route: string, middleware: Middleware): this;
+    use(route: Route | string, middleware?: Middleware): this {
         if (isString(route)) {
             if (!middleware || this.has(route)) return this;
-            this.routes.set(route, isFunction(middleware) ? { middleware } : middleware);
+            this.routes.set(route, middleware);
         } else {
             if (this.has(route.path)) return this;
             this.routes.set(route.path, new MappingRoute(route, this.protocols));
@@ -205,12 +205,12 @@ export class MappingRouter extends Router implements OnDestroy {
         return this;
     }
 
-    middleware(ctx: TransportContext, next: Endpoint): Observable<TransportContext> {
+    intercept(ctx: TransportContext, next: Endpoint): Observable<any> {
         const route = this.getRoute(ctx);
         if (route) {
-            return route.middleware(ctx, next);
+            return route.intercept(ctx, next);
         } else {
-            return next.endpoint(ctx);
+            return next.handle(ctx);
         }
     }
 

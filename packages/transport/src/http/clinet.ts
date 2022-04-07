@@ -1,4 +1,4 @@
-import { Chain, Endpoint, HttpRequest, HttpResponse, RequestMethod, TransportClient, TransportRequest } from '@tsdi/core';
+import { Chain, Endpoint, HttpRequest, HttpResponse, RequestMethod, TransportClient } from '@tsdi/core';
 import { EMPTY_OBJ, Inject, Injectable, InvocationContext, lang, tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Logger } from '@tsdi/logs';
@@ -69,7 +69,7 @@ export class HttpClient extends TransportClient<HttpContext> {
         }
     }
 
-    protected createContext(url: string | TransportRequest<any>, options?: { body?: any; method?: RequestMethod | undefined; headers?: any; context?: InvocationContext<any> | undefined; params?: any; observe?: 'body' | 'events' | 'response' | undefined; reportProgress?: boolean | undefined; responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | undefined; withCredentials?: boolean | undefined; }): HttpContext {
+    protected createContext(url: string | RequestPacket<any>, options?: { body?: any; method?: RequestMethod | undefined; headers?: any; context?: InvocationContext<any> | undefined; params?: any; observe?: 'body' | 'events' | 'response' | undefined; reportProgress?: boolean | undefined; responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | undefined; withCredentials?: boolean | undefined; }): HttpContext {
         const ctx = HttpContext.create(this.context.injector, {
             reponse: new HttpResponse(),
             request: new HttpRequest(options?.method || 'GET', url, { ...options })
@@ -92,7 +92,7 @@ export class HttpBackEndpoint implements Endpoint<HttpContext> {
 
     }
 
-    endpoint(ctx: HttpContext): Observable<HttpContext> {
+    endpoint(ctx: HttpContext): Observable<any> {
         const client = this.options ? http.request(ctx.url, this.options) : http.request(ctx.url);
     }
 
@@ -103,7 +103,7 @@ export class Http2BackEndpoint implements Endpoint<HttpContext> {
     constructor(private client: http2.ClientHttp2Session) {
 
     }
-    endpoint(ctx: HttpContext): Observable<HttpContext> {
+    endpoint(ctx: HttpContext): Observable<any> {
         const req = this.client.request({
             path: ctx.url
         });

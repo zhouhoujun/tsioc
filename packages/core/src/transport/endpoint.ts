@@ -1,4 +1,4 @@
-import { isFunction } from '@tsdi/ioc';
+import { Abstract } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { TransportContext } from './context';
 
@@ -6,78 +6,74 @@ import { TransportContext } from './context';
 /**
  * Endpoint is the fundamental building block of servers and clients.
  */
-export type EndpointFn<T extends TransportContext = TransportContext> = (context: T) => Observable<T>;
-
-/**
- * Endpoint is the fundamental building block of servers and clients.
- */
-export interface Endpoint<T extends TransportContext = TransportContext> {
+export interface Endpoint<TRequest extends TransportContext = TransportContext, TResponse = any> {
     /**
-     * update endpoint.
-     * @param ctx 
+     * transport endpoint handle.
+     * @param ctx request input with context.
      */
-    endpoint(ctx: T): Observable<T>;
+    handle(ctx: TRequest): Observable<TResponse>;
 }
 
+/**
+ * A final {@link Endpoint} which will dispatch the request via browser HTTP APIs to a backend.
+ *
+ * Middleware sit between the `Client|Server` interface and the `EndpointBackend`.
+ *
+ * When injected, `EndpointBackend` dispatches requests directly to the backend, without going
+ * through the interceptor chain.
+ */
+@Abstract()
+export abstract class EndpointBackend<TRequest extends TransportContext, TResponse> implements Endpoint<TRequest, TResponse> {
+    /**
+     * transport endpoint handle.
+     * @param ctx request input with context.
+     */
+    abstract handle(ctx: TRequest): Observable<TResponse>;
+}
 
 /**
  * Middleware is a chainable behavior modifier for endpoints.
  */
-export type MiddlewareFn<T extends TransportContext = TransportContext> = (context: T, next: Endpoint<T>) => Observable<T>;
-
-/**
- * Middlewarable
- */
-export interface Middleware<T extends TransportContext = TransportContext> {
+export interface Middleware<TRequest extends TransportContext = TransportContext, TResponse = any> {
     /**
-     * middleware handle.
-     *
-     * @abstract
-     * @param {T} ctx
-     * @param {Endpoint<T>} next
-     * @returns {Observable<T>}
+     * the method to implemet middleware.
+     * @param ctx  request with context.
+     * @param next The next middleware in the chain, or the backend
+     * if no interceptors remain in the chain.
+     * @returns An observable of the event stream.
      */
-    middleware(ctx: T, next: Endpoint<T>): Observable<T>;
+    intercept(ctx: TRequest, next: Endpoint<TRequest, TResponse>): Observable<TResponse>;
 }
 
-export type TransportMiddleware<T extends TransportContext = TransportContext> = Middleware<T> | MiddlewareFn<T>;
+
+/**
+ * Middleware Endpoint.
+ */
+export class MiddlewareEndpoint<TRequest extends TransportContext = TransportContext, TResponse = any> implements Endpoint<TRequest, TResponse> {
+    constructor(private next: Endpoint<TRequest, TResponse>, private middleware: Middleware<TRequest, TResponse>) { }
+
+    handle(ctx: TRequest): Observable<TResponse> {
+        return this.middleware.intercept(ctx, this.next);
+    }
+}
 
 /**
  * middleware chain. for composing middlewares. Requests will
  * traverse them in the order they're declared. That is, the first middleware
  * is treated as the outermost middleware.
  */
-export class Chain<T extends TransportContext = TransportContext> implements Endpoint<T> {
+export class Chain<TRequest extends TransportContext, TResponse> implements Endpoint<TRequest, TResponse> {
 
-    private chain!: Endpoint<T>;
-    constructor(private backend: EndpointFn<T> | Endpoint<T>, private middlewares: TransportMiddleware<T>[]) {
+    private chain!: Endpoint<TRequest, TResponse>;
+    constructor(private backend: EndpointBackend<TRequest, TResponse>, private middlewares: Middleware<TRequest, TResponse>[]) {
 
     }
 
-    endpoint(ctx: T): Observable<T> {
+    handle(ctx: TRequest): Observable<TResponse> {
         if (!this.chain) {
-            const endpoint = this.middlewares.reduceRight(
-                (next, middleware) => new InterceptorEndpoint(next, middleware), this.backend);
-            this.chain = isFunction(endpoint) ? { endpoint } : endpoint;
+            this.chain = this.middlewares.reduceRight(
+                (next, middleware) => new MiddlewareEndpoint(next, middleware), this.backend);
         }
-        return this.chain.endpoint(ctx);
+        return this.chain.handle(ctx);
     }
 }
-
-
-/**
- * Interceptor endpoint.
- */
-export class InterceptorEndpoint<T extends TransportContext = TransportContext> implements Endpoint<T> {
-    private middle: Middleware<T>;
-    private next: Endpoint<T>;
-    constructor(endpoint: Endpoint<T> | EndpointFn<T>, middleware: TransportMiddleware<T>) {
-        this.next = isFunction(endpoint) ? { endpoint } : endpoint;
-        this.middle = isFunction(middleware) ? { middleware } : middleware;
-    }
-
-    endpoint(ctx: T): Observable<T> {
-        return this.middle.middleware(ctx, this.next);
-    }
-}
-

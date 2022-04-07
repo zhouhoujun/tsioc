@@ -1,4 +1,4 @@
-import { ApplicationContext, HttpStatusCode, Protocol, RequestMethod, TransportContext, TransportError, TransportMiddleware, TransportOption, TransportServer, TransportStatus } from '@tsdi/core';
+import { ApplicationContext, HttpStatusCode, Protocol, RequestMethod, TransportContext, TransportError, TransportMiddleware, TransportOption, TransportStatus } from '@tsdi/core';
 import { Abstract, Injector, isNumber, isString, tokenId } from '@tsdi/ioc';
 import * as assert from 'assert';
 import * as http from 'http';
@@ -10,20 +10,45 @@ import { encodeUrl, escapeHtml, isBuffer, isStream } from '../utils';
 import { emptyStatus, redirectStatus, statusMessage } from './status';
 import { CONTENT_DISPOSITION } from './content';
 
+export interface HttpContextOption extends TransportOption {
+    request: http.IncomingMessage | http2.Http2ServerRequest;
+    response: http.ServerResponse | http2.Http2ServerResponse;
+}
+
+export type HttpResponse = http.ServerResponse | http2.Http2ServerResponse;
+
 @Abstract()
 export abstract class HttpContext extends TransportContext {
 
     protected _body: any;
     private _explicitStatus?: boolean;
     private _explicitNullBody?: boolean;
-    constructor(injector: Injector, options: TransportOption) {
-        super(injector, options);
-    }
 
+    /**
+     * target client or server.
+     */
+    readonly target: any;
     /**
      * transport request.
      */
-    abstract get request(): http.IncomingMessage | http2.Http2ServerRequest;
+    readonly request: http.IncomingMessage | http2.Http2ServerRequest;
+
+    /**
+     * transport response.
+     */
+    readonly response: http.ServerResponse | http2.Http2ServerResponse;
+
+    constructor(injector: Injector, options: HttpContextOption) {
+        super(injector, options);
+        this.target = options.target;
+        this.request = options.request;
+        this.response = options.response;
+    }
+
+    // /**
+    //  * transport request.
+    //  */
+    // abstract get request(): http.IncomingMessage | http2.Http2ServerRequest;
 
     /**
      * Return the request socket.
@@ -301,7 +326,7 @@ export abstract class HttpContext extends TransportContext {
        */
 
     get fresh() {
-        const method = this.method;
+        const method = this.methodName;
         const s = this.status;
 
         // GET or HEAD for weak freshness validation only
@@ -317,10 +342,10 @@ export abstract class HttpContext extends TransportContext {
 
 
 
-    /**
-     * transport response.
-     */
-    abstract get response(): http.ServerResponse | http2.Http2ServerResponse;
+    // /**
+    //  * transport response.
+    //  */
+    // abstract get response(): http.ServerResponse | http2.Http2ServerResponse;
 
 
     get contentType(): string {

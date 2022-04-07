@@ -131,13 +131,13 @@ const loggerResolver = {
         if (!ctx.has(ConfigureLoggerManager)) {
             let local: string;
             if (pr.propertyKey && pr.paramName) {
-                local = ` method ${ctx.method} param ${pr.paramName} of class `
+                local = ` method ${ctx.methodName} param ${pr.paramName} of class `
             } else if (pr.propertyKey) {
                 local = ` field ${pr.propertyKey} of class `
             } else {
                 local = ' ';
             }
-            throw new ArgumentError(`Autowired logger in${local}${ctx.target} failed. It denpendence on LogModule in package '@tsdi/logs',  please register LogModule first. `);
+            throw new ArgumentError(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on LogModule in package '@tsdi/logs',  please register LogModule first. `);
         }
         return !!pr.logname;
     },

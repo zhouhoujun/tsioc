@@ -99,7 +99,7 @@ export abstract class RouteRef<T = any> implements Middleware, Destroyable, OnDe
      * @param {() => Promise<void>} next
      * @returns {Promise<void>}
      */
-    abstract middleware(ctx: TransportContext, next: Endpoint): Observable<TransportContext>;
+    abstract intercept(ctx: TransportContext, next: Endpoint): Observable<TransportContext>;
     /**
      * is destroyed or not.
      */

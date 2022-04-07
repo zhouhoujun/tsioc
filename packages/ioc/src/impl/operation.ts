@@ -181,16 +181,16 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
         let destroy: boolean | Function | undefined;
         if (option instanceof InvocationContext) {
             context = option;
-            const refctx = this.createContext({ invokerMethod: key });
+            const refctx = this.createContext({ methodName: key });
             context.addRef(refctx);
             destroy = () => {
                 context.removeRef(refctx);
                 refctx.destroy();
             }
         } else {
-            context = option?.context ? option.context : this.createContext({ ...option, invokerMethod: key });
+            context = option?.context ? option.context : this.createContext({ ...option, methodName: key });
             if (option?.context) {
-                const refctx = this.createContext({ ...option, invokerMethod: key });
+                const refctx = this.createContext({ ...option, methodName: key });
                 context.addRef(refctx);
                 destroy = () => {
                     context.removeRef(refctx);
@@ -230,7 +230,7 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
             providers = providers ? this._tagPdrs.concat(providers) : this._tagPdrs;
             resolvers = resolvers ? this.reflect.class.resolvers.concat(resolvers) : this.reflect.class.resolvers;
         }
-        const method = option?.invokerMethod;
+        const method = option?.methodName;
         if (method) {
             const mthpdrs = this.reflect.class.getMethodProviders(method);
             providers = (providers && mthpdrs) ? providers.concat(mthpdrs) : (providers ?? mthpdrs);
@@ -242,7 +242,7 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
         return InvocationContext.create(injector, {
             ...option,
             parent: root ?? option?.parent,
-            invokerTarget: this.reflect.type,
+            targetType: this.reflect.type,
             providers,
             resolvers
         });

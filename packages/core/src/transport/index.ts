@@ -5,8 +5,6 @@ export * from './endpoint';
 export * from './guard';
 export * from './result';
 
-export * from './handler';
-export * from './interceptor';
 
 export * from './resolver';
 export * from './error';

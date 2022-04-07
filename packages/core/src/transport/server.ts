@@ -7,13 +7,12 @@ import { Protocol } from './packet';
 import { Endpoint } from './endpoint';
 import { TransportContext } from './context';
 
-
 /**
  * abstract transport server.
  */
 @Abstract()
 @Runner('startup')
-export abstract class TransportServer<T extends TransportContext = TransportContext> implements Startup, OnDispose {
+export abstract class TransportServer<T extends TransportContext> implements Startup, OnDispose {
 
     @Log()
     protected readonly logger!: Logger;
@@ -57,10 +56,10 @@ export const SERVEROPTION = tokenId<ServerOption>('SERVEROPTION');
  * server abstract factory.
  */
 @Abstract()
-export abstract class ServerFactory {
+export abstract class ServerFactory<T extends TransportContext> {
     /**
      * create by options.
      * @param options 
      */
-    abstract create(options: ServerOption): TransportServer;
+    abstract create(options: ServerOption): TransportServer<T>;
 }

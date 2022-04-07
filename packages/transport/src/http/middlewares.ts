@@ -1,10 +1,10 @@
 import { hasOwn, Injectable, isString } from '@tsdi/ioc';
-import { ApplicationContext, Middleware } from '@tsdi/core';
+import { ApplicationContext, Endpoint, Middleware, TransportContext } from '@tsdi/core';
 import { Logger, LoggerFactory } from '@tsdi/logs';
 import { Observable } from 'rxjs';
 import { catchError, finalize, map, } from 'rxjs/operators'
 import { isBuffer, isStream } from '../utils';
-import { HttpContext } from './context';
+import { HttpContext, HttpResponse } from './context';
 import { HttpEndpoint } from './endpoint';
 import { JsonStreamStringify } from '../stringify';
 
@@ -15,7 +15,7 @@ export interface JsonMiddlewareOption {
 }
 
 @Injectable()
-export class HttpEncodeJsonMiddleware implements Middleware<HttpContext> {
+export class HttpEncodeJsonMiddleware implements Middleware<HttpContext, HttpResponse> {
 
     private pretty: boolean;
     private spaces: number;
@@ -26,9 +26,9 @@ export class HttpEncodeJsonMiddleware implements Middleware<HttpContext> {
         this.paramName = option.param ?? '';
     }
 
-    middleware(ctx: HttpContext, next: HttpEndpoint): Observable<HttpContext> {
+    intercept(ctx: HttpContext, next: Endpoint<HttpContext, any>): Observable<any> {
         ctx.contentType = 'application/json; charset=utf-8';
-        return next.endpoint(ctx)
+        return next.handle(ctx)
             .pipe(
                 map(ctx => {
                     let body = ctx.body;
@@ -59,17 +59,18 @@ export class HttpLogMiddleware implements Middleware<HttpContext> {
 
     constructor(private appContext: ApplicationContext) { }
 
-    middleware(ctx: HttpContext, next: HttpEndpoint): Observable<HttpContext> {
+    intercept(ctx: HttpContext, next: HttpEndpoint): Observable<HttpResponse> {
         const logger = ctx.getValue(Logger) ?? ctx.get(LoggerFactory).getLogger();
         if (!logger) {
-            return next.endpoint(ctx);
+            return next.handle(ctx);
         }
 
         const dev = !this.appContext.arguments.env.production;
         dev && logger.log();
 
-        return next.endpoint(ctx)
+        return next.handle(ctx)
             .pipe(
+                map(rep=> rep),
                 catchError((err, caught) => {
                     logger.log(err);
                     return caught;

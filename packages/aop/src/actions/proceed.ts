@@ -211,7 +211,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements ActionSetu
 export class CtorAdvicesScope extends IocActions<Joinpoint> implements ActionSetup {
 
     override handle(ctx: Joinpoint, next?: () => void) {
-        if (ctx.method === ctorName) {
+        if (ctx.methodName === ctorName) {
             super.handle(ctx);
         } else {
             next?.();

@@ -8,8 +8,18 @@ import { TransportError } from './error';
  * transport option.
  */
 export interface TransportOption extends InvokeArguments {
+    /**
+     * context of target client or server.
+     */
+    target: any;
+    /**
+     * request.
+     */
     request: any;
-    reponse: any;
+    /**
+     * response.
+     */
+    response?: any;
 }
 
 
@@ -17,20 +27,24 @@ export interface TransportOption extends InvokeArguments {
  * transport context.
  */
 @Abstract()
-export abstract class TransportContext extends DefaultInvocationContext<any> {
+export abstract class TransportContext<TRequest = any, TResponse = any> extends DefaultInvocationContext<any> {
 
     constructor(injector: Injector, options: TransportOption) {
         super(injector, options);
         this.injector.setValue(TransportContext, this);
     }
     /**
+     * target client or server.
+     */
+    abstract get target(): any;
+    /**
      * transport request.
      */
-    abstract get request(): any;
+    abstract get request(): TRequest;
     /**
      * transport response.
      */
-    abstract get response(): any;
+    abstract get response(): TResponse;
     /**
      * transport protocol.
      */
@@ -160,7 +174,7 @@ export function promisify<T>(target: T | Observable<T> | Promise<T>): Promise<T>
  * @returns 
  */
 export function stringify(pattern: Pattern): string {
-    if(isString(pattern)) return pattern;
+    if (isString(pattern)) return pattern;
     if (isNumber(pattern)) {
         return `${pattern}`;
     }

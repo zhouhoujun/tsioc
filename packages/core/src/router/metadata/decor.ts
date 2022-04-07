@@ -5,7 +5,7 @@ import {
 import { PipeTransform } from '../../pipes/pipe';
 import { RequestMethod } from '../../transport/packet';
 import { CanActivate } from '../../transport/guard';
-import { Middleware, MiddlewareFn } from '../../transport/endpoint';
+import { Middleware } from '../../transport/endpoint';
 import { RouteFactoryResolver } from '../route';
 import { MappingReflect, ProtocolRouteMappingMetadata, Router, RouterResolver } from '../router';
 import { HandleMetadata, HandleMessagePattern } from './meta';
@@ -199,7 +199,7 @@ export interface RouteMapping {
         /**
          * middlewares for the route.
          */
-        middlewares: Array<Middleware | MiddlewareFn>;
+        middlewares: Array<Middleware | Type<Middleware>>;
         /**
         * pipes for the route.
         */
@@ -217,7 +217,7 @@ export interface RouteMapping {
      * route decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
-     * @param {{ middlewares?: Middleware[], contentType?: string, method?: string}} options
+     * @param {{ middlewares?: Array<Middleware | Type<Middleware>>, contentType?: string, method?: string}} options
      *  [middlewares] the middlewares for the route.
      *  [contentType] set request contentType.
      *  [method] set request method.
@@ -234,7 +234,7 @@ export interface RouteMapping {
         /**
          * middlewares for the route.
          */
-        middlewares: Array<Middleware | MiddlewareFn>;
+        middlewares: Array<Middleware | Type<Middleware>>;
         /**
          * pipes for the route.
          */
@@ -503,7 +503,7 @@ export interface RestController {
         /**
          * middlewares for the route.
          */
-        middlewares: Array<Middleware | MiddlewareFn>[];
+        middlewares: Array<Middleware | Type<Middleware>>;
         /**
         * pipes for the route.
         */
@@ -563,7 +563,7 @@ export interface RouteMethodDecorator {
         /**
          * middlewares for the route.
          */
-        middlewares: Array<Middleware | MiddlewareFn>;
+        middlewares: Array<Middleware | Type<Middleware>>;
         /**
          * pipes for the route.
          */
@@ -633,7 +633,7 @@ export interface HeadDecorator {
         /**
          * middlewares for the route.
          */
-        middlewares: Middleware[];
+        middlewares: Array<Middleware | Type<Middleware>>;
         /**
          * pipes for the route.
          */

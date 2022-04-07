@@ -7,7 +7,6 @@
  */
 
 import { InvocationContext, isString, type_bool, type_num, type_obj, type_undef } from '@tsdi/ioc';
-import { TransportRequest } from '../packet';
 import { HttpHeaders } from './headers';
 import { HttpParams } from './params';
 
@@ -88,7 +87,7 @@ function isUrlSearchParams(value: any): value is URLSearchParams {
  *
  * @publicApi
  */
-export class HttpRequest<T = any> implements TransportRequest<T> {
+export class HttpRequest<T = any> {
     /**
      * The request body, or `null` if one isn't set.
      *

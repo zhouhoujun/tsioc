@@ -16,7 +16,7 @@ export class TaskLogProcess extends LogProcess {
     processLog(joinPoint: Joinpoint) {
         (async () => {
             let logger = this.logger;
-            let target = joinPoint.target as IActivityRef;
+            let target = joinPoint.targetType as IActivityRef;
             let name = target.name;
             if (!name) {
                 name = lang.getClassName(joinPoint.targetType);

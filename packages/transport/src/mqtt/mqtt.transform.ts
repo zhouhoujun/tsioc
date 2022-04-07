@@ -1,10 +1,10 @@
-import { TransportRequest } from '@tsdi/core';
+import { RequestPacket } from '@tsdi/core';
 import { type_obj } from '@tsdi/ioc';
 import { IClientPublishOptions } from 'mqtt';
 
 
 export class MqttRecordSerializer {
-    serialize(packet: TransportRequest | any): TransportRequest & Partial<MqttRecord> {
+    serialize(packet: RequestPacket | any): RequestPacket & Partial<MqttRecord> {
         if (
             packet?.data &&
             typeof packet.data === type_obj &&

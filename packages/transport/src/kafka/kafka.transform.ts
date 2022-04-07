@@ -1,6 +1,6 @@
 import * as tls from 'tls';
 import * as net from 'net';
-import { Deserializer, TransportResponse, Serializer } from '@tsdi/core';
+import { Deserializer, ResponsePacket, Serializer } from '@tsdi/core';
 import { isNil, isObject, isPlainObject, isString, isUndefined } from '@tsdi/ioc';
 
 export interface KafkaRequest<T = any> {
@@ -45,8 +45,8 @@ export class KafkaRequestSerializer implements Serializer<any, KafkaRequest> {
 }
 
 
-export class KafkaResponseDeserializer implements Deserializer<any, TransportResponse> {
-    deserialize(message: any, options?: Record<string, any>): TransportResponse {
+export class KafkaResponseDeserializer implements Deserializer<any, ResponsePacket> {
+    deserialize(message: any, options?: Record<string, any>): ResponsePacket {
         const id = message.headers[KafkaHeaders.CORRELATION_ID].toString();
         if (!isUndefined(message.headers[KafkaHeaders.NEST_ERR])) {
             return {
