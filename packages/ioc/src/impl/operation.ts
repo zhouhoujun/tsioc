@@ -25,7 +25,7 @@ export class Reflective {
      * @param context the context to use to invoke the operation
      * @param destroy destroy the context after invoked.
      */
-    invoke<T>(typeRef: TypeReflect<T>, method: string, context: InvocationContext, instance: T, destroy?: boolean | Function) {
+    invoke<T>(typeRef: TypeReflect<T>, method: string, context: InvocationContext, instance?: T, destroy?: boolean | Function) {
         const type = typeRef.type;
         const inst: any = instance ?? context.resolve(type);
         if (!instance || !isFunction(inst[method])) {
@@ -105,7 +105,17 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
      * @param context the context to use to invoke the operation
      * @param destroy destroy the context after invoked.
      */
-    invoke(context: InvocationContext, destroy?: boolean | Function) {
+    invoke(context: InvocationContext, destroy?: boolean | Function): any
+    /**
+     * Invoke the underlying operation using the given {@code context}.
+     * @param context the context to use to invoke the operation
+     * @param destroy destroy the context after invoked.
+     */
+    invoke(context: InvocationContext, instance: object, destroy?: boolean | Function): any;
+    invoke(context: InvocationContext, arg?: object | boolean | Function, destroy?: boolean | Function): any {
+        if (arg && isTypeObject(arg)) {
+            return this.reflective.invoke(this.typeRef, this.method, context, arg, destroy);
+        }
         return this.reflective.invoke(this.typeRef, this.method, context, this.instance, destroy);
     }
 

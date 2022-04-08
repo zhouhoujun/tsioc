@@ -34,6 +34,7 @@ export * from './Application';
 
 export * from './model';
 
+export * from './execptions';
 export * from './transport';
 export * from './router';
 

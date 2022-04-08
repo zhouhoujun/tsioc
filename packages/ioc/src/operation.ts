@@ -29,6 +29,13 @@ export interface OperationInvoker {
      * @param destroy try destroy the context after invoked.
      */
     invoke(context: InvocationContext, destroy?: boolean | Function): any;
+    /**
+     * Invoke the underlying operation using the given {@code context}.
+     * @param context the context to use to invoke the operation
+     * @param instance instance of the method to invoke.
+     * @param destroy try destroy the context after invoked.
+     */
+    invoke(context: InvocationContext, instance: object, destroy?: boolean | Function): any;
 
     /**
      * resolve args. 
