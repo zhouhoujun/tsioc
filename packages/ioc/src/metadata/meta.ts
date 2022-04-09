@@ -164,7 +164,7 @@ export interface PropertyMetadata extends ProvideMetadata {
  * @export
  * @interface PropMetadata
  */
-export interface MethodMetadata {
+export interface MethodMetadata extends Record<string, any> {
     /**
      * method returnning type.
      */

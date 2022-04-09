@@ -185,8 +185,8 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         let subRoute = ctx.url.replace(this.path, '');
         if (!this.sortRoutes) {
             this.sortRoutes = this.reflect.class.methodDecors
-                .filter(m => m && isString(m.metadata.route))
-                .sort((ra, rb) => (rb.metadata.route || '').length - (ra.metadata.route || '').length);
+                .filter(m => m && isString((m.metadata as RouteMappingMetadata).route))
+                .sort((ra, rb) => ((rb.metadata as RouteMappingMetadata).route || '').length - ((ra.metadata as RouteMappingMetadata).route || '').length);
 
         }
 

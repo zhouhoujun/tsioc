@@ -1,4 +1,4 @@
-import { ApplicationContext, HttpStatusCode, Middleware, Protocol, RequestMethod, TransportContext, TransportError, TransportOption, TransportStatus } from '@tsdi/core';
+import { ApplicationContext, HttpStatusCode, Middleware, Protocol, RequestMethod, TransportContext, TransportError, TransportOption } from '@tsdi/core';
 import { Abstract, Injector, isNumber, isString, tokenId } from '@tsdi/ioc';
 import * as assert from 'assert';
 import * as http from 'http';
@@ -591,20 +591,32 @@ export class HttpContext extends TransportContext {
     }
 
     /**
-   * Set header `field` to `val` or pass
-   * an object of header fields.
-   *
-   * Examples:
-   *
-   *    this.set('Foo', ['bar', 'baz']);
-   *    this.set('Accept', 'application/json');
-   *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
-   *
-   * @param {String|Object|Array} field
-   * @param {String} val
-   * @api public
-   */
+     * Set header `field` to `val` or pass
+     * an object of header fields.
+     *
+     * Examples:
+     *
+     *    this.set('Foo', ['bar', 'baz']);
+     *    this.set('Accept', 'application/json');
+     *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
+     *
+     * @param {String|Object|Array} field
+     * @param {String} val
+     * @api public
+     */
     setHeader(field: string, val: string | number | string[]): void;
+    /**
+     * Set header `field` to `val` or pass
+     * an object of header fields.
+     *
+     * Examples:
+     *
+     *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
+     *
+     * @param {Record<string, string | number | string[]>} fields
+     * @param {String} val
+     * @api public
+     */
     setHeader(fields: Record<string, string | number | string[]>): void;
     setHeader(field: string | Record<string, string | number | string[]>, val?: string | number | string[]) {
         if (this.headerSent) return;
@@ -768,7 +780,7 @@ export class HttpContext extends TransportContext {
 
 
     throwError(status: TransportStatus, ...messages: string[]): TransportError<TransportStatus> {
-        
+
     }
 
     static create(injector: Injector, options?: TransportOption): HttpContext {

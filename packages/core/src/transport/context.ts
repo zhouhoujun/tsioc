@@ -131,6 +131,36 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
      */
     abstract redirect(url: string, alt?: string): void;
 
+
+    /**
+     * Set header `field` to `val` or pass
+     * an object of header fields.
+     *
+     * Examples:
+     *
+     *    this.set('Foo', ['bar', 'baz']);
+     *    this.set('Accept', 'application/json');
+     *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
+     *
+     * @param {String|Object|Array} field
+     * @param {String} val
+     * @api public
+     */
+    abstract setHeader(field: string, val: string | number | string[]): void;
+    /**
+     * Set header `field` to `val` or pass
+     * an object of header fields.
+     *
+     * Examples:
+     *
+     *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
+     *
+     * @param {Record<string, string | number | string[]>} fields
+     * @param {String} val
+     * @api public
+     */
+    abstract setHeader(fields: Record<string, string | number | string[]>): void;
+
     /**
      * Get response body.
      */

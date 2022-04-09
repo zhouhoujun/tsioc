@@ -1,92 +1,14 @@
 import { ClassType, Type } from '../types';
 import { TypeReflect } from '../metadata/type';
-import { EMPTY, isArray, isClassType, isFunction, isPlainObject, isPromise, isString, isTypeObject, isTypeReflect } from '../utils/chk';
-import { getClassName } from '../utils/lang';
+import { isFunction, isTypeObject } from '../utils/chk';
 import { Token } from '../tokens';
 import { get } from '../metadata/refl';
 import { ProviderType } from '../providers';
-import { Parameter } from '../resolver';
 import { InvocationContext, InvocationOption, InvokeArguments, InvokeOption } from '../context';
-import { ArgumentError, OperationFactory, OperationFactoryResolver, OperationInvoker } from '../operation';
+import { OperationFactory, OperationFactoryResolver, OperationInvoker } from '../operation';
 import { Injector, MethodType } from '../injector';
-import { MthAutorunAction } from '../actions/run-act';
 
 
-/**
- * reflective.
- */
-export class Reflective {
-
-    constructor() { }
-
-    /**
-     * Invoke the underlying operation using the given {@code context}.
-     * @param typeRef target type reflect.
-     * @param method invoke the method named with.
-     * @param context the context to use to invoke the operation
-     * @param destroy destroy the context after invoked.
-     */
-    invoke<T>(typeRef: TypeReflect<T>, method: string, context: InvocationContext, instance?: T, destroy?: boolean | Function) {
-        const type = typeRef.type;
-        const inst: any = instance ?? context.resolve(type);
-        if (!instance || !isFunction(inst[method])) {
-            throw new Error(`type: ${type} has no method ${method}.`);
-        }
-        const hasPointcut = inst[method]['_proxy'] == true;
-        const args = this.resolveArguments(typeRef, method, context);
-        if (hasPointcut) {
-            args.push(context);
-        }
-        let result = inst[method](...args);
-        if (destroy && !hasPointcut) {
-            if (isPromise(result)) {
-                return result.then(val => {
-                    isFunction(destroy) ? destroy() : context?.destroy();
-                    return val;
-                }) as any;
-            } else {
-                isFunction(destroy) ? destroy() : context?.destroy();
-            }
-        }
-        return result;
-    }
-
-    /**
-     * resolve args.     
-     * @param typeRef target type reflect.
-     * @param method invoke the method named with.
-     * @param context invocation context.
-     */
-    resolveArguments<T>(typeRef: TypeReflect<T>, method: string, context: InvocationContext): any[] {
-        const parameters = this.getParameters(typeRef, method);
-        this.validate(typeRef, method, context, parameters);
-        return parameters.map(p => this.resolveArgument(p, context));
-    }
-
-    protected resolveArgument(parameter: Parameter, context: InvocationContext) {
-        return context.resolveArgument(parameter);
-    }
-
-    protected getParameters(typeRef: TypeReflect, method: string): Parameter[] {
-        return typeRef.class.getParameters(method) as Parameter[] ?? EMPTY;
-    }
-
-    protected validate(typeRef: TypeReflect, method: string, context: InvocationContext, parameters: Parameter[]) {
-        const missings = parameters.filter(p => this.isisMissing(context, p));
-        if (missings.length) {
-            throw new MissingParameterError(missings, typeRef.type, method);
-        }
-    }
-
-    protected isisMissing(context: InvocationContext, parameter: Parameter) {
-        return !context.canResolve(parameter);
-    }
-}
-
-/**
- * global Reflective. instance of {@link Reflective}
- */
-export const REFLECTIVE = new Reflective();
 
 /**
  * reflective operation invoker.
@@ -98,8 +20,7 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
     constructor(
         private typeRef: TypeReflect,
         private method: string,
-        private instance?: any,
-        private reflective: Reflective = REFLECTIVE) {
+        private instance?: any) {
     }
 
     get returnType(): ClassType<T> {
@@ -109,12 +30,19 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
         return this._returnType;
     }
 
-
+    private _returns?: ((ctx: InvocationContext, returnning: any) => void)[]
     /**
      * method return callback hooks.
      */
-    onReturning(callback: (value: T) => void): void {
+    onReturnning(callback: (ctx: InvocationContext, returnning: T) => void): void {
+        if (!this._returns) {
+            this._returns = [];
+        }
+        this._returns.push(callback);
+    }
 
+    runHooks = (ctx: InvocationContext, returnning: T) => {
+        this._returns?.forEach(c => c(ctx, returnning));
     }
 
     /**
@@ -131,9 +59,9 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
     invoke(context: InvocationContext, instance: object, destroy?: boolean | Function): T;
     invoke(context: InvocationContext, arg?: object | boolean | Function, destroy?: boolean | Function): T {
         if (arg && isTypeObject(arg)) {
-            return this.reflective.invoke(this.typeRef, this.method, context, arg, destroy);
+            return this.typeRef.class.invoke(this.method, context, arg, destroy, this._returns ? this.runHooks : undefined);
         }
-        return this.reflective.invoke(this.typeRef, this.method, context, this.instance, destroy);
+        return this.typeRef.class.invoke(this.method, context, this.instance, destroy, this._returns ? this.runHooks : undefined);
     }
 
     /**
@@ -141,18 +69,7 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
      * @param context 
      */
     resolveArguments(context: InvocationContext): any[] {
-        return this.reflective.resolveArguments(this.typeRef, this.method, context);
-    }
-}
-
-
-/**
- * Missing argument errror.
- */
-export class MissingParameterError extends ArgumentError {
-    constructor(parameters: Parameter[], type: ClassType, method: string) {
-        super(`ailed to invoke operation because the following required parameters were missing: [ ${parameters.map(p => object2string(p)).join(',\n')} ], method ${method} of class ${object2string(type)}`);
-        Object.setPrototypeOf(this, MissingParameterError.prototype);
+        return this.typeRef.class.resolveArguments(this.method, context);
     }
 }
 
@@ -162,16 +79,12 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
     private _tagPdrs: ProviderType[] | undefined;
     private _type: Type<T>;
     readonly context: InvocationContext;
-    constructor(readonly reflect: TypeReflect<T>, readonly injector: Injector, options?: InvokeArguments, protected reflective: Reflective = REFLECTIVE) {
+    constructor(readonly reflect: TypeReflect<T>, readonly injector: Injector, options?: InvokeArguments) {
         super()
         this._type = reflect.type as Type<T>;
         this.context = this.createContext(injector, options);
         this.context.setValue(OperationFactory, this);
         injector.onDestroy(this);
-    }
-
-    protected createReflective(): Reflective {
-        return REFLECTIVE;
     }
 
     get type(): Type<T> {
@@ -186,12 +99,12 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
 
     invoke(method: MethodType<T>, option?: InvokeOption | InvocationContext, instance?: T) {
         const [context, key, destroy] = this.createMethodContext(method, option);
-        return this.reflective.invoke(this.reflect, key, context, instance ?? this.resolve(), destroy);
+        return this.reflect.class.invoke(key, context, instance ?? this.resolve(), destroy);
     }
 
     resolveArguments(method: MethodType<T>, option?: InvokeOption | InvocationContext) {
         const [context, key, destroy] = this.createMethodContext(method, option);
-        const args = this.reflective.resolveArguments(this.reflect, key, context);
+        const args = this.reflect.class.resolveArguments(key, context);
         if (destroy) {
             if (isFunction(destroy)) {
                 destroy()
@@ -231,7 +144,7 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
     }
 
     createInvoker(method: string, instance?: T): OperationInvoker {
-        return new ReflectiveOperationInvoker(this.reflect, method, instance, this.reflective);
+        return new ReflectiveOperationInvoker(this.reflect, method, instance);
     }
 
     createContext(parent?: Injector | InvocationContext | InvocationOption, option?: InvocationOption): InvocationContext<any> {
@@ -278,7 +191,6 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
     onDestroy(): void | Promise<void> {
         this._type = null!;
         this._tagPdrs = null!;
-        this.reflective = null!;
         (this as any).injector = null!;
         (this as any).reflect = null!;
         return this.context?.destroy();
@@ -291,40 +203,3 @@ export class DefaultOperationFactoryResolver extends OperationFactoryResolver {
     }
 }
 
-
-const deft = {
-    typeInst: true,
-    fun: true
-}
-
-/**
- * format object to string for log.
- * @param obj 
- * @returns 
- */
-export function object2string(obj: any, options?: { typeInst?: boolean; fun?: boolean; }): string {
-    options = { ...deft, ...options };
-    if (isArray(obj)) {
-        return `[${obj.map(v => object2string(v, options)).join(', ')}]`;
-    } else if (isString(obj)) {
-        return `"${obj}"`;
-    } else if (isClassType(obj)) {
-        return 'Type<' + getClassName(obj) + '>';
-    } else if (isTypeReflect(obj)) {
-        return `[${obj.class.className} TypeReflect]`;
-    } else if (isPlainObject(obj)) {
-        let str: string[] = [];
-        for (let n in obj) {
-            let value = obj[n];
-            str.push(`${n}: ${object2string(value, options)}`)
-        }
-        return `{ ${str.join(', ')} }`;
-    } else if (options.typeInst && isTypeObject(obj)) {
-        let fileds = Object.keys(obj).filter(k => k).map(k => `${k}: ${object2string(obj[k], { typeInst: false, fun: false })}`);
-        return `[${getClassName(obj)} {${fileds.join(', ')}} ]`;
-    }
-    if (!options.fun && isFunction(obj)) {
-        return 'Function';
-    }
-    return `${obj}`;
-}

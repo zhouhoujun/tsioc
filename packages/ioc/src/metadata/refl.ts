@@ -5,8 +5,7 @@ import { cleanObj, getParentClass } from '../utils/lang';
 import { EMPTY, isArray, isFunction } from '../utils/chk';
 import { chain, Handler } from '../handler';
 import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata, RunnableMetadata, InjectableMetadata, MethodMetadata } from './meta';
-import { ctorName, DecoratorType, DecorContext, DecorDefine, Decors, ActionTypes, TypeReflect } from './type';
-import { TypeDefine } from './typedef';
+import { ctorName, DecoratorType, DecorContext, DecorDefine, Decors, ActionTypes, Reflective, TypeReflect } from './type';
 import { Platform } from '../injector';
 
 
@@ -472,7 +471,7 @@ export function get<T extends TypeReflect>(type: ClassType, ify?: boolean): T {
         }
         tagRefl = {
             type,
-            class: new TypeDefine(type, prRef?.class)
+            class: new Reflective(type, prRef?.class)
         };
         (type as AnnotationType).ρRfl = () => tagRefl;
     }

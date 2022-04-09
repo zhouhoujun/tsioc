@@ -19,7 +19,6 @@ export { Defer } from './utils/lang';
 
 
 // metadata
-export * from './metadata/typedef';
 export * from './metadata/meta';
 export * from './metadata/type';
 export * as refl from './metadata/refl';

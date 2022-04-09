@@ -1,23 +1,11 @@
 import { ClassType, Type } from './types';
 import { Token } from './tokens';
-import { isArray } from './utils/chk';
 import { Abstract } from './metadata/fac';
 import { TypeReflect } from './metadata/type';
 import { OnDestroy } from './destroy';
 import { Injector, MethodType } from './injector';
 import { InvocationContext, InvocationOption, InvokeArguments, InvokeOption } from './context';
 
-
-/**
- * argument errror.
- */
-export class ArgumentError extends Error {
-    constructor(message?: string | string[]) {
-        super(isArray(message) ? message.join('\n') : message || '');
-        Object.setPrototypeOf(this, ArgumentError.prototype);
-        Error.captureStackTrace(this);
-    }
-}
 
 /**
  * Interface to perform an operation invocation.
@@ -30,7 +18,7 @@ export interface OperationInvoker<T = any> {
     /**
      * method return callback hooks.
      */
-    onReturning(callback: (value: T) => void): void;
+    onReturnning(callback: (ctx: InvocationContext, value: T) => void): void;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation
