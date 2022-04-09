@@ -1,6 +1,6 @@
 import {
     Type, tokenId, Injector, Token, IocContext, InvocationContext, DefaultInvocationContext,
-    ParameterMetadata, lang, ClassType, InvokeOption, DecorDefine, Defer, InvocationOption, EMPTY_OBJ
+    ParameterMetadata, lang, ClassType, DecorDefine, Defer, InvocationOption, EMPTY_OBJ
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advices } from '../advices/Advices';
@@ -9,9 +9,9 @@ import { Advicer } from '../advices/Advicer';
 /**
  * joinpoint option.
  */
-export interface JoinpointOption extends InvokeOption {
-    invokerTarget: Type;
-    invokerMethod: string;
+export interface JoinpointOption extends InvocationOption {
+    targetType: ClassType;
+    methodName: string;
     fullName?: string;
     provJoinpoint?: Joinpoint;
     params?: ParameterMetadata[];
@@ -63,7 +63,7 @@ export class Joinpoint<T = any> extends DefaultInvocationContext<T> implements I
     constructor(injector: Injector, options: JoinpointOption) {
         super(injector, options);
         this.target = options.target;
-        this.targetType = options.invokerTarget;
+        this.targetType = options.targetType;
         this.advices = options.advices;
         this.originMethod = options.originMethod;
         this.params = options.params;

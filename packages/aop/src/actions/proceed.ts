@@ -40,8 +40,8 @@ export class ProceedingScope extends IocActions<Joinpoint> implements ActionSetu
         }
 
         const joinPoint = Joinpoint.create(injector ?? this.platform.getInjector('root') ?? this.platform.getInjector('platform'), {
-            invokerTarget: targetType,
-            invokerMethod: ctorName,
+            targetType: targetType,
+            methodName: ctorName,
             state: JoinpointState.Before,
             advices,
             args,
@@ -58,8 +58,8 @@ export class ProceedingScope extends IocActions<Joinpoint> implements ActionSetu
         }
 
         const joinPoint = Joinpoint.create(injector ?? this.platform.getInjector('root') ?? this.platform.getInjector('platform'), {
-            invokerTarget: targetType,
-            invokerMethod: ctorName,
+            targetType: targetType,
+            methodName: ctorName,
             state: JoinpointState.After,
             advices,
             args,
@@ -131,8 +131,8 @@ export class ProceedingScope extends IocActions<Joinpoint> implements ActionSetu
             }
             const targetRef = refl.get(targetType);
             const joinPoint = Joinpoint.create(parent?.injector ?? platform.getInjector('root') ?? this.platform.getInjector('platform'), {
-                invokerTarget: targetType,
-                invokerMethod: name,
+                targetType: targetType,
+                methodName: name,
                 fullName,
                 params: targetRef.class.getParameters(name),
                 args,
