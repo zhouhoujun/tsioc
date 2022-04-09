@@ -16,7 +16,7 @@ export class TransactionTest {
     @Before()
     async beforeInit() {
         this.ctx = await Application.run({
-            type: MockBootLoadTest,
+            module: MockBootLoadTest,
             baseURL: __dirname
         });
 

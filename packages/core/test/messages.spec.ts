@@ -84,12 +84,12 @@ class DeviceController {
 
 @Handle('/hdevice')
 class DeviceQueue implements Middleware {
-    middleware(ctx: TransportContext, next: Endpoint): Observable<TransportContext> {
+    intercept(ctx: TransportContext, next: Endpoint): Observable<TransportContext> {
 
         return defer(async () => {
             console.log('device msg start.');
             ctx.setValue('device', 'device data')
-            await lastValueFrom(new Chain(ctx => of(ctx), ctx.resolve(DEVICE_MIDDLEWARES)).endpoint(ctx));
+            await lastValueFrom(new Chain({handle: ctx => of(ctx)}, ctx.resolve(DEVICE_MIDDLEWARES)).handle(ctx));
             ctx.setValue('device', 'device next');
 
             const device = ctx.getValue('device');
@@ -105,7 +105,7 @@ class DeviceQueue implements Middleware {
             console.log('device sub msg done.');
             return ctx;
         }).pipe(
-            mergeMap(c => next.endpoint(ctx))
+            mergeMap(c => next.handle(ctx))
         )
     }
 }
@@ -114,7 +114,7 @@ class DeviceQueue implements Middleware {
 @Injectable()
 class DeviceStartupHandle implements Middleware {
 
-    middleware(ctx: TransportContext, next: Endpoint): Observable<TransportContext> {
+    intercept(ctx: TransportContext, next: Endpoint): Observable<TransportContext> {
         console.log('DeviceStartupHandle.', 'resp:', ctx.request.body.type, 'req:', ctx.request.body.type)
         if (ctx.body.type === 'startup') {
             // todo sth.
@@ -128,14 +128,14 @@ class DeviceStartupHandle implements Middleware {
 @Injectable()
 class DeviceAStartupHandle implements Middleware {
 
-    middleware(ctx: TransportContext, next: Endpoint): Observable<TransportContext> {
+    intercept(ctx: TransportContext, next: Endpoint): Observable<TransportContext> {
         console.log('DeviceAStartupHandle.', 'resp:', ctx.body.type, 'req:', ctx.request.body.type)
         if (ctx.body.type === 'startup') {
             // todo sth.
             let ret = ctx.injector.get(MyService).dosth();
             ctx.setValue('deviceA_state', ret);
         }
-        return next.endpoint(ctx);
+        return next.handle(ctx);
     }
 }
 

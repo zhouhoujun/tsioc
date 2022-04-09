@@ -16,7 +16,7 @@ export class LoadReposTest {
     @Before()
     async beforeInit() {
         this.ctx = await Application.run({
-            type: MockBootTest,
+            module: MockBootTest,
             baseURL: __dirname
         });
 

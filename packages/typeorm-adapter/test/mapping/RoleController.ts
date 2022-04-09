@@ -1,12 +1,12 @@
 import { RouteMapping, DBRepository, Transactional, RequestParam } from '@tsdi/core';
-import { ILogger, Logger } from '@tsdi/logs';
+import { Log, Logger } from '@tsdi/logs';
 import { Repository } from 'typeorm';
 import { Role } from '../models/models';
 
 @RouteMapping('/roles')
 export class RoleController {
 
-    constructor(@DBRepository(Role) private repo: Repository<Role>, @Logger() private logger: ILogger) {
+    constructor(@DBRepository(Role) private repo: Repository<Role>, @Log() private logger: Logger) {
 
     }
 

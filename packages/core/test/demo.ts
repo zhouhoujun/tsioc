@@ -45,7 +45,7 @@ export class ModuleA {
 @Injectable()
 export class ClassSevice implements Runnable {
 
-    @Logger() logger!: Logger;
+    @Log() logger!: Logger;
 
     @Inject('mark', { defaultValue: '' })
     mark!: string;
@@ -110,7 +110,7 @@ export class ModuleB { }
 @ComponentScan()
 export class SocketService implements ConfigureService, OnDispose {
 
-    @Logger() logger!: Logger;
+    @Log() logger!: Logger;
 
     public tcpServer!: net.Server;
     private init_times = 0;
