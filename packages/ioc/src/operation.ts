@@ -12,6 +12,10 @@ import { InvocationContext, InvocationOption, InvokeArguments, InvokeOption } fr
  */
 export interface OperationInvoker<T = any> {
     /**
+     * invoker order.
+     */
+    order?: number;
+    /**
      * method return type.
      */
     get returnType(): ClassType<T>;

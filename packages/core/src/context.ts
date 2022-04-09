@@ -1,6 +1,6 @@
 import {
     ProviderType, LoadType, Injector, Abstract, Type, InvokeArguments,
-    ModuleLoader, Destroyable, Modules, DestroyCallback, InvocationContext, InvocationOption
+    ModuleLoader, Destroyable, Modules, DestroyCallback, InvocationContext
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
 import { RunnableFactory, BootstrapOption } from './runnable';

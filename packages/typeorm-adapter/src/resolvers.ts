@@ -22,7 +22,7 @@ export class TypeormRepositoryArgumentResolver extends RepositoryArgumentResolve
         }
 
         if (!model || !getConnection(connection).hasMetadata(model)) {
-            throw new ArgumentError(`Autowired repository in${this.getLocal(parameter, ctx)}${ctx.target} failed. It denpendence on model type ${model ? model : ''},  please register model in TypeORM first. `);
+            throw new ArgumentError(`Autowired repository in${this.getLocal(parameter, ctx)}${ctx.targetType} failed. It denpendence on model type ${model ? model : ''},  please register model in TypeORM first. `);
         }
         return true;
     }
@@ -38,7 +38,7 @@ export class TypeormRepositoryArgumentResolver extends RepositoryArgumentResolve
     protected getLocal(parameter: Parameter<any>, ctx: InvocationContext<any>) {
         let local: string;
         if (parameter.propertyKey && parameter.paramName) {
-            local = ` method ${ctx.method} param ${parameter.paramName} of class `
+            local = ` method ${ctx.methodName} param ${parameter.paramName} of class `
         } else if (parameter.propertyKey) {
             local = ` field ${parameter.propertyKey} of class `
         } else {

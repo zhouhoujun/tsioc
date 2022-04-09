@@ -1,6 +1,6 @@
 import 'reflect-metadata';
-import { ILogger, Logger } from '@tsdi/logs';
-import { Type, isString, isArray, Injector, isFunction, EMPTY, isNil } from '@tsdi/ioc';
+import { Log, Logger } from '@tsdi/logs';
+import { Type, isString, Injector, isFunction, EMPTY, isNil } from '@tsdi/ioc';
 import {
     ConnectionOptions, ApplicationContext, ComponentScan, Startup, createModelResolver,
     DBPropertyMetadata, PipeTransform, missingPropPipeError, MODEL_RESOLVERS, OnDispose, TransportParameter, TransportContext, CONNECTIONS
@@ -20,7 +20,7 @@ export class TypeormServer implements Startup, OnDispose {
      */
     protected options!: ConnectionOptions;
 
-    @Logger() private logger!: ILogger;
+    @Log() private logger!: Logger;
 
     constructor(protected ctx: ApplicationContext) {
 

@@ -1,14 +1,14 @@
 import { ClassType, ctorName, Inject, lang, refl, Type } from '@tsdi/ioc';
 import { DBRepository, RepositoryMetadata, TransactionalMetadata, TransactionError, TransactionManager, TransactionStatus } from '@tsdi/core';
 import { Joinpoint } from '@tsdi/aop';
-import { ILogger, Logger } from '@tsdi/logs';
+import { Log, Logger } from '@tsdi/logs';
 import { EntityManager, getManager, MongoRepository, Repository, TreeRepository } from 'typeorm';
 import { DEFAULT_CONNECTION } from './objectid.pipe';
 
 export class TypeormTransactionStatus extends TransactionStatus {
 
     private _jointPoint: Joinpoint | undefined;
-    constructor(private definition: TransactionalMetadata, private logger: ILogger) {
+    constructor(private definition: TransactionalMetadata, private logger: Logger) {
         super();
     }
 
@@ -33,7 +33,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
             joinPoint.setValue(EntityManager, entityManager);
 
             joinPoint.params?.length && targetRef.class.paramDecors.filter(dec => {
-                if (dec.propertyKey === joinPoint.method) {
+                if (dec.propertyKey === joinPoint.methodName) {
                     if (dec.decor === DBRepository.toString()) {
                         joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager));
                     } else if ((dec.metadata.provider as Type || dec.metadata.type) === EntityManager) {
@@ -55,7 +55,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
                 }
             });
 
-            ctorName !== joinPoint.method && targetRef.class.getParameters(ctorName)?.forEach(metadata => {
+            ctorName !== joinPoint.methodName && targetRef.class.getParameters(ctorName)?.forEach(metadata => {
                 const paramName = metadata.paramName;
                 if (paramName) {
                     const filed = joinPoint.target[paramName];
@@ -155,7 +155,7 @@ export class TypeormTransactionManager extends TransactionManager {
 
     constructor(
         @Inject(DEFAULT_CONNECTION, { nullable: true }) private conn: string,
-        @Logger() private logger: ILogger) {
+        @Log() private logger: Logger) {
         super();
     }
 
