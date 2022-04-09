@@ -6,7 +6,7 @@ import { forIn } from '../utils/lang';
 import { RunableDefine, ctorName, DecoratorType, DecorDefine, DecorMemberType, Decors } from './type';
 import { Token } from '../tokens';
 import { ProviderType } from '../providers';
-import { ParameterMetadata, PropertyMetadata } from './meta';
+import { MethodMetadata, ParameterMetadata, PropertyMetadata } from './meta';
 import { ArgumentResolver } from '../resolver';
 
 
@@ -23,7 +23,7 @@ export class TypeDefine {
     readonly decors: DecorDefine[];
     readonly classDecors: DecorDefine[];
     readonly propDecors: DecorDefine<PropertyMetadata>[];
-    readonly methodDecors: DecorDefine[];
+    readonly methodDecors: DecorDefine<MethodMetadata>[];
     readonly paramDecors: DecorDefine<ParameterMetadata>[];
 
     readonly annotation: DesignAnnotation;

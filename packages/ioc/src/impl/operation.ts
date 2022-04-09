@@ -9,6 +9,7 @@ import { Parameter } from '../resolver';
 import { InvocationContext, InvocationOption, InvokeArguments, InvokeOption } from '../context';
 import { ArgumentError, OperationFactory, OperationFactoryResolver, OperationInvoker } from '../operation';
 import { Injector, MethodType } from '../injector';
+import { MthAutorunAction } from '../actions/run-act';
 
 
 /**
@@ -91,8 +92,9 @@ export const REFLECTIVE = new Reflective();
  * reflective operation invoker.
  * implements {@link OperationInvoker}
  */
-export class ReflectiveOperationInvoker implements OperationInvoker {
+export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> {
 
+    private _returnType!: ClassType;
     constructor(
         private typeRef: TypeReflect,
         private method: string,
@@ -100,19 +102,34 @@ export class ReflectiveOperationInvoker implements OperationInvoker {
         private reflective: Reflective = REFLECTIVE) {
     }
 
+    get returnType(): ClassType<T> {
+        if (!this._returnType) {
+            this._returnType = this.typeRef.class.methodDecors.find(d => d.propertyKey === this.method)?.metadata.type ?? Object;
+        }
+        return this._returnType;
+    }
+
+
+    /**
+     * method return callback hooks.
+     */
+    onReturning(callback: (value: T) => void): void {
+
+    }
+
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation
      * @param destroy destroy the context after invoked.
      */
-    invoke(context: InvocationContext, destroy?: boolean | Function): any
+    invoke(context: InvocationContext, destroy?: boolean | Function): T
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation
      * @param destroy destroy the context after invoked.
      */
-    invoke(context: InvocationContext, instance: object, destroy?: boolean | Function): any;
-    invoke(context: InvocationContext, arg?: object | boolean | Function, destroy?: boolean | Function): any {
+    invoke(context: InvocationContext, instance: object, destroy?: boolean | Function): T;
+    invoke(context: InvocationContext, arg?: object | boolean | Function, destroy?: boolean | Function): T {
         if (arg && isTypeObject(arg)) {
             return this.reflective.invoke(this.typeRef, this.method, context, arg, destroy);
         }

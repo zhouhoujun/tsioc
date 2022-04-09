@@ -3,12 +3,16 @@ import { Module } from '../metadata/decor';
 import { RouteFactoryResolver, ROUTES, Routes } from './route';
 import { DefaultRouteFactoryResovler } from './route_ref';
 import { MappingRouterResolver, RouterResolver } from './router';
+import { ExecptionModule } from '../execptions';
 
 
 /*
  * Middleware module.
  */
 @Module({
+    imports:[
+        ExecptionModule
+    ],
     providers: [
         { provide: RouterResolver, useValue: new MappingRouterResolver() },
         { provide: RouteFactoryResolver, useValue: new DefaultRouteFactoryResovler() },
@@ -40,5 +44,4 @@ export class RouterModule {
             ],
         };
     }
-
 }

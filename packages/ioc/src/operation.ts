@@ -22,21 +22,28 @@ export class ArgumentError extends Error {
 /**
  * Interface to perform an operation invocation.
  */
-export interface OperationInvoker {
+export interface OperationInvoker<T = any> {
+    /**
+     * method return type.
+     */
+    get returnType(): ClassType<T>;
+    /**
+     * method return callback hooks.
+     */
+    onReturning(callback: (value: T) => void): void;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation
      * @param destroy try destroy the context after invoked.
      */
-    invoke(context: InvocationContext, destroy?: boolean | Function): any;
+    invoke(context: InvocationContext, destroy?: boolean | Function): T;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation
      * @param instance instance of the method to invoke.
      * @param destroy try destroy the context after invoked.
      */
-    invoke(context: InvocationContext, instance: object, destroy?: boolean | Function): any;
-
+    invoke(context: InvocationContext, instance: object, destroy?: boolean | Function): T;
     /**
      * resolve args. 
      * @param context 
