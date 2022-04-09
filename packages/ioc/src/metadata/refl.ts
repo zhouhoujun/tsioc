@@ -342,13 +342,19 @@ export const TypeProvidersAction = (ctx: DecorContext, next: () => void) => {
 }
 
 export const InitMethodDesignParams = (ctx: DecorContext, next: () => void) => {
-    if (!ctx.reflect.class.hasParameters(ctx.propertyKey)) {
-        const names = ctx.reflect.class.getParamNames(ctx.propertyKey);
-        ctx.reflect.class.setParameters(ctx.propertyKey,
-            (Reflect.getMetadata('design:paramtypes', ctx.target, ctx.propertyKey) as Type[]).map((type, idx) => ({ type, paramName: names[idx] })));
+    const reflective = ctx.reflect.class;
+    const method = ctx.propertyKey;
+    if (!reflective.hasParameters(method)) {
+        const names = reflective.getParamNames(method);
+        reflective.setParameters(method,
+            (Reflect.getMetadata('design:paramtypes', ctx.target, method) as Type[]).map((type, idx) => ({ type, paramName: names[idx] })));
     }
-    if(!(ctx.metadata as MethodMetadata).type) {
-        (ctx.metadata as MethodMetadata).type = Reflect.getMetadata('design:returntype', ctx.target, ctx.propertyKey);
+    const meta = ctx.metadata as MethodMetadata;
+    if (!meta.type) {
+        meta.type = Reflect.getMetadata('design:returntype', ctx.target, method);
+    }
+    if (!reflective.hasReturnning(method) && meta.type) {
+        reflective.setReturnning(method, meta.type)
     }
     return next();
 }

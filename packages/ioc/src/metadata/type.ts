@@ -183,7 +183,7 @@ export interface ModuleReflect<T = any> extends TypeReflect<T> {
 /**
  * type reflective.
  */
-export class Reflective {
+export class Reflective<T = any> {
     className: string;
 
     readonly decors: DecorDefine[];
@@ -226,6 +226,12 @@ export class Reflective {
      */
     private methodParams: Map<string, ParameterMetadata[]>;
     /**
+     * method resturn type.
+     *
+     * @type {Map<IParameter[]>}
+     */
+     private methodReturns: Map<string, ClassType>;
+    /**
      * method providers.
      *
      * @type {Map<ProviderType[]>}
@@ -242,7 +248,7 @@ export class Reflective {
      */
     readonly runnables: RunableDefine[];
 
-    constructor(public readonly type: ClassType, private parent?: Reflective) {
+    constructor(public readonly type: ClassType<T>, private parent?: Reflective) {
         this.annotation = getClassAnnotation(type)!;
         this.className = this.annotation?.name || type.name;
         this.classDecors = [];
@@ -265,6 +271,7 @@ export class Reflective {
         this.methodParams = new Map();
         this.methodProviders = new Map();
         this.methodResolvers = new Map();
+        this.methodReturns = new Map();
     }
 
     /**
@@ -275,7 +282,7 @@ export class Reflective {
      * @param destroy destroy the context after invoked.
      * @param completed invoked completed callback.
      */
-    invoke<T>(method: string, context: InvocationContext, instance?: T, destroy?: boolean | Function, completed?: (context: InvocationContext, returnning: any) => void) {
+    invoke(method: string, context: InvocationContext, instance?: T, destroy?: boolean | Function, completed?: (context: InvocationContext, returnning: any) => void) {
         const type = this.type;
         const inst: any = instance ?? context.resolve(type);
         if (!instance || !isFunction(inst[method])) {
@@ -287,17 +294,15 @@ export class Reflective {
             args.push(context);
         }
         let result = inst[method](...args);
-        if ((!hasPointcut && destroy) || completed) {
-            if (isPromise(result)) {
-                return result.then(val => {
-                    completed && completed(context, val);
-                    if (!hasPointcut) isFunction(destroy) ? destroy() : context?.destroy();
-                    return val;
-                }) as any;
-            } else {
-                completed && completed(context, result);
-                if (!hasPointcut) isFunction(destroy) ? destroy() : context?.destroy();
-            }
+        if (isPromise(result)) {
+            return (completed || destroy) ? result.then(val => {
+                if (completed) completed(context, val);
+                if (!hasPointcut && destroy) isFunction(destroy) ? destroy() : context?.destroy();
+                return val;
+            }) as any : result;
+        } else {
+            if (completed) completed(context, result);
+            if (!hasPointcut && destroy) isFunction(destroy) ? destroy() : context?.destroy();
         }
         return result;
     }
@@ -308,7 +313,7 @@ export class Reflective {
      * @param method invoke the method named with.
      * @param context invocation context.
      */
-    resolveArguments<T>(method: string, context: InvocationContext): any[] {
+    resolveArguments(method: string, context: InvocationContext): any[] {
         const parameters = this.getParameters(method) ?? EMPTY;
         this.validate(method, context, parameters);
         return parameters.map(p => context.resolveArgument(p));
@@ -335,6 +340,18 @@ export class Reflective {
 
     setParameters(method: string, metadatas: ParameterMetadata[]) {
         this.methodParams.set(method, metadatas);
+    }
+
+    hasReturnning(method: string): boolean {
+        return this.methodReturns.has(method);
+    }
+
+    getReturnning(method: string): ClassType | undefined {
+        return this.methodReturns.get(method) ?? this.parent?.getReturnning(method);
+    }
+
+    setReturnning(method: string, returnType: ClassType) {
+        this.methodReturns.set(method, returnType);
     }
 
     hasProperyProviders(prop: string): boolean {

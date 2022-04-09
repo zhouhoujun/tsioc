@@ -25,7 +25,7 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
 
     get returnType(): ClassType<T> {
         if (!this._returnType) {
-            this._returnType = this.typeRef.class.methodDecors.find(d => d.propertyKey === this.method)?.metadata.type ?? Object;
+            this._returnType = this.typeRef.class.getReturnning(this.method) ?? Object;
         }
         return this._returnType;
     }
