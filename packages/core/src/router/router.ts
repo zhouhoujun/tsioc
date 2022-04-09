@@ -1,4 +1,4 @@
-import { Abstract, EMPTY, isFunction, isString, lang, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
+import { Abstract, EMPTY, isString, lang, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
 import { from, mergeMap, Observable, of, throwError } from 'rxjs';
 import { RequestMethod } from '../transport/packet';
 import { promisify, TransportContext } from '../transport/context';
@@ -91,7 +91,7 @@ export class MappingRoute implements Middleware {
                     if (can) {
                         return this.navigate(this.route, ctx, next);
                     } else {
-                        return throwError(() => ctx.throwError('Forbidden'));
+                        return throwError(() => ctx.throwError(403));
                     }
                 })
             );
@@ -123,11 +123,11 @@ export class MappingRoute implements Middleware {
                         if (router) {
                             return router.intercept(ctx, next);
                         } else {
-                            return throwError(() => ctx.throwError('Not Found'));
+                            return throwError(() => ctx.throwError(404));
                         }
                     }));
         } else {
-            return throwError(() => ctx.throwError('Not Found'));
+            return throwError(() => ctx.throwError(404));
         }
     }
 
@@ -141,7 +141,7 @@ export class MappingRoute implements Middleware {
         if (route) {
             return route.intercept(ctx, next);
         } else {
-            return throwError(() => ctx.throwError('Not Found'));
+            return throwError(() => ctx.throwError(404));
         }
     }
 

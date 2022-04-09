@@ -3,7 +3,7 @@ import { Logger, Log } from '@tsdi/logs';
 import { defer, Observable, throwError } from 'rxjs';
 import { concatMap } from 'rxjs/operators';
 import { OnDispose } from '../lifecycle';
-import { InvalidMessageError } from './error';
+import { TransportError } from './error';
 import { Endpoint } from './endpoint';
 import { TransportContext } from './context';
 
@@ -30,7 +30,7 @@ export abstract class TransportClient<T extends TransportContext> implements OnD
      */
     send<TResponse>(req: T): Observable<TResponse> {
         if (isNil(req)) {
-            return throwError(() => new InvalidMessageError());
+            return throwError(() => new TransportError(400, 'Invalid message'));
         }
         return defer(() => this.connect()).pipe(
             concatMap((ctx) => this.endpoint.handle(ctx))

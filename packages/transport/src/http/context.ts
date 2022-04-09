@@ -1,5 +1,5 @@
 import { ApplicationContext, HttpStatusCode, Middleware, Protocol, RequestMethod, TransportContext, TransportError, TransportOption } from '@tsdi/core';
-import { Abstract, Injector, isNumber, isString, tokenId } from '@tsdi/ioc';
+import { Injector, isNumber, isString, tokenId } from '@tsdi/ioc';
 import * as assert from 'assert';
 import * as http from 'http';
 import * as http2 from 'http2';
@@ -779,8 +779,8 @@ export class HttpContext extends TransportContext {
     }
 
 
-    throwError(status: TransportStatus, ...messages: string[]): TransportError<TransportStatus> {
-
+    throwError(status: TransportStatus, ...messages: string[]):  {
+        
     }
 
     static create(injector: Injector, options?: TransportOption): HttpContext {

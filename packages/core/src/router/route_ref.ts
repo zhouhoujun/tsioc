@@ -108,7 +108,9 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         if (this.guards && this.guards.length) {
             if (!(await lang.some(
                 this.guards.map(guard => () => promisify(guard.canActivate(ctx))),
-                vaild => vaild === false))) return null;
+                vaild => vaild === false))) {
+                throw ctx.throwError(403)
+            };
         }
         const meta = this.getRouteMetaData(ctx) as DecorDefine<RouteMappingMetadata>;
         if (!meta) return null;
@@ -117,7 +119,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
             if (!(await lang.some(
                 rmeta.guards.map(token => () => promisify(this.factory.resolve(token)?.canActivate(ctx))),
                 vaild => vaild === false))) {
-                throw ctx.throwError('Forbidden');
+                throw ctx.throwError(403);
             }
         }
         return meta;
