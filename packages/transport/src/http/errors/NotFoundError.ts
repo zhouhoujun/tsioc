@@ -1,4 +1,5 @@
 import { HttpStatusCode } from '@tsdi/core';
+import { statusMessage } from '../status';
 import { HttpError } from './HttpError';
 
 /**
@@ -9,7 +10,7 @@ import { HttpError } from './HttpError';
  * @extends {HttpError}
  */
 export class NotFoundError extends HttpError {
-    constructor(message = 'Not Found') {
+    constructor(message = statusMessage[HttpStatusCode.NotFound]) {
         super(HttpStatusCode.NotFound, message);
     }
 }

@@ -1,4 +1,5 @@
 import { HttpStatusCode } from '@tsdi/core';
+import { statusMessage } from '../status';
 import { HttpError } from './HttpError';
 
 /**
@@ -9,7 +10,7 @@ import { HttpError } from './HttpError';
  * @extends {HttpError}
  */
 export class MethodNotAllowedError extends HttpError {
-    constructor(message = 'Method Not Allowed') {
+    constructor(message = statusMessage[HttpStatusCode.MethodNotAllowed]) {
         super(HttpStatusCode.MethodNotAllowed, message);
     }
 }

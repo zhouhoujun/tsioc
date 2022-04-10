@@ -7,7 +7,7 @@ import { TransportError, HttpStatusCode } from '@tsdi/core';
  * @class HttpError
  * @extends {Error}
  */
-export class HttpError extends TransportError<HttpStatusCode> {
+export class HttpError extends TransportError {
     constructor(status: HttpStatusCode, message?: string | string[]) {
         super(status, message);
     }

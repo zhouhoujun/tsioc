@@ -1,4 +1,5 @@
 import { HttpStatusCode } from '@tsdi/core';
+import { statusMessage } from '../status';
 import { HttpError } from './HttpError';
 
 /**
@@ -9,7 +10,7 @@ import { HttpError } from './HttpError';
  * @extends {HttpError}
  */
 export class InternalServerError extends HttpError {
-    constructor(message = 'Internal Server Error') {
+    constructor(message = statusMessage[HttpStatusCode.InternalServerError]) {
         super(HttpStatusCode.InternalServerError, message);
     }
 }

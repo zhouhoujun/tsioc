@@ -1,5 +1,6 @@
 import { HttpStatusCode } from '@tsdi/core';
 import { HttpError } from './HttpError';
+import { statusMessage } from '../status';
 
 /**
  * forbidden error.
@@ -9,7 +10,7 @@ import { HttpError } from './HttpError';
  * @extends {HttpError}
  */
 export class ForbiddenError extends HttpError {
-    constructor(message = 'Request Forbidden') {
+    constructor(message = statusMessage[HttpStatusCode.Forbidden]) {
         super(HttpStatusCode.Forbidden, message);
     }
 }

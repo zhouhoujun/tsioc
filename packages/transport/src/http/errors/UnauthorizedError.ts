@@ -1,4 +1,5 @@
 import { HttpStatusCode } from '@tsdi/core';
+import { statusMessage } from '../status';
 import { HttpError } from './HttpError';
 
 /**
@@ -9,7 +10,7 @@ import { HttpError } from './HttpError';
  * @extends {HttpError}
  */
 export class UnauthorizedError extends HttpError {
-    constructor(message = 'Unauthorized') {
+    constructor(message = statusMessage[HttpStatusCode.Unauthorized]) {
         super(HttpStatusCode.Unauthorized, message);
     }
 }
