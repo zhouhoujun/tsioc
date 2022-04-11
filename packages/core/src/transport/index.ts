@@ -1,6 +1,5 @@
 export * from './packet';
 
-export * from './context';
 export * from './endpoint';
 export * from './guard';
 export * from './result';

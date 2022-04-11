@@ -1,9 +1,5 @@
-import { Abstract, InvocationContext } from '@tsdi/ioc';
-
-/**
- * pattern type.
- */
-export type Pattern = string | number | Record<string, string | number | Record<string, string | number>>;
+import { Abstract, InvocationContext, isPromise } from '@tsdi/ioc';
+import { isObservable, lastValueFrom, Observable } from 'rxjs';
 
 
 /**
@@ -24,29 +20,29 @@ export type HttpProtocol = 'http' | 'https';
  */
 export type Protocol = 'tcp' | 'grpc' | 'rmq' | 'kafka' | 'redis' | 'amqp' | 'ssl' | 'msg' | HttpProtocol | MqttProtocol;
 
+@Abstract()
+export abstract class TransportContext extends InvocationContext {
+    abstract request: RequestBase;
+    abstract response: ResponseBase;
+}
 
 /**
  * request base
  */
 @Abstract()
-export abstract class RequestBase<T = any> extends InvocationContext {
+export abstract class RequestBase<T = any> {
     /**
      * Shared and mutable context that can be used by middlewares
      */
-    abstract get context(): InvocationContext;
-
+    abstract get context(): TransportContext;
     /**
      * Outgoing URL
      */
     abstract get url(): string;
     /**
-     * transport protocol.
-     */
-    abstract get protocol(): Protocol;
-    /**
      * Outgoing URL parameters.
      */
-    abstract get params(): Record<string, string | string[] | number>;
+    abstract get params(): Record<string, string | string[] | number | any>;
     /**
      * The outgoing HTTP request method.
      */
@@ -144,7 +140,7 @@ export abstract class ResponseBase<T = any> {
     /**
      * Shared and mutable context that can be used by middlewares
      */
-    abstract get context(): InvocationContext;
+    abstract get context(): TransportContext;
     /**
      * Response status code.
      */
@@ -175,6 +171,10 @@ export abstract class ResponseBase<T = any> {
      * Whether the status code is ok
      */
     abstract get ok(): boolean;
+    /**
+     * Whether the status code is ok
+     */
+    abstract set ok(ok: boolean);
 
     /**
      * Get response body.
@@ -343,4 +343,20 @@ export abstract class ResponseBase<T = any> {
      */
     abstract throwError(error: Error): Error;
 
+}
+
+
+
+/**
+ * to promise.
+ * @param target 
+ * @returns 
+ */
+ export function promisify<T>(target: T | Observable<T> | Promise<T>): Promise<T> {
+    if (isObservable(target)) {
+        return lastValueFrom(target);
+    } else if (isPromise(target)) {
+        return target;
+    }
+    return Promise.resolve(target);
 }

@@ -1,5 +1,5 @@
 import { Abstract, EMPTY, isArray, isDefined, tokenId, Type, Parameter } from '@tsdi/ioc';
-import { TransportContext } from '../transport/context';
+import { TransportContext } from '../transport/packet';
 import { composeFieldResolver, DBPropertyMetadata, MissingModelFieldError, missingPropError, ModelFieldResolver, MODEL_FIELD_RESOLVERS } from './field.resolver';
 
 
@@ -96,7 +96,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
             this._resolver = composeFieldResolver(
                 (p, ctx, fields) => p.nullable === true
                     || (fields && isDefined(fields[p.propertyKey] ?? p.default))
-                    || ((ctx as TransportContext).isUpdate?.() === false && p.primary === true),
+                    || ((ctx as TransportContext).request?.isUpdate?.() === false && p.primary === true),
                 ...this.resolvers ?? EMPTY,
                 ...MODEL_FIELD_RESOLVERS);
         }

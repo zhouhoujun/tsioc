@@ -1,17 +1,17 @@
 import { Abstract } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { TransportContext } from './context';
+import { RequestBase, ResponseBase } from './packet';
 
 
 /**
  * Endpoint is the fundamental building block of servers and clients.
  */
-export interface Endpoint<TRequest extends TransportContext = TransportContext, TResponse = any> {
+export interface Endpoint<TRequest extends RequestBase = RequestBase, TResponse extends ResponseBase = ResponseBase> {
     /**
      * transport endpoint handle.
-     * @param ctx request input with context.
+     * @param req request input with context.
      */
-    handle(ctx: TRequest): Observable<TResponse>;
+    handle(req: TRequest): Observable<TResponse>;
 }
 
 /**
@@ -23,18 +23,18 @@ export interface Endpoint<TRequest extends TransportContext = TransportContext, 
  * through the interceptor chain.
  */
 @Abstract()
-export abstract class EndpointBackend<TRequest extends TransportContext, TResponse> implements Endpoint<TRequest, TResponse> {
+export abstract class EndpointBackend<TRequest extends RequestBase, TResponse extends ResponseBase> implements Endpoint<TRequest, TResponse> {
     /**
      * transport endpoint handle.
-     * @param ctx request input with context.
+     * @param req request input with context.
      */
-    abstract handle(ctx: TRequest): Observable<TResponse>;
+    abstract handle(req: TRequest): Observable<TResponse>;
 }
 
 /**
  * Middleware is a chainable behavior modifier for endpoints.
  */
-export interface Middleware<TRequest extends TransportContext = TransportContext, TResponse = any> {
+export interface Middleware<TRequest extends RequestBase = RequestBase, TResponse extends ResponseBase = ResponseBase> {
     /**
      * the method to implemet middleware.
      * @param ctx  request with context.
@@ -49,7 +49,7 @@ export interface Middleware<TRequest extends TransportContext = TransportContext
 /**
  * Middleware Endpoint.
  */
-export class MiddlewareEndpoint<TRequest extends TransportContext = TransportContext, TResponse = any> implements Endpoint<TRequest, TResponse> {
+export class MiddlewareEndpoint<TRequest extends RequestBase = RequestBase, TResponse extends ResponseBase = ResponseBase> implements Endpoint<TRequest, TResponse> {
     constructor(private next: Endpoint<TRequest, TResponse>, private middleware: Middleware<TRequest, TResponse>) { }
 
     handle(ctx: TRequest): Observable<TResponse> {
@@ -62,7 +62,7 @@ export class MiddlewareEndpoint<TRequest extends TransportContext = TransportCon
  * traverse them in the order they're declared. That is, the first middleware
  * is treated as the outermost middleware.
  */
-export class Chain<TRequest extends TransportContext, TResponse> implements Endpoint<TRequest, TResponse> {
+export class Chain<TRequest extends RequestBase, TResponse  extends ResponseBase> implements Endpoint<TRequest, TResponse> {
 
     private chain!: Endpoint<TRequest, TResponse>;
     constructor(private backend: EndpointBackend<TRequest, TResponse>, private middlewares: Middleware<TRequest, TResponse>[]) {

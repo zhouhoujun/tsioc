@@ -5,20 +5,20 @@ import { concatMap } from 'rxjs/operators';
 import { OnDispose } from '../lifecycle';
 import { TransportError } from './error';
 import { Endpoint } from './endpoint';
-import { TransportContext } from './context';
+import { RequestBase, ResponseBase } from './packet';
 
 /**
  * abstract transport client.
  */
 @Abstract()
-export abstract class TransportClient<T extends TransportContext> implements OnDispose {
+export abstract class TransportClient<TRequest extends RequestBase , TResponse extends ResponseBase> implements OnDispose {
 
     @Log()
     protected readonly logger!: Logger;
     /**
      * transport handler.
      */
-    abstract get endpoint(): Endpoint<T>;
+    abstract get endpoint(): Endpoint<TRequest, TResponse>;
     /**
      * connect.
      */
@@ -28,14 +28,26 @@ export abstract class TransportClient<T extends TransportContext> implements OnD
      *
      * @return An `Observable` of the response, with the response body as a stream of `HttpEvent`s.
      */
-    send<TResponse>(req: T): Observable<TResponse> {
+    send(url: string, options?: any): Observable<TResponse>;
+    /**
+     * Sends an `HttpRequest` and returns a stream of `HttpEvent`s.
+     *
+     * @return An `Observable` of the response, with the response body as a stream of `HttpEvent`s.
+     */
+    send(req: TRequest): Observable<TResponse>;
+    send(req: TRequest | string, options?: any): Observable<TResponse> {
         if (isNil(req)) {
             return throwError(() => new TransportError(400, 'Invalid message'));
         }
-        return defer(() => this.connect()).pipe(
-            concatMap((ctx) => this.endpoint.handle(ctx))
+        return defer(async () => {
+           await this.connect();
+           return this.buildRequest(req, options);
+        }).pipe(
+            concatMap((req) => this.endpoint.handle(req))
         );
     }
+
+    protected abstract buildRequest(req: TRequest | string, options?: any): Promise<TRequest> | TRequest;
 
 
     /**

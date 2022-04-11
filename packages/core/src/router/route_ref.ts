@@ -2,19 +2,18 @@ import {
     DecorDefine, Type, Injector, lang, EMPTY, refl,
     isPrimitiveType, isPromise, isString, isArray, isFunction, isDefined,
     composeResolver, Parameter, ClassType, ArgumentError, OperationFactoryResolver,
-    OnDestroy, isClass, TypeReflect, OperationFactory, DestroyCallback
+    OnDestroy, isClass, TypeReflect, OperationFactory, DestroyCallback, EMPTY_OBJ
 } from '@tsdi/ioc';
-import { from, isObservable, lastValueFrom, mergeMap, Observable } from 'rxjs';
+import { from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { CanActivate } from '../transport/guard';
 import { ResultValue } from '../transport/result';
-import { TransportArgumentResolver, TransportParameter } from '../transport/resolver';
 import { Chain, Endpoint } from '../transport/endpoint';
-import { TransportContext, promisify } from '../transport/context';
+import { RequestBase, ResponseBase, TransportContext, promisify } from '../transport/packet';
+import { TransportArgumentResolver, TransportParameter } from '../transport/resolver';
 import { MODEL_RESOLVERS } from '../model/model.resolver';
 import { PipeTransform } from '../pipes/pipe';
-import { RouteRef, RouteOption, RouteFactory, RouteFactoryResolver, joinprefix } from './route';
+import { RouteRef, RouteOption, RouteFactory, RouteFactoryResolver, joinprefix, RESTFUL_PARAMS } from './route';
 import { ProtocolRouteMappingMetadata, RouteMappingMetadata } from './router';
-
 
 
 const isRest = /\/:/;
@@ -74,17 +73,17 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         return this._guards;
     }
 
-    intercept(ctx: TransportContext, next: Endpoint): Observable<any> {
-        return from(this.canActivate(ctx))
+    intercept(req: RequestBase, next: Endpoint): Observable<ResponseBase> {
+        return from(this.canActivate(req))
             .pipe(
                 mergeMap(method => {
                     if (method) {
                         const metadate = method.metadata;
-                        const key = `${metadate.method ?? ctx.methodName} ${method.propertyKey}`;
+                        const key = `${metadate.method ?? req.method} ${method.propertyKey}`;
                         let endpoint = this._endpoints.get(key);
                         if (!endpoint) {
-                            let middlewares = this.getRouteMiddleware(ctx, method);
-                            const backend = { handle: (c) => from(this.response(c, method)) } as Endpoint;
+                            let middlewares = this.getRouteMiddleware(req, method);
+                            const backend = { handle: (req1) => this.response(req1, next, method) } as Endpoint;
                             if (middlewares.length) {
                                 endpoint = new Chain(
                                     backend,
@@ -94,97 +93,118 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
                             }
                             this._endpoints.set(key, endpoint);
                         }
-                        return endpoint.handle(ctx);
+                        return endpoint.handle(req);
+                    } else if (method === false) {
+                        return this.throwError(req, next, 403);
                     } else {
-                        return next.handle(ctx);
+                        return next.handle(req);
                     }
                 })
             );
     }
 
-    protected async canActivate(ctx: TransportContext) {
-        if (ctx.sent) return null;
+    protected throwError(req: RequestBase, next: Endpoint, status: number): Observable<ResponseBase> {
+        if (req.context.response) {
+            return throwError(() => req.context.response.throwError(status));
+        }
+        return next.handle(req).pipe(mergeMap(resp => throwError(() => resp.throwError(status))));
+    }
+
+    protected async canActivate(req: RequestBase) {
+        if (req.context.response?.sent) return null;
         // if (!ctx.pattern.startsWith(this.path)) return null;
         if (this.guards && this.guards.length) {
             if (!(await lang.some(
-                this.guards.map(guard => () => promisify(guard.canActivate(ctx))),
+                this.guards.map(guard => () => promisify(guard.canActivate(req))),
                 vaild => vaild === false))) {
-                throw ctx.throwError(403)
+                return false;
             };
         }
-        const meta = this.getRouteMetaData(ctx) as DecorDefine<RouteMappingMetadata>;
-        if (!meta) return null;
+        const meta = this.getRouteMetaData(req) as DecorDefine<RouteMappingMetadata>;
+        if (!meta || !meta.propertyKey) return null;
         let rmeta = meta.metadata;
         if (rmeta.guards?.length) {
             if (!(await lang.some(
-                rmeta.guards.map(token => () => promisify(this.factory.resolve(token)?.canActivate(ctx))),
+                rmeta.guards.map(token => () => promisify(this.factory.resolve(token)?.canActivate(req))),
                 vaild => vaild === false))) {
-                throw ctx.throwError(403);
+                return false;
             }
         }
         return meta;
     }
 
-    async response(ctx: TransportContext, meta: DecorDefine) {
+    response(req: RequestBase, next: Endpoint, meta: DecorDefine): Observable<ResponseBase> {
         const injector = this.injector;
-        if (meta && meta.propertyKey) {
 
-            let restParams: any = {};
-            const route: string = meta.metadata.route;
-            if (route && isRest.test(route)) {
-                let routes = route.split('/').map(r => r.trim());
-                let restParamNames = routes.filter(d => restParms.test(d));
-                let routeUrls = ctx.url.replace(this.path, '').split('/');
-                restParamNames.forEach(pname => {
-                    let val = routeUrls[routes.indexOf(pname)];
-                    if (val) {
-                        restParams[pname.substring(1)] = val;
-                    }
-                });
-            }
-            ctx.restful = restParams;
-            let result = this.factory.invoke(
-                meta.propertyKey,
-                {
-                    context: ctx,
-                    resolvers: [
-                        ...primitiveResolvers,
-                        ...injector.get(MODEL_RESOLVERS) ?? EMPTY,
-                    ]
-                },
-                this.instance);
-
-
-            if (isPromise(result)) {
-                result = await result;
-            } else if (isObservable(result)) {
-                result = await lastValueFrom(result);
-            }
-
-            // middleware.
-            if (isFunction(result)) {
-                await result(ctx);
-            } else if (result instanceof ResultValue) {
-                return await result.sendValue(ctx);
-            } else if (isDefined(result)) {
-                ctx.body = result;
-            } else {
-                ctx.ok = true;
-            }
-
+        let restParams: any = {};
+        const route: string = meta.metadata.route;
+        if (route && isRest.test(route)) {
+            let routes = route.split('/').map(r => r.trim());
+            let restParamNames = routes.filter(d => restParms.test(d));
+            let routeUrls = req.url.replace(this.path, '').split('/');
+            restParamNames.forEach(pname => {
+                let val = routeUrls[routes.indexOf(pname)];
+                if (val) {
+                    restParams[pname.substring(1)] = val;
+                    // req.context.setArgument(pname.substring(1), val);
+                }
+            });
         }
-        return ctx;
+        req.context.setValue(RESTFUL_PARAMS, restParams ?? EMPTY_OBJ);
+        return (req.context.response ? of(req.context.response) : next.handle(req)).pipe(
+            mergeMap(async resp => {
+                if (!req.context.response) {
+                    req.context.response = resp;
+                }
+                let result = this.factory.invoke(
+                    meta.propertyKey,
+                    {
+                        context: req.context,
+                        resolvers: [
+                            ...primitiveResolvers,
+                            ...injector.get(MODEL_RESOLVERS) ?? EMPTY,
+                        ]
+                    },
+                    this.instance);
+
+
+                if (isPromise(result)) {
+                    result = await result;
+                } else if (isObservable(result)) {
+                    result = await lastValueFrom(result);
+                }
+
+                // middleware.
+                if (isFunction(result)) {
+                    resp = await result(req);
+                    return resp;
+                }
+
+                if (result instanceof ResultValue) {
+                    await result.sendValue(resp);
+                    return resp;
+                }
+
+                if (isDefined(result)) {
+                    resp.body = result;
+                } else {
+                    resp.ok = true;
+                }
+                return resp;
+
+            }));
+
     }
 
-    protected getRouteMiddleware(ctx: TransportContext, meta: DecorDefine) {
+    protected getRouteMiddleware(req: RequestBase, meta: DecorDefine) {
         if (this.metadata.middlewares?.length || (meta.metadata as RouteMappingMetadata).middlewares?.length) {
             return [...this.metadata.middlewares || EMPTY, ...(meta.metadata as RouteMappingMetadata).middlewares || EMPTY];
         }
         return EMPTY;
     }
 
-    protected getRouteMetaData(ctx: TransportContext) {
-        let subRoute = ctx.url.replace(this.path, '');
+    protected getRouteMetaData(req: RequestBase) {
+        let subRoute = req.url.replace(this.path, '');
         if (!this.sortRoutes) {
             this.sortRoutes = this.reflect.class.methodDecors
                 .filter(m => m && isString((m.metadata as RouteMappingMetadata).route))
@@ -192,7 +212,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
 
         }
 
-        let allMethods = this.sortRoutes.filter(m => m && m.metadata.method === ctx.methodName);
+        let allMethods = this.sortRoutes.filter(m => m && m.metadata.method === req.method);
 
         let meta = allMethods.find(d => (d.metadata.route || '') === subRoute);
         if (!meta) {
@@ -254,22 +274,22 @@ const primitiveResolvers: TransportArgumentResolver[] = [
             (parameter, ctx) => isPrimitiveType(parameter.type),
             {
                 canResolve(parameter, ctx) {
-                    return parameter.scope === 'query' && isDefined(ctx.query[parameter.field ?? parameter.paramName!]);
+                    return parameter.scope === 'query' && isDefined(ctx.request.params[parameter.field ?? parameter.paramName!]);
                 },
                 resolve(parameter, ctx) {
                     const pipe = ctx.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
                     if (!pipe) throw missingPipeError(parameter, ctx.targetType, ctx.methodName);
-                    return pipe.transform(ctx.query[parameter.field ?? parameter.paramName!], ...parameter.args || EMPTY)
+                    return pipe.transform(ctx.request.params[parameter.field ?? parameter.paramName!], ...parameter.args || EMPTY)
                 }
             },
             {
                 canResolve(parameter, ctx) {
-                    return parameter.scope === 'restful' && isDefined(ctx.restful[parameter.field ?? parameter.paramName!]);
+                    return parameter.scope === 'restful' && isDefined(ctx.getValue(RESTFUL_PARAMS)[parameter.field ?? parameter.paramName!]);
                 },
                 resolve(parameter, ctx) {
                     const pipe = ctx.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
                     if (!pipe) throw missingPipeError(parameter, ctx.targetType, ctx.methodName);
-                    return pipe.transform(ctx.restful[parameter.field ?? parameter.paramName!], ...parameter.args || EMPTY)
+                    return pipe.transform(ctx.getValue(RESTFUL_PARAMS)[parameter.field ?? parameter.paramName!], ...parameter.args || EMPTY)
                 }
             },
             {
@@ -285,13 +305,13 @@ const primitiveResolvers: TransportArgumentResolver[] = [
             {
                 canResolve(parameter, ctx) {
                     const field = parameter.field ?? parameter.paramName!;
-                    return !parameter.scope && isDefined(ctx.query[field] ?? ctx.restful[field] ?? ctx.request.body[field])
+                    return !parameter.scope && isDefined(ctx.request.params[field] ?? ctx.getValue(RESTFUL_PARAMS)[field] ?? ctx.request.body[field])
                 },
                 resolve(parameter, ctx) {
                     const field = parameter.field ?? parameter.paramName!;
                     const pipe = ctx.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
                     if (!pipe) throw missingPipeError(parameter, ctx.targetType, ctx.methodName);
-                    return pipe.transform(ctx.query[field] ?? ctx.restful[field] ?? ctx.request.body[field], ...parameter.args || EMPTY)
+                    return pipe.transform(ctx.request.params[field] ?? ctx.getValue(RESTFUL_PARAMS)[field] ?? ctx.request.body[field], ...parameter.args || EMPTY)
                 }
             }
         ),
@@ -300,7 +320,7 @@ const primitiveResolvers: TransportArgumentResolver[] = [
             {
                 canResolve(parameter, ctx) {
                     const field = parameter.field ?? parameter.paramName!;
-                    return parameter.scope === 'query' && (isArray(ctx.query[field]) || isString(ctx.query[field]));
+                    return parameter.scope === 'query' && (isArray(ctx.request.params[field]) || isString(ctx.request.params[field]));
                 },
                 resolve(parameter, ctx) {
                     const value = ctx.request.body[parameter.field ?? parameter.paramName!];
@@ -312,10 +332,10 @@ const primitiveResolvers: TransportArgumentResolver[] = [
             },
             {
                 canResolve(parameter, ctx) {
-                    return parameter.scope === 'restful' && isDefined(ctx.restful[parameter.field ?? parameter.paramName!]);
+                    return parameter.scope === 'restful' && isDefined(ctx.getValue(RESTFUL_PARAMS)[parameter.field ?? parameter.paramName!]);
                 },
                 resolve(parameter, ctx) {
-                    const value = (ctx.restful[parameter.field ?? parameter.paramName!] as string).split(',');
+                    const value = (ctx.getValue(RESTFUL_PARAMS)[parameter.field ?? parameter.paramName!] as string).split(',');
                     const pipe = ctx.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase());
                     if (!pipe) throw missingPipeError(parameter, ctx.targetType, ctx.methodName);
                     return value.map(val => pipe.transform(val, ...parameter.args || EMPTY)) as any;
