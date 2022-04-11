@@ -7,7 +7,8 @@ import * as https from 'https';
 import * as http2 from 'http2';
 import { Socket } from 'net';
 import { TLSSocket } from 'tls';
-import { HttpContext, HttpMiddleware, HTTP_MIDDLEWARES } from './context';
+import { HttpContext } from './context';
+import { HttpMiddleware, HTTP_MIDDLEWARES } from './endpoint';
 
 
 
@@ -23,9 +24,9 @@ export const HTTP_SESSIONOPTIONS = tokenId<HttpSessionOptions>('HTTP_SESSIONOPTI
 
 
 @Injectable()
-export class HttpClient extends TransportClient<HttpContext> {
+export class HttpClient extends TransportClient<HttpRequest, HttpResponse> {
 
-    private _endpoint!: Endpoint<HttpContext>;
+    private _endpoint!: Endpoint<HttpRequest, HttpResponse>;
     private http2client?: http2.ClientHttp2Session;
 
     constructor(
@@ -36,7 +37,7 @@ export class HttpClient extends TransportClient<HttpContext> {
     }
 
 
-    get endpoint(): Endpoint<HttpContext> {
+    get endpoint(): Endpoint<HttpRequest, HttpResponse> {
         return this._endpoint;
     }
 
@@ -69,7 +70,7 @@ export class HttpClient extends TransportClient<HttpContext> {
         }
     }
 
-    protected createContext(url: string | RequestPacket<any>, options?: { body?: any; method?: RequestMethod | undefined; headers?: any; context?: InvocationContext<any> | undefined; params?: any; observe?: 'body' | 'events' | 'response' | undefined; reportProgress?: boolean | undefined; responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | undefined; withCredentials?: boolean | undefined; }): HttpContext {
+    protected createContext(url: string | HttpRequest<any>, options?: { body?: any; method?: RequestMethod | undefined; headers?: any; context?: InvocationContext<any> | undefined; params?: any; observe?: 'body' | 'events' | 'response' | undefined; reportProgress?: boolean | undefined; responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | undefined; withCredentials?: boolean | undefined; }): HttpContext {
         const ctx = HttpContext.create(this.context.injector, {
             reponse: new HttpResponse(),
             request: new HttpRequest(options?.method || 'GET', url, { ...options })
@@ -87,41 +88,41 @@ export class HttpClient extends TransportClient<HttpContext> {
 
 }
 
-export class HttpBackEndpoint implements Endpoint<HttpContext> {
+export class HttpBackEndpoint implements Endpoint<HttpRequest, HttpResponse> {
     constructor() {
 
     }
 
-    endpoint(ctx: HttpContext): Observable<any> {
+    endpoint(ctx: HttpRequest): Observable<any> {
         const client = this.options ? http.request(ctx.url, this.options) : http.request(ctx.url);
     }
 
 }
 
 
-export class Http2BackEndpoint implements Endpoint<HttpContext> {
+export class Http2BackEndpoint implements Endpoint<HttpRequest, HttpResponse> {
     constructor(private client: http2.ClientHttp2Session) {
 
     }
-    endpoint(ctx: HttpContext): Observable<any> {
-        const req = this.client.request({
-            path: ctx.url
+    endpoint(req: HttpRequest): Observable<HttpResponse> {
+        const reqt = this.client.request({
+            path: req.url
         });
-        const logger = ctx.getValue(Logger);
+        const logger = req.context.getValue(Logger);
 
-        req.on('response', (headers, flags) => {
+        reqt.on('response', (headers, flags) => {
             for (const name in headers) {
                 logger.log(`${name}: ${headers[name]}`);
             }
         });
 
-        req.setEncoding('utf8');
-        req.on('data', (chunk) => { data += chunk; });
-        req.on('end', () => {
+        reqt.setEncoding('utf8');
+        reqt.on('data', (chunk) => { data += chunk; });
+        reqt.on('end', () => {
             logger.log(`\n${data}`);
             this.client.close();
         });
-        req.end();
+        reqt.end();
     }
 
 }

@@ -1,21 +1,16 @@
-import { hasOwn, Injectable, isString } from '@tsdi/ioc';
-import { ApplicationContext, Endpoint, HttpRequest, HttpResponse, Middleware, TransportContext } from '@tsdi/core';
+import { hasOwn, Injectable, isString, tokenId } from '@tsdi/ioc';
+import { ApplicationContext, Endpoint, HttpRequest, HttpResponse } from '@tsdi/core';
 import { Logger, LoggerFactory } from '@tsdi/logs';
 import { Observable } from 'rxjs';
 import { catchError, finalize, map, } from 'rxjs/operators'
 import { isBuffer, isStream } from '../utils';
-import { HttpEndpoint } from './endpoint';
+import { HttpEndpoint, HttpMiddleware } from './endpoint';
 import { JsonStreamStringify } from '../stringify';
 
 export interface JsonMiddlewareOption {
     pretty: boolean;
     param?: string;
     spaces?: number;
-}
-
-
-export interface HttpMiddleware extends Middleware<HttpRequest, HttpResponse> {
-
 }
 
 

@@ -6,8 +6,9 @@ import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
 import * as assert from 'assert';
-import { HttpContext, HTTP_MIDDLEWARES } from './context';
+import { HttpContext } from './context';
 import { CONTENT_DISPOSITION } from './content';
+import { HTTP_MIDDLEWARES } from './endpoint';
 
 
 export type HttpVersion = 'http1.1' | 'http2';
@@ -88,7 +89,7 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse> {
             request,
             response
         });
-        
+
         this._endpoint.endpoint(ctx);
     }
     protected http2RequestHandler(request: http2.Http2ServerRequest, response: http2.Http2ServerResponse) {

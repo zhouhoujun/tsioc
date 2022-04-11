@@ -1,5 +1,5 @@
-import { ApplicationContext, HttpStatusCode, Middleware, Protocol, RequestMethod, TransportContext, TransportError, TransportOption } from '@tsdi/core';
-import { Injector, isNumber, isString, tokenId } from '@tsdi/ioc';
+import { ApplicationContext, HttpStatusCode, Middleware, Protocol, RequestMethod, TransportContext, TransportError } from '@tsdi/core';
+import { Injector, InvokeOption, isNumber, isString, tokenId } from '@tsdi/ioc';
 import * as assert from 'assert';
 import * as http from 'http';
 import * as http2 from 'http2';
@@ -10,7 +10,7 @@ import { encodeUrl, escapeHtml, isBuffer, isStream } from '../utils';
 import { emptyStatus, redirectStatus, statusMessage } from './status';
 import { CONTENT_DISPOSITION } from './content';
 
-export interface HttpContextOption extends TransportOption {
+export interface HttpContextOption extends InvokeOption {
     request: http.IncomingMessage | http2.Http2ServerRequest;
     response: http.ServerResponse | http2.Http2ServerResponse;
 }
@@ -778,19 +778,10 @@ export class HttpContext extends TransportContext {
     }
 
 
-    throwError(status: TransportStatus, ...messages: string[]):  {
+    throwError(status: number, msg: string) {
         
     }
 
-    static create(injector: Injector, options?: TransportOption): HttpContext {
-        throw new Error('Method not implemented.');
-    }
 }
 
 
-export type HttpMiddleware = Middleware<HttpContext>;
-
-/**
- * http middlewares token.
- */
-export const HTTP_MIDDLEWARES = tokenId<HttpMiddleware[]>('MIDDLEWARES');
