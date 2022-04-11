@@ -15,7 +15,6 @@ export interface HttpContextOption extends TransportOption {
     response: http.ServerResponse | http2.Http2ServerResponse;
 }
 
-export type HttpResponse = http.ServerResponse | http2.Http2ServerResponse;
 
 export class HttpContext extends TransportContext {
 

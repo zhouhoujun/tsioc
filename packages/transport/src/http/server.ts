@@ -1,5 +1,5 @@
 import { Inject, Injectable, InvocationContext, isFunction, lang, tokenId } from '@tsdi/ioc';
-import { Chain, Endpoint, TransportServer } from '@tsdi/core';
+import { Chain, Endpoint, HttpEvent, HttpRequest, HttpResponse, Middleware, TransportServer } from '@tsdi/core';
 import { Logger } from '@tsdi/logs';
 import { fromEvent, of, race } from 'rxjs';
 import * as http from 'http';
@@ -26,9 +26,9 @@ export type HttpServerOptions = Http1ServerOptions | Http2ServerOptions;
 export const HTTP_SERVEROPTIONS = tokenId<HttpServerOptions>('HTTP_SERVEROPTIONS');
 
 @Injectable()
-export class HttpServer extends TransportServer<HttpContext> {
+export class HttpServer extends TransportServer<HttpRequest, HttpResponse> {
 
-    private _endpoint!: Endpoint<HttpContext>;
+    private _endpoint!: Endpoint<HttpRequest, HttpResponse>;
     private _server!: http2.Http2Server | http.Server | https.Server;
     constructor(
         @Inject() private context: InvocationContext,
@@ -37,7 +37,7 @@ export class HttpServer extends TransportServer<HttpContext> {
         super();
     }
 
-    get endpoint(): Endpoint {
+    get endpoint(): Endpoint<HttpRequest, HttpResponse> {
         return this._endpoint;
     }
 
@@ -88,7 +88,7 @@ export class HttpServer extends TransportServer<HttpContext> {
             request,
             response
         });
-
+        
         this._endpoint.endpoint(ctx);
     }
     protected http2RequestHandler(request: http2.Http2ServerRequest, response: http2.Http2ServerResponse) {
