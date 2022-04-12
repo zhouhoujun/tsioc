@@ -167,6 +167,10 @@ export abstract class HttpResponseBase extends ResponseBase {
         return this._message;
     }
 
+    get statusMessage(): string {
+        return this._message;
+    }
+
     /**
      * URL of the resource retrieved, or null if not available.
      */
@@ -186,7 +190,6 @@ export abstract class HttpResponseBase extends ResponseBase {
      */
     readonly type!: HttpEventType.Response | HttpEventType.ResponseHeader;
 
-    readonly context!: TransportContext;
     /**
      * Super-constructor for all responses.
      *
@@ -196,7 +199,6 @@ export abstract class HttpResponseBase extends ResponseBase {
     constructor(
         init: {
             headers?: HttpHeaders,
-            context?: TransportContext,
             status?: number,
             statusText?: string,
             url?: string,
@@ -206,65 +208,16 @@ export abstract class HttpResponseBase extends ResponseBase {
         // If the hash has values passed, use them to initialize the response.
         // Otherwise use the default values.
         this.headers = init.headers || new HttpHeaders();
-        this.context = init.context!;
         this.status = init.status !== undefined ? init.status : defaultStatus;
         this._message = init.statusText || defaultStatusText;
         this.url = init.url || null;
     }
 
-    set statusMessage(msg: string) {
-        this._message = msg;
-    }
-    get statusMessage(): string {
-        return this._message;
+    
+    getHeaders() {
+        return this.headers;
     }
 
-    get contentType(): string {
-        return this.getHeader('Content-Type')?.toString();
-    }
-    set contentType(type: string) {
-        this.setHeader('Content-Type', type);
-    }
-
-    get sent(): boolean {
-        return true;
-    }
-
-    set length(n: number | undefined) {
-        throw new Error('Method not implemented.');
-    }
-    get length(): number | undefined {
-        throw new Error('Method not implemented.');
-    }
-    redirect(url: string, alt?: string): void {
-        throw new Error('Method not implemented.');
-    }
-    getHeader(field: string): string | number | string[] {
-        throw new Error('Method not implemented.');
-    }
-    hasHeader(field: string): boolean {
-        throw new Error('Method not implemented.');
-    }
-    setHeader(field: string, val: string | number | string[]): void;
-    setHeader(fields: Record<string, string | number | string[]>): void;
-    setHeader(field: any, val?: any): void {
-        throw new Error('Method not implemented.');
-    }
-    removeHeader(field: string): void {
-        throw new Error('Method not implemented.');
-    }
-    attachment(filename: string, options?: { contentType?: string | undefined; type?: string | undefined; fallback?: string | boolean | undefined; }): void {
-        throw new Error('Method not implemented.');
-    }
-    get writable(): boolean {
-        throw new Error('Method not implemented.');
-    }
-    throwError(status: number, message?: string): Error;
-    throwError(message: string): Error;
-    throwError(error: Error): Error;
-    throwError(status: any, message?: any): Error {
-        throw new Error('Method not implemented.');
-    }
 }
 
 /**
@@ -278,14 +231,12 @@ export abstract class HttpResponseBase extends ResponseBase {
  */
 export class HttpHeaderResponse extends HttpResponseBase {
 
-    body = null;
-
+    readonly body = null;
     /**
      * Create a new `HttpHeaderResponse` with the given parameters.
      */
     constructor(init: {
         headers?: HttpHeaders,
-        context?: TransportContext,
         status?: number,
         statusText?: string,
         url?: string,
@@ -333,7 +284,6 @@ export class HttpResponse<T = any> extends HttpResponseBase {
     constructor(init: {
         body?: T | null,
         headers?: HttpHeaders;
-        context?: TransportContext,
         status?: number;
         statusText?: string;
         url?: string;
@@ -393,7 +343,6 @@ export class HttpErrorResponse extends HttpResponseBase implements Error {
     constructor(init: {
         error?: any;
         headers?: HttpHeaders;
-        context?: TransportContext,
         status?: number;
         statusText?: string;
         url?: string;

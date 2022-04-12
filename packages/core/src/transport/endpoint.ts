@@ -1,12 +1,11 @@
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, isFunction } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { RequestBase, ResponseBase } from './packet';
 
 
 /**
  * Endpoint is the fundamental building block of servers and clients.
  */
-export interface Endpoint<TRequest extends RequestBase = RequestBase, TResponse extends ResponseBase = ResponseBase> {
+export interface Endpoint<TRequest, TResponse> {
     /**
      * transport endpoint handle.
      * @param req request input with context.
@@ -23,7 +22,7 @@ export interface Endpoint<TRequest extends RequestBase = RequestBase, TResponse 
  * through the interceptor chain.
  */
 @Abstract()
-export abstract class EndpointBackend<TRequest extends RequestBase, TResponse extends ResponseBase> implements Endpoint<TRequest, TResponse> {
+export abstract class EndpointBackend<TRequest, TResponse> implements Endpoint<TRequest, TResponse> {
     /**
      * transport endpoint handle.
      * @param req request input with context.
@@ -34,26 +33,26 @@ export abstract class EndpointBackend<TRequest extends RequestBase, TResponse ex
 /**
  * Middleware is a chainable behavior modifier for endpoints.
  */
-export interface Middleware<TRequest extends RequestBase = RequestBase, TResponse extends ResponseBase = ResponseBase> {
+export interface Middleware<TRequest, TResponse> {
     /**
      * the method to implemet middleware.
-     * @param ctx  request with context.
+     * @param req  request with context.
      * @param next The next middleware in the chain, or the backend
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    intercept(ctx: TRequest, next: Endpoint<TRequest, TResponse>): Observable<TResponse>;
+    intercept(req: TRequest, next: Endpoint<TRequest, TResponse>): Observable<TResponse>;
 }
 
 
 /**
  * Middleware Endpoint.
  */
-export class MiddlewareEndpoint<TRequest extends RequestBase = RequestBase, TResponse extends ResponseBase = ResponseBase> implements Endpoint<TRequest, TResponse> {
+export class MiddlewareEndpoint<TRequest, TResponse> implements Endpoint<TRequest, TResponse> {
     constructor(private next: Endpoint<TRequest, TResponse>, private middleware: Middleware<TRequest, TResponse>) { }
 
-    handle(ctx: TRequest): Observable<TResponse> {
-        return this.middleware.intercept(ctx, this.next);
+    handle(req: TRequest): Observable<TResponse> {
+        return this.middleware.intercept(req, this.next);
     }
 }
 
@@ -62,18 +61,19 @@ export class MiddlewareEndpoint<TRequest extends RequestBase = RequestBase, TRes
  * traverse them in the order they're declared. That is, the first middleware
  * is treated as the outermost middleware.
  */
-export class Chain<TRequest extends RequestBase, TResponse  extends ResponseBase> implements Endpoint<TRequest, TResponse> {
+export class Chain<TRequest, TResponse> implements Endpoint<TRequest, TResponse> {
 
     private chain!: Endpoint<TRequest, TResponse>;
-    constructor(private backend: EndpointBackend<TRequest, TResponse>, private middlewares: Middleware<TRequest, TResponse>[]) {
-
+    private backend: EndpointBackend<TRequest, TResponse>;
+    constructor(backend: EndpointBackend<TRequest, TResponse> | ((req: TRequest) => Observable<TResponse>), private middlewares: Middleware<TRequest, TResponse>[]) {
+        this.backend = isFunction(backend) ? { handle: backend } : backend;
     }
 
-    handle(ctx: TRequest): Observable<TResponse> {
+    handle(req: TRequest): Observable<TResponse> {
         if (!this.chain) {
             this.chain = this.middlewares.reduceRight(
                 (next, middleware) => new MiddlewareEndpoint(next, middleware), this.backend);
         }
-        return this.chain.handle(ctx);
+        return this.chain.handle(req);
     }
 }

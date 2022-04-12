@@ -7,11 +7,12 @@ import {
 import { from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { CanActivate } from '../transport/guard';
 import { ResultValue } from '../transport/result';
-import { Chain, Endpoint } from '../transport/endpoint';
-import { RequestBase, ResponseBase, TransportContext, promisify } from '../transport/packet';
+import { Chain } from '../transport/endpoint';
+import { RequestBase, WritableResponse, TransportContext, promisify } from '../transport/packet';
 import { TransportArgumentResolver, TransportParameter } from '../transport/resolver';
 import { MODEL_RESOLVERS } from '../model/model.resolver';
 import { PipeTransform } from '../pipes/pipe';
+import { RouteEndpoint, RouteMiddleware } from './endpoint';
 import { RouteRef, RouteOption, RouteFactory, RouteFactoryResolver, joinprefix, RESTFUL_PARAMS } from './route';
 import { ProtocolRouteMappingMetadata, RouteMappingMetadata } from './router';
 
@@ -33,7 +34,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     protected sortRoutes: DecorDefine[] | undefined;
     private _url: string;
     private _instance: T | undefined;
-    private _endpoints: Map<string, Endpoint>;
+    private _endpoints: Map<string, RouteEndpoint>;
 
     constructor(private factory: OperationFactory<T>, prefix?: string) {
         super();
@@ -73,7 +74,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         return this._guards;
     }
 
-    intercept(req: RequestBase, next: Endpoint): Observable<ResponseBase> {
+    intercept(req: RequestBase, next: RouteEndpoint): Observable<WritableResponse> {
         return from(this.canActivate(req))
             .pipe(
                 mergeMap(method => {
@@ -83,9 +84,9 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
                         let endpoint = this._endpoints.get(key);
                         if (!endpoint) {
                             let middlewares = this.getRouteMiddleware(req, method);
-                            const backend = { handle: (req1) => this.response(req1, next, method) } as Endpoint;
+                            const backend = { handle: (req1) => this.response(req1, next, method) } as RouteEndpoint;
                             if (middlewares.length) {
-                                endpoint = new Chain(
+                                endpoint = new Chain<RequestBase, WritableResponse>(
                                     backend,
                                     middlewares.map(m => isClass(m) ? this.factory.resolve(m) : m));
                             } else {
@@ -97,21 +98,22 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
                     } else if (method === false) {
                         return this.throwError(req, next, 403);
                     } else {
-                        return next.handle(req);
+                        return req.context.response instanceof WritableResponse ? of(req.context.response) : next.handle(req);
                     }
                 })
             );
     }
 
-    protected throwError(req: RequestBase, next: Endpoint, status: number): Observable<ResponseBase> {
-        if (req.context.response) {
-            return throwError(() => req.context.response.throwError(status));
+    protected throwError(req: RequestBase, next: RouteEndpoint, status: number): Observable<WritableResponse> {
+        const resp = req.context.response;
+        if (resp instanceof WritableResponse) {
+            return throwError(() => resp.throwError(status));
         }
         return next.handle(req).pipe(mergeMap(resp => throwError(() => resp.throwError(status))));
     }
 
     protected async canActivate(req: RequestBase) {
-        if (req.context.response?.sent) return null;
+        if ((req.context.response as WritableResponse)?.sent) return null;
         // if (!ctx.pattern.startsWith(this.path)) return null;
         if (this.guards && this.guards.length) {
             if (!(await lang.some(
@@ -133,7 +135,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         return meta;
     }
 
-    response(req: RequestBase, next: Endpoint, meta: DecorDefine): Observable<ResponseBase> {
+    response(req: RequestBase, next: RouteEndpoint, meta: DecorDefine): Observable<WritableResponse> {
         const injector = this.injector;
 
         let restParams: any = {};
@@ -151,7 +153,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
             });
         }
         req.context.setValue(RESTFUL_PARAMS, restParams ?? EMPTY_OBJ);
-        return (req.context.response ? of(req.context.response) : next.handle(req)).pipe(
+        return (req.context.response instanceof WritableResponse ? of(req.context.response) : next.handle(req)).pipe(
             mergeMap(async resp => {
                 if (!req.context.response) {
                     req.context.response = resp;
@@ -196,7 +198,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
 
     }
 
-    protected getRouteMiddleware(req: RequestBase, meta: DecorDefine) {
+    protected getRouteMiddleware(req: RequestBase, meta: DecorDefine): RouteMiddleware[] {
         if (this.metadata.middlewares?.length || (meta.metadata as RouteMappingMetadata).middlewares?.length) {
             return [...this.metadata.middlewares || EMPTY, ...(meta.metadata as RouteMappingMetadata).middlewares || EMPTY];
         }

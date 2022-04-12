@@ -138,21 +138,53 @@ export abstract class RequestBase<T = any> {
 @Abstract()
 export abstract class ResponseBase<T = any> {
     /**
-     * Shared and mutable context that can be used by middlewares
+     * Get all response headers.
      */
-    abstract get context(): TransportContext;
+    abstract getHeaders(): any;
     /**
-     * Response status code.
+     * Type of the response, narrowed to either the full response or the header.
      */
-    abstract status: number;
-
+    abstract get type(): number;
+    /**
+     * Get response status code.
+     */
+    abstract get status(): number;
     /**
      * Textual description of response status code, defaults to OK.
      *
      * Do not depend on this.
      */
-    abstract statusMessage: string;
+    abstract get statusMessage(): string;
+    /**
+     * Whether the status code is ok
+     */
+    abstract get ok(): boolean;
 
+    /**
+     * Get response body.
+     *
+     * @return {T}
+     * @api public
+     */
+    abstract get body(): T;
+}
+
+@Abstract()
+export abstract class WritableResponse<T = any> extends ResponseBase<T> {
+    /**
+     * Shared and mutable context that can be used by middlewares
+     */
+    abstract get context(): TransportContext;
+    /**
+     * Set response status code, defaults to OK.
+     */
+    abstract set status(status: number);
+    /**
+     * Set Textual description of response status code, defaults to OK.
+     *
+     * Do not depend on this.
+     */
+    abstract set statusMessage(msg: string);
     /**
      * Get Content-Type response header with `type` through `mime.lookup()`
      * when it does not contain a charset.
@@ -170,19 +202,7 @@ export abstract class ResponseBase<T = any> {
     /**
      * Whether the status code is ok
      */
-    abstract get ok(): boolean;
-    /**
-     * Whether the status code is ok
-     */
     abstract set ok(ok: boolean);
-
-    /**
-     * Get response body.
-     *
-     * @return {T}
-     * @api public
-     */
-    abstract get body(): T
 
     /**
      * Set response body.
@@ -287,7 +307,6 @@ export abstract class ResponseBase<T = any> {
      */
     abstract removeHeader(field: string): void;
 
-
     /**
      * Set Content-Disposition header to "attachment" with optional `filename`.
      *
@@ -352,7 +371,7 @@ export abstract class ResponseBase<T = any> {
  * @param target 
  * @returns 
  */
- export function promisify<T>(target: T | Observable<T> | Promise<T>): Promise<T> {
+export function promisify<T>(target: T | Observable<T> | Promise<T>): Promise<T> {
     if (isObservable(target)) {
         return lastValueFrom(target);
     } else if (isPromise(target)) {

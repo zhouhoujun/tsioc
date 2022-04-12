@@ -1,7 +1,7 @@
 import { ClassMethodDecorator, createDecorator, Type, TypeMetadata } from '@tsdi/ioc';
 import { CanActivate } from '../transport/guard';
 import { PipeTransform } from '../pipes/pipe';
-import { Middleware } from '../transport/endpoint';
+import { RouteMiddleware } from '../router';
 
 
 /**
@@ -15,7 +15,7 @@ export interface AuthorizationMetadata extends TypeMetadata {
     /**
      * middleware to auth.
      */
-    middlewares?: Middleware[];
+    middlewares?: RouteMiddleware[];
     /**
      * pipes for the route.
      */

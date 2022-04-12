@@ -1,8 +1,8 @@
 import { Abstract, Destroyable, DestroyCallback, Injector, InvokeArguments, InvokeOption, OnDestroy, tokenId, Type, TypeReflect } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { CanActivate } from '../transport/guard';
-import { Endpoint, Middleware } from '../transport/endpoint';
-import { RequestBase, ResponseBase } from '../transport/packet';
+import { RequestBase, WritableResponse } from '../transport/packet';
+import { RouteEndpoint, RouteMiddleware } from './endpoint';
 
 /**
  * Route.
@@ -41,18 +41,16 @@ export interface Route extends InvokeArguments {
      * An object specifying lazy-loaded child routes.
      */
     loadChildren?: LoadChildren;
-
     /**
      * The controller to instantiate when the path matches.
      * Can be empty if child routes specify controller.
      */
     controller?: Type;
-
     /**
      * The middlewarable to instantiate when the path matches.
      * Can be empty if child routes specify middlewarable.
      */
-    middleware?: Middleware;
+    middleware?: RouteMiddleware;
 
 }
 
@@ -67,7 +65,7 @@ export const RESTFUL_PARAMS = tokenId<Record<string, string|number>>('RESTFUL_PA
  * middleware ref.
  */
 @Abstract()
-export abstract class RouteRef<T = any> implements Middleware, Destroyable, OnDestroy {
+export abstract class RouteRef<T = any> implements RouteMiddleware, Destroyable, OnDestroy {
     /**
      * controller type.
      */
@@ -100,7 +98,7 @@ export abstract class RouteRef<T = any> implements Middleware, Destroyable, OnDe
      * @param {() => Promise<void>} next
      * @returns {Promise<void>}
      */
-    abstract intercept(ctx: RequestBase, next: Endpoint): Observable<ResponseBase>;
+    abstract intercept(ctx: RequestBase, next: RouteEndpoint): Observable<WritableResponse>;
     /**
      * is destroyed or not.
      */

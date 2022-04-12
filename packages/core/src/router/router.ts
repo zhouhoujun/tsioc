@@ -1,10 +1,10 @@
 import { Abstract, EMPTY, isString, lang, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
 import { Observable, from, throwError } from 'rxjs';
 import { map, mergeMap } from 'rxjs/operators';
-import { RequestBase, RequestMethod, ResponseBase, promisify } from '../transport/packet';
+import { RequestBase, RequestMethod, promisify, WritableResponse } from '../transport/packet';
 import { CanActivate } from '../transport/guard';
-import { Endpoint, Middleware } from '../transport/endpoint';
 import { PipeTransform } from '../pipes/pipe';
+import { RouteEndpoint, RouteMiddleware } from './endpoint';
 import { Route, RouteFactoryResolver } from './route';
 import { ModuleRef } from '../module.ref';
 
@@ -15,7 +15,7 @@ import { ModuleRef } from '../module.ref';
  * abstract router.
  */
 @Abstract()
-export abstract class Router implements Middleware {
+export abstract class Router implements RouteMiddleware {
     /**
      * route prefix.
      */
@@ -23,15 +23,15 @@ export abstract class Router implements Middleware {
     /**
      * routes.
      */
-    abstract get routes(): Map<string, Middleware>;
+    abstract get routes(): Map<string, RouteMiddleware>;
     /**
      * intercept handle.
      *
      * @param {TransportContext} req request with context.
-     * @param {Endpoint<T>} next
+     * @param {RouteEndpoint} next
      * @returns {Observable<T>}
      */
-    abstract intercept(req: RequestBase, next: Endpoint): Observable<ResponseBase>;
+    abstract intercept(req: RequestBase, next: RouteEndpoint): Observable<WritableResponse>;
     /**
      * has route or not.
      * @param route route
@@ -46,7 +46,7 @@ export abstract class Router implements Middleware {
      * use route.
      * @param route 
      */
-    abstract use(route: string, middleware: Middleware): this;
+    abstract use(route: string, middleware: RouteMiddleware): this;
     /**
      * unuse route.
      * @param route 
@@ -68,7 +68,7 @@ export abstract class RouterResolver {
 }
 
 
-export class MappingRoute implements Middleware {
+export class MappingRoute implements RouteMiddleware {
 
     private _guards!: CanActivate[];
     private router?: Router;
@@ -80,7 +80,7 @@ export class MappingRoute implements Middleware {
         return this.route.path;
     }
 
-    intercept(req: RequestBase, next: Endpoint): Observable<ResponseBase> {
+    intercept(req: RequestBase, next: RouteEndpoint): Observable<WritableResponse> {
         return from(this.canActive(req))
             .pipe(
                 mergeMap(can => {
@@ -100,7 +100,7 @@ export class MappingRoute implements Middleware {
         return lang.some(this._guards.map(guard => () => promisify(guard.canActivate(req))), vaild => vaild === false);
     }
 
-    protected navigate(route: Route & { router?: Router }, req: RequestBase, next: Endpoint): Promise<any> | Observable<any> {
+    protected navigate(route: Route & { router?: Router }, req: RequestBase, next: RouteEndpoint): Promise<any> | Observable<any> {
         if (route.middleware) {
             return route.middleware.intercept(req, next);
         } else if (route.redirectTo) {
@@ -127,19 +127,20 @@ export class MappingRoute implements Middleware {
         }
     }
 
-    protected throwError(req: RequestBase, next: Endpoint, status: number): Observable<ResponseBase> {
-        if(req.context.response) {
-            return throwError(() => req.context.response.throwError(status));
+    protected throwError(req: RequestBase, next: RouteEndpoint, status: number): Observable<WritableResponse> {
+        const resp  = req.context.response;
+        if(resp instanceof WritableResponse) {
+            return throwError(() => resp.throwError(status));
         }
         return next.handle(req).pipe(mergeMap(resp => throwError(() => resp.throwError(status))));
     }
 
-    protected redirect(resp: ResponseBase, url: string, alt?: string): ResponseBase {
+    protected redirect(resp: WritableResponse, url: string, alt?: string): WritableResponse {
         resp.redirect(url, alt);
         return resp;
     }
 
-    protected routeController(req: RequestBase, controller: Type, next: Endpoint): Observable<ResponseBase> {
+    protected routeController(req: RequestBase, controller: Type, next: RouteEndpoint): Observable<WritableResponse> {
         const route = req.context.resolve(RouteFactoryResolver).resolve(controller).last();
         if (route) {
             return route.intercept(req, next);
@@ -167,11 +168,11 @@ const endColon = /:$/;
 
 export class MappingRouter extends Router implements OnDestroy {
 
-    readonly routes: Map<string, Middleware>;
+    readonly routes: Map<string, RouteMiddleware>;
 
     constructor(readonly prefix = '') {
         super();
-        this.routes = new Map<string, Middleware>();
+        this.routes = new Map<string, RouteMiddleware>();
     }
 
     has(route: string | Route): boolean {
@@ -187,8 +188,8 @@ export class MappingRouter extends Router implements OnDestroy {
      * use route.
      * @param route 
      */
-    use(route: string, middleware: Middleware): this;
-    use(route: Route | string, middleware?: Middleware): this {
+    use(route: string, middleware: RouteMiddleware): this;
+    use(route: Route | string, middleware?: RouteMiddleware): this {
         if (isString(route)) {
             if (!middleware || this.has(route)) return this;
             this.routes.set(route, middleware);
@@ -205,7 +206,7 @@ export class MappingRouter extends Router implements OnDestroy {
         return this;
     }
 
-    intercept(ctx: RequestBase, next: Endpoint): Observable<any> {
+    intercept(ctx: RequestBase, next: RouteEndpoint): Observable<any> {
         const route = this.getRoute(ctx);
         if (route) {
             return route.intercept(ctx, next);
@@ -214,7 +215,7 @@ export class MappingRouter extends Router implements OnDestroy {
         }
     }
 
-    protected getRoute(req: RequestBase): Middleware | undefined {
+    protected getRoute(req: RequestBase): RouteMiddleware | undefined {
         if (req.context.response?.status && req.context.response.status !== 404) return;
         if (!req.url.startsWith(this.prefix)) return;
         const url = req.url.replace(this.prefix, '') || '/';
@@ -222,7 +223,7 @@ export class MappingRouter extends Router implements OnDestroy {
 
     }
 
-    getRouteByUrl(url: string): Middleware | undefined {
+    getRouteByUrl(url: string): RouteMiddleware | undefined {
         let route = this.routes.get(url);
         while (!route && url.lastIndexOf('/') > 1) {
             route = this.getRouteByUrl(url.slice(0, url.lastIndexOf('/')));
@@ -286,7 +287,7 @@ export interface RouteMappingMetadata {
      * @type {Middleware[]}
      * @memberof RouteMetadata
      */
-    middlewares?: Middleware[];
+    middlewares?: RouteMiddleware[];
     /**
      * pipes for the route.
      */

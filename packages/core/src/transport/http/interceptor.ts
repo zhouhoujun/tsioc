@@ -1,5 +1,6 @@
 import { Injectable, InvocationContext, tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
+import { Middleware, MiddlewareEndpoint } from '../endpoint';
 import { HttpBackend, HttpHandler } from './handler';
 import { HttpRequest } from './request';
 import { HttpEvent } from './response';
@@ -7,7 +8,7 @@ import { HttpEvent } from './response';
 /**
  * http interceptor.
  */
-export interface HttpInterceptor {
+export interface HttpInterceptor extends Middleware<HttpRequest, HttpEvent> {
     /**
      * the method to implemet interceptor.
      * @param req request.
@@ -42,7 +43,7 @@ export class HttpInterceptingHandler implements HttpHandler {
         if (!this.chain) {
             const interceptors = this.context.resolve(HTTP_INTERCEPTORS);
             this.chain = interceptors.reduceRight(
-                (next, interceptor) => new InterceptorHandler(next, interceptor), this.backend);
+                (next, interceptor) => new MiddlewareEndpoint(next, interceptor), this.backend);
         }
         return this.chain.handle(req);
     }
@@ -54,16 +55,3 @@ export class NoopInterceptor implements HttpInterceptor {
         return next.handle(req);
     }
 }
-
-/**
- * Interceptor Handler.
- */
- export class InterceptorHandler implements HttpHandler {
-    constructor(private next: HttpHandler, private interceptor: HttpInterceptor) { }
-
-    handle(req: HttpRequest): Observable<HttpEvent> {
-        return this.interceptor.intercept(req, this.next);
-    }
-}
-
-

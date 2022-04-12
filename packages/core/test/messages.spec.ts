@@ -1,8 +1,8 @@
 import { Injector, Injectable, lang, ArgumentError, MissingParameterError, tokenId, chain } from '@tsdi/ioc';
 import { defer, lastValueFrom, Observable, of } from 'rxjs';
-import { mergeMap } from 'rxjs/operators';
+import { map, mergeMap } from 'rxjs/operators';
 import expect = require('expect');
-import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module, TransportContext, HttpClientModule, Middleware, HttpClient, Chain, Endpoint, HttpErrorResponse, HttpResponseBase } from '../src';
+import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module, TransportContext, HttpClientModule, Middleware, HttpClient, Chain, Endpoint, HttpErrorResponse, HttpResponseBase, RequestBase, ResponseBase, WritableResponse, RouteMiddleware } from '../src';
 
 
 
@@ -83,63 +83,66 @@ class DeviceController {
 // }
 
 @Handle('/hdevice')
-class DeviceQueue implements Middleware {
-    intercept(ctx: TransportContext, next: Endpoint): Observable<TransportContext> {
+class DeviceQueue implements Middleware<RequestBase, WritableResponse> {
 
-        return defer(async () => {
-            console.log('device msg start.');
-            ctx.setValue('device', 'device data')
-            await lastValueFrom(new Chain({handle: ctx => of(ctx)}, ctx.resolve(DEVICE_MIDDLEWARES)).handle(ctx));
+    intercept(req: RequestBase, next: Endpoint<RequestBase, WritableResponse>): Observable<WritableResponse> {
+        const ctx = req.context;
+        console.log('device msg start.');
+        ctx.setValue('device', 'device data')
+        return new Chain(req => {
             ctx.setValue('device', 'device next');
-
-            const device = ctx.getValue('device');
-            const deviceA_state = ctx.getValue('deviceA_state');
-            const deviceB_state = ctx.getValue('deviceB_state');
-
-            ctx.body = {
-                device,
-                deviceA_state,
-                deviceB_state
-            };
-
-            console.log('device sub msg done.');
-            return ctx;
-        }).pipe(
-            mergeMap(c => next.handle(ctx))
-        )
+            return next.handle(req);
+        }, ctx.resolve(DEVICE_MIDDLEWARES))
+            .handle(req)
+            .pipe(
+                mergeMap(() => next.handle(req)),
+                map(resp => {
+                    const ctx = req.context;
+                    const device = ctx.getValue('device');
+                    const deviceA_state = ctx.getValue('deviceA_state');
+                    const deviceB_state = ctx.getValue('deviceB_state');
+                    resp.body = {
+                        device,
+                        deviceA_state,
+                        deviceB_state
+                    };
+                    console.log('device sub msg done.');
+                    return resp;
+                })
+            );
     }
 }
 
 
 @Injectable()
-class DeviceStartupHandle implements Middleware {
+class DeviceStartupHandle implements Middleware<RequestBase, WritableResponse> {
 
-    intercept(ctx: TransportContext, next: Endpoint): Observable<TransportContext> {
-        console.log('DeviceStartupHandle.', 'resp:', ctx.request.body.type, 'req:', ctx.request.body.type)
-        if (ctx.body.type === 'startup') {
+    intercept(req: RequestBase, next: Endpoint<RequestBase, WritableResponse>): Observable<WritableResponse> {
+        console.log('DeviceStartupHandle.', 'resp:', req.body.type, 'req:', req.body.type)
+        if (req.body.type === 'startup') {
             // todo sth.
-            let ret = ctx.injector.get(MyService).dosth();
-            ctx.setValue('deviceB_state', ret);
+            let ret = req.context.injector.get(MyService).dosth();
+            req.context.setValue('deviceB_state', ret);
         }
-        return of(ctx);
+        return next.handle(req);
     }
 }
 
 @Injectable()
-class DeviceAStartupHandle implements Middleware {
+class DeviceAStartupHandle implements Middleware<RequestBase, WritableResponse> {
 
-    intercept(ctx: TransportContext, next: Endpoint): Observable<TransportContext> {
-        console.log('DeviceAStartupHandle.', 'resp:', ctx.body.type, 'req:', ctx.request.body.type)
-        if (ctx.body.type === 'startup') {
+    intercept(req: RequestBase, next: Endpoint<RequestBase, WritableResponse>): Observable<WritableResponse> {
+        console.log('DeviceAStartupHandle.', 'resp:', req.body.type, 'req:', req.body.type)
+        if (req.body.type === 'startup') {
             // todo sth.
-            let ret = ctx.injector.get(MyService).dosth();
-            ctx.setValue('deviceA_state', ret);
+            let ret = req.context.injector.get(MyService).dosth();
+            req.context.setValue('deviceA_state', ret);
         }
-        return next.handle(ctx);
+        return next.handle(req);
     }
 }
 
-export const DEVICE_MIDDLEWARES = tokenId<Middleware[]>('DEVICE_MIDDLEWARES');
+export const DEVICE_MIDDLEWARES = tokenId<RouteMiddleware[]>('DEVICE_MIDDLEWARES');
 
 @Module({
     providers: [
