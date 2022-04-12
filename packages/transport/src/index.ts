@@ -6,7 +6,7 @@ export * from './mqtt/mqtt.client';
 export * from './nats/nats.client';
 export * from './redis/redis.client';
 export * from './rmq/rmq.client';
-export * from './tcp/tcp.clinet';
+export * from './tcp/clinet';
 
 
 export * from './http';
@@ -18,5 +18,5 @@ export * from './mqtt/mqtt.server';
 export * from './nats/nats.server';
 export * from './redis/redis.server';
 export * from './rmq/rmq.server';
-export * from './tcp/tcp.server';
+export * from './tcp/server';
 export * from './ws/ws.server';

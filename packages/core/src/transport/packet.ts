@@ -20,14 +20,23 @@ export type HttpProtocol = 'http' | 'https';
  */
 export type Protocol = 'tcp' | 'grpc' | 'rmq' | 'kafka' | 'redis' | 'amqp' | 'ssl' | 'msg' | HttpProtocol | MqttProtocol;
 
+/**
+ * transport context.
+ */
 @Abstract()
 export abstract class TransportContext extends InvocationContext {
+    /**
+     * transport request.
+     */
     abstract request: RequestBase;
+    /**
+     * transport response.
+     */
     abstract response: ResponseBase;
 }
 
 /**
- * request base
+ * request base.
  */
 @Abstract()
 export abstract class RequestBase<T = any> {
@@ -71,6 +80,12 @@ export abstract class RequestBase<T = any> {
      * is update modle resquest.
      */
     abstract isUpdate(): boolean;
+
+    /**
+     * has header field or not.
+     * @param field 
+     */
+    abstract hasHeader(field: string): boolean;
     /**
      * Return request header.
      *
@@ -93,11 +108,6 @@ export abstract class RequestBase<T = any> {
      * @api public
      */
     abstract getHeader(field: string): string | string[] | number;
-    /**
-     * has header field or not.
-     * @param field 
-     */
-    abstract hasHeader(field: string): boolean;
     /**
      * Set header `field` to `val` or pass
      * an object of header fields.
@@ -135,6 +145,9 @@ export abstract class RequestBase<T = any> {
     abstract removeHeader(field: string): void;
 }
 
+/**
+ * response base.
+ */
 @Abstract()
 export abstract class ResponseBase<T = any> {
     /**
@@ -169,6 +182,9 @@ export abstract class ResponseBase<T = any> {
     abstract get body(): T;
 }
 
+/**
+ * writable response.
+ */
 @Abstract()
 export abstract class WritableResponse<T = any> extends ResponseBase<T> {
     /**
@@ -248,6 +264,11 @@ export abstract class WritableResponse<T = any> extends ResponseBase<T> {
     abstract redirect(url: string, alt?: string): void;
 
     /**
+     * has header field or not.
+     * @param field 
+     */
+    abstract hasHeader(field: string): boolean;
+    /**
      * Return response header.
      *
      * Examples:
@@ -266,11 +287,6 @@ export abstract class WritableResponse<T = any> extends ResponseBase<T> {
      * @api public
      */
     abstract getHeader(field: string): string | string[] | number;
-    /**
-     * has header field or not.
-     * @param field 
-     */
-    abstract hasHeader(field: string): boolean;
     /**
      * Set header `field` to `val` or pass
      * an object of header fields.

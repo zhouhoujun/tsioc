@@ -1,7 +1,6 @@
 import { OperationArgumentResolver, Parameter, Type } from '@tsdi/ioc';
 import { PipeTransform } from '../pipes/pipe';
 import { TransportContext } from './packet';
-import { ServerOption } from './server';
 
 /**
  * transport parameter argument of an {@link TransportArgumentResolver}.
@@ -28,7 +27,7 @@ export interface TransportParameter<T = any> extends Parameter<T> {
 /**
  * Resolver for an transport argument of an {@link OperationInvoker}.
  */
-export interface TransportArgumentResolver extends OperationArgumentResolver<ServerOption> {
+export interface TransportArgumentResolver<T = any> extends OperationArgumentResolver<T> {
     /**
      * Return whether an argument of the given {@code parameter} can be resolved.
      * @param parameter argument type

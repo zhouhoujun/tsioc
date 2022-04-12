@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { ResponseBase } from './packet';
+import { WritableResponse } from './packet';
 
 /**
  * route mapping return result. 
@@ -17,9 +17,9 @@ export abstract class ResultValue {
      * send value.
      *
      * @abstract
-     * @param {Context} ctx
+     * @param {WritableResponse} response
      * @returns {Promise<any>}
      * @memberof ResultValue
      */
-    abstract sendValue(ctx: ResponseBase): Promise<any>;
+    abstract sendValue(response: WritableResponse): Promise<any>;
 }
