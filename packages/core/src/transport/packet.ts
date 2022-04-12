@@ -82,6 +82,10 @@ export abstract class RequestBase<T = any> {
     abstract isUpdate(): boolean;
 
     /**
+     * Get all response headers.
+     */
+     abstract getHeaders(): any;
+    /**
      * has header field or not.
      * @param field 
      */
@@ -107,7 +111,7 @@ export abstract class RequestBase<T = any> {
      * @return {String}
      * @api public
      */
-    abstract getHeader(field: string): string | string[] | number;
+    abstract getHeader(field: string): string | string[] | number | undefined;
     /**
      * Set header `field` to `val` or pass
      * an object of header fields.
@@ -179,7 +183,7 @@ export abstract class ResponseBase<T = any> {
      * @return {T}
      * @api public
      */
-    abstract get body(): T;
+    abstract get body(): T | null;
 }
 
 /**
@@ -192,9 +196,19 @@ export abstract class WritableResponse<T = any> extends ResponseBase<T> {
      */
     abstract get context(): TransportContext;
     /**
+     * Get response status code.
+     */
+    abstract get status(): number;
+    /**
      * Set response status code, defaults to OK.
      */
     abstract set status(status: number);
+    /**
+     * Textual description of response status code, defaults to OK.
+     *
+     * Do not depend on this.
+     */
+    abstract get statusMessage(): string;
     /**
      * Set Textual description of response status code, defaults to OK.
      *
@@ -218,15 +232,26 @@ export abstract class WritableResponse<T = any> extends ResponseBase<T> {
     /**
      * Whether the status code is ok
      */
+    abstract get ok(): boolean;
+    /**
+     * Whether the status code is ok
+     */
     abstract set ok(ok: boolean);
 
+    /**
+     * Get response body.
+     *
+     * @return {T}
+     * @api public
+     */
+    abstract get body(): T | null;
     /**
      * Set response body.
      *
      * @param {T} value
      * @api public
      */
-    abstract set body(value: T);
+    abstract set body(value: T | null);
 
     /**
      * Set Content-Length field to `n`.
@@ -286,7 +311,7 @@ export abstract class WritableResponse<T = any> extends ResponseBase<T> {
      * @return {String}
      * @api public
      */
-    abstract getHeader(field: string): string | string[] | number;
+    abstract getHeader(field: string): string | string[] | number | undefined;
     /**
      * Set header `field` to `val` or pass
      * an object of header fields.

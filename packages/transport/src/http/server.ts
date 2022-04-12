@@ -1,14 +1,15 @@
 import { Inject, Injectable, InvocationContext, isFunction, lang, tokenId } from '@tsdi/ioc';
-import { Chain, Endpoint, HttpEvent, HttpRequest, HttpResponse, Middleware, TransportServer } from '@tsdi/core';
+import { Chain, Endpoint, HttpEvent, Middleware, TransportServer } from '@tsdi/core';
 import { Logger } from '@tsdi/logs';
 import { fromEvent, of, race } from 'rxjs';
 import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
 import * as assert from 'assert';
-import { HttpContext } from './context';
 import { CONTENT_DISPOSITION } from './content';
 import { HTTP_MIDDLEWARES } from './endpoint';
+import { HttpRequest } from './request';
+import { HttpResponse, WritableHttpResponse } from './response';
 
 
 export type HttpVersion = 'http1.1' | 'http2';
@@ -27,9 +28,9 @@ export type HttpServerOptions = Http1ServerOptions | Http2ServerOptions;
 export const HTTP_SERVEROPTIONS = tokenId<HttpServerOptions>('HTTP_SERVEROPTIONS');
 
 @Injectable()
-export class HttpServer extends TransportServer<HttpRequest, HttpResponse> {
+export class HttpServer extends TransportServer<HttpRequest, WritableHttpResponse> {
 
-    private _endpoint!: Endpoint<HttpRequest, HttpResponse>;
+    private _endpoint!: Endpoint<HttpRequest, WritableHttpResponse>;
     private _server!: http2.Http2Server | http.Server | https.Server;
     constructor(
         @Inject() private context: InvocationContext,
@@ -38,7 +39,7 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse> {
         super();
     }
 
-    get endpoint(): Endpoint<HttpRequest, HttpResponse> {
+    get endpoint(): Endpoint<HttpRequest, WritableHttpResponse> {
         return this._endpoint;
     }
 
@@ -53,7 +54,7 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse> {
             this.context.setValue(CONTENT_DISPOSITION, func);
         }
         this.context.setValue(Logger, this.logger);
-        this._endpoint = new Chain((ctx) => {
+        this._endpoint = new Chain((req) => {
             // const cb = ()=> ctx.destroy();
             // race([fromEvent(ctx.response, 'end'), fromEvent(ctx.response, 'end'), fromEvent( ctx.response, 'finish') ])
             //     .pipe((c)=> {

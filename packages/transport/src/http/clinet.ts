@@ -1,4 +1,4 @@
-import { Chain, Endpoint, HttpRequest, HttpResponse, RequestMethod, TransportClient } from '@tsdi/core';
+import { Chain, Endpoint, RequestMethod, TransportClient } from '@tsdi/core';
 import { EMPTY_OBJ, Inject, Injectable, InvocationContext, lang, tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Logger } from '@tsdi/logs';
@@ -7,8 +7,9 @@ import * as https from 'https';
 import * as http2 from 'http2';
 import { Socket } from 'net';
 import { TLSSocket } from 'tls';
-import { HttpContext } from './context';
 import { HttpMiddleware, HTTP_MIDDLEWARES } from './endpoint';
+import { HttpRequest } from './request';
+import { HttpResponse } from './response';
 
 
 

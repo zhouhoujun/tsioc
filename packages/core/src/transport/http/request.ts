@@ -339,6 +339,9 @@ export class HttpRequest<T = any> extends RequestBase<T> {
         return null;
     }
 
+    getHeaders(): HttpHeaders {
+        return this.headers;
+    }
     /**
      * is update modle resquest.
      */
