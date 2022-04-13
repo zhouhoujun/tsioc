@@ -1,5 +1,5 @@
-import { Chain, Endpoint, RequestMethod, TransportClient } from '@tsdi/core';
 import { EMPTY_OBJ, Inject, Injectable, InvocationContext, lang, tokenId } from '@tsdi/ioc';
+import { Chain, Endpoint, Middleware, MiddlewareFn, RequestMethod, TransportClient } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { Logger } from '@tsdi/logs';
 import * as http from 'http';
@@ -32,13 +32,24 @@ export class HttpClient extends TransportClient<HttpRequest, HttpResponse> {
 
     constructor(
         @Inject() private context: InvocationContext,
-        @Inject(HTTP_MIDDLEWARES) private middlewares: HttpMiddleware[],
         @Inject(HTTP_SESSIONOPTIONS, { defaultValue: EMPTY_OBJ }) private options: HttpSessionOptions) {
         super()
     }
 
+    useBefore(middleware: Middleware<HttpRequest<any>, HttpResponse<any>> | MiddlewareFn<HttpRequest<any>, HttpResponse<any>>): this {
+        throw new Error('Method not implemented.');
+    }
+    useAfter(middleware: Middleware<HttpRequest<any>, HttpResponse<any>> | MiddlewareFn<HttpRequest<any>, HttpResponse<any>>): this {
+        throw new Error('Method not implemented.');
+    }
+    useFinalizer(middleware: Middleware<HttpRequest<any>, HttpResponse<any>> | MiddlewareFn<HttpRequest<any>, HttpResponse<any>>): this {
+        throw new Error('Method not implemented.');
+    }
 
-    get endpoint(): Endpoint<HttpRequest, HttpResponse> {
+    getEndpoint(): Endpoint<HttpRequest, HttpResponse> {
+        if(!this._endpoint) {
+
+        }
         return this._endpoint;
     }
 
@@ -71,12 +82,8 @@ export class HttpClient extends TransportClient<HttpRequest, HttpResponse> {
         }
     }
 
-    protected createContext(url: string | HttpRequest<any>, options?: { body?: any; method?: RequestMethod | undefined; headers?: any; context?: InvocationContext<any> | undefined; params?: any; observe?: 'body' | 'events' | 'response' | undefined; reportProgress?: boolean | undefined; responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | undefined; withCredentials?: boolean | undefined; }): HttpContext {
-        const ctx = HttpContext.create(this.context.injector, {
-            reponse: new HttpResponse(),
-            request: new HttpRequest(options?.method || 'GET', url, { ...options })
-        });
-        return ctx;
+    protected buildRequest(url: string | HttpRequest<any>, options?: { body?: any; method?: RequestMethod | undefined; headers?: any; context?: InvocationContext<any> | undefined; params?: any; observe?: 'body' | 'events' | 'response' | undefined; reportProgress?: boolean | undefined; responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | undefined; withCredentials?: boolean | undefined; }): HttpContext {
+        throw new Error('Method not implemented.');
     }
 
     async close(): Promise<void> {

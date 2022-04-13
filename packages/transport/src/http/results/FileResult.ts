@@ -3,7 +3,7 @@ import { ApplicationContext, ResultValue } from '@tsdi/core';
 import { Stream } from 'stream';
 import { existsSync, createReadStream } from 'fs';
 import { join, isAbsolute } from 'path';
-import { HttpContext } from '../context';
+import { WritableHttpResponse } from '../response';
 
 /**
  * controller method return result type of file.
@@ -53,25 +53,24 @@ export class FileResult extends ResultValue {
         super(options?.contentType || 'application/octet-stream');
     }
 
-    async sendValue(ctx: HttpContext) {
+    async sendValue(resp: WritableHttpResponse) {
         let file = this.file;
         const contentType = this.contentType;
         if (this.options && this.options.filename) {
-            ctx.attachment(this.options.filename, { contentType, ...this.options.disposition });
+            resp.attachment(this.options.filename, { contentType, ...this.options.disposition });
         } else {
-            ctx.contentType = contentType;
+            resp.contentType = contentType;
         }
-        const baseURL = ctx.injector.get(ApplicationContext).baseURL;
+        const baseURL = resp.context.get(ApplicationContext).baseURL;
         if (isString(file)) {
             let filepath = (isAbsolute(file) || !baseURL) ? file : join(baseURL, file);
             if (existsSync(filepath)) {
-                ctx.body = createReadStream(filepath);
+                resp.body = createReadStream(filepath);
             }
         } else if (file instanceof Buffer) {
-            ctx.body = file;
+            resp.body = file;
         } else if (file instanceof Stream) {
-            ctx.body = file;
+            resp.body = file;
         }
-
     }
 }

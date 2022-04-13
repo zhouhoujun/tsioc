@@ -1,51 +1,96 @@
-import { Endpoint, TransportClient } from '@tsdi/core';
-import { Inject, Injectable } from '@tsdi/ioc';
-import { Socket } from 'net';
-import { DEFAULT_TCPOPTION, TcpOption, TCPRequest, TCPResponse } from './packet';
+import { Endpoint, Middleware, MiddlewareFn, TransportClient } from '@tsdi/core';
+import { Abstract, Inject, Injectable, lang } from '@tsdi/ioc';
+import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
+import { TCPRequest, TCPResponse } from './packet';
+
+
+
+@Abstract()
+export abstract class TcpClientOption {
+    /**
+     * is json or not.
+     */
+    abstract json?: boolean;
+    abstract socketOpts?: SocketConstructorOpts;
+    abstract connectOpts: NetConnectOpts;
+}
+
+export const TCPCLIENTOPTION = {
+    json: true,
+    connectOpts: {
+        port: 3000,
+        hostname: 'localhost'
+    }
+} as TcpClientOption;
 
 
 @Injectable()
 export class TCPClient extends TransportClient<TCPRequest, TCPResponse> {
 
-    private socket!: Socket;
+
+    private socket?: Socket;
     private connected: boolean;
-    constructor(@Inject({ defaultValue: DEFAULT_TCPOPTION }) private options: TcpOption) {
+    constructor(@Inject({ defaultValue: TCPCLIENTOPTION }) private options: TcpClientOption) {
         super();
         this.connected = false;
     }
 
-    get endpoint(): Endpoint<TCPRequest<any>, TCPResponse<any>> {
+    useBefore(middleware: Middleware<TCPRequest<any>, TCPResponse<any>> | MiddlewareFn<TCPRequest<any>, TCPResponse<any>>): this {
+        throw new Error('Method not implemented.');
+    }
+    useAfter(middleware: Middleware<TCPRequest<any>, TCPResponse<any>> | MiddlewareFn<TCPRequest<any>, TCPResponse<any>>): this {
+        throw new Error('Method not implemented.');
+    }
+    useFinalizer(middleware: Middleware<TCPRequest<any>, TCPResponse<any>> | MiddlewareFn<TCPRequest<any>, TCPResponse<any>>): this {
+        throw new Error('Method not implemented.');
+    }
+    getEndpoint(): Endpoint<TCPRequest<any>, TCPResponse<any>> {
         throw new Error('Method not implemented.');
     }
 
     async connect(): Promise<any> {
-        if (this.socket?.connecting)
-            this.socket = new Socket(this.options.socket);
+        if (this.connected) return;
+        if (this.socket) {
+            this.socket.destroy();
+        }
+        const socket = this.socket = new Socket(this.options.socketOpts);
+        const defer = lang.defer();
+        let inited = true;
         this.socket.on('connect', () => {
             this.connected = true;
-            this.logger.info(this.socket.address, 'connect');
+            if (inited) {
+                inited = false;
+                defer.resolve(true);
+            }
+            this.logger.info(socket.address, 'connect');
         });
         this.socket.on('close', (err) => {
             this.connected = false;
             if (err) {
                 this.logger.error(err);
             } else {
-                this.logger.info(this.socket.address, 'closed');
+                this.logger.info(socket.address, 'closed');
             }
         });
         this.socket.on('error', (err) => {
             this.connected = false;
+            if (inited) {
+                inited = false;
+                defer.reject(err);
+            }
             this.logger.error(err);
         });
         this.socket.on('data', (data) => {
             try {
                 this.handleData(data);
             } catch (err) {
-                this.socket.emit('error', (err as Error).message);
-                this.socket.end();
+                socket.emit('error', (err as Error).message);
+                socket.end();
             }
         });
-        this.socket.connect(this.options.port, this.options.host);
+        this.socket.connect(this.options.connectOpts);
+
+        return await defer.promise;
     }
 
     handleData(data: Buffer) {

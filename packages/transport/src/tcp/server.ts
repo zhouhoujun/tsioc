@@ -1,19 +1,59 @@
-import { Endpoint, TransportServer } from '@tsdi/core';
-import { Injectable } from '@tsdi/ioc';
-import * as net from 'net';
+import { Endpoint, Middleware, MiddlewareFn, TransportServer } from '@tsdi/core';
+import { Abstract, Inject, Injectable } from '@tsdi/ioc';
+import { Server, ServerOpts, ListenOptions } from 'net';
 import { TCPRequest, WritableTCPResponse } from './packet';
+
+
+
+@Abstract()
+export abstract class TcpServerOption {
+    /**
+     * is json or not.
+     */
+    abstract json?: boolean;
+    abstract serverOpts?: ServerOpts | undefined;
+    abstract listenOptions: ListenOptions;
+}
+
+export const TCPSERVEROPTION = {
+    json: true,
+    serverOpts: undefined,
+    listenOptions: {
+        port: 3000,
+        host: 'localhost'
+    }
+} as TcpServerOption;
+
 
 
 @Injectable()
 export class TCPServer extends TransportServer<TCPRequest, WritableTCPResponse> {
-    startup(): Promise<void> {
+
+    private server?: Server;
+    constructor(@Inject({ defaultValue: TCPSERVEROPTION }) private options: TcpServerOption) {
+        super();
+    }
+
+    async startup(): Promise<void> {
+        this.server = new Server(this.options.serverOpts);
+        this.server.listen(this.options.listenOptions);
+    }
+
+    useBefore(middleware: Middleware<TCPRequest<any>, WritableTCPResponse<any>> | MiddlewareFn<TCPRequest<any>, WritableTCPResponse<any>>): this {
         throw new Error('Method not implemented.');
     }
-    get endpoint(): Endpoint<TCPRequest<any>, WritableTCPResponse<any>> {
+    useAfter(middleware: Middleware<TCPRequest<any>, WritableTCPResponse<any>> | MiddlewareFn<TCPRequest<any>, WritableTCPResponse<any>>): this {
         throw new Error('Method not implemented.');
     }
-    close(): Promise<void> {
+    useFinalizer(middleware: Middleware<TCPRequest<any>, WritableTCPResponse<any>> | MiddlewareFn<TCPRequest<any>, WritableTCPResponse<any>>): this {
+        throw new Error('Method not implemented.');
+    }
+    getEndpoint(): Endpoint<TCPRequest<any>, WritableTCPResponse<any>> {
         throw new Error('Method not implemented.');
     }
     
+    async close(): Promise<void> {
+        this.server?.close();
+    }
+
 }

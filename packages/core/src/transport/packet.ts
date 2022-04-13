@@ -1,4 +1,4 @@
-import { Abstract, InvocationContext, isPromise } from '@tsdi/ioc';
+import { Abstract, Injector, InvocationContext, InvocationOption, isPromise, TARGET } from '@tsdi/ioc';
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
 
 
@@ -20,11 +20,22 @@ export type HttpProtocol = 'http' | 'https';
  */
 export type Protocol = 'tcp' | 'grpc' | 'rmq' | 'kafka' | 'redis' | 'amqp' | 'ssl' | 'msg' | HttpProtocol | MqttProtocol;
 
+
+export interface TransportOption extends InvocationOption {
+    target?: any;
+    request?: RequestBase;
+    response?: ResponseBase
+}
+
 /**
  * transport context.
  */
 @Abstract()
 export abstract class TransportContext extends InvocationContext {
+
+    get target(): any {
+        return this.getValue(TARGET);
+    }
     /**
      * transport request.
      */
@@ -33,6 +44,20 @@ export abstract class TransportContext extends InvocationContext {
      * transport response.
      */
     abstract response: ResponseBase;
+
+    static override create(injector: Injector, options?: TransportOption): TransportContext {
+        const ctx = InvocationContext.create(injector, options) as TransportContext;
+        if(options?.target){
+            ctx.setValue(TARGET, options.target);
+        }
+        if (options?.request) {
+            ctx.request = options.request;
+        }
+        if (options?.response) {
+            ctx.response = options.response;
+        }
+        return ctx;
+    }
 }
 
 /**
@@ -84,7 +109,7 @@ export abstract class RequestBase<T = any> {
     /**
      * Get all response headers.
      */
-     abstract getHeaders(): any;
+    abstract getHeaders(): any;
     /**
      * has header field or not.
      * @param field 

@@ -89,6 +89,8 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
+    "@grpc/grpc-js": "^1.6.3",
+    "@grpc/proto-loader": "^0.6.9",
     "@types/content-disposition": "^0.5.4",
     "axios": "^0.26.0",
     "content-disposition": "^0.5.4",

@@ -1,53 +1,8 @@
 import { RequestBase, ResponseBase, TransportContext, WritableResponse } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
-import { Socket } from 'net';
+import { Socket, NetConnectOpts } from 'net';
 
-@Abstract()
-export abstract class TcpOption {
-    /**
-     * tcp port.
-     */
-    abstract get port(): number;
-    /**
-     * tcp host.
-     */
-    abstract get host(): string;
-    /**
-     * is json or not.
-     */
-    abstract get json(): boolean;
-    /**
-     * socket option.
-     */
-    abstract get socket(): undefined | {
-        /**
-         *  If specified, wrap around an existing socket with the given file descriptor, otherwise a new socket will be created.
-         */
-        fd?: number;
-        /**
-         * If set to false, then the socket will automatically end the writable side when the readable side ends. See net.createServer() and the 'end' event for details. Default: false.
-         */
-        allowHalfOpen?: boolean;
-        /**
-         *  Allow reads on the socket when an fd is passed, otherwise ignored. Default: false.
-         */
-        readable?: boolean;
-        /**
-         *  Allow writes on the socket when an fd is passed, otherwise ignored. Default: false.
-         */
-        writable?: boolean;
-        /**
-         * An Abort signal that may be used to destroy the socket.
-         */
-        signal?: AbortSignal;
-    };
-}
-
-export const DEFAULT_TCPOPTION = {
-    port: 3000,
-    host: 'localhost'
-} as TcpOption;
 
 export class TCPRequest<T = any> extends RequestBase<T> {
     constructor(public readonly socket: Socket) {
@@ -77,6 +32,8 @@ export class TCPRequest<T = any> extends RequestBase<T> {
     }
     isUpdate(): boolean {
         throw new Error('Method not implemented.');
+    }
+    getHeaders() {
     }
     hasHeader(field: string): boolean {
         throw new Error('Method not implemented.');

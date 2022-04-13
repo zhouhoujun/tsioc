@@ -1,14 +1,19 @@
-import { Injectable } from '@tsdi/ioc';
+import { EMPTY_OBJ, Inject, Injectable, InvocationContext } from '@tsdi/ioc';
 import { Endpoint, RequestBase, ResponseBase, TransportClient } from '@tsdi/core';
-
+import * as grpc from '@grpc/grpc-js';
+import * as gload from '@grpc/proto-loader';
 
 @Injectable()
 export class GrpcClient extends TransportClient<RequestBase, ResponseBase> {
-    get endpoint(): Endpoint<RequestBase<any>, ResponseBase<any>> {
-        throw new Error('Method not implemented.');
+
+    constructor(
+        @Inject() private context: InvocationContext,
+        @Inject({ defaultValue: EMPTY_OBJ }) private options: HttpSessionOptions) {
+        super()
     }
-    connect(): Promise<any> {
-        throw new Error('Method not implemented.');
+    
+    async connect(): Promise<any> {
+        grpc.loadPackageDefinition()
     }
     protected buildRequest(req: string | RequestBase<any>, options?: any): RequestBase<any> | Promise<RequestBase<any>> {
         throw new Error('Method not implemented.');

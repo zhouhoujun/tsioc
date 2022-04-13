@@ -13,6 +13,9 @@ export interface Endpoint<TRequest, TResponse> {
     handle(req: TRequest): Observable<TResponse>;
 }
 
+export type EndpointFn<TRequest, TResponse> = (req: TRequest) => Observable<TResponse>;
+
+
 /**
  * A final {@link Endpoint} which will dispatch the request via browser HTTP APIs to a backend.
  *
@@ -45,6 +48,8 @@ export interface Middleware<TRequest, TResponse> {
 }
 
 
+export type MiddlewareFn<TRequest, TResponse> = (req: TRequest, next: Endpoint<TRequest, TResponse>) => Observable<TResponse>;
+
 /**
  * Middleware Endpoint.
  */
@@ -65,7 +70,7 @@ export class Chain<TRequest, TResponse> implements Endpoint<TRequest, TResponse>
 
     private chain!: Endpoint<TRequest, TResponse>;
     private backend: EndpointBackend<TRequest, TResponse>;
-    constructor(backend: EndpointBackend<TRequest, TResponse> | ((req: TRequest) => Observable<TResponse>), private middlewares: Middleware<TRequest, TResponse>[]) {
+    constructor(backend: EndpointBackend<TRequest, TResponse> | EndpointFn<TRequest, TResponse>, private middlewares: Middleware<TRequest, TResponse>[]) {
         this.backend = isFunction(backend) ? { handle: backend } : backend;
     }
 

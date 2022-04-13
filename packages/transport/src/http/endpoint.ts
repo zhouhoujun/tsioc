@@ -21,7 +21,6 @@ export interface HttpMiddleware extends Middleware<HttpRequest, HttpResponse> {
 
 }
 
-
 /**
  * http middlewares token.
  */

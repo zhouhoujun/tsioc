@@ -1,5 +1,5 @@
 import { Inject, Injectable, InvocationContext, isFunction, lang, tokenId } from '@tsdi/ioc';
-import { Chain, Endpoint, HttpEvent, Middleware, TransportServer } from '@tsdi/core';
+import { Chain, Endpoint, HttpEvent, Middleware, MiddlewareFn, TransportContext, TransportServer } from '@tsdi/core';
 import { Logger } from '@tsdi/logs';
 import { fromEvent, of, race } from 'rxjs';
 import * as http from 'http';
@@ -39,7 +39,17 @@ export class HttpServer extends TransportServer<HttpRequest, WritableHttpRespons
         super();
     }
 
-    get endpoint(): Endpoint<HttpRequest, WritableHttpResponse> {
+    useBefore(middleware: Middleware<HttpRequest<any>, WritableHttpResponse> | MiddlewareFn<HttpRequest<any>, WritableHttpResponse>): this {
+        throw new Error('Method not implemented.');
+    }
+    useAfter(middleware: Middleware<HttpRequest<any>, WritableHttpResponse> | MiddlewareFn<HttpRequest<any>, WritableHttpResponse>): this {
+        throw new Error('Method not implemented.');
+    }
+    useFinalizer(middleware: Middleware<HttpRequest<any>, WritableHttpResponse> | MiddlewareFn<HttpRequest<any>, WritableHttpResponse>): this {
+        throw new Error('Method not implemented.');
+    }
+
+    getEndpoint(): Endpoint<HttpRequest, WritableHttpResponse> {
         return this._endpoint;
     }
 
@@ -76,7 +86,7 @@ export class HttpServer extends TransportServer<HttpRequest, WritableHttpRespons
             const handler = this.http1RequestHandler.bind(this);
             if (options.options) {
                 this._server = (options.options as https.ServerOptions).cert ?
-                 https.createServer(options.options as https.ServerOptions, handler) : http.createServer(options.options as http.ServerOptions, handler);
+                    https.createServer(options.options as https.ServerOptions, handler) : http.createServer(options.options as http.ServerOptions, handler);
             } else {
                 this._server = http.createServer(handler);
             }
@@ -84,23 +94,25 @@ export class HttpServer extends TransportServer<HttpRequest, WritableHttpRespons
     }
 
     protected http1RequestHandler(request: http.IncomingMessage, response: http.ServerResponse) {
-        const ctx = HttpContext.create(this.context.injector, {
+        const ctx = TransportContext.create(this.context.injector, {
             target: this,
-            parent: this.context,
-            request,
-            response
+            parent: this.context
         });
+        const req = new HttpRequest(ctx, request);
+        const resp = new WritableHttpResponse(ctx, response);
+        ctx.response = resp;
 
-        this._endpoint.endpoint(ctx);
+        this.getEndpoint().handle(req);
     }
     protected http2RequestHandler(request: http2.Http2ServerRequest, response: http2.Http2ServerResponse) {
-        const ctx = HttpContext.create(this.context.injector, {
+        const ctx = TransportContext.create(this.context.injector, {
             target: this,
-            parent: this.context,
-            request,
-            response
+            parent: this.context
         });
-        this._endpoint.endpoint(ctx);
+        const req = new HttpRequest(ctx, request);
+        const resp = new WritableHttpResponse(ctx, response);
+        ctx.response = resp;
+        this.getEndpoint().handle(req);
     }
 
     async close(): Promise<void> {

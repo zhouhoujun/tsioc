@@ -1,5 +1,5 @@
 import { ResultValue } from '@tsdi/core';
-import { HttpContext } from '../context';
+import { WritableHttpResponse } from '../response';
 
 
 /**
@@ -13,8 +13,8 @@ export class JsonResult extends ResultValue {
     constructor(private data: object) {
         super('application/json');
     }
-    async sendValue(ctx: HttpContext) {
-        ctx.contentType = this.contentType;
-        ctx.body = this.data || {};
+    async sendValue(resp: WritableHttpResponse) {
+        resp.contentType = this.contentType;
+        resp.body = this.data || {};
     }
 }
