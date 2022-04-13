@@ -1,4 +1,4 @@
-import { Abstract, isNil } from '@tsdi/ioc';
+import { Abstract, isFunction, isNil } from '@tsdi/ioc';
 import { Logger, Log } from '@tsdi/logs';
 import { defer, Observable, throwError } from 'rxjs';
 import { concatMap } from 'rxjs/operators';
@@ -13,25 +13,38 @@ import { RequestBase, ResponseBase } from './packet';
 @Abstract()
 export abstract class TransportClient<TRequest extends RequestBase, TResponse extends ResponseBase> implements OnDispose {
 
+    protected _befores: Middleware<TRequest, TResponse>[] = [];
+    protected _afters: Middleware<TRequest, TResponse>[] = [];
+    protected _finalizer: Middleware<TRequest, TResponse>[] = [];
+
     @Log()
     protected readonly logger!: Logger;
     /**
      * sets the Request that are applied to the outgoing transport request before it's invoked.
      * @param middleware 
      */
-    abstract useBefore(middleware: Middleware<TRequest, TResponse> | MiddlewareFn<TRequest, TResponse>): this;
+    useBefore(middleware: Middleware<TRequest, TResponse> | MiddlewareFn<TRequest, TResponse>): this {
+        this._befores.push(isFunction(middleware) ? { intercept: middleware } : middleware);
+        return this;
+    }
     /**
      * sets the Response that are applied to the incoming
      * transport response prior to it being decoded. This is useful for obtaining
      * response metadata and adding onto the context prior to decoding.
      * @param middleware 
      */
-    abstract useAfter(middleware: Middleware<TRequest, TResponse> | MiddlewareFn<TRequest, TResponse>): this;
+    useAfter(middleware: Middleware<TRequest, TResponse> | MiddlewareFn<TRequest, TResponse>): this {
+        this._afters.push(isFunction(middleware) ? { intercept: middleware } : middleware);
+        return this;
+    }
     /**
      * Finalizer middleware is executed at the end of every transport request. By default, no finalizer is registered.
      * @param middleware 
      */
-    abstract useFinalizer(middleware: Middleware<TRequest, TResponse> | MiddlewareFn<TRequest, TResponse>): this;
+    useFinalizer(middleware: Middleware<TRequest, TResponse> | MiddlewareFn<TRequest, TResponse>): this {
+        this._finalizer.push(isFunction(middleware) ? { intercept: middleware } : middleware);
+        return this;
+    }
     /**
      * transport handler.
      */
