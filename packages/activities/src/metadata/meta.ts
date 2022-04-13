@@ -17,18 +17,3 @@ import { InjectableMetadata } from '@tsdi/ioc';
      */
     selector?: string;
 }
-
-/**
- * workflow metadata.
- */
-export interface WorkflowMetadata extends ActivityMetadata {
-    /**
-     * template for workflow component.
-     *
-     * @type {*}
-     * @memberof ComponentMetadata
-     */
-     template?: any;
-
-     templateUrl?: string;
-}

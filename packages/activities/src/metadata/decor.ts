@@ -1,7 +1,6 @@
-import { AnnotationReflect, RunnableFactoryResolver, Runner } from '@tsdi/boot';
-import { CompilerFacade } from '@tsdi/components';
+import { AnnotationReflect, CompilerFacade } from '@tsdi/components';
 import { ActionTypes, ClassType, createDecorator, InjectableMetadata } from '@tsdi/ioc';
-import { ActivityMetadata, WorkflowMetadata } from './meta';
+import { ActivityMetadata } from './meta';
 
 
 /**
@@ -90,44 +89,6 @@ export const Activity: IActivityDecorator = createDecorator<ActivityMetadata>('A
      */
     (selector?: string, template?: any, option?: InjectableMetadata): ClassDecorator;
 }
-
-/**
- * Workflow decorator, define for class. use to define the class as Workflow. it can setting provider to some token, singleton or not. it will execute  [`WorkflowLifecycle`]
- *
- * @Workflow
- */
-export const Workflow: IWorkflowDecorator = createDecorator<WorkflowMetadata>('Workflow', {
-    actionType: [ActionTypes.annoation, ActionTypes.typeProviders],
-    props: (selector: string, template?: any, option?: InjectableMetadata) => ({ selector, template, ...option }),
-    reflect: {
-        class: (ctx, next) => {
-            (ctx.reflect as AnnotationReflect).annoType = 'workflow';
-            (ctx.reflect as AnnotationReflect).annoDecor = ctx.decor;
-            (ctx.reflect as AnnotationReflect).annotation = ctx.metadata;
-            return next();
-        }
-    },
-    design: {
-        class: (ctx, next) => {
-            const compRefl = ctx.reflect as WorkflowReflect;
-            if (compRefl.annoType !== 'workflow') {
-                return next();
-            }
-
-            if (ctx.reflect.class.annotation?.def) {
-                (ctx.reflect as WorkflowReflect).def = ctx.reflect.class.annotation?.def;
-                return next();
-            }
-
-            const compiler = ctx.injector.getService({ token: CompilerFacade, target: ctx.currDecor });
-            compRefl.def = compiler.compileWorkflow(compRefl);
-            next();
-        }
-    },
-    providers: [
-        { provide: RunnableFactoryResolver, useExisting: WorkflowFactoryResolver }
-    ]
-});
 
 
 /**

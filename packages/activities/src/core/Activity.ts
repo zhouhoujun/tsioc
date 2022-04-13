@@ -1,11 +1,8 @@
-import { isClass, Type, Abstract } from '@tsdi/ioc';
-import { Input } from '@tsdi/components';
-import { Task } from '../metadata/decor';
-import { IActivityContext } from './IActivityContext';
-import { ActivityMetadata } from './ActivityMetadata';
+import { Abstract } from '@tsdi/ioc';
+import { ActivityContext } from './ActivityContext';
 
 @Abstract()
-export abstract class Activity<T = any, TCtx extends IActivityContext = IActivityContext> {
+export abstract class Activity<T = any> {
     static ρCT = 'activity';
     /**
      * activity display name.
@@ -13,29 +10,10 @@ export abstract class Activity<T = any, TCtx extends IActivityContext = IActivit
      * @type {string}
      * @memberof Activity
      */
-    @Input() name: string;
-
-    abstract execute(ctx: TCtx): Promise<T>;
-}
-
-
-/**
- * target is activity class.
- *
- * @export
- * @param {*} target
- * @returns {target is Type<Activity>}
- */
-export function isAcitvityClass(target: any, ext?: (meta: ActivityMetadata) => boolean): target is Type<Activity> {
-    if (!isClass(target)) {
-        return false;
-    }
-    let key = Task.toString();
-    if (Reflect.hasOwnMetadata(key, target)) {
-        if (ext) {
-            return Reflect.getOwnMetadata(key, target).some(meta => meta && ext(meta));
-        }
-        return true;
-    }
-    return false;
+    abstract get name(): string;
+    /**
+     * execute activity.
+     * @param ctx 
+     */
+    abstract execute(ctx: ActivityContext): Promise<T>;
 }

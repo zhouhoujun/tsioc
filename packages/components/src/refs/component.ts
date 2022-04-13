@@ -1,5 +1,5 @@
 import { Abstract, Injector, lang, Type } from '@tsdi/ioc';
-import { Runner, RunnableFactory, BootstrapOption, RunnableFactoryResolver, ApplicationContext } from '@tsdi/core';
+import { RunnableFactory, BootstrapOption, RunnableFactoryResolver, ApplicationContext, Runnable, RunnableRef } from '@tsdi/core';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ElementRef } from './element';
 import { ViewRef } from './view';
@@ -13,7 +13,7 @@ import { ComponentReflect } from '../reflect';
  * @publicApi
  */
 @Abstract()
-export abstract class ComponentRef<C = any> extends Runner {
+export abstract class ComponentRef<C = any> implements RunnableRef<C> {
     /**
      * component type.
      */
@@ -56,12 +56,11 @@ export abstract class ComponentRef<C = any> extends Runner {
     run(context?: ApplicationContext) {
         if (context) {
             this.onDestroy(() => {
-                lang.remove(context.bootstraps, this);
+                lang.remove(context.runners.bootstraps, this);
             });
-            context.bootstraps.push(this);
+            context.runners.bootstraps.push(this);
         }
         this.render();
-        return this;
     }
 
     /**
@@ -69,6 +68,7 @@ export abstract class ComponentRef<C = any> extends Runner {
      */
     abstract render(): void;
 
+    abstract get destroyed(): boolean;
     /**
     * destroy this.
     */
@@ -91,7 +91,7 @@ export abstract class ComponentFactory<T> extends RunnableFactory<T> {
      * @param type
      * @param option 
      */
-    abstract create(option: BootstrapOption): ComponentRef<T>;
+    abstract create(injector: Injector, option: BootstrapOption): ComponentRef<T>;
 }
 
 @Abstract()

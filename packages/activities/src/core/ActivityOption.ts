@@ -1,4 +1,4 @@
-import { IBuildOption } from '@tsdi/boot';
+import { ModuleWithProviders } from '@tsdi/ioc';
 import { ActivityTemplate } from './ActivityMetadata';
 
 
@@ -9,7 +9,7 @@ import { ActivityTemplate } from './ActivityMetadata';
  * @interface ActivityOption
  * @extends {BootOption}
  */
-export interface ActivityOption<T = any> extends IBuildOption<T> {
+export interface ActivityOption<T = any> extends ModuleWithProviders<T> {
     /**
      * name.
      */
@@ -21,9 +21,4 @@ export interface ActivityOption<T = any> extends IBuildOption<T> {
      * @memberof ActivityConfigure
      */
     template?: ActivityTemplate;
-
-    /**
-     * input data
-     */
-    data?: any;
 }
