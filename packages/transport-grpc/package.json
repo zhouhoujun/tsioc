@@ -31,7 +31,10 @@
     "url": "https://github.com/zhouhoujun/tsioc.git"
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
-  "dependencies": {},
+  "dependencies": {
+    "@grpc/grpc-js": "^1.6.3",
+    "@grpc/proto-loader": "^0.6.9"
+  },
   "directories": {
     "lib": "lib",
     "test": "test"

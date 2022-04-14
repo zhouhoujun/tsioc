@@ -8,6 +8,8 @@ export * from './result';
 export * from './resolver';
 export * from './error';
 
+export * from './publisher';
+export * from './subscriber';
 export * from './client';
 export * from './server';
 export * from './http';

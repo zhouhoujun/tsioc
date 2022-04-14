@@ -4,7 +4,7 @@ import { WebSocket, WebSocketServer, ServerOptions } from 'ws';
 import { WsRequest } from './request';
 import { WritableWsResponse } from './response';
 
-export const WSSERVEROPTIONS = tokenId<ServerOptions>('WSSERVEROPTIONS');
+export const WS_SERVER_OPTIONS = tokenId<ServerOptions>('WS_SERVER_OPTIONS');
 
 @Injectable()
 export class WsServer extends TransportServer<WsRequest, WritableWsResponse>{
@@ -12,7 +12,7 @@ export class WsServer extends TransportServer<WsRequest, WritableWsResponse>{
     private server?: WebSocketServer;
     constructor(
         private context: InvocationContext,
-        @Inject(WSSERVEROPTIONS) private options: ServerOptions) {
+        @Inject(WS_SERVER_OPTIONS) private options: ServerOptions) {
         super();
     }
 

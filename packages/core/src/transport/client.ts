@@ -77,9 +77,7 @@ export abstract class TransportClient<TRequest extends RequestBase, TResponse ex
         );
     }
 
-
     protected abstract buildRequest(req: TRequest | string, options?: any): Promise<TRequest> | TRequest;
-
 
     /**
      * close client.
