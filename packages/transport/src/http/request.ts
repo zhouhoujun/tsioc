@@ -1,11 +1,11 @@
-import { RequestBase, TransportContext } from '@tsdi/core';
+import { RequestBase, RequestHeader, TransportContext } from '@tsdi/core';
 import { isArray, isDefined, isString, isUndefined } from '@tsdi/ioc';
 import * as http from 'http';
 import * as http2 from 'http2';
 import { TLSSocket } from 'tls';
 
 
-export class HttpRequest<T = any> extends RequestBase<T> {
+export class HttpRequest<T = any> extends RequestBase<T> implements RequestHeader {
 
     constructor(readonly context: TransportContext, readonly req: http.IncomingMessage | http2.Http2ServerRequest) {
         super()
@@ -25,7 +25,7 @@ export class HttpRequest<T = any> extends RequestBase<T> {
         return (this.req.socket as TLSSocket).encrypted === true;
     }
 
-    get body(): T | null {
+    get body(): T {
         // this.req.pipe()
     }
 

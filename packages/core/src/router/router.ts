@@ -1,7 +1,7 @@
 import { Abstract, EMPTY, isString, lang, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
 import { Observable, from, throwError } from 'rxjs';
 import { map, mergeMap } from 'rxjs/operators';
-import { RequestBase, RequestMethod, promisify, WritableResponse } from '../transport/packet';
+import { RequestBase, RequestMethod, promisify, WritableResponse, Redirect } from '../transport/packet';
 import { CanActivate } from '../transport/guard';
 import { PipeTransform } from '../pipes/pipe';
 import { RouteEndpoint, RouteMiddleware } from './endpoint';
@@ -136,7 +136,7 @@ export class MappingRoute implements RouteMiddleware {
     }
 
     protected redirect(resp: WritableResponse, url: string, alt?: string): WritableResponse {
-        resp.redirect(url, alt);
+        resp.context.resolve(Redirect).redirect(resp, url, alt);
         return resp;
     }
 

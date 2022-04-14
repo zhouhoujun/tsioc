@@ -21,9 +21,6 @@ export class TCPRequest<T = any> extends RequestBase<T> {
     get method(): string {
         throw new Error('Method not implemented.');
     }
-    get withCredentials(): boolean {
-        throw new Error('Method not implemented.');
-    }
     get body(): T | null {
         throw new Error('Method not implemented.');
     }
@@ -53,9 +50,7 @@ export class TCPRequest<T = any> extends RequestBase<T> {
 }
 
 export class TCPResponse<T = any> extends ResponseBase<T> {
-    getHeaders() {
-        throw new Error('Method not implemented.');
-    }
+
     get type(): number {
         throw new Error('Method not implemented.');
     }
@@ -73,7 +68,9 @@ export class TCPResponse<T = any> extends ResponseBase<T> {
     }
 }
 
+
 export class WritableTCPResponse<T = any> extends WritableResponse<T>  {
+
     get context(): TransportContext {
         throw new Error('Method not implemented.');
     }
@@ -98,45 +95,11 @@ export class WritableTCPResponse<T = any> extends WritableResponse<T>  {
     set body(value: T) {
         throw new Error('Method not implemented.');
     }
-    set length(n: number | undefined) {
-        throw new Error('Method not implemented.');
-    }
-    get length(): number | undefined {
-        throw new Error('Method not implemented.');
-    }
-    redirect(url: string, alt?: string): void {
-        throw new Error('Method not implemented.');
-    }
-    hasHeader(field: string): boolean {
-        throw new Error('Method not implemented.');
-    }
-    getHeader(field: string): string | number | string[] {
-        throw new Error('Method not implemented.');
-    }
-    setHeader(field: string, val: string | number | string[]): void;
-    setHeader(fields: Record<string, string | number | string[]>): void;
-    setHeader(field: any, val?: any): void {
-        throw new Error('Method not implemented.');
-    }
-    removeHeader(field: string): void {
-        throw new Error('Method not implemented.');
-    }
-    attachment(filename: string, options?: { contentType?: string | undefined; type?: string | undefined; fallback?: string | boolean | undefined; }): void {
-        throw new Error('Method not implemented.');
-    }
-    get writable(): boolean {
-        throw new Error('Method not implemented.');
-    }
+
     throwError(status: number, message?: string): Error;
     throwError(message: string): Error;
     throwError(error: Error): Error;
     throwError(status: any, message?: any): Error {
-        throw new Error('Method not implemented.');
-    }
-    getHeaders() {
-        throw new Error('Method not implemented.');
-    }
-    get type(): number {
         throw new Error('Method not implemented.');
     }
 

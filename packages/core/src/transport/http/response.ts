@@ -5,8 +5,6 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.io/license
  */
-
-import { ResponseBase, TransportContext } from '../packet';
 import { HttpHeaders } from './headers';
 import { HttpStatusCode } from './status';
 
@@ -146,7 +144,7 @@ export type HttpEvent<T = any> =
  *
  * @publicApi
  */
-export abstract class HttpResponseBase extends ResponseBase {
+export abstract class HttpResponseBase {
     /**
      * All response headers.
      */
@@ -204,18 +202,12 @@ export abstract class HttpResponseBase extends ResponseBase {
             url?: string,
         },
         defaultStatus: number = HttpStatusCode.Ok, defaultStatusText: string = 'OK') {
-        super()
         // If the hash has values passed, use them to initialize the response.
         // Otherwise use the default values.
         this.headers = init.headers || new HttpHeaders();
         this.status = init.status !== undefined ? init.status : defaultStatus;
         this._message = init.statusText || defaultStatusText;
         this.url = init.url || null;
-    }
-
-    
-    getHeaders() {
-        return this.headers;
     }
 
 }

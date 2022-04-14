@@ -1,5 +1,5 @@
 import { Endpoint, Middleware, MiddlewareFn, TransportServer } from '@tsdi/core';
-import { Abstract, Inject, Injectable } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, lang } from '@tsdi/ioc';
 import { Server, ServerOpts, ListenOptions } from 'net';
 import { TCPRequest, WritableTCPResponse } from './packet';
 
@@ -36,18 +36,12 @@ export class TCPServer extends TransportServer<TCPRequest, WritableTCPResponse> 
 
     async startup(): Promise<void> {
         this.server = new Server(this.options.serverOpts);
-        this.server.listen(this.options.listenOptions);
+        const defer = lang.defer();
+        this.server.once('error', defer.reject);
+        this.server.listen(this.options.listenOptions, defer.resolve);
+        await defer.promise;
     }
 
-    useBefore(middleware: Middleware<TCPRequest<any>, WritableTCPResponse<any>> | MiddlewareFn<TCPRequest<any>, WritableTCPResponse<any>>): this {
-        throw new Error('Method not implemented.');
-    }
-    useAfter(middleware: Middleware<TCPRequest<any>, WritableTCPResponse<any>> | MiddlewareFn<TCPRequest<any>, WritableTCPResponse<any>>): this {
-        throw new Error('Method not implemented.');
-    }
-    useFinalizer(middleware: Middleware<TCPRequest<any>, WritableTCPResponse<any>> | MiddlewareFn<TCPRequest<any>, WritableTCPResponse<any>>): this {
-        throw new Error('Method not implemented.');
-    }
     getEndpoint(): Endpoint<TCPRequest<any>, WritableTCPResponse<any>> {
         throw new Error('Method not implemented.');
     }

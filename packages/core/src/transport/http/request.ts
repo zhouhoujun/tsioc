@@ -6,8 +6,8 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import { isArray, isString, isUndefined, type_bool, type_num, type_obj, type_undef } from '@tsdi/ioc';
-import { RequestBase, TransportContext } from '../packet';
+import { isString, type_bool, type_num, type_obj, type_undef } from '@tsdi/ioc';
+import { TransportContext } from '../packet';
 import { HttpHeaders } from './headers';
 import { HttpParams } from './params';
 
@@ -88,7 +88,7 @@ function isUrlSearchParams(value: any): value is URLSearchParams {
  *
  * @publicApi
  */
-export class HttpRequest<T = any> extends RequestBase<T> {
+export class HttpRequest<T = any>  {
     /**
      * The request body, or `null` if one isn't set.
      *
@@ -190,7 +190,6 @@ export class HttpRequest<T = any> extends RequestBase<T> {
             responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
             withCredentials?: boolean,
         }) {
-        super();
         this.method = method.toUpperCase();
         // Next, need to figure out which argument holds the HttpRequestInit
         // options, if any.
@@ -337,97 +336,6 @@ export class HttpRequest<T = any> extends RequestBase<T> {
         }
         // No type could be inferred.
         return null;
-    }
-
-    getHeaders(): HttpHeaders {
-        return this.headers;
-    }
-    /**
-     * is update modle resquest.
-     */
-    isUpdate(): boolean {
-        return this.method === 'PUT';
-    }
-
-    /**
-     * Return request header.
-     *
-     * The `Referrer` header field is special-cased,
-     * both `Referrer` and `Referer` are interchangeable.
-     *
-     * Examples:
-     *
-     *     this.get('Content-Type');
-     *     // => "text/plain"
-     *
-     *     this.get('content-type');
-     *     // => "text/plain"
-     *
-     *     this.get('Something');
-     *     // => ''
-     *
-     * @param {String} field
-     * @return {String}
-     * @api public
-     */
-    getHeader(field: string): string | string[] | number {
-        return this.headers.get(field)!;
-    }
-    /**
-     * has header field or not.
-     * @param field 
-     */
-    hasHeader(field: string): boolean {
-        return this.headers.has(field);
-    }
-    /**
-     * Set header `field` to `val` or pass
-     * an object of header fields.
-     *
-     * Examples:
-     *
-     *    this.set('Foo', ['bar', 'baz']);
-     *    this.set('Accept', 'application/json');
-     *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
-     *
-     * @param {String|Object|Array} field
-     * @param {String} val
-     * @api public
-     */
-    setHeader(field: string, val: string | number | string[]): void;
-    /**
-     * Set header `field` to `val` or pass
-     * an object of header fields.
-     *
-     * Examples:
-     *
-     *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
-     *
-     * @param {Record<string, string | number | string[]>} fields
-     * @param {String} val
-     * @api public
-     */
-    setHeader(fields: Record<string, string | number | string[]>): void;
-    setHeader(fields: any, val?: string | number | string[]) {
-        if (isString(fields) && !isUndefined(val)) {
-            this.headers.set(fields, isArray(val) ? val : val?.toString());
-        } else {
-            for (let k in fields) {
-                val = fields[k];
-                if (!isUndefined(val)) {
-                    this.headers.set(k, isArray(val) ? val : val?.toString());
-                }
-            }
-        }
-    }
-    /**
-     * Remove header `field`.
-     *
-     * @param {String} name
-     * @api public
-     */
-    removeHeader(field: string): void {
-       this.headers.delete(field);
     }
 
     clone(): HttpRequest<T>;

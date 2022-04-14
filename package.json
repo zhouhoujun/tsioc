@@ -40,6 +40,7 @@
     "@types/mocha": "^7.0.2",
     "@types/shelljs": "^0.8.0",
     "@types/vinyl-fs": "^2.4.8",
+    "@types/ws": "^8.5.3",
     "assert": "^2.0.0",
     "bluebird": "^3.7.2",
     "chalk": "^4.0.0",
@@ -97,6 +98,7 @@
     "kafkajs": "^1.15.0",
     "modbus-serial": "^8.0.5",
     "uuid": "^8.3.2",
+    "ws": "^8.5.0",
     "xhr2": "^0.2.1"
   }
 }

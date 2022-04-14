@@ -1,4 +1,4 @@
-import { HttpStatusCode, ResponseBase, TransportContext, WritableResponse } from '@tsdi/core';
+import { HttpStatusCode, ResponseBase, ResponseHeader, TransportContext, WritableResponse } from '@tsdi/core';
 import { isNumber, isString } from '@tsdi/ioc';
 import assert = require('assert');
 import * as http from 'http';
@@ -13,11 +13,8 @@ import { HttpRequest } from './request';
 
 
 
-export class HttpResponse<T = any> extends ResponseBase<T> {
+export class HttpResponse<T = any> extends ResponseBase<T> implements ResponseHeader {
 
-    getHeaders() {
-        throw new Error('Method not implemented.');
-    }
     get type(): number {
         throw new Error('Method not implemented.');
     }
@@ -33,9 +30,29 @@ export class HttpResponse<T = any> extends ResponseBase<T> {
     get body(): T {
         throw new Error('Method not implemented.');
     }
+
+    getHeaders() {
+        throw new Error('Method not implemented.');
+    }
+    hasHeader(field: string): boolean {
+        throw new Error('Method not implemented.');
+    }
+    getHeader(field: string): string | number | string[] | undefined {
+        throw new Error('Method not implemented.');
+    }
+    setHeader(field: string, val: string | number | string[]): void;
+    setHeader(fields: Record<string, string | number | string[]>): void;
+    setHeader(field: any, val?: any): void {
+        throw new Error('Method not implemented.');
+    }
+    removeHeader(field: string): void {
+        throw new Error('Method not implemented.');
+    }
+
+
 }
 
-export class WritableHttpResponse extends WritableResponse<any> {
+export class WritableHttpResponse extends WritableResponse<any> implements ResponseHeader {
 
     protected _body: any;
     private _explicitStatus?: boolean;
@@ -56,7 +73,11 @@ export class WritableHttpResponse extends WritableResponse<any> {
         return this.request.req;
     }
 
-    get type(): number {
+    get type(): string {
+        throw new Error('Method not implemented.');
+    }
+
+    set type(type: string) {
         throw new Error('Method not implemented.');
     }
 

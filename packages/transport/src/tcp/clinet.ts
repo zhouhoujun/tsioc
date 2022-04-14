@@ -35,15 +35,6 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> {
         this.connected = false;
     }
 
-    useBefore(middleware: Middleware<TCPRequest<any>, TCPResponse<any>> | MiddlewareFn<TCPRequest<any>, TCPResponse<any>>): this {
-        throw new Error('Method not implemented.');
-    }
-    useAfter(middleware: Middleware<TCPRequest<any>, TCPResponse<any>> | MiddlewareFn<TCPRequest<any>, TCPResponse<any>>): this {
-        throw new Error('Method not implemented.');
-    }
-    useFinalizer(middleware: Middleware<TCPRequest<any>, TCPResponse<any>> | MiddlewareFn<TCPRequest<any>, TCPResponse<any>>): this {
-        throw new Error('Method not implemented.');
-    }
     getEndpoint(): Endpoint<TCPRequest<any>, TCPResponse<any>> {
         throw new Error('Method not implemented.');
     }
@@ -55,16 +46,20 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> {
         }
         const socket = this.socket = new Socket(this.options.socketOpts);
         const defer = lang.defer();
-        let inited = true;
-        this.socket.on('connect', () => {
+        socket.once('error', defer.reject);
+        socket.once('connect', () => {
             this.connected = true;
-            if (inited) {
-                inited = false;
-                defer.resolve(true);
-            }
+            defer.resolve(true);
             this.logger.info(socket.address, 'connect');
         });
-        this.socket.on('close', (err) => {
+
+        this.socket.connect(this.options.connectOpts);
+        await defer.promise;
+        this.bindEvents(this.socket);
+    }
+
+    private bindEvents(socket: Socket) {
+        socket.on('close', (err) => {
             this.connected = false;
             if (err) {
                 this.logger.error(err);
@@ -72,15 +67,11 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> {
                 this.logger.info(socket.address, 'closed');
             }
         });
-        this.socket.on('error', (err) => {
+        socket.on('error', (err) => {
             this.connected = false;
-            if (inited) {
-                inited = false;
-                defer.reject(err);
-            }
             this.logger.error(err);
         });
-        this.socket.on('data', (data) => {
+        socket.on('data', (data) => {
             try {
                 this.handleData(data);
             } catch (err) {
@@ -88,9 +79,6 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> {
                 socket.end();
             }
         });
-        this.socket.connect(this.options.connectOpts);
-
-        return await defer.promise;
     }
 
     handleData(data: Buffer) {
