@@ -2,9 +2,11 @@ import { RequestBase, TransportContext } from '@tsdi/core';
 
 
 export class WsRequest<T = any> extends RequestBase<T> {
-    get context(): TransportContext {
-        throw new Error('Method not implemented.');
+    
+    constructor(readonly context: TransportContext) {
+        super()
     }
+    
     get url(): string {
         throw new Error('Method not implemented.');
     }
