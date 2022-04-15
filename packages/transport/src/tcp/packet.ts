@@ -1,50 +1,40 @@
-import { RequestBase, ResponseBase, TransportContext, WritableResponse } from '@tsdi/core';
-import { Abstract } from '@tsdi/ioc';
+import { RequestBase, ResponseBase, TransportContext, UUIDFactory, WritableResponse } from '@tsdi/core';
+import { Abstract, EMPTY_OBJ } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { Socket, NetConnectOpts } from 'net';
 
 
 export class TCPRequest<T = any> extends RequestBase<T> {
-    constructor(public readonly socket: Socket) {
+
+    public readonly id: string;
+    public readonly url: string;
+    public readonly method: string;
+    public readonly socket: Socket;
+    public readonly params: Record<string, any>;
+    public readonly body: T | null;
+    private _update: boolean;
+    constructor(public readonly context: TransportContext, option: {
+        id?: string;
+        url: string;
+        socket: Socket;
+        params?: Record<string, any>;
+        method?: string;
+        body?: T;
+        update?: boolean;
+    }) {
         super();
-        this.socket
+        this.context.request = this;
+        this.id = option.id ?? this.context.resolve(UUIDFactory).generate();
+        this.url = option.url;
+        this.method = option.method ?? 'EES';
+        this.params = option.params ?? {};
+        this.socket = option.socket;
+        this.body = option.body ?? null;
+        this._update = option.update === true;
     }
-    get context(): TransportContext {
-        throw new Error('Method not implemented.');
-    }
-    get url(): string {
-        throw new Error('Method not implemented.');
-    }
-    get params(): Record<string, any> {
-        throw new Error('Method not implemented.');
-    }
-    get method(): string {
-        throw new Error('Method not implemented.');
-    }
-    get body(): T | null {
-        throw new Error('Method not implemented.');
-    }
-    get responseType(): "arraybuffer" | "blob" | "json" | "text" {
-        throw new Error('Method not implemented.');
-    }
+
     isUpdate(): boolean {
-        throw new Error('Method not implemented.');
-    }
-    getHeaders() {
-    }
-    hasHeader(field: string): boolean {
-        throw new Error('Method not implemented.');
-    }
-    getHeader(field: string): string | number | string[] {
-        throw new Error('Method not implemented.');
-    }
-    setHeader(field: string, val: string | number | string[]): void;
-    setHeader(fields: Record<string, string | number | string[]>): void;
-    setHeader(field: any, val?: any): void {
-        throw new Error('Method not implemented.');
-    }
-    removeHeader(field: string): void {
-        throw new Error('Method not implemented.');
+        return this._update;
     }
 
 }

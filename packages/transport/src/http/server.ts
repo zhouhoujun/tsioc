@@ -94,9 +94,8 @@ export class HttpServer extends TransportServer<HttpRequest, WritableHttpRespons
     }
 
     protected http1RequestHandler(request: http.IncomingMessage, response: http.ServerResponse) {
-        const ctx = TransportContext.create(this.context.injector, {
-            target: this,
-            parent: this.context
+        const ctx = TransportContext.create(this.context, {
+            target: this
         });
         const req = new HttpRequest(ctx, request);
         const resp = new WritableHttpResponse(ctx, response);
@@ -105,9 +104,8 @@ export class HttpServer extends TransportServer<HttpRequest, WritableHttpRespons
         this.getEndpoint().handle(req);
     }
     protected http2RequestHandler(request: http2.Http2ServerRequest, response: http2.Http2ServerResponse) {
-        const ctx = TransportContext.create(this.context.injector, {
-            target: this,
-            parent: this.context
+        const ctx = TransportContext.create(this.context, {
+            target: this
         });
         const req = new HttpRequest(ctx, request);
         const resp = new WritableHttpResponse(ctx, response);

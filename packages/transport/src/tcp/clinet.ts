@@ -1,5 +1,5 @@
-import { Endpoint, Middleware, MiddlewareFn, TransportClient } from '@tsdi/core';
-import { Abstract, Inject, Injectable, lang } from '@tsdi/ioc';
+import { Endpoint, TransportClient, TransportContext } from '@tsdi/core';
+import { Abstract, Inject, Injectable, InvocationContext, isString, lang } from '@tsdi/ioc';
 import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
 import { TCPRequest, TCPResponse } from './packet';
 
@@ -15,7 +15,7 @@ export abstract class TcpClientOption {
     abstract connectOpts: NetConnectOpts;
 }
 
-export const TCPCLIENTOPTION = {
+const defaults = {
     json: true,
     connectOpts: {
         port: 3000,
@@ -30,7 +30,10 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> {
 
     private socket?: Socket;
     private connected: boolean;
-    constructor(@Inject({ defaultValue: TCPCLIENTOPTION }) private options: TcpClientOption) {
+    constructor(
+        @Inject() private context: InvocationContext,
+        @Inject({ nullable: true }) private options: TcpClientOption = defaults
+    ) {
         super();
         this.connected = false;
     }
@@ -86,7 +89,10 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> {
     }
 
     protected buildRequest(req: string | TCPRequest<any>, options?: any): TCPRequest<any> | Promise<TCPRequest<any>> {
-        throw new Error('Method not implemented.');
+        if (isString(req)) {
+            return new TCPRequest(TransportContext.create(this.context), options);
+        }
+        return req;
     }
 
     async close(): Promise<void> {

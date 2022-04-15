@@ -62,7 +62,7 @@ export class WsClient extends TransportClient<WsRequest, WsResponse> {
 
     protected buildRequest(req: string | WsRequest<any>, options?: any): WsRequest<any>  {
         return isString(req) ?
-            new WsRequest(TransportContext.create(this.context.injector, { parent: this.context }))
+            new WsRequest(TransportContext.create(this.context, options))
             : req;
     }
 

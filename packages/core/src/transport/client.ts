@@ -11,7 +11,7 @@ import { RequestBase, ResponseBase } from './packet';
  * abstract transport client.
  */
 @Abstract()
-export abstract class TransportClient<TRequest extends RequestBase, TResponse extends ResponseBase> implements OnDispose {
+export abstract class TransportClient<TRequest extends RequestBase, TResponse extends ResponseBase, TOption = any> implements OnDispose {
 
     protected _befores: Middleware<TRequest, TResponse>[] = [];
     protected _afters: Middleware<TRequest, TResponse>[] = [];
@@ -58,14 +58,14 @@ export abstract class TransportClient<TRequest extends RequestBase, TResponse ex
      *
      * @return An `Observable` of the response, with the response body as a stream of `HttpEvent`s.
      */
-    send(url: string, options?: any): Observable<TResponse>;
+    send(url: string, options?: TOption): Observable<TResponse>;
     /**
      * Sends an `HttpRequest` and returns a stream of `HttpEvent`s.
      *
      * @return An `Observable` of the response, with the response body as a stream of `HttpEvent`s.
      */
     send(req: TRequest): Observable<TResponse>;
-    send(req: TRequest | string, options?: any): Observable<TResponse> {
+    send(req: TRequest | string, options?: TOption): Observable<TResponse> {
         if (isNil(req)) {
             return throwError(() => new TransportError(400, 'Invalid message'));
         }
@@ -77,7 +77,7 @@ export abstract class TransportClient<TRequest extends RequestBase, TResponse ex
         );
     }
 
-    protected abstract buildRequest(req: TRequest | string, options?: any): Promise<TRequest> | TRequest;
+    protected abstract buildRequest(req: TRequest | string, options?: TOption): Promise<TRequest> | TRequest;
 
     /**
      * close client.

@@ -15,7 +15,7 @@ export abstract class TcpServerOption {
     abstract listenOptions: ListenOptions;
 }
 
-export const TCPSERVEROPTION = {
+const defaults = {
     json: true,
     serverOpts: undefined,
     listenOptions: {
@@ -30,7 +30,7 @@ export const TCPSERVEROPTION = {
 export class TCPServer extends TransportServer<TCPRequest, WritableTCPResponse> {
 
     private server?: Server;
-    constructor(@Inject({ defaultValue: TCPSERVEROPTION }) private options: TcpServerOption) {
+    constructor(@Inject({ nullable: true }) private options: TcpServerOption = defaults) {
         super();
     }
 

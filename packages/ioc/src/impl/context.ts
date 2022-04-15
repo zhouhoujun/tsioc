@@ -3,7 +3,7 @@ import { Destroyable, OnDestroy } from '../destroy';
 import { remove } from '../utils/lang';
 import { EMPTY, EMPTY_OBJ, isDefined, isFunction, isNumber, isPrimitiveType, isString } from '../utils/chk';
 import { InjectFlags, Token } from '../tokens';
-import { Injector } from '../injector';
+import { Injector, isInjector } from '../injector';
 import { OperationArgumentResolver, Parameter, composeResolver, DEFAULT_RESOLVERS } from '../resolver';
 import { InvocationContext, INVOCATION_CONTEXT_IMPL, InvocationOption } from '../context';
 import { get } from '../metadata/refl';
@@ -262,7 +262,13 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
 }
 
-INVOCATION_CONTEXT_IMPL.create = (injector, option) => new DefaultInvocationContext(injector, option);
+INVOCATION_CONTEXT_IMPL.create = (parent, option) => {
+    if (isInjector(parent)) {
+        return new DefaultInvocationContext(parent, option);
+    } else {
+        return new DefaultInvocationContext(parent.injector, { parent, ...option });
+    }
+};
 
 
 export const BASE_RESOLVERS: OperationArgumentResolver[] = [

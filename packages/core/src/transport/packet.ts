@@ -45,8 +45,8 @@ export abstract class TransportContext extends InvocationContext {
      */
     abstract response: ResponseBase;
 
-    static override create(injector: Injector, options?: TransportOption): TransportContext {
-        const ctx = InvocationContext.create(injector, options) as TransportContext;
+    static override create(parent: Injector | InvocationContext, options?: TransportOption): TransportContext {
+        const ctx = InvocationContext.create(parent, options) as TransportContext;
         if (options?.target) {
             ctx.setValue(TARGET, options.target);
         }
