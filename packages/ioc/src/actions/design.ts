@@ -24,5 +24,3 @@ export class DesignLifeScope extends RegisterLifeScope<DesignContext> implements
         );
     }
 }
-
-

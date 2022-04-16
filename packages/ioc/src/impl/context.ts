@@ -112,7 +112,9 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      */
     has(token: Token, flags?: InjectFlags): boolean {
         if (this.isSelf(token)) return true;
-        return this.injector.has(token, flags) || this._refs.some(i => i.has(token, flags)); // || (flags != InjectFlags.Self && this.parent?.has(token, flags) === true);
+        return this.injector.has(token, flags)
+            || this._refs.some(i => i.has(token, flags));
+        //  || (flags != InjectFlags.Self && this.parent?.has(token, flags) === true);
     }
 
     /**
@@ -139,7 +141,9 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         } else {
             context = contextOrFlag ?? this;
         }
-        return this.injector.get(token, context, flags, null) ?? this.getFormRef(token, context, flags) as T; //?? (flags != InjectFlags.Self? this.parent?.get(token, context, flags) : null) as T;
+        return this.injector.get(token, context, flags, null)
+            ?? this.getFormRef(token, context, flags) as T;
+        //  ?? (flags != InjectFlags.Self ? this.parent?.get(token, context, flags) : null) as T;
     }
 
     protected getFormRef<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags): T | undefined {
@@ -251,8 +255,6 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         });
         return result ?? this.parent?.resolveArgument(meta) ?? null;
     }
-
-
 
     protected clear() {
         this._args = null!;

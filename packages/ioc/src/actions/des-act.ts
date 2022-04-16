@@ -5,7 +5,7 @@ import { Type } from '../types';
 import { Token } from '../tokens';
 import { DesignContext, RuntimeContext } from './ctx';
 import { ActionSetup } from '../action';
-import { IocRegAction, IocRegScope } from './reg';
+import { IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
 import { FactoryRecord, FnType, Injector, Platform } from '../injector';
 import { InvocationContext } from '../context';
@@ -13,17 +13,9 @@ import { Decors } from '../metadata/type';
 
 
 /**
- * ioc design action.
- * the register type class can only register in ioc as:
- * ` container.registerSingleton(SubDesignRegisterAction, () => new SubDesignRegisterAction(container));`
- */
-export abstract class IocDesignAction extends IocRegAction<DesignContext> { }
-
-/**
  * design class handle scope.
  */
 export class DesignClassScope extends IocRegScope<DesignContext> implements ActionSetup {
-
     setup() {
         this.use(
             BeforeAnnoDecorHandle,

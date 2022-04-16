@@ -30,5 +30,4 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeContext> {
             ra.RuntimeAnnoScope
         );
     }
-
 }

@@ -27,5 +27,4 @@ export class RegisterLifeScope<T extends RegContext = RegContext> extends IocAct
     register(ctx: T, next?: () => void) {
         this.handle(ctx, next);
     }
-
 }

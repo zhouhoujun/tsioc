@@ -70,6 +70,9 @@ export interface DesignContext extends RegContext, ProvidedInMetadata {
  * @extends {RegContext}
  */
 export interface RuntimeContext extends RegContext {
+    /**
+     * platform.
+     */
     platform: Platform;
     /**
      * invocation context.
@@ -82,17 +85,14 @@ export interface RuntimeContext extends RegContext {
      * @memberof RuntimeActionContext
      */
     instance?: any;
-
     /**
      * property key
      */
     propertyKey?: string;
-
     /**
      * args of the propertyKey method.
      */
     args?: any[];
-
     /**
      * params of the propertyKey method.
      */

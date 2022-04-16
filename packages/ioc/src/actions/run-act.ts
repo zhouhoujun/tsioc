@@ -2,23 +2,12 @@ import { EMPTY, isDefined } from '../utils/chk';
 import { chain } from '../handler';
 import { ActionSetup } from '../action';
 import { RuntimeContext } from './ctx';
-import { IocRegAction, IocRegScope } from './reg';
+import { IocRegScope } from './reg';
 import { PropertyMetadata } from '../metadata/meta';
 import { OperationFactoryResolver } from '../operation';
 import { ctorName, Decors } from '../metadata/type';
 import { ArgumentError, Parameter } from '../resolver';
 
-
-/**
- * ioc runtime register action.
- * the register type class can only register in ioc as:
- * ` container.registerSingleton(SubRuntimRegisterAction, () => new SubRuntimRegisterAction(container));`
- * @export
- * @abstract
- * @class IocRegisterAction
- * @extends {IocRegAction<RuntimeContext>}
- */
-export abstract class IocRuntimeAction extends IocRegAction<RuntimeContext> { }
 
 /**
  * resolve constructor args action.
@@ -143,10 +132,6 @@ export const AfterCtorDecorHandle = function (ctx: RuntimeContext, next: () => v
     return next();
 }
 
-/**
- * ioc extend register action.
- */
-export abstract class IocExtendRegAction extends IocRuntimeAction { }
 
 /**
  * cache action. To cache instance of Token. define cache expires in decorator.
@@ -249,4 +234,3 @@ export const RuntimePropDecorHandle = function (ctx: RuntimeContext, next: () =>
 
     return next();
 }
-

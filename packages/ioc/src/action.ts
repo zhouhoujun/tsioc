@@ -20,7 +20,6 @@ export interface ActionSetup {
  */
 export type ActionType<T = any> = Token<Action<T, void>> | Handler<T, void>;
 
-
 /**
  * action.
  *
@@ -30,14 +29,10 @@ export type ActionType<T = any> = Token<Action<T, void>> | Handler<T, void>;
 export abstract class Action<T = any, TR = void> {
     /**
      * action handle.
-     * @param ctx
-     * @param next 
      */
     abstract getHandler(): Handler<T, TR>;
 
 }
-
-
 
 /**
  * actions scope.
@@ -54,14 +49,13 @@ export abstract class Actions<T, TR = void> extends Action<T, TR> {
     private _afts: ActionType[];
     private _hdlrs: Handler[] | undefined;
 
-    private _handler: Handler;
+    private _handler?: Handler;
 
     constructor() {
         super();
         this._befs = [];
         this._acts = [];
         this._afts = [];
-        this._handler = (ctx, next)=> this.handle(ctx, next);
     }
 
     has(action: ActionType) {
@@ -160,6 +154,9 @@ export abstract class Actions<T, TR = void> extends Action<T, TR> {
     }
 
     getHandler(): Handler<T, TR> {
+        if (!this._handler) {
+            this._handler = (ctx, next) => this.handle(ctx, next);
+        }
         return this._handler;
     }
 
