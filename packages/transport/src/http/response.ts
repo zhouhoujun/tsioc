@@ -104,16 +104,7 @@ export class HttpServerResponse extends ServerResponse<any> implements ResponseH
     set statusMessage(msg: string) {
         this.resp.statusMessage = msg;
     }
-    get contentType(): string {
-        return this.resp.getHeader('Content-Type')?.toString() ?? '';
-    }
-    set contentType(type: string) {
-        if (type) {
-            this.resp.setHeader('Content-Type', type);
-        } else {
-            this.resp.removeHeader('Content-Type');
-        }
-    }
+
     get sent(): boolean {
         throw new Error('Method not implemented.');
     }
@@ -167,7 +158,7 @@ export class HttpServerResponse extends ServerResponse<any> implements ResponseH
             });
             // onFinish(this.response, destroy.bind(null, val));
             if (original != val) {
-                val.once('error', err => this.onerror(err));
+                val.once('error', err => this.throwError(err));
                 // overwriting
                 if (null != original) this.removeHeader('Content-Length');
             }
@@ -181,6 +172,37 @@ export class HttpServerResponse extends ServerResponse<any> implements ResponseH
         this.contentType = 'application/json';
 
     }
+
+    get contentType(): string {
+        return this.resp.getHeader('Content-Type')?.toString() ?? '';
+    }
+
+    /**
+     * Set Content-Type response header with `type` through `mime.lookup()`
+     * when it does not contain a charset.
+     *
+     * Examples:
+     *
+     *     this.contentType = 'application/json';
+     *     this.contentType = 'application/octet-stream';  // buffer stream
+     *     this.contentType = 'image/png';      // png
+     *     this.contentType = 'image/pjpeg';   //jpeg
+     *     this.contentType = 'text/plain';    // text, txt
+     *     this.contentType = 'text/html';    // html, htm, shtml
+     *     this.contextType = 'text/javascript'; // javascript text
+     *     this.contentType = 'application/javascript'; //javascript file .js, .mjs
+     *
+     * @param {String} type
+     * @api public
+     */
+    set contentType(type: string) {
+        if (type) {
+            this.resp.setHeader('Content-Type', type);
+        } else {
+            this.resp.removeHeader('Content-Type');
+        }
+    }
+
     /**
      * Set Content-Length field to `n`.
      *
@@ -212,6 +234,49 @@ export class HttpServerResponse extends ServerResponse<any> implements ResponseH
         if ('string' === typeof body) return Buffer.byteLength(body);
         if (Buffer.isBuffer(body)) return body.length;
         return Buffer.byteLength(JSON.stringify(body));
+    }
+
+    /**
+     * Check if the given `type(s)` is acceptable, returning
+     * the best match when true, otherwise `false`, in which
+     * case you should respond with 406 "Not Acceptable".
+     *
+     * The `type` value may be a single mime type string
+     * such as "application/json", the extension name
+     * such as "json" or an array `["json", "html", "text/plain"]`. When a list
+     * or array is given the _best_ match, if any is returned.
+     *
+     * Examples:
+     *
+     *     // Accept: text/html
+     *     this.accepts('html');
+     *     // => "html"
+     *
+     *     // Accept: text/*, application/json
+     *     this.accepts('html');
+     *     // => "html"
+     *     this.accepts('text/html');
+     *     // => "text/html"
+     *     this.accepts('json', 'text');
+     *     // => "json"
+     *     this.accepts('application/json');
+     *     // => "application/json"
+     *
+     *     // Accept: text/*, application/json
+     *     this.accepts('image/png');
+     *     this.accepts('png');
+     *     // => false
+     *
+     *     // Accept: text/*;q=.5, application/json
+     *     this.accepts('html', 'json');
+     *     // => "json"
+     *
+     * @param {String|Array} type(s)...
+     * @return {String|Array|false}
+     * @api public
+     */
+    accepts(...args: string[]): string | number | string[] {
+        return '';
     }
 
     /**

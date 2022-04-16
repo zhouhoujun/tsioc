@@ -4,6 +4,7 @@ import { RouteFactoryResolver, ROUTES, Routes } from './route';
 import { DefaultRouteFactoryResovler } from './route_ref';
 import { MappingRouterResolver, RouterResolver } from './router';
 import { ExecptionModule } from '../execptions';
+import { LogModule } from '@tsdi/logs';
 
 
 /*
@@ -11,6 +12,7 @@ import { ExecptionModule } from '../execptions';
  */
 @Module({
     imports:[
+        LogModule,
         ExecptionModule
     ],
     providers: [

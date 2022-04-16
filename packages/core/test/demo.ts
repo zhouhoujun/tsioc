@@ -2,6 +2,7 @@ import {
     Module, ConfigureService, ApplicationContext, Configuration, ComponentScan, OnDispose,
     Runnable, Bean, HttpClientModule
 } from '../src';
+import { TcpModule } from '@tsdi/transport';
 import { Injectable, Inject, OnDestroy, lang, Abstract } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
 import { Logger, LogConfigure, Log, LogModule } from '@tsdi/logs';
@@ -85,7 +86,7 @@ export class LoggerAspect {
     exports: [
         AopModule,
         LogModule,
-        HttpClientModule
+        TcpModule,
     ]
 })
 export class SharedModule {

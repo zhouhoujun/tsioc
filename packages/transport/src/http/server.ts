@@ -39,16 +39,6 @@ export class HttpServer extends TransportServer<HttpRequest, HttpServerResponse>
         super();
     }
 
-    useBefore(middleware: Middleware<HttpRequest<any>, HttpServerResponse> | MiddlewareFn<HttpRequest<any>, HttpServerResponse>): this {
-        throw new Error('Method not implemented.');
-    }
-    useAfter(middleware: Middleware<HttpRequest<any>, HttpServerResponse> | MiddlewareFn<HttpRequest<any>, HttpServerResponse>): this {
-        throw new Error('Method not implemented.');
-    }
-    useFinalizer(middleware: Middleware<HttpRequest<any>, HttpServerResponse> | MiddlewareFn<HttpRequest<any>, HttpServerResponse>): this {
-        throw new Error('Method not implemented.');
-    }
-
     getEndpoint(): Endpoint<HttpRequest, HttpServerResponse> {
         return this._endpoint;
     }
@@ -64,16 +54,7 @@ export class HttpServer extends TransportServer<HttpRequest, HttpServerResponse>
             this.context.setValue(CONTENT_DISPOSITION, func);
         }
         this.context.setValue(Logger, this.logger);
-        this._endpoint = new Chain((req) => {
-            // const cb = ()=> ctx.destroy();
-            // race([fromEvent(ctx.response, 'end'), fromEvent(ctx.response, 'end'), fromEvent( ctx.response, 'finish') ])
-            //     .pipe((c)=> {
 
-            //     })
-            // ctx.response.once('close', cb);
-            // ctx.response.once('error', )
-            return of(ctx);
-        }, this.context.resolve(HTTP_MIDDLEWARES));
         if (options.version === 'http2') {
             const handler = this.http2RequestHandler.bind(this);
             if (options.options) {

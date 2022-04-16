@@ -1,11 +1,12 @@
 import { hasOwn, Injectable, isString, tokenId } from '@tsdi/ioc';
-import { ApplicationContext, Endpoint, HttpRequest, HttpResponse } from '@tsdi/core';
+import { ApplicationContext, headers, Endpoint, HttpRequest, HttpResponse, Middleware } from '@tsdi/core';
 import { Logger, LoggerFactory } from '@tsdi/logs';
 import { Observable } from 'rxjs';
 import { catchError, finalize, map, } from 'rxjs/operators'
 import { isBuffer, isStream } from '../utils';
 import { HttpEndpoint, HttpMiddleware } from './endpoint';
 import { JsonStreamStringify } from '../stringify';
+import { HttpServerResponse } from './response';
 
 export interface JsonMiddlewareOption {
     pretty: boolean;
@@ -15,7 +16,7 @@ export interface JsonMiddlewareOption {
 
 
 @Injectable()
-export class HttpEncodeJsonMiddleware implements HttpMiddleware {
+export class HttpEncodeJsonMiddleware implements Middleware<HttpRequest, HttpServerResponse> {
 
     private pretty: boolean;
     private spaces: number;
@@ -26,7 +27,7 @@ export class HttpEncodeJsonMiddleware implements HttpMiddleware {
         this.paramName = option.param ?? '';
     }
 
-    intercept(req: HttpRequest, next: Endpoint<HttpRequest, HttpResponse>): Observable<any> {
+    intercept(req: HttpRequest, next: Endpoint<HttpRequest, HttpServerResponse>): Observable<HttpServerResponse> {
         return next.handle(req)
             .pipe(
                 map(resp => {
@@ -41,10 +42,12 @@ export class HttpEncodeJsonMiddleware implements HttpMiddleware {
                     let pretty = this.pretty || hasOwn(req.params, this.paramName);
 
                     if (strm) {
-                        resp.contentType = 'application/json';
+                        // resp.contentType = 'application/json';
+                        resp.setHeader(headers.contentType, 'application/json');
                         resp.body = new JsonStreamStringify(body, undefined, pretty ? this.spaces : 2);
                     } else if (json && pretty) {
-                        resp.contentType = 'application/json; charset=utf-8';
+                        // resp.contentType = 'application/json; charset=utf-8';
+                        resp.setHeader(headers.contentType, 'application/json; charset=utf-8');
                         resp.body = JSON.stringify(body, null, this.spaces);
                     }
                     return resp;

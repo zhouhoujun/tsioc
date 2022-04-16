@@ -36,16 +36,6 @@ export class HttpClient extends TransportClient<HttpRequest, HttpResponse> {
         super()
     }
 
-    useBefore(middleware: Middleware<HttpRequest<any>, HttpResponse<any>> | MiddlewareFn<HttpRequest<any>, HttpResponse<any>>): this {
-        throw new Error('Method not implemented.');
-    }
-    useAfter(middleware: Middleware<HttpRequest<any>, HttpResponse<any>> | MiddlewareFn<HttpRequest<any>, HttpResponse<any>>): this {
-        throw new Error('Method not implemented.');
-    }
-    useFinalizer(middleware: Middleware<HttpRequest<any>, HttpResponse<any>> | MiddlewareFn<HttpRequest<any>, HttpResponse<any>>): this {
-        throw new Error('Method not implemented.');
-    }
-
     getEndpoint(): Endpoint<HttpRequest, HttpResponse> {
         if (!this._endpoint) {
 
@@ -60,7 +50,6 @@ export class HttpClient extends TransportClient<HttpRequest, HttpResponse> {
                 return;
             }
             this.http2client = http2.connect(this.options.authority, this.options.options);
-            this._endpoint = new Chain(new Http2BackEndpoint(this.http2client), this.middlewares);
         } else {
 
             if (this._endpoint) return;
@@ -82,7 +71,7 @@ export class HttpClient extends TransportClient<HttpRequest, HttpResponse> {
         }
     }
 
-    protected buildRequest(url: string | HttpRequest<any>, options?: { body?: any; method?: RequestMethod | undefined; headers?: any; context?: InvocationContext<any> | undefined; params?: any; observe?: 'body' | 'events' | 'response' | undefined; reportProgress?: boolean | undefined; responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | undefined; withCredentials?: boolean | undefined; }): HttpContext {
+    protected buildRequest(url: string | HttpRequest<any>, options?: { body?: any; method?: RequestMethod | undefined; headers?: any; context?: InvocationContext<any> | undefined; params?: any; observe?: 'body' | 'events' | 'response' | undefined; reportProgress?: boolean | undefined; responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | undefined; withCredentials?: boolean | undefined; }): HttpRequest {
         throw new Error('Method not implemented.');
     }
 
@@ -92,45 +81,6 @@ export class HttpClient extends TransportClient<HttpRequest, HttpResponse> {
         this.http2client.close(() => defer.resolve());
         await defer.promise;
 
-    }
-
-}
-
-export class HttpBackEndpoint implements Endpoint<HttpRequest, HttpResponse> {
-    constructor() {
-
-    }
-
-    endpoint(ctx: HttpRequest): Observable<any> {
-        const client = this.options ? http.request(ctx.url, this.options) : http.request(ctx.url);
-    }
-
-}
-
-
-export class Http2BackEndpoint implements Endpoint<HttpRequest, HttpResponse> {
-    constructor(private client: http2.ClientHttp2Session) {
-
-    }
-    endpoint(req: HttpRequest): Observable<HttpResponse> {
-        const reqt = this.client.request({
-            path: req.url
-        });
-        const logger = req.context.getValue(Logger);
-
-        reqt.on('response', (headers, flags) => {
-            for (const name in headers) {
-                logger.log(`${name}: ${headers[name]}`);
-            }
-        });
-
-        reqt.setEncoding('utf8');
-        reqt.on('data', (chunk) => { data += chunk; });
-        reqt.on('end', () => {
-            logger.log(`\n${data}`);
-            this.client.close();
-        });
-        reqt.end();
     }
 
 }

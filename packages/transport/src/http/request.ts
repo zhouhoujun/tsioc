@@ -21,16 +21,50 @@ export class HttpRequest<T = any> extends RequestBase<T> implements RequestHeade
     get method(): string {
         return this.req.method ?? 'GET';
     }
-    get withCredentials(): boolean {
-        return (this.req.socket as TLSSocket).encrypted === true;
+    
+    /**
+     * Return the protocol string "http" or "https"
+     * when requested with TLS. When the proxy setting
+     * is enabled the "X-Forwarded-Proto" header
+     * field will be trusted. If you're running behind
+     * a reverse proxy that supplies https for you this
+     * may be enabled.
+     *
+     * @return {String}
+     * @api public
+     */
+    get protocol(): string {
+        if ((this.socket as TLSSocket).encrypted) return 'https';
+        // if (!this.get(TransportServer).proxy) return 'http';
+        const proto = this.getHeader('X-Forwarded-Proto') as string;
+        return proto ? proto.split(/\s*,\s*/, 1)[0] : 'http';
     }
 
-    get body(): T {
-        // this.req.pipe()
+    /**
+     * Return the request socket.
+     *
+     * @return {Connection}
+     * @api public
+     */
+
+    get socket() {
+        return this.req.socket;
     }
 
-    get responseType(): "arraybuffer" | "blob" | "json" | "text" {
-        throw new Error('Method not implemented.');
+    /**
+     * Short-hand for:
+     *
+     *    this.protocol == 'https'
+     *
+     * @return {Boolean}
+     * @api public
+     */
+    get secure(): boolean {
+        return this.protocol === 'https';
+    }
+
+    get body(): T | null {
+        return null;
     }
   
     isUpdate(): boolean {
