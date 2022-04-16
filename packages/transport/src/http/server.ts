@@ -31,7 +31,7 @@ export const HTTP_SERVEROPTIONS = tokenId<HttpServerOptions>('HTTP_SERVEROPTIONS
 export class HttpServer extends TransportServer<HttpRequest, WritableHttpResponse> {
 
     private _endpoint!: Endpoint<HttpRequest, WritableHttpResponse>;
-    private _server!: http2.Http2Server | http.Server | https.Server;
+    private _server?: http2.Http2Server | http.Server | https.Server;
     constructor(
         @Inject() private context: InvocationContext,
         @Inject(HTTP_SERVEROPTIONS, { defaultValue: defaultOption }) private options: HttpServerOptions
@@ -114,9 +114,15 @@ export class HttpServer extends TransportServer<HttpRequest, WritableHttpRespons
     }
 
     async close(): Promise<void> {
+        if(!this._server) return;
         const defer = lang.defer();
         this._server.close((err) => {
-            err ? defer.reject(err) : defer.resolve();
+            if(err) {
+                this.logger.error(err);
+                defer.reject(err);
+            } else {
+                defer.resolve();
+            }
         });
         await defer.promise;
     }

@@ -45,9 +45,19 @@ export class TCPServer extends TransportServer<TCPRequest, WritableTCPResponse> 
     getEndpoint(): Endpoint<TCPRequest<any>, WritableTCPResponse<any>> {
         throw new Error('Method not implemented.');
     }
-    
+
     async close(): Promise<void> {
-        this.server?.close();
+        if (!this.server) return;
+        const defer = lang.defer();
+        this.server.close(err => {
+            if (err) {
+                this.logger.error(err);
+                defer.reject(err);
+            } else {
+                defer.resolve();
+            }
+        });
+        await defer.promise;
     }
 
 }

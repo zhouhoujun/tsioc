@@ -1,4 +1,4 @@
-import { EMPTY, Injectable, isNumber, OperationInvoker, ProviderType, Type } from '@tsdi/ioc';
+import { EMPTY, Injectable, isNumber, lang, OperationInvoker, ProviderType, Type } from '@tsdi/ioc';
 import { ExecptionHandlerMethodResolver } from './resolver';
 
 
@@ -9,7 +9,8 @@ export class DefaultExecptionHandlerMethodResolver extends ExecptionHandlerMetho
     resolve(execption: Type<Error>): OperationInvoker[] {
         return this.maps.get(execption) ?? EMPTY;
     }
-    addHandle(execption: Type<Error>, methodInvoker: OperationInvoker, order?: number): void {
+
+    addHandle(execption: Type<Error>, methodInvoker: OperationInvoker, order?: number): this {
         let hds = this.maps.get(execption);
         if (isNumber(order)) {
             methodInvoker.order = order;
@@ -19,6 +20,13 @@ export class DefaultExecptionHandlerMethodResolver extends ExecptionHandlerMetho
         } else {
             hds.push(methodInvoker);
         }
+        return this;
+    }
+
+    removeHandle(execption: Type<Error>, methodInvoker: OperationInvoker): this {
+        const hds = this.maps.get(execption);
+        if(hds) lang.remove(hds, methodInvoker);
+        return this;
     }
 }
 

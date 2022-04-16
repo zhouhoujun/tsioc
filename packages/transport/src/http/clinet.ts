@@ -47,7 +47,7 @@ export class HttpClient extends TransportClient<HttpRequest, HttpResponse> {
     }
 
     getEndpoint(): Endpoint<HttpRequest, HttpResponse> {
-        if(!this._endpoint) {
+        if (!this._endpoint) {
 
         }
         return this._endpoint;
@@ -87,11 +87,11 @@ export class HttpClient extends TransportClient<HttpRequest, HttpResponse> {
     }
 
     async close(): Promise<void> {
-        if (this.http2client) {
-            const defer = lang.defer();
-            this.http2client.close(() => defer.resolve());
-            await defer.promise;
-        }
+        if (!this.http2client) return;
+        const defer = lang.defer();
+        this.http2client.close(() => defer.resolve());
+        await defer.promise;
+
     }
 
 }

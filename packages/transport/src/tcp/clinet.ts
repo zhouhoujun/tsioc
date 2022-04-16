@@ -96,8 +96,8 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> {
     }
 
     async close(): Promise<void> {
-        this.socket?.end();
         this.connected = false;
+        this.socket?.end();
     }
 
 }
