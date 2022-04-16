@@ -1,7 +1,7 @@
 import { Abstract, Destroyable, DestroyCallback, Injector, InvokeArguments, InvokeOption, OnDestroy, tokenId, Type, TypeReflect } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { CanActivate } from '../transport/guard';
-import { RequestBase, WritableResponse } from '../transport/packet';
+import { RequestBase, ServerResponse } from '../transport/packet';
 import { RouteEndpoint, RouteMiddleware } from './endpoint';
 
 /**
@@ -98,7 +98,7 @@ export abstract class RouteRef<T = any> implements RouteMiddleware, Destroyable,
      * @param {() => Promise<void>} next
      * @returns {Promise<void>}
      */
-    abstract intercept(ctx: RequestBase, next: RouteEndpoint): Observable<WritableResponse>;
+    abstract intercept(ctx: RequestBase, next: RouteEndpoint): Observable<ServerResponse>;
     /**
      * is destroyed or not.
      */

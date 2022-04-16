@@ -271,10 +271,10 @@ export interface ResponseHeader<T = any> {
 }
 
 /**
- * writable response.
+ * server response.
  */
 @Abstract()
-export abstract class WritableResponse<T = any> extends ResponseBase<T> {
+export abstract class ServerResponse<T = any> extends ResponseBase<T> {
     /**
      * Shared and mutable context that can be used by middlewares
      */
@@ -347,7 +347,7 @@ export abstract class Redirect {
      * @param {String} [alt]
      * @api public
      */
-    abstract redirect(response: WritableResponse, url: string, alt?: string): void;
+    abstract redirect(response: ServerResponse, url: string, alt?: string): void;
 }
 
 // /**

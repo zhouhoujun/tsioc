@@ -89,10 +89,7 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> {
     }
 
     protected buildRequest(req: string | TCPRequest<any>, options?: any): TCPRequest<any> | Promise<TCPRequest<any>> {
-        if (isString(req)) {
-            return new TCPRequest(TransportContext.create(this.context), options);
-        }
-        return req;
+        return isString(req)? new TCPRequest(TransportContext.create(this.context), options) : req;
     }
 
     async close(): Promise<void> {

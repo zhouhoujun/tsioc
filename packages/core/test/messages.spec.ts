@@ -2,7 +2,7 @@ import { Injector, Injectable, lang, ArgumentError, MissingParameterError, token
 import { defer, lastValueFrom, Observable, of } from 'rxjs';
 import { map, mergeMap } from 'rxjs/operators';
 import expect = require('expect');
-import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module, TransportContext, HttpClientModule, Middleware, HttpClient, Chain, Endpoint, HttpErrorResponse, HttpResponseBase, RequestBase, ResponseBase, WritableResponse, RouteMiddleware } from '../src';
+import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module, TransportContext, HttpClientModule, Middleware, HttpClient, Chain, Endpoint, HttpErrorResponse, HttpResponseBase, RequestBase, ResponseBase, ServerResponse, RouteMiddleware } from '../src';
 
 
 
@@ -83,9 +83,9 @@ class DeviceController {
 // }
 
 @Handle('/hdevice')
-class DeviceQueue implements Middleware<RequestBase, WritableResponse> {
+class DeviceQueue implements Middleware<RequestBase, ServerResponse> {
 
-    intercept(req: RequestBase, next: Endpoint<RequestBase, WritableResponse>): Observable<WritableResponse> {
+    intercept(req: RequestBase, next: Endpoint<RequestBase, ServerResponse>): Observable<ServerResponse> {
         const ctx = req.context;
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
@@ -115,9 +115,9 @@ class DeviceQueue implements Middleware<RequestBase, WritableResponse> {
 
 
 @Injectable()
-class DeviceStartupHandle implements Middleware<RequestBase, WritableResponse> {
+class DeviceStartupHandle implements Middleware<RequestBase, ServerResponse> {
 
-    intercept(req: RequestBase, next: Endpoint<RequestBase, WritableResponse>): Observable<WritableResponse> {
+    intercept(req: RequestBase, next: Endpoint<RequestBase, ServerResponse>): Observable<ServerResponse> {
         console.log('DeviceStartupHandle.', 'resp:', req.body.type, 'req:', req.body.type)
         if (req.body.type === 'startup') {
             // todo sth.
@@ -129,9 +129,9 @@ class DeviceStartupHandle implements Middleware<RequestBase, WritableResponse> {
 }
 
 @Injectable()
-class DeviceAStartupHandle implements Middleware<RequestBase, WritableResponse> {
+class DeviceAStartupHandle implements Middleware<RequestBase, ServerResponse> {
 
-    intercept(req: RequestBase, next: Endpoint<RequestBase, WritableResponse>): Observable<WritableResponse> {
+    intercept(req: RequestBase, next: Endpoint<RequestBase, ServerResponse>): Observable<ServerResponse> {
         console.log('DeviceAStartupHandle.', 'resp:', req.body.type, 'req:', req.body.type)
         if (req.body.type === 'startup') {
             // todo sth.

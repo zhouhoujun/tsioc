@@ -1,4 +1,4 @@
-import { ResponseBase, TransportContext, WritableResponse } from '@tsdi/core';
+import { ResponseBase, TransportContext, ServerResponse } from '@tsdi/core';
 
 
 export class WsResponse<T = any> extends ResponseBase<T>{
@@ -19,7 +19,7 @@ export class WsResponse<T = any> extends ResponseBase<T>{
     }
 }
 
-export class WritableWsResponse<T= any> extends WritableResponse<T> {
+export class WsServerResponse<T= any> extends ServerResponse<T> {
     constructor(readonly context: TransportContext) {
         super()
     }

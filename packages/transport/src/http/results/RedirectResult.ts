@@ -1,5 +1,5 @@
 import { ResultValue } from '@tsdi/core';
-import { WritableHttpResponse } from '../response';
+import { HttpServerResponse } from '../response';
 
 /**
  * redirect url
@@ -12,7 +12,7 @@ export class RedirectResult extends ResultValue {
     constructor(private url: string, private alt?: string) {
         super('text/html');
     }
-    async sendValue(resp: WritableHttpResponse) {
+    async sendValue(resp: HttpServerResponse) {
         return resp.redirect(this.url, this.alt);
     }
 }

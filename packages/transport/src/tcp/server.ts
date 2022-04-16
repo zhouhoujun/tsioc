@@ -1,7 +1,7 @@
 import { Endpoint, Middleware, MiddlewareFn, TransportServer } from '@tsdi/core';
 import { Abstract, Inject, Injectable, lang } from '@tsdi/ioc';
 import { Server, ServerOpts, ListenOptions } from 'net';
-import { TCPRequest, WritableTCPResponse } from './packet';
+import { TCPRequest, TCPServerResponse } from './packet';
 
 
 
@@ -27,7 +27,7 @@ const defaults = {
 
 
 @Injectable()
-export class TCPServer extends TransportServer<TCPRequest, WritableTCPResponse> {
+export class TCPServer extends TransportServer<TCPRequest, TCPServerResponse> {
 
     private server?: Server;
     constructor(@Inject({ nullable: true }) private options: TcpServerOption = defaults) {
@@ -42,7 +42,7 @@ export class TCPServer extends TransportServer<TCPRequest, WritableTCPResponse> 
         await defer.promise;
     }
 
-    getEndpoint(): Endpoint<TCPRequest<any>, WritableTCPResponse<any>> {
+    getEndpoint(): Endpoint<TCPRequest<any>, TCPServerResponse<any>> {
         throw new Error('Method not implemented.');
     }
 

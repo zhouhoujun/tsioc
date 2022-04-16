@@ -9,7 +9,7 @@ import * as assert from 'assert';
 import { CONTENT_DISPOSITION } from './content';
 import { HTTP_MIDDLEWARES } from './endpoint';
 import { HttpRequest } from './request';
-import { HttpResponse, WritableHttpResponse } from './response';
+import { HttpResponse, HttpServerResponse } from './response';
 
 
 export type HttpVersion = 'http1.1' | 'http2';
@@ -28,9 +28,9 @@ export type HttpServerOptions = Http1ServerOptions | Http2ServerOptions;
 export const HTTP_SERVEROPTIONS = tokenId<HttpServerOptions>('HTTP_SERVEROPTIONS');
 
 @Injectable()
-export class HttpServer extends TransportServer<HttpRequest, WritableHttpResponse> {
+export class HttpServer extends TransportServer<HttpRequest, HttpServerResponse> {
 
-    private _endpoint!: Endpoint<HttpRequest, WritableHttpResponse>;
+    private _endpoint!: Endpoint<HttpRequest, HttpServerResponse>;
     private _server?: http2.Http2Server | http.Server | https.Server;
     constructor(
         @Inject() private context: InvocationContext,
@@ -39,17 +39,17 @@ export class HttpServer extends TransportServer<HttpRequest, WritableHttpRespons
         super();
     }
 
-    useBefore(middleware: Middleware<HttpRequest<any>, WritableHttpResponse> | MiddlewareFn<HttpRequest<any>, WritableHttpResponse>): this {
+    useBefore(middleware: Middleware<HttpRequest<any>, HttpServerResponse> | MiddlewareFn<HttpRequest<any>, HttpServerResponse>): this {
         throw new Error('Method not implemented.');
     }
-    useAfter(middleware: Middleware<HttpRequest<any>, WritableHttpResponse> | MiddlewareFn<HttpRequest<any>, WritableHttpResponse>): this {
+    useAfter(middleware: Middleware<HttpRequest<any>, HttpServerResponse> | MiddlewareFn<HttpRequest<any>, HttpServerResponse>): this {
         throw new Error('Method not implemented.');
     }
-    useFinalizer(middleware: Middleware<HttpRequest<any>, WritableHttpResponse> | MiddlewareFn<HttpRequest<any>, WritableHttpResponse>): this {
+    useFinalizer(middleware: Middleware<HttpRequest<any>, HttpServerResponse> | MiddlewareFn<HttpRequest<any>, HttpServerResponse>): this {
         throw new Error('Method not implemented.');
     }
 
-    getEndpoint(): Endpoint<HttpRequest, WritableHttpResponse> {
+    getEndpoint(): Endpoint<HttpRequest, HttpServerResponse> {
         return this._endpoint;
     }
 
@@ -98,7 +98,7 @@ export class HttpServer extends TransportServer<HttpRequest, WritableHttpRespons
             target: this
         });
         const req = new HttpRequest(ctx, request);
-        const resp = new WritableHttpResponse(ctx, response);
+        const resp = new HttpServerResponse(ctx, response);
         ctx.response = resp;
 
         this.getEndpoint().handle(req);
@@ -108,7 +108,7 @@ export class HttpServer extends TransportServer<HttpRequest, WritableHttpRespons
             target: this
         });
         const req = new HttpRequest(ctx, request);
-        const resp = new WritableHttpResponse(ctx, response);
+        const resp = new HttpServerResponse(ctx, response);
         ctx.response = resp;
         this.getEndpoint().handle(req);
     }

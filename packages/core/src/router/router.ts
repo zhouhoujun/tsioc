@@ -1,7 +1,7 @@
 import { Abstract, EMPTY, isString, lang, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
 import { Observable, from, throwError } from 'rxjs';
 import { map, mergeMap } from 'rxjs/operators';
-import { RequestBase, RequestMethod, promisify, WritableResponse, Redirect } from '../transport/packet';
+import { RequestBase, RequestMethod, promisify, ServerResponse, Redirect } from '../transport/packet';
 import { CanActivate } from '../transport/guard';
 import { PipeTransform } from '../pipes/pipe';
 import { RouteEndpoint, RouteMiddleware } from './endpoint';
@@ -31,7 +31,7 @@ export abstract class Router implements RouteMiddleware {
      * @param {RouteEndpoint} next
      * @returns {Observable<T>}
      */
-    abstract intercept(req: RequestBase, next: RouteEndpoint): Observable<WritableResponse>;
+    abstract intercept(req: RequestBase, next: RouteEndpoint): Observable<ServerResponse>;
     /**
      * has route or not.
      * @param route route
@@ -80,7 +80,7 @@ export class MappingRoute implements RouteMiddleware {
         return this.route.path;
     }
 
-    intercept(req: RequestBase, next: RouteEndpoint): Observable<WritableResponse> {
+    intercept(req: RequestBase, next: RouteEndpoint): Observable<ServerResponse> {
         return from(this.canActive(req))
             .pipe(
                 mergeMap(can => {
@@ -127,20 +127,20 @@ export class MappingRoute implements RouteMiddleware {
         }
     }
 
-    protected throwError(req: RequestBase, next: RouteEndpoint, status: number): Observable<WritableResponse> {
+    protected throwError(req: RequestBase, next: RouteEndpoint, status: number): Observable<ServerResponse> {
         const resp  = req.context.response;
-        if(resp instanceof WritableResponse) {
+        if(resp instanceof ServerResponse) {
             return throwError(() => resp.throwError(status));
         }
         return next.handle(req).pipe(mergeMap(resp => throwError(() => resp.throwError(status))));
     }
 
-    protected redirect(resp: WritableResponse, url: string, alt?: string): WritableResponse {
+    protected redirect(resp: ServerResponse, url: string, alt?: string): ServerResponse {
         resp.context.resolve(Redirect).redirect(resp, url, alt);
         return resp;
     }
 
-    protected routeController(req: RequestBase, controller: Type, next: RouteEndpoint): Observable<WritableResponse> {
+    protected routeController(req: RequestBase, controller: Type, next: RouteEndpoint): Observable<ServerResponse> {
         const route = req.context.resolve(RouteFactoryResolver).resolve(controller).last();
         if (route) {
             return route.intercept(req, next);

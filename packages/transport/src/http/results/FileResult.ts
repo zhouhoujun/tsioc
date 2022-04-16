@@ -3,7 +3,7 @@ import { ApplicationContext, ResultValue } from '@tsdi/core';
 import { Stream } from 'stream';
 import { existsSync, createReadStream } from 'fs';
 import { join, isAbsolute } from 'path';
-import { WritableHttpResponse } from '../response';
+import { HttpServerResponse } from '../response';
 
 /**
  * controller method return result type of file.
@@ -53,7 +53,7 @@ export class FileResult extends ResultValue {
         super(options?.contentType || 'application/octet-stream');
     }
 
-    async sendValue(resp: WritableHttpResponse) {
+    async sendValue(resp: HttpServerResponse) {
         let file = this.file;
         const contentType = this.contentType;
         if (this.options && this.options.filename) {

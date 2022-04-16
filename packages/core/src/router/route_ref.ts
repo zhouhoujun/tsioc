@@ -8,7 +8,7 @@ import { from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError
 import { CanActivate } from '../transport/guard';
 import { ResultValue } from '../transport/result';
 import { Chain } from '../transport/endpoint';
-import { RequestBase, WritableResponse, TransportContext, promisify } from '../transport/packet';
+import { RequestBase, ServerResponse, TransportContext, promisify } from '../transport/packet';
 import { TransportArgumentResolver, TransportParameter } from '../transport/resolver';
 import { MODEL_RESOLVERS } from '../model/model.resolver';
 import { PipeTransform } from '../pipes/pipe';
@@ -74,7 +74,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         return this._guards;
     }
 
-    intercept(req: RequestBase, next: RouteEndpoint): Observable<WritableResponse> {
+    intercept(req: RequestBase, next: RouteEndpoint): Observable<ServerResponse> {
         return from(this.canActivate(req))
             .pipe(
                 mergeMap(method => {
@@ -86,7 +86,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
                             let middlewares = this.getRouteMiddleware(req, method);
                             const backend = { handle: (req1) => this.response(req1, next, method) } as RouteEndpoint;
                             if (middlewares.length) {
-                                endpoint = new Chain<RequestBase, WritableResponse>(
+                                endpoint = new Chain<RequestBase, ServerResponse>(
                                     backend,
                                     middlewares.map(m => isClass(m) ? this.factory.resolve(m) : m));
                             } else {
@@ -98,22 +98,22 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
                     } else if (method === false) {
                         return this.throwError(req, next, 403);
                     } else {
-                        return req.context.response instanceof WritableResponse ? of(req.context.response) : next.handle(req);
+                        return req.context.response instanceof ServerResponse ? of(req.context.response) : next.handle(req);
                     }
                 })
             );
     }
 
-    protected throwError(req: RequestBase, next: RouteEndpoint, status: number): Observable<WritableResponse> {
+    protected throwError(req: RequestBase, next: RouteEndpoint, status: number): Observable<ServerResponse> {
         const resp = req.context.response;
-        if (resp instanceof WritableResponse) {
+        if (resp instanceof ServerResponse) {
             return throwError(() => resp.throwError(status));
         }
         return next.handle(req).pipe(mergeMap(resp => throwError(() => resp.throwError(status))));
     }
 
     protected async canActivate(req: RequestBase) {
-        if ((req.context.response as WritableResponse)?.sent) return null;
+        if ((req.context.response as ServerResponse)?.sent) return null;
         // if (!ctx.pattern.startsWith(this.path)) return null;
         if (this.guards && this.guards.length) {
             if (!(await lang.some(
@@ -135,7 +135,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         return meta;
     }
 
-    response(req: RequestBase, next: RouteEndpoint, meta: DecorDefine): Observable<WritableResponse> {
+    response(req: RequestBase, next: RouteEndpoint, meta: DecorDefine): Observable<ServerResponse> {
         const injector = this.injector;
 
         let restParams: any = {};
@@ -153,7 +153,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
             });
         }
         req.context.setValue(RESTFUL_PARAMS, restParams ?? EMPTY_OBJ);
-        return (req.context.response instanceof WritableResponse ? of(req.context.response) : next.handle(req)).pipe(
+        return (req.context.response instanceof ServerResponse ? of(req.context.response) : next.handle(req)).pipe(
             mergeMap(async resp => {
                 if (!req.context.response) {
                     req.context.response = resp;

@@ -1,10 +1,10 @@
 import { Abstract } from '@tsdi/ioc';
 import { ResultValue } from '@tsdi/core';
-import { WritableHttpResponse } from '../response';
+import { HttpServerResponse } from '../response';
 
 @Abstract()
 export abstract class ViewRenderer {
-    abstract render(ctx: WritableHttpResponse, name: string, model?: any): any;
+    abstract render(ctx: HttpServerResponse, name: string, model?: any): any;
 }
 
 /**
@@ -19,7 +19,7 @@ export class ViewResult extends ResultValue {
         super('text/html');
     }
 
-    async sendValue(resp: WritableHttpResponse) {
+    async sendValue(resp: HttpServerResponse) {
         const renderer = resp.context.get(ViewRenderer);
         if (!renderer) {
             return Promise.reject('view engin middleware no configed!');

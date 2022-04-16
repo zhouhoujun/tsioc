@@ -1,4 +1,4 @@
-import { isString, isRegExp, Type, lang, isArray, isFunction, refl, ClassType, Injector, ctorName, Decors } from '@tsdi/ioc';
+import { isString, isRegExp, Type, lang, isArray, refl, ClassType, Injector, ctorName, Decors } from '@tsdi/ioc';
 import { IAdviceMatcher } from './IAdviceMatcher';
 import { AdviceMetadata } from './metadata/meta';
 import { IPointcut } from './joinpoints/IPointcut';

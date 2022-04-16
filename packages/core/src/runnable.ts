@@ -56,8 +56,8 @@ export abstract class RunnableRef<T = any> implements Runnable, Destroyable, OnD
      */
     abstract run(): any;
     /**
-    * is destroyed or not.
-    */
+     * is destroyed or not.
+     */
     abstract get destroyed(): boolean;
     /**
      * Destroys the runnable instance and all of the data structures associated with it.

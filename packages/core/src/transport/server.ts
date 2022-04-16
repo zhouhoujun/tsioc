@@ -3,7 +3,7 @@ import { Logger, Log } from '@tsdi/logs';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
 import { Startup } from '../startup';
-import { Protocol, RequestBase, WritableResponse } from './packet';
+import { Protocol, RequestBase, ServerResponse } from './packet';
 import { Endpoint, Middleware, MiddlewareFn } from './endpoint';
 
 /**
@@ -11,11 +11,11 @@ import { Endpoint, Middleware, MiddlewareFn } from './endpoint';
  */
 @Abstract()
 @Runner('startup')
-export abstract class TransportServer<TRequest extends RequestBase, TResponse extends WritableResponse> implements Startup, OnDispose {
+export abstract class TransportServer<TRequest extends RequestBase, TResponse extends ServerResponse> implements Startup, OnDispose {
 
-    protected _befores: Middleware<TRequest, WritableResponse>[] = [];
-    protected _afters: Middleware<TRequest, WritableResponse>[] = [];
-    protected _finalizer: Middleware<TRequest, WritableResponse>[] = [];
+    protected _befores: Middleware<TRequest, TResponse>[] = [];
+    protected _afters: Middleware<TRequest, TResponse>[] = [];
+    protected _finalizer: Middleware<TRequest, TResponse>[] = [];
 
     @Log()
     protected readonly logger!: Logger;
@@ -87,7 +87,7 @@ export const SERVEROPTION = tokenId<ServerOption>('SERVEROPTION');
  * server abstract factory.
  */
 @Abstract()
-export abstract class ServerFactory<TRequest extends RequestBase, TResponse extends WritableResponse> {
+export abstract class ServerFactory<TRequest extends RequestBase, TResponse extends ServerResponse> {
     /**
      * create by options.
      * @param options 

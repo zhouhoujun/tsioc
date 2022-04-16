@@ -32,9 +32,8 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
     constructor(readonly injector: ModuleRef, options: InvokeArguments = EMPTY_OBJ) {
         super(injector, options);
         const args = injector.get(ApplicationArguments);
-        if (args) {
-            this._args = args;
-            options.arguments && lang.forIn(options.arguments, (v, k) => this.setArgument(k, v));
+        if (args && options.arguments !== args) {
+            this._args = options.arguments ? { ...options.arguments, ...args } : args;
         }
         this._multicaster = injector.get(ApplicationEventMulticaster);
         if (!this._multicaster) {
