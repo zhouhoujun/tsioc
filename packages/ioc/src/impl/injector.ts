@@ -32,6 +32,7 @@ import { DEFAULT_RESOLVERS } from '../resolver';
 export class DefaultInjector extends Injector {
 
     protected _plat?: Platform;
+    protected isStatic?: boolean;
     /**
      * factories.
      *
@@ -300,7 +301,7 @@ export class DefaultInjector extends Injector {
 
     protected tryResolve(token: Token, record: FactoryRecord | undefined, platform: Platform, parent: Injector | undefined,
         context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, lifecycle?: LifecycleHooks) {
-        return tryResolveToken(token, record, this.records, platform, parent, context, notFoundValue, flags, lifecycle);
+        return tryResolveToken(token, record, this.records, platform, parent, context, notFoundValue, flags, lifecycle, this.isStatic);
     }
 
     resolve<T>(option: ResolveOption<T>): T;
@@ -507,11 +508,7 @@ export class DefaultInjector extends Injector {
  * static injector.
  */
 export class StaticInjector extends DefaultInjector {
-
-    protected override tryResolve(token: Token, record: FactoryRecord | undefined, platform: Platform, parent: Injector | undefined,
-        context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, lifecycle: LifecycleHooks) {
-        return tryResolveToken(token, record, this.records, platform, parent, context, notFoundValue, flags, lifecycle, true);
-    }
+    protected isStatic = true;
 }
 
 const platformAlias = [Injector, INJECTOR, Container, CONTAINER];

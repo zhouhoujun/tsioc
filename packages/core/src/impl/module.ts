@@ -31,9 +31,10 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     lifecycle!: ModuleLifecycleHooks;
 
     constructor(moduleType: ModuleReflect, providers: ProviderType[] | undefined, readonly parent: Injector,
-        readonly scope?: InjectorScope, deps?: (Modules | ModuleWithProviders)[]) {
+        readonly scope?: InjectorScope, deps?: (Modules | ModuleWithProviders)[], isStatic?: boolean) {
         super(undefined, parent, scope ?? moduleType.type as Type);
         const dedupStack: Type[] = [];
+        this.isStatic = isStatic;
         this._typeRefl = moduleType;
         this._type = moduleType.type as Type;
         this.inject(
@@ -246,7 +247,7 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
     }
 
     create(parent: Injector, option?: ModuleOption): ModuleRef<T> {
-        return new DefaultModuleRef(this.moduleReflect, option?.providers, parent, option?.scope as InjectorScope, option?.deps);
+        return new DefaultModuleRef(this.moduleReflect, option?.providers, parent, option?.scope as InjectorScope, option?.deps, option?.isStatic);
     }
 }
 

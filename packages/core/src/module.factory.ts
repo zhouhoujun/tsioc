@@ -18,6 +18,9 @@ export interface ModuleOption {
      * moduel scope.
      */
     scope?: 'root' | string;
+
+    isStatic?: boolean;
+    
 }
 
 /**
