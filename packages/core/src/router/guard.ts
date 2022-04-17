@@ -1,5 +1,5 @@
 import { Observable } from 'rxjs';
-import { RequestBase } from './packet';
+import { RequestBase } from '../transport/packet';
 
 /**
  * Route Guard.

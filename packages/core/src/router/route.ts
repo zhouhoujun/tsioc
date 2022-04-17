@@ -1,7 +1,7 @@
 import { Abstract, Destroyable, DestroyCallback, Injector, InvokeArguments, InvokeOption, OnDestroy, tokenId, Type, TypeReflect } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { CanActivate } from '../transport/guard';
 import { RequestBase, ServerResponse } from '../transport/packet';
+import { CanActivate } from './guard';
 import { RouteEndpoint, RouteMiddleware } from './endpoint';
 
 /**

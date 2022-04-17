@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { ServerResponse } from './packet';
+import { ServerResponse } from '../transport/packet';
 
 /**
  * route mapping return result. 

@@ -2,7 +2,7 @@ import { Abstract, EMPTY, isString, lang, OnDestroy, Type, TypeReflect } from '@
 import { Observable, from, throwError } from 'rxjs';
 import { map, mergeMap } from 'rxjs/operators';
 import { RequestBase, RequestMethod, promisify, ServerResponse, Redirect } from '../transport/packet';
-import { CanActivate } from '../transport/guard';
+import { CanActivate } from './guard';
 import { PipeTransform } from '../pipes/pipe';
 import { RouteEndpoint, RouteMiddleware } from './endpoint';
 import { Route, RouteFactoryResolver } from './route';

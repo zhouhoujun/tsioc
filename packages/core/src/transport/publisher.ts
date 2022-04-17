@@ -1,9 +1,9 @@
-import { Abstract, isFunction, tokenId } from '@tsdi/ioc';
+import { Abstract, isFunction } from '@tsdi/ioc';
 import { Logger, Log } from '@tsdi/logs';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
 import { Startup } from '../startup';
-import { Protocol, RequestBase, ServerResponse } from './packet';
+import { RequestBase, ServerResponse } from './packet';
 import { Endpoint, Middleware, MiddlewareFn } from './endpoint';
 
 /**

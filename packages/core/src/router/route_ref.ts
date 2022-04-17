@@ -5,8 +5,8 @@ import {
     OnDestroy, isClass, TypeReflect, OperationFactory, DestroyCallback, EMPTY_OBJ
 } from '@tsdi/ioc';
 import { from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
-import { CanActivate } from '../transport/guard';
-import { ResultValue } from '../transport/result';
+import { CanActivate } from './guard';
+import { ResultValue } from './result';
 import { Chain } from '../transport/endpoint';
 import { RequestBase, ServerResponse, TransportContext, promisify } from '../transport/packet';
 import { TransportArgumentResolver, TransportParameter } from '../transport/resolver';

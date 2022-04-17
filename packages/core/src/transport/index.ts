@@ -2,9 +2,6 @@ export * from './packet';
 export * from './uuid';
 
 export * from './endpoint';
-export * from './guard';
-export * from './result';
-
 
 export * from './resolver';
 export * from './error';

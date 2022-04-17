@@ -1,5 +1,5 @@
 import { ClassMethodDecorator, createDecorator, Type, TypeMetadata } from '@tsdi/ioc';
-import { CanActivate } from '../transport/guard';
+import { CanActivate } from '../router/guard';
 import { PipeTransform } from '../pipes/pipe';
 import { RouteMiddleware } from '../router';
 

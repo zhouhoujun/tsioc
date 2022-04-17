@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { PipeTransform } from '../../pipes/pipe';
 import { RequestMethod } from '../../transport/packet';
-import { CanActivate } from '../../transport/guard';
+import { CanActivate } from '../guard';
 import { RouteFactoryResolver } from '../route';
 import { MappingReflect, ProtocolRouteMappingMetadata, Router, RouterResolver } from '../router';
 import { HandleMetadata, HandleMessagePattern } from './meta';
