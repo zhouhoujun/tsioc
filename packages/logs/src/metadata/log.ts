@@ -1,9 +1,10 @@
 import {
     TypeMetadata, createDecorator, EMPTY_OBJ, OperationArgumentResolver, Type, isString,
-    lang, PropParamDecorator, ArgumentError, Decors, ActionTypes
+    lang, PropParamDecorator, ArgumentError, Decors, ActionTypes, getToken
 } from '@tsdi/ioc';
 import { Level } from '../Level';
-import { LoggerConfig, LoggerManager, LOGGER_MANAGER } from '../LoggerManager';
+import { LogConfigure } from '../LogConfigure';
+import { LoggerConfig, LoggerManager } from '../LoggerManager';
 import { ConfigureLoggerManager } from '../manager';
 
 
@@ -138,6 +139,20 @@ const loggerResolver = {
                 local = ' ';
             }
             throw new ArgumentError(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on LogModule in package '@tsdi/logs',  please register LogModule first. `);
+        } else if (ctx.has(LogConfigure)) {
+            const adapter = ctx.get(LogConfigure)?.adapter ?? 'console';
+            const token = isString(adapter) ? getToken(LoggerManager, adapter) : adapter;
+            if (!ctx.has(token)) {
+                let local: string;
+                if (pr.propertyKey && pr.paramName) {
+                    local = ` method ${ctx.methodName} param ${pr.paramName} of class `
+                } else if (pr.propertyKey) {
+                    local = ` field ${pr.propertyKey} of class `
+                } else {
+                    local = ' ';
+                }
+                throw new ArgumentError(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on '${token.toString()}',  please register this LoggerManager first. `);
+            }
         }
         return !!pr.logname;
     },
@@ -151,7 +166,7 @@ const loggerResolver = {
             }
             loggerManager.configure(pr.config);
         } else {
-            loggerManager = ctx.get(LOGGER_MANAGER) ?? ctx.get(ConfigureLoggerManager)
+            loggerManager = ctx.get(LoggerManager) ?? ctx.get(ConfigureLoggerManager);
         }
         const logger = loggerManager.getLogger(pr.logname);
         if (level) logger.level = level;

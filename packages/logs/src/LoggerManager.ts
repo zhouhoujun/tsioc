@@ -33,9 +33,3 @@ export abstract class LoggerManager implements LoggerFactory {
      */
     abstract getLogger(name?: string): Logger
 }
-
-
-/**
- * global default logger manager.
- */
-export const LOGGER_MANAGER = tokenId<LoggerManager>('LOGGER_MANAGER');

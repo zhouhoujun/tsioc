@@ -47,7 +47,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         injector: Injector,
         options: InvocationOption = EMPTY_OBJ) {
         super();
-        this.injector = this.createInvocationInjector(injector, options.providers);
+        this.injector = this.createInjector(injector, options.providers);
         const defsRvs = this.injector.get(DEFAULT_RESOLVERS, EMPTY);
         this.resolvers = (options.resolvers ? options.resolvers.concat(defsRvs) : defsRvs).map(r => isFunction(r) ? this.injector.get<OperationArgumentResolver>(r) : r);
         this._args = (options.arguments ?? {}) as T;
@@ -60,7 +60,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     }
 
 
-    protected createInvocationInjector(injector: Injector, providers?: ProviderType[]) {
+    protected createInjector(injector: Injector, providers?: ProviderType[]) {
         return Injector.create(providers, injector, 'invocation');
     }
 

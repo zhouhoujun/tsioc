@@ -156,7 +156,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
         return ctx.runners.run();
     }
 
-    protected async handleRunFailure(ctx: ApplicationContext, error: Error|any): Promise<void> {
+    protected async handleRunFailure(ctx: ApplicationContext, error: Error | any): Promise<void> {
         if (ctx) {
             const logger = ctx.getLogger();
             logger ? logger.error(error) : console.error(error);

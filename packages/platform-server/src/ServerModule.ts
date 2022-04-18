@@ -1,6 +1,6 @@
 import { Singleton, ModuleLoader, isString, EMPTY } from '@tsdi/ioc';
 import {
-    Module, PROCESS_ROOT, ApplicationExit, ApplicationArguments, 
+    Module, PROCESS_ROOT, ApplicationExit, ApplicationArguments,
     ApplicationContext, PLATFORM_ID, PLATFORM_SERVER_ID
 } from '@tsdi/core';
 import { runMainPath } from './toAbsolute';
@@ -130,4 +130,4 @@ export class ServerApplicationExit extends ApplicationExit {
         ...HTTP_PROVIDERS
     ]
 })
-export class ServerBootstrapModule { }
+export class ServerModule { }

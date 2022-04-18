@@ -2,7 +2,7 @@ import { ApplicationContext, Application, formatDate } from '../src';
 import { After, Before, Suite, Test } from '@tsdi/unit';
 import { ConfigureLoggerManager, ILogger, LogConfigure } from '@tsdi/logs';
 import expect = require('expect');
-import { ServerMainModule } from './demo';
+import { logConfig, ServerMainModule } from './demo';
 import * as log4js from 'log4js';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -22,7 +22,7 @@ export class ServerBootTest {
         this.ctx = await Application.run({
             module: ServerMainModule, 
             providers: [
-                { provide: LogConfigure, useValue: LogConfigure }
+                { provide: LogConfigure, useValue: logConfig }
             ]
         }); 
         const now = new Date();
@@ -44,7 +44,7 @@ export class ServerBootTest {
     @Test()
     async canWriteLogFile() {
         const msg = 'log file test';
-        this.ctx.resolve(ConfigureLoggerManager).getLogger().info(msg);
+        this.ctx.getLogger().info(msg);
         let defer = lang.defer();
         setTimeout(() => {
             expect(fs.existsSync(this.logfile)).toBeTruthy();

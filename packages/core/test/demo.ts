@@ -1,13 +1,13 @@
 import {
     Module, ConfigureService, ApplicationContext, Configuration, ComponentScan, OnDispose,
-    Runnable, Bean, HttpClientModule
+    Runnable, Bean, HttpClientModule, LoggerModule
 } from '../src';
 import { TcpModule } from '@tsdi/transport';
 import { Injectable, Inject, OnDestroy, lang, Abstract } from '@tsdi/ioc';
-import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
-import { Logger, LogConfigure, Log, LogModule } from '@tsdi/logs';
+import { Aspect, Around, Joinpoint } from '@tsdi/aop';
+import { Logger, LogConfigure, Log } from '@tsdi/logs';
 import * as net from 'net';
-import { ServerBootstrapModule, ServerLogsModule } from '@tsdi/platform-server';
+import { ServerModule, ServerLogsModule } from '@tsdi/platform-server';
 
 export class TestService {
     testFiled = 'test';
@@ -84,9 +84,7 @@ export class LoggerAspect {
 
 @Module({
     exports: [
-        AopModule,
-        LogModule,
-        TcpModule,
+        LoggerModule
     ]
 })
 export class SharedModule {
@@ -149,10 +147,10 @@ export class StatupModule { }
 
 @Module({
     imports: [
+        ServerModule,
+        ServerLogsModule,
         SharedModule,
         StatupModule,
-        ServerBootstrapModule,
-        ServerLogsModule
     ],
     providers: [
         LoggerAspect,

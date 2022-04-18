@@ -201,9 +201,10 @@ export const ComponentScan: ComponentScan = createDecorator<ComponentScanMetadat
             return next();
         }
     },
-    appendProps: (meta) => {
-        return meta;
-    }
+    // appendProps: (meta) => {
+    //     meta.singleton = true;
+    //     return meta;
+    // }
 });
 
 

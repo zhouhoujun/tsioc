@@ -46,7 +46,7 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         this.onDestroy(this._runners);
     }
 
-    protected override createInvocationInjector(injector: Injector, providers?: ProviderType[]): Injector {
+    protected override createInjector(injector: Injector, providers?: ProviderType[]): Injector {
         if (providers) injector.inject(providers);
         return injector;
     }

@@ -2,7 +2,7 @@ import { Injector, Injectable, lang, ArgumentError, MissingParameterError, token
 import { defer, lastValueFrom, Observable, of } from 'rxjs';
 import { map, mergeMap } from 'rxjs/operators';
 import expect = require('expect');
-import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module, TransportContext, HttpClientModule, Middleware, HttpClient, Chain, Endpoint, HttpErrorResponse, HttpResponseBase, RequestBase, ResponseBase, ServerResponse, RouteMiddleware } from '../src';
+import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module, TransportContext, HttpClientModule, Middleware, HttpClient, Chain, Endpoint, HttpErrorResponse, HttpResponseBase, RequestBase, ResponseBase, ServerResponse, RouteMiddleware, LoggerModule } from '../src';
 import { TcpModule } from '@tsdi/transport';
 
 
@@ -176,6 +176,7 @@ class DeviceAModule {
 
 @Module({
     imports: [
+        LoggerModule,
         TcpModule,
         HttpClientModule,
         DeviceManageModule,

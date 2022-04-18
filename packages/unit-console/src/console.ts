@@ -1,13 +1,13 @@
 import { Token, lang } from '@tsdi/ioc';
 import { Module } from '@tsdi/core';
 import { SuiteDescribe, RealtimeReporter, ICaseDescribe } from '@tsdi/unit';
-import { ServerBootstrapModule, ServerLogsModule } from '@tsdi/platform-server';
+import { ServerModule, ServerLogsModule } from '@tsdi/platform-server';
 import * as chalk from 'chalk';
 
 @Module({
     providedIn: 'root',
     imports: [
-        ServerBootstrapModule,
+        ServerModule,
         ServerLogsModule
     ]
 })

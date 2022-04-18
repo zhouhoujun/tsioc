@@ -15,5 +15,5 @@ let processRoot = global.baseURL || '.';
         { provide: PROCESS_ROOT, useValue: processRoot, asDefault: true }
     ]
 })
-export class BrowserBootstrapModule { }
+export class BrowserModule { }
 

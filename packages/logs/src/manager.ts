@@ -1,4 +1,4 @@
-import { EMPTY_OBJ, getToken, Inject, Injectable, Injector, isFunction, isString, Token, Type } from '@tsdi/ioc';
+import { ArgumentError, EMPTY_OBJ, getToken, Inject, Injectable, Injector, isFunction, isString, Token, Type } from '@tsdi/ioc';
 import { Logger } from './logger';
 import { LogConfigure } from './LogConfigure';
 import { Level, Levels } from './Level';
@@ -61,14 +61,15 @@ export class ConfigureLoggerManager implements LoggerManager {
                 token = adapter;
             }
             this._logManger = this.injector.get<LoggerManager>(token);
+            if (!this._logManger) {
+                throw new ArgumentError(`has no provider for LoggerManager ${token.toString()}.`);
+            }
             if (cfg.config) {
                 this._logManger.configure(cfg.config);
             }
-
         }
         return this._logManger;
     }
-
 
     configure(config: LoggerConfig) {
         this.logManger.configure(config);
