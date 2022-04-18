@@ -4,7 +4,7 @@ import { LogAspect } from '../src';
 
 @Singleton()
 @Aspect()
-export class DebugLogAspect extends LogAspect {
+export class DebugLog1Aspect extends LogAspect {
 
     @Around('execution(*.*)')
     logging(joinPoint: Joinpoint) {

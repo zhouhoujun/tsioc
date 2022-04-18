@@ -62,12 +62,7 @@ export class BootApplication extends Application<BootApplicationContext> {
 
         if (config.logConfig) {
             injector.import(LoggerModule.withOptions(config.logConfig, config.debug));
-            // injector.setValue(LogConfigure, config.logConfig);
         }
-        // if (config.debug) {
-        //     // make sure log module registered.
-        //     injector.register(LogModule, DebugLogAspect);
-        // }
 
         await super.prepareContext(ctx);
     }

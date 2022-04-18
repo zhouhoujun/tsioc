@@ -4,6 +4,7 @@ import * as net from 'net';
 import { ModuleA, ModuleB, ClassSevice, SocketService, StatupModule, TestService } from './demo';
 import { Application, HttpClient, LoggerModule, Router } from '../src';
 import { lastValueFrom } from 'rxjs';
+import { DebugLogAspect } from '@tsdi/logs';
 
 
 describe('di module', () => {
@@ -89,7 +90,7 @@ describe('di module', () => {
             deps: [
                 LoggerModule.withOptions(null, true),
                 ModuleA
-            ]
+            ],
         });
         let ser = ctx.injector.get(SocketService);
         expect(ser).toBeInstanceOf(SocketService);

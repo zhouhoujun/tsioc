@@ -1,7 +1,5 @@
 import { LoadType, Type } from '@tsdi/ioc';
-import { AopModule } from '@tsdi/aop';
-import { LogModule } from '@tsdi/logs';
-import { ApplicationOption, Application, Module } from '@tsdi/core';
+import { ApplicationOption, Application, Module, LoggerModule } from '@tsdi/core';
 import { UNITTESTCONFIGURE, UnitTestConfigureService } from './configure';
 import { UnitTestConfigure } from './UnitTestConfigure';
 import { UnitTestRunner } from './runner/UnitTestRunner';
@@ -13,7 +11,7 @@ import { SuiteRunner } from './runner/SuiteRunner';
 
 @Module({
    imports: [
-      LogModule
+      LoggerModule
    ],
    providers: [
       UnitTestConfigureService,

@@ -88,6 +88,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         this.assertNotDestroyed();
         let types: Type[] = [];
         const platform = this.platform();
+        const stk: Type[] = [];
         lang.deepForEach(args, ty => {
             if (isFunction(ty)) {
                 const mdref = refl.get<ModuleReflect>(ty);
@@ -98,7 +99,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
                 }
             } else if (isFunction(ty.module) && isArray(ty.providers)) {
                 types.push(ty.module);
-                this.import(ty);
+                this.processInjectorType(platform, ty, stk, this.moduleReflect);
             }
         }, v => isPlainObject(v) && !(isFunction(v.module) && isArray(v.providers)));
         return types;

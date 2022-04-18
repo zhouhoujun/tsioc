@@ -535,7 +535,7 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
         deepForEach(
             typeOrDef.providers,
             pdr => processProvider(pdr, typeOrDef.providers),
-            v => isPlainObject(v) && !v.provide
+            v => isPlainObject(v) && !v.provide //&& !(isFunction(v.module) && isArray(v.providers || v.injects))
         );
     }
     const isDuplicate = dedupStack.indexOf(type) !== -1;
@@ -563,7 +563,7 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
             deepForEach(
                 typeRef.providers,
                 pdr => processProvider(pdr, typeRef.providers),
-                v => isPlainObject(v) && !v.provide
+                v => isPlainObject(v) && !v.provide // && !(isFunction(v.module) && isArray(v.providers || v.injects))
             );
         }
     }

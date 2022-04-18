@@ -23,6 +23,7 @@ export class AopModule {
     setup(@Inject() injector: Injector) {
 
         const platform = injector.platform();
+        if(platform.hasAction(Advisor)) return;
 
         platform.setActionValue(Advisor, new Advisor(), Advisor)
             .setActionValue(ADVICE_MATCHER, new AdviceMatcher(injector), AdviceMatcher);
