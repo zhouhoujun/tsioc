@@ -131,5 +131,5 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
     if (!options.fun && isFunction(obj)) {
         return 'Function';
     }
-    return `${obj}`;
+    return `${obj?.toString()}`;
 }

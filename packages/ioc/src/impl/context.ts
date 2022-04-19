@@ -47,7 +47,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         injector: Injector,
         options: InvocationOption = EMPTY_OBJ) {
         super();
-        this.parent = options.parent ?? injector.get(InvocationContext);
+        this.parent = options.parent;
         this.injector = this.createInjector(injector, options.providers);
         const defsRvs = this.injector.get(DEFAULT_RESOLVERS, EMPTY);
         this.resolvers = (options.resolvers ? options.resolvers.concat(defsRvs) : defsRvs).map(r => isFunction(r) ? this.injector.get<OperationArgumentResolver>(r) : r);
@@ -72,12 +72,12 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     }
 
     /**
-     * add reference resolver.
-     * @param resolvers the list instance of {@link Injector} or {@link InvocationContext}.
+     * add reference contexts.
+     * @param contexts the list instance of {@link Injector} or {@link InvocationContext}.
      */
-    addRef(...resolvers: InvocationContext[]) {
-        resolvers.forEach(j => {
-            if (j !== this && this.parent !== this && this._refs.indexOf(j) < 0) {
+    addRef(...contexts: InvocationContext[]) {
+        contexts.forEach(j => {
+            if (!this.hasRef(j)) {
                 this._refs.push(j);
             }
         });
@@ -85,10 +85,15 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     /**
      * remove reference resolver.
-     * @param resolver instance of {@link Injector} or {@link InvocationContext}.
+     * @param context instance of {@link InvocationContext}.
      */
-    removeRef(resolver: Injector | InvocationContext) {
-        remove(this._refs, resolver);
+    removeRef(context: InvocationContext) {
+        remove(this._refs, context);
+    }
+
+    hasRef(ctx: InvocationContext): boolean {
+        if(ctx === this && this._refs.indexOf(ctx) >= 0) return true;
+        return this.parent?.hasRef(ctx) === true;
     }
 
     /**
@@ -111,8 +116,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     has(token: Token, flags?: InjectFlags): boolean {
         if (this.isSelf(token)) return true;
         return this.injector.has(token, flags)
-            || this._refs.some(i => i.has(token, flags));
-            // || (flags != InjectFlags.Self && this.parent?.has(token, flags) === true);
+            || this._refs.some(i => i.has(token, flags))
+            || (flags != InjectFlags.Self && this.parent?.has(token, flags) === true);
     }
 
     /**
@@ -140,8 +145,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
             context = contextOrFlag ?? this;
         }
         return this.injector.get(token, context, flags, null)
-            ?? this.getFormRef(token, context, flags) as T;
-            // ?? (flags != InjectFlags.Self ? this.parent?.get(token, context, flags) : null) as T;
+            ?? this.getFormRef(token, context, flags)
+            ?? (flags != InjectFlags.Self ? this.parent?.get(token, context, flags) : null) as T;
     }
 
     protected getFormRef<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags): T | undefined {
@@ -158,20 +163,20 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * has value to context
      * @param token the token to check has value.
      */
-    hasValue<T>(token: Token): boolean {
+    hasValue<T>(token: Token, flags?: InjectFlags): boolean {
         if (this.isSelf(token)) return true;
-        return this._values.has(token) || this._refs.some(c => c.hasValue(token));
-        // || this.parent?.hasValue(token) === true;
+        return this._values.has(token) || this._refs.some(c => c.hasValue(token))
+        || (flags != InjectFlags.Self && this.parent?.hasValue(token, flags) === true);
     }
 
     /**
      * get value to context
      * @param token the token to get value.
      */
-    getValue<T>(token: Token<T>): T {
+    getValue<T>(token: Token<T>, flags?: InjectFlags): T {
         if (this.isSelf(token)) return this as any;
-        return this._values.get(token) ?? this.getRefValue(token);
-        // ?? this.parent?.getValue(token);
+        return this._values.get(token) ?? this.getRefValue(token)
+        ?? (flags != InjectFlags.Self? this.parent?.getValue(token) : null);
     }
 
     protected getRefValue(token: Token) {
@@ -264,10 +269,10 @@ export const BASE_RESOLVERS: OperationArgumentResolver[] = [
         (parameter, ctx) => isDefined(parameter.provider),
         {
             canResolve(parameter, ctx) {
-                return ctx.hasValue(parameter.provider!);
+                return ctx.hasValue(parameter.provider!, parameter.flags);
             },
             resolve(parameter, ctx) {
-                return ctx.getValue<any>(parameter.provider!);
+                return ctx.getValue<any>(parameter.provider!, parameter.flags);
             }
         },
         {
@@ -296,10 +301,10 @@ export const BASE_RESOLVERS: OperationArgumentResolver[] = [
         (parameter, ctx) => isDefined(parameter.paramName),
         {
             canResolve(parameter, ctx) {
-                return ctx.hasValue(parameter.paramName!);
+                return ctx.hasValue(parameter.paramName!, parameter.flags);
             },
             resolve(parameter, ctx) {
-                return ctx.getValue(parameter.paramName!) as any;
+                return ctx.getValue(parameter.paramName!, parameter.flags) as any;
             }
         },
         {
@@ -315,10 +320,10 @@ export const BASE_RESOLVERS: OperationArgumentResolver[] = [
         (parameter, ctx) => isDefined(parameter.type),
         {
             canResolve(parameter, ctx) {
-                return ctx.hasValue(parameter.type!);
+                return ctx.hasValue(parameter.type!, parameter.flags);
             },
             resolve(parameter, ctx) {
-                return ctx.getValue<any>(parameter.type!);
+                return ctx.getValue<any>(parameter.type!, parameter.flags);
             }
         },
         {

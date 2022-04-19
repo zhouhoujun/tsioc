@@ -34,14 +34,19 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
     abstract get methodName(): string | undefined;
     /**
      * add reference resolver.
-     * @param resolvers the list instance of {@link Injector} or {@link InvocationContext}.
+     * @param resolvers the list instance of {@link InvocationContext}.
      */
     abstract addRef(...resolvers: InvocationContext[]): void;
     /**
      * remove reference resolver.
-     * @param resolver instance of {@link Injector} or {@link InvocationContext}.
+     * @param resolver instance of {@link InvocationContext}.
      */
-    abstract removeRef(resolver: Injector | InvocationContext): void;
+    abstract removeRef(resolver: InvocationContext): void;
+    /**
+     * has ref or not.
+     * @param ctx 
+     */
+    abstract hasRef(ctx: InvocationContext): boolean;
     /**
      * the invocation arguments.
      */
@@ -72,12 +77,12 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
      * has value to context
      * @param token the token to check has value.
      */
-    abstract hasValue<T>(token: Token): boolean;
+    abstract hasValue<T>(token: Token, flags?: InjectFlags): boolean;
     /**
      * get value to context
      * @param token the token to get value.
      */
-    abstract getValue<T>(token: Token<T>): T;
+    abstract getValue<T>(token: Token<T>, flags?: InjectFlags): T;
     /**
      * set value.
      * @param token token
