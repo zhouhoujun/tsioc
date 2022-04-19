@@ -11,16 +11,23 @@ export interface ModuleOption {
      */
     providers?: ProviderType[];
     /**
-     * dependence types.
+     * dependence modules. register before module injector init.
      */
     deps?: ModuleType[];
+    /**
+     * register modules after module injector inited.
+     */
+    uses?: ModuleType[];
     /**
      * moduel scope.
      */
     scope?: 'root' | string;
 
+    /**
+     * is static or not.
+     */
     isStatic?: boolean;
-    
+
 }
 
 /**

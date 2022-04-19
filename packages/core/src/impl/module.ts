@@ -1,9 +1,9 @@
 
 import {
     DefaultInjector, Injector, InjectorScope, ModuleWithProviders, refl, isFunction,
-    Platform, ModuleReflect, Modules, processInjectorType, ProviderType, Token, Type, lang,
+    Platform, ModuleReflect, processInjectorType, Token, Type, lang,
     LifecycleHooksResolver, LifecycleHooks, DestroyLifecycleHooks, OperationFactoryResolver,
-    DefaultOperationFactoryResolver, isPlainObject, isArray
+    DefaultOperationFactoryResolver, isPlainObject, isArray, EMPTY_OBJ
 } from '@tsdi/ioc';
 import { Subscription } from 'rxjs';
 import { ApplicationEventMulticaster } from '../events';
@@ -30,11 +30,10 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
     lifecycle!: ModuleLifecycleHooks;
 
-    constructor(moduleType: ModuleReflect, providers: ProviderType[] | undefined, readonly parent: Injector,
-        readonly scope?: InjectorScope, deps?: (Modules | ModuleWithProviders)[], isStatic?: boolean) {
-        super(undefined, parent, scope ?? moduleType.type as Type);
+    constructor(moduleType: ModuleReflect, parent: Injector, option: ModuleOption = EMPTY_OBJ) {
+        super(undefined, parent, option?.scope as InjectorScope ?? moduleType.type as Type);
         const dedupStack: Type[] = [];
-        this.isStatic = isStatic;
+        this.isStatic = option.isStatic;
         this._typeRefl = moduleType;
         this._type = moduleType.type as Type;
         this.inject(
@@ -45,9 +44,10 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         this.setValue(ModuleRef, this);
         const platfrom = this.platform();
         platfrom.modules.set(this._type, this);
-        deps && this.use(deps);
-        providers && this.inject(providers);
+        option.deps && this.use(option.deps);
+        option.providers && this.inject(option.providers);
         this.processInjectorType(platfrom, this._type, dedupStack, this.moduleReflect);
+        option.uses && this.use(option.uses);
         this._instance = this.get(this._type);
     }
 
@@ -248,7 +248,7 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
     }
 
     create(parent: Injector, option?: ModuleOption): ModuleRef<T> {
-        return new DefaultModuleRef(this.moduleReflect, option?.providers, parent, option?.scope as InjectorScope, option?.deps, option?.isStatic);
+        return new DefaultModuleRef(this.moduleReflect, parent, option);
     }
 }
 
