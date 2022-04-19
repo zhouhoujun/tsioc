@@ -387,7 +387,7 @@ export class DefaultRouteFactory<T = any> extends RouteFactory<T> {
     create(injector: Injector, option?: RouteOption): RouteRef<T> {
         const factory = injector.get(OperationFactoryResolver).resolve(this.reflect, injector, option);
         if (option?.prefix) {
-            factory.context.setArgument('prefix', option?.prefix);
+            factory.context.setValue('prefix', option?.prefix);
         }
         return this.routeRef = new RouteMappingRef(factory, option?.prefix);
     }

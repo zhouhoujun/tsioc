@@ -1,7 +1,7 @@
 import { ClassType, Type } from '../types';
 import { Destroyable, OnDestroy } from '../destroy';
-import { remove } from '../utils/lang';
-import { EMPTY, EMPTY_OBJ, isDefined, isFunction, isNumber, isPrimitiveType, isString } from '../utils/chk';
+import { forIn, remove } from '../utils/lang';
+import { EMPTY, EMPTY_OBJ, isDefined, isFunction, isNumber, isPrimitiveType } from '../utils/chk';
 import { InjectFlags, Token } from '../tokens';
 import { Injector, isInjector } from '../injector';
 import { OperationArgumentResolver, Parameter, composeResolver, DEFAULT_RESOLVERS } from '../resolver';
@@ -50,8 +50,15 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         this.injector = this.createInjector(injector, options.providers);
         const defsRvs = this.injector.get(DEFAULT_RESOLVERS, EMPTY);
         this.resolvers = (options.resolvers ? options.resolvers.concat(defsRvs) : defsRvs).map(r => isFunction(r) ? this.injector.get<OperationArgumentResolver>(r) : r);
-        this._args = (options.arguments ?? {}) as T;
+
         this._values = new Map(options.values);
+        this._args = options.arguments;
+        if (this._args) {
+            forIn(this._args, (v, k) => {
+                this._values.set(k, v);
+            });
+        }
+
         this.parent = options.parent ?? injector.get(InvocationContext);
         this.targetType = options.targetType;
         this.methodName = options.methodName;
@@ -89,15 +96,6 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      */
     get arguments(): T {
         return this._args;
-    }
-
-    /**
-     * set argument.
-     * @param name 
-     * @param value 
-     */
-    setArgument(name: string, value: any): void {
-        (this._args as any)[name] = value;
     }
 
     protected isSelf(token: Token) {
@@ -162,8 +160,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      */
     hasValue<T>(token: Token): boolean {
         if (this.isSelf(token)) return true;
-        return this.hasArg(token)
-            || this._values.has(token)
+        return this._values.has(token)
             || this._refs.some(c => c.hasValue(token))
             || this.parent?.hasValue(token) === true;
     }
@@ -174,18 +171,9 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      */
     getValue<T>(token: Token<T>): T {
         if (this.isSelf(token)) return this as any;
-        return this.getArg(token)
-            ?? this._values.get(token)
+        return this._values.get(token)
             ?? this.getRefValue(token)
             ?? this.parent?.getValue(token);
-    }
-
-    protected hasArg(token: Token) {
-        return isString(token) ? isDefined((this._args as any)[token]) : false;
-    }
-
-    protected getArg(token: Token) {
-        return isString(token) ? (this._args as any)[token] : null;
     }
 
     protected getRefValue(token: Token) {

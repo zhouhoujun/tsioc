@@ -166,25 +166,25 @@ export class ProceedingScope extends IocActions<Joinpoint> implements ActionSetu
         }
         const metadata = advicer.advice as AroundMetadata;
         if (!isNil(joinPoint.args) && metadata.args) {
-            joinPoint.setArgument(metadata.args, joinPoint.args);
+            joinPoint.setValue(metadata.args, joinPoint.args);
         }
 
         if (metadata.annotationArgName) {
             if (metadata.annotationName) {
                 let d: string = metadata.annotationName;
                 d = d ? (aExp.test(d) ? d : `@${d}`) : '';
-                joinPoint.setArgument(metadata.annotationArgName, joinPoint.annotations ? joinPoint.annotations.filter(v => v && v.decor == d).map(d => d.metadata) : []);
+                joinPoint.setValue(metadata.annotationArgName, joinPoint.annotations ? joinPoint.annotations.filter(v => v && v.decor == d).map(d => d.metadata) : []);
             } else {
-                joinPoint.setArgument(metadata.annotationArgName, joinPoint.annotations?.map(d => d.metadata) ?? []);
+                joinPoint.setValue(metadata.annotationArgName, joinPoint.annotations?.map(d => d.metadata) ?? []);
             }
         }
 
         if (!isNil(joinPoint.returning) && metadata.returning) {
-            joinPoint.setArgument(metadata.returning, joinPoint.returning);
+            joinPoint.setValue(metadata.returning, joinPoint.returning);
         }
 
         if (joinPoint.throwing && metadata.throwing) {
-            joinPoint.setArgument(metadata.throwing, joinPoint.throwing);
+            joinPoint.setValue(metadata.throwing, joinPoint.throwing);
         }
 
         const context = advicer.aspect.context;

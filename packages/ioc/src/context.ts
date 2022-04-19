@@ -47,12 +47,6 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
      */
     abstract get arguments(): T;
     /**
-     * set argument.
-     * @param name 
-     * @param value 
-     */
-    abstract setArgument(name: string, value: any): void;
-    /**
      * has token in the context or not.
      * @param token the token to check.
      * @param flags inject flags, type of {@link InjectFlags}.
