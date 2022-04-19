@@ -1,13 +1,13 @@
 import {
-    Module, Message, ConfigureService, ApplicationContext, Configuration, ComponentScan, OnDispose,
-    Runnable, Middlewares, Bean, HttpClientModule
+    Module, ConfigureService, ApplicationContext, Configuration, ComponentScan, OnDispose,
+    Runnable, Bean, HttpClientModule, Handle
 } from '@tsdi/core';
 import { Injectable, Inject, OnDestroy, lang } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
-import { ILogger, LogConfigure, Logger, LogModule } from '@tsdi/logs';
+import { ILogger, Log, LogConfigure, Logger, LogModule } from '@tsdi/logs';
 import { HttpModule } from '@tsdi/transport';
 import * as net from 'net';
-import { ServerBootstrapModule, ServerLogsModule } from '@tsdi/platform-server';
+import { ServerModule, ServerLogsModule } from '@tsdi/platform-server';
 import { ApplicationConfiguration, Settings } from '../src';
 
 export class TestService {
@@ -47,7 +47,7 @@ export class ModuleA {
 @Injectable()
 export class ClassSevice implements Runnable {
 
-    @Logger() logger!: ILogger;
+    @Log() logger!: Logger;
 
     @Inject('mark', { defaultValue: '' })
     mark!: string;
@@ -82,8 +82,8 @@ export class LoggerAspect {
     }
 }
 
-@Message()
-export class SubMessageQueue extends Middlewares {
+@Handle('/decvice')
+export class SubMessageQueue extends Middleware {
 
 }
 
@@ -118,7 +118,7 @@ export class ModuleB { }
 @ComponentScan()
 export class SocketService implements ConfigureService, OnDispose {
 
-    @Logger() logger!: ILogger;
+    @Log() logger!: Logger;
 
     public tcpServer!: net.Server;
     private init_times = 0;

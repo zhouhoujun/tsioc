@@ -77,7 +77,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      */
     addRef(...resolvers: InvocationContext[]) {
         resolvers.forEach(j => {
-            if (j !== this && this._refs.indexOf(j) < 0) {
+            if (j !== this && this.parent !== this && this._refs.indexOf(j) < 0) {
                 this._refs.push(j);
             }
         });
@@ -112,7 +112,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         if (this.isSelf(token)) return true;
         return this.injector.has(token, flags)
             || this._refs.some(i => i.has(token, flags));
-        //  || (flags != InjectFlags.Self && this.parent?.has(token, flags) === true);
+            // || (flags != InjectFlags.Self && this.parent?.has(token, flags) === true);
     }
 
     /**
@@ -141,7 +141,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         }
         return this.injector.get(token, context, flags, null)
             ?? this.getFormRef(token, context, flags) as T;
-        //  ?? (flags != InjectFlags.Self ? this.parent?.get(token, context, flags) : null) as T;
+            // ?? (flags != InjectFlags.Self ? this.parent?.get(token, context, flags) : null) as T;
     }
 
     protected getFormRef<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags): T | undefined {
@@ -160,8 +160,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      */
     hasValue<T>(token: Token): boolean {
         if (this.isSelf(token)) return true;
-        return this._values.has(token) || this._refs.some(c => c.hasValue(token))
-            // || this.parent?.hasValue(token) === true;
+        return this._values.has(token) || this._refs.some(c => c.hasValue(token));
+        // || this.parent?.hasValue(token) === true;
     }
 
     /**
@@ -170,8 +170,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      */
     getValue<T>(token: Token<T>): T {
         if (this.isSelf(token)) return this as any;
-        return this._values.get(token) ?? this.getRefValue(token)
-            // ?? this.parent?.getValue(token);
+        return this._values.get(token) ?? this.getRefValue(token);
+        // ?? this.parent?.getValue(token);
     }
 
     protected getRefValue(token: Token) {
