@@ -47,6 +47,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         injector: Injector,
         options: InvocationOption = EMPTY_OBJ) {
         super();
+        this.parent = options.parent ?? injector.get(InvocationContext);
         this.injector = this.createInjector(injector, options.providers);
         const defsRvs = this.injector.get(DEFAULT_RESOLVERS, EMPTY);
         this.resolvers = (options.resolvers ? options.resolvers.concat(defsRvs) : defsRvs).map(r => isFunction(r) ? this.injector.get<OperationArgumentResolver>(r) : r);
@@ -59,7 +60,6 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
             });
         }
 
-        this.parent = options.parent ?? injector.get(InvocationContext);
         this.targetType = options.targetType;
         this.methodName = options.methodName;
         injector.onDestroy(this);
@@ -77,7 +77,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      */
     addRef(...resolvers: InvocationContext[]) {
         resolvers.forEach(j => {
-            if (this._refs.indexOf(j) < 0) {
+            if (j !== this && this._refs.indexOf(j) < 0) {
                 this._refs.push(j);
             }
         });
@@ -160,9 +160,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      */
     hasValue<T>(token: Token): boolean {
         if (this.isSelf(token)) return true;
-        return this._values.has(token)
-            || this._refs.some(c => c.hasValue(token))
-            || this.parent?.hasValue(token) === true;
+        return this._values.has(token) || this._refs.some(c => c.hasValue(token))
+            // || this.parent?.hasValue(token) === true;
     }
 
     /**
@@ -171,9 +170,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      */
     getValue<T>(token: Token<T>): T {
         if (this.isSelf(token)) return this as any;
-        return this._values.get(token)
-            ?? this.getRefValue(token)
-            ?? this.parent?.getValue(token);
+        return this._values.get(token) ?? this.getRefValue(token)
+            // ?? this.parent?.getValue(token);
     }
 
     protected getRefValue(token: Token) {

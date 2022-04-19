@@ -1,13 +1,13 @@
-import { ApplicationContext, Application, formatDate } from '../src';
-import { After, Before, Suite, Test } from '@tsdi/unit';
+import { isString, lang } from '@tsdi/ioc';
 import { ConfigureLoggerManager, ILogger, LogConfigure } from '@tsdi/logs';
+import { After, Before, Suite, Test } from '@tsdi/unit';
 import expect = require('expect');
+import { ApplicationContext, Application, formatDate } from '../src';
 import { logConfig, ServerMainModule } from './demo';
 import * as log4js from 'log4js';
 import * as fs from 'fs';
 import * as path from 'path';
 const del = require('del');
-import { isString, lang } from '@tsdi/ioc';
 
 const logdir = path.join(__dirname, '../log-caches')
 

@@ -31,10 +31,10 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
             const providers = (target.platformProviders && target.platformProviders.length) ? [...this.getDefaultProviders(), ...target.platformProviders] : this.getDefaultProviders();
             target.deps = target.deps?.length ? [...this.getDeps(), ...target.deps] : this.getDeps();
             target.scope = 'root';
-            target.isStatic = true;
+            // target.isStatic = true;
             this.root = this.createInjector(providers, target);
         } else {
-            const option = { module: target, deps: this.getDeps(), scope: 'root', isStatic: true };
+            const option = { module: target, deps: this.getDeps(), scope: 'root' }; //, isStatic: true };
             this.root = this.createInjector(this.getDefaultProviders(), option);
         }
         this.initRoot();

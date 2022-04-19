@@ -224,7 +224,8 @@ describe('app message queue', () => {
         let device, aState, bState;
 
         const defer = lang.defer();
-        const client = ctx.resolve(HttpClient);
+        let client = ctx.resolve(HttpClient);
+  
         client.request<any>('POST', '/hdevice', { observe: 'response', body: { type: 'startup' } })
             .subscribe(rep => {
                 device = rep.body['device'];
