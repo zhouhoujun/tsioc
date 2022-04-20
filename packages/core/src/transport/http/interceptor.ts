@@ -1,5 +1,6 @@
-import { Injectable, InvocationContext, tokenId } from '@tsdi/ioc';
+import { Injectable, Injector, InvocationContext, tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
+import { ApplicationContext } from '../../context';
 import { Middleware, MiddlewareEndpoint } from '../endpoint';
 import { HttpBackend, HttpHandler } from './handler';
 import { HttpRequest } from './request';
@@ -37,11 +38,11 @@ export const HTTP_INTERCEPTORS = tokenId<HttpInterceptor[]>('HTTP_INTERCEPTORS')
 export class HttpInterceptingHandler implements HttpHandler {
     private chain!: HttpHandler;
 
-    constructor(private backend: HttpBackend, private context: InvocationContext) { }
+    constructor(private backend: HttpBackend, private injector: Injector) { }
 
     handle(req: HttpRequest): Observable<HttpEvent> {
         if (!this.chain) {
-            const interceptors = this.context.resolve(HTTP_INTERCEPTORS);
+            const interceptors = this.injector.get(HTTP_INTERCEPTORS);
             this.chain = interceptors.reduceRight(
                 (next, interceptor) => new MiddlewareEndpoint(next, interceptor), this.backend);
         }

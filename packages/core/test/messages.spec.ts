@@ -178,9 +178,9 @@ class DeviceAModule {
 @Module({
     imports: [
         LoggerModule,
-        ServerModule,
         TcpModule,
         HttpClientModule,
+        ServerModule,
         DeviceManageModule,
         DeviceAModule
     ],

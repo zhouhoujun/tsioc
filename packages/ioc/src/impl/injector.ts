@@ -751,7 +751,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                     isStatic));
             }
         }
-        if (context) {
+        if (context && rd.fn !==IDENT && rd.fn !== MUTIL) {
             deps.push(context);
         }
         switch (rd.fnType) {

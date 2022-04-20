@@ -1,12 +1,12 @@
 import { Singleton, ModuleLoader, isString, EMPTY } from '@tsdi/ioc';
 import {
     Module, PROCESS_ROOT, ApplicationExit, ApplicationArguments,
-    ApplicationContext, PLATFORM_ID, PLATFORM_SERVER_ID
+    ApplicationContext, PLATFORM_ID, PLATFORM_SERVER_ID, DOCUMENT, HttpBackend
 } from '@tsdi/core';
 import { runMainPath } from './toAbsolute';
 import { NodeModuleLoader } from './NodeModuleLoader';
 import { HTTP_PROVIDERS } from './xhr';
-
+import * as domino from 'domino';
 
 const signls = [
     'SIGHUP',
@@ -126,6 +126,7 @@ export class ServerApplicationExit extends ApplicationExit {
         { provide: ApplicationArguments, useValue: new ServerApplicationArguments(process.env, process.argv.slice(2)) },
         { provide: PROCESS_ROOT, useValue: runMainPath(), asDefault: true },
         { provide: ModuleLoader, useValue: new NodeModuleLoader() },
+        { provide: DOCUMENT, useValue: domino.createDocument() },
         { provide: ApplicationExit, useClass: ServerApplicationExit },
         ...HTTP_PROVIDERS
     ]

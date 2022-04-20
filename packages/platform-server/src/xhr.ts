@@ -1,5 +1,5 @@
 /// <reference path="./type.d.ts" />
-import { EMPTY_OBJ, Injectable, InvocationContext, ProviderType } from '@tsdi/ioc';
+import { EMPTY_OBJ, Injectable, Injector, ProviderType } from '@tsdi/ioc';
 import { HttpBackend, HttpEvent, HttpHandler, HttpInterceptingHandler, HttpRequest, SERVEROPTION, XhrFactory } from '@tsdi/core';
 import * as xhr2 from 'xhr2';
 import { Observable } from 'rxjs';
@@ -17,13 +17,13 @@ const isAbsoluteUrl = /^[a-zA-Z\-\+.]+:\/\//;
 
 export class HttpClientBackend implements HttpBackend {
 
-  constructor(private backend: HttpBackend, private context: InvocationContext) {
+  constructor(private backend: HttpBackend, private injector: Injector) {
 
   }
 
   handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
     return new Observable(observer => process.nextTick(() => {
-      const { hostname, port } = this.context.resolve(SERVEROPTION) ?? EMPTY_OBJ;
+      const { hostname, port } = this.injector.get(SERVEROPTION) ?? EMPTY_OBJ;
 
       let request: HttpRequest;
       const protocol = req.withCredentials? 'https' : 'http';
@@ -41,13 +41,13 @@ export class HttpClientBackend implements HttpBackend {
 
 }
 
-function interceptingHandler(backend: HttpBackend, context: InvocationContext) {
-  const realBackend: HttpBackend = new HttpInterceptingHandler(backend, context);
-  return new HttpClientBackend(realBackend, context);
+function interceptingHandler(backend: HttpBackend, injector: Injector) {
+  const realBackend: HttpBackend = new HttpInterceptingHandler(backend, injector);
+  return new HttpClientBackend(realBackend, injector);
 }
 
 
 export const HTTP_PROVIDERS: ProviderType[] = [
   { provide: XhrFactory, useClass: ServerXhr },
-  { provide: HttpHandler, useFactory: interceptingHandler, deps: [HttpBackend, InvocationContext] }
+  { provide: HttpHandler, useFactory: interceptingHandler, deps: [HttpBackend, Injector] }
 ];
