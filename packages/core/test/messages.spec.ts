@@ -225,17 +225,14 @@ describe('app message queue', () => {
         // const a = injector.get(DeviceQueue);
         let device, aState, bState;
 
-        const defer = lang.defer();
         let client = ctx.resolve(HttpClient);
   
-        client.request<any>('POST', '/hdevice', { observe: 'response', body: { type: 'startup' } })
-            .subscribe(rep => {
-                device = rep.body['device'];
-                aState = rep.body['deviceA_state'];
-                bState = rep.body['deviceB_state'];
-                defer.resolve()
-            });
-        await defer.promise;
+        const rep = await lastValueFrom(client.request<any>('POST', '/hdevice', { observe: 'response', body: { type: 'startup' } }));
+
+        device = rep.body['device'];
+        aState = rep.body['deviceA_state'];
+        bState = rep.body['deviceB_state'];
+
         expect(device).toBe('device next');
         expect(aState).toBe('startuped');
         expect(bState).toBe('startuped');
