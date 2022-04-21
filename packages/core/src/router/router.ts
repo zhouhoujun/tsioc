@@ -1,12 +1,13 @@
-import { Abstract, EMPTY, isString, lang, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
+import { Abstract, EMPTY, isFunction, isString, lang, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
 import { Observable, from, throwError } from 'rxjs';
 import { map, mergeMap } from 'rxjs/operators';
-import { RequestBase, RequestMethod, promisify, ServerResponse, Redirect } from '../transport/packet';
+import { RequestBase, RequestMethod, ServerResponse } from '../transport/packet';
 import { CanActivate } from './guard';
 import { PipeTransform } from '../pipes/pipe';
-import { RouteEndpoint, RouteMiddleware } from './endpoint';
 import { Route, RouteFactoryResolver } from './route';
 import { ModuleRef } from '../module.ref';
+import { Middleware, MiddlewareFn } from '../transport/endpoint';
+import { promisify, TransportContext } from '../transport';
 
 
 
@@ -15,7 +16,7 @@ import { ModuleRef } from '../module.ref';
  * abstract router.
  */
 @Abstract()
-export abstract class Router implements RouteMiddleware {
+export abstract class Router implements Middleware {
     /**
      * route prefix.
      */
@@ -23,15 +24,15 @@ export abstract class Router implements RouteMiddleware {
     /**
      * routes.
      */
-    abstract get routes(): Map<string, RouteMiddleware>;
+    abstract get routes(): Map<string, MiddlewareFn>;
     /**
      * intercept handle.
      *
      * @param {TransportContext} req request with context.
-     * @param {RouteEndpoint} next
+     * @param {() => Promise<void>} next
      * @returns {Observable<T>}
      */
-    abstract intercept(req: RequestBase, next: RouteEndpoint): Observable<ServerResponse>;
+    abstract invoke(ctx: TransportContext<any, any>, next: () => Promise<void>): Promise<void>;
     /**
      * has route or not.
      * @param route route
@@ -46,7 +47,7 @@ export abstract class Router implements RouteMiddleware {
      * use route.
      * @param route 
      */
-    abstract use(route: string, middleware: RouteMiddleware): this;
+    abstract use(route: string, middleware: Middleware | MiddlewareFn): this;
     /**
      * unuse route.
      * @param route 
@@ -68,10 +69,12 @@ export abstract class RouterResolver {
 }
 
 
-export class MappingRoute implements RouteMiddleware {
+export class MappingRoute implements Middleware {
 
-    private _guards!: CanActivate[];
+    private _guards?: CanActivate[];
     private router?: Router;
+    private _loaded?: boolean;
+    private _middleware?: Middleware;
     constructor(private route: Route) {
 
     }
@@ -80,85 +83,71 @@ export class MappingRoute implements RouteMiddleware {
         return this.route.path;
     }
 
-    intercept(req: RequestBase, next: RouteEndpoint): Observable<ServerResponse> {
-        return from(this.canActive(req))
-            .pipe(
-                mergeMap(can => {
-                    if (can) {
-                        return this.navigate(this.route, req, next);
-                    } else {
-                        return this.throwError(req, next, 403);
-                    }
-                })
-            );
-    }
+    async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
 
-    protected canActive(req: RequestBase) {
-        if (!this._guards) {
-            this._guards = this.route.guards?.map(token => req.context.resolve(token)) ?? EMPTY;
+        if (await this.canActive(ctx)) {
+            return this.navigate(this.route, ctx, next);
+        } else {
+            throw ctx.throwError(403);
         }
-        return lang.some(this._guards.map(guard => () => promisify(guard.canActivate(req))), vaild => vaild === false);
     }
 
-    protected navigate(route: Route & { router?: Router }, req: RequestBase, next: RouteEndpoint): Promise<any> | Observable<any> {
+    protected canActive(ctx: TransportContext) {
+        if (!this._guards) {
+            this._guards = this.route.guards?.map(token => ctx.resolve(token)) ?? EMPTY;
+        }
+        return lang.some(this._guards.map(guard => () => promisify(guard.canActivate(ctx))), vaild => vaild === false);
+    }
+
+    protected navigate(route: Route & { router?: Router }, ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         if (route.middleware) {
-            return route.middleware.intercept(req, next);
+            if (!this._middleware) {
+                this._middleware = ctx.get(route.middleware);
+            }
+            return this._middleware.invoke(ctx, next);
         } else if (route.redirectTo) {
-            return next.handle(req).pipe(map(resp => this.redirect(resp, route.redirectTo as string)));
+            return this.redirect(ctx, route.redirectTo);
         } else if (route.controller) {
-            return this.routeController(req, route.controller, next);
+            return this.routeController(ctx, route.controller, next);
         } else if (route.children) {
             if (!this.router) {
                 this.router = new MappingRouter(route.path);
             }
-            return this.router.intercept(req, next);
+            return this.router.invoke(ctx, next);
         } else if (route.loadChildren) {
-            return from(this.loadChildren(req, route.loadChildren, route.path))
-                .pipe(
-                    mergeMap(router => {
-                        if (router) {
-                            return router.intercept(req, next);
-                        } else {
-                            return this.throwError(req, next, 404);;
-                        }
-                    }));
+            return this.routeLoadChildren(ctx, next, route.loadChildren, route.path)
         } else {
-            return this.throwError(req, next, 404);
+            throw ctx.throwError(404);
         }
     }
 
-    protected throwError(req: RequestBase, next: RouteEndpoint, status: number): Observable<ServerResponse> {
-        const resp  = req.context.response;
-        if(resp instanceof ServerResponse) {
-            return throwError(() => resp.throwError(status));
-        }
-        return next.handle(req).pipe(mergeMap(resp => throwError(() => resp.throwError(status))));
+    protected async redirect(ctx: TransportContext, url: string, alt?: string): Promise<void> {
+        ctx.redirect(url, alt);
     }
 
-    protected redirect(resp: ServerResponse, url: string, alt?: string): ServerResponse {
-        resp.context.resolve(Redirect).redirect(resp, url, alt);
-        return resp;
-    }
-
-    protected routeController(req: RequestBase, controller: Type, next: RouteEndpoint): Observable<ServerResponse> {
-        const route = req.context.resolve(RouteFactoryResolver).resolve(controller).last();
+    protected async routeController(ctx: TransportContext, controller: Type, next: () => Promise<void>): Promise<void> {
+        const route = ctx.resolve(RouteFactoryResolver).resolve(controller).last();
         if (route) {
-            return route.intercept(req, next);
+            return route.invoke(ctx, next);
         } else {
-            return this.throwError(req, next, 404);
+            throw ctx.throwError(404);
         }
     }
 
-    protected async loadChildren(req: RequestBase, loadChildren: () => any, prefix?: string): Promise<Router | undefined> {
-        if (!this.router) {
+    protected async routeLoadChildren(ctx: TransportContext, next: () => Promise<void>, loadChildren: () => any, prefix?: string): Promise<void> {
+        if (!this.router && !this._loaded) {
             const module = await loadChildren();
-            const platform = req.context.injector.platform();
+            const platform = ctx.injector.platform();
             if (!platform.modules.has(module)) {
-                req.context.injector.get(ModuleRef).import(module);
+                ctx.injector.get(ModuleRef).import(module);
             }
             this.router = platform.modules.get(module)?.injector.get(RouterResolver).resolve(prefix);
         }
-        return this.router;
+        if (this.router) {
+            return await this.router.invoke(ctx, next);
+        } else {
+            throw ctx.throwError(404);
+        }
     }
 
 }
@@ -168,11 +157,11 @@ const endColon = /:$/;
 
 export class MappingRouter extends Router implements OnDestroy {
 
-    readonly routes: Map<string, RouteMiddleware>;
+    readonly routes: Map<string, MiddlewareFn>;
 
     constructor(readonly prefix = '') {
         super();
-        this.routes = new Map<string, RouteMiddleware>();
+        this.routes = new Map<string, MiddlewareFn>();
     }
 
     has(route: string | Route): boolean {
@@ -188,17 +177,20 @@ export class MappingRouter extends Router implements OnDestroy {
      * use route.
      * @param route 
      */
-    use(route: string, middleware: RouteMiddleware): this;
-    use(route: Route | string, middleware?: RouteMiddleware): this {
+    use(route: string, middleware: Middleware | MiddlewareFn): this;
+    use(route: Route | string, middleware?: Middleware | MiddlewareFn): this {
         if (isString(route)) {
             if (!middleware || this.has(route)) return this;
-            this.routes.set(route, middleware);
+            this.routes.set(route, isFunction(middleware) ? middleware : this.parse(middleware));
         } else {
             if (this.has(route.path)) return this;
-            this.routes.set(route.path, new MappingRoute(route));
+            this.routes.set(route.path, this.parse(new MappingRoute(route)));
         }
-
         return this;
+    }
+
+    parse(middleware: Middleware): MiddlewareFn {
+        return (ctx, next) => middleware.invoke(ctx, next);
     }
 
     unuse(route: string) {
@@ -206,24 +198,24 @@ export class MappingRouter extends Router implements OnDestroy {
         return this;
     }
 
-    intercept(ctx: RequestBase, next: RouteEndpoint): Observable<any> {
+    invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         const route = this.getRoute(ctx);
         if (route) {
-            return route.intercept(ctx, next);
+            return route(ctx, next);
         } else {
-            return next.handle(ctx);
+            return next();
         }
     }
 
-    protected getRoute(req: RequestBase): RouteMiddleware | undefined {
-        if (req.context.response?.status && req.context.response.status !== 404) return;
-        if (!req.url.startsWith(this.prefix)) return;
-        const url = req.url.replace(this.prefix, '') || '/';
+    protected getRoute(ctx: TransportContext): MiddlewareFn | undefined {
+        if (ctx.status && ctx.status !== 404) return;
+        if (!ctx.url.startsWith(this.prefix)) return;
+        const url = ctx.url.replace(this.prefix, '') || '/';
         return this.getRouteByUrl(url);
 
     }
 
-    getRouteByUrl(url: string): RouteMiddleware | undefined {
+    getRouteByUrl(url: string): MiddlewareFn | undefined {
         let route = this.routes.get(url);
         while (!route && url.lastIndexOf('/') > 1) {
             route = this.getRouteByUrl(url.slice(0, url.lastIndexOf('/')));
@@ -284,10 +276,10 @@ export interface RouteMappingMetadata {
     /**
      * middlewares for the route.
      *
-     * @type {Middleware[]}
+     * @type {(MiddlewareFn| Type<Middleware>)[]}
      * @memberof RouteMetadata
      */
-    middlewares?: RouteMiddleware[];
+    middlewares?: (MiddlewareFn | Type<Middleware>)[];
     /**
      * pipes for the route.
      */

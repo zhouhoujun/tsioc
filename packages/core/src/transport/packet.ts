@@ -1,5 +1,4 @@
-import { Abstract, Injector, InvocationContext, InvocationOption, isPromise, TARGET } from '@tsdi/ioc';
-import { isObservable, lastValueFrom, Observable } from 'rxjs';
+import { Abstract, InvocationContext } from '@tsdi/ioc';
 
 
 /**
@@ -21,44 +20,6 @@ export type HttpProtocol = 'http' | 'https';
 export type Protocol = 'tcp' | 'grpc' | 'rmq' | 'kafka' | 'redis' | 'amqp' | 'ssl' | 'msg' | HttpProtocol | MqttProtocol;
 
 
-export interface TransportOption extends InvocationOption {
-    target?: any;
-    request?: RequestBase;
-    response?: ResponseBase
-}
-
-/**
- * transport context.
- */
-@Abstract()
-export abstract class TransportContext extends InvocationContext {
-
-    get target(): any {
-        return this.getValue(TARGET);
-    }
-    /**
-     * transport request.
-     */
-    abstract request: RequestBase;
-    /**
-     * transport response.
-     */
-    abstract response: ResponseBase;
-
-    static override create(parent: Injector | InvocationContext, options?: TransportOption): TransportContext {
-        const ctx = InvocationContext.create(parent, options) as TransportContext;
-        if (options?.target) {
-            ctx.setValue(TARGET, options.target);
-        }
-        if (options?.request) {
-            ctx.request = options.request;
-        }
-        if (options?.response) {
-            ctx.response = options.response;
-        }
-        return ctx;
-    }
-}
 
 /**
  * request package.
@@ -72,7 +33,7 @@ export abstract class RequestBase<T = any> {
     /**
      * Shared and mutable context that can be used by middlewares
      */
-    abstract get context(): TransportContext;
+    abstract get context(): InvocationContext;
     /**
      * Outgoing URL
      */
@@ -279,7 +240,7 @@ export abstract class ServerResponse<T = any> extends ResponseBase<T> {
     /**
      * Shared and mutable context that can be used by middlewares
      */
-    abstract get context(): TransportContext;
+    abstract get context(): InvocationContext;
     /**
      * Set response status code, defaults to OK.
      */
@@ -305,62 +266,4 @@ export abstract class ServerResponse<T = any> extends ResponseBase<T> {
      * has sent or not.
      */
     abstract get sent(): boolean;
-    /**
-     * create error instance of {@link TransportError}.
-     * @param status transport status
-     * @param messages transport messages.
-     * @returns instance of {@link TransportError}
-     */
-    abstract throwError(status: number, message?: string): Error;
-    /**
-     * create error instance of {@link TransportError}.
-     * @param status transport status
-     * @param messages transport messages.
-     * @returns instance of {@link TransportError}
-     */
-    abstract throwError(message: string): Error;
-    /**
-     * create error instance of {@link TransportError}.
-     * @param error error 
-     * @returns instance of {@link TransportError}
-     */
-    abstract throwError(error: Error): Error;
-}
-
-
-@Abstract()
-export abstract class Redirect {
-    /**
-     * Perform a 302 redirect to `url`.
-     *
-     * The string "back" is special-cased
-     * to provide Referrer support, when Referrer
-     * is not present `alt` or "/" is used.
-     *
-     * Examples:
-     *
-     *    this.redirect('back');
-     *    this.redirect('back', '/index.html');
-     *    this.redirect('/login');
-     *    this.redirect('http://google.com');
-     *
-     * @param {String} url
-     * @param {String} [alt]
-     * @api public
-     */
-    abstract redirect(response: ServerResponse, url: string, alt?: string): void;
-}
-
-/**
- * to promise.
- * @param target 
- * @returns 
- */
-export function promisify<T>(target: T | Observable<T> | Promise<T>): Promise<T> {
-    if (isObservable(target)) {
-        return lastValueFrom(target);
-    } else if (isPromise(target)) {
-        return target;
-    }
-    return Promise.resolve(target);
 }

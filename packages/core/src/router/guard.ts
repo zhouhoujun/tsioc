@@ -1,14 +1,14 @@
 import { Observable } from 'rxjs';
-import { RequestBase } from '../transport/packet';
+import { TransportContext } from '../transport';
 
 /**
  * Route Guard.
  */
-export interface CanActivate<T extends RequestBase = RequestBase> {
+export interface CanActivate<T extends TransportContext = TransportContext> {
     /**
      * route guard.
-     * @param req request context of route.
+     * @param ctx context of route.
      * @returns can activate or not. type of boolean, Promise<boolean> or Observable<boolean>.
      */
-    canActivate(req: T): boolean | Promise<boolean> | Observable<boolean>;
+    canActivate(ctx: T): boolean | Promise<boolean> | Observable<boolean>;
 }

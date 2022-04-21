@@ -4,51 +4,51 @@ import { defer, Observable, throwError } from 'rxjs';
 import { concatMap } from 'rxjs/operators';
 import { OnDispose } from '../lifecycle';
 import { TransportError } from './error';
-import { Endpoint, Middleware, MiddlewareFn } from './endpoint';
-import { RequestBase, ResponseBase } from './packet';
+import { Chain, Endpoint, EndpointBackend, Interceptor, InterceptorFn } from './endpoint';
+
 
 /**
  * abstract transport client.
  */
 @Abstract()
-export abstract class TransportClient<TRequest extends RequestBase, TResponse extends ResponseBase, TOption = any> implements OnDispose {
-
-    protected _befores: Middleware<TRequest, TResponse>[] = [];
-    protected _afters: Middleware<TRequest, TResponse>[] = [];
-    protected _finalizer: Middleware<TRequest, TResponse>[] = [];
+export abstract class TransportClient<TRequest, TResponse, TOption = any> implements OnDispose {
 
     @Log()
     protected readonly logger!: Logger;
+    
+    protected _chain?: Endpoint<TRequest, TResponse>;
+    private _interceptors: Interceptor<TRequest, TResponse>[] = [];
     /**
-     * sets the Request that are applied to the outgoing transport request before it's invoked.
-     * @param middleware 
+     * intercept on the transport request.
+     * @param interceptor 
      */
-    useBefore(middleware: Middleware<TRequest, TResponse> | MiddlewareFn<TRequest, TResponse>): this {
-        this._befores.push(isFunction(middleware) ? { intercept: middleware } : middleware);
+    intercept(interceptor: Interceptor<TRequest, TResponse> | InterceptorFn<TRequest, TResponse>): this {
+        this._interceptors.push(isFunction(interceptor) ? { intercept: interceptor } : interceptor);
         return this;
     }
+
     /**
-     * sets the Response that are applied to the incoming
-     * transport response prior to it being decoded. This is useful for obtaining
-     * response metadata and adding onto the context prior to decoding.
-     * @param middleware 
+     * get backend endpoint.
      */
-    useAfter(middleware: Middleware<TRequest, TResponse> | MiddlewareFn<TRequest, TResponse>): this {
-        this._afters.push(isFunction(middleware) ? { intercept: middleware } : middleware);
-        return this;
+    abstract getBackend(): EndpointBackend<TRequest, TResponse>;
+    /**
+     * get interceptors.
+     * @returns 
+     */
+    protected getInterceptors(): Interceptor<TRequest, TResponse>[] {
+        return this._interceptors;
     }
+
     /**
-     * Finalizer middleware is executed at the end of every transport request. By default, no finalizer is registered.
-     * @param middleware 
+     * transport endpoint chain.
      */
-    useFinalizer(middleware: Middleware<TRequest, TResponse> | MiddlewareFn<TRequest, TResponse>): this {
-        this._finalizer.push(isFunction(middleware) ? { intercept: middleware } : middleware);
-        return this;
+    chain(): Endpoint<TRequest, TResponse> {
+        if (!this._chain) {
+            this._chain = new Chain(this.getBackend(), this.getInterceptors());
+        }
+        return this._chain;
     }
-    /**
-     * transport handler.
-     */
-    abstract getEndpoint(): Endpoint<TRequest, TResponse>;
+
     /**
      * connect.
      */
@@ -73,7 +73,7 @@ export abstract class TransportClient<TRequest extends RequestBase, TResponse ex
             await this.connect();
             return this.buildRequest(req, options);
         }).pipe(
-            concatMap((req) => this.getEndpoint().handle(req))
+            concatMap((req) => this.chain().handle(req))
         );
     }
 

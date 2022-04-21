@@ -1,4 +1,4 @@
-import { Endpoint, Middleware, MiddlewareFn, TransportServer } from '@tsdi/core';
+import { Endpoint, Interceptor, InterceptorFn, TransportServer } from '@tsdi/core';
 import { Abstract, Inject, Injectable, lang } from '@tsdi/ioc';
 import { Server, ServerOpts, ListenOptions } from 'net';
 import { TCPRequest, TCPServerResponse } from './packet';

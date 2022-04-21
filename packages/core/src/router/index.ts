@@ -1,7 +1,6 @@
 export * from './guard';
 export * from './result';
 
-export * from './endpoint';
 export * from './route';
 export * from './router';
 export * from './route_ref';

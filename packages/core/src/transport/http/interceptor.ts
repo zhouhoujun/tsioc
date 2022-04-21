@@ -1,7 +1,6 @@
-import { Injectable, Injector, InvocationContext, tokenId } from '@tsdi/ioc';
+import { Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { ApplicationContext } from '../../context';
-import { Middleware, MiddlewareEndpoint } from '../endpoint';
+import { Interceptor, InterceptorEndpoint } from '../endpoint';
 import { HttpBackend, HttpHandler } from './handler';
 import { HttpRequest } from './request';
 import { HttpEvent } from './response';
@@ -9,7 +8,7 @@ import { HttpEvent } from './response';
 /**
  * http interceptor.
  */
-export interface HttpInterceptor extends Middleware<HttpRequest, HttpEvent> {
+export interface HttpInterceptor extends Interceptor<HttpRequest, HttpEvent> {
     /**
      * the method to implemet interceptor.
      * @param req request.
@@ -44,7 +43,7 @@ export class HttpInterceptingHandler implements HttpHandler {
         if (!this.chain) {
             const interceptors = this.injector.get(HTTP_INTERCEPTORS);
             this.chain = interceptors.reduceRight(
-                (next, interceptor) => new MiddlewareEndpoint(next, interceptor), this.backend);
+                (next, interceptor) => new InterceptorEndpoint(next, interceptor), this.backend);
         }
         return this.chain.handle(req);
     }

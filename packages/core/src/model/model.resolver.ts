@@ -1,5 +1,5 @@
 import { Abstract, EMPTY, isArray, isDefined, tokenId, Type, Parameter } from '@tsdi/ioc';
-import { TransportContext } from '../transport/packet';
+import { TransportContext } from '../transport/context';
 import { composeFieldResolver, DBPropertyMetadata, MissingModelFieldError, missingPropError, ModelFieldResolver, MODEL_FIELD_RESOLVERS } from './field.resolver';
 
 

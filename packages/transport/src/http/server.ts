@@ -1,5 +1,5 @@
 import { Inject, Injectable, InvocationContext, isFunction, lang, tokenId } from '@tsdi/ioc';
-import { Chain, Endpoint, HttpEvent, Middleware, MiddlewareFn, TransportContext, TransportServer } from '@tsdi/core';
+import { Chain, Endpoint, HttpEvent, Interceptor, InterceptorFn, TransportContext, TransportServer } from '@tsdi/core';
 import { Logger } from '@tsdi/logs';
 import { fromEvent, of, race } from 'rxjs';
 import * as http from 'http';

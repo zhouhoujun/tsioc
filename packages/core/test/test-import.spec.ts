@@ -1,10 +1,10 @@
 import { ServerLogsModule } from '@tsdi/platform-server';
 import expect = require('expect');
+import { lastValueFrom, map } from 'rxjs';
 import * as net from 'net';
 import { ModuleA, ModuleB, ClassSevice, SocketService, StatupModule, TestService } from './demo';
 import { Application, HttpClient, LoggerModule, Router } from '../src';
-import { lastValueFrom } from 'rxjs';
-import { DebugLogAspect } from '@tsdi/logs';
+import { HttpModule, HttpServer } from '@tsdi/transport';
 
 
 describe('di module', () => {
@@ -22,17 +22,27 @@ describe('di module', () => {
 
 
     it('message test.', async () => {
-        let ctx = await Application.run(ModuleB);
-        let router = ctx.resolve(Router);
-        // router?.use((ctx, next) => {
-        //     console.log('ctx.pattern:', ctx.pattern);
-        //     if (ctx.pattern.startsWith('/test')) {
-        //         console.log('message queue test: ' + ctx.request.body);
-        //         ctx.body = ctx.request.query.hi;
-        //         console.log(ctx.body, ctx.request.query);
-        //     }
-        //     return next()
-        // });
+        let ctx = await Application.run({
+            module: ModuleB,
+            uses: [
+                HttpModule
+            ]
+        });
+        let server = ctx.resolve(HttpServer);
+        server.intercept((req, next) => {
+            console.log('ctx.url:', req.url);
+            if (req.url.startsWith('/test')) {
+                console.log('message queue test: ' + req.body);
+            }
+            return next.handle(req)
+                .pipe(
+                    map(resp => {
+                        console.log(resp.body, req.params);
+                        resp.body = req.params.hi;
+                        return resp;
+                    })
+                )
+        });
 
         // has no parent.
         const rep = await lastValueFrom(ctx.resolve(HttpClient).request('GET', 'test', { observe: 'response', params: { hi: 'hello' } }));
@@ -108,10 +118,10 @@ describe('di module', () => {
     it('can statup socket service in module with option', async () => {
         let ctx = await Application.run({
             module: StatupModule,
-            uses:[
+            uses: [
                 LoggerModule.withOptions(null, true),
             ],
-            deps:[
+            deps: [
                 ServerLogsModule
             ]
         });

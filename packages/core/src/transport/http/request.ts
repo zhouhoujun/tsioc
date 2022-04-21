@@ -6,8 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import { isString, type_bool, type_num, type_obj, type_undef } from '@tsdi/ioc';
-import { TransportContext } from '../packet';
+import { isString, type_bool, type_num, type_obj, type_undef, InvocationContext } from '@tsdi/ioc';
 import { HttpHeaders } from './headers';
 import { HttpParams } from './params';
 
@@ -19,7 +18,7 @@ import { HttpParams } from './params';
  */
 interface HttpRequestInit {
     headers?: HttpHeaders;
-    context?: TransportContext;
+    context?: InvocationContext;
     reportProgress?: boolean;
     params?: HttpParams;
     responseType?: 'arraybuffer' | 'blob' | 'json' | 'text';
@@ -147,11 +146,11 @@ export class HttpRequest<T = any>  {
      */
     readonly urlWithParams: string;
 
-    readonly context!: TransportContext;
+    readonly context!: InvocationContext;
 
     constructor(method: 'DELETE' | 'GET' | 'HEAD' | 'JSONP' | 'OPTIONS', url: string, init?: {
         headers?: HttpHeaders,
-        context?: TransportContext,
+        context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -159,7 +158,7 @@ export class HttpRequest<T = any>  {
     });
     constructor(method: 'POST' | 'PUT' | 'PATCH', url: string, body: T | null, init?: {
         headers?: HttpHeaders,
-        context?: TransportContext,
+        context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -167,7 +166,7 @@ export class HttpRequest<T = any>  {
     });
     constructor(method: string, url: string, body: T | null, init?: {
         headers?: HttpHeaders,
-        context?: TransportContext,
+        context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -176,7 +175,7 @@ export class HttpRequest<T = any>  {
     constructor(
         method: string, readonly url: string, third?: T | {
             headers?: HttpHeaders,
-            context?: TransportContext,
+            context?: InvocationContext,
             reportProgress?: boolean,
             params?: HttpParams,
             responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -184,7 +183,7 @@ export class HttpRequest<T = any>  {
         } | null,
         fourth?: {
             headers?: HttpHeaders,
-            context?: TransportContext,
+            context?: InvocationContext,
             reportProgress?: boolean,
             params?: HttpParams,
             responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -236,9 +235,9 @@ export class HttpRequest<T = any>  {
             this.headers = new HttpHeaders();
         }
 
-        // If no context have been passed in, construct a new TransportContext instance.
+        // If no context have been passed in, construct a new InvocationContext instance.
         // if (!this.context) {
-        //     this.context = new TransportContext();
+        //     this.context = new InvocationContext();
         // }
 
         // If no parameters have been passed in, construct a new HttpUrlEncodedParams instance.
@@ -341,7 +340,7 @@ export class HttpRequest<T = any>  {
     clone(): HttpRequest<T>;
     clone(update: {
         headers?: HttpHeaders,
-        context?: TransportContext,
+        context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -354,7 +353,7 @@ export class HttpRequest<T = any>  {
     }): HttpRequest<T>;
     clone<V>(update: {
         headers?: HttpHeaders,
-        context?: TransportContext,
+        context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -367,7 +366,7 @@ export class HttpRequest<T = any>  {
     }): HttpRequest<V>;
     clone(update: {
         headers?: HttpHeaders,
-        context?: TransportContext,
+        context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',

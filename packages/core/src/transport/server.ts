@@ -4,56 +4,70 @@ import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
 import { Startup } from '../startup';
 import { Protocol, RequestBase, ServerResponse } from './packet';
-import { Endpoint, Middleware, MiddlewareFn } from './endpoint';
+import { Chain, Endpoint, EndpointBackend, Interceptor, InterceptorFn, Middleware, MiddlewareBackend, MiddlewareFn } from './endpoint';
+import { TransportContextFactory } from './context';
 
 /**
  * abstract transport server.
  */
 @Abstract()
 @Runner('startup')
-export abstract class TransportServer<TRequest extends RequestBase, TResponse extends ServerResponse> implements Startup, OnDispose {
-
-    protected _befores: Middleware<TRequest, TResponse>[] = [];
-    protected _afters: Middleware<TRequest, TResponse>[] = [];
-    protected _finalizer: Middleware<TRequest, TResponse>[] = [];
+export abstract class TransportServer<TRequest, TResponse> implements Startup, OnDispose {
 
     @Log()
     protected readonly logger!: Logger;
+
+    protected _chain?: Endpoint<TRequest, TResponse>;
+    private _interceptors: Interceptor<TRequest, TResponse>[] = [];
+    private _middlewares: (Middleware | MiddlewareFn)[] = [];
+
+    /**
+     * context factory
+     */
+    abstract get contextFactory(): TransportContextFactory<TRequest, TResponse>;
     /**
      * startup server.
      */
     abstract startup(): Promise<void>;
     /**
-     * Before middlewares are executed on the transport request object before the
+     * intercept on the transport request.
+     * @param interceptor 
+     */
+    intercept(interceptor: Interceptor<TRequest, TResponse> | InterceptorFn<TRequest, TResponse>): this {
+        this._interceptors.push(isFunction(interceptor) ? { intercept: interceptor } : interceptor);
+        return this;
+    }
+    /**
+     * middlewares are executed on the transport request object before the
      * request is decoded.
      * @param middleware 
      */
-    useBefore(middleware: Middleware<TRequest, TResponse> | MiddlewareFn<TRequest, TResponse>): this {
-        this._befores.push(isFunction(middleware) ? { intercept: middleware } : middleware);
+    use(middleware: Middleware | MiddlewareFn): this {
+        this._middlewares.push(middleware);
         return this;
     }
+
     /**
-     * After middlewares are executed on the transport response writer after the
-     * endpoint is invoked, but before anything is written to the client.
-     * @param middleware 
+     * get backend endpoint.
      */
-    useAfter(middleware: Middleware<TRequest, TResponse> | MiddlewareFn<TRequest, TResponse>): this {
-        this._afters.push(isFunction(middleware) ? { intercept: middleware } : middleware);
-        return this;
+    abstract getBackend(): EndpointBackend<TRequest, TResponse>;
+    /**
+     * get interceptors.
+     * @returns 
+     */
+    protected getInterceptors(): Interceptor<TRequest, TResponse>[] {
+        return this._interceptors;
     }
+
     /**
-     * Finalizer is executed at the end of every transport request.
-     * By default, no finalizer is registered.
-     * @param middleware 
+     * transport endpoint chain.
      */
-    useFinalizer(middleware: Middleware<TRequest, TResponse> | MiddlewareFn<TRequest, TResponse>): this {
-        this._finalizer.push(isFunction(middleware) ? { intercept: middleware } : middleware);
-        return this;
+    chain(): Endpoint<TRequest, TResponse> {
+        if (!this._chain) {
+            this._chain = new Chain(new MiddlewareBackend(this.contextFactory, this.getBackend(), this._middlewares), this.getInterceptors());
+        }
+        return this._chain;
     }
-    /**
-     * transport handler.
-     */
-    abstract getEndpoint(): Endpoint<TRequest, TResponse>;
 
     /**
      * close server.

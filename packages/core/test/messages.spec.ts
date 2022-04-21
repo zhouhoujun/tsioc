@@ -2,8 +2,8 @@ import { Injector, Injectable, lang, ArgumentError, MissingParameterError, token
 import { defer, lastValueFrom, Observable, of } from 'rxjs';
 import { map, mergeMap } from 'rxjs/operators';
 import expect = require('expect');
-import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module, TransportContext, HttpClientModule, Middleware, HttpClient, Chain, Endpoint, HttpErrorResponse, HttpResponseBase, RequestBase, ResponseBase, ServerResponse, RouteMiddleware, LoggerModule } from '../src';
-import { TcpModule } from '@tsdi/transport';
+import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module, TransportContext, HttpClientModule, Interceptor, HttpClient, Chain, Endpoint, HttpErrorResponse, HttpResponseBase, RequestBase, ResponseBase, ServerResponse, RouteMiddleware, LoggerModule } from '../src';
+import { HttpModule, TcpModule } from '@tsdi/transport';
 import { ServerModule } from '@tsdi/platform-server';
 
 
@@ -85,7 +85,7 @@ class DeviceController {
 // }
 
 @Handle('/hdevice')
-class DeviceQueue implements Middleware<RequestBase, ServerResponse> {
+class DeviceQueue implements Interceptor<RequestBase, ServerResponse> {
 
     intercept(req: RequestBase, next: Endpoint<RequestBase, ServerResponse>): Observable<ServerResponse> {
         const ctx = req.context;
@@ -117,7 +117,7 @@ class DeviceQueue implements Middleware<RequestBase, ServerResponse> {
 
 
 @Injectable()
-class DeviceStartupHandle implements Middleware<RequestBase, ServerResponse> {
+class DeviceStartupHandle implements Interceptor<RequestBase, ServerResponse> {
 
     intercept(req: RequestBase, next: Endpoint<RequestBase, ServerResponse>): Observable<ServerResponse> {
         console.log('DeviceStartupHandle.', 'resp:', req.body.type, 'req:', req.body.type)
@@ -131,7 +131,7 @@ class DeviceStartupHandle implements Middleware<RequestBase, ServerResponse> {
 }
 
 @Injectable()
-class DeviceAStartupHandle implements Middleware<RequestBase, ServerResponse> {
+class DeviceAStartupHandle implements Interceptor<RequestBase, ServerResponse> {
 
     intercept(req: RequestBase, next: Endpoint<RequestBase, ServerResponse>): Observable<ServerResponse> {
         console.log('DeviceAStartupHandle.', 'resp:', req.body.type, 'req:', req.body.type)
@@ -178,7 +178,8 @@ class DeviceAModule {
 @Module({
     imports: [
         LoggerModule,
-        TcpModule,
+        // TcpModule,
+        HttpModule,
         HttpClientModule,
         ServerModule,
         DeviceManageModule,
@@ -222,7 +223,6 @@ describe('app message queue', () => {
 
 
     it('msg work', async () => {
-        // const a = injector.get(DeviceQueue);
         let device, aState, bState;
 
         let client = ctx.resolve(HttpClient);

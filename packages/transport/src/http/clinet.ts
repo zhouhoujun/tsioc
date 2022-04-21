@@ -1,5 +1,5 @@
 import { EMPTY_OBJ, Inject, Injectable, InvocationContext, lang, tokenId } from '@tsdi/ioc';
-import { Chain, Endpoint, Middleware, MiddlewareFn, RequestMethod, TransportClient } from '@tsdi/core';
+import { Chain, Endpoint, Interceptor, InterceptorFn, RequestMethod, TransportClient } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { Logger } from '@tsdi/logs';
 import * as http from 'http';

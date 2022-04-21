@@ -1,5 +1,5 @@
 import { hasOwn, Injectable, isString, tokenId } from '@tsdi/ioc';
-import { ApplicationContext, headers, Endpoint, HttpRequest, HttpResponse, Middleware } from '@tsdi/core';
+import { ApplicationContext, headers, Endpoint, HttpRequest, HttpResponse, Interceptor } from '@tsdi/core';
 import { Logger, LoggerFactory } from '@tsdi/logs';
 import { Observable } from 'rxjs';
 import { catchError, finalize, map, } from 'rxjs/operators'
@@ -16,7 +16,7 @@ export interface JsonMiddlewareOption {
 
 
 @Injectable()
-export class HttpEncodeJsonMiddleware implements Middleware<HttpRequest, HttpServerResponse> {
+export class HttpEncodeJsonMiddleware implements Interceptor<HttpRequest, HttpServerResponse> {
 
     private pretty: boolean;
     private spaces: number;
