@@ -4,7 +4,7 @@ import { defer, Observable, throwError } from 'rxjs';
 import { concatMap } from 'rxjs/operators';
 import { OnDispose } from '../lifecycle';
 import { TransportError } from './error';
-import { Chain, Endpoint, EndpointBackend, Interceptor, InterceptorFn } from './endpoint';
+import { InterceptorChain, Endpoint, EndpointBackend, Interceptor, InterceptorFn } from './endpoint';
 
 
 /**
@@ -44,7 +44,7 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> implem
      */
     chain(): Endpoint<TRequest, TResponse> {
         if (!this._chain) {
-            this._chain = new Chain(this.getBackend(), this.getInterceptors());
+            this._chain = new InterceptorChain(this.getBackend(), this.getInterceptors());
         }
         return this._chain;
     }

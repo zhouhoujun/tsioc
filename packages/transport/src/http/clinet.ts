@@ -1,5 +1,5 @@
 import { EMPTY_OBJ, Inject, Injectable, InvocationContext, lang, tokenId } from '@tsdi/ioc';
-import { Chain, Endpoint, Interceptor, InterceptorFn, RequestMethod, TransportClient } from '@tsdi/core';
+import { InterceptorChain, Endpoint, Interceptor, InterceptorFn, RequestMethod, TransportClient, EndpointBackend } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { Logger } from '@tsdi/logs';
 import * as http from 'http';
@@ -26,6 +26,7 @@ export const HTTP_SESSIONOPTIONS = tokenId<HttpSessionOptions>('HTTP_SESSIONOPTI
 
 @Injectable()
 export class HttpClient extends TransportClient<HttpRequest, HttpResponse> {
+    
 
     private _endpoint!: Endpoint<HttpRequest, HttpResponse>;
     private http2client?: http2.ClientHttp2Session;
@@ -36,11 +37,8 @@ export class HttpClient extends TransportClient<HttpRequest, HttpResponse> {
         super()
     }
 
-    getEndpoint(): Endpoint<HttpRequest, HttpResponse> {
-        if (!this._endpoint) {
-
-        }
-        return this._endpoint;
+    getBackend(): EndpointBackend<HttpRequest<any>, HttpResponse<any>> {
+        throw new Error('Method not implemented.');
     }
 
     async connect(): Promise<any> {

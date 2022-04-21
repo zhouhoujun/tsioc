@@ -2,7 +2,7 @@ import { Injector, Injectable, lang, ArgumentError, MissingParameterError, token
 import { defer, lastValueFrom, Observable, of } from 'rxjs';
 import { map, mergeMap } from 'rxjs/operators';
 import expect = require('expect');
-import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module, TransportContext, HttpClientModule, Interceptor, HttpClient, Chain, Endpoint, HttpErrorResponse, HttpResponseBase, RequestBase, ResponseBase, ServerResponse, RouteMiddleware, LoggerModule } from '../src';
+import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module, TransportContext, HttpClientModule, Interceptor, HttpClient, InterceptorChain, Endpoint, HttpErrorResponse, HttpResponseBase, RequestBase, ResponseBase, ServerResponse, LoggerModule, Middleware, compose, Chain } from '../src';
 import { HttpModule, TcpModule } from '@tsdi/transport';
 import { ServerModule } from '@tsdi/platform-server';
 
@@ -85,33 +85,31 @@ class DeviceController {
 // }
 
 @Handle('/hdevice')
-class DeviceQueue implements Interceptor<RequestBase, ServerResponse> {
+class DeviceQueue implements Middleware {
 
-    intercept(req: RequestBase, next: Endpoint<RequestBase, ServerResponse>): Observable<ServerResponse> {
-        const ctx = req.context;
+    async invoke(ctx: TransportContext<any, any>, next: () => Promise<void>): Promise<void> {
+
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
-        return new Chain(req => {
-            ctx.setValue('device', 'device next');
-            return next.handle(req);
-        }, ctx.resolve(DEVICE_MIDDLEWARES))
-            .handle(req)
-            .pipe(
-                mergeMap(() => next.handle(req)),
-                map(resp => {
-                    const ctx = req.context;
-                    const device = ctx.getValue('device');
-                    const deviceA_state = ctx.getValue('deviceA_state');
-                    const deviceB_state = ctx.getValue('deviceB_state');
-                    resp.body = {
-                        device,
-                        deviceA_state,
-                        deviceB_state
-                    };
-                    console.log('device sub msg done.');
-                    return resp;
-                })
-            );
+
+
+        console.log('device msg start.');
+        ctx.setValue('device', 'device data')
+        await new Chain(ctx.resolve(DEVICE_MIDDLEWARES)).invoke(ctx);
+        ctx.setValue('device', 'device next');
+
+        const device = ctx.getValue('device');
+        const deviceA_state = ctx.getValue('deviceA_state');
+        const deviceB_state = ctx.getValue('deviceB_state');
+
+        ctx.body = {
+            device,
+            deviceA_state,
+            deviceB_state
+        };
+
+        console.log('device sub msg done.');
+        return await next();
     }
 }
 
@@ -144,7 +142,7 @@ class DeviceAStartupHandle implements Interceptor<RequestBase, ServerResponse> {
     }
 }
 
-export const DEVICE_MIDDLEWARES = tokenId<RouteMiddleware[]>('DEVICE_MIDDLEWARES');
+export const DEVICE_MIDDLEWARES = tokenId<Middleware[]>('DEVICE_MIDDLEWARES');
 
 @Module({
     providers: [
@@ -226,7 +224,7 @@ describe('app message queue', () => {
         let device, aState, bState;
 
         let client = ctx.resolve(HttpClient);
-  
+
         const rep = await lastValueFrom(client.request<any>('POST', '/hdevice', { observe: 'response', body: { type: 'startup' } }));
 
         device = rep.body['device'];

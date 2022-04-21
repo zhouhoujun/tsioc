@@ -4,6 +4,7 @@ import { Stream } from 'stream';
 import { existsSync, createReadStream } from 'fs';
 import { join, isAbsolute } from 'path';
 import { HttpServerResponse } from '../response';
+import { HttpContext } from '../context';
 
 /**
  * controller method return result type of file.
@@ -53,24 +54,24 @@ export class FileResult extends ResultValue {
         super(options?.contentType || 'application/octet-stream');
     }
 
-    async sendValue(resp: HttpServerResponse) {
+    async sendValue(ctx: HttpContext) {
         let file = this.file;
         const contentType = this.contentType;
         if (this.options && this.options.filename) {
-            resp.attachment(this.options.filename, { contentType, ...this.options.disposition });
+            ctx.attachment(this.options.filename, { contentType, ...this.options.disposition });
         } else {
-            resp.contentType = contentType;
+            ctx.contentType = contentType;
         }
-        const baseURL = resp.context.get(ApplicationContext).baseURL;
+        const baseURL = ctx.get(ApplicationContext).baseURL;
         if (isString(file)) {
             let filepath = (isAbsolute(file) || !baseURL) ? file : join(baseURL, file);
             if (existsSync(filepath)) {
-                resp.body = createReadStream(filepath);
+                ctx.body = createReadStream(filepath);
             }
         } else if (file instanceof Buffer) {
-            resp.body = file;
+            ctx.body = file;
         } else if (file instanceof Stream) {
-            resp.body = file;
+            ctx.body = file;
         }
     }
 }

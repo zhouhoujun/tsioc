@@ -1,5 +1,5 @@
 import { ResultValue } from '@tsdi/core';
-import { HttpServerResponse } from '../response';
+import { HttpContext } from '../context';
 
 /**
  * EventStream Result
@@ -12,8 +12,8 @@ export class EventStreamResult extends ResultValue {
     constructor(private message: string) {
         super('text/event-stream');
     }
-    async sendValue(resp: HttpServerResponse) {
-        resp.contentType = this.contentType;
-        await resp.write(this.message);
+    async sendValue(ctx: HttpContext) {
+        ctx.contentType = this.contentType;
+        await ctx.write(this.message);
     }
 }

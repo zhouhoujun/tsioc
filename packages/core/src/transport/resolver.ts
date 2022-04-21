@@ -1,6 +1,6 @@
 import { OperationArgumentResolver, Parameter, Type } from '@tsdi/ioc';
 import { PipeTransform } from '../pipes/pipe';
-import { TransportContext } from './packet';
+import { TransportContext } from './context';
 
 /**
  * transport parameter argument of an {@link TransportArgumentResolver}.

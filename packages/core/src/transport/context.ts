@@ -1,4 +1,4 @@
-import { Abstract, Injector, InvocationContext, InvocationOption, isPromise, TARGET } from '@tsdi/ioc';
+import { Abstract, DefaultInvocationContext, Injector, InvocationContext, InvocationOption, isPromise, TARGET } from '@tsdi/ioc';
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
 
 /**
@@ -15,11 +15,17 @@ export interface TransportOption<TRequest = any, TResponse = any> extends Invoca
  * transport context.
  */
 @Abstract()
-export abstract class TransportContext<TRequest = any, TResponse = any> extends InvocationContext {
+export abstract class TransportContext<TRequest = any, TResponse = any> extends DefaultInvocationContext {
 
-    get target(): any {
-        return this.getValue(TARGET);
+    /**
+     * target server.
+     */
+    readonly target: any;
+    constructor(injector: Injector, options?: TransportOption) {
+        super(injector, options);
+        this.target = options?.target;
     }
+
     /**
      * transport request.
      */
@@ -40,7 +46,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
     /**
      * The outgoing HTTP request method.
      */
-    abstract get method(): string;
+    abstract get method(): string | undefined;
     /**
      * The request body, or `null` if one isn't set.
      *

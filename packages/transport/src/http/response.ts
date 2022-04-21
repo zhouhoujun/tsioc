@@ -53,6 +53,9 @@ export class HttpResponse<T = any> extends ResponseBase<T> implements ResponseHe
 }
 
 export class HttpServerResponse extends ServerResponse<any> implements ResponseHeader {
+    throwError(err: any): void {
+        throw new Error('Method not implemented.');
+    }
 
     protected _body: any;
     private _explicitStatus?: boolean;
@@ -416,13 +419,6 @@ export class HttpServerResponse extends ServerResponse<any> implements ResponseH
         if (this.resp instanceof http.ServerResponse) {
             this.resp.flushHeaders();
         }
-    }
-
-    throwError(status: number, message?: string): Error;
-    throwError(message: string): Error;
-    throwError(error: Error): Error;
-    throwError(status: any, message?: any): Error {
-        throw new Error('Method not implemented.');
     }
 
 }

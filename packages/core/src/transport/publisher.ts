@@ -4,7 +4,7 @@ import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
 import { Startup } from '../startup';
 import { RequestBase, ServerResponse } from './packet';
-import { Chain, Endpoint, EndpointBackend, Interceptor, InterceptorFn, Middleware, MiddlewareBackend, MiddlewareFn } from './endpoint';
+import { InterceptorChain, Endpoint, EndpointBackend, Interceptor, InterceptorFn, Middleware, MiddlewareBackend, MiddlewareFn } from './endpoint';
 import { TransportContextFactory } from './context';
 
 /**
@@ -64,7 +64,7 @@ export abstract class Publisher<TRequest extends RequestBase, TResponse extends 
      */
     chain(): Endpoint<TRequest, TResponse> {
         if (!this._chain) {
-            this._chain = new Chain(new MiddlewareBackend(this.contextFactory, this.getBackend(), this._middlewares), this.getInterceptors());
+            this._chain = new InterceptorChain(new MiddlewareBackend(this.contextFactory, this.getBackend(), this._middlewares), this.getInterceptors());
         }
         return this._chain;
     }

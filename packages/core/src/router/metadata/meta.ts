@@ -1,6 +1,6 @@
 import { PatternMetadata, Type, TypeMetadata } from '@tsdi/ioc';
 import { CanActivate } from '../guard';
-import { RouteMiddleware } from '../endpoint';
+import { Router } from '../router';
 
 export interface HandleMessagePattern {
     /**
@@ -34,19 +34,14 @@ export interface HandleMetadata extends TypeMetadata, PatternMetadata {
      */
     prefix?: string;
     /**
-     * route protocol
-     */
-    protocol?: string;
-    /**
      * route guards.
      */
     guards?: Type<CanActivate>[];
-
     /**
      * handle parent.
      * default register in root handle queue.
      */
-    parent?: Type<RouteMiddleware>;
+    parent?: Type<Router>;
 }
 
 export interface HandlesMetadata extends HandleMetadata {

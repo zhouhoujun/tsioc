@@ -88,7 +88,7 @@ export class InterceptorEndpoint<TRequest, TResponse> implements Endpoint<TReque
  * traverse them in the order they're declared. That is, the first endpoint
  * is treated as the outermost interceptor.
  */
-export class Chain<TRequest, TResponse> implements Endpoint<TRequest, TResponse> {
+export class InterceptorChain<TRequest, TResponse> implements Endpoint<TRequest, TResponse> {
 
     private chain!: Endpoint<TRequest, TResponse>;
     private backend: EndpointBackend<TRequest, TResponse>;
@@ -110,7 +110,7 @@ export class Chain<TRequest, TResponse> implements Endpoint<TRequest, TResponse>
  */
 export class MiddlewareBackend<TRequest, TResponse> implements EndpointBackend<TRequest, TResponse> {
 
-    private _middles?: MiddlewareFn[];
+    private _middleware?: MiddlewareFn;
     constructor(private factory: TransportContextFactory<TRequest, TResponse>, private backend: EndpointBackend<TRequest, TResponse>, private middlewares: (Middleware | MiddlewareFn)[]) {
 
     }
@@ -119,18 +119,43 @@ export class MiddlewareBackend<TRequest, TResponse> implements EndpointBackend<T
         return this.backend.handle(req)
             .pipe(
                 mergeMap(async resp => {
-                    if (!this._middles) {
-                        this._middles = this.middlewares.map(m => isFunction(m) ? m : (ctx, nt) => m.invoke(ctx, nt));
+                    if (!this._middleware) {
+                        this._middleware = compose(this.middlewares);
                     }
                     try {
                         const ctx = this.factory.create({ request: req, response: resp });
-                        await chain(this._middles, ctx);
+                        await this._middleware(ctx, () => ctx.destroy() as Promise<void>);
                     } catch (err) {
                         throw err;
                     }
                     return resp;
-                })
-            );
+                }));
+    }
+
+}
+
+/**
+ * compose middlewares
+ * @param middlewares 
+ */
+export function compose(middlewares: (Middleware | MiddlewareFn)[]): MiddlewareFn {
+    const middleFns = middlewares.filter(m => m).map(m => isFunction(m) ? m : ((ctx, next) => m.invoke(ctx, next)) as MiddlewareFn);
+    return (ctx, next) => chain(middleFns, ctx, next);
+}
+
+const NEXT = async () => { };
+
+export class Chain implements Middleware {
+
+    private _chainFn?: MiddlewareFn;
+    constructor(private middlewares: (Middleware | MiddlewareFn)[]) {
+
+    }
+    invoke<T extends TransportContext>(ctx: T, next?: () => Promise<void>): Promise<void> {
+        if (!this._chainFn) {
+            this._chainFn = compose(this.middlewares);
+        }
+        return this._chainFn(ctx, next ?? NEXT);
     }
 
 }

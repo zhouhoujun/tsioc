@@ -1,5 +1,5 @@
 import { Inject, Injectable, InvocationContext, isFunction, lang, tokenId } from '@tsdi/ioc';
-import { Chain, Endpoint, HttpEvent, Interceptor, InterceptorFn, TransportContext, TransportServer } from '@tsdi/core';
+import { InterceptorChain, Endpoint, HttpEvent, Interceptor, InterceptorFn, TransportContext, TransportServer, EndpointBackend, TransportContextFactory } from '@tsdi/core';
 import { Logger } from '@tsdi/logs';
 import { fromEvent, of, race } from 'rxjs';
 import * as http from 'http';
@@ -30,6 +30,7 @@ export const HTTP_SERVEROPTIONS = tokenId<HttpServerOptions>('HTTP_SERVEROPTIONS
 @Injectable()
 export class HttpServer extends TransportServer<HttpRequest, HttpServerResponse> {
 
+
     private _endpoint!: Endpoint<HttpRequest, HttpServerResponse>;
     private _server?: http2.Http2Server | http.Server | https.Server;
     constructor(
@@ -39,8 +40,12 @@ export class HttpServer extends TransportServer<HttpRequest, HttpServerResponse>
         super();
     }
 
-    getEndpoint(): Endpoint<HttpRequest, HttpServerResponse> {
-        return this._endpoint;
+    get contextFactory(): TransportContextFactory<HttpRequest<any>, HttpServerResponse> {
+        throw new Error('Method not implemented.');
+    }
+
+    getBackend(): EndpointBackend<HttpRequest<any>, HttpServerResponse> {
+        throw new Error('Method not implemented.');
     }
 
     async startup(): Promise<void> {
@@ -82,7 +87,7 @@ export class HttpServer extends TransportServer<HttpRequest, HttpServerResponse>
         const resp = new HttpServerResponse(ctx, response);
         ctx.response = resp;
 
-        this.getEndpoint().handle(req);
+        this.chain().handle(req);
     }
     protected http2RequestHandler(request: http2.Http2ServerRequest, response: http2.Http2ServerResponse) {
         const ctx = TransportContext.create(this.context, {
@@ -91,7 +96,7 @@ export class HttpServer extends TransportServer<HttpRequest, HttpServerResponse>
         const req = new HttpRequest(ctx, request);
         const resp = new HttpServerResponse(ctx, response);
         ctx.response = resp;
-        this.getEndpoint().handle(req);
+        this.chain().handle(req);
     }
 
     async close(): Promise<void> {

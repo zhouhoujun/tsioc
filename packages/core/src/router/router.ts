@@ -65,7 +65,7 @@ export abstract class RouterResolver {
      * @param protocol the router protocal. 
      * @param prefix route prefix.
      */
-    abstract resolve(protocol?: string, prefix?: string): Router;
+    abstract resolve(prefix?: string): Router;
 }
 
 

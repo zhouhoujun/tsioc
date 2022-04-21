@@ -1,10 +1,9 @@
-import { Interceptor } from '@grpc/grpc-js';
 import {
     isArray, isString, lang, Type, isRegExp, createDecorator, OperationArgumentResolver,
-    ClassMethodDecorator, createParamDecorator, ParameterMetadata, ActionTypes
+    ClassMethodDecorator, createParamDecorator, ParameterMetadata, ActionTypes, OperationFactoryResolver
 } from '@tsdi/ioc';
 import { PipeTransform } from '../../pipes/pipe';
-import { Middleware, MiddlewareFn } from '../../transport';
+import { Middleware, MiddlewareFn } from '../../transport/endpoint';
 import { RequestMethod } from '../../transport/packet';
 import { CanActivate } from '../guard';
 import { RouteFactoryResolver } from '../route';
@@ -12,7 +11,7 @@ import { MappingReflect, ProtocolRouteMappingMetadata, Router, RouterResolver } 
 import { HandleMetadata, HandleMessagePattern } from './meta';
 
 
-export type HandleDecorator = <TFunction extends Type<Interceptor|Middleware>>(target: TFunction) => TFunction | void;
+export type HandleDecorator = <TFunction extends Type<Middleware>>(target: TFunction) => TFunction | void;
 
 
 /**
@@ -119,24 +118,22 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
         afterAnnoation: (ctx, next) => {
             const reflect = ctx.reflect;
             const metadata = reflect.class.getMetadata<HandleMetadata>(ctx.currDecor);
-            const { route, protocol, parent } = metadata;
+            const { route, prefix, parent } = metadata;
             const injector = ctx.injector;
 
             if (!isString(route) && !parent) {
                 return next();
             }
 
-            let queue: Middleware | undefined;
-            if (isString(route) || reflect.class.isExtends(Router)) {
-                queue = parent ? (injector.get(parent) ?? injector.get(RouterResolver).resolve(protocol)) : injector.get(RouterResolver).resolve(protocol);
-                if (!(queue instanceof Router)) {
-                    throw new Error(lang.getClassName(queue) + 'is not message router!');
+            if (isString(route)) {
+                const router = parent? injector.get(parent) : injector.get(RouterResolver).resolve(prefix);
+                if (!(router instanceof Router)) {
+                    throw new Error(lang.getClassName(router) + 'is not message router!');
                 }
-                const router = queue as Router;
-                const routeRef = injector.get(RouteFactoryResolver).resolve(reflect).create(injector, { prefix: router.prefix });
-                const path = routeRef.path;
-                routeRef.onDestroy(() => router.unuse(path));
-                router.use(path, routeRef);
+                const factory = injector.get(OperationFactoryResolver).resolve(reflect, injector);
+                injector.onDestroy(() => router.unuse(route));
+
+                router.use(route, (ctx, next)=> (factory.resolve() as Middleware).invoke(ctx, next));
             }
             next();
         },
@@ -592,7 +589,7 @@ export function createRouteDecorator(method: RequestMethod) {
     return createDecorator<ProtocolRouteMappingMetadata>('Route', {
         props: (
             route: string,
-            arg2?: string | { protocol?: string, middlewares: (Middleware|MiddlewareFn)[], guards?: Type<CanActivate>[], contentType?: string, method?: string }
+            arg2?: string | { protocol?: string, middlewares: (Middleware | MiddlewareFn)[], guards?: Type<CanActivate>[], contentType?: string, method?: string }
         ) => (isString(arg2) ? { route, contentType: arg2 } : { route, ...arg2, method }) as ProtocolRouteMappingMetadata
     });
 }

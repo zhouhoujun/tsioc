@@ -1,4 +1,4 @@
-import { Endpoint, TransportClient, TransportContext } from '@tsdi/core';
+import { Endpoint, EndpointBackend, TransportClient, TransportContext } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang } from '@tsdi/ioc';
 import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
 import { TCPRequest, TCPResponse } from './packet';
@@ -27,7 +27,6 @@ const defaults = {
 @Injectable()
 export class TCPClient extends TransportClient<TCPRequest, TCPResponse> {
 
-
     private socket?: Socket;
     private connected: boolean;
     constructor(
@@ -38,7 +37,7 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> {
         this.connected = false;
     }
 
-    getEndpoint(): Endpoint<TCPRequest<any>, TCPResponse<any>> {
+    getBackend(): EndpointBackend<TCPRequest<any>, TCPResponse<any>> {
         throw new Error('Method not implemented.');
     }
 

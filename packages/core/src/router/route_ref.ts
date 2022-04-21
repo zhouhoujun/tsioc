@@ -7,7 +7,7 @@ import {
 import { from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { CanActivate } from './guard';
 import { ResultValue } from './result';
-import { Chain, Middleware, MiddlewareFn } from '../transport/endpoint';
+import { InterceptorChain, Middleware, MiddlewareFn } from '../transport/endpoint';
 import { RequestBase, ServerResponse } from '../transport/packet';
 import { TransportArgumentResolver, TransportParameter } from '../transport/resolver';
 import { MODEL_RESOLVERS } from '../model/model.resolver';
