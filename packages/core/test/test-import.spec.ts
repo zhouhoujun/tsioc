@@ -1,9 +1,9 @@
-import { ServerLogsModule } from '@tsdi/platform-server';
+import { ServerLogsModule, ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { lastValueFrom, map } from 'rxjs';
 import * as net from 'net';
 import { ModuleA, ModuleB, ClassSevice, SocketService, StatupModule, TestService } from './demo';
-import { Application, HttpClient, LoggerModule, Router } from '../src';
+import { Application, HttpClient, HttpClientModule, LoggerModule, Router } from '../src';
 import { HttpModule, HttpServer } from '@tsdi/transport';
 
 
@@ -25,7 +25,9 @@ describe('di module', () => {
         let ctx = await Application.run({
             module: ModuleB,
             uses: [
-                HttpModule
+                HttpClientModule,
+                HttpModule,
+                ServerModule
             ]
         });
         let server = ctx.resolve(HttpServer);

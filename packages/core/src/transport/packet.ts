@@ -231,39 +231,3 @@ export interface ResponseHeader<T = any> {
      */
     removeHeader(field: string): void;
 }
-
-/**
- * server response.
- */
-@Abstract()
-export abstract class ServerResponse<T = any> extends ResponseBase<T> {
-    /**
-     * Shared and mutable context that can be used by middlewares
-     */
-    abstract get context(): InvocationContext;
-    /**
-     * Set response status code, defaults to OK.
-     */
-    abstract set status(status: number);
-    /**
-     * Set Textual description of response status code, defaults to OK.
-     *
-     * Do not depend on this.
-     */
-    abstract set statusMessage(msg: string);
-    /**
-     * Whether the status code is ok
-     */
-    abstract set ok(ok: boolean);
-    /**
-     * Set response body.
-     *
-     * @param {T} value
-     * @api public
-     */
-    abstract set body(value: T | null);
-    /**
-     * has sent or not.
-     */
-    abstract get sent(): boolean;
-}

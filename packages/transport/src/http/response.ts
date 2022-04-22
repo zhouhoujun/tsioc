@@ -1,4 +1,4 @@
-import { HttpStatusCode, ResponseBase, ResponseHeader, TransportContext, ServerResponse } from '@tsdi/core';
+import { HttpStatusCode, ResponseBase, ResponseHeader, TransportContext } from '@tsdi/core';
 import { isNumber, isString } from '@tsdi/ioc';
 import assert = require('assert');
 import * as http from 'http';
@@ -52,7 +52,7 @@ export class HttpResponse<T = any> extends ResponseBase<T> implements ResponseHe
 
 }
 
-export class HttpServerResponse extends ServerResponse<any> implements ResponseHeader {
+export class HttpServerResponse extends ResponseBase<any> implements ResponseHeader {
     throwError(err: any): void {
         throw new Error('Method not implemented.');
     }

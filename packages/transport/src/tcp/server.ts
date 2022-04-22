@@ -1,7 +1,7 @@
-import { Endpoint, EndpointBackend, Interceptor, InterceptorFn, TransportContextFactory, TransportServer } from '@tsdi/core';
+import { EndpointBackend, TransportContextFactory, TransportServer } from '@tsdi/core';
 import { Abstract, Inject, Injectable, lang } from '@tsdi/ioc';
 import { Server, ServerOpts, ListenOptions } from 'net';
-import { TCPRequest, TCPServerResponse } from './packet';
+import { TCPRequest, TCPResponse } from './packet';
 
 
 
@@ -27,7 +27,7 @@ const defaults = {
 
 
 @Injectable()
-export class TCPServer extends TransportServer<TCPRequest, TCPServerResponse> {
+export class TCPServer extends TransportServer<TCPRequest, TCPResponse> {
 
 
     private server?: Server;
@@ -43,11 +43,11 @@ export class TCPServer extends TransportServer<TCPRequest, TCPServerResponse> {
         await defer.promise;
     }
 
-    get contextFactory(): TransportContextFactory<TCPRequest<any>, TCPServerResponse<any>> {
+    get contextFactory(): TransportContextFactory<TCPRequest<any>, TCPResponse<any>> {
         throw new Error('Method not implemented.');
     }
     
-    getBackend(): EndpointBackend<TCPRequest<any>, TCPServerResponse<any>> {
+    getBackend(): EndpointBackend<TCPRequest<any>, TCPResponse<any>> {
         throw new Error('Method not implemented.');
     }
 

@@ -1,7 +1,5 @@
 import { Abstract, EMPTY, isFunction, isString, lang, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
-import { Observable, from, throwError } from 'rxjs';
-import { map, mergeMap } from 'rxjs/operators';
-import { RequestBase, RequestMethod, ServerResponse } from '../transport/packet';
+import { RequestMethod } from '../transport/packet';
 import { CanActivate } from './guard';
 import { PipeTransform } from '../pipes/pipe';
 import { Route, RouteFactoryResolver } from './route';

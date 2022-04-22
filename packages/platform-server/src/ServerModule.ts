@@ -120,7 +120,7 @@ export class ServerApplicationExit extends ApplicationExit {
  * server boot module.
  */
 @Module({
-    providedIn: 'platform',
+    providedIn: 'root',
     providers: [
         { provide: PLATFORM_ID, useValue: PLATFORM_SERVER_ID },
         { provide: ApplicationArguments, useValue: new ServerApplicationArguments(process.env, process.argv.slice(2)) },

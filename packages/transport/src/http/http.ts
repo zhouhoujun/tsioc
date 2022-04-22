@@ -1,5 +1,5 @@
 import { Module, RouterModule, TransformModule } from '@tsdi/core';
-import { HttpClient } from './clinet';
+import { Http } from './clinet';
 import { HttpServer } from './server';
 
 @Module({
@@ -9,7 +9,7 @@ import { HttpServer } from './server';
     ],
     providers: [
         HttpServer,
-        HttpClient
+        Http
     ]
 })
 export class HttpModule {

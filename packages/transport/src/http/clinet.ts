@@ -25,7 +25,7 @@ export const HTTP_SESSIONOPTIONS = tokenId<HttpSessionOptions>('HTTP_SESSIONOPTI
 
 
 @Injectable()
-export class HttpClient extends TransportClient<HttpRequest, HttpResponse> {
+export class Http extends TransportClient<HttpRequest, HttpResponse> {
     
 
     private _endpoint!: Endpoint<HttpRequest, HttpResponse>;

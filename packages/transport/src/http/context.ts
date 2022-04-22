@@ -1,5 +1,6 @@
 import { ApplicationContext, HttpStatusCode, Protocol, TransportContext } from '@tsdi/core';
 import { Injector, InvokeOption, isNumber, isString } from '@tsdi/ioc';
+import * as util from 'util';
 import * as assert from 'assert';
 import * as http from 'http';
 import * as http2 from 'http2';
@@ -390,22 +391,25 @@ export class HttpContext extends TransportContext {
         this.contentType = type;
     }
 
-    get sent(): boolean {
-        throw new Error('Method not implemented.');
-    }
+    /**
+     * Whether the status code is ok
+     */
     get ok(): boolean {
-        throw new Error('Method not implemented.');
+        return this.status >= 200 && this.status < 300
     }
-    set ok(value: boolean) {
-        throw new Error('Method not implemented.');
+    /**
+     * Whether the status code is ok
+     */
+    set ok(ok: boolean) {
+        this.status = ok ? 200 : 404;
     }
-
+    
     get status(): HttpStatusCode {
         return this.response.statusCode;
     }
 
     set status(code: HttpStatusCode) {
-        if (this.headerSent) return;
+        if (this.sent) return;
 
         assert(Number.isInteger(code), 'status code must be a number');
         assert(code >= 100 && code <= 999, `invalid status code: ${code}`);
@@ -565,7 +569,7 @@ export class HttpContext extends TransportContext {
      * @return {Boolean}
      * @api public
      */
-    get headerSent() {
+    get sent() {
         return this.response.headersSent;
     }
 
@@ -598,7 +602,7 @@ export class HttpContext extends TransportContext {
      */
     setHeader(fields: Record<string, string | number | string[]>): void;
     setHeader(field: string | Record<string, string | number | string[]>, val?: string | number | string[]) {
-        if (this.headerSent) return;
+        if (this.sent) return;
 
         if (val) {
             this.response.setHeader(field as string, val);
@@ -643,7 +647,7 @@ export class HttpContext extends TransportContext {
      * @api public
      */
     removeHeader(field: string) {
-        if (this.headerSent) return;
+        if (this.sent) return;
         this.response.removeHeader(field);
     }
 
@@ -743,7 +747,7 @@ export class HttpContext extends TransportContext {
     write(chunk: string | Uint8Array, cb?: (err?: Error | null) => void): boolean;
     write(chunk: string | Uint8Array, encoding: BufferEncoding, cb?: (err?: Error | null) => void): boolean;
     write(chunk: string | Uint8Array, encoding?: BufferEncoding | ((err?: Error | null) => void), cb?: (err?: Error | null) => void): boolean {
-        if (this.headerSent) return false;
+        if (this.sent) return false;
         if (this.response instanceof http.ServerResponse) {
             return isString(encoding) ? this.response.write(chunk, encoding, cb) : this.response.write(chunk, encoding);
         } else {
@@ -763,6 +767,61 @@ export class HttpContext extends TransportContext {
     throwError(error: Error): Error;
     throwError(status: any, message?: any): Error {
         throw new Error('Method not implemented.');
+    }
+
+    onError(err: any) {
+
+        if (null == err) return;
+
+        const isNativeError =
+            Object.prototype.toString.call(err) === '[object Error]' ||
+            err instanceof Error;
+        if (!isNativeError) err = new Error(util.format('non-error thrown: %j', err));
+
+        let headerSent = false;
+        if (this.sent || !this.writable) {
+            headerSent = err.headerSent = true;
+        }
+
+        // delegate
+        // this.get(ApplicationContext).emit('error', err, this);
+
+        // nothing we can do here other
+        // than delegate to the app-level
+        // handler and log.
+        if (headerSent) {
+            return;
+        }
+
+        const res = this.response;
+
+        // first unset all headers
+        if (typeof res.getHeaderNames === 'function') {
+            res.getHeaderNames().forEach(name => res.removeHeader(name));
+        } else {
+            (res as any)._headers = {}; // Node < 7.7
+        }
+
+        // then set those specified
+        this.setHeader(err.headers);
+
+        // force text/plain
+        this.type = 'text';
+
+        let statusCode = (err.status || err.statusCode) as HttpStatusCode;
+
+        // ENOENT support
+        if ('ENOENT' === err.code) statusCode = 404;
+
+        // default to 500
+        if ('number' !== typeof statusCode || !statusMessage[statusCode]) statusCode = 500;
+
+        // respond
+        const code = statusMessage[statusCode];
+        const msg = err.expose ? err.message : code;
+        this.status = err.status = statusCode;
+        this.length = Buffer.byteLength(msg);
+        res.end(msg);
     }
 
 }

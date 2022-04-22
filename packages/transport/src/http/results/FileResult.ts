@@ -3,7 +3,6 @@ import { ApplicationContext, ResultValue } from '@tsdi/core';
 import { Stream } from 'stream';
 import { existsSync, createReadStream } from 'fs';
 import { join, isAbsolute } from 'path';
-import { HttpServerResponse } from '../response';
 import { HttpContext } from '../context';
 
 /**

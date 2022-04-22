@@ -1,7 +1,5 @@
-import { RequestBase, ResponseBase, TransportContext, UUIDFactory, ServerResponse } from '@tsdi/core';
-import { Abstract, EMPTY_OBJ } from '@tsdi/ioc';
-import { Buffer } from 'buffer';
-import { Socket, NetConnectOpts } from 'net';
+import { RequestBase, ResponseBase, TransportContext, UUIDFactory } from '@tsdi/core';
+import { Socket } from 'net';
 
 
 export class TCPRequest<T = any> extends RequestBase<T> {
@@ -62,41 +60,4 @@ export class TCPResponse<T = any> extends ResponseBase<T> {
     get ok(): boolean {
         throw new Error('Method not implemented.');
     }
-}
-
-
-export class TCPServerResponse<T = any> extends ServerResponse<T>  {
-
-    get context(): TransportContext {
-        throw new Error('Method not implemented.');
-    }
-    set status(status: number) {
-        throw new Error('Method not implemented.');
-    }
-    set statusMessage(msg: string) {
-        throw new Error('Method not implemented.');
-    }
-    get contentType(): string {
-        throw new Error('Method not implemented.');
-    }
-    set contentType(type: string) {
-        throw new Error('Method not implemented.');
-    }
-    get sent(): boolean {
-        throw new Error('Method not implemented.');
-    }
-    set ok(ok: boolean) {
-        throw new Error('Method not implemented.');
-    }
-    set body(value: T) {
-        throw new Error('Method not implemented.');
-    }
-
-    throwError(status: number, message?: string): Error;
-    throwError(message: string): Error;
-    throwError(error: Error): Error;
-    throwError(status: any, message?: any): Error {
-        throw new Error('Method not implemented.');
-    }
-
 }

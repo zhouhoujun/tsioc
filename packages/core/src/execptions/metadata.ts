@@ -1,5 +1,5 @@
 import { createDecorator, InvocationContext, OperationFactoryResolver, Type } from '@tsdi/ioc';
-import { ResponseHeader, ServerResponse } from '../transport/packet';
+import { TransportContext } from '../transport';
 import { ExecptionHandlerMethodResolver } from './resolver';
 
 /**
@@ -63,15 +63,15 @@ export const ExecptionHandler: ExecptionHandler = createDecorator('Handle', {
             if (response) {
                 if (response === 'body') {
                     invoker.onReturnning((ctx, value) => {
-                        ctx.resolve(ServerResponse).body = value;
-                    })
+                        ctx.resolve(TransportContext).body = value;
+                    });
                 } else if (response === 'header') {
                     invoker.onReturnning((ctx, value) => {
-                        (ctx.resolve(ServerResponse) as ServerResponse & ResponseHeader)?.setHeader?.(value);
-                    })
+                        ctx.resolve(TransportContext).setHeader(value);
+                    });
                 } else if (response === 'response') {
                     invoker.onReturnning((ctx, value) => {
-                        ctx.resolve(ServerResponse).statusMessage = String(value);
+                        ctx.resolve(TransportContext).statusMessage = String(value);
                     });
                 } else {
                     invoker.onReturnning(response);

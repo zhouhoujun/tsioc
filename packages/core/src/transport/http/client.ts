@@ -7,7 +7,9 @@ import { HttpRequest } from './request';
 import { HttpEvent, HttpResponse } from './response';
 
 
-
+/**
+ * http xml request client.
+ */
 @Injectable()
 export class HttpClient {
 

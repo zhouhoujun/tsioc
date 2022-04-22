@@ -7,7 +7,7 @@ let processRoot = global.baseURL || '.';
 
 
 @Module({
-    providedIn: 'platform',
+    providedIn: 'root',
     providers: [
         { provide: PLATFORM_ID, useValue: PLATFORM_BROWSER_ID },
         { provide: DOCUMENT, useFactory: () => document },

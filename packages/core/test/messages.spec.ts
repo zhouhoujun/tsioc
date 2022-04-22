@@ -1,8 +1,7 @@
 import { Injector, Injectable, lang, ArgumentError, MissingParameterError, tokenId, chain } from '@tsdi/ioc';
-import { defer, lastValueFrom, Observable, of } from 'rxjs';
-import { map, mergeMap } from 'rxjs/operators';
+import { lastValueFrom, Observable, of } from 'rxjs';
 import expect = require('expect');
-import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module, TransportContext, HttpClientModule, Interceptor, HttpClient, InterceptorChain, Endpoint, HttpErrorResponse, HttpResponseBase, RequestBase, ResponseBase, ServerResponse, LoggerModule, Middleware, compose, Chain } from '../src';
+import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module, TransportContext, HttpClientModule, Interceptor, HttpClient, Endpoint,  RequestBase, LoggerModule, Middleware, compose, Chain, ResponseBase } from '../src';
 import { HttpModule, TcpModule } from '@tsdi/transport';
 import { ServerModule } from '@tsdi/platform-server';
 
@@ -115,30 +114,31 @@ class DeviceQueue implements Middleware {
 
 
 @Injectable()
-class DeviceStartupHandle implements Interceptor<RequestBase, ServerResponse> {
+class DeviceStartupHandle implements Middleware {
 
-    intercept(req: RequestBase, next: Endpoint<RequestBase, ServerResponse>): Observable<ServerResponse> {
-        console.log('DeviceStartupHandle.', 'resp:', req.body.type, 'req:', req.body.type)
-        if (req.body.type === 'startup') {
+    invoke(ctx: TransportContext<RequestBase, ResponseBase>, next: () => Promise<void>): Promise<void> {
+        
+        console.log('DeviceStartupHandle.', 'resp:', ctx.request.body.type, 'req:', ctx.request.body.type)
+        if (ctx.request.body.type === 'startup') {
             // todo sth.
-            let ret = req.context.injector.get(MyService).dosth();
-            req.context.setValue('deviceB_state', ret);
+            let ret = ctx.injector.get(MyService).dosth();
+            ctx.setValue('deviceB_state', ret);
         }
-        return next.handle(req);
+        return next();
     }
 }
 
 @Injectable()
-class DeviceAStartupHandle implements Interceptor<RequestBase, ServerResponse> {
+class DeviceAStartupHandle implements Middleware{
 
-    intercept(req: RequestBase, next: Endpoint<RequestBase, ServerResponse>): Observable<ServerResponse> {
-        console.log('DeviceAStartupHandle.', 'resp:', req.body.type, 'req:', req.body.type)
-        if (req.body.type === 'startup') {
+    invoke(ctx: TransportContext<RequestBase, ResponseBase>, next: () => Promise<void>): Promise<void> {
+        console.log('DeviceAStartupHandle.', 'resp:', ctx.request.body.type, 'req:', ctx.request.body.type)
+        if (ctx.request.body.type === 'startup') {
             // todo sth.
-            let ret = req.context.injector.get(MyService).dosth();
-            req.context.setValue('deviceA_state', ret);
+            let ret = ctx.get(MyService).dosth();
+            ctx.setValue('deviceA_state', ret);
         }
-        return next.handle(req);
+        return next();
     }
 }
 

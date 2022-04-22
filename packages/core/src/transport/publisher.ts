@@ -3,7 +3,6 @@ import { Logger, Log } from '@tsdi/logs';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
 import { Startup } from '../startup';
-import { RequestBase, ServerResponse } from './packet';
 import { InterceptorChain, Endpoint, EndpointBackend, Interceptor, InterceptorFn, Middleware, MiddlewareBackend, MiddlewareFn } from './endpoint';
 import { TransportContextFactory } from './context';
 
@@ -12,7 +11,7 @@ import { TransportContextFactory } from './context';
  */
 @Abstract()
 @Runner('startup')
-export abstract class Publisher<TRequest extends RequestBase, TResponse extends ServerResponse> implements Startup, OnDispose {
+export abstract class Publisher<TRequest, TResponse> implements Startup, OnDispose {
 
     @Log()
     protected readonly logger!: Logger;

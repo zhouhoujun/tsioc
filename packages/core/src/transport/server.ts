@@ -3,7 +3,6 @@ import { Logger, Log } from '@tsdi/logs';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
 import { Startup } from '../startup';
-import { Protocol, RequestBase, ServerResponse } from './packet';
 import { InterceptorChain, Endpoint, EndpointBackend, Interceptor, InterceptorFn, Middleware, MiddlewareBackend, MiddlewareFn } from './endpoint';
 import { TransportContextFactory } from './context';
 
@@ -89,10 +88,6 @@ export interface ServerOption extends Record<string, any> {
     url?: string;
     host?: string;
     port?: number;
-    /**
-     * transport protocol type.
-     */
-    protocol: Protocol;
 }
 
 export const SERVEROPTION = tokenId<ServerOption>('SERVEROPTION');
@@ -101,7 +96,7 @@ export const SERVEROPTION = tokenId<ServerOption>('SERVEROPTION');
  * server abstract factory.
  */
 @Abstract()
-export abstract class ServerFactory<TRequest extends RequestBase, TResponse extends ServerResponse> {
+export abstract class ServerFactory<TRequest, TResponse> {
     /**
      * create by options.
      * @param options 

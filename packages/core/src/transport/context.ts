@@ -76,20 +76,18 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
      * Set response status code, defaults to OK.
      */
     abstract set status(status: number);
-
     /**
      * Textual description of response status code, defaults to OK.
      *
      * Do not depend on this.
      */
-     abstract get statusMessage(): string;
+    abstract get statusMessage(): string;
     /**
      * Set Textual description of response status code, defaults to OK.
      *
      * Do not depend on this.
      */
     abstract set statusMessage(msg: string);
-
     /**
      * Whether the status code is ok
      */
@@ -98,6 +96,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
      * Whether the status code is ok
      */
     abstract set ok(ok: boolean);
+
     /**
      * has sent or not.
      */
@@ -144,6 +143,72 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
      */
     abstract throwError(error: Error): Error;
 
+
+    /**
+     * Return request header.
+     *
+     * The `Referrer` header field is special-cased,
+     * both `Referrer` and `Referer` are interchangeable.
+     *
+     * Examples:
+     *
+     *     this.get('Content-Type');
+     *     // => "text/plain"
+     *
+     *     this.get('content-type');
+     *     // => "text/plain"
+     *
+     *     this.get('Something');
+     *     // => ''
+     *
+     * @param {String} field
+     * @return {String}
+     * @api public
+     */
+    abstract getHeader(field: string): string | string[] | number | undefined;
+
+
+    /**
+     * has response header field or not.
+     * @param field 
+     */
+    abstract hasHeader(field: string): boolean;
+    /**
+     * Set response header `field` to `val` or pass
+     * an object of header fields.
+     *
+     * Examples:
+     *
+     *    this.set('Foo', ['bar', 'baz']);
+     *    this.set('Accept', 'application/json');
+     *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
+     *
+     * @param {String|Object|Array} field
+     * @param {String} val
+     * @api public
+     */
+    abstract setHeader(field: string, val: string | number | string[]): void;
+    /**
+     * Set response header `field` to `val` or pass
+     * an object of header fields.
+     *
+     * Examples:
+     *
+     *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
+     *
+     * @param {Record<string, string | number | string[]>} fields
+     * @param {String} val
+     * @api public
+     */
+    abstract setHeader(fields: Record<string, string | number | string[]>): void;
+    /**
+     * Remove response header `field`.
+     *
+     * @param {String} name
+     * @api public
+     */
+    abstract removeHeader(field: string): void;
+
     static override create(parent: Injector | InvocationContext, options?: TransportOption): TransportContext {
         const ctx = InvocationContext.create(parent, options) as TransportContext;
         if (options?.target) {
@@ -178,7 +243,7 @@ export abstract class TransportContextFactory<TRequest = any, TResponse = any> {
  * @param target 
  * @returns 
  */
- export function promisify<T>(target: T | Observable<T> | Promise<T>): Promise<T> {
+export function promisify<T>(target: T | Observable<T> | Promise<T>): Promise<T> {
     if (isObservable(target)) {
         return lastValueFrom(target);
     } else if (isPromise(target)) {
