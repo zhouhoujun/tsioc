@@ -11,10 +11,17 @@ import { encodeUrl, escapeHtml, isBuffer, isStream } from '../utils';
 import { emptyStatus, redirectStatus, statusMessage } from './status';
 import { CONTENT_DISPOSITION } from './content';
 
+
+
+export type HttpRequest = (http.IncomingMessage | http2.Http2ServerRequest) & {body?: any; params?: any};
+
+export type HttpResponse = (http.ServerResponse | http2.Http2ServerResponse) & {body?: any};
+
+
 export interface HttpContextOption extends InvokeOption {
     target?: any;
-    request: http.IncomingMessage | http2.Http2ServerRequest;
-    response: http.ServerResponse | http2.Http2ServerResponse;
+    request: HttpRequest;
+    response: HttpResponse;
 }
 
 
@@ -27,12 +34,12 @@ export class HttpContext extends TransportContext {
     /**
      * transport request.
      */
-    readonly request: http.IncomingMessage | http2.Http2ServerRequest;
+    readonly request: HttpRequest;
 
     /**
      * transport response.
      */
-    readonly response: http.ServerResponse | http2.Http2ServerResponse;
+    readonly response: HttpResponse;
 
     constructor(injector: Injector, options: HttpContextOption) {
         super(injector, options);
@@ -403,7 +410,7 @@ export class HttpContext extends TransportContext {
     set ok(ok: boolean) {
         this.status = ok ? 200 : 404;
     }
-    
+
     get status(): HttpStatusCode {
         return this.response.statusCode;
     }
@@ -499,7 +506,7 @@ export class HttpContext extends TransportContext {
             });
             // onFinish(this.response, destroy.bind(null, val));
             if (original != val) {
-                // val.once('error', err => this.onerror(err));
+                val.once('error', err => this.onError(err));
                 // overwriting
                 if (null != original) this.removeHeader('Content-Length');
             }

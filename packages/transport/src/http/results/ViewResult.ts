@@ -1,6 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
 import { ResultValue } from '@tsdi/core';
-import { HttpServerResponse } from '../response';
 import { HttpContext } from '../context';
 
 @Abstract()

@@ -33,7 +33,7 @@ describe('di module', () => {
         let server = ctx.resolve(HttpServer);
         server.intercept((req, next) => {
             console.log('ctx.url:', req.url);
-            if (req.url.startsWith('/test')) {
+            if (req.url?.startsWith('/test')) {
                 console.log('message queue test: ' + req.body);
             }
             return next.handle(req)

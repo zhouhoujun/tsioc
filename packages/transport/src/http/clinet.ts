@@ -8,9 +8,7 @@ import * as http2 from 'http2';
 import { Socket } from 'net';
 import { TLSSocket } from 'tls';
 import { HttpMiddleware, HTTP_MIDDLEWARES } from './endpoint';
-import { HttpRequest } from './request';
-import { HttpResponse } from './response';
-
+import { HttpRequest, HttpResponse } from './context';
 
 
 export interface HttpSessionOptions {
@@ -25,7 +23,7 @@ export const HTTP_SESSIONOPTIONS = tokenId<HttpSessionOptions>('HTTP_SESSIONOPTI
 
 
 @Injectable()
-export class Http extends TransportClient<HttpRequest, HttpResponse> {
+export class Http  extends TransportClient<HttpRequest, HttpResponse> {
     
 
     private _endpoint!: Endpoint<HttpRequest, HttpResponse>;
@@ -37,7 +35,7 @@ export class Http extends TransportClient<HttpRequest, HttpResponse> {
         super()
     }
 
-    getBackend(): EndpointBackend<HttpRequest<any>, HttpResponse<any>> {
+    getBackend(): EndpointBackend<HttpRequest, HttpResponse> {
         throw new Error('Method not implemented.');
     }
 
@@ -69,7 +67,7 @@ export class Http extends TransportClient<HttpRequest, HttpResponse> {
         }
     }
 
-    protected buildRequest(url: string | HttpRequest<any>, options?: { body?: any; method?: RequestMethod | undefined; headers?: any; context?: InvocationContext<any> | undefined; params?: any; observe?: 'body' | 'events' | 'response' | undefined; reportProgress?: boolean | undefined; responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | undefined; withCredentials?: boolean | undefined; }): HttpRequest {
+    protected buildRequest(url: string | HttpRequest, options?: { body?: any; method?: RequestMethod | undefined; headers?: any; context?: InvocationContext<any> | undefined; params?: any; observe?: 'body' | 'events' | 'response' | undefined; reportProgress?: boolean | undefined; responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | undefined; withCredentials?: boolean | undefined; }): HttpRequest {
         throw new Error('Method not implemented.');
     }
 
