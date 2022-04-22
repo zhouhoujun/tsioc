@@ -31,19 +31,15 @@ describe('di module', () => {
             ]
         });
         let server = ctx.resolve(HttpServer);
-        server.intercept((req, next) => {
-            console.log('ctx.url:', req.url);
-            if (req.url?.startsWith('/test')) {
-                console.log('message queue test: ' + req.body);
+        server.use((ctx, next) => {
+            console.log('ctx.url:', ctx.url);
+            if (ctx.url.startsWith('/test')) {
+                console.log('message queue test: ' + ctx.playload);
             }
-            return next.handle(req)
-                .pipe(
-                    map(resp => {
-                        console.log(resp.body, req.params);
-                        resp.body = req.params.hi;
-                        return resp;
-                    })
-                )
+           
+            console.log(ctx.body, ctx.query);
+            ctx.body = ctx.query.hi;
+            return next();
         });
 
         // has no parent.

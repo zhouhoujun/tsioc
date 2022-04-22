@@ -13,9 +13,9 @@ import { CONTENT_DISPOSITION } from './content';
 
 
 
-export type HttpRequest = (http.IncomingMessage | http2.Http2ServerRequest) & {body?: any; params?: any};
+export type HttpRequest = http.IncomingMessage | http2.Http2ServerRequest;
 
-export type HttpResponse = (http.ServerResponse | http2.Http2ServerResponse) & {body?: any};
+export type HttpResponse = http.ServerResponse | http2.Http2ServerResponse;
 
 
 export interface HttpContextOption extends InvokeOption {
@@ -203,8 +203,8 @@ export class HttpContext extends TransportContext {
         throw new Error('Method not implemented.');
     }
 
-    get params(): any {
-        throw new Error('Method not implemented.');
+    get playload():  any {
+        return (this.request as any).body;
     }
 
     // /**

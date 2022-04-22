@@ -36,13 +36,21 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
     abstract response: TResponse;
 
     /**
-     * Outgoing URL
+     * request URL
      */
     abstract get url(): string;
     /**
-     * Outgoing URL parameters.
+     * restful params. 
      */
-    abstract get params(): Record<string, string | string[] | number | any>;
+    restfulParams?: any;
+    /**
+     * request URL query parameters.
+     */
+    abstract get query(): Record<string, string | string[] | number | any>;
+    /**
+     * request body, playload.
+     */
+    abstract get playload(): any;
     /**
      * The outgoing HTTP request method.
      */

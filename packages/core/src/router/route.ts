@@ -58,8 +58,6 @@ export type Routes = Route[];
 
 export const ROUTES = tokenId<Routes>('ROUTES');
 
-export const RESTFUL_PARAMS = tokenId<Record<string, string|number>>('RESTFUL_PARAMS');
-
 /**
  * middleware ref.
  */

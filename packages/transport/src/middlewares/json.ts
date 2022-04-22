@@ -28,7 +28,7 @@ export class EncodeJsonMiddleware implements Middleware {
             return;
         }
 
-        let pretty = this.pretty || hasOwn(ctx.params, this.paramName);
+        let pretty = this.pretty || hasOwn(ctx.query, this.paramName);
 
         if (strm) {
             // resp.contentType = 'application/json';
