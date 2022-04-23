@@ -1,5 +1,5 @@
 import { Inject, Injectable, InvocationContext, isFunction, lang, tokenId } from '@tsdi/ioc';
-import { InterceptorChain, Endpoint, HttpEvent, Interceptor, InterceptorFn, TransportContext, TransportServer, EndpointBackend, TransportContextFactory } from '@tsdi/core';
+import { InterceptorChain, Endpoint, HttpEvent, Interceptor, InterceptorFn, TransportContext, TransportServer, EndpointBackend, TransportContextFactory, RequestMethod } from '@tsdi/core';
 import { Logger } from '@tsdi/logs';
 import { fromEvent, of, race } from 'rxjs';
 import * as http from 'http';
@@ -8,7 +8,7 @@ import * as http2 from 'http2';
 import * as assert from 'assert';
 import { CONTENT_DISPOSITION } from './content';
 import { HTTP_MIDDLEWARES } from './endpoint';
-import { HttpRequest, HttpResponse } from './context';
+import { HttpContext, HttpRequest, HttpResponse } from './context';
 
 
 export type HttpVersion = 'http1.1' | 'http2';

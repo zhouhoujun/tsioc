@@ -1,5 +1,5 @@
-import { HttpStatusCode, Protocol, TransportContext } from '@tsdi/core';
-import { Injector, InvokeOption, isArray, isFunction, isNumber, isString, lang } from '@tsdi/ioc';
+import { HttpStatusCode, Protocol, ResponseHeader, TransportContext } from '@tsdi/core';
+import { ArgumentError, Injector, InvokeOption, isArray, isFunction, isNumber, isString, lang } from '@tsdi/ioc';
 import * as util from 'util';
 import * as assert from 'assert';
 import * as http from 'http';
@@ -7,7 +7,7 @@ import * as http2 from 'http2';
 import { TLSSocket } from 'tls';
 import { Readable } from 'stream';
 import { extname } from 'path';
-import { encodeUrl, escapeHtml, isBuffer, isStream } from '../utils';
+import { append, encodeUrl, escapeHtml, isBuffer, isStream, parseTokenList } from '../utils';
 import { emptyStatus, redirectStatus, statusMessage } from './status';
 import { CONTENT_DISPOSITION } from './content';
 import { codes, contentTypes, hdrs } from '../consts';
@@ -465,15 +465,14 @@ export class HttpContext extends TransportContext {
     }
 
     /**
-       * Check if the request is fresh, aka
-       * Last-Modified and/or the ETag
-       * still match.
-       *
-       * @return {Boolean}
-       * @api public
-       */
-
-    get fresh() {
+     * Check if the request is fresh, aka
+     * Last-Modified and/or the ETag
+     * still match.
+     *
+     * @return {Boolean}
+     * @api public
+     */
+    get fresh(): boolean {
         const method = this.methodName;
         const s = this.status;
 
@@ -488,11 +487,11 @@ export class HttpContext extends TransportContext {
         return false;
     }
 
-    get stale() {
+    get stale(): boolean {
         return !this.fresh;
     }
 
-    protected freshHeader() {
+    protected freshHeader(): boolean {
         const reqHeaders = this.request.headers;
         let modifSince = reqHeaders[hdrs.IF_MODIFIED_SINCE];
         let nonMatch = reqHeaders[hdrs.IF_NONE_MATCH];
@@ -748,6 +747,77 @@ export class HttpContext extends TransportContext {
         if (isString(body)) return Buffer.byteLength(body);
         if (Buffer.isBuffer(body)) return body.length;
         return Buffer.byteLength(JSON.stringify(body));
+    }
+
+    /**
+     * Set the Last-Modified date using a string or a Date.
+     *
+     *     this.response.lastModified = new Date();
+     *
+     * @param {String|Date} type
+     * @api public
+     */
+
+    set lastModified(val: Date | null) {
+        if (!val) {
+            this.removeHeader(hdrs.LAST_MODIFIED);
+            return;
+        }
+        this.setHeader(hdrs.LAST_MODIFIED, val.toUTCString());
+    }
+
+    /**
+     * Get the Last-Modified date in Date form, if it exists.
+     *
+     * @return {Date}
+     * @api public
+     */
+
+    get lastModified(): Date | null {
+        const date = this.get('last-modified') as string;
+        return date ? new Date(date) : null;
+    }
+
+    /**
+     * Set the ETag of a response.
+     * This will normalize the quotes if necessary.
+     *
+     *     this.response.etag = 'md5hashsum';
+     *     this.response.etag = '"md5hashsum"';
+     *     this.response.etag = 'W/"123456789"';
+     *
+     * @param {String} etag
+     * @api public
+     */
+
+    set etag(val: string) {
+        if (!/^(W\/)?"/.test(val)) val = `"${val}"`;
+        this.setHeader('ETag', val);
+    }
+
+    vary(field: string) {
+        if(this.sent) return;
+        let val = this.response.getHeader('Vary') ?? '';
+        let header = Array.isArray(val)
+            ? val.join(', ')
+            : String(val)
+
+        // set new header
+        if ((val = append(header, field))) {
+            this.setHeader('Vary', val)
+        }
+    }
+
+
+    /**
+     * Get the ETag of a response.
+     *
+     * @return {String}
+     * @api public
+     */
+
+    get etag(): string {
+        return this.response.getHeader('ETag') as string;
     }
 
     /**
@@ -1043,39 +1113,4 @@ function parseStamp(date?: string | number): number {
         return isString(date) ? Date.parse(date) : date;
     }
     return NaN;
-}
-/**
- * Parse a HTTP token list.
- *
- * @param {string} str
- * @private
- */
-
-function parseTokenList(str: string) {
-    let end = 0
-    let list = []
-    let start = 0
-
-    // gather tokens
-    for (let i = 0, len = str.length; i < len; i++) {
-        switch (str.charCodeAt(i)) {
-            case 0x20: /*   */
-                if (start === end) {
-                    start = end = i + 1
-                }
-                break
-            case 0x2c: /* , */
-                list.push(str.substring(start, end))
-                start = end = i + 1
-                break
-            default:
-                end = i + 1
-                break
-        }
-    }
-
-    // final token
-    list.push(str.substring(start, end))
-
-    return list;
 }
