@@ -1,4 +1,4 @@
-import { Abstract, DefaultInvocationContext, Injector, InvocationContext, InvocationOption, isPromise, TARGET } from '@tsdi/ioc';
+import { Abstract, DefaultInvocationContext, Injector, InvocationContext, InvocationOption, isPromise } from '@tsdi/ioc';
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
 
 /**
@@ -6,8 +6,8 @@ import { isObservable, lastValueFrom, Observable } from 'rxjs';
  */
 export interface TransportOption<TRequest = any, TResponse = any> extends InvocationOption {
     target?: any;
-    request?: TRequest;
-    response?: TResponse;
+    request: TRequest;
+    response: TResponse;
 }
 
 
@@ -16,24 +16,24 @@ export interface TransportOption<TRequest = any, TResponse = any> extends Invoca
  */
 @Abstract()
 export abstract class TransportContext<TRequest = any, TResponse = any> extends DefaultInvocationContext {
-
     /**
      * target server.
      */
     readonly target: any;
-    constructor(injector: Injector, options?: TransportOption) {
-        super(injector, options);
-        this.target = options?.target;
-    }
-
     /**
      * transport request.
      */
-    abstract request: TRequest;
+    readonly request: TRequest;
     /**
      * transport response.
      */
-    abstract response: TResponse;
+    readonly response: TResponse;
+    constructor(injector: Injector, options: TransportOption) {
+        super(injector, options);
+        this.target = options?.target;
+        this.request = options.request;
+        this.response = options.response;
+    }
 
     /**
      * request URL
@@ -218,17 +218,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
     abstract removeHeader(field: string): void;
 
     static override create(parent: Injector | InvocationContext, options?: TransportOption): TransportContext {
-        const ctx = InvocationContext.create(parent, options) as TransportContext;
-        if (options?.target) {
-            ctx.setValue(TARGET, options.target);
-        }
-        if (options?.request) {
-            ctx.request = options.request;
-        }
-        if (options?.response) {
-            ctx.response = options.response;
-        }
-        return ctx;
+        throw new Error('Method not implemented.');
     }
 }
 

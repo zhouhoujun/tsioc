@@ -1,6 +1,7 @@
-import { Endpoint, EndpointBackend, TransportClient, TransportContext } from '@tsdi/core';
-import { Abstract, Inject, Injectable, InvocationContext, isString, lang } from '@tsdi/ioc';
+import { EndpointBackend, TransportClient } from '@tsdi/core';
+import { Abstract, Inject, Injectable, Injector, InvocationContext, isString, lang } from '@tsdi/ioc';
 import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
+import { codes } from '../consts';
 import { TCPRequest, TCPResponse } from './packet';
 
 
@@ -30,7 +31,7 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> {
     private socket?: Socket;
     private connected: boolean;
     constructor(
-        @Inject() private context: InvocationContext,
+        @Inject() private injector: Injector,
         @Inject({ nullable: true }) private options: TcpClientOption = defaults
     ) {
         super();
@@ -61,23 +62,26 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> {
     }
 
     private bindEvents(socket: Socket) {
-        socket.on('close', (err) => {
+        socket.on(codes.CLOSE, (err) => {
             this.connected = false;
+            this.socket = null!;
             if (err) {
                 this.logger.error(err);
             } else {
                 this.logger.info(socket.address, 'closed');
             }
         });
-        socket.on('error', (err) => {
+        socket.on(codes.ERROR, (err: any) => {
             this.connected = false;
-            this.logger.error(err);
+            if (err.code !== codes.ECONNREFUSED) {
+                this.logger.error(err);
+            }
         });
-        socket.on('data', (data) => {
+        socket.on(codes.DATA, (data) => {
             try {
                 this.handleData(data);
             } catch (err) {
-                socket.emit('error', (err as Error).message);
+                socket.emit(codes.ERROR, (err as Error).message);
                 socket.end();
             }
         });
@@ -88,7 +92,7 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> {
     }
 
     protected buildRequest(req: string | TCPRequest<any>, options?: any): TCPRequest<any> | Promise<TCPRequest<any>> {
-        return isString(req)? new TCPRequest(TransportContext.create(this.context), options) : req;
+        return isString(req) ? new TCPRequest(InvocationContext.create(this.injector), options) : req;
     }
 
     async close(): Promise<void> {

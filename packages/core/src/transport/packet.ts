@@ -20,7 +20,6 @@ export type HttpProtocol = 'http' | 'https';
 export type Protocol = 'tcp' | 'grpc' | 'rmq' | 'kafka' | 'redis' | 'amqp' | 'ssl' | 'msg' | HttpProtocol | MqttProtocol;
 
 
-
 /**
  * request package.
  */
@@ -31,9 +30,9 @@ export abstract class RequestBase<T = any> {
      */
     readonly id?: string;
     /**
-     * Shared and mutable context that can be used by middlewares
+     * Shared and mutable context that can be used by interceptors
      */
-    abstract get context(): InvocationContext;
+    abstract get context(): InvocationContext | undefined;
     /**
      * Outgoing URL
      */
@@ -43,9 +42,9 @@ export abstract class RequestBase<T = any> {
      */
     abstract get params(): Record<string, string | string[] | number | any>;
     /**
-     * The outgoing HTTP request method.
+     * The outgoing request method.
      */
-    abstract get method(): string;
+    abstract get method(): string | undefined;
     /**
      * The request body, or `null` if one isn't set.
      *

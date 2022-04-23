@@ -1,5 +1,5 @@
-import { ApplicationContext, HttpStatusCode, Protocol, TransportContext } from '@tsdi/core';
-import { Injector, InvokeOption, isNumber, isString } from '@tsdi/ioc';
+import { HttpStatusCode, Protocol, TransportContext } from '@tsdi/core';
+import { Injector, InvokeOption, isArray, isFunction, isNumber, isString, lang } from '@tsdi/ioc';
 import * as util from 'util';
 import * as assert from 'assert';
 import * as http from 'http';
@@ -10,6 +10,7 @@ import { extname } from 'path';
 import { encodeUrl, escapeHtml, isBuffer, isStream } from '../utils';
 import { emptyStatus, redirectStatus, statusMessage } from './status';
 import { CONTENT_DISPOSITION } from './content';
+import { codes, contentTypes, hdrs } from '../consts';
 
 
 
@@ -24,13 +25,13 @@ export interface HttpContextOption extends InvokeOption {
     response: HttpResponse;
 }
 
-
 export class HttpContext extends TransportContext {
 
     protected _body: any;
     private _explicitStatus?: boolean;
     private _explicitNullBody?: boolean;
-
+    private _URL?: URL;
+    private _ip?: string;
     /**
      * transport request.
      */
@@ -41,10 +42,13 @@ export class HttpContext extends TransportContext {
      */
     readonly response: HttpResponse;
 
+    readonly originalUrl: string;
+
     constructor(injector: Injector, options: HttpContextOption) {
         super(injector, options);
         this.request = options.request;
         this.response = options.response;
+        this.originalUrl = this.request.url ?? '';
     }
 
     /**
@@ -114,9 +118,9 @@ export class HttpContext extends TransportContext {
      */
     get protocol(): Protocol {
         if ((this.socket as TLSSocket).encrypted) return 'https';
-        // if (!this.get(TransportServer).proxy) return 'http';
+        if (!this.target?.proxy) return 'http';
         const proto = this.getHeader('X-Forwarded-Proto') as string;
-        return (proto ? proto.split(/\s*,\s*/, 1)[0] : 'http') as Protocol;
+        return (proto ? proto.split(urlsplit, 1)[0] : 'http') as Protocol;
     }
 
     /**
@@ -142,6 +146,50 @@ export class HttpContext extends TransportContext {
     }
 
     /**
+   * When `app.proxy` is `true`, parse
+   * the "X-Forwarded-For" ip address list.
+   *
+   * For example if the value was "client, proxy1, proxy2"
+   * you would receive the array `["client", "proxy1", "proxy2"]`
+   * where "proxy2" is the furthest down-stream.
+   *
+   * @return {Array}
+   * @api public
+   */
+
+    get ips() {
+        const proxy = this.target.proxy;
+        const val = this.getHeader(this.target.proxyIpHeader) as string;
+        let ips = proxy && val
+            ? val.split(/\s*,\s*/)
+            : [];
+        if (this.target.maxIpsCount > 0) {
+            ips = ips.slice(-this.target.maxIpsCount);
+        }
+        return ips;
+    }
+
+    /**
+     * Return request's remote address
+     * When `app.proxy` is `true`, parse
+     * the "X-Forwarded-For" ip address list and return the first one
+     *
+     * @return {String}
+     * @api public
+     */
+
+    get ip() {
+        if (!this._ip) {
+            this._ip = this.ips[0] || this.socket.remoteAddress || '';
+        }
+        return this._ip;
+    }
+
+    set ip(ip: string) {
+        this._ip = ip;
+    }
+
+    /**
      * Parse the "Host" header field host
      * and support X-Forwarded-Host when a
      * proxy is enabled.
@@ -150,14 +198,49 @@ export class HttpContext extends TransportContext {
      * @api public
      */
     get host() {
-        const proxy = this.get(ApplicationContext).arguments.env.proxy;
-        let host = proxy && this.getHeader('X-Forwarded-Host');
+        const proxy = this.target?.proxy;
+        let host = proxy && this.getHeader(hdrs.X_FORWARDED_HOST);
         if (!host) {
-            if (this.request.httpVersionMajor >= 2) host = this.getHeader(':authority');
-            if (!host) host = this.getHeader('Host');
+            if (this.request.httpVersionMajor >= 2) host = this.getHeader(hdrs.AUTHORITY);
+            if (!host) host = this.getHeader(hdrs.HOST);
         }
         if (!host || isNumber(host)) return '';
-        return isString(host) ? host.split(/\s*,\s*/, 1)[0] : host[0];
+        return isString(host) ? host.split(urlsplit, 1)[0] : host[0];
+    }
+
+    /**
+     * Parse the "Host" header field hostname
+     * and support X-Forwarded-Host when a
+     * proxy is enabled.
+     *
+     * @return {String} hostname
+     * @api public
+     */
+    get hostname() {
+        const host = this.host;
+        if (!host) return '';
+        if ('[' === host[0]) return this.URL.hostname || ''; // IPv6
+        return host.split(':', 1)[0];
+    }
+
+    /**
+     * Get WHATWG parsed URL.
+     * Lazily memoized.
+     *
+     * @return {URL|Object}
+     * @api public
+     */
+    get URL() {
+        /* istanbul ignore else */
+        if (!this._URL) {
+            const originalUrl = this.originalUrl || ''; // avoid undefined in template string
+            try {
+                this._URL = new URL(`${this.origin}${originalUrl}`);
+            } catch (err) {
+                this._URL = Object.create(null);
+            }
+        }
+        return this._URL!;
     }
 
     /**
@@ -179,9 +262,8 @@ export class HttpContext extends TransportContext {
      */
 
     get href() {
-        // support: `GET http://example.com/foo`
-        if (/^https?:\/\//i.test(this.url)) return this.url;
-        return this.origin + this.url;
+        if (httptl.test(this.originalUrl)) return this.originalUrl;
+        return this.origin + this.originalUrl;
     }
 
     /**
@@ -199,11 +281,57 @@ export class HttpContext extends TransportContext {
         return this.method === 'PUT';
     }
 
-    get query(): any {
-        throw new Error('Method not implemented.');
+    get query(): URLSearchParams {
+        return this.URL.searchParams;
     }
 
-    get playload():  any {
+    /**
+     * Get the search string. Same as the query string
+     * except it includes the leading ?.
+     *
+     * @return {String}
+     * @api public
+     */
+
+    get search() {
+        return this.URL.search;
+    }
+
+    /**
+     * Set the search string. Same as
+     * request.querystring= but included for ubiquity.
+     *
+     * @param {String} str
+     * @api public
+     */
+
+    set search(str: string) {
+        this.URL.search = str;
+    }
+
+    /**
+     * Get query string.
+     *
+     * @return {String}
+     * @api public
+     */
+
+    get querystring() {
+        return this.URL.search?.slice(1);
+    }
+
+    /**
+     * Set query string.
+     *
+     * @param {String} str
+     * @api public
+     */
+
+    set querystring(str) {
+        this.URL.search = `?${str}`;
+    }
+
+    get playload(): any {
         return (this.request as any).body;
     }
 
@@ -326,6 +454,17 @@ export class HttpContext extends TransportContext {
     }
 
     /**
+     * Check if the request is idempotent.
+     *
+     * @return {Boolean}
+     * @api public
+     */
+
+    get idempotent() {
+        return !!~methods.indexOf(this.method!);
+    }
+
+    /**
        * Check if the request is fresh, aka
        * Last-Modified and/or the ETag
        * still match.
@@ -343,14 +482,72 @@ export class HttpContext extends TransportContext {
 
         // 2xx or 304 as per rfc2616 14.26
         if ((s >= 200 && s < 300) || 304 === s) {
-            // return fresh(this.request.headers, this.response.getHeaders());
+            return this.freshHeader();
         }
 
         return false;
     }
 
+    get stale() {
+        return !this.fresh;
+    }
+
+    protected freshHeader() {
+        const reqHeaders = this.request.headers;
+        let modifSince = reqHeaders[hdrs.IF_MODIFIED_SINCE];
+        let nonMatch = reqHeaders[hdrs.IF_NONE_MATCH];
+        if (!modifSince && !nonMatch) {
+            return false
+        }
+
+        let cacheControl = reqHeaders[hdrs.CACHE_CONTROL];
+        if (cacheControl && no_cache.test(cacheControl)) {
+            return false
+        }
+
+        // if-none-match
+        if (nonMatch && nonMatch !== '*') {
+            let etag = this.response.getHeader(hdrs.ETAG)
+
+            if (!etag) {
+                return false
+            }
+
+            let etagStale = true
+            let matches = parseTokenList(nonMatch)
+            for (let i = 0; i < matches.length; i++) {
+                let match = matches[i]
+                if (match === etag || match === 'W/' + etag || 'W/' + match === etag) {
+                    etagStale = false
+                    break
+                }
+            }
+
+            if (etagStale) {
+                return false
+            }
+        }
+
+        // if-modified-since
+        if (modifSince) {
+            let lastModified = this.response.getHeader(hdrs.LAST_MODIFIED);
+            if (isArray(lastModified)) {
+                lastModified = lang.first(lastModified);
+            }
+            let modifiedStale = !lastModified || !(parseStamp(lastModified) <= parseStamp(modifSince))
+
+            if (modifiedStale) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+
+
+
     get contentType(): string {
-        return this.response.getHeader('Content-Type')?.toString() ?? '';
+        return this.response.getHeader(hdrs.CONTENT_TYPE)?.toString() ?? '';
     }
 
     /**
@@ -373,9 +570,9 @@ export class HttpContext extends TransportContext {
      */
     set contentType(type: string) {
         if (type) {
-            this.response.setHeader('Content-Type', type);
+            this.response.setHeader(hdrs.CONTENT_TYPE, type);
         } else {
-            this.response.removeHeader('Content-Type');
+            this.response.removeHeader(hdrs.CONTENT_TYPE);
         }
     }
 
@@ -473,9 +670,9 @@ export class HttpContext extends TransportContext {
         if (null == val) {
             if (!emptyStatus[this.status]) this.status = 204;
             if (val === null) this._explicitNullBody = true;
-            this.removeHeader('Content-Type');
-            this.removeHeader('Content-Length');
-            this.removeHeader('Transfer-Encoding');
+            this.removeHeader(hdrs.CONTENT_TYPE);
+            this.removeHeader(hdrs.CONTENT_LENGTH);
+            this.removeHeader(hdrs.TRANSFER_ENCODING);
             return;
         }
 
@@ -483,18 +680,18 @@ export class HttpContext extends TransportContext {
         if (!this._explicitStatus) this.status = 200;
 
         // set the content-type only if not yet set
-        const setType = !this.hasHeader('Content-Type');
+        const setType = !this.hasHeader(hdrs.CONTENT_TYPE);
 
         // string
         if (isString(val)) {
-            if (setType) this.contentType = /^\s*</.test(val) ? 'text/html' : 'text/plain';
+            if (setType) this.contentType = xmlpat.test(val) ? contentTypes.TEXT_HTML : contentTypes.TEXT_PLAIN;
             this.length = Buffer.byteLength(val);
             return;
         }
 
         // buffer
         if (isBuffer(val)) {
-            if (setType) this.contentType = 'application/octet-stream';
+            if (setType) this.contentType = contentTypes.OCTET_STREAM;
             this.length = val.length;
             return;
         }
@@ -508,16 +705,16 @@ export class HttpContext extends TransportContext {
             if (original != val) {
                 val.once('error', err => this.onError(err));
                 // overwriting
-                if (null != original) this.removeHeader('Content-Length');
+                if (null != original) this.removeHeader(hdrs.CONTENT_LENGTH);
             }
 
-            if (setType) this.contentType = 'application/octet-stream';
+            if (setType) this.contentType = contentTypes.OCTET_STREAM;
             return;
         }
 
         // json
-        this.removeHeader('Content-Length');
-        this.contentType = 'application/json';
+        this.removeHeader(hdrs.CONTENT_LENGTH);
+        this.contentType = contentTypes.APPL_JSON;
     }
 
     /**
@@ -527,10 +724,10 @@ export class HttpContext extends TransportContext {
      * @api public
      */
     set length(n: number | undefined) {
-        if (isNumber(n) && !this.hasHeader('Transfer-Encoding')) {
-            this.setHeader('Content-Length', n);
+        if (isNumber(n) && !this.hasHeader(hdrs.TRANSFER_ENCODING)) {
+            this.setHeader(hdrs.CONTENT_LENGTH, n);
         } else {
-            this.removeHeader('Content-Length');
+            this.removeHeader(hdrs.CONTENT_LENGTH);
         }
     }
 
@@ -542,13 +739,13 @@ export class HttpContext extends TransportContext {
      */
 
     get length(): number | undefined {
-        if (this.hasHeader('Content-Length')) {
-            return this.response.getHeader('Content-Length') as number || 0;
+        if (this.hasHeader(hdrs.CONTENT_LENGTH)) {
+            return this.response.getHeader(hdrs.CONTENT_LENGTH) as number || 0;
         }
 
         const { body } = this;
         if (!body || isStream(body)) return undefined;
-        if ('string' === typeof body) return Buffer.byteLength(body);
+        if (isString(body)) return Buffer.byteLength(body);
         if (Buffer.isBuffer(body)) return body.length;
         return Buffer.byteLength(JSON.stringify(body));
     }
@@ -803,7 +1000,7 @@ export class HttpContext extends TransportContext {
         const res = this.response;
 
         // first unset all headers
-        if (typeof res.getHeaderNames === 'function') {
+        if (isFunction(res.getHeaderNames)) {
             res.getHeaderNames().forEach(name => res.removeHeader(name));
         } else {
             (res as any)._headers = {}; // Node < 7.7
@@ -813,15 +1010,15 @@ export class HttpContext extends TransportContext {
         this.setHeader(err.headers);
 
         // force text/plain
-        this.type = 'text';
+        this.contentType = contentTypes.TEXT_PLAIN;
 
         let statusCode = (err.status || err.statusCode) as HttpStatusCode;
 
         // ENOENT support
-        if ('ENOENT' === err.code) statusCode = 404;
+        if (codes.ENOENT === err.code) statusCode = 404;
 
         // default to 500
-        if ('number' !== typeof statusCode || !statusMessage[statusCode]) statusCode = 500;
+        if (!isNumber(statusCode) || !statusMessage[statusCode]) statusCode = 500;
 
         // respond
         const code = statusMessage[statusCode];
@@ -834,3 +1031,51 @@ export class HttpContext extends TransportContext {
 }
 
 
+const httptl = /^https?:\/\//i;
+const urlsplit = /\s*,\s*/;
+const xmlpat = /^\s*</;
+const no_cache = /(?:^|,)\s*?no-cache\s*?(?:,|$)/;
+const methods = ['GET', 'HEAD', 'PUT', 'DELETE', 'OPTIONS', 'TRACE'];
+
+
+function parseStamp(date?: string | number): number {
+    if (date) {
+        return isString(date) ? Date.parse(date) : date;
+    }
+    return NaN;
+}
+/**
+ * Parse a HTTP token list.
+ *
+ * @param {string} str
+ * @private
+ */
+
+function parseTokenList(str: string) {
+    let end = 0
+    let list = []
+    let start = 0
+
+    // gather tokens
+    for (let i = 0, len = str.length; i < len; i++) {
+        switch (str.charCodeAt(i)) {
+            case 0x20: /*   */
+                if (start === end) {
+                    start = end = i + 1
+                }
+                break
+            case 0x2c: /* , */
+                list.push(str.substring(start, end))
+                start = end = i + 1
+                break
+            default:
+                end = i + 1
+                break
+        }
+    }
+
+    // final token
+    list.push(str.substring(start, end))
+
+    return list;
+}

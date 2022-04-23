@@ -1,13 +1,14 @@
-import { Endpoint, TransportServer } from '@tsdi/core';
+import { EndpointBackend, TransportContextFactory, TransportServer } from '@tsdi/core';
 import { Inject, Injectable, InvocationContext, lang, tokenId } from '@tsdi/ioc';
 import { WebSocket, WebSocketServer, ServerOptions } from 'ws';
 import { WsRequest } from './request';
-import { WsServerResponse } from './response';
+import { WsResponse } from './response';
 
 export const WS_SERVER_OPTIONS = tokenId<ServerOptions>('WS_SERVER_OPTIONS');
 
 @Injectable()
-export class WsServer extends TransportServer<WsRequest, WsServerResponse>{
+export class WsServer extends TransportServer<WsRequest, WsResponse>{
+
 
     private server?: WebSocketServer;
     constructor(
@@ -38,7 +39,11 @@ export class WsServer extends TransportServer<WsRequest, WsServerResponse>{
         });
     }
 
-    getEndpoint(): Endpoint<WsRequest<any>, WsServerResponse<any>> {
+    get contextFactory(): TransportContextFactory<WsRequest<any>, WsResponse<any>> {
+        throw new Error('Method not implemented.');
+    }
+
+    getBackend(): EndpointBackend<WsRequest<any>, WsResponse<any>> {
         throw new Error('Method not implemented.');
     }
 

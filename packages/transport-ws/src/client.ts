@@ -1,4 +1,4 @@
-import { Endpoint, TransportClient, TransportContext } from '@tsdi/core';
+import { Endpoint, EndpointBackend, TransportClient, TransportContext } from '@tsdi/core';
 import { Inject, Injectable, InvocationContext, isString, lang, tokenId } from '@tsdi/ioc';
 import { WebSocket, ClientOptions } from 'ws';
 import { WsRequest } from './request';
@@ -27,8 +27,7 @@ export class WsClient extends TransportClient<WsRequest, WsResponse> {
         super();
     }
 
-
-    getEndpoint(): Endpoint<WsRequest<any>, WsResponse<any>> {
+    getBackend(): EndpointBackend<WsRequest<any>, WsResponse<any>> {
         throw new Error('Method not implemented.');
     }
 

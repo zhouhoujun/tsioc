@@ -1,4 +1,5 @@
-import { RequestBase, ResponseBase, TransportContext, UUIDFactory } from '@tsdi/core';
+import { RequestBase, ResponseBase, UUIDFactory } from '@tsdi/core';
+import { InvocationContext } from '@tsdi/ioc';
 import { Socket } from 'net';
 
 
@@ -11,7 +12,7 @@ export class TCPRequest<T = any> extends RequestBase<T> {
     public readonly params: Record<string, any>;
     public readonly body: T | null;
     private _update: boolean;
-    constructor(public readonly context: TransportContext, option: {
+    constructor(public readonly context: InvocationContext, option: {
         id?: string;
         url: string;
         socket: Socket;
@@ -21,7 +22,6 @@ export class TCPRequest<T = any> extends RequestBase<T> {
         update?: boolean;
     }) {
         super();
-        this.context.request = this;
         this.id = option.id ?? this.context.resolve(UUIDFactory).generate();
         this.url = option.url;
         this.method = option.method ?? 'EES';

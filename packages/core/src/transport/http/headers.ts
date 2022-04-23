@@ -260,23 +260,3 @@ export class HttpHeaders {
       .forEach(key => fn(this.normalizedNames.get(key)!, this.headers.get(key)!));
   }
 }
-
-/**
- * header keys.
- */
-export namespace headers {
-
-  /**
-   * Set or get Content-Type response header with `type`.
-   */
-  export const contentType = 'Content-Type';
-  /**
-   * Set or get Content-Length field to `n`.
-   */
-  export const contentLength = 'Content-Length';
-
-  /**
-   * Accept header
-   */
-  export const accept = 'Accept';
-}
