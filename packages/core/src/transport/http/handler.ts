@@ -1,4 +1,4 @@
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, InvocationContext } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Endpoint, EndpointBackend } from '../endpoint';
 import { HttpRequest } from './request';
@@ -12,8 +12,9 @@ export abstract class HttpHandler implements Endpoint<HttpRequest, HttpEvent> {
     /**
      * http transport handler.
      * @param req http request input.
+     * @param context request with context for interceptor
      */
-    abstract handle(req: HttpRequest): Observable<HttpEvent>;
+    abstract handle(req: HttpRequest, context?: InvocationContext): Observable<HttpEvent>;
 }
 
 /**
@@ -24,8 +25,9 @@ export abstract class HttpBackend implements EndpointBackend<HttpRequest, HttpEv
     /**
      * http transport handler.
      * @param req http request input.
+     * @param context request with context for interceptor
      */
-    abstract handle(req: HttpRequest): Observable<HttpEvent>;
+    abstract handle(req: HttpRequest, context?: InvocationContext): Observable<HttpEvent>;
 }
 
 /**

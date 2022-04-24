@@ -1,4 +1,4 @@
-import { Abstract, chain, Handler, isFunction } from '@tsdi/ioc';
+import { Abstract, chain, Handler, InvocationContext, isFunction } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
 import { TransportContext, TransportContextFactory } from './context';
@@ -10,12 +10,13 @@ import { TransportContext, TransportContextFactory } from './context';
 export interface Endpoint<TRequest, TResponse> {
     /**
      * transport endpoint handle.
-     * @param req request input with context.
+     * @param req request input.
+     * @param context request context.
      */
-    handle(req: TRequest): Observable<TResponse>;
+    handle(req: TRequest, context?: InvocationContext): Observable<TResponse>;
 }
 
-export type EndpointFn<TRequest, TResponse> = (req: TRequest) => Observable<TResponse>;
+export type EndpointFn<TRequest, TResponse> = (req: TRequest, context?: InvocationContext) => Observable<TResponse>;
 
 
 /**
@@ -30,9 +31,10 @@ export type EndpointFn<TRequest, TResponse> = (req: TRequest) => Observable<TRes
 export abstract class EndpointBackend<TRequest, TResponse> implements Endpoint<TRequest, TResponse> {
     /**
      * transport endpoint handle.
-     * @param req request input with context.
+     * @param req request input.
+     * @param context request context.
      */
-    abstract handle(req: TRequest): Observable<TResponse>;
+    abstract handle(req: TRequest, context?: InvocationContext): Observable<TResponse>;
 }
 
 /**
@@ -41,18 +43,19 @@ export abstract class EndpointBackend<TRequest, TResponse> implements Endpoint<T
 export interface Interceptor<TRequest, TResponse> {
     /**
      * the method to implemet interceptor.
-     * @param req  request with context.
+     * @param req  request input.
      * @param next The next interceptor in the chain, or the backend
      * if no interceptors remain in the chain.
+     * @param context request context.
      * @returns An observable of the event stream.
      */
-    intercept(req: TRequest, next: Endpoint<TRequest, TResponse>): Observable<TResponse>;
+    intercept(req: TRequest, next: Endpoint<TRequest, TResponse>, context?: InvocationContext): Observable<TResponse>;
 }
 
 /**
  * interceptor function.
  */
-export type InterceptorFn<TRequest, TResponse> = (req: TRequest, next: Endpoint<TRequest, TResponse>) => Observable<TResponse>;
+export type InterceptorFn<TRequest, TResponse> = (req: TRequest, next: Endpoint<TRequest, TResponse>, context?: InvocationContext) => Observable<TResponse>;
 
 
 /**
@@ -79,8 +82,8 @@ export type MiddlewareFn<T extends TransportContext = TransportContext> = Handle
 export class InterceptorEndpoint<TRequest, TResponse> implements Endpoint<TRequest, TResponse> {
     constructor(private next: Endpoint<TRequest, TResponse>, private middleware: Interceptor<TRequest, TResponse>) { }
 
-    handle(req: TRequest): Observable<TResponse> {
-        return this.middleware.intercept(req, this.next);
+    handle(req: TRequest, context?: InvocationContext): Observable<TResponse> {
+        return this.middleware.intercept(req, this.next, context);
     }
 }
 
@@ -97,12 +100,21 @@ export class InterceptorChain<TRequest, TResponse> implements Endpoint<TRequest,
         this.backend = isFunction(backend) ? { handle: backend } : backend;
     }
 
-    handle(req: TRequest): Observable<TResponse> {
+    handle(req: TRequest, context?: InvocationContext): Observable<TResponse> {
         if (!this.chain) {
             this.chain = this.interceptors.reduceRight(
                 (next, middleware) => new InterceptorEndpoint(next, middleware), this.backend);
         }
-        return this.chain.handle(req);
+        return this.chain.handle(req, context);
+    }
+}
+
+export class CustomEndpoint<TRequest, TResponse> implements Endpoint<TRequest, TResponse>  {
+
+    constructor(private fn: EndpointFn<TRequest, TResponse>) { }
+
+    handle(req: TRequest, context?: InvocationContext<any>): Observable<TResponse> {
+        return this.fn(req, context);
     }
 }
 
@@ -112,20 +124,19 @@ export class InterceptorChain<TRequest, TResponse> implements Endpoint<TRequest,
 export class MiddlewareBackend<TRequest, TResponse> implements EndpointBackend<TRequest, TResponse> {
 
     private _middleware?: MiddlewareFn;
-    constructor(private factory: TransportContextFactory<TRequest, TResponse>, private backend: EndpointBackend<TRequest, TResponse>, private middlewares: (Middleware | MiddlewareFn)[]) {
+    constructor(private backend: EndpointBackend<TRequest, TResponse>, private middlewares: (Middleware | MiddlewareFn)[]) {
 
     }
 
-    handle(req: TRequest): Observable<TResponse> {
-        return this.backend.handle(req)
+    handle(req: TRequest, context: TransportContext): Observable<TResponse> {
+        return this.backend.handle(req, context)
             .pipe(
                 mergeMap(async resp => {
                     if (!this._middleware) {
                         this._middleware = compose(this.middlewares);
                     }
                     try {
-                        const ctx = this.factory.create({ request: req, response: resp });
-                        await this._middleware(ctx, () => ctx.destroy() as Promise<void>);
+                        await this._middleware(context, NEXT);
                     } catch (err) {
                         throw err;
                     }

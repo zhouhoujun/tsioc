@@ -1,7 +1,8 @@
 import { Inject, Injectable, InvocationContext, isFunction, lang, tokenId } from '@tsdi/ioc';
-import { InterceptorChain, Endpoint, HttpEvent, Interceptor, InterceptorFn, TransportContext, TransportServer, EndpointBackend, TransportContextFactory, RequestMethod } from '@tsdi/core';
+import { TransportContext, TransportServer, EndpointBackend, TransportContextFactory, CustomEndpoint } from '@tsdi/core';
 import { Logger } from '@tsdi/logs';
 import { fromEvent, of, race } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
@@ -26,25 +27,27 @@ export type HttpServerOptions = Http1ServerOptions | Http2ServerOptions;
 
 export const HTTP_SERVEROPTIONS = tokenId<HttpServerOptions>('HTTP_SERVEROPTIONS');
 
+/**
+ * http server.
+ */
 @Injectable()
 export class HttpServer extends TransportServer<HttpRequest, HttpResponse> {
 
-
-    private _endpoint!: Endpoint<HttpRequest, HttpResponse>;
+    private _backend?: EndpointBackend<HttpRequest, HttpResponse>;
     private _server?: http2.Http2Server | http.Server | https.Server;
     constructor(
+        @Inject() readonly contextFactory: TransportContextFactory<HttpRequest, HttpResponse>,
         @Inject() private context: InvocationContext,
         @Inject(HTTP_SERVEROPTIONS, { defaultValue: defaultOption }) private options: HttpServerOptions
     ) {
         super();
     }
 
-    get contextFactory(): TransportContextFactory<HttpRequest, HttpResponse> {
-        throw new Error('Method not implemented.');
-    }
-
     getBackend(): EndpointBackend<HttpRequest, HttpResponse> {
-        throw new Error('Method not implemented.');
+        if (!this._backend) {
+            this._backend = new CustomEndpoint<HttpRequest, HttpResponse>((req, ctx) => of((ctx as HttpContext).response));
+        }
+        return this._backend;
     }
 
     async startup(): Promise<void> {
@@ -59,8 +62,19 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse> {
         }
         this.context.setValue(Logger, this.logger);
 
+        const handler = (request: HttpRequest, response: HttpResponse) => {
+            const ctx = this.contextFactory.create(request, response, this) as HttpContext;
+            ctx.setValue(Logger, this.logger);
+            ctx.status = 404;
+            return this.chain().handle(request, ctx)
+                .pipe(
+                    catchError((err, caught) => {
+                        ctx.onError(err);
+                        return caught;
+                    })
+                );
+        }
         if (options.version === 'http2') {
-            const handler = this.http2RequestHandler.bind(this);
             if (options.options) {
                 this._server = (options.options as http2.SecureServerOptions)?.cert ?
                     http2.createSecureServer(options.options, handler) : http2.createServer(options.options, handler);
@@ -68,7 +82,6 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse> {
                 this._server = http2.createServer(handler);
             }
         } else {
-            const handler = this.http1RequestHandler.bind(this);
             if (options.options) {
                 this._server = (options.options as https.ServerOptions).cert ?
                     https.createServer(options.options as https.ServerOptions, handler) : http.createServer(options.options as http.ServerOptions, handler);
@@ -78,30 +91,12 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse> {
         }
     }
 
-    protected http1RequestHandler(request: http.IncomingMessage, response: http.ServerResponse) {
-        const ctx = TransportContext.create(this.context, {
-            target: this,
-            request,
-            response
-        });
-
-        this.chain().handle(request);
-    }
-    protected http2RequestHandler(request: http2.Http2ServerRequest, response: http2.Http2ServerResponse) {
-        const ctx = TransportContext.create(this.context, {
-            target: this,
-            request,
-            response
-        });
-
-        this.chain().handle(request);
-    }
 
     async close(): Promise<void> {
-        if(!this._server) return;
+        if (!this._server) return;
         const defer = lang.defer();
         this._server.close((err) => {
-            if(err) {
+            if (err) {
                 this.logger.error(err);
                 defer.reject(err);
             } else {
@@ -110,5 +105,4 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse> {
         });
         await defer.promise;
     }
-
 }

@@ -1,5 +1,5 @@
 /// <reference path="./type.d.ts" />
-import { EMPTY_OBJ, Injectable, Injector, ProviderType } from '@tsdi/ioc';
+import { EMPTY_OBJ, Injectable, Injector, InvocationContext, ProviderType } from '@tsdi/ioc';
 import { HttpBackend, HttpEvent, HttpHandler, HttpInterceptingHandler, HttpRequest, SERVEROPTION, XhrFactory } from '@tsdi/core';
 import * as xhr2 from 'xhr2';
 import { Observable } from 'rxjs';
@@ -21,7 +21,7 @@ export class HttpClientBackend implements HttpBackend {
 
   }
 
-  handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
+  handle(req: HttpRequest<any>, context?: InvocationContext): Observable<HttpEvent<any>> {
     return new Observable(observer => process.nextTick(() => {
       const { hostname, port } = this.injector.get(SERVEROPTION) ?? EMPTY_OBJ;
 
@@ -35,7 +35,7 @@ export class HttpClientBackend implements HttpBackend {
       } else {
         request = req;
       }
-      this.backend.handle(request).subscribe(observer);
+      this.backend.handle(request, context).subscribe(observer);
     }));
   }
 

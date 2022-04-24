@@ -87,7 +87,9 @@ export class DefaultInjector extends Injector {
             default:
                 if (scope) this.platform().setInjector(scope, this);
                 injectAlias.forEach(tk => this.records.set(tk, val));
-                this.isAlias = isInjectAlias;
+                if(!this.isStatic) {
+                    this.isAlias = isInjectAlias;
+                }
                 this.lifecycle = this.createLifecycle();
                 break;
         }

@@ -5,7 +5,7 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.io/license
  */
-import { Inject, Injectable } from '@tsdi/ioc';
+import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
 import { Observable, Observer } from 'rxjs';
 import { DOCUMENT } from '../../platform';
 import { HttpBackend, HttpHandler } from './handler';
@@ -70,7 +70,7 @@ export class JsonpClientBackend implements HttpBackend {
      * @returns An observable of the response events.
      *
      */
-    handle(req: HttpRequest<never>): Observable<HttpEvent<any>> {
+    handle(req: HttpRequest<never>, context?: InvocationContext): Observable<HttpEvent<any>> {
         // Firstly, check both the method and response type. If either doesn't match
         // then the request was improperly routed here and cannot be handled.
         if (req.method !== 'JSONP') {
@@ -242,11 +242,11 @@ export class JsonpInterceptor {
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    intercept(req: HttpRequest<any>, next: HttpHandler, context?: InvocationContext): Observable<HttpEvent<any>> {
         if (req.method === 'JSONP') {
-            return this.jsonp.handle(req as HttpRequest<never>);
+            return this.jsonp.handle(req as HttpRequest<never>, context);
         }
         // Fall through for normal HTTP requests.
-        return next.handle(req);
+        return next.handle(req, context);
     }
 }

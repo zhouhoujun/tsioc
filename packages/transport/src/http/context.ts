@@ -1,5 +1,5 @@
-import { HttpStatusCode, Protocol, ResponseHeader, TransportContext } from '@tsdi/core';
-import { ArgumentError, Injector, InvokeOption, isArray, isFunction, isNumber, isString, lang } from '@tsdi/ioc';
+import { HttpStatusCode, Protocol, TransportContext, TransportContextFactory } from '@tsdi/core';
+import { Injectable, Injector, InvokeArguments, isArray, isFunction, isNumber, isString, lang } from '@tsdi/ioc';
 import * as util from 'util';
 import * as assert from 'assert';
 import * as http from 'http';
@@ -19,36 +19,18 @@ export type HttpRequest = http.IncomingMessage | http2.Http2ServerRequest;
 export type HttpResponse = http.ServerResponse | http2.Http2ServerResponse;
 
 
-export interface HttpContextOption extends InvokeOption {
-    target?: any;
-    request: HttpRequest;
-    response: HttpResponse;
-}
-
-export class HttpContext extends TransportContext {
+export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
 
     protected _body: any;
     private _explicitStatus?: boolean;
     private _explicitNullBody?: boolean;
     private _URL?: URL;
     private _ip?: string;
-    /**
-     * transport request.
-     */
-    readonly request: HttpRequest;
-
-    /**
-     * transport response.
-     */
-    readonly response: HttpResponse;
-
     readonly originalUrl: string;
 
-    constructor(injector: Injector, options: HttpContextOption) {
-        super(injector, options);
-        this.request = options.request;
-        this.response = options.response;
-        this.originalUrl = this.request.url ?? '';
+    constructor(injector: Injector, request: HttpRequest, response: HttpResponse, target?: any, options?: InvokeArguments) {
+        super(injector, request, response, target, options);
+        this.originalUrl = request.url ?? '';
     }
 
     /**
@@ -796,7 +778,7 @@ export class HttpContext extends TransportContext {
     }
 
     vary(field: string) {
-        if(this.sent) return;
+        if (this.sent) return;
         let val = this.response.getHeader('Vary') ?? '';
         let header = Array.isArray(val)
             ? val.join(', ')
@@ -1113,4 +1095,16 @@ function parseStamp(date?: string | number): number {
         return isString(date) ? Date.parse(date) : date;
     }
     return NaN;
+}
+
+@Injectable()
+export class HttpContextFactory extends TransportContextFactory<HttpRequest, HttpResponse> {
+    constructor(private injector: Injector) {
+        super();
+    }
+
+    create(request: HttpRequest, response: HttpResponse, target: any, options?: InvokeArguments): HttpContext {
+        return new HttpContext(this.injector, request, response, target, options);
+    }
+
 }

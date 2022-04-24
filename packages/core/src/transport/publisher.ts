@@ -63,7 +63,7 @@ export abstract class Publisher<TRequest, TResponse> implements Startup, OnDispo
      */
     chain(): Endpoint<TRequest, TResponse> {
         if (!this._chain) {
-            this._chain = new InterceptorChain(new MiddlewareBackend(this.contextFactory, this.getBackend(), this._middlewares), this.getInterceptors());
+            this._chain = new InterceptorChain(new MiddlewareBackend(this.getBackend(), this._middlewares), this.getInterceptors());
         }
         return this._chain;
     }

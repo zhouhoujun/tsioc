@@ -63,7 +63,7 @@ export abstract class TransportServer<TRequest, TResponse> implements Startup, O
      */
     chain(): Endpoint<TRequest, TResponse> {
         if (!this._chain) {
-            this._chain = new InterceptorChain(new MiddlewareBackend(this.contextFactory, this.getBackend(), this._middlewares), this.getInterceptors());
+            this._chain = new InterceptorChain(new MiddlewareBackend(this.getBackend(), this._middlewares), this.getInterceptors());
         }
         return this._chain;
     }

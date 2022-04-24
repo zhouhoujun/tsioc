@@ -1,14 +1,5 @@
-import { Abstract, DefaultInvocationContext, Injector, InvocationContext, InvocationOption, isPromise } from '@tsdi/ioc';
+import { Abstract, DefaultInvocationContext, Injector, InvocationContext, InvokeArguments, isPromise } from '@tsdi/ioc';
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
-
-/**
- * transport option.
- */
-export interface TransportOption<TRequest = any, TResponse = any> extends InvocationOption {
-    target?: any;
-    request: TRequest;
-    response: TResponse;
-}
 
 
 /**
@@ -28,11 +19,11 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
      * transport response.
      */
     readonly response: TResponse;
-    constructor(injector: Injector, options: TransportOption) {
+    constructor(injector: Injector, request: TRequest, response: TResponse, target?: any, options?: InvokeArguments) {
         super(injector, options);
-        this.target = options?.target;
-        this.request = options.request;
-        this.response = options.response;
+        this.target = target;
+        this.request = request;
+        this.response = response;
     }
 
     /**
@@ -217,7 +208,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
      */
     abstract removeHeader(field: string): void;
 
-    static override create(parent: Injector | InvocationContext, options?: TransportOption): TransportContext {
+    static override create(parent: Injector | InvocationContext, options?: InvokeArguments): TransportContext {
         throw new Error('Method not implemented.');
     }
 }
@@ -225,15 +216,10 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
 @Abstract()
 export abstract class TransportContextFactory<TRequest = any, TResponse = any> {
     /**
-     * parent.
-     */
-    abstract get parent(): Injector | InvocationContext;
-    /**
      * create transport context.
-     * @param parent 
      * @param options 
      */
-    abstract create(options: TransportOption<TRequest, TResponse>): TransportContext<TRequest, TResponse>;
+    abstract create(request: TRequest, response: TResponse, target?: any, options?: InvokeArguments): TransportContext<TRequest, TResponse>;
 }
 
 /**

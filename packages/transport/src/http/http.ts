@@ -1,5 +1,6 @@
-import { Module, RouterModule, TransformModule } from '@tsdi/core';
+import { Module, RouterModule, TransformModule, TransportContextFactory } from '@tsdi/core';
 import { Http } from './clinet';
+import { HttpContextFactory } from './context';
 import { HttpServer } from './server';
 
 @Module({
@@ -8,6 +9,7 @@ import { HttpServer } from './server';
         RouterModule
     ],
     providers: [
+        { provide: TransportContextFactory, useClass: HttpContextFactory },
         HttpServer,
         Http
     ]

@@ -146,11 +146,9 @@ export class HttpRequest<T = any>  {
      */
     readonly urlWithParams: string;
 
-    readonly context!: InvocationContext;
 
     constructor(method: 'DELETE' | 'GET' | 'HEAD' | 'JSONP' | 'OPTIONS', url: string, init?: {
         headers?: HttpHeaders,
-        context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -158,7 +156,6 @@ export class HttpRequest<T = any>  {
     });
     constructor(method: 'POST' | 'PUT' | 'PATCH', url: string, body: T | null, init?: {
         headers?: HttpHeaders,
-        context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -166,7 +163,7 @@ export class HttpRequest<T = any>  {
     });
     constructor(method: string, url: string, body: T | null, init?: {
         headers?: HttpHeaders,
-        context?: InvocationContext,
+        
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -175,7 +172,7 @@ export class HttpRequest<T = any>  {
     constructor(
         method: string, readonly url: string, third?: T | {
             headers?: HttpHeaders,
-            context?: InvocationContext,
+            
             reportProgress?: boolean,
             params?: HttpParams,
             responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -183,7 +180,7 @@ export class HttpRequest<T = any>  {
         } | null,
         fourth?: {
             headers?: HttpHeaders,
-            context?: InvocationContext,
+            
             reportProgress?: boolean,
             params?: HttpParams,
             responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -219,10 +216,6 @@ export class HttpRequest<T = any>  {
             // Override headers if they're provided.
             if (!!options.headers) {
                 this.headers = options.headers;
-            }
-
-            if (!!options.context) {
-                this.context = options.context;
             }
 
             if (!!options.params) {
@@ -340,7 +333,7 @@ export class HttpRequest<T = any>  {
     clone(): HttpRequest<T>;
     clone(update: {
         headers?: HttpHeaders,
-        context?: InvocationContext,
+        
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -353,7 +346,7 @@ export class HttpRequest<T = any>  {
     }): HttpRequest<T>;
     clone<V>(update: {
         headers?: HttpHeaders,
-        context?: InvocationContext,
+        
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -366,7 +359,7 @@ export class HttpRequest<T = any>  {
     }): HttpRequest<V>;
     clone(update: {
         headers?: HttpHeaders,
-        context?: InvocationContext,
+        
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -401,9 +394,6 @@ export class HttpRequest<T = any>  {
         let headers = update.headers || this.headers;
         let params = update.params || this.params;
 
-        // Pass on context if needed
-        const context = update.context ?? this.context;
-
         // Check whether the caller has asked to add headers.
         if (update.setHeaders !== undefined) {
             // Set every requested header.
@@ -423,7 +413,6 @@ export class HttpRequest<T = any>  {
         return new HttpRequest(method, url, body, {
             params,
             headers,
-            context,
             reportProgress,
             responseType,
             withCredentials,

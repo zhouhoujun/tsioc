@@ -75,7 +75,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * add reference contexts.
      * @param contexts the list instance of {@link Injector} or {@link InvocationContext}.
      */
-    addRef(...contexts: InvocationContext[]) {
+    addRef(...contexts: InvocationContext[]): void {
         contexts.forEach(j => {
             if (!this.hasRef(j)) {
                 this._refs.push(j);
@@ -87,7 +87,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * remove reference resolver.
      * @param context instance of {@link InvocationContext}.
      */
-    removeRef(context: InvocationContext) {
+    removeRef(context: InvocationContext): void {
         remove(this._refs, context);
     }
 

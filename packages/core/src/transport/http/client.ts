@@ -434,7 +434,6 @@ export class HttpClient {
             // Construct the request.
             req = new HttpRequest(method ?? 'GET', url!, (options.body !== undefined ? options.body : null), {
                 headers,
-                context: options.context,
                 params,
                 reportProgress: options.reportProgress,
                 // By default, JSON is assumed to be returned for all calls.
@@ -448,7 +447,7 @@ export class HttpClient {
         // inside an Observable chain, which causes interceptors to be re-run on every
         // subscription (this also makes retries re-run the handler, including interceptors).
         const events$: Observable<HttpEvent<any>> =
-            of(req).pipe(concatMap((req: HttpRequest<any>) => this.handler.handle(req)));
+            of(req).pipe(concatMap((req: HttpRequest<any>) => this.handler.handle(req, options.context)));
 
         // If coming via the API signature which accepts a previously constructed HttpRequest,
         // the only option is to get the event stream. Otherwise, return the event stream if

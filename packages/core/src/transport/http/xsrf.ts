@@ -1,4 +1,4 @@
-import { Inject, Injectable, tokenId } from '@tsdi/ioc';
+import { Inject, Injectable, InvocationContext, tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { DOCUMENT, PLATFORM_ID } from '../../platform';
 
@@ -64,7 +64,7 @@ export class HttpXsrfInterceptor implements HttpInterceptor {
         private tokenService: HttpXsrfTokenExtractor,
         @Inject(XSRF_HEADER_NAME) private headerName: string) { }
 
-    intercept(req: HttpRequest, next: HttpHandler): Observable<HttpEvent> {
+    intercept(req: HttpRequest, next: HttpHandler, context?: InvocationContext): Observable<HttpEvent> {
         const lcUrl = req.url.toLowerCase();
         // Skip both non-mutating requests and absolute URLs.
         // Non-mutating requests don't require a token, and absolute URLs require special handling
@@ -80,7 +80,7 @@ export class HttpXsrfInterceptor implements HttpInterceptor {
         if (token !== null && !req.headers.has(this.headerName)) {
             req = req.clone({ headers: req.headers.set(this.headerName, token) });
         }
-        return next.handle(req);
+        return next.handle(req, context);
     }
 }
 
