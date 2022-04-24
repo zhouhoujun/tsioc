@@ -157,7 +157,7 @@ export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void
 export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void) {
     if (ctx.reflect.class.runnables.length) {
         const { injector: injector, type, instance, context } = ctx;
-        ctx.reflect.class.runnables.forEach(aut => {
+        ctx.reflect.class.runnables.filter(c => c.auto).forEach(aut => {
             injector.invoke(instance || type, aut.method, context);
         });
     }

@@ -1,6 +1,6 @@
 import { ApplicationContext, ComponentScan, ConfigureService, Repository, RequestParam, RouteMapping, Transactional } from '@tsdi/core';
 import { lang } from '@tsdi/ioc';
-import { ILogger, Logger } from '@tsdi/logs';
+import { ILogger, Log, Logger } from '@tsdi/logs';
 import { User } from '../models/models';
 import { UserRepository } from '../repositories/UserRepository';
 
@@ -10,7 +10,7 @@ export class UserController {
     // @Inject() injector!: Injector;
     // @Logger() logger!: ILogger;
 
-    constructor(private usrRep: UserRepository, @Logger() private logger: ILogger) {
+    constructor(private usrRep: UserRepository, @Log() private logger: Logger) {
 
     }
 

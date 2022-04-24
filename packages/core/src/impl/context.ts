@@ -40,7 +40,7 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
             this._multicaster = new DefaultEventMulticaster();
             injector.setValue(ApplicationEventMulticaster, this._multicaster);
         }
-        injector.setValue(InvocationContext, this);
+        // injector.setValue(InvocationContext, this);
         injector.setValue(ApplicationContext, this);
         this._runners = injector.get(ApplicationRunners);
         this.onDestroy(this._runners);

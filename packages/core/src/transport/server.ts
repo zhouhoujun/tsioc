@@ -1,4 +1,4 @@
-import { Abstract, isFunction, tokenId } from '@tsdi/ioc';
+import { Abstract, Inject, Injector, isFunction, tokenId } from '@tsdi/ioc';
 import { Logger, Log } from '@tsdi/logs';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
@@ -15,6 +15,8 @@ export abstract class TransportServer<TRequest, TResponse> implements Startup, O
 
     @Log()
     protected readonly logger!: Logger;
+    @Inject()
+    protected injector!: Injector;
 
     protected _chain?: Endpoint<TRequest, TResponse>;
     private _interceptors: Interceptor<TRequest, TResponse>[] = [];

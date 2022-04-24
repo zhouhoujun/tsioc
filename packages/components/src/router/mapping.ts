@@ -1,4 +1,4 @@
-import { RouteMappingRef, Context } from '@tsdi/core';
+import { RouteMappingRef, TransportContext } from '@tsdi/core';
 import { Type } from '@tsdi/ioc';
 import { ApplicationRef } from '../refs/app';
 
@@ -8,7 +8,7 @@ import { ApplicationRef } from '../refs/app';
  */
 export class HostMappingRoute<T = any> extends RouteMappingRef<T> {
 
-    protected getInstance(ctx: Context) {
+    protected getInstance(ctx: TransportContext) {
         // todo get host lived component.
         const appRef = this.injector.get(ApplicationRef);
         let component = appRef.components.find(c => c instanceof this.reflect.type)?.instance;

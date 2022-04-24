@@ -1,6 +1,7 @@
-import { Module, ConnectionOptions, TransactionModule } from '@tsdi/core';
+import { Module, ConnectionOptions, TransactionModule, LoggerModule } from '@tsdi/core';
 import { LogModule } from '@tsdi/logs';
-import { ServerBootstrapModule } from '@tsdi/platform-server';
+import { ServerModule } from '@tsdi/platform-server';
+import { HttpModule } from '@tsdi/transport';
 import { Connection } from 'typeorm';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
 import { Role, User } from './models/models';
@@ -45,8 +46,9 @@ export const connections = {
 @Module({
     // baseURL: __dirname,
     imports: [
-        LogModule,
-        ServerBootstrapModule,
+        LoggerModule,
+        ServerModule,
+        HttpModule,
         TransactionModule,
         TypeOrmModule.withConnection(connections)
     ],

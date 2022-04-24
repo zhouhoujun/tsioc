@@ -28,10 +28,10 @@ const defaults = {
 @Injectable()
 export class TCPClient extends TransportClient<TCPRequest, TCPResponse> {
 
+
     private socket?: Socket;
     private connected: boolean;
     constructor(
-        @Inject() private injector: Injector,
         @Inject({ nullable: true }) private options: TcpClientOption = defaults
     ) {
         super();
@@ -91,8 +91,8 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> {
 
     }
 
-    protected buildRequest(req: string | TCPRequest<any>, options?: any): TCPRequest<any> | Promise<TCPRequest<any>> {
-        return isString(req) ? new TCPRequest(InvocationContext.create(this.injector), options) : req;
+    protected buildRequest(ctx: InvocationContext, req: string | TCPRequest<any>, options?: any): TCPRequest<any> | Promise<TCPRequest<any>> {
+        return isString(req) ? new TCPRequest(ctx, options) : req;
     }
 
     async close(): Promise<void> {

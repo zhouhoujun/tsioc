@@ -166,7 +166,7 @@ export const DesignMthDecorScope = function (ctx: DesignContext, next: () => voi
  * @extends {IocDesignAction}
  */
 export const IocAutorunAction = function (ctx: DesignContext, next: () => void) {
-    if (ctx.reflect.class.runnables.length < 1) {
+    if (ctx.reflect.class.runnables.length < 1 || !ctx.reflect.class.runnables.some(c=> c.auto)) {
         return next();
     }
 

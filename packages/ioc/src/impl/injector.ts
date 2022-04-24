@@ -87,9 +87,7 @@ export class DefaultInjector extends Injector {
             default:
                 if (scope) this.platform().setInjector(scope, this);
                 injectAlias.forEach(tk => this.records.set(tk, val));
-                if(!this.isStatic) {
-                    this.isAlias = isInjectAlias;
-                }
+                this.isAlias = isInjectAlias;
                 this.lifecycle = this.createLifecycle();
                 break;
         }
@@ -695,7 +693,7 @@ export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, rec
     context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, lifecycle?: LifecycleHooks, isStatic?: boolean): any {
     try {
         const value = resolveToken(token, rd, records, platform, parent, context, notFoundValue, flags, lifecycle, isStatic);
-        if (rd && rd.fn !== IDENT && rd.fn !== MUTIL && lifecycle && isTypeObject(value)) {
+        if (token !== Injector && token !== INJECTOR && rd && rd.fn !== IDENT && rd.fn !== MUTIL && lifecycle && isTypeObject(value)) {
             lifecycle.register(value);
         }
         if (isStatic) {
@@ -753,7 +751,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                     isStatic));
             }
         }
-        if (context && rd.fn !==IDENT && rd.fn !== MUTIL) {
+        if (context && rd.fn !== IDENT && rd.fn !== MUTIL) {
             deps.push(context);
         }
         switch (rd.fnType) {

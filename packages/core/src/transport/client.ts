@@ -1,7 +1,7 @@
-import { Abstract, isFunction, isNil } from '@tsdi/ioc';
+import { Abstract, Inject, Injector, InvocationContext, isFunction, isNil } from '@tsdi/ioc';
 import { Logger, Log } from '@tsdi/logs';
 import { defer, Observable, throwError } from 'rxjs';
-import { concatMap } from 'rxjs/operators';
+import { catchError, concatMap, finalize } from 'rxjs/operators';
 import { OnDispose } from '../lifecycle';
 import { TransportError } from './error';
 import { InterceptorChain, Endpoint, EndpointBackend, Interceptor, InterceptorFn } from './endpoint';
@@ -15,7 +15,9 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> implem
 
     @Log()
     protected readonly logger!: Logger;
-    
+    @Inject()
+    protected injector!: Injector;
+
     protected _chain?: Endpoint<TRequest, TResponse>;
     private _interceptors: Interceptor<TRequest, TResponse>[] = [];
     /**
@@ -69,15 +71,27 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> implem
         if (isNil(req)) {
             return throwError(() => new TransportError(400, 'Invalid message'));
         }
+        let ctx = this.createContext();
         return defer(async () => {
             await this.connect();
-            return this.buildRequest(req, options);
+            return this.buildRequest(ctx, req, options);
         }).pipe(
-            concatMap((req) => this.chain().handle(req))
+            concatMap((req) => this.chain().handle(req, ctx)),
+            catchError((err, caught) => {
+                this.logger.error(err);
+                return caught;
+            }),
+            finalize(() => {
+                ctx.destroy();
+            })
         );
     }
 
-    protected abstract buildRequest(req: TRequest | string, options?: TOption): Promise<TRequest> | TRequest;
+    protected createContext(): InvocationContext {
+        return InvocationContext.create(this.injector);
+    }
+
+    protected abstract buildRequest(context: InvocationContext, req: TRequest | string, options?: TOption): Promise<TRequest> | TRequest;
 
     /**
      * close client.

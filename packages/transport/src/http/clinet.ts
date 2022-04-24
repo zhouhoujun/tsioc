@@ -1,4 +1,4 @@
-import { EMPTY_OBJ, Inject, Injectable, InvocationContext, lang, tokenId } from '@tsdi/ioc';
+import { EMPTY_OBJ, Inject, Injectable, Injector, InvocationContext, lang, tokenId } from '@tsdi/ioc';
 import { InterceptorChain, Endpoint, Interceptor, InterceptorFn, RequestMethod, TransportClient, EndpointBackend } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { Logger } from '@tsdi/logs';
@@ -30,7 +30,6 @@ export class Http extends TransportClient<HttpRequest, HttpResponse> {
     private http2client?: http2.ClientHttp2Session;
 
     constructor(
-        @Inject() private context: InvocationContext,
         @Inject(HTTP_SESSIONOPTIONS, { defaultValue: EMPTY_OBJ }) private options: HttpSessionOptions) {
         super()
     }
@@ -40,7 +39,6 @@ export class Http extends TransportClient<HttpRequest, HttpResponse> {
     }
 
     async connect(): Promise<any> {
-        this.context.setValue(Logger, this.logger);
         if (this.options.authority) {
             if (this.http2client && !this.http2client.closed) {
                 return;
@@ -67,7 +65,7 @@ export class Http extends TransportClient<HttpRequest, HttpResponse> {
         }
     }
 
-    protected buildRequest(url: string | HttpRequest, options?: { body?: any; method?: RequestMethod | undefined; headers?: any; context?: InvocationContext<any> | undefined; params?: any; observe?: 'body' | 'events' | 'response' | undefined; reportProgress?: boolean | undefined; responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | undefined; withCredentials?: boolean | undefined; }): HttpRequest {
+    protected buildRequest(ctx: InvocationContext, url: string | HttpRequest, options?: { body?: any; method?: RequestMethod | undefined; headers?: any; context?: InvocationContext<any> | undefined; params?: any; observe?: 'body' | 'events' | 'response' | undefined; reportProgress?: boolean | undefined; responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | undefined; withCredentials?: boolean | undefined; }): HttpRequest {
         throw new Error('Method not implemented.');
     }
 

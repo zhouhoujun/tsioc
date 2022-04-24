@@ -3,6 +3,7 @@ import { TransportContext, TransportServer, EndpointBackend, TransportContextFac
 import { Logger } from '@tsdi/logs';
 import { fromEvent, of, race } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { ListenOptions } from 'net';
 import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
@@ -17,10 +18,12 @@ export type HttpVersion = 'http1.1' | 'http2';
 export interface Http1ServerOptions {
     version: 'http1.1',
     options?: http.ServerOptions | https.ServerOptions;
+    listenOptions?: ListenOptions;
 }
 export interface Http2ServerOptions {
     version?: 'http2',
     options?: http2.ServerOptions | http2.SecureServerOptions;
+    listenOptions?: ListenOptions;
 }
 const defaultOption = { version: 'http2' };
 export type HttpServerOptions = Http1ServerOptions | Http2ServerOptions;
@@ -37,7 +40,6 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse> {
     private _server?: http2.Http2Server | http.Server | https.Server;
     constructor(
         @Inject() readonly contextFactory: TransportContextFactory<HttpRequest, HttpResponse>,
-        @Inject() private context: InvocationContext,
         @Inject(HTTP_SERVEROPTIONS, { defaultValue: defaultOption }) private options: HttpServerOptions
     ) {
         super();
@@ -55,12 +57,11 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse> {
         if (!options.version) {
             options.version = 'http2';
         }
-        if (this.context.hasValue(CONTENT_DISPOSITION)) {
-            const func = await this.context.injector.getLoader().require('content-disposition');
+        if (this.injector.has(CONTENT_DISPOSITION)) {
+            const func = await this.injector.getLoader().require('content-disposition');
             assert(isFunction(func), 'Can not found any Content Disposition provider. Require content-disposition module');
-            this.context.setValue(CONTENT_DISPOSITION, func);
+            this.injector.setValue(CONTENT_DISPOSITION, func);
         }
-        this.context.setValue(Logger, this.logger);
 
         const handler = (request: HttpRequest, response: HttpResponse) => {
             const ctx = this.contextFactory.create(request, response, this) as HttpContext;
@@ -89,6 +90,7 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse> {
                 this._server = http.createServer(handler);
             }
         }
+        this._server.listen(this.options.listenOptions);
     }
 
 
