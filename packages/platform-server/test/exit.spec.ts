@@ -1,6 +1,6 @@
 
 import { Application, ApplicationContext, Module } from '@tsdi/core';
-import { ServerBootstrapModule } from '../src';
+import { ServerModule } from '../src';
 import { Before, Suite, Test } from '@tsdi/unit';
 import expect = require('expect');
 
@@ -8,7 +8,7 @@ import expect = require('expect');
 @Module({
     // baseURL: __dirname,
     imports: [
-        ServerBootstrapModule
+        ServerModule
     ]
 })
 class MainModule { }

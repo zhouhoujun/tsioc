@@ -25,7 +25,7 @@ export interface Http2ServerOptions {
     options?: http2.ServerOptions | http2.SecureServerOptions;
     listenOptions?: ListenOptions;
 }
-const defaultOption = { version: 'http2' };
+const defaultOption = { version: 'http2', listenOptions: { port: 3000, host: 'localhost' } as ListenOptions };
 export type HttpServerOptions = Http1ServerOptions | Http2ServerOptions;
 
 export const HTTP_SERVEROPTIONS = tokenId<HttpServerOptions>('HTTP_SERVEROPTIONS');

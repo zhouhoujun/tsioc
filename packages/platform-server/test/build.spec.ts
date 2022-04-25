@@ -2,7 +2,7 @@ import { getToken, Injector } from '@tsdi/ioc';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, Student, InjCollegeClassRoom, InjMClassRoom, StringIdTest, SymbolIdest } from './debug';
 
 import expect = require('expect');
-import { ServerBootstrapModule } from '../src';
+import { ServerModule } from '../src';
 import { Application, ApplicationContext } from '@tsdi/core';
 
 
@@ -14,7 +14,7 @@ describe('auto register with build', () => {
 
     before(async () => {
         ctx = await Application.run({
-            type: ServerBootstrapModule,
+            module: ServerModule,
             loads: [
                 {
                     files: __dirname + '/debug.ts'

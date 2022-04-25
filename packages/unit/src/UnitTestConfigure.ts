@@ -21,6 +21,10 @@ export interface UnitTestOptions {
  */
 export interface UnitTestConfigure {
     /**
+     * base url
+     */
+    baseURL?: string;
+    /**
      * test source
      *
      * @type {(string | Type | (string | Type)[])}

@@ -1,5 +1,5 @@
-import { LoadType, Type } from '@tsdi/ioc';
-import { ApplicationOption, Application, Module, LoggerModule } from '@tsdi/core';
+import { LoadType, ProviderType, Type } from '@tsdi/ioc';
+import { ApplicationOption, Application, Module, LoggerModule, PROCESS_ROOT } from '@tsdi/core';
 import { UNITTESTCONFIGURE, UnitTestConfigureService } from './configure';
 import { UnitTestConfigure } from './UnitTestConfigure';
 import { UnitTestRunner } from './runner/UnitTestRunner';
@@ -37,14 +37,18 @@ export class UnitTest { }
  * @returns {Promise<any>}
  */
 export async function runTest(src: string | Type | (string | Type)[], config?: UnitTestConfigure, ...loads: LoadType[]): Promise<any> {
+   const providers: ProviderType[] = [
+      {
+         provide: UNITTESTCONFIGURE,
+         useValue: { ...config, src }
+      }
+   ];
+   if (config?.baseURL) {
+      providers.push({ provide: PROCESS_ROOT, useValue: config.baseURL });
+   }
    await Application.run({
       module: UnitTest,
       loads,
-      providers: [
-         {
-            provide: UNITTESTCONFIGURE,
-            useValue: { ...config, src }
-         }
-      ]
+      providers
    } as ApplicationOption)
 }
