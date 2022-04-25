@@ -1,7 +1,8 @@
 /// <reference path="./type.d.ts" />
-import { EMPTY_OBJ, Injectable, Injector, InvocationContext, ProviderType } from '@tsdi/ioc';
-import { HttpBackend, HttpEvent, HttpHandler, HttpInterceptingHandler, HttpRequest, Module, SERVEROPTION, XhrFactory } from '@tsdi/core';
+import { EMPTY_OBJ, Injectable, Injector, InvocationContext, ProviderType, tokenId } from '@tsdi/ioc';
+import { HttpBackend, HttpEvent, HttpHandler, HttpInterceptingHandler, HttpRequest, Module, XhrFactory } from '@tsdi/core';
 import * as xhr2 from 'xhr2';
+import { ListenOptions } from 'net';
 import { Observable } from 'rxjs';
 import { ServerModule } from './ServerModule';
 
@@ -16,6 +17,21 @@ export class ServerXhr implements XhrFactory {
 
 const isAbsoluteUrl = /^[a-zA-Z\-\+.]+:\/\//;
 
+/**
+ * http listen options.
+ */
+export interface HttpListenOptions extends ListenOptions {
+  withCredentials?: boolean;
+}
+
+/**
+ *  http server ListenOptions.
+ */
+export const HTTP_LISTENOPTIONS = tokenId<HttpListenOptions>('HTTP_LISTENOPTIONS');
+
+/**
+ * http client backend.
+ */
 export class HttpClientBackend implements HttpBackend {
 
   constructor(private backend: HttpBackend, private injector: Injector) {
@@ -24,12 +40,11 @@ export class HttpClientBackend implements HttpBackend {
 
   handle(req: HttpRequest<any>, context?: InvocationContext): Observable<HttpEvent<any>> {
     return new Observable(observer => process.nextTick(() => {
-      const { hostname, port } = this.injector.get(SERVEROPTION) ?? EMPTY_OBJ;
-
       let request: HttpRequest;
-      const protocol = req.withCredentials ? 'https' : 'http';
       if (!isAbsoluteUrl.test(req.url)) {
-        const urlPrefix = `${protocol}://${hostname ?? 'localhost'}:${port ?? 3000}`;
+        const { host, port, path, withCredentials } = context?.get(HTTP_LISTENOPTIONS) ?? this.injector.get(HTTP_LISTENOPTIONS) ?? EMPTY_OBJ;
+        const protocol = (req.withCredentials || withCredentials) ? 'https' : 'http';
+        const urlPrefix = `${protocol}://${host ?? 'localhost'}:${port ?? 3000}${path ?? ''}`;
         const baseUrl = new URL(urlPrefix);
         const url = new URL(req.url, baseUrl);
         request = req.clone({ url: url.toString() });

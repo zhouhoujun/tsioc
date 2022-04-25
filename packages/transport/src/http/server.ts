@@ -1,6 +1,7 @@
-import { Inject, Injectable, InvocationContext, isFunction, lang, tokenId } from '@tsdi/ioc';
-import { TransportContext, TransportServer, EndpointBackend, TransportContextFactory, CustomEndpoint } from '@tsdi/core';
+import { Inject, Injectable, isFunction, lang, tokenId } from '@tsdi/ioc';
+import { TransportServer, EndpointBackend, TransportContextFactory, CustomEndpoint } from '@tsdi/core';
 import { Logger } from '@tsdi/logs';
+import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { fromEvent, of, race } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ListenOptions } from 'net';
@@ -11,7 +12,6 @@ import * as assert from 'assert';
 import { CONTENT_DISPOSITION } from './content';
 import { HTTP_MIDDLEWARES } from './endpoint';
 import { HttpContext, HttpRequest, HttpResponse } from './context';
-import { getClassName } from 'packages/ioc/src/utils/lang';
 
 
 export type HttpVersion = 'http1.1' | 'http2';
@@ -95,7 +95,8 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse> {
             }
         }
         const listenOptions = this.options.listenOptions;
-        this.logger.info(getClassName(this), 'listen:', listenOptions, '. access with url:', `http${cert ? 's' : ''}://${listenOptions?.host}:${listenOptions?.port}${listenOptions?.path ?? ''}!`)
+        this.injector.setValue(HTTP_LISTENOPTIONS, { ...listenOptions, withCredentials: cert!! });
+        this.logger.info(lang.getClassName(this), 'listen:', listenOptions, '. access with url:', `http${cert ? 's' : ''}://${listenOptions?.host}:${listenOptions?.port}${listenOptions?.path ?? ''}`, '!')
         this._server.listen(listenOptions);
     }
 
@@ -108,7 +109,7 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse> {
                 this.logger.error(err);
                 defer.reject(err);
             } else {
-                this.logger.info(getClassName(this), this.options.listenOptions, 'closed!');
+                this.logger.info(lang.getClassName(this), this.options.listenOptions, 'closed !');
                 defer.resolve();
             }
         });

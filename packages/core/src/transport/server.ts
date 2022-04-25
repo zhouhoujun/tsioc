@@ -1,4 +1,4 @@
-import { Abstract, Inject, Injector, isFunction, tokenId } from '@tsdi/ioc';
+import { Abstract, Inject, Injector, isFunction } from '@tsdi/ioc';
 import { Logger, Log } from '@tsdi/logs';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
@@ -81,27 +81,4 @@ export abstract class TransportServer<TRequest, TResponse> implements Startup, O
         await this.close();
     }
 
-}
-
-/**
- * server option.
- */
-export interface ServerOption extends Record<string, any> {
-    url?: string;
-    host?: string;
-    port?: number;
-}
-
-export const SERVEROPTION = tokenId<ServerOption>('SERVEROPTION');
-
-/**
- * server abstract factory.
- */
-@Abstract()
-export abstract class ServerFactory<TRequest, TResponse> {
-    /**
-     * create by options.
-     * @param options 
-     */
-    abstract create(options: ServerOption): TransportServer<TRequest, TResponse>;
 }

@@ -227,6 +227,8 @@ describe('app message queue', () => {
 
         let client = ctx.resolve(HttpClient);
 
+        // const rep1 = await lastValueFrom(client.get('http://www.zyhh-tech.com:8800/config.json'));
+
         const rep = await lastValueFrom(client.request<any>('POST', '/hdevice', { observe: 'response', body: { type: 'startup' } }));
 
         device = rep.body['device'];
