@@ -49,7 +49,7 @@
             "request": "launch",
             "name": "test ioc",
             "args": [
-                "${workspaceRoot}/packages/ioc/test/unit.ts" 
+                "${workspaceRoot}/packages/ioc/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -69,7 +69,7 @@
             "request": "launch",
             "name": "test aop",
             "args": [
-                "${workspaceRoot}/packages/aop/test/unit.ts" 
+                "${workspaceRoot}/packages/aop/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -89,7 +89,7 @@
             "request": "launch",
             "name": "test logs",
             "args": [
-                "${workspaceRoot}/packages/logs/test/unit.ts" 
+                "${workspaceRoot}/packages/logs/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -109,7 +109,7 @@
             "request": "launch",
             "name": "test core",
             "args": [
-                "${workspaceRoot}/packages/core/test/unit.ts" 
+                "${workspaceRoot}/packages/core/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -129,7 +129,7 @@
             "request": "launch",
             "name": "test boot",
             "args": [
-                "${workspaceRoot}/packages/boot/test/unit.ts" 
+                "${workspaceRoot}/packages/boot/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -149,7 +149,7 @@
             "request": "launch",
             "name": "test platform-browser",
             "args": [
-                "${workspaceRoot}/packages/platform-browser/test/unit.ts" 
+                "${workspaceRoot}/packages/platform-browser/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -169,7 +169,7 @@
             "request": "launch",
             "name": "test platform-server",
             "args": [
-                "${workspaceRoot}/packages/platform-server/test/unit.ts" 
+                "${workspaceRoot}/packages/platform-server/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -189,7 +189,7 @@
             "request": "launch",
             "name": "test typeorm-adapter",
             "args": [
-                "${workspaceRoot}/packages/typeorm-adapter/test/unit.ts" 
+                "${workspaceRoot}/packages/typeorm-adapter/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -209,7 +209,7 @@
             "request": "launch",
             "name": "test transport",
             "args": [
-                "${workspaceRoot}/packages/transport/test/unit.ts" 
+                "${workspaceRoot}/packages/transport/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -229,7 +229,7 @@
             "request": "launch",
             "name": "test transport-amqp",
             "args": [
-                "${workspaceRoot}/packages/transport-amqp/test/unit.ts" 
+                "${workspaceRoot}/packages/transport-amqp/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -249,7 +249,7 @@
             "request": "launch",
             "name": "test transport-grpc",
             "args": [
-                "${workspaceRoot}/packages/transport-grpc/test/unit.ts" 
+                "${workspaceRoot}/packages/transport-grpc/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -269,7 +269,7 @@
             "request": "launch",
             "name": "test transport-kafka",
             "args": [
-                "${workspaceRoot}/packages/transport-kafka/test/unit.ts" 
+                "${workspaceRoot}/packages/transport-kafka/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -289,7 +289,7 @@
             "request": "launch",
             "name": "test transport-modbus",
             "args": [
-                "${workspaceRoot}/packages/transport-modbus/test/unit.ts" 
+                "${workspaceRoot}/packages/transport-modbus/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -309,7 +309,7 @@
             "request": "launch",
             "name": "test transport-mqtt",
             "args": [
-                "${workspaceRoot}/packages/transport-mqtt/test/unit.ts" 
+                "${workspaceRoot}/packages/transport-mqtt/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -329,7 +329,7 @@
             "request": "launch",
             "name": "test transport-nats",
             "args": [
-                "${workspaceRoot}/packages/transport-nats/test/unit.ts" 
+                "${workspaceRoot}/packages/transport-nats/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -349,7 +349,7 @@
             "request": "launch",
             "name": "test transport-redis",
             "args": [
-                "${workspaceRoot}/packages/transport-redis/test/unit.ts" 
+                "${workspaceRoot}/packages/transport-redis/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -369,7 +369,7 @@
             "request": "launch",
             "name": "test transport-ws",
             "args": [
-                "${workspaceRoot}/packages/transport-ws/test/unit.ts" 
+                "${workspaceRoot}/packages/transport-ws/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -389,7 +389,7 @@
             "request": "launch",
             "name": "test components",
             "args": [
-                "${workspaceRoot}/packages/components/test/unit.ts" 
+                "${workspaceRoot}/packages/components/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -409,7 +409,7 @@
             "request": "launch",
             "name": "test compiler",
             "args": [
-                "${workspaceRoot}/packages/compiler/test/unit.ts" 
+                "${workspaceRoot}/packages/compiler/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -429,7 +429,7 @@
             "request": "launch",
             "name": "test activities",
             "args": [
-                "${workspaceRoot}/packages/activities/test/unit.ts" 
+                "${workspaceRoot}/packages/activities/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",

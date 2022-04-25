@@ -11,6 +11,7 @@ import * as assert from 'assert';
 import { CONTENT_DISPOSITION } from './content';
 import { HTTP_MIDDLEWARES } from './endpoint';
 import { HttpContext, HttpRequest, HttpResponse } from './context';
+import { getClassName } from 'packages/ioc/src/utils/lang';
 
 
 export type HttpVersion = 'http1.1' | 'http2';
@@ -38,11 +39,13 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse> {
 
     private _backend?: EndpointBackend<HttpRequest, HttpResponse>;
     private _server?: http2.Http2Server | http.Server | https.Server;
+    private options: HttpServerOptions;
     constructor(
         @Inject() readonly contextFactory: TransportContextFactory<HttpRequest, HttpResponse>,
-        @Inject(HTTP_SERVEROPTIONS, { defaultValue: defaultOption }) private options: HttpServerOptions
+        @Inject(HTTP_SERVEROPTIONS, { nullable: true }) options: HttpServerOptions
     ) {
         super();
+        this.options = { ...defaultOption, ...options } as HttpServerOptions;
     }
 
     getBackend(): EndpointBackend<HttpRequest, HttpResponse> {
@@ -75,22 +78,25 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse> {
                     })
                 );
         }
+        let cert: any;
         if (options.version === 'http2') {
             if (options.options) {
-                this._server = (options.options as http2.SecureServerOptions)?.cert ?
-                    http2.createSecureServer(options.options, handler) : http2.createServer(options.options, handler);
+                cert = (options.options as http2.SecureServerOptions)?.cert;
+                this._server = cert ? http2.createSecureServer(options.options, handler) : http2.createServer(options.options, handler);
             } else {
                 this._server = http2.createServer(handler);
             }
         } else {
             if (options.options) {
-                this._server = (options.options as https.ServerOptions).cert ?
-                    https.createServer(options.options as https.ServerOptions, handler) : http.createServer(options.options as http.ServerOptions, handler);
+                cert = (options.options as https.ServerOptions).cert;
+                this._server = cert ? https.createServer(options.options as https.ServerOptions, handler) : http.createServer(options.options as http.ServerOptions, handler);
             } else {
                 this._server = http.createServer(handler);
             }
         }
-        this._server.listen(this.options.listenOptions);
+        const listenOptions = this.options.listenOptions;
+        this.logger.info(getClassName(this), 'listen:', listenOptions, '. access with url:', `http${cert ? 's' : ''}://${listenOptions?.host}:${listenOptions?.port}${listenOptions?.path ?? ''}`)
+        this._server.listen(listenOptions);
     }
 
 
@@ -102,6 +108,7 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse> {
                 this.logger.error(err);
                 defer.reject(err);
             } else {
+                this.logger.info(getClassName(this), this.options.listenOptions, 'closed');
                 defer.resolve();
             }
         });
