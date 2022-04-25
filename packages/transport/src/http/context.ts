@@ -263,8 +263,20 @@ export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
         return this.method === 'PUT';
     }
 
-    get query(): URLSearchParams {
+    get params(): URLSearchParams {
         return this.URL.searchParams;
+    }
+
+    private _query?: Record<string, any>;
+    get query(): Record<string, any> {
+        if(!this._query) {
+            const q: Record<string, any> = {};
+            this.URL.searchParams.forEach((v, k)=> {
+                q[k] = v;
+            });
+            this._query = q;
+        }
+        return this._query;
     }
 
     /**
@@ -289,6 +301,7 @@ export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
 
     set search(str: string) {
         this.URL.search = str;
+        this._query = null!;
     }
 
     /**
@@ -310,7 +323,7 @@ export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
      */
 
     set querystring(str) {
-        this.URL.search = `?${str}`;
+        this.search = `?${str}`;
     }
 
     get playload(): any {

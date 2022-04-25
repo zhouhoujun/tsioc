@@ -1,5 +1,5 @@
 import { Injector, Injectable, lang, ArgumentError, MissingParameterError, tokenId, chain, isArray } from '@tsdi/ioc';
-import { lastValueFrom, Observable, of } from 'rxjs';
+import { catchError, lastValueFrom, Observable, of, throwError } from 'rxjs';
 import expect = require('expect');
 import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module, TransportContext, HttpClientModule, Interceptor, HttpClient, Endpoint,  RequestBase, LoggerModule, Middleware, compose, Chain, ResponseBase } from '../src';
 import { HttpModule, HttpServer, HTTP_MIDDLEWARES, LogMiddleware, TcpModule } from '@tsdi/transport';
@@ -233,7 +233,11 @@ describe('app message queue', () => {
         expect(res).toBeDefined();
         expect(isArray(res.features)).toBeTruthy();
 
-        const rep = await lastValueFrom(client.request<any>('POST', '/hdevice', { observe: 'response', body: { type: 'startup' } }));
+        const rep = await lastValueFrom(client.request<any>('POST', '/hdevice', { observe: 'response', body: { type: 'startup' } }).pipe(
+            catchError((err, ct)=> {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
 
         device = rep.body['device'];
         aState = rep.body['deviceA_state'];
