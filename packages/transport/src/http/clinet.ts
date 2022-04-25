@@ -7,7 +7,6 @@ import * as https from 'https';
 import * as http2 from 'http2';
 import { Socket } from 'net';
 import { TLSSocket } from 'tls';
-import { HttpMiddleware, HTTP_MIDDLEWARES } from './endpoint';
 import { HttpRequest, HttpResponse } from './context';
 
 

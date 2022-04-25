@@ -1,5 +1,5 @@
 import { Inject, Injectable, isFunction, lang, tokenId } from '@tsdi/ioc';
-import { TransportServer, EndpointBackend, TransportContextFactory, CustomEndpoint } from '@tsdi/core';
+import { TransportServer, EndpointBackend, TransportContextFactory, CustomEndpoint, Middleware, MiddlewareFn, TransportContext } from '@tsdi/core';
 import { Logger } from '@tsdi/logs';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { fromEvent, of, race } from 'rxjs';
@@ -10,8 +10,7 @@ import * as https from 'https';
 import * as http2 from 'http2';
 import * as assert from 'assert';
 import { CONTENT_DISPOSITION } from './content';
-import { HTTP_MIDDLEWARES } from './endpoint';
-import { HttpContext, HttpRequest, HttpResponse } from './context';
+import { HttpContext, HttpMiddleware, HttpRequest, HttpResponse, HTTP_MIDDLEWARES } from './context';
 
 
 export type HttpVersion = 'http1.1' | 'http2';
@@ -35,7 +34,7 @@ export const HTTP_SERVEROPTIONS = tokenId<HttpServerOptions>('HTTP_SERVEROPTIONS
  * http server.
  */
 @Injectable()
-export class HttpServer extends TransportServer<HttpRequest, HttpResponse> {
+export class HttpServer extends TransportServer<HttpRequest, HttpResponse, HttpContext> {
 
     private _backend?: EndpointBackend<HttpRequest, HttpResponse>;
     private _server?: http2.Http2Server | http.Server | https.Server;
@@ -53,6 +52,10 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse> {
             this._backend = new CustomEndpoint<HttpRequest, HttpResponse>((req, ctx) => of((ctx as HttpContext).response));
         }
         return this._backend;
+    }
+
+    protected override getMiddlewares(): HttpMiddleware[] {
+        return [...this.injector.get(HTTP_MIDDLEWARES), ...super.getMiddlewares()];
     }
 
     async startup(): Promise<void> {

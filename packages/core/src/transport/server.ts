@@ -3,15 +3,15 @@ import { Logger, Log } from '@tsdi/logs';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
 import { Startup } from '../startup';
-import { InterceptorChain, Endpoint, EndpointBackend, Interceptor, InterceptorFn, Middleware, MiddlewareBackend, MiddlewareFn } from './endpoint';
-import { TransportContextFactory } from './context';
+import { InterceptorChain, Endpoint, EndpointBackend, Interceptor, InterceptorFn, Middleware, MiddlewareBackend, MiddlewareFn, MiddlewareType } from './endpoint';
+import { TransportContext, TransportContextFactory } from './context';
 
 /**
  * abstract transport server.
  */
 @Abstract()
 @Runner('startup')
-export abstract class TransportServer<TRequest, TResponse> implements Startup, OnDispose {
+export abstract class TransportServer<TRequest, TResponse, Tx extends TransportContext = TransportContext> implements Startup, OnDispose {
 
     @Log()
     protected readonly logger!: Logger;
@@ -20,7 +20,7 @@ export abstract class TransportServer<TRequest, TResponse> implements Startup, O
 
     protected _chain?: Endpoint<TRequest, TResponse>;
     private _interceptors: Interceptor<TRequest, TResponse>[] = [];
-    private _middlewares: (Middleware | MiddlewareFn)[] = [];
+    private _middlewares: MiddlewareType<Tx>[] = [];
 
     /**
      * context factory
@@ -43,7 +43,7 @@ export abstract class TransportServer<TRequest, TResponse> implements Startup, O
      * request is decoded.
      * @param middleware 
      */
-    use(middleware: Middleware | MiddlewareFn): this {
+    use(middleware: MiddlewareType<Tx>): this {
         this._middlewares.push(middleware);
         return this;
     }
@@ -60,12 +60,16 @@ export abstract class TransportServer<TRequest, TResponse> implements Startup, O
         return this._interceptors;
     }
 
+    protected getMiddlewares(): MiddlewareType<Tx>[] {
+        return this._middlewares;
+    }
+
     /**
      * transport endpoint chain.
      */
     chain(): Endpoint<TRequest, TResponse> {
         if (!this._chain) {
-            this._chain = new InterceptorChain(new MiddlewareBackend(this.getBackend(), this._middlewares), this.getInterceptors());
+            this._chain = new InterceptorChain(new MiddlewareBackend(this.getBackend(), this.getMiddlewares()), this.getInterceptors());
         }
         return this._chain;
     }

@@ -1,7 +1,7 @@
 import { Module, ConnectionOptions, TransactionModule, LoggerModule } from '@tsdi/core';
 import { LogModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
-import { HttpModule } from '@tsdi/transport';
+import { HttpModule, HttpServer } from '@tsdi/transport';
 import { Connection } from 'typeorm';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
 import { Role, User } from './models/models';
@@ -55,7 +55,8 @@ export const connections = {
     providers: [
         UserController,
         RoleController
-    ]
+    ],
+    bootstrap: HttpServer
 })
 export class MockTransBootTest {
 

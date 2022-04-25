@@ -1,8 +1,8 @@
-import { Injector, Injectable, lang, ArgumentError, MissingParameterError, tokenId, chain } from '@tsdi/ioc';
+import { Injector, Injectable, lang, ArgumentError, MissingParameterError, tokenId, chain, isArray } from '@tsdi/ioc';
 import { lastValueFrom, Observable, of } from 'rxjs';
 import expect = require('expect');
 import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module, TransportContext, HttpClientModule, Interceptor, HttpClient, Endpoint,  RequestBase, LoggerModule, Middleware, compose, Chain, ResponseBase } from '../src';
-import { HttpModule, HttpServer, TcpModule } from '@tsdi/transport';
+import { HttpModule, HttpServer, HTTP_MIDDLEWARES, LogMiddleware, TcpModule } from '@tsdi/transport';
 import { ServerHttpClientModule, ServerModule } from '@tsdi/platform-server';
 
 
@@ -186,7 +186,8 @@ class DeviceAModule {
     ],
     providers: [
         // DeviceController,
-        DeviceStartupHandle
+        DeviceStartupHandle,
+        { provide: HTTP_MIDDLEWARES, useClass: LogMiddleware, multi: true}
     ],
     declarations: [
         DeviceController
@@ -227,7 +228,10 @@ describe('app message queue', () => {
 
         let client = ctx.resolve(HttpClient);
 
-        // const rep1 = await lastValueFrom(client.get('http://www.zyhh-tech.com:8800/config.json'));
+        const res: any = await lastValueFrom(client.get('https://geo.datav.aliyun.com/areas_v2/bound/510100_full.json'));
+
+        expect(res).toBeDefined();
+        expect(isArray(res.features)).toBeTruthy();
 
         const rep = await lastValueFrom(client.request<any>('POST', '/hdevice', { observe: 'response', body: { type: 'startup' } }));
 

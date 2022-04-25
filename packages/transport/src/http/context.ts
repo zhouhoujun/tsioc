@@ -1,5 +1,5 @@
-import { HttpStatusCode, Protocol, TransportContext, TransportContextFactory } from '@tsdi/core';
-import { Injectable, Injector, InvokeArguments, isArray, isFunction, isNumber, isString, lang } from '@tsdi/ioc';
+import { HttpStatusCode, MiddlewareType, Protocol, TransportContext, TransportContextFactory } from '@tsdi/core';
+import { Injectable, Injector, InvokeArguments, isArray, isFunction, isNumber, isString, lang, tokenId } from '@tsdi/ioc';
 import * as util from 'util';
 import * as assert from 'assert';
 import * as http from 'http';
@@ -1108,3 +1108,14 @@ export class HttpContextFactory extends TransportContextFactory<HttpRequest, Htt
     }
 
 }
+
+/**
+ * http middleware.
+ */
+ export type HttpMiddleware = MiddlewareType<HttpContext>;
+
+/**
+ * http middlewares token.
+ */
+export const HTTP_MIDDLEWARES = tokenId<HttpMiddleware[]>('HTTP_MIDDLEWARES');
+

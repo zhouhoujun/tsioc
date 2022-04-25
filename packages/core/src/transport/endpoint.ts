@@ -76,6 +76,8 @@ export interface Middleware<T extends TransportContext = TransportContext> {
  */
 export type MiddlewareFn<T extends TransportContext = TransportContext> = Handler<T, Promise<void>>;
 
+export type MiddlewareType<T extends TransportContext = TransportContext> = Middleware<T> | MiddlewareFn<T>;
+
 /**
  * Interceptor Endpoint.
  */
@@ -121,14 +123,14 @@ export class CustomEndpoint<TRequest, TResponse> implements Endpoint<TRequest, T
 /**
  * middleware backend.
  */
-export class MiddlewareBackend<TRequest, TResponse> implements EndpointBackend<TRequest, TResponse> {
+export class MiddlewareBackend<TRequest, TResponse, Tx extends TransportContext> implements EndpointBackend<TRequest, TResponse> {
 
-    private _middleware?: MiddlewareFn;
-    constructor(private backend: EndpointBackend<TRequest, TResponse>, private middlewares: (Middleware | MiddlewareFn)[]) {
+    private _middleware?: MiddlewareFn<Tx>;
+    constructor(private backend: EndpointBackend<TRequest, TResponse>, private middlewares: MiddlewareType<Tx>[]) {
 
     }
 
-    handle(req: TRequest, context: TransportContext): Observable<TResponse> {
+    handle(req: TRequest, context: Tx): Observable<TResponse> {
         return this.backend.handle(req, context)
             .pipe(
                 mergeMap(async resp => {
@@ -150,8 +152,8 @@ export class MiddlewareBackend<TRequest, TResponse> implements EndpointBackend<T
  * compose middlewares
  * @param middlewares 
  */
-export function compose(middlewares: (Middleware | MiddlewareFn)[]): MiddlewareFn {
-    const middleFns = middlewares.filter(m => m).map(m => isFunction(m) ? m : ((ctx, next) => m.invoke(ctx, next)) as MiddlewareFn);
+export function compose<T extends TransportContext>(middlewares: MiddlewareType<T>[]): MiddlewareFn<T> {
+    const middleFns = middlewares.filter(m => m).map(m => isFunction(m) ? m : ((ctx, next) => m.invoke(ctx, next)) as MiddlewareFn<T>);
     return (ctx, next) => chain(middleFns, ctx, next);
 }
 
