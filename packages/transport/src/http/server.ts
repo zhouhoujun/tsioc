@@ -95,7 +95,7 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse> {
             }
         }
         const listenOptions = this.options.listenOptions;
-        this.logger.info(getClassName(this), 'listen:', listenOptions, '. access with url:', `http${cert ? 's' : ''}://${listenOptions?.host}:${listenOptions?.port}${listenOptions?.path ?? ''}`)
+        this.logger.info(getClassName(this), 'listen:', listenOptions, '. access with url:', `http${cert ? 's' : ''}://${listenOptions?.host}:${listenOptions?.port}${listenOptions?.path ?? ''}!`)
         this._server.listen(listenOptions);
     }
 
@@ -108,7 +108,7 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse> {
                 this.logger.error(err);
                 defer.reject(err);
             } else {
-                this.logger.info(getClassName(this), this.options.listenOptions, 'closed');
+                this.logger.info(getClassName(this), this.options.listenOptions, 'closed!');
                 defer.resolve();
             }
         });

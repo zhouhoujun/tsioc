@@ -1,11 +1,10 @@
 import { Singleton, ModuleLoader, isString, EMPTY } from '@tsdi/ioc';
 import {
     Module, PROCESS_ROOT, ApplicationExit, ApplicationArguments,
-    ApplicationContext, PLATFORM_ID, PLATFORM_SERVER_ID, DOCUMENT, HttpBackend
+    ApplicationContext, PLATFORM_ID, PLATFORM_SERVER_ID, DOCUMENT
 } from '@tsdi/core';
 import { runMainPath } from './toAbsolute';
 import { NodeModuleLoader } from './NodeModuleLoader';
-import { HTTP_PROVIDERS } from './xhr';
 import * as domino from 'domino';
 
 const signls = [
@@ -127,8 +126,7 @@ export class ServerApplicationExit extends ApplicationExit {
         { provide: PROCESS_ROOT, useValue: runMainPath(), asDefault: true },
         { provide: ModuleLoader, useValue: new NodeModuleLoader() },
         { provide: DOCUMENT, useValue: domino.createDocument() },
-        { provide: ApplicationExit, useClass: ServerApplicationExit },
-        ...HTTP_PROVIDERS
+        { provide: ApplicationExit, useClass: ServerApplicationExit }
     ]
 })
 export class ServerModule { }

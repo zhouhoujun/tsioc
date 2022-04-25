@@ -1,8 +1,9 @@
 /// <reference path="./type.d.ts" />
 import { EMPTY_OBJ, Injectable, Injector, InvocationContext, ProviderType } from '@tsdi/ioc';
-import { HttpBackend, HttpEvent, HttpHandler, HttpInterceptingHandler, HttpRequest, SERVEROPTION, XhrFactory } from '@tsdi/core';
+import { HttpBackend, HttpEvent, HttpHandler, HttpInterceptingHandler, HttpRequest, Module, SERVEROPTION, XhrFactory } from '@tsdi/core';
 import * as xhr2 from 'xhr2';
 import { Observable } from 'rxjs';
+import { ServerModule } from './ServerModule';
 
 
 @Injectable()
@@ -26,9 +27,9 @@ export class HttpClientBackend implements HttpBackend {
       const { hostname, port } = this.injector.get(SERVEROPTION) ?? EMPTY_OBJ;
 
       let request: HttpRequest;
-      const protocol = req.withCredentials? 'https' : 'http';
+      const protocol = req.withCredentials ? 'https' : 'http';
       if (!isAbsoluteUrl.test(req.url)) {
-        const urlPrefix = `${protocol}://${hostname ?? 'localhost'}:${port?? 3000}`;
+        const urlPrefix = `${protocol}://${hostname ?? 'localhost'}:${port ?? 3000}`;
         const baseUrl = new URL(urlPrefix);
         const url = new URL(req.url, baseUrl);
         request = req.clone({ url: url.toString() });
@@ -51,3 +52,16 @@ export const HTTP_PROVIDERS: ProviderType[] = [
   { provide: XhrFactory, useClass: ServerXhr },
   { provide: HttpHandler, useFactory: interceptingHandler, deps: [HttpBackend, Injector] }
 ];
+
+
+@Module({
+  imports: [
+    ServerModule
+  ],
+  providers: [
+    ...HTTP_PROVIDERS
+  ]
+})
+export class ServerHttpClientModule {
+
+}

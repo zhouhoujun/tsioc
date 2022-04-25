@@ -3,7 +3,7 @@ import { ServerLogFormater } from './ServerLogFormater';
 import { Log4jsAdapter } from './Log4jsAdapter';
 
 @Module({
-    providedIn: 'platform',
+    providedIn: 'root',
     providers: [
         ServerLogFormater,
         Log4jsAdapter

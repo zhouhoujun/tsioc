@@ -3,7 +3,7 @@ import { lastValueFrom, Observable, of } from 'rxjs';
 import expect = require('expect');
 import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module, TransportContext, HttpClientModule, Interceptor, HttpClient, Endpoint,  RequestBase, LoggerModule, Middleware, compose, Chain, ResponseBase } from '../src';
 import { HttpModule, HttpServer, TcpModule } from '@tsdi/transport';
-import { ServerModule } from '@tsdi/platform-server';
+import { ServerHttpClientModule, ServerModule } from '@tsdi/platform-server';
 
 
 
@@ -175,11 +175,12 @@ class DeviceAModule {
 
 @Module({
     imports: [
+        ServerModule,
         LoggerModule,
         // TcpModule,
         HttpModule,
         HttpClientModule,
-        ServerModule,
+        ServerHttpClientModule,
         DeviceManageModule,
         DeviceAModule
     ],

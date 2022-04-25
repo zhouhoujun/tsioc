@@ -9,25 +9,27 @@ import * as fs from 'fs';
 import * as path from 'path';
 const del = require('del');
 
-const logdir = path.join(__dirname, '../log-caches');
-
+const dir = __dirname;
 @Suite()
 export class ServerBootTest {
 
     private ctx!: ApplicationContext;
     private logfile!: string;
+    private logdir!: string;
+
     @Before()
     async init() {
-        await del(logdir);
         this.ctx = await Application.run({
             module: ServerMainModule,
             providers: [
-                { provide: PROCESS_ROOT, useValue: __dirname },
                 { provide: LogConfigure, useValue: logConfig }
             ]
         });
+        console.log(this.ctx.baseURL);
+        this.logdir = path.join(this.ctx.baseURL, 'log-caches');
+        await del(this.logdir);
         const now = new Date();
-        this.logfile = path.join(this.ctx.baseURL, `../log-caches/focas.-${formatDate(now).replace(/(-|\/)/g, '')}.log`);
+        this.logfile = path.join(this.ctx.baseURL, `log-caches/focas.-${formatDate(now).replace(/(-|\/)/g, '')}.log`);
     }
 
     @Test()
@@ -62,6 +64,6 @@ export class ServerBootTest {
     @After()
     async after() {
         this.ctx.destroy();
-        await del(logdir);
+        await del(this.logdir);
     }
 }

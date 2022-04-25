@@ -1,4 +1,4 @@
-import { ServerLogsModule, ServerModule } from '@tsdi/platform-server';
+import { ServerHttpClientModule, ServerLogsModule, ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { lastValueFrom, map } from 'rxjs';
 import * as net from 'net';
@@ -26,6 +26,7 @@ describe('di module', () => {
             module: ModuleB,
             uses: [
                 HttpClientModule,
+                ServerHttpClientModule,
                 HttpModule,
                 ServerModule
             ]

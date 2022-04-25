@@ -147,8 +147,8 @@ export class StatupModule { }
 
 @Module({
     imports: [
-        SharedModule,
         ServerModule,
+        SharedModule,
         ServerLogsModule,
         StatupModule,
     ],
