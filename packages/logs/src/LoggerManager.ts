@@ -1,4 +1,4 @@
-import { Abstract, tokenId } from '@tsdi/ioc';
+import { Abstract } from '@tsdi/ioc';
 import { Logger } from './logger';
 import { LoggerFactory } from './factory';
 

@@ -1,4 +1,4 @@
-import { ArgumentError, EMPTY_OBJ, getToken, Inject, Injectable, Injector, isFunction, isString, Token, Type } from '@tsdi/ioc';
+import { ArgumentError, EMPTY_OBJ, getToken, Inject, Injectable, Injector, isFunction, isString, Singleton, Token, Type } from '@tsdi/ioc';
 import { Logger } from './logger';
 import { LogConfigure } from './LogConfigure';
 import { Level, Levels } from './Level';
