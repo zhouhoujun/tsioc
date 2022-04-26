@@ -1,7 +1,7 @@
 import { EndpointBackend, TransportClient } from '@tsdi/core';
 import { Abstract, Inject, Injectable, Injector, InvocationContext, isString, lang } from '@tsdi/ioc';
 import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
-import { codes } from '../consts';
+import { ev } from '../consts';
 import { TCPRequest, TCPResponse } from './packet';
 
 
@@ -62,7 +62,7 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> {
     }
 
     private bindEvents(socket: Socket) {
-        socket.on(codes.CLOSE, (err) => {
+        socket.on(ev.CLOSE, (err) => {
             this.connected = false;
             this.socket = null!;
             if (err) {
@@ -71,17 +71,17 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> {
                 this.logger.info(socket.address, 'closed');
             }
         });
-        socket.on(codes.ERROR, (err: any) => {
+        socket.on(ev.ERROR, (err: any) => {
             this.connected = false;
-            if (err.code !== codes.ECONNREFUSED) {
+            if (err.code !== ev.ECONNREFUSED) {
                 this.logger.error(err);
             }
         });
-        socket.on(codes.DATA, (data) => {
+        socket.on(ev.DATA, (data) => {
             try {
                 this.handleData(data);
             } catch (err) {
-                socket.emit(codes.ERROR, (err as Error).message);
+                socket.emit(ev.ERROR, (err as Error).message);
                 socket.end();
             }
         });

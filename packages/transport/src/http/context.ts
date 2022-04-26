@@ -10,7 +10,7 @@ import { extname } from 'path';
 import { append, encodeUrl, escapeHtml, isBuffer, isStream, parseTokenList } from '../utils';
 import { emptyStatus, redirectStatus, statusMessage } from './status';
 import { CONTENT_DISPOSITION } from './content';
-import { codes, contentTypes, hdrs } from '../consts';
+import { ev, ctype, hdr } from '../consts';
 
 
 
@@ -101,7 +101,7 @@ export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
     get protocol(): Protocol {
         if ((this.socket as TLSSocket).encrypted) return 'https';
         if (!this.target?.proxy) return 'http';
-        const proto = this.getHeader('X-Forwarded-Proto') as string;
+        const proto = this.getHeader(hdr.X_FORWARDED_PROTO) as string;
         return (proto ? proto.split(urlsplit, 1)[0] : 'http') as Protocol;
     }
 
@@ -181,10 +181,10 @@ export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
      */
     get host() {
         const proxy = this.target?.proxy;
-        let host = proxy && this.getHeader(hdrs.X_FORWARDED_HOST);
+        let host = proxy && this.getHeader(hdr.X_FORWARDED_HOST);
         if (!host) {
-            if (this.request.httpVersionMajor >= 2) host = this.getHeader(hdrs.AUTHORITY);
-            if (!host) host = this.getHeader(hdrs.HOST);
+            if (this.request.httpVersionMajor >= 2) host = this.getHeader(hdr.AUTHORITY);
+            if (!host) host = this.getHeader(hdr.HOST);
         }
         if (!host || isNumber(host)) return '';
         return isString(host) ? host.split(urlsplit, 1)[0] : host[0];
@@ -488,20 +488,20 @@ export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
 
     protected freshHeader(): boolean {
         const reqHeaders = this.request.headers;
-        let modifSince = reqHeaders[hdrs.IF_MODIFIED_SINCE];
-        let nonMatch = reqHeaders[hdrs.IF_NONE_MATCH];
+        let modifSince = reqHeaders[hdr.IF_MODIFIED_SINCE];
+        let nonMatch = reqHeaders[hdr.IF_NONE_MATCH];
         if (!modifSince && !nonMatch) {
             return false
         }
 
-        let cacheControl = reqHeaders[hdrs.CACHE_CONTROL];
+        let cacheControl = reqHeaders[hdr.CACHE_CONTROL];
         if (cacheControl && no_cache.test(cacheControl)) {
             return false
         }
 
         // if-none-match
         if (nonMatch && nonMatch !== '*') {
-            let etag = this.response.getHeader(hdrs.ETAG)
+            let etag = this.response.getHeader(hdr.ETAG)
 
             if (!etag) {
                 return false
@@ -524,7 +524,7 @@ export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
 
         // if-modified-since
         if (modifSince) {
-            let lastModified = this.response.getHeader(hdrs.LAST_MODIFIED);
+            let lastModified = this.response.getHeader(hdr.LAST_MODIFIED);
             if (isArray(lastModified)) {
                 lastModified = lang.first(lastModified);
             }
@@ -541,7 +541,7 @@ export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
 
 
     get contentType(): string {
-        return this.response.getHeader(hdrs.CONTENT_TYPE)?.toString() ?? '';
+        return this.response.getHeader(hdr.CONTENT_TYPE)?.toString() ?? '';
     }
 
     /**
@@ -564,9 +564,9 @@ export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
      */
     set contentType(type: string) {
         if (type) {
-            this.response.setHeader(hdrs.CONTENT_TYPE, type);
+            this.response.setHeader(hdr.CONTENT_TYPE, type);
         } else {
-            this.response.removeHeader(hdrs.CONTENT_TYPE);
+            this.response.removeHeader(hdr.CONTENT_TYPE);
         }
     }
 
@@ -664,9 +664,9 @@ export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
         if (null == val) {
             if (!emptyStatus[this.status]) this.status = 204;
             if (val === null) this._explicitNullBody = true;
-            this.removeHeader(hdrs.CONTENT_TYPE);
-            this.removeHeader(hdrs.CONTENT_LENGTH);
-            this.removeHeader(hdrs.TRANSFER_ENCODING);
+            this.removeHeader(hdr.CONTENT_TYPE);
+            this.removeHeader(hdr.CONTENT_LENGTH);
+            this.removeHeader(hdr.TRANSFER_ENCODING);
             return;
         }
 
@@ -674,18 +674,18 @@ export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
         if (!this._explicitStatus) this.status = 200;
 
         // set the content-type only if not yet set
-        const setType = !this.hasHeader(hdrs.CONTENT_TYPE);
+        const setType = !this.hasHeader(hdr.CONTENT_TYPE);
 
         // string
         if (isString(val)) {
-            if (setType) this.contentType = xmlpat.test(val) ? contentTypes.TEXT_HTML : contentTypes.TEXT_PLAIN;
+            if (setType) this.contentType = xmlpat.test(val) ? ctype.TEXT_HTML : ctype.TEXT_PLAIN;
             this.length = Buffer.byteLength(val);
             return;
         }
 
         // buffer
         if (isBuffer(val)) {
-            if (setType) this.contentType = contentTypes.OCTET_STREAM;
+            if (setType) this.contentType = ctype.OCTET_STREAM;
             this.length = val.length;
             return;
         }
@@ -699,16 +699,16 @@ export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
             if (original != val) {
                 val.once('error', err => this.onError(err));
                 // overwriting
-                if (null != original) this.removeHeader(hdrs.CONTENT_LENGTH);
+                if (null != original) this.removeHeader(hdr.CONTENT_LENGTH);
             }
 
-            if (setType) this.contentType = contentTypes.OCTET_STREAM;
+            if (setType) this.contentType = ctype.OCTET_STREAM;
             return;
         }
 
         // json
-        this.removeHeader(hdrs.CONTENT_LENGTH);
-        this.contentType = contentTypes.APPL_JSON;
+        this.removeHeader(hdr.CONTENT_LENGTH);
+        this.contentType = ctype.APPL_JSON;
     }
 
     /**
@@ -718,10 +718,10 @@ export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
      * @api public
      */
     set length(n: number | undefined) {
-        if (isNumber(n) && !this.hasHeader(hdrs.TRANSFER_ENCODING)) {
-            this.setHeader(hdrs.CONTENT_LENGTH, n);
+        if (isNumber(n) && !this.hasHeader(hdr.TRANSFER_ENCODING)) {
+            this.setHeader(hdr.CONTENT_LENGTH, n);
         } else {
-            this.removeHeader(hdrs.CONTENT_LENGTH);
+            this.removeHeader(hdr.CONTENT_LENGTH);
         }
     }
 
@@ -733,8 +733,8 @@ export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
      */
 
     get length(): number | undefined {
-        if (this.hasHeader(hdrs.CONTENT_LENGTH)) {
-            return this.response.getHeader(hdrs.CONTENT_LENGTH) as number || 0;
+        if (this.hasHeader(hdr.CONTENT_LENGTH)) {
+            return this.response.getHeader(hdr.CONTENT_LENGTH) as number || 0;
         }
 
         const { body } = this;
@@ -755,10 +755,10 @@ export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
 
     set lastModified(val: Date | null) {
         if (!val) {
-            this.removeHeader(hdrs.LAST_MODIFIED);
+            this.removeHeader(hdr.LAST_MODIFIED);
             return;
         }
-        this.setHeader(hdrs.LAST_MODIFIED, val.toUTCString());
+        this.setHeader(hdr.LAST_MODIFIED, val.toUTCString());
     }
 
     /**
@@ -769,12 +769,12 @@ export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
      */
 
     get lastModified(): Date | null {
-        const date = this.get('last-modified') as string;
+        const date = this.response.getHeader(hdr.LAST_MODIFIED) as string;
         return date ? new Date(date) : null;
     }
 
     /**
-     * Set the ETag of a response.
+     * Set the etag of a response.
      * This will normalize the quotes if necessary.
      *
      *     this.response.etag = 'md5hashsum';
@@ -787,32 +787,32 @@ export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
 
     set etag(val: string) {
         if (!/^(W\/)?"/.test(val)) val = `"${val}"`;
-        this.setHeader('ETag', val);
+        this.setHeader(hdr.ETAG, val);
     }
 
     vary(field: string) {
         if (this.sent) return;
-        let val = this.response.getHeader('Vary') ?? '';
+        let val = this.response.getHeader(hdr.VARY) ?? '';
         let header = Array.isArray(val)
             ? val.join(', ')
             : String(val)
 
         // set new header
         if ((val = append(header, field))) {
-            this.setHeader('Vary', val)
+            this.setHeader(hdr.VARY, val)
         }
     }
 
 
     /**
-     * Get the ETag of a response.
+     * Get the etag of a response.
      *
      * @return {String}
      * @api public
      */
 
     get etag(): string {
-        return this.response.getHeader('ETag') as string;
+        return this.response.getHeader(hdr.ETAG) as string;
     }
 
     /**
@@ -1075,12 +1075,12 @@ export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
         this.setHeader(err.headers);
 
         // force text/plain
-        this.contentType = contentTypes.TEXT_PLAIN;
+        this.contentType = ctype.TEXT_PLAIN;
 
         let statusCode = (err.status || err.statusCode) as HttpStatusCode;
 
         // ENOENT support
-        if (codes.ENOENT === err.code) statusCode = 404;
+        if (ev.ENOENT === err.code) statusCode = 404;
 
         // default to 500
         if (!isNumber(statusCode) || !statusMessage[statusCode]) statusCode = 500;

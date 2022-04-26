@@ -1,6 +1,6 @@
 import { Middleware, TransportContext } from '@tsdi/core';
 import { hasOwn, Injectable, isString } from '@tsdi/ioc';
-import { hdrs } from '../consts';
+import { hdr } from '../consts';
 import { JsonStreamStringify } from '../stringify';
 import { isBuffer, isStream } from '../utils';
 
@@ -33,11 +33,11 @@ export class EncodeJsonMiddleware implements Middleware {
 
         if (strm) {
             // resp.contentType = 'application/json';
-            ctx.setHeader(hdrs.CONTENT_TYPE, 'application/json');
+            ctx.setHeader(hdr.CONTENT_TYPE, 'application/json');
             ctx.body = new JsonStreamStringify(body, undefined, pretty ? this.spaces : 2);
         } else if (json && pretty) {
             // resp.contentType = 'application/json; charset=utf-8';
-            ctx.setHeader(hdrs.CONTENT_TYPE, 'application/json; charset=utf-8');
+            ctx.setHeader(hdr.CONTENT_TYPE, 'application/json; charset=utf-8');
             ctx.body = JSON.stringify(body, null, this.spaces);
         }
 

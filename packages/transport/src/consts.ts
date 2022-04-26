@@ -1,11 +1,15 @@
 
-export namespace codes {
+export const LOCALHOST = 'localhost';
+
+/**
+ * events key.
+ */
+export namespace ev {
 
     export const ECONNREFUSED = 'ECONNREFUSED';
     export const CONN_ERR = 'CONN_ERR';
     export const EADDRINUSE = 'EADDRINUSE';
 
-    export const LOCALHOST = 'localhost';
     export const ENOENT = 'ENOENT';
 
     export const CONNECT = 'connect';
@@ -16,16 +20,16 @@ export namespace codes {
     export const DATA = 'data';
     export const ERROR = 'error';
     export const CLOSE = 'close';
+    export const STREAM = 'stream';
 
     export const SUBSCRIBE = 'subscribe';
     export const CANCELLED = 'cancelled';
-
 }
 
 /**
  * header keys.
  */
-export namespace hdrs {
+export namespace hdr {
 
     /**
      * Set or get Content-Type response header with `type`.
@@ -54,6 +58,9 @@ export namespace hdrs {
 
     export const ORIGIN = 'Origin';
 
+
+    export const VARY = 'Vary';
+    export const X_FORWARDED_PROTO = 'X-Forwarded-Proto';
     /**
      * header X-Forwarded-Host
      */
@@ -77,7 +84,7 @@ export namespace hdrs {
 /**
  * content types.
  */
-export namespace contentTypes {
+export namespace ctype {
     /**
      * stream, buffer type. 
      */

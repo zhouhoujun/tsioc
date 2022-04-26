@@ -1,7 +1,7 @@
 import { Middleware, RequestMethod, TransportContext } from '@tsdi/core';
 import { Abstract, isArray, isFunction, isPromise } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
-import { hdrs } from '../consts';
+import { hdr } from '../consts';
 import { append, vary } from '../utils';
 import { HttpError } from '../http/errors';
 
@@ -128,8 +128,8 @@ export class CorsMiddleware implements Middleware {
     }
 
     async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
-        let requestOrigin = ctx.getHeader(hdrs.ORIGIN);
-        !ctx.sent && vary(ctx.response, hdrs.ORIGIN);
+        let requestOrigin = ctx.getHeader(hdr.ORIGIN);
+        !ctx.sent && vary(ctx.response, hdr.ORIGIN);
         if (!requestOrigin) {
             return await next();
         }
@@ -156,13 +156,13 @@ export class CorsMiddleware implements Middleware {
         };
 
         if (ctx.method !== 'OPTIONS') {
-            set(hdrs.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
+            set(hdr.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
             if (options.credentials === true) {
-                set(hdrs.ACCESS_CONTROL_ALLOW_CREDENTIALS, 'true');
+                set(hdr.ACCESS_CONTROL_ALLOW_CREDENTIALS, 'true');
             }
 
             if (options.exposeHeaders) {
-                set(hdrs.ACCESS_CONTROL_EXPOSE_HEADERS, options.exposeHeaders);
+                set(hdr.ACCESS_CONTROL_EXPOSE_HEADERS, options.exposeHeaders);
             }
 
             if (!options.keepHeadersOnError) {
@@ -187,33 +187,33 @@ export class CorsMiddleware implements Middleware {
                 ctx.get(Logger)?.error(err);
             };
         } else {
-            if (!ctx.getHeader(hdrs.ACCESS_CONTROL_REQUEST_METHOD)) {
+            if (!ctx.getHeader(hdr.ACCESS_CONTROL_REQUEST_METHOD)) {
                 // this not preflight request, ignore it
                 return await next();
             }
 
             options = this.options;
-            ctx.setHeader(hdrs.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
+            ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
 
             if (options.credentials === true) {
-                ctx.setHeader(hdrs.ACCESS_CONTROL_ALLOW_CREDENTIALS, 'true');
+                ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_CREDENTIALS, 'true');
             }
 
             let maxAge = String(options.maxAge);
             if (maxAge) {
-                ctx.setHeader(hdrs.ACCESS_CONTROL_MAX_AGE, maxAge);
+                ctx.setHeader(hdr.ACCESS_CONTROL_MAX_AGE, maxAge);
             }
 
             if (options.allowMethods) {
-                ctx.setHeader(hdrs.ACCESS_CONTROL_ALLOW_METHODS, options.allowMethods);
+                ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_METHODS, options.allowMethods);
             }
 
             let allowHeaders = options.allowHeaders;
             if (!allowHeaders) {
-                allowHeaders = ctx.getHeader(hdrs.ACCESS_CONTROL_REQUEST_HEADERS) as string;
+                allowHeaders = ctx.getHeader(hdr.ACCESS_CONTROL_REQUEST_HEADERS) as string;
             }
             if (allowHeaders) {
-                ctx.setHeader(hdrs.ACCESS_CONTROL_ALLOW_HEADERS, allowHeaders);
+                ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_HEADERS, allowHeaders);
             }
             ctx.status = 204;
         }

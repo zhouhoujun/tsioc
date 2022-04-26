@@ -1,4 +1,4 @@
-import { Inject, Injectable, isFunction, lang, tokenId } from '@tsdi/ioc';
+import { EMPTY_OBJ, Inject, Injectable, isFunction, lang, tokenId } from '@tsdi/ioc';
 import { TransportServer, EndpointBackend, TransportContextFactory, CustomEndpoint, Middleware, MiddlewareFn, TransportContext } from '@tsdi/core';
 import { Logger } from '@tsdi/logs';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
@@ -11,21 +11,21 @@ import * as http2 from 'http2';
 import * as assert from 'assert';
 import { CONTENT_DISPOSITION } from './content';
 import { HttpContext, HttpMiddleware, HttpRequest, HttpResponse, HTTP_MIDDLEWARES } from './context';
+import { ev, LOCALHOST } from '../consts';
 
 
-export type HttpVersion = 'http1.1' | 'http2';
 
 export interface Http1ServerOptions {
-    version: 'http1.1',
+    majorVersion: 1,
     options?: http.ServerOptions | https.ServerOptions;
     listenOptions?: ListenOptions;
 }
 export interface Http2ServerOptions {
-    version?: 'http2',
+    majorVersion: 2,
     options?: http2.ServerOptions | http2.SecureServerOptions;
     listenOptions?: ListenOptions;
 }
-const defaultOption = { version: 'http2', listenOptions: { port: 3000, host: 'localhost' } as ListenOptions };
+const defaultOption = { majorVersion: 2, listenOptions: { port: 3000, host: LOCALHOST } as ListenOptions };
 export type HttpServerOptions = Http1ServerOptions | Http2ServerOptions;
 
 export const HTTP_SERVEROPTIONS = tokenId<HttpServerOptions>('HTTP_SERVEROPTIONS');
@@ -60,9 +60,6 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse, HttpC
 
     async startup(): Promise<void> {
         const options = this.options;
-        if (!options.version) {
-            options.version = 'http2';
-        }
         if (this.injector.has(CONTENT_DISPOSITION)) {
             const func = await this.injector.getLoader().require('content-disposition');
             assert(isFunction(func), 'Can not found any Content Disposition provider. Require content-disposition module');
@@ -82,23 +79,30 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse, HttpC
                 );
         }
         let cert: any;
-        if (options.version === 'http2') {
-            if (options.options) {
-                cert = (options.options as http2.SecureServerOptions)?.cert;
-                this._server = cert ? http2.createSecureServer(options.options, handler) : http2.createServer(options.options, handler);
-            } else {
-                this._server = http2.createServer(handler);
-            }
+        if (options.majorVersion === 2) {
+            const option = options.options ?? EMPTY_OBJ;
+            cert = option.cert;
+            const server = cert ? http2.createSecureServer(option, handler) : http2.createServer(option, handler);
+            this._server = server;
+            server.on(ev.STREAM, (stream, headers, flags) => {
+                stream.respond({
+                    'content-type': 'application/json; charset=utf-8',
+                    ':status': 200
+                });
+                stream.write(JSON.stringify({ name: 'ss' }));
+                stream.end();
+            });
+            server.on(ev.ERROR, (err) => {
+                this.logger.error(err);
+            });
         } else {
-            if (options.options) {
-                cert = (options.options as https.ServerOptions).cert;
-                this._server = cert ? https.createServer(options.options as https.ServerOptions, handler) : http.createServer(options.options as http.ServerOptions, handler);
-            } else {
-                this._server = http.createServer(handler);
-            }
+            const option = options.options ?? EMPTY_OBJ;
+            cert = option.cert;
+            const server = cert ? https.createServer(option, handler) : http.createServer(option, handler);
+            this._server = server;
         }
         const listenOptions = this.options.listenOptions;
-        this.injector.setValue(HTTP_LISTENOPTIONS, { ...listenOptions, withCredentials: cert!! });
+        this.injector.setValue(HTTP_LISTENOPTIONS, { ...listenOptions, withCredentials: cert!!, majorVersion: options.majorVersion });
         this.logger.info(lang.getClassName(this), 'listen:', listenOptions, '. access with url:', `http${cert ? 's' : ''}://${listenOptions?.host}:${listenOptions?.port}${listenOptions?.path ?? ''}`, '!')
         this._server.listen(listenOptions);
     }

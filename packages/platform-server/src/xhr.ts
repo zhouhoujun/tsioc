@@ -21,6 +21,7 @@ const isAbsoluteUrl = /^[a-zA-Z\-\+.]+:\/\//;
  * http listen options.
  */
 export interface HttpListenOptions extends ListenOptions {
+  majorVersion?: number;
   withCredentials?: boolean;
 }
 
