@@ -85,12 +85,14 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse, HttpC
             const server = cert ? http2.createSecureServer(option, handler) : http2.createServer(option, handler);
             this._server = server;
             server.on(ev.STREAM, (stream, headers, flags) => {
-                stream.respond({
-                    'content-type': 'application/json; charset=utf-8',
-                    ':status': 200
-                });
-                stream.write(JSON.stringify({ name: 'ss' }));
-                stream.end();
+                //todo stream.
+                
+                // stream.respond({
+                //     'content-type': 'application/json; charset=utf-8',
+                //     ':status': 200
+                // });
+                // stream.write(JSON.stringify({ name: 'ss' }));
+                // stream.end();
             });
             server.on(ev.ERROR, (err) => {
                 this.logger.error(err);

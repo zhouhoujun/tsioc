@@ -20,7 +20,9 @@ const protocolChk = /^https:/;
 
 export const HTTP_SESSIONOPTIONS = tokenId<HttpSessionOptions>('HTTP_SESSIONOPTIONS');
 
-
+/**
+ * http client for nodejs
+ */
 @Injectable()
 export class Http extends TransportClient<HttpRequest, HttpResponse> {
 
