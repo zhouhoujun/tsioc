@@ -33,12 +33,8 @@ export class DeviceConnectionService implements ConfigureService {
 
     connention: any;
     async configureService(ctx: BootApplicationContext): Promise<void> {
-        let defer = lang.defer<void>();
-        setTimeout(() => {
-            this.connention = { name: 'device_connect' };
-            defer.resolve();
-        }, 50);
-        return defer.promise;
+        await lang.delay(50);
+        this.connention = { name: 'device_connect' };
     }
 
 }

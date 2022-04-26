@@ -44,35 +44,26 @@ export class SuiteTest {
     }
 
     @Test('assert test timeout', 200)
-    testTimeout() {
+    async testTimeout() {
         console.log('--------assert test timeout------');
-        let def = PromiseUtil.defer();
-        setTimeout(() => {
-            def.resolve('out time do...')
-        }, 300)
-        return def.promise;
+        await lang.delay(300);
+        return 'out time do...';
     }
 
     @Test('assert test in time', 200)
-    testInTime() {
+    async testInTime() {
         console.log('--------assert test in time------');
-        let def = PromiseUtil.defer();
-        setTimeout(() => {
-            def.resolve('in time do...')
-        }, 100)
-        return def.promise;
+        await lang.delay(100);
+        return 'in time do...';
     }
 
 
     @Test('assert test in time', 200)
-    testInTime(assert: Assert) {
+    async testInTime(assert: Assert) {
         console.log('--------assert test in time------');
-        let def = PromiseUtil.defer();
-        setTimeout(() => {
-            def.resolve('in time do...')
-        }, 100)
+        await lang.delay(100);
         assert.strictEqual('0', 0);
-        return def.promise;
+        return 'in time do...';
     }
 
     @Test('expect test')

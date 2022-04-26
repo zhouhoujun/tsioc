@@ -272,13 +272,8 @@ class DeviceController {
     async update(version: string) {
         // do smth.
         console.log('update version:', version);
-        let defer = lang.defer();
-
-        setTimeout(()=> {
-            defer.resolve(version);
-        }, 10);
-
-        return await defer.promise;
+        await lang.delay(50);
+        return version;
     }
 
 

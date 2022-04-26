@@ -22,6 +22,7 @@ export class ServerBootTest {
         this.ctx = await Application.run({
             module: ServerMainModule,
             providers: [
+                { provide: PROCESS_ROOT, useValue: dir },
                 { provide: LogConfigure, useValue: logConfig }
             ]
         });
@@ -48,15 +49,11 @@ export class ServerBootTest {
     async canWriteLogFile() {
         const msg = 'log file test';
         this.ctx.getLogger().info(msg);
-        let defer = lang.defer();
-        setTimeout(() => {
-            expect(fs.existsSync(this.logfile)).toBeTruthy();
-            const content = fs.readFileSync(this.logfile, 'utf-8');
-            expect(isString(content)).toBeTruthy();
-            expect(content.indexOf(msg)).toBeGreaterThan(0);
-            defer.resolve();
-        }, 10);
-        await defer.promise;
+        await lang.delay(10);
+        expect(fs.existsSync(this.logfile)).toBeTruthy();
+        const content = fs.readFileSync(this.logfile, 'utf-8');
+        expect(isString(content)).toBeTruthy();
+        expect(content.indexOf(msg)).toBeGreaterThan(0);
     }
 
 

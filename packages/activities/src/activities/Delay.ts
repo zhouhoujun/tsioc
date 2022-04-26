@@ -24,12 +24,7 @@ export class DelayActivity extends ControlActivity {
 
     async execute(ctx: ActivityContext): Promise<void> {
         let timeout = await this.timer.execute(ctx);
-        let defer = lang.defer();
-        let timmer = setTimeout(() => {
-            defer.resolve();
-            clearTimeout(timmer);
-        }, timeout);
-        await defer.promise;
+        await lang.delay(timeout);
         await ctx.getExector().runActivity(this.body);
     }
 }
