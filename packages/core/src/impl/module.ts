@@ -61,8 +61,8 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
     protected override createLifecycle(): LifecycleHooks {
         let platform = this.scope === 'root' ? this.platform() : undefined;
-        const lifecycle = this.get(LifecycleHooksResolver)?.resolve(platform) ?? new DefaultModuleLifecycleHooks(platform);
-        (lifecycle as DefaultModuleLifecycleHooks).eventMulticaster = this.get(ApplicationEventMulticaster);
+        const lifecycle = this.get(LifecycleHooksResolver, null)?.resolve(platform) ?? new DefaultModuleLifecycleHooks(platform);
+        (lifecycle as DefaultModuleLifecycleHooks).eventMulticaster = this.get(ApplicationEventMulticaster, null)!;
         return lifecycle;
     }
 

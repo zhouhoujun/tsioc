@@ -1,5 +1,5 @@
-import { EMPTY_OBJ, Inject, Injectable, isFunction, lang, tokenId } from '@tsdi/ioc';
-import { TransportServer, EndpointBackend, TransportContextFactory, CustomEndpoint, Middleware, MiddlewareFn, TransportContext } from '@tsdi/core';
+import { EMPTY, EMPTY_OBJ, Inject, Injectable, isFunction, lang, tokenId } from '@tsdi/ioc';
+import { TransportServer, EndpointBackend, TransportContextFactory, CustomEndpoint } from '@tsdi/core';
 import { Logger } from '@tsdi/logs';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { fromEvent, of, race } from 'rxjs';
@@ -25,7 +25,7 @@ export interface Http2ServerOptions {
     options?: http2.ServerOptions | http2.SecureServerOptions;
     listenOptions?: ListenOptions;
 }
-const defaultOption = { majorVersion: 2, listenOptions: { port: 3000, host: LOCALHOST } as ListenOptions };
+const defaultOption = { majorVersion: 2, options: { allowHTTP1: true }, listenOptions: { port: 3000, host: LOCALHOST } as ListenOptions };
 export type HttpServerOptions = Http1ServerOptions | Http2ServerOptions;
 
 export const HTTP_SERVEROPTIONS = tokenId<HttpServerOptions>('HTTP_SERVEROPTIONS');
@@ -45,6 +45,12 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse, HttpC
     ) {
         super();
         this.options = { ...defaultOption, ...options } as HttpServerOptions;
+        if (options?.options) {
+            this.options.options = { ...defaultOption.options, ...options.options };
+        }
+        if (options?.listenOptions) {
+            this.options.listenOptions = { ...defaultOption.listenOptions, ...options.listenOptions };
+        }
     }
 
     getBackend(): EndpointBackend<HttpRequest, HttpResponse> {
@@ -55,7 +61,8 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse, HttpC
     }
 
     protected override getMiddlewares(): HttpMiddleware[] {
-        return [...this.injector.get(HTTP_MIDDLEWARES), ...super.getMiddlewares()];
+        const regd = this.injector.get(HTTP_MIDDLEWARES, EMPTY);
+        return [...regd, ...this._middlewares];
     }
 
     async startup(): Promise<void> {
@@ -86,13 +93,13 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse, HttpC
             this._server = server;
             server.on(ev.STREAM, (stream, headers, flags) => {
                 //todo stream.
-                
-                // stream.respond({
-                //     'content-type': 'application/json; charset=utf-8',
-                //     ':status': 200
-                // });
-                // stream.write(JSON.stringify({ name: 'ss' }));
-                // stream.end();
+
+                stream.respond({
+                    'content-type': 'application/json; charset=utf-8',
+                    ':status': 200
+                });
+                stream.write(JSON.stringify({ name: 'ss' }));
+                stream.end();
             });
             server.on(ev.ERROR, (err) => {
                 this.logger.error(err);

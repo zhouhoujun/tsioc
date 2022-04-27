@@ -19,8 +19,8 @@ export abstract class TransportServer<TRequest, TResponse, Tx extends TransportC
     protected injector!: Injector;
 
     protected _chain?: Endpoint<TRequest, TResponse>;
-    private _interceptors: Interceptor<TRequest, TResponse>[] = [];
-    private _middlewares: MiddlewareType<Tx>[] = [];
+    protected _interceptors: Interceptor<TRequest, TResponse>[] = [];
+    protected _middlewares: MiddlewareType<Tx>[] = [];
 
     /**
      * context factory

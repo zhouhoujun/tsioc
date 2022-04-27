@@ -57,7 +57,7 @@ export class DefaultInjector extends Injector {
     }
 
     protected createLifecycle(platform?: Platform): LifecycleHooks {
-        return this.get(LifecycleHooksResolver)?.resolve(platform) ?? new DestroyLifecycleHooks(platform);
+        return this.get(LifecycleHooksResolver, null)?.resolve(platform) ?? new DestroyLifecycleHooks(platform);
     }
 
     protected initScope(scope?: InjectorScope) {
@@ -354,7 +354,7 @@ export class DefaultInjector extends Injector {
 
     protected resolveStrategy<T>(platform: Platform, option: ResolveOption, context?: InvocationContext): T {
         return context?.resolve(option.token)
-            ?? this.get(option.token!, context)
+            ?? this.get(option.token!, context, InjectFlags.Default, null)
             ?? this.resolveFailed(platform, option.token!, context, option.regify, option.defaultToken);
     }
 
@@ -693,10 +693,11 @@ export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, rec
     context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, lifecycle?: LifecycleHooks, isStatic?: boolean): any {
     try {
         const value = resolveToken(token, rd, records, platform, parent, context, notFoundValue, flags, lifecycle, isStatic);
-        if (token !== Injector && token !== INJECTOR && rd && rd.fn !== IDENT && rd.fn !== MUTIL && lifecycle && isTypeObject(value)) {
+        const isDef = isDefined(value);
+        if (isDef && token !== Injector && token !== INJECTOR && rd && rd.fn !== IDENT && rd.fn !== MUTIL && lifecycle && isTypeObject(value)) {
             lifecycle.register(value);
         }
-        if (isStatic) {
+        if (isStatic && isDef) {
             if (rd) {
                 rd.value = value;
             } else {
@@ -775,8 +776,8 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                 }
                 return rd.fn?.(...deps)
         }
-    } else if (!(flags & InjectFlags.Self)) {
-        return parent?.get(token, context, InjectFlags.Default, notFoundValue);
+    } else if (parent && !(flags & InjectFlags.Self)) {
+        return parent.get(token, context, InjectFlags.Default, notFoundValue);
     } else if (!(flags & InjectFlags.Optional)) {
         if (notFoundValue === THROW_FLAGE) {
             throw new NullInjectorError(token);

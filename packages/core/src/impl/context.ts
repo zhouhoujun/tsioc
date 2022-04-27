@@ -24,18 +24,18 @@ import { ApplicationEvent, ApplicationEventMulticaster } from '../events';
  */
 export class DefaultApplicationContext extends DefaultInvocationContext implements ApplicationContext {
 
-    private _multicaster: ApplicationEventMulticaster;
+    private _multicaster: ApplicationEventMulticaster|null;
     exit = true;
 
     private _runners: ApplicationRunners;
 
     constructor(readonly injector: ModuleRef, options: InvokeArguments = EMPTY_OBJ) {
         super(injector, options);
-        const args = injector.get(ApplicationArguments);
+        const args = injector.get(ApplicationArguments, null);
         if (args && options.arguments !== args) {
             this._args = options.arguments ? { ...options.arguments, ...args } : args;
         }
-        this._multicaster = injector.get(ApplicationEventMulticaster);
+        this._multicaster = injector.get(ApplicationEventMulticaster, null);
         if (!this._multicaster) {
             this._multicaster = new DefaultEventMulticaster();
             injector.setValue(ApplicationEventMulticaster, this._multicaster);
@@ -69,7 +69,7 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
     }
 
     getLogger(name?: string): Logger {
-        return this.injector.get(LoggerFactory)?.getLogger(name);
+        return this.injector.get(LoggerFactory, null)?.getLogger(name)!;
     }
 
     publishEvent(event: ApplicationEvent): void;
@@ -86,7 +86,7 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
             event = new PayloadApplicationEvent(this, obj);
         }
 
-        this._multicaster.emit(event);
+        this._multicaster?.emit(event);
 
         // Publish event via parent context as well...
         if (this.parent) {

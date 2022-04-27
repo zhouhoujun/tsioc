@@ -145,7 +145,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
     }
 
     protected refreshContext(ctx: T): any {
-        const exit = ctx.injector.get(ApplicationExit);
+        const exit = ctx.injector.get(ApplicationExit, null);
         if (exit) {
             exit.register();
         }

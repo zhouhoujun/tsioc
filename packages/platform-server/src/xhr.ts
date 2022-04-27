@@ -43,7 +43,7 @@ export class HttpClientBackend implements HttpBackend {
     return new Observable(observer => process.nextTick(() => {
       let request: HttpRequest;
       if (!isAbsoluteUrl.test(req.url)) {
-        const { host, port, path, withCredentials } = context?.get(HTTP_LISTENOPTIONS) ?? this.injector.get(HTTP_LISTENOPTIONS) ?? EMPTY_OBJ;
+        const { host, port, path, withCredentials } = context?.get(HTTP_LISTENOPTIONS) ?? this.injector.get(HTTP_LISTENOPTIONS, EMPTY_OBJ);
         const protocol = (req.withCredentials || withCredentials) ? 'https' : 'http';
         const urlPrefix = `${protocol}://${host ?? 'localhost'}:${port ?? 3000}${path ?? ''}`;
         const baseUrl = new URL(urlPrefix);
