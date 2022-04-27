@@ -186,8 +186,7 @@ class DeviceAModule {
     ],
     providers: [
         // DeviceController,
-        DeviceStartupHandle,
-        { provide: HTTP_MIDDLEWARES, useClass: LogMiddleware, multi: true}
+        DeviceStartupHandle
     ],
     declarations: [
         DeviceController

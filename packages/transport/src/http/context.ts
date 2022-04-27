@@ -198,11 +198,15 @@ export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
      * @return {String} hostname
      * @api public
      */
-    get hostname() {
+    get hostname(): string {
         const host = this.host;
         if (!host) return '';
         if ('[' === host[0]) return this.URL.hostname || ''; // IPv6
         return host.split(':', 1)[0];
+    }
+
+    get pathname(): string {
+        return this.URL.pathname;
     }
 
     /**
@@ -212,7 +216,7 @@ export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
      * @return {URL|Object}
      * @api public
      */
-    get URL() {
+    get URL(): URL {
         /* istanbul ignore else */
         if (!this._URL) {
             const originalUrl = this.originalUrl || ''; // avoid undefined in template string

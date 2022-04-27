@@ -24,9 +24,9 @@ export abstract class Router implements Middleware {
      */
     abstract get routes(): Map<string, MiddlewareFn>;
     /**
-     * intercept handle.
+     * invoke middleware.
      *
-     * @param {TransportContext} req request with context.
+     * @param {TransportContext} ctx context.
      * @param {() => Promise<void>} next
      * @returns {Observable<T>}
      */
@@ -59,11 +59,16 @@ export abstract class Router implements Middleware {
 @Abstract()
 export abstract class RouterResolver {
     /**
-     * resolve router.
+     * get router match with path.
+     * @param path 
+     */
+    abstract match(path: string): Router | undefined;
+    /**
+     * resolve router. get or create router start with prefix.
      * @param protocol the router protocal. 
      * @param prefix route prefix.
      */
-    abstract resolve(prefix?: string): Router;
+    abstract resolve(prefix?: string, version?: string): Router;
 }
 
 
@@ -234,11 +239,22 @@ export class MappingRouterResolver implements RouterResolver {
         this.routers = new Map();
     }
 
-    resolve(prefix: string = ''): Router {
-        let router = this.routers.get(prefix);
+    match(path: string): Router | undefined {
+        const paths = path.split('/');
+        let router: Router | undefined;
+        for (let i = paths.length; i > 0; i--) {
+            router = this.routers.get(paths.slice(0, i).join('/'));
+            if (router) break;
+        }
+        return router;
+    }
+
+    resolve(prefix: string = '', version?: string): Router {
+        const route = version ? `${version}/${prefix}` : prefix;
+        let router = this.routers.get(route);
         if (!router) {
-            router = new MappingRouter(prefix);
-            this.routers.set(prefix, router);
+            router = new MappingRouter(route);
+            this.routers.set(route, router);
         }
         return router;
     }
@@ -293,13 +309,13 @@ export interface RouteMappingMetadata {
  */
 export interface ProtocolRouteMappingMetadata extends RouteMappingMetadata {
     /**
-     * protocol type.
-     */
-    protocol?: string;
-    /**
      * version of api.
      */
     version?: string;
+    /**
+     * route prefix.
+     */
+    prefix?: string;
 }
 
 /**

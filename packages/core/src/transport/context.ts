@@ -25,11 +25,15 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
         this.request = request;
         this.response = response;
     }
-
     /**
      * request URL
      */
     abstract get url(): string;
+
+    /**
+     * Get request pathname .
+     */
+    abstract get pathname(): string;
     /**
      * restful params. 
      */

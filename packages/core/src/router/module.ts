@@ -4,6 +4,7 @@ import { RouteFactoryResolver, ROUTES, Routes } from './route';
 import { DefaultRouteFactoryResovler } from './route_ref';
 import { MappingRouterResolver, RouterResolver } from './router';
 import { ExecptionModule } from '../execptions';
+import { RouterMiddleware } from './middleware';
 
 
 /*
@@ -16,6 +17,7 @@ import { ExecptionModule } from '../execptions';
     providers: [
         { provide: RouterResolver, useValue: new MappingRouterResolver() },
         { provide: RouteFactoryResolver, useValue: new DefaultRouteFactoryResovler() },
+        RouterMiddleware
     ]
 })
 export class RouterModule {

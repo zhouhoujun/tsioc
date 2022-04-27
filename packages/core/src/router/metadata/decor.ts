@@ -7,7 +7,7 @@ import { Middleware, MiddlewareFn } from '../../transport/endpoint';
 import { RequestMethod } from '../../transport/packet';
 import { CanActivate } from '../guard';
 import { RouteFactoryResolver } from '../route';
-import { MappingReflect, ProtocolRouteMappingMetadata, Router, RouterResolver } from '../router';
+import { MappingReflect, ProtocolRouteMappingMetadata, RouteMappingMetadata, Router, RouterResolver } from '../router';
 import { HandleMetadata, HandleMessagePattern } from './meta';
 
 
@@ -183,9 +183,9 @@ export interface RouteMapping {
          */
         version?: string;
         /**
-         * protocol type.
+         * route prefix.
          */
-        protocol?: string;
+        prefix?: string;
         /**
          * parent router.
          */
@@ -222,10 +222,6 @@ export interface RouteMapping {
      */
     (route: string, options: {
         /**
-         * version of api.
-         */
-        version?: string;
-        /**
          * route guards.
          */
         guards?: Type<CanActivate>[];
@@ -248,11 +244,17 @@ export interface RouteMapping {
     }): MethodDecorator;
 
     /**
-     * route decorator. define the controller method as an route.
+     * route decorator. define the controller as an route.
      *
-     * @param {RouteMetadata} [metadata] route metadata.
+     * @param {ProtocolRouteMappingMetadata} [metadata] route metadata.
      */
-    (metadata: ProtocolRouteMappingMetadata): ClassMethodDecorator;
+    (metadata: ProtocolRouteMappingMetadata): ClassDecorator;
+    /**
+     * route decorator. define the method as an route.
+     *
+     * @param {RouteMappingMetadata} [metadata] route metadata.
+     */
+    (metadata: RouteMappingMetadata): MethodDecorator;
 }
 
 
@@ -278,19 +280,18 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
         design: {
             afterAnnoation: (ctx, next) => {
                 const reflect = ctx.reflect as MappingReflect;
-                const { protocol, version, parent } = reflect.annotation;
+                const { prefix, version, parent } = reflect.annotation;
                 const injector = ctx.injector;
                 let router: Router;
                 if (parent) {
                     router = injector.get(parent);
                 } else {
-                    router = injector.get(RouterResolver).resolve(protocol);
+                    router = injector.get(RouterResolver).resolve(prefix, version);
                 }
 
                 if (!router) throw new Error(lang.getClassName(parent) + 'has not registered!');
                 if (!(router instanceof Router)) throw new Error(lang.getClassName(router) + 'is not router!');
-                const prefix = router.prefix;
-                const routeRef = injector.get(RouteFactoryResolver).resolve(reflect).create(injector, { prefix });
+                const routeRef = injector.get(RouteFactoryResolver).resolve(reflect).create(injector);
                 const path = routeRef.path;
                 routeRef.onDestroy(() => router.unuse(path));
                 router.use(path, routeRef);
@@ -487,9 +488,9 @@ export interface RestController {
          */
         version?: string;
         /**
-         * protocol type.
+         * route prefix.
          */
-        protocol?: string;
+        prefix?: string;
         /**
          * parent router.
          */
