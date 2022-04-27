@@ -1,5 +1,5 @@
-import { EMPTY, EMPTY_OBJ, Inject, Injectable, isFunction, lang, tokenId } from '@tsdi/ioc';
-import { TransportServer, EndpointBackend, TransportContextFactory, CustomEndpoint } from '@tsdi/core';
+import { EMPTY, EMPTY_OBJ, Inject, Injectable, Injector, InvocationContext, isFunction, lang, tokenId } from '@tsdi/ioc';
+import { TransportServer, EndpointBackend, TransportContextFactory, CustomEndpoint, MiddlewareSet, BasicMiddlewareSet, MiddlewareType } from '@tsdi/core';
 import { Logger } from '@tsdi/logs';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { fromEvent, of, race } from 'rxjs';
@@ -10,23 +10,31 @@ import * as https from 'https';
 import * as http2 from 'http2';
 import * as assert from 'assert';
 import { CONTENT_DISPOSITION } from './content';
-import { HttpContext, HttpMiddleware, HttpRequest, HttpResponse, HTTP_MIDDLEWARES } from './context';
+import { HttpContext, HttpRequest, HttpResponse, HTTP_MIDDLEWARES } from './context';
 import { ev, LOCALHOST } from '../consts';
+import { CorsMiddleware, CorsOptions } from '../middlewares/cors';
 
+export interface HttpOptions {
+    majorVersion?: number;
+    cors?: CorsOptions;
+    listenOptions?: ListenOptions;
+}
 
-
-export interface Http1ServerOptions {
+export interface Http1ServerOptions extends HttpOptions {
     majorVersion: 1,
     options?: http.ServerOptions | https.ServerOptions;
-    listenOptions?: ListenOptions;
 }
-export interface Http2ServerOptions {
+export interface Http2ServerOptions extends HttpOptions {
     majorVersion: 2,
     options?: http2.ServerOptions | http2.SecureServerOptions;
-    listenOptions?: ListenOptions;
 }
-const defaultOption = { majorVersion: 2, options: { allowHTTP1: true }, listenOptions: { port: 3000, host: LOCALHOST } as ListenOptions };
+
 export type HttpServerOptions = Http1ServerOptions | Http2ServerOptions;
+/**
+ * default options.
+ */
+const httpOpts = { majorVersion: 2, options: { allowHTTP1: true }, listenOptions: { port: 3000, host: LOCALHOST } as ListenOptions };
+
 
 export const HTTP_SERVEROPTIONS = tokenId<HttpServerOptions>('HTTP_SERVEROPTIONS');
 
@@ -39,18 +47,20 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse, HttpC
     private _backend?: EndpointBackend<HttpRequest, HttpResponse>;
     private _server?: http2.Http2Server | http.Server | https.Server;
     private options: HttpServerOptions;
+
     constructor(
-        @Inject() readonly contextFactory: TransportContextFactory<HttpRequest, HttpResponse>,
+        @Inject() readonly context: InvocationContext,
         @Inject(HTTP_SERVEROPTIONS, { nullable: true }) options: HttpServerOptions
     ) {
         super();
-        this.options = { ...defaultOption, ...options } as HttpServerOptions;
+        this.options = { ...httpOpts, ...options } as HttpServerOptions;
         if (options?.options) {
-            this.options.options = { ...defaultOption.options, ...options.options };
+            this.options.options = { ...httpOpts.options, ...options.options };
         }
         if (options?.listenOptions) {
-            this.options.listenOptions = { ...defaultOption.listenOptions, ...options.listenOptions };
+            this.options.listenOptions = { ...httpOpts.listenOptions, ...options.listenOptions };
         }
+        this.context.setValue(HTTP_SERVEROPTIONS, this.options);
     }
 
     getBackend(): EndpointBackend<HttpRequest, HttpResponse> {
@@ -60,17 +70,12 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse, HttpC
         return this._backend;
     }
 
-    protected override getMiddlewares(): HttpMiddleware[] {
-        const regd = this.injector.get(HTTP_MIDDLEWARES, EMPTY);
-        return [...regd, ...this._middlewares];
-    }
-
     async startup(): Promise<void> {
         const options = this.options;
-        if (this.injector.has(CONTENT_DISPOSITION)) {
-            const func = await this.injector.getLoader().require('content-disposition');
+        if (this.context.has(CONTENT_DISPOSITION)) {
+            const func = await this.context.injector.getLoader().require('content-disposition');
             assert(isFunction(func), 'Can not found any Content Disposition provider. Require content-disposition module');
-            this.injector.setValue(CONTENT_DISPOSITION, func);
+            this.context.setValue(CONTENT_DISPOSITION, func);
         }
 
         const handler = (request: HttpRequest, response: HttpResponse) => {
@@ -111,7 +116,7 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse, HttpC
             this._server = server;
         }
         const listenOptions = this.options.listenOptions;
-        this.injector.setValue(HTTP_LISTENOPTIONS, { ...listenOptions, withCredentials: cert!!, majorVersion: options.majorVersion });
+        this.context.setValue(HTTP_LISTENOPTIONS, { ...listenOptions, withCredentials: cert!!, majorVersion: options.majorVersion });
         this.logger.info(lang.getClassName(this), 'listen:', listenOptions, '. access with url:', `http${cert ? 's' : ''}://${listenOptions?.host}:${listenOptions?.port}${listenOptions?.path ?? ''}`, '!')
         this._server.listen(listenOptions);
     }
@@ -130,5 +135,28 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse, HttpC
             }
         });
         await defer.promise;
+    }
+
+    protected override createMidderwareSet(): MiddlewareSet<HttpContext> {
+        return this.context.resolve(MiddlewareSet)
+    }
+}
+
+
+@Injectable()
+export class HttpMiddlewareSet extends BasicMiddlewareSet<HttpContext> {
+    constructor(
+        @Inject(HTTP_MIDDLEWARES, { nullable: true }) middlewares: MiddlewareType<HttpContext>[],
+        @Inject(HTTP_SERVEROPTIONS) private options: HttpServerOptions
+    ) {
+        super(middlewares);
+    }
+
+    getAll(): MiddlewareType<HttpContext>[] {
+        const cors = this.options.cors;
+        if (cors) {
+            return this.middlewares;
+        }
+        return this.middlewares.filter(c => !(c instanceof CorsMiddleware));
     }
 }

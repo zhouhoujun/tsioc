@@ -56,6 +56,9 @@ export interface Route extends InvokeArguments {
 export type LoadChildren = () => any;
 export type Routes = Route[];
 
+/**
+ * ROUTES
+ */
 export const ROUTES = tokenId<Routes>('ROUTES');
 
 /**

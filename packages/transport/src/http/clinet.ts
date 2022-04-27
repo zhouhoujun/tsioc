@@ -31,6 +31,7 @@ export class Http extends TransportClient<HttpRequest, HttpResponse> {
     private http2client?: http2.ClientHttp2Session;
 
     constructor(
+        @Inject() readonly context: InvocationContext,
         @Inject(HTTP_SESSIONOPTIONS, { defaultValue: EMPTY_OBJ }) private options: HttpSessionOptions) {
         super()
     }

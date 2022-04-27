@@ -1,5 +1,5 @@
 import { Middleware, RequestMethod, TransportContext } from '@tsdi/core';
-import { Abstract, isArray, isFunction, isPromise } from '@tsdi/ioc';
+import { Abstract, Injectable, isArray, isFunction, isPromise } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
 import { hdr } from '../consts';
 import { append, vary } from '../utils';
@@ -93,6 +93,8 @@ interface Options {
  */
 const allowMethods = 'GET,HEAD,PUT,POST,DELETE,PATCH';
 
+
+@Injectable()
 export class CorsMiddleware implements Middleware {
 
     private options: Options;

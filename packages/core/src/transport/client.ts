@@ -15,11 +15,17 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> implem
 
     @Log()
     protected readonly logger!: Logger;
-    @Inject()
-    protected injector!: Injector;
 
     protected _chain?: Endpoint<TRequest, TResponse>;
     private _interceptors: Interceptor<TRequest, TResponse>[] = [];
+
+
+    
+    /**
+     * client context.
+     */
+    abstract get context(): InvocationContext;
+
     /**
      * intercept on the transport request.
      * @param interceptor 
@@ -88,7 +94,7 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> implem
     }
 
     protected createContext(): InvocationContext {
-        return InvocationContext.create(this.injector);
+        return InvocationContext.create(this.context);
     }
 
     protected abstract buildRequest(context: InvocationContext, req: TRequest | string, options?: TOption): Promise<TRequest> | TRequest;

@@ -1,5 +1,5 @@
 import { EndpointBackend, TransportContextFactory, TransportServer } from '@tsdi/core';
-import { Abstract, Inject, Injectable, lang } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, InvocationContext, lang } from '@tsdi/ioc';
 import { Server, ServerOpts, ListenOptions } from 'net';
 import { TCPRequest, TCPResponse } from './packet';
 
@@ -31,7 +31,9 @@ export class TCPServer extends TransportServer<TCPRequest, TCPResponse> {
 
 
     private server?: Server;
-    constructor(@Inject({ nullable: true }) private options: TcpServerOption = defaults) {
+    constructor(
+        @Inject() readonly context: InvocationContext,
+        @Inject({ nullable: true }) private options: TcpServerOption = defaults) {
         super();
     }
 

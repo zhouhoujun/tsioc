@@ -1,9 +1,9 @@
 import { Injectable, Injector, lang } from '@tsdi/ioc';
 import { NonePointcut } from '@tsdi/aop';
+import { PROCESS_ROOT } from '@tsdi/core';
 import { LoggerManager, Logger } from '@tsdi/logs';
 import * as log4js from 'log4js';
 import path = require('path');
-import { PROCESS_ROOT } from '@tsdi/core';
 import { isAbsolute } from 'path';
 
 /**

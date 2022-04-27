@@ -32,6 +32,7 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> {
     private socket?: Socket;
     private connected: boolean;
     constructor(
+        @Inject() readonly context: InvocationContext,
         @Inject({ nullable: true }) private options: TcpClientOption = defaults
     ) {
         super();
