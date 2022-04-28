@@ -32,7 +32,7 @@ export class Http extends TransportClient<HttpRequest, HttpResponse> {
 
     constructor(
         @Inject() readonly context: InvocationContext,
-        @Inject(HTTP_SESSIONOPTIONS, { defaultValue: EMPTY_OBJ }) private options: HttpSessionOptions) {
+        @Inject(HTTP_SESSIONOPTIONS, { nullable: true }) private options: HttpSessionOptions) {
         super()
     }
 

@@ -1,7 +1,7 @@
 import { ArgumentError, isFunction, isString } from '@tsdi/ioc';
 import { ResponseHeader } from '@tsdi/core';
 import { Stream } from 'stream';
-import { EventEmitter } from 'events'
+import { EventEmitter } from 'events';
 
 
 export function isBuffer(body: any): body is Buffer {

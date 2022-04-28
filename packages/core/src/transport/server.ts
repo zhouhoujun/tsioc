@@ -41,7 +41,7 @@ export abstract class TransportServer<TRequest, TResponse, Tx extends TransportC
     abstract getInterceptors(): Interceptor[];
 
     /**
-     * middleware set.
+     * Get middleware set.
      */
     get middlewares(): MiddlewareSet<Tx> {
         if (!this._middset) {
@@ -73,7 +73,7 @@ export abstract class TransportServer<TRequest, TResponse, Tx extends TransportC
     /**
      * get backend endpoint.
      */
-    abstract getBackend(): EndpointBackend<TRequest, TResponse>;
+    protected abstract getBackend(): EndpointBackend<TRequest, TResponse>;
 
     /**
      * transport endpoint chain.

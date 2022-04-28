@@ -122,7 +122,7 @@ export class InterceptorChain<TRequest, TResponse> implements Endpoint<TRequest,
     handle(req: TRequest, context?: InvocationContext): Observable<TResponse> {
         if (!this.chain) {
             this.chain = this.interceptors.reduceRight(
-                (next, middleware) => new InterceptorEndpoint(next, middleware), this.backend);
+                (next, inteceptor) => new InterceptorEndpoint(next, inteceptor), this.backend);
         }
         return this.chain.handle(req, context);
     }

@@ -12,7 +12,6 @@ export class LogMiddleware implements Middleware {
 
         const dev = !this.args.env.production;
 
-
         dev && logger.log(ctx.url);
 
         try {

@@ -31,7 +31,7 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> implem
     /**
      * get backend endpoint.
      */
-    abstract getBackend(): EndpointBackend<TRequest, TResponse>;
+    protected abstract getBackend(): EndpointBackend<TRequest, TResponse>;
 
     /**
      * transport endpoint chain.
