@@ -1,4 +1,4 @@
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, tokenId } from '@tsdi/ioc';
 import { Endpoint, HttpRequest, HttpResponse, Interceptor } from '@tsdi/core';
 import { Observable } from 'rxjs';
 
@@ -21,4 +21,7 @@ export interface HttpInterceptor extends Interceptor<HttpRequest, HttpResponse> 
 
 }
 
-
+/**
+ * http Interceptor tokens
+ */
+export const HTTP_INTERCEPTORS = tokenId<Interceptor<HttpRequest, HttpResponse>[]>('HTTP_INTERCEPTORS');

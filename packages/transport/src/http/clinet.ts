@@ -1,4 +1,4 @@
-import { EMPTY_OBJ, Inject, Injectable, Injector, InvocationContext, lang, tokenId } from '@tsdi/ioc';
+import { EMPTY, EMPTY_OBJ, Inject, Injectable, Injector, InvocationContext, lang, tokenId } from '@tsdi/ioc';
 import { InterceptorChain, Endpoint, Interceptor, InterceptorFn, RequestMethod, TransportClient, EndpointBackend } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { Logger } from '@tsdi/logs';
@@ -8,7 +8,7 @@ import * as http2 from 'http2';
 import { Socket } from 'net';
 import { TLSSocket } from 'tls';
 import { HttpRequest, HttpResponse } from './context';
-
+import { HTTP_INTERCEPTORS } from './endpoint';
 
 export interface HttpSessionOptions {
     authority: string;
@@ -34,6 +34,10 @@ export class Http extends TransportClient<HttpRequest, HttpResponse> {
         @Inject() readonly context: InvocationContext,
         @Inject(HTTP_SESSIONOPTIONS, { defaultValue: EMPTY_OBJ }) private options: HttpSessionOptions) {
         super()
+    }
+
+    getInterceptors(): Interceptor[] {
+        return this.context.get(HTTP_INTERCEPTORS) ?? EMPTY
     }
 
     getBackend(): EndpointBackend<HttpRequest, HttpResponse> {

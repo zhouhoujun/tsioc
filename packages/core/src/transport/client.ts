@@ -1,10 +1,10 @@
-import { Abstract, Inject, Injector, InvocationContext, isFunction, isNil } from '@tsdi/ioc';
+import { Abstract, InvocationContext, isNil } from '@tsdi/ioc';
 import { Logger, Log } from '@tsdi/logs';
 import { defer, Observable, throwError } from 'rxjs';
 import { catchError, concatMap, finalize } from 'rxjs/operators';
 import { OnDispose } from '../lifecycle';
 import { TransportError } from './error';
-import { InterceptorChain, Endpoint, EndpointBackend, Interceptor, InterceptorFn } from './endpoint';
+import { InterceptorChain, Endpoint, EndpointBackend, Interceptor } from './endpoint';
 
 
 /**
@@ -17,35 +17,21 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> implem
     protected readonly logger!: Logger;
 
     protected _chain?: Endpoint<TRequest, TResponse>;
-    private _interceptors: Interceptor<TRequest, TResponse>[] = [];
 
-
-    
     /**
      * client context.
      */
     abstract get context(): InvocationContext;
 
     /**
-     * intercept on the transport request.
-     * @param interceptor 
+     * get interceptors.
      */
-    intercept(interceptor: Interceptor<TRequest, TResponse> | InterceptorFn<TRequest, TResponse>): this {
-        this._interceptors.push(isFunction(interceptor) ? { intercept: interceptor } : interceptor);
-        return this;
-    }
+    abstract getInterceptors(): Interceptor[];
 
     /**
      * get backend endpoint.
      */
     abstract getBackend(): EndpointBackend<TRequest, TResponse>;
-    /**
-     * get interceptors.
-     * @returns 
-     */
-    protected getInterceptors(): Interceptor<TRequest, TResponse>[] {
-        return this._interceptors;
-    }
 
     /**
      * transport endpoint chain.

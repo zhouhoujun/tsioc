@@ -1,4 +1,4 @@
-import { HttpStatusCode, MiddlewareType, Protocol, TransportContext, TransportContextFactory } from '@tsdi/core';
+import { HttpStatusCode, MiddlewareInst, Protocol, TransportContext, TransportContextFactory } from '@tsdi/core';
 import { Injectable, Injector, InvokeArguments, isArray, isFunction, isNumber, isString, lang, tokenId } from '@tsdi/ioc';
 import * as util from 'util';
 import * as assert from 'assert';
@@ -1129,7 +1129,7 @@ export class HttpContextFactory extends TransportContextFactory<HttpRequest, Htt
 /**
  * http middleware.
  */
- export type HttpMiddleware = MiddlewareType<HttpContext>;
+ export type HttpMiddleware = MiddlewareInst<HttpContext>;
 
 /**
  * http middlewares token.

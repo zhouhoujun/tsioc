@@ -1,8 +1,7 @@
-import { MiddlewareSet, Module, RouterMiddleware, RouterModule, TransformModule, TransportContextFactory } from '@tsdi/core';
-import { ModuleWithProviders } from '@tsdi/ioc';
-import { LogMiddleware } from '../middlewares/log';
+import { MiddlewareSet, Module, RouterModule, TransformModule, TransportContextFactory } from '@tsdi/core';
+import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
 import { Http } from './clinet';
-import { HttpContextFactory, HTTP_MIDDLEWARES } from './context';
+import { HttpContextFactory } from './context';
 import { HttpServer, HttpMiddlewareSet, HttpServerOptions, HTTP_SERVEROPTIONS } from './server';
 
 @Module({
@@ -14,20 +13,16 @@ import { HttpServer, HttpMiddlewareSet, HttpServerOptions, HTTP_SERVEROPTIONS } 
         { provide: TransportContextFactory, useClass: HttpContextFactory },
         { provide: MiddlewareSet, useClass: HttpMiddlewareSet },
         HttpServer,
-        Http,
-        { provide: HTTP_MIDDLEWARES, useClass: LogMiddleware, multi: true },
-        { provide: HTTP_MIDDLEWARES, useClass: RouterMiddleware, multi: true },
-        { provide: HTTP_MIDDLEWARES, useClass: RouterMiddleware, multi: true },
+        Http
     ]
 })
 export class HttpModule {
 
     static withOption(option: HttpServerOptions): ModuleWithProviders<HttpModule> {
+        const providers: ProviderType[] = [{ provide: HTTP_SERVEROPTIONS, useValue: option }];
         return {
             module: HttpModule,
-            providers: [
-                { provide: HTTP_SERVEROPTIONS, useValue: option }
-            ]
+            providers
         }
     }
 }

@@ -1,8 +1,8 @@
-import { EMPTY, EMPTY_OBJ, Inject, Injectable, Injector, InvocationContext, isFunction, lang, tokenId } from '@tsdi/ioc';
-import { TransportServer, EndpointBackend, TransportContextFactory, CustomEndpoint, MiddlewareSet, BasicMiddlewareSet, MiddlewareType } from '@tsdi/core';
+import { EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isClass, isFunction, lang, tokenId, Type } from '@tsdi/ioc';
+import { TransportServer, EndpointBackend, CustomEndpoint, MiddlewareSet, BasicMiddlewareSet, MiddlewareInst, RouterMiddleware, MiddlewareType, Interceptor } from '@tsdi/core';
 import { Logger } from '@tsdi/logs';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
-import { fromEvent, of, race } from 'rxjs';
+import { of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ListenOptions } from 'net';
 import * as http from 'http';
@@ -13,11 +13,15 @@ import { CONTENT_DISPOSITION } from './content';
 import { HttpContext, HttpRequest, HttpResponse, HTTP_MIDDLEWARES } from './context';
 import { ev, LOCALHOST } from '../consts';
 import { CorsMiddleware, CorsOptions } from '../middlewares/cors';
+import { LogMiddleware } from '../middlewares';
+import { HTTP_INTERCEPTORS } from './endpoint';
 
 export interface HttpOptions {
     majorVersion?: number;
     cors?: CorsOptions;
     listenOptions?: ListenOptions;
+    interceptors?: Type<Interceptor<HttpRequest, HttpResponse>>[];
+    middlewares?: MiddlewareType[];
 }
 
 export interface Http1ServerOptions extends HttpOptions {
@@ -33,7 +37,16 @@ export type HttpServerOptions = Http1ServerOptions | Http2ServerOptions;
 /**
  * default options.
  */
-const httpOpts = { majorVersion: 2, options: { allowHTTP1: true }, listenOptions: { port: 3000, host: LOCALHOST } as ListenOptions };
+const httpOpts = {
+    majorVersion: 2,
+    options: { allowHTTP1: true },
+    listenOptions: { port: 3000, host: LOCALHOST } as ListenOptions,
+    middlewares: [
+        LogMiddleware,
+        CorsMiddleware,
+        RouterMiddleware
+    ]
+} as Http2ServerOptions;
 
 /**
  * http server opptions.
@@ -48,13 +61,17 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse, HttpC
 
     private _backend?: EndpointBackend<HttpRequest, HttpResponse>;
     private _server?: http2.Http2Server | http.Server | https.Server;
-    private options: HttpServerOptions;
+    private options!: HttpServerOptions;
 
     constructor(
         @Inject() readonly context: InvocationContext,
         @Inject(HTTP_SERVEROPTIONS, { nullable: true }) options: HttpServerOptions
     ) {
         super();
+        this.initOption(options);
+    }
+
+    protected initOption(options: HttpServerOptions) {
         this.options = { ...httpOpts, ...options } as HttpServerOptions;
         if (options?.options) {
             this.options.options = { ...httpOpts.options, ...options.options };
@@ -63,6 +80,27 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse, HttpC
             this.options.listenOptions = { ...httpOpts.listenOptions, ...options.listenOptions };
         }
         this.context.setValue(HTTP_SERVEROPTIONS, this.options);
+        const middlewares = (this.options.cors === false ? this.options.middlewares?.filter(f => f !== CorsMiddleware) : this.options.middlewares)?.map(m => {
+            if (isFunction(m)) {
+                return { provide: HTTP_MIDDLEWARES, useClass: m, multi: true };
+            } else {
+                return { provide: HTTP_MIDDLEWARES, useValue: m, multi: true };
+            }
+        }) ?? EMPTY;
+        this.context.injector.inject(middlewares);
+
+        const interceptors = this.options.interceptors?.map(m => {
+            if (isFunction(m)) {
+                return { provide: HTTP_INTERCEPTORS, useClass: m, multi: true };
+            } else {
+                return { provide: HTTP_INTERCEPTORS, useValue: m, multi: true };
+            }
+        }) ?? EMPTY;
+        this.context.injector.inject(interceptors);
+    }
+
+    getInterceptors(): Interceptor[] {
+        return this.context.get(HTTP_INTERCEPTORS) ?? EMPTY;
     }
 
     getBackend(): EndpointBackend<HttpRequest, HttpResponse> {
@@ -147,18 +185,7 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse, HttpC
 
 @Injectable()
 export class HttpMiddlewareSet extends BasicMiddlewareSet<HttpContext> {
-    constructor(
-        @Inject(HTTP_MIDDLEWARES, { nullable: true }) middlewares: MiddlewareType<HttpContext>[],
-        @Inject(HTTP_SERVEROPTIONS) private options: HttpServerOptions
-    ) {
+    constructor(@Inject(HTTP_MIDDLEWARES, { nullable: true }) middlewares: MiddlewareInst<HttpContext>[]) {
         super(middlewares);
-    }
-
-    getAll(): MiddlewareType<HttpContext>[] {
-        const cors = this.options.cors;
-        if (cors) {
-            return this.middlewares;
-        }
-        return this.middlewares.filter(c => !(c instanceof CorsMiddleware));
     }
 }

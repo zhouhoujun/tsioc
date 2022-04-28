@@ -1,10 +1,11 @@
-import { Abstract, EMPTY, Inject, Injector, InvocationContext, isFunction, isNumber } from '@tsdi/ioc';
+import { Abstract, InvocationContext } from '@tsdi/ioc';
 import { Logger, Log } from '@tsdi/logs';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
 import { Startup } from '../startup';
-import { InterceptorChain, Endpoint, EndpointBackend, Interceptor, InterceptorFn, MiddlewareBackend, MiddlewareType } from './endpoint';
+import { InterceptorChain, Endpoint, EndpointBackend, MiddlewareBackend, MiddlewareInst, InterceptorInst, Interceptor } from './endpoint';
 import { TransportContext, TransportContextFactory } from './context';
+import { BasicMiddlewareSet, MiddlewareSet } from './middlware.set';
 
 /**
  * abstract transport server.
@@ -17,7 +18,6 @@ export abstract class TransportServer<TRequest, TResponse, Tx extends TransportC
     protected readonly logger!: Logger;
 
     protected _chain?: Endpoint<TRequest, TResponse>;
-    protected _intpset?: InterceptorSet<TRequest, TResponse>;
     private _middset?: MiddlewareSet<Tx>;
     private _ctxfac?: TransportContextFactory<TRequest, TResponse>;
 
@@ -36,23 +36,9 @@ export abstract class TransportServer<TRequest, TResponse, Tx extends TransportC
     }
 
     /**
-     * Interceptor set.
+     * get interceptors.
      */
-    get interceptors(): InterceptorSet<TRequest, TResponse> {
-        if (!this._intpset) {
-            this._intpset = this.createInterceptorSet();
-        }
-        return this._intpset;
-    }
-
-    /**
-     * lazy create interceptor set.
-     * @returns 
-     */
-    protected createInterceptorSet(): InterceptorSet<TRequest, TResponse> {
-        return this.context.get(InterceptorSet) ?? new BasicInterceptorSet();;
-    }
-
+    abstract getInterceptors(): Interceptor[];
 
     /**
      * middleware set.
@@ -70,26 +56,16 @@ export abstract class TransportServer<TRequest, TResponse, Tx extends TransportC
     protected createMidderwareSet(): MiddlewareSet<Tx> {
         return this.context.get(MiddlewareSet) ?? new BasicMiddlewareSet();
     }
-
     /**
      * startup server.
      */
     abstract startup(): Promise<void>;
     /**
-     * intercept on the transport request.
-     * @param interceptor 
-     * @param odrer 
-     */
-    intercept(interceptor: Interceptor<TRequest, TResponse> | InterceptorFn<TRequest, TResponse>, order?: number): this {
-        this.interceptors.use(interceptor, order);
-        return this;
-    }
-    /**
      * middlewares are executed on the transport request object before the
      * request is decoded.
      * @param middleware 
      */
-    use(middleware: MiddlewareType<Tx>, order?: number): this {
+    use(middleware: MiddlewareInst<Tx>, order?: number): this {
         this.middlewares.use(middleware, order);
         return this;
     }
@@ -104,7 +80,7 @@ export abstract class TransportServer<TRequest, TResponse, Tx extends TransportC
      */
     chain(): Endpoint<TRequest, TResponse> {
         if (!this._chain) {
-            this._chain = new InterceptorChain(new MiddlewareBackend(this.getBackend(), this.middlewares.getAll()), this.interceptors.getAll());
+            this._chain = new InterceptorChain(new MiddlewareBackend(this.getBackend(), this.middlewares.getAll()), this.getInterceptors());
         }
         return this._chain;
     }
@@ -120,75 +96,4 @@ export abstract class TransportServer<TRequest, TResponse, Tx extends TransportC
         await this.close();
     }
 
-}
-
-@Abstract()
-export abstract class InterceptorSet<TRequest, TResponse> {
-    /**
-     * use intercept on the transport request.
-     * @param interceptor 
-     * @param order 
-     */
-    abstract use(interceptor: Interceptor<TRequest, TResponse> | InterceptorFn<TRequest, TResponse>, order?: number): void;
-    /**
-     * get all interceptors.
-     */
-    abstract getAll(): Interceptor<TRequest, TResponse>[];
-}
-
-export class BasicInterceptorSet<TRequest, TResponse> extends InterceptorSet<TRequest, TResponse> {
-
-    protected _intps: Interceptor<TRequest, TResponse>[];
-    constructor() {
-        super();
-        this._intps = [];
-    }
-
-    use(interceptor: Interceptor<TRequest, TResponse> | InterceptorFn<TRequest, TResponse>, order?: number): void {
-        const inptor = isFunction(interceptor) ? { intercept: interceptor } : interceptor;
-        if (isNumber(order)) {
-            this._intps.splice(order, 0, inptor);
-        } else {
-            this._intps.push(inptor);
-        }
-    }
-
-    getAll(): Interceptor<TRequest, TResponse>[] {
-        return this._intps;
-    }
-
-}
-
-@Abstract()
-export abstract class MiddlewareSet<T extends TransportContext = TransportContext> {
-    /**
-     * middlewares are executed on the transport request object before the
-     * request is decoded.
-     * @param middleware 
-     */
-    abstract use(middleware: MiddlewareType<T>, order?: number): void;
-    /**
-     * get all middlewares.
-     */
-    abstract getAll(): MiddlewareType<T>[];
-}
-
-
-export class BasicMiddlewareSet<T extends TransportContext> implements MiddlewareSet<T> {
-    protected middlewares: MiddlewareType<T>[];
-    constructor(middlewares?: MiddlewareType<T>[]) {
-        this.middlewares = [...middlewares ?? EMPTY];
-    }
-
-    use(middleware: MiddlewareType<T>, order?: number): void {
-        if (isNumber(order)) {
-            this.middlewares.splice(order, 0, middleware);
-        } else {
-            this.middlewares.push(middleware);
-        }
-    }
-
-    getAll(): MiddlewareType<T>[] {
-        return this.middlewares;
-    }
 }

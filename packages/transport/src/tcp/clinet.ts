@@ -1,4 +1,4 @@
-import { EndpointBackend, TransportClient } from '@tsdi/core';
+import { EndpointBackend, Interceptor, TransportClient } from '@tsdi/core';
 import { Abstract, Inject, Injectable, Injector, InvocationContext, isString, lang } from '@tsdi/ioc';
 import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
 import { ev } from '../consts';
@@ -38,6 +38,11 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> {
         super();
         this.connected = false;
     }
+
+    getInterceptors(): Interceptor[] {
+        throw new Error('Method not implemented.');
+    }
+
 
     getBackend(): EndpointBackend<TCPRequest<any>, TCPResponse<any>> {
         throw new Error('Method not implemented.');

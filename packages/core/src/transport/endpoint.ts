@@ -1,4 +1,4 @@
-import { Abstract, chain, Handler, InvocationContext, isFunction } from '@tsdi/ioc';
+import { Abstract, chain, Handler, InvocationContext, isFunction, Type } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
 import { TransportContext, TransportContextFactory } from './context';
@@ -40,7 +40,7 @@ export abstract class EndpointBackend<TRequest, TResponse> implements Endpoint<T
 /**
  * Interceptor is a chainable behavior modifier for endpoints.
  */
-export interface Interceptor<TRequest, TResponse> {
+export interface Interceptor<TRequest = any, TResponse = any> {
     /**
      * the method to implemet interceptor.
      * @param req  request input.
@@ -56,6 +56,16 @@ export interface Interceptor<TRequest, TResponse> {
  * interceptor function.
  */
 export type InterceptorFn<TRequest, TResponse> = (req: TRequest, next: Endpoint<TRequest, TResponse>, context?: InvocationContext) => Observable<TResponse>;
+
+/**
+ * interceptor instance.
+ */
+export type InterceptorInst<TRequest = any, TResponse = any> = Interceptor<TRequest, TResponse> | InterceptorFn<TRequest, TResponse>;
+
+/**
+ * interceptor function.
+ */
+export type InterceptorType<TRequest = any, TResponse = any> = Type<Interceptor<TRequest, TResponse>> | Interceptor<TRequest, TResponse>;
 
 
 /**
@@ -75,8 +85,15 @@ export interface Middleware<T extends TransportContext = TransportContext> {
  * middleware function
  */
 export type MiddlewareFn<T extends TransportContext = TransportContext> = Handler<T, Promise<void>>;
+/**
+ * middleware instance.
+ */
+export type MiddlewareInst<T extends TransportContext = TransportContext> = Middleware<T> | MiddlewareFn<T>;
+/**
+ * middleware type.
+ */
+export type MiddlewareType<T extends TransportContext = TransportContext> = Type<Middleware<T>> | Middleware<T>;
 
-export type MiddlewareType<T extends TransportContext = TransportContext> = Middleware<T> | MiddlewareFn<T>;
 
 /**
  * Interceptor Endpoint.
@@ -126,7 +143,7 @@ export class CustomEndpoint<TRequest, TResponse> implements Endpoint<TRequest, T
 export class MiddlewareBackend<TRequest, TResponse, Tx extends TransportContext> implements EndpointBackend<TRequest, TResponse> {
 
     private _middleware?: MiddlewareFn<Tx>;
-    constructor(private backend: EndpointBackend<TRequest, TResponse>, private middlewares: MiddlewareType<Tx>[]) {
+    constructor(private backend: EndpointBackend<TRequest, TResponse>, private middlewares: MiddlewareInst<Tx>[]) {
 
     }
 
@@ -152,7 +169,7 @@ export class MiddlewareBackend<TRequest, TResponse, Tx extends TransportContext>
  * compose middlewares
  * @param middlewares 
  */
-export function compose<T extends TransportContext>(middlewares: MiddlewareType<T>[]): MiddlewareFn<T> {
+export function compose<T extends TransportContext>(middlewares: MiddlewareInst<T>[]): MiddlewareFn<T> {
     const middleFns = middlewares.filter(m => m).map(m => isFunction(m) ? m : ((ctx, next) => m.invoke(ctx, next)) as MiddlewareFn<T>);
     return (ctx, next) => chain(middleFns, ctx, next);
 }

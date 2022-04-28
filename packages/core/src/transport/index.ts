@@ -3,6 +3,7 @@ export * from './packet';
 export * from './uuid';
 
 export * from './endpoint';
+export * from './middlware.set';
 
 export * from './resolver';
 export * from './error';

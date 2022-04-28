@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import {
     MappingReflect, MessageQueue, Middlewares,
-    MiddlewareType, RouteMappingMetadata, Router, RunnableFactoryResolver
+    MiddlewareInst, RouteMappingMetadata, Router, RunnableFactoryResolver
 } from '@tsdi/core';
 import {
     BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
@@ -354,19 +354,19 @@ export interface IHostMappingDecorator {
      * route decorator. define the component method as an route.
      *
      * @param {string} route route sub path.
-     * @param {MiddlewareType[]} [middlewares] the middlewares for the route.
+     * @param {MiddlewareInst[]} [middlewares] the middlewares for the route.
      */
-    (route: string, middlewares?: MiddlewareType[]): ClassMethodDecorator;
+    (route: string, middlewares?: MiddlewareInst[]): ClassMethodDecorator;
 
     /**
      * route decorator. define the component method as an route.
      *
      * @param {string} route route sub path.
-     * @param {{ middlewares?: MiddlewareType[], contentType?: string, method?: string}} options
+     * @param {{ middlewares?: MiddlewareInst[], contentType?: string, method?: string}} options
      *  [parent] set parent route.
      *  [middlewares] the middlewares for the route.
      */
-    (route: string, options: { parent?: Type<Router>, middlewares: MiddlewareType[] }): ClassDecorator;
+    (route: string, options: { parent?: Type<Router>, middlewares: MiddlewareInst[] }): ClassDecorator;
     /**
      * route decorator. define the controller method as an route.
      *
@@ -379,12 +379,12 @@ export interface IHostMappingDecorator {
      * route decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
-     * @param {{ middlewares?: MiddlewareType[], contentType?: string, method?: string}} options
+     * @param {{ middlewares?: MiddlewareInst[], contentType?: string, method?: string}} options
      *  [middlewares] the middlewares for the route.
      *  [contentType] set request contentType.
      *  [method] set request method.
      */
-    (route: string, options: { middlewares: MiddlewareType[], contentType?: string, method?: string }): MethodDecorator;
+    (route: string, options: { middlewares: MiddlewareInst[], contentType?: string, method?: string }): MethodDecorator;
 
     /**
      * route decorator. define the controller method as an route.
@@ -398,7 +398,7 @@ export interface IHostMappingDecorator {
  * HostMapping decorator
  */
 export const HostMapping: IHostMappingDecorator = createDecorator<RouteMappingMetadata>('HostMapping', {
-    props: (route: string, arg2?: Type<Router> | MiddlewareType[] | string | { middlewares: MiddlewareType[], contentType?: string, method?: string }) => {
+    props: (route: string, arg2?: Type<Router> | MiddlewareInst[] | string | { middlewares: MiddlewareInst[], contentType?: string, method?: string }) => {
         if (isArray(arg2)) {
             return { route, middlewares: arg2 };
         } else if (isString(arg2)) {
