@@ -100,6 +100,7 @@
     "axios": "^0.26.0",
     "content-disposition": "^0.5.4",
     "domino": "^2.1.6",
+    "http2": "^3.3.7",
     "kafkajs": "^1.15.0",
     "modbus-serial": "^8.0.5",
     "uuid": "^8.3.2",

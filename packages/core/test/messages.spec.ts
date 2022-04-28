@@ -1,9 +1,14 @@
-import { Injector, Injectable, lang, ArgumentError, MissingParameterError, tokenId, chain, isArray } from '@tsdi/ioc';
+import { Injector, Injectable, lang, ArgumentError, MissingParameterError, tokenId, isArray } from '@tsdi/ioc';
 import { catchError, lastValueFrom, Observable, of, throwError } from 'rxjs';
-import expect = require('expect');
-import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module, TransportContext, HttpClientModule, Interceptor, HttpClient, Endpoint,  RequestBase, LoggerModule, Middleware, compose, Chain, ResponseBase } from '../src';
-import { HttpModule, HttpServer, HTTP_MIDDLEWARES, LogMiddleware, TcpModule } from '@tsdi/transport';
+import { HttpModule, HttpServer } from '@tsdi/transport';
 import { ServerHttpClientModule, ServerModule } from '@tsdi/platform-server';
+import expect = require('expect');
+import * as fs from 'fs';
+import {
+    Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module,
+    TransportContext, HttpClientModule, HttpClient, RequestBase, LoggerModule, Middleware, Chain, ResponseBase
+} from '../src';
+import path = require('path');
 
 
 
@@ -117,7 +122,7 @@ class DeviceQueue implements Middleware {
 class DeviceStartupHandle implements Middleware {
 
     invoke(ctx: TransportContext<RequestBase, ResponseBase>, next: () => Promise<void>): Promise<void> {
-        
+
         console.log('DeviceStartupHandle.', 'resp:', ctx.request.body.type, 'req:', ctx.request.body.type)
         if (ctx.request.body.type === 'startup') {
             // todo sth.
@@ -129,7 +134,7 @@ class DeviceStartupHandle implements Middleware {
 }
 
 @Injectable()
-class DeviceAStartupHandle implements Middleware{
+class DeviceAStartupHandle implements Middleware {
 
     invoke(ctx: TransportContext<RequestBase, ResponseBase>, next: () => Promise<void>): Promise<void> {
         console.log('DeviceAStartupHandle.', 'resp:', ctx.request.body.type, 'req:', ctx.request.body.type)
@@ -173,12 +178,23 @@ class DeviceAModule {
 
 }
 
+
+const key = fs.readFileSync(path.join(__dirname, './localhost-privkey.pem'));
+const cert = fs.readFileSync(path.join(__dirname, './localhost-cert.pem'));
+
 @Module({
     imports: [
         ServerModule,
         LoggerModule,
         // TcpModule,
-        HttpModule,
+        HttpModule.withOption({
+            majorVersion: 2,
+            options: {
+                allowHTTP1: true,
+                key,
+                cert
+            }
+        }),
         HttpClientModule,
         ServerHttpClientModule,
         DeviceManageModule,
@@ -233,7 +249,7 @@ describe('app message queue', () => {
         expect(isArray(res.features)).toBeTruthy();
 
         const rep = await lastValueFrom(client.request<any>('POST', '/hdevice', { observe: 'response', body: { type: 'startup' } }).pipe(
-            catchError((err, ct)=> {
+            catchError((err, ct) => {
                 ctx.getLogger().error(err);
                 return of(err);
             })));

@@ -2,8 +2,8 @@ import * as http2 from 'http2';
 import * as fs from 'fs';
 
 
-const client = http2.connect('http://localhost:3000', {
-//   ca: fs.readFileSync('localhost-cert.pem')
+const client = http2.connect('https://localhost:3000', {
+  ca: fs.readFileSync('./localhost-cert.pem')
 });
 client.on('error', (err) => console.error(err));
 

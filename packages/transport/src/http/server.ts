@@ -35,7 +35,9 @@ export type HttpServerOptions = Http1ServerOptions | Http2ServerOptions;
  */
 const httpOpts = { majorVersion: 2, options: { allowHTTP1: true }, listenOptions: { port: 3000, host: LOCALHOST } as ListenOptions };
 
-
+/**
+ * http server opptions.
+ */
 export const HTTP_SERVEROPTIONS = tokenId<HttpServerOptions>('HTTP_SERVEROPTIONS');
 
 /**
