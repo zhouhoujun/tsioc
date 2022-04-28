@@ -1,5 +1,5 @@
 import { Middleware, RequestMethod, TransportContext } from '@tsdi/core';
-import { Abstract, Injectable, isArray, isFunction, isPromise } from '@tsdi/ioc';
+import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
 import { hdr } from '../consts';
 import { append, vary } from '../utils';
@@ -99,7 +99,7 @@ export class CorsMiddleware implements Middleware {
 
     private options: Options;
 
-    constructor(options: CorsOptions) {
+    constructor(@Nullable() options: CorsOptions) {
 
         this.options = this.parseOption({
             allowMethods,

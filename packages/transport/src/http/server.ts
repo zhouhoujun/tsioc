@@ -12,8 +12,7 @@ import * as assert from 'assert';
 import { CONTENT_DISPOSITION } from './content';
 import { HttpContext, HttpRequest, HttpResponse, HTTP_MIDDLEWARES } from './context';
 import { ev, LOCALHOST } from '../consts';
-import { CorsMiddleware, CorsOptions } from '../middlewares/cors';
-import { LogMiddleware } from '../middlewares';
+import { CorsMiddleware, CorsOptions, EncodeJsonMiddleware, HelmetMiddleware, LogMiddleware } from '../middlewares';
 import { HTTP_INTERCEPTORS } from './endpoint';
 
 export interface HttpOptions {
@@ -43,6 +42,8 @@ const httpOpts = {
     listenOptions: { port: 3000, host: LOCALHOST } as ListenOptions,
     middlewares: [
         LogMiddleware,
+        HelmetMiddleware,
+        EncodeJsonMiddleware,
         CorsMiddleware,
         RouterMiddleware
     ]

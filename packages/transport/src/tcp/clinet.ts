@@ -1,5 +1,5 @@
 import { EndpointBackend, Interceptor, TransportClient } from '@tsdi/core';
-import { Abstract, Inject, Injectable, Injector, InvocationContext, isString, lang } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Injector, InvocationContext, isString, lang, Nullable } from '@tsdi/ioc';
 import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
 import { ev } from '../consts';
 import { TCPRequest, TCPResponse } from './packet';
@@ -33,7 +33,7 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> {
     private connected: boolean;
     constructor(
         @Inject() readonly context: InvocationContext,
-        @Inject({ nullable: true }) private options: TcpClientOption = defaults
+        @Nullable() private options: TcpClientOption = defaults
     ) {
         super();
         this.connected = false;

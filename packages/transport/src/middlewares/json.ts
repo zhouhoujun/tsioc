@@ -1,5 +1,5 @@
 import { Middleware, TransportContext } from '@tsdi/core';
-import { hasOwn, Injectable, isString } from '@tsdi/ioc';
+import { Abstract, hasOwn, Injectable, isString, Nullable } from '@tsdi/ioc';
 import { hdr } from '../consts';
 import { JsonStreamStringify } from '../stringify';
 import { isBuffer, isStream } from '../utils';
@@ -11,10 +11,10 @@ export class EncodeJsonMiddleware implements Middleware {
     private pretty: boolean;
     private spaces: number;
     private paramName: string;
-    constructor(option: JsonMiddlewareOption) {
-        this.pretty = option.pretty ?? true;
-        this.spaces = option.spaces ?? 2;
-        this.paramName = option.param ?? '';
+    constructor(@Nullable() option: JsonMiddlewareOption) {
+        this.pretty = option?.pretty ?? true;
+        this.spaces = option?.spaces ?? 2;
+        this.paramName = option?.param ?? '';
     }
 
     async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
@@ -44,8 +44,9 @@ export class EncodeJsonMiddleware implements Middleware {
     }
 }
 
-export interface JsonMiddlewareOption {
-    pretty: boolean;
+@Abstract()
+export abstract class JsonMiddlewareOption {
+    pretty?: boolean;
     param?: string;
     spaces?: number;
 }

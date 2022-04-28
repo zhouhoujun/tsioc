@@ -245,6 +245,23 @@ export const Inject: Inject = createDecorator<InjectMetadata>('Inject', {
     }
 });
 
+/**
+ * @Nullable decoator. define param can enable null.
+ */
+ export interface Nullable {
+    /**
+     * @Nullable decoator. define param can enable null.
+     */
+    (): ParameterDecorator;
+
+ }
+export const Nullable = createDecorator<InjectMetadata>('Nullable', {
+    appendProps: (meta) => {
+        meta.nullable = true;
+        return meta;
+    }
+});
+
 
 /**
  * Parameter decorator.

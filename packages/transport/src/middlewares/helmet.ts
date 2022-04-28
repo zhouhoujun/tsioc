@@ -1,12 +1,12 @@
 import { Middleware, TransportContext } from '@tsdi/core';
-import { Abstract, Injectable } from '@tsdi/ioc';
+import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
 
 
 @Injectable()
 export class HelmetMiddleware implements Middleware {
 
     private options: HelmentOptions
-    constructor(options: HelmentOptions) {
+    constructor(@Nullable() options: HelmentOptions) {
         this.options = {
             dnsPrefetch: 'off',
             ...options

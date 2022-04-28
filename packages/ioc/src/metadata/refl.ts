@@ -214,7 +214,7 @@ function regActionType(decor: string, type: ActionType) {
     }
 }
 
-const paramInjectDecors: Record<string, boolean> = { '@Inject': true, '@Autowired': true, '@Param': true };
+const paramInjectDecors: Record<string, boolean> = { '@Inject': true, '@Autowired': true, '@Param': true, '@Nullable': true };
 export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
     if (paramInjectDecors[ctx.decor]) {
         const reflect = ctx.reflect;
