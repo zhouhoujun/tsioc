@@ -1,4 +1,4 @@
-import { Injectable, Inject, Autowired, Container, Injector, refl } from '@tsdi/ioc';
+import { Injectable, Inject, Autowired, Container, Injector } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { LogModule, Log, Logger } from '../src';
 import { DebugLog1Aspect } from './debugLog';

@@ -2,7 +2,10 @@ import { LoadType, Modules, Type } from '../types';
 import { OnDestroy } from '../destroy';
 import { cleanObj, deepForEach } from '../utils/lang';
 import { InjectFlags, Token } from '../tokens';
-import { isArray, isDefined, isFunction, isPlainObject, isNumber, isTypeObject, isTypeReflect, EMPTY, getClass, isString, isUndefined, isNil } from '../utils/chk';
+import {
+    isArray, isDefined, isFunction, isPlainObject, isNumber, isTypeObject, isTypeReflect,
+    EMPTY, getClass, isString, isUndefined
+} from '../utils/chk';
 import {
     ResolveOption, MethodType, FnType, InjectorScope, ResolverOption, RegisterOption, FactoryRecord,
     Platform, Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption

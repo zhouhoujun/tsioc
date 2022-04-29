@@ -2,7 +2,10 @@ import { ClassType, DesignAnnotation, Type } from '../types';
 import { Handler } from '../handler';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { ModuleWithProviders, ProviderType } from '../providers';
-import { PatternMetadata, ProvidersMetadata, ProvidedInMetadata, ModuleMetadata, PropertyMetadata, ParameterMetadata, MethodMetadata } from './meta';
+import {
+    PatternMetadata, ProvidersMetadata, ProvidedInMetadata, ModuleMetadata,
+    PropertyMetadata, ParameterMetadata, MethodMetadata
+} from './meta';
 import { InvocationContext, InvokeArguments } from '../context';
 import { Token } from '../tokens';
 import { ArgumentResolver, MissingParameterError, Parameter } from '../resolver';
@@ -230,7 +233,7 @@ export class Reflective<T = any> {
      *
      * @type {Map<IParameter[]>}
      */
-     private methodReturns: Map<string, ClassType>;
+    private methodReturns: Map<string, ClassType>;
     /**
      * method providers.
      *

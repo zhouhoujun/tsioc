@@ -3,7 +3,10 @@ import { Logger, Log } from '@tsdi/logs';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
 import { Startup } from '../startup';
-import { InterceptorChain, Endpoint, EndpointBackend, Interceptor, InterceptorFn, Middleware, MiddlewareBackend, MiddlewareFn } from './endpoint';
+import {
+    InterceptorChain, Endpoint, EndpointBackend, Interceptor, InterceptorFn,
+    Middleware, MiddlewareBackend, MiddlewareFn
+} from './endpoint';
 import { TransportContextFactory } from './context';
 
 /**

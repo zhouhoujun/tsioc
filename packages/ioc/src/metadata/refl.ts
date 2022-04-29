@@ -4,13 +4,20 @@ import { AnnotationType, ClassType, Type } from '../types';
 import { cleanObj, getParentClass } from '../utils/lang';
 import { EMPTY, isArray, isFunction } from '../utils/chk';
 import { chain, Handler } from '../handler';
-import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata, RunnableMetadata, InjectableMetadata, MethodMetadata } from './meta';
-import { ctorName, DecoratorType, DecorContext, DecorDefine, Decors, ActionTypes, Reflective, TypeReflect } from './type';
+import {
+    ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata,
+    RunnableMetadata, InjectableMetadata, MethodMetadata
+} from './meta';
+import {
+    ctorName, DecoratorType, DecorContext, DecorDefine, Decors, ActionTypes,
+    Reflective, TypeReflect
+} from './type';
 import { Platform } from '../injector';
 
 
 
-export type ActionType = 'propInject' | 'paramInject' | 'annoation' | 'runnable' | 'typeProviders' | 'methodProviders';
+export type ActionType = 'propInject' | 'paramInject' | 'annoation' | 'runnable'
+    | 'typeProviders' | 'methodProviders';
 
 
 /**

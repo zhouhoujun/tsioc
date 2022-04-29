@@ -1,4 +1,8 @@
-import { Abstract, ArgumentError, ClassType, composeResolver, DefaultInvocationContext, EMPTY, Injector, InvocationContext, InvokeArguments, isArray, isDefined, isPrimitiveType, isPromise, isString, Parameter, Type } from '@tsdi/ioc';
+import {
+    Abstract, ArgumentError, ClassType, composeResolver, DefaultInvocationContext, EMPTY,
+    Injector, InvocationContext, InvokeArguments, isArray, isDefined, isPrimitiveType, isPromise,
+    isString, Parameter, Type
+} from '@tsdi/ioc';
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
 import { MODEL_RESOLVERS } from '../model/model.resolver';
 import { PipeTransform } from '../pipes/pipe';
@@ -24,13 +28,13 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
     readonly response: TResponse;
     constructor(injector: Injector, request: TRequest, response: TResponse, target?: any, options?: InvokeArguments) {
         super(injector, {
-            ...options, 
-            resolvers:[
-            ...options?.resolvers ?? EMPTY,
-            ...primitiveResolvers,
-            ...injector.get(MODEL_RESOLVERS) ?? EMPTY,
-            
-        ]
+            ...options,
+            resolvers: [
+                ...options?.resolvers ?? EMPTY,
+                ...primitiveResolvers,
+                ...injector.get(MODEL_RESOLVERS) ?? EMPTY,
+
+            ]
         });
         this.target = target;
         this.request = request;
