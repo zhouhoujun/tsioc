@@ -1,5 +1,5 @@
 import { EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isClass, isFunction, lang, tokenId, Type } from '@tsdi/ioc';
-import { TransportServer, EndpointBackend, CustomEndpoint, MiddlewareSet, BasicMiddlewareSet, MiddlewareInst, RouterMiddleware, MiddlewareType, Interceptor } from '@tsdi/core';
+import { TransportServer, EndpointBackend, CustomEndpoint, MiddlewareSet, BasicMiddlewareSet, MiddlewareInst, RouterMiddleware, MiddlewareType, Interceptor, ModuleRef } from '@tsdi/core';
 import { Logger } from '@tsdi/logs';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { of, EMPTY as RxEMPTY } from 'rxjs';
@@ -146,7 +146,7 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse, HttpC
             this._server = server;
         }
         const listenOptions = this.options.listenOptions;
-        this.context.setValue(HTTP_LISTENOPTIONS, { ...listenOptions, withCredentials: cert!!, majorVersion: options.majorVersion });
+        this.context.get(ModuleRef).setValue(HTTP_LISTENOPTIONS, { ...listenOptions, withCredentials: cert!!, majorVersion: options.majorVersion });
         this.logger.info(lang.getClassName(this), 'listen:', listenOptions, '. access with url:', `http${cert ? 's' : ''}://${listenOptions?.host}:${listenOptions?.port}${listenOptions?.path ?? ''}`, '!')
         this._server.listen(listenOptions);
     }

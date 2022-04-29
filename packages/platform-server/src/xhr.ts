@@ -1,7 +1,8 @@
 /// <reference path="./type.d.ts" />
 import { EMPTY_OBJ, Injectable, Injector, InvocationContext, ProviderType, tokenId } from '@tsdi/ioc';
 import { HttpBackend, HttpEvent, HttpHandler, HttpInterceptingHandler, HttpRequest, Module, XhrFactory } from '@tsdi/core';
-import * as xhr2 from 'xhr2';
+// import * as xhr2 from 'xhr2';
+import * as xhr2 from 'xmlhttprequest-ssl';
 import { ListenOptions } from 'net';
 import { Observable } from 'rxjs';
 import { ServerModule } from './ServerModule';
