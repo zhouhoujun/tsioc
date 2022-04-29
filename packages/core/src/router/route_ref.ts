@@ -2,7 +2,7 @@ import {
     DecorDefine, Type, Injector, lang, EMPTY, refl,
     isPrimitiveType, isPromise, isString, isArray, isFunction, isDefined,
     composeResolver, Parameter, ClassType, ArgumentError, OperationFactoryResolver,
-    OnDestroy, isClass, TypeReflect, OperationFactory, DestroyCallback, EMPTY_OBJ, chain, hasOwn
+    OnDestroy, isClass, TypeReflect, OperationFactory, DestroyCallback, EMPTY_OBJ, chain, hasOwn, InvokeOption
 } from '@tsdi/ioc';
 import { isObservable, lastValueFrom } from 'rxjs';
 import { CanActivate } from './guard';
@@ -11,7 +11,7 @@ import { Middleware, MiddlewareFn } from '../transport/endpoint';
 import { TransportArgumentResolver, TransportParameter } from '../transport/resolver';
 import { MODEL_RESOLVERS } from '../model/model.resolver';
 import { PipeTransform } from '../pipes/pipe';
-import { RouteRef, RouteOption, RouteFactory, RouteFactoryResolver, joinprefix } from './route';
+import { RouteRef, RouteFactory, RouteFactoryResolver, joinprefix } from './route';
 import { ProtocolRouteMappingMetadata, RouteMappingMetadata } from './router';
 import { promisify, TransportContext } from '../transport/context';
 
@@ -35,10 +35,10 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     private _instance: T | undefined;
     private _endpoints: Map<string, MiddlewareFn[]>;
 
-    constructor(private factory: OperationFactory<T>, prefix?: string) {
+    constructor(private factory: OperationFactory<T>) {
         super();
         this.metadata = factory.reflect.annotation as ProtocolRouteMappingMetadata;
-        this._url = joinprefix(prefix, this.metadata.version, this.metadata.route);
+        this._url = joinprefix(this.metadata.prefix, this.metadata.version, this.metadata.route);
         this._endpoints = new Map();
     }
 
@@ -99,7 +99,6 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
 
     protected async canActivate(ctx: TransportContext) {
         if (ctx.sent) return null;
-        // if (!ctx.pattern.startsWith(this.path)) return null;
         if (this.guards && this.guards.length) {
             if (!(await lang.some(
                 this.guards.map(guard => () => promisify(guard.canActivate(ctx))),
@@ -146,11 +145,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         let result = this.factory.invoke(
             meta.propertyKey,
             {
-                context: ctx,
-                resolvers: [
-                    ...primitiveResolvers,
-                    ...injector.get(MODEL_RESOLVERS) ?? EMPTY,
-                ]
+                context: ctx
             },
             this.instance);
 
@@ -244,131 +239,15 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     }
 }
 
-export function missingPipeError(parameter: Parameter, type?: ClassType, method?: string) {
-    return new ArgumentError(`missing pipe to transform argument ${parameter.paramName} type, method ${method} of class ${type}`);
-}
-
-const primitiveResolvers: TransportArgumentResolver[] = [
-    composeResolver<TransportArgumentResolver, TransportParameter>(
-        (parameter, ctx) => ctx instanceof TransportContext && isDefined(parameter.field ?? parameter.paramName),
-        composeResolver<TransportArgumentResolver>(
-            (parameter, ctx) => isPrimitiveType(parameter.type),
-            {
-                canResolve(parameter, ctx) {
-                    return parameter.scope === 'query' && isDefined(ctx.query[parameter.field ?? parameter.paramName!]);
-                },
-                resolve(parameter, ctx) {
-                    const pipe = ctx.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
-                    if (!pipe) throw missingPipeError(parameter, ctx.targetType, ctx.methodName);
-                    return pipe.transform(ctx.query[parameter.field ?? parameter.paramName!], ...parameter.args || EMPTY)
-                }
-            },
-            {
-                canResolve(parameter, ctx) {
-                    return parameter.scope === 'restful' && ctx.restfulParams && isDefined(ctx.restfulParams[parameter.field ?? parameter.paramName!]);
-                },
-                resolve(parameter, ctx) {
-                    const pipe = ctx.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
-                    if (!pipe) throw missingPipeError(parameter, ctx.targetType, ctx.methodName);
-                    return pipe.transform(ctx.restfulParams[parameter.field ?? parameter.paramName!], ...parameter.args || EMPTY)
-                }
-            },
-            {
-                canResolve(parameter, ctx) {
-                    return parameter.scope === 'body' && isDefined(ctx.playload[parameter.field ?? parameter.paramName!]);
-                },
-                resolve(parameter, ctx) {
-                    const pipe = ctx.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
-                    if (!pipe) throw missingPipeError(parameter, ctx.targetType, ctx.methodName);
-                    return pipe.transform(ctx.playload[parameter.field ?? parameter.paramName!], ...parameter.args || EMPTY)
-                }
-            },
-            {
-                canResolve(parameter, ctx) {
-                    const field = parameter.field ?? parameter.paramName!;
-                    return !parameter.scope && isDefined(ctx.query[field] ?? ctx.restfulParams?.[field] ?? ctx.playload[field])
-                },
-                resolve(parameter, ctx) {
-                    const field = parameter.field ?? parameter.paramName!;
-                    const pipe = ctx.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
-                    if (!pipe) throw missingPipeError(parameter, ctx.targetType, ctx.methodName);
-                    return pipe.transform(ctx.query[field] ?? ctx.restfulParams?.[field] ?? ctx.playload[field], ...parameter.args || EMPTY)
-                }
-            }
-        ),
-        composeResolver<TransportArgumentResolver, TransportParameter>(
-            (parameter) => isPrimitiveType(parameter.provider) && (parameter.mutil === true || parameter.type === Array),
-            {
-                canResolve(parameter, ctx) {
-                    const field = parameter.field ?? parameter.paramName!;
-                    return parameter.scope === 'query' && (isArray(ctx.query[field]) || isString(ctx.query[field]));
-                },
-                resolve(parameter, ctx) {
-                    const value = ctx.playload[parameter.field ?? parameter.paramName!];
-                    const values: any[] = isString(value) ? value.split(',') : value;
-                    const pipe = ctx.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase());
-                    if (!pipe) throw missingPipeError(parameter, ctx.targetType, ctx.methodName);
-                    return values.map(val => pipe.transform(val, ...parameter.args || EMPTY)) as any;
-                }
-            },
-            {
-                canResolve(parameter, ctx) {
-                    return parameter.scope === 'restful' && ctx.restfulParams && isDefined(ctx.restfulParams[parameter.field ?? parameter.paramName!]);
-                },
-                resolve(parameter, ctx) {
-                    const value = (ctx.restfulParams[parameter.field ?? parameter.paramName!] as string).split(',');
-                    const pipe = ctx.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase());
-                    if (!pipe) throw missingPipeError(parameter, ctx.targetType, ctx.methodName);
-                    return value.map(val => pipe.transform(val, ...parameter.args || EMPTY)) as any;
-                }
-            },
-            {
-                canResolve(parameter, ctx) {
-                    return isArray(ctx.playload[parameter.field ?? parameter.paramName!]);
-                },
-                resolve(parameter, ctx) {
-                    const value: any[] = ctx.playload[parameter.field ?? parameter.paramName!];
-                    const pipe = ctx.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase());
-                    if (!pipe) throw missingPipeError(parameter, ctx.targetType, ctx.methodName);
-                    return value.map(val => pipe.transform(val, ...parameter.args || EMPTY)) as any;;
-                }
-            }
-        ),
-        {
-
-            canResolve(parameter, ctx) {
-                return isDefined(parameter.pipe) && parameter.scope === 'body'
-                    && (parameter.field ? ctx.playload[parameter.field] : Object.keys(ctx.playload).length > 0);
-            },
-            resolve(parameter, ctx) {
-                const value = parameter.field ? ctx.playload[parameter.field] : ctx.playload;
-                const pipe = ctx.get<PipeTransform>(parameter.pipe!);
-                if (!pipe) throw missingPipeError(parameter, ctx.targetType, ctx.methodName);
-                return pipe.transform(value, ...parameter.args || EMPTY);
-            }
-        },
-        {
-            canResolve(parameter, ctx) {
-                return parameter.nullable === true;
-            },
-            resolve(parameter, ctx) {
-                return undefined as any;
-            }
-        }
-    )
-]
 
 export class DefaultRouteFactory<T = any> extends RouteFactory<T> {
     private routeRef?: RouteRef<T>;
     constructor(readonly reflect: TypeReflect<T>) {
         super()
     }
-    create(injector: Injector, option?: RouteOption): RouteRef<T> {
+    create(injector: Injector, option?: InvokeOption): RouteRef<T> {
         const factory = injector.get(OperationFactoryResolver).resolve(this.reflect, injector, option);
-        if (option?.prefix) {
-            factory.context.setValue('prefix', option?.prefix);
-        }
-        return this.routeRef = new RouteMappingRef(factory, option?.prefix);
+        return this.routeRef = new RouteMappingRef(factory);
     }
 
     last(): RouteRef<T> | undefined {

@@ -27,10 +27,12 @@ export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
     private _URL?: URL;
     private _ip?: string;
     readonly originalUrl: string;
+    private _url: string;
 
     constructor(injector: Injector, request: HttpRequest, response: HttpResponse, target?: any, options?: InvokeArguments) {
         super(injector, request, response, target, options);
-        this.originalUrl = request.url ?? '';
+        this.originalUrl = request.url?.toString() ?? '';
+        this._url =  request.url ?? '';
     }
 
     /**
@@ -118,13 +120,20 @@ export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
     }
 
     /**
-     * Get request URL.
+     * Get url path.
      *
      * @return {String}
      * @api public
      */
     get url(): string {
-        return this.request.url ?? '';
+        return this._url;
+    }
+
+    /**
+     * Set url path
+     */
+    set url(value: string) {
+        this._url =  value;
     }
 
     /**

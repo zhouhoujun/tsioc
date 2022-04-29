@@ -51,9 +51,10 @@ export abstract class ModuleRef<T = any> extends Injector implements ModRef<T>, 
     abstract get instance(): T;
     /**
      * import module.
-     * @param modle 
+     * @param modle
+     * @param children import as children or not. 
      */
-    abstract import<M>(modle: Type<M> | ModuleWithProviders<M>): void;
+    abstract import<M>(modle: Type<M> | ModuleWithProviders<M>, children?: boolean): void;
     /**
      * use modules.
      * @param modules 

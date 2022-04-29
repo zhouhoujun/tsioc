@@ -6,8 +6,8 @@ import { PipeTransform } from '../../pipes/pipe';
 import { Middleware, MiddlewareFn } from '../../transport/endpoint';
 import { RequestMethod } from '../../transport/packet';
 import { CanActivate } from '../guard';
-import { RouteFactoryResolver } from '../route';
-import { MappingReflect, ProtocolRouteMappingMetadata, RouteMappingMetadata, Router, RouterResolver } from '../router';
+import { joinprefix, RouteFactoryResolver } from '../route';
+import { MappingReflect, ProtocolRouteMappingMetadata, RouteMappingMetadata, Router } from '../router';
 import { HandleMetadata, HandleMessagePattern } from './meta';
 
 
@@ -118,7 +118,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
         afterAnnoation: (ctx, next) => {
             const reflect = ctx.reflect;
             const metadata = reflect.class.getMetadata<HandleMetadata>(ctx.currDecor);
-            const { route, prefix, parent } = metadata;
+            const { route, prefix, version, parent } = metadata;
             const injector = ctx.injector;
 
             if (!isString(route) && !parent) {
@@ -126,14 +126,15 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
             }
 
             if (isString(route)) {
-                const router = parent? injector.get(parent) : injector.get(RouterResolver).resolve(prefix);
+                const url = joinprefix(prefix, version, route);
+                const router = parent? injector.get(parent) : injector.get(Router);
                 if (!(router instanceof Router)) {
                     throw new Error(lang.getClassName(router) + 'is not message router!');
                 }
                 const factory = injector.get(OperationFactoryResolver).resolve(reflect, injector);
-                injector.onDestroy(() => router.unuse(route));
+                injector.onDestroy(() => router.unuse(url));
 
-                router.use(route, (ctx, next)=> (factory.resolve() as Middleware).invoke(ctx, next));
+                router.use(url, (ctx, next)=> (factory.resolve() as Middleware).invoke(ctx, next));
             }
             next();
         },
@@ -280,13 +281,13 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
         design: {
             afterAnnoation: (ctx, next) => {
                 const reflect = ctx.reflect as MappingReflect;
-                const { prefix, version, parent } = reflect.annotation;
+                const { parent } = reflect.annotation;
                 const injector = ctx.injector;
                 let router: Router;
                 if (parent) {
                     router = injector.get(parent);
                 } else {
-                    router = injector.get(RouterResolver).resolve(prefix, version);
+                    router = injector.get(Router);
                 }
 
                 if (!router) throw new Error(lang.getClassName(parent) + 'has not registered!');

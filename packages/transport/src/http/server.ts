@@ -1,5 +1,5 @@
 import { EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isClass, isFunction, lang, tokenId, Type } from '@tsdi/ioc';
-import { TransportServer, EndpointBackend, CustomEndpoint, MiddlewareSet, BasicMiddlewareSet, MiddlewareInst, RouterMiddleware, MiddlewareType, Interceptor, ModuleRef } from '@tsdi/core';
+import { TransportServer, EndpointBackend, CustomEndpoint, MiddlewareSet, BasicMiddlewareSet, MiddlewareInst, MiddlewareType, Interceptor, ModuleRef, Router } from '@tsdi/core';
 import { Logger } from '@tsdi/logs';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { of, EMPTY as RxEMPTY } from 'rxjs';
@@ -46,7 +46,7 @@ const httpOpts = {
         HelmetMiddleware,
         EncodeJsonMiddleware,
         CorsMiddleware,
-        RouterMiddleware
+        Router
     ]
 } as Http2ServerOptions;
 

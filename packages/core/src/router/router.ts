@@ -20,6 +20,10 @@ export abstract class Router implements Middleware {
      */
     abstract get prefix(): string;
     /**
+     * route prefix.
+     */
+    abstract set prefix(value: string);
+    /**
      * routes.
      */
     abstract get routes(): Map<string, MiddlewareFn>;
@@ -53,30 +57,9 @@ export abstract class Router implements Middleware {
     abstract unuse(route: string): this;
 }
 
-/**
- * router resolver
- */
-@Abstract()
-export abstract class RouterResolver {
-    /**
-     * get router match with path.
-     * @param path 
-     */
-    abstract match(path: string): Router | undefined;
-    /**
-     * resolve router. get or create router start with prefix.
-     * @param protocol the router protocal. 
-     * @param prefix route prefix.
-     */
-    abstract resolve(prefix?: string, version?: string): Router;
-}
-
-
 export class MappingRoute implements Middleware {
 
     private _guards?: CanActivate[];
-    private router?: Router;
-    private _loaded?: boolean;
     private _middleware?: Middleware;
     constructor(private route: Route) {
 
@@ -89,7 +72,10 @@ export class MappingRoute implements Middleware {
     async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
 
         if (await this.canActive(ctx)) {
-            return this.navigate(this.route, ctx, next);
+            if (!this._middleware) {
+                this._middleware = await this.parse(this.route, ctx);
+            }
+            return this._middleware.invoke(ctx, next);
         } else {
             throw ctx.throwError(403);
         }
@@ -102,55 +88,41 @@ export class MappingRoute implements Middleware {
         return lang.some(this._guards.map(guard => () => promisify(guard.canActivate(ctx))), vaild => vaild === false);
     }
 
-    protected navigate(route: Route & { router?: Router }, ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    protected async parse(route: Route & { router?: Router }, ctx: TransportContext): Promise<Middleware> {
         if (route.middleware) {
-            if (!this._middleware) {
-                this._middleware = ctx.get(route.middleware);
-            }
-            return this._middleware.invoke(ctx, next);
+            return ctx.get(route.middleware);
         } else if (route.redirectTo) {
-            return this.redirect(ctx, route.redirectTo);
+            const to = route.redirectTo;
+            return this.create((c, n) => this.redirect(c, to));
         } else if (route.controller) {
-            return this.routeController(ctx, route.controller, next);
+            return ctx.resolve(RouteFactoryResolver).resolve(route.controller).last() ?? this.create((c, n) => { throw c.throwError(404) });
         } else if (route.children) {
-            if (!this.router) {
-                this.router = new MappingRouter(route.path);
-            }
-            return this.router.invoke(ctx, next);
+            const router = new MappingRouter(route.path);
+            route.children.forEach(route => router.use(route));
+            return router;
         } else if (route.loadChildren) {
-            return this.routeLoadChildren(ctx, next, route.loadChildren, route.path)
+            const module = await route.loadChildren();
+            const platform = ctx.injector.platform();
+            if (!platform.modules.has(module)) {
+                ctx.injector.get(ModuleRef).import(module, true);
+            }
+            const router = platform.modules.get(module)?.injector.get(Router);
+            if (router) {
+                router.prefix = route.path ?? '';
+                return router;
+            }
+            return this.create((c, n) => { throw c.throwError(404) });
         } else {
-            throw ctx.throwError(404);
+            return this.create((c, n) => { throw c.throwError(404) });
         }
+    }
+
+    protected create(invoke: MiddlewareFn) {
+        return { invoke };
     }
 
     protected async redirect(ctx: TransportContext, url: string, alt?: string): Promise<void> {
         ctx.redirect(url, alt);
-    }
-
-    protected async routeController(ctx: TransportContext, controller: Type, next: () => Promise<void>): Promise<void> {
-        const route = ctx.resolve(RouteFactoryResolver).resolve(controller).last();
-        if (route) {
-            return route.invoke(ctx, next);
-        } else {
-            throw ctx.throwError(404);
-        }
-    }
-
-    protected async routeLoadChildren(ctx: TransportContext, next: () => Promise<void>, loadChildren: () => any, prefix?: string): Promise<void> {
-        if (!this.router && !this._loaded) {
-            const module = await loadChildren();
-            const platform = ctx.injector.platform();
-            if (!platform.modules.has(module)) {
-                ctx.injector.get(ModuleRef).import(module);
-            }
-            this.router = platform.modules.get(module)?.injector.get(RouterResolver).resolve(prefix);
-        }
-        if (this.router) {
-            return await this.router.invoke(ctx, next);
-        } else {
-            throw ctx.throwError(404);
-        }
     }
 
 }
@@ -162,7 +134,7 @@ export class MappingRouter extends Router implements OnDestroy {
 
     readonly routes: Map<string, MiddlewareFn>;
 
-    constructor(readonly prefix = '') {
+    constructor(public prefix = '') {
         super();
         this.routes = new Map<string, MiddlewareFn>();
     }
@@ -212,9 +184,20 @@ export class MappingRouter extends Router implements OnDestroy {
 
     protected getRoute(ctx: TransportContext): MiddlewareFn | undefined {
         if (ctx.status && ctx.status !== 404) return;
-        if (!ctx.url.startsWith(this.prefix)) return;
-        const url = ctx.url.replace(this.prefix, '') || '/';
-        return this.getRouteByUrl(url);
+
+        let url: string;
+        if (this.prefix) {
+            if(!ctx.url.startsWith(this.prefix)) return;
+            url = ctx.url.slice(this.prefix.length);
+        } else {
+            url = ctx.url ?? '/';
+        }
+        
+        const route = this.getRouteByUrl(ctx.url);
+        if (route) {
+            ctx.url = url;
+        }
+        return route;
 
     }
 
@@ -231,34 +214,6 @@ export class MappingRouter extends Router implements OnDestroy {
     }
 }
 
-
-export class MappingRouterResolver implements RouterResolver {
-
-    readonly routers: Map<string, Router>;
-    constructor() {
-        this.routers = new Map();
-    }
-
-    match(path: string): Router | undefined {
-        const paths = path.split('/');
-        let router: Router | undefined;
-        for (let i = paths.length; i > 0; i--) {
-            router = this.routers.get(paths.slice(0, i).join('/'));
-            if (router) break;
-        }
-        return router;
-    }
-
-    resolve(prefix: string = '', version?: string): Router {
-        const route = version ? `${version}/${prefix}` : prefix;
-        let router = this.routers.get(route);
-        if (!router) {
-            router = new MappingRouter(route);
-            this.routers.set(route, router);
-        }
-        return router;
-    }
-}
 
 
 /**

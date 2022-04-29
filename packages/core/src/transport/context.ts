@@ -1,5 +1,8 @@
-import { Abstract, DefaultInvocationContext, Injector, InvocationContext, InvokeArguments, isPromise } from '@tsdi/ioc';
+import { Abstract, ArgumentError, ClassType, composeResolver, DefaultInvocationContext, EMPTY, Injector, InvocationContext, InvokeArguments, isArray, isDefined, isPrimitiveType, isPromise, isString, Parameter, Type } from '@tsdi/ioc';
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
+import { MODEL_RESOLVERS } from '../model/model.resolver';
+import { PipeTransform } from '../pipes/pipe';
+import { TransportArgumentResolver, TransportParameter } from './resolver';
 
 
 /**
@@ -20,15 +23,29 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
      */
     readonly response: TResponse;
     constructor(injector: Injector, request: TRequest, response: TResponse, target?: any, options?: InvokeArguments) {
-        super(injector, options);
+        super(injector, {
+            ...options, 
+            resolvers:[
+            ...options?.resolvers ?? EMPTY,
+            ...primitiveResolvers,
+            ...injector.get(MODEL_RESOLVERS) ?? EMPTY,
+            
+        ]
+        });
         this.target = target;
         this.request = request;
         this.response = response;
     }
     /**
-     * request URL
+     * Get request rul
      */
     abstract get url(): string;
+
+    /**
+     * Set request url
+     */
+    abstract set url(value: string);
+
 
     /**
      * Get request pathname .
@@ -239,3 +256,117 @@ export function promisify<T>(target: T | Observable<T> | Promise<T>): Promise<T>
     }
     return Promise.resolve(target);
 }
+
+export function missingPipeError(parameter: Parameter, type?: ClassType, method?: string) {
+    return new ArgumentError(`missing pipe to transform argument ${parameter.paramName} type, method ${method} of class ${type}`);
+}
+
+const primitiveResolvers: TransportArgumentResolver[] = [
+    composeResolver<TransportArgumentResolver, TransportParameter>(
+        (parameter, ctx) => ctx instanceof TransportContext && isDefined(parameter.field ?? parameter.paramName),
+        composeResolver<TransportArgumentResolver>(
+            (parameter, ctx) => isPrimitiveType(parameter.type),
+            {
+                canResolve(parameter, ctx) {
+                    return parameter.scope === 'query' && isDefined(ctx.query[parameter.field ?? parameter.paramName!]);
+                },
+                resolve(parameter, ctx) {
+                    const pipe = ctx.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
+                    if (!pipe) throw missingPipeError(parameter, ctx.targetType, ctx.methodName);
+                    return pipe.transform(ctx.query[parameter.field ?? parameter.paramName!], ...parameter.args || EMPTY)
+                }
+            },
+            {
+                canResolve(parameter, ctx) {
+                    return parameter.scope === 'restful' && ctx.restfulParams && isDefined(ctx.restfulParams[parameter.field ?? parameter.paramName!]);
+                },
+                resolve(parameter, ctx) {
+                    const pipe = ctx.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
+                    if (!pipe) throw missingPipeError(parameter, ctx.targetType, ctx.methodName);
+                    return pipe.transform(ctx.restfulParams[parameter.field ?? parameter.paramName!], ...parameter.args || EMPTY)
+                }
+            },
+            {
+                canResolve(parameter, ctx) {
+                    return parameter.scope === 'body' && isDefined(ctx.playload[parameter.field ?? parameter.paramName!]);
+                },
+                resolve(parameter, ctx) {
+                    const pipe = ctx.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
+                    if (!pipe) throw missingPipeError(parameter, ctx.targetType, ctx.methodName);
+                    return pipe.transform(ctx.playload[parameter.field ?? parameter.paramName!], ...parameter.args || EMPTY)
+                }
+            },
+            {
+                canResolve(parameter, ctx) {
+                    const field = parameter.field ?? parameter.paramName!;
+                    return !parameter.scope && isDefined(ctx.query[field] ?? ctx.restfulParams?.[field] ?? ctx.playload[field])
+                },
+                resolve(parameter, ctx) {
+                    const field = parameter.field ?? parameter.paramName!;
+                    const pipe = ctx.get<PipeTransform>(parameter.pipe ?? parameter.type?.name.toLowerCase()!);
+                    if (!pipe) throw missingPipeError(parameter, ctx.targetType, ctx.methodName);
+                    return pipe.transform(ctx.query[field] ?? ctx.restfulParams?.[field] ?? ctx.playload[field], ...parameter.args || EMPTY)
+                }
+            }
+        ),
+        composeResolver<TransportArgumentResolver, TransportParameter>(
+            (parameter) => isPrimitiveType(parameter.provider) && (parameter.mutil === true || parameter.type === Array),
+            {
+                canResolve(parameter, ctx) {
+                    const field = parameter.field ?? parameter.paramName!;
+                    return parameter.scope === 'query' && (isArray(ctx.query[field]) || isString(ctx.query[field]));
+                },
+                resolve(parameter, ctx) {
+                    const value = ctx.playload[parameter.field ?? parameter.paramName!];
+                    const values: any[] = isString(value) ? value.split(',') : value;
+                    const pipe = ctx.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase());
+                    if (!pipe) throw missingPipeError(parameter, ctx.targetType, ctx.methodName);
+                    return values.map(val => pipe.transform(val, ...parameter.args || EMPTY)) as any;
+                }
+            },
+            {
+                canResolve(parameter, ctx) {
+                    return parameter.scope === 'restful' && ctx.restfulParams && isDefined(ctx.restfulParams[parameter.field ?? parameter.paramName!]);
+                },
+                resolve(parameter, ctx) {
+                    const value = (ctx.restfulParams[parameter.field ?? parameter.paramName!] as string).split(',');
+                    const pipe = ctx.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase());
+                    if (!pipe) throw missingPipeError(parameter, ctx.targetType, ctx.methodName);
+                    return value.map(val => pipe.transform(val, ...parameter.args || EMPTY)) as any;
+                }
+            },
+            {
+                canResolve(parameter, ctx) {
+                    return isArray(ctx.playload[parameter.field ?? parameter.paramName!]);
+                },
+                resolve(parameter, ctx) {
+                    const value: any[] = ctx.playload[parameter.field ?? parameter.paramName!];
+                    const pipe = ctx.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase());
+                    if (!pipe) throw missingPipeError(parameter, ctx.targetType, ctx.methodName);
+                    return value.map(val => pipe.transform(val, ...parameter.args || EMPTY)) as any;;
+                }
+            }
+        ),
+        {
+
+            canResolve(parameter, ctx) {
+                return isDefined(parameter.pipe) && parameter.scope === 'body'
+                    && (parameter.field ? ctx.playload[parameter.field] : Object.keys(ctx.playload).length > 0);
+            },
+            resolve(parameter, ctx) {
+                const value = parameter.field ? ctx.playload[parameter.field] : ctx.playload;
+                const pipe = ctx.get<PipeTransform>(parameter.pipe!);
+                if (!pipe) throw missingPipeError(parameter, ctx.targetType, ctx.methodName);
+                return pipe.transform(value, ...parameter.args || EMPTY);
+            }
+        },
+        {
+            canResolve(parameter, ctx) {
+                return parameter.nullable === true;
+            },
+            resolve(parameter, ctx) {
+                return undefined as any;
+            }
+        }
+    )
+]

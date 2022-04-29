@@ -2,10 +2,8 @@ import { ModuleWithProviders } from '@tsdi/ioc';
 import { Module } from '../metadata/decor';
 import { RouteFactoryResolver, ROUTES, Routes } from './route';
 import { DefaultRouteFactoryResovler } from './route_ref';
-import { MappingRouterResolver, RouterResolver } from './router';
+import { MappingRouter, Router } from './router';
 import { ExecptionModule } from '../execptions';
-import { RouterMiddleware } from './middleware';
-
 
 /*
  * Middleware module.
@@ -15,9 +13,8 @@ import { RouterMiddleware } from './middleware';
         ExecptionModule
     ],
     providers: [
-        { provide: RouterResolver, useValue: new MappingRouterResolver() },
-        { provide: RouteFactoryResolver, useValue: new DefaultRouteFactoryResovler() },
-        RouterMiddleware
+        { provide: Router, useValue: new MappingRouter() },
+        { provide: RouteFactoryResolver, useValue: new DefaultRouteFactoryResovler() }
     ]
 })
 export class RouterModule {

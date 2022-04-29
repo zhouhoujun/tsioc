@@ -78,8 +78,16 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         return token === ModuleRef || super.isself(token);
     }
 
-    import(typeOrDef: Type | ModuleWithProviders) {
-        this.processInjectorType(this.platform(), typeOrDef, [], this.moduleReflect);
+    import(typeOrDef: Type | ModuleWithProviders, children?: boolean) {
+        if (children) {
+            if (isFunction(typeOrDef)) {
+                this.get(ModuleFactoryResolver).resolve(typeOrDef).create(this);
+            } else {
+                this.get(ModuleFactoryResolver).resolve(typeOrDef.module).create(this, typeOrDef);
+            }
+        } else {
+            this.processInjectorType(this.platform(), typeOrDef, [], this.moduleReflect);
+        }
     }
 
     override use(modules: ModuleType[]): Type[];
@@ -179,7 +187,7 @@ export class DefaultModuleLifecycleHooks extends DestroyLifecycleHooks implement
     }
 
     async runDisoise(): Promise<void> {
-        this._appEventSubs?.forEach(e=> e && e.unsubscribe());
+        this._appEventSubs?.forEach(e => e && e.unsubscribe());
         this._appEventSubs = [];
         this._disposed = true;
         await Promise.all(Array.from(this._disposes.values()).map(s => s && s.onDispose()));

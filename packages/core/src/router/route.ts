@@ -117,15 +117,6 @@ export abstract class RouteRef<T = any> implements Middleware, Destroyable, OnDe
 }
 
 
-/**
- * route option.
- */
-export interface RouteOption extends InvokeOption {
-    /**
-     * route prefix.
-     */
-    prefix?: string;
-}
 
 /**
  * route factory.
@@ -139,10 +130,10 @@ export abstract class RouteFactory<T = any> {
     /**
      * create {@link RouteRef}
      * @param injector injector.
-     * @param option invoke option. type of {@link RouteOption}.
+     * @param option invoke option. type of {@link InvokeOption}.
      * @returns instance of {@link RouteRef}
      */
-    abstract create(injector: Injector, option?: RouteOption): RouteRef<T>;
+    abstract create(injector: Injector, option?: InvokeOption): RouteRef<T>;
     /**
      * get the last route ref instance.
      */
