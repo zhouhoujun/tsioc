@@ -158,6 +158,9 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse, HttpC
         this.options.timeout && request.setTimeout(this.options.timeout, () => {
             cancel?.unsubscribe();
         });
+        request.once(ev.CLOSE, () => {
+            cancel?.unsubscribe();
+        });
         const cancel = this.chain().handle(request, ctx)
             .pipe(
                 catchError((err, caught) => {
