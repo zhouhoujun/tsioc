@@ -1,8 +1,8 @@
 import { Middleware, TransportContext } from '@tsdi/core';
-import { Abstract, hasOwn, Injectable, isString, Nullable } from '@tsdi/ioc';
+import { Abstract, hasOwn, Injectable, Nullable } from '@tsdi/ioc';
 import { hdr } from '../consts';
 import { JsonStreamStringify } from '../stringify';
-import { isBuffer, isJson, isStream } from '../utils';
+import { isJson, isStream } from '../utils';
 
 
 

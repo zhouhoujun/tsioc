@@ -31,6 +31,7 @@ export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
 
     constructor(injector: Injector, request: HttpRequest, response: HttpResponse, target?: any, options?: InvokeArguments) {
         super(injector, request, response, target, options);
+        this.response.statusCode = 404;
         this.originalUrl = request.url?.toString() ?? '';
         this._url =  request.url ?? '';
     }
