@@ -36,9 +36,9 @@ import { Repository as ORMRepository } from 'typeorm';
 export class UserController {
 
     // as property inject
-    // @Logger() logger!: ILogger;
+    // @Log() logger!: ILogger;
 
-    constructor(private usrRep: UserRepository, @Logger() private logger: ILogger) {
+    constructor(private usrRep: UserRepository, @Log() private logger: ILogger) {
 
     }
 
@@ -85,7 +85,7 @@ export class UserController {
 @RouteMapping('/roles')
 export class RoleController {
 
-    constructor(@Repository(Role) private repo: ORMRepository<Role>, @Logger() private logger: ILogger) {
+    constructor(@Repository(Role) private repo: ORMRepository<Role>, @Log() private logger: ILogger) {
 
     }
 

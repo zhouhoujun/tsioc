@@ -1,6 +1,6 @@
 import { Module, ConnectionOptions, TransactionModule, LoggerModule } from '@tsdi/core';
 import { LogModule } from '@tsdi/logs';
-import { ServerModule } from '@tsdi/platform-server';
+import { ServerHttpClientModule, ServerModule } from '@tsdi/platform-server';
 import { HttpModule, HttpServer } from '@tsdi/transport';
 import { Connection } from 'typeorm';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
@@ -49,6 +49,7 @@ export const connections = {
         LoggerModule,
         ServerModule,
         HttpModule,
+        ServerHttpClientModule,
         TransactionModule,
         TypeOrmModule.withConnection(connections)
     ],

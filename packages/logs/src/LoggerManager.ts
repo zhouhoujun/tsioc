@@ -1,6 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
 import { Logger } from './logger';
-import { LoggerFactory } from './factory';
 
 /**
  * logger configuation.
@@ -17,7 +16,7 @@ export interface LoggerConfig extends Record<string, any> { }
  * logger manager.
  */
 @Abstract()
-export abstract class LoggerManager implements LoggerFactory {
+export abstract class LoggerManager {
     static ρNPT = true;
     /**
      * config logger context.

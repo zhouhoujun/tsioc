@@ -8,7 +8,7 @@ import { UserRepository } from '../repositories/UserRepository';
 export class UserController {
 
     // @Inject() injector!: Injector;
-    // @Logger() logger!: ILogger;
+    // @Log() logger!: ILogger;
 
     constructor(private usrRep: UserRepository, @Log() private logger: Logger) {
 

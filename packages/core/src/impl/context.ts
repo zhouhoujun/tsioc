@@ -1,8 +1,8 @@
 import {
-    Type, lang, isFunction, ModuleMetadata, getClass, Injector, ProviderType, EMPTY_OBJ,
-    DefaultInvocationContext, InvokeArguments, InvocationContext, ArgumentError
+    Type, isFunction, ModuleMetadata, getClass, Injector, ProviderType,
+    DefaultInvocationContext, InvokeArguments, ArgumentError, EMPTY_OBJ
 } from '@tsdi/ioc';
-import { Logger, LoggerFactory } from '@tsdi/logs';
+import { Logger, LoggerManager } from '@tsdi/logs';
 import { PROCESS_ROOT } from '../metadata/tk';
 import { ApplicationContext, ApplicationFactory, APP_CONTEXT_IMPL, EnvironmentOption } from '../context';
 import { RunnableFactory, RunnableFactoryResolver, BootstrapOption } from '../runnable';
@@ -69,7 +69,7 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
     }
 
     getLogger(name?: string): Logger {
-        return this.injector.get(LoggerFactory, null)?.getLogger(name)!;
+        return this.injector.get(LoggerManager, null)?.getLogger(name)!;
     }
 
     publishEvent(event: ApplicationEvent): void;

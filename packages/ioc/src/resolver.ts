@@ -38,7 +38,7 @@ export interface OperationArgumentResolver<C = any> {
      * @param parameter argument type
      * @param args gave arguments
      */
-    resolve<T>(parameter: Parameter<T>, ctx: InvocationContext<C>): T;
+    resolve<T>(parameter: Parameter<T>, ctx: InvocationContext<C>, target?: ClassType): T;
 }
 
 /**

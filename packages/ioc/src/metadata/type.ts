@@ -316,7 +316,7 @@ export class Reflective<T = any> {
     resolveArguments(method: string, context: InvocationContext): any[] {
         const parameters = this.getParameters(method) ?? EMPTY;
         this.validate(method, context, parameters);
-        return parameters.map(p => context.resolveArgument(p));
+        return parameters.map(p => context.resolveArgument(p, this.type));
     }
 
     protected validate(method: string, context: InvocationContext, parameters: Parameter[]) {

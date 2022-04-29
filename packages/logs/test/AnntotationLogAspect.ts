@@ -6,7 +6,7 @@ import { LogAspect } from '../src';
 @Aspect()
 export class AnntotationLogAspect extends LogAspect {
 
-    @Pointcut('@annotation(Logger)', { annotationArgName: 'logAnnotation', annotationName: '@Logger'} )
+    @Pointcut('@annotation(Logger)', { annotationArgName: 'logAnnotation', annotationName: '@Log'} )
     logging(logAnnotation: MethodMetadata[], joinPoint: Joinpoint) {
         this.processLog(joinPoint, logAnnotation);
     }

@@ -2,7 +2,7 @@ import { EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isClass, isFun
 import { TransportServer, EndpointBackend, CustomEndpoint, MiddlewareSet, BasicMiddlewareSet, MiddlewareInst, RouterMiddleware, MiddlewareType, Interceptor } from '@tsdi/core';
 import { Logger } from '@tsdi/logs';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
-import { of } from 'rxjs';
+import { of, EMPTY as RxEMPTY } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 import { ListenOptions } from 'net';
 import * as http from 'http';
@@ -18,6 +18,7 @@ import { HTTP_INTERCEPTORS } from './endpoint';
 export interface HttpOptions {
     majorVersion?: number;
     cors?: CorsOptions;
+    timeout?: number;
     listenOptions?: ListenOptions;
     interceptors?: Type<Interceptor<HttpRequest, HttpResponse>>[];
     middlewares?: MiddlewareType[];
@@ -119,26 +120,15 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse, HttpC
             this.context.setValue(CONTENT_DISPOSITION, func);
         }
 
-        const handler = (request: HttpRequest, response: HttpResponse) => {
-            const ctx = this.contextFactory.create(request, response, this) as HttpContext;
-            ctx.setValue(Logger, this.logger);
-            ctx.status = 404;
-            const cancel = this.chain().handle(request, ctx)
-                .pipe(
-                    catchError((err, caught) => {
-                        ctx.onError(err);
-                        return caught;
-                    })
-                ).subscribe(resp => {
-                    resp.end();
-                });
-        }
         let cert: any;
         if (options.majorVersion === 2) {
             const option = options.options ?? EMPTY_OBJ;
             cert = option.cert;
-            const server = cert ? http2.createSecureServer(option, handler) : http2.createServer(option, handler);
+            const server = cert ? http2.createSecureServer(option, (req, res) => this.requestHandler(req, res)) : http2.createServer(option, (req, res) => this.requestHandler(req, res));
             this._server = server;
+            server.on(ev.ERROR, (err) => {
+                this.logger.error(err);
+            });
             // server.on(ev.STREAM, (stream, headers, flags) => {
             //     //todo stream.
 
@@ -149,13 +139,10 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse, HttpC
             //     stream.write(JSON.stringify({ name: 'ss' }));
             //     stream.end();
             // });
-            server.on(ev.ERROR, (err) => {
-                this.logger.error(err);
-            });
         } else {
             const option = options.options ?? EMPTY_OBJ;
             cert = option.cert;
-            const server = cert ? https.createServer(option, handler) : http.createServer(option, handler);
+            const server = cert ? https.createServer(option, (req, res) => this.requestHandler(req, res)) : http.createServer(option, (req, res) => this.requestHandler(req, res));
             this._server = server;
         }
         const listenOptions = this.options.listenOptions;
@@ -164,6 +151,25 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse, HttpC
         this._server.listen(listenOptions);
     }
 
+    protected requestHandler(request: HttpRequest, response: HttpResponse) {
+        const ctx = this.contextFactory.create(request, response, this) as HttpContext;
+        ctx.setValue(Logger, this.logger);
+        ctx.status = 404;
+        this.options.timeout && request.setTimeout(this.options.timeout, () => {
+            cancel?.unsubscribe();
+        });
+        const cancel = this.chain().handle(request, ctx)
+            .pipe(
+                catchError((err, caught) => {
+                    ctx.onError(err);
+                    this.logger.error(err);
+                    return RxEMPTY;
+                }),
+                finalize(() => {
+                    response.end();
+                })
+            ).subscribe(resp => { });
+    }
 
     async close(): Promise<void> {
         if (!this._server) return;

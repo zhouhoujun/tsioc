@@ -1,11 +1,10 @@
 import {
     TypeMetadata, createDecorator, EMPTY_OBJ, OperationArgumentResolver, Type, isString,
-    lang, PropParamDecorator, ArgumentError, Decors, ActionTypes, getToken
+    lang, PropParamDecorator, ArgumentError, Decors, ActionTypes, getToken, ClassType, isDefined
 } from '@tsdi/ioc';
 import { Level } from '../Level';
 import { LogConfigure } from '../LogConfigure';
 import { LoggerConfig, LoggerManager } from '../LoggerManager';
-import { ConfigureLoggerManager } from '../manager';
 
 
 /**
@@ -22,6 +21,10 @@ export interface LogMetadata extends TypeMetadata {
      * @type {string}
      */
     logname?: string;
+    /**
+     * log for target type.
+     */
+    target?: ClassType;
     /**
      * param name.
      */
@@ -67,7 +70,7 @@ export interface LogMetadata extends TypeMetadata {
 export interface Log<T extends LogMetadata> {
     /**
      * inject logger for property or parameter with the name in {@link ILoggerManager}.
-     * @Logger
+     * @Log
      *
      * @param {string} name the logger name.  Default current class name.
      * @param options the logger options.
@@ -75,7 +78,7 @@ export interface Log<T extends LogMetadata> {
     (name?: string | Type): PropParamDecorator;
     /**
      * inject logger for property or parameter with the name in {@link ILoggerManager}.
-     * @Logger
+     * @Log
      *
      * @param options the logger options.
      */
@@ -96,7 +99,7 @@ export interface Log<T extends LogMetadata> {
 
     /**
      * define logger annotation pointcut to this class or method.
-     * @Logger
+     * @Log
      *
      * @param {string} message set special message to logging.
      * @param {string} logname use the logger with name.  Default current class name.
@@ -105,7 +108,7 @@ export interface Log<T extends LogMetadata> {
     (message: string, logname: string, level?: Level): MethodDecorator;
     /**
      * define logger annotation pointcut to this class or method.
-     * @Logger
+     * @Log
      *
      * @param {string} message set special message to logging.
      * @param {Level} [level] set log level to this message.
@@ -129,7 +132,7 @@ export interface Log<T extends LogMetadata> {
 
 const loggerResolver = {
     canResolve: (pr: LogMetadata, ctx) => {
-        if (!ctx.has(ConfigureLoggerManager)) {
+        if (!ctx.has(LoggerManager)) {
             let local: string;
             if (pr.propertyKey && pr.paramName) {
                 local = ` method ${ctx.methodName} param ${pr.paramName} of class `
@@ -154,21 +157,18 @@ const loggerResolver = {
                 throw new ArgumentError(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on '${token.toString()}',  please register this LoggerManager first. `);
             }
         }
-        return !!pr.logname;
+        return isDefined(pr.logname || pr.target);
     },
-    resolve: (pr: LogMetadata, ctx) => {
-        let loggerManager: LoggerManager;
+    resolve: (pr: LogMetadata, ctx, target?: ClassType) => {
+        let factory = ctx.get(LoggerManager);
         let level = pr.level;
         if (pr.config) {
-            loggerManager = ctx.get(ConfigureLoggerManager);
             if (!level) {
                 level = pr.config.level;
             }
-            loggerManager.configure(pr.config);
-        } else {
-            loggerManager = ctx.get(LoggerManager) ?? ctx.get(ConfigureLoggerManager);
+            factory.configure(pr.config);
         }
-        const logger = loggerManager.getLogger(pr.logname);
+        const logger = factory.getLogger(pr.logname ?? lang.getClassName(target ?? pr.target));
         if (level) logger.level = level;
         return logger;
     }
@@ -178,7 +178,7 @@ const loggerResolver = {
 /**
  * Logger decorator, for method or class.
  *
- * @Logger
+ * @Log
  */
 export const Log: Log<LogMetadata> = createDecorator<LogMetadata>('Log', {
     actionType: [ActionTypes.paramInject, ActionTypes.propInject],
@@ -186,7 +186,7 @@ export const Log: Log<LogMetadata> = createDecorator<LogMetadata>('Log', {
         if (ctx.decorType === Decors.parameter || ctx.decorType === Decors.property) {
             const metadata = ctx.metadata as LogMetadata;
             if (!metadata.logname) {
-                metadata.logname = lang.getClassName(ctx.reflect.type);
+                metadata.target = ctx.reflect.type;
                 metadata.resolver = loggerResolver;
             }
             metadata.propertyKey = ctx.propertyKey;

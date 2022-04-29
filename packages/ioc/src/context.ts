@@ -103,9 +103,10 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
     /**
      * resolve the parameter value.
      * @param meta property or parameter metadata type of {@link Parameter}.
+     * @param target resolve parameter for target type. 
      * @returns the parameter value in this context.
      */
-    abstract resolveArgument<T>(meta: Parameter<T>): T | null;
+    abstract resolveArgument<T>(meta: Parameter<T>, target?: ClassType): T | null;
     /**
      * finally clear.
      */

@@ -230,21 +230,21 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * @param meta property or parameter metadata type of {@link Parameter}.
      * @returns the parameter value in this context.
      */
-    resolveArgument<T>(meta: Parameter<T>): T | null {
+    resolveArgument<T>(meta: Parameter<T>, target?: ClassType): T | null {
         let result: T | undefined;
         const metaRvr = this.getMetaReolver(meta);
         if (metaRvr?.canResolve(meta, this)) {
-            result = metaRvr.resolve(meta, this);
+            result = metaRvr.resolve(meta, this, target);
             if (isDefined(result)) return result;
         }
         this.resolvers.some(r => {
             if (r.canResolve(meta, this)) {
-                result = r.resolve(meta, this);
+                result = r.resolve(meta, this, target);
                 return isDefined(result);
             }
             return false;
         });
-        return result ?? this.parent?.resolveArgument(meta) ?? null;
+        return result ?? this.parent?.resolveArgument(meta, target) ?? null;
     }
 
     protected clear() {
