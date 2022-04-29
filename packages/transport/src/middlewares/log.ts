@@ -12,13 +12,13 @@ export class LogMiddleware implements Middleware {
 
         const dev = !this.args.env.production;
 
-        dev && logger.log(ctx.url);
+        dev && logger.info('--------------->', ctx.url);
 
         try {
             await next();
-            dev && logger.log(ctx.url);
+            dev && logger.info('<---------------', ctx.url, ctx.status);
         } catch (err) {
-            logger.error(err);
+            logger.error('<---------------', ctx.url, ctx.status, err);
             throw err;
         }
     }

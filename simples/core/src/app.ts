@@ -1,6 +1,4 @@
 import { Module, ConnectionOptions, TransactionModule, LoggerModule } from '@tsdi/core';
-import { LogModule } from '@tsdi/logs';
-import { ServerHttpClientModule, ServerModule } from '@tsdi/platform-server';
 import { HttpModule, HttpServer } from '@tsdi/transport';
 import { Connection } from 'typeorm';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
@@ -8,6 +6,7 @@ import { Role, User } from './models/models';
 import { UserController } from './mapping/UserController';
 import { RoleController } from './mapping/RoleController';
 import { UserRepository } from './repositories/UserRepository';
+import { ServerLogsModule, ServerModule } from '@tsdi/platform-server';
 
 
 
@@ -46,10 +45,40 @@ export const connections = {
 @Module({
     // baseURL: __dirname,
     imports: [
-        LoggerModule,
+        LoggerModule.withOptions({
+            // adapter: 'console',
+            // config: {
+            //     level: 'trace'
+            // },
+            adapter: 'log4js',
+            config: {
+                appenders: <any>{
+                    core: {
+                        type: 'dateFile',
+                        pattern: '-yyyyMMdd.log',
+                        filename: './log/core',
+                        backups: 3,
+                        alwaysIncludePattern: true,
+                        category: 'core'
+                    },
+                    console: { type: 'console' }
+                },
+                categories: {
+                    default: {
+                        appenders: ['core', 'console'],
+                        level: 'info'
+                    },
+                    core: {
+                        appenders: ['core', 'console'],
+                        level: 'info'
+                    }
+                },
+                pm2: true
+            }
+        }),
         ServerModule,
+        ServerLogsModule,
         HttpModule,
-        ServerHttpClientModule,
         TransactionModule,
         TypeOrmModule.withConnection(connections)
     ],
