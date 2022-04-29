@@ -170,5 +170,5 @@ export function joinprefix(...paths: (string | undefined)[]) {
         .map(p => p && endExp.test(p) ? p.slice(0, p.length - 1) : p)
         .join('/');
 
-    return endExp.test(joined) ? joined : joined + '/';
+    return endExp.test(joined) ? joined.slice(0) : joined;
 }

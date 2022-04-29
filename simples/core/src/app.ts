@@ -2,11 +2,13 @@ import { Module, ConnectionOptions, TransactionModule, LoggerModule } from '@tsd
 import { HttpModule, HttpServer } from '@tsdi/transport';
 import { Connection } from 'typeorm';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
+import { ServerLogsModule, ServerModule } from '@tsdi/platform-server';
+import * as fs from 'fs';
+import * as path from 'path';
 import { Role, User } from './models/models';
 import { UserController } from './mapping/UserController';
 import { RoleController } from './mapping/RoleController';
 import { UserRepository } from './repositories/UserRepository';
-import { ServerLogsModule, ServerModule } from '@tsdi/platform-server';
 
 
 
@@ -41,6 +43,8 @@ export const connections = {
     logging: false  // 日志
 } as ConnectionOptions;
 
+const key = fs.readFileSync(path.join(__dirname, './localhost-privkey.pem'));
+const cert = fs.readFileSync(path.join(__dirname, './localhost-cert.pem'));
 
 @Module({
     // baseURL: __dirname,
@@ -78,7 +82,13 @@ export const connections = {
         }),
         ServerModule,
         ServerLogsModule,
-        HttpModule,
+        HttpModule.withOption({
+            majorVersion: 2,
+            options: {
+                cert,
+                key
+            }
+        }),
         TransactionModule,
         TypeOrmModule.withConnection(connections)
     ],
