@@ -2,7 +2,7 @@ import { Middleware, TransportContext } from '@tsdi/core';
 import { Abstract, hasOwn, Injectable, isString, Nullable } from '@tsdi/ioc';
 import { hdr } from '../consts';
 import { JsonStreamStringify } from '../stringify';
-import { isBuffer, isStream } from '../utils';
+import { isBuffer, isJson, isStream } from '../utils';
 
 
 
@@ -23,7 +23,7 @@ export class EncodeJsonMiddleware implements Middleware {
 
         let body = ctx.body;
         let strm = isStream(body);
-        let json = !body && !isString(body) && !strm && isBuffer(body);
+        let json = isJson(body);
 
         if (!json && !strm) {
             return;

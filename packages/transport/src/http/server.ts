@@ -1,4 +1,4 @@
-import { EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isClass, isFunction, lang, tokenId, Type } from '@tsdi/ioc';
+import { EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isClass, isFunction, isString, lang, tokenId, Type } from '@tsdi/ioc';
 import { TransportServer, EndpointBackend, CustomEndpoint, MiddlewareSet, BasicMiddlewareSet, MiddlewareInst, MiddlewareType, Interceptor, ModuleRef, Router } from '@tsdi/core';
 import { Logger } from '@tsdi/logs';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
@@ -11,9 +11,11 @@ import * as http2 from 'http2';
 import * as assert from 'assert';
 import { CONTENT_DISPOSITION } from './content';
 import { HttpContext, HttpRequest, HttpResponse, HTTP_MIDDLEWARES } from './context';
-import { ev, LOCALHOST } from '../consts';
+import { ev, hdr, LOCALHOST } from '../consts';
 import { CorsMiddleware, CorsOptions, EncodeJsonMiddleware, HelmetMiddleware, LogMiddleware } from '../middlewares';
 import { HTTP_INTERCEPTORS } from './endpoint';
+import { emptyStatus } from './status';
+import { isStream } from '../utils';
 
 export interface HttpOptions {
     majorVersion?: number;
@@ -154,7 +156,6 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse, HttpC
     protected requestHandler(request: HttpRequest, response: HttpResponse) {
         const ctx = this.contextFactory.create(request, response, this) as HttpContext;
         ctx.setValue(Logger, this.logger);
-        ctx.status = 404;
         this.options.timeout && request.setTimeout(this.options.timeout, () => {
             cancel?.unsubscribe();
         });
@@ -169,9 +170,67 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse, HttpC
                     return RxEMPTY;
                 }),
                 finalize(() => {
-                    response.end();
+                    ctx.destroy();
                 })
-            ).subscribe(resp => { });
+            ).subscribe(resp => {
+                this.respond(ctx);
+             });
+    }
+
+    protected respond(ctx: HttpContext) {
+        if (ctx.destroyed) return;
+
+        if (!ctx.writable) return;
+
+        const res = ctx.response;
+        let body = ctx.body;
+        const code = ctx.status;
+
+        // ignore body
+        if (emptyStatus[code]) {
+            // strip headers
+            ctx.body = null;
+            return res.end();
+        }
+
+        if ('HEAD' === ctx.method) {
+            if (!res.headersSent && !res.hasHeader(hdr.CONTENT_LENGTH)) {
+                const length = ctx.length;
+                if (Number.isInteger(length)) ctx.length = length;
+            }
+            return res.end();
+        }
+
+        // status body
+        if (null == body) {
+            if (ctx._explicitNullBody) {
+                res.removeHeader(hdr.CONTENT_TYPE);
+                res.removeHeader(hdr.TRANSFER_ENCODING);
+                return res.end();
+            }
+            if (ctx.request.httpVersionMajor >= 2) {
+                body = String(code);
+            } else {
+                body = ctx.statusMessage || String(code);
+            }
+            if (!res.headersSent) {
+                ctx.type = 'text';
+                ctx.length = Buffer.byteLength(body);
+            }
+            return res.end(body);
+        }
+
+        // responses
+        if (Buffer.isBuffer(body)) return res.end(body);
+        if (isString(body)) return res.end(body);
+        if (isStream(body)) return body.pipe(res);
+
+        // body: json
+        body = JSON.stringify(body);
+        if (!res.headersSent) {
+            ctx.length = Buffer.byteLength(body);
+        }
+        res.end(body);
     }
 
     async close(): Promise<void> {

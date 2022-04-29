@@ -82,15 +82,15 @@ const cert = fs.readFileSync(path.join(__dirname, './localhost-cert.pem'));
         }),
         ServerModule,
         ServerLogsModule,
+        TransactionModule,
+        TypeOrmModule.withConnection(connections),
         HttpModule.withOption({
             majorVersion: 2,
             options: {
                 cert,
                 key
             }
-        }),
-        TransactionModule,
-        TypeOrmModule.withConnection(connections)
+        })
     ],
     providers: [
         UserController,

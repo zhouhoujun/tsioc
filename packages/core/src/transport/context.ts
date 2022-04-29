@@ -32,7 +32,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
             resolvers: [
                 ...options?.resolvers ?? EMPTY,
                 ...primitiveResolvers,
-                ...injector.get(MODEL_RESOLVERS) ?? EMPTY,
+                ...injector.get(MODEL_RESOLVERS),
 
             ]
         });

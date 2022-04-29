@@ -1,6 +1,6 @@
 import { Module, ConnectionOptions, TransactionModule } from '@tsdi/core';
 import { LogModule } from '@tsdi/logs';
-import { ServerBootstrapModule } from '@tsdi/platform-server';
+import { ServerModule } from '@tsdi/platform-server';
 import { Connection } from 'typeorm';
 import { TypeOrmModule } from '../src';
 import { Role, User } from './models/models';
@@ -40,7 +40,7 @@ export const option = {
     // baseURL: __dirname,
     imports: [
         LogModule,
-        ServerBootstrapModule,
+        ServerModule,
         TypeOrmModule.withConnection({
             ...option,
             entities: [
@@ -63,7 +63,7 @@ export class MockBootTest {
     baseURL: __dirname,
     imports: [
         LogModule,
-        ServerBootstrapModule,
+        ServerModule,
         TypeOrmModule.withConnection({
             ...option,
             models: ['./models/**/*.ts'],
@@ -85,7 +85,7 @@ export class MockBootLoadTest {
     // baseURL: __dirname,
     imports: [
         LogModule,
-        ServerBootstrapModule,
+        ServerModule,
         TransactionModule,
         TypeOrmModule.withConnection({
             ...option,

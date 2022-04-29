@@ -23,7 +23,7 @@ export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
 
     protected _body: any;
     private _explicitStatus?: boolean;
-    private _explicitNullBody?: boolean;
+    public _explicitNullBody?: boolean;
     private _URL?: URL;
     private _ip?: string;
     readonly originalUrl: string;

@@ -154,11 +154,7 @@ export class MiddlewareBackend<TRequest, TResponse, Tx extends TransportContext>
                     if (!this._middleware) {
                         this._middleware = compose(this.middlewares);
                     }
-                    try {
-                        await this._middleware(context, NEXT);
-                    } catch (err) {
-                        throw err;
-                    }
+                    await this._middleware(context, NEXT);
                     return resp;
                 }));
     }
