@@ -2,7 +2,6 @@ import { Abstract, InvocationContext, isNil } from '@tsdi/ioc';
 import { Logger, Log } from '@tsdi/logs';
 import { defer, Observable, throwError } from 'rxjs';
 import { catchError, concatMap, finalize } from 'rxjs/operators';
-import { OnDispose } from '../lifecycle';
 import { TransportError } from './error';
 import { InterceptorChain, Endpoint, EndpointBackend, Interceptor } from './endpoint';
 
@@ -66,7 +65,7 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> {
             concatMap((req) => this.chain().handle(req, ctx)),
             catchError((err, caught) => {
                 this.logger.error(err);
-                return caught;
+                return throwError(() => err);
             }),
             finalize(() => {
                 ctx.destroy();
