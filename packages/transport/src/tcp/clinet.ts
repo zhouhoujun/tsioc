@@ -1,4 +1,4 @@
-import { EndpointBackend, Interceptor, TransportClient } from '@tsdi/core';
+import { EndpointBackend, Interceptor, OnDispose, TransportClient } from '@tsdi/core';
 import { Abstract, Inject, Injectable, Injector, InvocationContext, isString, lang, Nullable } from '@tsdi/ioc';
 import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
 import { ev } from '../consts';
@@ -26,7 +26,7 @@ const defaults = {
 
 
 @Injectable()
-export class TCPClient extends TransportClient<TCPRequest, TCPResponse> {
+export class TCPClient extends TransportClient<TCPRequest, TCPResponse> implements OnDispose {
 
 
     private socket?: Socket;
@@ -97,13 +97,20 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> {
 
     }
 
-    protected buildRequest(ctx: InvocationContext, req: string | TCPRequest<any>, options?: any): TCPRequest<any> | Promise<TCPRequest<any>> {
+    protected async buildRequest(ctx: InvocationContext, req: string | TCPRequest<any>, options?: any): Promise<TCPRequest<any>> {
         return isString(req) ? new TCPRequest(ctx, options) : req;
     }
 
     async close(): Promise<void> {
         this.connected = false;
         this.socket?.end();
+    }
+
+    /**
+     * on dispose.
+     */
+    onDispose(): Promise<void> {
+        return this.close();
     }
 
 }

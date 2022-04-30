@@ -10,10 +10,9 @@ import * as https from 'https';
 import * as http2 from 'http2';
 import * as assert from 'assert';
 import { CONTENT_DISPOSITION } from './content';
-import { HttpContext, HttpRequest, HttpResponse, HTTP_MIDDLEWARES } from './context';
+import { HttpContext, HttpServRequest, HttpServResponse, HTTP_INTERCEPTORS, HTTP_MIDDLEWARES } from './context';
 import { ev, hdr, LOCALHOST } from '../consts';
 import { CorsMiddleware, CorsOptions, EncodeJsonMiddleware, HelmetMiddleware, LogMiddleware } from '../middlewares';
-import { HTTP_INTERCEPTORS } from './endpoint';
 import { emptyStatus } from './status';
 import { isStream } from '../utils';
 
@@ -22,7 +21,7 @@ export interface HttpOptions {
     cors?: CorsOptions;
     timeout?: number;
     listenOptions?: ListenOptions;
-    interceptors?: Type<Interceptor<HttpRequest, HttpResponse>>[];
+    interceptors?: Type<Interceptor<HttpServRequest, HttpServResponse>>[];
     middlewares?: MiddlewareType[];
 }
 
@@ -61,9 +60,9 @@ export const HTTP_SERVEROPTIONS = tokenId<HttpServerOptions>('HTTP_SERVEROPTIONS
  * http server.
  */
 @Injectable()
-export class HttpServer extends TransportServer<HttpRequest, HttpResponse, HttpContext> {
+export class HttpServer extends TransportServer<HttpServRequest, HttpServResponse, HttpContext> {
 
-    private _backend?: EndpointBackend<HttpRequest, HttpResponse>;
+    private _backend?: EndpointBackend<HttpServRequest, HttpServResponse>;
     private _server?: http2.Http2Server | http.Server | https.Server;
     private options!: HttpServerOptions;
 
@@ -107,9 +106,9 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse, HttpC
         return this.context.get(HTTP_INTERCEPTORS) ?? EMPTY;
     }
 
-    getBackend(): EndpointBackend<HttpRequest, HttpResponse> {
+    getBackend(): EndpointBackend<HttpServRequest, HttpServResponse> {
         if (!this._backend) {
-            this._backend = new CustomEndpoint<HttpRequest, HttpResponse>((req, ctx) => of((ctx as HttpContext).response));
+            this._backend = new CustomEndpoint<HttpServRequest, HttpServResponse>((req, ctx) => of((ctx as HttpContext).response));
         }
         return this._backend;
     }
@@ -153,7 +152,7 @@ export class HttpServer extends TransportServer<HttpRequest, HttpResponse, HttpC
         this._server.listen(listenOptions);
     }
 
-    protected requestHandler(request: HttpRequest, response: HttpResponse) {
+    protected requestHandler(request: HttpServRequest, response: HttpServResponse) {
         const ctx = this.contextFactory.create(request, response, this) as HttpContext;
         ctx.setValue(Logger, this.logger);
         this.options.timeout && request.setTimeout(this.options.timeout, () => {

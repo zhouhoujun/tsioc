@@ -1,5 +1,5 @@
-import { EMPTY, EMPTY_OBJ, Inject, Injectable, Injector, InvocationContext, lang, tokenId } from '@tsdi/ioc';
-import { InterceptorChain, Endpoint, Interceptor, InterceptorFn, RequestMethod, TransportClient, EndpointBackend } from '@tsdi/core';
+import { Abstract, EMPTY, EMPTY_OBJ, Inject, Injectable, Injector, InvocationContext, isFunction, isString, lang, Nullable, tokenId, Type } from '@tsdi/ioc';
+import { InterceptorChain, Endpoint, Interceptor, InterceptorFn, RequestMethod, TransportClient, EndpointBackend, HttpRequest, HttpResponse, HttpEvent, OnDispose } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { Logger } from '@tsdi/logs';
 import * as http from 'http';
@@ -7,80 +7,115 @@ import * as https from 'https';
 import * as http2 from 'http2';
 import { Socket } from 'net';
 import { TLSSocket } from 'tls';
-import { HttpRequest, HttpResponse } from './context';
-import { HTTP_INTERCEPTORS } from './endpoint';
+import { ev } from '../consts';
 
-export interface HttpSessionOptions {
-    authority: string;
-    options?: http2.ClientSessionOptions | http2.SecureClientSessionOptions;
-}
 
+// export type HttpRequest = http.ClientRequest | http2.ClientHttp2Stream;
+
+// export type HttpResponse = http
+
+export const HTTP_CLIENT_INTERCEPTORS = tokenId<Interceptor<HttpRequest, HttpEvent>[]>('HTTP_CLIENT_INTERCEPTORS');
+
+export type HttpSessionOptions = http2.ClientSessionOptions | http2.SecureClientSessionOptions;
 
 const protocolChk = /^https:/;
 
 export const HTTP_SESSIONOPTIONS = tokenId<HttpSessionOptions>('HTTP_SESSIONOPTIONS');
 
+@Abstract()
+export abstract class HttpClientOptions {
+    abstract get majorVersion(): number;
+    abstract get interceptors(): Type<Interceptor<HttpRequest, HttpEvent>>[] | undefined;
+    abstract get options(): HttpSessionOptions | undefined;
+}
+
+export interface HttpRequestOptions {
+    body?: any;
+    method?: RequestMethod | undefined;
+    headers?: any;
+    params?: any;
+    observe?: 'body' | 'events' | 'response' | undefined;
+    reportProgress?: boolean | undefined;
+    responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | undefined;
+    withCredentials?: boolean | undefined;
+}
+
 /**
  * http client for nodejs
  */
 @Injectable()
-export class Http extends TransportClient<HttpRequest, HttpResponse> {
+export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOptions> implements OnDispose {
 
-
-    private _endpoint!: Endpoint<HttpRequest, HttpResponse>;
-    private http2client?: http2.ClientHttp2Session;
+    private _backend!: EndpointBackend<HttpRequest, HttpEvent>;
+    private http2s: Map<string, http2.ClientHttp2Session>;
 
     constructor(
         @Inject() readonly context: InvocationContext,
-        @Inject(HTTP_SESSIONOPTIONS, { nullable: true }) private options: HttpSessionOptions) {
+        @Nullable() private options: HttpClientOptions) {
         super()
+        this.http2s = new Map();
+        const interceptors = this.options.interceptors?.map(m => {
+            if (isFunction(m)) {
+                return { provide: HTTP_CLIENT_INTERCEPTORS, useClass: m, multi: true };
+            } else {
+                return { provide: HTTP_CLIENT_INTERCEPTORS, useValue: m, multi: true };
+            }
+        }) ?? EMPTY;
+        this.context.injector.inject(interceptors);
     }
 
     getInterceptors(): Interceptor[] {
-        return this.context.get(HTTP_INTERCEPTORS) ?? EMPTY
+        return this.context.get(HTTP_CLIENT_INTERCEPTORS) ?? EMPTY
     }
 
     getBackend(): EndpointBackend<HttpRequest, HttpResponse> {
         throw new Error('Method not implemented.');
     }
 
-    async connect(): Promise<any> {
-        if (this.options.authority) {
-            if (this.http2client && !this.http2client.closed) {
-                return;
-            }
-            this.http2client = http2.connect(this.options.authority, this.options.options);
-        } else {
+    protected async buildRequest(ctx: InvocationContext, url: string | HttpRequest, options?: HttpRequestOptions): Promise<HttpRequest> {
+        if (isString(url)) {
+            return new HttpRequest(options?.method ?? 'GET', url, options);
+            // const uri = new URL(url);
+            // if (this.options.majorVersion >= 2) {
+            //     let client = this.http2s.get(uri.origin);
+            //     if (!client) {
+            //         client = http2.connect(uri.origin, this.options.options);
+            //         client.on(ev.ERROR, err => {
+            //             this.logger.error(err);
+            //         });
+            //     }
+            //     const req = client.request({ ':path': uri.pathname });
+            //     req.on(ev.DATA, buf => {
 
-            if (this._endpoint) return;
-            // const url = this.options.url;
-            // let client: http.ClientRequest;
-            // const secure = (this.options.options?.protocol && protocolChk.test(this.options.options?.protocol)) || protocolChk.test(url);
-            // if (secure) {
-            //     client = this.options.options ? https.request(url, this.options.options) : https.request(url);
+            //     });
+            //     req.on(ev.END, () => {
+            //         client?.close();
+            //     })
+            //     return req;
             // } else {
-            //     client = this.options.options ? http.request(url, this.options.options) : http.request(url);
+            //     const client = uri.protocol === 'https' ? https.request(uri) : http.request(uri);
+            //     client.on('response',)
+            //     return client;
             // }
-            // const defer = lang.defer();
-            // client.on('connect', (res, socket) => {
-            //     this._endpoint = new Chain(new Http1BackEndpoint(client), this.middlewares);
-            //     defer.resolve(res);
-            // });
-            // client.on('error', defer.reject);
-            // await defer.promise;
         }
-    }
-
-    protected buildRequest(ctx: InvocationContext, url: string | HttpRequest, options?: { body?: any; method?: RequestMethod | undefined; headers?: any; context?: InvocationContext<any> | undefined; params?: any; observe?: 'body' | 'events' | 'response' | undefined; reportProgress?: boolean | undefined; responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | undefined; withCredentials?: boolean | undefined; }): HttpRequest {
-        throw new Error('Method not implemented.');
+        return url;
     }
 
     async close(): Promise<void> {
-        if (!this.http2client) return;
-        const defer = lang.defer();
-        this.http2client.close(() => defer.resolve());
-        await defer.promise;
+        if (this.http2s.size < 1) return;
+        await Promise.all(Array.from(this.http2s.values()).map(c => {
+            const defer = lang.defer();
+            c.close(() => defer.resolve());
+            return defer.promise
+        }));
+        this.http2s.clear();
+    }
 
+    /**
+     * on dispose.
+     */
+    onDispose(): Promise<void> {
+        return this.close();
     }
 
 }

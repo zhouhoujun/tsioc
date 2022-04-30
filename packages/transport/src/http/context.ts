@@ -1,4 +1,4 @@
-import { HttpStatusCode, MiddlewareInst, Protocol, TransportContext, TransportContextFactory } from '@tsdi/core';
+import { HttpStatusCode, Interceptor, MiddlewareInst, Protocol, TransportContext, TransportContextFactory } from '@tsdi/core';
 import { Injectable, Injector, InvokeArguments, isArray, isFunction, isNumber, isString, lang, tokenId } from '@tsdi/ioc';
 import * as util from 'util';
 import * as assert from 'assert';
@@ -14,12 +14,12 @@ import { ev, ctype, hdr } from '../consts';
 
 
 
-export type HttpRequest = http.IncomingMessage | http2.Http2ServerRequest;
+export type HttpServRequest = http.IncomingMessage | http2.Http2ServerRequest;
 
-export type HttpResponse = http.ServerResponse | http2.Http2ServerResponse;
+export type HttpServResponse = http.ServerResponse | http2.Http2ServerResponse;
 
 
-export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
+export class HttpContext extends TransportContext<HttpServRequest, HttpServResponse> {
 
     protected _body: any;
     private _explicitStatus?: boolean;
@@ -29,7 +29,7 @@ export class HttpContext extends TransportContext<HttpRequest, HttpResponse> {
     readonly originalUrl: string;
     private _url: string;
 
-    constructor(injector: Injector, request: HttpRequest, response: HttpResponse, target?: any, options?: InvokeArguments) {
+    constructor(injector: Injector, request: HttpServRequest, response: HttpServResponse, target?: any, options?: InvokeArguments) {
         super(injector, request, response, target, options);
         this.response.statusCode = 404;
         this.originalUrl = request.url?.toString() ?? '';
@@ -1125,21 +1125,26 @@ function parseStamp(date?: string | number): number {
 }
 
 @Injectable()
-export class HttpContextFactory extends TransportContextFactory<HttpRequest, HttpResponse> {
+export class HttpContextFactory extends TransportContextFactory<HttpServRequest, HttpServResponse> {
     constructor(private injector: Injector) {
         super();
     }
 
-    create(request: HttpRequest, response: HttpResponse, target: any, options?: InvokeArguments): HttpContext {
+    create(request: HttpServRequest, response: HttpServResponse, target: any, options?: InvokeArguments): HttpContext {
         return new HttpContext(this.injector, request, response, target, options);
     }
 
 }
 
 /**
+ * http Interceptor tokens
+ */
+export const HTTP_INTERCEPTORS = tokenId<Interceptor<HttpServRequest, HttpServResponse>[]>('HTTP_INTERCEPTORS');
+
+/**
  * http middleware.
  */
- export type HttpMiddleware = MiddlewareInst<HttpContext>;
+export type HttpMiddleware = MiddlewareInst<HttpContext>;
 
 /**
  * http middlewares token.

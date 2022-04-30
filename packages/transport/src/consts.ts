@@ -20,6 +20,7 @@ export namespace ev {
     export const DATA = 'data';
     export const ERROR = 'error';
     export const CLOSE = 'close';
+    export const END = 'end';
     export const STREAM = 'stream';
 
     export const SUBSCRIBE = 'subscribe';

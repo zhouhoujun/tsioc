@@ -11,7 +11,7 @@ import { InterceptorChain, Endpoint, EndpointBackend, Interceptor } from './endp
  * abstract transport client.
  */
 @Abstract()
-export abstract class TransportClient<TRequest, TResponse, TOption = any> implements OnDispose {
+export abstract class TransportClient<TRequest, TResponse, TOption = any> {
 
     @Log()
     protected readonly logger!: Logger;
@@ -44,10 +44,6 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> implem
     }
 
     /**
-     * connect.
-     */
-    abstract connect(): Promise<any>;
-    /**
      * Sends an `HttpRequest` and returns a stream of `HttpEvent`s.
      *
      * @return An `Observable` of the response, with the response body as a stream of `HttpEvent`s.
@@ -64,8 +60,7 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> implem
             return throwError(() => new TransportError(400, 'Invalid message'));
         }
         let ctx = this.createContext();
-        return defer(async () => {
-            await this.connect();
+        return defer(() => {
             return this.buildRequest(ctx, req, options);
         }).pipe(
             concatMap((req) => this.chain().handle(req, ctx)),
@@ -83,18 +78,6 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> implem
         return InvocationContext.create(this.context);
     }
 
-    protected abstract buildRequest(context: InvocationContext, req: TRequest | string, options?: TOption): Promise<TRequest> | TRequest;
-
-    /**
-     * close client.
-     */
-    abstract close(): Promise<void>;
-
-    /**
-     * on dispose.
-     */
-    async onDispose(): Promise<void> {
-        await this.close();
-    }
+    protected abstract buildRequest(context: InvocationContext, req: TRequest | string, options?: TOption): Promise<TRequest>;
 
 }
