@@ -32,8 +32,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
             resolvers: [
                 ...options?.resolvers ?? EMPTY,
                 ...primitiveResolvers,
-                ...injector.get(MODEL_RESOLVERS),
-
+                ...injector.get(MODEL_RESOLVERS, EMPTY)
             ]
         });
         this.target = target;
@@ -50,7 +49,6 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
      */
     abstract set url(value: string);
 
-
     /**
      * Get request pathname .
      */
@@ -66,11 +64,18 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
     /**
      * request body, playload.
      */
-    abstract get playload(): any;
+    get playload(): any {
+        return (this.request as any).body;
+    }
     /**
      * The outgoing HTTP request method.
      */
     abstract get method(): string | undefined;
+    /**
+     * request playload is type or not.
+     * @param type 
+     */
+    abstract isType(type:string|string[]): string;
     /**
      * The request body, or `null` if one isn't set.
      *

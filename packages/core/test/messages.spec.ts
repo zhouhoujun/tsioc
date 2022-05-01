@@ -6,7 +6,7 @@ import expect = require('expect');
 import * as fs from 'fs';
 import {
     Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module,
-    TransportContext, HttpClientModule, HttpClient, RequestBase, LoggerModule, Middleware, Chain, ResponseBase
+    TransportContext, HttpClientModule, HttpClient, LoggerModule, Middleware, Chain
 } from '../src';
 import path = require('path');
 
@@ -91,7 +91,7 @@ class DeviceController {
 @Handle('/hdevice')
 class DeviceQueue implements Middleware {
 
-    async invoke(ctx: TransportContext<any, any>, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
 
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
@@ -121,10 +121,10 @@ class DeviceQueue implements Middleware {
 @Injectable()
 class DeviceStartupHandle implements Middleware {
 
-    invoke(ctx: TransportContext<RequestBase, ResponseBase>, next: () => Promise<void>): Promise<void> {
+    invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
 
-        console.log('DeviceStartupHandle.', 'resp:', ctx.request.body.type, 'req:', ctx.request.body.type)
-        if (ctx.request.body.type === 'startup') {
+        console.log('DeviceStartupHandle.', 'resp:', ctx.playload.type, 'req:', ctx.playload.type)
+        if (ctx.playload.type === 'startup') {
             // todo sth.
             let ret = ctx.injector.get(MyService).dosth();
             ctx.setValue('deviceB_state', ret);
@@ -136,9 +136,9 @@ class DeviceStartupHandle implements Middleware {
 @Injectable()
 class DeviceAStartupHandle implements Middleware {
 
-    invoke(ctx: TransportContext<RequestBase, ResponseBase>, next: () => Promise<void>): Promise<void> {
-        console.log('DeviceAStartupHandle.', 'resp:', ctx.request.body.type, 'req:', ctx.request.body.type)
-        if (ctx.request.body.type === 'startup') {
+    invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+        console.log('DeviceAStartupHandle.', 'resp:', ctx.playload.type, 'req:', ctx.playload.type)
+        if (ctx.playload.type === 'startup') {
             // todo sth.
             let ret = ctx.get(MyService).dosth();
             ctx.setValue('deviceA_state', ret);
@@ -188,11 +188,11 @@ const cert = fs.readFileSync(path.join(__dirname, './localhost-cert.pem'));
         LoggerModule,
         // TcpModule,
         HttpModule.withOption({
-            majorVersion: 2,
+            majorVersion: 1,
             options: {
-                allowHTTP1: true,
-                key,
-                cert
+                // allowHTTP1: true,
+                // key,
+                // cert
             }
         }),
         HttpClientModule,

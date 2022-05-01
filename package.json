@@ -98,6 +98,7 @@
     "amqp-connection-manager": "^4.1.2",
     "amqplib": "^0.8.0",
     "axios": "^0.26.0",
+    "body-parser": "^1.20.0",
     "content-disposition": "^0.5.4",
     "domino": "^2.1.6",
     "kafkajs": "^1.15.0",

@@ -11,6 +11,7 @@ import { append, encodeUrl, escapeHtml, isBuffer, isStream, parseTokenList } fro
 import { emptyStatus, redirectStatus, statusMessage } from './status';
 import { CONTENT_DISPOSITION } from './content';
 import { ev, ctype, hdr } from '../consts';
+import { MimeAdapter } from '../mime';
 
 
 
@@ -271,6 +272,22 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
 
     get method(): string | undefined {
         return this.request.method;
+    }
+
+
+    isType(type: string | string[]): string {
+        //no body
+        if(this.getHeader(hdr.TRANSFER_ENCODING) && !this.getHeader(hdr.CONTENT_LENGTH)) {
+            return '';
+        }
+        let ctype = this.getHeader(hdr.CONTENT_TYPE) as string;
+        if(!ctype) return '';
+        const adapter = this.injector.get(MimeAdapter)
+        ctype =  adapter.normalize(ctype);
+        if(!ctype) return '';
+        
+        const types = isArray(type)? type : [type];
+        return adapter.match(types, ctype);
     }
 
     isUpdate(): boolean {

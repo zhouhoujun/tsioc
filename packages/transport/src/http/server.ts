@@ -15,6 +15,7 @@ import { ev, hdr, LOCALHOST } from '../consts';
 import { CorsMiddleware, CorsOptions, EncodeJsonMiddleware, HelmetMiddleware, LogMiddleware } from '../middlewares';
 import { emptyStatus } from './status';
 import { isStream } from '../utils';
+import { BodyparserMiddleware } from '../middlewares/bodyparser';
 
 export interface HttpOptions {
     majorVersion?: number;
@@ -47,6 +48,7 @@ const httpOpts = {
         HelmetMiddleware,
         EncodeJsonMiddleware,
         CorsMiddleware,
+        BodyparserMiddleware,
         Router
     ]
 } as Http2ServerOptions;
