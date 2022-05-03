@@ -1,5 +1,5 @@
 import { ApplicationContext, ExecptionHandlerMethodResolver, HttpStatusCode, Interceptor, MiddlewareInst, Protocol, TransportContext, TransportContextFactory } from '@tsdi/core';
-import { Injectable, Injector, InvokeArguments, isArray, isFunction, isNumber, isString, lang, tokenId } from '@tsdi/ioc';
+import { Injectable, Injector, InvokeArguments, isArray, isFunction, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import * as util from 'util';
 import * as assert from 'assert';
 import * as http from 'http';
@@ -38,6 +38,10 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
         this._url = request.url ?? '';
     }
 
+    protected isSelf(token: Token) {
+        return token === HttpContext || token === TransportContext;
+    }
+    
     /**
      * Return the request socket.
      *

@@ -10,6 +10,7 @@ export abstract class ExecptionContext<T = Error> extends InvocationContext {
 
     static override create<T>(parent: InvocationContext | Injector, execption: T, options?: InvocationOption): ExecptionContext<T> {
         const ctx = InvocationContext.create(parent, options) as ExecptionContext<T>;
+        ctx.setValue(ExecptionContext, ctx);
         ctx.execption = execption;
         return ctx;
     }

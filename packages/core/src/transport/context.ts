@@ -1,7 +1,7 @@
 import {
     Abstract, ArgumentError, ClassType, composeResolver, DefaultInvocationContext, EMPTY,
     Injector, InvocationContext, InvokeArguments, isArray, isDefined, isPrimitiveType, isPromise,
-    isString, Parameter, Type
+    isString, Parameter, Token, Type
 } from '@tsdi/ioc';
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
 import { MODEL_RESOLVERS } from '../model/model.resolver';
@@ -38,6 +38,10 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
         this.target = target;
         this.request = request;
         this.response = response;
+    }
+
+    protected isSelf(token: Token) {
+        return token === TransportContext;
     }
     /**
      * Get request rul

@@ -27,7 +27,7 @@ export class HttpFinalizeFilter implements ExecptionFilter {
         if (!isNativeError) {
             err = new HttpError(500, util.format('non-error thrown: %j', err));
         }
-        const httpctx = ctx.resolve(HttpContext);
+        const httpctx = ctx.getValue(HttpContext);
         let headerSent = false;
         if (httpctx.sent || !httpctx.writable) {
             headerSent = err.headerSent = true;
