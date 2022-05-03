@@ -1,5 +1,5 @@
 import { EMPTY, isDefined } from '../utils/chk';
-import { chain } from '../handler';
+import { runChain } from '../handler';
 import { ActionSetup } from '../action';
 import { RuntimeContext } from './ctx';
 import { IocRegScope } from './reg';
@@ -95,7 +95,7 @@ export class BeforeCtorScope extends IocRegScope<RuntimeContext> implements Acti
 export const BeforeCtorDecorHandle = function (ctx: RuntimeContext, next: () => void) {
     ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        chain(d.getRuntimeHandle(Decors.beforeConstructor), ctx);
+        runChain(d.getRuntimeHandle(Decors.beforeConstructor), ctx);
     });
 
     return next();
@@ -126,7 +126,7 @@ export class AfterCtorScope extends IocRegScope<RuntimeContext> implements Actio
 export const AfterCtorDecorHandle = function (ctx: RuntimeContext, next: () => void) {
     ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        chain(d.getRuntimeHandle(Decors.afterConstructor), ctx);
+        runChain(d.getRuntimeHandle(Decors.afterConstructor), ctx);
     });
 
     return next();
@@ -198,7 +198,7 @@ export class RuntimeAnnoScope extends IocRegScope<RuntimeContext> implements Act
 export const RuntimeAnnoDecorHandle = function (ctx: RuntimeContext, next: () => void) {
     ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        chain(d.getRuntimeHandle(Decors.CLASS), ctx);
+        runChain(d.getRuntimeHandle(Decors.CLASS), ctx);
     });
 
     return next();
@@ -213,7 +213,7 @@ export class RuntimeMthScope extends IocRegScope<RuntimeContext> implements Acti
 export const RuntimeMthDecorHandle = function (ctx: RuntimeContext, next: () => void) {
     ctx.reflect.class.methodDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        chain(d.getRuntimeHandle(Decors.method), ctx);
+        runChain(d.getRuntimeHandle(Decors.method), ctx);
     });
 
     return next();
@@ -229,7 +229,7 @@ export class RuntimePropScope extends IocRegScope<RuntimeContext> implements Act
 export const RuntimePropDecorHandle = function (ctx: RuntimeContext, next: () => void) {
     ctx.reflect.class.propDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        chain(d.getRuntimeHandle(Decors.property), ctx);
+        runChain(d.getRuntimeHandle(Decors.property), ctx);
     });
 
     return next();

@@ -1,6 +1,6 @@
 import {
     DecorDefine, Type, Injector, lang, EMPTY, refl, isPromise, isString, isFunction, isDefined, OnDestroy,
-    OperationFactoryResolver, TypeReflect, OperationFactory, DestroyCallback, chain, InvokeOption
+    OperationFactoryResolver, TypeReflect, OperationFactory, DestroyCallback, InvokeOption, chain
 } from '@tsdi/ioc';
 import { isObservable, lastValueFrom } from 'rxjs';
 import { CanActivate } from './guard';
@@ -28,7 +28,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     protected sortRoutes: DecorDefine[] | undefined;
     private _url: string;
     private _instance: T | undefined;
-    private _endpoints: Map<string, MiddlewareFn[]>;
+    private _endpoints: Map<string, MiddlewareFn>;
 
     constructor(private factory: OperationFactory<T>) {
         super();
@@ -76,11 +76,12 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
             const key = `${metadate.method ?? ctx.method} ${method.propertyKey}`;
             let endpoint = this._endpoints.get(key);
             if (!endpoint) {
-                endpoint = this.getRouteMiddleware(ctx, method)?.map(c => this.parse(c)) ?? [];
-                endpoint.push((c, n) => this.response(c, n, method))
+                let endpoints = this.getRouteMiddleware(ctx, method)?.map(c => this.parse(c)) ?? [];
+                endpoints.push((c, n) => this.response(c, n, method));
+                endpoint = chain(endpoints);
                 this._endpoints.set(key, endpoint);
             }
-            return await chain(endpoint, ctx, next);
+            return await endpoint(ctx, next);
         } else if (method === false) {
             ctx.throwError(403);
         } else {

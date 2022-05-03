@@ -1,4 +1,4 @@
-import { HttpStatusCode, Interceptor, MiddlewareInst, Protocol, TransportContext, TransportContextFactory } from '@tsdi/core';
+import { ApplicationContext, ExecptionHandlerMethodResolver, HttpStatusCode, Interceptor, MiddlewareInst, Protocol, TransportContext, TransportContextFactory } from '@tsdi/core';
 import { Injectable, Injector, InvokeArguments, isArray, isFunction, isNumber, isString, lang, tokenId } from '@tsdi/ioc';
 import * as util from 'util';
 import * as assert from 'assert';
@@ -12,6 +12,7 @@ import { emptyStatus, redirectStatus, statusMessage } from './status';
 import { CONTENT_DISPOSITION } from './content';
 import { ev, ctype, hdr } from '../consts';
 import { MimeAdapter } from '../mime';
+import { Negotiator } from '../negotiator';
 
 
 
@@ -34,7 +35,7 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
         super(injector, request, response, target, options);
         this.response.statusCode = 404;
         this.originalUrl = request.url?.toString() ?? '';
-        this._url =  request.url ?? '';
+        this._url = request.url ?? '';
     }
 
     /**
@@ -135,7 +136,7 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
      * Set url path
      */
     set url(value: string) {
-        this._url =  value;
+        this._url = value;
     }
 
     /**
@@ -275,18 +276,18 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
     }
 
 
-    isType(type: string | string[]): string {
+    is(type: string | string[]): string | null | false {
         //no body
-        if(this.getHeader(hdr.TRANSFER_ENCODING) && !this.getHeader(hdr.CONTENT_LENGTH)) {
-            return '';
+        if (this.getHeader(hdr.TRANSFER_ENCODING) && !this.getHeader(hdr.CONTENT_LENGTH)) {
+            return null;
         }
         let ctype = this.getHeader(hdr.CONTENT_TYPE) as string;
-        if(!ctype) return '';
+        if (!ctype) return false;
         const adapter = this.injector.get(MimeAdapter)
-        ctype =  adapter.normalize(ctype);
-        if(!ctype) return '';
-        
-        const types = isArray(type)? type : [type];
+        ctype = adapter.normalize(ctype);
+        if (!ctype) return false;
+
+        const types = isArray(type) ? type : [type];
         return adapter.match(types, ctype);
     }
 
@@ -300,9 +301,9 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
 
     private _query?: Record<string, any>;
     get query(): Record<string, any> {
-        if(!this._query) {
+        if (!this._query) {
             const q: Record<string, any> = {};
-            this.URL.searchParams.forEach((v, k)=> {
+            this.URL.searchParams.forEach((v, k) => {
                 q[k] = v;
             });
             this._query = q;
@@ -361,30 +362,6 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
         return (this.request as any).body;
     }
 
-    // /**
-    //  * Get accept object.
-    //  * Lazily memoized.
-    //  *
-    //  * @return {Object}
-    //  * @api private
-    //  */
-
-    // get accept() {
-    //     return this._accept || (this._accept = accepts(this.request));
-    // }
-
-    // /**
-    //  * Set accept object.
-    //  *
-    //  * @param {Object}
-    //  * @api private
-    //  */
-
-    // set accept(obj) {
-    //     this.request.
-    //         this._accept = obj;
-    // }
-
     /**
      * Check if the given `type(s)` is acceptable, returning
      * the best match when true, otherwise `false`, in which
@@ -425,8 +402,12 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
      * @api public
      */
 
-    accepts(...args: string[]): string | number | string[] {
-        return '';
+    accepts(...args: string[]): string | string[] | false {
+        const negotiator = this.resolve(Negotiator);
+        if (!args.length) {
+            return negotiator.mediaTypes();
+        }
+        return lang.first(negotiator.mediaTypes(...args)) ?? false;
     }
 
     /**
@@ -441,8 +422,12 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
      * @return {String|Array}
      * @api public
      */
-    acceptsEncodings(...encodings: string[]): void {
-
+    acceptsEncodings(...encodings: string[]): string | string[] | false {
+        const negotiator = this.resolve(Negotiator);
+        if (!encodings.length) {
+            return negotiator.encodings();
+        }
+        return lang.first(negotiator.encodings(...encodings)) ?? false;
     }
 
     /**
@@ -457,8 +442,12 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
      * @return {String|Array}
      * @api public
      */
-    acceptsCharsets(...charsets: string[]): void {
-
+    acceptsCharsets(...charsets: string[]): string | string[] | false {
+        const negotiator = this.resolve(Negotiator);
+        if (!charsets.length) {
+            return negotiator.charsets();
+        }
+        return  lang.first(negotiator.charsets(...charsets)) ?? false;
     }
 
 
@@ -475,8 +464,12 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
      * @api public
      */
 
-    acceptsLanguages(...langs: string[]): void {
-        // return this.accept.languages(...langs);
+    acceptsLanguages(...langs: string[]): string | string[] {
+        const negotiator = this.resolve(Negotiator);
+        if (!langs.length) {
+            return negotiator.languages();
+        }
+        return  lang.first(negotiator.languages(...langs)) ?? false;
     }
 
     /**
@@ -570,9 +563,12 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
 
 
 
-
+    /**
+     * content type.
+     */
     get contentType(): string {
-        return this.response.getHeader(hdr.CONTENT_TYPE)?.toString() ?? '';
+        const ctype = this.response.getHeader(hdr.CONTENT_TYPE);
+        return (isArray(ctype) ? lang.first(ctype) : ctype) as string ?? '';
     }
 
     /**
@@ -617,7 +613,22 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
      * @api public
      */
     set type(type: string) {
+        type = this.injector.get(MimeAdapter).contentType(type);
         this.contentType = type;
+    }
+
+    /**
+     * Return the response mime type void of
+     * parameters such as "charset".
+     *
+     * @return {String}
+     * @api public
+     */
+
+    get type() {
+        const type = this.contentType;
+        if (!type) return '';
+        return type.split(';', 1)[0];
     }
 
     /**
@@ -728,7 +739,9 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
             });
             // onFinish(this.response, destroy.bind(null, val));
             if (original != val) {
-                val.once('error', err => this.onError(err));
+                val.once('error', err => {
+                    throw err;
+                });
                 // overwriting
                 if (null != original) this.removeHeader(hdr.CONTENT_LENGTH);
             }
@@ -970,8 +983,8 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
      * @api public
      */
     redirect(url: string, alt?: string): void {
-        if ('back' === url) url = this.getHeader('Referrer') as string || alt || '/';
-        this.setHeader('Location', encodeUrl(url));
+        if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
+        this.setHeader(hdr.LOCATION, encodeUrl(url));
 
         // status
         if (!redirectStatus[this.status]) this.status = 302;
@@ -979,13 +992,13 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
         // html
         if (this.accepts('html')) {
             url = escapeHtml(url);
-            this.contentType = 'text/html; charset=utf-8';
+            this.type = ctype.TEXT_HTML_UTF8;
             this.body = `Redirecting to <a href="${url}">${url}</a>.`;
             return;
         }
 
         // text
-        this.contentType = 'text/plain; charset=utf-8';
+        this.type = ctype.TEXT_PLAIN_UTF8;
         this.body = `Redirecting to ${url}.`;
     }
 
@@ -1021,7 +1034,7 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
             this.type = extname(filename);
         }
         const func = this.getValue(CONTENT_DISPOSITION);
-        this.response.setHeader('Content-Disposition', func(filename, options));
+        this.response.setHeader(hdr.CONTENT_DISPOSITION, func(filename, options));
     }
 
     /**
@@ -1069,60 +1082,6 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
         throw new Error('Method not implemented.');
     }
 
-    onError(err: any) {
-
-        if (null == err) return;
-
-        const isNativeError =
-            Object.prototype.toString.call(err) === '[object Error]' ||
-            err instanceof Error;
-        if (!isNativeError) err = new Error(util.format('non-error thrown: %j', err));
-
-        let headerSent = false;
-        if (this.sent || !this.writable) {
-            headerSent = err.headerSent = true;
-        }
-
-        // delegate
-        // this.get(ApplicationContext).emit('error', err, this);
-
-        // nothing we can do here other
-        // than delegate to the app-level
-        // handler and log.
-        if (headerSent) {
-            return;
-        }
-
-        const res = this.response;
-
-        // first unset all headers
-        if (isFunction(res.getHeaderNames)) {
-            res.getHeaderNames().forEach(name => res.removeHeader(name));
-        } else {
-            (res as any)._headers = {}; // Node < 7.7
-        }
-
-        // then set those specified
-        this.setHeader(err.headers);
-
-        // force text/plain
-        this.contentType = ctype.TEXT_PLAIN;
-
-        let statusCode = (err.status || err.statusCode) as HttpStatusCode;
-
-        // ENOENT support
-        if (ev.ENOENT === err.code) statusCode = 404;
-
-        // default to 500
-        if (!isNumber(statusCode) || !statusMessage[statusCode]) statusCode = 500;
-
-        // respond
-        const code = statusMessage[statusCode];
-        const msg = err.expose ? err.message : code;
-        this.status = err.status = statusCode;
-        this.length = Buffer.byteLength(msg);
-        res.end(msg);
-    }
 
 }
 

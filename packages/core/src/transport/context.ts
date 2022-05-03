@@ -72,10 +72,27 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
      */
     abstract get method(): string | undefined;
     /**
-     * request playload is type or not.
-     * @param type 
+     * Check if the incoming request contains the "Content-Type"
+     * header field and if it contains any of the given mime `type`s.
+     * If there is no request body, `null` is returned.
+     * If there is no content type, `false` is returned.
+     * Otherwise, it returns the first `type` that matches.
+     *
+     * Examples:
+     *
+     *     // With Content-Type: text/html; charset=utf-8
+     *     this.is('html'); // => 'html'
+     *     this.is('text/html'); // => 'text/html'
+     *     this.is('text/*', 'application/json'); // => 'text/html'
+     *
+     *     // When Content-Type is application/json
+     *     this.is('json', 'urlencoded'); // => 'json'
+     *     this.is('application/json'); // => 'application/json'
+     *     this.is('html', 'application/*'); // => 'application/json'
+     *
+     *     this.is('html'); // => false
      */
-    abstract isType(type:string|string[]): string;
+    abstract is(type: string | string[]): string|null|false;
     /**
      * The request body, or `null` if one isn't set.
      *

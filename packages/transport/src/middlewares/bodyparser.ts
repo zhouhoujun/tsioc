@@ -1,6 +1,6 @@
 import { Middleware, TransportContext } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable } from '@tsdi/ioc';
-import { Logger } from '@tsdi/logs';
+
 
 @Abstract()
 export class PlayloadOptions {
@@ -61,28 +61,23 @@ export class BodyparserMiddleware implements Middleware {
 
     async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         if (!isUndefined(ctx.request.body)) return await next();
-        try {
-            const res = await this.parseBody(ctx);
-            ctx.request.body = res.body ?? {};
-            if (isUndefined(ctx.request.rawBody)) ctx.request.rawBody = res.raw;
-        } catch (err) {
-            ctx.get(Logger)?.error(err);
-            throw err;
-        }
+        const res = await this.parseBody(ctx);
+        ctx.request.body = res.body ?? {};
+        if (isUndefined(ctx.request.rawBody)) ctx.request.rawBody = res.raw;
         await next();
     }
 
     parseBody(ctx: TransportContext): Promise<{ raw?: any, body?: any }> {
-        if (this.enableJson && ctx.isType(jsonTypes)) {
+        if (this.enableJson && ctx.is(jsonTypes)) {
             return this.parseJson(ctx);
         }
-        if (this.enableForm && ctx.isType(formTypes)) {
+        if (this.enableForm && ctx.is(formTypes)) {
             return this.parseForm(ctx);
         }
-        if (this.enableText && ctx.isType(textTypes)) {
+        if (this.enableText && ctx.is(textTypes)) {
             return this.parseText(ctx);
         }
-        if (this.enableXml && ctx.isType(xmlTypes)) {
+        if (this.enableXml && ctx.is(xmlTypes)) {
             return this.parseText(ctx);
         }
 

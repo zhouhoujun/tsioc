@@ -22,6 +22,7 @@ export namespace ev {
     export const CLOSE = 'close';
     export const END = 'end';
     export const STREAM = 'stream';
+    export const ABOUT = 'about';
 
     export const SUBSCRIBE = 'subscribe';
     export const CANCELLED = 'cancelled';
@@ -45,10 +46,18 @@ export namespace hdr {
      */
     export const TRANSFER_ENCODING = 'Transfer-Encoding';
 
+    export const REFERRER = 'Referrer';
+
+    export const LOCATION = 'Location';
+
+    export const CONTENT_DISPOSITION = 'Content-Disposition';
+
     /**
      * header Accept
      */
     export const ACCEPT = 'Accept';
+
+    export const ACCEPT_CHARSET = 'accept-charset';
 
     /**
      * header Host
@@ -99,8 +108,17 @@ export namespace ctype {
      * text html.
      */
     export const TEXT_HTML = 'text/html';
+
+    /**
+     * text html utf-8.
+     */
+     export const TEXT_HTML_UTF8 = 'text/html; charset=utf-8';
     /**
      * text plain.
      */
     export const TEXT_PLAIN = 'text/plain';
+    /**
+     * text plain utf-8.
+     */
+     export const TEXT_PLAIN_UTF8 = 'text/plain; charset=utf-8';
 }

@@ -1,13 +1,15 @@
-import { InvocationContext } from '@tsdi/ioc';
+import { Abstract } from '@tsdi/ioc';
+import { ExecptionContext } from './context';
 
 /**
  * execption filter.
  */
- export interface ExecptionFilter<T extends InvocationContext = InvocationContext> {
+@Abstract()
+export abstract class ExecptionFilter {
     /**
      * handle execption.
-     * @param ctx invocation context.
-     * @param execption execption error.
+     * @param ctx invocation context with execption error.
+     * @param next invoke next filter in chain.
      */
-    handle(ctx: T, execption: Error): any;
+    abstract handle(ctx: ExecptionContext, next: () => Promise<void>): Promise<any>;
 }

@@ -1,6 +1,6 @@
 import { Token } from './tokens';
 import { isBoolean, isFunction } from './utils/chk';
-import { chain, Handler } from './handler';
+import { runChain, Handler } from './handler';
 import { isBaseOf } from './utils/lang';
 import { Platform } from './injector';
 
@@ -18,7 +18,7 @@ export interface ActionSetup {
 /**
  * ioc action type.
  */
-export type ActionType<T = any> = Token<Action<T, void>> | Handler<T, void>;
+export type ActionType<T = any> = Token<Action<T>> | Handler<T, void>;
 
 /**
  * action.
@@ -26,11 +26,11 @@ export type ActionType<T = any> = Token<Action<T, void>> | Handler<T, void>;
  * @export
  * @abstract
  */
-export abstract class Action<T = any, TR = void> {
+export abstract class Action<T = any> {
     /**
      * action handle.
      */
-    abstract getHandler(): Handler<T, TR>;
+    abstract getHandler(): Handler<T, void>;
 
 }
 
@@ -42,7 +42,7 @@ export abstract class Action<T = any, TR = void> {
  * @extends {Action<T>}
  * @template T
  */
-export abstract class Actions<T, TR = void> extends Action<T, TR> {
+export abstract class Actions<T> extends Action<T> {
 
     private _acts: ActionType[];
     private _befs: ActionType[];
@@ -145,15 +145,16 @@ export abstract class Actions<T, TR = void> extends Action<T, TR> {
         return this;
     }
 
-    handle(ctx: T, next?: () => TR): TR {
+    handle(ctx: T, next?: () => void): void {
         if (!this._hdlrs) {
             const pdr = this.getPlatform(ctx);
             this._hdlrs = [...this._befs, ...this._acts, ...this._afts].map(ac => this.parseHandler(pdr, ac)).filter(f => f);
         }
-        return chain(this._hdlrs, ctx, next);
+        runChain(this._hdlrs, ctx);
+        next && next();
     }
 
-    getHandler(): Handler<T, TR> {
+    getHandler(): Handler<T, void> {
         if (!this._handler) {
             this._handler = (ctx, next) => this.handle(ctx, next);
         }

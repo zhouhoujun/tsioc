@@ -1,4 +1,4 @@
-import { Injectable, IInjector, isArray, Type, isClass, isFunction, isPromise, isNil, AsyncHandler, chain, isString } from '@tsdi/ioc';
+import { Injectable, IInjector, isArray, Type, isClass, isFunction, isPromise, isNil, AsyncHandler, runChain, isString } from '@tsdi/ioc';
 import { BUILDER } from '@tsdi/boot';
 import { ActivityType, Expression } from './ActivityMetadata';
 import { IActivityRef, ACTIVITY_INPUT, ACTIVITY_DATA } from './IActivityRef';
@@ -119,7 +119,7 @@ export class ActivityExecutor implements IActivityExecutor {
             }
             return;
         }
-        await chain(actions.filter(f => f), this.context.workflow, next);
+        await runChain(actions.filter(f => f), this.context.workflow, next);
     }
 
     parseAction<T extends IWorkflowContext>(activity: ActivityType | ActivityType[], input?: any): AsyncHandler<T> | AsyncHandler<T>[] {

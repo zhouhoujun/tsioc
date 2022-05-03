@@ -1,6 +1,6 @@
 import { isFunction } from '../utils/chk';
 import { cleanObj } from '../utils/lang';
-import { chain } from '../handler';
+import { runChain } from '../handler';
 import { Type } from '../types';
 import { Token } from '../tokens';
 import { DesignContext, RuntimeContext } from './ctx';
@@ -81,7 +81,7 @@ function regProvider(records: Map<Token, FactoryRecord>, platform: Platform, inj
 export const BeforeAnnoDecorHandle = function (ctx: DesignContext, next: () => void) {
     ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        chain(d.getDesignHandle(Decors.beforeAnnoation), ctx);
+        runChain(d.getDesignHandle(Decors.beforeAnnoation), ctx);
     });
 
     return next();
@@ -91,7 +91,7 @@ export const BeforeAnnoDecorHandle = function (ctx: DesignContext, next: () => v
 export const DesignClassDecorHandle = function (ctx: DesignContext, next: () => void) {
     ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        chain(d.getDesignHandle(Decors.CLASS), ctx);
+        runChain(d.getDesignHandle(Decors.CLASS), ctx);
     });
 
     return next();
@@ -108,7 +108,7 @@ export class DesignPropScope extends IocRegScope<DesignContext> implements Actio
 export const DesignPropDecorScope = function (ctx: DesignContext, next: () => void) {
     ctx.reflect.class.propDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        chain(d.getDesignHandle(Decors.property), ctx);
+        runChain(d.getDesignHandle(Decors.property), ctx);
     });
 
     return next();
@@ -151,7 +151,7 @@ export class DesignMthScope extends IocRegScope<DesignContext> implements Action
 export const DesignMthDecorScope = function (ctx: DesignContext, next: () => void) {
     ctx.reflect.class.methodDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        chain(d.getDesignHandle(Decors.method), ctx);
+        runChain(d.getDesignHandle(Decors.method), ctx);
     });
 
     return next();
@@ -193,7 +193,7 @@ export class AnnoScope extends IocRegScope<DesignContext> implements ActionSetup
 export const AnnoDecorScope = function (ctx: DesignContext, next: () => void) {
     ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        chain(d.getDesignHandle(Decors.annoation), ctx);
+        runChain(d.getDesignHandle(Decors.annoation), ctx);
     });
 
     return next();
@@ -202,7 +202,7 @@ export const AnnoDecorScope = function (ctx: DesignContext, next: () => void) {
 export const AfterAnnoDecorScope = function (ctx: DesignContext, next: () => void) {
     ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        chain(d.getDesignHandle(Decors.afterAnnoation), ctx);
+        runChain(d.getDesignHandle(Decors.afterAnnoation), ctx);
     });
 
     return next();

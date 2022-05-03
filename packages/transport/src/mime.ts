@@ -5,7 +5,6 @@ import { Abstract } from '@tsdi/ioc';
  */
 @Abstract()
 export abstract class MimeAdapter {
-
     /**
      * Get the default charset for a MIME type.
      * @param type 

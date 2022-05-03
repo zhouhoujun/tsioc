@@ -6,6 +6,9 @@ import { Startup } from '../startup';
 import { InterceptorChain, Endpoint, EndpointBackend, MiddlewareBackend, MiddlewareInst, Interceptor } from './endpoint';
 import { TransportContext, TransportContextFactory } from './context';
 import { BasicMiddlewareSet, MiddlewareSet } from './middlware.set';
+import { catchError, EMPTY, finalize, from, mergeMap, pipe, Subscription } from 'rxjs';
+import { ExecptionContext, ExecptionFilter } from '../execptions';
+
 
 /**
  * abstract transport server.
@@ -84,6 +87,42 @@ export abstract class TransportServer<TRequest, TResponse, Tx extends TransportC
         }
         return this._chain;
     }
+
+    protected requestHandler(request: TRequest, response: TResponse) {
+        const ctx = this.contextFactory.create(request, response, this) as Tx;
+        ctx.setValue(Logger, this.logger);
+
+        const cancel = this.chain().handle(request, ctx)
+            .pipe(
+                mergeMap(res => {
+                    return this.respond(res, ctx);
+                }),
+                catchError((err, caught) => {
+                    // log error
+                    this.logger.error(err);
+                    // handle error
+                    const filter = this.getExecptionFilter(ctx);
+                    const context = ExecptionContext.create(ctx, err);
+                    return from(filter.handle(context, async () => {
+                        return await context.destroy();
+                    }));
+                })
+            ).subscribe({
+                complete: async () => {
+                    ctx.destroy();
+                }
+            });
+
+        this.bindEvent(ctx, cancel);
+    }
+
+    protected getExecptionFilter(ctx: Tx): ExecptionFilter {
+        return ctx.injector.get(ExecptionFilter);
+    }
+
+    protected abstract bindEvent(ctx: Tx, cancel: Subscription): void;
+
+    protected abstract respond(res: TResponse, ctx: Tx): Promise<any>;
 
     /**
      * close server.

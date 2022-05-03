@@ -3,7 +3,7 @@ import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { AnnotationType, ClassType, Type } from '../types';
 import { cleanObj, getParentClass } from '../utils/lang';
 import { EMPTY, isArray, isFunction } from '../utils/chk';
-import { chain, Handler } from '../handler';
+import { runChain, Handler } from '../handler';
 import {
     ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata,
     RunnableMetadata, InjectableMetadata, MethodMetadata
@@ -380,7 +380,7 @@ export const MethodProvidersAction = (ctx: DecorContext, next: () => void) => {
 export const ExecuteDecorHandle = (ctx: DecorContext, next: () => void) => {
     if (ctx.getHandle) {
         const handles = ctx.getHandle(ctx.decorType);
-        chain(handles, ctx);
+        runChain(handles, ctx);
     }
     return next()
 }

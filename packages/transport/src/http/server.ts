@@ -1,9 +1,11 @@
-import { EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isClass, isFunction, isString, lang, tokenId, Type } from '@tsdi/ioc';
-import { TransportServer, EndpointBackend, CustomEndpoint, MiddlewareSet, BasicMiddlewareSet, MiddlewareInst, MiddlewareType, Interceptor, ModuleRef, Router } from '@tsdi/core';
+import { EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isFunction, isString, lang, tokenId, Type } from '@tsdi/ioc';
+import {
+    TransportServer, EndpointBackend, CustomEndpoint, MiddlewareSet, BasicMiddlewareSet,
+    MiddlewareType, MiddlewareInst, Interceptor, ModuleRef, Router, 
+} from '@tsdi/core';
 import { Logger } from '@tsdi/logs';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
-import { of, EMPTY as RxEMPTY } from 'rxjs';
-import { catchError, finalize } from 'rxjs/operators';
+import { of, Subscription } from 'rxjs';
 import { ListenOptions } from 'net';
 import * as http from 'http';
 import * as https from 'https';
@@ -17,12 +19,14 @@ import { emptyStatus } from './status';
 import { isStream } from '../utils';
 import { BodyparserMiddleware } from '../middlewares/bodyparser';
 
+
 export interface HttpOptions {
     majorVersion?: number;
     cors?: CorsOptions;
     timeout?: number;
     listenOptions?: ListenOptions;
     interceptors?: Type<Interceptor<HttpServRequest, HttpServResponse>>[];
+    execptions?: Type<Interceptor>;
     middlewares?: MiddlewareType[];
 }
 
@@ -43,6 +47,7 @@ const httpOpts = {
     majorVersion: 2,
     options: { allowHTTP1: true },
     listenOptions: { port: 3000, host: LOCALHOST } as ListenOptions,
+
     middlewares: [
         LogMiddleware,
         HelmetMiddleware,
@@ -62,7 +67,7 @@ export const HTTP_SERVEROPTIONS = tokenId<HttpServerOptions>('HTTP_SERVEROPTIONS
  * http server.
  */
 @Injectable()
-export class HttpServer extends TransportServer<HttpServRequest, HttpServResponse, HttpContext> {
+export class HttpServer extends TransportServer<HttpServRequest, HttpServResponse, HttpContext>  {
 
     private _backend?: EndpointBackend<HttpServRequest, HttpServResponse>;
     private _server?: http2.Http2Server | http.Server | https.Server;
@@ -154,36 +159,22 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         this._server.listen(listenOptions);
     }
 
-    protected requestHandler(request: HttpServRequest, response: HttpServResponse) {
-        const ctx = this.contextFactory.create(request, response, this) as HttpContext;
-        ctx.setValue(Logger, this.logger);
-        this.options.timeout && request.setTimeout(this.options.timeout, () => {
+    protected override bindEvent(ctx: HttpContext, cancel: Subscription): void {
+        const req = ctx.request;
+        this.options.timeout && req.setTimeout(this.options.timeout, () => {
+            req.emit(ev.ABOUT);
             cancel?.unsubscribe();
         });
-        request.once(ev.CLOSE, () => {
+        req.once(ev.CLOSE, () => {
             cancel?.unsubscribe();
         });
-        const cancel = this.chain().handle(request, ctx)
-            .pipe(
-                catchError((err, caught) => {
-                    ctx.onError(err);
-                    this.logger.error(err);
-                    return RxEMPTY;
-                }),
-                finalize(() => {
-                    ctx.destroy();
-                })
-            ).subscribe(resp => {
-                this.respond(ctx);
-             });
     }
 
-    protected respond(ctx: HttpContext) {
+    protected override async respond(res: HttpServResponse, ctx: HttpContext): Promise<any> {
         if (ctx.destroyed) return;
 
         if (!ctx.writable) return;
 
-        const res = ctx.response;
         let body = ctx.body;
         const code = ctx.status;
 

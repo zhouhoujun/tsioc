@@ -1,4 +1,4 @@
-import { Abstract, chain, Handler, InvocationContext, isFunction, Type } from '@tsdi/ioc';
+import { Abstract, Handler, InvocationContext, isFunction, Type, chain } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
 import { TransportContext } from './context';
@@ -167,10 +167,13 @@ export class MiddlewareBackend<TRequest, TResponse, Tx extends TransportContext>
  */
 export function compose<T extends TransportContext>(middlewares: MiddlewareInst<T>[]): MiddlewareFn<T> {
     const middleFns = middlewares.filter(m => m).map(m => isFunction(m) ? m : ((ctx, next) => m.invoke(ctx, next)) as MiddlewareFn<T>);
-    return (ctx, next) => chain(middleFns, ctx, next);
+    return chain(middleFns);
 }
 
-const NEXT = async () => { };
+/**
+ * empty next.
+ */
+export const NEXT = async () => { };
 
 export class Chain implements Middleware {
 
