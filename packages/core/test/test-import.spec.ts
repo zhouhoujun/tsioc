@@ -1,9 +1,9 @@
 import { ServerHttpClientModule, ServerLogsModule, ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
-import { lastValueFrom, map } from 'rxjs';
+import { catchError, lastValueFrom, Observable, of, throwError } from 'rxjs';
 import * as net from 'net';
 import { ModuleA, ModuleB, ClassSevice, SocketService, StatupModule, TestService } from './demo';
-import { Application, HttpClient, HttpClientModule, LoggerModule, Router } from '../src';
+import { Application, HttpClient, HttpClientModule, LoggerModule, Router, RunnableFactory, RunnableFactoryResolver } from '../src';
 import { HttpModule, HttpServer } from '@tsdi/transport';
 
 
@@ -25,26 +25,35 @@ describe('di module', () => {
         let ctx = await Application.run({
             module: ModuleB,
             uses: [
+                ServerModule,
                 HttpClientModule,
                 ServerHttpClientModule,
-                HttpModule,
-                ServerModule
+                HttpModule.withOption({
+                    majorVersion: 1,
+                })
             ]
         });
-        let server = ctx.resolve(HttpServer);
-        server.use((ctx, next) => {
+        let server = ctx.createRunnable(HttpServer);
+        server.instance.use((ctx, next) => {
             console.log('ctx.url:', ctx.url);
             if (ctx.url.startsWith('/test')) {
                 console.log('message queue test: ' + ctx.playload);
             }
-           
+
             console.log(ctx.body, ctx.query);
             ctx.body = ctx.query.hi;
             return next();
-        });
+        }, 0);
+
+        await server.run();
 
         // has no parent.
-        const rep = await lastValueFrom(ctx.resolve(HttpClient).request('GET', 'test', { observe: 'response', params: { hi: 'hello' } }));
+        const rep = await lastValueFrom(ctx.resolve(HttpClient).request('GET', 'test', { observe: 'response', responseType: 'text', params: { hi: 'hello' } })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
         expect(rep.body).toEqual('hello');
         expect(rep.status).toEqual(200);
 

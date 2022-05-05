@@ -5,7 +5,7 @@ import {
 import { Logger, LoggerManager } from '@tsdi/logs';
 import { PROCESS_ROOT } from '../metadata/tk';
 import { ApplicationContext, ApplicationFactory, APP_CONTEXT_IMPL, EnvironmentOption } from '../context';
-import { RunnableFactory, RunnableFactoryResolver, BootstrapOption } from '../runnable';
+import { RunnableFactory, RunnableFactoryResolver, BootstrapOption, RunnableRef } from '../runnable';
 import { ApplicationRunners } from '../runners';
 import { ModuleRef } from '../module.ref';
 import { ApplicationArguments } from '../args';
@@ -61,6 +61,11 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
 
     get runners() {
         return this._runners;
+    }
+
+    createRunnable<C>(type: Type<C>, option?: BootstrapOption): RunnableRef<C> {
+        const factory = this.injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type);
+        return factory.create(this.injector, option);
     }
 
     bootstrap<C>(type: Type<C> | RunnableFactory<C>, option?: BootstrapOption): any {

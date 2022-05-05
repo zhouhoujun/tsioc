@@ -35,6 +35,10 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
         this.response.statusCode = 404;
         this.originalUrl = request.url?.toString() ?? '';
         this._url = request.url ?? '';
+        const sidx = this._url.indexOf('?');
+        if (sidx > 0) {
+            this._url = this._url.slice(0, sidx);
+        }
     }
 
     protected isSelf(token: Token) {

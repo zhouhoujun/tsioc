@@ -156,13 +156,19 @@ export abstract class RouteFactoryResolver {
     abstract resolve<T>(type: Type<T> | TypeReflect<T>): RouteFactory<T>;
 }
 
-
+const startExp = /^\//;
 const endExp = /\/$/;
 
 export function joinprefix(...paths: (string | undefined)[]) {
     let joined = paths.filter(p => p)
-        .map(p => p && endExp.test(p) ? p.slice(0, p.length - 1) : p)
+        .map(p => {
+            if (!p) return '';
+            p = p.trim();
+            const start = startExp.test(p) ? 1 : 0;
+            const end = endExp.test(p) ? p.length - 1 : p.length;
+            return p.slice(start, end);
+        })
         .join('/');
 
-    return endExp.test(joined) ? joined.slice(0) : joined;
+    return '/' + joined;
 }

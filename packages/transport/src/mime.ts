@@ -1,4 +1,4 @@
-import { Abstract, Injectable, tokenId } from '@tsdi/ioc';
+import { Abstract, Injectable } from '@tsdi/ioc';
 
 /**
  * mime type adapter.

@@ -3,7 +3,7 @@ import {
     ModuleLoader, Destroyable, Modules, DestroyCallback, InvocationContext
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
-import { RunnableFactory, BootstrapOption } from './runnable';
+import { RunnableFactory, BootstrapOption, RunnableRef } from './runnable';
 import { ApplicationRunners } from './runners';
 import { ModuleOption } from './module.factory';
 import { ModuleRef } from './module.ref';
@@ -24,6 +24,11 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
      * module instance.
      */
     abstract get instance(): any;
+    /**
+     * create runnable ref.
+     * @param type 
+     */
+    abstract createRunnable<C>(type: Type<C>): RunnableRef<C>;
     /**
      * bootstrap type
      * @param type bootstrap type.
