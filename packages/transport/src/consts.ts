@@ -41,10 +41,13 @@ export namespace hdr {
      * Set or get Content-Length field to `n`.
      */
     export const CONTENT_LENGTH = 'Content-Length';
+    export const CONTENT_ENCODING = 'content-encoding';
     /**
      * transfer encoding.
      */
     export const TRANSFER_ENCODING = 'Transfer-Encoding';
+
+    export const IDENTITY = 'identity';
 
     export const REFERRER = 'Referrer';
 

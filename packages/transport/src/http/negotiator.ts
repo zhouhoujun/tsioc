@@ -69,13 +69,13 @@ export class HttpNegotiator extends Negotiator {
       let enco = this.matchify(a.trim(), i);
       if (enco) {
         encodings.push(enco);
-        hasIdentity = hasIdentity || this.specify(identity, enco) !== null;
+        hasIdentity = hasIdentity || this.specify(hdr.IDENTITY, enco) !== null;
         minQuality = Math.min(minQuality, enco.q || 1);
       }
     });
     if (hasIdentity) {
       encodings.push({
-        value: identity,
+        value: hdr.IDENTITY,
         q: minQuality,
         i: accepts.length
       })
@@ -378,7 +378,6 @@ export class HttpNegotiator extends Negotiator {
   }
 }
 
-const identity = 'identity';
 const lang = 'lang';
 const media = 'media';
 

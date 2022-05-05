@@ -48,6 +48,14 @@ export const db: Record<string, MimeSource> = {
         "compressible": true,
         "extensions": ["json", "map"]
     },
+    "application/json-patch+json": {
+        "source": "iana",
+        "compressible": true
+    },
+    "application/vnd.api+json": {
+        "source": "iana",
+        "compressible": true
+    },
     "application/msword": {
         "source": "iana",
         "compressible": false,
@@ -124,6 +132,10 @@ export const db: Record<string, MimeSource> = {
         "source": "apache",
         "compressible": true,
         "extensions": ["xspf"]
+    },
+    "application/x-www-form-urlencoded": {
+        "source": "iana",
+        "compressible": true
     },
     "application/zip": {
         "source": "iana",
@@ -318,5 +330,5 @@ export const db: Record<string, MimeSource> = {
     },
     "video/mpeg4-generic": {
         "source": "iana"
-    },
+    }
 }

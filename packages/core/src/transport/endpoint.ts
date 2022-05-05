@@ -1,6 +1,6 @@
 import { Abstract, Handler, InvocationContext, isFunction, Type, chain } from '@tsdi/ioc';
-import { Observable } from 'rxjs';
-import { mergeMap } from 'rxjs/operators';
+import { from, Observable } from 'rxjs';
+import { mergeMap, switchMap } from 'rxjs/operators';
 import { TransportContext } from './context';
 
 
@@ -150,13 +150,13 @@ export class MiddlewareBackend<TRequest, TResponse, Tx extends TransportContext>
     handle(req: TRequest, context: Tx): Observable<TResponse> {
         return this.backend.handle(req, context)
             .pipe(
-                mergeMap(async resp => {
+                switchMap(resp => {
                     if (!this._middleware) {
                         this._middleware = compose(this.middlewares);
                     }
-                    await this._middleware(context, NEXT);
-                    return resp;
-                }));
+                    return from(this._middleware(context, NEXT).then(c => resp));
+                })
+            );
     }
 
 }
@@ -173,7 +173,8 @@ export function compose<T extends TransportContext>(middlewares: MiddlewareInst<
 /**
  * empty next.
  */
-export const NEXT = async () => { };
+export const NEXT = () => Promise.resolve();
+
 
 export class Chain implements Middleware {
 

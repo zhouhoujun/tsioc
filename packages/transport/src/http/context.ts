@@ -89,9 +89,9 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
         switch (field = field.toLowerCase()) {
             case 'referer':
             case 'referrer':
-                return req.headers.referrer || req.headers.referer || '';
+                return req.headers.referrer || req.headers.referer;
             default:
-                return req.headers[field] || '';
+                return req.headers[field];
         }
     }
 
@@ -668,7 +668,7 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
     }
 
     get statusMessage() {
-        return this.response.statusMessage ?? statusMessage[this.status];
+        return this.response.statusMessage || statusMessage[this.status];
     }
 
     set statusMessage(msg: string) {
@@ -679,7 +679,7 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
     set error(err: Error) {
         this._err = err;
         if (err) {
-            this.statusMessage = err.stack ?? err.message;
+            this.statusMessage = err.stack || err.message;
             this.status = HttpStatusCode.InternalServerError;
         }
     }

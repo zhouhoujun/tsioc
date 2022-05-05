@@ -248,11 +248,7 @@ describe('app message queue', () => {
         expect(res).toBeDefined();
         expect(isArray(res.features)).toBeTruthy();
 
-        const rep = await lastValueFrom(client.request<any>('POST', '/hdevice', { observe: 'response', body: { type: 'startup' } }).pipe(
-            catchError((err, ct) => {
-                ctx.getLogger().error(err);
-                return of(err);
-            })));
+        const rep = await lastValueFrom(client.request<any>('POST', '/hdevice', { observe: 'response', body: { type: 'startup' } }));
 
         device = rep.body['device'];
         aState = rep.body['deviceA_state'];
@@ -347,6 +343,6 @@ describe('app message queue', () => {
 
 
     after(() => {
-        ctx.destroy();
+        return ctx.destroy();
     })
 });
