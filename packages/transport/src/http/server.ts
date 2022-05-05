@@ -3,7 +3,6 @@ import {
     TransportServer, EndpointBackend, CustomEndpoint, MiddlewareSet, BasicMiddlewareSet,
     MiddlewareType, MiddlewareInst, Interceptor, ModuleRef, Router,
 } from '@tsdi/core';
-import { Logger } from '@tsdi/logs';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { of, Subscription } from 'rxjs';
 import { ListenOptions } from 'net';
@@ -26,6 +25,7 @@ export interface HttpOptions {
     majorVersion?: number;
     cors?: CorsOptions;
     timeout?: number;
+    closeDelay?: number;
     mimeDb?: Record<string, MimeSource>;
     listenOptions?: ListenOptions;
     interceptors?: Type<Interceptor<HttpServRequest, HttpServResponse>>[];
@@ -51,6 +51,7 @@ const httpOpts = {
     options: { allowHTTP1: true },
     listenOptions: { port: 3000, host: LOCALHOST } as ListenOptions,
     mimeDb: db,
+    closeDelay: 100,
     middlewares: [
         LogMiddleware,
         HelmetMiddleware,
@@ -93,9 +94,10 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
             this.options.listenOptions = { ...httpOpts.listenOptions, ...options.listenOptions };
         }
         this.context.setValue(HTTP_SERVEROPTIONS, this.options);
-        if (options.mimeDb) {
+
+        if (this.options.mimeDb) {
             const mimedb = this.context.injector.get(MimeDb);
-            mimedb.from(options.mimeDb);
+            mimedb.from(this.options.mimeDb);
         }
         const middlewares = (this.options.cors === false ? this.options.middlewares?.filter(f => f !== CorsMiddleware) : this.options.middlewares)?.map(m => {
             if (isFunction(m)) {
@@ -172,8 +174,12 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
             req.emit(ev.ABOUT);
             cancel?.unsubscribe();
         });
-        req.once(ev.CLOSE, () => {
+        req.once(ev.CLOSE, async () => {
+            await lang.delay(this.options.closeDelay ?? 100);
             cancel?.unsubscribe();
+            if (!ctx.sent) {
+                ctx.response.end();
+            }
         });
     }
 

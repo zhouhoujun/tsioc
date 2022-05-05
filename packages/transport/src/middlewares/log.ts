@@ -13,10 +13,10 @@ export class LogMiddleware implements Middleware {
     async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         const logger: Logger = ctx.target?.logger ?? ctx.getValue(Logger) ?? ctx.get(LoggerManager).getLogger();
 
-        logger.debug('--------------->', ctx.url);
+        logger.info('--------------->', ctx.url);
         try {
             await next();
-            logger.debug('<---------------', ctx.url, ctx.status);
+            logger.info('<---------------', ctx.url, ctx.status);
         } catch (er) {
             let err = er as HttpError;
             let statusCode = (err.status || err.statusCode) as HttpStatusCode;

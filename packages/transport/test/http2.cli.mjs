@@ -7,7 +7,7 @@ const client = http2.connect('https://localhost:3000', {
 });
 client.on('error', (err) => console.error(err));
 
-const req = client.request({ ':path': '/' });
+const req = client.request({ ':path': '/user/admin' });
 
 req.on('response', (headers, flags) => {
   for (const name in headers) {

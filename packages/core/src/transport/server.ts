@@ -7,7 +7,7 @@ import { InterceptorChain, Endpoint, EndpointBackend, MiddlewareBackend, Middlew
 import { TransportContext, TransportContextFactory } from './context';
 import { BasicMiddlewareSet, MiddlewareSet } from './middlware.set';
 import { from, Subscription } from 'rxjs';
-import { catchError, mergeMap, switchMap, tap } from 'rxjs/operators';
+import { catchError, mergeMap, takeLast } from 'rxjs/operators';
 import { ExecptionContext, ExecptionFilter } from '../execptions';
 
 
@@ -95,6 +95,7 @@ export abstract class TransportServer<TRequest, TResponse, Tx extends TransportC
 
         const cancel = this.chain().handle(request, ctx)
             .pipe(
+                takeLast(1),
                 mergeMap(res => this.respond(res, ctx)),
                 catchError((err, caught) => {
                     // log error

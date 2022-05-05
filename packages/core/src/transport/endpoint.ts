@@ -99,10 +99,10 @@ export type MiddlewareType<T extends TransportContext = TransportContext> = Type
  * Interceptor Endpoint.
  */
 export class InterceptorEndpoint<TRequest, TResponse> implements Endpoint<TRequest, TResponse> {
-    constructor(private next: Endpoint<TRequest, TResponse>, private middleware: Interceptor<TRequest, TResponse>) { }
+    constructor(private next: Endpoint<TRequest, TResponse>, private interceptor: Interceptor<TRequest, TResponse>) { }
 
     handle(req: TRequest, context?: InvocationContext): Observable<TResponse> {
-        return this.middleware.intercept(req, this.next, context);
+        return this.interceptor.intercept(req, this.next, context);
     }
 }
 
@@ -150,7 +150,7 @@ export class MiddlewareBackend<TRequest, TResponse, Tx extends TransportContext>
     handle(req: TRequest, context: Tx): Observable<TResponse> {
         return this.backend.handle(req, context)
             .pipe(
-                switchMap(resp => {
+                mergeMap(resp => {
                     if (!this._middleware) {
                         this._middleware = compose(this.middlewares);
                     }

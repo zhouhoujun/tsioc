@@ -281,7 +281,7 @@ describe('app message queue', () => {
         expect(a.ok).toBeTruthy();
         expect(a.body).toBeDefined();
         expect(a.body.year).toStrictEqual(50);
-        expect(a.body.createAt).toEqual(new Date('2021-10-01'));
+        expect(new Date(a.body.createAt)).toEqual(new Date('2021-10-01'));
     })
 
     it('route with request body pipe throw missing argument err', async () => {
