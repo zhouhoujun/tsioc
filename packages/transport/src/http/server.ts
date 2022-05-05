@@ -1,7 +1,7 @@
 import { EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isFunction, isString, lang, tokenId, Type } from '@tsdi/ioc';
 import {
     TransportServer, EndpointBackend, CustomEndpoint, MiddlewareSet, BasicMiddlewareSet,
-    MiddlewareType, MiddlewareInst, Interceptor, ModuleRef, Router, 
+    MiddlewareType, MiddlewareInst, Interceptor, ModuleRef, Router,
 } from '@tsdi/core';
 import { Logger } from '@tsdi/logs';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
@@ -18,12 +18,15 @@ import { CorsMiddleware, CorsOptions, EncodeJsonMiddleware, HelmetMiddleware, Lo
 import { emptyStatus } from './status';
 import { isStream } from '../utils';
 import { BodyparserMiddleware } from '../middlewares/bodyparser';
+import { MimeDb, MimeSource } from '../mime';
+import { db } from './mimedb';
 
 
 export interface HttpOptions {
     majorVersion?: number;
     cors?: CorsOptions;
     timeout?: number;
+    mimeDb?: Record<string, MimeSource>;
     listenOptions?: ListenOptions;
     interceptors?: Type<Interceptor<HttpServRequest, HttpServResponse>>[];
     execptions?: Type<Interceptor>;
@@ -47,7 +50,7 @@ const httpOpts = {
     majorVersion: 2,
     options: { allowHTTP1: true },
     listenOptions: { port: 3000, host: LOCALHOST } as ListenOptions,
-
+    mimeDb: db,
     middlewares: [
         LogMiddleware,
         HelmetMiddleware,
@@ -90,6 +93,10 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
             this.options.listenOptions = { ...httpOpts.listenOptions, ...options.listenOptions };
         }
         this.context.setValue(HTTP_SERVEROPTIONS, this.options);
+        if (options.mimeDb) {
+            const mimedb = this.context.injector.get(MimeDb);
+            mimedb.from(options.mimeDb);
+        }
         const middlewares = (this.options.cors === false ? this.options.middlewares?.filter(f => f !== CorsMiddleware) : this.options.middlewares)?.map(m => {
             if (isFunction(m)) {
                 return { provide: HTTP_MIDDLEWARES, useClass: m, multi: true };
@@ -252,3 +259,5 @@ export class HttpMiddlewareSet extends BasicMiddlewareSet<HttpContext> {
         super(middlewares);
     }
 }
+
+

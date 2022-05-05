@@ -1,6 +1,6 @@
 import { ExecptionFilter, MiddlewareSet, Module, RouterModule, TransformModule, TransportContextFactory } from '@tsdi/core';
 import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
-import { MimeAdapter } from '../mime';
+import { BasicMimeDb, MimeAdapter, MimeDb } from '../mime';
 import { Negotiator } from '../negotiator';
 import { Http } from './clinet';
 import { HttpContextFactory } from './context';
@@ -22,6 +22,7 @@ import { HttpServer, HttpMiddlewareSet, HttpServerOptions, HTTP_SERVEROPTIONS } 
         { provide: MimeAdapter, useClass: HttpMimeAdapter },
         { provide: Negotiator, useClass: HttpNegotiator },
         { provide: HTTP_EXECPTION_FILTERS, useClass: HttpFinalizeFilter, multi: true },
+        { provide: MimeDb, useClass: BasicMimeDb, asDefault: true },
         HttpServer,
         Http
     ]

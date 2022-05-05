@@ -1,6 +1,9 @@
-import { Middleware, TransportContext } from '@tsdi/core';
-import { Injectable } from '@tsdi/ioc';
+import { HttpStatusCode, Middleware, TransportContext } from '@tsdi/core';
+import { Injectable, isNumber } from '@tsdi/ioc';
 import { Logger, LoggerManager } from '@tsdi/logs';
+import { ev } from '../consts';
+import { HttpError } from '../http';
+import { statusMessage } from '../http/status';
 
 @Injectable()
 export class LogMiddleware implements Middleware {
@@ -14,8 +17,16 @@ export class LogMiddleware implements Middleware {
         try {
             await next();
             logger.debug('<---------------', ctx.url, ctx.status);
-        } catch (err) {
-            logger.error('--------------->', ctx.url, ctx.status, err);
+        } catch (er) {
+            let err = er as HttpError;
+            let statusCode = (err.status || err.statusCode) as HttpStatusCode;
+
+            // ENOENT support
+            if (ev.ENOENT === err.code) statusCode = 404;
+
+            // default to 500
+            if (!isNumber(statusCode) || !statusMessage[statusCode]) statusCode = 500;
+            logger.error('--------------->', ctx.url, statusCode, err);
             throw err;
         }
     }

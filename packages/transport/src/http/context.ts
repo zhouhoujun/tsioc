@@ -1,6 +1,5 @@
-import { ApplicationContext, ExecptionHandlerMethodResolver, HttpStatusCode, Interceptor, MiddlewareInst, Protocol, TransportContext, TransportContextFactory } from '@tsdi/core';
-import { Injectable, Injector, InvokeArguments, isArray, isFunction, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
-import * as util from 'util';
+import { HttpStatusCode, Interceptor, MiddlewareInst, Protocol, TransportContext, TransportContextFactory } from '@tsdi/core';
+import { Injectable, Injector, InvokeArguments, isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import * as assert from 'assert';
 import * as http from 'http';
 import * as http2 from 'http2';
@@ -41,7 +40,7 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
     protected isSelf(token: Token) {
         return token === HttpContext || token === TransportContext;
     }
-    
+
     /**
      * Return the request socket.
      *
@@ -285,14 +284,14 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
         if (this.getHeader(hdr.TRANSFER_ENCODING) && !this.getHeader(hdr.CONTENT_LENGTH)) {
             return null;
         }
-        let ctype = this.getHeader(hdr.CONTENT_TYPE) as string;
+        const ctype = this.getHeader(hdr.CONTENT_TYPE) as string;
         if (!ctype) return false;
         const adapter = this.injector.get(MimeAdapter)
-        ctype = adapter.normalize(ctype);
-        if (!ctype) return false;
+        const normaled = adapter.normalize(ctype);
+        if (!normaled) return false;
 
         const types = isArray(type) ? type : [type];
-        return adapter.match(types, ctype);
+        return adapter.match(types, normaled);
     }
 
     isUpdate(): boolean {
@@ -411,7 +410,9 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
         if (!args.length) {
             return negotiator.mediaTypes();
         }
-        return lang.first(negotiator.mediaTypes(...args)) ?? false;
+        const mimeAdapter = this.resolve(MimeAdapter);
+        let medias = args.map(a => a.indexOf('/') === -1 ? mimeAdapter.lookup(a) : a).filter(a => isString(a)) as string[];
+        return lang.first(negotiator.mediaTypes(...medias)) ?? false;
     }
 
     /**
@@ -451,7 +452,7 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
         if (!charsets.length) {
             return negotiator.charsets();
         }
-        return  lang.first(negotiator.charsets(...charsets)) ?? false;
+        return lang.first(negotiator.charsets(...charsets)) ?? false;
     }
 
 
@@ -473,7 +474,7 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
         if (!langs.length) {
             return negotiator.languages();
         }
-        return  lang.first(negotiator.languages(...langs)) ?? false;
+        return lang.first(negotiator.languages(...langs)) ?? false;
     }
 
     /**
@@ -617,8 +618,10 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
      * @api public
      */
     set type(type: string) {
-        type = this.injector.get(MimeAdapter).contentType(type);
-        this.contentType = type;
+        let contentType = this.injector.get(MimeAdapter).contentType(type);
+        if (contentType) {
+            this.contentType = contentType;
+        }
     }
 
     /**

@@ -59,6 +59,10 @@ export namespace hdr {
 
     export const ACCEPT_CHARSET = 'accept-charset';
 
+    export const ACCEPT_ENCODING = 'accept-encoding';
+
+    export const ACCEPT_LANGUAGE = 'accept-language';
+
     /**
      * header Host
      */
