@@ -148,10 +148,10 @@ export class DefaultApplicationRunners extends ApplicationRunners {
 }
 
 export const DEFAULTA_PROVIDERS: ProviderType[] = [
-    { provide: ApplicationRunners, useClass: DefaultApplicationRunners, singleton: true },
+    { provide: ApplicationRunners, useClass: DefaultApplicationRunners, static: true },
     { provide: LifecycleHooksResolver, useValue: new ModuleLifecycleHooksResolver() },
     { provide: ModuleFactoryResolver, useValue: new DefaultModuleFactoryResolver() },
-    { provide: ApplicationFactory, useValue: new DefaultApplicationFactory() },
+    { provide: ApplicationFactory, useClass: DefaultApplicationFactory, static: true },
     {
         provide: ObservableParser,
         useValue: {

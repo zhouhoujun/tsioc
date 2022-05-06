@@ -18,7 +18,7 @@ export class LogMiddleware implements Middleware {
             await next();
             logger.info('<---------------', ctx.url, ctx.status);
         } catch (er) {
-            let err = er as HttpError;
+            let err = er as any;
             let statusCode = (err.status || err.statusCode) as HttpStatusCode;
 
             // ENOENT support

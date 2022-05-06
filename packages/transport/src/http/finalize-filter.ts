@@ -1,7 +1,6 @@
 import { ExecptionContext, ExecptionFilter, HttpStatusCode } from '@tsdi/core';
-import { Injectable, Injector, isFunction, isNumber, tokenId } from '@tsdi/ioc';
+import { Injectable, isFunction, isNumber } from '@tsdi/ioc';
 import { HttpError, InternalServerError } from './errors';
-import * as util from 'util';
 import { HttpContext } from './context';
 import { ctype, ev } from '../consts';
 import { statusMessage } from './status';
@@ -12,7 +11,7 @@ export class HttpFinalizeFilter implements ExecptionFilter {
 
     async handle(ctx: ExecptionContext, next: () => Promise<void>): Promise<any> {
         if (ctx.completed || !ctx.execption) return;
-        let err: HttpError;
+        let err: any;
         try {
             await next();
             if (ctx.completed) return;
@@ -21,12 +20,6 @@ export class HttpFinalizeFilter implements ExecptionFilter {
             err = new InternalServerError((er as Error).message);
         }
 
-        const isNativeError =
-            Object.prototype.toString.call(err) === '[object Error]' ||
-            err instanceof Error;
-        if (!isNativeError) {
-            err = new HttpError(500, util.format('non-error thrown: %j', err));
-        }
         const httpctx = ctx.getValue(HttpContext);
         let headerSent = false;
         if (httpctx.sent || !httpctx.writable) {
@@ -54,18 +47,20 @@ export class HttpFinalizeFilter implements ExecptionFilter {
 
         // force text/plain
         httpctx.contentType = ctype.TEXT_PLAIN;
-
         let statusCode = (err.status || err.statusCode) as HttpStatusCode;
+        let msg: string;
+        if (err instanceof HttpError) {
+            msg = err.message;
+        } else {
+            // ENOENT support
+            if (ev.ENOENT === err.code) statusCode = 404;
 
-        // ENOENT support
-        if (ev.ENOENT === err.code) statusCode = 404;
+            // default to 500
+            if (!isNumber(statusCode) || !statusMessage[statusCode]) statusCode = 500;
 
-        // default to 500
-        if (!isNumber(statusCode) || !statusMessage[statusCode]) statusCode = 500;
-
-        // respond
-        const code = statusMessage[statusCode];
-        const msg = err.expose ? err.message : code;
+            // respond
+            msg = statusMessage[statusCode];
+        }
         httpctx.status = statusCode;
         httpctx.length = Buffer.byteLength(msg);
         res.end(msg);

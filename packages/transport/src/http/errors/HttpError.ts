@@ -8,12 +8,9 @@ import { TransportError, HttpStatusCode } from '@tsdi/core';
  * @extends {Error}
  */
 export class HttpError extends TransportError {
-    headerSent?:boolean;
-    headers?: any;
-    code?: string;
-    expose?: boolean;
     constructor(status: HttpStatusCode, message?: string | string[]) {
         super(status, message);
+        Object.setPrototypeOf(this, HttpError.prototype);
     }
 
     toString() {

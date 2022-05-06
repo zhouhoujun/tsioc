@@ -57,7 +57,7 @@ const httpOpts = {
     options: { allowHTTP1: true },
     listenOptions: { port: 3000, host: LOCALHOST } as ListenOptions,
     mimeDb: db,
-    closeDelay: 100,
+    closeDelay: 500,
     middlewares: [
         LogMiddleware,
         HelmetMiddleware,
@@ -171,7 +171,7 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
             cancel?.unsubscribe();
         });
         req.once(ev.CLOSE, async () => {
-            await lang.delay(this.options.closeDelay ?? 100);
+            await lang.delay(this.options.closeDelay ?? 500);
             cancel?.unsubscribe();
             if (!ctx.sent) {
                 ctx.response.end();

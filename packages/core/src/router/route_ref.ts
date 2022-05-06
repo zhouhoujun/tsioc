@@ -165,6 +165,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         if (isDefined(result)) {
             ctx.body = result;
         } else {
+            ctx.body = {};
             ctx.ok = true;
         }
     }
@@ -177,7 +178,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     }
 
     protected getRouteMetaData(ctx: TransportContext) {
-        let subRoute = ctx.url.replace(this.path, '');
+        let subRoute = ctx.url.replace(this.path, '') || '/';
         if (!this.sortRoutes) {
             this.sortRoutes = this.reflect.class.methodDecors
                 .filter(m => m && isString((m.metadata as RouteMappingMetadata).route))

@@ -90,7 +90,8 @@ export class MockBootTest {
     declarations: [
         UserController,
         RoleController
-    ]
+    ],
+    bootstrap: HttpServer
 })
 export class MockBootLoadTest {
 
@@ -118,7 +119,8 @@ export class MockBootLoadTest {
     providers: [
         UserController,
         RoleController
-    ]
+    ],
+    bootstrap: HttpServer
 })
 export class MockTransBootTest {
 

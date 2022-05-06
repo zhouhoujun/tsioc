@@ -3,7 +3,7 @@ import { After, Before, Suite, Test } from '@tsdi/unit';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { TypeOrmHelper } from '../src';
-import { MockBootLoadTest, MockTransBootTest } from './app';
+import { MockTransBootTest } from './app';
 import { Role, User } from './models/models';
 import { UserRepository } from './repositories/UserRepository';
 
@@ -11,7 +11,7 @@ import { UserRepository } from './repositories/UserRepository';
 @Suite()
 export class TransactionTest {
 
-    constructor(private ctx: ApplicationContext) { }
+    private ctx!: ApplicationContext;
 
     @Before()
     async beforeInit() {
@@ -31,6 +31,8 @@ export class TransactionTest {
         if (role1) await rrep.remove(role1);
         const role2 = await rrep.find({ where: { name: 'opter_2' } });
         if (role2) await rrep.remove(role2);
+
+        console.log('clean data');
     }
 
     @Test()
@@ -45,10 +47,16 @@ export class TransactionTest {
         rep.error && console.log(rep.error)
         expect(rep.status).toEqual(500);
         expect(rep.error).toBeDefined();
-        expect(rep.error?.message).toEqual('check');
+        expect(rep.error).toEqual('check');
         expect(rep.body).toBeNull();
 
-        const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users/test_111', { observe: 'response' }));
+        const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users/test_111', { observe: 'response' })
+            .pipe(
+                catchError((err, caught) => {
+                    this.ctx.getLogger().error(err);
+                    return of(err);
+                })
+            ));
         expect(rep2.status).toEqual(200);
         console.log('rep.body:', rep2.body);
         expect(rep2.body).not.toHaveProperty('id');
@@ -66,7 +74,7 @@ export class TransactionTest {
         rep.error && console.log(rep.error)
         expect(rep.status).toEqual(500);
         expect(rep.error).toBeDefined();
-        expect(rep.error?.message).toEqual('check');
+        expect(rep.error).toEqual('check');
         expect(rep.body).toBeNull();
 
         const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users/test_112', { observe: 'response' }));
@@ -113,7 +121,7 @@ export class TransactionTest {
         rep.error && console.log(rep.error)
         expect(rep.status).toEqual(500);
         expect(rep.error).toBeDefined();
-        expect(rep.error?.message).toEqual('check');
+        expect(rep.error).toEqual('check');
         expect(rep.body).toBeNull();
         // await lang.delay(100);
 
@@ -135,7 +143,7 @@ export class TransactionTest {
         rep.error && console.log(rep.error)
         expect(rep.status).toEqual(500);
         expect(rep.error).toBeDefined();
-        expect(rep.error?.message).toEqual('check');
+        expect(rep.error).toEqual('check');
         expect(rep.body).toBeNull();
         // await lang.delay(100);
 

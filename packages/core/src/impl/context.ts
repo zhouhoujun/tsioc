@@ -1,6 +1,6 @@
 import {
     Type, isFunction, ModuleMetadata, getClass, Injector, ProviderType,
-    DefaultInvocationContext, InvokeArguments, ArgumentError, EMPTY_OBJ
+    DefaultInvocationContext, InvokeArguments, ArgumentError, EMPTY_OBJ, Injectable
 } from '@tsdi/ioc';
 import { Logger, LoggerManager } from '@tsdi/logs';
 import { PROCESS_ROOT } from '../metadata/tk';
@@ -133,6 +133,7 @@ export class PayloadApplicationEvent<T = any> extends ApplicationEvent {
 /**
  * default application factory.
  */
+@Injectable()
 export class DefaultApplicationFactory extends ApplicationFactory {
 
     constructor() {

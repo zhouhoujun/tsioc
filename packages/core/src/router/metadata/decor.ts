@@ -6,7 +6,7 @@ import { PipeTransform } from '../../pipes/pipe';
 import { Middleware, MiddlewareFn } from '../../transport/endpoint';
 import { RequestMethod } from '../../transport/packet';
 import { CanActivate } from '../guard';
-import { joinprefix, RouteFactoryResolver } from '../route';
+import { joinprefix, normalize, RouteFactoryResolver } from '../route';
 import { MappingReflect, ProtocolRouteMappingMetadata, RouteMappingMetadata, Router } from '../router';
 import { HandleMetadata, HandleMessagePattern } from './meta';
 
@@ -127,14 +127,14 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
 
             if (isString(route)) {
                 const url = joinprefix(prefix, version, route);
-                const router = parent? injector.get(parent) : injector.get(Router);
+                const router = parent ? injector.get(parent) : injector.get(Router);
                 if (!(router instanceof Router)) {
                     throw new Error(lang.getClassName(router) + 'is not message router!');
                 }
                 const factory = injector.get(OperationFactoryResolver).resolve(reflect, injector);
                 injector.onDestroy(() => router.unuse(url));
 
-                router.use(url, (ctx, next)=> (factory.resolve() as Middleware).invoke(ctx, next));
+                router.use(url, (ctx, next) => (factory.resolve() as Middleware).invoke(ctx, next));
             }
             next();
         },
@@ -262,6 +262,7 @@ export interface RouteMapping {
 export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(name: string, controllerOnly?: boolean) {
     return createDecorator<T>(name, {
         props: (route: string, arg2?: Type<Router> | Type<CanActivate>[] | string | T) => {
+            route = normalize(route);
             if (isArray(arg2)) {
                 return { route, guards: arg2 } as T;
             } else if (!controllerOnly && isString(arg2)) {
@@ -579,6 +580,7 @@ export interface RouteMethodDecorator {
     }): MethodDecorator;
 }
 
+
 /**
  * create route decorator.
  *
@@ -592,7 +594,10 @@ export function createRouteDecorator(method: RequestMethod) {
         props: (
             route: string,
             arg2?: string | { protocol?: string, middlewares: (Middleware | MiddlewareFn)[], guards?: Type<CanActivate>[], contentType?: string, method?: string }
-        ) => (isString(arg2) ? { route, contentType: arg2 } : { route, ...arg2, method }) as ProtocolRouteMappingMetadata
+        ) => {
+            route = normalize(route);
+            return (isString(arg2) ? { route, contentType: arg2, method } : { route, ...arg2, method }) as ProtocolRouteMappingMetadata
+        }
     });
 }
 

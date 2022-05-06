@@ -12,7 +12,7 @@ import { TypeormRepositoryArgumentResolver, TypeormTransactionResolver } from '.
         TypeormServer,
         TypeOrmHelper,
         ParseObjectIdPipe,
-        { provide: RepositoryArgumentResolver, useClass: TypeormRepositoryArgumentResolver, singleton: true },
+        { provide: RepositoryArgumentResolver, useClass: TypeormRepositoryArgumentResolver, static: true },
         { provide: TransactionResolver, useClass: TypeormTransactionResolver },
         { provide: TransactionManager, useClass: TypeormTransactionManager }
     ]
