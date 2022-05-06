@@ -12,6 +12,7 @@ import { CONTENT_DISPOSITION } from './content';
 import { ev, ctype, hdr } from '../consts';
 import { MimeAdapter } from '../mime';
 import { Negotiator } from '../negotiator';
+import { HttpError, InternalServerError } from './errors';
 
 
 
@@ -1089,7 +1090,11 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
     throwError(message: string): Error;
     throwError(error: Error): Error;
     throwError(status: any, message?: any): Error {
-        throw new Error('Method not implemented.');
+        if (isString(status)) {
+            return new InternalServerError(status);
+        } else {
+            return new HttpError(status, message);
+        }
     }
 
 
