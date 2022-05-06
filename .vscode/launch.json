@@ -20,7 +20,7 @@
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
+            
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         },
@@ -40,7 +40,7 @@
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
+            
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         },
@@ -60,7 +60,7 @@
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
+            
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         },
@@ -80,7 +80,7 @@
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
+            
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         },
@@ -100,7 +100,7 @@
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
+            
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         },
@@ -120,7 +120,7 @@
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
+            
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         },
@@ -140,7 +140,7 @@
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
+            
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         },
@@ -160,7 +160,7 @@
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
+            
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         },
@@ -180,7 +180,7 @@
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
+            
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         },
@@ -200,7 +200,7 @@
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
+            
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         },
@@ -220,7 +220,7 @@
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
+            
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         },
@@ -240,7 +240,7 @@
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
+            
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         },
@@ -260,7 +260,7 @@
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
+            
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         },
@@ -280,7 +280,7 @@
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
+            
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         },
@@ -300,7 +300,7 @@
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
+            
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         },
@@ -320,7 +320,7 @@
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
+            
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         },
@@ -340,7 +340,7 @@
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
+            
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         },
@@ -360,7 +360,7 @@
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
+            
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         },
@@ -380,7 +380,7 @@
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
+            
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         },
@@ -400,7 +400,7 @@
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
+            
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         },
@@ -420,7 +420,7 @@
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
+            
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         },
@@ -440,7 +440,7 @@
             ],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
+            
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         }
