@@ -1093,7 +1093,10 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
         if (isString(status)) {
             return new InternalServerError(status);
         } else {
-            return new HttpError(status, message);
+            if (!statusMessage[status as HttpStatusCode]) {
+                status = 500;
+            }
+            return new HttpError(status, message ?? statusMessage[status as HttpStatusCode]);
         }
     }
 
