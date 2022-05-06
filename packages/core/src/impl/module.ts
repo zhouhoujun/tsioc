@@ -3,7 +3,7 @@ import {
     DefaultInjector, Injector, InjectorScope, ModuleWithProviders, refl, isFunction,
     Platform, ModuleReflect, processInjectorType, Token, Type, lang,
     LifecycleHooksResolver, LifecycleHooks, DestroyLifecycleHooks, OperationFactoryResolver,
-    DefaultOperationFactoryResolver, isPlainObject, isArray, EMPTY_OBJ
+    DefaultOperationFactoryResolver, isPlainObject, isArray, EMPTY_OBJ, isClass
 } from '@tsdi/ioc';
 import { Subscription } from 'rxjs';
 import { ApplicationEventMulticaster } from '../events';
@@ -98,16 +98,12 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         const platform = this.platform();
         const stk: Type[] = [];
         lang.deepForEach(args, ty => {
-            if (isFunction(ty)) {
-                const mdref = refl.get<ModuleReflect>(ty);
-                if (mdref) {
-                    types.push(ty);
-                    this.registerReflect(platform, mdref, { injectorType: mdref.module });
-
-                }
+            if (isClass(ty)) {
+                types.push(ty);
+                this.processInjectorType(platform, ty, stk);
             } else if (isFunction(ty.module) && isArray(ty.providers)) {
                 types.push(ty.module);
-                this.processInjectorType(platform, ty, stk, this.moduleReflect);
+                this.processInjectorType(platform, ty, stk);
             }
         }, v => isPlainObject(v) && !(isFunction(v.module) && isArray(v.providers)));
         return types;

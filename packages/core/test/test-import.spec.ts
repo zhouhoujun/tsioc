@@ -3,7 +3,7 @@ import expect = require('expect');
 import { catchError, lastValueFrom, Observable, of, throwError } from 'rxjs';
 import * as net from 'net';
 import { ModuleA, ModuleB, ClassSevice, SocketService, StatupModule, TestService } from './demo';
-import { Application, HttpClient, HttpClientModule, LoggerModule, Router, RunnableFactory, RunnableFactoryResolver } from '../src';
+import { Application, HttpClient, HttpClientModule, LoggerModule } from '../src';
 import { HttpModule, HttpServer } from '@tsdi/transport';
 
 
@@ -22,6 +22,7 @@ describe('di module', () => {
 
 
     it('message test.', async () => {
+
         let ctx = await Application.run({
             module: ModuleB,
             uses: [

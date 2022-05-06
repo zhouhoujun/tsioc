@@ -748,7 +748,6 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
             this.onDestroy(() => {
                 if (val instanceof Readable) val.destroy();
             });
-            // onFinish(this.response, destroy.bind(null, val));
             if (original != val) {
                 val.once('error', err => {
                     throw err;
