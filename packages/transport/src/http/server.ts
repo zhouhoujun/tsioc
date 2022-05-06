@@ -152,15 +152,6 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
             server.on(ev.ERROR, (err) => {
                 this.logger.error(err);
             });
-            // server.on(ev.STREAM, (stream, headers, flags) => {
-            //     //todo stream.
-            //     stream.respond({
-            //         'content-type': 'application/json; charset=utf-8',
-            //         ':status': 200
-            //     });
-            //     stream.write(JSON.stringify({ name: 'ss' }));
-            //     stream.end();
-            // });
         } else {
             const option = options.options ?? EMPTY_OBJ;
             cert = option.cert;
