@@ -15,7 +15,7 @@ export interface HttpInterceptor extends Interceptor<HttpRequest, HttpEvent> {
      * @param next route handler.
      * @param context request with context for interceptor
      */
-    intercept(req: HttpRequest, next: HttpHandler, context?: InvocationContext): Observable<HttpEvent>;
+    intercept(req: HttpRequest, next: HttpHandler, context: InvocationContext): Observable<HttpEvent>;
 }
 
 
@@ -40,7 +40,7 @@ export class HttpInterceptingHandler implements HttpHandler {
 
     constructor(private backend: HttpBackend, private injector: Injector) { }
 
-    handle(req: HttpRequest, context?: InvocationContext): Observable<HttpEvent> {
+    handle(req: HttpRequest, context: InvocationContext): Observable<HttpEvent> {
         if (!this.chain) {
             const interceptors = this.injector.get(HTTP_INTERCEPTORS);
             this.chain = interceptors.reduceRight(
@@ -52,7 +52,7 @@ export class HttpInterceptingHandler implements HttpHandler {
 
 @Injectable()
 export class NoopInterceptor implements HttpInterceptor {
-    intercept(req: HttpRequest<any>, next: HttpHandler, context?: InvocationContext): Observable<HttpEvent> {
+    intercept(req: HttpRequest<any>, next: HttpHandler, context: InvocationContext): Observable<HttpEvent> {
         return next.handle(req, context);
     }
 }

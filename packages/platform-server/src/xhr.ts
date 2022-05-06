@@ -40,7 +40,7 @@ export class HttpClientBackend implements HttpBackend {
 
   }
 
-  handle(req: HttpRequest<any>, context?: InvocationContext): Observable<HttpEvent<any>> {
+  handle(req: HttpRequest<any>, context: InvocationContext): Observable<HttpEvent<any>> {
     return new Observable(observer => process.nextTick(() => {
       let request: HttpRequest;
       if (!isAbsoluteUrl.test(req.url)) {

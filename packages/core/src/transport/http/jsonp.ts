@@ -242,7 +242,7 @@ export class JsonpInterceptor {
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    intercept(req: HttpRequest<any>, next: HttpHandler, context?: InvocationContext): Observable<HttpEvent<any>> {
+    intercept(req: HttpRequest<any>, next: HttpHandler, context: InvocationContext): Observable<HttpEvent<any>> {
         if (req.method === 'JSONP') {
             return this.jsonp.handle(req as HttpRequest<never>, context);
         }

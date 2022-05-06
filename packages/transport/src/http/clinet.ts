@@ -1,6 +1,6 @@
 import { Abstract, EMPTY, EMPTY_OBJ, Inject, Injectable, Injector, InvocationContext, isFunction, isString, lang, Nullable, tokenId, Type } from '@tsdi/ioc';
-import { InterceptorChain, Endpoint, Interceptor, InterceptorFn, RequestMethod, TransportClient, EndpointBackend, HttpRequest, HttpResponse, HttpEvent, OnDispose } from '@tsdi/core';
-import { Observable } from 'rxjs';
+import { InterceptorChain, Endpoint, Interceptor, InterceptorFn, RequestMethod, TransportClient, EndpointBackend, HttpRequest, HttpResponse, HttpEvent, OnDispose, CustomEndpoint } from '@tsdi/core';
+import { Observable, of } from 'rxjs';
 import { Logger } from '@tsdi/logs';
 import * as http from 'http';
 import * as https from 'https';
@@ -9,8 +9,6 @@ import { Socket } from 'net';
 import { TLSSocket } from 'tls';
 import { ev } from '../consts';
 
-
-// export type HttpRequest = http.ClientRequest | http2.ClientHttp2Stream;
 
 // export type HttpResponse = http
 
@@ -24,7 +22,6 @@ export const HTTP_SESSIONOPTIONS = tokenId<HttpSessionOptions>('HTTP_SESSIONOPTI
 
 @Abstract()
 export abstract class HttpClientOptions {
-    abstract get majorVersion(): number;
     abstract get interceptors(): Type<Interceptor<HttpRequest, HttpEvent>>[] | undefined;
     abstract get options(): HttpSessionOptions | undefined;
 }
@@ -34,6 +31,7 @@ export interface HttpRequestOptions {
     method?: RequestMethod | undefined;
     headers?: any;
     params?: any;
+    majorVersion?: number;
     observe?: 'body' | 'events' | 'response' | undefined;
     reportProgress?: boolean | undefined;
     responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | undefined;
@@ -46,7 +44,7 @@ export interface HttpRequestOptions {
 @Injectable()
 export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOptions> implements OnDispose {
 
-    private _backend!: EndpointBackend<HttpRequest, HttpEvent>;
+    private _backend?: EndpointBackend<HttpRequest, HttpEvent>;
     private http2s: Map<string, http2.ClientHttp2Session>;
 
     constructor(
@@ -68,8 +66,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         return this.context.get(HTTP_CLIENT_INTERCEPTORS) ?? EMPTY
     }
 
-    getBackend(): EndpointBackend<HttpRequest, HttpResponse> {
-        throw new Error('Method not implemented.');
+    getBackend(): EndpointBackend<HttpRequest, HttpEvent> {
+        if(!this._backend) {
+            this._backend = new CustomEndpoint((req, ctx)=> {
+                return of(new HttpResponse());
+            });
+        }
+        return this._backend!;
     }
 
     protected async buildRequest(ctx: InvocationContext, url: string | HttpRequest, options?: HttpRequestOptions): Promise<HttpRequest> {

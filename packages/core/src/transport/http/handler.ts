@@ -14,7 +14,7 @@ export abstract class HttpHandler implements Endpoint<HttpRequest, HttpEvent> {
      * @param req http request input.
      * @param context request with context for interceptor
      */
-    abstract handle(req: HttpRequest, context?: InvocationContext): Observable<HttpEvent>;
+    abstract handle(req: HttpRequest, context: InvocationContext): Observable<HttpEvent>;
 }
 
 /**
@@ -27,7 +27,7 @@ export abstract class HttpBackend implements EndpointBackend<HttpRequest, HttpEv
      * @param req http request input.
      * @param context request with context for interceptor
      */
-    abstract handle(req: HttpRequest, context?: InvocationContext): Observable<HttpEvent>;
+    abstract handle(req: HttpRequest, context: InvocationContext): Observable<HttpEvent>;
 }
 
 /**

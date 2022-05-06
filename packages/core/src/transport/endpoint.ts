@@ -13,7 +13,7 @@ export interface Endpoint<TRequest, TResponse> {
      * @param req request input.
      * @param context request context.
      */
-    handle(req: TRequest, context?: InvocationContext): Observable<TResponse>;
+    handle(req: TRequest, context: InvocationContext): Observable<TResponse>;
 }
 
 export type EndpointFn<TRequest, TResponse> = (req: TRequest, context?: InvocationContext) => Observable<TResponse>;
@@ -34,7 +34,7 @@ export abstract class EndpointBackend<TRequest, TResponse> implements Endpoint<T
      * @param req request input.
      * @param context request context.
      */
-    abstract handle(req: TRequest, context?: InvocationContext): Observable<TResponse>;
+    abstract handle(req: TRequest, context: InvocationContext): Observable<TResponse>;
 }
 
 /**
@@ -119,7 +119,7 @@ export class InterceptorChain<TRequest, TResponse> implements Endpoint<TRequest,
         this.backend = isFunction(backend) ? { handle: backend } : backend;
     }
 
-    handle(req: TRequest, context?: InvocationContext): Observable<TResponse> {
+    handle(req: TRequest, context: InvocationContext): Observable<TResponse> {
         if (!this.chain) {
             this.chain = this.interceptors.reduceRight(
                 (next, inteceptor) => new InterceptorEndpoint(next, inteceptor), this.backend);
