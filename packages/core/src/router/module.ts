@@ -9,11 +9,11 @@ import { ExecptionModule } from '../execptions';
  * Middleware module.
  */
 @Module({
-    imports:[
+    imports: [
         ExecptionModule
     ],
     providers: [
-        { provide: Router, useValue: new MappingRouter() },
+        { provide: Router, useClass: MappingRouter, static: true },
         { provide: RouteFactoryResolver, useValue: new DefaultRouteFactoryResovler() }
     ]
 })

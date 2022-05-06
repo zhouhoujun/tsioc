@@ -602,6 +602,7 @@ export function generateRecord<T>(platfrom: Platform, injector: Injector, provid
     let value: T | undefined;
     let fnType = FnType.Fac;
     let type = provider.useClass;
+    let isStatic = provider.static;
     let deps = computeDeps(provider);
     if (isDefined(provider.useValue)) {
         value = provider.useValue;
@@ -631,7 +632,7 @@ export function generateRecord<T>(platfrom: Platform, injector: Injector, provid
             }
         }
     }
-    return { value, fn, fnType, deps, type };
+    return { value, fn, fnType, deps, type, isStatic };
 }
 
 function computeDeps(provider: StaticProviders): DependencyRecord[] {
@@ -700,10 +701,10 @@ export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, rec
         if (isDef && token !== Injector && token !== INJECTOR && rd && rd.fn !== IDENT && rd.fn !== MUTIL && lifecycle && isTypeObject(value)) {
             lifecycle.register(value);
         }
-        if (isStatic && isDef) {
-            if (rd) {
+        if (isDef) {
+            if (rd && (isStatic || rd.isStatic)) {
                 rd.value = value;
-            } else {
+            } else if (isStatic) {
                 records.set(token, { value });
             }
         }

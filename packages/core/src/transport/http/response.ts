@@ -223,7 +223,6 @@ export abstract class HttpResponseBase {
  */
 export class HttpHeaderResponse extends HttpResponseBase {
 
-    readonly body = null;
     /**
      * Create a new `HttpHeaderResponse` with the given parameters.
      */
@@ -281,7 +280,7 @@ export class HttpResponse<T = any> extends HttpResponseBase {
         url?: string;
     } = {}) {
         super(init);
-        this.body = init.body !== undefined ? init.body : null;
+        this.body = init.body !== undefined ? init.body : null!;
     }
 
     override readonly type: HttpEventType.Response = HttpEventType.Response;

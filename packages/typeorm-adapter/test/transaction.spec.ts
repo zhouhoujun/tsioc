@@ -1,9 +1,9 @@
-import { Application, ApplicationContext } from '@tsdi/core';
+import { Application, ApplicationContext, HttpClient } from '@tsdi/core';
 import { After, Before, Suite, Test } from '@tsdi/unit';
 import expect = require('expect');
-import { lastValueFrom } from 'rxjs';
+import { catchError, lastValueFrom, of } from 'rxjs';
 import { TypeOrmHelper } from '../src';
-import { MockBootLoadTest } from './app';
+import { MockBootLoadTest, MockTransBootTest } from './app';
 import { Role, User } from './models/models';
 import { UserRepository } from './repositories/UserRepository';
 
@@ -16,7 +16,7 @@ export class TransactionTest {
     @Before()
     async beforeInit() {
         this.ctx = await Application.run({
-            module: MockBootLoadTest,
+            module: MockTransBootTest,
             baseURL: __dirname
         });
 
@@ -27,119 +27,144 @@ export class TransactionTest {
         const u2 = await urep.findByAccount('post_test');
         if (u2) await urep.remove(u2);
         const rrep = await this.ctx.injector.get(TypeOrmHelper).getRepository(Role);
-        const role1 = await rrep.find({ where: {name: 'opter_1'}});
-        if(role1) await rrep.remove(role1);
-        const role2 = await rrep.find({ where: {name: 'opter_2'}});
-        if(role2)  await rrep.remove(role2);
+        const role1 = await rrep.find({ where: { name: 'opter_1' } });
+        if (role1) await rrep.remove(role1);
+        const role2 = await rrep.find({ where: { name: 'opter_2' } });
+        if (role2) await rrep.remove(role2);
     }
 
     @Test()
     async postRolebackUser() {
-        const rep = await lastValueFrom(this.ctx.send('/users', { method: 'POST', body: { name: 'test_111', account: 'test_111', password: '111111' }, query: { check: true } }));
+        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).post<User>('/users', { name: 'test_111', account: 'test_111', password: '111111' }, { observe: 'response', params: { check: true } })
+            .pipe(
+                catchError((err, caught) => {
+                    this.ctx.getLogger().error(err);
+                    return of(err);
+                })
+            ));
         rep.error && console.log(rep.error)
         expect(rep.status).toEqual(500);
         expect(rep.error).toBeDefined();
         expect(rep.error?.message).toEqual('check');
-        expect(rep.body).not.toBeInstanceOf(User);
-        
-        const rep2 = await lastValueFrom(this.ctx.send('/users/test_111', { method: 'GET' }));
+        expect(rep.body).toBeNull();
+
+        const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users/test_111', { observe: 'response' }));
         expect(rep2.status).toEqual(200);
         console.log('rep.body:', rep2.body);
-        expect(rep2.body).not.toBeInstanceOf(User);
+        expect(rep2.body).not.toHaveProperty('id');
     }
 
     @Test()
     async postRolebackUser2() {
-        const rep = await lastValueFrom(this.ctx.send('/users/save', { method: 'POST', body: { name: 'test_112', account: 'test_112', password: '111111' }, query: { check: true } }));
+        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).post<User>('/users/save', { name: 'test_112', account: 'test_112', password: '111111' }, { observe: 'response', params: { check: true } })
+            .pipe(
+                catchError((err, caught) => {
+                    this.ctx.getLogger().error(err);
+                    return of(err);
+                })
+            ));
         rep.error && console.log(rep.error)
         expect(rep.status).toEqual(500);
         expect(rep.error).toBeDefined();
         expect(rep.error?.message).toEqual('check');
-        expect(rep.body).not.toBeInstanceOf(User);
+        expect(rep.body).toBeNull();
 
-        const rep2 = await lastValueFrom(this.ctx.send('/users/test_112', { method: 'GET' }));
+        const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users/test_112', { observe: 'response' }));
         expect(rep2.status).toEqual(200);
         console.log('rep.body:', rep2.body);
-        expect(rep2.body).not.toBeInstanceOf(User);
+        expect(rep2.body).not.toHaveProperty('id');
     }
 
     @Test()
     async postCommitUser() {
-        const rep = await lastValueFrom(this.ctx.send('/users', { method: 'POST', body: { name: 'post_test', account: 'post_test', password: '111111' } }));
+        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).post<User>('/users', { name: 'post_test', account: 'post_test', password: '111111' }, { observe: 'response' }));
         rep.error && console.log(rep.error)
         expect(rep.status).toEqual(200);
-        expect(rep.body).toBeInstanceOf(User);
-        expect(rep.body.name).toEqual('post_test');
+        expect(rep.body).toBeDefined();
+        expect(rep.body?.name).toEqual('post_test');
         // await lang.delay(100);
-        
-        const rep2 = await lastValueFrom(this.ctx.send('/users/post_test', { method: 'GET' }));
+
+        const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users/post_test', { observe: 'response' }));
         expect(rep2.status).toEqual(200);
-        expect(rep2.body).toBeInstanceOf(User);
-        expect(rep2.body.account).toEqual('post_test');
+        expect(rep2.body).toBeDefined();
+        expect(rep2.body?.account).toEqual('post_test');
     }
 
     @Test()
     async clearUser() {
-        const rep1 = await lastValueFrom(this.ctx.send('/users/post_test', { method: 'GET' }));
+        const rep1 = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users/post_test', { observe: 'response' }));
         expect(rep1.status).toEqual(200);
-        expect(rep1.body).toBeInstanceOf(User);
-        const rep = await lastValueFrom(this.ctx.send('/users/' + rep1.body.id, { method: 'DELETE' }));
+        expect(rep1.body).toBeDefined();
+        expect(rep1.body?.id).toBeDefined();
+        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).delete('/users/' + rep1.body?.id, { observe: 'response' }));
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeTruthy();
     }
 
     @Test()
     async postRolebackRole() {
-        const rep = await lastValueFrom(this.ctx.send('/roles', { method: 'POST', body: { name: 'opter_1' }, query: { check: true } }));
+        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).post<Role>('/roles', { name: 'opter_1' }, { observe: 'response', params: { check: true } })
+            .pipe(
+                catchError((err, caught) => {
+                    this.ctx.getLogger().error(err);
+                    return of(err);
+                })
+            ));
         rep.error && console.log(rep.error)
         expect(rep.status).toEqual(500);
         expect(rep.error).toBeDefined();
         expect(rep.error?.message).toEqual('check');
-        expect(rep.body).not.toBeInstanceOf(Role);
+        expect(rep.body).toBeNull();
         // await lang.delay(100);
 
-        const rep2 = await lastValueFrom(this.ctx.send('/roles/opter_1', { method: 'GET' }));
+        const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get<Role>('/roles/opter_1', { observe: 'response' }));
         expect(rep2.status).toEqual(200);
         console.log('rep.body:', rep2.body);
-        expect(rep2.body).not.toBeInstanceOf(Role);
+        expect(rep2.body).not.toHaveProperty('id');
     }
 
     @Test()
     async postRolebackRole2() {
-        const rep = await lastValueFrom(this.ctx.send('/roles/save2', { method: 'POST', body: { name: 'opter_2' }, query: { check: true } }));
+        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).post<Role>('/roles/save2', { name: 'opter_2' }, { observe: 'response', params: { check: true } })
+            .pipe(
+                catchError((err, caught) => {
+                    this.ctx.getLogger().error(err);
+                    return of(err);
+                })
+            ));
         rep.error && console.log(rep.error)
         expect(rep.status).toEqual(500);
         expect(rep.error).toBeDefined();
         expect(rep.error?.message).toEqual('check');
-        expect(rep.body).not.toBeInstanceOf(Role);
+        expect(rep.body).toBeNull();
         // await lang.delay(100);
 
-        const rep2 = await lastValueFrom(this.ctx.send('/roles/opter_2', { method: 'GET' }));
+        const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get<Role>('/roles/opter_2', { observe: 'response' }));
         expect(rep2.status).toEqual(200);
         console.log('rep.body:', rep2.body);
-        expect(rep2.body).not.toBeInstanceOf(Role);
+        expect(rep2.body).not.toHaveProperty('id');
     }
 
     @Test()
     async postCommitRole() {
-        const rep = await lastValueFrom(this.ctx.send('/roles', { method: 'POST', body: { name: 'opter' } }));
+        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).post<Role>('/roles', { name: 'opter' }, { observe: 'response' }));
         rep.error && console.log(rep.error)
         expect(rep.status).toEqual(200);
-        expect(rep.body).toBeInstanceOf(Role);
-        expect(rep.body.name).toEqual('opter');
-        
-        const rep2 = await lastValueFrom(this.ctx.send('/roles/opter', { method: 'GET' }));
+        expect(rep.body).toBeDefined();
+        expect(rep.body?.name).toEqual('opter');
+
+        const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get<Role>('/roles/opter', { observe: 'response' }));
         expect(rep2.status).toEqual(200);
-        expect(rep2.body).toBeInstanceOf(Role);
-        expect(rep2.body.name).toEqual('opter');
+        expect(rep2.body).toBeDefined();
+        expect(rep2.body?.name).toEqual('opter');
     }
 
     @Test()
     async clearRole() {
-        const rep1 = await lastValueFrom(this.ctx.send('/roles/opter', { method: 'GET' }));
+        const rep1 = await lastValueFrom(this.ctx.resolve(HttpClient).get<Role>('/roles/opter', { observe: 'response' }));
         expect(rep1.status).toEqual(200);
-        expect(rep1.body).toBeInstanceOf(Role);
-        const rep = await lastValueFrom(this.ctx.send('/roles/' + rep1.body.id, { method: 'DELETE' }));
+        expect(rep1.body).toHaveProperty('id');
+        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).delete('/roles/' + rep1.body?.id, { observe: 'response' }));
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeTruthy();
     }

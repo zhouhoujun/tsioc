@@ -13,6 +13,10 @@ export interface ProvideProvider<T = any> {
      */
     provide: Token<T>;
     /**
+     * is static value for provide.
+     */
+    static?: boolean;
+    /**
      * provide multi or not.
      */
     multi?: boolean;

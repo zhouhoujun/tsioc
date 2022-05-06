@@ -79,7 +79,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
                 let endpoints = this.getRouteMiddleware(ctx, method)?.map(c => this.parse(c)) ?? [];
                 endpoints.push(async (c, n) => {
                     await this.response(c, method);
-                    return await n();
+                    // return await n();
                 });
                 endpoint = chain(endpoints);
                 this._endpoints.set(key, endpoint);

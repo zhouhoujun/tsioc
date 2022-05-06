@@ -627,6 +627,11 @@ export interface FactoryRecord<T = any> {
     type?: Type<T>;
 
     /**
+     * is static for fn create once.
+     */
+     isStatic?: boolean;
+
+    /**
      * cache value.
      */
     cache?: T;

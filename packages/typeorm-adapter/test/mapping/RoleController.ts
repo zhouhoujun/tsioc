@@ -1,9 +1,9 @@
-import { RouteMapping, DBRepository, Transactional, RequestParam } from '@tsdi/core';
+import { RouteMapping, DBRepository, Transactional, RequestParam, Controller, Post, Put, Get, Delete } from '@tsdi/core';
 import { Log, Logger } from '@tsdi/logs';
 import { Repository } from 'typeorm';
 import { Role } from '../models/models';
 
-@RouteMapping('/roles')
+@Controller('/roles')
 export class RoleController {
 
     constructor(@DBRepository(Role) private repo: Repository<Role>, @Log() private logger: Logger) {
@@ -11,8 +11,8 @@ export class RoleController {
     }
 
     @Transactional()
-    @RouteMapping('/', 'POST')
-    @RouteMapping('/', 'PUT')
+    @Post('/')
+    @Put('/')
     async save(role: Role, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(role);
         console.log('save isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
@@ -23,8 +23,8 @@ export class RoleController {
     }
 
     @Transactional()
-    @RouteMapping('/save2', 'POST')
-    @RouteMapping('/save2', 'PUT')
+    @Post('/save2')
+    @Put('/save2')
     async save2(role: Role, @DBRepository(Role) roleRepo: Repository<Role>, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(role);
         console.log('save2 isTransactionActive:', roleRepo.queryRunner?.isTransactionActive);
@@ -35,7 +35,7 @@ export class RoleController {
     }
 
 
-    @RouteMapping('/:name', 'GET')
+    @Get('/:name')
     async getRole(name: string) {
         this.logger.log('name:', name);
         console.log('getRole isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
@@ -44,7 +44,7 @@ export class RoleController {
 
 
     @Transactional()
-    @RouteMapping('/:id', 'DELETE')
+    @Delete('/:id')
     async del(id: string) {
         this.logger.log('id:', id);
         console.log('del isTransactionActive:', this.repo.queryRunner?.isTransactionActive);

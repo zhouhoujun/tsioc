@@ -1,11 +1,13 @@
-import { Module, ConnectionOptions, TransactionModule } from '@tsdi/core';
+import { Module, ConnectionOptions, TransactionModule, LoggerModule, HttpClientModule } from '@tsdi/core';
 import { LogModule } from '@tsdi/logs';
-import { ServerModule } from '@tsdi/platform-server';
+import { ServerHttpClientModule, ServerModule } from '@tsdi/platform-server';
+import { HttpModule, HttpServer } from '@tsdi/transport';
 import { Connection } from 'typeorm';
 import { TypeOrmModule } from '../src';
 import { Role, User } from './models/models';
 import { UserController } from './mapping/UserController';
 import { RoleController } from './mapping/RoleController';
+import { UserRepository } from './repositories/UserRepository';
 
 
 
@@ -39,20 +41,29 @@ export const option = {
 @Module({
     // baseURL: __dirname,
     imports: [
-        LogModule,
         ServerModule,
+        LoggerModule,
+        HttpModule.withOption({
+            majorVersion: 1
+        }),
+        HttpClientModule,
+        ServerHttpClientModule,
         TypeOrmModule.withConnection({
             ...option,
             entities: [
                 Role,
                 User
+            ],
+            repositories: [
+                UserRepository
             ]
         })
     ],
     declarations: [
         UserController,
         RoleController
-    ]
+    ],
+    bootstrap: HttpServer
 })
 export class MockBootTest {
 
@@ -62,11 +73,17 @@ export class MockBootTest {
 @Module({
     baseURL: __dirname,
     imports: [
-        LogModule,
         ServerModule,
+        LoggerModule,
+        HttpModule.withOption({
+            majorVersion: 1
+        }),
+        HttpClientModule,
+        ServerHttpClientModule,
+        TransactionModule,
         TypeOrmModule.withConnection({
             ...option,
-            models: ['./models/**/*.ts'],
+            entities: ['./models/**/*.ts'],
             repositories: ['./repositories/**/*.ts']
         })
     ],
@@ -84,12 +101,17 @@ export class MockBootLoadTest {
 @Module({
     // baseURL: __dirname,
     imports: [
-        LogModule,
         ServerModule,
+        LoggerModule,
+        HttpModule.withOption({
+            majorVersion: 1
+        }),
+        HttpClientModule,
+        ServerHttpClientModule,
         TransactionModule,
         TypeOrmModule.withConnection({
             ...option,
-            models: ['./models/**/*.ts'],
+            entities: ['./models/**/*.ts'],
             repositories: ['./repositories/**/*.ts']
         })
     ],

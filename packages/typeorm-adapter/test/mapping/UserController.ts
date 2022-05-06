@@ -1,10 +1,10 @@
-import { Repository, RequestParam, RouteMapping, Transactional } from '@tsdi/core';
+import { Controller, Delete, Get, Post, Put, Repository, RequestParam, RouteMapping, Transactional } from '@tsdi/core';
 import { lang } from '@tsdi/ioc';
 import { Log, Logger } from '@tsdi/logs';
 import { User } from '../models/models';
 import { UserRepository } from '../repositories/UserRepository';
 
-@RouteMapping('/users')
+@Controller('/users')
 export class UserController {
 
     // @Inject() injector!: Injector;
@@ -15,15 +15,15 @@ export class UserController {
     }
 
 
-    @RouteMapping('/:name', 'GET')
+    @Get('/:name')
     getUser(name: string) {
         this.logger.log('name:', name);
         return this.usrRep.findByAccount(name);
     }
 
     @Transactional()
-    @RouteMapping('/', 'POST')
-    @RouteMapping('/', 'PUT')
+    @Post('/')
+    @Put('/')
     async modify(user: User, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(lang.getClassName(this.usrRep), user);
         let val = await this.usrRep.save(user);
@@ -33,8 +33,8 @@ export class UserController {
     }
 
     @Transactional()
-    @RouteMapping('/save', 'POST')
-    @RouteMapping('/save', 'PUT')
+    @Post('/save')
+    @Put('/save')
     async modify2(user: User, @Repository() userRepo: UserRepository, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(lang.getClassName(this.usrRep), user);
         let val = await userRepo.save(user);
@@ -44,7 +44,7 @@ export class UserController {
     }
 
     @Transactional()
-    @RouteMapping('/:id', 'DELETE')
+    @Delete('/:id')
     async del(id: string) {
         this.logger.log('id:', id);
         await this.usrRep.delete(id);
