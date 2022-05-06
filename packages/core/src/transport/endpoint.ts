@@ -1,6 +1,6 @@
 import { Abstract, Handler, InvocationContext, isFunction, Type, chain } from '@tsdi/ioc';
 import { from, Observable } from 'rxjs';
-import { mergeMap, switchMap } from 'rxjs/operators';
+import { mergeMap } from 'rxjs/operators';
 import { TransportContext } from './context';
 
 

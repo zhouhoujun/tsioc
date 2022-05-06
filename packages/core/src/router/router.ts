@@ -202,9 +202,11 @@ export class MappingRouter extends Router implements OnDestroy {
     }
 
     getRouteByUrl(url: string): MiddlewareFn | undefined {
-        let route = this.routes.get(url);
-        while (!route && url.lastIndexOf('/') > 1) {
-            route = this.getRouteByUrl(url.slice(0, url.lastIndexOf('/')));
+        const paths = url.split('/');
+        let route: MiddlewareFn | undefined;
+        for (let i = paths.length; i > 0; i--) {
+            route = this.routes.get(paths.slice(0, i).join('/'));
+            if (route) break;
         }
         return route;
     }

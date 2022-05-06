@@ -24,7 +24,13 @@ import { db } from './mimedb';
 export interface HttpOptions {
     majorVersion?: number;
     cors?: CorsOptions;
+    /**
+     * request timeout.
+     */
     timeout?: number;
+    /**
+     * delay some time to clean up after request client close.
+     */
     closeDelay?: number;
     mimeDb?: Record<string, MimeSource>;
     listenOptions?: ListenOptions;
@@ -148,7 +154,6 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
             });
             // server.on(ev.STREAM, (stream, headers, flags) => {
             //     //todo stream.
-
             //     stream.respond({
             //         'content-type': 'application/json; charset=utf-8',
             //         ':status': 200

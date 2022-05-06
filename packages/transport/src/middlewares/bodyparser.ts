@@ -4,7 +4,6 @@ import * as zlib from 'zlib';
 import * as getRaw from 'raw-body';
 import { Readable } from 'stream';
 import * as qslib from 'qs';
-
 import { hdr } from '../consts';
 
 
@@ -29,58 +28,6 @@ export class PlayloadOptions {
     enableTypes?: string[];
     extendTypes?: ParseExtendTypes;
 }
-
-const defaults = {
-    json: {
-        encoding: 'utf8',
-        limit: '1mb'
-    },
-    form: {
-        encoding: 'utf8',
-        limit: '100kb',
-        queryString: {
-            allowDots: true
-        }
-    },
-    text: {
-        encoding: 'utf8',
-        limit: '1mb'
-    },
-    enableTypes: ['json', 'form'],
-    extendTypes: EMPTY_OBJ
-};
-
-export interface ParseExtendTypes {
-    json: string[];
-    form: string[];
-    text: string[];
-    xml: string[];
-}
-
-// default json types
-const jsonTypes = [
-    'application/json',
-    'application/json-patch+json',
-    'application/vnd.api+json',
-    'application/csp-report',
-];
-
-// default form types
-const formTypes = [
-    'application/x-www-form-urlencoded',
-];
-
-// default text types
-const textTypes = [
-    'text/plain',
-];
-
-// default xml types
-const xmlTypes = [
-    'text/xml',
-    'application/xml',
-];
-
 
 @Injectable()
 export class BodyparserMiddleware implements Middleware {
@@ -278,3 +225,54 @@ export class BodyparserMiddleware implements Middleware {
 }
 
 const strictJSONReg = /^[\x20\x09\x0a\x0d]*(\[|\{)/;
+
+const defaults = {
+    json: {
+        encoding: 'utf8',
+        limit: '1mb'
+    },
+    form: {
+        encoding: 'utf8',
+        limit: '100kb',
+        queryString: {
+            allowDots: true
+        }
+    },
+    text: {
+        encoding: 'utf8',
+        limit: '1mb'
+    },
+    enableTypes: ['json', 'form'],
+    extendTypes: EMPTY_OBJ
+};
+
+export interface ParseExtendTypes {
+    json: string[];
+    form: string[];
+    text: string[];
+    xml: string[];
+}
+
+// default json types
+const jsonTypes = [
+    'application/json',
+    'application/json-patch+json',
+    'application/vnd.api+json',
+    'application/csp-report',
+];
+
+// default form types
+const formTypes = [
+    'application/x-www-form-urlencoded',
+];
+
+// default text types
+const textTypes = [
+    'text/plain',
+];
+
+// default xml types
+const xmlTypes = [
+    'text/xml',
+    'application/xml',
+];

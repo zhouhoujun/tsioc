@@ -77,7 +77,10 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
             let endpoint = this._endpoints.get(key);
             if (!endpoint) {
                 let endpoints = this.getRouteMiddleware(ctx, method)?.map(c => this.parse(c)) ?? [];
-                endpoints.push((c, n) => this.response(c, n, method));
+                endpoints.push(async (c, n) => {
+                    await this.response(c, method);
+                    return await n();
+                });
                 endpoint = chain(endpoints);
                 this._endpoints.set(key, endpoint);
             }
@@ -115,8 +118,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         return meta;
     }
 
-    async response(ctx: TransportContext, next: () => Promise<void>, meta: DecorDefine): Promise<void> {
-        const injector = this.injector;
+    async response(ctx: TransportContext, meta: DecorDefine): Promise<void> {
 
         const route: string = meta.metadata.route;
         if (route && isRest.test(route)) {
@@ -165,7 +167,6 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         } else {
             ctx.ok = true;
         }
-
     }
 
     protected getRouteMiddleware(ctx: TransportContext, meta: DecorDefine): Middleware[] {
