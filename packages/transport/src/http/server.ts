@@ -164,6 +164,9 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
             cert = option.cert;
             const server = cert ? https.createServer(option, (req, res) => this.requestHandler(req, res)) : http.createServer(option, (req, res) => this.requestHandler(req, res));
             this._server = server;
+            server.on(ev.ERROR, (err) => {
+                this.logger.error(err);
+            });
         }
         const listenOptions = this.options.listenOptions;
         this.context.get(ModuleRef).setValue(HTTP_LISTENOPTIONS, { ...listenOptions, withCredentials: cert!!, majorVersion: options.majorVersion });

@@ -17,10 +17,12 @@ export namespace ev {
     export const DISCONNECT = 'disconnect';
 
     export const MESSAGE = 'message';
+    export const RESPONSE = 'response';
     export const DATA = 'data';
     export const ERROR = 'error';
     export const CLOSE = 'close';
     export const END = 'end';
+    export const TIMEOUT = 'timeout';
     export const STREAM = 'stream';
     export const ABOUT = 'about';
 
@@ -36,29 +38,29 @@ export namespace hdr {
     /**
      * Set or get Content-Type response header with `type`.
      */
-    export const CONTENT_TYPE = 'Content-Type';
+    export const CONTENT_TYPE = 'content-type';
     /**
      * Set or get Content-Length field to `n`.
      */
-    export const CONTENT_LENGTH = 'Content-Length';
+    export const CONTENT_LENGTH = 'content-length';
     export const CONTENT_ENCODING = 'content-encoding';
     /**
      * transfer encoding.
      */
-    export const TRANSFER_ENCODING = 'Transfer-Encoding';
+    export const TRANSFER_ENCODING = 'transfer-encoding';
 
     export const IDENTITY = 'identity';
 
-    export const REFERRER = 'Referrer';
+    export const REFERRER = 'referrer';
 
-    export const LOCATION = 'Location';
+    export const LOCATION = 'location';
 
-    export const CONTENT_DISPOSITION = 'Content-Disposition';
+    export const CONTENT_DISPOSITION = 'content-disposition';
 
     /**
      * header Accept
      */
-    export const ACCEPT = 'Accept';
+    export const ACCEPT = 'accept';
 
     export const ACCEPT_CHARSET = 'accept-charset';
 
@@ -69,19 +71,19 @@ export namespace hdr {
     /**
      * header Host
      */
-    export const HOST = 'Host';
+    export const HOST = 'host';
 
     export const AUTHORITY = ':authority';
 
-    export const ORIGIN = 'Origin';
+    export const ORIGIN = 'origin';
 
 
-    export const VARY = 'Vary';
-    export const X_FORWARDED_PROTO = 'X-Forwarded-Proto';
+    export const VARY = 'vary';
+    export const X_FORWARDED_PROTO = 'x-forwarded-proto';
     /**
-     * header X-Forwarded-Host
+     * header x-forwarded-host
      */
-    export const X_FORWARDED_HOST = 'X-Forwarded-Host';
+    export const X_FORWARDED_HOST = 'x-forwarded-host';
 
     export const IF_MODIFIED_SINCE = 'if-modified-since';
     export const IF_NONE_MATCH = 'if-none-match';
@@ -89,14 +91,14 @@ export namespace hdr {
     export const ETAG = 'etag';
     export const LAST_MODIFIED = 'last-modified';
 
-    export const ACCESS_CONTROL_ALLOW_ORIGIN = 'Access-Control-Allow-Origin';
-    export const ACCESS_CONTROL_ALLOW_CREDENTIALS = 'Access-Control-Allow-Credentials';
-    export const ACCESS_CONTROL_REQUEST_METHOD = 'Access-Control-Request-Method';
-    export const ACCESS_CONTROL_MAX_AGE = 'Access-Control-Max-Age';
-    export const ACCESS_CONTROL_ALLOW_METHODS = 'Access-Control-Allow-Methods';
-    export const ACCESS_CONTROL_REQUEST_HEADERS = 'Access-Control-Request-Headers';
-    export const ACCESS_CONTROL_ALLOW_HEADERS = 'Access-Control-Allow-Headers';
-    export const ACCESS_CONTROL_EXPOSE_HEADERS = 'Access-Control-Expose-Headers';
+    export const ACCESS_CONTROL_ALLOW_ORIGIN = 'access-control-allow-origin';
+    export const ACCESS_CONTROL_ALLOW_CREDENTIALS = 'access-control-allow-credentials';
+    export const ACCESS_CONTROL_REQUEST_METHOD = 'access-control-request-method';
+    export const ACCESS_CONTROL_MAX_AGE = 'access-control-max-age';
+    export const ACCESS_CONTROL_ALLOW_METHODS = 'access-control-allow-methods';
+    export const ACCESS_CONTROL_REQUEST_HEADERS = 'access-control-request-headers';
+    export const ACCESS_CONTROL_ALLOW_HEADERS = 'access-control-allow-headers';
+    export const ACCESS_CONTROL_EXPOSE_HEADERS = 'access-control-expose-headers';
 }
 /**
  * content types.

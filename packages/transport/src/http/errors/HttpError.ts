@@ -4,9 +4,6 @@ import { Execption, isArray } from '@tsdi/ioc';
 /**
  * http error
  *
- * @export
- * @class HttpError
- * @extends {Error}
  */
 export class HttpError extends Execption {
     constructor(readonly status: HttpStatusCode, message?: string | string[]) {

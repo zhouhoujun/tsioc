@@ -16,7 +16,7 @@ export interface Endpoint<TRequest, TResponse> {
     handle(req: TRequest, context: InvocationContext): Observable<TResponse>;
 }
 
-export type EndpointFn<TRequest, TResponse> = (req: TRequest, context?: InvocationContext) => Observable<TResponse>;
+export type EndpointFn<TRequest, TResponse> = (req: TRequest, context: InvocationContext) => Observable<TResponse>;
 
 
 /**
@@ -132,7 +132,7 @@ export class CustomEndpoint<TRequest, TResponse> implements Endpoint<TRequest, T
 
     constructor(private fn: EndpointFn<TRequest, TResponse>) { }
 
-    handle(req: TRequest, context?: InvocationContext<any>): Observable<TResponse> {
+    handle(req: TRequest, context: InvocationContext<any>): Observable<TResponse> {
         return this.fn(req, context);
     }
 }
