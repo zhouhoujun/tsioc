@@ -1,5 +1,4 @@
 import { Module, ConnectionOptions, TransactionModule, LoggerModule, HttpClientModule } from '@tsdi/core';
-import { LogModule } from '@tsdi/logs';
 import { ServerHttpClientModule, ServerModule } from '@tsdi/platform-server';
 import { HttpModule, HttpServer } from '@tsdi/transport';
 import { Connection } from 'typeorm';

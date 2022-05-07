@@ -462,14 +462,14 @@ export const RequestBody: RequsetParameterDecorator = createParamDecorator('Requ
  */
 export interface RestController {
     /**
-     * route decorator. define the controller method as an route.
+     * controller decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
      * @param {Type<Router>} [parent] the middlewares for the route.
      */
     (route: string, parent?: Type<Router>): ClassDecorator;
     /**
-     * route decorator. define the controller method as an route.
+     * controller decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
      * @param {Type<CanActivate>[]} [guards] the guards for the route.
@@ -477,7 +477,7 @@ export interface RestController {
     (route: string, guards?: Type<CanActivate>[]): ClassMethodDecorator;
 
     /**
-     * route decorator. define the controller method as an route.
+     * controller decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
      * @param {{ middlewares?: Middleware[], contentType?: string, method?: string}} options
@@ -515,7 +515,7 @@ export interface RestController {
         args?: any[];
     }): ClassDecorator;
     /**
-     * route decorator. define the controller method as an route.
+     * controller decorator. define the controller method as an route.
      *
      * @param {RouteMetadata} [metadata] route metadata.
      */
