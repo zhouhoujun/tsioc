@@ -1,7 +1,7 @@
 import { EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isFunction, isString, lang, tokenId, Type } from '@tsdi/ioc';
 import {
     TransportServer, EndpointBackend, CustomEndpoint, MiddlewareSet, BasicMiddlewareSet,
-    MiddlewareType, MiddlewareInst, Interceptor, ModuleRef, Router,
+    MiddlewareType, Interceptor, ModuleRef, Router,
 } from '@tsdi/core';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { of, Subscription } from 'rxjs';
@@ -77,7 +77,7 @@ export const HTTP_SERVEROPTIONS = tokenId<HttpServerOptions>('HTTP_SERVEROPTIONS
 /**
  * http server Interceptor tokens for {@link HttpServer}.
  */
- export const HTTP_SERV_INTERCEPTORS = tokenId<Interceptor<HttpServRequest, HttpServResponse>[]>('HTTP_SERV_INTERCEPTORS');
+export const HTTP_SERV_INTERCEPTORS = tokenId<Interceptor<HttpServRequest, HttpServResponse>[]>('HTTP_SERV_INTERCEPTORS');
 
 
 /**
@@ -85,6 +85,7 @@ export const HTTP_SERVEROPTIONS = tokenId<HttpServerOptions>('HTTP_SERVEROPTIONS
  */
 @Injectable()
 export class HttpServer extends TransportServer<HttpServRequest, HttpServResponse, HttpContext>  {
+
 
     private _backend?: EndpointBackend<HttpServRequest, HttpServResponse>;
     private _server?: http2.Http2Server | http.Server | https.Server;
@@ -135,13 +136,6 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         return this.context.get(HTTP_SERV_INTERCEPTORS) ?? EMPTY;
     }
 
-    getBackend(): EndpointBackend<HttpServRequest, HttpServResponse> {
-        if (!this._backend) {
-            this._backend = new CustomEndpoint<HttpServRequest, HttpServResponse>((req, ctx) => of((ctx as HttpContext).response));
-        }
-        return this._backend;
-    }
-
     async startup(): Promise<void> {
         const options = this.options;
         if (this.context.has(CONTENT_DISPOSITION)) {
@@ -174,10 +168,18 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         this._server.listen(listenOptions);
     }
 
+
+    protected override getBackend(): EndpointBackend<HttpServRequest, HttpServResponse> {
+        if (!this._backend) {
+            this._backend = new CustomEndpoint<HttpServRequest, HttpServResponse>((req, ctx) => of((ctx as HttpContext).response));
+        }
+        return this._backend;
+    }
+
     protected override bindEvent(ctx: HttpContext, cancel: Subscription): void {
         const req = ctx.request;
         this.options.timeout && req.setTimeout(this.options.timeout, () => {
-            req.emit(ev.ABOUT);
+            req.emit(ev.TIMEOUT);
             cancel?.unsubscribe();
         });
         req.once(ev.CLOSE, async () => {
@@ -259,17 +261,15 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         await defer.promise;
     }
 
+    protected override createContext(request: HttpServRequest, response: HttpServResponse): HttpContext {
+        return new HttpContext(this.context.injector, request, response, this);
+    }
+
     protected override createMidderwareSet(): MiddlewareSet<HttpContext> {
-        return this.context.resolve(MiddlewareSet)
+        return new BasicMiddlewareSet(this.context.get(HTTP_MIDDLEWARES));
     }
 }
 
 
-@Injectable()
-export class HttpMiddlewareSet extends BasicMiddlewareSet<HttpContext> {
-    constructor(@Inject(HTTP_MIDDLEWARES, { nullable: true }) middlewares: MiddlewareInst<HttpContext>[]) {
-        super(middlewares);
-    }
-}
 
 

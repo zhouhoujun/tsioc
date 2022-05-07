@@ -22,7 +22,7 @@ export class TypeormServer implements Startup, OnDispose {
 
     @Log() private logger!: Logger;
 
-    constructor(protected ctx: InvocationContext) {
+    constructor(protected injector: Injector) {
 
     }
 
@@ -30,10 +30,9 @@ export class TypeormServer implements Startup, OnDispose {
      * startup server.
      */
     async startup(): Promise<void> {
-        let ctx = this.ctx;
         this.logger.info('startup db connections');
-        const connections = this.ctx.resolve(CONNECTIONS);
-        const injector = ctx.get(ModuleRef);
+        const connections = this.injector.get(CONNECTIONS);
+        const injector = this.injector;
 
         // if (connections.repositories && connections.repositories.some(r => isString(r))) {
         //     let loader = this.ctx.injector.getLoader();
@@ -136,9 +135,9 @@ export class TypeormServer implements Startup, OnDispose {
     async createConnection(options: ConnectionOptions, config: ConnectionOptions[]) {
 
         if (options.entities?.some(m => isString(m))) {
-            let entities: Type[] = options.entities.filter(e=> !isString(e)) as Type[];
-            let loader = this.ctx.injector.getLoader();
-            let models = await loader.loadType({ files: options.entities?.filter(m => isString(m)), basePath: this.ctx.get(PROCESS_ROOT) });
+            let entities: Type[] = options.entities.filter(e => !isString(e)) as Type[];
+            let loader = this.injector.getLoader();
+            let models = await loader.loadType({ files: options.entities?.filter(m => isString(m)), basePath: this.injector.get(PROCESS_ROOT) });
             models.forEach(mdl => {
                 if (mdl && entities.indexOf(mdl) < 0) {
                     entities.push(mdl);
@@ -148,9 +147,9 @@ export class TypeormServer implements Startup, OnDispose {
         }
 
         if (options.repositories && options.repositories.some(r => isString(r))) {
-            let loader = this.ctx.injector.getLoader();
+            let loader = this.injector.getLoader();
             // preload repositories for typeorm.
-            await loader.loadType({ files: options.repositories.filter(r => isString(r)), basePath: this.ctx.get(PROCESS_ROOT) });
+            await loader.loadType({ files: options.repositories.filter(r => isString(r)), basePath: this.injector.get(PROCESS_ROOT) });
         }
         if (options.asDefault) {
             this.options = options;
@@ -180,7 +179,7 @@ export class TypeormServer implements Startup, OnDispose {
     async onDispose(): Promise<void> {
         await this.disconnect();
         this.logger = null!;
-        this.ctx = null!;
+        this.injector = null!;
         this.options = null!;
     }
 }

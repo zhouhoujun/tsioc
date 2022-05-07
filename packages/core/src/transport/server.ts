@@ -4,8 +4,8 @@ import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
 import { Startup } from '../startup';
 import { InterceptorChain, Endpoint, EndpointBackend, MiddlewareBackend, MiddlewareInst, Interceptor } from './endpoint';
-import { TransportContext, TransportContextFactory } from './context';
-import { BasicMiddlewareSet, MiddlewareSet } from './middlware.set';
+import { TransportContext } from './context';
+import { MiddlewareSet } from './middlware.set';
 import { from, Subscription } from 'rxjs';
 import { catchError, mergeMap } from 'rxjs/operators';
 import { ExecptionContext, ExecptionFilter } from '../execptions';
@@ -23,21 +23,11 @@ export abstract class TransportServer<TRequest, TResponse, Tx extends TransportC
 
     protected _chain?: Endpoint<TRequest, TResponse>;
     private _middset?: MiddlewareSet<Tx>;
-    private _ctxfac?: TransportContextFactory<TRequest, TResponse>;
 
     /**
      * server context.
      */
     abstract get context(): InvocationContext;
-    /**
-     * trasport context factory.
-     */
-    get contextFactory(): TransportContextFactory<TRequest, TResponse> {
-        if (!this._ctxfac) {
-            this._ctxfac = this.context.get(TransportContextFactory);
-        }
-        return this._ctxfac;
-    }
 
     /**
      * get interceptors.
@@ -55,12 +45,6 @@ export abstract class TransportServer<TRequest, TResponse, Tx extends TransportC
     }
 
     /**
-     * lazy create middleware set.
-     */
-    protected createMidderwareSet(): MiddlewareSet<Tx> {
-        return this.context.get(MiddlewareSet) ?? new BasicMiddlewareSet();
-    }
-    /**
      * startup server.
      */
     abstract startup(): Promise<void>;
@@ -75,11 +59,6 @@ export abstract class TransportServer<TRequest, TResponse, Tx extends TransportC
     }
 
     /**
-     * get backend endpoint.
-     */
-    protected abstract getBackend(): EndpointBackend<TRequest, TResponse>;
-
-    /**
      * transport endpoint chain.
      */
     chain(): Endpoint<TRequest, TResponse> {
@@ -89,8 +68,22 @@ export abstract class TransportServer<TRequest, TResponse, Tx extends TransportC
         return this._chain;
     }
 
+    /**
+     * get backend endpoint.
+     */
+    protected abstract getBackend(): EndpointBackend<TRequest, TResponse>;
+    /**
+     * lazy create context.
+     */
+    protected abstract createContext(request: TRequest, response: TResponse): Tx;
+    /**
+     * lazy create middleware set.
+     */
+    protected abstract createMidderwareSet(): MiddlewareSet<Tx>;
+
+
     protected requestHandler(request: TRequest, response: TResponse) {
-        const ctx = this.contextFactory.create(request, response, this) as Tx;
+        const ctx = this.createContext(request, response) as Tx;
         ctx.setValue(Logger, this.logger);
 
         const cancel = this.chain().handle(request, ctx)

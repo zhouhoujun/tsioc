@@ -1,5 +1,5 @@
-import { HttpStatusCode, Interceptor, MiddlewareInst, Protocol, TransportContext, TransportContextFactory } from '@tsdi/core';
-import { Injectable, Injector, InvokeArguments, isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
+import { HttpStatusCode, MiddlewareInst, Protocol, TransportContext } from '@tsdi/core';
+import { Injector, InvokeArguments, isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import * as assert from 'assert';
 import * as http from 'http';
 import * as http2 from 'http2';
@@ -20,7 +20,9 @@ export type HttpServRequest = http.IncomingMessage | http2.Http2ServerRequest;
 
 export type HttpServResponse = http.ServerResponse | http2.Http2ServerResponse;
 
-
+/**
+ * http context for `HttpServer`.
+ */
 export class HttpContext extends TransportContext<HttpServRequest, HttpServResponse> {
 
     protected _body: any;
@@ -1100,7 +1102,6 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
         }
     }
 
-
 }
 
 
@@ -1118,17 +1119,6 @@ function parseStamp(date?: string | number): number {
     return NaN;
 }
 
-@Injectable()
-export class HttpContextFactory extends TransportContextFactory<HttpServRequest, HttpServResponse> {
-    constructor(private injector: Injector) {
-        super();
-    }
-
-    create(request: HttpServRequest, response: HttpServResponse, target: any, options?: InvokeArguments): HttpContext {
-        return new HttpContext(this.injector, request, response, target, options);
-    }
-
-}
 
 /**
  * http middleware.

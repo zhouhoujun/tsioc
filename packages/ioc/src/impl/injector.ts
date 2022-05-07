@@ -4,7 +4,7 @@ import { cleanObj, deepForEach } from '../utils/lang';
 import { InjectFlags, Token } from '../tokens';
 import {
     isArray, isDefined, isFunction, isPlainObject, isNumber, isTypeObject, isTypeReflect,
-    EMPTY, getClass, isString, isUndefined
+    EMPTY, getClass, isString, isUndefined, isNil
 } from '../utils/chk';
 import {
     ResolveOption, MethodType, FnType, InjectorScope, ResolverOption, RegisterOption, FactoryRecord,
@@ -700,13 +700,15 @@ export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, rec
     context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, lifecycle?: LifecycleHooks, isStatic?: boolean): any {
     try {
         const value = resolveToken(token, rd, records, platform, parent, context, notFoundValue, flags, lifecycle, isStatic);
-        const isDef = isDefined(value);
+        const isDef = isDefined(value) && value !== notFoundValue;
         if (isDef && token !== Injector && token !== INJECTOR && rd && rd.fn !== IDENT && rd.fn !== MUTIL && lifecycle && isTypeObject(value)) {
             lifecycle.register(value);
         }
-        if (isDef) {
-            if (rd && (isStatic || rd.isStatic)) {
-                rd.value = value;
+        if (isDef && (isStatic || rd?.isStatic)) {
+            if (rd) {
+                if (isNil(rd.value)) {
+                    rd.value = value;
+                }
             } else if (isStatic) {
                 records.set(token, { value });
             }

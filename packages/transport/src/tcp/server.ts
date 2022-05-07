@@ -1,4 +1,4 @@
-import { EndpointBackend, Interceptor, TransportContext, TransportContextFactory, TransportServer } from '@tsdi/core';
+import { EndpointBackend, Interceptor, MiddlewareSet, TransportContext, TransportServer } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, lang, Nullable } from '@tsdi/ioc';
 import { Server, ServerOpts, ListenOptions } from 'net';
 import { Subscription } from 'rxjs';
@@ -29,8 +29,7 @@ const defaults = {
 
 @Injectable()
 export class TCPServer extends TransportServer<TCPRequest, TCPResponse> {
-    
-
+  
     private server?: Server;
     constructor(
         @Inject() readonly context: InvocationContext,
@@ -45,10 +44,7 @@ export class TCPServer extends TransportServer<TCPRequest, TCPResponse> {
         this.server.listen(this.options.listenOptions, defer.resolve);
         await defer.promise;
     }
-
-    get contextFactory(): TransportContextFactory<TCPRequest<any>, TCPResponse<any>> {
-        throw new Error('Method not implemented.');
-    }
+    
 
     getInterceptors(): Interceptor[] {
         throw new Error('Method not implemented.');
@@ -62,6 +58,14 @@ export class TCPServer extends TransportServer<TCPRequest, TCPResponse> {
         throw new Error('Method not implemented.');
     }
     protected respond(res: TCPResponse<any>, ctx: TransportContext<any, any>): Promise<any> {
+        throw new Error('Method not implemented.');
+    }
+
+    protected createContext(request: TCPRequest<any>, response: TCPResponse<any>): TransportContext<any, any> {
+        throw new Error('Method not implemented.');
+    }
+
+    protected createMidderwareSet(): MiddlewareSet<TransportContext<any, any>> {
         throw new Error('Method not implemented.');
     }
 

@@ -264,14 +264,6 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
     }
 }
 
-@Abstract()
-export abstract class TransportContextFactory<TRequest = any, TResponse = any> {
-    /**
-     * create transport context.
-     * @param options 
-     */
-    abstract create(request: TRequest, response: TResponse, target?: any, options?: InvokeArguments): TransportContext<TRequest, TResponse>;
-}
 
 /**
  * to promise.
