@@ -1,13 +1,12 @@
-import { HttpStatusCode } from '@tsdi/core';
-import { Execption, isArray } from '@tsdi/ioc';
+import { HttpStatusCode, TransportError } from '@tsdi/core';
 
 /**
  * http error
  *
  */
-export class HttpError extends Execption {
+export class HttpError extends TransportError {
     constructor(readonly status: HttpStatusCode, message?: string | string[]) {
-        super(isArray(message) ? message.join('\n') : message || '');
+        super(status, message);
     }
 
     get statusCode(): HttpStatusCode {

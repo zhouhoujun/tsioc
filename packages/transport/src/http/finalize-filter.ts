@@ -1,4 +1,4 @@
-import { ExecptionContext, ExecptionFilter, HttpStatusCode } from '@tsdi/core';
+import { ExecptionContext, ExecptionFilter, HttpStatusCode, TransportError } from '@tsdi/core';
 import { Injectable, isFunction, isNumber } from '@tsdi/ioc';
 import { HttpError, InternalServerError } from './errors';
 import { HttpContext } from './context';
@@ -49,7 +49,7 @@ export class HttpFinalizeFilter implements ExecptionFilter {
         httpctx.contentType = ctype.TEXT_PLAIN;
         let statusCode = (err.status || err.statusCode) as HttpStatusCode;
         let msg: string;
-        if (err instanceof HttpError) {
+        if (err instanceof TransportError) {
             msg = err.message;
         } else {
             // ENOENT support
