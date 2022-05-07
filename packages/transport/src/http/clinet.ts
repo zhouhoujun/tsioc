@@ -1,7 +1,6 @@
-import { Abstract, ArgumentError, EMPTY, EMPTY_OBJ, Inject, Injectable, Injector, InvocationContext, isFunction, isString, lang, Nullable, tokenId, Type } from '@tsdi/ioc';
-import { InterceptorChain, Endpoint, Interceptor, InterceptorFn, RequestMethod, TransportClient, EndpointBackend, HttpRequest, HttpResponse, HttpEvent, OnDispose, CustomEndpoint, HttpParams, HttpHeaders } from '@tsdi/core';
+import { Abstract, ArgumentError, EMPTY, Inject, Injectable, InvocationContext, isFunction, isString, lang, Nullable, tokenId, Type } from '@tsdi/ioc';
+import { Interceptor, RequestMethod, TransportClient, EndpointBackend, HttpRequest, HttpResponse, HttpEvent, OnDispose, CustomEndpoint, HttpParams, HttpHeaders, InterceptorType } from '@tsdi/core';
 import { from, fromEvent, Observable, Observer, of } from 'rxjs';
-import { Logger } from '@tsdi/logs';
 import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
@@ -25,7 +24,7 @@ export const HTTP_SESSIONOPTIONS = tokenId<HttpSessionOptions>('HTTP_SESSIONOPTI
 
 @Abstract()
 export abstract class HttpClientOptions {
-    abstract get interceptors(): Type<Interceptor<HttpRequest, HttpEvent>>[] | undefined;
+    abstract get interceptors(): InterceptorType<HttpRequest, HttpEvent>[] | undefined;
     abstract get authority(): string | undefined;
     abstract get options(): HttpSessionOptions | undefined;
 
@@ -68,7 +67,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
     }
 
     getInterceptors(): Interceptor[] {
-        return this.context.get(HTTP_INTERCEPTORS) ?? EMPTY
+        return this.context.injector.get(HTTP_INTERCEPTORS, EMPTY);
     }
 
     getBackend(): EndpointBackend<HttpRequest, HttpEvent> {

@@ -1,7 +1,7 @@
 import { EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isFunction, isString, lang, tokenId, Type } from '@tsdi/ioc';
 import {
     TransportServer, EndpointBackend, CustomEndpoint, MiddlewareSet, BasicMiddlewareSet,
-    MiddlewareType, Interceptor, ModuleRef, Router,
+    MiddlewareType, Interceptor, ModuleRef, Router, InterceptorType,
 } from '@tsdi/core';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { of, Subscription } from 'rxjs';
@@ -34,7 +34,7 @@ export interface HttpOptions {
     closeDelay?: number;
     mimeDb?: Record<string, MimeSource>;
     listenOptions?: ListenOptions;
-    interceptors?: Type<Interceptor<HttpServRequest, HttpServResponse>>[];
+    interceptors?: InterceptorType<HttpServRequest, HttpServResponse>[];
     execptions?: Type<Interceptor>;
     middlewares?: MiddlewareType[];
 }
@@ -132,8 +132,8 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         this.context.injector.inject(interceptors);
     }
 
-    getInterceptors(): Interceptor[] {
-        return this.context.get(HTTP_SERV_INTERCEPTORS) ?? EMPTY;
+    getInterceptors(): Interceptor<HttpServRequest, HttpServResponse>[] {
+        return this.context.injector.get(HTTP_SERV_INTERCEPTORS, EMPTY);
     }
 
     async startup(): Promise<void> {

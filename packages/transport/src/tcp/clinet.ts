@@ -1,5 +1,5 @@
-import { EndpointBackend, Interceptor, OnDispose, TransportClient, UUIDFactory } from '@tsdi/core';
-import { Abstract, Inject, Injectable, Injector, InvocationContext, isString, lang, Nullable } from '@tsdi/ioc';
+import { EndpointBackend, Interceptor, InterceptorType, OnDispose, TransportClient, UUIDFactory } from '@tsdi/core';
+import { Abstract, EMPTY, Inject, Injectable, Injector, InvocationContext, isFunction, isString, lang, Nullable, tokenId } from '@tsdi/ioc';
 import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
 import { ev } from '../consts';
 import { TCPRequest, TCPResponse } from './packet';
@@ -14,6 +14,7 @@ export abstract class TcpClientOption {
     abstract json?: boolean;
     abstract socketOpts?: SocketConstructorOpts;
     abstract connectOpts: NetConnectOpts;
+    abstract interceptors?: InterceptorType<TCPRequest, TCPResponse>[]
 }
 
 const defaults = {
@@ -25,6 +26,8 @@ const defaults = {
 } as TcpClientOption;
 
 
+export const TCP_INTERCEPTORS = tokenId<Interceptor<TCPRequest, TCPResponse>[]>('TCP_INTERCEPTORS');
+
 @Injectable()
 export class TCPClient extends TransportClient<TCPRequest, TCPResponse> implements OnDispose {
 
@@ -33,14 +36,26 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> implemen
     private connected: boolean;
     constructor(
         @Inject() readonly context: InvocationContext,
-        @Nullable() private options: TcpClientOption = defaults
+        @Nullable() private option: TcpClientOption = defaults
     ) {
         super();
         this.connected = false;
+        this.initOptions(option);
     }
 
-    getInterceptors(): Interceptor[] {
-        throw new Error('Method not implemented.');
+    protected initOptions(option: TcpClientOption) {
+        const interceptors = option.interceptors?.map(m => {
+            if (isFunction(m)) {
+                return { provide: TCP_INTERCEPTORS, useClass: m, multi: true };
+            } else {
+                return { provide: TCP_INTERCEPTORS, useValue: m, multi: true };
+            }
+        }) ?? EMPTY;
+        this.context.injector.inject(interceptors);
+    }
+
+    getInterceptors(): Interceptor<TCPRequest, TCPResponse>[] {
+        return this.context.injector.get(TCP_INTERCEPTORS, EMPTY);
     }
 
 
@@ -53,16 +68,16 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> implemen
         if (this.socket) {
             this.socket.destroy();
         }
-        const socket = this.socket = new Socket(this.options.socketOpts);
+        const socket = this.socket = new Socket(this.option.socketOpts);
         const defer = lang.defer();
-        socket.once('error', defer.reject);
-        socket.once('connect', () => {
+        socket.once(ev.ERROR, defer.reject);
+        socket.once(ev.CONNECT, () => {
             this.connected = true;
             defer.resolve(true);
-            this.logger.info(socket.address, 'connect');
+            this.logger.info(socket.address, 'connected');
         });
 
-        this.socket.connect(this.options.connectOpts);
+        this.socket.connect(this.option.connectOpts);
         await defer.promise;
         this.bindEvents(this.socket);
     }
