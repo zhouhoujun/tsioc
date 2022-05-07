@@ -1131,11 +1131,6 @@ export class HttpContextFactory extends TransportContextFactory<HttpServRequest,
 }
 
 /**
- * http Interceptor tokens
- */
-export const HTTP_INTERCEPTORS = tokenId<Interceptor<HttpServRequest, HttpServResponse>[]>('HTTP_INTERCEPTORS');
-
-/**
  * http middleware.
  */
 export type HttpMiddleware = MiddlewareInst<HttpContext>;

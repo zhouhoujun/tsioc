@@ -20,9 +20,9 @@ export interface HttpInterceptor extends Interceptor<HttpRequest, HttpEvent> {
 
 
 /**
- * http transport interceptors.
+ * http transport interceptors for `HttpClient`.
  */
-export const HTTP_INTERCEPTORS = tokenId<HttpInterceptor[]>('HTTP_INTERCEPTORS');
+export const HTTP_CLIENT_INTERCEPTORS = tokenId<HttpInterceptor[]>('HTTP_CLIENT_INTERCEPTORS');
 
 
 /**
@@ -42,7 +42,7 @@ export class HttpInterceptingHandler implements HttpHandler {
 
     handle(req: HttpRequest, context: InvocationContext): Observable<HttpEvent> {
         if (!this.chain) {
-            const interceptors = this.injector.get(HTTP_INTERCEPTORS);
+            const interceptors = this.injector.get(HTTP_CLIENT_INTERCEPTORS);
             this.chain = interceptors.reduceRight(
                 (next, interceptor) => new InterceptorEndpoint(next, interceptor), this.backend);
         }

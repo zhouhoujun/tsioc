@@ -11,7 +11,7 @@ import * as https from 'https';
 import * as http2 from 'http2';
 import * as assert from 'assert';
 import { CONTENT_DISPOSITION } from './content';
-import { HttpContext, HttpServRequest, HttpServResponse, HTTP_INTERCEPTORS, HTTP_MIDDLEWARES } from './context';
+import { HttpContext, HttpServRequest, HttpServResponse, HTTP_MIDDLEWARES } from './context';
 import { ev, hdr, LOCALHOST } from '../consts';
 import { CorsMiddleware, CorsOptions, EncodeJsonMiddleware, HelmetMiddleware, LogMiddleware } from '../middlewares';
 import { emptyStatus } from './status';
@@ -73,6 +73,13 @@ const httpOpts = {
  */
 export const HTTP_SERVEROPTIONS = tokenId<HttpServerOptions>('HTTP_SERVEROPTIONS');
 
+
+/**
+ * http server Interceptor tokens for {@link HttpServer}.
+ */
+ export const HTTP_SERV_INTERCEPTORS = tokenId<Interceptor<HttpServRequest, HttpServResponse>[]>('HTTP_SERV_INTERCEPTORS');
+
+
 /**
  * http server.
  */
@@ -116,16 +123,16 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
 
         const interceptors = this.options.interceptors?.map(m => {
             if (isFunction(m)) {
-                return { provide: HTTP_INTERCEPTORS, useClass: m, multi: true };
+                return { provide: HTTP_SERV_INTERCEPTORS, useClass: m, multi: true };
             } else {
-                return { provide: HTTP_INTERCEPTORS, useValue: m, multi: true };
+                return { provide: HTTP_SERV_INTERCEPTORS, useValue: m, multi: true };
             }
         }) ?? EMPTY;
         this.context.injector.inject(interceptors);
     }
 
     getInterceptors(): Interceptor[] {
-        return this.context.get(HTTP_INTERCEPTORS) ?? EMPTY;
+        return this.context.get(HTTP_SERV_INTERCEPTORS) ?? EMPTY;
     }
 
     getBackend(): EndpointBackend<HttpServRequest, HttpServResponse> {

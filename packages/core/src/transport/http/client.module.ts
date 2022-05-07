@@ -1,7 +1,7 @@
 import { ModuleWithProviders, type_obj } from '@tsdi/ioc';
 import { Module } from '../../metadata/decor';
 import { HttpBackend, HttpHandler } from './handler';
-import { HttpInterceptingHandler, HTTP_INTERCEPTORS, NoopInterceptor } from './interceptor';
+import { HttpInterceptingHandler, HTTP_CLIENT_INTERCEPTORS, NoopInterceptor } from './interceptor';
 import { HttpClient } from './client';
 import { JsonpCallbackContext, JsonpClientBackend, JsonpInterceptor } from './jsonp';
 import { HttpXhrBackend } from './backend';
@@ -24,7 +24,7 @@ import { HttpXsrfCookieExtractor, HttpXsrfInterceptor, HttpXsrfTokenExtractor, X
 @Module({
     providers: [
         HttpXsrfInterceptor,
-        { provide: HTTP_INTERCEPTORS, useExisting: HttpXsrfInterceptor, multi: true },
+        { provide: HTTP_CLIENT_INTERCEPTORS, useExisting: HttpXsrfInterceptor, multi: true },
         { provide: HttpXsrfTokenExtractor, useClass: HttpXsrfCookieExtractor },
         { provide: XSRF_COOKIE_NAME, useValue: 'XSRF-TOKEN' },
         { provide: XSRF_HEADER_NAME, useValue: 'X-XSRF-TOKEN' },
@@ -107,7 +107,7 @@ export class HttpClientModule {
     providers: [
         JsonpClientBackend,
         { provide: JsonpCallbackContext, useFactory: jsonpCallbackContext },
-        { provide: HTTP_INTERCEPTORS, useClass: JsonpInterceptor, multi: true },
+        { provide: HTTP_CLIENT_INTERCEPTORS, useClass: JsonpInterceptor, multi: true },
     ],
 })
 export class HttpClientJsonpModule {
