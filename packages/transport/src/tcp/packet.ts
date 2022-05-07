@@ -12,8 +12,7 @@ export class TCPRequest<T = any> extends RequestBase<T> {
     public readonly params: Record<string, any>;
     public readonly body: T | null;
     private _update: boolean;
-    constructor(public readonly context: InvocationContext, option: {
-        id?: string;
+    constructor(id: string, option: {
         url: string;
         socket: Socket;
         params?: Record<string, any>;
@@ -22,7 +21,7 @@ export class TCPRequest<T = any> extends RequestBase<T> {
         update?: boolean;
     }) {
         super();
-        this.id = option.id ?? this.context.resolve(UUIDFactory).generate();
+        this.id = id;
         this.url = option.url;
         this.method = option.method ?? 'EES';
         this.params = option.params ?? {};

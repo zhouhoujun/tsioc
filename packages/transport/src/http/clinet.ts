@@ -25,7 +25,9 @@ export const HTTP_SESSIONOPTIONS = tokenId<HttpSessionOptions>('HTTP_SESSIONOPTI
 @Abstract()
 export abstract class HttpClientOptions {
     abstract get interceptors(): Type<Interceptor<HttpRequest, HttpEvent>>[] | undefined;
+    abstract get authority(): string | undefined;
     abstract get options(): HttpSessionOptions | undefined;
+
 }
 
 export interface HttpRequestOptions {
@@ -47,13 +49,13 @@ export interface HttpRequestOptions {
 export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOptions> implements OnDispose {
 
     private _backend?: EndpointBackend<HttpRequest, HttpEvent>;
-    private http2s: Map<string, http2.ClientHttp2Session>;
+    private client?: http2.ClientHttp2Session;
 
     constructor(
         @Inject() readonly context: InvocationContext,
         @Nullable() private option: HttpClientOptions) {
-        super()
-        this.http2s = new Map();
+        super();
+
         const interceptors = this.option.interceptors?.map(m => {
             if (isFunction(m)) {
                 return { provide: HTTP_INTERCEPTORS, useClass: m, multi: true };
@@ -77,11 +79,21 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         return this._backend!;
     }
 
-    protected async buildRequest(ctx: InvocationContext, url: string | HttpRequest, options?: HttpRequestOptions): Promise<HttpRequest> {
+    protected buildRequest(context: InvocationContext<any>, url: string | HttpRequest<any>, options?: HttpRequestOptions): HttpRequest<any> {
         if (isString(url)) {
             return new HttpRequest(options?.method ?? 'GET', url, options);
         }
         return url;
+    }
+
+    protected async connect(): Promise<void> {
+        if (this.option.authority) {
+            if (this.client && !this.client.closed) return;
+            this.client = http2.connect(this.option.authority, this.option.options);
+            this.client.on(ev.ERROR, (err) => {
+                this.logger.error(err);
+            });
+        }
     }
 
 
@@ -2721,13 +2733,11 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
     }
 
     async close(): Promise<void> {
-        if (this.http2s.size < 1) return;
-        await Promise.all(Array.from(this.http2s.values()).map(c => {
+        if (this.client) {
             const defer = lang.defer();
-            c.close(() => defer.resolve());
-            return defer.promise
-        }));
-        this.http2s.clear();
+            this.client.close(() => defer.resolve());
+            return defer.promise;
+        };
     }
 
     /**

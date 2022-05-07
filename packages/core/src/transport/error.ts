@@ -1,4 +1,4 @@
-import { isArray } from '@tsdi/ioc';
+import { Execption, isArray } from '@tsdi/ioc';
 
 
 /**
@@ -8,11 +8,10 @@ import { isArray } from '@tsdi/ioc';
  * @class TransportError
  * @extends {Error}
  */
-export class TransportError extends Error {
+export class TransportError extends Execption {
+    
     constructor(readonly status: number, message?: string | string[]) {
         super(isArray(message) ? message.join('\n') : message || '');
-        Object.setPrototypeOf(this, TransportError.prototype);
-        Error.captureStackTrace(this);
     }
 
     get statusCode(): number {
@@ -22,5 +21,6 @@ export class TransportError extends Error {
     toString() {
         return `Transport Error: ${this.status}, ${this.message}`;
     }
-
 }
+
+

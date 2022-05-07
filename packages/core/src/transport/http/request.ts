@@ -146,7 +146,6 @@ export class HttpRequest<T = any>  {
      */
     readonly urlWithParams: string;
 
-
     constructor(method: 'DELETE' | 'GET' | 'HEAD' | 'JSONP' | 'OPTIONS', url: string, init?: {
         headers?: HttpHeaders,
         reportProgress?: boolean,

@@ -30,10 +30,6 @@ export abstract class RequestBase<T = any> {
      */
     readonly id?: string;
     /**
-     * Shared and mutable context that can be used by interceptors
-     */
-    abstract get context(): InvocationContext | undefined;
-    /**
      * Outgoing URL
      */
     abstract get url(): string;

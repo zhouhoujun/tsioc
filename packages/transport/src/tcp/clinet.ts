@@ -1,4 +1,4 @@
-import { EndpointBackend, Interceptor, OnDispose, TransportClient } from '@tsdi/core';
+import { EndpointBackend, Interceptor, OnDispose, TransportClient, UUIDFactory } from '@tsdi/core';
 import { Abstract, Inject, Injectable, Injector, InvocationContext, isString, lang, Nullable } from '@tsdi/ioc';
 import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
 import { ev } from '../consts';
@@ -48,7 +48,7 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> implemen
         throw new Error('Method not implemented.');
     }
 
-    async connect(): Promise<any> {
+    async connect(): Promise<void> {
         if (this.connected) return;
         if (this.socket) {
             this.socket.destroy();
@@ -97,8 +97,8 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> implemen
 
     }
 
-    protected async buildRequest(ctx: InvocationContext, req: string | TCPRequest<any>, options?: any): Promise<TCPRequest<any>> {
-        return isString(req) ? new TCPRequest(ctx, options) : req;
+    protected buildRequest(context: InvocationContext<any>, req: string | TCPRequest<any>, options?: any): TCPRequest<any> {
+        return isString(req) ? new TCPRequest(context.resolve(UUIDFactory).generate(), options) : req;
     }
 
     async close(): Promise<void> {

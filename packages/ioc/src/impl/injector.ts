@@ -26,6 +26,7 @@ import { DefaultOperationFactoryResolver } from './operation';
 import { BASE_RESOLVERS } from './context';
 import { InvocationContext, InvokeOption } from '../context';
 import { DEFAULT_RESOLVERS } from '../resolver';
+import { Execption } from '../execption';
 
 
 
@@ -670,20 +671,22 @@ function computeDeps(provider: StaticProviders): DependencyRecord[] {
     return deps;
 }
 
+const cirMsg = 'Circular dependency';
 /**
  * circular dependency error.
  */
-export class CircularDependencyError extends Error {
+export class CircularDependencyError extends Execption {
     constructor(message?: string) {
-        super('Circular dependency' + message);
-        Object.setPrototypeOf(this, CircularDependencyError);
+        super(message ? cirMsg + message : cirMsg);
     }
 }
 
-export class NullInjectorError extends Error {
+/**
+ * Null injector execption.
+ */
+export class NullInjectorError extends Execption {
     constructor(token: Token) {
-        super(`NullInjectorError: No provider for ${token?.toString()}!`);
-        Object.setPrototypeOf(this, NullInjectorError);
+        super(`NullInjectorError: No provider for ${token?.toString()}!`)
     }
 }
 

@@ -1,4 +1,4 @@
-import { InvocationContext, isDefined, isFunction, isNil, PropertyMetadata, Type, ArgumentError, object2string } from '@tsdi/ioc';
+import { InvocationContext, isDefined, isFunction, isNil, PropertyMetadata, Type, ArgumentError, object2string, Execption } from '@tsdi/ioc';
 import { PipeTransform } from '../pipes/pipe';
 
 /**
@@ -83,10 +83,9 @@ export interface ModelFieldResolver<C = any> {
 /**
  * Missing model field errror.
  */
-export class MissingModelFieldError extends ArgumentError {
+export class MissingModelFieldError extends Execption {
     constructor(fields: DBPropertyMetadata[], type: Type) {
         super(`ailed to resolve model class ${object2string(type)} because the following required fields were missing: [ ${fields.map(p => object2string(p)).join(',\n')} ]`);
-        Object.setPrototypeOf(this, MissingModelFieldError.prototype);
     }
 }
 

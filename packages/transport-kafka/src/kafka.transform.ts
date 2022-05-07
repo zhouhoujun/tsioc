@@ -1,7 +1,6 @@
 import * as tls from 'tls';
 import * as net from 'net';
-import { Deserializer, ResponsePacket, Serializer } from '@tsdi/core';
-import { isNil, isObject, isPlainObject, isString, isUndefined } from '@tsdi/ioc';
+import { ArgumentError, isNil, isObject, isPlainObject, isString, isUndefined } from '@tsdi/ioc';
 
 export interface KafkaRequest<T = any> {
     key: Buffer | string | null;
@@ -122,13 +121,11 @@ export class KafkaParser {
     }
 }
 
-export class InvalidKafkaClientTopicError extends Error {
+export class InvalidKafkaClientTopicError extends ArgumentError {
     constructor(topic?: string) {
         super(
             `The client consumer did not subscribe to the corresponding reply topic (${topic}).`,
         );
-        Object.setPrototypeOf(this, InvalidKafkaClientTopicError.prototype);
-        Error.captureStackTrace(this);
     }
 }
 

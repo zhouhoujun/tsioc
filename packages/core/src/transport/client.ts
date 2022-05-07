@@ -1,8 +1,7 @@
-import { Abstract, InvocationContext, isNil } from '@tsdi/ioc';
+import { Abstract, ArgumentError, InvocationContext, isNil } from '@tsdi/ioc';
 import { Logger, Log } from '@tsdi/logs';
 import { defer, Observable, throwError } from 'rxjs';
 import { catchError, concatMap, finalize } from 'rxjs/operators';
-import { TransportError } from './error';
 import { InterceptorChain, Endpoint, EndpointBackend, Interceptor } from './endpoint';
 
 
@@ -56,10 +55,11 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> {
     send(req: TRequest): Observable<TResponse>;
     send(req: TRequest | string, options?: TOption): Observable<TResponse> {
         if (isNil(req)) {
-            return throwError(() => new TransportError(400, 'Invalid message'));
+            return throwError(() => new ArgumentError('Invalid message'));
         }
         let ctx = this.createContext();
-        return defer(() => {
+        return defer(async () => {
+            await this.connect();
             return this.buildRequest(ctx, req, options);
         }).pipe(
             concatMap((req) => this.chain().handle(req, ctx)),
@@ -77,6 +77,8 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> {
         return InvocationContext.create(this.context);
     }
 
-    protected abstract buildRequest(context: InvocationContext, req: TRequest | string, options?: TOption): Promise<TRequest>;
+    protected abstract buildRequest(context: InvocationContext, url: TRequest | string, options?: TOption): TRequest;
+
+    protected abstract connect(): Promise<void>;
 
 }

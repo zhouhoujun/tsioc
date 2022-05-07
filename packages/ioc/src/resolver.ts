@@ -4,6 +4,7 @@ import { ParameterMetadata } from './metadata/meta';
 import { InvocationContext } from './context';
 import { isArray, isClassType, isDefined, isFunction, isPlainObject, isString, isTypeObject, isTypeReflect } from './utils/chk';
 import { getClassName } from './utils/lang';
+import { Execption } from './execption';
 
 /**
  * parameter argument of an {@link OperationArgumentResolver}.
@@ -52,7 +53,7 @@ export type ArgumentResolver = OperationArgumentResolver | ClassType<OperationAr
  * @param resolvers resolves of the group.
  * @returns 
  */
- export function composeResolver<T extends OperationArgumentResolver<any>, TP extends Parameter = Parameter>(filter: (parameter: TP, ctx: InvocationContext) => boolean, ...resolvers: T[]): OperationArgumentResolver {
+export function composeResolver<T extends OperationArgumentResolver<any>, TP extends Parameter = Parameter>(filter: (parameter: TP, ctx: InvocationContext) => boolean, ...resolvers: T[]): OperationArgumentResolver {
     return {
         canResolve: (parameter: TP, ctx: InvocationContext) => filter(parameter, ctx) && resolvers.some(r => r.canResolve(parameter, ctx)),
         resolve: (parameter: TP, ctx: InvocationContext) => {
@@ -78,21 +79,18 @@ export const DEFAULT_RESOLVERS = tokenId<OperationArgumentResolver[]>('DEFAULT_R
 /**
  * argument errror.
  */
- export class ArgumentError extends Error {
+export class ArgumentError extends Execption {
     constructor(message?: string | string[]) {
         super(isArray(message) ? message.join('\n') : message || '');
-        Object.setPrototypeOf(this, ArgumentError.prototype);
-        Error.captureStackTrace(this);
     }
 }
 
 /**
  * Missing argument errror.
  */
- export class MissingParameterError extends ArgumentError {
+export class MissingParameterError extends Execption {
     constructor(parameters: Parameter[], type: ClassType, method: string) {
         super(`ailed to invoke operation because the following required parameters were missing: [ ${parameters.map(p => object2string(p)).join(',\n')} ], method ${method} of class ${object2string(type)}`);
-        Object.setPrototypeOf(this, MissingParameterError.prototype);
     }
 }
 
