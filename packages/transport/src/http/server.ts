@@ -1,7 +1,7 @@
-import { EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isFunction, isString, lang, tokenId, Type } from '@tsdi/ioc';
+import { EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isFunction, isString, lang, Providers, tokenId, Type } from '@tsdi/ioc';
 import {
     TransportServer, EndpointBackend, CustomEndpoint, MiddlewareSet, BasicMiddlewareSet,
-    MiddlewareType, Interceptor, ModuleRef, Router, InterceptorType,
+    MiddlewareType, Interceptor, ModuleRef, Router, InterceptorType, ExecptionFilter,
 } from '@tsdi/core';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { of, Subscription } from 'rxjs';
@@ -17,8 +17,15 @@ import { CorsMiddleware, CorsOptions, EncodeJsonMiddleware, HelmetMiddleware, Lo
 import { emptyStatus } from './status';
 import { isStream } from '../utils';
 import { BodyparserMiddleware } from '../middlewares/bodyparser';
-import { MimeDb, MimeSource } from '../mime';
+import { MimeAdapter, MimeDb, MimeSource } from '../mime';
 import { db } from './mimedb';
+import { SendAdapter } from '../middlewares/send';
+import { HttpSendAdapter } from './send';
+import { Negotiator } from '../negotiator';
+import { HttpExecptionFilter } from './filter';
+import { HttpMimeAdapter } from './mime';
+import { HttpNegotiator } from './negotiator';
+import { ContentMiddleware, ContentOptions } from '../middlewares/content';
 
 
 export interface HttpOptions {
@@ -35,6 +42,7 @@ export interface HttpOptions {
     mimeDb?: Record<string, MimeSource>;
     listenOptions?: ListenOptions;
     interceptors?: InterceptorType<HttpServRequest, HttpServResponse>[];
+    content?: ContentOptions;
     execptions?: Type<Interceptor>;
     middlewares?: MiddlewareType[];
 }
@@ -58,11 +66,15 @@ const httpOpts = {
     listenOptions: { port: 3000, host: LOCALHOST } as ListenOptions,
     mimeDb: db,
     closeDelay: 500,
+    content: {
+        root: 'public'
+    },
     middlewares: [
         LogMiddleware,
         HelmetMiddleware,
         EncodeJsonMiddleware,
         CorsMiddleware,
+        ContentMiddleware,
         BodyparserMiddleware,
         Router
     ]
@@ -84,8 +96,13 @@ export const HTTP_SERV_INTERCEPTORS = tokenId<Interceptor<HttpServRequest, HttpS
  * http server.
  */
 @Injectable()
+@Providers([
+    { provide: SendAdapter, useClass: HttpSendAdapter },
+    { provide: ExecptionFilter, useClass: HttpExecptionFilter },
+    { provide: MimeAdapter, useClass: HttpMimeAdapter },
+    { provide: Negotiator, useClass: HttpNegotiator }
+])
 export class HttpServer extends TransportServer<HttpServRequest, HttpServResponse, HttpContext>  {
-
 
     private _backend?: EndpointBackend<HttpServRequest, HttpServResponse>;
     private _server?: http2.Http2Server | http.Server | https.Server;
@@ -107,7 +124,9 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         if (options?.listenOptions) {
             this.options.listenOptions = { ...httpOpts.listenOptions, ...options.listenOptions };
         }
-        this.context.setValue(HTTP_SERVEROPTIONS, this.options);
+        this.context.injector.setValue(HTTP_SERVEROPTIONS, this.options);
+
+        this.context.injector.setValue(ContentOptions, this.options.content);
 
         if (this.options.mimeDb) {
             const mimedb = this.context.injector.get(MimeDb);
@@ -133,7 +152,7 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
     }
 
     getInterceptors(): Interceptor<HttpServRequest, HttpServResponse>[] {
-        return this.context.injector.get(HTTP_SERV_INTERCEPTORS, EMPTY);
+        return this.context.get(HTTP_SERV_INTERCEPTORS) ?? EMPTY;
     }
 
     async startup(): Promise<void> {

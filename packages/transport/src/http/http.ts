@@ -1,12 +1,9 @@
-import { ExecptionFilter, Module, RouterModule, TransformModule } from '@tsdi/core';
+import { Module, RouterModule, TransformModule } from '@tsdi/core';
 import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
-import { BasicMimeDb, MimeAdapter, MimeDb } from '../mime';
-import { Negotiator } from '../negotiator';
+import { BasicMimeDb, MimeDb } from '../mime';
 import { Http } from './clinet';
-import { HttpExecptionFilter, HTTP_EXECPTION_FILTERS } from './filter';
+import { HTTP_EXECPTION_FILTERS } from './filter';
 import { HttpFinalizeFilter } from './finalize-filter';
-import { HttpMimeAdapter } from './mime';
-import { HttpNegotiator } from './negotiator';
 import { HttpServer, HttpServerOptions, HTTP_SERVEROPTIONS } from './server';
 
 @Module({
@@ -15,9 +12,6 @@ import { HttpServer, HttpServerOptions, HTTP_SERVEROPTIONS } from './server';
         RouterModule
     ],
     providers: [
-        { provide: ExecptionFilter, useClass: HttpExecptionFilter },
-        { provide: MimeAdapter, useClass: HttpMimeAdapter },
-        { provide: Negotiator, useClass: HttpNegotiator },
         { provide: HTTP_EXECPTION_FILTERS, useClass: HttpFinalizeFilter, multi: true },
         { provide: MimeDb, useClass: BasicMimeDb, asDefault: true },
         HttpServer,

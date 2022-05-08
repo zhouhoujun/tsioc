@@ -3,6 +3,11 @@ import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
 import { hdr } from '../consts';
 
 
+@Abstract()
+export abstract class HelmentOptions {
+    readonly dnsPrefetch?: 'on' | 'off';
+}
+
 @Injectable()
 export class HelmetMiddleware implements Middleware {
 
@@ -19,9 +24,4 @@ export class HelmetMiddleware implements Middleware {
         await next();
     }
 
-}
-
-@Abstract()
-export abstract class HelmentOptions {
-    readonly dnsPrefetch?: 'on' | 'off';
 }

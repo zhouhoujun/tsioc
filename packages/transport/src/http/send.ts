@@ -1,0 +1,135 @@
+import { PROCESS_ROOT } from '@tsdi/core';
+import { Injectable, isArray } from '@tsdi/ioc';
+import { SendAdapter, SendOption } from '../middlewares/send';
+import { normalize, resolve, basename, extname, parse, sep, isAbsolute, join } from 'path';
+import { existsSync, stat, createReadStream } from 'fs';
+import { promisify } from 'util';
+import { HttpContext } from './context';
+import { hdr } from '../consts';
+
+
+const statify = promisify(stat);
+
+@Injectable()
+export class HttpSendAdapter extends SendAdapter {
+    async send(ctx: HttpContext, opts: SendOption): Promise<string> {
+        let path = ctx.pathname;
+        const endSlash = path[path.length - 1] === '/';
+        path = path.substring(parse(path).root.length);
+        const roots = isArray(opts.root) ? opts.root.map(u => this.normaliz(u)) : [this.normaliz(opts.root)];
+        try {
+            path = decodeURIComponent(path);
+        } catch {
+            throw ctx.throwError(400, 'failed to decode url')
+        }
+        const index = opts.index;
+        if (index && endSlash) path += index;
+        let relpath: string;
+        const baseUrl = ctx.get(PROCESS_ROOT);
+        if (isAbsolute(path) || winAbsPath.test(path)) {
+            throw ctx.throwError(400, 'Malicious Path');
+        }
+        if (UP_REGEXP.test(normalize('.' + sep + path))) {
+            throw ctx.throwError(403);
+        }
+        let filename = '';
+        let encodingExt = ''
+        roots.some(root => {
+            relpath = this.resolvePath(root || baseUrl, path);
+            if (!opts.hidden && isHidden(root, relpath)) return false;
+            let encodingExt = ''
+            // serve brotli file when possible otherwise gzipped file when possible
+            if (ctx.acceptsEncodings('br', 'identity') === 'br' && opts.brotli && existsSync(path + '.br')) {
+                filename = path + '.br';
+                encodingExt = '.br';
+                ctx.setHeader(hdr.CONTENT_ENCODING, 'br');
+                ctx.removeHeader(hdr.CONTENT_LENGTH);
+            } else if (ctx.acceptsEncodings('gzip', 'identity') === 'gzip' && opts.gzip && existsSync(path + '.gz')) {
+                filename = path + '.gz';
+                encodingExt = '.gz';
+                ctx.setHeader(hdr.CONTENT_ENCODING, 'gzip');
+                ctx.removeHeader(hdr.CONTENT_LENGTH);
+            }
+            if (!filename && opts.extensions && !/\./.exec(basename(path))) {
+                const list = [...opts.extensions]
+                for (let i = 0; i < list.length; i++) {
+                    let ext = list[i]
+                    if (typeof ext !== 'string') {
+                        throw new TypeError('option extensions must be array of strings or false')
+                    }
+                    if (!/^\./.exec(ext)) ext = `.${ext}`
+                    if (existsSync(`${path}${ext}`)) {
+                        filename = `${path}${ext}`
+                        break
+                    }
+                }
+            }
+            return !!filename;
+        });
+        if (!filename) return filename;
+        // stat
+        let stats
+        try {
+            stats = await statify(filename);
+            // Format the path to serve static file servers
+            // and not require a trailing slash for directories,
+            // so that you can do both `/directory` and `/directory/`
+            if (stats.isDirectory()) {
+                if (opts.format && index) {
+                    path += `/${index}`;
+                    stats = await statify(filename)
+                } else {
+                    return '';
+                }
+            }
+        } catch (err) {
+            const notfound = ['ENOENT', 'ENAMETOOLONG', 'ENOTDIR']
+            if (notfound.includes((err as any).code)) {
+                throw ctx.throwError(404, (err as Error).message);
+            }
+            throw ctx.throwError(500);
+        }
+
+        if (opts.setHeaders) opts.setHeaders(ctx, path, stats);
+
+        const maxAge = opts.maxAge ?? 0;
+        ctx.setHeader(hdr.CONTENT_LENGTH, stats.size);
+        if (!ctx.response.getHeader(hdr.LAST_MODIFIED)) ctx.setHeader(hdr.LAST_MODIFIED, stats.mtime.toUTCString())
+        if (!ctx.response.getHeader(hdr.CACHE_CONTROL)) {
+            const directives = [`max-age=${(maxAge / 1000 | 0)}`];
+            if (opts.immutable) {
+                directives.push('immutable')
+            }
+            ctx.setHeader(hdr.CACHE_CONTROL, directives.join(','))
+        }
+        if (!ctx.type) ctx.type = this.getExtname(filename, encodingExt);
+        ctx.body = createReadStream(path);
+
+        return filename;
+    }
+
+    private getExtname(file: string, ext?: string) {
+        return ext ? extname(basename(file, ext)) : extname(file)
+
+    }
+
+    private normaliz(url: string) {
+        if (!url) return '';
+        return normalize(resolve(url))
+    }
+
+    private resolvePath(root: string, path: string): string {
+        return normalize(join(resolve(root), path));
+    }
+}
+
+function isHidden(root: string, path: string) {
+    let paths = path.substring(root.length).split(sep)
+    for (let i = 0; i < paths.length; i++) {
+        if (paths[i][0] === '.') return true
+    }
+    return false
+}
+
+const winAbsPath = /^[a-zA-Z]+:\//;
+const UP_REGEXP = /(?:^|[\\/])\.\.(?:[\\/]|$)/

@@ -4,6 +4,12 @@ import { ctype, hdr } from '../consts';
 import { JsonStreamStringify } from '../stringify';
 import { isJson, isStream } from '../utils';
 
+@Abstract()
+export abstract class JsonMiddlewareOption {
+    pretty?: boolean;
+    param?: string;
+    spaces?: number;
+}
 
 
 @Injectable()
@@ -44,9 +50,3 @@ export class EncodeJsonMiddleware implements Middleware {
     }
 }
 
-@Abstract()
-export abstract class JsonMiddlewareOption {
-    pretty?: boolean;
-    param?: string;
-    spaces?: number;
-}

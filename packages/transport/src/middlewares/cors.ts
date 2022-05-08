@@ -5,6 +5,8 @@ import { hdr } from '../consts';
 import { append, vary } from '../utils';
 import { HttpError } from '../http/errors';
 
+
+
 @Abstract()
 export abstract class CorsOptions {
     /**
@@ -56,42 +58,6 @@ export abstract class CorsOptions {
      */
     maxAge?: number | string;
 }
-
-interface Options {
-    /**
-     * origin `Access-Control-Allow-Origin`, default is request Origin header
-     */
-    origin?: string | ((ctx: TransportContext) => any);
-    /**
-     * allowMethods `Access-Control-Allow-Methods`, default is 'GET,HEAD,PUT,POST,DELETE,PATCH'
-     */
-    allowMethods?: string;
-    /**
-     * exposeHeaders `Access-Control-Expose-Headers`
-     */
-    exposeHeaders?: string;
-    /**
-     * allowHeaders `Access-Control-Allow-Headers`
-     */
-    allowHeaders?: string;
-    /**
-     *  `Access-Control-Max-Age` in seconds
-     */
-    maxAge?: string;
-    /**
-     *  `Access-Control-Allow-Credentials` all or not.
-     */
-    credentials?: boolean;
-    /**
-     * keep headers on error.
-     */
-    keepHeadersOnError?: boolean;
-}
-
-/**
- * default cors all methods.
- */
-const allowMethods = 'GET,HEAD,PUT,POST,DELETE,PATCH';
 
 
 @Injectable()
@@ -220,4 +186,40 @@ export class CorsMiddleware implements Middleware {
             ctx.status = 204;
         }
     }
+}
+
+/**
+ * default cors all methods.
+ */
+const allowMethods = 'GET,HEAD,PUT,POST,DELETE,PATCH';
+
+interface Options {
+    /**
+     * origin `Access-Control-Allow-Origin`, default is request Origin header
+     */
+    origin?: string | ((ctx: TransportContext) => any);
+    /**
+     * allowMethods `Access-Control-Allow-Methods`, default is 'GET,HEAD,PUT,POST,DELETE,PATCH'
+     */
+    allowMethods?: string;
+    /**
+     * exposeHeaders `Access-Control-Expose-Headers`
+     */
+    exposeHeaders?: string;
+    /**
+     * allowHeaders `Access-Control-Allow-Headers`
+     */
+    allowHeaders?: string;
+    /**
+     *  `Access-Control-Max-Age` in seconds
+     */
+    maxAge?: string;
+    /**
+     *  `Access-Control-Allow-Credentials` all or not.
+     */
+    credentials?: boolean;
+    /**
+     * keep headers on error.
+     */
+    keepHeadersOnError?: boolean;
 }

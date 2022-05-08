@@ -1,5 +1,20 @@
-import { Middleware, TransportContext } from '@tsdi/core';
-import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
+import { Middleware, TransportContext, TransportError } from '@tsdi/core';
+import { Abstract, Inject, Injectable } from '@tsdi/ioc';
+import { SendAdapter, SendOption } from './send';
+
+@Abstract()
+export abstract class ContentOptions implements SendOption {
+    abstract root: string | string[];
+    abstract defer?: boolean;
+    abstract index?: string;
+    abstract maxAge?: number;
+    abstract immutable?: boolean;
+    abstract hidden?: boolean;
+    abstract format?: boolean;
+    abstract extensions?: string[] | false;
+    abstract brotli?: boolean;
+    abstract gzip?: boolean;
+}
 
 /**
  * static content resources.
@@ -7,22 +22,38 @@ import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
 @Injectable()
 export class ContentMiddleware implements Middleware {
 
-    constructor(@Nullable() private options: ContentOptions) {
-
+    private options: ContentOptions
+    constructor(options: ContentOptions) {
+        this.options = { ...defaults, ...options };
     }
 
-    invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
-        throw new Error('Method not implemented.');
+    async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+        if (this.options.defer) {
+            await next();
+        }
+        let file = '';
+        if (ctx.method === 'HEAD' || ctx.method === 'GET') {
+            try {
+                let sender = ctx.injector.resolve(SendAdapter, { target: ctx.target });
+                file = await sender.send(ctx, this.options);
+            } catch (err) {
+                if ((err as TransportError).status !== 404) {
+                    throw err;
+                }
+            }
+        }
+        if (!this.options.defer && !file) {
+            await next();
+        }
     }
 
 }
 
-@Abstract()
-export abstract class ContentOptions {
-    abstract path: string | string[];
-    abstract maxAge?: number;
-    abstract hidden?: boolean;
-    abstract index?: string;
-    abstract encode?: string;
-    abstract extensions?: boolean;
+export const defaults: ContentOptions = {
+    root: '',
+    index: 'index.html',
+    maxAge: 0,
+    immutable: false,
+
 }
+
