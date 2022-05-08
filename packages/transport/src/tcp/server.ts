@@ -1,9 +1,24 @@
 import { EndpointBackend, Interceptor, MiddlewareSet, TransportContext, TransportServer } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, lang, Nullable } from '@tsdi/ioc';
-import { Server, ServerOpts, ListenOptions } from 'net';
+import { Server, ListenOptions } from 'net';
 import { Subscription } from 'rxjs';
 import { TCPRequest, TCPResponse } from './packet';
 
+
+
+
+export interface TcpServerOpts  {
+    /**
+         * Indicates whether half-opened TCP connections are allowed.
+         * @default false
+         */
+     allowHalfOpen?: boolean | undefined;
+     /**
+      * Indicates whether the socket should be paused on incoming connections.
+      * @default false
+      */
+     pauseOnConnect?: boolean | undefined;
+}
 
 
 @Abstract()
@@ -12,7 +27,7 @@ export abstract class TcpServerOption {
      * is json or not.
      */
     abstract json?: boolean;
-    abstract serverOpts?: ServerOpts | undefined;
+    abstract serverOpts?: TcpServerOpts | undefined;
     abstract listenOptions: ListenOptions;
 }
 

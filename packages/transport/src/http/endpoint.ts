@@ -1,6 +1,4 @@
-import { Abstract, tokenId } from '@tsdi/ioc';
-import { Endpoint, HttpRequest, HttpResponse, Interceptor } from '@tsdi/core';
-import { Observable } from 'rxjs';
+import { HttpRequest, HttpResponse, Interceptor } from '@tsdi/core';
 
 
 /**

@@ -255,7 +255,7 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         // responses
         if (Buffer.isBuffer(body)) return res.end(body);
         if (isString(body)) return res.end(body);
-        if (isStream(body)) return body.pipe(res);
+        if (isStream(body)) return body.pipe(res as any);
 
         // body: json
         body = JSON.stringify(body);

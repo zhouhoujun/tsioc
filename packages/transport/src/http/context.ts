@@ -1061,8 +1061,7 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
         // https://nodejs.org/api/http.html#http_response_writableended
         // response.finished is undocumented feature of previous Node versions
         // https://stackoverflow.com/questions/16254385/undocumented-response-finished-in-node-js
-        if (this.response.writableEnded || this.response.finished) return false;
-
+        if ((this.response as any).writableEnded || this.response.finished) return false;
         const socket = this.response.socket;
         // There are already pending outgoing res, but still writable
         // https://github.com/nodejs/node/blob/v4.4.7/lib/_http_server.js#L486
