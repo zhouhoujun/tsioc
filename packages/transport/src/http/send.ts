@@ -5,7 +5,7 @@ import { normalize, resolve, basename, extname, parse, sep, isAbsolute, join } f
 import { existsSync, stat, createReadStream } from 'fs';
 import { promisify } from 'util';
 import { HttpContext } from './context';
-import { hdr } from '../consts';
+import { ev, hdr } from '../consts';
 
 
 const statify = promisify(stat);
@@ -83,7 +83,6 @@ export class HttpSendAdapter extends SendAdapter {
                 }
             }
         } catch (err) {
-            const notfound = ['ENOENT', 'ENAMETOOLONG', 'ENOTDIR']
             if (notfound.includes((err as any).code)) {
                 throw ctx.throwError(404, (err as Error).message);
             }
@@ -131,5 +130,6 @@ function isHidden(root: string, path: string) {
     return false
 }
 
+const notfound = [ev.ENOENT, ev.ENAMETOOLONG, ev.ENOTDIR];
 const winAbsPath = /^[a-zA-Z]+:\//;
 const UP_REGEXP = /(?:^|[\\/])\.\.(?:[\\/]|$)/

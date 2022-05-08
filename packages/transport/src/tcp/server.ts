@@ -6,18 +6,20 @@ import { TCPRequest, TCPResponse } from './packet';
 
 
 
-
-export interface TcpServerOpts  {
+/**
+ * TCP server options.
+ */
+export interface TcpServerOpts {
     /**
-         * Indicates whether half-opened TCP connections are allowed.
-         * @default false
-         */
-     allowHalfOpen?: boolean | undefined;
-     /**
-      * Indicates whether the socket should be paused on incoming connections.
-      * @default false
-      */
-     pauseOnConnect?: boolean | undefined;
+     * Indicates whether half-opened TCP connections are allowed.
+     * @default false
+     */
+    allowHalfOpen?: boolean | undefined;
+    /**
+     * Indicates whether the socket should be paused on incoming connections.
+     * @default false
+     */
+    pauseOnConnect?: boolean | undefined;
 }
 
 
@@ -44,7 +46,7 @@ const defaults = {
 
 @Injectable()
 export class TCPServer extends TransportServer<TCPRequest, TCPResponse> {
-  
+
     private server?: Server;
     constructor(
         @Inject() readonly context: InvocationContext,
@@ -59,7 +61,7 @@ export class TCPServer extends TransportServer<TCPRequest, TCPResponse> {
         this.server.listen(this.options.listenOptions, defer.resolve);
         await defer.promise;
     }
-    
+
 
     getInterceptors(): Interceptor[] {
         throw new Error('Method not implemented.');

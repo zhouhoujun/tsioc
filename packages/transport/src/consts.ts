@@ -9,8 +9,9 @@ export namespace ev {
     export const ECONNREFUSED = 'ECONNREFUSED';
     export const CONN_ERR = 'CONN_ERR';
     export const EADDRINUSE = 'EADDRINUSE';
-
+    export const ENOTDIR = 'ENOTDIR';
     export const ENOENT = 'ENOENT';
+    export const ENAMETOOLONG = 'ENAMETOOLONG';
 
     export const CONNECT = 'connect';
     export const CONNECT_FAILED = 'connectFailed';
