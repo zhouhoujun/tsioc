@@ -84,6 +84,7 @@ export namespace hdr {
      * header x-forwarded-host
      */
     export const X_FORWARDED_HOST = 'x-forwarded-host';
+    export const X_DNS_PREFETCH_CONTROL = 'x-dns-prefetch-control';
 
     export const IF_MODIFIED_SINCE = 'if-modified-since';
     export const IF_NONE_MATCH = 'if-none-match';
@@ -112,6 +113,10 @@ export namespace ctype {
      * application json.
      */
     export const APPL_JSON = 'application/json';
+    /**
+     * application json.
+     */
+     export const APPL_JSON_UTF8 = 'application/json; charset=utf-8';
 
     /**
      * text html.

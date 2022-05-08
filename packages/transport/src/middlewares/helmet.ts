@@ -1,5 +1,6 @@
 import { Middleware, TransportContext } from '@tsdi/core';
 import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
+import { hdr } from '../consts';
 
 
 @Injectable()
@@ -14,7 +15,7 @@ export class HelmetMiddleware implements Middleware {
     }
 
     async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
-        this.options.dnsPrefetch && ctx.setHeader('X-DNS-Prefetch-Control', this.options.dnsPrefetch)
+        this.options.dnsPrefetch && ctx.setHeader(hdr.X_DNS_PREFETCH_CONTROL, this.options.dnsPrefetch)
         await next();
     }
 
