@@ -135,12 +135,12 @@ export class BodyparserMiddleware implements Middleware {
             case 'deflate':
                 break
             case 'identity':
-                return ctx.request
+                return ctx.request;
             default:
                 let err = new TransportError(415, 'Unsupported Content-Encoding: ' + encoding);
                 throw err
         }
-        return (ctx.request as Readable).pipe(zlib.createGunzip());
+        return (ctx.request as Readable).pipe(zlib.createUnzip());
     }
 
     private jsonify(str: string, strict?: boolean) {
