@@ -4,7 +4,6 @@ import * as assert from 'assert';
 import * as http from 'http';
 import * as http2 from 'http2';
 import { TLSSocket } from 'tls';
-import { Readable } from 'stream';
 import { extname } from 'path';
 import { append, encodeUrl, escapeHtml, isBuffer, isStream, parseTokenList } from '../utils';
 import { emptyStatus, redirectStatus, statusMessage } from './status';
@@ -748,13 +747,7 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
 
         // stream
         if (isStream(val)) {
-            this.onDestroy(() => {
-                if (val instanceof Readable) val.destroy();
-            });
             if (original != val) {
-                val.once('error', err => {
-                    throw err;
-                });
                 // overwriting
                 if (null != original) this.removeHeader(hdr.CONTENT_LENGTH);
             }

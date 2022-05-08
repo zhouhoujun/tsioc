@@ -10,12 +10,13 @@ import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
 import * as assert from 'assert';
+import { Readable } from 'stream';
 import { CONTENT_DISPOSITION } from './content';
 import { HttpContext, HttpServRequest, HttpServResponse, HTTP_MIDDLEWARES } from './context';
 import { ev, hdr, LOCALHOST } from '../consts';
 import { CorsMiddleware, CorsOptions, EncodeJsonMiddleware, HelmetMiddleware, LogMiddleware } from '../middlewares';
 import { emptyStatus } from './status';
-import { isStream } from '../utils';
+import { isBuffer, isStream } from '../utils';
 import { BodyparserMiddleware } from '../middlewares/bodyparser';
 import { MimeAdapter, MimeDb, MimeSource } from '../mime';
 import { db } from './mimedb';
@@ -72,9 +73,9 @@ const httpOpts = {
     middlewares: [
         LogMiddleware,
         HelmetMiddleware,
-        EncodeJsonMiddleware,
         CorsMiddleware,
         ContentMiddleware,
+        EncodeJsonMiddleware,
         BodyparserMiddleware,
         Router
     ]
@@ -253,9 +254,23 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         }
 
         // responses
-        if (Buffer.isBuffer(body)) return res.end(body);
+        if (isBuffer(body)) return res.end(body);
         if (isString(body)) return res.end(body);
-        if (isStream(body)) return body.pipe(res as any);
+        if (isStream(body)) {
+            let defer = lang.defer();
+            body.once(ev.ERROR, (err) => {
+                defer.reject(err);
+            });
+            body.once(ev.END, () => {
+                defer.resolve();
+            });
+            body.pipe(res as any);
+            return await defer.promise
+                .then(() => {
+                    res.end();
+                    if (body instanceof Readable) body.destroy();
+                });
+        }
 
         // body: json
         body = JSON.stringify(body);

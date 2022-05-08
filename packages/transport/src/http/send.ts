@@ -16,7 +16,7 @@ export class HttpSendAdapter extends SendAdapter {
         let path = ctx.pathname;
         const endSlash = path[path.length - 1] === '/';
         path = path.substring(parse(path).root.length);
-        const roots = isArray(opts.root) ? opts.root.map(u => this.normaliz(u)) : [this.normaliz(opts.root)];
+        const roots = isArray(opts.root) ? opts.root: [opts.root];
         try {
             path = decodeURIComponent(path);
         } catch {
@@ -24,7 +24,6 @@ export class HttpSendAdapter extends SendAdapter {
         }
         const index = opts.index;
         if (index && endSlash) path += index;
-        let relpath: string;
         const baseUrl = ctx.get(PROCESS_ROOT);
         if (isAbsolute(path) || winAbsPath.test(path)) {
             throw ctx.throwError(400, 'Malicious Path');
@@ -35,22 +34,23 @@ export class HttpSendAdapter extends SendAdapter {
         let filename = '';
         let encodingExt = ''
         roots.some(root => {
-            relpath = this.resolvePath(root || baseUrl, path);
-            if (!opts.hidden && isHidden(root, relpath)) return false;
+            let rpath = this.resolvePath(baseUrl, root, path);
+            if (!opts.hidden && isHidden(root, rpath)) return false;
             let encodingExt = ''
             // serve brotli file when possible otherwise gzipped file when possible
-            if (ctx.acceptsEncodings('br', 'identity') === 'br' && opts.brotli && existsSync(path + '.br')) {
-                filename = path + '.br';
+            if (ctx.acceptsEncodings('br', 'identity') === 'br' && opts.brotli && existsSync(rpath + '.br')) {
+                filename = rpath + '.br';
                 encodingExt = '.br';
                 ctx.setHeader(hdr.CONTENT_ENCODING, 'br');
                 ctx.removeHeader(hdr.CONTENT_LENGTH);
-            } else if (ctx.acceptsEncodings('gzip', 'identity') === 'gzip' && opts.gzip && existsSync(path + '.gz')) {
-                filename = path + '.gz';
+            } else if (ctx.acceptsEncodings('gzip', 'identity') === 'gzip' && opts.gzip && existsSync(rpath + '.gz')) {
+                filename = rpath + '.gz';
                 encodingExt = '.gz';
                 ctx.setHeader(hdr.CONTENT_ENCODING, 'gzip');
                 ctx.removeHeader(hdr.CONTENT_LENGTH);
-            }
-            if (!filename && opts.extensions && !/\./.exec(basename(path))) {
+            } else if (existsSync(rpath)) {
+                filename = rpath;
+            } else if (opts.extensions && !/\./.exec(basename(rpath))) {
                 const list = [...opts.extensions]
                 for (let i = 0; i < list.length; i++) {
                     let ext = list[i]
@@ -58,8 +58,8 @@ export class HttpSendAdapter extends SendAdapter {
                         throw new TypeError('option extensions must be array of strings or false')
                     }
                     if (!/^\./.exec(ext)) ext = `.${ext}`
-                    if (existsSync(`${path}${ext}`)) {
-                        filename = `${path}${ext}`
+                    if (existsSync(`${rpath}${ext}`)) {
+                        filename = `${rpath}${ext}`
                         break
                     }
                 }
@@ -89,7 +89,7 @@ export class HttpSendAdapter extends SendAdapter {
             throw ctx.throwError(500);
         }
 
-        if (opts.setHeaders) opts.setHeaders(ctx, path, stats);
+        if (opts.setHeaders) opts.setHeaders(ctx, filename, stats);
 
         const maxAge = opts.maxAge ?? 0;
         ctx.setHeader(hdr.CONTENT_LENGTH, stats.size);
@@ -102,7 +102,7 @@ export class HttpSendAdapter extends SendAdapter {
             ctx.setHeader(hdr.CACHE_CONTROL, directives.join(','))
         }
         if (!ctx.type) ctx.type = this.getExtname(filename, encodingExt);
-        ctx.body = createReadStream(path);
+        ctx.body = createReadStream(filename);
 
         return filename;
     }
@@ -112,13 +112,8 @@ export class HttpSendAdapter extends SendAdapter {
 
     }
 
-    private normaliz(url: string) {
-        if (!url) return '';
-        return normalize(resolve(url))
-    }
-
-    private resolvePath(root: string, path: string): string {
-        return normalize(join(resolve(root), path));
+    private resolvePath(root: string, ...path: string[]): string {
+        return normalize(join(resolve(root), ...path));
     }
 }
 

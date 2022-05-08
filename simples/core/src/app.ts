@@ -47,7 +47,7 @@ const key = fs.readFileSync(path.join(__dirname, './localhost-privkey.pem'));
 const cert = fs.readFileSync(path.join(__dirname, './localhost-cert.pem'));
 
 @Module({
-    // baseURL: __dirname,
+    baseURL: __dirname,
     imports: [
         LoggerModule.withOptions({
             // adapter: 'console',
