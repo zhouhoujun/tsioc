@@ -32,6 +32,8 @@ import { ContentMiddleware, ContentOptions } from '../middlewares/content';
 export interface HttpOptions {
     majorVersion?: number;
     cors?: CorsOptions;
+    proxy?: boolean;
+    proxyIpHeader?: string;
     /**
      * request timeout.
      */
@@ -115,6 +117,14 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
     ) {
         super();
         this.initOption(options);
+    }
+
+    get proxy() {
+        return this.options.proxy;
+    }
+
+    get proxyIpHeader() {
+        return this.options.proxyIpHeader;
     }
 
     protected initOption(options: HttpServerOptions) {

@@ -149,16 +149,16 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
     }
 
     /**
-   * When `app.proxy` is `true`, parse
-   * the "X-Forwarded-For" ip address list.
-   *
-   * For example if the value was "client, proxy1, proxy2"
-   * you would receive the array `["client", "proxy1", "proxy2"]`
-   * where "proxy2" is the furthest down-stream.
-   *
-   * @return {Array}
-   * @api public
-   */
+     * When `httpServer.proxy` is `true`, parse
+     * the "X-Forwarded-For" ip address list.
+     *
+     * For example if the value was "client, proxy1, proxy2"
+     * you would receive the array `["client", "proxy1", "proxy2"]`
+     * where "proxy2" is the furthest down-stream.
+     *
+     * @return {Array}
+     * @api public
+     */
 
     get ips() {
         const proxy = this.target.proxy;

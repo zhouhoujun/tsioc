@@ -78,6 +78,8 @@ export namespace hdr {
 
     export const ORIGIN = 'origin';
 
+    export const USER_AGENT = 'user-agent';
+
 
     export const VARY = 'vary';
     export const X_FORWARDED_PROTO = 'x-forwarded-proto';
@@ -86,6 +88,12 @@ export namespace hdr {
      */
     export const X_FORWARDED_HOST = 'x-forwarded-host';
     export const X_DNS_PREFETCH_CONTROL = 'x-dns-prefetch-control';
+    export const X_DOWNLOAD_OPTIONS = 'x-download-options';
+    export const X_FRAME_OPTIONS = 'x-frame-options';
+    export const X_POWERED_BY = 'x-powered-by';
+    export const X_CONTENT_TYPE_OPTIONS = 'x-content-type-options';
+    export const X_XSS_PROTECTION = 'x-xss-protection';
+    export const STRICT_TRANSPORT_SECURITY = 'strict-transport-security';
 
     export const IF_MODIFIED_SINCE = 'if-modified-since';
     export const IF_NONE_MATCH = 'if-none-match';
