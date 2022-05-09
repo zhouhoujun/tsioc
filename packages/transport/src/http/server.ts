@@ -1,7 +1,7 @@
 import { EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isBoolean, isFunction, isString, lang, Providers, tokenId, Type } from '@tsdi/ioc';
 import {
     TransportServer, EndpointBackend, CustomEndpoint, MiddlewareSet, BasicMiddlewareSet,
-    MiddlewareType, Interceptor, ModuleRef, Router, InterceptorType, ExecptionFilter,
+    MiddlewareType, Interceptor, ModuleRef, Router, InterceptorType, ExecptionFilter, RunnableFactoryResolver,
 } from '@tsdi/core';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { of, Subscription } from 'rxjs';
@@ -20,12 +20,12 @@ import { isBuffer, isStream } from '../utils';
 import { BodyparserMiddleware } from '../middlewares/bodyparser';
 import { MimeAdapter, MimeDb, MimeSource } from '../mime';
 import { db } from './mimedb';
-import { SendAdapter } from '../middlewares/send';
 import { HttpSendAdapter } from './send';
+import { SendAdapter } from '../middlewares/send';
+import { HttpNegotiator } from './negotiator';
 import { Negotiator } from '../negotiator';
 import { HttpExecptionFilter } from './filter';
 import { HttpMimeAdapter } from './mime';
-import { HttpNegotiator } from './negotiator';
 import { ContentMiddleware, ContentOptions } from '../middlewares/content';
 import { SessionMiddleware, SessionOptions } from '../middlewares/session';
 import { CsrfMiddleware, CsrfOptions } from '../middlewares/csrf';
@@ -54,6 +54,11 @@ export interface HttpOptions {
     csrf?: boolean | CsrfOptions;
     execptions?: Type<Interceptor>;
     middlewares?: MiddlewareType[];
+    /**
+     * share with thie http server.
+     * eg. ws, socket.io server.
+     */
+    sharing?: Type<TransportServer<any, any>>[];
 }
 
 export interface Http1ServerOptions extends HttpOptions {
@@ -128,6 +133,10 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
     ) {
         super();
         this.initOption(options);
+    }
+
+    get server() {
+        return this._server;
     }
 
     get proxy() {
@@ -212,6 +221,20 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
                 this.logger.error(err);
             });
         }
+
+        const resolver = this.context.injector.get(RunnableFactoryResolver);
+        //sharing servers
+        if (this.options.sharing) {
+            const providers = [
+                { provide: HttpServer, useValue: this },
+                { provide: HTTP_SERVEROPTIONS, useValue: this.options }
+            ];
+            await Promise.all(this.options.sharing.map(sr => {
+                let runnable = resolver.resolve(sr);
+                return runnable.create(this.context.injector, { providers }).run();
+            }));
+        }
+
         const listenOptions = this.options.listenOptions;
         this.context.get(ModuleRef).setValue(HTTP_LISTENOPTIONS, { ...listenOptions, withCredentials: cert!!, majorVersion: options.majorVersion });
         this.logger.info(lang.getClassName(this), 'listen:', listenOptions, '. access with url:', `http${cert ? 's' : ''}://${listenOptions?.host}:${listenOptions?.port}${listenOptions?.path ?? ''}`, '!')

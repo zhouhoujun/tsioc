@@ -2,7 +2,9 @@ import { Middleware, TransportContext } from '@tsdi/core';
 import { Abstract, Injectable } from '@tsdi/ioc';
 
 
-
+/**
+ * session
+ */
 @Abstract()
 export abstract class Session {
     /**
@@ -67,6 +69,9 @@ export abstract class Session {
     abstract toJSON(): Record<string, any>;
 }
 
+/**
+ * session options.
+ */
 @Abstract()
 export abstract class SessionOptions {
     abstract key: string;
@@ -90,6 +95,9 @@ const defOpts = {
     decode
 } as SessionOptions;
 
+/**
+ * session middleware.
+ */
 @Injectable()
 export class SessionMiddleware implements Middleware {
 

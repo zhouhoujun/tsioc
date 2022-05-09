@@ -14,7 +14,7 @@ export abstract class TcpClientOption {
     abstract json?: boolean;
     abstract socketOpts?: SocketConstructorOpts;
     abstract connectOpts: NetConnectOpts;
-    abstract interceptors?: InterceptorType<TCPRequest, TCPResponse>[]
+    abstract interceptors?: InterceptorType<TCPRequest, TCPResponse>[];
 }
 
 const defaults = {

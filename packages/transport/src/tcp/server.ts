@@ -43,7 +43,9 @@ const defaults = {
 } as TcpServerOption;
 
 
-
+/**
+ * TCP server.
+ */
 @Injectable()
 export class TCPServer extends TransportServer<TCPRequest, TCPResponse> {
 
