@@ -27,6 +27,8 @@ import { HttpExecptionFilter } from './filter';
 import { HttpMimeAdapter } from './mime';
 import { HttpNegotiator } from './negotiator';
 import { ContentMiddleware, ContentOptions } from '../middlewares/content';
+import { SessionMiddleware, SessionOptions } from '../middlewares/session';
+import { CsrfMiddleware } from '../middlewares/csrf';
 
 
 export interface HttpOptions {
@@ -46,6 +48,7 @@ export interface HttpOptions {
     listenOptions?: ListenOptions;
     interceptors?: InterceptorType<HttpServRequest, HttpServResponse>[];
     content?: ContentOptions;
+    session?: SessionOptions;
     execptions?: Type<Interceptor>;
     middlewares?: MiddlewareType[];
 }
@@ -77,6 +80,8 @@ const httpOpts = {
         HelmetMiddleware,
         CorsMiddleware,
         ContentMiddleware,
+        // SessionMiddleware,
+        // CsrfMiddleware,
         EncodeJsonMiddleware,
         BodyparserMiddleware,
         Router
@@ -163,7 +168,7 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
     }
 
     getInterceptors(): Interceptor<HttpServRequest, HttpServResponse>[] {
-        return this.context.get(HTTP_SERV_INTERCEPTORS) ?? EMPTY;
+        return this.context.injector.get(HTTP_SERV_INTERCEPTORS, EMPTY);
     }
 
     async startup(): Promise<void> {

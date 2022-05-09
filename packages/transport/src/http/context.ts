@@ -280,8 +280,8 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
      * @api public
      */
 
-    get method(): string | undefined {
-        return this.request.method;
+    get method(): string {
+        return this.request.method ?? '';
     }
 
 

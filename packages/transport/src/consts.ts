@@ -95,6 +95,11 @@ export namespace hdr {
     export const X_XSS_PROTECTION = 'x-xss-protection';
     export const STRICT_TRANSPORT_SECURITY = 'strict-transport-security';
 
+    export const CSRF_TOKEN = 'csrf-token';
+    export const XSRF_TOKEN = 'xsrf-token';
+    export const X_CSRF_TOKEN = 'x-csrf-token';
+    export const X_XSRF_TOKEN = 'x-xsrf-token';
+
     export const IF_MODIFIED_SINCE = 'if-modified-since';
     export const IF_NONE_MATCH = 'if-none-match';
     export const CACHE_CONTROL = 'cache-control';

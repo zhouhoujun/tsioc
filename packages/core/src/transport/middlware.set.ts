@@ -2,7 +2,9 @@ import { Abstract, EMPTY, isNumber } from '@tsdi/ioc';
 import { TransportContext } from './context';
 import { MiddlewareInst } from './endpoint';
 
-
+/**
+ * middleware set.
+ */
 @Abstract()
 export abstract class MiddlewareSet<T extends TransportContext = TransportContext> {
     /**
@@ -17,7 +19,9 @@ export abstract class MiddlewareSet<T extends TransportContext = TransportContex
     abstract getAll(): MiddlewareInst<T>[];
 }
 
-
+/**
+ * basic middleware.
+ */
 export class BasicMiddlewareSet<T extends TransportContext> implements MiddlewareSet<T> {
     protected middlewares: MiddlewareInst<T>[];
     constructor(middlewares?: MiddlewareInst<T>[]) {

@@ -101,6 +101,7 @@
     "axios": "^0.26.0",
     "body-parser": "^1.20.0",
     "content-disposition": "^0.5.4",
+    "csrf": "^3.1.0",
     "domino": "^2.1.6",
     "kafkajs": "^1.15.0",
     "modbus-serial": "^8.0.5",

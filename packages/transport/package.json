@@ -33,6 +33,7 @@
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
     "@types/qs": "^6.9.7",
+    "csrf": "^3.1.0",
     "raw-body": "^2.5.1",
     "qs": "^6.10.3"
   },

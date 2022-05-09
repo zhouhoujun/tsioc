@@ -74,7 +74,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
     /**
      * The outgoing HTTP request method.
      */
-    abstract get method(): string | undefined;
+    abstract get method(): string;
     /**
      * Check if the incoming request contains the "Content-Type"
      * header field and if it contains any of the given mime `type`s.
