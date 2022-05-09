@@ -115,6 +115,7 @@ export namespace hdr {
     export const ACCESS_CONTROL_ALLOW_HEADERS = 'access-control-allow-headers';
     export const ACCESS_CONTROL_EXPOSE_HEADERS = 'access-control-expose-headers';
 }
+
 /**
  * content types.
  */
@@ -130,17 +131,15 @@ export namespace ctype {
     /**
      * application json.
      */
-     export const APPL_JSON_UTF8 = 'application/json; charset=utf-8';
-
+    export const APPL_JSON_UTF8 = 'application/json; charset=utf-8';
     /**
      * text html.
      */
     export const TEXT_HTML = 'text/html';
-
     /**
      * text html utf-8.
      */
-     export const TEXT_HTML_UTF8 = 'text/html; charset=utf-8';
+    export const TEXT_HTML_UTF8 = 'text/html; charset=utf-8';
     /**
      * text plain.
      */
@@ -148,5 +147,5 @@ export namespace ctype {
     /**
      * text plain utf-8.
      */
-     export const TEXT_PLAIN_UTF8 = 'text/plain; charset=utf-8';
+    export const TEXT_PLAIN_UTF8 = 'text/plain; charset=utf-8';
 }

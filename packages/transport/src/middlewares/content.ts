@@ -24,7 +24,7 @@ export class ContentMiddleware implements Middleware {
 
     private options: ContentOptions
     constructor(options: ContentOptions) {
-        this.options = { ...defaults, ...options };
+        this.options = { ...defOpts, ...options };
     }
 
     async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
@@ -49,8 +49,8 @@ export class ContentMiddleware implements Middleware {
 
 }
 
-export const defaults: ContentOptions = {
-    root: '',
+export const defOpts: ContentOptions = {
+    root: 'public',
     index: 'index.html',
     maxAge: 0,
     immutable: false,

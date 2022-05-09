@@ -1,4 +1,4 @@
-import { EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isFunction, isString, lang, Providers, tokenId, Type } from '@tsdi/ioc';
+import { EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isBoolean, isFunction, isString, lang, Providers, tokenId, Type } from '@tsdi/ioc';
 import {
     TransportServer, EndpointBackend, CustomEndpoint, MiddlewareSet, BasicMiddlewareSet,
     MiddlewareType, Interceptor, ModuleRef, Router, InterceptorType, ExecptionFilter,
@@ -28,9 +28,11 @@ import { HttpMimeAdapter } from './mime';
 import { HttpNegotiator } from './negotiator';
 import { ContentMiddleware, ContentOptions } from '../middlewares/content';
 import { SessionMiddleware, SessionOptions } from '../middlewares/session';
-import { CsrfMiddleware } from '../middlewares/csrf';
+import { CsrfMiddleware, CsrfOptions } from '../middlewares/csrf';
 
-
+/**
+ * http options.
+ */
 export interface HttpOptions {
     majorVersion?: number;
     cors?: CorsOptions;
@@ -47,8 +49,9 @@ export interface HttpOptions {
     mimeDb?: Record<string, MimeSource>;
     listenOptions?: ListenOptions;
     interceptors?: InterceptorType<HttpServRequest, HttpServResponse>[];
-    content?: ContentOptions;
-    session?: SessionOptions;
+    content?: boolean | ContentOptions;
+    session?: boolean | SessionOptions;
+    csrf?: boolean | CsrfOptions;
     execptions?: Type<Interceptor>;
     middlewares?: MiddlewareType[];
 }
@@ -62,6 +65,9 @@ export interface Http2ServerOptions extends HttpOptions {
     options?: http2.ServerOptions | http2.SecureServerOptions;
 }
 
+/**
+ * http server options.
+ */
 export type HttpServerOptions = Http1ServerOptions | Http2ServerOptions;
 /**
  * default options.
@@ -80,8 +86,8 @@ const httpOpts = {
         HelmetMiddleware,
         CorsMiddleware,
         ContentMiddleware,
-        // SessionMiddleware,
-        // CsrfMiddleware,
+        SessionMiddleware,
+        CsrfMiddleware,
         EncodeJsonMiddleware,
         BodyparserMiddleware,
         Router
@@ -142,13 +148,22 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         }
         this.context.injector.setValue(HTTP_SERVEROPTIONS, this.options);
 
-        this.context.injector.setValue(ContentOptions, this.options.content);
+        if (this.options.content && !isBoolean(this.options.content)) {
+            this.context.injector.setValue(ContentOptions, this.options.content);
+        }
 
         if (this.options.mimeDb) {
             const mimedb = this.context.injector.get(MimeDb);
             mimedb.from(this.options.mimeDb);
         }
-        const middlewares = (this.options.cors === false ? this.options.middlewares?.filter(f => f !== CorsMiddleware) : this.options.middlewares)?.map(m => {
+
+        const middlewares = this.options.middlewares?.filter(m => {
+            if (!this.options.cors && m === CorsMiddleware) return false;
+            if (!this.options.session && m === SessionMiddleware) return false;
+            if (!this.options.csrf && m === CsrfMiddleware) return false;
+            if (!this.options.content && m === ContentMiddleware) return false;
+            return true;
+        }).map(m => {
             if (isFunction(m)) {
                 return { provide: HTTP_MIDDLEWARES, useClass: m, multi: true };
             } else {
