@@ -197,8 +197,9 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
 
     async startup(): Promise<void> {
         const options = this.options;
+        const injector = this.context.injector;
         if (this.context.has(CONTENT_DISPOSITION)) {
-            const func = await this.context.injector.getLoader().require('content-disposition');
+            const func = await injector.getLoader().require('content-disposition');
             assert(isFunction(func), 'Can not found any Content Disposition provider. Require content-disposition module');
             this.context.setValue(CONTENT_DISPOSITION, func);
         }
@@ -222,21 +223,21 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
             });
         }
 
-        const resolver = this.context.injector.get(RunnableFactoryResolver);
         //sharing servers
         if (this.options.sharing) {
+            const resolver = injector.get(RunnableFactoryResolver);
             const providers = [
                 { provide: HttpServer, useValue: this },
                 { provide: HTTP_SERVEROPTIONS, useValue: this.options }
             ];
             await Promise.all(this.options.sharing.map(sr => {
                 let runnable = resolver.resolve(sr);
-                return runnable.create(this.context.injector, { providers }).run();
+                return runnable.create(injector, { providers }).run();
             }));
         }
 
         const listenOptions = this.options.listenOptions;
-        this.context.get(ModuleRef).setValue(HTTP_LISTENOPTIONS, { ...listenOptions, withCredentials: cert!!, majorVersion: options.majorVersion });
+        injector.get(ModuleRef).setValue(HTTP_LISTENOPTIONS, { ...listenOptions, withCredentials: cert!!, majorVersion: options.majorVersion });
         this.logger.info(lang.getClassName(this), 'listen:', listenOptions, '. access with url:', `http${cert ? 's' : ''}://${listenOptions?.host}:${listenOptions?.port}${listenOptions?.path ?? ''}`, '!')
         this._server.listen(listenOptions);
     }
