@@ -1,6 +1,6 @@
 import { Injector, Injectable, lang, ArgumentError, MissingParameterError, tokenId, isArray } from '@tsdi/ioc';
 import { catchError, lastValueFrom, Observable, of, throwError } from 'rxjs';
-import { Http, HttpModule, HttpServer } from '../src';
+import { Http, HttpClientOptions, HttpModule, HttpServer } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import * as fs from 'fs';
@@ -203,9 +203,18 @@ describe('app message queue', () => {
     let ctx: ApplicationContext;
     let injector: Injector;
 
+    let client: Http;
+
     before(async () => {
         ctx = await Application.run(MainApp);
         injector = ctx.injector;
+        client = injector.resolve(Http, {
+            provide: HttpClientOptions,
+            useValue: {
+                key,
+                cert
+            }
+        });
     });
 
     it('make sure singleton', async () => {
@@ -227,14 +236,13 @@ describe('app message queue', () => {
     it('msg work', async () => {
         let device, aState, bState;
 
-        let client = ctx.resolve(Http);
 
         const res: any = await lastValueFrom(client.get('https://geo.datav.aliyun.com/areas_v2/bound/510100_full.json'));
 
         expect(res).toBeDefined();
         expect(isArray(res.features)).toBeTruthy();
 
-        const rep = await lastValueFrom(client.send<any>('/hdevice', { method:'POST', observe: 'response', body: { type: 'startup' } }));
+        const rep = await lastValueFrom(client.send<any>('/hdevice', { method: 'POST', observe: 'response', body: { type: 'startup' } }));
 
         device = rep.body['device'];
         aState = rep.body['deviceA_state'];
@@ -246,7 +254,7 @@ describe('app message queue', () => {
     });
 
     it('post route response object', async () => {
-        const a = await lastValueFrom(ctx.resolve(Http).post<any>('/device/init', null, { observe: 'response', params: { name: 'test' } }));
+        const a = await lastValueFrom(client.post<any>('/device/init', null, { observe: 'response', params: { name: 'test' } }));
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toBeDefined();
@@ -254,7 +262,7 @@ describe('app message queue', () => {
     });
 
     it('post route response string', async () => {
-        const b = await lastValueFrom(ctx.resolve(Http).post('/device/update', null, { observe: 'response', responseType: 'text', params: { version: '1.0.0' } })
+        const b = await lastValueFrom(client.post('/device/update', null, { observe: 'response', responseType: 'text', params: { version: '1.0.0' } })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -266,7 +274,7 @@ describe('app message queue', () => {
     });
 
     it('route with request body pipe', async () => {
-        const a = await lastValueFrom(ctx.resolve(Http).post<any>('/device/usage', { id: 'test1', age: '50', createAt: '2021-10-01' }, { observe: 'response' }));
+        const a = await lastValueFrom(client.post<any>('/device/usage', { id: 'test1', age: '50', createAt: '2021-10-01' }, { observe: 'response' }));
         // a.error && console.log(a.error);
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
@@ -276,7 +284,7 @@ describe('app message queue', () => {
     })
 
     it('route with request body pipe throw missing argument err', async () => {
-        const r = await lastValueFrom(ctx.resolve(Http).post('/device/usage', {}, { observe: 'response' })
+        const r = await lastValueFrom(client.post('/device/usage', {}, { observe: 'response' })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -287,7 +295,7 @@ describe('app message queue', () => {
     })
 
     it('route with request body pipe throw argument err', async () => {
-        const r = await lastValueFrom(ctx.resolve(Http).post('/device/usage', { id: 'test1', age: 'test', createAt: '2021-10-01' }, { observe: 'response' })
+        const r = await lastValueFrom(client.post('/device/usage', { id: 'test1', age: 'test', createAt: '2021-10-01' }, { observe: 'response' })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -298,14 +306,14 @@ describe('app message queue', () => {
     })
 
     it('route with request param pipe', async () => {
-        const a = await lastValueFrom(ctx.resolve(Http).get('/device/usege/find', { observe: 'response', params: { age: '20' } }));
+        const a = await lastValueFrom(client.get('/device/usege/find', { observe: 'response', params: { age: '20' } }));
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toStrictEqual(20);
     })
 
     it('route with request param pipe throw missing argument err', async () => {
-        const r = await lastValueFrom(ctx.resolve(Http).get('/device/usege/find', { observe: 'response' })
+        const r = await lastValueFrom(client.get('/device/usege/find', { observe: 'response' })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -316,25 +324,25 @@ describe('app message queue', () => {
     })
 
     it('route with request param pipe throw argument err', async () => {
-        const r = await lastValueFrom(ctx.resolve(Http).get('/device/usege/find', { observe: 'response', params: { age: 'test' } })
-        .pipe(
-            catchError((err, ct) => {
-                ctx.getLogger().error(err);
-                return of(err);
-            })));
+        const r = await lastValueFrom(client.get('/device/usege/find', { observe: 'response', params: { age: 'test' } })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
         expect(r.status).toEqual(500);
         // expect(r.error).toBeInstanceOf(ArgumentError)
     })
 
     it('route with request param pipe', async () => {
-        const a = await lastValueFrom(ctx.resolve(Http).get('/device/30/used', { observe: 'response', params: { age: '20' } }));
+        const a = await lastValueFrom(client.get('/device/30/used', { observe: 'response', params: { age: '20' } }));
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toStrictEqual(30);
     })
 
     it('route with request restful param pipe throw missing argument err', async () => {
-        const r = await lastValueFrom(ctx.resolve(Http).get('/device//used', { observe: 'response', params: { age: '20' } })
+        const r = await lastValueFrom(client.get('/device//used', { observe: 'response', params: { age: '20' } })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -345,7 +353,7 @@ describe('app message queue', () => {
     })
 
     it('route with request restful param pipe throw argument err', async () => {
-        const r = await lastValueFrom(ctx.resolve(Http).get('/device/age1/used', { observe: 'response', params: { age: '20' } })
+        const r = await lastValueFrom(client.get('/device/age1/used', { observe: 'response', params: { age: '20' } })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -357,7 +365,7 @@ describe('app message queue', () => {
 
 
     it('response with Observable', async () => {
-        const r = await lastValueFrom(ctx.resolve(Http).get('/device/status', { observe: 'response', responseType: 'text' }));
+        const r = await lastValueFrom(client.get('/device/status', { observe: 'response', responseType: 'text' }));
         expect(r.status).toEqual(200);
         expect(r.body).toEqual('working');
     })

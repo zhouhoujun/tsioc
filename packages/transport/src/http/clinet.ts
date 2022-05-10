@@ -100,15 +100,16 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
                         });
                         request.setEncoding('utf8');
                         request.on('response', (heads)=> {
-                        
-                        })
+                            
+                        });
+
                     } else {
                         let option = {
                             method: req.method,
                             headers: {
                                 ...headers
                             }
-                        }
+                        };
                         request = secureExp.test(req.url) ? https.request(option) : http.request(option);
                         request.on('response', respone=> {
                             

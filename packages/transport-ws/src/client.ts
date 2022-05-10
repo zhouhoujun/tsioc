@@ -1,4 +1,4 @@
-import { Endpoint, EndpointBackend, TransportClient, TransportContext } from '@tsdi/core';
+import { Endpoint, EndpointBackend, Interceptor, TransportClient, TransportContext } from '@tsdi/core';
 import { Inject, Injectable, InvocationContext, isString, lang, tokenId } from '@tsdi/ioc';
 import { WebSocket, ClientOptions } from 'ws';
 import { WsRequest } from './request';
@@ -18,11 +18,14 @@ export const WS_CLIENT_OPTIONS = tokenId<WSClitentOptions>('WS_CLIENT_OPTIONS');
 
 @Injectable()
 export class WsClient extends TransportClient<WsRequest, WsResponse> {
+    getInterceptors(): Interceptor<any, any>[] {
+        throw new Error('Method not implemented.');
+    }
 
     private ws?: WebSocket;
     private connected?: boolean;
     constructor(
-        private context: InvocationContext,
+        readonly context: InvocationContext,
         @Inject(WS_CLIENT_OPTIONS) private options: WSClitentOptions) {
         super();
     }
@@ -59,7 +62,7 @@ export class WsClient extends TransportClient<WsRequest, WsResponse> {
         });
     }
 
-    protected buildRequest(req: string | WsRequest<any>, options?: any): WsRequest<any>  {
+    protected buildRequest(ctx: InvocationContext, req: string | WsRequest<any>, options?: any): WsRequest<any>  {
         return isString(req) ?
             new WsRequest(TransportContext.create(this.context, options))
             : req;
