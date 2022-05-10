@@ -8,3 +8,4 @@ tsconfig.es2017.json
 tslint.json
 package-lock.json
 node_modules
+unit.ts

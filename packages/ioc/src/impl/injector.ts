@@ -351,7 +351,8 @@ export class DefaultInjector extends Injector {
             if (args[0] instanceof InvocationContext) {
                 return { token, context: args[0] };
             }
-            return { token, ...args[0] };
+            args[0].token = token;
+            return args[0];
         }
         return;
     }
