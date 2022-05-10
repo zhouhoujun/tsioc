@@ -15,8 +15,8 @@ import { ExecptionContext, ExecptionFilter } from '../execptions';
  * abstract transport server.
  */
 @Abstract()
-@Runner('startup')
-export abstract class TransportServer<TRequest, TResponse, Tx extends TransportContext = TransportContext> implements Startup, OnDispose {
+@Runner('start')
+export abstract class TransportServer<TRequest, TResponse, Tx extends TransportContext = TransportContext> implements OnDispose {
 
     @Log()
     protected readonly logger!: Logger;
@@ -45,9 +45,9 @@ export abstract class TransportServer<TRequest, TResponse, Tx extends TransportC
     }
 
     /**
-     * startup server.
+     * start server.
      */
-    abstract startup(): Promise<void>;
+    abstract start(): Promise<void>;
     /**
      * middlewares are executed on the transport request object before the
      * request is decoded.

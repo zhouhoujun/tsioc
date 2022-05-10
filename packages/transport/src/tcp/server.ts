@@ -56,7 +56,7 @@ export class TCPServer extends TransportServer<TCPRequest, TCPResponse> {
         super();
     }
 
-    async startup(): Promise<void> {
+    async start(): Promise<void> {
         this.server = new Server(this.options.serverOpts);
         const defer = lang.defer();
         this.server.once('error', defer.reject);

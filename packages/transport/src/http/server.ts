@@ -195,7 +195,7 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         return this.context.injector.get(HTTP_SERV_INTERCEPTORS, EMPTY);
     }
 
-    async startup(): Promise<void> {
+    async start(): Promise<void> {
         const options = this.options;
         const injector = this.context.injector;
         if (this.context.has(CONTENT_DISPOSITION)) {
