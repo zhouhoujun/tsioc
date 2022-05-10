@@ -1,4 +1,4 @@
-import { Abstract, InvocationContext } from '@tsdi/ioc';
+import { Abstract } from '@tsdi/ioc';
 
 
 /**

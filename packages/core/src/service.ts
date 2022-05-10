@@ -5,7 +5,7 @@ import { ApplicationContext } from './context';
  */
 export interface ConfigureService {
     /**
-     * config service of application.
+     * config application.
      *
      * @param {ApplicationContext} [ctx]
      * @returns {void} startup service token
