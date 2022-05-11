@@ -405,7 +405,7 @@ export const BASE_RESOLVERS: OperationArgumentResolver[] = [
             },
             resolve(parameter, ctx) {
                 const ty = parameter.type!;
-                const injector = ctx.injector?.parent ?? ctx.injector;;
+                const injector = ctx.injector?.parent ?? ctx.injector;
                 injector.register(ty as Type);
                 return injector.get(ty, ctx, parameter.flags);
             }

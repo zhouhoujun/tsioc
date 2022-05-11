@@ -268,7 +268,7 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
                 this.logger.info(lang.getClassName(this), this.options.listenOptions, 'closed !');
                 defer.resolve();
             }
-        });;
+        });
         await defer.promise;
         this._server = null!
     }

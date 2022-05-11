@@ -371,7 +371,7 @@ const primitiveResolvers: TransportArgumentResolver[] = [
                     const value: any[] = ctx.playload[parameter.field ?? parameter.paramName!];
                     const pipe = ctx.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase());
                     if (!pipe) throw missingPipeError(parameter, ctx.targetType, ctx.methodName);
-                    return value.map(val => pipe.transform(val, ...parameter.args || EMPTY)) as any;;
+                    return value.map(val => pipe.transform(val, ...parameter.args || EMPTY)) as any;
                 }
             }
         ),

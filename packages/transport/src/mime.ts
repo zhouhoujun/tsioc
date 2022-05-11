@@ -84,7 +84,7 @@ export class BasicMimeDb extends MimeDb {
     constructor() {
         super();
         this.map = new Map();
-        this.extenType = new Map();;
+        this.extenType = new Map();
     }
 
 
