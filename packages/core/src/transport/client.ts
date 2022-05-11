@@ -1,8 +1,8 @@
-import { Abstract, ArgumentError, createContext, InvocationContext, isNil } from '@tsdi/ioc';
+import { Abstract, ArgumentError, createContext, EMPTY, InvocationContext, isNil, isNumber } from '@tsdi/ioc';
 import { Logger, Log } from '@tsdi/logs';
 import { defer, Observable, throwError } from 'rxjs';
 import { catchError, concatMap, finalize } from 'rxjs/operators';
-import { InterceptorChain, Endpoint, EndpointBackend, Interceptor } from './endpoint';
+import { InterceptorChain, Endpoint, EndpointBackend, InterceptorInst } from './endpoint';
 
 
 /**
@@ -14,7 +14,9 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> {
     @Log()
     protected readonly logger!: Logger;
 
-    protected _chain?: Endpoint<TRequest, TResponse>;
+    private _chain?: Endpoint<TRequest, TResponse>;
+    private _interceptors?: InterceptorInst<TRequest, TResponse>[];
+
 
     /**
      * client context.
@@ -22,21 +24,37 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> {
     abstract get context(): InvocationContext;
 
     /**
-     * get interceptors.
+     * client interceptors.
      */
-    abstract getInterceptors(): Interceptor[];
+    get interceptors(): InterceptorInst<TRequest, TResponse>[] {
+        if (!this._interceptors) {
+            this._interceptors = [...this.getRegInterceptors() ?? EMPTY];
+        }
+        return this._interceptors;
+    }
 
     /**
-     * get backend endpoint.
+     * use interceptors.
+     * @param interceptor 
+     * @param order 
+     * @returns 
      */
-    protected abstract getBackend(): EndpointBackend<TRequest, TResponse>;
+    use(interceptor: InterceptorInst<TRequest, TResponse>, order?: number): this {
+        if (isNumber(order)) {
+            this.interceptors.splice(order, 0, interceptor);
+        } else {
+            this.interceptors.push(interceptor);
+        }
+        this._chain = null!;
+        return this;
+    }
 
     /**
      * transport endpoint chain.
      */
     chain(): Endpoint<TRequest, TResponse> {
         if (!this._chain) {
-            this._chain = new InterceptorChain(this.getBackend(), this.getInterceptors());
+            this._chain = new InterceptorChain(this.getBackend(), this.interceptors);
         }
         return this._chain;
     }
@@ -72,6 +90,16 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> {
             })
         );
     }
+
+    /**
+     * get registed interceptors.
+     */
+    protected abstract getRegInterceptors(): InterceptorInst[];
+
+    /**
+     * get backend endpoint.
+     */
+    protected abstract getBackend(): EndpointBackend<TRequest, TResponse>;
 
     protected createContext(): InvocationContext {
         return createContext(this.context);

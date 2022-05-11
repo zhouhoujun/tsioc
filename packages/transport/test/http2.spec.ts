@@ -290,7 +290,7 @@ describe('app message queue', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual(400);
         // expect(r.error).toBeInstanceOf(MissingParameterError)
     })
 
@@ -319,7 +319,7 @@ describe('app message queue', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual(400);
         // expect(r.error).toBeInstanceOf(MissingParameterError)
     })
 
@@ -348,7 +348,7 @@ describe('app message queue', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual(400);
         // expect(r.error).toBeInstanceOf(MissingParameterError);
     })
 

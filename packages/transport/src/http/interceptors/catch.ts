@@ -17,7 +17,7 @@ export class CatchInterceptor implements Interceptor<HttpServRequest, HttpServRe
             .pipe(
                 catchError((err, caught) => {
                     // log error
-                    ctx.getValue(Logger).error(err);
+                    ctx.get(Logger).error(err);
                     // handle error
                     const filter = ctx.get(HttpExecptionFilter);
                     const context = createExecptionContext(ctx, err);

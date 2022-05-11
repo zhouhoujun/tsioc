@@ -66,11 +66,11 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         this.context.injector.inject(interceptors);
     }
 
-    getInterceptors(): Interceptor[] {
+    protected getRegInterceptors(): Interceptor[] {
         return this.context.injector.get(HTTP_INTERCEPTORS, EMPTY);
     }
 
-    getBackend(): EndpointBackend<HttpRequest, HttpEvent> {
+    protected getBackend(): EndpointBackend<HttpRequest, HttpEvent> {
         if (!this._backend) {
             this._backend = new CustomEndpoint((req, ctx) => {
                 return new Observable((observer: Observer<HttpEvent<any>>) => {

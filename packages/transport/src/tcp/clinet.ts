@@ -54,16 +54,16 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> implemen
         this.context.injector.inject(interceptors);
     }
 
-    getInterceptors(): Interceptor<TCPRequest, TCPResponse>[] {
+    protected getRegInterceptors(): Interceptor<TCPRequest, TCPResponse>[] {
         return this.context.injector.get(TCP_INTERCEPTORS, EMPTY);
     }
 
 
-    getBackend(): EndpointBackend<TCPRequest<any>, TCPResponse<any>> {
+    protected getBackend(): EndpointBackend<TCPRequest<any>, TCPResponse<any>> {
         throw new Error('Method not implemented.');
     }
 
-    async connect(): Promise<void> {
+    protected async connect(): Promise<void> {
         if (this.connected) return;
         if (this.socket) {
             this.socket.destroy();
@@ -108,7 +108,7 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> implemen
         });
     }
 
-    handleData(data: Buffer) {
+    protected handleData(data: Buffer) {
 
     }
 

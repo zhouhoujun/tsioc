@@ -1,7 +1,7 @@
 import { EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isBoolean, isFunction, lang, Providers, tokenId, Type } from '@tsdi/ioc';
 import {
-    TransportServer, EndpointBackend, CustomEndpoint, MiddlewareSet, BasicMiddlewareSet,
-    MiddlewareType, Interceptor, ModuleRef, Router, InterceptorType, RunnableFactoryResolver,
+    TransportServer, EndpointBackend, CustomEndpoint, RunnableFactoryResolver,
+    MiddlewareType, Interceptor, ModuleRef, Router, InterceptorType, 
 } from '@tsdi/core';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { of, Subscription } from 'rxjs';
@@ -11,7 +11,7 @@ import * as https from 'https';
 import * as http2 from 'http2';
 import * as assert from 'assert';
 import { CONTENT_DISPOSITION } from './content';
-import { HttpContext, HttpServRequest, HttpServResponse, HTTP_MIDDLEWARES } from './context';
+import { HttpContext, HttpMiddleware, HttpServRequest, HttpServResponse, HTTP_MIDDLEWARES } from './context';
 import { ev, LOCALHOST } from '../consts';
 import { CorsMiddleware, CorsOptions, EncodeJsonMiddleware, HelmetMiddleware } from '../middlewares';
 import { BodyparserMiddleware } from '../middlewares/bodyparser';
@@ -187,10 +187,6 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         this.context.injector.inject(interceptors);
     }
 
-    getInterceptors(): Interceptor<HttpServRequest, HttpServResponse>[] {
-        return this.context.injector.get(HTTP_SERV_INTERCEPTORS, EMPTY);
-    }
-
     async start(): Promise<void> {
         const options = this.options;
         const injector = this.context.injector;
@@ -281,9 +277,14 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         return new HttpContext(this.context.injector, request, response, this);
     }
 
-    protected override createMidderwareSet(): MiddlewareSet<HttpContext> {
-        return new BasicMiddlewareSet(this.context.get(HTTP_MIDDLEWARES));
+    protected override getRegMidderwares(): HttpMiddleware[] {
+        return this.context.get(HTTP_MIDDLEWARES);
     }
+
+    protected override getRegInterceptors(): Interceptor<HttpServRequest, HttpServResponse>[] {
+        return this.context.injector.get(HTTP_SERV_INTERCEPTORS, EMPTY);
+    }
+
 }
 
 

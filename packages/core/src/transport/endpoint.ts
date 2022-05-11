@@ -115,8 +115,10 @@ export class InterceptorChain<TRequest, TResponse> implements Endpoint<TRequest,
 
     private chain!: Endpoint<TRequest, TResponse>;
     private backend: EndpointBackend<TRequest, TResponse>;
-    constructor(backend: EndpointBackend<TRequest, TResponse> | EndpointFn<TRequest, TResponse>, private interceptors: Interceptor<TRequest, TResponse>[]) {
+    private interceptors: Interceptor<TRequest, TResponse>[];
+    constructor(backend: EndpointBackend<TRequest, TResponse> | EndpointFn<TRequest, TResponse>, interceptors: InterceptorInst<TRequest, TResponse>[]) {
         this.backend = isFunction(backend) ? { handle: backend } : backend;
+        this.interceptors = interceptors.map(intercept => isFunction(intercept) ? ({ intercept }) : intercept);
     }
 
     handle(req: TRequest, context: InvocationContext): Observable<TResponse> {
