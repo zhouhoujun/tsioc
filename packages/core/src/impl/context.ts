@@ -24,7 +24,7 @@ import { ApplicationEvent, ApplicationEventMulticaster } from '../events';
  */
 export class DefaultApplicationContext extends DefaultInvocationContext implements ApplicationContext {
 
-    private _multicaster: ApplicationEventMulticaster|null;
+    private _multicaster: ApplicationEventMulticaster | null;
     exit = true;
 
     private _runners: ApplicationRunners;
@@ -133,9 +133,12 @@ export class PayloadApplicationEvent<T = any> extends ApplicationEvent {
 /**
  * default application factory.
  */
-@Injectable()
 export class DefaultApplicationFactory extends ApplicationFactory {
-
+    /**
+     * none poincut for aop.
+     */
+    static ρNPT = true;
+    
     constructor() {
         super();
     }
