@@ -10,7 +10,7 @@ export abstract class ExecptionHandlerMethodResolver {
      * resolve execption hanlde.
      * @param execption 
      */
-    abstract resolve(execption: Type<Error>): OperationInvoker[];
+    abstract resolve(execption: Type<Error> | Error): OperationInvoker[];
     /**
      * add execption handle.
      * @param execption execption type

@@ -90,16 +90,8 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
      */
     abstract onDestroy(callback: DestroyCallback): void;
 
-    static override create(injector: ModuleRef, options?: EnvironmentOption): ApplicationContext {
-        return APP_CONTEXT_IMPL.create(injector, options);
-    }
 }
 
-export const APP_CONTEXT_IMPL = {
-    create(injector: ModuleRef, options?: EnvironmentOption): ApplicationContext {
-        throw new Error('Method not implemented.');
-    }
-}
 
 /**
  * Environment option.

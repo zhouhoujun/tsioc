@@ -6,7 +6,8 @@ import { IocRegScope } from './reg';
 import { PropertyMetadata } from '../metadata/meta';
 import { OperationFactoryResolver } from '../operation';
 import { ctorName, Decors } from '../metadata/type';
-import { ArgumentError, Parameter } from '../resolver';
+import { Parameter } from '../resolver';
+import { ArgumentError } from '../execption';
 
 
 /**

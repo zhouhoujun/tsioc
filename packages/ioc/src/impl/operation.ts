@@ -7,6 +7,7 @@ import { ProviderType } from '../providers';
 import { InvocationContext, InvocationOption, InvokeArguments, InvokeOption } from '../context';
 import { OperationFactory, OperationFactoryResolver, OperationInvoker } from '../operation';
 import { Injector, MethodType } from '../injector';
+import { createContext } from './context';
 
 
 
@@ -21,6 +22,10 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
         private typeRef: TypeReflect,
         private method: string,
         private instance?: any) {
+    }
+
+    get descriptor(): TypedPropertyDescriptor<T> {
+        return this.typeRef.class.getDescriptor(this.method);
     }
 
     get returnType(): ClassType<T> {
@@ -179,7 +184,7 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
             resolvers = (resolvers && mthrsv) ? resolvers.concat(mthrsv) : (resolvers ?? mthrsv);
         }
 
-        return InvocationContext.create(injector, {
+        return createContext(injector, {
             ...option,
             parent: root ?? option?.parent,
             targetType: this.reflect.type,

@@ -1,17 +1,17 @@
-import { Abstract, Injector, InvocationContext, InvocationOption } from '@tsdi/ioc';
+import { Abstract, createContext, getClass, Injector, InvocationContext, InvocationOption } from '@tsdi/ioc';
 
 @Abstract()
-export abstract class ExecptionContext<T = Error> extends InvocationContext {
-
+export abstract class ExecptionContext<T extends Error = Error> extends InvocationContext {
     completed?: boolean;
-
     abstract get execption(): T;
     abstract set execption(val: T);
+}
 
-    static override create<T>(parent: InvocationContext | Injector, execption: T, options?: InvocationOption): ExecptionContext<T> {
-        const ctx = InvocationContext.create(parent, options) as ExecptionContext<T>;
-        ctx.setValue(ExecptionContext, ctx);
-        ctx.execption = execption;
-        return ctx;
-    }
+
+export function createExecptionContext<T extends Error>(parent: InvocationContext | Injector, execption: T, options?: InvocationOption): ExecptionContext<T> {
+    const ctx = createContext(parent, options) as ExecptionContext<T>;
+    ctx.injector.setValue(ExecptionContext, ctx);
+    ctx.injector.setValue(getClass(execption), execption);
+    ctx.execption = execption;
+    return ctx;
 }

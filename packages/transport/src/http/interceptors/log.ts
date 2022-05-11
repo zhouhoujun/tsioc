@@ -1,39 +1,31 @@
-import { HttpStatusCode, Middleware, TransportContext } from '@tsdi/core';
-import { Injectable, isNumber } from '@tsdi/ioc';
+import { Endpoint, Interceptor } from '@tsdi/core';
+import { Injectable } from '@tsdi/ioc';
 import { Logger, LoggerManager } from '@tsdi/logs';
 import * as chalk from 'chalk';
-import { ev } from '../consts';
-import { emptyStatus, redirectStatus, statusMessage } from '../http/status';
+import { map, Observable } from 'rxjs';
+import { HttpContext, HttpServRequest, HttpServResponse } from '../context';
+import { emptyStatus, redirectStatus } from '../status';
 
 
 
 @Injectable()
-export class LogMiddleware implements Middleware {
+export class LogInterceptor implements Interceptor<HttpServRequest, HttpServResponse> {
 
     constructor() { }
 
-    async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    intercept(req: HttpServRequest, next: Endpoint<HttpServRequest, HttpServResponse>, ctx: HttpContext): Observable<HttpServResponse> {
         const logger: Logger = ctx.target?.logger ?? ctx.getValue(Logger) ?? ctx.get(LoggerManager).getLogger();
 
         const start = Date.now();
         const method = chalk.cyan(ctx.method);
         logger.info(incoming, method, ctx.url);
-        try {
-            await next();
-            logger.info(outgoing, method, ctx.url, this.getStatusWithColor(ctx.status), this.getTimespan(Date.now() - start));
-        } catch (er) {
-            let err = er as any;
-            let statusCode = (err.status || err.statusCode) as HttpStatusCode;
-
-            // ENOENT support
-            if (ev.ENOENT === err.code) statusCode = 404;
-
-            // default to 500
-            if (!isNumber(statusCode) || !statusMessage[statusCode]) statusCode = 500;
-            logger.error(outgoing, method, ctx.url, this.getStatusWithColor(statusCode), this.getTimespan(Date.now() - start), err);
-            throw err;
-        }
-
+        return next.handle(req, ctx)
+            .pipe(
+                map(res => {
+                    logger.info(outgoing, method, ctx.url, this.getStatusWithColor(ctx.status), this.getTimespan(Date.now() - start), ctx.statusMessage);
+                    return res;
+                })
+            );
     }
 
     getStatusWithColor(status: number) {
@@ -46,8 +38,13 @@ export class LogMiddleware implements Middleware {
         if (status == 200) {
             return chalk.green(status);
         }
+
         if (status >= 500) {
             return chalk.red(status);
+        } else if (status > 300) {
+            return chalk.yellow(status);
+        } else if (status > 200) {
+            return chalk.cyan(status);
         }
 
     }

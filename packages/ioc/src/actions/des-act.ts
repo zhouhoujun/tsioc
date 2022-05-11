@@ -28,11 +28,11 @@ export class DesignClassScope extends IocRegScope<DesignContext> implements Acti
 
 
 export const RegClassAction = function (ctx: DesignContext, next: () => void): void {
-    regProvider(ctx.getRecords(), ctx.platform, ctx.injector, ctx.type, ctx.provide || ctx.type, ctx.singleton || ctx.reflect.singleton === true);
+    regProvider(ctx.getRecords(), ctx.platform, ctx.injector, ctx.type, ctx.provide || ctx.type, ctx.singleton || ctx.reflect.singleton === true, ctx.reflect.static);
     next();
 };
 
-function regProvider(records: Map<Token, FactoryRecord>, platform: Platform, injector: Injector, type: Type, provide: Token, singleton: boolean) {
+function regProvider(records: Map<Token, FactoryRecord>, platform: Platform, injector: Injector, type: Type, provide: Token, singleton: boolean, isStatic?: boolean) {
     const recd = {
         type,
         fn: (...fnArgs: any[]) => {
@@ -72,6 +72,7 @@ function regProvider(records: Map<Token, FactoryRecord>, platform: Platform, inj
             cleanObj(ctx);
             return instance;
         },
+        isStatic,
         fnType: FnType.Inj,
         unreg: () => platform.clearTypeProvider(type)
     } as FactoryRecord;

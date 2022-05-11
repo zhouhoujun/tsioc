@@ -1,3 +1,4 @@
+import { isArray } from './utils/chk';
 
 /**
  * Execption is Basic Error.
@@ -24,4 +25,14 @@ export class Execption extends Error {
         }
     }
     
+}
+
+
+/**
+ * argument errror.
+ */
+ export class ArgumentError extends Execption {
+    constructor(message?: string | string[]) {
+        super(isArray(message) ? message.join('\n') : message || '');
+    }
 }

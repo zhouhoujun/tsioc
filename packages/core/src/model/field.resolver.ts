@@ -1,5 +1,6 @@
-import { InvocationContext, isDefined, isFunction, isNil, PropertyMetadata, Type, ArgumentError, object2string, Execption } from '@tsdi/ioc';
+import { InvocationContext, isDefined, isFunction, isNil, PropertyMetadata, Type, ArgumentError, object2string } from '@tsdi/ioc';
 import { PipeTransform } from '../pipes/pipe';
+import { TransportArgumentError } from '../transport/error';
 
 /**
  * db property metadata. model parameter of {@link ModelFieldResolver} 
@@ -83,7 +84,7 @@ export interface ModelFieldResolver<C = any> {
 /**
  * Missing model field errror.
  */
-export class MissingModelFieldError extends Execption {
+export class MissingModelFieldError extends TransportArgumentError {
     constructor(fields: DBPropertyMetadata[], type: Type) {
         super(`ailed to resolve model class ${object2string(type)} because the following required fields were missing: [ ${fields.map(p => object2string(p)).join(',\n')} ]`);
     }
@@ -132,10 +133,10 @@ const jsonExp = /^(\s|\w)*json(b)?$/;
  * missing pipe error.
  * @param prop property metadata.
  * @param type target type.
- * @returns instance of {@link ArgumentError}
+ * @returns instance of {@link TransportArgumentError}
  */
 export function missingPropPipeError(prop: DBPropertyMetadata, type?: Type) {
-    return new ArgumentError(`missing pipe to transform property ${prop.propertyKey} of class ${type}`);
+    return new TransportArgumentError(`missing pipe to transform property ${prop.propertyKey} of class ${type}`);
 }
 
 
@@ -273,9 +274,9 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
 /**
  * missing property error. 
  * @param type 
- * @returns argument error {@link ArgumentError}.
+ * @returns argument error {@link TransportArgumentError}.
  */
 export function missingPropError(type?: Type) {
-    return new ArgumentError(`missing modle properties of class ${type}`);
+    return new TransportArgumentError(`missing modle properties of class ${type}`);
 }
 

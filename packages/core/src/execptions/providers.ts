@@ -1,4 +1,4 @@
-import { EMPTY, Injectable, isNumber, lang, OperationInvoker, ProviderType, Type } from '@tsdi/ioc';
+import { EMPTY, getClass, Injectable, isFunction, isNumber, lang, OperationInvoker, ProviderType, Type } from '@tsdi/ioc';
 import { ExecptionHandlerMethodResolver } from './resolver';
 
 
@@ -6,8 +6,8 @@ import { ExecptionHandlerMethodResolver } from './resolver';
 export class DefaultExecptionHandlerMethodResolver extends ExecptionHandlerMethodResolver {
     private maps = new Map<Type, OperationInvoker[]>();
 
-    resolve(execption: Type<Error>): OperationInvoker[] {
-        return this.maps.get(execption) ?? EMPTY;
+    resolve(execption: Type<Error> | Error): OperationInvoker[] {
+        return this.maps.get(isFunction(execption) ? execption : getClass(execption)) ?? EMPTY;
     }
 
     addHandle(execption: Type<Error>, methodInvoker: OperationInvoker, order?: number): this {
@@ -17,7 +17,8 @@ export class DefaultExecptionHandlerMethodResolver extends ExecptionHandlerMetho
         }
         if (!hds) {
             hds = [methodInvoker];
-        } else {
+            this.maps.set(execption, hds);
+        } else if (!hds.some(h => h.descriptor === methodInvoker.descriptor)) {
             hds.push(methodInvoker);
         }
         return this;
@@ -25,13 +26,13 @@ export class DefaultExecptionHandlerMethodResolver extends ExecptionHandlerMetho
 
     removeHandle(execption: Type<Error>, methodInvoker: OperationInvoker): this {
         const hds = this.maps.get(execption);
-        if(hds) lang.remove(hds, methodInvoker);
+        if (hds) lang.remove(hds, methodInvoker);
         return this;
     }
 }
 
 
 export const EXECPTION_PROVIDERS: ProviderType[] = [
-    { provide: ExecptionHandlerMethodResolver, useClass: DefaultExecptionHandlerMethodResolver }
+    { provide: ExecptionHandlerMethodResolver, useClass: DefaultExecptionHandlerMethodResolver, static: true }
 ]
 

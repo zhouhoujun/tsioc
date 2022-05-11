@@ -1,13 +1,17 @@
 import { ClassType, Type } from '../types';
 import { Destroyable, OnDestroy } from '../destroy';
-import { forIn, remove } from '../utils/lang';
-import { EMPTY, EMPTY_OBJ, isDefined, isFunction, isNumber, isPrimitiveType } from '../utils/chk';
+import { forIn, remove, getClassName } from '../utils/lang';
+import {
+    EMPTY, EMPTY_OBJ, isNumber, isPrimitiveType, isArray, isClassType, isDefined,
+    isFunction, isPlainObject, isString, isTypeObject, isTypeReflect
+} from '../utils/chk';
 import { InjectFlags, Token } from '../tokens';
 import { Injector, isInjector } from '../injector';
 import { OperationArgumentResolver, Parameter, composeResolver, DEFAULT_RESOLVERS } from '../resolver';
-import { InvocationContext, INVOCATION_CONTEXT_IMPL, InvocationOption } from '../context';
+import { InvocationContext, InvocationOption } from '../context';
 import { get } from '../metadata/refl';
 import { ProviderType } from '../providers';
+import { Execption } from '../execption';
 
 
 
@@ -15,6 +19,7 @@ import { ProviderType } from '../providers';
  * The context for the {@link OperationInvoker invocation of an operation}.
  */
 export class DefaultInvocationContext<T = any> extends InvocationContext implements Destroyable, OnDestroy {
+
     protected _args: T;
     protected _refs: InvocationContext[];
     protected _values: Map<Token, any>;
@@ -92,7 +97,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     }
 
     hasRef(ctx: InvocationContext): boolean {
-        if(ctx === this && this._refs.indexOf(ctx) >= 0) return true;
+        if (ctx === this && this._refs.indexOf(ctx) >= 0) return true;
         return this.parent?.hasRef(ctx) === true;
     }
 
@@ -166,7 +171,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     hasValue<T>(token: Token, flags?: InjectFlags): boolean {
         if (this.isSelf(token)) return true;
         return this._values.has(token) || this._refs.some(c => c.hasValue(token))
-        || (flags != InjectFlags.Self && this.parent?.hasValue(token, flags) === true);
+            || (flags != InjectFlags.Self && this.parent?.hasValue(token, flags) === true);
     }
 
     /**
@@ -176,7 +181,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     getValue<T>(token: Token<T>, flags?: InjectFlags): T {
         if (this.isSelf(token)) return this as any;
         return this._values.get(token) ?? this.getRefValue(token)
-        ?? (flags != InjectFlags.Self? this.parent?.getValue(token) : null);
+            ?? (flags != InjectFlags.Self ? this.parent?.getValue(token) : null);
     }
 
     protected getRefValue(token: Token) {
@@ -247,6 +252,10 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         return result ?? this.parent?.resolveArgument(meta, target) ?? null;
     }
 
+    missingError(missings: Parameter<any>[], type: ClassType<any>, method: string): Error {
+        return new MissingParameterError(missings, type, method);
+    }
+
     protected clear() {
         this._args = null!;
         this.resolvers = null!;
@@ -255,13 +264,68 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
 }
 
-INVOCATION_CONTEXT_IMPL.create = (parent, option) => {
-    if (isInjector(parent)) {
-        return new DefaultInvocationContext(parent, option);
-    } else {
-        return new DefaultInvocationContext(parent.injector, { parent, ...option });
+
+/**
+ * Missing argument errror.
+ */
+export class MissingParameterError extends Execption {
+    constructor(parameters: Parameter[], type: ClassType, method: string) {
+        super(`ailed to invoke operation because the following required parameters were missing: [ ${parameters.map(p => object2string(p)).join(',\n')} ], method ${method} of class ${object2string(type)}`);
     }
-};
+}
+
+
+const deft = {
+    typeInst: true,
+    fun: true
+}
+
+/**
+ * format object to string for log.
+ * @param obj 
+ * @returns 
+ */
+export function object2string(obj: any, options?: { typeInst?: boolean; fun?: boolean; }): string {
+    options = { ...deft, ...options };
+    if (isArray(obj)) {
+        return `[${obj.map(v => object2string(v, options)).join(', ')}]`;
+    } else if (isString(obj)) {
+        return `"${obj}"`;
+    } else if (isClassType(obj)) {
+        return 'Type<' + getClassName(obj) + '>';
+    } else if (isTypeReflect(obj)) {
+        return `[${obj.class.className} TypeReflect]`;
+    } else if (isPlainObject(obj)) {
+        let str: string[] = [];
+        for (let n in obj) {
+            let value = obj[n];
+            str.push(`${n}: ${object2string(value, options)}`)
+        }
+        return `{ ${str.join(', ')} }`;
+    } else if (options.typeInst && isTypeObject(obj)) {
+        let fileds = Object.keys(obj).filter(k => k).map(k => `${k}: ${object2string(obj[k], { typeInst: false, fun: false })}`);
+        return `[${getClassName(obj)} {${fileds.join(', ')}} ]`;
+    }
+    if (!options.fun && isFunction(obj)) {
+        return 'Function';
+    }
+    return `${obj?.toString()}`;
+}
+
+
+/**
+ * create invocation context.
+ * @param parent 
+ * @param options 
+ * @returns 
+ */
+export function createContext(parent: Injector | InvocationContext, options?: InvocationOption): InvocationContext {
+    if (isInjector(parent)) {
+        return new DefaultInvocationContext(parent, options);
+    } else {
+        return new DefaultInvocationContext(parent.injector, { parent, ...options });
+    }
+}
 
 
 export const BASE_RESOLVERS: OperationArgumentResolver[] = [

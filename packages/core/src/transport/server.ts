@@ -2,13 +2,10 @@ import { Abstract, InvocationContext } from '@tsdi/ioc';
 import { Logger, Log } from '@tsdi/logs';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
-import { Startup } from '../startup';
 import { InterceptorChain, Endpoint, EndpointBackend, MiddlewareBackend, MiddlewareInst, Interceptor } from './endpoint';
 import { TransportContext } from './context';
 import { MiddlewareSet } from './middlware.set';
-import { from, Subscription } from 'rxjs';
-import { catchError, mergeMap } from 'rxjs/operators';
-import { ExecptionContext, ExecptionFilter } from '../execptions';
+import { Subscription } from 'rxjs';
 
 
 /**
@@ -87,19 +84,6 @@ export abstract class TransportServer<TRequest, TResponse, Tx extends TransportC
         ctx.setValue(Logger, this.logger);
 
         const cancel = this.chain().handle(request, ctx)
-            .pipe(
-                mergeMap(res => this.respond(res, ctx)),
-                catchError((err, caught) => {
-                    // log error
-                    this.logger.error(err);
-                    // handle error
-                    const filter = this.getExecptionFilter(ctx);
-                    const context = ExecptionContext.create(ctx, err);
-                    return from(filter.handle(context, async () => {
-                        return await context.destroy();
-                    }));
-                })
-            )
             .subscribe({
                 complete: () => {
                     ctx.destroy();
@@ -109,13 +93,8 @@ export abstract class TransportServer<TRequest, TResponse, Tx extends TransportC
         this.bindEvent(ctx, cancel);
     }
 
-    protected getExecptionFilter(ctx: Tx): ExecptionFilter {
-        return ctx.injector.get(ExecptionFilter);
-    }
-
     protected abstract bindEvent(ctx: Tx, cancel: Subscription): void;
 
-    protected abstract respond(res: TResponse, ctx: Tx): Promise<any>;
 
     /**
      * close server.

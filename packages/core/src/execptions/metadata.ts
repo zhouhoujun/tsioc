@@ -1,5 +1,5 @@
-import { createDecorator, InvocationContext, OperationFactoryResolver, Type } from '@tsdi/ioc';
-import { TransportContext } from '../transport';
+import { createDecorator, Decors, InvocationContext, OperationFactoryResolver, Type } from '@tsdi/ioc';
+import { TransportContext, TransportError } from '../transport';
 import { ExecptionHandlerMethodResolver } from './resolver';
 
 /**
@@ -35,7 +35,16 @@ export interface ExecptionHandler {
      * @param {string} pattern message match pattern.
      * @param {order?: number } option message match option.
      */
-    (execption: Type<Error>, option?: { order?: number }): MethodDecorator;
+    (execption: Type<Error>, option?: {
+        /**
+         * order.
+         */
+        order?: number;
+        /**
+         * handle expection as response type.
+         */
+        response?: 'body' | 'header' | 'response' | ((ctx: InvocationContext, returnning: any) => void)
+    }): MethodDecorator;
 }
 
 /**
@@ -44,40 +53,42 @@ export interface ExecptionHandler {
  * 
  * @exports {@link ExecptionHandler}
  */
-export const ExecptionHandler: ExecptionHandler = createDecorator('Handle', {
+export const ExecptionHandler: ExecptionHandler = createDecorator('ExecptionHandler', {
     props: (execption?: Type<Error>, options?: { order?: number }) => ({ execption, ...options }),
-    reflect: {
-        class: (ctx, next) => {
-            ctx.reflect.annotation = ctx.metadata;
-            return next();
-        }
-    },
     design: {
         method: (ctx, next) => {
             const reflect = ctx.reflect;
-            const decor = reflect.class.getDecorDefine<ExecptionHandlerMetadata>(ctx.currDecor)!;
-            const { execption, order, response } = decor.metadata;
+            const decors = reflect.class.getDecorDefines<ExecptionHandlerMetadata>(ctx.currDecor, Decors.method);
             const injector = ctx.injector;
-
-            const invoker = injector.get(OperationFactoryResolver).resolve(reflect, injector).createInvoker(decor.propertyKey);
-            if (response) {
-                if (response === 'body') {
-                    invoker.onReturnning((ctx, value) => {
-                        ctx.resolve(TransportContext).body = value;
-                    });
-                } else if (response === 'header') {
-                    invoker.onReturnning((ctx, value) => {
-                        ctx.resolve(TransportContext).setHeader(value);
-                    });
-                } else if (response === 'response') {
-                    invoker.onReturnning((ctx, value) => {
-                        ctx.resolve(TransportContext).statusMessage = String(value);
-                    });
-                } else {
-                    invoker.onReturnning(response);
+            const factory = injector.get(OperationFactoryResolver).resolve(reflect, injector);
+            decors.forEach(decor => {
+                const { execption, order, response } = decor.metadata;
+                const invoker = factory.createInvoker(decor.propertyKey);
+                if (response) {
+                    if (response === 'body') {
+                        invoker.onReturnning((ctx, value) => {
+                            ctx.resolve(TransportContext).body = value;
+                        });
+                    } else if (response === 'header') {
+                        invoker.onReturnning((ctx, value) => {
+                            ctx.resolve(TransportContext).setHeader(value);
+                        });
+                    } else if (response === 'response') {
+                        invoker.onReturnning((ctx, value) => {
+                            const context = ctx.resolve(TransportContext);
+                            if (value instanceof TransportError) {
+                                context.status = value.statusCode;
+                                context.statusMessage = value.message;
+                            } else {
+                                ctx.resolve(TransportContext).statusMessage = String(value);
+                            }
+                        });
+                    } else {
+                        invoker.onReturnning(response);
+                    }
                 }
-            }
-            injector.get(ExecptionHandlerMethodResolver).addHandle(execption, invoker, order);
+                injector.get(ExecptionHandlerMethodResolver).addHandle(execption, invoker, order);
+            });
             next();
         }
     }

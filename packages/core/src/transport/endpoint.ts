@@ -49,7 +49,7 @@ export interface Interceptor<TRequest = any, TResponse = any> {
      * @param context request context.
      * @returns An observable of the event stream.
      */
-    intercept(req: TRequest, next: Endpoint<TRequest, TResponse>, context?: InvocationContext): Observable<TResponse>;
+    intercept(req: TRequest, next: Endpoint<TRequest, TResponse>, context: InvocationContext): Observable<TResponse>;
 }
 
 /**
@@ -101,7 +101,7 @@ export type MiddlewareType<T extends TransportContext = TransportContext> = Type
 export class InterceptorEndpoint<TRequest, TResponse> implements Endpoint<TRequest, TResponse> {
     constructor(private next: Endpoint<TRequest, TResponse>, private interceptor: Interceptor<TRequest, TResponse>) { }
 
-    handle(req: TRequest, context?: InvocationContext): Observable<TResponse> {
+    handle(req: TRequest, context: InvocationContext): Observable<TResponse> {
         return this.interceptor.intercept(req, this.next, context);
     }
 }

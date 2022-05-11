@@ -1,12 +1,16 @@
-import { ExecptionContext, ExecptionFilter, HttpStatusCode, TransportError } from '@tsdi/core';
-import { Injectable, isFunction, isNumber } from '@tsdi/ioc';
-import { HttpError, InternalServerError } from './errors';
+import {
+    ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
+    HttpStatusCode, MissingModelFieldError, TransportArgumentError, TransportError, TransportMissingError
+} from '@tsdi/core';
+import { Inject, Injectable, isFunction, isNumber } from '@tsdi/ioc';
+import { BadRequestError, HttpError, InternalServerError } from './errors';
 import { HttpContext } from './context';
 import { ctype, ev } from '../consts';
 import { statusMessage } from './status';
+import { HttpServerOptions, HTTP_SERVEROPTIONS } from './server';
 
 
-@Injectable()
+@Injectable({ static: true })
 export class HttpFinalizeFilter implements ExecptionFilter {
 
     async handle(ctx: ExecptionContext, next: () => Promise<void>): Promise<any> {
@@ -65,5 +69,43 @@ export class HttpFinalizeFilter implements ExecptionFilter {
         httpctx.length = Buffer.byteLength(msg);
         res.end(msg);
     }
+
+}
+
+
+@Injectable({ static: true })
+export class ArgumentErrorFilter implements ExecptionFilter {
+
+    constructor(@Inject(HTTP_SERVEROPTIONS) private option: HttpServerOptions) {
+
+    }
+
+    async handle(ctx: ExecptionContext<Error>, next: () => Promise<void>): Promise<any> {
+        const handles = ctx.injector.get(ExecptionHandlerMethodResolver).resolve(ctx.execption);
+        if (handles.length) {
+            await Promise.all(handles.map(h => h.invoke(ctx)));
+        }
+
+        if (!ctx.completed) {
+            return await next();
+        }
+
+    }
+
+    @ExecptionHandler(TransportArgumentError)
+    anguExecption(ctx: ExecptionContext, execption: TransportArgumentError) {
+        ctx.execption = new BadRequestError(this.option.detailError ? execption.message : undefined);
+    }
+
+    @ExecptionHandler(MissingModelFieldError)
+    missFieldExecption(ctx: ExecptionContext, execption: MissingModelFieldError) {
+        ctx.execption = new BadRequestError(this.option.detailError ? execption.message : undefined);
+    }
+
+    @ExecptionHandler(TransportMissingError)
+    missExecption(ctx: ExecptionContext, execption: TransportMissingError) {
+        ctx.execption = new BadRequestError(this.option.detailError ? execption.message : undefined);
+    }
+
 
 }

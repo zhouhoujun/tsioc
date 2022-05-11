@@ -2,9 +2,7 @@ import { ClassType } from './types';
 import { Token, tokenId } from './tokens';
 import { ParameterMetadata } from './metadata/meta';
 import { InvocationContext } from './context';
-import { isArray, isClassType, isDefined, isFunction, isPlainObject, isString, isTypeObject, isTypeReflect } from './utils/chk';
-import { getClassName } from './utils/lang';
-import { Execption } from './execption';
+import { isDefined } from './utils/chk';
 
 /**
  * parameter argument of an {@link OperationArgumentResolver}.
@@ -74,60 +72,3 @@ export function composeResolver<T extends OperationArgumentResolver<any>, TP ext
  * default resolvers {@link OperationArgumentResolver}. 
  */
 export const DEFAULT_RESOLVERS = tokenId<OperationArgumentResolver[]>('DEFAULT_RESOLVERS');
-
-
-/**
- * argument errror.
- */
-export class ArgumentError extends Execption {
-    constructor(message?: string | string[]) {
-        super(isArray(message) ? message.join('\n') : message || '');
-    }
-}
-
-/**
- * Missing argument errror.
- */
-export class MissingParameterError extends Execption {
-    constructor(parameters: Parameter[], type: ClassType, method: string) {
-        super(`ailed to invoke operation because the following required parameters were missing: [ ${parameters.map(p => object2string(p)).join(',\n')} ], method ${method} of class ${object2string(type)}`);
-    }
-}
-
-
-const deft = {
-    typeInst: true,
-    fun: true
-}
-
-/**
- * format object to string for log.
- * @param obj 
- * @returns 
- */
-export function object2string(obj: any, options?: { typeInst?: boolean; fun?: boolean; }): string {
-    options = { ...deft, ...options };
-    if (isArray(obj)) {
-        return `[${obj.map(v => object2string(v, options)).join(', ')}]`;
-    } else if (isString(obj)) {
-        return `"${obj}"`;
-    } else if (isClassType(obj)) {
-        return 'Type<' + getClassName(obj) + '>';
-    } else if (isTypeReflect(obj)) {
-        return `[${obj.class.className} TypeReflect]`;
-    } else if (isPlainObject(obj)) {
-        let str: string[] = [];
-        for (let n in obj) {
-            let value = obj[n];
-            str.push(`${n}: ${object2string(value, options)}`)
-        }
-        return `{ ${str.join(', ')} }`;
-    } else if (options.typeInst && isTypeObject(obj)) {
-        let fileds = Object.keys(obj).filter(k => k).map(k => `${k}: ${object2string(obj[k], { typeInst: false, fun: false })}`);
-        return `[${getClassName(obj)} {${fileds.join(', ')}} ]`;
-    }
-    if (!options.fun && isFunction(obj)) {
-        return 'Function';
-    }
-    return `${obj?.toString()}`;
-}

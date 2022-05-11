@@ -1,6 +1,6 @@
 import {
-    Type, tokenId, Injector, Token, IocContext, InvocationContext, DefaultInvocationContext,
-    ParameterMetadata, lang, ClassType, DecorDefine, Defer, InvocationOption, EMPTY_OBJ
+    tokenId, Injector, Token, IocContext, InvocationContext, DefaultInvocationContext,
+    ParameterMetadata, lang, ClassType, DecorDefine, Defer, InvocationOption
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advices } from '../advices/Advices';
@@ -89,7 +89,7 @@ export class Joinpoint<T = any> extends DefaultInvocationContext<T> implements I
      * @param options 
      * @returns 
      */
-    static override create(injector: Injector, options: JoinpointOption) {
+    static create(injector: Injector, options: JoinpointOption) {
         return new Joinpoint(injector, options);
     }
 }

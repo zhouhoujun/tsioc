@@ -249,6 +249,10 @@ export interface ProvidedInMetadata {
  */
 export interface PatternMetadata {
     /**
+     * static provider or not.
+     */
+    static?: boolean;
+    /**
      * is singleton or not.
      *
      * @type {boolean}

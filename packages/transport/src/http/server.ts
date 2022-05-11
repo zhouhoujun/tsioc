@@ -1,7 +1,7 @@
-import { EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isBoolean, isFunction, isString, lang, Providers, tokenId, Type } from '@tsdi/ioc';
+import { EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isBoolean, isFunction, lang, Providers, tokenId, Type } from '@tsdi/ioc';
 import {
     TransportServer, EndpointBackend, CustomEndpoint, MiddlewareSet, BasicMiddlewareSet,
-    MiddlewareType, Interceptor, ModuleRef, Router, InterceptorType, ExecptionFilter, RunnableFactoryResolver,
+    MiddlewareType, Interceptor, ModuleRef, Router, InterceptorType, RunnableFactoryResolver,
 } from '@tsdi/core';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { of, Subscription } from 'rxjs';
@@ -10,13 +10,10 @@ import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
 import * as assert from 'assert';
-import { Readable } from 'stream';
 import { CONTENT_DISPOSITION } from './content';
 import { HttpContext, HttpServRequest, HttpServResponse, HTTP_MIDDLEWARES } from './context';
-import { ev, hdr, LOCALHOST } from '../consts';
-import { CorsMiddleware, CorsOptions, EncodeJsonMiddleware, HelmetMiddleware, LogMiddleware } from '../middlewares';
-import { emptyStatus } from './status';
-import { isBuffer, isStream } from '../utils';
+import { ev, LOCALHOST } from '../consts';
+import { CorsMiddleware, CorsOptions, EncodeJsonMiddleware, HelmetMiddleware } from '../middlewares';
 import { BodyparserMiddleware } from '../middlewares/bodyparser';
 import { MimeAdapter, MimeDb, MimeSource } from '../mime';
 import { db } from './mimedb';
@@ -24,7 +21,6 @@ import { HttpSendAdapter } from './send';
 import { SendAdapter } from '../middlewares/send';
 import { HttpNegotiator } from './negotiator';
 import { Negotiator } from '../negotiator';
-import { HttpExecptionFilter } from './filter';
 import { HttpMimeAdapter } from './mime';
 import { ContentMiddleware, ContentOptions } from '../middlewares/content';
 import { SessionMiddleware, SessionOptions } from '../middlewares/session';
@@ -46,6 +42,7 @@ export interface HttpOptions {
      * delay some time to clean up after request client close.
      */
     closeDelay?: number;
+    detailError?: boolean;
     mimeDb?: Record<string, MimeSource>;
     listenOptions?: ListenOptions;
     interceptors?: InterceptorType<HttpServRequest, HttpServResponse>[];
@@ -86,8 +83,8 @@ const httpOpts = {
     content: {
         root: 'public'
     },
+    detailError: true,
     middlewares: [
-        LogMiddleware,
         HelmetMiddleware,
         CorsMiddleware,
         ContentMiddleware,
@@ -117,7 +114,6 @@ export const HTTP_SERV_INTERCEPTORS = tokenId<Interceptor<HttpServRequest, HttpS
 @Injectable()
 @Providers([
     { provide: SendAdapter, useClass: HttpSendAdapter },
-    { provide: ExecptionFilter, useClass: HttpExecptionFilter },
     { provide: MimeAdapter, useClass: HttpMimeAdapter },
     { provide: Negotiator, useClass: HttpNegotiator }
 ])
@@ -263,75 +259,6 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
                 ctx.response.end();
             }
         });
-    }
-
-    protected override async respond(res: HttpServResponse, ctx: HttpContext): Promise<any> {
-        if (ctx.destroyed) return;
-
-        if (!ctx.writable) return;
-
-        let body = ctx.body;
-        const code = ctx.status;
-
-        // ignore body
-        if (emptyStatus[code]) {
-            // strip headers
-            ctx.body = null;
-            return res.end();
-        }
-
-        if ('HEAD' === ctx.method) {
-            if (!res.headersSent && !res.hasHeader(hdr.CONTENT_LENGTH)) {
-                const length = ctx.length;
-                if (Number.isInteger(length)) ctx.length = length;
-            }
-            return res.end();
-        }
-
-        // status body
-        if (null == body) {
-            if (ctx._explicitNullBody) {
-                res.removeHeader(hdr.CONTENT_TYPE);
-                res.removeHeader(hdr.TRANSFER_ENCODING);
-                return res.end();
-            }
-            if (ctx.request.httpVersionMajor >= 2) {
-                body = String(code);
-            } else {
-                body = ctx.statusMessage || String(code);
-            }
-            if (!res.headersSent) {
-                ctx.type = 'text';
-                ctx.length = Buffer.byteLength(body);
-            }
-            return res.end(body);
-        }
-
-        // responses
-        if (isBuffer(body)) return res.end(body);
-        if (isString(body)) return res.end(body);
-        if (isStream(body)) {
-            let defer = lang.defer();
-            body.once(ev.ERROR, (err) => {
-                defer.reject(err);
-            });
-            body.once(ev.END, () => {
-                defer.resolve();
-            });
-            body.pipe(res as any);
-            return await defer.promise
-                .then(() => {
-                    res.end();
-                    if (body instanceof Readable) body.destroy();
-                });
-        }
-
-        // body: json
-        body = JSON.stringify(body);
-        if (!res.headersSent) {
-            ctx.length = Buffer.byteLength(body);
-        }
-        res.end(body);
     }
 
     async close(): Promise<void> {

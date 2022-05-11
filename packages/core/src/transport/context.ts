@@ -1,11 +1,12 @@
 import {
-    Abstract, ArgumentError, ClassType, composeResolver, DefaultInvocationContext, EMPTY,
-    Injector, InvocationContext, InvokeArguments, isArray, isDefined, isPrimitiveType, isPromise,
-    isString, Parameter, Token, Type
+    Abstract, ClassType, composeResolver, DefaultInvocationContext, EMPTY,
+    Injector, InvokeArguments, isArray, isDefined, isPrimitiveType, isPromise,
+    isString, MissingParameterError, Parameter, Token, Type
 } from '@tsdi/ioc';
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
 import { MODEL_RESOLVERS } from '../model/model.resolver';
 import { PipeTransform } from '../pipes/pipe';
+import { TransportArgumentError } from './error';
 import { TransportArgumentResolver, TransportParameter } from './resolver';
 
 
@@ -96,7 +97,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
      *
      *     this.is('html'); // => false
      */
-    abstract is(type: string | string[]): string|null|false;
+    abstract is(type: string | string[]): string | null | false;
     /**
      * The request body, or `null` if one isn't set.
      *
@@ -259,11 +260,16 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
      */
     abstract removeHeader(field: string): void;
 
-    static override create(parent: Injector | InvocationContext, options?: InvokeArguments): TransportContext {
-        throw new Error('Method not implemented.');
+    override missingError(missings: Parameter<any>[], type: ClassType<any>, method: string): MissingParameterError {
+        return new TransportMissingError(missings, type, method);
     }
 }
 
+export class TransportMissingError extends MissingParameterError {
+    constructor(parameters: Parameter[], type: ClassType, method: string) {
+        super(parameters, type, method);
+    }
+}
 
 /**
  * to promise.
@@ -280,7 +286,7 @@ export function promisify<T>(target: T | Observable<T> | Promise<T>): Promise<T>
 }
 
 export function missingPipeError(parameter: Parameter, type?: ClassType, method?: string) {
-    return new ArgumentError(`missing pipe to transform argument ${parameter.paramName} type, method ${method} of class ${type}`);
+    return new TransportArgumentError(`missing pipe to transform argument ${parameter.paramName} type, method ${method} of class ${type}`);
 }
 
 const primitiveResolvers: TransportArgumentResolver[] = [

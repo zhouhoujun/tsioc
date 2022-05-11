@@ -23,7 +23,7 @@ import { ModuleLoader } from '../module.loader';
 import { DefaultPlatform } from './platform';
 import { LifecycleHooks, LifecycleHooksResolver } from '../lifecycle';
 import { DefaultOperationFactoryResolver } from './operation';
-import { BASE_RESOLVERS } from './context';
+import { BASE_RESOLVERS, createContext } from './context';
 import { InvocationContext, InvokeOption } from '../context';
 import { DEFAULT_RESOLVERS } from '../resolver';
 import { Execption } from '../execption';
@@ -331,7 +331,7 @@ export class DefaultInjector extends Injector {
                     }
                     option.values = [...option.values || EMPTY, [TARGET, option.target]];
                 }
-                context = context ? InvocationContext.create(this, { parent: context, ...option, providers }) : InvocationContext.create(this, providers ? { ...option, providers } : option);
+                context = context ? createContext(this, { parent: context, ...option, providers }) : createContext(this, providers ? { ...option, providers } : option);
                 isnew = true;
             }
             inst = this.resolveStrategy(platform, option, context);

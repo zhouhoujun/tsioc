@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { Logger, LoggerManager } from '@tsdi/logs';
 import { PROCESS_ROOT } from '../metadata/tk';
-import { ApplicationContext, ApplicationFactory, APP_CONTEXT_IMPL, EnvironmentOption } from '../context';
+import { ApplicationContext, ApplicationFactory, EnvironmentOption } from '../context';
 import { RunnableFactory, RunnableFactoryResolver, BootstrapOption, RunnableRef } from '../runnable';
 import { ApplicationRunners } from '../runners';
 import { ModuleRef } from '../module.ref';
@@ -138,7 +138,6 @@ export class DefaultApplicationFactory extends ApplicationFactory {
 
     constructor() {
         super();
-        APP_CONTEXT_IMPL.create = this.create.bind(this);
     }
 
     create<T>(root: ModuleRef<T>, option?: EnvironmentOption): ApplicationContext {

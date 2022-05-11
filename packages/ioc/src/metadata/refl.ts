@@ -305,6 +305,9 @@ export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
         if (meta.singleton) {
             reflect.singleton = true;
         }
+        if (meta.static) {
+            reflect.static = true;
+        }
         if (meta.provide && reflect.class.provides.indexOf(meta.provide) < 0) {
             reflect.class.provides.push(meta.provide);
         }

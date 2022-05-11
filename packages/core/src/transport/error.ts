@@ -1,4 +1,4 @@
-import { Execption, isArray } from '@tsdi/ioc';
+import { ArgumentError, Execption, isArray } from '@tsdi/ioc';
 
 
 /**
@@ -9,7 +9,7 @@ import { Execption, isArray } from '@tsdi/ioc';
  * @extends {Error}
  */
 export class TransportError extends Execption {
-    
+
     constructor(readonly status: number, message?: string | string[]) {
         super(isArray(message) ? message.join('\n') : message || '');
     }
@@ -23,4 +23,12 @@ export class TransportError extends Execption {
     }
 }
 
+/**
+ * transport arguments error.
+ */
+export class TransportArgumentError extends ArgumentError {
+    constructor(message?: string | string[]) {
+        super(message);
+    }
+}
 

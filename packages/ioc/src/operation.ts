@@ -20,6 +20,10 @@ export interface OperationInvoker<T = any> {
      */
     get returnType(): ClassType<T>;
     /**
+     * origin method descriptor.
+     */
+    get descriptor(): TypedPropertyDescriptor<T>;
+    /**
      * method return callback hooks.
      */
     onReturnning(callback: (ctx: InvocationContext, value: T) => void): void;

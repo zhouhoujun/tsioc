@@ -8,7 +8,7 @@ import {
 } from './meta';
 import { InvocationContext, InvokeArguments } from '../context';
 import { Token } from '../tokens';
-import { ArgumentResolver, MissingParameterError, Parameter } from '../resolver';
+import { ArgumentResolver, Parameter } from '../resolver';
 import { getClassAnnotation } from '../utils/util';
 import { EMPTY, isFunction, isPromise, isString } from '../utils/chk';
 import { forIn } from '../utils/lang';
@@ -288,7 +288,7 @@ export class Reflective<T = any> {
     invoke(method: string, context: InvocationContext, instance?: T, destroy?: boolean | Function, completed?: (context: InvocationContext, returnning: any) => void) {
         const type = this.type;
         const inst: any = instance ?? context.resolve(type);
-        if (!instance || !isFunction(inst[method])) {
+        if (!inst || !isFunction(inst[method])) {
             throw new Error(`type: ${type} has no method ${method}.`);
         }
         const hasPointcut = inst[method]['_proxy'] == true;
@@ -325,7 +325,7 @@ export class Reflective<T = any> {
     protected validate(method: string, context: InvocationContext, parameters: Parameter[]) {
         const missings = parameters.filter(p => this.isisMissing(context, p));
         if (missings.length) {
-            throw new MissingParameterError(missings, this.type, method);
+            throw context.missingError(missings, this.type, method);
         }
     }
 
@@ -466,6 +466,7 @@ export class Reflective<T = any> {
     }
 
     getDecorDefine<T = any>(decor: string | Function): DecorDefine<T> | undefined;
+    getDecorDefine<T = any>(decor: string | Function, type: DecorMemberType): DecorDefine<T> | undefined;
     getDecorDefine<T = any>(decor: string | Function, propertyKey: string, type: DecorMemberType): DecorDefine<T> | undefined;
     getDecorDefine(decor: string | Function, type?: DecoratorType | string, propertyKey?: string | DecorMemberType): DecorDefine | undefined {
         type = type || Decors.CLASS;
@@ -620,6 +621,10 @@ export class Reflective<T = any> {
     hasMethod(...names: string[]): boolean {
         const descs = this.getPropertyDescriptors();
         return !names.some(name => !isFunction(descs[name]?.value));
+    }
+
+    getDescriptor(name: string): TypedPropertyDescriptor<any> {
+        return this.getPropertyDescriptors()[name];
     }
 
     private descriptos!: Record<string, TypedPropertyDescriptor<any>>;
