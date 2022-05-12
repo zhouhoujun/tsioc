@@ -3,7 +3,9 @@ import { invalidPipeArgumentError } from '@tsdi/core';
 import { Pipe } from '../../metadata/decor';
 import { PipeTransform } from '../pipe';
 
-
+/**
+ * parse float.
+ */
 @Pipe('float')
 export class ParseFloatPipe implements PipeTransform<number> {
 

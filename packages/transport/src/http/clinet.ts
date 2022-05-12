@@ -66,7 +66,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         this.context.injector.inject(interceptors);
     }
 
-    protected getRegInterceptors(): Interceptor[] {
+    protected getRegInterceptors(): Interceptor<HttpRequest, HttpEvent>[] {
         return this.context.injector.get(HTTP_INTERCEPTORS, EMPTY);
     }
 
@@ -83,9 +83,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
                     const dataLinster = (chunk: string) => {
                         // observer.next(chunk)
                     };
-                    const onResponse = (hdrs:any, flags: any) => {
-
-                    }
+                    let onResponse: any;
                     let request: http.ClientRequest | http2.ClientHttp2Stream;
                     if (this.option.authority && this.client) {
                         let url = req.url.trim();
@@ -95,26 +93,29 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
                         }
                         request = this.client.request({
                             ...headers,
+                            'accept': 'application/json, text/plain, */*',
                             method: req.method,
                             ':path': url
                         });
                         request.setEncoding('utf8');
-                        request.on('response', (heads)=> {
-                            
-                        });
+                        onResponse = (headers: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader, flags: number) => {
+
+                        };
 
                     } else {
                         let option = {
                             method: req.method,
                             headers: {
-                                ...headers
+                                ...headers,
+                                'accept': 'application/json, text/plain, */*',
                             }
                         };
                         request = secureExp.test(req.url) ? https.request(option) : http.request(option);
-                        request.on('response', respone=> {
+                        onResponse = (respone: http.IncomingMessage) => {
                             
-                        });
+                        };
                     }
+                    
                     request.on(ev.RESPONSE, onResponse);
                     request.on(ev.DATA, dataLinster);
                     request.on(ev.ERROR, onError);
@@ -159,8 +160,6 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
             });
         }
     }
-
-
 
     /**
      * Constructs a `DELETE` request that interprets the body as an `ArrayBuffer`

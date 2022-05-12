@@ -1,14 +1,17 @@
 import { Module, RouterModule, TransformModule } from '@tsdi/core';
 import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
 import { BasicMimeDb, MimeDb } from '../mime';
-import { Http } from './clinet';
 import { HttpExecptionFilter, HTTP_EXECPTION_FILTERS } from './filter';
 import { ArgumentErrorFilter, HttpFinalizeFilter } from './finalize-filter';
 import { CatchInterceptor } from './interceptors/catch';
 import { LogInterceptor } from './interceptors/log';
 import { ResponsedInterceptor } from './interceptors/respond';
 import { HttpServer, HttpServerOptions, HTTP_SERVEROPTIONS, HTTP_SERV_INTERCEPTORS } from './server';
+import { Http } from './clinet';
 
+/**
+ * http module.
+ */
 @Module({
     imports: [
         TransformModule,

@@ -3,6 +3,9 @@ import { isString, isUndefined } from '@tsdi/ioc';
 import { Pipe } from '../../metadata/decor';
 import { PipeTransform } from '../pipe';
 
+/**
+ * parse enum.
+ */
 @Pipe('enum')
 export class ParseEnumPipe<T> implements PipeTransform<T> {
 

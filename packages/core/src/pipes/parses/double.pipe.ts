@@ -4,6 +4,9 @@ import { Pipe } from '../../metadata/decor';
 import { PipeTransform } from '../pipe';
 
 
+/**
+ * parse double.
+ */
 @Pipe('double')
 export class ParseDoublePipe implements PipeTransform<number> {
 

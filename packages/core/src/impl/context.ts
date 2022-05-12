@@ -1,6 +1,6 @@
 import {
     Type, isFunction, ModuleMetadata, getClass, Injector, ProviderType,
-    DefaultInvocationContext, InvokeArguments, ArgumentError, EMPTY_OBJ, Injectable
+    DefaultInvocationContext, InvokeArguments, ArgumentError, EMPTY_OBJ
 } from '@tsdi/ioc';
 import { Logger, LoggerManager } from '@tsdi/logs';
 import { PROCESS_ROOT } from '../metadata/tk';

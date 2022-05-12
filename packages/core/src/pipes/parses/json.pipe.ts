@@ -2,6 +2,9 @@ import { isNil, isString } from '@tsdi/ioc';
 import { Pipe } from '../../metadata/decor';
 import { PipeTransform, invalidPipeArgumentError } from '../pipe';
 
+/**
+ * parse json.
+ */
 @Pipe('json')
 export class JsonPipe implements PipeTransform<object> {
     /**

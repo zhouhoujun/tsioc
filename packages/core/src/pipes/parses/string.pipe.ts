@@ -4,7 +4,9 @@ import { Pipe } from '../../metadata/decor';
 import { PipeTransform, invalidPipeArgumentError } from '../pipe';
 
 
-
+/**
+ * parse string.
+ */
 @Pipe('string')
 export class ParseStringPipe implements PipeTransform<string> {
 

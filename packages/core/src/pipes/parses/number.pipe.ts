@@ -2,6 +2,9 @@ import { isNumber, isString } from '@tsdi/ioc';
 import { Pipe } from '../../metadata/decor';
 import { PipeTransform, invalidPipeArgumentError } from '../pipe';
 
+/**
+ * parse number.
+ */
 @Pipe('number')
 export class ParseNumberPipe implements PipeTransform<number> {
 

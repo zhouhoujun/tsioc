@@ -1,6 +1,9 @@
 import { Pipe } from '../metadata/decor';
 import { PipeTransform } from './pipe';
 
+/**
+ * json stringify.
+ */
 @Pipe('json-format')
 export class ParseJsonPipe implements PipeTransform {
   /**

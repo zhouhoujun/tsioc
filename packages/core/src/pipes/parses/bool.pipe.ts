@@ -2,7 +2,9 @@ import { Pipe } from '../../metadata/decor';
 import { PipeTransform, invalidPipeArgumentError } from '../pipe';
 
 
-
+/**
+ * parse boolean.
+ */
 @Pipe('boolean')
 export class ParseBoolPipe implements PipeTransform<boolean> {
 

@@ -1,4 +1,4 @@
-import { InvocationContext, isDefined, isFunction, isNil, PropertyMetadata, Type, ArgumentError, object2string } from '@tsdi/ioc';
+import { InvocationContext, isDefined, isFunction, isNil, PropertyMetadata, Type, object2string } from '@tsdi/ioc';
 import { PipeTransform } from '../pipes/pipe';
 import { TransportArgumentError } from '../transport/error';
 
