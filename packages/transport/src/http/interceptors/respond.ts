@@ -1,5 +1,5 @@
 import { Endpoint, Interceptor } from '@tsdi/core';
-import { isString, lang } from '@tsdi/ioc';
+import { Injectable, isString, lang } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
 import { Readable } from 'node:stream';
@@ -8,7 +8,7 @@ import { isBuffer, isStream } from '../../utils';
 import { HttpContext, HttpServRequest, HttpServResponse } from '../context';
 import { emptyStatus } from '../status';
 
-
+@Injectable()
 export class ResponsedInterceptor implements Interceptor<HttpServRequest, HttpServResponse> {
     intercept(req: HttpServRequest, next: Endpoint<HttpServRequest, HttpServResponse>, ctx: HttpContext): Observable<HttpServResponse> {
         return next.handle(req, ctx)
@@ -17,7 +17,6 @@ export class ResponsedInterceptor implements Interceptor<HttpServRequest, HttpSe
                     return this.respond(res, ctx)
                 })
             )
-
     }
 
     protected async respond(res: HttpServResponse, ctx: HttpContext): Promise<any> {

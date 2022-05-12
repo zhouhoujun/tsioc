@@ -300,12 +300,12 @@ export class Reflective<T = any> {
         if (isPromise(result)) {
             return (completed || destroy) ? result.then(val => {
                 if (completed) completed(context, val);
-                if (!hasPointcut && destroy) isFunction(destroy) ? destroy() : context?.destroy();
+                if (!hasPointcut && destroy) isFunction(destroy) ? destroy() : (!context?.injected && context?.destroy());
                 return val;
             }) as any : result;
         } else {
             if (completed) completed(context, result);
-            if (!hasPointcut && destroy) isFunction(destroy) ? destroy() : context?.destroy();
+            if (!hasPointcut && destroy) isFunction(destroy) ? destroy() :  (!context?.injected && context?.destroy());
         }
         return result;
     }

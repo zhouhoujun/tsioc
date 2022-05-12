@@ -8,7 +8,7 @@ import {
 import { InjectFlags, Token } from '../tokens';
 import { Injector, isInjector } from '../injector';
 import { OperationArgumentResolver, Parameter, composeResolver, DEFAULT_RESOLVERS } from '../resolver';
-import { InvocationContext, InvocationOption } from '../context';
+import { InvocationContext, InvocationOption, INVOCATION_CONTEXT_IMPL } from '../context';
 import { get } from '../metadata/refl';
 import { ProviderType } from '../providers';
 import { Execption } from '../execption';
@@ -141,7 +141,10 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      */
     get<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags): T;
     get<T>(token: Token<T>, contextOrFlag?: InvocationContext | InjectFlags, flags?: InjectFlags): T {
-        if (this.isSelf(token)) return this as any;
+        if (this.isSelf(token)) {
+            this.injected = true;
+            return this as any;
+        }
         let context: InvocationContext;
         if (isNumber(contextOrFlag)) {
             flags = contextOrFlag;
@@ -179,7 +182,10 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * @param token the token to get value.
      */
     getValue<T>(token: Token<T>, flags?: InjectFlags): T {
-        if (this.isSelf(token)) return this as any;
+        if (this.isSelf(token)) {
+            this.injected = true;
+            return this as any;
+        }
         return this._values.get(token) ?? this.getRefValue(token)
             ?? (flags != InjectFlags.Self ? this.parent?.getValue(token) : null);
     }
@@ -313,13 +319,7 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
 }
 
 
-/**
- * create invocation context.
- * @param parent 
- * @param options 
- * @returns 
- */
-export function createContext(parent: Injector | InvocationContext, options?: InvocationOption): InvocationContext {
+INVOCATION_CONTEXT_IMPL.create = (parent: Injector | InvocationContext, options?: InvocationOption) => {
     if (isInjector(parent)) {
         return new DefaultInvocationContext(parent, options);
     } else {

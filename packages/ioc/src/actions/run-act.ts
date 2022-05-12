@@ -4,10 +4,10 @@ import { ActionSetup } from '../action';
 import { RuntimeContext } from './ctx';
 import { IocRegScope } from './reg';
 import { PropertyMetadata } from '../metadata/meta';
-import { OperationFactoryResolver } from '../operation';
 import { ctorName, Decors } from '../metadata/type';
 import { Parameter } from '../resolver';
 import { ArgumentError } from '../execption';
+import { createContext, InvocationContext } from '../context';
 
 
 /**
@@ -17,23 +17,31 @@ export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): 
     if (!ctx.params) {
         ctx.params = ctx.reflect.class.getParameters(ctorName);
     }
-    const factory = ctx.injector.get(OperationFactoryResolver).resolve(ctx.reflect, ctx.injector);
-    const newCtx = factory.createContext({
-        methodName: ctorName
-    });
-    const custCtx = ctx.context;
-    custCtx?.addRef(newCtx);
 
-    const context = ctx.context = custCtx ?? newCtx;
+    const hasCtx = ctx.context?.targetType === ctx.type;
+    let newCtx: InvocationContext | undefined
+    if (!hasCtx) {
+        let providers = ctx.reflect.class.providers;
+        newCtx = createContext(ctx.injector, {
+            targetType: ctx.type,
+            parent: ctx.context,
+            providers,
+            methodName: ctorName
+        });
+
+        ctx.context = newCtx;
+    }
+
 
     if (!ctx.args) {
-        ctx.args = factory.resolveArguments(ctorName, context);
+        ctx.args = ctx.reflect.class.resolveArguments(ctorName, ctx.context!);
     }
 
     next();
     // after create.
-    custCtx?.removeRef(newCtx);
-    newCtx.destroy();
+    if (!hasCtx && newCtx && !newCtx.injected) {
+        newCtx.destroy();
+    }
 };
 
 

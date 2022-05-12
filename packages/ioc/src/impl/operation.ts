@@ -4,10 +4,9 @@ import { isFunction, isTypeObject } from '../utils/chk';
 import { Token } from '../tokens';
 import { get } from '../metadata/refl';
 import { ProviderType } from '../providers';
-import { InvocationContext, InvocationOption, InvokeArguments, InvokeOption } from '../context';
+import { createContext, InvocationContext, InvocationOption, InvokeArguments, InvokeOption } from '../context';
 import { OperationFactory, OperationFactoryResolver, OperationInvoker } from '../operation';
 import { Injector, MethodType } from '../injector';
-import { createContext } from './context';
 
 
 
