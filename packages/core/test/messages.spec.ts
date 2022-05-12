@@ -3,13 +3,12 @@ import { catchError, lastValueFrom, Observable, of, throwError } from 'rxjs';
 import { HttpModule, HttpServer } from '@tsdi/transport';
 import { ServerHttpClientModule, ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
-import * as fs from 'fs';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import {
     Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module,
     TransportContext, HttpClientModule, HttpClient, LoggerModule, Middleware, Chain
 } from '../src';
-import path = require('path');
-
 
 
 @RouteMapping('/device')

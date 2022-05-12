@@ -1,6 +1,6 @@
 import { TransportContext } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
-import { Stats } from 'fs';
+import { Stats } from 'node:fs';
 
 
 export interface SendOption {

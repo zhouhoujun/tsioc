@@ -1,5 +1,5 @@
 import * as tls from 'tls';
-import * as net from 'net';
+import * as net from 'node:net';
 import { ArgumentError, isNil, isObject, isPlainObject, isString, isUndefined } from '@tsdi/ioc';
 
 export interface KafkaRequest<T = any> {

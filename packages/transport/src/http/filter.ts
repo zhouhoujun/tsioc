@@ -4,6 +4,9 @@ import { Injectable, Injector, tokenId } from '@tsdi/ioc';
 
 export const HTTP_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('HTTP_EXECPTION_FILTERS');
 
+/**
+ * http execption filter.
+ */
 @Injectable()
 export class HttpExecptionFilter implements ExecptionFilter {
 

@@ -6,7 +6,7 @@ import { CompilerOptions } from 'typescript';
 import { ExternalOption, RollupCache, WatcherOptions, GlobalsOption, Plugin, RollupOptions } from 'rollup';
 import { RollupOption } from '../rollups';
 import { PlatformService } from '../PlatformService';
-import { join } from 'path';
+import { join } from 'node:path';
 import { NodeActivityContext } from '../NodeActivityContext';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');

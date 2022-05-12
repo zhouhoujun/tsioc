@@ -1,5 +1,5 @@
 import { isPromise } from '@tsdi/ioc';
-import { Readable } from 'stream';
+import { Readable } from 'node:stream';
 
 export class JsonStreamStringify extends Readable {
     private visited!: VisitedWeakMap | VisitedWeakSet;

@@ -6,7 +6,7 @@ import { TcpModule } from '@tsdi/transport';
 import { Injectable, Inject, OnDestroy, lang, Abstract } from '@tsdi/ioc';
 import { Aspect, Around, Joinpoint } from '@tsdi/aop';
 import { Logger, LogConfigure, Log } from '@tsdi/logs';
-import * as net from 'net';
+import * as net from 'node:net';
 import { ServerModule, ServerLogsModule } from '@tsdi/platform-server';
 
 export class TestService {

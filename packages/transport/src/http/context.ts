@@ -1,10 +1,10 @@
 import { HttpStatusCode, MiddlewareInst, Protocol, TransportContext } from '@tsdi/core';
 import { Injector, InvokeArguments, isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
-import * as assert from 'assert';
-import * as http from 'http';
-import * as http2 from 'http2';
-import { TLSSocket } from 'tls';
-import { extname } from 'path';
+import * as assert from 'node:assert';
+import * as http from 'node:http';
+import * as http2 from 'node:http2';
+import { TLSSocket } from 'node:tls';
+import { extname } from 'node:path';
 import { append, encodeUrl, escapeHtml, isBuffer, isStream, parseTokenList } from '../utils';
 import { emptyStatus, redirectStatus, statusMessage } from './status';
 import { CONTENT_DISPOSITION } from './content';

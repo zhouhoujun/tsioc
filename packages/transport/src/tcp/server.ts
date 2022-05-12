@@ -1,6 +1,6 @@
 import { EndpointBackend, Interceptor, MiddlewareInst, TransportContext, TransportServer } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, lang, Nullable } from '@tsdi/ioc';
-import { Server, ListenOptions } from 'net';
+import { Server, ListenOptions } from 'node:net';
 import { Subscription } from 'rxjs';
 import { TCPRequest, TCPResponse } from './packet';
 

@@ -1,6 +1,6 @@
 import { RequestBase, ResponseBase, UUIDFactory } from '@tsdi/core';
 import { InvocationContext } from '@tsdi/ioc';
-import { Socket } from 'net';
+import { Socket } from 'node:net';
 
 
 export class TCPRequest<T = any> extends RequestBase<T> {

@@ -1,5 +1,5 @@
 import { Injectable, isString } from '@tsdi/ioc';
-import { extname } from 'path';
+import { extname } from 'node:path';
 import { MimeAdapter, MimeDb, SplitType } from '../mime';
 
 @Injectable()

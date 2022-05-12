@@ -1,6 +1,6 @@
 import { Injectable, InvocationContext } from '@tsdi/ioc';
 import { Endpoint, EndpointBackend, Interceptor, MiddlewareSet, TransportContext, TransportServer } from '@tsdi/core';
-import { Http2ServerRequest, Http2ServerResponse } from 'http2';
+import { Http2ServerRequest, Http2ServerResponse } from 'node:http2';
 import { Subscription } from 'rxjs';
 
 

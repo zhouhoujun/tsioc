@@ -1,5 +1,5 @@
-import * as path from 'path';
-import { existsSync } from 'fs';
+import * as path from 'node:path';
+import { existsSync } from 'node:fs';
 
 /**
  * convert path to absolute path.

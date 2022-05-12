@@ -6,7 +6,7 @@ import { Injectable, Inject, OnDestroy, lang } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
 import { ILogger, Log, LogConfigure, Logger, LogModule } from '@tsdi/logs';
 import { HttpModule } from '@tsdi/transport';
-import * as net from 'net';
+import * as net from 'node:net';
 import { ServerModule, ServerLogsModule } from '@tsdi/platform-server';
 import { ApplicationConfiguration, Settings } from '../src';
 

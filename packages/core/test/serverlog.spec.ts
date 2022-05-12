@@ -5,8 +5,8 @@ import expect = require('expect');
 import { ApplicationContext, Application, formatDate, PROCESS_ROOT } from '../src';
 import { logConfig, ServerMainModule } from './demo';
 import * as log4js from 'log4js';
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 const del = require('del');
 
 const dir = __dirname;

@@ -3,8 +3,7 @@ import { NonePointcut } from '@tsdi/aop';
 import { PROCESS_ROOT } from '@tsdi/core';
 import { LoggerManager, Logger } from '@tsdi/logs';
 import * as log4js from 'log4js';
-import path = require('path');
-import { isAbsolute } from 'path';
+import { isAbsolute, join } from 'node:path';
 
 /**
  * log4js logger manager adapter.
@@ -28,7 +27,7 @@ export class Log4jsAdapter implements LoggerManager {
         const root = this.injector.get(PROCESS_ROOT);
         lang.forIn(config.appenders, (appender: any, name) => {
             if (appender.filename && !isAbsolute(appender.filename)) {
-                appender.filename = path.join(root, appender.filename);
+                appender.filename = join(root, appender.filename);
             }
         });
         this.getLog4js().configure(config);

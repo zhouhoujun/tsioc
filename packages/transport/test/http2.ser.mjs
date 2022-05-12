@@ -2,8 +2,8 @@
 // //openssl req -x509 -newkey rsa:2048 -nodes -sha256 -subj '/CN=localhost' -keyout localhost-privkey.pem -out localhost-cert.pem
 
 
-// import * as http2 from 'http2';
-// import * as fs from 'fs';
+// import * as http2 from 'node:http2';
+// import * as fs from 'node:fs';
 
 
 // const server = http2.createSecureServer({

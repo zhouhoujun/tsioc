@@ -1,5 +1,5 @@
 import { Middleware, TransportContext } from '@tsdi/core';
-import { Abstract, ArgumentError, EMPTY_OBJ, Injectable, isString, Nullable } from '@tsdi/ioc';
+import { Abstract, ArgumentError, EMPTY_OBJ, Injectable, Nullable } from '@tsdi/ioc';
 import { hdr } from '../consts';
 
 

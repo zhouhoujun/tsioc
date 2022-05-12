@@ -3,7 +3,7 @@ import { EMPTY_OBJ, Injectable, Injector, InvocationContext, ProviderType, token
 import { HttpBackend, HttpEvent, HttpHandler, HttpInterceptingHandler, HttpRequest, Module, XhrFactory } from '@tsdi/core';
 // import * as xhr2 from 'xhr2';
 import * as xhr2 from 'xmlhttprequest-ssl';
-import { ListenOptions } from 'net';
+import { ListenOptions } from 'node:net';
 import { Observable } from 'rxjs';
 import { ServerModule } from './ServerModule';
 

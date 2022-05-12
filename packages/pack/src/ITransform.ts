@@ -1,6 +1,6 @@
 import { ObjectMap, isObject, isFunction } from '@tsdi/ioc';
 import { isObservable } from 'rxjs';
-import { Stream } from 'stream';
+import { Stream } from 'node:stream';
 
 /**
  * transform interface.

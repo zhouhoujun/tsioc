@@ -4,7 +4,7 @@ import {
     CompilerOptions, sys, createSourceFile, ScriptTarget, createProgram, Diagnostic, DiagnosticCategory, formatDiagnostics,
     convertCompilerOptionsFromJson, readConfigFile, parseJsonConfigFileContent, ParsedCommandLine, System, ParseConfigHost, transform, ProjectReference, transpileModule, flattenDiagnosticMessageText, getPreEmitDiagnostics, createCompilerHost, ScriptKind, Program,
 } from 'typescript';
-import * as path from 'path';
+import * as path from 'node:path';
 import { tsdexp, jsFileExp, mapexp } from './exps';
 
 @Injectable()

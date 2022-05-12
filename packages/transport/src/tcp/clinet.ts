@@ -1,6 +1,6 @@
 import { EndpointBackend, Interceptor, InterceptorType, OnDispose, TransportClient, UUIDFactory } from '@tsdi/core';
 import { Abstract, EMPTY, Inject, Injectable, InvocationContext, isFunction, isString, lang, Nullable, tokenId } from '@tsdi/ioc';
-import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
+import { Socket, SocketConstructorOpts, NetConnectOpts } from 'node:net';
 import { ev } from '../consts';
 import { TCPRequest, TCPResponse } from './packet';
 
