@@ -1,6 +1,6 @@
 import {
     Abstract, Destroyable, DestroyCallback, Injector, ModuleWithProviders, Type,
-    isFunction, isPlainObject, lang, ModuleReflect, OnDestroy, OperationFactoryResolver,
+    isFunction, isPlainObject, lang, ModuleReflect, OnDestroy, ReflectiveResolver,
     ModuleRef as ModRef, Modules
 } from '@tsdi/ioc';
 import { ModuleLifecycleHooks } from './lifecycle';
@@ -34,9 +34,9 @@ export abstract class ModuleRef<T = any> extends Injector implements ModRef<T>, 
      */
     abstract get lifecycle(): ModuleLifecycleHooks;
     /**
-     * operaton factory resolver.
+     * reflective resolver.
      */
-    abstract get operationFactoryResolver(): OperationFactoryResolver;
+    abstract get reflectiveResolver(): ReflectiveResolver;
     /**
      * runnable factory resolver.
      */

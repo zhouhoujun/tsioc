@@ -5,7 +5,7 @@ import { Token } from '../tokens';
 import { get } from '../metadata/refl';
 import { ProviderType } from '../providers';
 import { createContext, InvocationContext, InvocationOption, InvokeArguments, InvokeOption } from '../context';
-import { OperationFactory, OperationFactoryResolver, OperationInvoker } from '../operation';
+import { ReflectiveRef, ReflectiveResolver, OperationInvoker } from '../operation';
 import { Injector, MethodType } from '../injector';
 
 
@@ -78,7 +78,7 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
 }
 
 
-export class DefaultOperationFactory<T> extends OperationFactory<T> {
+export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
 
     private _tagPdrs: ProviderType[] | undefined;
     private _type: Type<T>;
@@ -87,7 +87,7 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
         super()
         this._type = reflect.type as Type<T>;
         this.context = this.createContext(injector, options);
-        this.context.setValue(OperationFactory, this);
+        this.context.setValue(ReflectiveRef, this);
         injector.onDestroy(this);
     }
 
@@ -201,9 +201,9 @@ export class DefaultOperationFactory<T> extends OperationFactory<T> {
     }
 }
 
-export class DefaultOperationFactoryResolver extends OperationFactoryResolver {
-    resolve<T>(type: ClassType<T> | TypeReflect<T>, injector: Injector, option?: InvokeArguments): OperationFactory<T> {
-        return new DefaultOperationFactory(isFunction(type) ? get(type) : type, injector, option);
+export class DefaultReflectiveResolver extends ReflectiveResolver {
+    resolve<T>(type: ClassType<T> | TypeReflect<T>, injector: Injector, option?: InvokeArguments): ReflectiveRef<T> {
+        return new DefaultReflectiveRef(isFunction(type) ? get(type) : type, injector, option);
     }
 }
 

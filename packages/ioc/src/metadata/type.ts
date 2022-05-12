@@ -299,15 +299,24 @@ export class Reflective<T = any> {
         let result = inst[method](...args);
         if (isPromise(result)) {
             return (completed || destroy) ? result.then(val => {
-                if (completed) completed(context, val);
-                if (!hasPointcut && destroy) isFunction(destroy) ? destroy() : (!context?.injected && context?.destroy());
+                this.afterInvoke(context, val, hasPointcut, destroy, completed);
                 return val;
             }) as any : result;
         } else {
-            if (completed) completed(context, result);
-            if (!hasPointcut && destroy) isFunction(destroy) ? destroy() :  (!context?.injected && context?.destroy());
+            this.afterInvoke(context, result, hasPointcut, destroy, completed);
         }
         return result;
+    }
+
+    private afterInvoke(context: InvocationContext, result: any, hasPointcut: boolean, destroy?: boolean | Function, completed?: (context: InvocationContext, returnning: any) => void) {
+        if (completed) completed(context, result);
+        if (!hasPointcut && destroy) {
+            if (isFunction(destroy)) {
+                destroy()
+            } else if (!context?.injected) {
+                context?.destroy()
+            }
+        }
     }
 
     /**

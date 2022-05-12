@@ -126,7 +126,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * get service or target reference service in the injector.
      *
      * @template T
-     * @param {(ResolveOption<T>} option resolve option {@link ResolveOption}.
+     * @param {ResolveOption<T>} option resolve option {@link ResolveOption}.
      * @returns {T}
      */
     abstract getService<T>(option: ResolveOption<T>): T;

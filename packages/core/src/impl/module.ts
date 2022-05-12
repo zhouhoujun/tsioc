@@ -2,8 +2,8 @@
 import {
     DefaultInjector, Injector, InjectorScope, ModuleWithProviders, refl, isFunction,
     Platform, ModuleReflect, processInjectorType, Token, Type, lang,
-    LifecycleHooksResolver, LifecycleHooks, DestroyLifecycleHooks, OperationFactoryResolver,
-    DefaultOperationFactoryResolver, isPlainObject, isArray, EMPTY_OBJ, isClass
+    LifecycleHooksResolver, LifecycleHooks, DestroyLifecycleHooks, ReflectiveResolver,
+    DefaultReflectiveResolver, isPlainObject, isArray, EMPTY_OBJ, isClass
 } from '@tsdi/ioc';
 import { Subscription } from 'rxjs';
 import { ApplicationEventMulticaster } from '../events';
@@ -25,7 +25,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     private _typeRefl: ModuleReflect;
 
 
-    operationFactoryResolver = new DefaultOperationFactoryResolver();
+    reflectiveResolver = new DefaultReflectiveResolver();
     runnableFactoryResolver: RunnableFactoryResolver = new DefaultRunnableFactoryResolver(this);
 
     lifecycle!: ModuleLifecycleHooks;
@@ -37,7 +37,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         this._typeRefl = moduleType;
         this._type = moduleType.type as Type;
         this.inject(
-            { provide: OperationFactoryResolver, useValue: this.operationFactoryResolver },
+            { provide: ReflectiveResolver, useValue: this.reflectiveResolver },
             { provide: RunnableFactoryResolver, useValue: this.runnableFactoryResolver }
         );
 
@@ -125,7 +125,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         this._type = null!;
         this.lifecycle.clear();
         this.lifecycle = null!;
-        this.operationFactoryResolver = null!;
+        this.reflectiveResolver = null!;
         this.runnableFactoryResolver = null!;
         this._typeRefl = null!;
         this._instance = null!;

@@ -47,11 +47,12 @@ export interface OperationInvoker<T = any> {
     resolveArguments(context: InvocationContext): any[];
 }
 
+
 /**
- * operation factory.
+ * type reflectiveRef.
  */
 @Abstract()
-export abstract class OperationFactory<T = any> implements OnDestroy {
+export abstract class ReflectiveRef<T = any> implements OnDestroy {
     /**
      * injector.
      */
@@ -130,17 +131,17 @@ export abstract class OperationFactory<T = any> implements OnDestroy {
 }
 
 /**
- * operation factory resolver.
+ * ReflectiveRef resolver.
  */
 @Abstract()
-export abstract class OperationFactoryResolver {
+export abstract class ReflectiveResolver {
     /**
      * resolve operation factory of target type
      * @param type target type or target type reflect.
      * @param injector injector.
      * @param option target type invoke option {@link InvokeArguments}
-     * @returns instance of {@link OperationFactory}
+     * @returns instance of {@link ReflectiveRef}
      */
-    abstract resolve<T>(type: ClassType<T> | TypeReflect<T>, injector: Injector, option?: InvokeArguments): OperationFactory<T>;
+    abstract resolve<T>(type: ClassType<T> | TypeReflect<T>, injector: Injector, option?: InvokeArguments): ReflectiveRef<T>;
 }
 

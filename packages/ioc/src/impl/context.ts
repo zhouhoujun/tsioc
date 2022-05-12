@@ -24,6 +24,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     protected _refs: InvocationContext[];
     protected _values: Map<Token, any>;
     protected _methodName?: string;
+    private _injected = false;
     /**
      * the invocation arguments resolver.
      */
@@ -108,6 +109,10 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         return this._args;
     }
 
+    get injected(): boolean {
+        return this._injected;
+    }
+
     protected isSelf(token: Token) {
         return token === InvocationContext;
     }
@@ -142,7 +147,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     get<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags): T;
     get<T>(token: Token<T>, contextOrFlag?: InvocationContext | InjectFlags, flags?: InjectFlags): T {
         if (this.isSelf(token)) {
-            this.injected = true;
+            this._injected = true;
             return this as any;
         }
         let context: InvocationContext;
@@ -183,7 +188,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      */
     getValue<T>(token: Token<T>, flags?: InjectFlags): T {
         if (this.isSelf(token)) {
-            this.injected = true;
+            this._injected = true;
             return this as any;
         }
         return this._values.get(token) ?? this.getRefValue(token)

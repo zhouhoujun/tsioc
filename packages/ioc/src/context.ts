@@ -14,8 +14,11 @@ import { ProviderType } from './providers';
 @Abstract()
 export abstract class InvocationContext<T = any> implements Destroyable, OnDestroy {
 
-    injected?: boolean;
-    
+    /**
+     * is this context injected in object or not.
+     */
+    abstract get injected(): boolean;
+
     private _dsryCbs = new Set<DestroyCallback>();
     private _destroyed = false;
     /**
@@ -157,9 +160,9 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
  * @param options 
  * @returns 
  */
- export function createContext(parent: Injector | InvocationContext, options?: InvocationOption): InvocationContext {
+export function createContext(parent: Injector | InvocationContext, options?: InvocationOption): InvocationContext {
     return INVOCATION_CONTEXT_IMPL.create(parent, options);
- }
+}
 
 /**
  * invocation context factory implement.

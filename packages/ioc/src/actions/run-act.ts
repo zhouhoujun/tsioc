@@ -18,20 +18,20 @@ export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): 
         ctx.params = ctx.reflect.class.getParameters(ctorName);
     }
 
-    const hasCtx = ctx.context?.targetType === ctx.type;
-    let newCtx: InvocationContext | undefined
-    if (!hasCtx) {
-        let providers = ctx.reflect.class.providers;
+    const uctx = ctx.context;
+    const providers = ctx.reflect.class.providers;
+    let newCtx: InvocationContext | undefined;
+    if (!uctx || (uctx.targetType && uctx.targetType !==ctx.type)) {
         newCtx = createContext(ctx.injector, {
             targetType: ctx.type,
-            parent: ctx.context,
+            parent: uctx,
             providers,
             methodName: ctorName
         });
-
         ctx.context = newCtx;
+    } else if (uctx && providers.length) {
+        uctx.injector.inject(providers);
     }
-
 
     if (!ctx.args) {
         ctx.args = ctx.reflect.class.resolveArguments(ctorName, ctx.context!);
@@ -39,7 +39,7 @@ export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): 
 
     next();
     // after create.
-    if (!hasCtx && newCtx && !newCtx.injected) {
+    if (newCtx && !newCtx.injected) {
         newCtx.destroy();
     }
 };

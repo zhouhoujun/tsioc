@@ -1,4 +1,4 @@
-import { OperationFactory } from '@tsdi/ioc';
+import { ReflectiveRef } from '@tsdi/ioc';
 import { MatchPointcut } from '../joinpoints/MatchPointcut';
 
 /**
@@ -13,6 +13,6 @@ export interface Advicer extends MatchPointcut {
      *
      * @type {Type}
      */
-    aspect: OperationFactory;
+    aspect: ReflectiveRef;
 }
 

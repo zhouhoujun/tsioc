@@ -1,4 +1,4 @@
-import { lang, Injectable, OperationFactory, Decors, Type, TypeReflect, isFunction, refl } from '@tsdi/ioc';
+import { lang, Injectable, ReflectiveRef, Decors, Type, TypeReflect, isFunction, refl } from '@tsdi/ioc';
 import { DefaultRunnableFactory, DefaultRunnableRef, RunnableFactory, RunnableFactoryResolver, RunnableRef } from '@tsdi/core';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata/decor';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata/meta';
@@ -19,7 +19,7 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
     timeout!: number;
     describe!: string;
 
-    constructor(factory: OperationFactory<T>) {
+    constructor(factory: ReflectiveRef<T>) {
         super(factory)
     }
 
@@ -181,7 +181,7 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
 }
 
 class SuiteRunnableFactory<T> extends DefaultRunnableFactory<T> {
-    protected override createInstance(factory: OperationFactory<T>): RunnableRef<T> {
+    protected override createInstance(factory: ReflectiveRef<T>): RunnableRef<T> {
         return factory.resolve(SuiteRunner);
     }
 }

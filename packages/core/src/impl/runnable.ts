@@ -1,4 +1,4 @@
-import { Type, refl, TypeReflect, OperationFactoryResolver, isFunction, Injector, OperationFactory, DestroyCallback, lang } from '@tsdi/ioc';
+import { Type, refl, TypeReflect, ReflectiveResolver, isFunction, Injector, ReflectiveRef, DestroyCallback, lang } from '@tsdi/ioc';
 import { BootstrapOption, RunnableFactory, RunnableFactoryResolver, RunnableRef } from '../runnable';
 import { ModuleRef } from '../module.ref';
 import { ApplicationRunners } from '../runners';
@@ -11,7 +11,7 @@ export class DefaultRunnableRef<T> extends RunnableRef<T> {
     private _dsryCbs = new Set<DestroyCallback>();
 
     private _instance: T | undefined;
-    constructor(protected factory: OperationFactory<T>, private defaultInvoke = 'run') {
+    constructor(protected factory: ReflectiveRef<T>, private defaultInvoke = 'run') {
         super();
         this.factory.context.setValue(RunnableRef, this);
     }
@@ -85,7 +85,7 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
 
     override create(injector: Injector, option?: BootstrapOption) {
 
-        const factory = injector.get(OperationFactoryResolver).resolve(this.reflect, injector, option);
+        const factory = injector.get(ReflectiveResolver).resolve(this.reflect, injector, option);
 
         const runnableRef = this.createInstance(factory, option?.defaultInvoke);
 
@@ -94,7 +94,7 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
         return runnableRef;
     }
 
-    protected createInstance(factory: OperationFactory<T>, invokeMethod?: string): RunnableRef<T> {
+    protected createInstance(factory: ReflectiveRef<T>, invokeMethod?: string): RunnableRef<T> {
         return new DefaultRunnableRef(factory, invokeMethod);
     }
 }

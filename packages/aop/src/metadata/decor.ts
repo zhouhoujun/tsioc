@@ -1,4 +1,4 @@
-import { isString, ClassType, ClassMetadata, DecoratorOption, createDecorator, EMPTY_OBJ, ActionTypes, lang, OperationFactoryResolver } from '@tsdi/ioc';
+import { isString, ClassType, ClassMetadata, DecoratorOption, createDecorator, EMPTY_OBJ, ActionTypes, lang, ReflectiveResolver } from '@tsdi/ioc';
 import { Advisor } from '../Advisor';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AspectMetadata, AroundMetadata, PointcutAnnotation, AdviceTypes } from './meta';
 import { AopReflect } from './ref';
@@ -52,7 +52,7 @@ export const Aspect: Aspect = createDecorator<AspectMetadata>('Aspect', {
             if (advisor) {
                 const { type, injector } = ctx;
                 
-                const factory = injector.get(OperationFactoryResolver).resolve(type, injector);
+                const factory = injector.get(ReflectiveResolver).resolve(type, injector);
                 injector.onDestroy(()=> {
                     advisor.remove(factory);
                     lang.cleanObj(factory);

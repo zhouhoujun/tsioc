@@ -1,7 +1,7 @@
 import {
     isUndefined, EMPTY_OBJ, isArray, lang, Type, createDecorator, ProviderType, InjectableMetadata,
     PropertyMetadata, ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes,
-    OperationFactoryResolver, MethodPropDecorator, Token, ArgumentError, object2string, InvokeArguments, isString, Parameter
+    ReflectiveResolver, MethodPropDecorator, Token, ArgumentError, object2string, InvokeArguments, isString, Parameter
 } from '@tsdi/ioc';
 import { ConfigureService } from '../service';
 import { PipeMetadata, ComponentScanMetadata, ScanReflect, BeanMetadata } from './meta';
@@ -309,7 +309,7 @@ export const Configuration: Configuration = createDecorator<InjectableMetadata>(
         afterAnnoation: (ctx, next) => {
             const { reflect, injector } = ctx;
 
-            const factory = injector.get(OperationFactoryResolver).resolve(reflect, injector);
+            const factory = injector.get(ReflectiveResolver).resolve(reflect, injector);
             const pdrs = reflect.class.decors.filter(d => d.decor === '@Bean')
                 .map(d => {
                     const key = d.propertyKey;
