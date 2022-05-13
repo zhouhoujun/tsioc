@@ -1,6 +1,5 @@
-import { HttpStatusCode } from '@tsdi/core';
+import { HttpStatusCode, statusMessage } from '@tsdi/core';
 import { HttpError } from './HttpError';
-import { statusMessage } from '../status';
 
 /**
  * forbidden error.

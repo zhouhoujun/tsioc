@@ -1,4 +1,4 @@
-import { HttpStatusCode, MiddlewareInst, Protocol, TransportContext } from '@tsdi/core';
+import { HttpStatusCode, MiddlewareInst, Protocol, statusMessage, TransportContext } from '@tsdi/core';
 import { Injector, InvokeArguments, isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import * as assert from 'node:assert';
 import * as http from 'node:http';
@@ -6,7 +6,7 @@ import * as http2 from 'node:http2';
 import { TLSSocket } from 'node:tls';
 import { extname } from 'node:path';
 import { append, encodeUrl, escapeHtml, isBuffer, isStream, parseTokenList } from '../utils';
-import { emptyStatus, redirectStatus, statusMessage } from './status';
+import { emptyStatus, redirectStatus } from './status';
 import { CONTENT_DISPOSITION } from './content';
 import { ev, ctype, hdr } from '../consts';
 import { MimeAdapter } from '../mime';
@@ -670,7 +670,6 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
         this.response.statusCode = code;
         if (this.request.httpVersionMajor < 2) this.response.statusMessage = statusMessage[code];
         if (this.body && emptyStatus[code]) this.body = null;
-        this.response.statusCode = code;
     }
 
     get statusMessage() {

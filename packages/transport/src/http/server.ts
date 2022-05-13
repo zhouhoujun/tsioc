@@ -1,7 +1,7 @@
 import { EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isBoolean, isFunction, lang, Providers, tokenId, Type } from '@tsdi/ioc';
 import {
     TransportServer, EndpointBackend, CustomEndpoint, RunnableFactoryResolver,
-    MiddlewareType, Interceptor, ModuleRef, Router, InterceptorType, 
+    MiddlewareType, Interceptor, ModuleRef, Router, InterceptorType,
 } from '@tsdi/core';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { of, Subscription } from 'rxjs';
@@ -31,7 +31,7 @@ import { CsrfMiddleware, CsrfOptions } from '../middlewares/csrf';
  */
 export interface HttpOptions {
     majorVersion?: number;
-    cors?: CorsOptions;
+    cors?: boolean | CorsOptions;
     proxy?: boolean;
     proxyIpHeader?: string;
     /**

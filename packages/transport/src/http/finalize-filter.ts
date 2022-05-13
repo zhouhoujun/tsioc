@@ -1,12 +1,11 @@
 import {
     ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
-    HttpStatusCode, MissingModelFieldError, TransportArgumentError, TransportError, TransportMissingError
+    HttpStatusCode, MissingModelFieldError, statusMessage, TransportArgumentError, TransportError, TransportMissingError
 } from '@tsdi/core';
 import { Inject, Injectable, isFunction, isNumber } from '@tsdi/ioc';
 import { BadRequestError, HttpError, InternalServerError } from './errors';
 import { HttpContext } from './context';
-import { ctype, ev } from '../consts';
-import { statusMessage } from './status';
+import { ev } from '../consts';
 import { HttpServerOptions, HTTP_SERVEROPTIONS } from './server';
 
 
@@ -24,9 +23,11 @@ export class HttpFinalizeFilter implements ExecptionFilter {
             err = new InternalServerError((er as Error).message);
         }
 
-        const httpctx = ctx.getValue(HttpContext);
+        //finllay defalt send error.
+
+        const hctx = ctx.getValue(HttpContext);
         let headerSent = false;
-        if (httpctx.sent || !httpctx.writable) {
+        if (hctx.sent || !hctx.writable) {
             headerSent = err.headerSent = true;
         }
 
@@ -37,7 +38,7 @@ export class HttpFinalizeFilter implements ExecptionFilter {
             return;
         }
 
-        const res = httpctx.response;
+        const res = hctx.response;
 
         // first unset all headers
         if (isFunction(res.getHeaderNames)) {
@@ -47,10 +48,10 @@ export class HttpFinalizeFilter implements ExecptionFilter {
         }
 
         // then set those specified
-        if (err.headers) httpctx.setHeader(err.headers);
+        if (err.headers) hctx.setHeader(err.headers);
 
         // force text/plain
-        httpctx.contentType = ctype.TEXT_PLAIN;
+        hctx.type = 'text';
         let statusCode = (err.status || err.statusCode) as HttpStatusCode;
         let msg: string;
         if (err instanceof TransportError) {
@@ -65,9 +66,9 @@ export class HttpFinalizeFilter implements ExecptionFilter {
             // respond
             msg = statusMessage[statusCode];
         }
-        httpctx.status = statusCode;
-        httpctx.statusMessage = msg;
-        httpctx.length = Buffer.byteLength(msg);
+        hctx.status = statusCode;
+        hctx.statusMessage = msg;
+        hctx.length = Buffer.byteLength(msg);
         res.end(msg);
     }
 

@@ -1,5 +1,5 @@
 import { Endpoint, Interceptor } from '@tsdi/core';
-import { Injectable, isNumber } from '@tsdi/ioc';
+import { Injectable, isNumber, isString } from '@tsdi/ioc';
 import { Logger, LoggerManager } from '@tsdi/logs';
 import * as chalk from 'chalk';
 import { Observable } from 'rxjs';
@@ -51,14 +51,17 @@ export class LogInterceptor implements Interceptor<HttpServRequest, HttpServResp
     }
 
     private getMessage(status: number, msg: string) {
-        if (!msg) return '';
+        if (!msg || !isString(msg)) return '';
         if (status >= 500) {
-            return chalk.red(msg);
-        } else if (status > 300) {
-            return chalk.yellow(msg);
-        } else if (status > 200) {
-            return chalk.cyan(msg);
+            return chalk.red(msg)
+        } else if (status >= 400) {
+            return chalk.redBright(msg)
+        } else if (status >= 300) {
+            return chalk.yellow(msg)
+        } else if (status === 200) {
+            return chalk.green(msg)
         }
+        return chalk.gray(msg);
     }
 
     private getTimespan(times: number) {

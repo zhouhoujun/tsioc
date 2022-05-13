@@ -16,6 +16,9 @@ export class UserController {
     @Get('/:name')
     getUser(name: string) {
         this.logger.log('name:', name);
+        if(name == 'error') {
+            throw new InternalServerError('error');
+        }
         return this.usrRep.findByAccount(name);
     }
 

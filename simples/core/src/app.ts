@@ -86,6 +86,7 @@ const cert = fs.readFileSync(path.join(__dirname, './localhost-cert.pem'));
         TypeOrmModule.withConnection(connections),
         HttpModule.withOption({
             majorVersion: 2,
+            cors: true,
             options: {
                 cert,
                 key

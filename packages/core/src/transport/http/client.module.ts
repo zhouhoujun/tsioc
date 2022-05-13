@@ -4,7 +4,7 @@ import { HttpBackend, HttpHandler } from './handler';
 import { HttpInterceptingHandler, HTTP_CLIENT_INTERCEPTORS, NoopInterceptor } from './interceptor';
 import { HttpClient } from './client';
 import { JsonpCallbackContext, JsonpClientBackend, JsonpInterceptor } from './jsonp';
-import { HttpXhrBackend } from './backend';
+import { HttpXhrBackend } from './xhr';
 import { HttpXsrfCookieExtractor, HttpXsrfInterceptor, HttpXsrfTokenExtractor, XSRF_COOKIE_NAME, XSRF_HEADER_NAME } from './xsrf';
 
 

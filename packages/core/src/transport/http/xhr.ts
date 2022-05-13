@@ -4,7 +4,7 @@ import { HttpBackend, XhrFactory } from './handler';
 import { HttpHeaders } from './headers';
 import { HttpRequest } from './request';
 import { HttpDownloadProgressEvent, HttpErrorResponse, HttpEvent, HttpEventType, HttpHeaderResponse, HttpJsonParseError, HttpResponse, HttpUploadProgressEvent } from './response';
-import { HttpStatusCode } from './status';
+import { HttpStatusCode, statusMessage } from './status';
 
 
 const XSSI_PREFIX = /^\)\]\}',?\n/;
@@ -105,7 +105,7 @@ export class HttpXhrBackend implements HttpBackend {
 
                 // Read status and normalize an IE9 bug (https://bugs.jquery.com/ticket/1450).
                 const status: number = xhr.status === 1223 ? HttpStatusCode.NoContent : xhr.status;
-                const statusText = xhr.statusText || 'OK';
+                const statusText = xhr.statusText ?? statusMessage[status as HttpStatusCode] ?? 'OK';
 
                 // Parse headers from XMLHttpRequest - this step is lazy.
                 const headers = new HttpHeaders(xhr.getAllResponseHeaders());
