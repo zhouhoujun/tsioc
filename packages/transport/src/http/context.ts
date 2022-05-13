@@ -681,19 +681,6 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
         this.response.statusMessage = msg;
     }
 
-    private _err!: Error;
-    set error(err: Error) {
-        this._err = err;
-        if (err) {
-            this.statusMessage = err.stack || err.message;
-            this.status = HttpStatusCode.InternalServerError;
-        }
-    }
-
-    get error() {
-        return this._err;
-    }
-
     /**
      * Get response body.
      *
