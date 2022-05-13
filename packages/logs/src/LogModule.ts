@@ -26,6 +26,6 @@ export class LogModule {
      * register aop for container.
      */
     setup(@Inject() injector: Injector) {
-        injector.inject(LOGGER_PROVIDERS);
+        injector.inject(LOGGER_PROVIDERS)
     }
 }

@@ -97,14 +97,14 @@ export class BasicMimeDb extends MimeDb {
     }
 
     protected getPreference(): (string | undefined)[] {
-        return preference;
+        return preference
     }
 
     has(mime: string): boolean {
-        return this.map.has(mime);
+        return this.map.has(mime)
     }
     get(mime: string): MimeSource | undefined {
-        return this.map.get(mime);
+        return this.map.get(mime)
     }
 
     set(mime: string, source: MimeSource): void {
@@ -132,12 +132,13 @@ export class BasicMimeDb extends MimeDb {
             }
         }
     }
+    
     remove(mime: string): void {
-        this.map.delete(mime);
+        this.map.delete(mime)
     }
 
     extension(name: string): string | undefined {
-        return this.extenType.get(name);
+        return this.extenType.get(name)
     }
 
 }

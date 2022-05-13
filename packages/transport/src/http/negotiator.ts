@@ -8,13 +8,13 @@ import { HttpContext } from './context';
 @Injectable()
 export class HttpNegotiator extends Negotiator {
   constructor(private ctx: HttpContext) {
-    super();
+    super()
   }
 
   charsets(...accepts: string[]): string[] {
     const accepted = this.parseCharset(this.ctx.getHeader(hdr.ACCEPT_CHARSET) ?? '*');
     if (!accepts) {
-      return this.getValues(accepted);
+      return this.getValues(accepted)
     }
 
     const pri = accepts.map((a, i) => this.getPriority(a, accepted, i));
@@ -24,28 +24,28 @@ export class HttpNegotiator extends Negotiator {
   encodings(...accepts: string[]): string[] {
     const accepted = this.parseEncoding(this.ctx.getHeader(hdr.ACCEPT_ENCODING) ?? '');
     if (!accepts.length) {
-      return this.getValues(accepted);
+      return this.getValues(accepted)
     }
     const pri = accepts.map((a, i) => this.getPriority(a, accepted, i));
-    return this.sortSpecify(pri).map(p => accepts[pri.indexOf(p)]);
+    return this.sortSpecify(pri).map(p => accepts[pri.indexOf(p)])
   }
 
   languages(...accepts: string[]): string[] {
     const accepted = this.parseLanguage(this.ctx.getHeader(hdr.ACCEPT_LANGUAGE) ?? '*');
     if (!accepts.length) {
-      return this.getValues(accepted);
+      return this.getValues(accepted)
     }
     const pri = accepts.map((a, i) => this.getPriority(a, accepted, i, lang));
-    return this.sortSpecify(pri).map(p => accepts[pri.indexOf(p)]);
+    return this.sortSpecify(pri).map(p => accepts[pri.indexOf(p)])
   }
 
   mediaTypes(...accepts: string[]): string[] {
     const accepted = this.parseMedia(this.ctx.getHeader(hdr.ACCEPT) ?? '*');
     if (!accepts.length) {
-      return this.getValues(accepted);
+      return this.getValues(accepted)
     }
     const pri = accepts.map((a, i) => this.getPriority(a, accepted, i, media));
-    return this.sortSpecify(pri).map(p => accepts[pri.indexOf(p)]);
+    return this.sortSpecify(pri).map(p => accepts[pri.indexOf(p)])
   }
 
   protected parseCharset(aspect: string | string[]): Accepted[] {
@@ -54,10 +54,10 @@ export class HttpNegotiator extends Negotiator {
     aspects.forEach((str, idx) => {
       let info = this.matchify(str, idx);
       if (info) {
-        ch.push(info);
+        ch.push(info)
       }
     });
-    return ch;
+    return ch
   }
 
   protected parseEncoding(encoding: string | string[]) {
@@ -70,7 +70,7 @@ export class HttpNegotiator extends Negotiator {
       if (enco) {
         encodings.push(enco);
         hasIdentity = hasIdentity || this.specify(hdr.IDENTITY, enco) !== null;
-        minQuality = Math.min(minQuality, enco.q || 1);
+        minQuality = Math.min(minQuality, enco.q || 1)
       }
     });
     if (hasIdentity) {
@@ -80,7 +80,7 @@ export class HttpNegotiator extends Negotiator {
         i: accepts.length
       })
     }
-    return encodings;
+    return encodings
   }
 
   protected sortAsccepted(accepted: Accepted[]) {
@@ -89,7 +89,7 @@ export class HttpNegotiator extends Negotiator {
   }
 
   protected getValues(accepted: Accepted[]) {
-    return this.sortAsccepted(accepted).map(a => a.value);
+    return this.sortAsccepted(accepted).map(a => a.value)
   }
 
   protected sortSpecify(specify: Specify[]): Specify[] {
@@ -109,7 +109,7 @@ export class HttpNegotiator extends Negotiator {
         let p = params[j].trim().split('=');
         if (p[0] === 'q') {
           q = parseFloat(p[1]);
-          break;
+          break
         }
       }
     }
@@ -118,7 +118,7 @@ export class HttpNegotiator extends Negotiator {
       value: charset,
       q: q,
       i: i
-    };
+    }
   }
 
   protected getPriority(value: string, accepted: Accepted[], index: number, v?: 'lang' | 'media'): Specify {
@@ -140,11 +140,11 @@ export class HttpNegotiator extends Negotiator {
       let spec = specify.call(this, value, accepted[i] as any, index);
 
       if (spec && (priority.s - spec.s || priority.q - spec.q || priority.o - spec.o) < 0) {
-        priority = spec;
+        priority = spec
       }
     }
 
-    return priority;
+    return priority
   }
 
   protected specify(value: string, spec: Accepted, index?: number): Specify | null {
@@ -168,11 +168,11 @@ export class HttpNegotiator extends Negotiator {
     if (!p) return null;
     let s = 0;
     if (spec.value.toLowerCase() === p.value.toLowerCase()) {
-      s |= 4;
+      s |= 4
     } else if (spec.prefix.toLowerCase() === p.value.toLowerCase()) {
-      s |= 2;
+      s |= 2
     } else if (spec.value.toLowerCase() === p.prefix.toLowerCase()) {
-      s |= 1;
+      s |= 1
     } else if (spec.value !== '*') {
       return null
     }
@@ -191,10 +191,10 @@ export class HttpNegotiator extends Negotiator {
     aspects.forEach((str, idx) => {
       let info = this.langMatchify(str, idx);
       if (info) {
-        langs.push(info);
+        langs.push(info)
       }
     });
-    return langs;
+    return langs
   }
 
   protected langMatchify(str: string, i: number = 0): LangAccepted | null {
@@ -222,7 +222,7 @@ export class HttpNegotiator extends Negotiator {
       q: q,
       i: i,
       value: full
-    };
+    }
   }
 
 
@@ -231,9 +231,9 @@ export class HttpNegotiator extends Negotiator {
     let j = 0
     for (let i = 1; i < accepts.length; i++) {
       if (this.quoteCount(accepts[j]) % 2 == 0) {
-        accepts[++j] = accepts[i];
+        accepts[++j] = accepts[i]
       } else {
-        accepts[j] += ',' + accepts[i];
+        accepts[j] += ',' + accepts[i]
       }
     }
     // trim accepts
@@ -242,10 +242,10 @@ export class HttpNegotiator extends Negotiator {
     accepts.forEach((v, i) => {
       let media = this.mediaMatchify(v.trim(), i);
       if (media) {
-        medias.push(media);
+        medias.push(media)
       }
     });
-    return medias;
+    return medias
   }
 
   protected mediaMatchify(str: string, i: number = 0): MediaAccepted | null {
@@ -272,11 +272,11 @@ export class HttpNegotiator extends Negotiator {
 
         if (key === 'q' && value) {
           q = parseFloat(value);
-          break;
+          break
         }
         if (key) {
           // store parameter
-          params[key] = value;
+          params[key] = value
         }
       }
     }
@@ -288,7 +288,7 @@ export class HttpNegotiator extends Negotiator {
       value: `${type}/${subtype}`,
       q,
       i
-    };
+    }
   }
 
   quoteCount(str: string) {
@@ -300,7 +300,7 @@ export class HttpNegotiator extends Negotiator {
       index++;
     }
 
-    return count;
+    return count
   }
 
   protected mediaSpecify(type: string, spec: MediaAccepted, index?: number) {
@@ -308,19 +308,19 @@ export class HttpNegotiator extends Negotiator {
     let s = 0;
 
     if (!p) {
-      return null;
+      return null
     }
 
     if (spec.type.toLowerCase() == p.type.toLowerCase()) {
       s |= 4
     } else if (spec.type != '*') {
-      return null;
+      return null
     }
 
     if (spec.subtype.toLowerCase() == p.subtype.toLowerCase()) {
       s |= 2
     } else if (spec.subtype != '*') {
-      return null;
+      return null
     }
 
     let keys = Object.keys(spec.params);
@@ -347,9 +347,9 @@ export class HttpNegotiator extends Negotiator {
     let j = 0;
     for (let i = 1; i < parameters.length; i++) {
       if (this.quoteCount(parameters[j]) % 2 == 0) {
-        parameters[++j] = parameters[i];
+        parameters[++j] = parameters[i]
       } else {
-        parameters[j] += ';' + parameters[i];
+        parameters[j] += ';' + parameters[i]
       }
     }
 
@@ -357,24 +357,25 @@ export class HttpNegotiator extends Negotiator {
     parameters.length = j + 1;
 
     for (let i = 0; i < parameters.length; i++) {
-      parameters[i] = parameters[i].trim();
+      parameters[i] = parameters[i].trim()
     }
 
-    return parameters;
+    return parameters
   }
+
   private splitKeyValuePair(str: string) {
     let index = str.indexOf('=');
     let key;
     let val;
 
     if (index === -1) {
-      key = str;
+      key = str
     } else {
       key = str.substring(0, index);
-      val = str.substring(index + 1);
+      val = str.substring(index + 1)
     }
 
-    return [key, val];
+    return [key, val]
   }
 }
 

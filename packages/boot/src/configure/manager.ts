@@ -112,22 +112,22 @@ export class ConfigureMergerImpl extends ConfigureMerger {
             switch (n) {
                 case 'setting':
                     target.setting = { ...target.setting, ...source.setting };
-                    break
+                    break;
                 case 'deps':
                     this.mergeArray(target, n, source.deps);
-                    break
+                    break;
                 case 'providers':
                     this.mergeArray(target, n, source.providers);
-                    break
+                    break;
                 case 'models':
                     this.mergeArray(target, n, source.models);
-                    break
+                    break;
                 case 'repositories':
                     this.mergeArray(target, n, source.repositories);
-                    break
+                    break;
                 default:
                     target[n] = source[n];
-                    break
+                    break;
             }
         }
 

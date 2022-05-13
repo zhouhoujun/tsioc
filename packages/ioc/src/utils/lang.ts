@@ -17,12 +17,12 @@ export function omit(target: any, ...fields: string[]): any {
         let result: any = {};
         for (let key in target) {
             if (fields.indexOf(key) < 0) {
-                result[key] = target[key];
+                result[key] = target[key]
             }
         }
-        return result;
+        return result
     } else {
-        return target;
+        return target
     }
 }
 
@@ -37,10 +37,10 @@ export function assign(target: any, values: any, ...omits: string[]): any {
     if (!values) return target;
     for (let key in values) {
         if (omits.indexOf(key) < 0) {
-            target[key] = values[key];
+            target[key] = values[key]
         }
     }
-    return target;
+    return target
 }
 
 /**
@@ -57,13 +57,13 @@ export function forIn(target: any, iterator: (item: any, idx?: any) => void | bo
     if (isArray(target)) {
         for (let i = 0, len = target.length; i < len; i++) {
             if (iterator(it, i) === false) {
-                break;
+                break
             }
         }
     } else if (target) {
         for (let key in target) {
             if (iterator(target[key], key) === false) {
-                break;
+                break
             }
         }
     }
@@ -86,11 +86,11 @@ export function deepForEach<T>(
         if (isArray(value)) {
             deepForEach(value, fn, isRecord, getRecord)
         } else if (isRecord && isRecord(value)) {
-            deepForEach(getRecord ? getRecord(value) : Object.values(value), fn, isRecord, getRecord);
+            deepForEach(getRecord ? getRecord(value) : Object.values(value), fn, isRecord, getRecord)
         } else {
             fn(value as T)
         }
-    });
+    })
 }
 
 
@@ -104,9 +104,9 @@ export function deepForEach<T>(
  */
 export function first<T>(list: T[] | null | undefined): T {
     if (isArray(list) && list.length) {
-        return list[0];
+        return list[0]
     }
-    return null!;
+    return null!
 }
 
 /**
@@ -116,10 +116,10 @@ export function first<T>(list: T[] | null | undefined): T {
  */
 export function remove<T>(list: T[] | null | undefined, el: T) {
     if (!isArray(list) || !list.length || isNil(el)) {
-        return null;
+        return null
     }
     const idx = list.indexOf(el);
-    return idx >= 0 ? list.splice(idx, 1) : null;
+    return idx >= 0 ? list.splice(idx, 1) : null
 }
 
 
@@ -133,9 +133,9 @@ export function remove<T>(list: T[] | null | undefined, el: T) {
  */
 export function last<T>(list: T[]): T {
     if (isArray(list) && list.length) {
-        return list[list.length - 1];
+        return list[list.length - 1]
     }
-    return null!;
+    return null!
 }
 
 
@@ -150,12 +150,12 @@ export function last<T>(list: T[]): T {
 export function getClassName(target: any): string {
     let classType = getClass(target);
     if (!classType) {
-        return '';
+        return ''
     }
     if (clsUglifyExp.test(classType.name)) {
-        return getClassAnnotation(classType)?.name ?? classType.name;
+        return getClassAnnotation(classType)?.name ?? classType.name
     }
-    return classType.name;
+    return classType.name
 }
 
 /**
@@ -167,7 +167,7 @@ export function getClassName(target: any): string {
  */
 export function getParentClass(target: ClassType): ClassType {
     const ty = Object.getPrototypeOf(target.prototype)?.constructor ?? Object.getPrototypeOf(target);
-    return ty === Object ? null : ty;
+    return ty === Object ? null : ty
 }
 
 /**
@@ -180,9 +180,9 @@ export function getParentClass(target: ClassType): ClassType {
 export function getClassChain(target: ClassType): ClassType[] {
     let types: ClassType[] = [];
     forInClassChain(target, type => {
-        types.push(type);
+        types.push(type)
     });
-    return types;
+    return types
 }
 
 /**
@@ -195,9 +195,9 @@ export function getClassChain(target: ClassType): ClassType[] {
 export function forInClassChain(target: ClassType, express: (token: ClassType) => any): void {
     while (target) {
         if (express(target) === false) {
-            break;
+            break
         }
-        target = getParentClass(target);
+        target = getParentClass(target)
     }
 }
 
@@ -207,7 +207,7 @@ export function forInClassChain(target: ClassType, express: (token: ClassType) =
  * @param baseType base class type.
  */
 export function isBaseOf<T>(target: any, baseType: ClassType<T>): target is Type<T> {
-    return isFunction(target) && (Object.getPrototypeOf(target.prototype) instanceof baseType || Object.getPrototypeOf(target) === baseType);
+    return isFunction(target) && (Object.getPrototypeOf(target.prototype) instanceof baseType || Object.getPrototypeOf(target) === baseType)
 }
 
 /**
@@ -224,14 +224,14 @@ export function isExtendsClass<T extends ClassType>(target: ClassType, baseClass
         const isCls = isClassType(baseClass);
         forInClassChain(target, t => {
             if (isCls) {
-                isExtnds = t === baseClass;
+                isExtnds = t === baseClass
             } else {
-                isExtnds = (<Function>baseClass)(t);
+                isExtnds = (<Function>baseClass)(t)
             }
-            return !isExtnds;
+            return !isExtnds
         });
     }
-    return isExtnds;
+    return isExtnds
 }
 
 /**
@@ -246,7 +246,7 @@ export function getTypes(mds: Modules | Modules[]): Type[] {
     mds && deepForEach(isArray(mds) ? mds : isPlainObject(mds) ? Object.values(mds) : [mds], ty => {
         isClass(ty) && types.push(ty)
     }, v => isPlainObject(v));
-    return types;
+    return types
 }
 
 /**
@@ -256,7 +256,7 @@ export function getTypes(mds: Modules | Modules[]): Type[] {
 export function cleanObj(obj: any) {
     if (!obj) return;
     for (let k in obj) {
-        obj[k] = null;
+        obj[k] = null
     }
 }
 
@@ -280,9 +280,9 @@ export class Defer<T = any> {
         const df = new Defer<C>();
         if (then) {
             df.promise = df.promise.then(then);
-            return df;
+            return df
         } else {
-            return df;
+            return df
         }
     }
     /**
@@ -303,8 +303,8 @@ export class Defer<T = any> {
     constructor() {
         this.promise = new Promise<T>((resolve, reject) => {
             this.resolve = resolve as (value?: T | PromiseLike<T>) => void;
-            this.reject = reject;
-        });
+            this.reject = reject
+        })
     }
 }
 
@@ -318,7 +318,7 @@ export class Defer<T = any> {
  * @returns {Defer<T>}
  */
 export function defer<T = any>(then?: (val: T) => T | PromiseLike<T>): Defer<T> {
-    return Defer.create(then);
+    return Defer.create(then)
 }
 
 /**
@@ -329,9 +329,9 @@ export function delay(times: number): Promise<void> {
     const defer = Defer.create<void>();
     const timout = setTimeout(() => {
         timout && clearTimeout(timout);
-        defer.resolve();
+        defer.resolve()
     }, times);
-    return defer.promise;
+    return defer.promise
 }
 
 /**
@@ -345,9 +345,9 @@ export function delay(times: number): Promise<void> {
 export function step<T>(promises: (T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[]) {
     let result = Promise.resolve<T>(null!);
     promises.forEach(p => {
-        result = result.then(v => isFunction(p) ? p(v) : p);
+        result = result.then(v => isFunction(p) ? p(v) : p)
     });
-    return result;
+    return result
 }
 
 /**
@@ -366,12 +366,12 @@ export function some<T>(promises: (T | PromiseLike<T> | ((value?: T) => T | Prom
                 val = value;
                 if (filter(value)) {
                     find = true;
-                    r(value);
+                    r(value)
                 }
-                return value;
+                return value
             }, err => {
-                j(err);
-            });
-        });
+                j(err)
+            })
+        })
     })
 }

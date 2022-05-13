@@ -10,9 +10,9 @@ import { HttpContext } from '../context';
  */
 export class RedirectResult extends ResultValue {
     constructor(private url: string, private alt?: string) {
-        super('text/html');
+        super('text/html')
     }
     async sendValue(ctx: HttpContext) {
-        return ctx.redirect(this.url, this.alt);
+        return ctx.redirect(this.url, this.alt)
     }
 }

@@ -16,29 +16,29 @@ export class RunAspect extends LogAspect {
     report!: TestReport;
     getReport(): TestReport {
         if (!this.report) {
-            this.report = this.injector.resolve(DefaultTestReport);
+            this.report = this.injector.resolve(DefaultTestReport)
         }
-        return this.report;
+        return this.report
     }
 
     @AfterThrowing('execution(*.runBefore)')
     beforeError(joinPoint: Joinpoint) {
-        this.getReport().track(joinPoint.throwing);
+        this.getReport().track(joinPoint.throwing)
     }
 
     @AfterThrowing('execution(*.runBeforeEach)')
     beforeEachError(joinPoint: Joinpoint) {
-        this.getReport().track(joinPoint.throwing);
+        this.getReport().track(joinPoint.throwing)
     }
 
     @AfterThrowing('execution(*.runAfterEach)')
     afterEachError(joinPoint: Joinpoint) {
-        this.getReport().track(joinPoint.throwing);
+        this.getReport().track(joinPoint.throwing)
     }
 
     @AfterThrowing('execution(*.runAfter)')
     afterError(joinPoint: Joinpoint) {
-        this.getReport().track(joinPoint.throwing);
+        this.getReport().track(joinPoint.throwing)
     }
 
     @Around('execution(*.runSuite)')
@@ -52,7 +52,7 @@ export class RunAspect extends LogAspect {
             case JoinpointState.AfterReturning:
             case JoinpointState.AfterThrowing:
                 this.getReport().setSuiteCompleted(runner.type || desc.describe);
-                break;
+                break
         }
     }
 
@@ -68,7 +68,7 @@ export class RunAspect extends LogAspect {
             case JoinpointState.AfterReturning:
             case JoinpointState.AfterThrowing:
                 this.getReport().setCaseCompleted(desc);
-                break;
+                break
         }
     }
 

@@ -12,7 +12,7 @@ export type Handler<T = any, TR = any> = (ctx: T, next: () => TR) => TR;
 export function chain<T>(handlers: Handler<T, Promise<void>>[]): Handler<T, Promise<void>> {
     return async (ctx: T, next: () => Promise<void>) => {
         await runChain(handlers, ctx);
-        if (next) await next();
+        if (next) await next()
     }
 }
 
@@ -23,7 +23,7 @@ export function chain<T>(handlers: Handler<T, Promise<void>>[]): Handler<T, Prom
 export function syncChain<T>(handlers: Handler<T, void>[]): Handler<T, void> {
     return (ctx: T, next: () => void) => {
         runChain(handlers, ctx);
-        next && next();
+        next && next()
     }
 }
 
@@ -47,15 +47,15 @@ export function runChain<T, TR = void>(handlers: Handler<T, TR>[], ctx: T, next?
         index = idx;
         let handle: Handler<T, TR> | undefined;
         if (idx < handlers.length) {
-            handle = handlers[idx];
+            handle = handlers[idx]
         } else if (idx === handlers.length) {
-            handle = next!;
+            handle = next!
         }
         if (!handle) {
-            return null!;
+            return null!
         }
         const gnext = dispatch.bind(null, idx + 1);
-        return handle(ctx, gnext);
+        return handle(ctx, gnext)
     }
-    return dispatch(0);
+    return dispatch(0)
 }

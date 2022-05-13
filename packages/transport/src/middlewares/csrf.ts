@@ -48,22 +48,22 @@ export class CsrfMiddleware implements Middleware {
             useFactory: () => {
                 const se = ctx.injector.get(Session, null);
                 if (!se) {
-                    return null;
+                    return null
                 }
                 if (!se.secret) {
                     se.secret = this.tokens.secretSync();
                 }
-                return this.tokens.create(se.secret);
+                return this.tokens.create(se.secret)
             }
         });
 
         const session = ctx.injector.get(Session, null);
         if (!session || this.options.excludedMethods?.indexOf(ctx.method) !== -1) {
-            return await next();
+            return await next()
         }
 
         if (!session.secret) {
-            session.secret = this.tokens.secretSync();
+            session.secret = this.tokens.secretSync()
         }
 
 
@@ -75,14 +75,14 @@ export class CsrfMiddleware implements Middleware {
             || ctx.getHeader(hdr.X_XSRF_TOKEN);
 
         if (!token) {
-            throw ctx.throwError(this.options.invalidTokenStatusCode!, typeof this.options.invalidTokenMessage === 'function' ? this.options.invalidTokenMessage(ctx) : this.options.invalidTokenMessage);
+            throw ctx.throwError(this.options.invalidTokenStatusCode!, typeof this.options.invalidTokenMessage === 'function' ? this.options.invalidTokenMessage(ctx) : this.options.invalidTokenMessage)
         }
 
         if (!this.tokens.verify(session.secret, token)) {
-            throw ctx.throwError(this.options.invalidTokenStatusCode!, typeof this.options.invalidTokenMessage === 'function' ? this.options.invalidTokenMessage(ctx) : this.options.invalidTokenMessage);
+            throw ctx.throwError(this.options.invalidTokenStatusCode!, typeof this.options.invalidTokenMessage === 'function' ? this.options.invalidTokenMessage(ctx) : this.options.invalidTokenMessage)
         }
 
-        return next();
+        return next()
     }
 
 }

@@ -87,19 +87,19 @@ export class BodyparserMiddleware implements Middleware {
     parseBody(ctx: TransportContext): Promise<{ raw?: any, body?: any }> {
         const extendTypes = this.options.extendTypes;
         if (this.enableJson && ctx.is(extendTypes.json)) {
-            return this.parseJson(ctx);
+            return this.parseJson(ctx)
         }
         if (this.enableForm && ctx.is(extendTypes.form)) {
-            return this.parseForm(ctx);
+            return this.parseForm(ctx)
         }
         if (this.enableText && ctx.is(extendTypes.text)) {
-            return this.parseText(ctx);
+            return this.parseText(ctx)
         }
         if (this.enableXml && ctx.is(extendTypes.xml)) {
-            return this.parseText(ctx);
+            return this.parseText(ctx)
         }
 
-        return Promise.resolve(EMPTY_OBJ);
+        return Promise.resolve(EMPTY_OBJ)
     }
 
     protected async parseJson(ctx: TransportContext): Promise<{ raw?: any, body?: any }> {
@@ -107,7 +107,7 @@ export class BodyparserMiddleware implements Middleware {
         const hdrcode = ctx.getHeader(hdr.CONTENT_ENCODING) as string || hdr.IDENTITY;
         let length: number | undefined;
         if (len && hdrcode === hdr.IDENTITY) {
-            length = ~~len;
+            length = ~~len
         }
         const { limit, strict, encoding } = this.options.json;
 
@@ -125,7 +125,7 @@ export class BodyparserMiddleware implements Middleware {
         } catch (err) {
             (err as any).status = 400;
             (err as any).body = str;
-            throw err;
+            throw err
         }
     }
 
@@ -135,12 +135,12 @@ export class BodyparserMiddleware implements Middleware {
             case 'deflate':
                 break
             case 'identity':
-                return ctx.request;
+                return ctx.request
             default:
                 let err = new TransportError(415, 'Unsupported Content-Encoding: ' + encoding);
                 throw err
         }
-        return (ctx.request as Readable).pipe(zlib.createUnzip());
+        return (ctx.request as Readable).pipe(zlib.createUnzip())
     }
 
     private jsonify(str: string, strict?: boolean) {
@@ -149,9 +149,9 @@ export class BodyparserMiddleware implements Middleware {
         if (!str) return {};
         // strict JSON test
         if (!strictJSONReg.test(str)) {
-            throw new SyntaxError('invalid JSON, only supports object and array');
+            throw new SyntaxError('invalid JSON, only supports object and array')
         }
-        return JSON.parse(str);
+        return JSON.parse(str)
     }
 
     protected async parseForm(ctx: TransportContext): Promise<{ raw?: any, body?: any }> {
@@ -159,13 +159,13 @@ export class BodyparserMiddleware implements Middleware {
         const hdrcode = ctx.getHeader(hdr.CONTENT_ENCODING) as string || hdr.IDENTITY;
         let length: number | undefined;
         if (len && hdrcode === hdr.IDENTITY) {
-            length = ~~len;
+            length = ~~len
         }
 
         let { limit, queryString, qs, encoding } = this.options.form;
 
         if (!qs) {
-            qs = qslib;
+            qs = qslib
         }
 
         const str = await getRaw(this.getStream(ctx, hdrcode), {
@@ -182,7 +182,7 @@ export class BodyparserMiddleware implements Middleware {
         } catch (err) {
             (err as any).status = 400;
             (err as any).body = str;
-            throw err;
+            throw err
         }
     }
 
@@ -206,7 +206,7 @@ export class BodyparserMiddleware implements Middleware {
     }
 
     private chkType(type: string) {
-        return this.options.enableTypes.includes(type) === true;
+        return this.options.enableTypes.includes(type) === true
     }
 
     private mergeType(types: string[], pvdr?: string[]) {
@@ -214,11 +214,11 @@ export class BodyparserMiddleware implements Middleware {
         if (pvdr && pvdr.length) {
             pvdr.forEach(p => {
                 if (merged.indexOf(p) < 0) {
-                    merged.push(p);
+                    merged.push(p)
                 }
             })
         }
-        return merged;
+        return merged
     }
 
 

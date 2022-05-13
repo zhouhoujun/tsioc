@@ -147,5 +147,5 @@ function decode(str: string): Object {
  */
 function encode(body: any): string {
     body = JSON.stringify(body);
-    return Buffer.from(body).toString('base64');
+    return Buffer.from(body).toString('base64')
 }

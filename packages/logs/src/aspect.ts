@@ -25,7 +25,7 @@ export abstract class LogAspect extends LogProcess {
     processLog(joinPoint: Joinpoint, annotation: any, level: any, ...messages: any[]): void {
         if (isArray(annotation)) {
             if (!isLevel(level)) {
-                !isNil(level) && messages.unshift(level);
+                !isNil(level) && messages.unshift(level)
             }
             annotation.forEach((logmeta: LogMetadata) => {
                 let canlog = logmeta.express ? logmeta.express(joinPoint) : true;
@@ -36,19 +36,19 @@ export abstract class LogAspect extends LogProcess {
                         logmeta.level || level,
                         false,
                         logmeta.message
-                    );
+                    )
                 }
             });
-            this.writeLog(this.logger, joinPoint, level, true, ...messages);
+            this.writeLog(this.logger, joinPoint, level, true, ...messages)
         } else {
             !isNil(level) && messages.unshift(level);
             if (isLevel(annotation)) {
-                level = annotation;
+                level = annotation
             } else {
                 level = '';
-                !isNil(annotation) && messages.unshift(annotation);
+                !isNil(annotation) && messages.unshift(annotation)
             }
-            this.writeLog(this.logger, joinPoint, level, true, ...messages);
+            this.writeLog(this.logger, joinPoint, level, true, ...messages)
         }
     }
 
@@ -56,7 +56,7 @@ export abstract class LogAspect extends LogProcess {
         (async () => {
             let formatMsgs = format ? this.formatMessage(joinPoint, logger, level, ...messages) : messages;
             if (level) {
-                logger[level](...formatMsgs);
+                logger[level](...formatMsgs)
             } else {
                 switch (joinPoint.state) {
                     case JoinpointState.Before:
@@ -73,12 +73,12 @@ export abstract class LogAspect extends LogProcess {
                         break;
                 }
             }
-        })();
+        })()
     }
 
     protected formatTimestamp(): any {
         let now = new Date();
-        return `[${now.toISOString()}]`;
+        return `[${now.toISOString()}]`
     }
 
     private _formater: LogFormater | undefined;
@@ -88,31 +88,31 @@ export abstract class LogAspect extends LogProcess {
             let formater: LogFormater | undefined;
             const format = config.format || LogFormater;
             if (isToken(format)) {
-                formater = this.injector.resolve({ token: format, target: this, defaultToken: DefaultLogFormater });
+                formater = this.injector.resolve({ token: format, target: this, defaultToken: DefaultLogFormater })
             } else if (isFunction(format)) {
-                formater = { format } as LogFormater;
+                formater = { format } as LogFormater
             } else if (isObject(format) && isFunction(format.format)) {
-                formater = format;
+                formater = format
             }
-            this._formater = formater;
+            this._formater = formater
         }
-        return this._formater;
+        return this._formater
     }
 
     protected formatMessage(joinPoint: Joinpoint, logger: Logger, level: Level, ...messages: any[]): any[] {
         let formater = this.getFormater();
         if (formater) {
-            messages = formater.format(joinPoint, level, logger, ...messages);
+            messages = formater.format(joinPoint, level, logger, ...messages)
         } else {
             messages.unshift((logger.name ?? 'default') + ' -')
             if (level) {
                 messages.unshift(`[${level.toUpperCase()}]`)
             }
             let timestamp = this.formatTimestamp();
-            if (timestamp) messages.unshift(timestamp);
+            if (timestamp) messages.unshift(timestamp)
         }
 
-        return messages;
+        return messages
     }
 }
 
@@ -130,6 +130,6 @@ export class AnnotationLogAspect extends LogAspect {
 
     @Pointcut('@annotation(Log)', 'annotation')
     logging(joinPoint: Joinpoint, annotation: LogMetadata[]) {
-        this.processLog(joinPoint, annotation);
+        this.processLog(joinPoint, annotation)
     }
 }

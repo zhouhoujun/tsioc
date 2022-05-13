@@ -20,7 +20,7 @@ export abstract class LogProcess {
     @Inject() protected injector!: Injector
 
     protected getLogger(name?: string): Logger {
-        return name ? this.logManger.getLogger(name) : this.logger;
+        return name ? this.logManger.getLogger(name) : this.logger
     }
 
     abstract processLog(joinPoint: Joinpoint, ...messages: any[]): void;

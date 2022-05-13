@@ -21,11 +21,11 @@ export class IntervalActivity extends ControlActivity {
 
     async execute(ctx: IActivityContext): Promise<void> {
         if (!this.body) {
-            return;
+            return
         }
         let interval = await this.timer.execute(ctx);
         setInterval(() => {
             ctx.getExector().runActivity(this.body);
-        }, interval);
+        }, interval)
     }
 }

@@ -60,9 +60,9 @@ export class TypeormTransactionStatus extends TransactionStatus {
                 if (paramName) {
                     const filed = joinPoint.target[paramName];
                     if (filed instanceof EntityManager) {
-                        context[paramName] = entityManager;
+                        context[paramName] = entityManager
                     } else if (filed instanceof Repository) {
-                        context[paramName] = this.getRepository((metadata as RepositoryMetadata).model, metadata.provider as Type || metadata.type, entityManager);
+                        context[paramName] = this.getRepository((metadata as RepositoryMetadata).model, metadata.provider as Type || metadata.type, entityManager)
                     }
                 }
             });

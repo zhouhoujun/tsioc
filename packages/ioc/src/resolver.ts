@@ -59,11 +59,11 @@ export function composeResolver<T extends OperationArgumentResolver<any>, TP ext
             resolvers.some(r => {
                 if (r.canResolve(parameter, ctx)) {
                     result = r.resolve(parameter, ctx);
-                    return isDefined(result);
+                    return isDefined(result)
                 }
-                return false;
+                return false
             });
-            return result ?? null;
+            return result ?? null
         }
     }
 }

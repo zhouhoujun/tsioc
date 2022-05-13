@@ -39,13 +39,13 @@ export const Suite: Suite = createDecorator<SuiteMetadata>('Suite', {
         class: (ctx, next) => {
             (ctx.reflect as SuiteReflect).suite = true;
             ctx.reflect.annotation = ctx.metadata;
-            return next();
+            return next()
         }
     },
     props: (describe: string, timeout?: number) => ({ describe, timeout }),
     appendProps: (metadata) => {
         metadata.singleton = true;
-        return metadata;
+        return metadata
     },
     providers: [
         { provide: RunnableFactoryResolver, useClass: SuiteRunnableFactoryResolver }
@@ -84,8 +84,8 @@ export function createTestDecorator<T extends TestMetadata>(name: string, option
     options = options || EMPTY_OBJ;
     return createDecorator<TestMetadata>(name, {
         props: (timeout: number, setp?: number) => ({ timeout, setp }),
-        ...options,
-    }) as TestDecorator<T>;
+        ...options
+    }) as TestDecorator<T>
 }
 
 /**

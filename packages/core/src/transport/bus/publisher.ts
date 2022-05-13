@@ -23,7 +23,7 @@ export abstract class Publisher implements OnDispose {
 
 
     onDispose(): Promise<void> {
-        return this.close();
+        return this.close()
     }
 
 }

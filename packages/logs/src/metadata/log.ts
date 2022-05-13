@@ -139,9 +139,9 @@ const loggerResolver = {
             } else if (pr.propertyKey) {
                 local = ` field ${pr.propertyKey} of class `
             } else {
-                local = ' ';
+                local = ' '
             }
-            throw new ArgumentError(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on LogModule in package '@tsdi/logs',  please register LogModule first. `);
+            throw new ArgumentError(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on LogModule in package '@tsdi/logs',  please register LogModule first. `)
         } else if (ctx.has(LogConfigure)) {
             const adapter = ctx.get(LogConfigure)?.adapter ?? 'console';
             const token = isString(adapter) ? getToken(LoggerManager, adapter) : adapter;
@@ -152,25 +152,25 @@ const loggerResolver = {
                 } else if (pr.propertyKey) {
                     local = ` field ${pr.propertyKey} of class `
                 } else {
-                    local = ' ';
+                    local = ' '
                 }
-                throw new ArgumentError(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on '${token.toString()}',  please register this LoggerManager first. `);
+                throw new ArgumentError(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on '${token.toString()}',  please register this LoggerManager first. `)
             }
         }
-        return isDefined(pr.logname || pr.target);
+        return isDefined(pr.logname || pr.target)
     },
     resolve: (pr: LogMetadata, ctx, target?: ClassType) => {
         let factory = ctx.get(LoggerManager);
         let level = pr.level;
         if (pr.config) {
             if (!level) {
-                level = pr.config.level;
+                level = pr.config.level
             }
-            factory.configure(pr.config);
+            factory.configure(pr.config)
         }
         const logger = factory.getLogger(pr.logname ?? lang.getClassName(target ?? pr.target));
         if (level) logger.level = level;
-        return logger;
+        return logger
     }
 } as OperationArgumentResolver;
 
@@ -187,9 +187,9 @@ export const Log: Log<LogMetadata> = createDecorator<LogMetadata>('Log', {
             const metadata = ctx.metadata as LogMetadata;
             if (!metadata.logname) {
                 metadata.target = ctx.reflect.type;
-                metadata.resolver = loggerResolver;
+                metadata.resolver = loggerResolver
             }
-            metadata.propertyKey = ctx.propertyKey;
+            metadata.propertyKey = ctx.propertyKey
         }
     },
     props: (...args: any[]) => {
@@ -198,15 +198,15 @@ export const Log: Log<LogMetadata> = createDecorator<LogMetadata>('Log', {
             return {
                 logname,
                 resolver: loggerResolver
-            };
+            }
         } else if (args.length >= 2) {
             const [message, logname, level] = args;
             if (isString(logname)) {
-                return { message, logname, level };
+                return { message, logname, level }
             } else {
-                return { message, ...logname };
+                return { message, ...logname }
             }
         }
-        return EMPTY_OBJ;
+        return EMPTY_OBJ
     }
 });

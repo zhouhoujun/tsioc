@@ -118,11 +118,11 @@ export interface Autowired {
 export const Autowired: Autowired = createDecorator<AutoWiredMetadata>('Autowired', {
     props: (provider: ProviderType[] | Token, alias?: string | Record<string, any>) => {
         if (isArray(provider)) {
-            return { providers: provider };
+            return { providers: provider }
         } else if (alias) {
-            return isString(alias) ? { provider: getToken(provider, alias) } : { provider: getToken(provider, alias.alias), ...alias, alias: undefined };
+            return isString(alias) ? { provider: getToken(provider, alias) } : { provider: getToken(provider, alias.alias), ...alias, alias: undefined }
         } else {
-            return { provider: provider };
+            return { provider: provider }
         }
     }
 });
@@ -236,11 +236,11 @@ export interface Inject {
 export const Inject: Inject = createDecorator<InjectMetadata>('Inject', {
     props: (provider: ProviderType[] | Token, alias?: string | Record<string, any>) => {
         if (isArray(provider)) {
-            return { providers: provider };
+            return { providers: provider }
         } else if (alias) {
-            return isString(alias) ? { provider: getToken(provider, alias) } : { provider: getToken(provider, alias.alias), ...alias, alias: undefined };
+            return isString(alias) ? { provider: getToken(provider, alias) } : { provider: getToken(provider, alias.alias), ...alias, alias: undefined }
         } else {
-            return { provider };
+            return { provider }
         }
     }
 });
@@ -258,7 +258,7 @@ export const Inject: Inject = createDecorator<InjectMetadata>('Inject', {
 export const Nullable = createDecorator<InjectMetadata>('Nullable', {
     appendProps: (meta) => {
         meta.nullable = true;
-        return meta;
+        return meta
     }
 });
 
@@ -382,11 +382,11 @@ export interface Optional {
 export const Optional: Optional = createParamDecorator('Optional', {
     appendProps: (meta) => {
         if (meta.flags) {
-            meta.flags = meta.flags & InjectFlags.Optional;
+            meta.flags = meta.flags & InjectFlags.Optional
         } else {
-            meta.flags = InjectFlags.Optional;
+            meta.flags = InjectFlags.Optional
         }
-        return meta;
+        return meta
     }
 });
 
@@ -416,11 +416,11 @@ export interface Self {
 export const Self: Self = createParamDecorator('Self', {
     appendProps: (meta) => {
         if (meta.flags) {
-            meta.flags = meta.flags & InjectFlags.Self;
+            meta.flags = meta.flags & InjectFlags.Self
         } else {
-            meta.flags = InjectFlags.Self;
+            meta.flags = InjectFlags.Self
         }
-        return meta;
+        return meta
     }
 });
 
@@ -458,11 +458,11 @@ export interface SkipSelf {
 export const SkipSelf: SkipSelf = createParamDecorator('SkipSelf', {
     appendProps: (meta) => {
         if (meta.flags) {
-            meta.flags = meta.flags & InjectFlags.SkipSelf;
+            meta.flags = meta.flags & InjectFlags.SkipSelf
         } else {
-            meta.flags = InjectFlags.SkipSelf;
+            meta.flags = InjectFlags.SkipSelf
         }
-        return meta;
+        return meta
     }
 });
 
@@ -492,11 +492,11 @@ export interface Host {
 export const Host: Host = createParamDecorator('Host', {
     appendProps: (meta) => {
         if (meta.flags) {
-            meta.flags = meta.flags & InjectFlags.Host;
+            meta.flags = meta.flags & InjectFlags.Host
         } else {
-            meta.flags = InjectFlags.Host;
+            meta.flags = InjectFlags.Host
         }
-        return meta;
+        return meta
     }
 });
 
@@ -643,7 +643,7 @@ export const ProviderIn: ProviderIn = createDecorator<ProviderInMetadata>('Provi
             let meta = ctx.reflect.class.getMetadata<ProviderInMetadata>(ctx.currDecor!);
             const type = ctx.type;
             ctx.injector.platform().setTypeProvider(meta.target, [{ provide: meta.provide || type, useClass: type }])
-            return next();
+            return next()
         }
     }
 });
@@ -697,7 +697,7 @@ export interface Singleton {
 export const Singleton: Singleton = createDecorator<ClassMetadata>('Singleton', {
     props: (provide: Token, alias?: string) => ({ provide: getToken(provide, alias) }),
     appendProps: (meta) => {
-        meta.singleton = true;
+        meta.singleton = true
     }
 });
 
@@ -787,12 +787,12 @@ export interface Autorun {
 export const Autorun: Autorun = createDecorator<RunnableMetadata>('Autorun', {
     props: (arg: string | number, args?: InvokeArguments) => {
         if (isString(arg)) {
-            return { method: arg, args };
+            return { method: arg, args }
         }
         return { order: arg, args }
     },
     appendProps: (meta) => {
         meta.auto = true;
-        meta.singleton = true;
+        meta.singleton = true
     }
 });

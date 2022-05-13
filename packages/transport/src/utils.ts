@@ -5,11 +5,11 @@ import { EventEmitter } from 'node:events';
 
 
 export function isBuffer(body: any): body is Buffer {
-  return Buffer.isBuffer(body);
+  return Buffer.isBuffer(body)
 }
 
 export function isStream(body: any): body is Stream {
-  return body instanceof Stream || (body instanceof EventEmitter && isFunction((body as Stream).pipe));
+  return body instanceof Stream || (body instanceof EventEmitter && isFunction((body as Stream).pipe))
 }
 
 export function isJson(body: any) {
@@ -17,7 +17,7 @@ export function isJson(body: any) {
   if (isString(body)) return false;
   if (isStream(body)) return false;
   if (isBuffer(body)) return false;
-  return true;
+  return true
 }
 
 
@@ -36,7 +36,7 @@ export function escapeHtml(content: string): string {
   var match = htmlRegExp.exec(str);
 
   if (!match) {
-    return str;
+    return str
   }
 
   var escape;
@@ -140,9 +140,9 @@ export function parseTokenList(str: string) {
   }
 
   // final token
-  list.push(str.substring(start, end))
+  list.push(str.substring(start, end));
 
-  return list;
+  return list
 }
 
 

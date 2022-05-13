@@ -27,7 +27,6 @@ export abstract class HttpClientOptions {
     abstract get interceptors(): InterceptorType<HttpRequest, HttpEvent>[] | undefined;
     abstract get authority(): string | undefined;
     abstract get options(): HttpSessionOptions | undefined;
-
 }
 
 export interface HttpRequestOptions {
@@ -54,20 +53,20 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
     constructor(
         @Inject() readonly context: InvocationContext,
         @Nullable() private option: HttpClientOptions) {
-        super();
+        super()
 
         const interceptors = this.option.interceptors?.map(m => {
             if (isFunction(m)) {
-                return { provide: HTTP_INTERCEPTORS, useClass: m, multi: true };
+                return { provide: HTTP_INTERCEPTORS, useClass: m, multi: true }
             } else {
-                return { provide: HTTP_INTERCEPTORS, useValue: m, multi: true };
+                return { provide: HTTP_INTERCEPTORS, useValue: m, multi: true }
             }
         }) ?? EMPTY;
-        this.context.injector.inject(interceptors);
+        this.context.injector.inject(interceptors)
     }
 
     protected getRegInterceptors(): Interceptor<HttpRequest, HttpEvent>[] {
-        return this.context.injector.get(HTTP_INTERCEPTORS, EMPTY);
+        return this.context.injector.get(HTTP_INTERCEPTORS, EMPTY)
     }
 
     protected getBackend(): EndpointBackend<HttpRequest, HttpEvent> {
@@ -76,7 +75,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
                 return new Observable((observer: Observer<HttpEvent<any>>) => {
                     let headers: Record<string, any> = {};
                     req.headers.forEach((name, values) => {
-                        headers[name] = values;
+                        headers[name] = values
                     });
 
                     const onError = (err: Error) => observer.error(err);
@@ -89,7 +88,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
                         let url = req.url.trim();
                         if (abstUrlExp.test(url)) {
                             if (!url.startsWith(this.option.authority)) throw new ArgumentError('Absolute url not start with authority.');
-                            url = url.substring(this.option.authority.length);
+                            url = url.substring(this.option.authority.length)
                         }
                         request = this.client.request({
                             ...headers,
@@ -123,11 +122,11 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
                     request.on(ev.ABOUT, onError);
                     request.on(ev.TIMEOUT, onError);
                     request.on(ev.END, () => {
-                        observer.complete();
+                        observer.complete()
                     });
 
                     if (req.body) {
-                        request.write(req.body);
+                        request.write(req.body)
                     }
 
                     request.end();
@@ -141,28 +140,28 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
                         if (!ctx.destroyed) {
                             request.emit(ev.CLOSE);
                         }
-                    };
+                    }
 
-                });
-            });
+                })
+            })
         }
-        return this._backend!;
+        return this._backend!
     }
 
     protected buildRequest(context: InvocationContext<any>, url: string | HttpRequest<any>, options?: HttpRequestOptions): HttpRequest<any> {
         if (isString(url)) {
-            return new HttpRequest(options?.method ?? 'GET', url, options);
+            return new HttpRequest(options?.method ?? 'GET', url, options)
         }
-        return url;
+        return url
     }
 
     protected async connect(): Promise<void> {
         if (this.option.authority) {
-            if (this.client && !this.client.closed) return;
+            if (this.client && !this.client.closed) return
             this.client = http2.connect(this.option.authority, this.option.options);
             this.client.on(ev.ERROR, (err) => {
-                this.logger.error(err);
-            });
+                this.logger.error(err)
+            })
         }
     }
 
@@ -796,7 +795,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
     } = {}): Observable<any> {
-        return this.send<any>(url, merge(options, 'GET'));
+        return this.send<any>(url, merge(options, 'GET'))
     }
 
 
@@ -1110,7 +1109,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
     } = {}): Observable<any> {
-        return this.send<any>(url, merge(options, 'HEAD'));
+        return this.send<any>(url, merge(options, 'HEAD'))
     }
 
     /**
@@ -1161,7 +1160,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
             params: new HttpParams().append(callbackParam, 'JSONP_CALLBACK'),
             observe: 'body',
             responseType: 'json',
-        });
+        })
     }
 
     /**
@@ -1472,7 +1471,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
     } = {}): Observable<any> {
-        return this.send<any>(url, merge(options, 'OPTIONS'));
+        return this.send<any>(url, merge(options, 'OPTIONS'))
     }
 
     /**
@@ -1798,7 +1797,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
     } = {}): Observable<any> {
-        return this.send<any>(url, merge(options, 'PATCH', body));
+        return this.send<any>(url, merge(options, 'PATCH', body))
     }
 
     /**
@@ -2124,7 +2123,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
     } = {}): Observable<any> {
-        return this.send<any>(url, merge(options, 'POST', body));
+        return this.send<any>(url, merge(options, 'POST', body))
     }
 
     /**
@@ -2449,7 +2448,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
     } = {}): Observable<any> {
-        return this.send<any>(url, merge(options, 'PUT', body));
+        return this.send<any>(url, merge(options, 'PUT', body))
     }
 
     /**
@@ -2797,22 +2796,22 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         withCredentials?: boolean,
     }): Observable<any>;
     send(req: HttpRequest | string, options?: any): Observable<any> {
-        return super.send(req as any, options);
+        return super.send(req as any, options)
     }
 
     async close(): Promise<void> {
         if (this.client) {
             const defer = lang.defer();
             this.client.close(() => defer.resolve());
-            return defer.promise;
-        };
+            return defer.promise
+        }
     }
 
     /**
      * on dispose.
      */
     onDispose(): Promise<void> {
-        return this.close();
+        return this.close()
     }
 
 }
@@ -2835,6 +2834,6 @@ function merge<T>(
         ...options,
         method,
         body,
-    };
+    }
 }
 

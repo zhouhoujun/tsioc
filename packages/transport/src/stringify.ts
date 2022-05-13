@@ -27,21 +27,21 @@ export class JsonStreamStringify extends Readable {
         });
         if (replacer instanceof Function) this.replacerFunction = replacer;
         if (Array.isArray(replacer)) this.replacerArray = replacer;
-        this.addToStack(value);
+        this.addToStack(value)
     }
 
     private cycler(key: string | number | undefined, value: any) {
         const existingPath = (this.visited as VisitedWeakMap).get(value);
         if (existingPath) {
             return {
-                $ref: existingPath,
-            };
+                $ref: existingPath
+            }
         }
         let path = this.path();
         if (key !== undefined) path.push(key);
         path = path.map(v => `[${(Number.isInteger(v as number) ? v : quoteString(v as string))}]`);
         (this.visited as VisitedWeakMap).set(value, path.length ? `$${path.join('')}` : '$');
-        return value;
+        return value
     }
 
     private addToStack(value: any, key?: string, index = -1, parent?: IStackItem) {
@@ -134,7 +134,7 @@ export class JsonStreamStringify extends Readable {
             });
         }
         this.stack.unshift(obj);
-        return obj;
+        return obj
     }
 
     private removeFromStack(item: IStackItem) {
@@ -167,7 +167,7 @@ export class JsonStreamStringify extends Readable {
     private processReadableObject(current: IStackItem, size: number) {
         if (current.end) {
             this.removeFromStack(current);
-            return undefined;
+            return undefined
         }
         return readAsPromised(current.value, size)
             .then((value) => {
@@ -180,14 +180,14 @@ export class JsonStreamStringify extends Readable {
                     current.readCount = current.readCount || 0;
                     current.readCount += 1;
                 }
-            });
+            })
     }
 
     private processObject(current: IStackItemObject) {
         // when no keys left, remove obj from stack
         if (!current.unread.length) {
             this.removeFromStack(current);
-            return;
+            return
         }
         const key = current.unread.shift()!;
         const value = current.value[key];
@@ -198,12 +198,12 @@ export class JsonStreamStringify extends Readable {
         const key = <number>current.unread;
         if (!key) {
             this.removeFromStack(current);
-            return;
+            return
         }
         const index = current.arrayLength - key;
         const value = current.value[index];
         current.unread -= 1;
-        this.addToStack(value, undefined, index, current);
+        this.addToStack(value, undefined, index, current)
     }
 
     processPrimitive(current: IStackItem) {
@@ -247,12 +247,12 @@ export class JsonStreamStringify extends Readable {
     private processReadableString(current: IStackItem, size: number) {
         if (current.end) {
             this.removeFromStack(current);
-            return undefined;
+            return undefined
         }
         return readAsPromised(current.value, size)
             .then((value: any) => {
                 if (value) this._push(escapeString(value?.toString()));
-            });
+            })
     }
 
     private processPromise(current: IStackItem) {
@@ -269,7 +269,7 @@ export class JsonStreamStringify extends Readable {
         try {
             out = (this as any)[processFunctionLookupTable[current.type]](current, size);
         } catch (err) {
-            return Promise.reject(err);
+            return Promise.reject(err)
         }
         return Promise.resolve(out)
             .then(() => {
@@ -284,7 +284,7 @@ export class JsonStreamStringify extends Readable {
     private __read(size = 0) {
         if (this.isReading || this.error) {
             this.readMore = true;
-            return undefined;
+            return undefined
         }
         this.isReading = true;
 
@@ -352,7 +352,7 @@ function getType(value: any): Types {
     if (isReadableStream(value)) return value._readableState.objectMode ? Types.ReadableObject : Types.ReadableString;
     if (Array.isArray(value)) return Types.Array;
     if (typeof value === 'object' || value instanceof Object) return Types.Object;
-    return Types.Primitive;
+    return Types.Primitive
 }
 
 enum Types {
@@ -394,11 +394,11 @@ function escapeString(str: string) {
     return str.replace(rxEscapable, (a) => {
         const c = meta[a];
         return typeof c === 'string' ? c : `\\u${a.charCodeAt(0).toString(16).padStart(4, '0')}`;
-    });
+    })
 }
 
 function quoteString(string: string) {
-    return `"${escapeString(string)}"`;
+    return `"${escapeString(string)}"`
 }
 
 function readAsPromised(stream: Readable, size: number) {
@@ -412,14 +412,14 @@ function readAsPromised(stream: Readable, size: number) {
                 stream.removeListener('end', endListener);
                 stream.removeListener('error', reject);
                 resolve(stream.read());
-            });
-        });
+            })
+        })
     }
-    return Promise.resolve(value);
+    return Promise.resolve(value)
 }
 
 function recursiveResolve(promise: Promise<any>): Promise<any> {
-    return promise.then(res => isPromise(res) ? recursiveResolve(res) : res);
+    return promise.then(res => isPromise(res) ? recursiveResolve(res) : res)
 }
 
 interface IStackItem {

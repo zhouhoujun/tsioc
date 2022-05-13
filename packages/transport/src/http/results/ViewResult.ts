@@ -16,16 +16,16 @@ export abstract class ViewRenderer {
  */
 export class ViewResult extends ResultValue {
     constructor(private name: string, private model?: object) {
-        super('text/html');
+        super('text/html')
     }
 
     async sendValue(ctx: HttpContext) {
         const renderer = ctx.get(ViewRenderer);
         if (!renderer) {
-            return Promise.reject('view engin middleware no configed!');
+            return Promise.reject('view engin middleware no configed!')
         } else {
             ctx.contentType = this.contentType;
-            return await renderer.render(ctx, this.name, this.model);
+            return await renderer.render(ctx, this.name, this.model)
         }
     }
 }

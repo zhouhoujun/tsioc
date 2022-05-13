@@ -36,7 +36,7 @@ export class ServerLogFormater extends LogFormater {
                     chalk.gray('returning value:'),
                     joinPoint.returning,
                     ...messages
-                ]
+                ];
                 break;
             case JoinpointState.AfterThrowing:
                 messages = [
@@ -44,19 +44,19 @@ export class ServerLogFormater extends LogFormater {
                     chalk.red('throw error:'),
                     joinPoint.throwing,
                     ...messages
-                ]
+                ];
                 break;
             default:
-                break;
+                break
         }
         if (logger.formatHeader) {
             messages.unshift(chalk.green((logger.name || 'default') + ' -'));
             if (level) {
-                messages.unshift(chalk.green(`[${level.toUpperCase()}]`));
+                messages.unshift(chalk.green(`[${level.toUpperCase()}]`))
             }
             let timestamp = this.timestamp(new Date());
-            if (timestamp) messages.unshift(timestamp);
+            if (timestamp) messages.unshift(timestamp)
         }
-        return messages;
+        return messages
     }
 }

@@ -97,7 +97,7 @@ export class DefaultPlatform implements Platform {
 
     registerAction(...types: Type<Action>[]): this {
         types.forEach(type => {
-            if (this._actions.has(type)) return
+            if (this._actions.has(type)) return;
             this.processAction(type)
         });
         return this

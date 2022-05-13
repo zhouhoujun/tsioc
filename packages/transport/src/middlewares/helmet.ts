@@ -115,7 +115,7 @@ export class HelmetMiddleware implements Middleware {
     private isOldIE(agent: string) {
         if (!agent) return false;
         let matches = IEExp.exec(agent);
-        return matches ? parseFloat(matches[1]) < 9 : false;
+        return matches ? parseFloat(matches[1]) < 9 : false
     }
 
 }

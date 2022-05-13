@@ -23,17 +23,17 @@ export class UnitTestConfigureService implements ConfigureService {
         const config = ctx.get(UNITTESTCONFIGURE);
         const inj = ctx.injector;
         if (!inj.has(Assert)) {
-            inj.setValue(Assert, assert);
+            inj.setValue(Assert, assert)
         }
         if (!inj.has(ExpectToken)) {
-            inj.setValue(ExpectToken, expect);
+            inj.setValue(ExpectToken, expect)
         }
         const reps = inj.get(Application).loadTypes.filter(l => lang.isBaseOf(l, AbstractReporter));
         if (reps.length) {
             inj.inject(reps.map(r => ({ provide: UNIT_REPORTES, useExisting: r, multi: true } as ProviderType)))
         }
         if (config.reporters && config.reporters.length) {
-            inj.inject(config.reporters.map(r => ({ provide: UNIT_REPORTES, useClass: r, multi: true } as ProviderType)));
+            inj.inject(config.reporters.map(r => ({ provide: UNIT_REPORTES, useClass: r, multi: true } as ProviderType)))
         }
     }
 

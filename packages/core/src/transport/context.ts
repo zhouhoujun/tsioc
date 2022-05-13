@@ -70,7 +70,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
      * request body, playload.
      */
     get playload(): any {
-        return (this.request as any).body;
+        return (this.request as any).body
     }
     /**
      * The outgoing HTTP request method.

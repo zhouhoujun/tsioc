@@ -18,7 +18,7 @@ export class HttpSendAdapter extends SendAdapter {
         path = path.substring(parse(path).root.length);
         const roots = isArray(opts.root) ? opts.root : [opts.root];
         try {
-            path = decodeURIComponent(path);
+            path = decodeURIComponent(path)
         } catch {
             throw ctx.throwError(400, 'failed to decode url')
         }
@@ -29,7 +29,7 @@ export class HttpSendAdapter extends SendAdapter {
             throw ctx.throwError(400, 'Malicious Path');
         }
         if (UP_REGEXP.test(normalize('.' + sep + path))) {
-            throw ctx.throwError(403);
+            throw ctx.throwError(403)
         }
         let filename = '';
         let encodingExt = ''
@@ -42,14 +42,14 @@ export class HttpSendAdapter extends SendAdapter {
                 filename = rpath + '.br';
                 encodingExt = '.br';
                 ctx.setHeader(hdr.CONTENT_ENCODING, 'br');
-                ctx.removeHeader(hdr.CONTENT_LENGTH);
+                ctx.removeHeader(hdr.CONTENT_LENGTH)
             } else if (ctx.acceptsEncodings('gzip', 'identity') === 'gzip' && opts.gzip && existsSync(rpath + '.gz')) {
                 filename = rpath + '.gz';
                 encodingExt = '.gz';
                 ctx.setHeader(hdr.CONTENT_ENCODING, 'gzip');
-                ctx.removeHeader(hdr.CONTENT_LENGTH);
+                ctx.removeHeader(hdr.CONTENT_LENGTH)
             } else if (existsSync(rpath)) {
-                filename = rpath;
+                filename = rpath
             } else if (opts.extensions && !/\./.exec(basename(rpath))) {
                 const list = [...opts.extensions]
                 for (let i = 0; i < list.length; i++) {
@@ -57,14 +57,14 @@ export class HttpSendAdapter extends SendAdapter {
                     if (typeof ext !== 'string') {
                         throw new TypeError('option extensions must be array of strings or false')
                     }
-                    if (!/^\./.exec(ext)) ext = `.${ext}`
+                    if (!/^\./.exec(ext)) ext = `.${ext}`;
                     if (existsSync(`${rpath}${ext}`)) {
-                        filename = `${rpath}${ext}`
+                        filename = `${rpath}${ext}`;
                         break
                     }
                 }
             }
-            return !!filename;
+            return !!filename
         });
         if (!filename) return filename;
         // stat
@@ -79,14 +79,14 @@ export class HttpSendAdapter extends SendAdapter {
                     path += `/${index}`;
                     stats = await statify(filename)
                 } else {
-                    return '';
+                    return ''
                 }
             }
         } catch (err) {
             if (notfound.includes((err as any).code)) {
-                throw ctx.throwError(404, (err as Error).message);
+                throw ctx.throwError(404, (err as Error).message)
             }
-            throw ctx.throwError(500);
+            throw ctx.throwError(500)
         }
 
         if (opts.setHeaders) opts.setHeaders(ctx, filename, stats);
@@ -104,7 +104,7 @@ export class HttpSendAdapter extends SendAdapter {
         if (!ctx.type) ctx.type = this.getExtname(filename, encodingExt);
         ctx.body = createReadStream(filename);
 
-        return filename;
+        return filename
     }
 
     private getExtname(file: string, ext?: string) {
@@ -113,7 +113,7 @@ export class HttpSendAdapter extends SendAdapter {
     }
 
     private resolvePath(root: string, ...path: string[]): string {
-        return normalize(join(resolve(root), ...path));
+        return normalize(join(resolve(root), ...path))
     }
 }
 

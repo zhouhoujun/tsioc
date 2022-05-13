@@ -6,14 +6,15 @@ import { HttpStatusCode, TransportError } from '@tsdi/core';
  */
 export class HttpError extends TransportError {
     constructor(readonly status: HttpStatusCode, message?: string | string[]) {
-        super(status, message);
+        super(status, message)
     }
 
     get statusCode(): HttpStatusCode {
-        return this.status;
+        return this.status
     }
+    
     toString() {
-        return `Http Error: ${this.status}, ${this.message}`;
+        return `Http Error: ${this.status}, ${this.message}`
     }
 
 }

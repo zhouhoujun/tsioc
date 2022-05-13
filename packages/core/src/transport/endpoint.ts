@@ -102,7 +102,7 @@ export class InterceptorEndpoint<TRequest, TResponse> implements Endpoint<TReque
     constructor(private next: Endpoint<TRequest, TResponse>, private interceptor: Interceptor<TRequest, TResponse>) { }
 
     handle(req: TRequest, context: InvocationContext): Observable<TResponse> {
-        return this.interceptor.intercept(req, this.next, context);
+        return this.interceptor.intercept(req, this.next, context)
     }
 }
 

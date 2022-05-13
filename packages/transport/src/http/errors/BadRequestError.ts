@@ -10,6 +10,6 @@ import { HttpError } from './HttpError';
  */
 export class BadRequestError extends HttpError {
     constructor(message = statusMessage[HttpStatusCode.BadRequest]) {
-        super(HttpStatusCode.BadRequest, message);
+        super(HttpStatusCode.BadRequest, message)
     }
 }

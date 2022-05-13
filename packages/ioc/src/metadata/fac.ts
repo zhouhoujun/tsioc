@@ -23,35 +23,35 @@ export function createDecorator<T>(name: string, option: DecoratorOption<T>): an
         let metadata: T;
         if (args.length) {
             if (args.length === 1 && isMetadataObject(args[0])) {
-                metadata = args[0];
+                metadata = args[0]
             } else if (option.props) {
-                metadata = option.props(...args);
+                metadata = option.props(...args)
             }
         }
 
         return (...pms: any[]) => {
-            return storeMetadata(name, decor, pms, metadata, option);
+            return storeMetadata(name, decor, pms, metadata, option)
         }
     }
 
     factory.toString = () => decor;
-    return factory;
+    return factory
 }
 
 function storeMetadata<T>(name: string, decor: string, args: any[], metadata: any, option: DecoratorOption<T>): any {
     let target, propertyKey;
     if (!metadata) {
-        metadata = {};
+        metadata = {}
     }
     if (option.appendProps) {
-        option.appendProps(metadata);
+        option.appendProps(metadata)
     }
     switch (args.length) {
         case 1:
             target = args[0];
             if (target) {
                 refl.dispatchTypeDecor(target, refl.toDefine(name, decor, metadata, Decors.CLASS, option), option)
-                return target;
+                return target
             }
             break;
         case 2:
@@ -64,29 +64,29 @@ function storeMetadata<T>(name: string, decor: string, args: any[], metadata: an
                 target = args[0];
                 propertyKey = args[1];
                 let parameterIndex = args[2];
-                refl.dispatchParamDecor(target, refl.toDefine(name, decor, metadata, Decors.parameter, option, propertyKey, parameterIndex), option);
+                refl.dispatchParamDecor(target, refl.toDefine(name, decor, metadata, Decors.parameter, option, propertyKey, parameterIndex), option)
             } else if (isUndefined(args[2])) {
                 target = args[0];
                 propertyKey = args[1];
-                refl.dispatchPorpDecor(target, refl.toDefine(name, decor, metadata, Decors.property, option, propertyKey), option);
+                refl.dispatchPorpDecor(target, refl.toDefine(name, decor, metadata, Decors.property, option, propertyKey), option)
             } else {
                 target = args[0];
                 propertyKey = args[1];
                 let descriptor = args[2] as TypedPropertyDescriptor<any>;
                 if (!descriptor) {
-                    return;
+                    return
                 }
                 // is set get or not.
                 if (descriptor.set || descriptor.get) {
-                    refl.dispatchPorpDecor(target, refl.toDefine(name, decor, metadata, Decors.property, option, propertyKey), option);
+                    refl.dispatchPorpDecor(target, refl.toDefine(name, decor, metadata, Decors.property, option, propertyKey), option)
                 } else {
-                    refl.dispatchMethodDecor(target, refl.toDefine(name, decor, metadata, Decors.method, option, propertyKey), option);
+                    refl.dispatchMethodDecor(target, refl.toDefine(name, decor, metadata, Decors.method, option, propertyKey), option)
                 }
-                return descriptor;
+                return descriptor
             }
             break;
         default:
-            throw new Error(`Invalid @${name} Decorator declaration.`);
+            throw new Error(`Invalid @${name} Decorator declaration.`)
     }
 }
 
@@ -138,13 +138,13 @@ export function createParamDecorator<T = ParameterMetadata>(name: string, option
         actionType: [ActionTypes.paramInject],
         props: (provider: Token, alias?: string | Record<string, any>) => {
             if (alias) {
-                return isString(alias) ? { provider: getToken(provider, alias) } : { provider: getToken(provider, alias.alias), ...alias, alias: undefined } as any;
+                return isString(alias) ? { provider: getToken(provider, alias) } : { provider: getToken(provider, alias.alias), ...alias, alias: undefined } as any
             } else {
-                return { provider };
+                return { provider }
             }
         },
         ...options
-    });
+    })
 }
 
 
@@ -162,7 +162,7 @@ export function createPropDecorator<T = PropertyMetadata>(name: string, options?
         actionType: [ActionTypes.propInject],
         props: (provider: Token, alias?: string) => ({ provider, alias } as any),
         ...options
-    });
+    })
 }
 
 
@@ -185,6 +185,6 @@ export interface IAbstractDecorator {
  */
 export const Abstract: IAbstractDecorator = createDecorator<AbstractMetadata>('Abstract', {
     appendProps: (meta) => {
-        meta.abstract = true;
+        meta.abstract = true
     }
 });

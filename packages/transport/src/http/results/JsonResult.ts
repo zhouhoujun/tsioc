@@ -11,10 +11,10 @@ import { HttpContext } from '../context';
  */
 export class JsonResult extends ResultValue {
     constructor(private data: object) {
-        super('application/json');
+        super('application/json')
     }
     async sendValue(ctx: HttpContext) {
         ctx.contentType = this.contentType;
-        ctx.body = this.data || {};
+        ctx.body = this.data || {}
     }
 }

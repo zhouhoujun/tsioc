@@ -10,7 +10,7 @@ export class HttpMimeAdapter extends MimeAdapter {
 
     charset(type: string): string | false {
         if (!type || !isString(type)) {
-            return false;
+            return false
         }
 
         // TODO: use media-typer
@@ -18,27 +18,27 @@ export class HttpMimeAdapter extends MimeAdapter {
         let mime = match && this.db.get(match[1].toLowerCase());
 
         if (mime && mime.charset) {
-            return mime.charset;
+            return mime.charset
         }
 
         // default text/* to utf-8
         if (match && TEXT_REGEXP.test(match[1])) {
-            return 'UTF-8';
+            return 'UTF-8'
         }
 
-        return false;
+        return false
     }
 
     extension(extname: string): string | false {
         if (!extname || !isString(extname)) {
-            return false;
+            return false
         }
         let match = EXTRACT_REGEXP.exec(extname);
         // get extensions
         let exts = match && this.db.extension(match[1].toLowerCase());
 
         if (!exts || !exts.length) {
-            return false;
+            return false
         }
 
         return exts[0]
@@ -46,7 +46,7 @@ export class HttpMimeAdapter extends MimeAdapter {
 
     contentType(str: string): string | false {
         if (!str || !isString(str)) {
-            return false;
+            return false
         }
 
         let mime = str.indexOf('/') === -1
@@ -54,15 +54,15 @@ export class HttpMimeAdapter extends MimeAdapter {
             : str;
 
         if (!mime) {
-            return false;
+            return false
         }
 
         if (mime.indexOf('charset') === -1) {
             let charset = this.charset(mime);
-            if (charset) mime += '; charset=' + charset.toLowerCase();
+            if (charset) mime += '; charset=' + charset.toLowerCase()
         }
 
-        return mime;
+        return mime
     }
 
     lookup(path: string): string | false {
@@ -76,10 +76,10 @@ export class HttpMimeAdapter extends MimeAdapter {
             .substring(1);
 
         if (!extension) {
-            return false;
+            return false
         }
 
-        return this.db.extension(extension) ?? false;
+        return this.db.extension(extension) ?? false
     }
 
     format(media: SplitType): string {
@@ -155,7 +155,7 @@ export class HttpMimeAdapter extends MimeAdapter {
 
         while (match = paramRegExp.exec(type)) {
             if (match.index !== index) {
-                throw new TypeError('invalid parameter format');
+                throw new TypeError('invalid parameter format')
             }
 
             index += match[0].length;
@@ -166,10 +166,10 @@ export class HttpMimeAdapter extends MimeAdapter {
                 // remove quotes and escapes
                 value = value
                     .substring(1, value.length - 2)
-                    .replace(qescRegExp, '$1');
+                    .replace(qescRegExp, '$1')
             }
 
-            params[key] = value;
+            params[key] = value
         }
 
         if (index !== -1 && index !== type.length) {
@@ -178,13 +178,13 @@ export class HttpMimeAdapter extends MimeAdapter {
 
         obj.parameters = params;
 
-        return obj;
+        return obj
     }
 
     normalize(type: string): string | false {
         if (!isString(type)) {
             // invalid type
-            return false;
+            return false
         }
 
         switch (type) {
@@ -201,13 +201,13 @@ export class HttpMimeAdapter extends MimeAdapter {
 
         return type.indexOf('/') === -1
             ? this.lookup(type)
-            : type;
+            : type
     }
 
     match(types: string[], target: string): string | false {
         let val = this.tryNormalizeType(target);
         if (!val) {
-            return false;
+            return false
         }
         if (!types || !types.length) return val;
         let type: string;
@@ -219,7 +219,7 @@ export class HttpMimeAdapter extends MimeAdapter {
                 ? val
                 : type!
         }
-        return false;
+        return false
     }
 
     private qstring(val: any): string {
@@ -259,7 +259,7 @@ export class HttpMimeAdapter extends MimeAdapter {
             type,
             subtype,
             suffix
-        };
+        }
     }
 
     private tryNormalizeType(value: string) {
@@ -305,7 +305,7 @@ export class HttpMimeAdapter extends MimeAdapter {
             return false
         }
 
-        return true;
+        return true
     }
 
     private normalizeType(value: string) {
@@ -316,7 +316,7 @@ export class HttpMimeAdapter extends MimeAdapter {
         type.parameters = undefined
 
         // reformat it
-        return this.format(type);
+        return this.format(type)
     }
 
 }

@@ -10,6 +10,6 @@ import { HttpError } from './HttpError';
  */
 export class InternalServerError extends HttpError {
     constructor(message = statusMessage[HttpStatusCode.InternalServerError]) {
-        super(HttpStatusCode.InternalServerError, message);
+        super(HttpStatusCode.InternalServerError, message)
     }
 }

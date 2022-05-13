@@ -166,11 +166,11 @@ export function joinprefix(...paths: (string | undefined)[]) {
             p = p.trim();
             const start = staExp.test(p) ? 1 : 0;
             const end = endExp.test(p) ? p.length - 1 : p.length;
-            return p.slice(start, end);
+            return p.slice(start, end)
         })
         .join('/');
 
-    return '/' + joined;
+    return '/' + joined
 }
 
 /**
@@ -184,7 +184,7 @@ export function normalize(route: string): string {
 
     let path = route.trim();
     if (endExp.test(route)) {
-        path = path.substring(0, path.length - 1);
+        path = path.substring(0, path.length - 1)
     }
-    return staExp.test(path) ? path : `/${path}`;
+    return staExp.test(path) ? path : `/${path}`
 }

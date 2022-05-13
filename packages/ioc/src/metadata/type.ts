@@ -259,12 +259,12 @@ export class Reflective<T = any> {
             this.decors = parent.decors.filter(d => d.decorType !== 'class');
             this.propDecors = parent.propDecors.slice(0);
             this.methodDecors = parent.methodDecors.slice(0);
-            this.paramDecors = parent.paramDecors.slice(0);
+            this.paramDecors = parent.paramDecors.slice(0)
         } else {
             this.decors = [];
             this.propDecors = [];
             this.methodDecors = [];
-            this.paramDecors = [];
+            this.paramDecors = []
         }
         this.provides = [];
         this.providers = parent ? parent.providers.slice(0) : [];
@@ -274,7 +274,7 @@ export class Reflective<T = any> {
         this.methodParams = new Map();
         this.methodProviders = new Map();
         this.methodResolvers = new Map();
-        this.methodReturns = new Map();
+        this.methodReturns = new Map()
     }
 
     /**
@@ -289,23 +289,23 @@ export class Reflective<T = any> {
         const type = this.type;
         const inst: any = instance ?? context.resolve(type);
         if (!inst || !isFunction(inst[method])) {
-            throw new Error(`type: ${type} has no method ${method}.`);
+            throw new Error(`type: ${type} has no method ${method}.`)
         }
         const hasPointcut = inst[method]['_proxy'] == true;
         const args = this.resolveArguments(method, context);
         if (hasPointcut) {
-            args.push(context);
+            args.push(context)
         }
         let result = inst[method](...args);
         if (isPromise(result)) {
             return (completed || destroy) ? result.then(val => {
                 this.afterInvoke(context, val, hasPointcut, destroy, completed);
                 return val;
-            }) as any : result;
+            }) as any : result
         } else {
-            this.afterInvoke(context, result, hasPointcut, destroy, completed);
+            this.afterInvoke(context, result, hasPointcut, destroy, completed)
         }
-        return result;
+        return result
     }
 
     private afterInvoke(context: InvocationContext, result: any, hasPointcut: boolean, destroy?: boolean | Function, completed?: (context: InvocationContext, returnning: any) => void) {
@@ -328,86 +328,86 @@ export class Reflective<T = any> {
     resolveArguments(method: string, context: InvocationContext): any[] {
         const parameters = this.getParameters(method) ?? EMPTY;
         this.validate(method, context, parameters);
-        return parameters.map(p => context.resolveArgument(p, this.type));
+        return parameters.map(p => context.resolveArgument(p, this.type))
     }
 
     protected validate(method: string, context: InvocationContext, parameters: Parameter[]) {
         const missings = parameters.filter(p => this.isisMissing(context, p));
         if (missings.length) {
-            throw context.missingError(missings, this.type, method);
+            throw context.missingError(missings, this.type, method)
         }
     }
 
     protected isisMissing(context: InvocationContext, parameter: Parameter) {
-        return !context.canResolve(parameter);
+        return !context.canResolve(parameter)
     }
 
     hasParameters(method: string): boolean {
-        return this.methodParams.has(method);
+        return this.methodParams.has(method)
     }
 
     getParameters(method: string): ParameterMetadata[] | undefined {
-        return this.methodParams.get(method) ?? this.parent?.getParameters(method);
+        return this.methodParams.get(method) ?? this.parent?.getParameters(method)
     }
 
     setParameters(method: string, metadatas: ParameterMetadata[]) {
-        this.methodParams.set(method, metadatas);
+        this.methodParams.set(method, metadatas)
     }
 
     hasReturnning(method: string): boolean {
-        return this.methodReturns.has(method);
+        return this.methodReturns.has(method)
     }
 
     getReturnning(method: string): ClassType | undefined {
-        return this.methodReturns.get(method) ?? this.parent?.getReturnning(method);
+        return this.methodReturns.get(method) ?? this.parent?.getReturnning(method)
     }
 
     setReturnning(method: string, returnType: ClassType) {
-        this.methodReturns.set(method, returnType);
+        this.methodReturns.set(method, returnType)
     }
 
     hasProperyProviders(prop: string): boolean {
-        return this.propMetadatas.has(prop);
+        return this.propMetadatas.has(prop)
     }
     getProperyProviders(prop: string): PropertyMetadata[] | undefined {
-        return this.propMetadatas.get(prop) ?? this.parent?.getProperyProviders(prop);
+        return this.propMetadatas.get(prop) ?? this.parent?.getProperyProviders(prop)
     }
     setProperyProviders(prop: string, metadatas: PropertyMetadata[]) {
         if (this.propMetadatas.has(prop)) {
-            this.propMetadatas.get(prop)?.push(...metadatas);
+            this.propMetadatas.get(prop)?.push(...metadatas)
         } else {
-            this.propMetadatas.set(prop, metadatas);
+            this.propMetadatas.set(prop, metadatas)
         }
     }
 
     eachProperty(callback: (value: PropertyMetadata[], key: string) => void) {
         this.propMetadatas.size && this.propMetadatas.forEach(callback);
-        this.parent?.eachProperty(callback);
+        this.parent?.eachProperty(callback)
     }
 
 
     hasMethodProviders(method: string): boolean {
-        return this.methodProviders.has(method);
+        return this.methodProviders.has(method)
     }
     getMethodProviders(method: string): ProviderType[] | undefined {
-        return this.methodProviders.get(method) ?? this.parent?.getMethodProviders(method);
+        return this.methodProviders.get(method) ?? this.parent?.getMethodProviders(method)
     }
     setMethodProviders(method: string, providers: ProviderType[]) {
         if (this.methodProviders.has(method)) {
-            this.methodProviders.get(method)?.push(...providers);
+            this.methodProviders.get(method)?.push(...providers)
         } else {
-            this.methodProviders.set(method, providers);
+            this.methodProviders.set(method, providers)
         }
     }
 
     getMethodResolvers(method: string): ArgumentResolver[] | undefined {
-        return this.methodResolvers.get(method) ?? this.parent?.getMethodResolvers(method);
+        return this.methodResolvers.get(method) ?? this.parent?.getMethodResolvers(method)
     }
     setMethodResolvers(method: string, metadatas: ArgumentResolver[]) {
         if (this.methodResolvers.has(method)) {
-            this.methodResolvers.get(method)?.push(...metadatas);
+            this.methodResolvers.get(method)?.push(...metadatas)
         } else {
-            this.methodResolvers.set(method, metadatas);
+            this.methodResolvers.set(method, metadatas)
         }
     }
 
@@ -421,27 +421,27 @@ export class Reflective<T = any> {
                 break;
             case Decors.method:
                 if (this.currprop === define.propertyKey) {
-                    this.methodDecors.splice(this.currpropidx, 0, define);
+                    this.methodDecors.splice(this.currpropidx, 0, define)
                 } else {
                     this.currpropidx = this.methodDecors.length;
                     this.currprop = define.propertyKey;
-                    this.methodDecors.push(define);
+                    this.methodDecors.push(define)
                 }
                 break;
             case Decors.property:
                 if (this.currprop === define.propertyKey) {
-                    this.propDecors.splice(this.currpropidx, 0, define);
+                    this.propDecors.splice(this.currpropidx, 0, define)
                 } else {
                     this.currpropidx = this.propDecors.length;
                     this.currprop = define.propertyKey;
-                    this.propDecors.push(define);
+                    this.propDecors.push(define)
                 }
                 break;
             case Decors.parameter:
                 this.paramDecors.unshift(define);
                 break;
         }
-        this.decors.unshift(define);
+        this.decors.unshift(define)
     }
 
     /**
@@ -462,15 +462,15 @@ export class Reflective<T = any> {
         const filter = (propertyKey && type !== Decors.CLASS) ? (d: DecorDefine) => d.decor === decor && d.propertyKey === propertyKey : (d: DecorDefine) => d.decor === decor;
         switch (type) {
             case Decors.CLASS:
-                return this.classDecors.some(filter);
+                return this.classDecors.some(filter)
             case Decors.method:
-                return this.methodDecors.some(filter);
+                return this.methodDecors.some(filter)
             case Decors.property:
-                return this.propDecors.some(filter);
+                return this.propDecors.some(filter)
             case Decors.parameter:
-                return this.paramDecors.some(filter);
+                return this.paramDecors.some(filter)
             default:
-                return false;
+                return false
         }
     }
 
@@ -483,15 +483,15 @@ export class Reflective<T = any> {
         const filter = (propertyKey && type !== Decors.CLASS) ? (d: DecorDefine) => d.decor === decor && d.propertyKey === propertyKey : (d: DecorDefine) => d.decor === decor;
         switch (type) {
             case Decors.CLASS:
-                return this.classDecors.find(filter);
+                return this.classDecors.find(filter)
             case Decors.method:
-                return this.methodDecors.find(filter);
+                return this.methodDecors.find(filter)
             case Decors.property:
-                return this.propDecors.find(filter);
+                return this.propDecors.find(filter)
             case Decors.parameter:
-                return this.paramDecors.find(filter);
+                return this.paramDecors.find(filter)
             default:
-                return;
+                return
         }
     }
 
@@ -514,13 +514,13 @@ export class Reflective<T = any> {
         const filter = (d: DecorDefine) => d.decor === decor;
         switch (type) {
             case Decors.CLASS:
-                return this.classDecors.filter(filter);
+                return this.classDecors.filter(filter)
             case Decors.method:
-                return this.methodDecors.filter(filter);
+                return this.methodDecors.filter(filter)
             case Decors.property:
-                return this.propDecors.filter(filter);
+                return this.propDecors.filter(filter)
             case Decors.parameter:
-                return this.paramDecors.filter(filter);
+                return this.paramDecors.filter(filter)
             default:
                 return EMPTY;
         }
@@ -539,7 +539,7 @@ export class Reflective<T = any> {
      */
     getMetadata<T = any>(decor: string | Function, propertyKey: string, type: DecorMemberType): T;
     getMetadata<T = any>(decor: string | Function, propertyKey?: string, type?: DecorMemberType): T {
-        return this.getDecorDefine(decor, propertyKey!, type!)?.metadata;
+        return this.getDecorDefine(decor, propertyKey!, type!)?.metadata
     }
 
     /**
@@ -554,7 +554,7 @@ export class Reflective<T = any> {
      */
     getMetadatas<T = any>(decor: string | Function, type: DecorMemberType): T[];
     getMetadatas<T = any>(decor: string | Function, type?: DecorMemberType): T[] {
-        return this.getDecorDefines(decor, type!).map(d => d.metadata).filter(d => d);
+        return this.getDecorDefines(decor, type!).map(d => d.metadata).filter(d => d)
     }
 
     private _extends!: ClassType[];
@@ -562,57 +562,57 @@ export class Reflective<T = any> {
         if (!this._extends) {
             if (this.parent) {
                 this._extends = this.parent.extendTypes.slice(0);
-                this._extends.unshift(this.type);
+                this._extends.unshift(this.type)
             } else {
-                this._extends = [this.type];
+                this._extends = [this.type]
             }
         }
-        return this._extends;
+        return this._extends
     }
 
     getParamName(method: string, idx: number): string {
         const names = this.getParamNames(method);
         if (idx >= 0 && names.length > idx) {
-            return names[idx];
+            return names[idx]
         }
-        return '';
+        return ''
     }
 
     getParamNames(method: string): string[] {
         const prop = method ?? ctorName;
-        return this.getParams().get(prop) || [];
+        return this.getParams().get(prop) || []
     }
 
     getParams(): Map<string, any[]> {
         if (!this.params) {
             this.params = this.parent ? new Map(this.parent.getParams()) : new Map();
-            this.setParam(this.params);
+            this.setParam(this.params)
         }
-        return this.params;
+        return this.params
     }
 
     protected setParam(params: Map<string, any[]>) {
         let classAnnations = this.annotation;
         if (classAnnations && classAnnations.params) {
             forIn(classAnnations.params, (p, n) => {
-                params.set(n, p);
-            });
+                params.set(n, p)
+            })
         } else {
             let descriptors = Object.getOwnPropertyDescriptors(this.type.prototype);
             forIn(descriptors, (item, n) => {
                 if (item.value) {
-                    params.set(n, getParamNames(item.value));
+                    params.set(n, getParamNames(item.value))
                 }
                 if (item.set) {
-                    params.set(n, getParamNames(item.value));
+                    params.set(n, getParamNames(item.value))
                 }
-            });
+            })
         }
     }
 
     getPropertyName(descriptor: TypedPropertyDescriptor<any>) {
         if (!descriptor) {
-            return '';
+            return ''
         }
         let pty = (descriptor as DefineDescriptor).__name;
         if (!pty) {
@@ -620,20 +620,20 @@ export class Reflective<T = any> {
             forIn(decs, (dec, n) => {
                 if (dec === descriptor) {
                     pty = n;
-                    return false;
+                    return false
                 }
-            });
+            })
         }
-        return pty;
+        return pty
     }
 
     hasMethod(...names: string[]): boolean {
         const descs = this.getPropertyDescriptors();
-        return !names.some(name => !isFunction(descs[name]?.value));
+        return !names.some(name => !isFunction(descs[name]?.value))
     }
 
     getDescriptor(name: string): TypedPropertyDescriptor<any> {
-        return this.getPropertyDescriptors()[name];
+        return this.getPropertyDescriptors()[name]
     }
 
     private descriptos!: Record<string, TypedPropertyDescriptor<any>>;
@@ -642,15 +642,15 @@ export class Reflective<T = any> {
             const descriptos = this.parent ? { ...this.parent.getPropertyDescriptors() } : {};
             forIn(Object.getOwnPropertyDescriptors(this.type.prototype), (d, n) => {
                 (d as DefineDescriptor).__name = n;
-                descriptos[n] = d;
+                descriptos[n] = d
             });
-            this.descriptos = descriptos;
+            this.descriptos = descriptos
         }
-        return this.descriptos;
+        return this.descriptos
     }
 
     isExtends(type: ClassType): boolean {
-        return this.extendTypes.indexOf(type) >= 0;
+        return this.extendTypes.indexOf(type) >= 0
     }
 }
 
@@ -660,16 +660,16 @@ interface DefineDescriptor<T = any> extends TypedPropertyDescriptor<T> {
 
 function getParamNames(func: Function) {
     if (!isFunction(func)) {
-        return [];
+        return []
     }
     let fnStr = func.toString().replace(STRIP_COMMENTS, '');
     let result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
     if (result === null) {
-        result = [];
+        result = []
     }
-    return result;
+    return result
 }
 
 function getDectorId(decor: string | Function): string {
-    return isString(decor) ? decor : decor.toString();
+    return isString(decor) ? decor : decor.toString()
 }

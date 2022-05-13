@@ -31,7 +31,7 @@ export class TCPRequest<T = any> extends RequestBase<T> {
     }
 
     isUpdate(): boolean {
-        return this._update;
+        return this._update
     }
 }
 

@@ -15,15 +15,15 @@ export class ConsoleReporter extends RealtimeReporter {
 
     override track(error: Error): void {
         console.log(chalk.red(error.stack || error.message));
-        throw error;
+        throw error
     }
 
     override renderSuite(desc: SuiteDescribe): void {
-        console.log('\n  ', desc.describe, '\n');
+        console.log('\n  ', desc.describe, '\n')
     }
 
     override renderCase(desc: ICaseDescribe): void {
-        console.log('    ', desc.error ? chalk.red('x') : chalk.green('√'), chalk.gray(desc.title));
+        console.log('    ', desc.error ? chalk.red('x') : chalk.green('√'), chalk.gray(desc.title))
     }
 
     override async render(suites: Map<Token, SuiteDescribe>): Promise<void> {
@@ -35,10 +35,10 @@ export class ConsoleReporter extends RealtimeReporter {
         let successed = 0, failed = 0;
         sus.forEach((d, i) => {
             if (i === 0) {
-                first = d;
+                first = d
             }
             if (i === (sus.length - 1)) {
-                last = d;
+                last = d
             }
             // reportStr = reportStr + '\n  ' + d.describe + '\n';
             d.cases.forEach(c => {
@@ -46,21 +46,21 @@ export class ConsoleReporter extends RealtimeReporter {
                     failed++;
                     let derr = fails[d.describe] = fails[d.describe] || [];
                     derr.push(`\n    ${c.title}\n`);
-                    derr.push(chalk.red(c.error.stack));
+                    derr.push(chalk.red(c.error.stack))
                 } else {
                     successed++;
                 }
                 // reportStr = reportStr + '    ' + (c.error ? chalk.red('x') : chalk.green('√')) + ' ' + chalk.gray(c.title) + '\n';
-            });
+            })
         });
 
         reportStr = reportStr + '\n  ';
         reportStr = reportStr + chalk.green(successed.toString() + ' passing');
         if (failed > 0) {
-            reportStr = reportStr + ' ' + chalk.red(failed.toString() + ' failed');
+            reportStr = reportStr + ' ' + chalk.red(failed.toString() + ' failed')
         }
         if (sus.length) {
-            reportStr = reportStr + chalk.gray(` (${last?.end! - first?.start!}ms)`);
+            reportStr = reportStr + chalk.gray(` (${last?.end! - first?.start!}ms)`)
         }
 
         reportStr += '\n';
@@ -68,13 +68,13 @@ export class ConsoleReporter extends RealtimeReporter {
         lang.forIn(fails, (errors, describe) => {
             reportStr = reportStr + '\n\n  ' + describe;
             errors.forEach(stack => {
-                reportStr = reportStr + '\n' + stack;
+                reportStr = reportStr + '\n' + stack
             })
         })
 
         console.log(reportStr);
         if (Object.values(fails).length) {
-            process.exit(1);
+            process.exit(1)
         }
     }
 }

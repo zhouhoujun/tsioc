@@ -154,15 +154,15 @@ export class DefaultModuleLifecycleHooks extends DestroyLifecycleHooks implement
     }
 
     get disposed(): boolean {
-        return this._disposed;
+        return this._disposed
     }
 
     get shutdown(): boolean {
-        return this._shutdowned;
+        return this._shutdowned
     }
 
     get destroyable(): boolean {
-        return this._shutdowned && this._disposed;
+        return this._shutdowned && this._disposed
     }
 
     override async dispose(): Promise<void> {
@@ -244,27 +244,27 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
     }
 
     get moduleType() {
-        return this._moduleType;
+        return this._moduleType
     }
 
     get moduleReflect() {
-        return this._moduleRefl;
+        return this._moduleRefl
     }
 
     create(parent: Injector, option?: ModuleOption): ModuleRef<T> {
-        return new DefaultModuleRef(this.moduleReflect, parent, option);
+        return new DefaultModuleRef(this.moduleReflect, parent, option)
     }
 }
 
 export class DefaultModuleFactoryResolver extends ModuleFactoryResolver {
     resolve<T>(type: Type<T> | ModuleReflect<T>): ModuleFactory<T> {
-        return new DefaultModuleFactory(type);
+        return new DefaultModuleFactory(type)
     }
 }
 
 export class ModuleLifecycleHooksResolver implements LifecycleHooksResolver {
     resolve(plaform?: Platform): LifecycleHooks {
-        return new DefaultModuleLifecycleHooks(plaform);
+        return new DefaultModuleLifecycleHooks(plaform)
     }
 
 }

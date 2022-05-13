@@ -24,34 +24,34 @@ export class LogInterceptor implements Interceptor<HttpServRequest, HttpServResp
             .pipe(
                 map(res => {
                     logger.info(outgoing, method, ctx.url, this.getStatus(ctx.status), this.getTimespan(Date.now() - start), this.getSize(ctx.length), this.getMessage(ctx.status, ctx.statusMessage));
-                    return res;
+                    return res
                 })
             );
     }
 
     private getStatus(status: number) {
         if (emptyStatus[status]) {
-            return chalk.yellow(status);
+            return chalk.yellow(status)
         }
         if (redirectStatus[status]) {
-            return chalk.blue(status);
+            return chalk.blue(status)
         }
         if (status == 200) {
-            return chalk.green(status);
+            return chalk.green(status)
         }
 
         if (status >= 500) {
-            return chalk.red(status);
+            return chalk.red(status)
         } else if (status > 300) {
-            return chalk.yellow(status);
+            return chalk.yellow(status)
         } else if (status > 200) {
-            return chalk.cyan(status);
+            return chalk.cyan(status)
         }
-
+        return chalk.gray(status)
     }
 
     private getMessage(status: number, msg: string) {
-        if (!msg || !isString(msg)) return '';
+        if (!msg || !isString(msg)) return ''
         if (status >= 500) {
             return chalk.red(msg)
         } else if (status >= 400) {
@@ -61,31 +61,31 @@ export class LogInterceptor implements Interceptor<HttpServRequest, HttpServResp
         } else if (status === 200) {
             return chalk.green(msg)
         }
-        return chalk.gray(msg);
+        return chalk.gray(msg)
     }
 
     private getTimespan(times: number) {
         let unitTime: string;
         if (times >= minM) {
-            unitTime = (times / minM).toFixed(2) + 'mins';
+            unitTime = (times / minM).toFixed(2) + 'mins'
         } else if (times >= minS) {
-            unitTime = (times / minM).toFixed(2) + 's';
+            unitTime = (times / minM).toFixed(2) + 's'
         } else {
-            unitTime = times + 'ms';
+            unitTime = times + 'ms'
         }
-        return chalk.gray(unitTime);
+        return chalk.gray(unitTime)
     }
 
     getSize(size?: number) {
-        if (!isNumber(size)) return '';
+        if (!isNumber(size)) return ''
         if (size >= 1073741824) {
-            return chalk.gray(`${parseFloat((size / 1073741824).toFixed(2))}gb`);
+            return chalk.gray(`${parseFloat((size / 1073741824).toFixed(2))}gb`)
         } else if (size >= 1048576) {
-            return chalk.gray(`${parseFloat((size / 1048576).toFixed(2))}mb`);
+            return chalk.gray(`${parseFloat((size / 1048576).toFixed(2))}mb`)
         } else if (size >= 1024) {
-            return chalk.gray(`${parseFloat((size / 1024).toFixed(2))}kb`);
+            return chalk.gray(`${parseFloat((size / 1024).toFixed(2))}kb`)
         } else {
-            return chalk.gray(`${size}b`);
+            return chalk.gray(`${size}b`)
         }
     }
 

@@ -26,9 +26,9 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
     override async run(): Promise<void> {
         try {
             let desc = this.getSuiteDescribe();
-            await this.runSuite(desc);
+            await this.runSuite(desc)
         } catch (err) {
-            throw err;
+            throw err
         }
     }
 
@@ -51,7 +51,7 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
     async runSuite(desc: SuiteDescribe): Promise<void> {
         await this.runBefore(desc);
         await this.runTest(desc);
-        await this.runAfter(desc);
+        await this.runAfter(desc)
     }
 
     runTimeout(key: string, describe: string, timeout?: number): Promise<any> {
@@ -67,7 +67,7 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
                     stackStartFunction: instance[key],
                     stackStartFn: instance[key]
                 });
-                defer.reject(err);
+                defer.reject(err)
             }
         }, timeout || this.timeout);
 
@@ -80,15 +80,15 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
             .then(r => {
                 clearTimeout(timer);
                 timer = null!;
-                defer.resolve(r);
+                defer.resolve(r)
             })
             .catch(err => {
                 clearTimeout(timer);
                 timer = null!;
-                defer.reject(err);
+                defer.reject(err)
             })
 
-        return defer.promise;
+        return defer.promise
     }
 
     async runBefore(describe: SuiteDescribe) {
@@ -98,8 +98,8 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
                 return this.runTimeout(
                     df.propertyKey,
                     'sutie before ' + df.propertyKey,
-                    df.metadata.timeout);
-            }));
+                    df.metadata.timeout)
+            }))
     }
 
     async runBeforeEach() {
@@ -109,8 +109,8 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
                 return this.runTimeout(
                     df.propertyKey,
                     'before each ' + df.propertyKey,
-                    df.metadata.timeout);
-            }));
+                    df.metadata.timeout)
+            }))
     }
 
     async runAfterEach() {
@@ -119,8 +119,8 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
             return this.runTimeout(
                 df.propertyKey,
                 'after each ' + df.propertyKey,
-                df.metadata.timeout);
-        }));
+                df.metadata.timeout)
+        }))
     }
 
     async runAfter(describe: SuiteDescribe) {
@@ -131,7 +131,7 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
                     df.propertyKey,
                     'sutie after ' + df.propertyKey,
                     df.metadata.timeout)
-            }));
+            }))
     }
 
     async runTest(desc: SuiteDescribe) {
@@ -146,11 +146,11 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
                 } as ICaseDescribe;
             })
                 .sort((a, b) => {
-                    return b.order! - a.order!;
+                    return b.order! - a.order!
                 })
                 .map(caseDesc => {
                     return () => this.runCase(caseDesc)
-                }));
+                }))
     }
 
     async runCase(caseDesc: ICaseDescribe): Promise<ICaseDescribe> {
@@ -159,30 +159,30 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
             await this.runTimeout(
                 caseDesc.key,
                 caseDesc.title,
-                caseDesc.timeout);
+                caseDesc.timeout)
         } catch (err) {
-            caseDesc.error = err as Error;
+            caseDesc.error = err as Error
         } finally {
             try {
-                await this.runAfterEach();
+                await this.runAfterEach()
             } catch (err) {
-                caseDesc.error = err as Error;
+                caseDesc.error = err as Error
             }
         }
-        return caseDesc;
+        return caseDesc
     }
 
     protected destroying() {
         this.factory = null!;
         this.timeout = null!;
-        this.describe = null!;
+        this.describe = null!
     }
 
 }
 
 class SuiteRunnableFactory<T> extends DefaultRunnableFactory<T> {
     protected override createInstance(factory: ReflectiveRef<T>): RunnableRef<T> {
-        return factory.resolve(SuiteRunner);
+        return factory.resolve(SuiteRunner)
     }
 }
 

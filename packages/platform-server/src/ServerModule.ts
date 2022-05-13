@@ -32,31 +32,31 @@ export class ServerApplicationArguments extends ApplicationArguments {
         super()
         this._args = this.toRecord(_source);
         this._env = this._env || {};
-        this._signls = this.tryGetSignls();
+        this._signls = this.tryGetSignls()
     }
 
     get env() {
-        return this._env;
+        return this._env
     }
     get argsSource(): string[] {
-        return this._source;
+        return this._source
     }
     get args(): Record<string, string> {
-        return this._args;
+        return this._args
     }
 
     get cmds() {
-        return this._cmds || EMPTY;
+        return this._cmds || EMPTY
     }
 
     get signls(): string[] {
-        return this._signls;
+        return this._signls
     }
 
     reset(args: string[]): void {
         this._source = args;
         this._args = this.toRecord(args);
-        this._signls = this.tryGetSignls();
+        this._signls = this.tryGetSignls()
     }
 
     protected toRecord(args: string[]): Record<string, string | boolean | number> {
@@ -66,22 +66,22 @@ export class ServerApplicationArguments extends ApplicationArguments {
             if (isArg.test(arg)) {
                 const [k, val] = arg.slice(2).split('=');
                 if (isNum.test(val)) {
-                    argr[k] = val.indexOf('.') ? parseFloat(val) : parseInt(val);
+                    argr[k] = val.indexOf('.') ? parseFloat(val) : parseInt(val)
                 } else if (val) {
-                    argr[k] = val;
+                    argr[k] = val
                 } else {
-                    argr[k] = true;
+                    argr[k] = true
                 }
             } else {
-                cmds.push(arg);
+                cmds.push(arg)
             }
         });
-        return argr;
+        return argr
     }
 
     protected tryGetSignls() {
         const sigs = this.env.signls || this._args.signls;
-        return sigs ? (isString(sigs) ? sigs.split(',') : signls) : EMPTY;
+        return sigs ? (isString(sigs) ? sigs.split(',') : signls) : EMPTY
     }
 }
 
@@ -89,7 +89,7 @@ export class ServerApplicationArguments extends ApplicationArguments {
 export class ServerApplicationExit extends ApplicationExit {
 
     constructor(readonly context: ApplicationContext) {
-        super();
+        super()
     }
 
     override register(): void {
@@ -101,14 +101,14 @@ export class ServerApplicationExit extends ApplicationExit {
             try {
                 usedsignls.forEach(si => process.removeListener(si, callback));
                 await this.context.destroy();
-                process.kill(process.pid, signal);
+                process.kill(process.pid, signal)
             } catch (err) {
                 logger?.error(err);
-                process.exit(1);
+                process.exit(1)
             }
         }
         usedsignls.forEach(signl => {
-            process.on(signl, callback);
+            process.on(signl, callback)
         });
     }
 

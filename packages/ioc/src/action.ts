@@ -72,7 +72,7 @@ export abstract class Actions<T> extends Action<T> {
     use(...actions: ActionType[]): this {
         const len = this._acts.length;
         actions.forEach(action => {
-            if (this.has(action)) return
+            if (this.has(action)) return;
             this._acts.push(action)
         });
         if (this._acts.length !== len) this.resetHandler()

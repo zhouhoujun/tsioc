@@ -10,6 +10,6 @@ import { HttpError } from './HttpError';
  */
 export class MethodNotAllowedError extends HttpError {
     constructor(message = statusMessage[HttpStatusCode.MethodNotAllowed]) {
-        super(HttpStatusCode.MethodNotAllowed, message);
+        super(HttpStatusCode.MethodNotAllowed, message)
     }
 }

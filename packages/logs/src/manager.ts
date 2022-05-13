@@ -22,31 +22,30 @@ export class ConfigureLoggerManager implements LoggerManager {
     get config(): LogConfigure {
         if (!this._config) {
             if (this.injector.has(LogConfigure)) {
-                this._config = this.injector.resolve(LogConfigure);
+                this._config = this.injector.resolve(LogConfigure)
             } else {
-                this._config = { adapter: 'console' };
+                this._config = { adapter: 'console' }
             }
         }
-        return this._config;
+        return this._config
     }
 
     setLogConfigure(config?: LogConfigure | Type<LogConfigure>) {
         if (!config) {
-            return;
+            return
         }
         if (isFunction(config)) {
             if (!this.injector.has(LogConfigure)) {
                 this.injector.register({ provide: LogConfigure, useClass: config });
-                this._config = this.injector.get(LogConfigure);
+                this._config = this.injector.get(LogConfigure)
             } else if (!this.injector.has(config)) {
                 this.injector.register(config);
-                this._config = this.injector.get<LogConfigure>(config);
+                this._config = this.injector.get<LogConfigure>(config)
             }
         } else {
-            this._config = config;
+            this._config = config
         }
-        this._logManger = null!;
-
+        this._logManger = null!
     }
 
 
@@ -56,27 +55,27 @@ export class ConfigureLoggerManager implements LoggerManager {
             let adapter = cfg.adapter || 'console';
             let token: Token;
             if (isString(adapter)) {
-                token = getToken(LoggerManager, adapter);
+                token = getToken(LoggerManager, adapter)
             } else {
-                token = adapter;
+                token = adapter
             }
             this._logManger = this.injector.get<LoggerManager>(token);
             if (!this._logManger) {
-                throw new ArgumentError(`has no provider for LoggerManager ${token.toString()}.`);
+                throw new ArgumentError(`has no provider for LoggerManager ${token.toString()}.`)
             }
             if (cfg.config) {
-                this._logManger.configure(cfg.config);
+                this._logManger.configure(cfg.config)
             }
         }
-        return this._logManger;
+        return this._logManger
     }
 
     configure(config: LoggerConfig) {
-        this.logManger.configure(config);
+        this.logManger.configure(config)
     }
 
     getLogger(name?: string): Logger {
-        return this.logManger.getLogger(name);
+        return this.logManger.getLogger(name)
     }
 }
 
@@ -108,11 +107,11 @@ export class ConsoleLogManager implements LoggerManager {
     }
 
     configure(config: ConsoleLoggerConfig) {
-        this.config = config;
+        this.config = config
     }
 
     getLogger(name?: string): Logger {
-        return new ConsoleLog(name, this.config?.level);
+        return new ConsoleLog(name, this.config?.level)
     }
 
 }
@@ -129,46 +128,46 @@ class ConsoleLog implements Logger {
     formatHeader = true;
 
     constructor(name?: string, public level: Level = 'info') {
-        this.name = name;
+        this.name = name
     }
 
     protected machLevel(level: Levels): boolean {
-        return (Levels as any)[this.level] <= level;
+        return (Levels as any)[this.level] <= level
     }
 
     log(...args: any[]): void {
-        console.log(...args);
+        console.log(...args)
     }
 
     trace(...args: any[]): void {
         if (this.machLevel(Levels.trace)) {
-            console.debug(...args);
+            console.debug(...args)
         }
     }
     debug(...args: any[]): void {
         // console.debug in nuix will not console.
         if (this.machLevel(Levels.debug)) {
-            console.debug(...args);
+            console.debug(...args)
         }
     }
     info(...args: any[]): void {
         if (this.machLevel(Levels.info)) {
-            console.info(...args);
+            console.info(...args)
         }
     }
     warn(...args: any[]): void {
         if (this.machLevel(Levels.warn)) {
-            console.warn(this.name, ...args);
+            console.warn(this.name, ...args)
         }
     }
     error(...args: any[]): void {
         if (this.machLevel(Levels.error)) {
-            console.error(...args);
+            console.error(...args)
         }
     }
     fatal(...args: any[]): void {
         if (this.machLevel(Levels.fatal)) {
-            console.error(this.name, ...args);
+            console.error(this.name, ...args)
         }
     }
 }

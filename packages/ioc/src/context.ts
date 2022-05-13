@@ -125,30 +125,30 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
     protected abstract clear(): void;
 
     get destroyed() {
-        return this._destroyed;
+        return this._destroyed
     }
 
     destroy(): void | Promise<void> {
         if (!this._destroyed) {
             this._destroyed = true;
             try {
-                this._dsryCbs.forEach(c => isFunction(c) ? c() : c?.onDestroy());
+                this._dsryCbs.forEach(c => isFunction(c) ? c() : c?.onDestroy())
             } finally {
                 this._dsryCbs.clear();
                 this.clear();
                 const injector = this.injector;
                 (this as any).parent = null;
                 (this as any).injector = null;
-                return injector.destroy();
+                return injector.destroy()
             }
         }
     }
 
     onDestroy(callback?: DestroyCallback): void | Promise<void> {
         if (!callback) {
-            return this.destroy();
+            return this.destroy()
         }
-        this._dsryCbs.add(callback);
+        this._dsryCbs.add(callback)
     }
 
 }
@@ -161,7 +161,7 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
  * @returns 
  */
 export function createContext(parent: Injector | InvocationContext, options?: InvocationOption): InvocationContext {
-    return INVOCATION_CONTEXT_IMPL.create(parent, options);
+    return INVOCATION_CONTEXT_IMPL.create(parent, options)
 }
 
 /**
@@ -174,7 +174,7 @@ export const INVOCATION_CONTEXT_IMPL = {
      * @param options invocation options.
      */
     create(parent: Injector | InvocationContext, options?: InvocationOption): InvocationContext {
-        throw new Error('not implemented.');
+        throw new Error('not implemented.')
     }
 };
 

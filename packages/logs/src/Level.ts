@@ -12,7 +12,7 @@ const levels = ['log', 'trace', 'debug', 'info', 'warn', 'error', 'fatal'];
  * @param target
  */
 export function isLevel(target: any): target is Level {
-    return isString(target) && levels.indexOf(target) >= 0;
+    return isString(target) && levels.indexOf(target) >= 0
 }
 
 /**

@@ -228,7 +228,7 @@ export class HttpHeaders {
         const base = (update.op === 'a' ? this.headers.get(key) : undefined) || [];
         base.push(...value);
         this.headers.set(key, base);
-        break
+        break;
       case 'd':
         const toDelete = update.value as string | undefined;
         if (!toDelete) {
@@ -247,7 +247,7 @@ export class HttpHeaders {
             this.headers.set(key, existing)
           }
         }
-        break
+        break;
     }
   }
 

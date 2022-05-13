@@ -251,7 +251,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         const metaRvr = this.getMetaReolver(meta);
         if (metaRvr?.canResolve(meta, this)) {
             result = metaRvr.resolve(meta, this, target);
-            if (isDefined(result)) return result
+            if (isDefined(result)) return result;
         }
         this.resolvers.some(r => {
             if (r.canResolve(meta, this)) {
@@ -355,7 +355,7 @@ export const BASE_RESOLVERS: OperationArgumentResolver[] = [
         {
             canResolve(parameter, ctx) {
                 if (parameter.mutil || !isFunction(parameter.provider) || isPrimitiveType(parameter.provider)
-                    || get(parameter.provider)?.class.abstract) return false
+                    || get(parameter.provider)?.class.abstract) return false;
                 return isDefined(parameter.flags) ? !ctx.injector.has(parameter.provider!, InjectFlags.Default) : true
             },
             resolve(parameter, ctx) {

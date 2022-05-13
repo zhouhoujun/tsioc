@@ -19,6 +19,6 @@ export class HttpExecptionFilter implements ExecptionFilter {
         if (!this._chain) {
             this._chain = new ExecptionChain(this.injector.get(HTTP_EXECPTION_FILTERS))
         }
-        return this._chain.handle(ctx, next);
+        return this._chain.handle(ctx, next)
     }
 }

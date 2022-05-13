@@ -11,7 +11,7 @@ import { ServerModule } from './ServerModule';
 @Injectable()
 export class ServerXhr implements XhrFactory {
   build(): XMLHttpRequest {
-    return new xhr2.XMLHttpRequest();
+    return new xhr2.XMLHttpRequest()
   }
 }
 
@@ -49,19 +49,19 @@ export class HttpClientBackend implements HttpBackend {
         const urlPrefix = `${protocol}://${host ?? 'localhost'}:${port ?? 3000}${path ?? ''}`;
         const baseUrl = new URL(urlPrefix);
         const url = new URL(req.url, baseUrl);
-        request = req.clone({ url: url.toString() });
+        request = req.clone({ url: url.toString() })
       } else {
-        request = req;
+        request = req
       }
-      this.backend.handle(request, context).subscribe(observer);
-    }));
+      this.backend.handle(request, context).subscribe(observer)
+    }))
   }
 
 }
 
 function interceptingHandler(backend: HttpBackend, injector: Injector) {
   const realBackend: HttpBackend = new HttpInterceptingHandler(backend, injector);
-  return new HttpClientBackend(realBackend, injector);
+  return new HttpClientBackend(realBackend, injector)
 }
 
 

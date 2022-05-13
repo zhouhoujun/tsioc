@@ -92,14 +92,14 @@ export class CorsMiddleware implements Middleware {
 
         options.keepHeadersOnError = options.keepHeadersOnError === undefined || !!options.keepHeadersOnError;
 
-        return options as Options;
+        return options as Options
     }
 
     async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         let requestOrigin = ctx.getHeader(hdr.ORIGIN);
         !ctx.sent && vary(ctx.response, hdr.ORIGIN);
         if (!requestOrigin) {
-            return await next();
+            return await next()
         }
 
         let options = this.options || {};
@@ -108,37 +108,37 @@ export class CorsMiddleware implements Middleware {
         if (isFunction(options.origin)) {
             origin = options.origin(ctx);
             if (isPromise(origin)) {
-                origin = await origin;
+                origin = await origin
             }
             if (!origin) {
-                return await next();
+                return await next()
             }
         } else {
-            origin = options.origin || requestOrigin;
+            origin = options.origin || requestOrigin
         }
         let headersSet: any = {};
 
         let set = (key: string, value: any) => {
             ctx.setHeader(key, value);
-            headersSet[key] = value;
+            headersSet[key] = value
         };
 
         if (ctx.method !== 'OPTIONS') {
             set(hdr.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
             if (options.credentials === true) {
-                set(hdr.ACCESS_CONTROL_ALLOW_CREDENTIALS, 'true');
+                set(hdr.ACCESS_CONTROL_ALLOW_CREDENTIALS, 'true')
             }
 
             if (options.exposeHeaders) {
-                set(hdr.ACCESS_CONTROL_EXPOSE_HEADERS, options.exposeHeaders);
+                set(hdr.ACCESS_CONTROL_EXPOSE_HEADERS, options.exposeHeaders)
             }
 
             if (!options.keepHeadersOnError) {
-                return await next();
+                return await next()
             }
 
             try {
-                await next();
+                await next()
             } catch (err: any) {
                 const errHeadersSet = err.headers || {};
                 const varyWithOrigin = append(errHeadersSet.vary || errHeadersSet.Vary || '', 'Origin');
@@ -152,38 +152,38 @@ export class CorsMiddleware implements Middleware {
 
                 ctx.status = err instanceof HttpError ? err.status || 500 : 500;
                 ctx.statusMessage = err.message || err.toString() || '';
-                ctx.get(Logger)?.error(err);
+                ctx.get(Logger)?.error(err)
             };
         } else {
             if (!ctx.getHeader(hdr.ACCESS_CONTROL_REQUEST_METHOD)) {
                 // this not preflight request, ignore it
-                return await next();
+                return await next()
             }
 
             options = this.options;
             ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
 
             if (options.credentials === true) {
-                ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_CREDENTIALS, 'true');
+                ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_CREDENTIALS, 'true')
             }
 
             let maxAge = String(options.maxAge);
             if (maxAge) {
-                ctx.setHeader(hdr.ACCESS_CONTROL_MAX_AGE, maxAge);
+                ctx.setHeader(hdr.ACCESS_CONTROL_MAX_AGE, maxAge)
             }
 
             if (options.allowMethods) {
-                ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_METHODS, options.allowMethods);
+                ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_METHODS, options.allowMethods)
             }
 
             let allowHeaders = options.allowHeaders;
             if (!allowHeaders) {
-                allowHeaders = ctx.getHeader(hdr.ACCESS_CONTROL_REQUEST_HEADERS) as string;
+                allowHeaders = ctx.getHeader(hdr.ACCESS_CONTROL_REQUEST_HEADERS) as string
             }
             if (allowHeaders) {
-                ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_HEADERS, allowHeaders);
+                ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_HEADERS, allowHeaders)
             }
-            ctx.status = 204;
+            ctx.status = 204
         }
     }
 }

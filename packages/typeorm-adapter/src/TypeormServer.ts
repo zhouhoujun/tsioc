@@ -74,11 +74,11 @@ export class TypeormServer implements Startup, OnDispose {
                         nullable: col.options.nullable,
                         mutil: (col.relationType === 'one-to-many' || col.relationType === 'many-to-many'),
                         type: (col.relationType === 'one-to-many' || col.relationType === 'many-to-many') ? Array : relaModel!
-                    });
+                    })
                 });
-            this.mdlmap.set(type, props);
+            this.mdlmap.set(type, props)
         }
-        return props;
+        return props
     }
 
 
@@ -105,7 +105,7 @@ export class TypeormServer implements Startup, OnDispose {
                         if (isNil(value)) return null;
                         const pipe = ctx.get<PipeTransform>('objectId');
                         if (!pipe) throw missingPropPipeError(prop, target)
-                        return pipe.transform(value, prop.enum);
+                        return pipe.transform(value, prop.enum)
                     }
                 }
             ]
@@ -169,7 +169,7 @@ export class TypeormServer implements Startup, OnDispose {
             if (c && c.isConnected) {
                 await c.close()
             }
-        }));
+        }))
     }
 
     async onDispose(): Promise<void> {

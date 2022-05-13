@@ -162,11 +162,11 @@ export abstract class HttpResponseBase {
      * Do not depend on this.
      */
     get statusText(): string {
-        return this._message;
+        return this._message
     }
 
     get statusMessage(): string {
-        return this._message;
+        return this._message
     }
 
     /**

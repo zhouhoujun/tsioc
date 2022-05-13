@@ -10,10 +10,10 @@ import { HttpContext } from '../context';
  */
 export class EventStreamResult extends ResultValue {
     constructor(private message: string) {
-        super('text/event-stream');
+        super('text/event-stream')
     }
     async sendValue(ctx: HttpContext) {
         ctx.contentType = this.contentType;
-        await ctx.write(this.message);
+        await ctx.write(this.message)
     }
 }

@@ -309,7 +309,7 @@ export class HttpParams {
             const base = (update.op === 'a' ? this.map!.get(update.param) : undefined) || [];
             base.push(valueToString(update.value!));
             this.map!.set(update.param, base);
-            break
+            break;
           case 'd':
             if (update.value !== undefined) {
               let base = this.map!.get(update.param) || [];

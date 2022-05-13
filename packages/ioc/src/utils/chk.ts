@@ -35,7 +35,7 @@ export const EMPTY_OBJ: Record<string, any> = {};
  * @returns
  */
 export function isFunction(target: any): target is Function {
-    return typeof target === type_func;
+    return typeof target === type_func
 }
 
 /**
@@ -44,7 +44,7 @@ export function isFunction(target: any): target is Function {
  * @returns 
  */
 export function isTypeReflect(target: any): target is TypeReflect {
-    return target && isFunction(target.type) && target.type === target.class?.type;
+    return target && isFunction(target.type) && target.type === target.class?.type
 }
 
 /**
@@ -66,7 +66,7 @@ const promiseTag = '[object Promise]';
  * @returns {target is Promise<any>}
  */
 export function isPromise(target: any): target is Promise<any> {
-    return toString.call(target) === promiseTag || target instanceof Promise || (target && typeof target.then === type_func && typeof target.catch === type_func);
+    return toString.call(target) === promiseTag || target instanceof Promise || (target && typeof target.then === type_func && typeof target.catch === type_func)
 }
 
 const obsTag = '[object Observable]';
@@ -78,7 +78,7 @@ const obsTag = '[object Observable]';
  * @returns {boolean}
  */
 export function isObservable(target: any): boolean {
-    return toString.call(target) === obsTag || (target && typeof target.subscribe === type_func && target.lift === type_func);
+    return toString.call(target) === obsTag || (target && typeof target.subscribe === type_func && target.lift === type_func)
 }
 
 
@@ -90,7 +90,7 @@ export function isObservable(target: any): boolean {
  * @returns {target is string}
  */
 export function isString(target: any): target is string {
-    return typeof target === type_str;
+    return typeof target === type_str
 }
 
 
@@ -102,7 +102,7 @@ export function isString(target: any): target is string {
  * @returns {target is boolean}
  */
 export function isBoolean(target: any): target is boolean {
-    return typeof target === type_bool;
+    return typeof target === type_bool
 }
 
 /**
@@ -114,7 +114,7 @@ export function isBoolean(target: any): target is boolean {
  */
 export function isNumber(target: any): target is number {
     const type = typeof target;
-    return type === type_num || type === type_bigint;
+    return type === type_num || type === type_bigint
 }
 
 /**
@@ -125,7 +125,7 @@ export function isNumber(target: any): target is number {
  * @returns {target is undefined}
  */
 export function isUndefined(target: any): target is undefined {
-    return typeof target === type_undef;
+    return typeof target === type_undef
 }
 
 
@@ -137,7 +137,7 @@ export function isUndefined(target: any): target is undefined {
  * @returns {target is null}
  */
 export function isNull(target: any): target is null {
-    return target === null;
+    return target === null
 }
 
 /**
@@ -148,7 +148,7 @@ export function isNull(target: any): target is null {
  * @returns {boolean}
  */
 export function isNil(target: any): boolean {
-    return isNull(target) || isUndefined(target);
+    return isNull(target) || isUndefined(target)
 }
 
 /**
@@ -164,7 +164,7 @@ export const isNullOrUndefined = isNil;
  * @returns {boolean}
  */
 export function isDefined(target: any): boolean {
-    return !isNil(target);
+    return !isNil(target)
 }
 
 /**
@@ -175,7 +175,7 @@ export function isDefined(target: any): boolean {
  * @returns {target is Array<any>}
  */
 export function isArray(target: any): target is Array<any> {
-    return Array.isArray(target);
+    return Array.isArray(target)
 }
 
 /**
@@ -188,7 +188,7 @@ export function isArray(target: any): target is Array<any> {
 export function isObject(target: any): target is object {
     if (isNull(target)) return false;
     const type = typeof target;
-    return (type === type_obj || type === type_func);
+    return (type === type_obj || type === type_func)
 }
 
 
@@ -202,7 +202,7 @@ const objName = 'Object';
  * @returns {boolean}
  */
 export function isTypeObject(target: any): boolean {
-    return toString.call(target) === objTag && target.constructor.name !== objName && !(target instanceof InjectToken);
+    return toString.call(target) === objTag && target.constructor.name !== objName && !(target instanceof InjectToken)
 }
 
 
@@ -217,7 +217,7 @@ export function isTypeObject(target: any): boolean {
  * @returns {target is Promise<any>}
  */
 export function isPlainObject(target: any): target is Record<string, any> {
-    return toString.call(target) === objTag && target.constructor.name === objName;
+    return toString.call(target) === objTag && target.constructor.name === objName
 }
 
 /**
@@ -232,7 +232,7 @@ export const isBaseObject = isPlainObject;
 const hasOwnProperty = Object.hasOwnProperty;
 
 export function hasOwn(target: any, property: string) {
-    return hasOwnProperty.call(target, property);
+    return hasOwnProperty.call(target, property)
 }
 
 /**
@@ -248,13 +248,13 @@ export function isMetadataObject(target: any, ...props: (string | string[])[]): 
     if (props.length) {
         for (let n in target) {
             if (props.some(ps => isString(ps) ? ps === n : ps.includes(n))) {
-                return true;
+                return true
             }
         }
-        return false;
+        return false
     }
 
-    return true;
+    return true
 }
 
 const dateTag = '[object Date]';
@@ -266,7 +266,7 @@ const dateTag = '[object Date]';
  * @returns {target is Date}
  */
 export function isDate(target: any): target is Date {
-    return toString.call(target) === dateTag;
+    return toString.call(target) === dateTag
 }
 
 const symbolTag = '[object Symbol]';
@@ -278,7 +278,7 @@ const symbolTag = '[object Symbol]';
  * @returns {target is symbol}
  */
 export function isSymbol(target: any): target is symbol {
-    return typeof target === type_symbol || toString.call(target) === symbolTag;
+    return typeof target === type_symbol || toString.call(target) === symbolTag
 }
 
 const regTag = '[object RegExp]';
@@ -290,7 +290,7 @@ const regTag = '[object RegExp]';
  * @returns {target is RegExp}
  */
 export function isRegExp(target: any): target is RegExp {
-    return toString.call(target) === regTag;
+    return toString.call(target) === regTag
 }
 
 
@@ -304,7 +304,7 @@ const native = /\[native code\]/;
  * @returns {boolean}
  */
 export function isNative(target: any): boolean {
-    return isFunction(target) && native.test(target.toString());
+    return isFunction(target) && native.test(target.toString())
 }
 
 /**
@@ -315,7 +315,7 @@ export function isNative(target: any): boolean {
  * @returns {boolean}
  */
 export function isPrimitiveType(target: any): boolean {
-    return isFunction(target) && isPrimitive(target);
+    return isFunction(target) && isPrimitive(target)
 }
 
 function isPrimitive(target: Function): boolean {
@@ -327,7 +327,7 @@ function isPrimitive(target: Function): boolean {
         || target === Array
         || target === Date
         || target === Symbol
-        || target === Promise;
+        || target === Promise
 }
 
 /**
@@ -346,7 +346,7 @@ export const isBaseType = isPrimitiveType;
  * @returns {target is AbstractType}
  */
 export function isAbstractClass(target: any): target is AbstractType {
-    return isClassType(target, true);
+    return isClassType(target, true)
 }
 
 
@@ -358,7 +358,7 @@ export function isAbstractClass(target: any): target is AbstractType {
  * @returns {target is Type}
  */
 export function isClass(target: any): target is Type {
-    return isClassType(target, false);
+    return isClassType(target, false)
 }
 
 export function isAnnotation(target: any): target is AnnotationType {
@@ -366,7 +366,7 @@ export function isAnnotation(target: any): target is AnnotationType {
     if (!target.name || !target.prototype) return false;
     if (target.prototype.constructor !== target) return false;
 
-    return (target as AnnotationType).ρRfl?.()?.type === target;
+    return (target as AnnotationType).ρRfl?.()?.type === target
 }
 
 /**
@@ -384,13 +384,13 @@ export function isClassType(target: any, abstract?: boolean): target is ClassTyp
     const ann = getClassAnnotation(target);
     if (ann) {
         if (isBoolean(abstract)) return abstract ? ann.abstract === true : !ann.abstract;
-        return true;
+        return true
     }
 
-    const rf: TypeReflect = (target as AnnotationType).ρRfl?.();
+    const rf: TypeReflect = (target as AnnotationType).ρRfl?.()
     if (rf) {
         if (isBoolean(abstract) && rf.type === target) return abstract ? rf.class.abstract === true : !rf.class.abstract;
-        return true;
+        return true
     }
 
     const pkeys = Object.getOwnPropertyNames(target);
@@ -400,7 +400,7 @@ export function isClassType(target: any, abstract?: boolean): target is ClassTyp
     if (pkeys.indexOf('caller') >= 0 && Object.getOwnPropertyNames(target.prototype).length < 2) return false;
 
     if (!clsNameExp.test(target.name)) return false;
-    return !isPrimitive(target);
+    return !isPrimitive(target)
 }
 
 /**
@@ -412,10 +412,10 @@ export function isClassType(target: any, abstract?: boolean): target is ClassTyp
  */
 export function getClass(target: any): Type {
     if (!target) {
-        return null!;
+        return null!
     }
     if (isClassType(target)) {
-        return target as Type;
+        return target as Type
     }
-    return target.constructor || target.prototype.constructor;
+    return target.constructor || target.prototype.constructor
 }

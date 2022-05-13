@@ -10,6 +10,6 @@ import { HttpError } from './HttpError';
  */
 export class UnauthorizedError extends HttpError {
     constructor(message = statusMessage[HttpStatusCode.Unauthorized]) {
-        super(HttpStatusCode.Unauthorized, message);
+        super(HttpStatusCode.Unauthorized, message)
     }
 }

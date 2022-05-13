@@ -34,6 +34,6 @@ export class DebugLogAspect extends LogAspect {
                 level = 'trace';
                 break;
         }
-        this.processLog(joinPoint, level);
+        this.processLog(joinPoint, level)
     }
 }

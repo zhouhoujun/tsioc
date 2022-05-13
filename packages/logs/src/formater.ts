@@ -33,7 +33,7 @@ export type LOGFormater = LogFormater | Token<LogFormater> | ((joinPoint?: Joinp
 export class DefaultLogFormater extends LogFormater {
 
     protected timestamp(time: Date): any {
-        return `[${time.toISOString()}]`;
+        return `[${time.toISOString()}]`
     }
 
     format(joinPoint: Joinpoint, level: Level, logger: Logger, ...messages: any[]): any[] {
@@ -69,16 +69,16 @@ export class DefaultLogFormater extends LogFormater {
                 ]
                 break;
             default:
-                break;
+                break
         }
         if (logger.formatHeader) {
-            messages.unshift((logger.name || 'default') + ' -')
+            messages.unshift((logger.name || 'default') + ' -');
             if (level) {
                 messages.unshift(`[${level.toUpperCase()}]`)
             }
             let timestamp = this.timestamp(new Date());
-            if (timestamp) messages.unshift(timestamp);
+            if (timestamp) messages.unshift(timestamp)
         }
-        return messages;
+        return messages
     }
 }

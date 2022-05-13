@@ -11,9 +11,9 @@ import { existsSync } from 'node:fs';
  */
 export function toAbsolutePath(root: string, pathstr: string): string {
     if (!root || path.isAbsolute(pathstr)) {
-        return pathstr;
+        return pathstr
     }
-    return path.join(root, pathstr);
+    return path.join(root, pathstr)
 }
 
 const jsTsChkExp = /(\w+\.ts|\.js)$/;
@@ -27,13 +27,13 @@ export function runMainPath(): string {
     let cwd = process.cwd();
     let pr: any = process;
     if (pr.mainModule && pr.mainModule.filename && pr.mainModule.filename.startsWith(cwd)) {
-        return path.dirname(pr.mainModule.filename);
+        return path.dirname(pr.mainModule.filename)
     }
     if (process.argv.length > 2) {
         let mainfile = process.argv.slice(2).find(arg => jsTsChkExp.test(arg) && existsSync(path.join(cwd, arg)));
         if (mainfile) {
-            return path.dirname(path.join(cwd, mainfile));
+            return path.dirname(path.join(cwd, mainfile))
         }
     }
-    return cwd;
+    return cwd
 }

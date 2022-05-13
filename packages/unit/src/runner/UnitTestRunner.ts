@@ -22,19 +22,19 @@ export class UnitTestRunner {
         const loader = injector.getLoader();
         oldRunner.registerGlobalScope();
         if (isString(src)) {
-            suites = await loader.loadType({ files: [src], basePath: ctx.baseURL });
+            suites = await loader.loadType({ files: [src], basePath: ctx.baseURL })
         } else if (isClass(src)) {
-            suites = [src];
+            suites = [src]
         } else if (isArray(src)) {
             if (src.some(t => isClass(t))) {
-                suites = src;
+                suites = src
             } else {
-                suites = await loader.loadType({ files: src as string | string[], basePath: ctx.baseURL });
+                suites = await loader.loadType({ files: src as string | string[], basePath: ctx.baseURL })
             }
         }
         oldRunner.unregisterGlobalScope();
         await oldRunner.run();
         await lang.step(suites.filter(v => v && refl.get<SuiteReflect>(v)?.suite).map(s => () => ctx.bootstrap(s)));
-        await injector.resolve(DefaultTestReport).report();
+        await injector.resolve(DefaultTestReport).report()
     }
 }

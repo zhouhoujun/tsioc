@@ -40,19 +40,19 @@ export class OldTestRunner implements UnitRunner {
 
     constructor(private injector: Injector) {
         this.suites = [];
-        this.timeout = (3 * 60 * 60 * 1000) as number;
+        this.timeout = (3 * 60 * 60 * 1000) as number
     }
 
     get type(): Type<any> {
-        return null!;
+        return null!
     }
 
 
     async run(): Promise<void> {
         try {
-            await lang.step(this.suites.map(desc => desc.cases.length ? () => this.runSuite(desc) : () => Promise.resolve()));
+            await lang.step(this.suites.map(desc => desc.cases.length ? () => this.runSuite(desc) : () => Promise.resolve()))
         } catch (err) {
-            throw err;
+            throw err
         }
     }
 
@@ -75,7 +75,7 @@ export class OldTestRunner implements UnitRunner {
             suites.push(suiteDesc);
 
             globals.describe = (subname: string, descrifn: () => any) => {
-                describe(name + ' ' + subname, descrifn, suiteDesc);
+                describe(name + ' ' + subname, descrifn, suiteDesc)
             }
 
             globals.it = (title: string, test: () => any, timeout?: number) => {
@@ -96,7 +96,7 @@ export class OldTestRunner implements UnitRunner {
                 suiteDesc.beforeEach.push({
                     fn: beachfn,
                     timeout: timeout
-                });
+                })
             }
             globals.after = globals.afterAll = (afterfn: () => any, timeout?: number) => {
                 if (!isFunction(afterfn)) return;
@@ -104,7 +104,7 @@ export class OldTestRunner implements UnitRunner {
                 suiteDesc.after.push({
                     fn: afterfn,
                     timeout: timeout
-                });
+                })
             }
             globals.afterEach = (aeachfn: () => any, timeout?: number) => {
                 if (!isFunction(aeachfn)) return;
@@ -112,10 +112,10 @@ export class OldTestRunner implements UnitRunner {
                 suiteDesc.afterEach.push({
                     fn: aeachfn,
                     timeout: timeout
-                });
+                })
             }
             fn && fn();
-            globals.describe = describe;
+            globals.describe = describe
         };
 
         // TDD style
@@ -162,7 +162,7 @@ export class OldTestRunner implements UnitRunner {
                 });
             }
             fn && fn();
-            globals.suite = suite;
+            globals.suite = suite
         };
     }
 
@@ -190,7 +190,7 @@ export class OldTestRunner implements UnitRunner {
                     stackStartFunction: fn,
                     stackStartFn: fn
                 });
-                defer.reject(err);
+                defer.reject(err)
             }
         }, timeout || this.timeout);
 
@@ -198,15 +198,15 @@ export class OldTestRunner implements UnitRunner {
             .then(r => {
                 clearTimeout(timer);
                 timer = null!;
-                defer.resolve(r);
+                defer.resolve(r)
             })
             .catch(err => {
                 clearTimeout(timer);
                 timer = null!;
-                defer.reject(err);
+                defer.reject(err)
             })
 
-        return defer.promise;
+        return defer.promise
     }
 
     async runHook(describe: SuiteDescribe, action: string, desc: string) {
@@ -215,27 +215,27 @@ export class OldTestRunner implements UnitRunner {
                 .map((hk: ICaseDescribe) => () => this.runTimeout(
                     hk.fn,
                     desc,
-                    hk.timeout || describe.timeout)));
+                    hk.timeout || describe.timeout)))
     }
 
     async runBefore(describe: SuiteDescribe) {
-        await this.runHook(describe, 'before', 'suite before');
+        await this.runHook(describe, 'before', 'suite before')
     }
 
     async runBeforeEach(describe: SuiteDescribe) {
-        await this.runHook(describe, 'beforeEach', 'before each');
+        await this.runHook(describe, 'beforeEach', 'before each')
     }
 
     async runAfterEach(describe: SuiteDescribe) {
-        await this.runHook(describe, 'afterEach', 'after case each');
+        await this.runHook(describe, 'afterEach', 'after case each')
     }
 
     async runAfter(describe: SuiteDescribe) {
-        await this.runHook(describe, 'after', 'suite after');
+        await this.runHook(describe, 'after', 'suite after')
     }
 
     async runTest(desc: SuiteDescribe) {
-        await lang.step(desc.cases.map(caseDesc => () => this.runCase(caseDesc, desc)));
+        await lang.step(desc.cases.map(caseDesc => () => this.runCase(caseDesc, desc)))
     }
 
     async runCase(caseDesc: ICaseDescribe, suiteDesc?: SuiteDescribe): Promise<ICaseDescribe> {
@@ -244,16 +244,16 @@ export class OldTestRunner implements UnitRunner {
             await this.runTimeout(
                 caseDesc.fn,
                 caseDesc.title,
-                caseDesc.timeout);
+                caseDesc.timeout)
         } catch (err) {
-            caseDesc.error = err as Error;
+            caseDesc.error = err as Error
         } finally {
             try {
-                await this.runAfterEach(suiteDesc!);
+                await this.runAfterEach(suiteDesc!)
             } catch (err) {
-                caseDesc.error = err as Error;
+                caseDesc.error = err as Error
             }
         }
-        return caseDesc;
+        return caseDesc
     }
 }

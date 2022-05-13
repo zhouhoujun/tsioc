@@ -11,7 +11,7 @@ const type_func = 'function';
  */
 export function getClassAnnotation(target: AnnotationType) {
     const annf = target.ρAnn || target.getClassAnnations;
-    return typeof annf === type_func ? (annf as Function).call(target) : null;
+    return typeof annf === type_func ? (annf as Function).call(target) : null
 }
 
 /**
@@ -22,5 +22,5 @@ export function getClassAnnotation(target: AnnotationType) {
  * @returns {boolean}
  */
 export function hasClassAnnotation(target: AnnotationType): boolean {
-    return typeof (target.ρAnn || target.getClassAnnations) === type_func;
+    return typeof (target.ρAnn || target.getClassAnnations) === type_func
 }

@@ -57,20 +57,20 @@ export class FileResult extends ResultValue {
         let file = this.file;
         const contentType = this.contentType;
         if (this.options && this.options.filename) {
-            ctx.attachment(this.options.filename, { contentType, ...this.options.disposition });
+            ctx.attachment(this.options.filename, { contentType, ...this.options.disposition })
         } else {
-            ctx.contentType = contentType;
+            ctx.contentType = contentType
         }
         const baseURL = ctx.get(ApplicationContext).baseURL;
         if (isString(file)) {
             let filepath = (isAbsolute(file) || !baseURL) ? file : join(baseURL, file);
             if (existsSync(filepath)) {
-                ctx.body = createReadStream(filepath);
+                ctx.body = createReadStream(filepath)
             }
         } else if (file instanceof Buffer) {
-            ctx.body = file;
+            ctx.body = file
         } else if (file instanceof Stream) {
-            ctx.body = file;
+            ctx.body = file
         }
     }
 }

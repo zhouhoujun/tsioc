@@ -46,27 +46,27 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> implemen
     protected initOptions(option: TcpClientOption) {
         const interceptors = option.interceptors?.map(m => {
             if (isFunction(m)) {
-                return { provide: TCP_INTERCEPTORS, useClass: m, multi: true };
+                return { provide: TCP_INTERCEPTORS, useClass: m, multi: true }
             } else {
-                return { provide: TCP_INTERCEPTORS, useValue: m, multi: true };
+                return { provide: TCP_INTERCEPTORS, useValue: m, multi: true }
             }
         }) ?? EMPTY;
-        this.context.injector.inject(interceptors);
+        this.context.injector.inject(interceptors)
     }
 
     protected getRegInterceptors(): Interceptor<TCPRequest, TCPResponse>[] {
-        return this.context.injector.get(TCP_INTERCEPTORS, EMPTY);
+        return this.context.injector.get(TCP_INTERCEPTORS, EMPTY)
     }
 
 
     protected getBackend(): EndpointBackend<TCPRequest<any>, TCPResponse<any>> {
-        throw new Error('Method not implemented.');
+        throw new Error('Method not implemented.')
     }
 
     protected async connect(): Promise<void> {
         if (this.connected) return;
         if (this.socket) {
-            this.socket.destroy();
+            this.socket.destroy()
         }
         const socket = this.socket = new Socket(this.option.socketOpts);
         const defer = lang.defer();
@@ -79,7 +79,7 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> implemen
 
         this.socket.connect(this.option.connectOpts);
         await defer.promise;
-        this.bindEvents(this.socket);
+        this.bindEvents(this.socket)
     }
 
     private bindEvents(socket: Socket) {
@@ -113,19 +113,19 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> implemen
     }
 
     protected buildRequest(context: InvocationContext<any>, req: string | TCPRequest<any>, options?: any): TCPRequest<any> {
-        return isString(req) ? new TCPRequest(context.resolve(UUIDFactory).generate(), options) : req;
+        return isString(req) ? new TCPRequest(context.resolve(UUIDFactory).generate(), options) : req
     }
 
     async close(): Promise<void> {
         this.connected = false;
-        this.socket?.end();
+        this.socket?.end()
     }
 
     /**
      * on dispose.
      */
     onDispose(): Promise<void> {
-        return this.close();
+        return this.close()
     }
 
 }

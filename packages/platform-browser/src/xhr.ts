@@ -7,6 +7,6 @@ import { Injectable } from '@tsdi/ioc';
 @Injectable()
 export class BrowserXhr implements XhrFactory {
     build(): XMLHttpRequest {
-        return new XMLHttpRequest();
+        return new XMLHttpRequest()
     }
 }

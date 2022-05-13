@@ -18,9 +18,9 @@ export class HttpFinalizeFilter implements ExecptionFilter {
         try {
             await next();
             if (ctx.completed) return;
-            err = ctx.execption as HttpError;
+            err = ctx.execption as HttpError
         } catch (er) {
-            err = new InternalServerError((er as Error).message);
+            err = new InternalServerError((er as Error).message)
         }
 
         //finllay defalt send error.
@@ -28,23 +28,23 @@ export class HttpFinalizeFilter implements ExecptionFilter {
         const hctx = ctx.getValue(HttpContext);
         let headerSent = false;
         if (hctx.sent || !hctx.writable) {
-            headerSent = err.headerSent = true;
+            headerSent = err.headerSent = true
         }
 
         // nothing we can do here other
         // than delegate to the app-level
         // handler and log.
         if (headerSent) {
-            return;
+            return
         }
 
         const res = hctx.response;
 
         // first unset all headers
         if (isFunction(res.getHeaderNames)) {
-            res.getHeaderNames().forEach(name => res.removeHeader(name));
+            res.getHeaderNames().forEach(name => res.removeHeader(name))
         } else {
-            (res as any)._headers = {}; // Node < 7.7
+            (res as any)._headers = {} // Node < 7.7
         }
 
         // then set those specified
@@ -55,7 +55,7 @@ export class HttpFinalizeFilter implements ExecptionFilter {
         let statusCode = (err.status || err.statusCode) as HttpStatusCode;
         let msg: string;
         if (err instanceof TransportError) {
-            msg = err.message;
+            msg = err.message
         } else {
             // ENOENT support
             if (ev.ENOENT === err.code) statusCode = 404;
@@ -64,12 +64,12 @@ export class HttpFinalizeFilter implements ExecptionFilter {
             if (!isNumber(statusCode) || !statusMessage[statusCode]) statusCode = 500;
 
             // respond
-            msg = statusMessage[statusCode];
+            msg = statusMessage[statusCode]
         }
         hctx.status = statusCode;
         hctx.statusMessage = msg;
         hctx.length = Buffer.byteLength(msg);
-        res.end(msg);
+        res.end(msg)
     }
 
 }
@@ -85,29 +85,28 @@ export class ArgumentErrorFilter implements ExecptionFilter {
     async handle(ctx: ExecptionContext<Error>, next: () => Promise<void>): Promise<any> {
         const handles = ctx.injector.get(ExecptionHandlerMethodResolver).resolve(ctx.execption);
         if (handles.length) {
-            await Promise.all(handles.map(h => h.invoke(ctx)));
+            await Promise.all(handles.map(h => h.invoke(ctx)))
         }
 
         if (!ctx.completed) {
-            return await next();
+            return await next()
         }
 
     }
 
     @ExecptionHandler(TransportArgumentError)
     anguExecption(ctx: ExecptionContext, execption: TransportArgumentError) {
-        ctx.execption = new BadRequestError(this.option.detailError ? execption.message : undefined);
+        ctx.execption = new BadRequestError(this.option.detailError ? execption.message : undefined)
     }
 
     @ExecptionHandler(MissingModelFieldError)
     missFieldExecption(ctx: ExecptionContext, execption: MissingModelFieldError) {
-        ctx.execption = new BadRequestError(this.option.detailError ? execption.message : undefined);
+        ctx.execption = new BadRequestError(this.option.detailError ? execption.message : undefined)
     }
 
     @ExecptionHandler(TransportMissingError)
     missExecption(ctx: ExecptionContext, execption: TransportMissingError) {
-        ctx.execption = new BadRequestError(this.option.detailError ? execption.message : undefined);
+        ctx.execption = new BadRequestError(this.option.detailError ? execption.message : undefined)
     }
-
 
 }

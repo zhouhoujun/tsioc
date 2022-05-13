@@ -73,27 +73,27 @@ export class DefaultInjector extends Injector {
                 this._plat = new DefaultPlatform(this);
                 this.lifecycle = this.createLifecycle();
                 registerCores(this);
-                break
+                break;
             case 'root':
                 this.platform().setInjector(scope, this);
                 rootAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = isRootAlias;
                 this.lifecycle = this.createLifecycle(this.platform());
-                break
+                break;
             case 'provider':
             case 'invocation':
                 this.lifecycle = this.createLifecycle();
-                break
+                break;
             case 'configuration':
                 this.platform().setInjector(scope, this);
                 this.lifecycle = this.createLifecycle();
-                break
+                break;
             default:
                 if (scope) this.platform().setInjector(scope, this);
                 injectAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = isInjectAlias;
                 this.lifecycle = this.createLifecycle();
-                break
+                break;
         }
         this.inject({ provide: LifecycleHooks, useValue: this.lifecycle })
     }
@@ -251,8 +251,8 @@ export class DefaultInjector extends Injector {
 
     has<T>(token: Token<T>, flags = InjectFlags.Default): boolean {
         this.assertNotDestroyed();
-        if (this.platform().hasSingleton(token)) return true
-        if (!(flags & InjectFlags.SkipSelf) && (this.records.has(token))) return true
+        if (this.platform().hasSingleton(token)) return true;
+        if (!(flags & InjectFlags.SkipSelf) && (this.records.has(token))) return true;
         if (!(flags & InjectFlags.Self)) {
             return this.parent?.has(token, flags) === true
         }
@@ -288,7 +288,7 @@ export class DefaultInjector extends Injector {
     get<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags, notFoundValue?: T): T;
     get<T>(token: Token<T>, arg1?: InvocationContext, flags = InjectFlags.Default, notFoundValue?: T): T {
         this.assertNotDestroyed();
-        if (this.isself(token)) return this as any
+        if (this.isself(token)) return this as any;
         const platform = this.platform();
         let context: InvocationContext | undefined;
         if (arg1 instanceof InvocationContext || !isUndefined(notFoundValue)) {
@@ -299,7 +299,7 @@ export class DefaultInjector extends Injector {
         } else {
             notFoundValue = (isUndefined(arg1) ? THROW_FLAGE : arg1) as T
         }
-        if (platform.hasSingleton(token)) return platform.getSingleton(token)
+        if (platform.hasSingleton(token)) return platform.getSingleton(token);
         return this.tryResolve(token, this.records.get(token), platform, this.parent, context, notFoundValue, flags, this.lifecycle)
     }
 
@@ -345,11 +345,11 @@ export class DefaultInjector extends Injector {
     }
 
     protected toOption(token: Token | ResolveOption, args: any[]): ResolveOption | undefined {
-        if (isPlainObject(token)) return token as ResolveOption
+        if (isPlainObject(token)) return token as ResolveOption;
         if (args.length) {
             if (args.length > 1 || (args.length === 1 && isArray(args))) return { token, providers: args };
             if (args[0] instanceof InvocationContext) {
-                return { token, context: args[0] };
+                return { token, context: args[0] }
             }
             args[0].token = token;
             return args[0]
@@ -738,7 +738,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
         if (value === CIRCULAR) {
             throw new CircularDependencyError()
         }
-        if (isDefined(rd.value) && value !== EMPTY) return rd.value
+        if (isDefined(rd.value) && value !== EMPTY) return rd.value;
         let deps = [];
         if (rd.deps?.length) {
             for (let i = 0; i < rd.deps.length; i++) {
@@ -810,7 +810,7 @@ export class DestroyLifecycleHooks extends LifecycleHooks {
     }
 
     async dispose(): Promise<void> {
-        if (this.destroyable) return
+        if (this.destroyable) return;
         if (this.platform) {
             const platform = this.platform;
             this.platform = null!;

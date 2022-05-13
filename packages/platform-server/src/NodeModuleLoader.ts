@@ -14,21 +14,21 @@ export class NodeModuleLoader extends DefaultModuleLoader implements ModuleLoade
 
     protected override loadFile(files: string | string[], basePath?: string): Promise<Modules[]> {
         if (isString(files)) {
-            files = this.normalize(files);
+            files = this.normalize(files)
         } else {
-            files = files.map(f => this.normalize(f));
+            files = files.map(f => this.normalize(f))
         }
         basePath = basePath || runMainPath();
 
         return globby(files, { cwd: basePath }).then(mflies => {
             return Promise.all(mflies.map(fp => {
-                return import(toAbsolutePath(basePath!, isString(fp) ? fp : (fp as { path: string }).path));
-            }));
-        });
+                return import(toAbsolutePath(basePath!, isString(fp) ? fp : (fp as { path: string }).path))
+            }))
+        })
     }
 
     protected override createLoader(): (modulepath: string) => Promise<Modules> {
-        return (modulepath: string) => import(modulepath);
+        return (modulepath: string) => import(modulepath)
     }
 
 }

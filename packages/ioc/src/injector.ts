@@ -305,7 +305,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * has destoryed or not.
      */
     get destroyed() {
-        return this._destroyed;
+        return this._destroyed
     }
     /**
     * destroy this.
@@ -316,13 +316,13 @@ export abstract class Injector implements Destroyable, OnDestroy {
                 .finally(() => {
                     this.tryDestroy();
                     if (this.scope === 'root') {
-                        return this.parent?.destroy();
+                        return this.parent?.destroy()
                     }
                 })
         } else {
             this.tryDestroy();
             if (this.scope === 'root') {
-                return this.parent?.destroy();
+                return this.parent?.destroy()
             }
         }
 
@@ -333,10 +333,10 @@ export abstract class Injector implements Destroyable, OnDestroy {
         this._destroyed = true;
         try {
             this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy());
-            this.lifecycle?.runDestroy();
+            this.lifecycle?.runDestroy()
         } finally {
             this._dsryCbs.clear();
-            this.destroying();
+            this.destroying()
         }
     }
 
@@ -351,14 +351,14 @@ export abstract class Injector implements Destroyable, OnDestroy {
     onDestroy(callback: DestroyCallback): void;
     onDestroy(callback?: DestroyCallback): void {
         if (!callback) {
-            this.destroy();
+            this.destroy()
         } else {
-            this._dsryCbs.add(callback);
+            this._dsryCbs.add(callback)
         }
     }
 
     offDestroy(callback: DestroyCallback) {
-        this._dsryCbs.delete(callback);
+        this._dsryCbs.delete(callback)
     }
 
     protected abstract destroying(): void;
@@ -380,10 +380,10 @@ export abstract class Injector implements Destroyable, OnDestroy {
         options: ProviderType[] | { providers: ProviderType[], parent?: Injector, scope?: InjectorScope } | undefined,
         parent?: Injector, scope?: InjectorScope): Injector {
         if (!options) {
-            options = EMPTY;
+            options = EMPTY
         }
         return isArray(options) ? INJECT_IMPL.create(options, parent, scope) :
-            INJECT_IMPL.create(options.providers, options.parent, options.scope);
+            INJECT_IMPL.create(options.providers, options.parent, options.scope)
     }
 }
 
@@ -518,7 +518,7 @@ export abstract class Platform implements OnDestroy {
  * @returns {target is Injector}
  */
 export function isInjector(target: any): target is Injector {
-    return target instanceof Injector;
+    return target instanceof Injector
 }
 
 /**
@@ -539,7 +539,7 @@ export const INJECT_IMPL = {
      * @param scope 
      */
     create(providers: ProviderType[], parent?: Injector, scope?: InjectorScope): Injector {
-        throw new Error('not implemented.');
+        throw new Error('not implemented.')
     }
 };
 

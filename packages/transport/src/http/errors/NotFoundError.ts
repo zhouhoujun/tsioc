@@ -10,6 +10,6 @@ import { HttpError } from './HttpError';
  */
 export class NotFoundError extends HttpError {
     constructor(message = statusMessage[HttpStatusCode.NotFound]) {
-        super(HttpStatusCode.NotFound, message);
+        super(HttpStatusCode.NotFound, message)
     }
 }

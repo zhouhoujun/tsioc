@@ -127,39 +127,39 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         @Inject() readonly context: InvocationContext,
         @Inject(HTTP_SERVEROPTIONS, { nullable: true }) options: HttpServerOptions
     ) {
-        super();
-        this.initOption(options);
+        super()
+        this.initOption(options)
     }
 
     get server() {
-        return this._server;
+        return this._server
     }
 
     get proxy() {
-        return this.options.proxy;
+        return this.options.proxy
     }
 
     get proxyIpHeader() {
-        return this.options.proxyIpHeader;
+        return this.options.proxyIpHeader
     }
 
     protected initOption(options: HttpServerOptions) {
         this.options = { ...httpOpts, ...options } as HttpServerOptions;
         if (options?.options) {
-            this.options.options = { ...httpOpts.options, ...options.options };
+            this.options.options = { ...httpOpts.options, ...options.options }
         }
         if (options?.listenOptions) {
-            this.options.listenOptions = { ...httpOpts.listenOptions, ...options.listenOptions };
+            this.options.listenOptions = { ...httpOpts.listenOptions, ...options.listenOptions }
         }
         this.context.injector.setValue(HTTP_SERVEROPTIONS, this.options);
 
         if (this.options.content && !isBoolean(this.options.content)) {
-            this.context.injector.setValue(ContentOptions, this.options.content);
+            this.context.injector.setValue(ContentOptions, this.options.content)
         }
 
         if (this.options.mimeDb) {
             const mimedb = this.context.injector.get(MimeDb);
-            mimedb.from(this.options.mimeDb);
+            mimedb.from(this.options.mimeDb)
         }
 
         const middlewares = this.options.middlewares?.filter(m => {
@@ -167,21 +167,21 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
             if (!this.options.session && m === SessionMiddleware) return false;
             if (!this.options.csrf && m === CsrfMiddleware) return false;
             if (!this.options.content && m === ContentMiddleware) return false;
-            return true;
+            return true
         }).map(m => {
             if (isFunction(m)) {
-                return { provide: HTTP_MIDDLEWARES, useClass: m, multi: true };
+                return { provide: HTTP_MIDDLEWARES, useClass: m, multi: true }
             } else {
-                return { provide: HTTP_MIDDLEWARES, useValue: m, multi: true };
+                return { provide: HTTP_MIDDLEWARES, useValue: m, multi: true }
             }
         }) ?? EMPTY;
         this.context.injector.inject(middlewares);
 
         const interceptors = this.options.interceptors?.map(m => {
             if (isFunction(m)) {
-                return { provide: HTTP_SERV_INTERCEPTORS, useClass: m, multi: true };
+                return { provide: HTTP_SERV_INTERCEPTORS, useClass: m, multi: true }
             } else {
-                return { provide: HTTP_SERV_INTERCEPTORS, useValue: m, multi: true };
+                return { provide: HTTP_SERV_INTERCEPTORS, useValue: m, multi: true }
             }
         }) ?? EMPTY;
         this.context.injector.inject(interceptors);
@@ -193,7 +193,7 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         if (this.context.has(CONTENT_DISPOSITION)) {
             const func = await injector.getLoader().require('content-disposition');
             assert(isFunction(func), 'Can not found any Content Disposition provider. Require content-disposition module');
-            this.context.setValue(CONTENT_DISPOSITION, func);
+            this.context.setValue(CONTENT_DISPOSITION, func)
         }
 
         let cert: any;
@@ -203,16 +203,16 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
             const server = cert ? http2.createSecureServer(option, (req, res) => this.requestHandler(req, res)) : http2.createServer(option, (req, res) => this.requestHandler(req, res));
             this._server = server;
             server.on(ev.ERROR, (err) => {
-                this.logger.error(err);
-            });
+                this.logger.error(err)
+            })
         } else {
             const option = options.options ?? EMPTY_OBJ;
             cert = option.cert;
             const server = cert ? https.createServer(option, (req, res) => this.requestHandler(req, res)) : http.createServer(option, (req, res) => this.requestHandler(req, res));
             this._server = server;
             server.on(ev.ERROR, (err) => {
-                this.logger.error(err);
-            });
+                this.logger.error(err)
+            })
         }
 
         //sharing servers
@@ -224,37 +224,37 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
             ];
             await Promise.all(this.options.sharing.map(sr => {
                 let runnable = resolver.resolve(sr);
-                return runnable.create(injector, { providers }).run();
-            }));
+                return runnable.create(injector, { providers }).run()
+            }))
         }
 
         const listenOptions = this.options.listenOptions;
         injector.get(ModuleRef).setValue(HTTP_LISTENOPTIONS, { ...listenOptions, withCredentials: cert!!, majorVersion: options.majorVersion });
         this.logger.info(lang.getClassName(this), 'listen:', listenOptions, '. access with url:', `http${cert ? 's' : ''}://${listenOptions?.host}:${listenOptions?.port}${listenOptions?.path ?? ''}`, '!')
-        this._server.listen(listenOptions);
+        this._server.listen(listenOptions)
     }
 
 
     protected override getBackend(): EndpointBackend<HttpServRequest, HttpServResponse> {
         if (!this._backend) {
-            this._backend = new CustomEndpoint<HttpServRequest, HttpServResponse>((req, ctx) => of((ctx as HttpContext).response));
+            this._backend = new CustomEndpoint<HttpServRequest, HttpServResponse>((req, ctx) => of((ctx as HttpContext).response))
         }
-        return this._backend;
+        return this._backend
     }
 
     protected override bindEvent(ctx: HttpContext, cancel: Subscription): void {
         const req = ctx.request;
         this.options.timeout && req.setTimeout(this.options.timeout, () => {
             req.emit(ev.TIMEOUT);
-            cancel?.unsubscribe();
+            cancel?.unsubscribe()
         });
         req.once(ev.CLOSE, async () => {
             await lang.delay(this.options.closeDelay ?? 500);
             cancel?.unsubscribe();
             if (!ctx.sent) {
-                ctx.response.end();
+                ctx.response.end()
             }
-        });
+        })
     }
 
     async close(): Promise<void> {
@@ -263,10 +263,10 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         this._server.close((err) => {
             if (err) {
                 this.logger.error(err);
-                defer.reject(err);
+                defer.reject(err)
             } else {
                 this.logger.info(lang.getClassName(this), this.options.listenOptions, 'closed !');
-                defer.resolve();
+                defer.resolve()
             }
         });
         await defer.promise;
@@ -274,15 +274,15 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
     }
 
     protected override createContext(request: HttpServRequest, response: HttpServResponse): HttpContext {
-        return new HttpContext(this.context.injector, request, response, this);
+        return new HttpContext(this.context.injector, request, response, this)
     }
 
     protected override getRegMidderwares(): HttpMiddleware[] {
-        return this.context.get(HTTP_MIDDLEWARES);
+        return this.context.get(HTTP_MIDDLEWARES)
     }
 
     protected override getRegInterceptors(): Interceptor<HttpServRequest, HttpServResponse>[] {
-        return this.context.injector.get(HTTP_SERV_INTERCEPTORS, EMPTY);
+        return this.context.injector.get(HTTP_SERV_INTERCEPTORS, EMPTY)
     }
 
 }

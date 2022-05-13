@@ -10,6 +10,6 @@ import { HttpError } from './HttpError';
  */
 export class NotAcceptableError extends HttpError {
     constructor(message = statusMessage[HttpStatusCode.NotAcceptable]) {
-        super(HttpStatusCode.NotAcceptable, message);
+        super(HttpStatusCode.NotAcceptable, message)
     }
 }

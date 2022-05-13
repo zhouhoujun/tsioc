@@ -38,7 +38,7 @@ function regProvider(records: Map<Token, FactoryRecord>, platform: Platform, inj
         fn: (...fnArgs: any[]) => {
             // make sure has value.
             if (singleton && platform.hasSingleton(type)) {
-                return platform.getSingleton(type);
+                return platform.getSingleton(type)
             }
             let args: any[] | undefined;
             let context: InvocationContext | undefined;

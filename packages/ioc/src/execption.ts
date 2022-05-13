@@ -9,19 +9,19 @@ export class Execption extends Error {
         super(message);
         let target: Function;
         try {
-            target = new.target;
+            target = new.target
         } catch {
-            target = Execption;
+            target = Execption
         }
 
         this.name = target.name;
         if (typeof (Error as any).captureStackTrace === 'function') {
-            (Error as any).captureStackTrace(this, target);
+            (Error as any).captureStackTrace(this, target)
         }
         if (typeof Object.setPrototypeOf === 'function') {
-            Object.setPrototypeOf(this, target.prototype);
+            Object.setPrototypeOf(this, target.prototype)
         } else {
-            (this as any).__proto__ = target.prototype;
+            (this as any).__proto__ = target.prototype
         }
     }
     
@@ -33,6 +33,6 @@ export class Execption extends Error {
  */
  export class ArgumentError extends Execption {
     constructor(message?: string | string[]) {
-        super(isArray(message) ? message.join('\n') : message || '');
+        super(isArray(message) ? message.join('\n') : message || '')
     }
 }

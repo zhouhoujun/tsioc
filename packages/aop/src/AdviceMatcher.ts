@@ -94,7 +94,7 @@ export class AdviceMatcher implements IAdviceMatcher {
                 if (executionChkExp.test(pointcut)) {
                     pointcut = pointcut.substring(10, pointcut.length - 1)
                 }
-                return pointcut.startsWith(name);
+                return pointcut.startsWith(name)
             } else if (isRegExp(pointcut)) {
                 return pointcut.test(name)
             }
@@ -114,7 +114,7 @@ export class AdviceMatcher implements IAdviceMatcher {
 
         matchedPointcut = matchedPointcut || [];
         return matchedPointcut.map(p => {
-            return { ...p, advice: metadata };
+            return { ...p, advice: metadata }
         })
     }
 
@@ -132,7 +132,7 @@ export class AdviceMatcher implements IAdviceMatcher {
                 } else {
                     return relfect.class.isExtends(metadata.within!)
                 }
-            });
+            })
         }
         if (metadata.target) {
             checks.push((method, fullName, targetType, target) => {
@@ -270,8 +270,8 @@ export class BoolExpression {
     toString(map?: (token: string, idx?: number, tokenIdx?: number, exp?: { type: string, value: any }[]) => string) {
         let idx = 0;
         return this._parsed.map((t, i, exp) => {
-            if (t.type === 'operator') return t.value
-            return map ? map(t.value, i, idx++, exp) : t.value;
+            if (t.type === 'operator') return t.value;
+            return map ? map(t.value, i, idx++, exp) : t.value
         }).join(' ')
     }
 }
@@ -282,7 +282,7 @@ const nativeOperators = /^(,|!|&&|\|\||\(|\))$/
 const operatorMap: any = { OR: '||', AND: '&&', NOT: '!' }
 function rewrite(ex: any[], el: string) {
     let t = el.trim()
-    if (!t) return ex
+    if (!t) return ex;
     if (operatorMap[t]) {
          t = operatorMap[t]
     }

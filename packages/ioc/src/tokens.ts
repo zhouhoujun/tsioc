@@ -16,11 +16,11 @@ export class InjectToken<T = any> {
         readonly providedIn: Type | 'root' | 'platform' | string = '') { }
 
     toString(): string {
-        return `Token ${this.desc}`;
+        return `Token ${this.desc}`
     }
 
     to(alias: string): InjectToken<T> {
-        return alias ? new InjectToken(`${this.desc}_${alias}`, this.providedIn) : this;
+        return alias ? new InjectToken(`${this.desc}_${alias}`, this.providedIn) : this
     }
 }
 
@@ -39,11 +39,11 @@ export type ProvideToken<T> = string | symbol | InjectToken<T> | AbstractType;
  * @param key id
  */
 export function tokenId<T = any>(key: string,): Token<T> {
-    return Symbol(key);
+    return Symbol(key)
 }
 
 export function formatToken(token: Token) {
-    return isFunction(token) ? `${getClassName(token)}` : token.toString();
+    return isFunction(token) ? `${getClassName(token)}` : token.toString()
 }
 
 /**
@@ -54,9 +54,9 @@ export function formatToken(token: Token) {
 export function getToken<T>(token: Token<T>, alias?: string): Token<T> {
     if (!alias) return token;
     if (token instanceof InjectToken) {
-        return token.to(alias);
+        return token.to(alias)
     }
-    return `${formatToken(token)}_${alias}`;
+    return `${formatToken(token)}_${alias}`
 }
 
 /**
@@ -65,7 +65,7 @@ export function getToken<T>(token: Token<T>, alias?: string): Token<T> {
  * @param target token ref target.
  */
 export function tokenRef<T>(token: Token<T>, target: Token): Token<T> {
-    return `Ref ${formatToken(token)} for ${formatToken(target)}`;
+    return `Ref ${formatToken(token)} for ${formatToken(target)}`
 }
 
 /**
@@ -77,23 +77,23 @@ export function tokenRef<T>(token: Token<T>, target: Token): Token<T> {
  */
 export function isToken(target: any): target is Token {
     if (!target) {
-        return false;
+        return false
     }
     const type = typeof target;
     switch (type) {
         case type_func:
-            return isClassType(target);
+            return isClassType(target)
         case type_str:
-            return true;
+            return true
         case type_symbol:
-            return true;
+            return true
     }
 
-    return isInjectToken(target);
+    return isInjectToken(target)
 }
 
 export function isInjectToken<T>(target: any): target is InjectToken<T> {
-    return target instanceof InjectToken;
+    return target instanceof InjectToken
 }
 
 

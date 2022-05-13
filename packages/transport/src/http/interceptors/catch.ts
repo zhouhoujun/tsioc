@@ -23,7 +23,7 @@ export class CatchInterceptor implements Interceptor<HttpServRequest, HttpServRe
                     const filter = ctx.get(HttpExecptionFilter);
                     const context = createExecptionContext(ctx, err);
                     return from(filter.handle(context, async () => {
-                        await context.destroy();
+                        await context.destroy()
                     }))
                 })
             )
