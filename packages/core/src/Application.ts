@@ -31,20 +31,20 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
             const providers = (target.platformProviders && target.platformProviders.length) ? [...this.getDefaultProviders(), ...target.platformProviders] : this.getDefaultProviders();
             target.deps = target.deps?.length ? [...this.getDeps(), ...target.deps] : this.getDeps();
             target.scope = 'root';
-            this.root = this.createInjector(providers, target);
+            this.root = this.createInjector(providers, target)
         } else {
             const option = { module: target, deps: this.getDeps(), scope: 'root' };
-            this.root = this.createInjector(this.getDefaultProviders(), option);
+            this.root = this.createInjector(this.getDefaultProviders(), option)
         }
-        this.initRoot();
+        this.initRoot()
     }
 
     protected getDefaultProviders(): ProviderType[] {
-        return DEFAULTA_PROVIDERS;
+        return DEFAULTA_PROVIDERS
     }
 
     protected initRoot() {
-        this.root.setValue(Application, this);
+        this.root.setValue(Application, this)
     }
 
     /**
@@ -53,7 +53,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
      * @returns instance of {@link ApplicationContext}.
      */
     getContext(): ApplicationContext {
-        return this.context;
+        return this.context
     }
 
     /**
@@ -74,7 +74,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
      */
     static run(target: Type, option?: EnvironmentOption): Promise<ApplicationContext>;
     static run(target: any, option?: EnvironmentOption): Promise<ApplicationContext> {
-        return new Application(option ? { module: target, ...option } as ApplicationOption : target).run();
+        return new Application(option ? { module: target, ...option } as ApplicationOption : target).run()
     }
 
     /**
@@ -89,31 +89,31 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
             await this.prepareContext(ctx);
             await this.refreshContext(ctx);
             await this.callRunners(ctx);
-            return ctx;
+            return ctx
         } catch (err) {
             await this.handleRunFailure(this.context, err);
-            throw err;
+            throw err
         }
     }
 
     get loadTypes(): Type[] {
-        return this._loads ?? EMPTY;
+        return this._loads ?? EMPTY
     }
 
     protected getDeps(): Modules[] {
-        return [];
+        return []
     }
 
     protected createInjector(providers: ProviderType[], option: ApplicationOption) {
         const container = option.injector ?? Injector.create(providers);
         if (option.baseURL) {
-            container.setValue(PROCESS_ROOT, option.baseURL);
+            container.setValue(PROCESS_ROOT, option.baseURL)
         }
         if (this.loader) {
-            container.setValue(ModuleLoader, this.loader);
+            container.setValue(ModuleLoader, this.loader)
         }
         option.platformDeps && container.use(...option.platformDeps);
-        return container.resolve({ token: ModuleFactoryResolver, target: option.module }).resolve(option.module).create(container, option);
+        return container.resolve({ token: ModuleFactoryResolver, target: option.module }).resolve(option.module).create(container, option)
     }
 
     protected async createContext(): Promise<T> {
@@ -121,15 +121,15 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
             const target = this.target;
             const root = this.root;
             if (isFunction(target)) {
-                this.context = root.resolve({ token: ApplicationFactory, target: target }).create(root) as T;
+                this.context = root.resolve({ token: ApplicationFactory, target: target }).create(root) as T
             } else {
                 if (target.loads) {
-                    this._loads = await this.root.load(target.loads);
+                    this._loads = await this.root.load(target.loads)
                 }
-                this.context = root.resolve({ token: ApplicationFactory, target: target.module }).create(root, target) as T;
+                this.context = root.resolve({ token: ApplicationFactory, target: target.module }).create(root, target) as T
             }
         }
-        return this.context;
+        return this.context
     }
 
     protected prepareContext(ctx: T): any {
@@ -138,30 +138,30 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
             const injector = ctx.injector;
             bootstraps.forEach(type => {
                 const runner = injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type).create(injector);
-                ctx.runners.addBootstrap(runner);
-            });
+                ctx.runners.addBootstrap(runner)
+            })
         }
     }
 
     protected refreshContext(ctx: T): any {
         const exit = ctx.injector.get(ApplicationExit, null);
         if (exit) {
-            exit.register();
+            exit.register()
         }
-        ctx.refresh();
+        ctx.refresh()
     }
 
     protected callRunners(ctx: ApplicationContext): Promise<void> {
-        return ctx.runners.run();
+        return ctx.runners.run()
     }
 
     protected async handleRunFailure(ctx: ApplicationContext, error: Error | any): Promise<void> {
         if (ctx) {
             const logger = ctx.getLogger();
             logger ? logger.error(error) : console.error(error);
-            await ctx.destroy();
+            await ctx.destroy()
         } else {
-            console.error(error);
+            console.error(error)
         }
     }
 

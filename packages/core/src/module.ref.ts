@@ -85,8 +85,8 @@ export function getModuleType(input: any[]): (Type | ModuleWithProviders)[] {
     const types: (Type | ModuleWithProviders)[] = [];
     lang.deepForEach<Type | ModuleWithProviders>(input, ty => {
         if (isFunction(ty) || (ty as ModuleWithProviders).module) {
-            types.push(ty);
+            types.push(ty)
         }
     }, v => isPlainObject(v) && !(v as ModuleWithProviders).module);
-    return types;
+    return types
 }

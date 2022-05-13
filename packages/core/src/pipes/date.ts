@@ -15,7 +15,7 @@ export function formatDate(date: Date, fmt: string = 'yyyy-MM-dd') {
     if (/(y+)/.test(fmt)) fmt = fmt.replace(RegExp.$1, (date.getFullYear() + "").substring(4 - RegExp.$1.length));
     for (var k in o)
         if (new RegExp("(" + k + ")").test(fmt)) fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substring(("" + o[k]).length)));
-    return fmt;
+    return fmt
 }
 
 /**
@@ -27,17 +27,15 @@ export class DateFormatPipe implements PipeTransform<string> {
     transform(value: any, ...args: any[]): string {
         let date: Date | null = null;
         if (isString(value) || isNumber(value)) {
-            date = new Date(value);
+            date = new Date(value)
         } else if (isDate(value)) {
-            date = value;
+            date = value
         }
 
         if (isDate(value)) {
-            return formatDate(date as Date, args.length ? args[0] : 'yyyy-MM-dd');
+            return formatDate(date as Date, args.length ? args[0] : 'yyyy-MM-dd')
         } else {
-
-            throw invalidPipeArgumentError(this, value);
+            throw invalidPipeArgumentError(this, value)
         }
     }
-
 }

@@ -74,13 +74,13 @@ export class Joinpoint<T = any> extends DefaultInvocationContext<T> implements I
 
     get fullName(): string {
         if (!this._fullName) {
-            this._fullName = lang.getClassName(this.targetType) + '.' + this.methodName;
+            this._fullName = lang.getClassName(this.targetType) + '.' + this.methodName
         }
-        return this._fullName;
+        return this._fullName
     }
 
     protected override isSelf(token: Token) {
-        return token === InvocationContext || token === Joinpoint;
+        return token === InvocationContext || token === Joinpoint
     }
 
     /**
@@ -90,6 +90,6 @@ export class Joinpoint<T = any> extends DefaultInvocationContext<T> implements I
      * @returns 
      */
     static create(injector: Injector, options: JoinpointOption) {
-        return new Joinpoint(injector, options);
+        return new Joinpoint(injector, options)
     }
 }

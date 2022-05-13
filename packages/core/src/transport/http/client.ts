@@ -406,7 +406,7 @@ export class HttpClient {
         if (first instanceof HttpRequest) {
             // It is. The other arguments must be undefined (per the signatures) and can be
             // ignored.
-            req = first;
+            req = first
         } else {
             // It's a string, so it represents a URL. Construct a request based on it,
             // and incorporate the remaining arguments (assuming `GET` unless a method is
@@ -416,18 +416,18 @@ export class HttpClient {
             // Figure out the headers.
             let headers: HttpHeaders | undefined = undefined;
             if (options.headers instanceof HttpHeaders) {
-                headers = options.headers;
+                headers = options.headers
             } else {
-                headers = new HttpHeaders(options.headers);
+                headers = new HttpHeaders(options.headers)
             }
 
             // Sort out parameters.
             let params: HttpParams | undefined = undefined;
             if (!!options.params) {
                 if (options.params instanceof HttpParams) {
-                    params = options.params;
+                    params = options.params
                 } else {
-                    params = new HttpParams({ fromObject: options.params } as HttpParamsOptions);
+                    params = new HttpParams({ fromObject: options.params } as HttpParamsOptions)
                 }
             }
 
@@ -439,7 +439,7 @@ export class HttpClient {
                 // By default, JSON is assumed to be returned for all calls.
                 responseType: options.responseType || 'json',
                 withCredentials: options.withCredentials,
-            });
+            })
         }
 
         // Start with an Observable.of() the initial request, and run the handler (which
@@ -453,7 +453,7 @@ export class HttpClient {
         // the only option is to get the event stream. Otherwise, return the event stream if
         // that is what was requested.
         if (first instanceof HttpRequest || options.observe === 'events') {
-            return events$;
+            return events$
         }
 
         // The requested stream contains either the full response or the body. In either
@@ -475,37 +475,37 @@ export class HttpClient {
                         return res$.pipe(map((res: HttpResponse<any>) => {
                             // Validate that the body is an ArrayBuffer.
                             if (res.body !== null && !(res.body instanceof ArrayBuffer)) {
-                                throw new Error('Response is not an ArrayBuffer.');
+                                throw new Error('Response is not an ArrayBuffer.')
                             }
-                            return res.body;
+                            return res.body
                         }));
                     case 'blob':
                         return res$.pipe(map((res: HttpResponse<any>) => {
                             // Validate that the body is a Blob.
                             if (res.body !== null && !(res.body instanceof Blob)) {
-                                throw new Error('Response is not a Blob.');
+                                throw new Error('Response is not a Blob.')
                             }
-                            return res.body;
+                            return res.body
                         }));
                     case 'text':
                         return res$.pipe(map((res: HttpResponse<any>) => {
                             // Validate that the body is a string.
                             if (res.body !== null && typeof res.body !== type_str) {
-                                throw new Error('Response is not a string.');
+                                throw new Error('Response is not a string.')
                             }
-                            return res.body;
+                            return res.body
                         }));
                     case 'json':
                     default:
                         // No validation needed for JSON responses, as they can be of any type.
-                        return res$.pipe(map((res: HttpResponse<any>) => res.body));
+                        return res$.pipe(map((res: HttpResponse<any>) => res.body))
                 }
             case 'response':
                 // The response stream was requested directly, so return it.
-                return res$;
+                return res$
             default:
                 // Guard against new future observe types being added.
-                throw new Error(`Unreachable: unhandled observe type ${options.observe}}`);
+                throw new Error(`Unreachable: unhandled observe type ${options.observe}}`)
         }
     }
 
@@ -2792,7 +2792,7 @@ export class HttpClient {
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
     } = {}): Observable<any> {
-        return this.request<any>('PUT', url, addBody(options, body));
+        return this.request<any>('PUT', url, addBody(options, body))
     }
 
 }
@@ -2818,5 +2818,5 @@ function addBody<T>(
         reportProgress: options.reportProgress,
         responseType: options.responseType,
         withCredentials: options.withCredentials,
-    };
+    }
 }

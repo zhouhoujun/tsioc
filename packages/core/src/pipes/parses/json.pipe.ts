@@ -14,12 +14,12 @@ export class JsonPipe implements PipeTransform<object> {
         if (isNil(value)) throw invalidPipeArgumentError(this, value);
         if (isString(value)) {
             try {
-                return JSON.parse(value);
+                return JSON.parse(value)
             } catch (err) {
-                throw invalidPipeArgumentError(this, value, (err as Error).toString());
+                throw invalidPipeArgumentError(this, value, (err as Error).toString())
             }
         }
-        return value;
+        return value
     }
 
 }

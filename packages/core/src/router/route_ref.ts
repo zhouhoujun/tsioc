@@ -31,41 +31,41 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     private _endpoints: Map<string, MiddlewareFn>;
 
     constructor(private factory: ReflectiveRef<T>) {
-        super();
+        super()
         this.metadata = factory.reflect.annotation as ProtocolRouteMappingMetadata;
         this._url = joinprefix(this.metadata.prefix, this.metadata.version, this.metadata.route);
-        this._endpoints = new Map();
+        this._endpoints = new Map()
     }
 
     get type() {
-        return this.factory.type;
+        return this.factory.type
     }
 
     get reflect() {
-        return this.factory.reflect;
+        return this.factory.reflect
     }
 
     get injector() {
-        return this.factory.injector;
+        return this.factory.injector
     }
 
     get instance(): T {
         if (!this._instance) {
-            this._instance = this.factory.resolve();
+            this._instance = this.factory.resolve()
         }
-        return this._instance;
+        return this._instance
     }
 
     get path(): string {
-        return this._url;
+        return this._url
     }
 
     private _guards?: CanActivate[];
     get guards(): CanActivate[] {
         if (!this._guards) {
-            this._guards = this.metadata.guards?.map(token => () => this.factory.resolve(token)) ?? EMPTY;
+            this._guards = this.metadata.guards?.map(token => () => this.factory.resolve(token)) ?? EMPTY
         }
-        return this._guards;
+        return this._guards
     }
 
     async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
@@ -78,22 +78,21 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
             if (!endpoint) {
                 let endpoints = this.getRouteMiddleware(ctx, method)?.map(c => this.parse(c)) ?? [];
                 endpoints.push(async (c, n) => {
-                    await this.response(c, method);
-                    // return await n();
+                    await this.response(c, method)
                 });
                 endpoint = chain(endpoints);
-                this._endpoints.set(key, endpoint);
+                this._endpoints.set(key, endpoint)
             }
-            return await endpoint(ctx, next);
+            return await endpoint(ctx, next)
         } else if (method === false) {
-            ctx.throwError(403);
+            ctx.throwError(403)
         } else {
-            return await next();
+            return await next()
         }
     }
 
     parse(middleware: Middleware): MiddlewareFn {
-        return (ctx, next) => middleware.invoke(ctx, next);
+        return (ctx, next) => middleware.invoke(ctx, next)
     }
 
     protected async canActivate(ctx: TransportContext) {
@@ -102,8 +101,8 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
             if (!(await lang.some(
                 this.guards.map(guard => () => promisify(guard.canActivate(ctx))),
                 vaild => vaild === false))) {
-                return false;
-            };
+                return false
+            }
         }
         const meta = this.getRouteMetaData(ctx) as DecorDefine<RouteMappingMetadata>;
         if (!meta || !meta.propertyKey) return null;
@@ -112,10 +111,10 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
             if (!(await lang.some(
                 rmeta.guards.map(token => () => promisify(this.factory.resolve(token)?.canActivate(ctx))),
                 vaild => vaild === false))) {
-                return false;
+                return false
             }
         }
-        return meta;
+        return meta
     }
 
     async response(ctx: TransportContext, meta: DecorDefine): Promise<void> {
@@ -131,11 +130,11 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
                 let val = routeUrls[routes.indexOf(pname)];
                 if (val) {
                     has = true;
-                    restParams[pname.substring(1)] = val;
+                    restParams[pname.substring(1)] = val
                 }
             });
             if (has) {
-                ctx.restfulParams = { ...ctx.restfulParams, ...restParams };
+                ctx.restfulParams = { ...ctx.restfulParams, ...restParams }
             }
         }
 
@@ -148,33 +147,33 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
             this.instance);
 
         if (isPromise(result)) {
-            result = await result;
+            result = await result
         } else if (isObservable(result)) {
-            result = await lastValueFrom(result);
+            result = await lastValueFrom(result)
         }
 
         // middleware.
         if (isFunction(result)) {
-            return await result(ctx);
+            return await result(ctx)
         }
 
         if (result instanceof ResultValue) {
-            return await result.sendValue(ctx);
+            return await result.sendValue(ctx)
         }
 
         if (isDefined(result)) {
-            ctx.body = result;
+            ctx.body = result
         } else {
             ctx.body = {};
-            ctx.ok = true;
+            ctx.ok = true
         }
     }
 
     protected getRouteMiddleware(ctx: TransportContext, meta: DecorDefine): Middleware[] {
         if (this.metadata.middlewares?.length || (meta.metadata as RouteMappingMetadata).middlewares?.length) {
-            return [...this.metadata.middlewares || EMPTY, ...(meta.metadata as RouteMappingMetadata).middlewares || EMPTY];
+            return [...this.metadata.middlewares || EMPTY, ...(meta.metadata as RouteMappingMetadata).middlewares || EMPTY]
         }
-        return EMPTY;
+        return EMPTY
     }
 
     protected getRouteMetaData(ctx: TransportContext) {
@@ -182,7 +181,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         if (!this.sortRoutes) {
             this.sortRoutes = this.reflect.class.methodDecors
                 .filter(m => m && isString((m.metadata as RouteMappingMetadata).route))
-                .sort((ra, rb) => ((rb.metadata as RouteMappingMetadata).route || '').length - ((ra.metadata as RouteMappingMetadata).route || '').length);
+                .sort((ra, rb) => ((rb.metadata as RouteMappingMetadata).route || '').length - ((ra.metadata as RouteMappingMetadata).route || '').length)
 
         }
 
@@ -196,24 +195,24 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
                     let idex = uri.indexOf('/:');
                     let url = uri.substring(0, idex);
                     if (url !== subRoute && subRoute.indexOf(url) === 0) {
-                        return true;
+                        return true
                     }
                 }
-                return false;
-            });
+                return false
+            })
         }
-        return meta;
+        return meta
     }
 
     get destroyed() {
-        return this._destroyed;
+        return this._destroyed
     }
 
     destroy(): void | Promise<void> {
         if (!this._destroyed) {
             this._destroyed = true;
             try {
-                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy());
+                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy())
             } finally {
                 this._dsryCbs.clear();
                 this.sortRoutes = null!;
@@ -223,16 +222,16 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
                 const factory = this.factory;
                 this.factory = null!;
 
-                return factory.onDestroy();
+                return factory.onDestroy()
             }
         }
     }
 
     onDestroy(callback?: DestroyCallback): void | Promise<void> {
         if (callback) {
-            this._dsryCbs.add(callback);
+            this._dsryCbs.add(callback)
         } else {
-            return this.destroy();
+            return this.destroy()
         }
     }
 }
@@ -245,16 +244,16 @@ export class DefaultRouteFactory<T = any> extends RouteFactory<T> {
     }
     create(injector: Injector, option?: InvokeOption): RouteRef<T> {
         const factory = injector.get(ReflectiveResolver).resolve(this.reflect, injector, option);
-        return this.routeRef = new RouteMappingRef(factory);
+        return this.routeRef = new RouteMappingRef(factory)
     }
 
     last(): RouteRef<T> | undefined {
-        return this.routeRef;
+        return this.routeRef
     }
 }
 
 export class DefaultRouteFactoryResovler extends RouteFactoryResolver {
     resolve<T>(type: Type<T> | TypeReflect<T>): RouteFactory<T> {
-        return new DefaultRouteFactory<T>(isFunction(type) ? refl.get(type) : type);
+        return new DefaultRouteFactory<T>(isFunction(type) ? refl.get(type) : type)
     }
 }

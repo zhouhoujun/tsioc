@@ -31,9 +31,9 @@ export abstract class TransportServer<TRequest, TResponse, Tx extends TransportC
      */
     get middlewares(): MiddlewareInst<Tx>[] {
         if (!this._middles) {
-            this._middles = [...this.getRegMidderwares() ?? EMPTY];
+            this._middles = [...this.getRegMidderwares() ?? EMPTY]
         }
-        return this._middles;
+        return this._middles
     }
 
     /**
@@ -41,9 +41,9 @@ export abstract class TransportServer<TRequest, TResponse, Tx extends TransportC
      */
     get interceptors(): InterceptorInst<TRequest, TResponse>[] {
         if (!this._interceptors) {
-            this._interceptors = [...this.getRegInterceptors() ?? EMPTY];
+            this._interceptors = [...this.getRegInterceptors() ?? EMPTY]
         }
-        return this._interceptors;
+        return this._interceptors
     }
 
 
@@ -60,12 +60,12 @@ export abstract class TransportServer<TRequest, TResponse, Tx extends TransportC
      */
     usetInterceptor(interceptor: InterceptorInst<TRequest, TResponse>, order?: number): this {
         if (isNumber(order)) {
-            this.interceptors.splice(order, 0, interceptor);
+            this.interceptors.splice(order, 0, interceptor)
         } else {
-            this.interceptors.push(interceptor);
+            this.interceptors.push(interceptor)
         }
         this._chain = null!;
-        return this;
+        return this
     }
     /**
      * middlewares are executed on the transport request object before the
@@ -74,12 +74,12 @@ export abstract class TransportServer<TRequest, TResponse, Tx extends TransportC
      */
     use(middleware: MiddlewareInst<Tx>, order?: number): this {
         if (isNumber(order)) {
-            this.middlewares.splice(order, 0, middleware);
+            this.middlewares.splice(order, 0, middleware)
         } else {
-            this.middlewares.push(middleware);
+            this.middlewares.push(middleware)
         }
         this._chain = null!;
-        return this;
+        return this
     }
 
     /**
@@ -87,9 +87,9 @@ export abstract class TransportServer<TRequest, TResponse, Tx extends TransportC
      */
     chain(): Endpoint<TRequest, TResponse> {
         if (!this._chain) {
-            this._chain = new InterceptorChain(new MiddlewareBackend(this.getBackend(), this.middlewares), this.interceptors);
+            this._chain = new InterceptorChain(new MiddlewareBackend(this.getBackend(), this.middlewares), this.interceptors)
         }
-        return this._chain;
+        return this._chain
     }
 
     /**
@@ -118,11 +118,11 @@ export abstract class TransportServer<TRequest, TResponse, Tx extends TransportC
         const cancel = this.chain().handle(request, ctx)
             .subscribe({
                 complete: () => {
-                    ctx.destroy();
+                    ctx.destroy()
                 }
             });
 
-        this.bindEvent(ctx, cancel);
+        this.bindEvent(ctx, cancel)
     }
 
     protected abstract bindEvent(ctx: Tx, cancel: Subscription): void;
@@ -136,7 +136,7 @@ export abstract class TransportServer<TRequest, TResponse, Tx extends TransportC
      * on dispose.
      */
     async onDispose(): Promise<void> {
-        await this.close();
+        await this.close()
     }
 
 }

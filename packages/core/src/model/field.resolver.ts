@@ -86,7 +86,7 @@ export interface ModelFieldResolver<C = any> {
  */
 export class MissingModelFieldError extends TransportArgumentError {
     constructor(fields: DBPropertyMetadata[], type: Type) {
-        super(`ailed to resolve model class ${object2string(type)} because the following required fields were missing: [ ${fields.map(p => object2string(p)).join(',\n')} ]`);
+        super(`ailed to resolve model class ${object2string(type)} because the following required fields were missing: [ ${fields.map(p => object2string(p)).join(',\n')} ]`)
     }
 }
 
@@ -106,11 +106,11 @@ export function composeFieldResolver<T extends ModelFieldResolver, TP extends DB
             resolvers.some(r => {
                 if (r.canResolve(prop, ctx, fields, target)) {
                     result = r.resolve(prop, ctx, fields, target);
-                    return isDefined(result);
+                    return isDefined(result)
                 }
-                return false;
+                return false
             });
-            return result ?? null;
+            return result ?? null
         }
     }
 }
@@ -136,7 +136,7 @@ const jsonExp = /^(\s|\w)*json(b)?$/;
  * @returns instance of {@link TransportArgumentError}
  */
 export function missingPropPipeError(prop: DBPropertyMetadata, type?: Type) {
-    return new TransportArgumentError(`missing pipe to transform property ${prop.propertyKey} of class ${type}`);
+    return new TransportArgumentError(`missing pipe to transform property ${prop.propertyKey} of class ${type}`)
 }
 
 
@@ -153,7 +153,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>('enum');
                 if (!pipe) throw missingPropPipeError(prop, target)
-                return pipe.transform(value, prop.enum);
+                return pipe.transform(value, prop.enum)
             }
         },
         {
@@ -163,7 +163,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('boolean');
                 if (!pipe) throw missingPropPipeError(prop, target);
-                return pipe.transform(value);
+                return pipe.transform(value)
             }
         },
         {
@@ -173,7 +173,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('int');
                 if (!pipe) throw missingPropPipeError(prop, target);
-                return pipe.transform(value);
+                return pipe.transform(value)
             }
         },
         {
@@ -183,7 +183,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('float');
                 if (!pipe) throw missingPropPipeError(prop, target);
-                return pipe.transform(value, prop.precision);
+                return pipe.transform(value, prop.precision)
             }
         },
         {
@@ -193,7 +193,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('double');
                 if (!pipe) throw missingPropPipeError(prop, target);
-                return pipe.transform(value, prop.precision);
+                return pipe.transform(value, prop.precision)
             }
         },
         {
@@ -203,7 +203,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('number');
                 if (!pipe) throw missingPropPipeError(prop, target);
-                return pipe.transform(value, prop.precision);
+                return pipe.transform(value, prop.precision)
             }
         },
         {
@@ -213,7 +213,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('string');
                 if (!pipe) throw missingPropPipeError(prop, target);
-                return pipe.transform(value, prop.length);
+                return pipe.transform(value, prop.length)
             }
         },
         {
@@ -223,7 +223,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('json');
                 if (!pipe) throw missingPropPipeError(prop, target);
-                return pipe.transform(value);
+                return pipe.transform(value)
             }
         },
         {
@@ -234,18 +234,18 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
                 if (isNil(value)) return null;
                 let pipeName = '';
                 if (dbtype === 'image') {
-                    pipeName = 'image';
+                    pipeName = 'image'
                 } else if (row.test(dbtype)) {
                     pipeName = 'row';
                 } else if (blob.test(dbtype)) {
-                    pipeName = 'blob';
+                    pipeName = 'blob'
                 } else if (clob.test(dbtype)) {
-                    pipeName = 'clob';
+                    pipeName = 'clob'
                 }
 
                 const pipe = ctx.get<PipeTransform>(dbtype) ?? ctx.get<PipeTransform>(pipeName || 'buffer');
                 if (!pipe) throw missingPropPipeError(prop, target);
-                return pipe.transform(value);
+                return pipe.transform(value)
             }
         },
         {
@@ -255,7 +255,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('date');
                 if (!pipe) throw missingPropPipeError(prop, target);
-                return pipe.transform(value);
+                return pipe.transform(value)
             }
         }
     ),
@@ -266,7 +266,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
             if (isNil(value)) return null;
             const pipe = ctx.get<PipeTransform>((prop.provider ?? prop.type)?.name.toLowerCase());
             if (!pipe) throw missingPropPipeError(prop, target);
-            return pipe.transform(value);
+            return pipe.transform(value)
         }
     }
 ];
@@ -277,6 +277,6 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
  * @returns argument error {@link TransportArgumentError}.
  */
 export function missingPropError(type?: Type) {
-    return new TransportArgumentError(`missing modle properties of class ${type}`);
+    return new TransportArgumentError(`missing modle properties of class ${type}`)
 }
 

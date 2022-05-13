@@ -11,19 +11,19 @@ import { Observable, Subject, Subscription } from 'rxjs';
 export abstract class ApplicationEvent {
     private _timestamp: number;
     constructor(private _source: Object) {
-        this._timestamp = Date.now() / 1000;
+        this._timestamp = Date.now() / 1000
     }
     /**
      * event source target.
      */
     getSource(): Object {
-        return this._source;
+        return this._source
     }
     /**
      * get the time in milliseconds when the event occurred.
      */
     getTimestamp(): number {
-        return this._timestamp;
+        return this._timestamp
     }
 }
 

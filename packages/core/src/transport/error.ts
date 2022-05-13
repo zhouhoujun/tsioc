@@ -11,15 +11,15 @@ import { ArgumentError, Execption, isArray } from '@tsdi/ioc';
 export class TransportError extends Execption {
 
     constructor(readonly status: number, message?: string | string[]) {
-        super(isArray(message) ? message.join('\n') : message || '');
+        super(isArray(message) ? message.join('\n') : message || '')
     }
 
     get statusCode(): number {
-        return this.status;
+        return this.status
     }
 
     toString() {
-        return `Transport Error: ${this.status}, ${this.message}`;
+        return `Transport Error: ${this.status}, ${this.message}`
     }
 }
 
@@ -28,7 +28,7 @@ export class TransportError extends Execption {
  */
 export class TransportArgumentError extends ArgumentError {
     constructor(message?: string | string[]) {
-        super(message);
+        super(message)
     }
 }
 

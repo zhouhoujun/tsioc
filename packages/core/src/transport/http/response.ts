@@ -207,7 +207,7 @@ export abstract class HttpResponseBase {
         this.headers = init.headers || new HttpHeaders();
         this.status = init.status !== undefined ? init.status : defaultStatus;
         this._message = init.statusText || defaultStatusText;
-        this.url = init.url || null;
+        this.url = init.url || null
     }
 
 }
@@ -232,7 +232,7 @@ export class HttpHeaderResponse extends HttpResponseBase {
         statusText?: string,
         url?: string,
     } = {}) {
-        super(init);
+        super(init)
     }
 
     override readonly type: HttpEventType.ResponseHeader = HttpEventType.ResponseHeader;
@@ -249,8 +249,8 @@ export class HttpHeaderResponse extends HttpResponseBase {
             headers: update.headers || this.headers,
             status: update.status !== undefined ? update.status : this.status,
             statusText: update.statusText || this.statusText,
-            url: update.url || this.url || undefined,
-        });
+            url: update.url || this.url || undefined
+        })
     }
 }
 
@@ -279,8 +279,8 @@ export class HttpResponse<T = any> extends HttpResponseBase {
         statusText?: string;
         url?: string;
     } = {}) {
-        super(init);
-        this.body = init.body !== undefined ? init.body : null!;
+        super(init)
+        this.body = init.body !== undefined ? init.body : null!
     }
 
     override readonly type: HttpEventType.Response = HttpEventType.Response;
@@ -307,8 +307,8 @@ export class HttpResponse<T = any> extends HttpResponseBase {
             headers: update.headers || this.headers,
             status: (update.status !== undefined) ? update.status : this.status,
             statusText: update.statusText || this.statusText,
-            url: update.url || this.url || undefined,
-        });
+            url: update.url || this.url || undefined
+        })
     }
 }
 
@@ -339,16 +339,16 @@ export class HttpErrorResponse extends HttpResponseBase implements Error {
         url?: string;
     }) {
         // Initialize with a default status of 0 / Unknown Error.
-        super(init, 0, 'Unknown Error');
+        super(init, 0, 'Unknown Error')
 
         // If the response was successful, then this was a parse error. Otherwise, it was
         // a protocol-level failure of some sort. Either the request failed in transit
         // or the server returned an unsuccessful status code.
         if (this.status >= 200 && this.status < 300) {
-            this.message = `Http failure during parsing for ${init.url || '(unknown url)'}`;
+            this.message = `Http failure during parsing for ${init.url || '(unknown url)'}`
         } else {
-            this.message = `Http failure response for ${init.url || '(unknown url)'}: ${init.status} ${init.statusText}`;
+            this.message = `Http failure response for ${init.url || '(unknown url)'}: ${init.status} ${init.statusText}`
         }
-        this.error = init.error || null;
+        this.error = init.error || null
     }
 }

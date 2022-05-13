@@ -21,17 +21,17 @@ const BOOT_DEFAULTA_PROVIDERS: ProviderType[] = [
 export class BootApplication extends Application<BootApplicationContext> {
 
     constructor(protected target: Type | BootApplicationOption, protected loader?: ModuleLoader) {
-        super(target, loader);
+        super(target, loader)
     }
 
     protected override getDefaultProviders(): ProviderType[] {
-        return BOOT_DEFAULTA_PROVIDERS;
+        return BOOT_DEFAULTA_PROVIDERS
     }
 
     protected override initRoot() {
         this.root.register(DefaultConfigureManager, ConfigureMergerImpl);
         super.initRoot();
-        this.root.setValue(BootApplication, this);
+        this.root.setValue(BootApplication, this)
     }
 
     protected async prepareContext(ctx: BootApplicationContext): Promise<void> {
@@ -41,37 +41,37 @@ export class BootApplication extends Application<BootApplicationContext> {
         let config = mgr.getConfig();
 
         if (config.deps && config.deps.length) {
-            await injector.load(config.deps);
+            await injector.load(config.deps)
         }
 
         if (config.providers && config.providers.length) {
-            injector.inject(config.providers);
+            injector.inject(config.providers)
         }
 
         if (baseURL) {
-            config.baseURL = baseURL;
+            config.baseURL = baseURL
         } else if (config.baseURL) {
-            injector.setValue(PROCESS_ROOT, config.baseURL);
+            injector.setValue(PROCESS_ROOT, config.baseURL)
         }
 
         if (injector.moduleReflect.annotation?.debug) {
-            config.debug = injector.moduleReflect.annotation.debug;
+            config.debug = injector.moduleReflect.annotation.debug
         }
 
         injector.setValue(CONFIGURATION, config);
 
         if (config.logConfig) {
-            injector.import(LoggerModule.withOptions(config.logConfig, config.debug));
+            injector.import(LoggerModule.withOptions(config.logConfig, config.debug))
         }
 
-        await super.prepareContext(ctx);
+        await super.prepareContext(ctx)
     }
 
     /**
     * run application.
     *
     * @static
-    * @param {BootApplicationOption<M>)} target
+    * @param {BootApplicationOption<M>} target
     * @returns {Promise<ApplicationContext<M>>}
     */
     static run(target: BootApplicationOption): Promise<BootApplicationContext>
@@ -85,7 +85,7 @@ export class BootApplication extends Application<BootApplicationContext> {
      */
     static run(target: Type, option?: BootEnvironmentOption): Promise<BootApplicationContext>;
     static override run(target: Type | BootApplicationOption, option?: BootEnvironmentOption): Promise<BootApplicationContext> {
-        return new BootApplication(option ? { module: target, ...option } as BootApplicationOption : target).run();
+        return new BootApplication(option ? { module: target, ...option } as BootApplicationOption : target).run()
     }
 }
 

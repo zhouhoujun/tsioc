@@ -20,13 +20,13 @@ export const Transactional: Transactional = createDecorator<TransactionalMetadat
         method: [
             (ctx, next) => {
                 ctx.reflect.class.setMethodResolvers(ctx.propertyKey, [TransactionResolver]);
-                next();
+                next()
             }
         ]
     },
     appendProps:(meta)=>{
         if(!meta.propagation){
-            meta.propagation = 'REQUIRED';
+            meta.propagation = 'REQUIRED'
         }
     }
 });

@@ -17,24 +17,24 @@ import * as fs from 'node:fs';
  
      constructor(@Inject(PROCESS_ROOT, { nullable: true }) private baseURL: string) {
          if (!baseURL) {
-             this.baseURL = runMainPath();
+             this.baseURL = runMainPath()
          }
      }
  
      async load<T extends ApplicationConfiguration>(uri?: string): Promise<T> {
          if (uri) {
              if (fs.existsSync(uri)) {
-                 return await import(uri) as T;
+                 return await import(uri) as T
              } else if (fs.existsSync(path.join(this.baseURL, uri))) {
-                 return await import(path.join(this.baseURL, uri)) as T;
+                 return await import(path.join(this.baseURL, uri)) as T
              } else {
                  console.log(`config file: ${uri} not exists.`)
-                 return null!;
+                 return null!
              }
          } else {
              const cfgpath = path.join(this.baseURL, './config');
              const file = ['.js', '.ts', '.json'].map(ext => cfgpath + ext).find(f => fs.existsSync(f))!;
-             return file ? await import(file) as T : null!;
+             return file ? await import(file) as T : null!
          }
      }
  }

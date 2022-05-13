@@ -12,18 +12,18 @@ export class DatePipe implements PipeTransform<Date> {
         let date: Date | null = null;
         if (isString(value) || isNumber(value)) {
             try {
-                date = new Date(value);
+                date = new Date(value)
             } catch {
-                throw invalidPipeArgumentError(this, value);
+                throw invalidPipeArgumentError(this, value)
             }
         } else if (isDate(value)) {
-            date = value;
+            date = value
         }
 
         if (isDate(date)) {
-            return date as Date;
+            return date as Date
         } else {
-            throw invalidPipeArgumentError(this, value);
+            throw invalidPipeArgumentError(this, value)
         }
     }
 }

@@ -31,36 +31,36 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
     abstract get resolvers(): ModelFieldResolver[];
 
     canResolve(parameter: Parameter, ctx: TransportContext): boolean {
-        return this.isModel(parameter.provider as Type ?? parameter.type) && this.hasFields(parameter, ctx);
+        return this.isModel(parameter.provider as Type ?? parameter.type) && this.hasFields(parameter, ctx)
     }
 
     resolve<T>(parameter: Parameter<T>, ctx: TransportContext): T {
         const classType = (parameter.provider ?? parameter.type) as Type;
         const fields = this.getFields(parameter, ctx);
         if (!fields) {
-            throw missingPropError(classType);
+            throw missingPropError(classType)
         }
         if (parameter.mutil && isArray(fields)) {
-            return fields.map(arg => this.resolveModel(classType, ctx, arg)) as any;
+            return fields.map(arg => this.resolveModel(classType, ctx, arg)) as any
         }
-        return this.resolveModel(classType, ctx, fields);
+        return this.resolveModel(classType, ctx, fields)
     }
 
     canResolveModel(modelType: Type, ctx: TransportContext, args: Record<string, any>, nullable?: boolean): boolean {
         return nullable || !this.getPropertyMeta(modelType).some(p => {
             if (this.isModel(p.provider ?? p.type)) {
-                return !this.canResolveModel(p.provider ?? p.type, ctx, args[p.propertyKey], p.nullable);
+                return !this.canResolveModel(p.provider ?? p.type, ctx, args[p.propertyKey], p.nullable)
             }
-            return !this.fieldResolver.canResolve(p, ctx, args, modelType);
+            return !this.fieldResolver.canResolve(p, ctx, args, modelType)
         })
     }
 
     resolveModel(modelType: Type, ctx: TransportContext, fields: Record<string, any>, nullable?: boolean): any {
         if (nullable && (!fields || Object.keys(fields).length < 1)) {
-            return null;
+            return null
         }
         if (!fields) {
-            throw missingPropError(modelType);
+            throw missingPropError(modelType)
         }
 
         const props = this.getPropertyMeta(modelType);
@@ -68,26 +68,26 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
             this.canResolveModel(p.provider ?? p.type, ctx, fields[p.propertyKey], p.nullable)
             : this.fieldResolver.canResolve(p, ctx, fields, modelType)));
         if (missings.length) {
-            throw new MissingModelFieldError(missings, modelType);
+            throw new MissingModelFieldError(missings, modelType)
         }
 
         const model = this.createInstance(modelType);
         props.forEach(prop => {
             let val: any;
             if (this.isModel(prop.provider ?? prop.type)) {
-                val = this.resolveModel(prop.provider ?? prop.type, ctx, fields[prop.propertyKey], prop.nullable);
+                val = this.resolveModel(prop.provider ?? prop.type, ctx, fields[prop.propertyKey], prop.nullable)
             } else {
-                val = this.fieldResolver.resolve(prop, ctx, fields, modelType);
+                val = this.fieldResolver.resolve(prop, ctx, fields, modelType)
             }
             if (isDefined(val)) {
-                model[prop.propertyKey] = val;
+                model[prop.propertyKey] = val
             }
         });
-        return model;
+        return model
     }
 
     protected createInstance(model: Type) {
-        return new model();
+        return new model()
     }
 
     private _resolver!: ModelFieldResolver;
@@ -98,9 +98,9 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
                     || (fields && isDefined(fields[p.propertyKey] ?? p.default))
                     || ((ctx as TransportContext).isUpdate?.() === false && p.primary === true),
                 ...this.resolvers ?? EMPTY,
-                ...MODEL_FIELD_RESOLVERS);
+                ...MODEL_FIELD_RESOLVERS)
         }
-        return this._resolver;
+        return this._resolver
     }
 
     /**
@@ -135,29 +135,29 @@ export const MODEL_RESOLVERS = tokenId<ModelArgumentResolver[]>('MODEL_RESOLVERS
 class ModelResolver<C = any> extends AbstractModelArgumentResolver<C> {
 
     constructor(private option: ModelResolveOption<C>) {
-        super();
+        super()
     }
 
     protected override createInstance(model: Type) {
-        return this.option.createInstance ? this.option.createInstance(model) : super.createInstance(model);
+        return this.option.createInstance ? this.option.createInstance(model) : super.createInstance(model)
     }
 
     get resolvers(): ModelFieldResolver<C>[] {
-        return this.option.fieldResolvers ?? EMPTY;
+        return this.option.fieldResolvers ?? EMPTY
     }
     protected isModel(type: Type<any>): boolean {
-        return this.option.isModel(type);
+        return this.option.isModel(type)
     }
     protected getPropertyMeta(type: Type<any>): DBPropertyMetadata<any>[] {
-        return this.option.getPropertyMeta(type);
+        return this.option.getPropertyMeta(type)
     }
 
     protected hasFields(parameter: Parameter<any>, ctx: TransportContext): boolean {
-        return this.option.hasField ? this.option.hasField(parameter, ctx) : !!this.getFields(parameter, ctx);
+        return this.option.hasField ? this.option.hasField(parameter, ctx) : !!this.getFields(parameter, ctx)
     }
 
     protected getFields(parameter: Parameter<any>, ctx: TransportContext): Record<string, any> {
-        return this.option.getFields(parameter, ctx);
+        return this.option.getFields(parameter, ctx)
     }
 }
 
@@ -199,5 +199,5 @@ export interface ModelResolveOption<C> {
  * @returns model resolver instance of {@link ModelArgumentResolver}.
  */
 export function createModelResolver<C = any>(option: ModelResolveOption<C>): ModelArgumentResolver<C> {
-    return new ModelResolver<C>(option);
+    return new ModelResolver<C>(option)
 }

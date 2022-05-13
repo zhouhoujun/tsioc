@@ -14,7 +14,7 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeContext> {
 
     override handle(ctx: RuntimeContext, next?: () => void): void {
         if (!ctx.instance) {
-            super.handle(ctx, next);
+            super.handle(ctx, next)
         }
     }
 
@@ -28,6 +28,6 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeContext> {
             ra.RuntimePropScope,
             ra.RuntimeMthScope,
             ra.RuntimeAnnoScope
-        );
+        )
     }
 }

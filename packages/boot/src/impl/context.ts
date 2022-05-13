@@ -10,7 +10,7 @@ export class BootApplicationContextImpl extends DefaultApplicationContext implem
      * configuration merge metadata config and all application config.
      */
     getConfiguration(): ApplicationConfiguration {
-        return this.injector.get(CONFIGURATION);
+        return this.injector.get(CONFIGURATION)
     }
 
     /**
@@ -19,7 +19,7 @@ export class BootApplicationContextImpl extends DefaultApplicationContext implem
      * @returns {ConfigureManager}
      */
     getConfigureManager(): ConfigureManager {
-        return this.injector.get(ConfigureManager);
+        return this.injector.get(ConfigureManager)
     }
 }
 
@@ -31,10 +31,10 @@ export class BootApplicationFactory extends ApplicationFactory {
 
     create<T>(root: ModuleRef<T>, option?: BootEnvironmentOption): BootApplicationContext {
         if (root.moduleReflect.annotation?.baseURL) {
-            root.setValue(PROCESS_ROOT, root.moduleReflect.annotation.baseURL);
+            root.setValue(PROCESS_ROOT, root.moduleReflect.annotation.baseURL)
         }
         const ctx = this.createInstance(root, option);
-        return ctx;
+        return ctx
     }
 
     initOption<T>(ctx: BootApplicationContext, option?: BootEnvironmentOption) {
@@ -43,16 +43,16 @@ export class BootApplicationFactory extends ApplicationFactory {
         const mgr = ctx.getConfigureManager();
         if (option.configures && option.configures.length) {
             option.configures.forEach(cfg => {
-                mgr.useConfiguration(cfg);
-            });
+                mgr.useConfiguration(cfg)
+            })
         } else {
             // load default config.
-            mgr.useConfiguration();
+            mgr.useConfiguration()
         }
     }
 
     protected createInstance(inj: ModuleRef, option?: InvokeArguments) {
-        return new BootApplicationContextImpl(inj, option);
+        return new BootApplicationContextImpl(inj, option)
     }
 }
 

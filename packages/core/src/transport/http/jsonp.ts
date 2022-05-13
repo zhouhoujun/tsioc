@@ -61,7 +61,7 @@ export class JsonpClientBackend implements HttpBackend {
      * Get the name of the next callback method, by incrementing the global `nextRequestId`.
      */
     private nextCallback(): string {
-        return `tsioc_jsonp_callback_${nextRequestId++}`;
+        return `tsioc_jsonp_callback_${nextRequestId++}`
     }
 
     /**
@@ -74,9 +74,9 @@ export class JsonpClientBackend implements HttpBackend {
         // Firstly, check both the method and response type. If either doesn't match
         // then the request was improperly routed here and cannot be handled.
         if (req.method !== 'JSONP') {
-            throw new Error(JSONP_ERR_WRONG_METHOD);
+            throw new Error(JSONP_ERR_WRONG_METHOD)
         } else if (req.responseType !== 'json') {
-            throw new Error(JSONP_ERR_WRONG_RESPONSE_TYPE);
+            throw new Error(JSONP_ERR_WRONG_RESPONSE_TYPE)
         }
 
         // Everything else happens inside the Observable boundary.
@@ -118,7 +118,7 @@ export class JsonpClientBackend implements HttpBackend {
 
                 // Set state to indicate data was received.
                 body = data;
-                finished = true;
+                finished = true
             };
 
             // cleanup() is a utility closure that removes the <script> from the page and
@@ -127,12 +127,12 @@ export class JsonpClientBackend implements HttpBackend {
             const cleanup = () => {
                 // Remove the <script> tag if it's still on the page.
                 if (node.parentNode) {
-                    node.parentNode.removeChild(node);
+                    node.parentNode.removeChild(node)
                 }
 
                 // Remove the response callback from the callbackMap (window object in the
                 // browser).
-                delete this.callbackMap[callback];
+                delete this.callbackMap[callback]
             };
 
             // onLoad() is the success callback which runs after the response callback
@@ -142,7 +142,7 @@ export class JsonpClientBackend implements HttpBackend {
             const onLoad = (event: Event) => {
                 // Do nothing if the request has been cancelled.
                 if (cancelled) {
-                    return;
+                    return
                 }
 
                 // We wrap it in an extra Promise, to ensure the microtask
@@ -162,7 +162,7 @@ export class JsonpClientBackend implements HttpBackend {
                             statusText: 'JSONP Error',
                             error: new Error(JSONP_ERR_NO_CALLBACK),
                         }));
-                        return;
+                        return
                     }
 
                     // Success. body either contains the response body or null if none was
@@ -175,7 +175,7 @@ export class JsonpClientBackend implements HttpBackend {
                     }));
 
                     // Complete the stream, the response is over.
-                    observer.complete();
+                    observer.complete()
                 });
             };
 
@@ -185,7 +185,7 @@ export class JsonpClientBackend implements HttpBackend {
             const onError: any = (error: Error) => {
                 // If the request was already cancelled, no need to emit anything.
                 if (cancelled) {
-                    return;
+                    return
                 }
                 cleanup();
 
@@ -195,7 +195,7 @@ export class JsonpClientBackend implements HttpBackend {
                     status: 0,
                     statusText: 'JSONP Error',
                     url,
-                }));
+                }))
             };
 
             // Subscribe to both the success (load) and error events on the <script> tag,
@@ -217,9 +217,9 @@ export class JsonpClientBackend implements HttpBackend {
                 node.removeEventListener('error', onError);
 
                 // And finally, clean up the page.
-                cleanup();
-            };
-        });
+                cleanup()
+            }
+        })
     }
 }
 
@@ -244,9 +244,9 @@ export class JsonpInterceptor {
      */
     intercept(req: HttpRequest<any>, next: HttpHandler, context: InvocationContext): Observable<HttpEvent<any>> {
         if (req.method === 'JSONP') {
-            return this.jsonp.handle(req as HttpRequest<never>, context);
+            return this.jsonp.handle(req as HttpRequest<never>, context)
         }
         // Fall through for normal HTTP requests.
-        return next.handle(req, context);
+        return next.handle(req, context)
     }
 }

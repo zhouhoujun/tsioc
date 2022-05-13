@@ -39,7 +39,7 @@ export class HttpClientXsrfModule {
             module: HttpClientXsrfModule,
             providers: [
                 { provide: HttpXsrfInterceptor, useClass: NoopInterceptor },
-            ],
+            ]
         };
     }
 
@@ -60,7 +60,7 @@ export class HttpClientXsrfModule {
             providers: [
                 options.cookieName ? { provide: XSRF_COOKIE_NAME, useValue: options.cookieName } : [],
                 options.headerName ? { provide: XSRF_HEADER_NAME, useValue: options.headerName } : [],
-            ],
+            ]
         };
     }
 }
@@ -115,7 +115,7 @@ export class HttpClientJsonpModule {
 
 export function jsonpCallbackContext(): Object {
     if (typeof window === type_obj) {
-        return window;
+        return window
     }
-    return {};
+    return {}
 }

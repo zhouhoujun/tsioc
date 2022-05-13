@@ -18,11 +18,11 @@ export class ParseObjectIdPipe implements PipeTransform {
             throw invalidPipeArgumentError(this, value, 'can not found module type ObjectID.')
         }
         if (isString(value)) {
-            return new this.type(value);
+            return new this.type(value)
         } else if (value instanceof this.type) {
-            return value;
+            return value
         }
-        throw invalidPipeArgumentError(this, value);
+        throw invalidPipeArgumentError(this, value)
     }
 
 }

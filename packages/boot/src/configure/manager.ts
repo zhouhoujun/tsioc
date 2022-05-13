@@ -21,51 +21,51 @@ export class DefaultConfigureManager extends ConfigureManager {
      * @param {string} [baseURL]
      */
     constructor(readonly injector: Injector) {
-        super();
-        this.configs = [];
+        super()
+        this.configs = []
     }
 
     get baseURL() {
-        return this.injector.get(PROCESS_ROOT);
+        return this.injector.get(PROCESS_ROOT)
     }
 
     private _loader: ConfigureLoader | undefined;
     get configLoader() {
         if (this._loader === undefined) {
-            this._loader = this.injector.get(ConfigureLoader) ?? null;
+            this._loader = this.injector.get(ConfigureLoader) ?? null
         }
-        return this._loader;
+        return this._loader
     }
 
     useConfiguration(config?: string | ApplicationConfiguration): this {
         if (isUndefined(config)) {
-            config = '';
+            config = ''
         }
         if (this.configs.indexOf(config) >= 0) return this;
         // clean cached config.
         this.config = undefined;
         if (isPlainObject(config) && config.baseURL && !this.injector.has(PROCESS_ROOT)) {
-            this.injector.setValue(PROCESS_ROOT, config.baseURL);
+            this.injector.setValue(PROCESS_ROOT, config.baseURL)
         }
         this.configs.push(config);
 
-        return this;
+        return this
     }
 
     getConfig<T extends ApplicationConfiguration>(): T {
-        return this.config as T;
+        return this.config as T
     }
 
     async load(): Promise<void> {
         if (this.config) {
-            return;
+            return
         }
         let config: ApplicationConfiguration = this.config = { ...this.injector.get(DEFAULT_CONFIG) };
         let exts = await Promise.all(this.configs.map(cfg => {
             if (isString(cfg)) {
-                return this.loadConfig(cfg);
+                return this.loadConfig(cfg)
             } else {
-                return cfg;
+                return cfg
             }
         }));
         const merger = this.injector.get(ConfigureMerger);
@@ -73,14 +73,14 @@ export class DefaultConfigureManager extends ConfigureManager {
             if (exCfg) {
                 exCfg = isMetadataObject((exCfg as any)['default']) ? (exCfg as any)['default'] : exCfg;
                 if (merger) {
-                    config = merger.merge(config, exCfg);
+                    config = merger.merge(config, exCfg)
                 } else {
                     for (let n in exCfg) {
-                        config[n] = exCfg[n];
+                        config[n] = exCfg[n]
                     }
                 }
             }
-        });
+        })
     }
 
     /**
@@ -92,12 +92,12 @@ export class DefaultConfigureManager extends ConfigureManager {
      */
     protected async loadConfig(src: string): Promise<ApplicationConfiguration> {
         if (this.configLoader) {
-            return await this.configLoader.load(src);
+            return await this.configLoader.load(src)
         } else if (src) {
             let cfg = await this.injector.getLoader().load([src])
-            return lang.first(cfg) as ApplicationConfiguration;
+            return lang.first(cfg) as ApplicationConfiguration
         } else {
-            return null!;
+            return null!
         }
     }
 }
@@ -112,25 +112,26 @@ export class ConfigureMergerImpl extends ConfigureMerger {
             switch (n) {
                 case 'setting':
                     target.setting = { ...target.setting, ...source.setting };
-                    break;
+                    break
                 case 'deps':
                     this.mergeArray(target, n, source.deps);
-                    break;
+                    break
                 case 'providers':
                     this.mergeArray(target, n, source.providers);
-                    break;
+                    break
                 case 'models':
                     this.mergeArray(target, n, source.models);
-                    break;
+                    break
                 case 'repositories':
                     this.mergeArray(target, n, source.repositories);
-                    break;
+                    break
                 default:
                     target[n] = source[n];
+                    break
             }
         }
 
-        return target;
+        return target
     }
 
     protected mergeArray(target: ApplicationConfiguration, name: string, source?: any[]) {
@@ -138,11 +139,11 @@ export class ConfigureMergerImpl extends ConfigureMerger {
         if (target[name]) {
             source.forEach(d => {
                 if ((target[name].indexOf(d) || 0) < 0) {
-                    target[name]?.push(d);
+                    target[name]?.push(d)
                 }
             })
         } else {
-            target[name] = [...source];
+            target[name] = [...source]
         }
     }
 }

@@ -15,8 +15,8 @@ export class ParseStringPipe implements PipeTransform<string> {
 
         const str = String(value);
         if (length && str.length > length) {
-            throw invalidPipeArgumentError(this, value, 'more than max lenght:' + length);
+            throw invalidPipeArgumentError(this, value, 'more than max lenght:' + length)
         }
-        return str;
+        return str
     }
 }

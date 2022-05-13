@@ -28,9 +28,9 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> {
      */
     get interceptors(): InterceptorInst<TRequest, TResponse>[] {
         if (!this._interceptors) {
-            this._interceptors = [...this.getRegInterceptors() ?? EMPTY];
+            this._interceptors = [...this.getRegInterceptors() ?? EMPTY]
         }
-        return this._interceptors;
+        return this._interceptors
     }
 
     /**
@@ -41,12 +41,12 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> {
      */
     use(interceptor: InterceptorInst<TRequest, TResponse>, order?: number): this {
         if (isNumber(order)) {
-            this.interceptors.splice(order, 0, interceptor);
+            this.interceptors.splice(order, 0, interceptor)
         } else {
-            this.interceptors.push(interceptor);
+            this.interceptors.push(interceptor)
         }
         this._chain = null!;
-        return this;
+        return this
     }
 
     /**
@@ -54,9 +54,9 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> {
      */
     chain(): Endpoint<TRequest, TResponse> {
         if (!this._chain) {
-            this._chain = new InterceptorChain(this.getBackend(), this.interceptors);
+            this._chain = new InterceptorChain(this.getBackend(), this.interceptors)
         }
-        return this._chain;
+        return this._chain
     }
 
     /**
@@ -73,22 +73,22 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> {
     send(req: TRequest): Observable<TResponse>;
     send(req: TRequest | string, options?: TOption): Observable<TResponse> {
         if (isNil(req)) {
-            return throwError(() => new ArgumentError('Invalid message'));
+            return throwError(() => new ArgumentError('Invalid message'))
         }
         let ctx = this.createContext();
         return defer(async () => {
             await this.connect();
-            return this.buildRequest(ctx, req, options);
+            return this.buildRequest(ctx, req, options)
         }).pipe(
             concatMap((req) => this.chain().handle(req, ctx)),
             catchError((err, caught) => {
                 this.logger.error(err);
-                return throwError(() => err);
+                return throwError(() => err)
             }),
             finalize(() => {
-                ctx.destroy();
+                ctx.destroy()
             })
-        );
+        )
     }
 
     /**

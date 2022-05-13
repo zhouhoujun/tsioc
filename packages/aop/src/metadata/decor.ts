@@ -1,6 +1,6 @@
 import { isString, ClassType, ClassMetadata, DecoratorOption, createDecorator, EMPTY_OBJ, ActionTypes, lang, ReflectiveResolver } from '@tsdi/ioc';
-import { Advisor } from '../Advisor';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AspectMetadata, AroundMetadata, PointcutAnnotation, AdviceTypes } from './meta';
+import { Advisor } from '../Advisor';
 import { AopReflect } from './ref';
 
 
@@ -43,7 +43,7 @@ export const Aspect: Aspect = createDecorator<AspectMetadata>('Aspect', {
     reflect: {
         class: (ctx, next) => {
             (ctx.reflect as AopReflect).aspect = ctx.metadata;
-            return next();
+            return next()
         }
     },
     design: {
@@ -51,17 +51,18 @@ export const Aspect: Aspect = createDecorator<AspectMetadata>('Aspect', {
             let advisor = ctx.injector.platform().getActionValue(Advisor);
             if (advisor) {
                 const { type, injector } = ctx;
-                
+
                 const factory = injector.get(ReflectiveResolver).resolve(type, injector);
-                injector.onDestroy(()=> {
+                injector.onDestroy(() => {
                     advisor.remove(factory);
                     lang.cleanObj(factory);
                 });
-                advisor.add(factory);
+                advisor.add(factory)
             } else {
-                console.error('aop module not registered. make sure register before', ctx.type);
+                console.error('aop module not registered. make sure register before', ctx.type)
             }
-            next();
+
+            next()
         }
     },
     props: (annotation: string, within?: ClassType | ClassType[], append?: ClassMetadata) =>
@@ -94,7 +95,7 @@ export const NonePointcut: NonePointcut = createDecorator<ClassMetadata>('NonePo
     reflect: {
         class: (ctx, next) => {
             (ctx.reflect as AopReflect).nonePointcut = true;
-            return next();
+            return next()
         }
     }
 });
@@ -196,18 +197,18 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
         reflect: {
             method: (ctx, next) => {
                 if (!(ctx.reflect as AopReflect).advices) {
-                    (ctx.reflect as AopReflect).advices = [];
+                    (ctx.reflect as AopReflect).advices = []
                 }
                 (ctx.reflect as AopReflect).advices.push({ ...ctx.metadata, propertyKey: ctx.propertyKey });
-                return next();
+                return next()
             }
         },
         appendProps: (metadata) => {
             if (append) {
-                append(metadata);
+                append(metadata)
             }
             metadata.adviceName = adviceName as AdviceTypes;
-            return metadata;
+            return metadata
         }
     });
 }
@@ -635,9 +636,9 @@ export const AfterReturning: AfterReturning =
     createAdviceDecorator<AfterReturningMetadata>('AfterReturning', {
         props: (pointcut: string | RegExp, returning: string, annotation?: string | PointcutAnnotation) => {
             if (isString(annotation)) {
-                return { pointcut, returning, annotationName: annotation };
+                return { pointcut, returning, annotationName: annotation }
             } else {
-                return { pointcut, ...annotation, returning };
+                return { pointcut, ...annotation, returning }
             }
         }
     });
@@ -721,9 +722,9 @@ export const AfterThrowing: AfterThrowing =
     createAdviceDecorator<AfterThrowingMetadata>('AfterThrowing', {
         props: (pointcut: string | RegExp, throwing: string, annotation?: string | PointcutAnnotation) => {
             if (isString(annotation)) {
-                return { pointcut, throwing, annotationName: annotation };
+                return { pointcut, throwing, annotationName: annotation }
             } else {
-                return { pointcut, ...annotation, throwing };
+                return { pointcut, ...annotation, throwing }
             }
         }
     });

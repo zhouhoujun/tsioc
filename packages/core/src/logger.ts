@@ -24,7 +24,7 @@ export class LoggerModule {
     static withOptions(config: LogConfigure | null, debug?: boolean): ModuleWithProviders<LoggerModule> {
         const providers: ProviderType[] = config ? [{ provide: LogConfigure, useValue: config }] : [];
         if(debug) {
-            providers.push(DebugLogAspect);
+            providers.push(DebugLogAspect)
         }
 
         return {

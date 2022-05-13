@@ -22,14 +22,14 @@ export class DesignClassScope extends IocRegScope<DesignContext> implements Acti
             TypeProviderAction,
             RegClassAction,
             DesignClassDecorHandle
-        );
+        )
     }
 }
 
 
 export const RegClassAction = function (ctx: DesignContext, next: () => void): void {
     regProvider(ctx.getRecords(), ctx.platform, ctx.injector, ctx.type, ctx.provide || ctx.type, ctx.singleton || ctx.reflect.singleton === true, ctx.reflect.static);
-    next();
+    next()
 };
 
 function regProvider(records: Map<Token, FactoryRecord>, platform: Platform, injector: Injector, type: Type, provide: Token, singleton: boolean, isStatic?: boolean) {
@@ -66,53 +66,53 @@ function regProvider(records: Map<Token, FactoryRecord>, platform: Platform, inj
             platform.getAction(RuntimeLifeScope).register(ctx);
             const instance = ctx.instance;
             if (singleton) {
-                recd.value = instance;
+                recd.value = instance
             }
             // clean context
             cleanObj(ctx);
-            return instance;
+            return instance
         },
         isStatic,
         fnType: FnType.Inj,
         unreg: () => platform.clearTypeProvider(type)
     } as FactoryRecord;
-    records.set(provide, recd);
+    records.set(provide, recd)
 }
 
 export const BeforeAnnoDecorHandle = function (ctx: DesignContext, next: () => void) {
     ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        runChain(d.getDesignHandle(Decors.beforeAnnoation), ctx);
+        runChain(d.getDesignHandle(Decors.beforeAnnoation), ctx)
     });
 
-    return next();
+    return next()
 }
 
 
 export const DesignClassDecorHandle = function (ctx: DesignContext, next: () => void) {
     ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        runChain(d.getDesignHandle(Decors.CLASS), ctx);
+        runChain(d.getDesignHandle(Decors.CLASS), ctx)
     });
 
-    return next();
+    return next()
 }
 
 export class DesignPropScope extends IocRegScope<DesignContext> implements ActionSetup {
     setup() {
         this.use(
             DesignPropDecorScope
-        );
+        )
     }
 }
 
 export const DesignPropDecorScope = function (ctx: DesignContext, next: () => void) {
     ctx.reflect.class.propDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        runChain(d.getDesignHandle(Decors.property), ctx);
+        runChain(d.getDesignHandle(Decors.property), ctx)
     });
 
-    return next();
+    return next()
 }
 
 
@@ -129,33 +129,33 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
     if (regpdr && regpdr !== type) {
         ctx.reflect.class.provides.forEach(provide => {
             if (provide != regpdr && regProvides !== false) {
-                injector.inject({ provide, useExisting: regpdr });
+                injector.inject({ provide, useExisting: regpdr })
             }
-        });
+        })
     } else {
         ctx.reflect.class.provides.forEach(provide => {
-            regProvides !== false && injector.inject({ provide, useClass: type });
-        });
+            regProvides !== false && injector.inject({ provide, useClass: type })
+        })
     }
 
-    next();
+    next()
 };
 
 export class DesignMthScope extends IocRegScope<DesignContext> implements ActionSetup {
     setup() {
         this.use(
             DesignMthDecorScope
-        );
+        )
     }
 }
 
 export const DesignMthDecorScope = function (ctx: DesignContext, next: () => void) {
     ctx.reflect.class.methodDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        runChain(d.getDesignHandle(Decors.method), ctx);
+        runChain(d.getDesignHandle(Decors.method), ctx)
     });
 
-    return next();
+    return next()
 }
 
 
@@ -167,8 +167,8 @@ export const DesignMthDecorScope = function (ctx: DesignContext, next: () => voi
  * @extends {IocDesignAction}
  */
 export const IocAutorunAction = function (ctx: DesignContext, next: () => void) {
-    if (ctx.reflect.class.runnables.length < 1 || !ctx.reflect.class.runnables.some(c=> c.auto)) {
-        return next();
+    if (ctx.reflect.class.runnables.length < 1 || !ctx.reflect.class.runnables.some(c => c.auto)) {
+        return next()
     }
 
     const injector = ctx.injector;
@@ -177,34 +177,34 @@ export const IocAutorunAction = function (ctx: DesignContext, next: () => void) 
     ctx.reflect.class.runnables.forEach(meta => {
         if (meta && meta.method && meta.auto) {
             if (isFunction(instance[meta.method])) {
-                injector.invoke(instance, meta.method);
+                injector.invoke(instance, meta.method)
             }
         }
     });
-    return next();
+    return next()
 };
 
 export class AnnoScope extends IocRegScope<DesignContext> implements ActionSetup {
 
     setup() {
-        this.use(AnnoDecorScope, AfterAnnoDecorScope, IocAutorunAction);
+        this.use(AnnoDecorScope, AfterAnnoDecorScope, IocAutorunAction)
     }
 }
 
 export const AnnoDecorScope = function (ctx: DesignContext, next: () => void) {
     ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        runChain(d.getDesignHandle(Decors.annoation), ctx);
+        runChain(d.getDesignHandle(Decors.annoation), ctx)
     });
 
-    return next();
+    return next()
 }
 
 export const AfterAnnoDecorScope = function (ctx: DesignContext, next: () => void) {
     ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        runChain(d.getDesignHandle(Decors.afterAnnoation), ctx);
+        runChain(d.getDesignHandle(Decors.afterAnnoation), ctx)
     });
 
-    return next();
+    return next()
 }

@@ -48,45 +48,45 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         option.providers && this.inject(option.providers);
         this.processInjectorType(platfrom, this._type, dedupStack, this.moduleReflect);
         option.uses && this.use(option.uses);
-        this._instance = this.get(this._type);
+        this._instance = this.get(this._type)
     }
 
     get moduleType() {
-        return this._type;
+        return this._type
     }
 
     get moduleReflect() {
-        return this._typeRefl;
+        return this._typeRefl
     }
 
     protected override createLifecycle(): LifecycleHooks {
         let platform = this.scope === 'root' ? this.platform() : undefined;
         const lifecycle = this.get(LifecycleHooksResolver, null)?.resolve(platform) ?? new DefaultModuleLifecycleHooks(platform);
         (lifecycle as DefaultModuleLifecycleHooks).eventMulticaster = this.get(ApplicationEventMulticaster, null)!;
-        return lifecycle;
+        return lifecycle
     }
 
     get injector(): Injector {
-        return this;
+        return this
     }
 
     get instance(): T {
-        return this._instance;
+        return this._instance
     }
 
     protected override isself(token: Token): boolean {
-        return token === ModuleRef || super.isself(token);
+        return token === ModuleRef || super.isself(token)
     }
 
     import(typeOrDef: Type | ModuleWithProviders, children?: boolean) {
         if (children) {
             if (isFunction(typeOrDef)) {
-                this.get(ModuleFactoryResolver).resolve(typeOrDef).create(this);
+                this.get(ModuleFactoryResolver).resolve(typeOrDef).create(this)
             } else {
-                this.get(ModuleFactoryResolver).resolve(typeOrDef.module).create(this, typeOrDef);
+                this.get(ModuleFactoryResolver).resolve(typeOrDef.module).create(this, typeOrDef)
             }
         } else {
-            this.processInjectorType(this.platform(), typeOrDef, [], this.moduleReflect);
+            this.processInjectorType(this.platform(), typeOrDef, [], this.moduleReflect)
         }
     }
 
@@ -100,13 +100,13 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         lang.deepForEach(args, ty => {
             if (isClass(ty)) {
                 types.push(ty);
-                this.processInjectorType(platform, ty, stk);
+                this.processInjectorType(platform, ty, stk)
             } else if (isFunction(ty.module) && isArray(ty.providers)) {
                 types.push(ty.module);
-                this.processInjectorType(platform, ty, stk);
+                this.processInjectorType(platform, ty, stk)
             }
         }, v => isPlainObject(v) && !(isFunction(v.module) && isArray(v.providers)));
-        return types;
+        return types
     }
 
     protected processInjectorType(platform: Platform, typeOrDef: Type | ModuleWithProviders, dedupStack: Type[], moduleRefl?: ModuleReflect) {
@@ -114,8 +114,8 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
             (pdr, pdrs) => this.processProvider(platform, pdr, pdrs),
             (tyref, type) => {
                 this._defs.add(type);
-                this.registerReflect(platform, tyref);
-            }, moduleRefl);
+                this.registerReflect(platform, tyref)
+            }, moduleRefl)
     }
 
     protected override destroying() {
@@ -128,7 +128,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         this.reflectiveResolver = null!;
         this.runnableFactoryResolver = null!;
         this._typeRefl = null!;
-        this._instance = null!;
+        this._instance = null!
     }
 
 }

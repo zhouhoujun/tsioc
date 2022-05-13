@@ -13,11 +13,11 @@ export class TypeormTransactionStatus extends TransactionStatus {
     }
 
     getPoint(): Joinpoint | undefined {
-        return this._jointPoint;
+        return this._jointPoint
     }
 
     hasPoint(): boolean {
-        return !!this._jointPoint;
+        return !!this._jointPoint
     }
 
     async flush(joinPoint: Joinpoint): Promise<void> {
@@ -35,11 +35,11 @@ export class TypeormTransactionStatus extends TransactionStatus {
             joinPoint.params?.length && targetRef.class.paramDecors.filter(dec => {
                 if (dec.propertyKey === joinPoint.methodName) {
                     if (dec.decor === DBRepository.toString()) {
-                        joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager));
+                        joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager))
                     } else if ((dec.metadata.provider as Type || dec.metadata.type) === EntityManager) {
-                        joinPoint.args?.splice(dec.parameterIndex || 0, 1, entityManager);
+                        joinPoint.args?.splice(dec.parameterIndex || 0, 1, entityManager)
                     } else if (isRepository(dec.metadata.provider as Type || dec.metadata.type)) {
-                        joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.provider as Type || dec.metadata.type, entityManager));
+                        joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.provider as Type || dec.metadata.type, entityManager))
                     }
                 }
             });
@@ -47,9 +47,9 @@ export class TypeormTransactionStatus extends TransactionStatus {
             const context = {} as any;
             targetRef.class.propDecors.forEach(dec => {
                 if (dec.decor === DBRepository.toString()) {
-                    context[dec.propertyKey] = this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager);
+                    context[dec.propertyKey] = this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager)
                 } else if ((dec.metadata.provider as Type || dec.metadata.type) === EntityManager) {
-                    context[dec.propertyKey] = entityManager;
+                    context[dec.propertyKey] = entityManager
                 } else if (isRepository(dec.metadata.provider as Type || dec.metadata.type)) {
                     context[dec.propertyKey] = this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.provider as Type || dec.metadata.type, entityManager)
                 }
@@ -69,41 +69,39 @@ export class TypeormTransactionStatus extends TransactionStatus {
 
             let target = joinPoint.target;
             if (Object.keys(context).length) {
-                target = { ...target, ...context };
+                target = { ...target, ...context }
             }
 
-            return joinPoint.originMethod?.apply(target, joinPoint.args);
+            return joinPoint.originMethod?.apply(target, joinPoint.args)
         };
 
         const withNewTransaction = () => {
             if (isolation) {
-                return getManager(connection).transaction(isolation as any, runInTransaction);
+                return getManager(connection).transaction(isolation as any, runInTransaction)
             } else {
-                return getManager(connection).transaction(runInTransaction);
+                return getManager(connection).transaction(runInTransaction)
             }
         };
 
-        const withOrigin = () => {
-            return joinPoint.originMethod?.apply(joinPoint.target, joinPoint.args);
-        };
+        const withOrigin = () => joinPoint.originMethod?.apply(joinPoint.target, joinPoint.args);
 
         joinPoint.originProxy = () => {
             const currTransaction = joinPoint.get(EntityManager);
             switch (propagation) {
                 case 'MANDATORY':
                     if (!currTransaction) {
-                        throw new TransactionError(`No existing transaction found for transaction marked with propagation 'MANDATORY'`);
+                        throw new TransactionError(`No existing transaction found for transaction marked with propagation 'MANDATORY'`)
                     }
-                    return runInTransaction(currTransaction);
+                    return runInTransaction(currTransaction)
 
                 case 'NESTED':
-                    return withNewTransaction();
+                    return withNewTransaction()
 
                 case 'NEVER':
                     if (currTransaction) {
-                        throw new TransactionError("Found an existing transaction, transaction marked with propagation 'NEVER'");
+                        throw new TransactionError("Found an existing transaction, transaction marked with propagation 'NEVER'")
                     }
-                    return withOrigin();
+                    return withOrigin()
 
                 case 'NOT_SUPPORTED':
                     // if (currTransaction) {
@@ -113,39 +111,39 @@ export class TypeormTransactionStatus extends TransactionStatus {
                     //         return value;
                     //     });
                     // }
-                    return withOrigin();
+                    return withOrigin()
 
                 case 'REQUIRED':
                     if (currTransaction) {
-                        return runInTransaction(currTransaction);
+                        return runInTransaction(currTransaction)
                     }
-                    return withNewTransaction();
+                    return withNewTransaction()
 
                 case 'REQUIRES_NEW':
-                    return withNewTransaction();
+                    return withNewTransaction()
 
                 case 'SUPPORTS':
                     if (currTransaction) {
-                        return runInTransaction(currTransaction);
+                        return runInTransaction(currTransaction)
                     }
-                    return withOrigin();
+                    return withOrigin()
             }
         }
     }
 
     protected getRepository<T>(model: Type<T> | undefined, rep: ClassType | undefined, entityManager: EntityManager) {
         if (!model) {
-            return entityManager.getCustomRepository(rep!);
+            return entityManager.getCustomRepository(rep!)
         }
         switch (rep) {
             case Repository:
-                return entityManager.getRepository(model);
+                return entityManager.getRepository(model)
             case MongoRepository:
-                return entityManager.getMongoRepository(model);
+                return entityManager.getMongoRepository(model)
             case TreeRepository:
-                return entityManager.getTreeRepository(model);
+                return entityManager.getTreeRepository(model)
             default:
-                return entityManager.getCustomRepository(rep!);
+                return entityManager.getCustomRepository(rep!)
         }
     }
 
@@ -156,27 +154,27 @@ export class TypeormTransactionManager extends TransactionManager {
     constructor(
         @Inject(DEFAULT_CONNECTION, { nullable: true }) private conn: string,
         @Log() private logger: Logger) {
-        super();
+        super()
     }
 
     async getTransaction(definition: TransactionalMetadata): Promise<TypeormTransactionStatus> {
-        return new TypeormTransactionStatus({ connection: this.conn, ...definition }, this.logger);
+        return new TypeormTransactionStatus({ connection: this.conn, ...definition }, this.logger)
     }
 
     async commit(status: TypeormTransactionStatus): Promise<void> {
         const joinPoint = status.getPoint();
         joinPoint?.setValue(EntityManager, null);
-        this.logger.log('commit transaction of', joinPoint?.fullName, 'with args:', joinPoint?.args);
-
+        this.logger.log('commit transaction of', joinPoint?.fullName, 'with args:', joinPoint?.args)
     }
+
     async rollback(status: TypeormTransactionStatus): Promise<void> {
         const joinPoint = status.getPoint();
         joinPoint?.setValue(EntityManager, null);
-        this.logger.log('rollback transaction of', joinPoint?.fullName, 'with args', joinPoint?.args, 'case by', joinPoint?.throwing);
+        this.logger.log('rollback transaction of', joinPoint?.fullName, 'with args', joinPoint?.args, 'case by', joinPoint?.throwing)
     }
 
 }
 
 function isRepository(type?: ClassType) {
-    return type && (type === Repository || type === TreeRepository || type === MongoRepository || lang.isExtendsClass(type, Repository));
+    return type && (type === Repository || type === TreeRepository || type === MongoRepository || lang.isExtendsClass(type, Repository))
 }

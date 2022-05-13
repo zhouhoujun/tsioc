@@ -12,13 +12,13 @@ export class SlicePipe implements PipeTransform {
         if (value == null) return value;
 
         if (!this.supports(value)) {
-            throw invalidPipeArgumentError(this, value);
+            throw invalidPipeArgumentError(this, value)
         }
 
-        return (value as string).slice(start, end);
+        return (value as string).slice(start, end)
     }
 
     private supports(obj: any): boolean {
-        return isString(obj) || isArray(obj);
+        return isString(obj) || isArray(obj)
     }
 }

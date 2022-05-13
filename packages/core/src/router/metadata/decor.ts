@@ -424,7 +424,7 @@ export interface RequsetParameterDecorator {
 export const RequestPath: RequsetParameterDecorator = createParamDecorator('RequestPath', {
     props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as RequsetParameterMetadata),
     appendProps: meta => {
-        meta.scope = 'restful';
+        meta.scope = 'restful'
     }
 });
 
@@ -436,7 +436,7 @@ export const RequestPath: RequsetParameterDecorator = createParamDecorator('Requ
 export const RequestParam: RequsetParameterDecorator = createParamDecorator('RequestParam', {
     props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as RequsetParameterMetadata),
     appendProps: meta => {
-        meta.scope = 'query';
+        meta.scope = 'query'
     }
 });
 
@@ -448,7 +448,7 @@ export const RequestParam: RequsetParameterDecorator = createParamDecorator('Req
 export const RequestBody: RequsetParameterDecorator = createParamDecorator('RequestBody', {
     props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as RequsetParameterMetadata),
     appendProps: meta => {
-        meta.scope = 'body';
+        meta.scope = 'body'
     }
 });
 

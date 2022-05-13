@@ -66,63 +66,63 @@ export class MappingRoute implements Middleware {
     }
 
     get path() {
-        return this.route.path;
+        return this.route.path
     }
 
     async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
 
         if (await this.canActive(ctx)) {
             if (!this._middleware) {
-                this._middleware = await this.parse(this.route, ctx);
+                this._middleware = await this.parse(this.route, ctx)
             }
-            return this._middleware.invoke(ctx, next);
+            return this._middleware.invoke(ctx, next)
         } else {
-            throw ctx.throwError(403);
+            throw ctx.throwError(403)
         }
     }
 
     protected canActive(ctx: TransportContext) {
         if (!this._guards) {
-            this._guards = this.route.guards?.map(token => ctx.resolve(token)) ?? EMPTY;
+            this._guards = this.route.guards?.map(token => ctx.resolve(token)) ?? EMPTY
         }
-        return lang.some(this._guards.map(guard => () => promisify(guard.canActivate(ctx))), vaild => vaild === false);
+        return lang.some(this._guards.map(guard => () => promisify(guard.canActivate(ctx))), vaild => vaild === false)
     }
 
     protected async parse(route: Route & { router?: Router }, ctx: TransportContext): Promise<Middleware> {
         if (route.middleware) {
-            return ctx.get(route.middleware);
+            return ctx.get(route.middleware)
         } else if (route.redirectTo) {
-            const to = route.redirectTo;
-            return this.create((c, n) => this.redirect(c, to));
+            const to = route.redirectTo
+            return this.create((c, n) => this.redirect(c, to))
         } else if (route.controller) {
-            return ctx.resolve(RouteFactoryResolver).resolve(route.controller).last() ?? this.create((c, n) => { throw c.throwError(404) });
+            return ctx.resolve(RouteFactoryResolver).resolve(route.controller).last() ?? this.create((c, n) => { throw c.throwError(404) })
         } else if (route.children) {
             const router = new MappingRouter(route.path);
             route.children.forEach(route => router.use(route));
-            return router;
+            return router
         } else if (route.loadChildren) {
             const module = await route.loadChildren();
             const platform = ctx.injector.platform();
             if (!platform.modules.has(module)) {
-                ctx.injector.get(ModuleRef).import(module, true);
+                ctx.injector.get(ModuleRef).import(module, true)
             }
             const router = platform.modules.get(module)?.injector.get(Router);
             if (router) {
                 router.prefix = route.path ?? '';
-                return router;
+                return router
             }
-            return this.create((c, n) => { throw c.throwError(404) });
+            return this.create((c, n) => { throw c.throwError(404) })
         } else {
-            return this.create((c, n) => { throw c.throwError(404) });
+            return this.create((c, n) => { throw c.throwError(404) })
         }
     }
 
     protected create(invoke: MiddlewareFn) {
-        return { invoke };
+        return { invoke }
     }
 
     protected async redirect(ctx: TransportContext, url: string, alt?: string): Promise<void> {
-        ctx.redirect(url, alt);
+        ctx.redirect(url, alt)
     }
 
 }
@@ -135,12 +135,12 @@ export class MappingRouter extends Router implements OnDestroy {
     readonly routes: Map<string, MiddlewareFn>;
 
     constructor(public prefix = '') {
-        super();
-        this.routes = new Map<string, MiddlewareFn>();
+        super()
+        this.routes = new Map<string, MiddlewareFn>()
     }
 
     has(route: string | Route): boolean {
-        return this.routes.has(isString(route) ? route : route.path);
+        return this.routes.has(isString(route) ? route : route.path)
     }
 
     /**
@@ -156,29 +156,29 @@ export class MappingRouter extends Router implements OnDestroy {
     use(route: Route | string, middleware?: Middleware | MiddlewareFn): this {
         if (isString(route)) {
             if (!middleware || this.has(route)) return this;
-            this.routes.set(route, isFunction(middleware) ? middleware : this.parse(middleware));
+            this.routes.set(route, isFunction(middleware) ? middleware : this.parse(middleware))
         } else {
             if (this.has(route.path)) return this;
-            this.routes.set(route.path, this.parse(new MappingRoute(route)));
+            this.routes.set(route.path, this.parse(new MappingRoute(route)))
         }
-        return this;
+        return this
     }
 
     parse(middleware: Middleware): MiddlewareFn {
-        return (ctx, next) => middleware.invoke(ctx, next);
+        return (ctx, next) => middleware.invoke(ctx, next)
     }
 
     unuse(route: string) {
         this.routes.delete(route);
-        return this;
+        return this
     }
 
     invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         const route = this.getRoute(ctx);
         if (route) {
-            return route(ctx, next);
+            return route(ctx, next)
         } else {
-            return next();
+            return next()
         }
     }
 
@@ -188,17 +188,16 @@ export class MappingRouter extends Router implements OnDestroy {
         let url: string;
         if (this.prefix) {
             if(!ctx.url.startsWith(this.prefix)) return;
-            url = ctx.url.slice(this.prefix.length);
+            url = ctx.url.slice(this.prefix.length)
         } else {
-            url = ctx.url ?? '/';
+            url = ctx.url ?? '/'
         }
         
         const route = this.getRouteByUrl(ctx.url);
         if (route) {
-            ctx.url = url;
+            ctx.url = url
         }
-        return route;
-
+        return route
     }
 
     getRouteByUrl(url: string): MiddlewareFn | undefined {
@@ -206,13 +205,13 @@ export class MappingRouter extends Router implements OnDestroy {
         let route: MiddlewareFn | undefined;
         for (let i = paths.length; i > 0; i--) {
             route = this.routes.get(paths.slice(0, i).join('/'));
-            if (route) break;
+            if (route) break
         }
-        return route;
+        return route
     }
 
     onDestroy(): void {
-        this.routes.clear();
+        this.routes.clear()
     }
 }
 

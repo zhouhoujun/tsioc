@@ -19,7 +19,7 @@ export class Advisor implements OnDestroy {
 
     constructor() {
         this.advices = new Map();
-        this.aspects = [];
+        this.aspects = []
     }
 
     /**
@@ -32,13 +32,13 @@ export class Advisor implements OnDestroy {
         let map = this.advices.get(type);
         if (!map) {
             map = new Map();
-            this.advices.set(type, map);
+            this.advices.set(type, map)
         }
-        map.set(key, advices);
+        map.set(key, advices)
     }
 
     hasAdvices(type: Type): boolean {
-        return this.advices.has(type);
+        return this.advices.has(type)
     }
 
     /**
@@ -48,7 +48,7 @@ export class Advisor implements OnDestroy {
      * @returns
      */
     getAdvices(type: Type, key: string): Advices {
-        return this.advices.get(type)?.get(key) || null!;
+        return this.advices.get(type)?.get(key) || null!
     }
 
     /**
@@ -58,7 +58,7 @@ export class Advisor implements OnDestroy {
      * @returns {Advices}
      */
     getAdviceMap(type: Type): Map<string, Advices> {
-        return this.advices.get(type)!;
+        return this.advices.get(type)!
     }
 
     /**
@@ -68,19 +68,19 @@ export class Advisor implements OnDestroy {
      * @param {Container} raiseContainer
      */
     add(aspect: ReflectiveRef): void {
-        this.aspects.push(aspect);
+        this.aspects.push(aspect)
     }
 
     remove(aspect: ReflectiveRef) {
-        lang.remove(this.aspects, aspect);
+        lang.remove(this.aspects, aspect)
     }
 
     get(type: Type): ReflectiveRef | undefined {
-        return this.aspects.find(r => r.type === type);
+        return this.aspects.find(r => r.type === type)
     }
     
     onDestroy(): void {
         this.aspects = [];
-        this.advices.clear();
+        this.advices.clear()
     }
 }

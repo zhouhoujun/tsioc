@@ -118,15 +118,15 @@ export class InterceptorChain<TRequest, TResponse> implements Endpoint<TRequest,
     private interceptors: Interceptor<TRequest, TResponse>[];
     constructor(backend: EndpointBackend<TRequest, TResponse> | EndpointFn<TRequest, TResponse>, interceptors: InterceptorInst<TRequest, TResponse>[]) {
         this.backend = isFunction(backend) ? { handle: backend } : backend;
-        this.interceptors = interceptors.map(intercept => isFunction(intercept) ? ({ intercept }) : intercept);
+        this.interceptors = interceptors.map(intercept => isFunction(intercept) ? ({ intercept }) : intercept)
     }
 
     handle(req: TRequest, context: InvocationContext): Observable<TResponse> {
         if (!this.chain) {
             this.chain = this.interceptors.reduceRight(
-                (next, inteceptor) => new InterceptorEndpoint(next, inteceptor), this.backend);
+                (next, inteceptor) => new InterceptorEndpoint(next, inteceptor), this.backend)
         }
-        return this.chain.handle(req, context);
+        return this.chain.handle(req, context)
     }
 }
 
@@ -135,7 +135,7 @@ export class CustomEndpoint<TRequest, TResponse> implements Endpoint<TRequest, T
     constructor(private fn: EndpointFn<TRequest, TResponse>) { }
 
     handle(req: TRequest, context: InvocationContext<any>): Observable<TResponse> {
-        return this.fn(req, context);
+        return this.fn(req, context)
     }
 }
 
@@ -154,11 +154,11 @@ export class MiddlewareBackend<TRequest, TResponse, Tx extends TransportContext>
             .pipe(
                 mergeMap(resp => {
                     if (!this._middleware) {
-                        this._middleware = compose(this.middlewares);
+                        this._middleware = compose(this.middlewares)
                     }
-                    return from(this._middleware(context, NEXT).then(c => resp));
+                    return from(this._middleware(context, NEXT).then(c => resp))
                 })
-            );
+            )
     }
 
 }
@@ -169,7 +169,7 @@ export class MiddlewareBackend<TRequest, TResponse, Tx extends TransportContext>
  */
 export function compose<T extends TransportContext>(middlewares: MiddlewareInst<T>[]): MiddlewareFn<T> {
     const middleFns = middlewares.filter(m => m).map(m => isFunction(m) ? m : ((ctx, next) => m.invoke(ctx, next)) as MiddlewareFn<T>);
-    return chain(middleFns);
+    return chain(middleFns)
 }
 
 /**
@@ -184,11 +184,12 @@ export class Chain implements Middleware {
     constructor(private middlewares: (Middleware | MiddlewareFn)[]) {
 
     }
+
     invoke<T extends TransportContext>(ctx: T, next?: () => Promise<void>): Promise<void> {
         if (!this._chainFn) {
-            this._chainFn = compose(this.middlewares);
+            this._chainFn = compose(this.middlewares)
         }
-        return this._chainFn(ctx, next ?? NEXT);
+        return this._chainFn(ctx, next ?? NEXT)
     }
 
 }

@@ -24,14 +24,14 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
     }
 
     get descriptor(): TypedPropertyDescriptor<T> {
-        return this.typeRef.class.getDescriptor(this.method);
+        return this.typeRef.class.getDescriptor(this.method)
     }
 
     get returnType(): ClassType<T> {
         if (!this._returnType) {
-            this._returnType = this.typeRef.class.getReturnning(this.method) ?? Object;
+            this._returnType = this.typeRef.class.getReturnning(this.method) ?? Object
         }
-        return this._returnType;
+        return this._returnType
     }
 
     private _returns?: ((ctx: InvocationContext, returnning: any) => void)[]
@@ -40,13 +40,13 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
      */
     onReturnning(callback: (ctx: InvocationContext, returnning: T) => void): void {
         if (!this._returns) {
-            this._returns = [];
+            this._returns = []
         }
-        this._returns.push(callback);
+        this._returns.push(callback)
     }
 
     runHooks = (ctx: InvocationContext, returnning: T) => {
-        this._returns?.forEach(c => c(ctx, returnning));
+        this._returns?.forEach(c => c(ctx, returnning))
     }
 
     /**
@@ -63,9 +63,9 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
     invoke(context: InvocationContext, instance: object, destroy?: boolean | Function): T;
     invoke(context: InvocationContext, arg?: object | boolean | Function, destroy?: boolean | Function): T {
         if (arg && isTypeObject(arg)) {
-            return this.typeRef.class.invoke(this.method, context, arg, destroy, this._returns ? this.runHooks : undefined);
+            return this.typeRef.class.invoke(this.method, context, arg, destroy, this._returns ? this.runHooks : undefined)
         }
-        return this.typeRef.class.invoke(this.method, context, this.instance, destroy, this._returns ? this.runHooks : undefined);
+        return this.typeRef.class.invoke(this.method, context, this.instance, destroy, this._returns ? this.runHooks : undefined)
     }
 
     /**
@@ -73,7 +73,7 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
      * @param context 
      */
     resolveArguments(context: InvocationContext): any[] {
-        return this.typeRef.class.resolveArguments(this.method, context);
+        return this.typeRef.class.resolveArguments(this.method, context)
     }
 }
 
@@ -88,22 +88,22 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         this._type = reflect.type as Type<T>;
         this.context = this.createContext(injector, options);
         this.context.setValue(ReflectiveRef, this);
-        injector.onDestroy(this);
+        injector.onDestroy(this)
     }
 
     get type(): Type<T> {
-        return this._type;
+        return this._type
     }
 
     resolve(): T;
     resolve<R>(token: Token<R>): R;
     resolve(token?: Token<any>): any {
-        return this.context.resolveArgument({ provider: token ?? this.type, nullable: true });
+        return this.context.resolveArgument({ provider: token ?? this.type, nullable: true })
     }
 
     invoke(method: MethodType<T>, option?: InvokeOption | InvocationContext, instance?: T) {
         const [context, key, destroy] = this.createMethodContext(method, option);
-        return this.reflect.class.invoke(key, context, instance ?? this.resolve(), destroy);
+        return this.reflect.class.invoke(key, context, instance ?? this.resolve(), destroy)
     }
 
     resolveArguments(method: MethodType<T>, option?: InvokeOption | InvocationContext) {
@@ -113,10 +113,10 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
             if (isFunction(destroy)) {
                 destroy()
             } else {
-                context.destroy();
+                context.destroy()
             }
         }
-        return args;
+        return args
     }
 
     protected createMethodContext(method: MethodType<T>, option?: InvokeOption | InvocationContext): [InvocationContext, string, boolean | Function | undefined] {
@@ -129,7 +129,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
             context.addRef(refctx);
             destroy = () => {
                 context.removeRef(refctx);
-                refctx.destroy();
+                refctx.destroy()
             }
         } else {
             context = option?.context ? option.context : this.createContext({ ...option, methodName: key });
@@ -138,41 +138,41 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
                 context.addRef(refctx);
                 destroy = () => {
                     context.removeRef(refctx);
-                    refctx.destroy();
+                    refctx.destroy()
                 }
             } else {
-                destroy = true;
+                destroy = true
             }
         }
-        return [context, key, destroy];
+        return [context, key, destroy]
     }
 
     createInvoker(method: string, instance?: T): OperationInvoker {
-        return new ReflectiveOperationInvoker(this.reflect, method, instance);
+        return new ReflectiveOperationInvoker(this.reflect, method, instance)
     }
 
     createContext(parent?: Injector | InvocationContext | InvocationOption, option?: InvocationOption): InvocationContext<any> {
         let root: InvocationContext | undefined;
         let injector: Injector;
         if (parent instanceof Injector) {
-            injector = parent;
+            injector = parent
         } else if (parent instanceof InvocationContext) {
             injector = parent.injector;
-            root = parent;
+            root = parent
         } else {
             injector = this.injector;
             root = this.context;
-            option = parent;
+            option = parent
         }
 
         if (!this._tagPdrs) {
-            this._tagPdrs = injector.platform().getTypeProvider(this.reflect);
+            this._tagPdrs = injector.platform().getTypeProvider(this.reflect)
         }
         let providers = option?.providers;
         let resolvers = option?.resolvers;
         if (!root) {
             providers = providers ? this._tagPdrs.concat(providers) : this._tagPdrs;
-            resolvers = resolvers ? this.reflect.class.resolvers.concat(resolvers) : this.reflect.class.resolvers;
+            resolvers = resolvers ? this.reflect.class.resolvers.concat(resolvers) : this.reflect.class.resolvers
         }
         const method = option?.methodName;
         if (method) {
@@ -180,7 +180,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
             providers = (providers && mthpdrs) ? providers.concat(mthpdrs) : (providers ?? mthpdrs);
 
             const mthrsv = this.reflect.class.getMethodResolvers(method);
-            resolvers = (resolvers && mthrsv) ? resolvers.concat(mthrsv) : (resolvers ?? mthrsv);
+            resolvers = (resolvers && mthrsv) ? resolvers.concat(mthrsv) : (resolvers ?? mthrsv)
         }
 
         return createContext(injector, {
@@ -189,7 +189,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
             targetType: this.reflect.type,
             providers,
             resolvers
-        });
+        })
     }
 
     onDestroy(): void | Promise<void> {
@@ -197,13 +197,13 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         this._tagPdrs = null!;
         (this as any).injector = null!;
         (this as any).reflect = null!;
-        return this.context?.destroy();
+        return this.context?.destroy()
     }
 }
 
 export class DefaultReflectiveResolver extends ReflectiveResolver {
     resolve<T>(type: ClassType<T> | TypeReflect<T>, injector: Injector, option?: InvokeArguments): ReflectiveRef<T> {
-        return new DefaultReflectiveRef(isFunction(type) ? get(type) : type, injector, option);
+        return new DefaultReflectiveRef(isFunction(type) ? get(type) : type, injector, option)
     }
 }
 

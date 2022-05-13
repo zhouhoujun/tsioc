@@ -13,63 +13,63 @@ export class DefaultRunnableRef<T> extends RunnableRef<T> {
     private _instance: T | undefined;
     constructor(protected factory: ReflectiveRef<T>, private defaultInvoke = 'run') {
         super();
-        this.factory.context.setValue(RunnableRef, this);
+        this.factory.context.setValue(RunnableRef, this)
     }
 
     get type() {
-        return this.factory.type;
+        return this.factory.type
     }
 
     get reflect() {
-        return this.factory.reflect;
+        return this.factory.reflect
     }
 
     get injector() {
-        return this.factory.injector;
+        return this.factory.injector
     }
 
     get instance(): T {
         if (!this._instance) {
-            this._instance = this.factory.resolve();
+            this._instance = this.factory.resolve()
         }
-        return this._instance;
+        return this._instance
     }
 
     run() {
         const runnables = this.reflect.class.runnables.filter(r => !r.auto);
         if (runnables.length === 1) {
             let runable = runnables[0];
-            return this.factory.invoke(runable.method, runable.args, this.instance);
+            return this.factory.invoke(runable.method, runable.args, this.instance)
         } else if (runnables.length) {
-            return lang.step(runnables.map(r => () => this.factory.invoke(r.method, r.args, this.instance)));
+            return lang.step(runnables.map(r => () => this.factory.invoke(r.method, r.args, this.instance)))
         } else {
-            return this.factory.invoke(this.defaultInvoke, undefined, this.instance);
+            return this.factory.invoke(this.defaultInvoke, undefined, this.instance)
         }
     }
 
     get destroyed() {
-        return this._destroyed;
+        return this._destroyed
     }
 
     destroy(): void {
         if (!this._destroyed) {
-            this._destroyed = true;
+            this._destroyed = true
             try {
-                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy());
+                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy())
             } finally {
                 this._dsryCbs.clear();
                 this.factory.onDestroy();
                 this.factory = null!;
-                this._instance = null!;
+                this._instance = null!
             }
         }
     }
 
     onDestroy(callback?: DestroyCallback): void {
         if (callback) {
-            this._dsryCbs.add(callback);
+            this._dsryCbs.add(callback)
         } else {
-            return this.destroy();
+            return this.destroy()
         }
     }
 }
@@ -80,7 +80,7 @@ export class DefaultRunnableRef<T> extends RunnableRef<T> {
 export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
 
     constructor(readonly reflect: TypeReflect<T>, private moduleRef?: ModuleRef) {
-        super();
+        super()
     }
 
     override create(injector: Injector, option?: BootstrapOption) {
@@ -91,11 +91,11 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
 
         const runners = injector.get(ApplicationRunners);
         runners.attach(runnableRef);
-        return runnableRef;
+        return runnableRef
     }
 
     protected createInstance(factory: ReflectiveRef<T>, invokeMethod?: string): RunnableRef<T> {
-        return new DefaultRunnableRef(factory, invokeMethod);
+        return new DefaultRunnableRef(factory, invokeMethod)
     }
 }
 
@@ -105,9 +105,10 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
  */
 export class DefaultRunnableFactoryResolver extends RunnableFactoryResolver {
     constructor(private moduleRef?: ModuleRef) {
-        super();
+        super()
     }
+    
     override resolve<T>(type: Type<T> | TypeReflect<T>) {
-        return new DefaultRunnableFactory(isFunction(type) ? refl.get(type) : type, this.moduleRef);
+        return new DefaultRunnableFactory(isFunction(type) ? refl.get(type) : type, this.moduleRef)
     }
 }

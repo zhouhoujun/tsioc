@@ -26,7 +26,7 @@ export class DefaultPlatform implements Platform {
         this._pdrs = new Map();
         this._actions = new Map();
         this._singls = new Map();
-        injector.onDestroy(this);
+        injector.onDestroy(this)
     }
 
     /**
@@ -36,33 +36,33 @@ export class DefaultPlatform implements Platform {
      */
     registerSingleton<T>(injector: Injector, token: Token<T>, value: T): this {
         if (this._singls.has(token)) {
-            throw Error('has singleton instance with token:' + token.toString());
+            throw Error('has singleton instance with token:' + token.toString())
         }
         this._singls.set(token, value);
         injector.onDestroy(() => this._singls.delete(token));
-        return this;
+        return this
     }
     /**
      * get singleton instance.
      * @param token 
      */
     getSingleton<T>(token: Token<T>): T {
-        return this._singls.get(token);
+        return this._singls.get(token)
     }
     /**
      * has singleton or not.
      * @param token 
      */
     hasSingleton(token: Token): boolean {
-        return this._singls.has(token);
+        return this._singls.has(token)
     }
 
     setInjector(scope: ClassType | string, injector: Injector) {
-        this._scopes.set(scope, injector);
+        this._scopes.set(scope, injector)
     }
 
     removeInjector(scope: InjectorScope): void {
-        this._scopes.delete(scope);
+        this._scopes.delete(scope)
     }
 
     /**
@@ -71,9 +71,9 @@ export class DefaultPlatform implements Platform {
      */
     getInjector<T extends Injector = Injector>(scope: InjectorScope): T {
         if (scope === 'platform') {
-            return this.injector as T;
+            return this.injector as T
         }
-        return this._scopes.get(scope) as T;
+        return this._scopes.get(scope) as T
     }
 
     /**
@@ -86,36 +86,36 @@ export class DefaultPlatform implements Platform {
      */
     getAction<T>(token: Token<T>, notFoundValue?: T): T {
         if (this._actions.has(token)) {
-            this.registerAction(token as Type);
+            this.registerAction(token as Type)
         }
-        return this._actions.get(token) ?? notFoundValue;
+        return this._actions.get(token) ?? notFoundValue
     }
 
     hasAction(token: Token) {
-        return this._actions.has(token);
+        return this._actions.has(token)
     }
 
     registerAction(...types: Type<Action>[]): this {
         types.forEach(type => {
-            if (this._actions.has(type)) return;
-            this.processAction(type);
+            if (this._actions.has(type)) return
+            this.processAction(type)
         });
-        return this;
+        return this
     }
 
     getHandle<T extends Handler>(target: Token<Action>): T {
         const action = this._actions.get(target) as Action;
-        return (action?.getHandler() ?? null)  as T;
+        return (action?.getHandler() ?? null)  as T
     }
 
     setActionValue<T>(token: Token<T>, value: T, provider?: Type<T>) {
         this._actions.set(token, value);
-        if (provider) this._actions.set(provider, value);
-        return this;
+        if (provider) this._actions.set(provider, value)
+        return this
     }
 
     getActionValue<T>(token: Token<T>, notFoundValue?: T): T {
-        return this._actions.get(token) ?? notFoundValue;
+        return this._actions.get(token) ?? notFoundValue
     }
 
     protected processAction(type: Type<Action>) {
@@ -123,7 +123,7 @@ export class DefaultPlatform implements Platform {
         const instance = new type(this) as Action & ActionSetup;
 
         this._actions.set(type, instance);
-        if (isFunction(instance.setup)) instance.setup();
+        if (isFunction(instance.setup)) instance.setup()
     }
 
     /**
@@ -136,10 +136,10 @@ export class DefaultPlatform implements Platform {
         tyRef.class.extendTypes.forEach(t => {
             let tpd = this._pdrs.get(t);
             if (tpd) {
-                pdrs.unshift(...tpd);
+                pdrs.unshift(...tpd)
             }
         })
-        return pdrs;
+        return pdrs
     }
 
     /**
@@ -151,14 +151,14 @@ export class DefaultPlatform implements Platform {
         const ty = isFunction(type) ? type : type.type;
         const prds = this._pdrs.get(ty);
         if (prds) {
-            prds.push(...providers);
+            prds.push(...providers)
         } else {
-            this._pdrs.set(ty, providers);
+            this._pdrs.set(ty, providers)
         }
     }
 
     clearTypeProvider(type: ClassType) {
-        this._pdrs.delete(type);
+        this._pdrs.delete(type)
     }
 
     onDestroy(): void {
@@ -166,7 +166,7 @@ export class DefaultPlatform implements Platform {
         this.modules.clear();
         this._pdrs.clear();
         this._actions.clear();
-        this._singls.clear();
+        this._singls.clear()
     }
 
 }

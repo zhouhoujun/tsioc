@@ -13,9 +13,9 @@ export class LowerCasePipe implements PipeTransform {
   transform(value: string): string {
     if (!value) return value;
     if (!isString(value)) {
-      throw invalidPipeArgumentError(this, value);
+      throw invalidPipeArgumentError(this, value)
     }
-    return value.toLowerCase();
+    return value.toLowerCase()
   }
 }
 
@@ -30,8 +30,8 @@ export class UpperCasePipe implements PipeTransform {
   transform(value: string): string {
     if (!value) return value;
     if (!isString(value)) {
-      throw invalidPipeArgumentError(this, value);
+      throw invalidPipeArgumentError(this, value)
     }
-    return value.toLowerCase();
+    return value.toLowerCase()
   }
 }

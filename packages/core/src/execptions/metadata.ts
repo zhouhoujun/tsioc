@@ -67,29 +67,30 @@ export const ExecptionHandler: ExecptionHandler = createDecorator('ExecptionHand
                 if (response) {
                     if (response === 'body') {
                         invoker.onReturnning((ctx, value) => {
-                            ctx.resolve(TransportContext).body = value;
-                        });
+                            ctx.resolve(TransportContext).body = value
+                        })
                     } else if (response === 'header') {
                         invoker.onReturnning((ctx, value) => {
-                            ctx.resolve(TransportContext).setHeader(value);
-                        });
+                            ctx.resolve(TransportContext).setHeader(value)
+                        })
                     } else if (response === 'response') {
                         invoker.onReturnning((ctx, value) => {
                             const context = ctx.resolve(TransportContext);
                             if (value instanceof TransportError) {
                                 context.status = value.statusCode;
-                                context.statusMessage = value.message;
+                                context.statusMessage = value.message
                             } else {
-                                ctx.resolve(TransportContext).statusMessage = String(value);
+                                ctx.resolve(TransportContext).statusMessage = String(value)
                             }
-                        });
+                        })
                     } else {
-                        invoker.onReturnning(response);
+                        invoker.onReturnning(response)
                     }
                 }
-                injector.get(ExecptionHandlerMethodResolver).addHandle(execption, invoker, order);
+                injector.get(ExecptionHandlerMethodResolver).addHandle(execption, invoker, order)
             });
-            next();
+
+            next()
         }
     }
 });

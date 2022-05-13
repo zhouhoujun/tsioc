@@ -60,4 +60,4 @@ export interface AuthorizationDecorator {
  */
 export const Authorization: AuthorizationDecorator = createDecorator<AuthorizationMetadata>('Authorization', {
     props: (role: string) => ({ role })
-});
+})

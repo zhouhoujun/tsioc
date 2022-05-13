@@ -30,14 +30,14 @@ export class AdviceMatcher implements IAdviceMatcher {
             if (aspectMeta.without) {
                 let outs = isArray(aspectMeta.without) ? aspectMeta.without : [aspectMeta.without];
                 if (outs.some(t => tagref.class.isExtends(t))) {
-                    return [];
+                    return []
                 }
             }
             if (aspectMeta.within) {
                 let ins = isArray(aspectMeta.within) ? aspectMeta.within : [aspectMeta.within];
                 if (!ins.some(t => tagref.class.isExtends(t))) {
                     if (!aspectMeta.annotation) {
-                        return [];
+                        return []
                     }
                 }
             }
@@ -45,7 +45,7 @@ export class AdviceMatcher implements IAdviceMatcher {
                 let annotation = aspectMeta.annotation.toString();
                 let anno = (annPreChkExp.test(annotation) ? '' : '@') + annotation;
                 if (!tagref.class.decors.some(d => d.decor === anno)) {
-                    return [];
+                    return []
                 }
             }
         }
@@ -65,7 +65,7 @@ export class AdviceMatcher implements IAdviceMatcher {
                             advice: adv
                         });
                     }
-                });
+                })
             }
         } else {
             const points: IPointcut[] = [];
@@ -75,15 +75,15 @@ export class AdviceMatcher implements IAdviceMatcher {
                 points.push({
                     name: name,
                     fullName: `${className}.${name}`
-                });
+                })
             }
 
             adviceMetas.forEach(metadata => {
-                matched = matched.concat(this.filterPointcut(tagref, points, metadata));
-            });
+                matched = matched.concat(this.filterPointcut(tagref, points, metadata))
+            })
         }
 
-        return matched;
+        return matched
     }
 
     protected matchAspectSelf(name: string, metadata: AdviceMetadata): boolean {
@@ -92,19 +92,19 @@ export class AdviceMatcher implements IAdviceMatcher {
 
             if (isString(pointcut)) {
                 if (executionChkExp.test(pointcut)) {
-                    pointcut = pointcut.substring(10, pointcut.length - 1);
+                    pointcut = pointcut.substring(10, pointcut.length - 1)
                 }
                 return pointcut.startsWith(name);
             } else if (isRegExp(pointcut)) {
-                return pointcut.test(name);
+                return pointcut.test(name)
             }
         }
-        return false;
+        return false
     }
 
     filterPointcut(relfect: AopReflect, points: IPointcut[], metadata: AdviceMetadata, target?: any): MatchPointcut[] {
         if (!metadata.pointcut) {
-            return [];
+            return []
         }
         let matchedPointcut;
         if (metadata.pointcut) {
@@ -115,12 +115,12 @@ export class AdviceMatcher implements IAdviceMatcher {
         matchedPointcut = matchedPointcut || [];
         return matchedPointcut.map(p => {
             return { ...p, advice: metadata };
-        });
+        })
     }
 
     protected matchTypeFactory(relfect: AopReflect, metadata: AdviceMetadata): MatchExpress {
         const checks = this.genChecks(relfect, metadata);
-        return (method?: string, fullName?: string, targetType?: ClassType, target?: any, pointcut?: IPointcut) => checks.every(chk => chk(method, fullName, targetType, target, pointcut));
+        return (method?: string, fullName?: string, targetType?: ClassType, target?: any, pointcut?: IPointcut) => checks.every(chk => chk(method, fullName, targetType, target, pointcut))
     }
 
     protected genChecks(relfect: AopReflect, metadata: AdviceMetadata): MatchExpress[] {
@@ -128,88 +128,88 @@ export class AdviceMatcher implements IAdviceMatcher {
         if (metadata.within) {
             checks.push(() => {
                 if (isArray(metadata.within)) {
-                    return metadata.within.some(t => relfect.class.isExtends(t));
+                    return metadata.within.some(t => relfect.class.isExtends(t))
                 } else {
-                    return relfect.class.isExtends(metadata.within!);
+                    return relfect.class.isExtends(metadata.within!)
                 }
             });
         }
         if (metadata.target) {
             checks.push((method, fullName, targetType, target) => {
-                return metadata.target === target;
-            });
+                return metadata.target === target
+            })
         }
 
         if (metadata.annotation) {
-            checks.push((method) => relfect.class.hasMetadata(metadata.annotation!, (!method || method === ctorName) ? Decors.CLASS : Decors.method, method));
+            checks.push((method) => relfect.class.hasMetadata(metadata.annotation!, (!method || method === ctorName) ? Decors.CLASS : Decors.method, method))
         }
 
         if (isString(metadata.pointcut)) {
             let pointcuts = (metadata.pointcut || '').trim();
-            checks.push(this.tranlateExpress(relfect, pointcuts));
+            checks.push(this.tranlateExpress(relfect, pointcuts))
         } else if (metadata.pointcut) {
             const reg = metadata.pointcut;
             if (annPreChkExp.test(reg.source)) {
-                checks.push(() => relfect.class.decors.some(n => reg.test(n.decor)));
+                checks.push(() => relfect.class.decors.some(n => reg.test(n.decor)))
             } else {
-                checks.push((name, fullName) => reg.test(fullName!));
+                checks.push((name, fullName) => reg.test(fullName!))
             }
         }
 
-        return checks;
+        return checks
     }
 
     protected spiltBrace(strExp: string): string {
         strExp = strExp.trim();
 
         if (preParam.test(strExp) && endParam.test(strExp)) {
-            strExp = strExp.substring(1, strExp.length - 1).trim();
+            strExp = strExp.substring(1, strExp.length - 1).trim()
         }
 
         if (preParam.test(strExp) && endParam.test(strExp)) {
-            return this.spiltBrace(strExp);
+            return this.spiltBrace(strExp)
         } else {
-            return strExp;
+            return strExp
         }
     }
 
     protected expressToFunc(reflect: AopReflect, strExp: string): MatchExpress {
 
         if (annContentExp.test(strExp)) {
-            return this.toAnnExpress(reflect, strExp.substring(12, strExp.length - 1));
+            return this.toAnnExpress(reflect, strExp.substring(12, strExp.length - 1))
         }
 
         if (execContentExp.test(strExp)) {
-            return this.toExecExpress(reflect, strExp.substring(10, strExp.length - 1));
+            return this.toExecExpress(reflect, strExp.substring(10, strExp.length - 1))
         }
 
         if (withInChkExp.test(strExp)) {
             let classnames = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).split(',').map(n => n.trim());
-            return (name?: string, fullName?: string, targetType?: ClassType) => targetType ? classnames.indexOf(lang.getClassName(targetType)) >= 0 : false;
+            return (name?: string, fullName?: string, targetType?: ClassType) => targetType ? classnames.indexOf(lang.getClassName(targetType)) >= 0 : false
         }
 
         if (targetChkExp.test(strExp)) {
             let torken = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).trim();
             const platform = this.injector.platform();
-            return (name?: string, fullName?: string, targetType?: ClassType) => targetType ? platform.getInjector(reflect.type).getTokenProvider(torken) === targetType : false;
+            return (name?: string, fullName?: string, targetType?: ClassType) => targetType ? platform.getInjector(reflect.type).getTokenProvider(torken) === targetType : false
         }
 
-        return fasleFn;
+        return fasleFn
     }
 
     protected toAnnExpress(reflect: AopReflect, exp: string): MatchExpress {
         let annotation = aExp.test(exp) ? exp : ('@' + exp);
-        return (name?: string, fullName?: string) => reflect.class.hasMetadata(annotation, (!name || name === ctorName) ? Decors.CLASS : Decors.method, name);
+        return (name?: string, fullName?: string) => reflect.class.hasMetadata(annotation, (!name || name === ctorName) ? Decors.CLASS : Decors.method, name)
     }
 
     protected toExecExpress(reflect: AopReflect, exp: string): MatchExpress {
         if (exp === '*' || exp === '*.*') {
-            return (name?: string, fullName?: string) => !!name && !reflect.aspect;
+            return (name?: string, fullName?: string) => !!name && !reflect.aspect
         }
 
         if (mthNameExp.test(exp)) {
             // if is method name, will match aspect self only.
-            return fasleFn;
+            return fasleFn
         }
 
         if (tgMthChkExp.test(exp)) {
@@ -219,9 +219,9 @@ export class AdviceMatcher implements IAdviceMatcher {
                 .replace(replNav, '\\\/');
 
             let matcher = new RegExp(exp + '$');
-            return (name?: string, fullName?: string) => fullName ? matcher.test(fullName) : false;
+            return (name?: string, fullName?: string) => fullName ? matcher.test(fullName) : false
         }
-        return fasleFn;
+        return fasleFn
     }
 
     protected tranlateExpress(reflect: AopReflect, strExp: string): MatchExpress {
@@ -232,7 +232,7 @@ export class AdviceMatcher implements IAdviceMatcher {
         const boolexp = new Function(...argnames, `return ${exp.toString((t, i, tkidx) => 'arg' + tkidx + '()')}`);
         return (method?: string, fullName?: string, targetType?: ClassType, target?: any, pointcut?: IPointcut) => {
             let args = fns.map(fn => () => fn(method, fullName, targetType, target, pointcut));
-            return boolexp(...args);
+            return boolexp(...args)
         }
     }
 }
@@ -245,16 +245,16 @@ export class BoolExpression {
         parts.forEach(exp => {
             exp = exp.trim();
             if (isToken && isToken(exp)) {
-                keys.push(exp);
+                keys.push(exp)
             } else {
                 if (exp.length > 1) {
-                    keys.push(...exp.split(allOperators));
+                    keys.push(...exp.split(allOperators))
                 } else if (exp) {
-                    keys.push(exp);
+                    keys.push(exp)
                 }
             }
         })
-        this._parsed = keys.filter(Boolean).reduce(rewrite, []);
+        this._parsed = keys.filter(Boolean).reduce(rewrite, [])
     }
 
     private _tokens!: any[];
@@ -262,9 +262,9 @@ export class BoolExpression {
         if (!this._tokens) {
             this._tokens = this._parsed
                 .map(e => e.type === 'token' ? e.value : undefined)
-                .filter(Boolean);
+                .filter(Boolean)
         }
-        return this._tokens;
+        return this._tokens
     }
 
     toString(map?: (token: string, idx?: number, tokenIdx?: number, exp?: { type: string, value: any }[]) => string) {
@@ -272,7 +272,7 @@ export class BoolExpression {
         return this._parsed.map((t, i, exp) => {
             if (t.type === 'operator') return t.value
             return map ? map(t.value, i, idx++, exp) : t.value;
-        }).join(' ');
+        }).join(' ')
     }
 }
 
@@ -283,10 +283,15 @@ const operatorMap: any = { OR: '||', AND: '&&', NOT: '!' }
 function rewrite(ex: any[], el: string) {
     let t = el.trim()
     if (!t) return ex
-    if (operatorMap[t]) t = operatorMap[t]
-    if (nativeOperators.test(t)) ex.push({ type: 'operator', value: t })
-    else ex.push({ type: 'token', value: t.replace(/['\\]/g, '\\$&') })
-    return ex;
+    if (operatorMap[t]) {
+         t = operatorMap[t]
+    }
+    if (nativeOperators.test(t)) {
+        ex.push({ type: 'operator', value: t })
+    } else {
+        ex.push({ type: 'token', value: t.replace(/['\\]/g, '\\$&') })
+    }
+    return ex
 }
 
 const isBoolToken = (exp: string) => annContentExp.test(exp) || execContentExp.test(exp) || withInChkExp.test(exp) || targetChkExp.test(exp);

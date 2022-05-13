@@ -18,14 +18,14 @@ export class DefaultModuleLoader extends ModuleLoader {
     private _loader!: (modulepath: string) => Promise<Modules>;
     getLoader() {
         if (!this._loader) {
-            this._loader = this.createLoader();
+            this._loader = this.createLoader()
         }
-        return this._loader;
+        return this._loader
     }
 
     async register(injecor: Injector, modules: LoadType[]): Promise<Type[]> {
         const mdls = await this.load(modules);
-        return injecor.use(mdls);
+        return injecor.use(mdls)
     }
 
     /**
@@ -37,21 +37,21 @@ export class DefaultModuleLoader extends ModuleLoader {
     load(modules: LoadType[]): Promise<Modules[]> {
         if (modules.length) {
             return Promise.all(modules.map(mdty => this.getMoudle(mdty)))
-                .then(mds => mds.reduce((prv, m) => prv.concat(m), []));
+                .then(mds => mds.reduce((prv, m) => prv.concat(m), []))
         } else {
-            return Promise.resolve([]);
+            return Promise.resolve([])
         }
     }
 
     getMoudle(mdty: LoadType): Promise<Modules[]> {
         if (isString(mdty)) {
-            return this.isFile(mdty) ? this.loadFile(mdty) : this.require(mdty).then(m => m ? [m] : []);
+            return this.isFile(mdty) ? this.loadFile(mdty) : this.require(mdty).then(m => m ? [m] : [])
         } else if (isPathModules(mdty)) {
-            return this.loadPathModule(mdty);
+            return this.loadPathModule(mdty)
         } else if (isChildModule(mdty)) {
-            return mdty.loadChild() as Promise<any>;
+            return mdty.loadChild() as Promise<any>
         } else {
-            return Promise.resolve(mdty ? [mdty] : []);
+            return Promise.resolve(mdty ? [mdty] : [])
         }
     }
 
@@ -63,7 +63,7 @@ export class DefaultModuleLoader extends ModuleLoader {
      */
     async loadType(mdl: LoadType): Promise<Type[]> {
         const mdls = await this.getMoudle(mdl);
-        return getTypes(mdls);
+        return getTypes(mdls)
     }
 
     /**
@@ -74,12 +74,12 @@ export class DefaultModuleLoader extends ModuleLoader {
      */
     async loadTypes(modules: LoadType[]): Promise<Type[][]> {
         let mdls = await this.load(modules);
-        return mdls.map(md => getTypes(md));
+        return mdls.map(md => getTypes(md))
     }
 
     require(moduleName: string): Promise<any> {
         let loader = this.getLoader();
-        return loader(moduleName);
+        return loader(moduleName)
     }
 
     protected loadFile(files: string | string[], basePath?: string): Promise<Modules[]> {
@@ -88,25 +88,25 @@ export class DefaultModuleLoader extends ModuleLoader {
         basePath = basePath ? this.normalize(basePath) : '';
         if (isArray(files)) {
             fRes = Promise.all(files.map(f => loader(this.resolveFilename(this.normalize(f), basePath))))
-                .then(mds => mds.reduce((prv, m) => prv.concat(m), [] as Modules[]).filter(it => !!it));
+                .then(mds => mds.reduce((prv, m) => prv.concat(m), [] as Modules[]).filter(it => !!it))
         } else {
-            fRes = loader(this.resolveFilename(this.normalize(files), basePath)).then(m => m ? [m] : []);
+            fRes = loader(this.resolveFilename(this.normalize(files), basePath)).then(m => m ? [m] : [])
         }
-        return fRes;
+        return fRes
     }
 
     protected resolveFilename(filename: string, basePath?: string) {
         if (basePath) {
             if (filename.startsWith(basePath)) {
-                return filename;
+                return filename
             }
-            return /\/$/.test(basePath) ? basePath + filename : basePath + '/' + filename;
+            return /\/$/.test(basePath) ? basePath + filename : basePath + '/' + filename
         }
-        return filename;
+        return filename
     }
 
     protected isFile(str: string) {
-        return str && fileChkExp.test(str.split('\\').join('/'));
+        return str && fileChkExp.test(str.split('\\').join('/'))
     }
 
     protected async loadPathModule(pmd: PathModules): Promise<Modules[]> {
@@ -114,22 +114,22 @@ export class DefaultModuleLoader extends ModuleLoader {
         if (pmd.modules) {
             await Promise.all(pmd.modules.map(async nmd => {
                 if (isString(nmd)) {
-                    modules.push(await this.require(nmd));
+                    modules.push(await this.require(nmd))
                 } else {
-                    modules.push(nmd);
+                    modules.push(nmd)
                 }
-            }));
+            }))
         }
 
-        return modules;
+        return modules
     }
 
     protected createLoader(): (modulepath: string) => Promise<Modules> {
-        return (pth: string) => import(pth);
+        return (pth: string) => import(pth)
     }
 
     protected normalize(pth: string) {
-        return pth ? pth.split('\\').join('/') : pth;
+        return pth ? pth.split('\\').join('/') : pth
     }
 
 }
@@ -138,9 +138,9 @@ export class DefaultModuleLoader extends ModuleLoader {
 const fileChkExp = /\/((\w|%|\.))+\.\w+$/;
 
 export function isPathModules(target: any): target is PathModules {
-    return isMetadataObject(target, 'modules', 'files');
+    return isMetadataObject(target, 'modules', 'files')
 }
 
 export function isChildModule(target: any): target is ChildModule {
-    return target && isFunction(target.loadChild);
+    return target && isFunction(target.loadChild)
 }

@@ -10,11 +10,11 @@ export class ParseBoolPipe implements PipeTransform<boolean> {
 
     transform(value: any, ...args: any[]): boolean {
         if (value === true || value === 'true') {
-            return true;
+            return true
         }
         if (value === false || value === 'false') {
-            return false;
+            return false
         }
-        throw invalidPipeArgumentError(this, value);
+        throw invalidPipeArgumentError(this, value)
     }
 }

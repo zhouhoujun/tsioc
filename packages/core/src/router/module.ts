@@ -40,7 +40,7 @@ export class RouterModule {
             module: RouterModule,
             providers: [
                 { provide: ROUTES, multi: true, useValue: routes }
-            ],
-        };
+            ]
+        }
     }
 }

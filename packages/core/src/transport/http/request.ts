@@ -35,9 +35,9 @@ function mightHaveBody(method: string): boolean {
         case 'HEAD':
         case 'OPTIONS':
         case 'JSONP':
-            return false;
+            return false
         default:
-            return true;
+            return true
     }
 }
 
@@ -47,7 +47,7 @@ function mightHaveBody(method: string): boolean {
  * In some execution environments ArrayBuffer is not defined.
  */
 function isArrayBuffer(value: any): value is ArrayBuffer {
-    return typeof ArrayBuffer !== type_undef && value instanceof ArrayBuffer;
+    return typeof ArrayBuffer !== type_undef && value instanceof ArrayBuffer
 }
 
 /**
@@ -56,7 +56,7 @@ function isArrayBuffer(value: any): value is ArrayBuffer {
  * In some execution environments Blob is not defined.
  */
 function isBlob(value: any): value is Blob {
-    return typeof Blob !== type_undef && value instanceof Blob;
+    return typeof Blob !== type_undef && value instanceof Blob
 }
 
 /**
@@ -65,7 +65,7 @@ function isBlob(value: any): value is Blob {
  * In some execution environments FormData is not defined.
  */
 function isFormData(value: any): value is FormData {
-    return typeof FormData !== type_undef && value instanceof FormData;
+    return typeof FormData !== type_undef && value instanceof FormData
 }
 
 /**
@@ -74,7 +74,7 @@ function isFormData(value: any): value is FormData {
  * In some execution environments URLSearchParams is not defined.
  */
 function isUrlSearchParams(value: any): value is URLSearchParams {
-    return typeof URLSearchParams !== type_undef && value instanceof URLSearchParams;
+    return typeof URLSearchParams !== type_undef && value instanceof URLSearchParams
 }
 
 /**
@@ -162,7 +162,7 @@ export class HttpRequest<T = any>  {
     });
     constructor(method: string, url: string, body: T | null, init?: {
         headers?: HttpHeaders,
-        
+
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -171,7 +171,7 @@ export class HttpRequest<T = any>  {
     constructor(
         method: string, readonly url: string, third?: T | {
             headers?: HttpHeaders,
-            
+
             reportProgress?: boolean,
             params?: HttpParams,
             responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -179,7 +179,7 @@ export class HttpRequest<T = any>  {
         } | null,
         fourth?: {
             headers?: HttpHeaders,
-            
+
             reportProgress?: boolean,
             params?: HttpParams,
             responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -195,10 +195,10 @@ export class HttpRequest<T = any>  {
         if (mightHaveBody(this.method) || !!fourth) {
             // Body is the third argument, options are the fourth.
             this.body = (third !== undefined) ? third as T : null;
-            options = fourth;
+            options = fourth
         } else {
             // No body required, options are the third argument. The body stays null.
-            options = third as HttpRequestInit;
+            options = third as HttpRequestInit
         }
 
         // If options have been passed, interpret them.
@@ -209,22 +209,22 @@ export class HttpRequest<T = any>  {
 
             // Override default response type of 'json' if one is provided.
             if (!!options.responseType) {
-                this.responseType = options.responseType;
+                this.responseType = options.responseType
             }
 
             // Override headers if they're provided.
             if (!!options.headers) {
-                this.headers = options.headers;
+                this.headers = options.headers
             }
 
             if (!!options.params) {
-                this.params = options.params;
+                this.params = options.params
             }
         }
 
         // If no headers have been passed in, construct a new HttpHeaders instance.
         if (!this.headers) {
-            this.headers = new HttpHeaders();
+            this.headers = new HttpHeaders()
         }
 
         // If no context have been passed in, construct a new InvocationContext instance.
@@ -235,13 +235,13 @@ export class HttpRequest<T = any>  {
         // If no parameters have been passed in, construct a new HttpUrlEncodedParams instance.
         if (!this.params) {
             this.params = new HttpParams();
-            this.urlWithParams = url;
+            this.urlWithParams = url
         } else {
             // Encode the parameters to a string in preparation for inclusion in the URL.
             const params = this.params.toString();
             if (params.length === 0) {
                 // No parameters, the visible URL is just the URL given at creation time.
-                this.urlWithParams = url;
+                this.urlWithParams = url
             } else {
                 // Does the URL already have query parameters? Look for '?'.
                 const qIdx = url.indexOf('?');
@@ -253,7 +253,7 @@ export class HttpRequest<T = any>  {
                 // This basically amounts to determining the character, if any, with
                 // which to join the URL and parameters.
                 const sep: string = qIdx === -1 ? '?' : (qIdx < url.length - 1 ? '&' : '');
-                this.urlWithParams = url + sep + params;
+                this.urlWithParams = url + sep + params
             }
         }
     }
@@ -265,25 +265,25 @@ export class HttpRequest<T = any>  {
     serializeBody(): ArrayBuffer | Blob | FormData | string | null {
         // If no body is present, no need to serialize it.
         if (this.body === null) {
-            return null;
+            return null
         }
         // Check whether the body is already in a serialized form. If so,
         // it can just be returned directly.
         if (isArrayBuffer(this.body) || isBlob(this.body) || isFormData(this.body) ||
             isUrlSearchParams(this.body) || isString(this.body)) {
-            return this.body;
+            return this.body
         }
         // Check whether the body is an instance of HttpUrlEncodedParams.
         if (this.body instanceof HttpParams) {
-            return this.body.toString();
+            return this.body.toString()
         }
         // Check whether the body is an object or array, and serialize with JSON if so.
         if (typeof this.body === type_obj || typeof this.body === type_bool ||
             Array.isArray(this.body)) {
-            return JSON.stringify(this.body);
+            return JSON.stringify(this.body)
         }
         // Fall back on toString() for everything else.
-        return (this.body as any).toString();
+        return (this.body as any).toString()
     }
 
     /**
@@ -295,44 +295,44 @@ export class HttpRequest<T = any>  {
     detectContentTypeHeader(): string | null {
         // An empty body has no content type.
         if (this.body === null) {
-            return null;
+            return null
         }
         // FormData bodies rely on the browser's content type assignment.
         if (isFormData(this.body)) {
-            return null;
+            return null
         }
         // Blobs usually have their own content type. If it doesn't, then
         // no type can be inferred.
         if (isBlob(this.body)) {
-            return this.body.type || null;
+            return this.body.type || null
         }
         // Array buffers have unknown contents and thus no type can be inferred.
         if (isArrayBuffer(this.body)) {
-            return null;
+            return null
         }
         // Technically, strings could be a form of JSON data, but it's safe enough
         // to assume they're plain strings.
         if (isString(this.body)) {
-            return 'text/plain';
+            return 'text/plain'
         }
         // `HttpUrlEncodedParams` has its own content-type.
         if (this.body instanceof HttpParams) {
-            return 'application/x-www-form-urlencoded;charset=UTF-8';
+            return 'application/x-www-form-urlencoded;charset=UTF-8'
         }
         // Arrays, objects, boolean and numbers will be encoded as JSON.
         const type = typeof this.body;
         if (type === type_obj || type === type_num ||
             type === type_bool) {
-            return 'application/json';
+            return 'application/json'
         }
         // No type could be inferred.
-        return null;
+        return null
     }
 
     clone(): HttpRequest<T>;
     clone(update: {
         headers?: HttpHeaders,
-        
+
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -345,7 +345,7 @@ export class HttpRequest<T = any>  {
     }): HttpRequest<T>;
     clone<V>(update: {
         headers?: HttpHeaders,
-        
+
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -358,7 +358,7 @@ export class HttpRequest<T = any>  {
     }): HttpRequest<V>;
     clone(update: {
         headers?: HttpHeaders,
-        
+
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -398,14 +398,14 @@ export class HttpRequest<T = any>  {
             // Set every requested header.
             headers =
                 Object.keys(update.setHeaders)
-                    .reduce((headers, name) => headers.set(name, update.setHeaders![name]), headers);
+                    .reduce((headers, name) => headers.set(name, update.setHeaders![name]), headers)
         }
 
         // Check whether the caller has asked to set params.
         if (update.setParams) {
             // Set every requested param.
             params = Object.keys(update.setParams)
-                .reduce((params, param) => params.set(param, update.setParams![param]), params);
+                .reduce((params, param) => params.set(param, update.setParams![param]), params)
         }
 
         // Finally, construct the new HttpRequest using the pieces from above.
@@ -415,6 +415,6 @@ export class HttpRequest<T = any>  {
             reportProgress,
             responseType,
             withCredentials,
-        });
+        })
     }
 }

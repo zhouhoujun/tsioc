@@ -18,25 +18,25 @@ export class TransactionalAspect {
 
     @Before('@annotation(Transactional)', { sync: true, annotationName: 'Transactional', annotationArgName: 'annotation' })
     async begin(manager: TransactionManager, annotation: TransactionalMetadata[], joinPoint: Joinpoint) {
-        if (!manager) throw new ArgumentError('TransactionManager can not be null.');
+        if (!manager) throw new ArgumentError('TransactionManager can not be null.')
         const status = await manager.getTransaction(lang.first(annotation));
         joinPoint.setValue(TransactionStatus, status);
-        await status.flush(joinPoint);
+        await status.flush(joinPoint)
     }
 
     @AfterReturning('@annotation(Transactional)', 'returning', { sync: true })
     async commit(manager: TransactionManager, returning: any, joinPoint: Joinpoint) {
-        if (!manager) throw new ArgumentError('TransactionManager can not be null.');
-        await manager.commit(joinPoint.getValue(TransactionStatus));
+        if (!manager) throw new ArgumentError('TransactionManager can not be null.')
+        await manager.commit(joinPoint.getValue(TransactionStatus))
     }
 
     @AfterThrowing('@annotation(Transactional)', 'error', { sync: true })
     async rollback(manager: TransactionManager, error: Error, joinPoint: Joinpoint) {
-        if (!manager) throw new ArgumentError('TransactionManager can not be null.');
+        if (!manager) throw new ArgumentError('TransactionManager can not be null.')
         try {
-            await manager.rollback(joinPoint.getValue(TransactionStatus));
+            await manager.rollback(joinPoint.getValue(TransactionStatus))
         } catch (err) {
-            throw new TransactionError(err as Error);
+            throw new TransactionError(err as Error)
         }
     }
 }

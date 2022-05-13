@@ -43,15 +43,15 @@ export class HttpXsrfCookieExtractor implements HttpXsrfTokenExtractor {
 
     getToken(): string | null {
         if (this.platform === 'server') {
-            return null;
+            return null
         }
         const cookieString = this.doc.cookie || '';
         if (cookieString !== this.lastCookieString) {
             this.parseCount++;
             this.lastToken = parseCookieValue(cookieString, this.cookieName);
-            this.lastCookieString = cookieString;
+            this.lastCookieString = cookieString
         }
-        return this.lastToken;
+        return this.lastToken
     }
 }
 
@@ -72,15 +72,15 @@ export class HttpXsrfInterceptor implements HttpInterceptor {
         // on our origin is not the same as the token expected by another origin.
         if (req.method === 'GET' || req.method === 'HEAD' || lcUrl.startsWith('http://') ||
             lcUrl.startsWith('https://')) {
-            return next.handle(req, context);
+            return next.handle(req, context)
         }
         const token = this.tokenService.getToken();
 
         // Be careful not to overwrite an existing header of the same name.
         if (token !== null && !req.headers.has(this.headerName)) {
-            req = req.clone({ headers: req.headers.set(this.headerName, token) });
+            req = req.clone({ headers: req.headers.set(this.headerName, token) })
         }
-        return next.handle(req, context);
+        return next.handle(req, context)
     }
 }
 
@@ -92,8 +92,8 @@ export function parseCookieValue(cookieStr: string, name: string): string | null
         const [cookieName, cookieValue]: string[] =
             eqIndex == -1 ? [cookie, ''] : [cookie.slice(0, eqIndex), cookie.slice(eqIndex + 1)];
         if (cookieName.trim() === name) {
-            return decodeURIComponent(cookieValue);
+            return decodeURIComponent(cookieValue)
         }
     }
-    return null;
+    return null
 }

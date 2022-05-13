@@ -44,15 +44,15 @@ export class HttpInterceptingHandler implements HttpHandler {
         if (!this.chain) {
             const interceptors = this.injector.get(HTTP_CLIENT_INTERCEPTORS);
             this.chain = interceptors.reduceRight(
-                (next, interceptor) => new InterceptorEndpoint(next, interceptor), this.backend);
+                (next, interceptor) => new InterceptorEndpoint(next, interceptor), this.backend)
         }
-        return this.chain.handle(req, context);
+        return this.chain.handle(req, context)
     }
 }
 
 @Injectable()
 export class NoopInterceptor implements HttpInterceptor {
     intercept(req: HttpRequest<any>, next: HttpHandler, context: InvocationContext): Observable<HttpEvent> {
-        return next.handle(req, context);
+        return next.handle(req, context)
     }
 }

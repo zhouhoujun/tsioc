@@ -13,5 +13,5 @@ export function createExecptionContext<T extends Error>(parent: InvocationContex
     ctx.injector.setValue(ExecptionContext, ctx);
     ctx.injector.setValue(getClass(execption), execption);
     ctx.execption = execption;
-    return ctx;
+    return ctx
 }

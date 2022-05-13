@@ -27,30 +27,30 @@ export class SortPipe implements PipeTransform {
                 if (i[sort] == null) return false;
                 type = typeof i[sort];
                 if (type === type_undef) {
-                    return false;
+                    return false
                 }
-                return type;
-            });
+                return type
+            })
         }
 
         if (type === type_str) {
             return value.sort((a, b) => {
                 let x: string = sort ? a[sort] : a;
                 let y: string = sort ? b[sort] : b;
-                return this.compare(x?.toLowerCase() ?? '', y?.toLowerCase() ?? '', order);
+                return this.compare(x?.toLowerCase() ?? '', y?.toLowerCase() ?? '', order)
             });
         }
         return value.sort((a, b) => {
             let x = sort ? a[sort] : a;
             let y = sort ? b[sort] : b;
-            return this.compare(x, y, order);
+            return this.compare(x, y, order)
         });
     }
 
     protected compare(x: any, y: any, order?: 'asc' | 'desc') {
-        if (x < y) { return order === 'desc' ? 1 : -1; }
-        if (x > y) { return order === 'desc' ? -1 : 1; }
-        return 0;
+        if (x < y) { return order === 'desc' ? 1 : -1 }
+        if (x > y) { return order === 'desc' ? -1 : 1 }
+        return 0
     }
 }
 

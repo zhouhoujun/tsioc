@@ -12,19 +12,19 @@ export class ParseNumberPipe implements PipeTransform<number> {
         let ret: number;
         if (isString(value)) {
             try {
-                ret = Number(value);
+                ret = Number(value)
             } catch {
-                throw invalidPipeArgumentError(this, value);
+                throw invalidPipeArgumentError(this, value)
             }
         } else if (isNumber(value)) {
-            ret = value;
+            ret = value
         } else {
-            ret = NaN;
+            ret = NaN
         }
         if (isNaN(ret)) {
-            throw invalidPipeArgumentError(this, value);
+            throw invalidPipeArgumentError(this, value)
         }
-        return ret;
+        return ret
     }
 
 }

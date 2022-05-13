@@ -10,12 +10,13 @@ export class ExecptionChain implements ExecptionFilter {
     constructor(private filters: ExecptionFilter[]) {
 
     }
+
     handle(ctx: ExecptionContext, next?: () => Promise<void>): Promise<void> {
         if (ctx.completed) return NEXT();
         if (!this._chain) {
-            const fns = this.filters.map(f => (c: ExecptionContext, n: () => Promise<void>) => f.handle(c, n))
-            this._chain = chain(fns);
+            const fns = this.filters.map(f => (c: ExecptionContext, n: () => Promise<void>) => f.handle(c, n));
+            this._chain = chain(fns)
         }
-        return this._chain(ctx, next ?? NEXT);
+        return this._chain(ctx, next ?? NEXT)
     }
 }

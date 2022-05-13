@@ -17,7 +17,7 @@ export const DOCUMENT = tokenId<Object>('DOCUMENT');
  * @publicApi
  */
 export function isPlatformBrowser(platformId: Object): boolean {
-    return platformId === PLATFORM_BROWSER_ID;
+    return platformId === PLATFORM_BROWSER_ID
 }
 
 /**
@@ -25,7 +25,7 @@ export function isPlatformBrowser(platformId: Object): boolean {
  * @publicApi
  */
 export function isPlatformServer(platformId: Object): boolean {
-    return platformId === PLATFORM_SERVER_ID;
+    return platformId === PLATFORM_SERVER_ID
 }
 
 // CommonJS / Node have global context exposed as "global" variable.

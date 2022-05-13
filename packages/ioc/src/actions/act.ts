@@ -13,7 +13,7 @@ import { IocContext } from './ctx';
 export class IocActions<T extends IocContext = IocContext> extends Actions<T> {
 
     protected override getPlatform(ctx: T) {
-        return ctx.injector.platform();
+        return ctx.injector.platform()
     }
 
 }

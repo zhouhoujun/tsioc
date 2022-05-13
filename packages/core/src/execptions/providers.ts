@@ -7,27 +7,27 @@ export class DefaultExecptionHandlerMethodResolver extends ExecptionHandlerMetho
     private maps = new Map<Type, OperationInvoker[]>();
 
     resolve(execption: Type<Error> | Error): OperationInvoker[] {
-        return this.maps.get(isFunction(execption) ? execption : getClass(execption)) ?? EMPTY;
+        return this.maps.get(isFunction(execption) ? execption : getClass(execption)) ?? EMPTY
     }
 
     addHandle(execption: Type<Error>, methodInvoker: OperationInvoker, order?: number): this {
         let hds = this.maps.get(execption);
         if (isNumber(order)) {
-            methodInvoker.order = order;
+            methodInvoker.order = order
         }
         if (!hds) {
             hds = [methodInvoker];
-            this.maps.set(execption, hds);
+            this.maps.set(execption, hds)
         } else if (!hds.some(h => h.descriptor === methodInvoker.descriptor)) {
-            hds.push(methodInvoker);
+            hds.push(methodInvoker)
         }
-        return this;
+        return this
     }
 
     removeHandle(execption: Type<Error>, methodInvoker: OperationInvoker): this {
         const hds = this.maps.get(execption);
         if (hds) lang.remove(hds, methodInvoker);
-        return this;
+        return this
     }
 }
 

@@ -21,6 +21,6 @@ export class DesignLifeScope extends RegisterLifeScope<DesignContext> implements
             da.DesignPropScope,
             da.DesignMthScope,
             da.AnnoScope
-        );
+        )
     }
 }

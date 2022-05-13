@@ -12,19 +12,19 @@ export class TypeOrmHelper {
     }
 
     getConnection(connectName?: string): Connection {
-        return getConnection(connectName || this.conn);
+        return getConnection(connectName || this.conn)
     }
 
     getRepository<T>(type: Type<T>, connectName?: string): Repository<T> {
-        return this.getConnection(connectName).getRepository<T>(type);
+        return this.getConnection(connectName).getRepository<T>(type)
     }
 
     getCustomRepository<T extends Repository<any>>(type: Type<T>, connectName?: string): T {
-        return this.getConnection(connectName).getCustomRepository(type);
+        return this.getConnection(connectName).getCustomRepository(type)
     }
 
     getMongoRepository<T>(type: Type<T>, connectName?: string): MongoRepository<T> {
-        return this.getConnection(connectName).getMongoRepository<T>(type);
+        return this.getConnection(connectName).getMongoRepository<T>(type)
     }
 
 }

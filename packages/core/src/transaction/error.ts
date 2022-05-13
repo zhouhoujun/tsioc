@@ -5,6 +5,6 @@ import { Execption, isString } from '@tsdi/ioc';
  */
 export class TransactionError extends Execption {
     constructor(message: string | Error) {
-        super(isString(message) ? message : message.stack || message.message);
+        super(isString(message) ? message : message.stack || message.message)
     }
 }

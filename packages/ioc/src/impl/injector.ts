@@ -52,16 +52,16 @@ export class DefaultInjector extends Injector {
         super();
         this.records = new Map();
         if (parent) {
-            this.initParent(parent);
+            this.initParent(parent)
         } else {
-            scope = this.scope = 'platform';
+            scope = this.scope = 'platform'
         }
         this.initScope(scope);
-        this.inject(providers);
+        this.inject(providers)
     }
 
     protected createLifecycle(platform?: Platform): LifecycleHooks {
-        return this.get(LifecycleHooksResolver, null)?.resolve(platform) ?? new DestroyLifecycleHooks(platform);
+        return this.get(LifecycleHooksResolver, null)?.resolve(platform) ?? new DestroyLifecycleHooks(platform)
     }
 
     protected initScope(scope?: InjectorScope) {
@@ -73,45 +73,45 @@ export class DefaultInjector extends Injector {
                 this._plat = new DefaultPlatform(this);
                 this.lifecycle = this.createLifecycle();
                 registerCores(this);
-                break;
+                break
             case 'root':
                 this.platform().setInjector(scope, this);
                 rootAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = isRootAlias;
                 this.lifecycle = this.createLifecycle(this.platform());
-                break;
+                break
             case 'provider':
             case 'invocation':
                 this.lifecycle = this.createLifecycle();
-                break;
+                break
             case 'configuration':
                 this.platform().setInjector(scope, this);
                 this.lifecycle = this.createLifecycle();
-                break;
+                break
             default:
                 if (scope) this.platform().setInjector(scope, this);
                 injectAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = isInjectAlias;
                 this.lifecycle = this.createLifecycle();
-                break;
+                break
         }
-        this.inject({ provide: LifecycleHooks, useValue: this.lifecycle });
+        this.inject({ provide: LifecycleHooks, useValue: this.lifecycle })
     }
 
     protected initParent(parent: Injector) {
-        parent.onDestroy(this);
+        parent.onDestroy(this)
     }
 
     get size(): number {
-        return this.records.size;
+        return this.records.size
     }
 
     tokens() {
-        return Array.from(this.records.keys());
+        return Array.from(this.records.keys())
     }
 
     platform(): Platform {
-        return this._plat ?? this.parent?.platform()!;
+        return this._plat ?? this.parent?.platform()!
     }
 
     register(types: (Type | RegisterOption)[]): this;
@@ -120,9 +120,9 @@ export class DefaultInjector extends Injector {
         this.assertNotDestroyed();
         const platform = this.platform();
         deepForEach(args, t => {
-            this.processProvider(platform, t);
+            this.processProvider(platform, t)
         });
-        return this;
+        return this
     }
 
     cache<T>(token: Token<T>, cache: T, expires: number): this {
@@ -132,11 +132,11 @@ export class DefaultInjector extends Injector {
         if (pd) {
             pd.cache = cache;
             pd.ltop = ltop
-            pd.expires = expires;
+            pd.expires = expires
         } else {
-            this.records.set(token, { cache, ltop, expires });
+            this.records.set(token, { cache, ltop, expires })
         }
-        return this;
+        return this
     }
 
     inject(providers: ProviderType[]): this;
@@ -145,18 +145,18 @@ export class DefaultInjector extends Injector {
         this.assertNotDestroyed();
         if (args.length) {
             const platform = this.platform();
-            deepForEach(args, p => this.processProvider(platform, p, args), v => isPlainObject(v) && !(v as StaticProviders).provide);
+            deepForEach(args, p => this.processProvider(platform, p, args), v => isPlainObject(v) && !(v as StaticProviders).provide)
         }
-        return this;
+        return this
     }
 
     protected processProvider(platform: Platform, p: TypeOption | StaticProvider, providers?: ProviderType[]) {
         if (isFunction(p)) {
-            this.registerType(platform, p);
+            this.registerType(platform, p)
         } else if (isPlainObject(p) && (p as StaticProviders).provide) {
-            this.registerProvider(platform, p as StaticProviders);
+            this.registerProvider(platform, p as StaticProviders)
         } else if (isPlainObject(p) && (p as TypeOption).type) {
-            this.registerType(platform, (p as TypeOption).type, p as TypeOption);
+            this.registerType(platform, (p as TypeOption).type, p as TypeOption)
         }
     }
 
@@ -172,13 +172,13 @@ export class DefaultInjector extends Injector {
 
     protected registerReflect(platform: Platform, reflect: TypeReflect, option?: RegOption) {
         const providedIn = option?.providedIn ?? reflect.providedIn;
-        (providedIn ? platform.getInjector(providedIn) as DefaultInjector : this).processRegister(platform, reflect.type as Type, reflect, option);
+        (providedIn ? platform.getInjector(providedIn) as DefaultInjector : this).processRegister(platform, reflect.type as Type, reflect, option)
     }
 
     protected processRegister(platform: Platform, type: Type, reflect: TypeReflect, option?: RegOption) {
         // make sure class register once.
         if (this.has(type, InjectFlags.Default)) {
-            return false;
+            return false
         }
 
         let injectorType: ((type: Type, typeReflect: ModuleReflect) => void) | undefined;
@@ -187,9 +187,9 @@ export class DefaultInjector extends Injector {
                 type, [],
                 (pdr, pdrs) => this.processProvider(platform, pdr, pdrs), (tyref, ty) => {
                     if (ty !== regType) {
-                        this.registerReflect(platform, tyref);
+                        this.registerReflect(platform, tyref)
                     }
-                }, typeReflect);
+                }, typeReflect)
         }
 
         const injector: Injector = this;
@@ -205,12 +205,12 @@ export class DefaultInjector extends Injector {
         } as DesignContext;
         platform.getAction(DesignLifeScope).register(ctx);
         cleanObj(ctx);
-        return true;
+        return true
     }
 
     protected registerProvider(platfrom: Platform, provider: StaticProviders) {
         if (provider.asDefault && this.has(provider.provide)) {
-            return;
+            return
         }
         if (provider.multi) {
             let multiPdr = this.records.get(provider.provide);
@@ -220,11 +220,11 @@ export class DefaultInjector extends Injector {
                     fn: MUTIL,
                     value: EMPTY,
                     deps: []
-                });
+                })
             }
-            multiPdr.deps?.push({ token: generateRecord(platfrom, this, provider), options: OptionFlags.Default });
+            multiPdr.deps?.push({ token: generateRecord(platfrom, this, provider), options: OptionFlags.Default })
         } else {
-            this.records.set(provider.provide, generateRecord(platfrom, this, provider));
+            this.records.set(provider.provide, generateRecord(platfrom, this, provider))
         }
     }
 
@@ -241,22 +241,22 @@ export class DefaultInjector extends Injector {
                 const mdref = get<ModuleReflect>(ty);
                 if (mdref) {
                     types.push(ty);
-                    this.registerReflect(platform, mdref, { injectorType: mdref.module });
+                    this.registerReflect(platform, mdref, { injectorType: mdref.module })
 
                 }
             }
         }, v => isPlainObject(v));
-        return types;
+        return types
     }
 
     has<T>(token: Token<T>, flags = InjectFlags.Default): boolean {
         this.assertNotDestroyed();
-        if (this.platform().hasSingleton(token)) return true;
-        if (!(flags & InjectFlags.SkipSelf) && (this.records.has(token))) return true;
+        if (this.platform().hasSingleton(token)) return true
+        if (!(flags & InjectFlags.SkipSelf) && (this.records.has(token))) return true
         if (!(flags & InjectFlags.Self)) {
-            return this.parent?.has(token, flags) === true;
+            return this.parent?.has(token, flags) === true
         }
-        return false;
+        return false
     }
 
     setValue<T>(token: Token<T>, value: T, type?: Type<T>): this {
@@ -264,48 +264,48 @@ export class DefaultInjector extends Injector {
         const isp = this.records.get(token);
         if (isp) {
             isp.value = value;
-            if (type) isp.type = type;
+            if (type) isp.type = type
         } else if (isDefined(value)) {
-            this.records.set(token, type ? { value, type } : { value });
+            this.records.set(token, type ? { value, type } : { value })
         }
-        return this;
+        return this
     }
 
     setSingleton<T>(token: Token<T>, value: T): this {
         this.assertNotDestroyed();
         const platform = this.platform();
         if (!platform.hasSingleton(token)) {
-            platform.registerSingleton(this, token, value);
+            platform.registerSingleton(this, token, value)
         }
-        return this;
+        return this
     }
 
     protected isself(token: Token): boolean {
-        return this.isAlias ? this.isAlias(token) : false;
+        return this.isAlias ? this.isAlias(token) : false
     }
 
     get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags): T;
     get<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags, notFoundValue?: T): T;
     get<T>(token: Token<T>, arg1?: InvocationContext, flags = InjectFlags.Default, notFoundValue?: T): T {
         this.assertNotDestroyed();
-        if (this.isself(token)) return this as any;
+        if (this.isself(token)) return this as any
         const platform = this.platform();
         let context: InvocationContext | undefined;
         if (arg1 instanceof InvocationContext || !isUndefined(notFoundValue)) {
             context = arg1;
             if (isUndefined(notFoundValue)) {
-                notFoundValue = THROW_FLAGE as T;
+                notFoundValue = THROW_FLAGE as T
             }
         } else {
-            notFoundValue = (isUndefined(arg1) ? THROW_FLAGE : arg1) as T;
+            notFoundValue = (isUndefined(arg1) ? THROW_FLAGE : arg1) as T
         }
-        if (platform.hasSingleton(token)) return platform.getSingleton(token);
-        return this.tryResolve(token, this.records.get(token), platform, this.parent, context, notFoundValue, flags, this.lifecycle);
+        if (platform.hasSingleton(token)) return platform.getSingleton(token)
+        return this.tryResolve(token, this.records.get(token), platform, this.parent, context, notFoundValue, flags, this.lifecycle)
     }
 
     protected tryResolve(token: Token, record: FactoryRecord | undefined, platform: Platform, parent: Injector | undefined,
         context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, lifecycle?: LifecycleHooks) {
-        return tryResolveToken(token, record, this.records, platform, parent, context, notFoundValue, flags, lifecycle, this.isStatic);
+        return tryResolveToken(token, record, this.records, platform, parent, context, notFoundValue, flags, lifecycle, this.isStatic)
     }
 
     resolve<T>(option: ResolveOption<T>): T;
@@ -332,46 +332,46 @@ export class DefaultInjector extends Injector {
                     option.values = [...option.values || EMPTY, [TARGET, option.target]];
                 }
                 context = context ? createContext(this, { parent: context, ...option, providers }) : createContext(this, providers ? { ...option, providers } : option);
-                isnew = true;
+                isnew = true
             }
             inst = this.resolveStrategy(platform, option, context);
             if (isnew && context && !context.injected) {
-                context.destroy();
+                context.destroy()
             }
         } else {
-            inst = this.get(token as Token);
+            inst = this.get(token as Token)
         }
-        return inst;
+        return inst
     }
 
     protected toOption(token: Token | ResolveOption, args: any[]): ResolveOption | undefined {
-        if (isPlainObject(token)) return token as ResolveOption;
+        if (isPlainObject(token)) return token as ResolveOption
         if (args.length) {
             if (args.length > 1 || (args.length === 1 && isArray(args))) return { token, providers: args };
             if (args[0] instanceof InvocationContext) {
                 return { token, context: args[0] };
             }
             args[0].token = token;
-            return args[0];
+            return args[0]
         }
-        return;
+        return
     }
 
     protected resolveStrategy<T>(platform: Platform, option: ResolveOption, context?: InvocationContext): T {
         return context?.resolve(option.token)
             ?? this.get(option.token!, context, InjectFlags.Default, null)
-            ?? this.resolveFailed(platform, option.token!, context, option.regify, option.defaultToken);
+            ?? this.resolveFailed(platform, option.token!, context, option.regify, option.defaultToken)
     }
 
     protected resolveFailed<T>(platform: Platform, token: Token<T>, context?: InvocationContext, regify?: boolean, defaultToken?: Token): T {
         if (regify && isFunction(token)) {
             this.registerType(platform, token as Type);
-            return this.get(token, context);
+            return this.get(token, context)
         }
         if (defaultToken) {
-            return this.get(defaultToken, context);
+            return this.get(defaultToken, context)
         }
-        return null!;
+        return null!
     }
 
     getService<T>(option: ResolveOption<T>): T;
@@ -380,7 +380,7 @@ export class DefaultInjector extends Injector {
     getService<T>(token: Token<T>, providers?: ProviderType[]): T;
     getService<T>(token: Token<T>, ...providers: ProviderType[]): T;
     getService<T>(target: Token<T> | ResolveOption<T>, ...args: any[]): T {
-        return this.resolve<T>(target as any, ...args);
+        return this.resolve<T>(target as any, ...args)
     }
 
     getTokenProvider<T>(token: Token<T>, flags = InjectFlags.Default): Type<T> {
@@ -388,12 +388,12 @@ export class DefaultInjector extends Injector {
         let type: Type | undefined;
         if (!(flags & InjectFlags.SkipSelf)) {
             const rd = this.records.get(token);
-            type = rd?.type;
+            type = rd?.type
         }
         if (!type || !(flags & InjectFlags.Self)) {
-            type = this.parent?.getTokenProvider(token, flags);
+            type = this.parent?.getTokenProvider(token, flags)
         }
-        return type ?? isFunction(token) ? token as Type : null!;
+        return type ?? isFunction(token) ? token as Type : null!
     }
 
     unregister<T>(token: Token<T>): this {
@@ -401,10 +401,10 @@ export class DefaultInjector extends Injector {
         if (isp) {
             this.records.delete(token);
             if (isFunction(isp.unreg)) isp.unreg();
-            cleanObj(isp);
+            cleanObj(isp)
         }
 
-        return this;
+        return this
     }
 
 
@@ -421,20 +421,20 @@ export class DefaultInjector extends Injector {
             const arg0 = args[0];
             if (arg0 instanceof InvocationContext) {
                 context = arg0;
-                providers = EMPTY;
+                providers = EMPTY
             } else if (isArray(arg0)) {
-                providers = arg0;
+                providers = arg0
             } else if (isPlainObject(arg0) && !arg0.provide) {
-                option = arg0;
+                option = arg0
             } else {
-                providers = args;
+                providers = args
             }
         } else {
-            providers = args;
+            providers = args
         }
 
         if (target instanceof ReflectiveRef) {
-            return target.invoke(propertyKey, context ?? { ...option, providers });
+            return target.invoke(propertyKey, context ?? { ...option, providers })
         }
 
         let targetClass: Type, instance: any;
@@ -442,11 +442,11 @@ export class DefaultInjector extends Injector {
 
         if (isTypeObject(target)) {
             targetClass = getClass(target);
-            instance = target as T;
+            instance = target as T
         } else {
             if (isTypeReflect(target)) {
                 tgRefl = target;
-                targetClass = target.type as Type;
+                targetClass = target.type as Type
             } else {
                 instance = this.resolve(target as Token, providers!);
                 targetClass = getClass(instance);
@@ -460,14 +460,14 @@ export class DefaultInjector extends Injector {
 
         const factory = this.get(ReflectiveResolver).resolve(tgRefl, this, context ?? { ...option, providers });
         if (!context) {
-            return factory.invoke(propertyKey, { ...option, providers }, instance);
+            return factory.invoke(propertyKey, { ...option, providers }, instance)
         }
-        return factory.invoke(propertyKey, context, instance);
+        return factory.invoke(propertyKey, context, instance)
     }
 
 
     getLoader(): ModuleLoader {
-        return this.get(ModuleLoader);
+        return this.get(ModuleLoader)
     }
 
     load(modules: LoadType[]): Promise<Type[]>;
@@ -476,16 +476,16 @@ export class DefaultInjector extends Injector {
         this.assertNotDestroyed();
         let modules: LoadType[];
         if (args.length === 1 && isArray(args[0])) {
-            modules = args[0];
+            modules = args[0]
         } else {
-            modules = args;
+            modules = args
         }
-        return this.getLoader().register(this, modules);
+        return this.getLoader().register(this, modules)
     }
 
     protected assertNotDestroyed(): void {
         if (this.destroyed) {
-            throw new Error('Injector has already been destroyed.');
+            throw new Error('Injector has already been destroyed.')
         }
     }
 
@@ -498,13 +498,13 @@ export class DefaultInjector extends Injector {
         this.records.clear();
         this.records = null!;
         if (this.parent) {
-            !this.parent.destroyed && this.parent.offDestroy(this);
+            !this.parent.destroyed && this.parent.offDestroy(this)
         }
         this._plat = null!;
         this.isAlias = null!;
         this.lifecycle.clear();
         (this as any).parent = null!;
-        (this as any).strategy = null!;
+        (this as any).strategy = null!
     }
 }
 
@@ -526,9 +526,9 @@ const isInjectAlias = (token: any) => token === Injector || token === INJECTOR;
 
 INJECT_IMPL.create = (providers: ProviderType[], parent?: Injector, scope?: InjectorScope) => {
     if (scope === 'invocation' || scope === 'configuration') {
-        return new StaticInjector(providers, parent, scope);
+        return new StaticInjector(providers, parent, scope)
     }
-    return new DefaultInjector(providers, parent!, scope);
+    return new DefaultInjector(providers, parent!, scope)
 }
 
 
@@ -541,26 +541,26 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
             typeOrDef.providers,
             pdr => processProvider(pdr, typeOrDef.providers),
             v => isPlainObject(v) && !v.provide //&& !(isFunction(v.module) && isArray(v.providers))
-        );
+        )
     }
     const isDuplicate = dedupStack.indexOf(type) !== -1;
     const typeRef = moduleRefl ?? get<ModuleReflect>(type, true);
     if (typeRef.module && !isDuplicate) {
         dedupStack.push(type);
         typeRef.imports?.forEach(imp => {
-            processInjectorType(imp, dedupStack, processProvider, regType, undefined, true);
+            processInjectorType(imp, dedupStack, processProvider, regType, undefined, true)
         });
 
         if (imported && !(typeRef.providedIn === 'root' || typeRef.providedIn === 'platform')) {
             typeRef.exports?.forEach(d => {
-                processInjectorType(d, dedupStack, processProvider, regType, undefined, true);
+                processInjectorType(d, dedupStack, processProvider, regType, undefined, true)
             })
         } else {
             typeRef.declarations?.forEach(d => {
-                processInjectorType(d, dedupStack, processProvider, regType, undefined, true);
+                processInjectorType(d, dedupStack, processProvider, regType, undefined, true)
             });
             typeRef.exports?.forEach(d => {
-                processInjectorType(d, dedupStack, processProvider, regType, undefined, true);
+                processInjectorType(d, dedupStack, processProvider, regType, undefined, true)
             })
         }
 
@@ -569,7 +569,7 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
                 typeRef.providers,
                 pdr => processProvider(pdr, typeRef.providers),
                 v => isPlainObject(v) && !v.provide // && !(isFunction(v.module) && isArray(v.providers))
-            );
+            )
         }
     }
     // // private providers.
@@ -581,15 +581,15 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
     //     );
     // }
 
-    regType(typeRef, type);
+    regType(typeRef, type)
 }
 
 
 const IDENT = function <T>(value: T): T {
-    return value;
+    return value
 };
 const MUTIL = function <T>(...args: any): T[] {
-    return args;
+    return args
 };
 const CIRCULAR = IDENT;
 
@@ -607,34 +607,34 @@ export function generateRecord<T>(platfrom: Platform, injector: Injector, provid
     let isStatic = provider.static;
     let deps = computeDeps(provider);
     if (isDefined(provider.useValue)) {
-        value = provider.useValue;
+        value = provider.useValue
     } else if (provider.useFactory) {
-        fn = provider.useFactory;
+        fn = provider.useFactory
     } else if (provider.useExisting) {
 
     } else if (provider.useClass) {
         if (deps) {
-            deps.unshift({ token: provider.useClass, options: OptionFlags.Default });
+            deps.unshift({ token: provider.useClass, options: OptionFlags.Default })
         } else {
-            deps = [{ token: provider.useClass, options: OptionFlags.Default }];
+            deps = [{ token: provider.useClass, options: OptionFlags.Default }]
         }
         if (!injector.has(type, InjectFlags.Default)) {
-            injector.register({ singleton: provider.singleton, type, deps, regProvides: false });
+            injector.register({ singleton: provider.singleton, type, deps, regProvides: false })
         }
     } else if (isFunction(provider.provide)) {
         if (deps) {
             fnType = FnType.Cotr;
             fn = provider.provide;
-            type = provider.provide;
+            type = provider.provide
         } else {
             deps = [{ token: provider.provide, options: OptionFlags.Default }];
             type = provider.provide;
             if (!injector.has(type, InjectFlags.Default)) {
-                injector.register({ singleton: provider.singleton, type, deps, regProvides: false });
+                injector.register({ singleton: provider.singleton, type, deps, regProvides: false })
             }
         }
     }
-    return { value, fn, fnType, deps, type, isStatic };
+    return { value, fn, fnType, deps, type, isStatic }
 }
 
 function computeDeps(provider: StaticProviders): DependencyRecord[] {
@@ -651,25 +651,25 @@ function computeDeps(provider: StaticProviders): DependencyRecord[] {
                         switch (d) {
                             case InjectFlags.Optional:
                                 options = options | OptionFlags.Optional;
-                                break;
+                                break
                             case InjectFlags.SkipSelf:
                                 options = options & ~OptionFlags.CheckSelf;
-                                break;
+                                break
                             case InjectFlags.Self:
                                 options = options & ~OptionFlags.CheckParent;
-                                break;
+                                break
                         }
                     } else {
-                        token = d;
+                        token = d
                     }
                 }
             }
-            return { token, options };
+            return { token, options }
         });
     } else if (provider.useExisting) {
-        deps = [{ token: provider.useExisting, options: OptionFlags.Default }];
+        deps = [{ token: provider.useExisting, options: OptionFlags.Default }]
     }
-    return deps;
+    return deps
 }
 
 const cirMsg = 'Circular dependency';
@@ -678,7 +678,7 @@ const cirMsg = 'Circular dependency';
  */
 export class CircularDependencyError extends Execption {
     constructor(message?: string) {
-        super(message ? cirMsg + message : cirMsg);
+        super(message ? cirMsg + message : cirMsg)
     }
 }
 
@@ -703,23 +703,23 @@ export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, rec
         const value = resolveToken(token, rd, records, platform, parent, context, notFoundValue, flags, lifecycle, isStatic);
         const isDef = isDefined(value) && value !== notFoundValue;
         if (isDef && token !== Injector && token !== INJECTOR && rd && rd.fn !== IDENT && rd.fn !== MUTIL && lifecycle && isTypeObject(value)) {
-            lifecycle.register(value);
+            lifecycle.register(value)
         }
         if (isDef && (isStatic || rd?.isStatic)) {
             if (rd) {
                 if (isNil(rd.value)) {
-                    rd.value = value;
+                    rd.value = value
                 }
             } else if (isStatic) {
-                records.set(token, { value });
+                records.set(token, { value })
             }
         }
-        return value;
+        return value
     } catch (e) {
         if (rd && rd.value === CIRCULAR) {
-            rd.value = EMPTY;
+            rd.value = EMPTY
         }
-        throw e;
+        throw e
     }
 }
 
@@ -736,9 +736,9 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
     if (rd && !(flags & InjectFlags.SkipSelf)) {
         let value = rd.value;
         if (value === CIRCULAR) {
-            throw new CircularDependencyError();
+            throw new CircularDependencyError()
         }
-        if (isDefined(rd.value) && value !== EMPTY) return rd.value;
+        if (isDefined(rd.value) && value !== EMPTY) return rd.value
         let deps = [];
         if (rd.deps?.length) {
             for (let i = 0; i < rd.deps.length; i++) {
@@ -747,7 +747,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
 
                 let val: any;
                 if (context) {
-                    val = context.resolveArgument(isString(dep.token) ? { paramName: dep.token } : { provider: dep.token });
+                    val = context.resolveArgument(isString(dep.token) ? { paramName: dep.token } : { provider: dep.token })
                 }
                 deps.push(val ?? tryResolveToken(
                     dep.token,
@@ -759,18 +759,18 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                     dep.options & OptionFlags.Optional ? null : THROW_FLAGE,
                     InjectFlags.Default,
                     lifecycle,
-                    isStatic));
+                    isStatic))
             }
         }
         if (context && rd.fn !== IDENT && rd.fn !== MUTIL) {
-            deps.push(context);
+            deps.push(context)
         }
         switch (rd.fnType) {
             case FnType.Cotr:
-                return new (rd.fn as Type)(...deps);
+                return new (rd.fn as Type)(...deps)
             case FnType.Fac:
                 if (value === EMPTY) {
-                    return rd.value = value = rd.fn?.(...deps);
+                    return rd.value = value = rd.fn?.(...deps)
                 }
                 return rd.fn?.(...deps)
             case FnType.Inj:
@@ -778,26 +778,26 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                 if (rd.expires) {
                     if ((rd.expires + rd.ltop!) < Date.now()) {
                         rd.ltop = Date.now();
-                        return rd.cache!;
+                        return rd.cache!
                     }
                     rd.expires = null!;
                     rd.cache = null!;
-                    rd.ltop = null!;
+                    rd.ltop = null!
                 }
                 return rd.fn?.(...deps)
         }
     } else if (parent && !(flags & InjectFlags.Self)) {
-        return parent.get(token, context, InjectFlags.Default, notFoundValue);
+        return parent.get(token, context, InjectFlags.Default, notFoundValue)
     } else if (!(flags & InjectFlags.Optional)) {
         if (notFoundValue === THROW_FLAGE) {
-            throw new NullInjectorError(token);
+            throw new NullInjectorError(token)
         }
-        return notFoundValue ?? null;
+        return notFoundValue ?? null
     } else {
         if (notFoundValue === THROW_FLAGE) {
-            throw new NullInjectorError(token);
+            throw new NullInjectorError(token)
         }
-        return notFoundValue ?? null;
+        return notFoundValue ?? null
     }
 }
 
@@ -806,47 +806,44 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
 export class DestroyLifecycleHooks extends LifecycleHooks {
 
     get destroyable(): boolean {
-        return this.platform ? this.platform.modules.size < 1 : true;
+        return this.platform ? this.platform.modules.size < 1 : true
     }
 
     async dispose(): Promise<void> {
-        if (this.destroyable) return;
+        if (this.destroyable) return
         if (this.platform) {
             const platform = this.platform;
             this.platform = null!;
             await Promise.all(Array.from(platform.modules.values())
                 .reverse()
-                .map(m => {
-                    return m.lifecycle.dispose();
-                }));
+                .map(m =>   m.lifecycle.dispose()))
         }
     }
 
     private _destrories: Set<OnDestroy>;
     constructor(protected platform?: Platform) {
-        super();
-
-        this._destrories = new Set();
+        super()
+        this._destrories = new Set()
     }
 
     register(target: any): void {
         const { onDestroy } = (target as OnDestroy);
         if (isFunction(onDestroy)) {
-            this.regDestory(target);
+            this.regDestory(target)
         }
     }
 
     clear(): void {
-        this._destrories.clear();
+        this._destrories.clear()
     }
 
     runDestroy(): void {
-        this._destrories.forEach(d => d?.onDestroy());
+        this._destrories.forEach(d => d?.onDestroy())
     }
 
 
     protected regDestory(hook: OnDestroy): void {
-        this._destrories.add(hook);
+        this._destrories.add(hook)
     }
 }
 
@@ -864,5 +861,5 @@ function registerCores(container: Container) {
     container.platform().registerAction(
         DesignLifeScope,
         RuntimeLifeScope
-    );
+    )
 }
