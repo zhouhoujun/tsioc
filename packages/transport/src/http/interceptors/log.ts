@@ -1,5 +1,5 @@
 import { Endpoint, Interceptor } from '@tsdi/core';
-import { Injectable } from '@tsdi/ioc';
+import { Injectable, isNumber } from '@tsdi/ioc';
 import { Logger, LoggerManager } from '@tsdi/logs';
 import * as chalk from 'chalk';
 import { Observable } from 'rxjs';
@@ -23,13 +23,13 @@ export class LogInterceptor implements Interceptor<HttpServRequest, HttpServResp
         return next.handle(req, ctx)
             .pipe(
                 map(res => {
-                    logger.info(outgoing, method, ctx.url, this.getStatusWithColor(ctx.status), this.getTimespan(Date.now() - start), ctx.statusMessage);
+                    logger.info(outgoing, method, ctx.url, this.getStatus(ctx.status), this.getTimespan(Date.now() - start), this.getSize(ctx.length), this.getMessage(ctx.status, ctx.statusMessage));
                     return res;
                 })
             );
     }
 
-    getStatusWithColor(status: number) {
+    private getStatus(status: number) {
         if (emptyStatus[status]) {
             return chalk.yellow(status);
         }
@@ -50,7 +50,18 @@ export class LogInterceptor implements Interceptor<HttpServRequest, HttpServResp
 
     }
 
-    getTimespan(times: number) {
+    private getMessage(status: number, msg: string) {
+        if (!msg) return '';
+        if (status >= 500) {
+            return chalk.red(msg);
+        } else if (status > 300) {
+            return chalk.yellow(msg);
+        } else if (status > 200) {
+            return chalk.cyan(msg);
+        }
+    }
+
+    private getTimespan(times: number) {
         let unitTime: string;
         if (times >= minM) {
             unitTime = (times / minM).toFixed(2) + 'mins';
@@ -62,9 +73,22 @@ export class LogInterceptor implements Interceptor<HttpServRequest, HttpServResp
         return chalk.gray(unitTime);
     }
 
+    getSize(size?: number) {
+        if (!isNumber(size)) return '';
+        if (size >= 1073741824) {
+            return chalk.gray(`${parseFloat((size / 1073741824).toFixed(2))}gb`);
+        } else if (size >= 1048576) {
+            return chalk.gray(`${parseFloat((size / 1048576).toFixed(2))}mb`);
+        } else if (size >= 1024) {
+            return chalk.gray(`${parseFloat((size / 1024).toFixed(2))}kb`);
+        } else {
+            return chalk.gray(`${size}b`);
+        }
+    }
+
 }
 
-const incoming = chalk.gray('--------------->');
-const outgoing = chalk.gray('<---------------');
+const incoming = chalk.gray('--->');
+const outgoing = chalk.gray('<---');
 const minS = 1000;
 const minM = 60000;
