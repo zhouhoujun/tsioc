@@ -115,8 +115,6 @@ export class SessionMiddleware implements Middleware {
         await se.load();
         try {
             await next();
-        } catch (err) {
-            throw err;
         } finally {
             if (this.options.autoCommit) {
                 await se.commit();

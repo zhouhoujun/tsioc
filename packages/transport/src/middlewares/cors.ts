@@ -96,7 +96,7 @@ export class CorsMiddleware implements Middleware {
     }
 
     async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
-        let requestOrigin = ctx.getHeader(hdr.ORIGIN);
+        const requestOrigin = ctx.getHeader(hdr.ORIGIN);
         !ctx.sent && vary(ctx.response, hdr.ORIGIN);
         if (!requestOrigin) {
             return await next()
@@ -116,9 +116,9 @@ export class CorsMiddleware implements Middleware {
         } else {
             origin = options.origin || requestOrigin
         }
-        let headersSet: any = {};
+        const headersSet: any = {};
 
-        let set = (key: string, value: any) => {
+        const set = (key: string, value: any) => {
             ctx.setHeader(key, value);
             headersSet[key] = value
         };
@@ -153,7 +153,7 @@ export class CorsMiddleware implements Middleware {
                 ctx.status = err instanceof HttpError ? err.status || 500 : 500;
                 ctx.statusMessage = err.message || err.toString() || '';
                 ctx.get(Logger)?.error(err)
-            };
+            }
         } else {
             if (!ctx.getHeader(hdr.ACCESS_CONTROL_REQUEST_METHOD)) {
                 // this not preflight request, ignore it
@@ -167,7 +167,7 @@ export class CorsMiddleware implements Middleware {
                 ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_CREDENTIALS, 'true')
             }
 
-            let maxAge = String(options.maxAge);
+            const maxAge = String(options.maxAge);
             if (maxAge) {
                 ctx.setHeader(hdr.ACCESS_CONTROL_MAX_AGE, maxAge)
             }

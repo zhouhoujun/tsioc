@@ -61,7 +61,7 @@ export class HelmetMiddleware implements Middleware {
     }
 
     protected setXFormOptions(ctx: TransportContext) {
-        let xFrame = this.options.xFrame ?? EMPTY_OBJ;
+        const xFrame = this.options.xFrame ?? EMPTY_OBJ;
         let action = xFrame.action ?? 'SAMEORIGIN';
         if (action === 'ALLOW-FROM') {
             if (!xFrame.domain) {
@@ -96,7 +96,7 @@ export class HelmetMiddleware implements Middleware {
         mode?: 'block';
         reportUri?: string;
     }) {
-        let head: string[] = ['1'];
+        const head: string[] = ['1'];
         if (xssProt.mode) {
             head.push('mode=block');
         }
@@ -107,14 +107,14 @@ export class HelmetMiddleware implements Middleware {
         if (xssProt.oldIE) {
             ctx.setHeader(hdr.X_XSS_PROTECTION, xss);
         } else {
-            let old = this.isOldIE(ctx.getHeader(hdr.USER_AGENT) as string);
+            const old = this.isOldIE(ctx.getHeader(hdr.USER_AGENT) as string);
             ctx.setHeader(hdr.X_XSS_PROTECTION, old ? '0' : xss);
         }
     }
 
     private isOldIE(agent: string) {
         if (!agent) return false;
-        let matches = IEExp.exec(agent);
+        const matches = IEExp.exec(agent);
         return matches ? parseFloat(matches[1]) < 9 : false
     }
 

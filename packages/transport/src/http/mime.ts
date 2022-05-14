@@ -259,7 +259,7 @@ export class HttpMimeAdapter extends MimeAdapter {
             type,
             subtype,
             suffix
-        }
+        };
     }
 
     private tryNormalizeType(value: string) {

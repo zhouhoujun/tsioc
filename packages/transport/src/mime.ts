@@ -110,15 +110,15 @@ export class BasicMimeDb extends MimeDb {
     set(mime: string, source: MimeSource): void {
         this.map.set(mime, source);
         if (source.extensions) {
-            let exts = source.extensions;
+            const exts = source.extensions;
             // extension -> mime
-            let preference = this.getPreference();
+            const preference = this.getPreference();
             for (let i = 0; i < exts.length; i++) {
-                let extension = exts[i]
+                const extension = exts[i]
                 const exist = this.extenType.get(extension);
                 if (exist) {
-                    let from = preference.indexOf(exist)
-                    let to = preference.indexOf(source.source);
+                    const from = preference.indexOf(exist)
+                    const to = preference.indexOf(source.source);
 
                     if (exist !== 'application/octet-stream' &&
                         (from > to || (from === to && exist.substring(0, 12) === 'application/'))) {

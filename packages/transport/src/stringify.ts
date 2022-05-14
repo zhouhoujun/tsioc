@@ -1,3 +1,5 @@
+/* eslint-disable no-control-regex */
+/* eslint-disable no-misleading-character-class */
 import { isPromise } from '@tsdi/ioc';
 import { Readable } from 'node:stream';
 
@@ -7,12 +9,12 @@ export class JsonStreamStringify extends Readable {
     private replacerFunction?: Function;
     private replacerArray?: any[];
     private gap?: string;
-    private depth: number = 0;
+    private depth = 0;
     private error?: boolean;
-    private pushCalled: boolean = false;
-    private end: boolean = false;
-    private isReading: boolean = false;
-    private readMore: boolean = false;
+    private pushCalled = false;
+    private end = false;
+    private isReading = false;
+    private readMore = false;
 
     constructor(value: any, replacer?: Function | any[], spaces?: number | string, private cycle: boolean = false) {
         super({ encoding: 'utf8' });
@@ -226,14 +228,10 @@ export class JsonStreamStringify extends Readable {
                 case 'object':
                     if (!current.value) {
                         value = 'null';
-                        break;
                     }
+                    break;
                 default:
-                    // This should never happen, I can't imagine a situation where this executes.
-                    // If you find a way, please open a ticket or PR
-                    throw Object.assign(new Error(`Unknown type "${type}". Please file an issue!`), {
-                        value: current.value,
-                    });
+                    throw this.onError(`Unknown type "${type}". Please file an issue!`, current.value);
             }
             this._push(value);
         } else if (this.stack[1] && (this.stack[1].type === Types.Array || this.stack[1].type === Types.ReadableObject)) {
@@ -242,6 +240,14 @@ export class JsonStreamStringify extends Readable {
             current.addSeparatorAfterEnd = false;
         }
         this.removeFromStack(current);
+    }
+
+    onError(msg: string, value?: any) {
+        const error = new Error(msg);
+        if (value) {
+            (error as any).value = value;
+        }
+        return error;
     }
 
     private processReadableString(current: IStackItem, size: number) {

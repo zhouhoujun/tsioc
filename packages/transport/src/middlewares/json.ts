@@ -27,15 +27,15 @@ export class EncodeJsonMiddleware implements Middleware {
 
         await next();
 
-        let body = ctx.body;
-        let strm = isStream(body);
-        let json = isJson(body);
+        const body = ctx.body;
+        const strm = isStream(body);
+        const json = isJson(body);
 
         if (!json && !strm) {
             return;
         }
 
-        let pretty = this.pretty || hasOwn(ctx.query, this.paramName);
+        const pretty = this.pretty || hasOwn(ctx.query, this.paramName);
 
         if (strm) {
             // resp.contentType = 'application/json';

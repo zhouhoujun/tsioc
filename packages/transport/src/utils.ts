@@ -32,17 +32,17 @@ const htmlRegExp = /["'&<>]/;
  */
 
 export function escapeHtml(content: string): string {
-  var str = '' + content;
-  var match = htmlRegExp.exec(str);
+  const str = '' + content;
+  const match = htmlRegExp.exec(str);
 
   if (!match) {
     return str
   }
 
-  var escape;
-  var html = '';
-  var index = 0;
-  var lastIndex = 0;
+  let escape;
+  let html = '';
+  let index = 0;
+  let lastIndex = 0;
 
   for (index = match.index; index < str.length; index++) {
     switch (str.charCodeAt(index)) {
@@ -117,9 +117,9 @@ const UNMATCHED_SURROGATE_PAIR_REPLACE = '$1\uFFFD$2'
  */
 
 export function parseTokenList(str: string) {
-  let end = 0
-  let list = []
-  let start = 0
+  let end = 0;
+  const list = [];
+  let start = 0;
 
   // gather tokens
   for (let i = 0, len = str.length; i < len; i++) {
@@ -128,14 +128,14 @@ export function parseTokenList(str: string) {
         if (start === end) {
           start = end = i + 1
         }
-        break
+        break;
       case 0x2c: /* , */
         list.push(str.substring(start, end))
         start = end = i + 1
-        break
+        break;
       default:
         end = i + 1
-        break
+        break;
     }
   }
 
@@ -157,10 +157,10 @@ const field_name = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
 
 export function vary(res: ResponseHeader, field: string) {
   // get existing header
-  let val = res.getHeader('Vary') || ''
-  let header = Array.isArray(val)
+  let val = res.getHeader('Vary') || '';
+  const header = Array.isArray(val)
     ? val.join(', ')
-    : String(val)
+    : String(val);
 
   // set new header
   if ((val = append(header, field))) {
@@ -187,9 +187,9 @@ export function append(header: string, field: string) {
   }
 
   // get fields array
-  let fields = !Array.isArray(field)
+  const fields = !Array.isArray(field)
     ? parseTokenList(String(field))
-    : field
+    : field;
 
   // assert on invalid field names
   for (let j = 0; j < fields.length; j++) {
@@ -204,8 +204,8 @@ export function append(header: string, field: string) {
   }
 
   // enumerate current values
-  let val = header
-  let vals = parseTokenList(header.toLowerCase())
+  let val = header;
+  const vals = parseTokenList(header.toLowerCase());
 
   // unspecified vary
   if (fields.indexOf('*') !== -1 || vals.indexOf('*') !== -1) {
@@ -213,7 +213,7 @@ export function append(header: string, field: string) {
   }
 
   for (let i = 0; i < fields.length; i++) {
-    let fld = fields[i].toLowerCase()
+    const fld = fields[i].toLowerCase()
 
     // append value (case-preserving)
     if (vals.indexOf(fld) === -1) {

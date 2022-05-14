@@ -34,7 +34,7 @@ export class ContentMiddleware implements Middleware {
         let file = '';
         if (ctx.method === 'HEAD' || ctx.method === 'GET') {
             try {
-                let sender = ctx.injector.get(SendAdapter);
+                const sender = ctx.injector.get(SendAdapter);
                 file = await sender.send(ctx, this.options)
             } catch (err) {
                 if ((err as TransportError).status !== 404) {

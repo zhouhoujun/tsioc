@@ -1,3 +1,4 @@
+/* eslint-disable no-control-regex */
 import { Middleware, TransportContext, TransportError } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable } from '@tsdi/ioc';
 import * as zlib from 'node:zlib';
@@ -137,8 +138,7 @@ export class BodyparserMiddleware implements Middleware {
             case 'identity':
                 return ctx.request
             default:
-                let err = new TransportError(415, 'Unsupported Content-Encoding: ' + encoding);
-                throw err
+                throw new TransportError(415, 'Unsupported Content-Encoding: ' + encoding);
         }
         return (ctx.request as Readable).pipe(zlib.createUnzip())
     }
@@ -162,8 +162,8 @@ export class BodyparserMiddleware implements Middleware {
             length = ~~len
         }
 
-        let { limit, queryString, qs, encoding } = this.options.form;
-
+        const { limit, queryString, encoding } = this.options.form;
+        let qs = this.options.form.qs;
         if (!qs) {
             qs = qslib
         }

@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-escape */
 import { Injectable, isArray, isString } from '@tsdi/ioc';
 import { hdr } from '../consts';
 import { Negotiator } from '../negotiator';
@@ -52,7 +53,7 @@ export class HttpNegotiator extends Negotiator {
     const aspects = isString(aspect) ? aspect.split(',') : aspect;
     const ch: Accepted[] = [];
     aspects.forEach((str, idx) => {
-      let info = this.matchify(str, idx);
+      const info = this.matchify(str, idx);
       if (info) {
         ch.push(info)
       }
@@ -64,9 +65,9 @@ export class HttpNegotiator extends Negotiator {
     const accepts = isArray(encoding) ? encoding : encoding.split(',');
     let hasIdentity = false;
     let minQuality = 1;
-    let encodings: Accepted[] = [];
+    const encodings: Accepted[] = [];
     accepts.forEach((a, i) => {
-      let enco = this.matchify(a.trim(), i);
+      const enco = this.matchify(a.trim(), i);
       if (enco) {
         encodings.push(enco);
         hasIdentity = hasIdentity || this.specify(hdr.IDENTITY, enco) !== null;
@@ -98,15 +99,15 @@ export class HttpNegotiator extends Negotiator {
   }
 
   protected matchify(str: string, i: number): null | Accepted {
-    let match = charsetRegExp.exec(str);
+    const match = charsetRegExp.exec(str);
     if (!match) return null;
 
-    let charset = match[1].toString();
+    const charset = match[1].toString();
     let q = 1;
     if (match[2]) {
-      let params = match[2].split(';')
+      const params = match[2].split(';')
       for (let j = 0; j < params.length; j++) {
-        let p = params[j].trim().split('=');
+        const p = params[j].trim().split('=');
         if (p[0] === 'q') {
           q = parseFloat(p[1]);
           break
@@ -137,7 +138,7 @@ export class HttpNegotiator extends Negotiator {
     }
 
     for (let i = 0; i < accepted.length; i++) {
-      let spec = specify.call(this, value, accepted[i] as any, index);
+      const spec = specify.call(this, value, accepted[i] as any, index);
 
       if (spec && (priority.s - spec.s || priority.q - spec.q || priority.o - spec.o) < 0) {
         priority = spec
@@ -164,7 +165,7 @@ export class HttpNegotiator extends Negotiator {
   }
 
   langSpecify(language: string, spec: LangAccepted, index?: number): Specify | null {
-    let p = this.langMatchify(language)
+    const p = this.langMatchify(language)
     if (!p) return null;
     let s = 0;
     if (spec.value.toLowerCase() === p.value.toLowerCase()) {
@@ -189,7 +190,7 @@ export class HttpNegotiator extends Negotiator {
     const aspects = isString(aspect) ? aspect.split(',') : aspect;
     const langs: LangAccepted[] = [];
     aspects.forEach((str, idx) => {
-      let info = this.langMatchify(str, idx);
+      const info = this.langMatchify(str, idx);
       if (info) {
         langs.push(info)
       }
@@ -197,21 +198,20 @@ export class HttpNegotiator extends Negotiator {
     return langs
   }
 
-  protected langMatchify(str: string, i: number = 0): LangAccepted | null {
-    let match = langRegExp.exec(str);
+  protected langMatchify(str: string, i = 0): LangAccepted | null {
+    const match = langRegExp.exec(str);
     if (!match) return null;
 
-    let prefix = match[1],
-      suffix = match[2],
-      full = prefix;
+    const prefix = match[1], suffix = match[2];
+    let full = prefix;
 
     if (suffix) full += "-" + suffix;
 
     let q = 1;
     if (match[3]) {
-      let params = match[3].split(';')
+      const params = match[3].split(';')
       for (let j = 0; j < params.length; j++) {
-        let p = params[j].split('=');
+        const p = params[j].split('=');
         if (p[0] === 'q') q = parseFloat(p[1]);
       }
     }
@@ -240,7 +240,7 @@ export class HttpNegotiator extends Negotiator {
     accepts.length = j + 1;
     const medias: MediaAccepted[] = [];
     accepts.forEach((v, i) => {
-      let media = this.mediaMatchify(v.trim(), i);
+      const media = this.mediaMatchify(v.trim(), i);
       if (media) {
         medias.push(media)
       }
@@ -248,25 +248,25 @@ export class HttpNegotiator extends Negotiator {
     return medias
   }
 
-  protected mediaMatchify(str: string, i: number = 0): MediaAccepted | null {
-    let match = mediaRegExp.exec(str);
+  protected mediaMatchify(str: string, i = 0): MediaAccepted | null {
+    const match = mediaRegExp.exec(str);
     if (!match) return null;
 
-    let params = Object.create(null);
+    const params = Object.create(null);
     let q = 1;
-    let subtype = match[2];
-    let type = match[1];
+    const subtype = match[2];
+    const type = match[1];
 
     if (match[3]) {
-      let kvps = this.splitParameters(match[3]).map(this.splitKeyValuePair);
+      const kvps = this.splitParameters(match[3]).map(this.splitKeyValuePair);
 
       for (let j = 0; j < kvps.length; j++) {
-        let pair = kvps[j];
-        let key = pair[0]?.toLowerCase();
-        let val = pair[1];
+        const pair = kvps[j];
+        const key = pair[0]?.toLowerCase();
+        const val = pair[1];
 
         // get the value, unwrapping quotes
-        let value = val && val[0] === '"' && val[val.length - 1] === '"'
+        const value = val && val[0] === '"' && val[val.length - 1] === '"'
           ? val.substring(1, val.length - 2)
           : val;
 
@@ -288,7 +288,7 @@ export class HttpNegotiator extends Negotiator {
       value: `${type}/${subtype}`,
       q,
       i
-    }
+    };
   }
 
   quoteCount(str: string) {
@@ -304,7 +304,7 @@ export class HttpNegotiator extends Negotiator {
   }
 
   protected mediaSpecify(type: string, spec: MediaAccepted, index?: number) {
-    let p = this.mediaMatchify(type);
+    const p = this.mediaMatchify(type);
     let s = 0;
 
     if (!p) {
@@ -323,7 +323,7 @@ export class HttpNegotiator extends Negotiator {
       return null
     }
 
-    let keys = Object.keys(spec.params);
+    const keys = Object.keys(spec.params);
     if (keys.length > 0) {
       if (keys.every(k => {
         return spec.params[k] == '*' || (spec.params[k] || '').toLowerCase() == (p!.params[k] || '').toLowerCase();
@@ -338,12 +338,12 @@ export class HttpNegotiator extends Negotiator {
       i: index,
       o: spec.i,
       q: spec.q,
-      s: s,
-    }
+      s: s
+    };
   }
 
   private splitParameters(str: string) {
-    let parameters = str.split(';');
+    const parameters = str.split(';');
     let j = 0;
     for (let i = 1; i < parameters.length; i++) {
       if (this.quoteCount(parameters[j]) % 2 == 0) {
@@ -364,7 +364,7 @@ export class HttpNegotiator extends Negotiator {
   }
 
   private splitKeyValuePair(str: string) {
-    let index = str.indexOf('=');
+    const index = str.indexOf('=');
     let key;
     let val;
 

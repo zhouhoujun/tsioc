@@ -1,4 +1,4 @@
-import { EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isBoolean, isFunction, lang, Providers, tokenId, Type } from '@tsdi/ioc';
+import { EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isBoolean, isDefined, isFunction, lang, Providers, tokenId, Type } from '@tsdi/ioc';
 import {
     TransportServer, EndpointBackend, CustomEndpoint, RunnableFactoryResolver,
     MiddlewareType, Interceptor, ModuleRef, Router, InterceptorType,
@@ -223,13 +223,13 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
                 { provide: HTTP_SERVEROPTIONS, useValue: this.options }
             ];
             await Promise.all(this.options.sharing.map(sr => {
-                let runnable = resolver.resolve(sr);
+                const runnable = resolver.resolve(sr);
                 return runnable.create(injector, { providers }).run()
             }))
         }
 
         const listenOptions = this.options.listenOptions;
-        injector.get(ModuleRef).setValue(HTTP_LISTENOPTIONS, { ...listenOptions, withCredentials: cert!!, majorVersion: options.majorVersion });
+        injector.get(ModuleRef).setValue(HTTP_LISTENOPTIONS, { ...listenOptions, withCredentials: isDefined(cert), majorVersion: options.majorVersion });
         this.logger.info(lang.getClassName(this), 'listen:', listenOptions, '. access with url:', `http${cert ? 's' : ''}://${listenOptions?.host}:${listenOptions?.port}${listenOptions?.path ?? ''}`, '!')
         this._server.listen(listenOptions)
     }

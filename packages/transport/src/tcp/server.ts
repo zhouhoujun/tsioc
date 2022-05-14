@@ -2,6 +2,7 @@ import { EndpointBackend, Interceptor, MiddlewareInst, TransportContext, Transpo
 import { Abstract, Inject, Injectable, InvocationContext, lang, Nullable } from '@tsdi/ioc';
 import { Server, ListenOptions } from 'node:net';
 import { Subscription } from 'rxjs';
+import { ev } from '../consts';
 import { TCPRequest, TCPResponse } from './packet';
 
 
@@ -33,9 +34,8 @@ export abstract class TcpServerOption {
     abstract listenOptions: ListenOptions;
 }
 
-const defaults = {
+const defOpts = {
     json: true,
-    serverOpts: undefined,
     listenOptions: {
         port: 3000,
         host: 'localhost'
@@ -50,16 +50,19 @@ const defaults = {
 export class TCPServer extends TransportServer<TCPRequest, TCPResponse> {
 
     private server?: Server;
+    private options: TcpServerOption;
     constructor(
         @Inject() readonly context: InvocationContext,
-        @Nullable() private options: TcpServerOption = defaults) {
-        super();
+        @Nullable() options: TcpServerOption) {
+        super()
+        this.options = { ...defOpts, ...options };
+
     }
 
     async start(): Promise<void> {
         this.server = new Server(this.options.serverOpts);
         const defer = lang.defer();
-        this.server.once('error', defer.reject);
+        this.server.once(ev.ERROR, defer.reject);
         this.server.listen(this.options.listenOptions, defer.resolve);
         await defer.promise;
     }
