@@ -74,7 +74,7 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
     }
 
     getLogger(name?: string): Logger {
-        return this.injector.get(LoggerManager, null)?.getLogger(name)!
+        return this.injector.get(LoggerManager, null)?.getLogger(name) ?? null!;
     }
 
     publishEvent(event: ApplicationEvent): void;

@@ -26,7 +26,7 @@ export class LogInterceptor implements Interceptor<HttpServRequest, HttpServResp
                     logger.info(outgoing, method, ctx.url, this.getStatus(ctx.status), this.getTimespan(Date.now() - start), this.getSize(ctx.length), this.getMessage(ctx.status, ctx.statusMessage));
                     return res
                 })
-            );
+            )
     }
 
     private getStatus(status: number) {
@@ -36,7 +36,7 @@ export class LogInterceptor implements Interceptor<HttpServRequest, HttpServResp
         if (redirectStatus[status]) {
             return chalk.blue(status)
         }
-        if (status == 200) {
+        if (status === 200) {
             return chalk.green(status)
         }
 

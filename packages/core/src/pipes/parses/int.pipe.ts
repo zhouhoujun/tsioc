@@ -8,7 +8,7 @@ import { PipeTransform, invalidPipeArgumentError } from '../pipe';
 @Pipe('int')
 export class ParseIntPipe implements PipeTransform<number> {
 
-    transform(value: any, radix: number = 10): number {
+    transform(value: any, radix = 10): number {
         let ret: number;
         if (isString(value)) {
             ret = parseInt(value, radix)

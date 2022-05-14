@@ -61,7 +61,7 @@ export class DefaultConfigureManager extends ConfigureManager {
             return
         }
         let config: ApplicationConfiguration = this.config = { ...this.injector.get(DEFAULT_CONFIG) };
-        let exts = await Promise.all(this.configs.map(cfg => {
+        const exts = await Promise.all(this.configs.map(cfg => {
             if (isString(cfg)) {
                 return this.loadConfig(cfg)
             } else {
@@ -75,7 +75,7 @@ export class DefaultConfigureManager extends ConfigureManager {
                 if (merger) {
                     config = merger.merge(config, exCfg)
                 } else {
-                    for (let n in exCfg) {
+                    for (const n in exCfg) {
                         config[n] = exCfg[n]
                     }
                 }
@@ -94,7 +94,7 @@ export class DefaultConfigureManager extends ConfigureManager {
         if (this.configLoader) {
             return await this.configLoader.load(src)
         } else if (src) {
-            let cfg = await this.injector.getLoader().load([src])
+            const cfg = await this.injector.getLoader().load([src])
             return lang.first(cfg) as ApplicationConfiguration
         } else {
             return null!
@@ -108,7 +108,7 @@ export class ConfigureMergerImpl extends ConfigureMerger {
 
     merge(target: ApplicationConfiguration, source: ApplicationConfiguration): ApplicationConfiguration {
         if (!source) return target;
-        for (let n in source) {
+        for (const n in source) {
             switch (n) {
                 case 'setting':
                     target.setting = { ...target.setting, ...source.setting };

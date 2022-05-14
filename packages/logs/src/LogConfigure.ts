@@ -13,7 +13,7 @@ export abstract class LogConfigure {
     /**
      * log adapter
      *
-     * @type {Token<LoggerManager>)}
+     * @type {Token<LoggerManager>}
      */
     abstract get adapter(): Token<LoggerManager>;
 

@@ -211,27 +211,22 @@ export interface ParameterMetadata extends PropertyMetadata {
 
 
 /**
+ * Inject metadata.
+ *
+ */
+ export type InjectMetadata = ParameterMetadata;
+
+/**
  * parameter property metadata.
  *
- * @export
- * @interface ParamPropMetadata
- * @extends {ParameterMetadata}
  */
-export interface ParamPropMetadata extends ParameterMetadata { }
+export type ParamPropMetadata = ParameterMetadata;
 
 /**
  * method param property metadata.
  */
 export interface MethodParamPropMetadata extends ParamPropMetadata, MethodMetadata { }
 
-/**
- * Inject metadata.
- *
- * @export
- * @interface InjectMetadata
- * @extends {ParamPropMetadata}
- */
-export interface InjectMetadata extends ParamPropMetadata { }
 
 /**
  * provided in metadata.
@@ -335,11 +330,8 @@ export interface ModuleMetadata extends ProvidedInMetadata, ProvidersMetadata {
 /**
  * Autowired metadata.
  *
- * @export
- * @interface AutoWiredMetadata
- * @extends {PropertyMetadata}
  */
-export interface AutoWiredMetadata extends MethodParamPropMetadata { }
+export type AutoWiredMetadata = MethodParamPropMetadata;
 
 
 /**

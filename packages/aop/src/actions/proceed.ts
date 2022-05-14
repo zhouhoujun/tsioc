@@ -82,8 +82,8 @@ export class ProceedingScope extends IocActions<Joinpoint> implements ActionSetu
         if (advices && pointcut) {
             const methodName = pointcut.name;
             if (pointcut.descriptor && (pointcut.descriptor.get || pointcut.descriptor.set)) {
-                const getProxy = pointcut.descriptor.get ? this.proxy(pointcut.descriptor.get.bind(target) as Function, advices, target, targetType, pointcut) : emptyFunc;
-                const setProxy = pointcut.descriptor.set ? this.proxy(pointcut.descriptor.set.bind(target) as Function, advices, target, targetType, pointcut) : emptyFunc;
+                const getProxy = pointcut.descriptor.get ? this.proxy(pointcut.descriptor.get.bind(target), advices, target, targetType, pointcut) : emptyFunc;
+                const setProxy = pointcut.descriptor.set ? this.proxy(pointcut.descriptor.set.bind(target), advices, target, targetType, pointcut) : emptyFunc;
                 if (pointcut.descriptor.get && pointcut.descriptor.set) {
                     Object.defineProperty(target, methodName, {
                         get: () => {
@@ -107,7 +107,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements ActionSetu
                     })
                 }
             } else if (isFunction(target[methodName]) && !target[methodName][proxyFlag]) {
-                let propertyMethod = target[methodName];
+                const propertyMethod = target[methodName];
                 target[methodName] = this.proxy(propertyMethod, advices, target, targetType, pointcut);
                 target[methodName][proxyFlag] = true
             }
@@ -117,7 +117,6 @@ export class ProceedingScope extends IocActions<Joinpoint> implements ActionSetu
     proxy(propertyMethod: Function, advices: Advices, target: any, targetType: Type, pointcut: IPointcut) {
         const fullName = pointcut.fullName;
         const name = pointcut.name;
-        const self = this;
         const platform = this.platform;
         return (...args: any[]) => {
             if (!platform || !platform.injector || platform.injector.destroyed) {
@@ -146,7 +145,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements ActionSetu
                 joinPoint.onDestroy(parent)
             }
 
-            self.handle(joinPoint);
+            this.handle(joinPoint);
 
             if (joinPoint.returningDefer) {
                 return isObservable(joinPoint.originReturning) ?

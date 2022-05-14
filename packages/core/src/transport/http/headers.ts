@@ -182,14 +182,14 @@ export class HttpHeaders {
   }
 
   private init(): void {
-    if (!!this.lazyInit) {
+    if (this.lazyInit) {
       if (this.lazyInit instanceof HttpHeaders) {
         this.copyFrom(this.lazyInit)
       } else {
         this.lazyInit()
       }
       this.lazyInit = null;
-      if (!!this.lazyUpdate) {
+      if (this.lazyUpdate) {
         this.lazyUpdate.forEach(update => this.applyUpdate(update));
         this.lazyUpdate = null
       }
@@ -214,10 +214,11 @@ export class HttpHeaders {
 
   private applyUpdate(update: Update): void {
     const key = update.name.toLowerCase();
+    let value, base:string[], toDelete: string[];
     switch (update.op) {
       case 'a':
       case 's':
-        let value = update.value!;
+        value = update.value!;
         if (isString(value)) {
           value = [value]
         }
@@ -225,12 +226,12 @@ export class HttpHeaders {
           return
         }
         this.maybeSetNormalizedName(update.name, key);
-        const base = (update.op === 'a' ? this.headers.get(key) : undefined) || [];
+        base = (update.op === 'a' ? this.headers.get(key) : undefined) || [];
         base.push(...value);
         this.headers.set(key, base);
         break;
       case 'd':
-        const toDelete = update.value as string | undefined;
+        toDelete = update.value as string[];
         if (!toDelete) {
           this.headers.delete(key);
           this.normalizedNames.delete(key)

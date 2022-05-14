@@ -525,7 +525,7 @@ export function isInjector(target: any): target is Injector {
 * ioc container. 
 */
 @Abstract()
-export abstract class Container extends Injector { };
+export abstract class Container extends Injector { }
 
 
 /**

@@ -12,7 +12,8 @@ export class TypeormRepositoryArgumentResolver extends RepositoryArgumentResolve
     }
 
     canResolve(parameter: Parameter<any>, ctx: InvocationContext<any>): boolean {
-        let { model, connection } = parameter as RepositoryMetadata;
+        const { model } = parameter as RepositoryMetadata;
+        let { connection } = parameter as RepositoryMetadata;
         if (!connection) {
             connection = this.conn
         }
@@ -28,7 +29,8 @@ export class TypeormRepositoryArgumentResolver extends RepositoryArgumentResolve
     }
 
     resolve<T>(parameter: Parameter<T>, ctx: InvocationContext<any>): T {
-        let { model, connection, type } = parameter as RepositoryMetadata;
+        const { model, type } = parameter as RepositoryMetadata;
+        let { connection } = parameter as RepositoryMetadata;
         if (!connection) {
             connection = this.conn
         }

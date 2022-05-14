@@ -111,7 +111,7 @@ export class DefaultInjector extends Injector {
     }
 
     platform(): Platform {
-        return this._plat ?? this.parent?.platform()!
+        return (this._plat ?? this.parent?.platform())!
     }
 
     register(types: (Type | RegisterOption)[]): this;
@@ -192,7 +192,7 @@ export class DefaultInjector extends Injector {
                 }, typeReflect)
         }
 
-        const injector: Injector = this;
+        const injector = this as Injector;
         const getRecords = () => this.records;
         const ctx = {
             injector,
@@ -234,7 +234,7 @@ export class DefaultInjector extends Injector {
     use(...modules: Modules[]): Type[];
     use(...args: any[]): Type[] {
         this.assertNotDestroyed();
-        let types: Type[] = [];
+        const types: Type[] = [];
         const platform = this.platform();
         deepForEach(args, ty => {
             if (isFunction(ty)) {
@@ -315,7 +315,7 @@ export class DefaultInjector extends Injector {
     resolve<T>(token: Token<T>, ...providers: ProviderType[]): T;
     resolve<T>(token: Token<T> | ResolveOption<T>, ...args: any[]) {
         this.assertNotDestroyed();
-        let option: ResolveOption<T> | undefined = this.toOption(token, args);
+        const option: ResolveOption<T> | undefined = this.toOption(token, args);
         let inst: T;
         if (option) {
             let isnew = false;
@@ -604,13 +604,14 @@ export function generateRecord<T>(platfrom: Platform, injector: Injector, provid
     let value: T | undefined;
     let fnType = FnType.Fac;
     let type = provider.useClass;
-    let isStatic = provider.static;
+    const isStatic = provider.static;
     let deps = computeDeps(provider);
     if (isDefined(provider.useValue)) {
         value = provider.useValue
     } else if (provider.useFactory) {
         fn = provider.useFactory
     } else if (provider.useExisting) {
+        // use ident.
 
     } else if (provider.useClass) {
         if (deps) {
@@ -646,7 +647,7 @@ function computeDeps(provider: StaticProviders): DependencyRecord[] {
             let token = dep;
             if (isArray(dep)) {
                 for (let i = 0; i < dep.length; i++) {
-                    let d = dep[i];
+                    const d = dep[i];
                     if (isNumber(d)) {
                         switch (d) {
                             case InjectFlags.Optional:
@@ -739,7 +740,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
             throw new CircularDependencyError()
         }
         if (isDefined(rd.value) && value !== EMPTY) return rd.value;
-        let deps = [];
+        const deps = [];
         if (rd.deps?.length) {
             for (let i = 0; i < rd.deps.length; i++) {
                 const dep = rd.deps[i];

@@ -1,4 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
+import { Level } from './Level';
 import { Logger } from './logger';
 
 /**
@@ -8,7 +9,9 @@ import { Logger } from './logger';
  * @interface LoggerConfig
  * @extends {Record<string, any>}
  */
-export interface LoggerConfig extends Record<string, any> { }
+export interface LoggerConfig extends Record<string, any> {
+    level?: Level;
+}
 
 
 
@@ -30,5 +33,5 @@ export abstract class LoggerManager {
      * @param {string} [name]
      * @returns {Logger}
      */
-    abstract getLogger(name?: string): Logger
+    abstract getLogger(name?: string): Logger;
 }

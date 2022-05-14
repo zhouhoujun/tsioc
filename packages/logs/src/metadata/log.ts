@@ -160,7 +160,7 @@ const loggerResolver = {
         return isDefined(pr.logname || pr.target)
     },
     resolve: (pr: LogMetadata, ctx, target?: ClassType) => {
-        let factory = ctx.get(LoggerManager);
+        const factory = ctx.get(LoggerManager);
         let level = pr.level;
         if (pr.config) {
             if (!level) {

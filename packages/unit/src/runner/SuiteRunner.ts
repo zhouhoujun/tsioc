@@ -24,12 +24,8 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
     }
 
     override async run(): Promise<void> {
-        try {
-            let desc = this.getSuiteDescribe();
-            await this.runSuite(desc)
-        } catch (err) {
-            throw err
-        }
+        const desc = this.getSuiteDescribe();
+        await this.runSuite(desc)
     }
 
     /**
@@ -38,7 +34,7 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
      * @returns {SuiteDescribe}
      */
     getSuiteDescribe(): SuiteDescribe {
-        let meta = this.factory.reflect.annotation as SuiteMetadata;
+        const meta = this.factory.reflect.annotation as SuiteMetadata;
         this.timeout = (meta && meta.timeout) ? meta.timeout : (3 * 60 * 60 * 1000);
         this.describe = meta.describe || this.factory.reflect.class.className;
         return {
@@ -55,14 +51,14 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
     }
 
     runTimeout(key: string, describe: string, timeout?: number): Promise<any> {
-        let instance = this.instance as any;
-        let defer = lang.defer();
+        const instance = this.instance as any;
+        const defer = lang.defer();
         const injector = this.factory.injector;
         let timer = setTimeout(() => {
             if (timer) {
                 clearTimeout(timer);
-                let assert = injector.get(Assert);
-                let err = new assert.AssertionError({
+                const assert = injector.get(Assert);
+                const err = new assert.AssertionError({
                     message: `${describe}, timeout ${timeout}`,
                     stackStartFunction: instance[key],
                     stackStartFn: instance[key]
@@ -92,7 +88,7 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
     }
 
     async runBefore(describe: SuiteDescribe) {
-        let befores = this.factory.reflect.class.getDecorDefines<BeforeTestMetadata>(Before.toString(), Decors.method);
+        const befores = this.factory.reflect.class.getDecorDefines<BeforeTestMetadata>(Before.toString(), Decors.method);
         await lang.step(
             befores.map(df => () => {
                 return this.runTimeout(
@@ -103,7 +99,7 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
     }
 
     async runBeforeEach() {
-        let befores = this.factory.reflect.class.getDecorDefines<BeforeEachTestMetadata>(BeforeEach.toString(), Decors.method);
+        const befores = this.factory.reflect.class.getDecorDefines<BeforeEachTestMetadata>(BeforeEach.toString(), Decors.method);
         await lang.step(
             befores.map(df => () => {
                 return this.runTimeout(
@@ -114,7 +110,7 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
     }
 
     async runAfterEach() {
-        let afters = this.factory.reflect.class.getDecorDefines<BeforeEachTestMetadata>(AfterEach.toString(), Decors.method);
+        const afters = this.factory.reflect.class.getDecorDefines<BeforeEachTestMetadata>(AfterEach.toString(), Decors.method);
         await lang.step(afters.map(df => () => {
             return this.runTimeout(
                 df.propertyKey,
@@ -124,7 +120,7 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
     }
 
     async runAfter(describe: SuiteDescribe) {
-        let afters = this.factory.reflect.class.getDecorDefines<BeforeTestMetadata>(After.toString(), Decors.method);
+        const afters = this.factory.reflect.class.getDecorDefines<BeforeTestMetadata>(After.toString(), Decors.method);
         await lang.step(
             afters.map(df => () => {
                 return this.runTimeout(
@@ -135,7 +131,7 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
     }
 
     async runTest(desc: SuiteDescribe) {
-        let tests = this.factory.reflect.class.getDecorDefines<TestCaseMetadata>(Test.toString(), Decors.method);
+        const tests = this.factory.reflect.class.getDecorDefines<TestCaseMetadata>(Test.toString(), Decors.method);
         await lang.step(
             tests.map(df => {
                 return {

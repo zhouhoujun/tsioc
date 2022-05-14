@@ -201,7 +201,7 @@ export abstract class HttpResponseBase {
             statusText?: string,
             url?: string,
         },
-        defaultStatus: number = HttpStatusCode.Ok, defaultStatusText: string = 'OK') {
+        defaultStatus: number = HttpStatusCode.Ok, defaultStatusText = 'OK') {
         // If the hash has values passed, use them to initialize the response.
         // Otherwise use the default values.
         this.headers = init.headers || new HttpHeaders();

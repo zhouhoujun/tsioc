@@ -1,7 +1,8 @@
+/* eslint-disable no-useless-escape */
+/* eslint-disable @typescript-eslint/triple-slash-reference */
 /// <reference path="./type.d.ts" />
 import { EMPTY_OBJ, Injectable, Injector, InvocationContext, ProviderType, tokenId } from '@tsdi/ioc';
 import { HttpBackend, HttpEvent, HttpHandler, HttpInterceptingHandler, HttpRequest, Module, XhrFactory } from '@tsdi/core';
-// import * as xhr2 from 'xhr2';
 import * as xhr2 from 'xmlhttprequest-ssl';
 import { ListenOptions } from 'node:net';
 import { Observable } from 'rxjs';

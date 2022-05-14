@@ -73,7 +73,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         if (!this._backend) {
             this._backend = new CustomEndpoint((req, ctx) => {
                 return new Observable((observer: Observer<HttpEvent<any>>) => {
-                    let headers: Record<string, any> = {};
+                    const headers: Record<string, any> = {};
                     req.headers.forEach((name, values) => {
                         headers[name] = values
                     });
@@ -99,10 +99,10 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
                         request.setEncoding('utf8');
                         onResponse = (headers: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader, flags: number) => {
 
-                        };
+                        }
 
                     } else {
-                        let option = {
+                        const option = {
                             method: req.method,
                             headers: {
                                 ...headers,
@@ -112,8 +112,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
                         request = secureExp.test(req.url) ? https.request(option) : http.request(option);
                         onResponse = (respone: http.IncomingMessage) => {
 
-                        };
-
+                        }
                     }
 
                     request.on(ev.RESPONSE, onResponse);
@@ -305,7 +304,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         responseType?: 'json',
         withCredentials?: boolean,
         body?: any | null,
-    }): Observable<HttpEvent<Object>>;
+    }): Observable<HttpEvent<object>>;
 
     /**
      * Constructs a `DELETE`request that interprets the body as a JSON object
@@ -404,7 +403,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         responseType?: 'json',
         withCredentials?: boolean,
         body?: any | null,
-    }): Observable<HttpResponse<Object>>;
+    }): Observable<HttpResponse<object>>;
 
     /**
      * Constructs a `DELETE` request that interprets the body as a JSON object
@@ -445,7 +444,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         responseType?: 'json',
         withCredentials?: boolean,
         body?: any | null,
-    }): Observable<Object>;
+    }): Observable<object>;
 
     /**
      * Constructs a DELETE request that interprets the body as a JSON object and returns
@@ -621,7 +620,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpEvent<Object>>;
+    }): Observable<HttpEvent<object>>;
 
     /**
      * Constructs a `GET` request that interprets the body as a JSON object and returns the full event
@@ -717,7 +716,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpResponse<Object>>;
+    }): Observable<HttpResponse<object>>;
 
     /**
      * Constructs a `GET` request that interprets the body as a JSON object and
@@ -758,7 +757,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<Object>;
+    }): Observable<object>;
 
     /**
      * Constructs a `GET` request that interprets the body as a JSON object and returns
@@ -932,7 +931,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpEvent<Object>>;
+    }): Observable<HttpEvent<object>>;
 
     /**
      * Constructs a `HEAD` request that interprets the body as a JSON object and
@@ -1019,7 +1018,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @param options The HTTP options to send with the request.
      *
      * @return An `Observable` of the `HttpResponse` for the request,
-     * with the response body of type `Object`.
+     * with the response body of type `object`.
      */
     head(url: string, options: {
         headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
@@ -1029,7 +1028,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpResponse<Object>>;
+    }): Observable<HttpResponse<object>>;
 
     /**
      * Constructs a `HEAD` request that interprets the body as a JSON object
@@ -1069,7 +1068,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<Object>;
+    }): Observable<object>;
 
     /**
      * Constructs a `HEAD` request that interprets the body as a JSON object and returns
@@ -1120,7 +1119,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      *
      * @return An `Observable` of the response object, with response body as an object.
      */
-    jsonp(url: string, callbackParam: string): Observable<Object>;
+    jsonp(url: string, callbackParam: string): Observable<object>;
 
     /**
      * Constructs a `JSONP` request for the given URL and name of the callback parameter.
@@ -1295,7 +1294,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpEvent<Object>>;
+    }): Observable<HttpEvent<object>>;
 
     /**
      * Constructs an `OPTIONS` request that interprets the body as a JSON object and
@@ -1392,7 +1391,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpResponse<Object>>;
+    }): Observable<HttpResponse<object>>;
 
     /**
      * Constructs an `OPTIONS` request that interprets the body as a JSON object and
@@ -1432,7 +1431,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<Object>;
+    }): Observable<object>;
 
     /**
      * Constructs an `OPTIONS` request that interprets the body as a JSON object and returns the
@@ -1614,7 +1613,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpEvent<Object>>;
+    }): Observable<HttpEvent<object>>;
 
     /**
      * Constructs a `PATCH` request that interprets the body as a JSON object
@@ -1716,7 +1715,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpResponse<Object>>;
+    }): Observable<HttpResponse<object>>;
 
     /**
      * Constructs a `PATCH` request that interprets the body as a JSON object
@@ -1758,7 +1757,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<Object>;
+    }): Observable<object>;
 
     /**
      * Constructs a `PATCH` request that interprets the body as a JSON object
@@ -1938,7 +1937,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpEvent<Object>>;
+    }): Observable<HttpEvent<object>>;
 
     /**
      * Constructs a POST request that interprets the body as a JSON object and returns the full event
@@ -2040,7 +2039,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpResponse<Object>>;
+    }): Observable<HttpResponse<object>>;
 
     /**
      * Constructs a `POST` request that interprets the body as a JSON object and returns the full
@@ -2083,7 +2082,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<Object>;
+    }): Observable<object>;
 
     /**
      * Constructs a `POST` request that interprets the body as a JSON object
@@ -2265,7 +2264,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpEvent<Object>>;
+    }): Observable<HttpEvent<object>>;
 
     /**
      * Constructs a `PUT` request that interprets the body as a JSON object and returns the
@@ -2367,7 +2366,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpResponse<Object>>;
+    }): Observable<HttpResponse<object>>;
 
     /**
      * Constructs a `PUT` request that interprets the body as an instance of the requested type and
@@ -2409,7 +2408,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<Object>;
+    }): Observable<object>;
 
     /**
      * Constructs a `PUT` request that interprets the body as an instance of the requested type
@@ -2708,7 +2707,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpResponse<Object>>;
+    }): Observable<HttpResponse<object>>;
 
     /**
      * Constructs a request which interprets the body as a JSON object and returns
@@ -2751,7 +2750,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         responseType?: 'json',
         reportProgress?: boolean,
         withCredentials?: boolean,
-    }): Observable<Object>;
+    }): Observable<object>;
 
     /**
      * Constructs a request which interprets the body as a JSON object

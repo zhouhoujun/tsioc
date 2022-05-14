@@ -31,8 +31,8 @@ export function isPlatformServer(platformId: Object): boolean {
 // CommonJS / Node have global context exposed as "global" variable.
 // We don't want to include the whole node.d.ts this this compilation unit so we'll just fake
 // the global "global" var for now.
-declare var global: any;
-declare var WorkerGlobalScope: any;
+declare const global: any;
+declare const WorkerGlobalScope: any;
 
 const __window = typeof window !== type_undef && window;
 const __self = typeof self !== type_undef && typeof WorkerGlobalScope !== type_undef &&

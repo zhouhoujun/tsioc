@@ -8,7 +8,7 @@ import { extname } from 'node:path';
 import { append, encodeUrl, escapeHtml, isBuffer, isStream, parseTokenList } from '../utils';
 import { emptyStatus, redirectStatus } from './status';
 import { CONTENT_DISPOSITION } from './content';
-import { ev, ctype, hdr } from '../consts';
+import { ctype, hdr } from '../consts';
 import { MimeAdapter } from '../mime';
 import { Negotiator } from '../negotiator';
 import { HttpError, InternalServerError } from './errors';
@@ -417,7 +417,7 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
             return negotiator.mediaTypes()
         }
         const mimeAdapter = this.resolve(MimeAdapter);
-        let medias = args.map(a => a.indexOf('/') === -1 ? mimeAdapter.lookup(a) : a).filter(a => isString(a)) as string[];
+        const medias = args.map(a => a.indexOf('/') === -1 ? mimeAdapter.lookup(a) : a).filter(a => isString(a)) as string[];
         return lang.first(negotiator.mediaTypes(...medias)) ?? false
     }
 
@@ -491,7 +491,7 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
      */
 
     get idempotent() {
-        return !!~methods.indexOf(this.method!)
+        return !!~methods.indexOf(this.method)
     }
 
     /**
@@ -523,29 +523,29 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
 
     protected freshHeader(): boolean {
         const reqHeaders = this.request.headers;
-        let modifSince = reqHeaders[hdr.IF_MODIFIED_SINCE];
-        let nonMatch = reqHeaders[hdr.IF_NONE_MATCH];
+        const modifSince = reqHeaders[hdr.IF_MODIFIED_SINCE];
+        const nonMatch = reqHeaders[hdr.IF_NONE_MATCH];
         if (!modifSince && !nonMatch) {
             return false
         }
 
-        let cacheControl = reqHeaders[hdr.CACHE_CONTROL];
+        const cacheControl = reqHeaders[hdr.CACHE_CONTROL];
         if (cacheControl && no_cache.test(cacheControl)) {
             return false
         }
 
         // if-none-match
         if (nonMatch && nonMatch !== '*') {
-            let etag = this.response.getHeader(hdr.ETAG)
+            const etag = this.response.getHeader(hdr.ETAG)
 
             if (!etag) {
                 return false
             }
 
             let etagStale = true
-            let matches = parseTokenList(nonMatch)
+            const matches = parseTokenList(nonMatch)
             for (let i = 0; i < matches.length; i++) {
-                let match = matches[i]
+                const match = matches[i]
                 if (match === etag || match === 'W/' + etag || 'W/' + match === etag) {
                     etagStale = false
                     break
@@ -563,7 +563,7 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
             if (isArray(lastModified)) {
                 lastModified = lang.first(lastModified)
             }
-            let modifiedStale = !lastModified || !(parseStamp(lastModified) <= parseStamp(modifSince))
+            const modifiedStale = !lastModified || !(parseStamp(lastModified) <= parseStamp(modifSince))
 
             if (modifiedStale) {
                 return false
@@ -624,7 +624,7 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
      * @api public
      */
     set type(type: string) {
-        let contentType = this.injector.get(MimeAdapter).contentType(type);
+        const contentType = this.injector.get(MimeAdapter).contentType(type);
         if (contentType) {
             this.contentType = contentType
         }
@@ -826,10 +826,20 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
         this.setHeader(hdr.ETAG, val)
     }
 
+    /**
+     * Get the etag of a response.
+     *
+     * @return {String}
+     * @api public
+     */
+    get etag(): string {
+        return this.response.getHeader(hdr.ETAG) as string
+    }
+
     vary(field: string) {
         if (this.sent) return;
         let val = this.response.getHeader(hdr.VARY) ?? '';
-        let header = Array.isArray(val)
+        const header = Array.isArray(val)
             ? val.join(', ')
             : String(val)
 
@@ -839,17 +849,6 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
         }
     }
 
-
-    /**
-     * Get the etag of a response.
-     *
-     * @return {String}
-     * @api public
-     */
-
-    get etag(): string {
-        return this.response.getHeader(hdr.ETAG) as string
-    }
 
     /**
      * Returns true if the header identified by name is currently set in the outgoing headers.
@@ -1040,7 +1039,7 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
         // https://nodejs.org/api/http.html#http_response_writableended
         // response.finished is undocumented feature of previous Node versions
         // https://stackoverflow.com/questions/16254385/undocumented-response-finished-in-node-js
-        if ((this.response as any).writableEnded || this.response.finished) return false;
+        if ((this.response as http.ServerResponse).writableEnded || this.response.finished) return false;
         const socket = this.response.socket;
         // There are already pending outgoing res, but still writable
         // https://github.com/nodejs/node/blob/v4.4.7/lib/_http_server.js#L486
@@ -1069,15 +1068,16 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
     throwError(status: number, message?: string): Error;
     throwError(message: string): Error;
     throwError(error: Error): Error;
-    throwError(status: any, message?: any): Error {
+    throwError(status: string | number | Error, message?: string): Error {
         if (isString(status)) {
             return new InternalServerError(status)
-        } else {
+        } else if (isNumber(status)) {
             if (!statusMessage[status as HttpStatusCode]) {
                 status = 500
             }
             return new HttpError(status, message ?? statusMessage[status as HttpStatusCode])
         }
+        return new HttpError((status as HttpError).statusCode ?? 500, status.message ?? statusMessage[(status as HttpError).statusCode ?? 500]);
     }
 
 }

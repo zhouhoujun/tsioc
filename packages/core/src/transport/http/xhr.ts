@@ -52,7 +52,7 @@ export class HttpXhrBackend implements HttpBackend {
             // Start by setting up the XHR object with request method, URL, and withCredentials flag.
             const xhr = this.xhrFactory.build();
             xhr.open(req.method, req.urlWithParams);
-            if (!!req.withCredentials) {
+            if (req.withCredentials) {
                 xhr.withCredentials = true
             }
 
@@ -125,8 +125,8 @@ export class HttpXhrBackend implements HttpBackend {
             // First up is the load event, which represents a response being fully available.
             const onLoad = () => {
                 // Read response state from the memoized partial data.
-                let { headers, status, statusText, url } = partialFromXhr();
-
+                const { headers, status: statusCode, statusText, url } = partialFromXhr();
+                let status = statusCode;
                 // The body will be read out if present.
                 let body: any | null = null;
 
@@ -137,7 +137,7 @@ export class HttpXhrBackend implements HttpBackend {
 
                 // Normalize another potential bug (this one comes from CORS).
                 if (status === 0) {
-                    status = !!body ? HttpStatusCode.Ok : 0
+                    status = body ? HttpStatusCode.Ok : 0
                 }
 
                 // ok determines whether the response will be transmitted on the event or
@@ -228,7 +228,7 @@ export class HttpXhrBackend implements HttpBackend {
 
                 // Start building the download progress event to deliver on the response
                 // event stream.
-                let progressEvent: HttpDownloadProgressEvent = {
+                const progressEvent: HttpDownloadProgressEvent = {
                     type: HttpEventType.DownloadProgress,
                     loaded: event.loaded
                 };
@@ -254,7 +254,7 @@ export class HttpXhrBackend implements HttpBackend {
             const onUpProgress = (event: ProgressEvent) => {
                 // Upload progress events are simpler. Begin building the progress
                 // event.
-                let progress: HttpUploadProgressEvent = {
+                const progress: HttpUploadProgressEvent = {
                     type: HttpEventType.UploadProgress,
                     loaded: event.loaded
                 };

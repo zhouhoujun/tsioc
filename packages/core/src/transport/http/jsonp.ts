@@ -18,7 +18,7 @@ import { HttpStatusCode } from './status';
 // whole page. Each request is assigned an id and the callback name is constructed
 // from that. The next id to be assigned is tracked in a global variable here that
 // is shared among all applications on the page.
-let nextRequestId: number = 0;
+let nextRequestId = 0;
 
 // Error text given when a JSONP script is injected, but doesn't invoke the callback
 // passed in its URL.
@@ -70,7 +70,7 @@ export class JsonpClientBackend implements HttpBackend {
      * @returns An observable of the response events.
      *
      */
-    handle(req: HttpRequest<never>, context?: InvocationContext): Observable<HttpEvent<any>> {
+    handle(req: HttpRequest<never>, context: InvocationContext): Observable<HttpEvent<any>> {
         // Firstly, check both the method and response type. If either doesn't match
         // then the request was improperly routed here and cannot be handled.
         if (req.method !== 'JSONP') {
@@ -98,11 +98,11 @@ export class JsonpClientBackend implements HttpBackend {
             let body: any | null = null;
 
             // Whether the response callback has been called.
-            let finished: boolean = false;
+            let finished = false;
 
             // Whether the request has been cancelled (and thus any other callbacks)
             // should be ignored.
-            let cancelled: boolean = false;
+            let cancelled = false;
 
             // Set the response callback in this.callbackMap (which will be the window
             // object in the browser. The script being loaded via the <script> tag will

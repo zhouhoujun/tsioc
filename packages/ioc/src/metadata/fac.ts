@@ -63,7 +63,7 @@ function storeMetadata<T>(name: string, decor: string, args: any[], metadata: an
             if (isNumber(args[2])) {
                 target = args[0];
                 propertyKey = args[1];
-                let parameterIndex = args[2];
+                const parameterIndex = args[2];
                 refl.dispatchParamDecor(target, refl.toDefine(name, decor, metadata, Decors.parameter, option, propertyKey, parameterIndex), option)
             } else if (isUndefined(args[2])) {
                 target = args[0];
@@ -72,7 +72,7 @@ function storeMetadata<T>(name: string, decor: string, args: any[], metadata: an
             } else {
                 target = args[0];
                 propertyKey = args[1];
-                let descriptor = args[2] as TypedPropertyDescriptor<any>;
+                const descriptor = args[2] as TypedPropertyDescriptor<any>;
                 if (!descriptor) {
                     return
                 }

@@ -76,7 +76,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
             const key = `${metadate.method ?? ctx.method} ${method.propertyKey}`;
             let endpoint = this._endpoints.get(key);
             if (!endpoint) {
-                let endpoints = this.getRouteMiddleware(ctx, method)?.map(c => this.parse(c)) ?? [];
+                const endpoints = this.getRouteMiddleware(ctx, method)?.map(c => this.parse(c)) ?? [];
                 endpoints.push(async (c, n) => {
                     await this.response(c, method)
                 });
@@ -106,7 +106,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         }
         const meta = this.getRouteMetaData(ctx) as DecorDefine<RouteMappingMetadata>;
         if (!meta || !meta.propertyKey) return null;
-        let rmeta = meta.metadata;
+        const rmeta = meta.metadata;
         if (rmeta.guards?.length) {
             if (!(await lang.some(
                 rmeta.guards.map(token => () => promisify(this.factory.resolve(token)?.canActivate(ctx))),
@@ -121,13 +121,13 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
 
         const route: string = meta.metadata.route;
         if (route && isRest.test(route)) {
-            let restParams: any = {};
-            let routes = route.split('/').map(r => r.trim());
-            let restParamNames = routes.filter(d => restParms.test(d));
-            let routeUrls = ctx.url.replace(this.path, '').split('/');
+            const restParams: any = {};
+            const routes = route.split('/').map(r => r.trim());
+            const restParamNames = routes.filter(d => restParms.test(d));
+            const routeUrls = ctx.url.replace(this.path, '').split('/');
             let has = false;
             restParamNames.forEach(pname => {
-                let val = routeUrls[routes.indexOf(pname)];
+                const val = routeUrls[routes.indexOf(pname)];
                 if (val) {
                     has = true;
                     restParams[pname.substring(1)] = val
@@ -177,7 +177,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     }
 
     protected getRouteMetaData(ctx: TransportContext) {
-        let subRoute = ctx.url.replace(this.path, '') || '/';
+        const subRoute = ctx.url.replace(this.path, '') || '/';
         if (!this.sortRoutes) {
             this.sortRoutes = this.reflect.class.methodDecors
                 .filter(m => m && isString((m.metadata as RouteMappingMetadata).route))
@@ -185,15 +185,15 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
 
         }
 
-        let allMethods = this.sortRoutes.filter(m => m && m.metadata.method === ctx.method);
+        const allMethods = this.sortRoutes.filter(m => m && m.metadata.method === ctx.method);
 
         let meta = allMethods.find(d => (d.metadata.route || '') === subRoute);
         if (!meta) {
             meta = allMethods.find(route => {
-                let uri = route.metadata.route || '';
+                const uri = route.metadata.route || '';
                 if (isRest.test(uri)) {
-                    let idex = uri.indexOf('/:');
-                    let url = uri.substring(0, idex);
+                    const idex = uri.indexOf('/:');
+                    const url = uri.substring(0, idex);
                     if (url !== subRoute && subRoute.indexOf(url) === 0) {
                         return true
                     }
@@ -211,19 +211,18 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     destroy(): void | Promise<void> {
         if (!this._destroyed) {
             this._destroyed = true;
-            try {
-                this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy())
-            } finally {
-                this._dsryCbs.clear();
-                this.sortRoutes = null!;
-                this.metadata = null!
-                this._url = null!;
-                this._instance = null!;
-                const factory = this.factory;
-                this.factory = null!;
 
-                return factory.onDestroy()
-            }
+            this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy())
+
+            this._dsryCbs.clear();
+            this.sortRoutes = null!;
+            this.metadata = null!
+            this._url = null!;
+            this._instance = null!;
+            const factory = this.factory;
+            this.factory = null!;
+
+            return factory.onDestroy();
         }
     }
 

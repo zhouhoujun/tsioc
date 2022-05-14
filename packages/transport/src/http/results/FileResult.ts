@@ -54,7 +54,7 @@ export class FileResult extends ResultValue {
     }
 
     async sendValue(ctx: HttpContext) {
-        let file = this.file;
+        const file = this.file;
         const contentType = this.contentType;
         if (this.options && this.options.filename) {
             ctx.attachment(this.options.filename, { contentType, ...this.options.disposition })
@@ -63,7 +63,7 @@ export class FileResult extends ResultValue {
         }
         const baseURL = ctx.get(ApplicationContext).baseURL;
         if (isString(file)) {
-            let filepath = (isAbsolute(file) || !baseURL) ? file : join(baseURL, file);
+            const filepath = (isAbsolute(file) || !baseURL) ? file : join(baseURL, file);
             if (existsSync(filepath)) {
                 ctx.body = createReadStream(filepath)
             }

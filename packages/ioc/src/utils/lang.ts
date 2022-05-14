@@ -14,8 +14,8 @@ import { getClassAnnotation } from './util';
  */
 export function omit(target: any, ...fields: string[]): any {
     if (target) {
-        let result: any = {};
-        for (let key in target) {
+        const result: any = {};
+        for (const key in target) {
             if (fields.indexOf(key) < 0) {
                 result[key] = target[key]
             }
@@ -35,7 +35,7 @@ export function omit(target: any, ...fields: string[]): any {
  */
 export function assign(target: any, values: any, ...omits: string[]): any {
     if (!values) return target;
-    for (let key in values) {
+    for (const key in values) {
         if (omits.indexOf(key) < 0) {
             target[key] = values[key]
         }
@@ -61,7 +61,7 @@ export function forIn(target: any, iterator: (item: any, idx?: any) => void | bo
             }
         }
     } else if (target) {
-        for (let key in target) {
+        for (const key in target) {
             if (iterator(target[key], key) === false) {
                 break
             }
@@ -148,7 +148,7 @@ export function last<T>(list: T[]): T {
  * @returns {string}
  */
 export function getClassName(target: any): string {
-    let classType = getClass(target);
+    const classType = getClass(target);
     if (!classType) {
         return ''
     }
@@ -178,7 +178,7 @@ export function getParentClass(target: ClassType): ClassType {
  * @returns {ClassType[]}
  */
 export function getClassChain(target: ClassType): ClassType[] {
-    let types: ClassType[] = [];
+    const types: ClassType[] = [];
     forInClassChain(target, type => {
         types.push(type)
     });
@@ -242,7 +242,7 @@ export function isExtendsClass<T extends ClassType>(target: ClassType, baseClass
  * @returns {Type[]}
  */
 export function getTypes(mds: Modules | Modules[]): Type[] {
-    let types: Type[] = [];
+    const types: Type[] = [];
     mds && deepForEach(isArray(mds) ? mds : isPlainObject(mds) ? Object.values(mds) : [mds], ty => {
         isClass(ty) && types.push(ty)
     }, v => isPlainObject(v));
@@ -255,7 +255,7 @@ export function getTypes(mds: Modules | Modules[]): Type[] {
  */
 export function cleanObj(obj: any) {
     if (!obj) return;
-    for (let k in obj) {
+    for (const k in obj) {
         obj[k] = null
     }
 }

@@ -156,12 +156,12 @@ export class HttpParams {
 
   constructor(options: HttpParamsOptions = {} as HttpParamsOptions) {
     this.encoder = options.encoder || new HttpUrlEncodingCodec();
-    if (!!options.fromString) {
-      if (!!options.fromObject) {
+    if (options.fromString) {
+      if (options.fromObject) {
         throw new Error(`Cannot specify both fromString and fromObject.`)
       }
       this.map = paramParser(options.fromString, this.encoder)
-    } else if (!!options.fromObject) {
+    } else if (options.fromObject) {
       this.map = new Map<string, string[]>();
       Object.keys(options.fromObject).forEach(key => {
         const value = (options.fromObject as any)[key];
@@ -192,7 +192,7 @@ export class HttpParams {
   get(param: string): string | null {
     this.init();
     const res = this.map!.get(param);
-    return !!res ? res[0] : null
+    return res ? res[0] : null
   }
 
   /**
@@ -302,17 +302,18 @@ export class HttpParams {
     if (this.cloneFrom !== null) {
       this.cloneFrom.init();
       this.cloneFrom.keys().forEach(key => this.map!.set(key, this.cloneFrom!.map!.get(key)!));
+      let base: string[];
       this.updates!.forEach(update => {
         switch (update.op) {
           case 'a':
           case 's':
-            const base = (update.op === 'a' ? this.map!.get(update.param) : undefined) || [];
+            base = (update.op === 'a' ? this.map!.get(update.param) : undefined) || [];
             base.push(valueToString(update.value!));
             this.map!.set(update.param, base);
             break;
           case 'd':
             if (update.value !== undefined) {
-              let base = this.map!.get(update.param) || [];
+              base = this.map!.get(update.param) || [];
               const idx = base.indexOf(valueToString(update.value));
               if (idx !== -1) {
                 base.splice(idx, 1)

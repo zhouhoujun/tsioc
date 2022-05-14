@@ -153,7 +153,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         let context: InvocationContext;
         if (isNumber(contextOrFlag)) {
             flags = contextOrFlag;
-            context = this
+            context = this as InvocationContext;
         } else {
             context = contextOrFlag ?? this
         }
@@ -307,14 +307,14 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
     } else if (isTypeReflect(obj)) {
         return `[${obj.class.className} TypeReflect]`
     } else if (isPlainObject(obj)) {
-        let str: string[] = [];
-        for (let n in obj) {
-            let value = obj[n];
+        const str: string[] = [];
+        for (const n in obj) {
+            const value = obj[n];
             str.push(`${n}: ${object2string(value, options)}`)
         }
         return `{ ${str.join(', ')} }`
     } else if (options.typeInst && isTypeObject(obj)) {
-        let fileds = Object.keys(obj).filter(k => k).map(k => `${k}: ${object2string(obj[k], { typeInst: false, fun: false })}`);
+        const fileds = Object.keys(obj).filter(k => k).map(k => `${k}: ${object2string(obj[k], { typeInst: false, fun: false })}`);
         return `[${getClassName(obj)} {${fileds.join(', ')}} ]`
     }
     if (!options.fun && isFunction(obj)) {

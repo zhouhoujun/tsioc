@@ -37,7 +37,7 @@ export class BootApplicationFactory extends ApplicationFactory {
         return ctx
     }
 
-    initOption<T>(ctx: BootApplicationContext, option?: BootEnvironmentOption) {
+    initOption(ctx: BootApplicationContext, option?: BootEnvironmentOption) {
         if (!option) return;
 
         const mgr = ctx.getConfigureManager();

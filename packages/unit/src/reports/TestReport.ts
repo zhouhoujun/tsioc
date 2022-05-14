@@ -60,7 +60,7 @@ export class DefaultTestReport implements TestReport {
     }
 
     setSuiteCompleted(suit: Token): void {
-        let suite = this.getSuite(suit);
+        const suite = this.getSuite(suit);
         if (suite) {
             suite.end = new Date().getTime()
         }
@@ -74,7 +74,7 @@ export class DefaultTestReport implements TestReport {
     }
 
     getCase(suit: Token, test: string): ICaseDescribe {
-        let suite = this.getSuite(suit);
+        const suite = this.getSuite(suit);
         if (suite) {
             let tCase = suite.cases.find(c => c.key === test)!;
             if (!tCase) {

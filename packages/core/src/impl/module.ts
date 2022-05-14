@@ -60,7 +60,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     }
 
     protected override createLifecycle(): LifecycleHooks {
-        let platform = this.scope === 'root' ? this.platform() : undefined;
+        const platform = this.scope === 'root' ? this.platform() : undefined;
         const lifecycle = this.get(LifecycleHooksResolver, null)?.resolve(platform) ?? new DefaultModuleLifecycleHooks(platform);
         (lifecycle as DefaultModuleLifecycleHooks).eventMulticaster = this.get(ApplicationEventMulticaster, null)!;
         return lifecycle
@@ -94,7 +94,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     override use(...modules: ModuleType[]): Type[];
     override use(...args: any[]): Type[] {
         this.assertNotDestroyed();
-        let types: Type[] = [];
+        const types: Type[] = [];
         const platform = this.platform();
         const stk: Type[] = [];
         lang.deepForEach(args, ty => {

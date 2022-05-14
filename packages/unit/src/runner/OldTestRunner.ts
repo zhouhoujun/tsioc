@@ -49,11 +49,7 @@ export class OldTestRunner implements UnitRunner {
 
 
     async run(): Promise<void> {
-        try {
-            await lang.step(this.suites.map(desc => desc.cases.length ? () => this.runSuite(desc) : () => Promise.resolve()))
-        } catch (err) {
-            throw err
-        }
+        await lang.step(this.suites.map(desc => desc.cases.length ? () => this.runSuite(desc) : () => Promise.resolve()))
     }
 
     registerGlobalScope() {
@@ -61,12 +57,12 @@ export class OldTestRunner implements UnitRunner {
             gls[k] = globals[k];
         });
 
-        let suites = this.suites;
+        const suites = this.suites;
 
         // BDD style
-        let describe = globals.describe = (name: string, fn: () => any, superDesc?: SuiteDescribe) => {
+        const describe = globals.describe = (name: string, fn: () => any, superDesc?: SuiteDescribe) => {
             if (!isFunction(fn)) return;
-            let suiteDesc = {
+            const suiteDesc = {
                 ...superDesc,
                 describe: name,
                 cases: []
@@ -119,8 +115,8 @@ export class OldTestRunner implements UnitRunner {
         };
 
         // TDD style
-        let suite = globals.suite = function (name: string, fn: () => any, superDesc?: SuiteDescribe) {
-            let suiteDesc = {
+        const suite = globals.suite = function (name: string, fn: () => any, superDesc?: SuiteDescribe) {
+            const suiteDesc = {
                 ...superDesc,
                 describe: name,
                 cases: []
@@ -180,12 +176,12 @@ export class OldTestRunner implements UnitRunner {
     }
 
     runTimeout(fn: Function | undefined, describe: string, timeout?: number): Promise<any> {
-        let defer = lang.defer();
+        const defer = lang.defer();
         let timer = setTimeout(() => {
             if (timer) {
                 clearTimeout(timer);
-                let assert = this.injector.resolve(Assert);
-                let err = new assert.AssertionError({
+                const assert = this.injector.resolve(Assert);
+                const err = new assert.AssertionError({
                     message: `${describe}, timeout ${timeout}`,
                     stackStartFunction: fn,
                     stackStartFn: fn

@@ -29,13 +29,13 @@ export abstract class HttpXsrfTokenExtractor {
  */
 @Injectable()
 export class HttpXsrfCookieExtractor implements HttpXsrfTokenExtractor {
-    private lastCookieString: string = '';
+    private lastCookieString = '';
     private lastToken: string | null = null;
 
     /**
      * @internal for testing
      */
-    parseCount: number = 0;
+    parseCount = 0;
 
     constructor(
         @Inject(DOCUMENT) private doc: any, @Inject(PLATFORM_ID) private platform: string,

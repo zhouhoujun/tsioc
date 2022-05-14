@@ -38,7 +38,7 @@ export class BootApplication extends Application<BootApplicationContext> {
         const { baseURL, injector } = ctx;
         const mgr = ctx.getConfigureManager();
         await mgr.load();
-        let config = mgr.getConfig();
+        const config = mgr.getConfig();
 
         if (config.deps && config.deps.length) {
             await injector.load(config.deps)

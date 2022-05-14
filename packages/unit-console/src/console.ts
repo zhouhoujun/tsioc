@@ -30,8 +30,8 @@ export class ConsoleReporter extends RealtimeReporter {
         let reportStr = '';
         let first: SuiteDescribe | undefined;
         let last: SuiteDescribe | undefined;
-        let sus = Array.from(suites.values());
-        let fails: Record<string, string[]> = {};
+        const sus = Array.from(suites.values());
+        const fails: Record<string, string[]> = {};
         let successed = 0, failed = 0;
         sus.forEach((d, i) => {
             if (i === 0) {
@@ -44,7 +44,7 @@ export class ConsoleReporter extends RealtimeReporter {
             d.cases.forEach(c => {
                 if (c.error) {
                     failed++;
-                    let derr = fails[d.describe] = fails[d.describe] || [];
+                    const derr = fails[d.describe] = fails[d.describe] || [];
                     derr.push(`\n    ${c.title}\n`);
                     derr.push(chalk.red(c.error.stack))
                 } else {
@@ -60,7 +60,7 @@ export class ConsoleReporter extends RealtimeReporter {
             reportStr = reportStr + ' ' + chalk.red(failed.toString() + ' failed')
         }
         if (sus.length) {
-            reportStr = reportStr + chalk.gray(` (${last?.end! - first?.start!}ms)`)
+            reportStr = reportStr + chalk.gray(` (${(last?.end ?? 0) - (first?.start ?? 0)}ms)`)
         }
 
         reportStr += '\n';

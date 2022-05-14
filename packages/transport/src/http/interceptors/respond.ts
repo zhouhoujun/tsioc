@@ -20,9 +20,9 @@ export class ResponsedInterceptor implements Interceptor<HttpServRequest, HttpSe
     }
 
     protected async respond(res: HttpServResponse, ctx: HttpContext): Promise<any> {
-        if (ctx.destroyed) return
+        if (ctx.destroyed) return;
 
-        if (!ctx.writable) return
+        if (!ctx.writable) return;
 
         let body = ctx.body;
         const code = ctx.status;
@@ -50,7 +50,7 @@ export class ResponsedInterceptor implements Interceptor<HttpServRequest, HttpSe
                 return res.end()
             }
             if (ctx.request.httpVersionMajor >= 2) {
-                body = String(code)
+                body = String(code);
             } else {
                 body = ctx.statusMessage || String(code)
             }
@@ -65,18 +65,18 @@ export class ResponsedInterceptor implements Interceptor<HttpServRequest, HttpSe
         if (isBuffer(body)) return res.end(body);
         if (isString(body)) return res.end(body);
         if (isStream(body)) {
-            let defer = lang.defer();
+            const defer = lang.defer();
             body.once(ev.ERROR, (err) => {
                 defer.reject(err)
             });
             body.once(ev.END, () => {
                 defer.resolve()
             });
-            body.pipe(res as any);
+            body.pipe(res);
             return await defer.promise
                 .then(() => {
                     res.end();
-                    if (body instanceof Readable) body.destroy()
+                    if (body instanceof Readable) body.destroy();
                 })
         }
 

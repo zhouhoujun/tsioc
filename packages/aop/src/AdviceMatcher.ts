@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-escape */
 import { isString, isRegExp, Type, lang, isArray, refl, ClassType, Injector, ctorName, Decors } from '@tsdi/ioc';
 import { IAdviceMatcher } from './IAdviceMatcher';
 import { AdviceMetadata } from './metadata/meta';
@@ -25,16 +26,16 @@ export class AdviceMatcher implements IAdviceMatcher {
     match(aspectType: Type, targetType: Type, adviceMetas?: AdviceMetadata[], target?: any): MatchPointcut[] {
         const aspref = refl.get<AopReflect>(aspectType);
         const tagref = refl.get<AopReflect>(targetType);
-        let aspectMeta = aspref.aspect;
+        const aspectMeta = aspref.aspect;
         if (aspectMeta) {
             if (aspectMeta.without) {
-                let outs = isArray(aspectMeta.without) ? aspectMeta.without : [aspectMeta.without];
+                const outs = isArray(aspectMeta.without) ? aspectMeta.without : [aspectMeta.without];
                 if (outs.some(t => tagref.class.isExtends(t))) {
                     return []
                 }
             }
             if (aspectMeta.within) {
-                let ins = isArray(aspectMeta.within) ? aspectMeta.within : [aspectMeta.within];
+                const ins = isArray(aspectMeta.within) ? aspectMeta.within : [aspectMeta.within];
                 if (!ins.some(t => tagref.class.isExtends(t))) {
                     if (!aspectMeta.annotation) {
                         return []
@@ -42,8 +43,8 @@ export class AdviceMatcher implements IAdviceMatcher {
                 }
             }
             if (aspectMeta.annotation) {
-                let annotation = aspectMeta.annotation.toString();
-                let anno = (annPreChkExp.test(annotation) ? '' : '@') + annotation;
+                const annotation = aspectMeta.annotation.toString();
+                const anno = (annPreChkExp.test(annotation) ? '' : '@') + annotation;
                 if (!tagref.class.decors.some(d => d.decor === anno)) {
                     return []
                 }
@@ -55,8 +56,8 @@ export class AdviceMatcher implements IAdviceMatcher {
         let matched: MatchPointcut[] = [];
 
         if (targetType === aspectType) {
-            let decorators = tagref.class.getPropertyDescriptors();
-            for (let n in decorators) {
+            const decorators = tagref.class.getPropertyDescriptors();
+            for (const n in decorators) {
                 adviceMetas.forEach(adv => {
                     if (this.matchAspectSelf(n, adv)) {
                         matched.push({
@@ -71,7 +72,7 @@ export class AdviceMatcher implements IAdviceMatcher {
             const points: IPointcut[] = [];
             const decorators = tagref.class.getPropertyDescriptors();
             // match method.
-            for (let name in decorators) {
+            for (const name in decorators) {
                 points.push({
                     name: name,
                     fullName: `${className}.${name}`
@@ -108,7 +109,7 @@ export class AdviceMatcher implements IAdviceMatcher {
         }
         let matchedPointcut;
         if (metadata.pointcut) {
-            let match = this.matchTypeFactory(relfect, metadata);
+            const match = this.matchTypeFactory(relfect, metadata);
             matchedPointcut = points.filter(p => match(p.name, p.fullName, relfect.type, target, p))
         }
 
@@ -145,7 +146,7 @@ export class AdviceMatcher implements IAdviceMatcher {
         }
 
         if (isString(metadata.pointcut)) {
-            let pointcuts = (metadata.pointcut || '').trim();
+            const pointcuts = (metadata.pointcut || '').trim();
             checks.push(this.tranlateExpress(relfect, pointcuts))
         } else if (metadata.pointcut) {
             const reg = metadata.pointcut;
@@ -184,12 +185,12 @@ export class AdviceMatcher implements IAdviceMatcher {
         }
 
         if (withInChkExp.test(strExp)) {
-            let classnames = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).split(',').map(n => n.trim());
+            const classnames = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).split(',').map(n => n.trim());
             return (name?: string, fullName?: string, targetType?: ClassType) => targetType ? classnames.indexOf(lang.getClassName(targetType)) >= 0 : false
         }
 
         if (targetChkExp.test(strExp)) {
-            let torken = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).trim();
+            const torken = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).trim();
             const platform = this.injector.platform();
             return (name?: string, fullName?: string, targetType?: ClassType) => targetType ? platform.getInjector(reflect.type).getTokenProvider(torken) === targetType : false
         }
@@ -198,7 +199,7 @@ export class AdviceMatcher implements IAdviceMatcher {
     }
 
     protected toAnnExpress(reflect: AopReflect, exp: string): MatchExpress {
-        let annotation = aExp.test(exp) ? exp : ('@' + exp);
+        const annotation = aExp.test(exp) ? exp : ('@' + exp);
         return (name?: string, fullName?: string) => reflect.class.hasMetadata(annotation, (!name || name === ctorName) ? Decors.CLASS : Decors.method, name)
     }
 
@@ -218,7 +219,7 @@ export class AdviceMatcher implements IAdviceMatcher {
                 .replace(replDot, '\\\.')
                 .replace(replNav, '\\\/');
 
-            let matcher = new RegExp(exp + '$');
+            const matcher = new RegExp(exp + '$');
             return (name?: string, fullName?: string) => fullName ? matcher.test(fullName) : false
         }
         return fasleFn
@@ -231,7 +232,7 @@ export class AdviceMatcher implements IAdviceMatcher {
         const argnames = exp.tokens.map((t, i) => 'arg' + i);
         const boolexp = new Function(...argnames, `return ${exp.toString((t, i, tkidx) => 'arg' + tkidx + '()')}`);
         return (method?: string, fullName?: string, targetType?: ClassType, target?: any, pointcut?: IPointcut) => {
-            let args = fns.map(fn => () => fn(method, fullName, targetType, target, pointcut));
+            const args = fns.map(fn => () => fn(method, fullName, targetType, target, pointcut));
             return boolexp(...args)
         }
     }
@@ -284,7 +285,7 @@ function rewrite(ex: any[], el: string) {
     let t = el.trim()
     if (!t) return ex;
     if (operatorMap[t]) {
-         t = operatorMap[t]
+        t = operatorMap[t]
     }
     if (nativeOperators.test(t)) {
         ex.push({ type: 'operator', value: t })

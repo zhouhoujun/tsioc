@@ -296,7 +296,7 @@ export class Reflective<T = any> {
         if (hasPointcut) {
             args.push(context)
         }
-        let result = inst[method](...args);
+        const result = inst[method](...args);
         if (isPromise(result)) {
             return (completed || destroy) ? result.then(val => {
                 this.afterInvoke(context, val, hasPointcut, destroy, completed);
@@ -592,13 +592,13 @@ export class Reflective<T = any> {
     }
 
     protected setParam(params: Map<string, any[]>) {
-        let classAnnations = this.annotation;
+        const classAnnations = this.annotation;
         if (classAnnations && classAnnations.params) {
             forIn(classAnnations.params, (p, n) => {
                 params.set(n, p)
             })
         } else {
-            let descriptors = Object.getOwnPropertyDescriptors(this.type.prototype);
+            const descriptors = Object.getOwnPropertyDescriptors(this.type.prototype);
             forIn(descriptors, (item, n) => {
                 if (item.value) {
                     params.set(n, getParamNames(item.value))
@@ -616,7 +616,7 @@ export class Reflective<T = any> {
         }
         let pty = (descriptor as DefineDescriptor).__name;
         if (!pty) {
-            let decs = this.getPropertyDescriptors();
+            const decs = this.getPropertyDescriptors();
             forIn(decs, (dec, n) => {
                 if (dec === descriptor) {
                     pty = n;
@@ -662,12 +662,9 @@ function getParamNames(func: Function) {
     if (!isFunction(func)) {
         return []
     }
-    let fnStr = func.toString().replace(STRIP_COMMENTS, '');
-    let result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
-    if (result === null) {
-        result = []
-    }
-    return result
+    const fnStr = func.toString().replace(STRIP_COMMENTS, '');
+    const result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
+    return result ?? []
 }
 
 function getDectorId(decor: string | Function): string {

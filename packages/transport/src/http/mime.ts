@@ -1,3 +1,5 @@
+/* eslint-disable no-useless-escape */
+/* eslint-disable no-control-regex */
 import { Injectable, isString } from '@tsdi/ioc';
 import { extname } from 'node:path';
 import { MimeAdapter, MimeDb, SplitType } from '../mime';
@@ -14,8 +16,8 @@ export class HttpMimeAdapter extends MimeAdapter {
         }
 
         // TODO: use media-typer
-        let match = EXTRACT_REGEXP.exec(type);
-        let mime = match && this.db.get(match[1].toLowerCase());
+        const match = EXTRACT_REGEXP.exec(type);
+        const mime = match && this.db.get(match[1].toLowerCase());
 
         if (mime && mime.charset) {
             return mime.charset
@@ -33,9 +35,9 @@ export class HttpMimeAdapter extends MimeAdapter {
         if (!extname || !isString(extname)) {
             return false
         }
-        let match = EXTRACT_REGEXP.exec(extname);
+        const match = EXTRACT_REGEXP.exec(extname);
         // get extensions
-        let exts = match && this.db.extension(match[1].toLowerCase());
+        const exts = match && this.db.extension(match[1].toLowerCase());
 
         if (!exts || !exts.length) {
             return false
@@ -58,7 +60,7 @@ export class HttpMimeAdapter extends MimeAdapter {
         }
 
         if (mime.indexOf('charset') === -1) {
-            let charset = this.charset(mime);
+            const charset = this.charset(mime);
             if (charset) mime += '; charset=' + charset.toLowerCase()
         }
 
@@ -71,7 +73,7 @@ export class HttpMimeAdapter extends MimeAdapter {
         }
 
         // get the extension ("ext" or ".ext" or full path)
-        let extension = extname('x.' + path)
+        const extension = extname('x.' + path)
             .toLowerCase()
             .substring(1);
 
@@ -87,10 +89,10 @@ export class HttpMimeAdapter extends MimeAdapter {
             throw new TypeError('argument obj is required')
         }
 
-        let parameters = media.parameters
-        let subtype = media.subtype
-        let suffix = media.suffix
-        let type = media.type
+        const parameters = media.parameters;
+        const subtype = media.subtype;
+        const suffix = media.suffix;
+        const type = media.type;
 
         if (!type || !typeNameRegExp.test(type)) {
             throw new TypeError('invalid type')
@@ -114,8 +116,8 @@ export class HttpMimeAdapter extends MimeAdapter {
 
         // append parameters
         if (parameters && typeof parameters === 'object') {
-            let param
-            let params = Object.keys(parameters).sort()
+            let param: any;
+            const params = Object.keys(parameters).sort();
 
             for (let i = 0; i < params.length; i++) {
                 param = params[i]
@@ -141,19 +143,18 @@ export class HttpMimeAdapter extends MimeAdapter {
         }
 
         let index = mime.indexOf(';');
-        let type = index !== -1
+        const type = index !== -1
             ? mime.substring(0, index)
             : mime;
 
-        let key
-        let match
-        let obj = this.splitType(type);
-        let params: Record<string, any> = {};
-        let value;
+        const obj = this.splitType(type);
+        const params: Record<string, any> = {};
 
         paramRegExp.lastIndex = index;
 
-        while (match = paramRegExp.exec(type)) {
+        let key, value;
+        const match = paramRegExp.exec(type);
+        while (match) {
             if (match.index !== index) {
                 throw new TypeError('invalid parameter format')
             }
@@ -205,7 +206,7 @@ export class HttpMimeAdapter extends MimeAdapter {
     }
 
     match(types: string[], target: string): string | false {
-        let val = this.tryNormalizeType(target);
+        const val = this.tryNormalizeType(target);
         if (!val) {
             return false
         }
@@ -223,7 +224,7 @@ export class HttpMimeAdapter extends MimeAdapter {
     }
 
     private qstring(val: any): string {
-        let str = String(val)
+        const str = String(val);
 
         // no need to quote tokens
         if (tokenRegExp.test(str)) {
@@ -238,18 +239,17 @@ export class HttpMimeAdapter extends MimeAdapter {
     }
 
     private splitType(str: string): SplitType {
-        let match = typeRegExp.exec(str.toLowerCase())
-
+        const match = typeRegExp.exec(str.toLowerCase());
         if (!match) {
             throw new TypeError('invalid media type')
         }
 
-        let type = match[1];
+        const type = match[1];
         let subtype = match[2];
         let suffix;
 
         // suffix after last +
-        let index = subtype.lastIndexOf('+')
+        const index = subtype.lastIndexOf('+');
         if (index !== -1) {
             suffix = subtype.substring(index + 1)
             subtype = subtype.substring(0, index)
@@ -281,8 +281,8 @@ export class HttpMimeAdapter extends MimeAdapter {
         }
 
         // split types
-        let actualParts = actual.split('/')
-        let expectedParts = expected.split('/')
+        const actualParts = actual.split('/');
+        const expectedParts = expected.split('/');
 
         // invalid format
         if (actualParts.length !== 2 || expectedParts.length !== 2) {
@@ -310,10 +310,10 @@ export class HttpMimeAdapter extends MimeAdapter {
 
     private normalizeType(value: string) {
         // parse the type
-        let type = this.parse(value)
+        const type = this.parse(value);
 
         // remove the parameters
-        type.parameters = undefined
+        type.parameters = undefined;
 
         // reformat it
         return this.format(type)

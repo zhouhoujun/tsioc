@@ -28,7 +28,7 @@ export abstract class LogAspect extends LogProcess {
                 !isNil(level) && messages.unshift(level)
             }
             annotation.forEach((logmeta: LogMetadata) => {
-                let canlog = logmeta.express ? logmeta.express(joinPoint) : true;
+                const canlog = logmeta.express ? logmeta.express(joinPoint) : true;
                 if (canlog && logmeta.message) {
                     this.writeLog(
                         this.getLogger(logmeta.logname),
@@ -54,7 +54,7 @@ export abstract class LogAspect extends LogProcess {
 
     protected writeLog(logger: Logger, joinPoint: Joinpoint, level: Level, format: boolean, ...messages: any[]) {
         (async () => {
-            let formatMsgs = format ? this.formatMessage(joinPoint, logger, level, ...messages) : messages;
+            const formatMsgs = format ? this.formatMessage(joinPoint, logger, level, ...messages) : messages;
             if (level) {
                 logger[level](...formatMsgs)
             } else {
@@ -77,14 +77,14 @@ export abstract class LogAspect extends LogProcess {
     }
 
     protected formatTimestamp(): any {
-        let now = new Date();
+        const now = new Date();
         return `[${now.toISOString()}]`
     }
 
     private _formater: LogFormater | undefined;
     getFormater() {
         if (!this._formater) {
-            let config = (this.logManger as ConfigureLoggerManager).config || (EMPTY_OBJ as LogConfigure);
+            const config = (this.logManger as ConfigureLoggerManager).config || (EMPTY_OBJ as LogConfigure);
             let formater: LogFormater | undefined;
             const format = config.format || LogFormater;
             if (isToken(format)) {
@@ -100,7 +100,7 @@ export abstract class LogAspect extends LogProcess {
     }
 
     protected formatMessage(joinPoint: Joinpoint, logger: Logger, level: Level, ...messages: any[]): any[] {
-        let formater = this.getFormater();
+        const formater = this.getFormater();
         if (formater) {
             messages = formater.format(joinPoint, level, logger, ...messages)
         } else {
@@ -108,7 +108,7 @@ export abstract class LogAspect extends LogProcess {
             if (level) {
                 messages.unshift(`[${level.toUpperCase()}]`)
             }
-            let timestamp = this.formatTimestamp();
+            const timestamp = this.formatTimestamp();
             if (timestamp) messages.unshift(timestamp)
         }
 

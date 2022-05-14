@@ -51,8 +51,8 @@ export class ConfigureLoggerManager implements LoggerManager {
 
     protected get logManger(): LoggerManager {
         if (!this._logManger) {
-            let cfg: LogConfigure = this.config || <LogConfigure>EMPTY_OBJ;
-            let adapter = cfg.adapter || 'console';
+            const cfg: LogConfigure = this.config || <LogConfigure>EMPTY_OBJ;
+            const adapter = cfg.adapter || 'console';
             let token: Token;
             if (isString(adapter)) {
                 token = getToken(LoggerManager, adapter)

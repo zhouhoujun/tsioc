@@ -20,7 +20,7 @@ export class ParseEnumPipe<T> implements PipeTransform<T> {
             }
             return (enumType as any)[value] as T
         } else {
-            let key = keys.find(k => (enumType as any)[k] === value);
+            const key = keys.find(k => (enumType as any)[k] === value);
             if (isUndefined(key)) {
                 throw invalidPipeArgumentError(this, value, `, enmu of ${enumType}`)
             }

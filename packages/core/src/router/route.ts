@@ -160,7 +160,7 @@ const staExp = /^\//;
 const endExp = /\/$/;
 
 export function joinprefix(...paths: (string | undefined)[]) {
-    let joined = paths.filter(p => p)
+    const joined = paths.filter(p => p)
         .map(p => {
             if (!p) return '';
             p = p.trim();

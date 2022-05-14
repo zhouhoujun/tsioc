@@ -134,7 +134,7 @@ export class DefaultPlatform implements Platform {
         const tyRef = isFunction(type) ? get(type) : type;
         const pdrs = tyRef.class.providers.slice(0);
         tyRef.class.extendTypes.forEach(t => {
-            let tpd = this._pdrs.get(t);
+            const tpd = this._pdrs.get(t);
             if (tpd) {
                 pdrs.unshift(...tpd)
             }

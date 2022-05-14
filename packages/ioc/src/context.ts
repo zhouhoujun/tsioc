@@ -131,16 +131,15 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
     destroy(): void | Promise<void> {
         if (!this._destroyed) {
             this._destroyed = true;
-            try {
-                this._dsryCbs.forEach(c => isFunction(c) ? c() : c?.onDestroy())
-            } finally {
-                this._dsryCbs.clear();
-                this.clear();
-                const injector = this.injector;
-                (this as any).parent = null;
-                (this as any).injector = null;
-                return injector.destroy()
-            }
+
+            this._dsryCbs.forEach(c => isFunction(c) ? c() : c?.onDestroy())
+
+            this._dsryCbs.clear();
+            this.clear();
+            const injector = this.injector;
+            (this as any).parent = null;
+            (this as any).injector = null;
+            return injector.destroy();
         }
     }
 

@@ -75,7 +75,7 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> {
         if (isNil(req)) {
             return throwError(() => new ArgumentError('Invalid message'))
         }
-        let ctx = this.createContext();
+        const ctx = this.createContext();
         return defer(async () => {
             await this.connect();
             return this.buildRequest(ctx, req, options)

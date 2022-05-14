@@ -38,7 +38,7 @@ export class DefaultRunnableRef<T> extends RunnableRef<T> {
     run() {
         const runnables = this.reflect.class.runnables.filter(r => !r.auto);
         if (runnables.length === 1) {
-            let runable = runnables[0];
+            const runable = runnables[0];
             return this.factory.invoke(runable.method, runable.args, this.instance)
         } else if (runnables.length) {
             return lang.step(runnables.map(r => () => this.factory.invoke(r.method, r.args, this.instance)))

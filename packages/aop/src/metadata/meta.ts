@@ -148,4 +148,4 @@ export interface AspectMetadata extends ClassMetadata {
 /**
  * pointcut metadata.
  */
-export interface PointcutMetadata extends MethodPropMetadata { }
+export type PointcutMetadata = MethodPropMetadata;

@@ -2,8 +2,8 @@ import { isDate, isNumber, isString } from '@tsdi/ioc';
 import { Pipe } from '../metadata/decor';
 import { PipeTransform, invalidPipeArgumentError } from './pipe';
 
-export function formatDate(date: Date, fmt: string = 'yyyy-MM-dd') {
-    var o = {
+export function formatDate(date: Date, fmt = 'yyyy-MM-dd') {
+    const o = {
         "M+": date.getMonth() + 1, //月份
         "d+": date.getDate(), //日
         "h+": date.getHours(), //小时
@@ -13,7 +13,7 @@ export function formatDate(date: Date, fmt: string = 'yyyy-MM-dd') {
         "S": date.getMilliseconds() //毫秒
     } as any;
     if (/(y+)/.test(fmt)) fmt = fmt.replace(RegExp.$1, (date.getFullYear() + "").substring(4 - RegExp.$1.length));
-    for (var k in o)
+    for (const k in o)
         if (new RegExp("(" + k + ")").test(fmt)) fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substring(("" + o[k]).length)));
     return fmt
 }

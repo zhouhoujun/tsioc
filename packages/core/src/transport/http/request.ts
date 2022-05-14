@@ -208,16 +208,16 @@ export class HttpRequest<T = any>  {
             this.withCredentials = !!options.withCredentials;
 
             // Override default response type of 'json' if one is provided.
-            if (!!options.responseType) {
+            if (options.responseType) {
                 this.responseType = options.responseType
             }
 
             // Override headers if they're provided.
-            if (!!options.headers) {
+            if (options.headers) {
                 this.headers = options.headers
             }
 
-            if (!!options.params) {
+            if (options.params) {
                 this.params = options.params
             }
         }

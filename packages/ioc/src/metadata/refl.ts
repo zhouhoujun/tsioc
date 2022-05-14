@@ -184,7 +184,7 @@ const emptyHd = (type: any) => EMPTY;
 
 function mapToFac(maps: Record<string, Handler | Handler[]>): (type: DecoratorType) => Handler[] {
     const mapHd = new Map();
-    for (let type in maps) {
+    for (const type in maps) {
         let rged: Handler[] = mapHd.get(type);
         if (!rged) {
             rged = [];
@@ -225,7 +225,7 @@ const paramInjectDecors: Record<string, boolean> = { '@Inject': true, '@Autowire
 export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
     if (paramInjectDecors[ctx.decor]) {
         const reflect = ctx.reflect;
-        let meta = ctx.metadata as ParameterMetadata;
+        const meta = ctx.metadata as ParameterMetadata;
         const propertyKey = ctx.propertyKey;
         let params = reflect.class.getParameters(propertyKey);
         if (!params) {
@@ -459,7 +459,7 @@ export function dispatchMethodDecor(type: any, define: DecorDefine, options: Dec
 }
 
 export function dispatchParamDecor(type: any, define: DecorDefine, options: DecoratorOption<any>) {
-    let target = type;
+    const target = type;
     if (!define.propertyKey) {
         define.propertyKey = ctorName
     } else {

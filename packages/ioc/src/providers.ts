@@ -147,7 +147,7 @@ export interface ExistingProvider<T = any> extends ProvideProvider<T> {
 /**
  * type provider.
  */
-export interface TypeProvider<T = any> extends Type<T> { }
+export type TypeProvider<T = any> = Type<T>;
 
 /**
  * static providers.

@@ -2,7 +2,7 @@ import { Module, global, PROCESS_ROOT, PLATFORM_ID, PLATFORM_BROWSER_ID, XhrFact
 import { BrowserXhr } from './xhr';
 
 
-let processRoot = global.baseURL || '.';
+const processRoot = global.baseURL || '.';
 
 
 

@@ -24,13 +24,13 @@ const jsTsChkExp = /(\w+\.ts|\.js)$/;
  * @returns {string}
  */
 export function runMainPath(): string {
-    let cwd = process.cwd();
-    let pr: any = process;
+    const cwd = process.cwd();
+    const pr: any = process;
     if (pr.mainModule && pr.mainModule.filename && pr.mainModule.filename.startsWith(cwd)) {
         return path.dirname(pr.mainModule.filename)
     }
     if (process.argv.length > 2) {
-        let mainfile = process.argv.slice(2).find(arg => jsTsChkExp.test(arg) && existsSync(path.join(cwd, arg)));
+        const mainfile = process.argv.slice(2).find(arg => jsTsChkExp.test(arg) && existsSync(path.join(cwd, arg)));
         if (mainfile) {
             return path.dirname(path.join(cwd, mainfile))
         }

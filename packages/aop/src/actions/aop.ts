@@ -94,16 +94,16 @@ export const MatchPointcutAction = function (ctx: RuntimeContext, next: () => vo
     }
 
     const platform = ctx.injector.platform();
-    let advisor = platform.getActionValue(Advisor);
-    let matcher = platform.getActionValue(ADVICE_MATCHER);
-    let targetType = ctx.type;
+    const advisor = platform.getActionValue(Advisor);
+    const matcher = platform.getActionValue(ADVICE_MATCHER);
+    const targetType = ctx.type;
 
     advisor.aspects.forEach(aspect => {
-        let aopRef = refl.get<AopReflect>(aspect.type);
-        let matchpoints = matcher.match(aspect.type, targetType, aopRef.advices, ctx.instance);
+        const aopRef = refl.get<AopReflect>(aspect.type);
+        const matchpoints = matcher.match(aspect.type, targetType, aopRef.advices, ctx.instance);
         matchpoints.forEach(mpt => {
-            let name = mpt.name;
-            let advice = mpt.advice;
+            const name = mpt.name;
+            const advice = mpt.advice;
 
             let advices = advisor.getAdvices(targetType, name);
             if (!advices) {
@@ -117,7 +117,8 @@ export const MatchPointcutAction = function (ctx: RuntimeContext, next: () => vo
                 } as Advices;
                 advisor.setAdvices(targetType, name, advices)
             }
-            let advicer = {
+            
+            const advicer = {
                 ...mpt,
                 aspect
             } as Advicer;

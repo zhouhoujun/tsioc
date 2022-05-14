@@ -38,7 +38,7 @@ export class TypeormServer implements Startup, OnDispose {
         if (connections.length > 1) {
             await Promise.all(connections.map((options) => this.statupConnection(injector, options, connections)))
         } else if (connections.length === 1) {
-            let options = connections[0];
+            const options = connections[0];
             options.asDefault = true;
             options.name && injector.setValue(DEFAULT_CONNECTION, options.name);
             await this.statupConnection(injector, options, connections)
@@ -67,7 +67,7 @@ export class TypeormServer implements Startup, OnDispose {
 
             getMetadataArgsStorage().relations.filter(col => col.target === type)
                 .forEach(col => {
-                    let relaModel = isFunction(col.type) ? col.type() as Type : undefined;
+                    const relaModel = isFunction(col.type) ? col.type() as Type : undefined;
                     props?.push({
                         propertyKey: col.propertyName,
                         provider: relaModel,
@@ -131,9 +131,9 @@ export class TypeormServer implements Startup, OnDispose {
     async createConnection(options: ConnectionOptions, config: ConnectionOptions[]) {
 
         if (options.entities?.some(m => isString(m))) {
-            let entities: Type[] = options.entities.filter(e => !isString(e)) as Type[];
-            let loader = this.injector.getLoader();
-            let models = await loader.loadType({ files: options.entities?.filter(m => isString(m)), basePath: this.injector.get(PROCESS_ROOT) });
+            const entities: Type[] = options.entities.filter(e => !isString(e)) as Type[];
+            const loader = this.injector.getLoader();
+            const models = await loader.loadType({ files: options.entities?.filter(m => isString(m)), basePath: this.injector.get(PROCESS_ROOT) });
             models.forEach(mdl => {
                 if (mdl && entities.indexOf(mdl) < 0) {
                     entities.push(mdl)
@@ -143,7 +143,7 @@ export class TypeormServer implements Startup, OnDispose {
         }
 
         if (options.repositories && options.repositories.some(r => isString(r))) {
-            let loader = this.injector.getLoader();
+            const loader = this.injector.getLoader();
             // preload repositories for typeorm.
             await loader.loadType({ files: options.repositories.filter(r => isString(r)), basePath: this.injector.get(PROCESS_ROOT) })
         }

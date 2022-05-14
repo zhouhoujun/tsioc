@@ -35,14 +35,14 @@ export class SortPipe implements PipeTransform {
 
         if (type === type_str) {
             return value.sort((a, b) => {
-                let x: string = sort ? a[sort] : a;
-                let y: string = sort ? b[sort] : b;
+                const x: string = sort ? a[sort] : a;
+                const y: string = sort ? b[sort] : b;
                 return this.compare(x?.toLowerCase() ?? '', y?.toLowerCase() ?? '', order)
             });
         }
         return value.sort((a, b) => {
-            let x = sort ? a[sort] : a;
-            let y = sort ? b[sort] : b;
+            const x = sort ? a[sort] : a;
+            const y = sort ? b[sort] : b;
             return this.compare(x, y, order)
         });
     }

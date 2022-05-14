@@ -73,17 +73,17 @@ export class DefaultModuleLoader extends ModuleLoader {
      * @returns {Promise<Type[]>}
      */
     async loadTypes(modules: LoadType[]): Promise<Type[][]> {
-        let mdls = await this.load(modules);
+        const mdls = await this.load(modules);
         return mdls.map(md => getTypes(md))
     }
 
     require(moduleName: string): Promise<any> {
-        let loader = this.getLoader();
+        const loader = this.getLoader();
         return loader(moduleName)
     }
 
     protected loadFile(files: string | string[], basePath?: string): Promise<Modules[]> {
-        let loader = this.getLoader();
+        const loader = this.getLoader();
         let fRes: Promise<Modules[]>;
         basePath = basePath ? this.normalize(basePath) : '';
         if (isArray(files)) {
@@ -110,7 +110,7 @@ export class DefaultModuleLoader extends ModuleLoader {
     }
 
     protected async loadPathModule(pmd: PathModules): Promise<Modules[]> {
-        let modules = pmd.files ? await this.loadFile(pmd.files, pmd.basePath) : [];
+        const modules = pmd.files ? await this.loadFile(pmd.files, pmd.basePath) : [];
         if (pmd.modules) {
             await Promise.all(pmd.modules.map(async nmd => {
                 if (isString(nmd)) {

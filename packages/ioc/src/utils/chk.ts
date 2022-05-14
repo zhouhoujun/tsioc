@@ -246,7 +246,7 @@ export function hasOwn(target: any, property: string) {
 export function isMetadataObject(target: any, ...props: (string | string[])[]): boolean {
     if (!isPlainObject(target)) return false;
     if (props.length) {
-        for (let n in target) {
+        for (const n in target) {
             if (props.some(ps => isString(ps) ? ps === n : ps.includes(n))) {
                 return true
             }

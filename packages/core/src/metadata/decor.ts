@@ -41,7 +41,7 @@ export interface Module<T extends ModuleMetadata> {
  */
 export function createModuleDecorator<T extends ModuleMetadata>(name: string, options?: DecoratorOption<T>): Module<T> {
     options = options || EMPTY_OBJ;
-    let hd = options.reflect?.class ?? [];
+    const hd = options.reflect?.class ?? [];
     const append = options.appendProps;
     return createDecorator<ModuleMetadata>(name, {
         ...options,
@@ -67,7 +67,7 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
         },
         design: {
             beforeAnnoation: (context: DesignContext, next) => {
-                let { type, reflect } = context;
+                const { type, reflect } = context;
                 // use as dependence inject module.
                 if (context.injectorType) {
                     context.injectorType(type, reflect)
@@ -187,7 +187,7 @@ export const ComponentScan: ComponentScan = createDecorator<ComponentScanMetadat
         afterAnnoation: (ctx, next) => {
             const { type, injector } = ctx;
             const reflect = ctx.reflect as ScanReflect;
-            let runners = injector.get(ApplicationRunners);
+            const runners = injector.get(ApplicationRunners);
             if (reflect.class.runnables.length || reflect.class.hasMetadata('run')) {
                 const typeRef = injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type).create(injector);
                 runners.addRunnable(typeRef, reflect.order)
@@ -277,7 +277,7 @@ export interface Bean {
 export const Bean: Bean = createDecorator<BeanMetadata>('Bean', {
     props: (provide: Token) => ({ provide }),
     afterInit: (ctx) => {
-        let metadata = ctx.metadata as BeanMetadata & PropertyMetadata;
+        const metadata = ctx.metadata as BeanMetadata & PropertyMetadata;
         if (!metadata.provide) {
             if (metadata.type !== Object) {
                 metadata.provide = metadata.type as any

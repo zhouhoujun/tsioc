@@ -275,7 +275,7 @@ export class HttpClient {
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpResponse<Object>>;
+    }): Observable<HttpResponse<object>>;
 
     /**
      * Constructs a request which interprets the body as a JSON object and returns
@@ -318,7 +318,7 @@ export class HttpClient {
         responseType?: 'json',
         reportProgress?: boolean,
         withCredentials?: boolean,
-    }): Observable<Object>;
+    }): Observable<object>;
 
     /**
      * Constructs a request which interprets the body as a JSON object
@@ -412,7 +412,7 @@ export class HttpClient {
             // and incorporate the remaining arguments (assuming `GET` unless a method is
             // provided.
 
-            let method = first as string;
+            const method = first as string;
             // Figure out the headers.
             let headers: HttpHeaders | undefined = undefined;
             if (options.headers instanceof HttpHeaders) {
@@ -423,7 +423,7 @@ export class HttpClient {
 
             // Sort out parameters.
             let params: HttpParams | undefined = undefined;
-            if (!!options.params) {
+            if (options.params) {
                 if (options.params instanceof HttpParams) {
                     params = options.params
                 } else {
@@ -650,7 +650,7 @@ export class HttpClient {
         responseType?: 'json',
         withCredentials?: boolean,
         body?: any | null,
-    }): Observable<HttpEvent<Object>>;
+    }): Observable<HttpEvent<object>>;
 
     /**
      * Constructs a `DELETE`request that interprets the body as a JSON object
@@ -749,7 +749,7 @@ export class HttpClient {
         responseType?: 'json',
         withCredentials?: boolean,
         body?: any | null,
-    }): Observable<HttpResponse<Object>>;
+    }): Observable<HttpResponse<object>>;
 
     /**
      * Constructs a `DELETE` request that interprets the body as a JSON object
@@ -790,7 +790,7 @@ export class HttpClient {
         responseType?: 'json',
         withCredentials?: boolean,
         body?: any | null,
-    }): Observable<Object>;
+    }): Observable<object>;
 
     /**
      * Constructs a DELETE request that interprets the body as a JSON object and returns
@@ -966,7 +966,7 @@ export class HttpClient {
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpEvent<Object>>;
+    }): Observable<HttpEvent<object>>;
 
     /**
      * Constructs a `GET` request that interprets the body as a JSON object and returns the full event
@@ -1062,7 +1062,7 @@ export class HttpClient {
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpResponse<Object>>;
+    }): Observable<HttpResponse<object>>;
 
     /**
      * Constructs a `GET` request that interprets the body as a JSON object and
@@ -1103,7 +1103,7 @@ export class HttpClient {
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<Object>;
+    }): Observable<object>;
 
     /**
      * Constructs a `GET` request that interprets the body as a JSON object and returns
@@ -1277,7 +1277,7 @@ export class HttpClient {
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpEvent<Object>>;
+    }): Observable<HttpEvent<object>>;
 
     /**
      * Constructs a `HEAD` request that interprets the body as a JSON object and
@@ -1374,7 +1374,7 @@ export class HttpClient {
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpResponse<Object>>;
+    }): Observable<HttpResponse<object>>;
 
     /**
      * Constructs a `HEAD` request that interprets the body as a JSON object
@@ -1414,7 +1414,7 @@ export class HttpClient {
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<Object>;
+    }): Observable<object>;
 
     /**
      * Constructs a `HEAD` request that interprets the body as a JSON object and returns
@@ -1465,7 +1465,7 @@ export class HttpClient {
      *
      * @return An `Observable` of the response object, with response body as an object.
      */
-    jsonp(url: string, callbackParam: string): Observable<Object>;
+    jsonp(url: string, callbackParam: string): Observable<object>;
 
     /**
      * Constructs a `JSONP` request for the given URL and name of the callback parameter.
@@ -1639,7 +1639,7 @@ export class HttpClient {
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpEvent<Object>>;
+    }): Observable<HttpEvent<object>>;
 
     /**
      * Constructs an `OPTIONS` request that interprets the body as a JSON object and
@@ -1736,7 +1736,7 @@ export class HttpClient {
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpResponse<Object>>;
+    }): Observable<HttpResponse<object>>;
 
     /**
      * Constructs an `OPTIONS` request that interprets the body as a JSON object and
@@ -1776,7 +1776,7 @@ export class HttpClient {
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<Object>;
+    }): Observable<object>;
 
     /**
      * Constructs an `OPTIONS` request that interprets the body as a JSON object and returns the
@@ -1958,7 +1958,7 @@ export class HttpClient {
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpEvent<Object>>;
+    }): Observable<HttpEvent<object>>;
 
     /**
      * Constructs a `PATCH` request that interprets the body as a JSON object
@@ -2060,7 +2060,7 @@ export class HttpClient {
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpResponse<Object>>;
+    }): Observable<HttpResponse<object>>;
 
     /**
      * Constructs a `PATCH` request that interprets the body as a JSON object
@@ -2102,7 +2102,7 @@ export class HttpClient {
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<Object>;
+    }): Observable<object>;
 
     /**
      * Constructs a `PATCH` request that interprets the body as a JSON object
@@ -2282,7 +2282,7 @@ export class HttpClient {
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpEvent<Object>>;
+    }): Observable<HttpEvent<object>>;
 
     /**
      * Constructs a POST request that interprets the body as a JSON object and returns the full event
@@ -2384,7 +2384,7 @@ export class HttpClient {
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpResponse<Object>>;
+    }): Observable<HttpResponse<object>>;
 
     /**
      * Constructs a `POST` request that interprets the body as a JSON object and returns the full
@@ -2427,7 +2427,7 @@ export class HttpClient {
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<Object>;
+    }): Observable<object>;
 
     /**
      * Constructs a `POST` request that interprets the body as a JSON object
@@ -2609,7 +2609,7 @@ export class HttpClient {
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpEvent<Object>>;
+    }): Observable<HttpEvent<object>>;
 
     /**
      * Constructs a `PUT` request that interprets the body as a JSON object and returns the
@@ -2711,7 +2711,7 @@ export class HttpClient {
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<HttpResponse<Object>>;
+    }): Observable<HttpResponse<object>>;
 
     /**
      * Constructs a `PUT` request that interprets the body as an instance of the requested type and
@@ -2753,7 +2753,7 @@ export class HttpClient {
         reportProgress?: boolean,
         responseType?: 'json',
         withCredentials?: boolean,
-    }): Observable<Object>;
+    }): Observable<object>;
 
     /**
      * Constructs a `PUT` request that interprets the body as an instance of the requested type
