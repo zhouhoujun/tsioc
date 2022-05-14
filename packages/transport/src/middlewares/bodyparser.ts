@@ -81,7 +81,7 @@ export class BodyparserMiddleware implements Middleware {
         const res = await this.parseBody(ctx);
         ctx.request.body = res.body ?? {};
         if (isUndefined(ctx.request.rawBody)) ctx.request.rawBody = res.raw;
-        await next();
+        await next()
     }
 
     parseBody(ctx: TransportContext): Promise<{ raw?: any, body?: any }> {
@@ -191,7 +191,7 @@ export class BodyparserMiddleware implements Middleware {
         const hdrcode = ctx.getHeader(hdr.CONTENT_ENCODING) as string || hdr.IDENTITY;
         let length: number | undefined;
         if (len && hdrcode === hdr.IDENTITY) {
-            length = ~~len;
+            length = ~~len
         }
         const { limit, encoding } = this.options.text;
         const str = await getRaw(this.getStream(ctx, hdrcode), {
@@ -220,7 +220,6 @@ export class BodyparserMiddleware implements Middleware {
         }
         return merged
     }
-
 
 }
 

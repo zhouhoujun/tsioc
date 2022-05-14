@@ -29,21 +29,21 @@ export class ContentMiddleware implements Middleware {
 
     async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         if (this.options.defer) {
-            await next();
+            await next()
         }
         let file = '';
         if (ctx.method === 'HEAD' || ctx.method === 'GET') {
             try {
                 let sender = ctx.injector.get(SendAdapter);
-                file = await sender.send(ctx, this.options);
+                file = await sender.send(ctx, this.options)
             } catch (err) {
                 if ((err as TransportError).status !== 404) {
-                    throw err;
+                    throw err
                 }
             }
         }
         if (!this.options.defer && !file) {
-            await next();
+            await next()
         }
     }
 

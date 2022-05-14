@@ -2833,7 +2833,7 @@ function merge<T>(
     return {
         ...options,
         method,
-        body,
+        body
     }
 }
 
