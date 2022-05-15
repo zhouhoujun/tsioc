@@ -28,19 +28,19 @@ export class ReposTest {
 
     @Test()
     async canGetUserRepository() {
-        let rep = this.ctx.injector.get(UserRepository);
+        const rep = this.ctx.injector.get(UserRepository);
         expect(rep).toBeInstanceOf(UserRepository);
     }
 
     @Test()
     async save() {
-        let rep = this.ctx.injector.get(UserRepository);
-        let newUr = new User();
+        const rep = this.ctx.injector.get(UserRepository);
+        const newUr = new User();
         newUr.name = 'admin----test';
         newUr.account = 'admin----test';
         newUr.password = '111111';
         await rep.save(newUr);
-        let svu = await rep.findByAccount('admin----test')
+        const svu = await rep.findByAccount('admin----test')
         // console.log(svu);
         expect(svu).toBeInstanceOf(User);
         expect(svu?.id).toBeDefined();
@@ -49,7 +49,7 @@ export class ReposTest {
     @Test()
     async deleteUser() {
         const rep = this.ctx.injector.get(UserRepository);
-        let svu = await rep.findByAccount('admin----test');
+        const svu = await rep.findByAccount('admin----test');
         await rep.remove(svu!);
     }
 

@@ -31,7 +31,7 @@ export class SuiteTest {
     @Test('assert test timeout', 5)
     testTimeout() {
         console.log('---------assert test timeout------');
-        let def = lang.defer();
+        const def = lang.defer();
         console.log('before out time do...');
         setTimeout(() => {
             console.log('out time do...');
@@ -43,7 +43,7 @@ export class SuiteTest {
     @Test('assert test in time', 5)
     testInTime(assert: Assert) {
         console.log('---------assert test in time------');
-        let def = lang.defer();
+        const def = lang.defer();
         assert.ok(assert);
         setTimeout(() => {
             console.log('in time do...');

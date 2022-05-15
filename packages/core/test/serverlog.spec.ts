@@ -7,7 +7,7 @@ import { logConfig, ServerMainModule } from './demo';
 import * as log4js from 'log4js';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-const del = require('del');
+import del = require('del');
 
 const dir = __dirname;
 @Suite()

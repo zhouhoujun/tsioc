@@ -52,7 +52,7 @@ export class RunAspect extends LogAspect {
             case JoinpointState.AfterReturning:
             case JoinpointState.AfterThrowing:
                 this.getReport().setSuiteCompleted(runner.type || desc.describe);
-                break
+                break;
         }
     }
 
@@ -68,7 +68,7 @@ export class RunAspect extends LogAspect {
             case JoinpointState.AfterReturning:
             case JoinpointState.AfterThrowing:
                 this.getReport().setCaseCompleted(desc);
-                break
+                break;
         }
     }
 

@@ -44,7 +44,7 @@ class DeviceController {
     async update(version: string) {
         // do smth.
         console.log('update version:', version);
-        let defer = lang.defer();
+        const defer = lang.defer();
 
         setTimeout(() => {
             defer.resolve(version);
@@ -115,7 +115,7 @@ class DeviceStartupHandle implements Middleware {
         console.log('DeviceStartupHandle.', 'resp:', ctx.playload.type, 'req:', ctx.playload.type)
         if (ctx.playload.type === 'startup') {
             // todo sth.
-            let ret = ctx.injector.get(MyService).dosth();
+            const ret = ctx.injector.get(MyService).dosth();
             ctx.setValue('deviceB_state', ret);
         }
         return next();
@@ -129,7 +129,7 @@ class DeviceAStartupHandle implements Middleware {
         console.log('DeviceAStartupHandle.', 'resp:', ctx.playload.type, 'req:', ctx.playload.type)
         if (ctx.playload.type === 'startup') {
             // todo sth.
-            let ret = ctx.get(MyService).dosth();
+            const ret = ctx.get(MyService).dosth();
             ctx.setValue('deviceA_state', ret);
         }
         return next();
@@ -234,8 +234,6 @@ describe('app message queue', () => {
 
 
     it('msg work', async () => {
-        let device, aState, bState;
-
 
         const res: any = await lastValueFrom(client.get('https://geo.datav.aliyun.com/areas_v2/bound/510100_full.json'));
 
@@ -244,9 +242,9 @@ describe('app message queue', () => {
 
         const rep = await lastValueFrom(client.send<any>('/hdevice', { method: 'POST', observe: 'response', body: { type: 'startup' } }));
 
-        device = rep.body['device'];
-        aState = rep.body['deviceA_state'];
-        bState = rep.body['deviceB_state'];
+        const device = rep.body['device'];
+        const aState = rep.body['deviceA_state'];
+        const bState = rep.body['deviceB_state'];
 
         expect(device).toBe('device next');
         expect(aState).toBe('startuped');

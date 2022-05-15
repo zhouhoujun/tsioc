@@ -30,19 +30,19 @@ export class LoadReposTest {
 
     @Test()
     async canGetUserRepository() {
-        let rep = this.ctx.injector.get(UserRepository);
+        const rep = this.ctx.injector.get(UserRepository);
         expect(rep).toBeInstanceOf(UserRepository);
     }
 
     @Test()
     async save() {
-        let rep = this.ctx.injector.get(UserRepository);
-        let newUr = new User();
+        const rep = this.ctx.injector.get(UserRepository);
+        const newUr = new User();
         newUr.name = 'admin----test';
         newUr.account = 'admin----test';
         newUr.password = '111111';
         await rep.save(newUr);
-        let svu = await rep.findByAccount('admin----test')
+        const svu = await rep.findByAccount('admin----test')
         // console.log(svu);
         expect(svu).toBeInstanceOf(User);
         expect(svu?.id).toBeDefined();
@@ -61,11 +61,11 @@ export class LoadReposTest {
     @Test()
     async deleteUser() {
         const rep = this.ctx.injector.get(UserRepository);
-        let svu = await rep.findByAccount('admin----test');
+        const svu = await rep.findByAccount('admin----test');
         const rmd = await rep.remove(svu!);
         expect(rmd).toBeDefined();
 
-        let svu1 = await rep.findByAccount('post_test');
+        const svu1 = await rep.findByAccount('post_test');
         if (svu1) {
             await rep.remove(svu1);
         }

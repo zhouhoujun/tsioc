@@ -1,6 +1,6 @@
 import {
     Module, ConfigureService, ApplicationContext, Configuration, ComponentScan, OnDispose,
-    Runnable, Bean, HttpClientModule, Handle
+    Runnable, Bean, HttpClientModule, Handle, Middleware, TransportContext
 } from '@tsdi/core';
 import { Injectable, Inject, OnDestroy, lang } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
@@ -83,7 +83,10 @@ export class LoggerAspect {
 }
 
 @Handle('/decvice')
-export class SubMessageQueue extends Middleware {
+export class SubMessageQueue implements Middleware {
+    invoke(ctx: TransportContext<any, any>, next: () => Promise<void>): Promise<void> {
+        throw new Error('Method not implemented.');
+    }
 
 }
 
@@ -134,7 +137,7 @@ export class SocketService implements ConfigureService, OnDispose {
     async onDispose() {
         this.logger.log('SocketService destroying...');
         this.tcpServer.removeAllListeners();
-        let defer = lang.defer();
+        const defer = lang.defer();
         this.tcpServer.close(() => {
             this.logger.log('tcpServer closed...');
             defer.resolve();
@@ -158,7 +161,7 @@ export class StatupModule { }
     imports: [
         SharedModule,
         StatupModule,
-        ServerBootstrapModule,
+        ServerModule,
         ServerLogsModule
     ],
     providers: [

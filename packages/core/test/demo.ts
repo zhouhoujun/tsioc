@@ -125,7 +125,7 @@ export class SocketService implements ConfigureService, OnDispose {
     async onDispose() {
         this.logger.log('SocketService destroying...');
         this.tcpServer.removeAllListeners();
-        let defer = lang.defer();
+        const defer = lang.defer();
         this.tcpServer.close(() => {
             this.logger.log('tcpServer closed...');
             defer.resolve();

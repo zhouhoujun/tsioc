@@ -13,7 +13,7 @@ describe('extends test', () => {
 
     it('should auto wried base class property', () => {
         expect(injector.has(Person)).toBeTruthy();
-        let instance = injector.get(Person);
+        const instance = injector.get(Person);
         expect(instance.home).not.toBeUndefined();
         expect(instance.container).not.toBeUndefined();
         expect(instance.container.has(Home)).toEqual(true);

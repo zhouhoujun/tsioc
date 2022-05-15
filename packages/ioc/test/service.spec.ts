@@ -50,33 +50,33 @@ describe('getService', () => {
     });
 
     it('get', () => {
-        let tsr = injector.get(TestService);
+        const tsr = injector.get(TestService);
         expect(tsr).toBeInstanceOf(TestService);
         expect(tsr.flash()).toEqual('hi');
     })
 
 
     it('get service', () => {
-        let tsr = injector.getService(TestService);
+        const tsr = injector.getService(TestService);
         expect(tsr).toBeInstanceOf(TestService);
         expect(tsr.flash()).toEqual('hi');
     })
 
 
     it('get service with providers', () => {
-        let tsr = injector.getService(TestService, { provide: DataProvider, useClass: CustomDataProvider });
+        const tsr = injector.getService(TestService, { provide: DataProvider, useClass: CustomDataProvider });
         expect(tsr).toBeInstanceOf(TestService);
         expect(tsr.flash()).toEqual('hi custom');
     })
 
     it('get service with providers in option', () => {
-        let tsr = injector.getService({ token: TestService, providers: [{ provide: DataProvider, useClass: CustomDataProvider }] });
+        const tsr = injector.getService({ token: TestService, providers: [{ provide: DataProvider, useClass: CustomDataProvider }] });
         expect(tsr).toBeInstanceOf(TestService);
         expect(tsr.flash()).toEqual('hi custom');
     })
 
     it('get service with alias in option', () => {
-        let tsr = injector.getService({ token: getToken(DataProvider, 'tt'), target: TestService });
+        const tsr = injector.getService({ token: getToken(DataProvider, 'tt'), target: TestService });
         expect(tsr).toBeInstanceOf(TestServiceProvider);
         expect(tsr.fetch()).toEqual('tt');
     })

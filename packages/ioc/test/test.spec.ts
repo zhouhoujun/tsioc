@@ -21,7 +21,7 @@ describe('custom register test', () => {
 
     it('should auto wried property', () => {
         container.register(SimppleAutoWried);
-        let instance = container.get(SimppleAutoWried);
+        const instance = container.get(SimppleAutoWried);
         expect(instance).toBeDefined();
         expect(instance.dateProperty).toBeDefined();
         // expect(instance.dateProperty instanceof Date).toBeTruthy();
@@ -29,7 +29,7 @@ describe('custom register test', () => {
 
     it('should auto create constructor params', () => {
         container.register(ClassRoom);
-        let instance = container.get(ClassRoom);
+        const instance = container.get(ClassRoom);
         expect(instance).toBeDefined();
         expect(instance.service).toBeDefined();
         expect(instance.service.current).toBeDefined();
@@ -37,7 +37,7 @@ describe('custom register test', () => {
 
     it('should auto create prop with spec @Autowired() class.', () => {
         container.register(MClassRoom);
-        let instance = container.get(MClassRoom);
+        const instance = container.get(MClassRoom);
         expect(instance).toBeDefined();
         expect(instance.leader).toBeDefined();
         expect(instance.leader.sayHi()).toEqual('I am a middle school student');
@@ -45,7 +45,7 @@ describe('custom register test', () => {
 
     it('should auto create constructor params with spec @Param() class.', () => {
         container.register(CollegeClassRoom);
-        let instance = container.get(CollegeClassRoom);
+        const instance = container.get(CollegeClassRoom);
         expect(instance).toBeDefined();
         expect(instance.leader).toBeDefined();
         expect(instance.leader.sayHi()).toEqual('I am a college student');
@@ -54,7 +54,7 @@ describe('custom register test', () => {
     it('should auto create prop with spec @Inject() class.', () => {
         container.register(MiddleSchoolStudent);
         container.register(InjMClassRoom);
-        let instance = container.get(InjMClassRoom);
+        const instance = container.get(InjMClassRoom);
         expect(instance).toBeDefined();
         expect(instance.leader).toBeDefined();
         expect(instance.leader.sayHi()).toEqual('I am a middle school student');
@@ -62,7 +62,7 @@ describe('custom register test', () => {
 
     it('should auto create constructor params with spec @Inject() class.', () => {
         container.register(InjCollegeClassRoom);
-        let instance = container.get(InjCollegeClassRoom);
+        const instance = container.get(InjCollegeClassRoom);
         expect(instance).toBeDefined();
         expect(instance.leader).toBeDefined();
         expect(instance.leader.sayHi()).toEqual('I am a college student');
@@ -71,7 +71,7 @@ describe('custom register test', () => {
     it('should auto create constructor params with spec @Inject() class with alias.', () => {
         container.register(CollegeStudent);
         container.register(InjCollegeAliasClassRoom);
-        let instance = container.get(InjCollegeAliasClassRoom);
+        const instance = container.get(InjCollegeAliasClassRoom);
         expect(instance).toBeDefined();
         expect(instance.leader).toBeDefined();
         expect(instance.leader.sayHi()).toEqual('I am a college student');
@@ -81,11 +81,11 @@ describe('custom register test', () => {
         container.register(MiddleSchoolStudent);
         container.register(CollegeStudent);
 
-        let instance = container.get(Student);
+        const instance = container.get(Student);
         expect(instance).toBeDefined();
         expect(instance.sayHi()).toEqual('I am a middle school student');
 
-        let instance2 = container.get(getToken(Student, 'college'));
+        const instance2 = container.get(getToken(Student, 'college'));
         expect(instance2).toBeDefined();
         expect(instance2.sayHi()).toEqual('I am a college student');
     });
@@ -96,7 +96,7 @@ describe('custom register test', () => {
         container.register(StingMClassRoom);
         container.register(StringIdTest);
 
-        let instance = container.get(StringIdTest);
+        const instance = container.get(StringIdTest);
         expect(instance).toBeDefined();
         expect(instance.room).toBeDefined();
         expect(instance.room.leader).toBeDefined();
@@ -110,7 +110,7 @@ describe('custom register test', () => {
         container.register(StingMClassRoom)
         container.register(SymbolIdest);
 
-        let instance = container.get(SymbolIdest);
+        const instance = container.get(SymbolIdest);
         expect(instance).toBeDefined();
         expect(instance.room).toBeDefined();
         expect(instance.room.leader).toBeDefined();

@@ -76,7 +76,7 @@ export class DefaultLogFormater extends LogFormater {
             if (level) {
                 messages.unshift(`[${level.toUpperCase()}]`)
             }
-            let timestamp = this.timestamp(new Date());
+            const timestamp = this.timestamp(new Date());
             if (timestamp) messages.unshift(timestamp)
         }
         return messages

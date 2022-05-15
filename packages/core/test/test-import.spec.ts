@@ -10,7 +10,7 @@ import { HttpModule, HttpServer } from '@tsdi/transport';
 describe('di module', () => {
 
     it('should has bootstrap, and auto wrid mark via inject.', async () => {
-        let ctx = await Application.run(ModuleB);
+        const ctx = await Application.run(ModuleB);
         expect(ctx.instance).not.toBeNull();
         expect(ctx.runners.bootstraps[0]).not.toBeNull();
         const runner = ctx.runners.bootstraps[0];
@@ -23,7 +23,7 @@ describe('di module', () => {
 
     it('message test.', async () => {
 
-        let ctx = await Application.run({
+        const ctx = await Application.run({
             module: ModuleB,
             uses: [
                 ServerModule,
@@ -34,7 +34,7 @@ describe('di module', () => {
                 })
             ]
         });
-        let runable = ctx.createRunnable(HttpServer);
+        const runable = ctx.createRunnable(HttpServer);
         runable.instance.use((ctx, next) => {
             console.log('ctx.url:', ctx.url);
             if (ctx.url.startsWith('/test')) {
@@ -62,7 +62,7 @@ describe('di module', () => {
     });
 
     it('options test.', async () => {
-        let ctx = await Application.run({
+        const ctx = await Application.run({
             module: ModuleB,
             providers: [
                 {
@@ -79,7 +79,7 @@ describe('di module', () => {
 
 
     it('can destroy service', async () => {
-        let ctx = await Application.run({
+        const ctx = await Application.run({
             module: ModuleB,
             // deps: [
             //     SocketService
@@ -87,7 +87,7 @@ describe('di module', () => {
             providers: [SocketService]
         });
 
-        let ser = ctx.injector.get(SocketService);
+        const ser = ctx.injector.get(SocketService);
         expect(ser).toBeInstanceOf(SocketService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server);
         await ctx.destroy();
@@ -95,8 +95,8 @@ describe('di module', () => {
     });
 
     it('can statup socket service in module', async () => {
-        let ctx = await Application.run(StatupModule);
-        let ser = ctx.injector.get(SocketService);
+        const ctx = await Application.run(StatupModule);
+        const ser = ctx.injector.get(SocketService);
         expect(ser).toBeInstanceOf(SocketService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server);
         await ctx.destroy();
@@ -104,7 +104,7 @@ describe('di module', () => {
     });
 
     it('can get service via module deps with option', async () => {
-        let ctx = await Application.run({
+        const ctx = await Application.run({
             module: StatupModule,
             uses: [
                 LoggerModule.withOptions(null, true)
@@ -113,10 +113,10 @@ describe('di module', () => {
                 ModuleA
             ],
         });
-        let ser = ctx.injector.get(SocketService);
+        const ser = ctx.injector.get(SocketService);
         expect(ser).toBeInstanceOf(SocketService);
         expect(ctx.injector.get('mark')).toEqual('marked');
-        let tsr = ctx.injector.get(TestService);
+        const tsr = ctx.injector.get(TestService);
         expect(tsr).toBeInstanceOf(TestService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server);
         expect(ctx.destroyed).toBeFalsy();
@@ -125,7 +125,7 @@ describe('di module', () => {
     });
 
     it('can statup socket service in module with option', async () => {
-        let ctx = await Application.run({
+        const ctx = await Application.run({
             module: StatupModule,
             uses: [
                 LoggerModule.withOptions(null, true),
@@ -134,7 +134,7 @@ describe('di module', () => {
                 ServerLogsModule
             ]
         });
-        let ser = ctx.injector.get(SocketService);
+        const ser = ctx.injector.get(SocketService);
         expect(ser).toBeInstanceOf(SocketService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server);
         expect(ctx.destroyed).toBeFalsy();

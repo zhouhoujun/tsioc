@@ -32,7 +32,6 @@ export class ProcessExitTest {
 
     @Test()
     exit() {
-        let val;
         this.ctx.onDestroy(()=> {
             console.log('SIGINT EXIT');
             // expect(val).toEqual('SIGINT EXIT');

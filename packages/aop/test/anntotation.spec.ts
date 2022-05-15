@@ -98,7 +98,7 @@ describe('aop test', () => {
         container.register(AnnotationAspect);
         container.register(CheckRightAspect);
         container.register(MethodTest3);
-        let mt3 = container.get('Test3') as any;
+        const mt3 = container.get('Test3') as any;
         expect(mt3['around_constructor_After']).toBeTruthy();
         expect(container.invoke(mt3, 'sayHello')).toEqual('Mama, I love you.');
         expect(mt3['around_sayHello_Before']).toBeTruthy();

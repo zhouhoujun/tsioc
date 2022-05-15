@@ -7,20 +7,20 @@ import expect = require('expect');
 describe('ModuleLoader test', () => {
 
     it('should has one instance via load module', async () => {
-        let container = Injector.create();
+        const container = Injector.create();
         await container.load({
             basePath: __dirname,
             files: 'debug.ts'
         });
 
         expect(container.has(Person)).toBeTruthy();
-        let instance = container.get(Person);
+        const instance = container.get(Person);
         expect(instance).toBeDefined();
         expect(instance.name).toEqual('testor');
         instance.name = 'testor B';
         expect(instance.name).toEqual('testor B');
 
-        let instanceB = container.get(Person);
+        const instanceB = container.get(Person);
         expect(instanceB.name).toEqual('testor B');
         expect(instance).toEqual(instanceB);
         container.destroy();
@@ -55,14 +55,14 @@ describe('ModuleLoader test', () => {
 
         it('should auto wried property', () => {
             expect(container.has(SimppleAutoWried)).toBeTruthy();
-            let instance = container.get(SimppleAutoWried);
+            const instance = container.get(SimppleAutoWried);
             expect(instance).toBeDefined();
             expect(instance.dateProperty).toBeDefined();
             // expect(instance.dateProperty instanceof Date).toBeTruthy();
         });
 
         it('should auto create constructor params', () => {
-            let instance = container.get(ClassRoom);
+            const instance = container.get(ClassRoom);
             // console.log(instance);
             expect(instance).toBeDefined();
             expect(instance.service).toBeDefined();
@@ -70,28 +70,28 @@ describe('ModuleLoader test', () => {
         });
 
         it('should auto create prop with spec @Param() class.', () => {
-            let instance = container.get(MClassRoom);
+            const instance = container.get(MClassRoom);
             expect(instance).toBeDefined();
             expect(instance.leader).toBeDefined();
             expect(instance.leader.sayHi()).toEqual('I am a middle school student');
         });
 
         it('should auto create constructor params with spec @Param() class.', () => {
-            let instance = container.get(CollegeClassRoom);
+            const instance = container.get(CollegeClassRoom);
             expect(instance).toBeDefined();
             expect(instance.leader).toBeDefined();
             expect(instance.leader.sayHi()).toEqual('I am a college student');
         });
 
         it('should auto create prop with spec @Inject() class.', () => {
-            let instance = container.get(InjMClassRoom);
+            const instance = container.get(InjMClassRoom);
             expect(instance).toBeDefined();
             expect(instance.leader).toBeDefined();
             expect(instance.leader.sayHi()).toEqual('I am a middle school student');
         });
 
         it('should auto create constructor params with spec @Inject() class.', () => {
-            let instance = container.get(InjCollegeClassRoom);
+            const instance = container.get(InjCollegeClassRoom);
             expect(instance).toBeDefined();
             expect(instance.leader).toBeDefined();
             expect(instance.leader.sayHi()).toEqual('I am a college student');
@@ -99,12 +99,12 @@ describe('ModuleLoader test', () => {
 
         it('should provider implement sub class to abstract class', () => {
 
-            let instance = container.get(Student);
+            const instance = container.get(Student);
             expect(instance).toBeDefined();
             // console.log(instance.sayHi());
             expect(instance.sayHi()).toEqual('I am a middle school student');
 
-            let instance2 = container.get(getToken(Student, 'college'));
+            const instance2 = container.get(getToken(Student, 'college'));
             // console.log(instance2);
             expect(instance2).toBeDefined();
             expect(instance2.sayHi()).toEqual('I am a college student');
@@ -113,7 +113,7 @@ describe('ModuleLoader test', () => {
 
         it('should work with sting id to get class', () => {
 
-            let instance = container.get(StringIdTest);
+            const instance = container.get(StringIdTest);
             expect(instance).toBeDefined();
             expect(instance.room).toBeDefined();
             expect(instance.room.leader).toBeDefined();
@@ -122,7 +122,7 @@ describe('ModuleLoader test', () => {
         });
 
         it('should work with Symbol id to get class', () => {
-            let instance = container.get(SymbolIdest);
+            const instance = container.get(SymbolIdest);
             expect(instance).toBeDefined();
             expect(instance.room).toBeDefined();
             expect(instance.room.leader).toBeDefined();

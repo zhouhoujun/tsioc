@@ -78,7 +78,7 @@ describe('method exec test', () => {
     });
 
     it('show has prop metadata', () => {
-        let refs = refl.get(MethodTest2);
+        const refs = refl.get(MethodTest2);
         expect(refs.class.hasMetadata(Inject, 'property')).toBeTruthy();
         expect(refs.class.hasMetadata(Inject, 'property', 'testAt')).toBeTruthy();
         expect(refs.class.hasMetadata(Inject, 'property', 'tester')).toBeFalsy();
@@ -86,7 +86,7 @@ describe('method exec test', () => {
     });
 
     it('show has method metadata', () => {
-        let refs = refl.get(MethodTest3);
+        const refs = refl.get(MethodTest3);
         expect(refs.class.hasMetadata(Autowired, 'method')).toBeTruthy();
         expect(refs.class.hasMetadata(Autowired, 'method', 'sayHello')).toBeTruthy();
         expect(refs.class.hasMetadata(Autowired, 'method', 'sayHello2')).toBeFalsy();
@@ -95,7 +95,7 @@ describe('method exec test', () => {
     it('show exec with type and instance', async () => {
         // container.register(Person);
         container.register(MethodTest);
-        let mtt = container.get(MethodTest);
+        const mtt = container.get(MethodTest);
         expect(isFunction(mtt.sayHello)).toBeTruthy();
         expect(await container.invoke(MethodTest, 'sayHello')).toEqual('I love you.');
 

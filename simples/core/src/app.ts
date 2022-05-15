@@ -14,10 +14,10 @@ import { UserRepository } from './repositories/UserRepository';
 
 export const connections = {
     async initDb(connection: Connection) {
-        let userRep = connection.getRepository(User);
-        let c = await userRep.count();
+        const userRep = connection.getRepository(User);
+        const c = await userRep.count();
         if (c < 1) {
-            let newUr = new User();
+            const newUr = new User();
             newUr.name = 'admin';
             newUr.account = 'admin';
             newUr.password = '111111';

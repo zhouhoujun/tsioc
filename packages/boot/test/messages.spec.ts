@@ -1,7 +1,7 @@
 import { Injector, Injectable, lang, ArgumentError, MissingParameterError } from '@tsdi/ioc';
 import { lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
-import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Middleware, Module, Middlewares, TransportContext, HttpClientModule, Endpoint, HttpClient } from '../src';
+import { Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Middleware, Module, TransportContext, HttpClientModule, Endpoint, HttpClient } from '@tsdi/core';
 import { HttpModule } from '@tsdi/transport';
 
 @RouteMapping('/device')
@@ -36,7 +36,7 @@ class DeviceController {
     async update(version: string) {
         // do smth.
         console.log('update version:', version);
-        let defer = lang.defer();
+        const defer = lang.defer();
 
         setTimeout(() => {
             defer.resolve(version);
@@ -80,14 +80,15 @@ class DeviceController {
 
 // }
 
-@Handle({ route: '/hdevice' })
-class DeviceQueue extends Middlewares {
-    override async handle(ctx: TransportContext, next?: () => Promise<void>): Promise<void> {
+@Handle('/hdevice')
+class DeviceQueue implements Middleware {
+    
+    async invoke(ctx: TransportContext<any, any>, next: () => Promise<void>): Promise<void> {
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
-        await super.handle(ctx, async () => {
-            ctx.setValue('device', 'device next');
-        });
+        // await handle(ctx, async () => {
+        //     ctx.setValue('device', 'device next');
+        // });
 
         const device = ctx.getValue('device');
         const deviceA_state = ctx.getValue('deviceA_state');

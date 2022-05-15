@@ -5,7 +5,7 @@ import { Module, Application, ConfigureService, ApplicationContext, ComponentSca
 @ComponentScan()
 export class MyStartupService implements ConfigureService {
     async configureService(ctx: ApplicationContext): Promise<void> {
-        let defer = lang.defer<void>();
+        const defer = lang.defer<void>();
         setTimeout(() => {
             ctx.injector.setValue('MyStartup', 'start');
             defer.resolve();
@@ -46,7 +46,7 @@ export class DeviceInitService implements ConfigureService {
     connid!: string;
     id = 0;
     async configureService(ctx: ApplicationContext): Promise<void> {
-        let connention = ctx.injector.get(DeviceConnectionService).connention;
+        const connention = ctx.injector.get(DeviceConnectionService).connention;
         this.connid = connention.name + this.id++;
     }
 
@@ -59,7 +59,7 @@ export class DeviceAService implements ConfigureService {
 
     data: any;
     async configureService(ctx: ApplicationContext): Promise<void> {
-        let connid = ctx.injector.get(DeviceInitService).connid;
+        const connid = ctx.injector.get(DeviceInitService).connid;
         this.data = { connid };
     }
 
