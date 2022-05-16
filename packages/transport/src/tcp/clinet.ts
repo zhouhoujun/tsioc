@@ -112,8 +112,8 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> implemen
 
     }
 
-    protected buildRequest(context: InvocationContext<any>, req: string | TCPRequest<any>, options?: any): TCPRequest<any> {
-        return isString(req) ? new TCPRequest(context.resolve(UUIDFactory).generate(), options) : req
+    protected override buildRequest(req: string | TCPRequest<any>, options?: any): TCPRequest<any> {
+        return isString(req) ? new TCPRequest(this.context.resolve(UUIDFactory).generate(), options) : req
     }
 
     async close(): Promise<void> {

@@ -53,10 +53,10 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
 
     constructor(
         @Inject() readonly context: InvocationContext,
-        @Nullable() private option: HttpClientOptions) {
+        @Nullable() private option?: HttpClientOptions) {
         super()
 
-        const interceptors = this.option.interceptors?.map(m => {
+        const interceptors = this.option?.interceptors?.map(m => {
             if (isFunction(m)) {
                 return { provide: HTTP_INTERCEPTORS, useClass: m, multi: true }
             } else {
@@ -85,7 +85,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
                     };
                     let onResponse: any;
                     let request: http.ClientRequest | http2.ClientHttp2Stream;
-                    if (this.option.authority && this.client) {
+                    if (this.option?.authority && this.client) {
                         let url = req.url.trim();
                         if (abstUrlExp.test(url)) {
                             if (!url.startsWith(this.option.authority)) throw new ArgumentError('Absolute url not start with authority.');
@@ -149,7 +149,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
     }
 
     protected override async connect(): Promise<void> {
-        if (this.option.authority) {
+        if (this.option?.authority) {
             if (this.client && !this.client.closed) return
             this.client = http2.connect(this.option.authority, this.option.options);
             this.client.on(ev.ERROR, (err) => {
