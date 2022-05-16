@@ -1,6 +1,7 @@
-import { Abstract, ArgumentError, EMPTY, Inject, Injectable, InvocationContext, isFunction, isString, lang, Nullable, tokenId, Type } from '@tsdi/ioc';
-import { Interceptor, RequestMethod, TransportClient, EndpointBackend, HttpRequest, HttpResponse, HttpEvent, OnDispose, CustomEndpoint, HttpParams, HttpHeaders, InterceptorType } from '@tsdi/core';
+import { Abstract, ArgumentError, EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isFunction, isString, lang, Nullable, tokenId, Type, type_str } from '@tsdi/ioc';
+import { Interceptor, RequestMethod, TransportClient, EndpointBackend, HttpRequest, HttpResponse, HttpEvent, OnDispose, CustomEndpoint, HttpParams, HttpHeaders, InterceptorType, HttpParamsOptions } from '@tsdi/core';
 import { from, fromEvent, Observable, Observer, of } from 'rxjs';
+import { filter, concatMap, map } from 'rxjs/operators';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import * as http2 from 'node:http2';
@@ -111,7 +112,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
                         };
                         request = secureExp.test(req.url) ? https.request(option) : http.request(option);
                         onResponse = (respone: http.IncomingMessage) => {
-
+                            respone.headers;
                         }
                     }
 
@@ -147,19 +148,123 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         return this._backend!
     }
 
-    protected buildRequest(context: InvocationContext<any>, url: string | HttpRequest<any>, options?: HttpRequestOptions): HttpRequest<any> {
-        if (isString(url)) {
-            return new HttpRequest(options?.method ?? 'GET', url, options)
-        }
-        return url
-    }
-
-    protected async connect(): Promise<void> {
+    protected override async connect(): Promise<void> {
         if (this.option.authority) {
             if (this.client && !this.client.closed) return
             this.client = http2.connect(this.option.authority, this.option.options);
             this.client.on(ev.ERROR, (err) => {
                 this.logger.error(err)
+            })
+        }
+    }
+
+    protected override request(context: InvocationContext, first: string | HttpRequest<any>, options: HttpRequestOptions = EMPTY_OBJ): Observable<HttpEvent<any>> {
+        const req = this.buildRequest(first, options);
+
+        // Start with an Observable.of() the initial request, and run the handler (which
+        // includes all interceptors) inside a concatMap(). This way, the handler runs
+        // inside an Observable chain, which causes interceptors to be re-run on every
+        // subscription (this also makes retries re-run the handler, including interceptors).
+        const events$: Observable<HttpEvent<any>> =
+            of(req).pipe(concatMap((req: HttpRequest<any>) => this.chain().handle(req, context)));
+
+        // If coming via the API signature which accepts a previously constructed HttpRequest,
+        // the only option is to get the event stream. Otherwise, return the event stream if
+        // that is what was requested.
+        if (first instanceof HttpRequest || options.observe === 'events') {
+            return events$
+        }
+
+        // The requested stream contains either the full response or the body. In either
+        // case, the first step is to filter the event stream to extract a stream of
+        // responses(s).
+        const res$: Observable<HttpResponse<any>> = <Observable<HttpResponse<any>>>events$.pipe(
+            filter((event: HttpEvent<any>) => event instanceof HttpResponse));
+
+        // Decide which stream to return.
+        switch (options.observe || 'body') {
+            case 'body':
+                // The requested stream is the body. Map the response stream to the response
+                // body. This could be done more simply, but a misbehaving interceptor might
+                // transform the response body into a different format and ignore the requested
+                // responseType. Guard against this by validating that the response is of the
+                // requested type.
+                switch (req.responseType) {
+                    case 'arraybuffer':
+                        return res$.pipe(map((res: HttpResponse<any>) => {
+                            // Validate that the body is an ArrayBuffer.
+                            if (res.body !== null && !(res.body instanceof ArrayBuffer)) {
+                                throw new Error('Response is not an ArrayBuffer.')
+                            }
+                            return res.body
+                        }));
+                    case 'blob':
+                        return res$.pipe(map((res: HttpResponse<any>) => {
+                            // Validate that the body is a Blob.
+                            if (res.body !== null && !(res.body instanceof Blob)) {
+                                throw new Error('Response is not a Blob.')
+                            }
+                            return res.body
+                        }));
+                    case 'text':
+                        return res$.pipe(map((res: HttpResponse<any>) => {
+                            // Validate that the body is a string.
+                            if (res.body !== null && typeof res.body !== type_str) {
+                                throw new Error('Response is not a string.')
+                            }
+                            return res.body
+                        }));
+                    case 'json':
+                    default:
+                        // No validation needed for JSON responses, as they can be of any type.
+                        return res$.pipe(map((res: HttpResponse<any>) => res.body))
+                }
+            case 'response':
+                // The response stream was requested directly, so return it.
+                return res$
+            default:
+                // Guard against new future observe types being added.
+                throw new Error(`Unreachable: unhandled observe type ${options.observe}}`)
+        }
+    }
+    protected override buildRequest(first: string | HttpRequest<any>, options: HttpRequestOptions): HttpRequest<any> {
+        // First, check whether the primary argument is an instance of `HttpRequest`.
+        if (first instanceof HttpRequest) {
+            // It is. The other arguments must be undefined (per the signatures) and can be
+            // ignored.
+            return first;
+        } else {
+            // It's a string, so it represents a URL. Construct a request based on it,
+            // and incorporate the remaining arguments (assuming `GET` unless a method is
+            // provided.
+
+            const url = first as string;
+            // Figure out the headers.
+            let headers: HttpHeaders | undefined = undefined;
+            if (options.headers instanceof HttpHeaders) {
+                headers = options.headers
+            } else {
+                headers = new HttpHeaders(options.headers)
+            }
+
+            // Sort out parameters.
+            let params: HttpParams | undefined = undefined;
+            if (options.params) {
+                if (options.params instanceof HttpParams) {
+                    params = options.params
+                } else {
+                    params = new HttpParams({ fromObject: options.params } as HttpParamsOptions)
+                }
+            }
+
+            // Construct the request.
+            return new HttpRequest(options.method ?? 'GET', url!, (options.body !== undefined ? options.body : null), {
+                headers,
+                params,
+                reportProgress: options.reportProgress,
+                // By default, JSON is assumed to be returned for all calls.
+                responseType: options.responseType || 'json',
+                withCredentials: options.withCredentials,
             })
         }
     }

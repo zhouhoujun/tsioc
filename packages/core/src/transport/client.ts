@@ -1,8 +1,9 @@
 import { Abstract, ArgumentError, createContext, EMPTY, InvocationContext, isNil, isNumber } from '@tsdi/ioc';
 import { Logger, Log } from '@tsdi/logs';
 import { defer, Observable, throwError } from 'rxjs';
-import { catchError, concatMap, finalize } from 'rxjs/operators';
+import { catchError, concatMap, finalize, mergeMap } from 'rxjs/operators';
 import { InterceptorChain, Endpoint, EndpointBackend, InterceptorInst } from './endpoint';
+import { TransportError } from './error';
 
 
 /**
@@ -75,20 +76,27 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> {
         if (isNil(req)) {
             return throwError(() => new ArgumentError('Invalid message'))
         }
-        const ctx = this.createContext();
-        return defer(async () => {
-            await this.connect();
-            return this.buildRequest(ctx, req, options)
-        }).pipe(
-            concatMap((req) => this.chain().handle(req, ctx)),
+        let ctx: InvocationContext;
+        return defer(() => this.connect()).pipe(
             catchError((err, caught) => {
-                this.logger.error(err);
-                return throwError(() => err)
+                return throwError(() => this.onError(err))
+            }),
+            mergeMap(() => {
+                ctx = this.createContext();
+                return this.request(ctx, req, options)
             }),
             finalize(() => {
-                ctx.destroy()
+                ctx?.destroy()
             })
         )
+    }
+
+    protected request(context: InvocationContext, req: TRequest | string, options?: TOption) {
+        return this.chain().handle(this.buildRequest(req, options), context);
+    }
+
+    protected onError(err: Error): Error {
+        return err;
     }
 
     /**
@@ -105,7 +113,7 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> {
         return createContext(this.context);
     }
 
-    protected abstract buildRequest(context: InvocationContext, url: TRequest | string, options?: TOption): TRequest;
+    protected abstract buildRequest(url: TRequest | string, options?: TOption): TRequest;
 
     protected abstract connect(): Promise<void>;
 

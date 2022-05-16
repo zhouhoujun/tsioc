@@ -1,6 +1,5 @@
 import { Injector, Injectable, lang, ArgumentError, MissingParameterError, tokenId, isArray } from '@tsdi/ioc';
-import { catchError, lastValueFrom, Observable, of, throwError } from 'rxjs';
-import {
+import { catchError, lastValueFrom, Observable, of, throwError } from 'rxjs';import {
     Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module,
     TransportContext, LoggerModule, Middleware, Chain
 } from '@tsdi/core';
@@ -169,20 +168,12 @@ class DeviceAModule {
 }
 
 
-const key = fs.readFileSync(path.join(__dirname, './localhost-privkey.pem'));
-const cert = fs.readFileSync(path.join(__dirname, './localhost-cert.pem'));
-
 @Module({
     imports: [
         ServerModule,
         LoggerModule,
         HttpModule.withOption({
-            majorVersion: 2,
-            options: {
-                allowHTTP1: true,
-                key,
-                cert
-            }
+            majorVersion: 1
         }),
         DeviceManageModule,
         DeviceAModule
@@ -200,7 +191,7 @@ class MainApp {
 
 }
 
-describe('http2 server, Http', () => {
+describe('http1.1 server, Http', () => {
     let ctx: ApplicationContext;
     let injector: Injector;
 
@@ -209,13 +200,7 @@ describe('http2 server, Http', () => {
     before(async () => {
         ctx = await Application.run(MainApp);
         injector = ctx.injector;
-        client = injector.resolve(Http, {
-            provide: HttpClientOptions,
-            useValue: {
-                key,
-                cert
-            }
-        });
+        client = injector.resolve(Http);
     });
 
     it('make sure singleton', async () => {
