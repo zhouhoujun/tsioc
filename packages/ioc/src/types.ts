@@ -80,16 +80,6 @@ export interface AnnotationType<T = any> extends Function {
      */
     ƿAnn?(): DesignAnnotation;
     /**
-     * class design annotation
-     * @deprecated use `ƿAnn` instead.
-     */
-    ρAnn?(): DesignAnnotation;
-    /**
-     * class design annotation
-     * @deprecated use `ƿAnn` instead.
-     */
-    getClassAnnations?(): DesignAnnotation;
-    /**
      * class flag. none poincut for aop.
      */
     ƿNPT?: boolean;
