@@ -20,7 +20,7 @@ export interface LoggerConfig extends Record<string, any> {
  */
 @Abstract()
 export abstract class LoggerManager {
-    static diNPT = true;
+    static ƿNPT = true;
     /**
      * config logger context.
      *

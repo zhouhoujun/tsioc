@@ -53,7 +53,7 @@ export abstract class ModuleFactory<T = any> {
  */
 @Abstract()
 export abstract class ModuleFactoryResolver {
-    static diNPT = true;
+    static ƿNPT = true;
     /**
      * resolve instance of {@link ModuleFactory}.
      * @param type module type or module reflect.

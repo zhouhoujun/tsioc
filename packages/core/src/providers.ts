@@ -12,7 +12,7 @@ import { RandomUuidGenerator, UuidGenerator } from './uuid';
 
 
 export class DefaultScanSet<T> extends RunnableSet<T> {
-    static diNPT = true;
+    static ƿNPT = true;
 
     private _rs: RunnableRef<T>[] = [];
     protected order = false;

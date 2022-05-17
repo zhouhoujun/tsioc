@@ -22,7 +22,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
     /**
      * none poincut for aop.
      */
-    static diNPT = true;
+    static ƿNPT = true;
 
     private _destroyed = false;
     protected _dsryCbs = new Set<DestroyCallback>();

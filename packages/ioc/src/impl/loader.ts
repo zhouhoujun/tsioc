@@ -13,7 +13,7 @@ import { Injector } from '../injector';
  */
 export class DefaultModuleLoader extends ModuleLoader {
 
-    static diNPT = true;
+    static ƿNPT = true;
 
     private _loader!: (modulepath: string) => Promise<Modules>;
     getLoader() {

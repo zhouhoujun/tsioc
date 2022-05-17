@@ -10,7 +10,7 @@ const type_func = 'function';
  * @returns
  */
 export function getClassAnnotation(target: AnnotationType) {
-    const annf = target.diAnn  || target.ρAnn || target.getClassAnnations;
+    const annf = target.ƿAnn  || target.ρAnn || target.getClassAnnations;
     return typeof annf === type_func ? (annf as Function).call(target) : null
 }
 
@@ -22,5 +22,5 @@ export function getClassAnnotation(target: AnnotationType) {
  * @returns {boolean}
  */
 export function hasClassAnnotation(target: AnnotationType): boolean {
-    return typeof (target.diAnn || target.ρAnn || target.getClassAnnations) === type_func
+    return typeof (target.ƿAnn || target.ρAnn || target.getClassAnnations) === type_func
 }

@@ -13,7 +13,7 @@ import { LoggerManager } from './LoggerManager';
  */
 @Abstract()
 export abstract class LogProcess {
-    static diNPT = true;
+    static ƿNPT = true;
 
     @Log() logger!: Logger;
     @Inject(ConfigureLoggerManager) logManger!: LoggerManager;

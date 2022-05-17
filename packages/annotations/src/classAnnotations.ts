@@ -52,7 +52,7 @@ export function iocAnnotations(contents: string): string {
             }
 
             let classAnnations = `
-                    static diAnn(): any {
+                    static ƿAnn(): any {
                         return ${JSON.stringify(annations)};
                     }
                `;

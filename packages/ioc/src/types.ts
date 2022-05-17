@@ -78,26 +78,25 @@ export interface AnnotationType<T = any> extends Function {
     /**
      * class design annotation
      */
-    diAnn?(): DesignAnnotation;
+    ƿAnn?(): DesignAnnotation;
     /**
      * class design annotation
-     * @deprecated use `diAnn` instead.
+     * @deprecated use `ƿAnn` instead.
      */
     ρAnn?(): DesignAnnotation;
     /**
      * class design annotation
-     * @deprecated use `diAnn` instead.
+     * @deprecated use `ƿAnn` instead.
      */
     getClassAnnations?(): DesignAnnotation;
     /**
      * class flag. none poincut for aop.
      */
-    diNPT?: boolean;
-
+    ƿNPT?: boolean;
     /**
      * type reflect of this class.
      */
-    diRfl?: () => any;
+    ƿRfl?: () => any;
 }
 
 /**
