@@ -3,7 +3,7 @@ import { ActivityContext } from './ActivityContext';
 
 @Abstract()
 export abstract class Activity<T = any> {
-    static ρCT = 'activity';
+    static diCT = 'activity';
     /**
      * activity display name.
      *

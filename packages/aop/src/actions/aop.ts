@@ -184,7 +184,7 @@ function equals(a: Advicer, b: Advicer) {
  * @returns {boolean}
  */
 function isValAspectTag(targetType: Type, reflect: AopReflect): boolean {
-    if ((targetType as AnnotationType).ρNPT) {
+    if ((targetType as AnnotationType).diNPT) {
         return false
     }
     return !reflect.nonePointcut

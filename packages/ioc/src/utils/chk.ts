@@ -366,7 +366,7 @@ export function isAnnotation(target: any): target is AnnotationType {
     if (!target.name || !target.prototype) return false;
     if (target.prototype.constructor !== target) return false;
 
-    return (target as AnnotationType).ρRfl?.()?.type === target
+    return (target as AnnotationType).diRfl?.()?.type === target
 }
 
 /**
@@ -387,7 +387,7 @@ export function isClassType(target: any, abstract?: boolean): target is ClassTyp
         return true
     }
 
-    const rf: TypeReflect = (target as AnnotationType).ρRfl?.()
+    const rf: TypeReflect = (target as AnnotationType).diRfl?.()
     if (rf) {
         if (isBoolean(abstract) && rf.type === target) return abstract ? rf.class.abstract === true : !rf.class.abstract;
         return true

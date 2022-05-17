@@ -11,7 +11,7 @@ import { LoggerConfig, LoggerManager } from './LoggerManager';
  */
 @Injectable()
 export class ConfigureLoggerManager implements LoggerManager {
-    static ρNPT = true;
+    static diNPT = true;
 
     private _config!: LogConfigure;
     private _logManger!: LoggerManager;
@@ -100,7 +100,7 @@ export interface ConsoleLoggerConfig extends LoggerConfig {
  */
 @Injectable(LoggerManager, 'console')
 export class ConsoleLogManager implements LoggerManager {
-    static ρNPT = true;
+    static diNPT = true;
     private config: ConsoleLoggerConfig | undefined;
 
     constructor() {
@@ -123,7 +123,7 @@ export class ConsoleLogManager implements LoggerManager {
  * @implements {Logger}
  */
 class ConsoleLog implements Logger {
-    static ρNPT = true;
+    static diNPT = true;
     readonly name: string | undefined;
     formatHeader = true;
 

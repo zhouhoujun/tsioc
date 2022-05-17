@@ -137,7 +137,7 @@ export class DefaultApplicationFactory extends ApplicationFactory {
     /**
      * none poincut for aop.
      */
-    static ρNPT = true;
+    static diNPT = true;
 
     constructor() {
         super()
