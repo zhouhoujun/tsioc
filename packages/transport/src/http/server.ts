@@ -1,7 +1,7 @@
-import { EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isBoolean, isDefined, isFunction, lang, Providers, tokenId, Type } from '@tsdi/ioc';
+import { EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isBoolean, isDefined, isFunction, lang, Providers, ProviderType, Token, tokenId, Type } from '@tsdi/ioc';
 import {
     TransportServer, EndpointBackend, CustomEndpoint, RunnableFactoryResolver,
-    MiddlewareType, Interceptor, ModuleRef, Router, InterceptorType,
+    MiddlewareType, Interceptor, ModuleRef, Router, InterceptorType, ExecptionFilter, Middleware, MiddlewareInst, InterceptorInst, ServerOptions,
 } from '@tsdi/core';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { of, Subscription } from 'rxjs';
@@ -25,11 +25,12 @@ import { HttpMimeAdapter } from './mime';
 import { ContentMiddleware, ContentOptions } from '../middlewares/content';
 import { SessionMiddleware, SessionOptions } from '../middlewares/session';
 import { CsrfMiddleware, CsrfOptions } from '../middlewares/csrf';
+import { HTTP_EXECPTION_FILTERS } from './filter';
 
 /**
  * http options.
  */
-export interface HttpOptions {
+export interface HttpOptions extends ServerOptions<HttpServRequest, HttpServResponse> {
     majorVersion?: number;
     cors?: boolean | CorsOptions;
     proxy?: boolean;
@@ -46,11 +47,11 @@ export interface HttpOptions {
     mimeDb?: Record<string, MimeSource>;
     listenOptions?: ListenOptions;
     interceptors?: InterceptorType<HttpServRequest, HttpServResponse>[];
+    execptions?: Type<ExecptionFilter>[];
+    middlewares?: MiddlewareType[];
     content?: boolean | ContentOptions;
     session?: boolean | SessionOptions;
     csrf?: boolean | CsrfOptions;
-    execptions?: Type<Interceptor>;
-    middlewares?: MiddlewareType[];
     /**
      * share with thie http server.
      * eg. ws, socket.io server.
@@ -128,7 +129,8 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         @Inject(HTTP_SERVEROPTIONS, { nullable: true }) options: HttpServerOptions
     ) {
         super()
-        this.initOption(options)
+        this.initOption(options);
+        this.initialize(this.options);
     }
 
     get server() {
@@ -161,30 +163,27 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
             const mimedb = this.context.injector.get(MimeDb);
             mimedb.from(this.options.mimeDb)
         }
+        if(this.options.middlewares){
+            this.options.middlewares = this.options.middlewares.filter(m => {
+                if (!this.options.cors && m === CorsMiddleware) return false;
+                if (!this.options.session && m === SessionMiddleware) return false;
+                if (!this.options.csrf && m === CsrfMiddleware) return false;
+                if (!this.options.content && m === ContentMiddleware) return false;
+                return true
+            });
+        }
+    }
 
-        const middlewares = this.options.middlewares?.filter(m => {
-            if (!this.options.cors && m === CorsMiddleware) return false;
-            if (!this.options.session && m === SessionMiddleware) return false;
-            if (!this.options.csrf && m === CsrfMiddleware) return false;
-            if (!this.options.content && m === ContentMiddleware) return false;
-            return true
-        }).map(m => {
-            if (isFunction(m)) {
-                return { provide: HTTP_MIDDLEWARES, useClass: m, multi: true }
-            } else {
-                return { provide: HTTP_MIDDLEWARES, useValue: m, multi: true }
-            }
-        }) ?? EMPTY;
-        this.context.injector.inject(middlewares);
+    protected override getInterceptorsToken(): Token<InterceptorInst<HttpServRequest, HttpServResponse>[]> {
+        return HTTP_SERV_INTERCEPTORS;
+    }
 
-        const interceptors = this.options.interceptors?.map(m => {
-            if (isFunction(m)) {
-                return { provide: HTTP_SERV_INTERCEPTORS, useClass: m, multi: true }
-            } else {
-                return { provide: HTTP_SERV_INTERCEPTORS, useValue: m, multi: true }
-            }
-        }) ?? EMPTY;
-        this.context.injector.inject(interceptors);
+    protected override getMiddlewaresToken(): Token<MiddlewareInst<HttpContext>[]> {
+        return HTTP_MIDDLEWARES;
+    }
+
+    protected override getExecptionsToken(): Token<ExecptionFilter[]> {
+        return HTTP_EXECPTION_FILTERS;
     }
 
     async start(): Promise<void> {
@@ -275,14 +274,6 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
 
     protected override createContext(request: HttpServRequest, response: HttpServResponse): HttpContext {
         return new HttpContext(this.context.injector, request, response, this)
-    }
-
-    protected override getRegMidderwares(): HttpMiddleware[] {
-        return this.context.get(HTTP_MIDDLEWARES)
-    }
-
-    protected override getRegInterceptors(): Interceptor<HttpServRequest, HttpServResponse>[] {
-        return this.context.injector.get(HTTP_SERV_INTERCEPTORS, EMPTY)
     }
 
 }

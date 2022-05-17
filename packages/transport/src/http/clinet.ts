@@ -1,5 +1,5 @@
-import { Abstract, ArgumentError, EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isFunction, isString, lang, Nullable, tokenId, Type, type_str } from '@tsdi/ioc';
-import { Interceptor, RequestMethod, TransportClient, EndpointBackend, HttpRequest, HttpResponse, HttpEvent, OnDispose, CustomEndpoint, HttpParams, HttpHeaders, InterceptorType, HttpParamsOptions } from '@tsdi/core';
+import { Abstract, ArgumentError, EMPTY_OBJ, Inject, Injectable, InvocationContext, lang, Nullable, Token, tokenId, type_str } from '@tsdi/ioc';
+import { Interceptor, RequestMethod, TransportClient, EndpointBackend, HttpRequest, HttpResponse, HttpEvent, OnDispose, CustomEndpoint, HttpParams, HttpHeaders, InterceptorType, HttpParamsOptions, InterceptorInst, ClientOptions } from '@tsdi/core';
 import { from, fromEvent, Observable, Observer, of } from 'rxjs';
 import { filter, concatMap, map } from 'rxjs/operators';
 import * as http from 'node:http';
@@ -24,7 +24,7 @@ const secureExp = /^https:/;
 export const HTTP_SESSIONOPTIONS = tokenId<HttpSessionOptions>('HTTP_SESSIONOPTIONS');
 
 @Abstract()
-export abstract class HttpClientOptions {
+export abstract class HttpClientOptions implements ClientOptions<HttpRequest, HttpEvent> {
     abstract get interceptors(): InterceptorType<HttpRequest, HttpEvent>[] | undefined;
     abstract get authority(): string | undefined;
     abstract get options(): HttpSessionOptions | undefined;
@@ -56,18 +56,11 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         @Nullable() private option?: HttpClientOptions) {
         super()
 
-        const interceptors = this.option?.interceptors?.map(m => {
-            if (isFunction(m)) {
-                return { provide: HTTP_INTERCEPTORS, useClass: m, multi: true }
-            } else {
-                return { provide: HTTP_INTERCEPTORS, useValue: m, multi: true }
-            }
-        }) ?? EMPTY;
-        this.context.injector.inject(interceptors)
+        this.option && this.initialize(this.option);
     }
 
-    protected getRegInterceptors(): Interceptor<HttpRequest, HttpEvent>[] {
-        return this.context.injector.get(HTTP_INTERCEPTORS, EMPTY)
+    protected getInterceptorsToken(): Token<InterceptorInst<HttpRequest<any>, HttpEvent<any>>[]> {
+        return HTTP_INTERCEPTORS;
     }
 
     protected getBackend(): EndpointBackend<HttpRequest, HttpEvent> {

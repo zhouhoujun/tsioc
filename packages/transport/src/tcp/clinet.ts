@@ -1,8 +1,8 @@
-import { EndpointBackend, Interceptor, InterceptorType, OnDispose, TransportClient, UUIDFactory } from '@tsdi/core';
-import { Abstract, EMPTY, Inject, Injectable, InvocationContext, isFunction, isString, lang, Nullable, tokenId } from '@tsdi/ioc';
+import { EndpointBackend, ExecptionFilter, Interceptor, InterceptorInst, InterceptorType, OnDispose, TransportClient, UuidGenerator } from '@tsdi/core';
+import { Abstract, EMPTY, Inject, Injectable, InvocationContext, isFunction, isString, lang, Nullable, Token, tokenId } from '@tsdi/ioc';
 import { Socket, SocketConstructorOpts, NetConnectOpts } from 'node:net';
 import { ev } from '../consts';
-import { TCPRequest, TCPResponse } from './packet';
+import { TcpRequest, TcpResponse } from './packet';
 
 
 
@@ -14,7 +14,7 @@ export abstract class TcpClientOption {
     abstract json?: boolean;
     abstract socketOpts?: SocketConstructorOpts;
     abstract connectOpts: NetConnectOpts;
-    abstract interceptors?: InterceptorType<TCPRequest, TCPResponse>[];
+    abstract interceptors?: InterceptorType<TcpRequest, TcpResponse>[];
 }
 
 const defaults = {
@@ -26,11 +26,10 @@ const defaults = {
 } as TcpClientOption;
 
 
-export const TCP_INTERCEPTORS = tokenId<Interceptor<TCPRequest, TCPResponse>[]>('TCP_INTERCEPTORS');
+export const TCP_INTERCEPTORS = tokenId<Interceptor<TcpRequest, TcpResponse>[]>('TCP_INTERCEPTORS');
 
 @Injectable()
-export class TCPClient extends TransportClient<TCPRequest, TCPResponse> implements OnDispose {
-
+export class TcpClient extends TransportClient<TcpRequest, TcpResponse> implements OnDispose {
 
     private socket?: Socket;
     private connected: boolean;
@@ -40,26 +39,14 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> implemen
     ) {
         super();
         this.connected = false;
-        this.initOptions(option);
+        this.initialize(option);
     }
 
-    protected initOptions(option: TcpClientOption) {
-        const interceptors = option.interceptors?.map(m => {
-            if (isFunction(m)) {
-                return { provide: TCP_INTERCEPTORS, useClass: m, multi: true }
-            } else {
-                return { provide: TCP_INTERCEPTORS, useValue: m, multi: true }
-            }
-        }) ?? EMPTY;
-        this.context.injector.inject(interceptors)
+    protected getInterceptorsToken(): Token<InterceptorInst<TcpRequest<any>, TcpResponse<any>>[]> {
+        return TCP_INTERCEPTORS;
     }
 
-    protected getRegInterceptors(): Interceptor<TCPRequest, TCPResponse>[] {
-        return this.context.injector.get(TCP_INTERCEPTORS, EMPTY)
-    }
-
-
-    protected getBackend(): EndpointBackend<TCPRequest<any>, TCPResponse<any>> {
+    protected getBackend(): EndpointBackend<TcpRequest<any>, TcpResponse<any>> {
         throw new Error('Method not implemented.')
     }
 
@@ -112,8 +99,8 @@ export class TCPClient extends TransportClient<TCPRequest, TCPResponse> implemen
 
     }
 
-    protected override buildRequest(req: string | TCPRequest<any>, options?: any): TCPRequest<any> {
-        return isString(req) ? new TCPRequest(this.context.resolve(UUIDFactory).generate(), options) : req
+    protected override buildRequest(req: string | TcpRequest<any>, options?: any): TcpRequest<any> {
+        return isString(req) ? new TcpRequest(this.context.resolve(UuidGenerator).generate(), options) : req
     }
 
     async close(): Promise<void> {

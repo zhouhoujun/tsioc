@@ -1,6 +1,7 @@
 import { Module, RouterModule, TransformModule } from '@tsdi/core';
-import { TCPClient } from './clinet';
-import { TCPServer } from './server';
+import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
+import { TcpClient } from './clinet';
+import { TcpServer } from './server';
 
 @Module({
     imports: [
@@ -8,10 +9,18 @@ import { TCPServer } from './server';
         RouterModule
     ],
     providers: [
-        TCPClient,
-        TCPServer
+        TcpClient,
+        TcpServer
     ]
 })
 export class TcpModule {
+
+    static withOptions(): ModuleWithProviders<TcpModule> {
+        const providers: ProviderType[] = [];
+        return {
+            module: TcpModule,
+            providers
+        }
+    }
 
 }

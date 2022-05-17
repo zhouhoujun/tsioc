@@ -1,10 +1,16 @@
-import { Abstract, ArgumentError, createContext, EMPTY, InvocationContext, isNil, isNumber } from '@tsdi/ioc';
+import { Abstract, ArgumentError, createContext, EMPTY, InvocationContext, isFunction, isNil, isNumber, Token } from '@tsdi/ioc';
 import { Logger, Log } from '@tsdi/logs';
 import { defer, Observable, throwError } from 'rxjs';
-import { catchError, concatMap, finalize, mergeMap } from 'rxjs/operators';
-import { InterceptorChain, Endpoint, EndpointBackend, InterceptorInst } from './endpoint';
-import { TransportError } from './error';
+import { catchError, finalize, mergeMap } from 'rxjs/operators';
+import { InterceptorChain, Endpoint, EndpointBackend, InterceptorInst, InterceptorType } from './endpoint';
 
+
+/**
+ * client options.
+ */
+export interface ClientOptions<TRequest, TResponse> {
+    interceptors?: InterceptorType<TRequest, TResponse>[];
+}
 
 /**
  * abstract transport client.
@@ -20,6 +26,27 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> {
 
 
     /**
+     * initialize interceptors, execptions with options.
+     * @param options 
+     */
+    protected initialize(options: ClientOptions<TRequest, TResponse>) {
+
+        if (options.interceptors && options.interceptors.length) {
+            const iToken = this.getInterceptorsToken();
+            const interceptors = options.interceptors.map(m => {
+                if (isFunction(m)) {
+                    return { provide: iToken, useClass: m, multi: true }
+                } else {
+                    return { provide: iToken, useValue: m, multi: true }
+                }
+            });
+            this.context.injector.inject(interceptors);
+        }
+    }
+
+    protected abstract getInterceptorsToken(): Token<InterceptorInst<TRequest, TResponse>[]>;
+
+    /**
      * client context.
      */
     abstract get context(): InvocationContext;
@@ -29,7 +56,7 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> {
      */
     get interceptors(): InterceptorInst<TRequest, TResponse>[] {
         if (!this._interceptors) {
-            this._interceptors = [...this.getRegInterceptors() ?? EMPTY]
+            this._interceptors = [...this.context.injector.get(this.getInterceptorsToken(), EMPTY)]
         }
         return this._interceptors
     }
@@ -98,11 +125,6 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> {
     protected onError(err: Error): Error {
         return err;
     }
-
-    /**
-     * get registed interceptors.
-     */
-    protected abstract getRegInterceptors(): InterceptorInst[];
 
     /**
      * get backend endpoint.

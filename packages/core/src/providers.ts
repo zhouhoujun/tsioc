@@ -8,6 +8,7 @@ import { Observable, from, lastValueFrom } from 'rxjs';
 import { ConfigureService } from './service';
 import { Startup } from './startup';
 import { ApplicationRunners } from './runners';
+import { RandomUuidGenerator, UuidGenerator } from './uuid';
 
 
 export class DefaultScanSet<T> extends RunnableSet<T> {
@@ -152,6 +153,7 @@ export const DEFAULTA_PROVIDERS: ProviderType[] = [
     { provide: LifecycleHooksResolver, useValue: new ModuleLifecycleHooksResolver() },
     { provide: ModuleFactoryResolver, useValue: new DefaultModuleFactoryResolver() },
     { provide: ApplicationFactory, useClass: DefaultApplicationFactory, static: true },
+    { provide: UuidGenerator, useClass: RandomUuidGenerator, asDefault: true, static: true },
     {
         provide: ObservableParser,
         useValue: {

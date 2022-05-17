@@ -1,9 +1,10 @@
-import { EndpointBackend, Interceptor, MiddlewareInst, TransportContext, TransportServer } from '@tsdi/core';
-import { Abstract, Inject, Injectable, InvocationContext, lang, Nullable } from '@tsdi/ioc';
+import { EndpointBackend, ExecptionFilter, Interceptor, InterceptorInst, InterceptorType, MiddlewareInst, MiddlewareType, ServerOptions, TransportContext, TransportServer, UuidGenerator } from '@tsdi/core';
+import { Abstract, Inject, Injectable, InvocationContext, lang, Nullable, Token, tokenId, Type } from '@tsdi/ioc';
 import { Server, ListenOptions } from 'node:net';
 import { Subscription } from 'rxjs';
 import { ev } from '../consts';
-import { TCPRequest, TCPResponse } from './packet';
+import { TCP_EXECPTION_FILTERS, TCP_MIDDLEWARES } from './context';
+import { TcpRequest, TcpResponse } from './packet';
 
 
 
@@ -25,13 +26,16 @@ export interface TcpServerOpts {
 
 
 @Abstract()
-export abstract class TcpServerOption {
+export abstract class TcpServerOption implements ServerOptions<TcpRequest, TcpResponse> {
     /**
      * is json or not.
      */
     abstract json?: boolean;
     abstract serverOpts?: TcpServerOpts | undefined;
     abstract listenOptions: ListenOptions;
+    abstract interceptors?: InterceptorType<TcpRequest, TcpResponse>[];
+    abstract execptions?: Type<ExecptionFilter>[];
+    abstract middlewares?: MiddlewareType[];
 }
 
 const defOpts = {
@@ -42,12 +46,14 @@ const defOpts = {
     }
 } as TcpServerOption;
 
+export const TCP_SERV_INTERCEPTORS = tokenId<Interceptor<TcpRequest, TcpResponse>[]>('TCP_SERV_INTERCEPTORS');
 
 /**
  * TCP server.
  */
 @Injectable()
-export class TCPServer extends TransportServer<TCPRequest, TCPResponse> {
+export class TcpServer extends TransportServer<TcpRequest, TcpResponse> {
+
 
     private server?: Server;
     private options: TcpServerOption;
@@ -56,7 +62,18 @@ export class TCPServer extends TransportServer<TCPRequest, TCPResponse> {
         @Nullable() options: TcpServerOption) {
         super()
         this.options = { ...defOpts, ...options };
+        this.initialize(this.options);
 
+    }
+
+    protected getInterceptorsToken(): Token<InterceptorInst<TcpRequest<any>, TcpResponse<any>>[]> {
+        return TCP_SERV_INTERCEPTORS;
+    }
+    protected getMiddlewaresToken(): Token<MiddlewareInst<TransportContext<any, any>>[]> {
+        return TCP_MIDDLEWARES;
+    }
+    protected getExecptionsToken(): Token<ExecptionFilter[]> {
+        return TCP_EXECPTION_FILTERS;
     }
 
     async start(): Promise<void> {
@@ -67,16 +84,7 @@ export class TCPServer extends TransportServer<TCPRequest, TCPResponse> {
         await defer.promise;
     }
 
-
-    protected getRegInterceptors(): Interceptor[] {
-        throw new Error('Method not implemented.');
-    }
-
-    protected getRegMidderwares(): MiddlewareInst<TransportContext<any, any>>[] {
-        throw new Error('Method not implemented.');
-    }
-
-    protected getBackend(): EndpointBackend<TCPRequest<any>, TCPResponse<any>> {
+    protected getBackend(): EndpointBackend<TcpRequest<any>, TcpResponse<any>> {
         throw new Error('Method not implemented.');
     }
 
@@ -84,7 +92,7 @@ export class TCPServer extends TransportServer<TCPRequest, TCPResponse> {
         throw new Error('Method not implemented.');
     }
 
-    protected createContext(request: TCPRequest<any>, response: TCPResponse<any>): TransportContext<any, any> {
+    protected createContext(request: TcpRequest<any>, response: TcpResponse<any>): TransportContext<any, any> {
         throw new Error('Method not implemented.');
     }
 

@@ -1,9 +1,8 @@
-import { RequestBase, ResponseBase, UUIDFactory } from '@tsdi/core';
-import { InvocationContext } from '@tsdi/ioc';
+import { RequestBase, ResponseBase } from '@tsdi/core';
 import { Socket } from 'node:net';
 
 
-export class TCPRequest<T = any> extends RequestBase<T> {
+export class TcpRequest<T = any> extends RequestBase<T> {
 
     public readonly id: string;
     public readonly url: string;
@@ -35,7 +34,7 @@ export class TCPRequest<T = any> extends RequestBase<T> {
     }
 }
 
-export class TCPResponse<T = any> extends ResponseBase<T> {
+export class TcpResponse<T = any> extends ResponseBase<T> {
 
     readonly type: number;
     readonly status: number;

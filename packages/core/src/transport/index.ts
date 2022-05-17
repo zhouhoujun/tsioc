@@ -1,6 +1,5 @@
 export * from './context';
 export * from './packet';
-export * from './uuid';
 
 export * from './endpoint';
 
