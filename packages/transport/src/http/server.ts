@@ -1,7 +1,11 @@
-import { EMPTY, EMPTY_OBJ, Inject, Injectable, InvocationContext, isBoolean, isDefined, isFunction, lang, Providers, ProviderType, Token, tokenId, Type } from '@tsdi/ioc';
+import {
+    EMPTY_OBJ, Inject, Injectable, InvocationContext, isBoolean, isDefined,
+    isFunction, lang, Providers, Token, tokenId, Type
+} from '@tsdi/ioc';
 import {
     TransportServer, EndpointBackend, CustomEndpoint, RunnableFactoryResolver,
-    MiddlewareType, Interceptor, ModuleRef, Router, InterceptorType, ExecptionFilter, Middleware, MiddlewareInst, InterceptorInst, ServerOptions,
+    MiddlewareType, Interceptor, ModuleRef, Router, InterceptorType, ExecptionFilter,
+    MiddlewareInst, InterceptorInst, ServerOptions,
 } from '@tsdi/core';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { of, Subscription } from 'rxjs';
@@ -11,7 +15,7 @@ import * as https from 'node:https';
 import * as http2 from 'node:http2';
 import * as assert from 'node:assert';
 import { CONTENT_DISPOSITION } from './content';
-import { HttpContext, HttpMiddleware, HttpServRequest, HttpServResponse, HTTP_MIDDLEWARES } from './context';
+import { HttpContext, HttpServRequest, HttpServResponse, HTTP_MIDDLEWARES } from './context';
 import { ev, LOCALHOST } from '../consts';
 import { CorsMiddleware, CorsOptions, EncodeJsonMiddleware, HelmetMiddleware } from '../middlewares';
 import { BodyparserMiddleware } from '../middlewares/bodyparser';
@@ -146,31 +150,32 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
     }
 
     protected initOption(options: HttpServerOptions) {
-        this.options = { ...httpOpts, ...options } as HttpServerOptions;
         if (options?.options) {
-            this.options.options = { ...httpOpts.options, ...options.options }
+            options.options = { ...httpOpts.options, ...options.options }
         }
         if (options?.listenOptions) {
-            this.options.listenOptions = { ...httpOpts.listenOptions, ...options.listenOptions }
+            options.listenOptions = { ...httpOpts.listenOptions, ...options.listenOptions }
         }
-        this.context.injector.setValue(HTTP_SERVEROPTIONS, this.options);
-
-        if (this.options.content && !isBoolean(this.options.content)) {
-            this.context.injector.setValue(ContentOptions, this.options.content)
-        }
-
-        if (this.options.mimeDb) {
-            const mimedb = this.context.injector.get(MimeDb);
-            mimedb.from(this.options.mimeDb)
-        }
-        if(this.options.middlewares){
-            this.options.middlewares = this.options.middlewares.filter(m => {
-                if (!this.options.cors && m === CorsMiddleware) return false;
-                if (!this.options.session && m === SessionMiddleware) return false;
-                if (!this.options.csrf && m === CsrfMiddleware) return false;
-                if (!this.options.content && m === ContentMiddleware) return false;
+        const opts = this.options = { ...httpOpts, ...options } as HttpServerOptions;
+        
+        if (opts.middlewares) {
+            opts.middlewares = opts.middlewares.filter(m => {
+                if (!opts.cors && m === CorsMiddleware) return false;
+                if (!opts.session && m === SessionMiddleware) return false;
+                if (!opts.csrf && m === CsrfMiddleware) return false;
+                if (!opts.content && m === ContentMiddleware) return false;
                 return true
             });
+        }
+        this.context.injector.setValue(HTTP_SERVEROPTIONS, opts);
+
+        if (opts.content && !isBoolean(opts.content)) {
+            this.context.injector.setValue(ContentOptions, opts.content)
+        }
+
+        if (opts.mimeDb) {
+            const mimedb = this.context.injector.get(MimeDb);
+            mimedb.from(opts.mimeDb)
         }
     }
 

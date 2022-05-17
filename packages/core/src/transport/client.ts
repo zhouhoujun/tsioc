@@ -26,7 +26,7 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> {
 
 
     /**
-     * initialize interceptors, execptions with options.
+     * initialize interceptors with options.
      * @param options 
      */
     protected initialize(options: ClientOptions<TRequest, TResponse>) {
