@@ -2,8 +2,7 @@ import { Endpoint, Interceptor } from '@tsdi/core';
 import { Injectable, isNumber, isString } from '@tsdi/ioc';
 import { Logger, LoggerManager } from '@tsdi/logs';
 import * as chalk from 'chalk';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, map } from 'rxjs';
 import { HttpContext, HttpServRequest, HttpServResponse } from '../context';
 import { emptyStatus, redirectStatus } from '../status';
 

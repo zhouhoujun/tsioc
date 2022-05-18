@@ -1,3 +1,4 @@
+import { Module } from '@tsdi/core';
 import { Inject, IocExt, Injector, ROOT_INJECTOR } from '@tsdi/ioc';
 import { ComponentFactoryResolver } from './refs/component';
 import { HostMappingRoot } from './router';
@@ -9,13 +10,11 @@ import { HostMappingRoot } from './router';
  * @export
  * @class ComponentModule
  */
-@IocExt()
+@Module({
+    providers:[
+        HostMappingRoot
+    ]
+})
 export class ComponentsModule {
-
-    setup(@Inject(ROOT_INJECTOR) injector: Injector) {
-        injector.register(HostMappingRoot);
-        // todo register default factory resolver.
-        // injector.setValue(ComponentFactoryResolver,  );
-    }
 
 }

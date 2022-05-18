@@ -85,7 +85,7 @@ export class TemplateOutletDirective implements OnChanges {
     const currCtxKeys = Object.keys(ctxChange.currentValue || EMPTY_OBJ);
 
     if (prevCtxKeys.length === currCtxKeys.length) {
-      for (let propName of currCtxKeys) {
+      for (const propName of currCtxKeys) {
         if (prevCtxKeys.indexOf(propName) === -1) {
           return true;
         }
@@ -96,7 +96,7 @@ export class TemplateOutletDirective implements OnChanges {
   }
 
   private _updateExistingContext(ctx: Object): void {
-    for (let propName of Object.keys(ctx)) {
+    for (const propName of Object.keys(ctx)) {
       (<any>this._viewRef!.context)[propName] = (<any>this.templateOutletContext)[propName];
     }
   }

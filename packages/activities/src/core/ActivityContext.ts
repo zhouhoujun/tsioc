@@ -1,4 +1,4 @@
-import { DefaultInvocationContext } from '@tsdi/ioc';
+import { DefaultInvocationContext, Injector } from '@tsdi/ioc';
 import { ActivityExecutor } from './ActivityExecutor';
 import { Expression } from './ActivityMetadata';
 

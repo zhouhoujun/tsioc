@@ -98,7 +98,7 @@ export class PluralCase {
   constructor(
     @Attribute('pluralCase') public value: string, template: TemplateRef<Object>,
     viewContainer: ViewContainerRef, @Host() plural: Plural) {
-    const isANumber: boolean = !isNaN(Number(value));
+    const isANumber = !isNaN(Number(value));
     plural.addCase(isANumber ? `=${value}` : value, new SwitchView(viewContainer, template));
   }
 }

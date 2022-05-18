@@ -47,7 +47,7 @@ export class ApplicationRef implements OnDestroy {
 
     try {
       this._runningTick = true;
-      for (let view of this._views) {
+      for (const view of this._views) {
         view.detectChanges();
       }
     } catch (e) {

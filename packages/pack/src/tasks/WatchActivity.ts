@@ -1,8 +1,7 @@
-import { PromiseUtil } from '@tsdi/ioc';
+import {  } from '@tsdi/ioc';
 import { Input, Binding } from '@tsdi/components';
 import { Task, Src, BodyTemplate, ActivityType } from '@tsdi/activities';
-import { fromEventPattern } from 'rxjs';
-import { bufferTime, filter } from 'rxjs/operators';
+import { fromEventPattern, bufferTime, filter} from 'rxjs';
 import { NodeActivityContext } from '../NodeActivityContext';
 import { NodeActivity } from '../NodeActivity';
 const chokidar = require('chokidar');

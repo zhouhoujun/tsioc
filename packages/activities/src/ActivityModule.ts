@@ -4,7 +4,6 @@ import { Module } from '@tsdi/core';
 import { ComponentsModule } from '@tsdi/components';
 import { RunAspect } from './aop/RunAspect';
 import { ActivityExecutor } from './core/ActivityExecutor';
-import { RandomUUIDFactory, UUIDToken } from './core/uuid';
 
 
 
@@ -24,8 +23,7 @@ import { RandomUUIDFactory, UUIDToken } from './core/uuid';
     ],
     providers: [
         ActivityExecutor,
-        RunAspect,
-        { provide: UUIDToken, useClass: RandomUUIDFactory }
+        RunAspect
     ]
 })
 export class ActivityModule {

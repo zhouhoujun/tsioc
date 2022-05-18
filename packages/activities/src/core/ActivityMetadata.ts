@@ -1,8 +1,5 @@
-import { Type, Token, ProviderType, tokenId, AsyncHandler } from '@tsdi/ioc';
+import { Type, Token, ProviderType, tokenId } from '@tsdi/ioc';
 import { Activity } from './Activity';
-import { IActivityContext } from './IActivityContext';
-import { IWorkflowContext } from './IWorkflowContext';
-import { IActivityRef } from './IActivityRef';
 import { Template } from '@tsdi/boot';
 
 
