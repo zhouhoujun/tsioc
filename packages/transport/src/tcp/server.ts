@@ -26,7 +26,7 @@ export interface TcpServerOpts {
 
 
 @Abstract()
-export abstract class TcpServerOption implements ServerOptions<TcpRequest, TcpResponse> {
+export abstract class TcpServerOptions implements ServerOptions<TcpRequest, TcpResponse> {
     /**
      * is json or not.
      */
@@ -44,7 +44,7 @@ const defOpts = {
         port: 3000,
         host: 'localhost'
     }
-} as TcpServerOption;
+} as TcpServerOptions;
 
 export const TCP_SERV_INTERCEPTORS = tokenId<Interceptor<TcpRequest, TcpResponse>[]>('TCP_SERV_INTERCEPTORS');
 
@@ -56,10 +56,10 @@ export class TcpServer extends TransportServer<TcpRequest, TcpResponse, TcpConte
 
 
     private server?: Server;
-    private options: TcpServerOption;
+    private options: TcpServerOptions;
     constructor(
         @Inject() readonly context: InvocationContext,
-        @Nullable() options: TcpServerOption) {
+        @Nullable() options: TcpServerOptions) {
         super()
         this.options = { ...defOpts, ...options };
         this.initialize(this.options);
@@ -72,6 +72,7 @@ export class TcpServer extends TransportServer<TcpRequest, TcpResponse, TcpConte
     protected getMiddlewaresToken(): Token<MiddlewareInst<TcpContext>[]> {
         return TCP_MIDDLEWARES;
     }
+
     protected getExecptionsToken(): Token<ExecptionFilter[]> {
         return TCP_EXECPTION_FILTERS;
     }

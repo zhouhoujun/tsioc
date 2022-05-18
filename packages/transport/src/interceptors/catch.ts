@@ -1,31 +1,29 @@
-import { createExecptionContext, Endpoint, Interceptor } from '@tsdi/core';
+import { createExecptionContext, Endpoint, ExecptionFilter, Interceptor, TransportContext } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
 import { from, Observable, catchError } from 'rxjs';
-import { HttpContext, HttpServRequest, HttpServResponse } from '../context';
-import { HttpExecptionFilter } from '../filter';
 
 
 
 @Injectable()
-export class CatchInterceptor implements Interceptor<HttpServRequest, HttpServResponse> {
+export class CatchInterceptor<TRequest = any, TResponse = any> implements Interceptor<TRequest, TResponse> {
 
     constructor() { }
 
-    intercept(req: HttpServRequest, next: Endpoint<HttpServRequest, HttpServResponse>, ctx: HttpContext): Observable<HttpServResponse> {
+    intercept(req: TRequest, next: Endpoint<TRequest, TResponse>, ctx: TransportContext): Observable<TResponse> {
         return next.handle(req, ctx)
             .pipe(
                 catchError((err, caught) => {
                     // log error
                     ctx.get(Logger).error(err);
                     // handle error
-                    const filter = ctx.get(HttpExecptionFilter);
+                    const filter = ctx.get(ExecptionFilter);
                     const context = createExecptionContext(ctx, err);
                     return from(filter.handle(context, async () => {
                         await context.destroy()
                     }))
                 })
             )
-        
+
     }
 }

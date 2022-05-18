@@ -21,7 +21,7 @@ export interface ServerOptions<TRequest, TResponse> {
  */
 @Abstract()
 @Runner('start')
-export abstract class TransportServer<TRequest, TResponse, Tx extends TransportContext = TransportContext> implements OnDispose {
+export abstract class TransportServer<TRequest = any, TResponse = any, Tx extends TransportContext = TransportContext> implements OnDispose {
 
     @Log()
     protected readonly logger!: Logger;

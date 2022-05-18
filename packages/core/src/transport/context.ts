@@ -115,6 +115,11 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
     abstract set body(value: any);
 
     /**
+     * response body length.
+     */
+    abstract get length(): number | undefined;
+
+    /**
      * is update modle resquest.
      */
     abstract isUpdate(): boolean;

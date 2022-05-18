@@ -5,6 +5,7 @@ import { TcpRequest, TcpResponse } from './packet';
 @Injectable()
 export class TcpContext extends TransportContext<TcpRequest, TcpResponse> {
 
+
     private _url?: string;
     get url(): string {
         if (!this._url) {
@@ -60,6 +61,12 @@ export class TcpContext extends TransportContext<TcpRequest, TcpResponse> {
         return this.request.method;
     }
 
+    isUpdate(): boolean {
+        return this.request.isUpdate;
+    }
+
+    
+
     is(type: string | string[]): string | false | null {
         throw new Error('Method not implemented.');
     }
@@ -71,8 +78,8 @@ export class TcpContext extends TransportContext<TcpRequest, TcpResponse> {
         throw new Error('Method not implemented.');
     }
 
-    isUpdate(): boolean {
-        return this.request.isUpdate;
+    get length(): number | undefined {
+        throw new Error('Method not implemented.');
     }
 
     get status(): number {

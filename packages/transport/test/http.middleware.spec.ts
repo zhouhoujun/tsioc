@@ -2,17 +2,22 @@ import { ServerHttpClientModule, ServerLogsModule, ServerModule } from '@tsdi/pl
 import expect = require('expect');
 import { catchError, lastValueFrom, Observable, of, throwError } from 'rxjs';
 import * as net from 'node:net';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { Application, HttpClient, HttpClientModule, LoggerModule, Module } from '@tsdi/core';
-import { HttpModule, HttpServer } from '../src';
+import { Http, HttpClientOptions, HttpModule, HttpServer } from '../src';
 
 @Module({
-    imports:[
+    imports: [
         LoggerModule
     ]
 })
 class ModuleB {
 
 }
+
+const key = fs.readFileSync(path.join(__dirname, './localhost-privkey.pem'));
+const cert = fs.readFileSync(path.join(__dirname, './localhost-cert.pem'));
 
 describe('middleware', () => {
 
@@ -23,10 +28,13 @@ describe('middleware', () => {
             module: ModuleB,
             uses: [
                 ServerModule,
-                HttpClientModule,
-                ServerHttpClientModule,
                 HttpModule.withOption({
-                    majorVersion: 1,
+                    majorVersion: 2,
+                    options: {
+                        allowHTTP1: true,
+                        key,
+                        cert
+                    }
                 })
             ]
         });
@@ -44,8 +52,16 @@ describe('middleware', () => {
 
         await runable.run();
 
+        const http = ctx.injector.resolve(Http, {
+            provide: HttpClientOptions,
+            useValue: {
+                key,
+                cert
+            }
+        });
+
         // has no parent.
-        const rep = await lastValueFrom(ctx.resolve(HttpClient).request('GET', 'test', { observe: 'response', responseType: 'text', params: { hi: 'hello' } })
+        const rep = await lastValueFrom(http.get('test', { observe: 'response', responseType: 'text', params: { hi: 'hello' } })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);

@@ -5,4 +5,5 @@ export * from './http';
 export * from './tcp';
 export * from './stringify';
 export * from './utils';
+export * from './interceptors';
 export * from './middlewares';
