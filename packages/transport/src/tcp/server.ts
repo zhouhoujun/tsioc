@@ -3,7 +3,7 @@ import { Abstract, Inject, Injectable, InvocationContext, lang, Nullable, Token,
 import { Server, ListenOptions } from 'node:net';
 import { Subscription } from 'rxjs';
 import { ev } from '../consts';
-import { TCP_EXECPTION_FILTERS, TCP_MIDDLEWARES } from './context';
+import { TcpContext, TCP_EXECPTION_FILTERS, TCP_MIDDLEWARES } from './context';
 import { TcpRequest, TcpResponse } from './packet';
 
 
@@ -52,7 +52,7 @@ export const TCP_SERV_INTERCEPTORS = tokenId<Interceptor<TcpRequest, TcpResponse
  * TCP server.
  */
 @Injectable()
-export class TcpServer extends TransportServer<TcpRequest, TcpResponse> {
+export class TcpServer extends TransportServer<TcpRequest, TcpResponse, TcpContext> {
 
 
     private server?: Server;
@@ -66,10 +66,10 @@ export class TcpServer extends TransportServer<TcpRequest, TcpResponse> {
 
     }
 
-    protected getInterceptorsToken(): Token<InterceptorInst<TcpRequest<any>, TcpResponse<any>>[]> {
+    protected getInterceptorsToken(): Token<InterceptorInst<TcpRequest, TcpResponse>[]> {
         return TCP_SERV_INTERCEPTORS;
     }
-    protected getMiddlewaresToken(): Token<MiddlewareInst<TransportContext<any, any>>[]> {
+    protected getMiddlewaresToken(): Token<MiddlewareInst<TcpContext>[]> {
         return TCP_MIDDLEWARES;
     }
     protected getExecptionsToken(): Token<ExecptionFilter[]> {
@@ -79,21 +79,29 @@ export class TcpServer extends TransportServer<TcpRequest, TcpResponse> {
     async start(): Promise<void> {
         this.server = new Server(this.options.serverOpts);
         const defer = lang.defer();
-        this.server.once(ev.ERROR, defer.reject);
+        this.server.once(ev.ERROR, (err: any)=> {
+            if(err?.code === ev.EADDRINUSE || err?.code === ev.ECONNREFUSED) {
+                defer.reject(err);
+            } else {
+                this.logger.error(err);
+            }
+        });
         this.server.listen(this.options.listenOptions, defer.resolve);
         await defer.promise;
     }
 
-    protected getBackend(): EndpointBackend<TcpRequest<any>, TcpResponse<any>> {
+    protected getBackend(): EndpointBackend<TcpRequest, TcpResponse> {
         throw new Error('Method not implemented.');
     }
 
-    protected bindEvent(ctx: TransportContext<any, any>, cancel: Subscription): void {
-        throw new Error('Method not implemented.');
+    protected bindEvent(ctx: TcpContext, cancel: Subscription): void {
+        ctx.request.socket.on(ev.CLOSE, () => {
+            cancel?.unsubscribe();
+        });
     }
 
-    protected createContext(request: TcpRequest<any>, response: TcpResponse<any>): TransportContext<any, any> {
-        throw new Error('Method not implemented.');
+    protected createContext(request: TcpRequest, response: TcpResponse): TcpContext {
+        return new TcpContext(this.context.injector, request, response, this, { parent: this.context });
     }
 
     async close(): Promise<void> {

@@ -31,12 +31,10 @@ export class HttpSendAdapter extends SendAdapter {
         if (UP_REGEXP.test(normalize('.' + sep + path))) {
             throw ctx.throwError(403)
         }
-        let filename = '';
-        let encodingExt = ''
+        let filename = '', encodingExt = '';
         roots.some(root => {
-            let rpath = this.resolvePath(baseUrl, root, path);
+            const rpath = this.resolvePath(baseUrl, root, path);
             if (!opts.hidden && isHidden(root, rpath)) return false;
-            let encodingExt = ''
             // serve brotli file when possible otherwise gzipped file when possible
             if (ctx.acceptsEncodings('br', 'identity') === 'br' && opts.brotli && existsSync(rpath + '.br')) {
                 filename = rpath + '.br';
@@ -118,7 +116,7 @@ export class HttpSendAdapter extends SendAdapter {
 }
 
 function isHidden(root: string, path: string) {
-    let paths = path.substring(root.length).split(sep)
+    const paths = path.substring(root.length).split(sep)
     for (let i = 0; i < paths.length; i++) {
         if (paths[i][0] === '.') return true
     }

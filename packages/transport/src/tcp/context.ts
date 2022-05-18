@@ -1,35 +1,80 @@
 import { ExecptionFilter, MiddlewareInst, TransportContext } from '@tsdi/core';
 import { Injectable, tokenId } from '@tsdi/ioc';
+import { TcpRequest, TcpResponse } from './packet';
 
 @Injectable()
-export class TcpContext extends TransportContext {
+export class TcpContext extends TransportContext<TcpRequest, TcpResponse> {
+
+    private _url?: string;
     get url(): string {
-        throw new Error('Method not implemented.');
+        if (!this._url) {
+            this._url = this.request.url;
+        }
+        return this._url;
     }
     set url(value: string) {
-        throw new Error('Method not implemented.');
+        this._url = value;
     }
+
+    get originalUrl(): string {
+        return this.request.url;
+    }
+
+    private _URL?: URL;
+    /**
+     * Get WHATWG parsed URL.
+     * Lazily memoized.
+     *
+     * @return {URL|Object}
+     * @api public
+     */
+    get URL(): URL {
+        /* istanbul ignore else */
+        if (!this._URL) {
+            const originalUrl = this.originalUrl || ''; // avoid undefined in template string
+            try {
+                this._URL = new URL(`tcp://${originalUrl}`);
+            } catch (err) {
+                this._URL = Object.create(null);
+            }
+        }
+        return this._URL!;
+    }
+
     get pathname(): string {
-        throw new Error('Method not implemented.');
+        return this.URL.pathname;
     }
+
+    private _query?: Record<string, any>;
     get query(): Record<string, any> {
-        throw new Error('Method not implemented.');
+        if(!this._query) {
+            const qs = this._query = {} as Record<string, any>;
+            this.URL.searchParams.forEach((v, k)=> {
+                qs[k] = v;
+            });
+        }
+        return this._query;
     }
+
     get method(): string {
-        throw new Error('Method not implemented.');
+        return this.request.method;
     }
+
     is(type: string | string[]): string | false | null {
         throw new Error('Method not implemented.');
     }
+
     get body(): any {
         throw new Error('Method not implemented.');
     }
     set body(value: any) {
         throw new Error('Method not implemented.');
     }
+
     isUpdate(): boolean {
-        throw new Error('Method not implemented.');
+        return this.request.isUpdate;
     }
+
     get status(): number {
         throw new Error('Method not implemented.');
     }
@@ -54,6 +99,7 @@ export class TcpContext extends TransportContext {
     redirect(url: string, alt?: string): void {
         throw new Error('Method not implemented.');
     }
+    
     throwError(status: number, message?: string): Error;
     throwError(message: string): Error;
     throwError(error: Error): Error;

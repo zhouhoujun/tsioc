@@ -53,7 +53,7 @@ export abstract class RequestBase<T = any> {
     /**
      * is update modle resquest.
      */
-    abstract isUpdate(): boolean;
+    abstract get isUpdate(): boolean;
 }
 
 

@@ -29,7 +29,7 @@ export class TcpRequest<T = any> extends RequestBase<T> {
         this._update = option.update === true;
     }
 
-    isUpdate(): boolean {
+    get isUpdate(): boolean {
         return this._update
     }
 }
