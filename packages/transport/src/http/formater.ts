@@ -9,10 +9,10 @@ import { emptyStatus, redirectStatus } from './status';
 @Injectable()
 export class HttpStatusFormater extends ResponseStatusFormater {
 
-    format(ctx: TransportContext<any, any>, usetimes: number): string[] {
+    format(ctx: TransportContext<any, any>, hrtime: [number, number]): string[] {
         return [
             this.formatStatus(ctx.status), 
-            this.formatTimespan(usetimes), 
+            this.formatHrtime(hrtime), 
             this.formatSize(ctx.length), 
             this.formatMessage(ctx.status, ctx.statusMessage)
         ]
