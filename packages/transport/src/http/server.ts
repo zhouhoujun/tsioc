@@ -29,9 +29,9 @@ import { HttpMimeAdapter } from './mime';
 import { ContentMiddleware, ContentOptions } from '../middlewares/content';
 import { SessionMiddleware, SessionOptions } from '../middlewares/session';
 import { CsrfMiddleware, CsrfOptions } from '../middlewares/csrf';
-import { HttpExecptionFilter, HTTP_EXECPTION_FILTERS } from './filter';
-import { ResponseStatusFormater } from '../interceptors/log';
+import { CatchInterceptor, LogInterceptor, ResponseStatusFormater } from '../interceptors';
 import { HttpStatusFormater } from './formater';
+import { ResponsedInterceptor } from './interceptors/respond';
 
 /**
  * http options.
@@ -91,6 +91,11 @@ const httpOpts = {
         root: 'public'
     },
     detailError: true,
+    interceptors: [
+        LogInterceptor,
+        CatchInterceptor,
+        ResponsedInterceptor
+    ],
     middlewares: [
         HelmetMiddleware,
         CorsMiddleware,
@@ -109,6 +114,8 @@ const httpOpts = {
 export const HTTP_SERVEROPTIONS = tokenId<HttpServerOptions>('HTTP_SERVEROPTIONS');
 
 
+export const HTTP_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('HTTP_EXECPTION_FILTERS');
+
 /**
  * http server Interceptor tokens for {@link HttpServer}.
  */
@@ -120,7 +127,6 @@ export const HTTP_SERV_INTERCEPTORS = tokenId<Interceptor<HttpServRequest, HttpS
  */
 @Injectable()
 @Providers([
-    { provide: ExecptionFilter, useClass: HttpExecptionFilter },
     { provide: ResponseStatusFormater, useClass: HttpStatusFormater },
     { provide: SendAdapter, useClass: HttpSendAdapter },
     { provide: MimeAdapter, useClass: HttpMimeAdapter },
@@ -153,6 +159,10 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         return this.options.proxyIpHeader
     }
 
+    override getExecptionsToken(): Token<ExecptionFilter[]> {
+        return HTTP_EXECPTION_FILTERS;
+    }
+
     protected initOption(options: HttpServerOptions) {
         if (options?.options) {
             options.options = { ...httpOpts.options, ...options.options }
@@ -161,7 +171,7 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
             options.listenOptions = { ...httpOpts.listenOptions, ...options.listenOptions }
         }
         const opts = this.options = { ...httpOpts, ...options } as HttpServerOptions;
-        
+
         if (opts.middlewares) {
             opts.middlewares = opts.middlewares.filter(m => {
                 if (!opts.cors && m === CorsMiddleware) return false;
@@ -191,9 +201,6 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         return HTTP_MIDDLEWARES;
     }
 
-    protected override getExecptionsToken(): Token<ExecptionFilter[]> {
-        return HTTP_EXECPTION_FILTERS;
-    }
 
     async start(): Promise<void> {
         const options = this.options;

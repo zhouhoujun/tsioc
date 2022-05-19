@@ -3,6 +3,7 @@ import { Abstract, Inject, Injectable, InvocationContext, lang, Nullable, Token,
 import { Server, ListenOptions } from 'node:net';
 import { Subscription } from 'rxjs';
 import { ev } from '../consts';
+import { CatchInterceptor, LogInterceptor } from '../interceptors';
 import { TcpContext, TCP_EXECPTION_FILTERS, TCP_MIDDLEWARES } from './context';
 import { TcpRequest, TcpResponse } from './packet';
 
@@ -40,6 +41,11 @@ export abstract class TcpServerOptions implements ServerOptions<TcpRequest, TcpR
 
 const defOpts = {
     json: true,
+    interceptors: [
+        LogInterceptor,
+        CatchInterceptor,
+
+    ],
     listenOptions: {
         port: 3000,
         host: 'localhost'
@@ -66,6 +72,10 @@ export class TcpServer extends TransportServer<TcpRequest, TcpResponse, TcpConte
 
     }
 
+    getExecptionsToken(): Token<ExecptionFilter[]> {
+        return TCP_EXECPTION_FILTERS;
+    }
+
     protected getInterceptorsToken(): Token<InterceptorInst<TcpRequest, TcpResponse>[]> {
         return TCP_SERV_INTERCEPTORS;
     }
@@ -73,15 +83,11 @@ export class TcpServer extends TransportServer<TcpRequest, TcpResponse, TcpConte
         return TCP_MIDDLEWARES;
     }
 
-    protected getExecptionsToken(): Token<ExecptionFilter[]> {
-        return TCP_EXECPTION_FILTERS;
-    }
-
     async start(): Promise<void> {
         this.server = new Server(this.options.serverOpts);
         const defer = lang.defer();
-        this.server.once(ev.ERROR, (err: any)=> {
-            if(err?.code === ev.EADDRINUSE || err?.code === ev.ECONNREFUSED) {
+        this.server.once(ev.ERROR, (err: any) => {
+            if (err?.code === ev.EADDRINUSE || err?.code === ev.ECONNREFUSED) {
                 defer.reject(err);
             } else {
                 this.logger.error(err);

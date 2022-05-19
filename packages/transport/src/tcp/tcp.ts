@@ -1,8 +1,7 @@
 import { Module, RouterModule, TransformModule } from '@tsdi/core';
 import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
-import { CatchInterceptor, LogInterceptor } from '../interceptors';
 import { TcpClient } from './clinet';
-import { TcpServer, TcpServerOptions, TCP_SERV_INTERCEPTORS } from './server';
+import { TcpServer, TcpServerOptions } from './server';
 
 @Module({
     imports: [
@@ -10,8 +9,6 @@ import { TcpServer, TcpServerOptions, TCP_SERV_INTERCEPTORS } from './server';
         RouterModule
     ],
     providers: [
-        { provide: TCP_SERV_INTERCEPTORS, useClass: LogInterceptor, multi: true },
-        { provide: TCP_SERV_INTERCEPTORS, useClass: CatchInterceptor, multi: true },
         TcpClient,
         TcpServer
     ]

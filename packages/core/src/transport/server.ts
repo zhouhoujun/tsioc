@@ -30,47 +30,6 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
     private _middles?: MiddlewareInst<Tx>[];
     private _interceptors?: InterceptorInst<TRequest, TResponse>[];
 
-    /**
-     * initialize middlewares, interceptors, execptions with options.
-     * @param options 
-     */
-    protected initialize(options: ServerOptions<TRequest, TResponse>) {
-        if (options.middlewares && options.middlewares.length) {
-            const mToken = this.getMiddlewaresToken();
-            const middlewares = options.middlewares.map(m => {
-                if (isFunction(m)) {
-                    return { provide: mToken, useClass: m, multi: true }
-                } else {
-                    return { provide: mToken, useValue: m, multi: true }
-                }
-            });
-            this.context.injector.inject(middlewares);
-        }
-
-        if (options.interceptors && options.interceptors.length) {
-            const iToken = this.getInterceptorsToken();
-            const interceptors = options.interceptors.map(m => {
-                if (isFunction(m)) {
-                    return { provide: iToken, useClass: m, multi: true }
-                } else {
-                    return { provide: iToken, useValue: m, multi: true }
-                }
-            });
-            this.context.injector.inject(interceptors);
-        }
-
-        if (options.execptions && options.execptions.length) {
-            const eToken = this.getExecptionsToken();
-            const filters = options.execptions.map(e => ({ provide: eToken, useClass: e, multi: true }) as ProviderType);
-            this.context.injector.inject(filters);
-        }
-    }
-
-    protected abstract getInterceptorsToken(): Token<InterceptorInst<TRequest, TResponse>[]>;
-
-    protected abstract getMiddlewaresToken(): Token<MiddlewareInst<Tx>[]>;
-
-    protected abstract getExecptionsToken(): Token<ExecptionFilter[]>;
 
     /**
      * server context.
@@ -97,7 +56,10 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
         return this._interceptors
     }
 
-
+    /**
+     * server execptions token.
+     */
+    abstract getExecptionsToken(): Token<ExecptionFilter[]>;
     /**
      * start server.
      */
@@ -142,6 +104,48 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
         }
         return this._chain
     }
+
+
+    /**
+     * initialize middlewares, interceptors, execptions with options.
+     * @param options 
+     */
+    protected initialize(options: ServerOptions<TRequest, TResponse>) {
+        this.context.injector.setValue(TransportServer, this as any);
+        if (options.middlewares && options.middlewares.length) {
+            const mToken = this.getMiddlewaresToken();
+            const middlewares = options.middlewares.map(m => {
+                if (isFunction(m)) {
+                    return { provide: mToken, useClass: m, multi: true }
+                } else {
+                    return { provide: mToken, useValue: m, multi: true }
+                }
+            });
+            this.context.injector.inject(middlewares);
+        }
+
+        if (options.interceptors && options.interceptors.length) {
+            const iToken = this.getInterceptorsToken();
+            const interceptors = options.interceptors.map(m => {
+                if (isFunction(m)) {
+                    return { provide: iToken, useClass: m, multi: true }
+                } else {
+                    return { provide: iToken, useValue: m, multi: true }
+                }
+            });
+            this.context.injector.inject(interceptors);
+        }
+
+        if (options.execptions && options.execptions.length) {
+            const eToken = this.getExecptionsToken();
+            const filters = options.execptions.map(e => ({ provide: eToken, useClass: e, multi: true }) as ProviderType);
+            this.context.injector.inject(filters);
+        }
+    }
+
+    protected abstract getInterceptorsToken(): Token<InterceptorInst<TRequest, TResponse>[]>;
+
+    protected abstract getMiddlewaresToken(): Token<MiddlewareInst<Tx>[]>;
 
     /**
      * get backend endpoint.
