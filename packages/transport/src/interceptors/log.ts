@@ -12,7 +12,7 @@ export class LogInterceptor<TRequest = any, TResponse = any> implements Intercep
     constructor() { }
 
     intercept(req: TRequest, next: Endpoint<TRequest, TResponse>, ctx: TransportContext): Observable<TResponse> {
-        const logger: Logger = ctx.target?.logger ?? ctx.getValue(Logger) ?? ctx.get(LoggerManager).getLogger();
+        const logger: Logger = ctx.target?.logger ?? ctx.get(Logger) ?? ctx.get(LoggerManager).getLogger();
 
         const start = Date.now();
         const method = chalk.cyan(ctx.method);

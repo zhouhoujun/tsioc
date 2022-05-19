@@ -79,16 +79,6 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
      */
     abstract get<T>(token: Token<T>, context?: InvocationContext<any>, flags?: InjectFlags): T;
     /**
-     * has value to context
-     * @param token the token to check has value.
-     */
-    abstract hasValue<T>(token: Token, flags?: InjectFlags): boolean;
-    /**
-     * get value to context
-     * @param token the token to get value.
-     */
-    abstract getValue<T>(token: Token<T>, flags?: InjectFlags): T;
-    /**
      * set value.
      * @param token token
      * @param value value for the token.

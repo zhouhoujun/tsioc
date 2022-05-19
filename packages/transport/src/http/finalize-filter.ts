@@ -25,7 +25,7 @@ export class HttpFinalizeFilter implements ExecptionFilter {
 
         //finllay defalt send error.
 
-        const hctx = ctx.getValue(HttpContext);
+        const hctx = ctx.get(HttpContext);
         let headerSent = false;
         if (hctx.sent || !hctx.writable) {
             headerSent = err.headerSent = true

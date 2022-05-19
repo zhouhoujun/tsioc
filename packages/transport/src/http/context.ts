@@ -1024,7 +1024,7 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
         } else if (filename) {
             this.type = extname(filename);
         }
-        const func = this.getValue(CONTENT_DISPOSITION);
+        const func = this.get(CONTENT_DISPOSITION);
         this.response.setHeader(hdr.CONTENT_DISPOSITION, func(filename, options))
     }
 

@@ -91,9 +91,9 @@ class DeviceQueue implements Middleware {
         await new Chain(ctx.resolve(DEVICE_MIDDLEWARES)).invoke(ctx);
         ctx.setValue('device', 'device next');
 
-        const device = ctx.getValue('device');
-        const deviceA_state = ctx.getValue('deviceA_state');
-        const deviceB_state = ctx.getValue('deviceB_state');
+        const device = ctx.get('device');
+        const deviceA_state = ctx.get('deviceA_state');
+        const deviceB_state = ctx.get('deviceB_state');
 
         ctx.body = {
             device,

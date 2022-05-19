@@ -27,14 +27,14 @@ export class TransactionalAspect {
     @AfterReturning('@annotation(Transactional)', 'returning', { sync: true })
     async commit(manager: TransactionManager, returning: any, joinPoint: Joinpoint) {
         if (!manager) throw new ArgumentError('TransactionManager can not be null.')
-        await manager.commit(joinPoint.getValue(TransactionStatus))
+        await manager.commit(joinPoint.get(TransactionStatus))
     }
 
     @AfterThrowing('@annotation(Transactional)', 'error', { sync: true })
     async rollback(manager: TransactionManager, error: Error, joinPoint: Joinpoint) {
         if (!manager) throw new ArgumentError('TransactionManager can not be null.')
         try {
-            await manager.rollback(joinPoint.getValue(TransactionStatus))
+            await manager.rollback(joinPoint.get(TransactionStatus))
         } catch (err) {
             throw new TransactionError(err as Error)
         }

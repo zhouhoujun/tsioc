@@ -122,6 +122,8 @@ export enum InjectFlags {
 
     /** Inject `defaultValue` instead if token not found. */
     Optional = 0b1000,
+
+    HostOnly = 0b10000,
 }
 
 
