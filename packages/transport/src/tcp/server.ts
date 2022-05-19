@@ -3,7 +3,7 @@ import { Abstract, Inject, Injectable, InvocationContext, lang, Nullable, Token,
 import { Server, ListenOptions } from 'node:net';
 import { Subscription } from 'rxjs';
 import { ev } from '../consts';
-import { CatchInterceptor, LogInterceptor } from '../interceptors';
+import { CatchInterceptor, LogInterceptor, DecodeInterceptor, EncodeInterceptor } from '../interceptors';
 import { TcpContext, TCP_EXECPTION_FILTERS, TCP_MIDDLEWARES } from './context';
 import { TcpRequest, TcpResponse } from './packet';
 
@@ -44,7 +44,8 @@ const defOpts = {
     interceptors: [
         LogInterceptor,
         CatchInterceptor,
-
+        DecodeInterceptor,
+        EncodeInterceptor
     ],
     listenOptions: {
         port: 3000,
