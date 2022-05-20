@@ -214,7 +214,7 @@ class MainApp {
 
 }
 
-describe('app message queue', () => {
+describe('HttpClient', () => {
     let ctx: ApplicationContext;
     let injector: Injector;
 
