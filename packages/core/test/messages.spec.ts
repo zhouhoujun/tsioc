@@ -184,6 +184,7 @@ const key = fs.readFileSync(path.join(__dirname, './localhost-privkey.pem'));
 const cert = fs.readFileSync(path.join(__dirname, './localhost-cert.pem'));
 
 @Module({
+    baseURL: __dirname,
     imports: [
         ServerModule,
         LoggerModule,
@@ -243,7 +244,7 @@ describe('app message queue', () => {
 
         const client = ctx.resolve(HttpClient);
 
-        const res: any = await lastValueFrom(client.get('https://geo.datav.aliyun.com/areas_v2/bound/510100_full.json'));
+        const res: any = await lastValueFrom(client.get('510100_full.json'));
 
         expect(res).toBeDefined();
         expect(isArray(res.features)).toBeTruthy();

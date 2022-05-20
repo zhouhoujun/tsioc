@@ -169,6 +169,7 @@ class DeviceAModule {
 
 
 @Module({
+    baseURL: __dirname,
     imports: [
         ServerModule,
         LoggerModule,
@@ -224,7 +225,7 @@ describe('http1.1 server, Http', () => {
 
     it('msg work', async () => {
 
-        const res: any = await lastValueFrom(client.get('https://geo.datav.aliyun.com/areas_v2/bound/510100_full.json'));
+        const res: any = await lastValueFrom(client.get('510100_full.json'));
 
         expect(res).toBeDefined();
         expect(isArray(res.features)).toBeTruthy();
