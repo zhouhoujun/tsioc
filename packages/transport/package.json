@@ -6,7 +6,7 @@
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
   "keywords": [
-    "boot",
+    "transport",
     "frameworks",
     "Application",
     "AOP",

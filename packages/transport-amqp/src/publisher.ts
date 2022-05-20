@@ -1,4 +1,4 @@
-import { Endpoint, Publisher, RequestBase, WritableResponse } from '@tsdi/core';
+import { Endpoint, Publisher, RequestBase } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import * as amqp from 'amqplib';
 
