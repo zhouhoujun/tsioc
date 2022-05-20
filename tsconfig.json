@@ -26,6 +26,9 @@
       "@tsdi/core": [
         "packages/core/src"
       ],
+      "@tsdi/common": [
+        "packages/common/src"
+      ],
       "@tsdi/transport": [
         "packages/transport/src"
       ],
@@ -79,6 +82,9 @@
       ],
       "@tsdi/platform-server": [
         "packages/platform-server/src"
+      ],
+      "@tsdi/platform-server-common": [
+        "packages/platform-server-common/src"
       ],
       "@tsdi/unit": [
         "packages/unit/src"

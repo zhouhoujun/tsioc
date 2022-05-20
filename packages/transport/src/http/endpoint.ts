@@ -1,4 +1,5 @@
-import { HttpRequest, HttpResponse, Interceptor } from '@tsdi/core';
+import { HttpRequest, HttpResponse } from '@tsdi/common';
+import { Interceptor } from '@tsdi/core';
 
 
 /**

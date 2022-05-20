@@ -1,6 +1,6 @@
 import { Inject, Injectable, InvocationContext, tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { DOCUMENT, PLATFORM_ID } from '../../platform';
+import { DOCUMENT, PLATFORM_ID } from '../platform';
 
 import { HttpHandler } from './handler';
 import { HttpInterceptor } from './interceptor';

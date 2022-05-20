@@ -1,6 +1,3 @@
-export * from './platform';
-
-
 // metadata
 export * from './metadata/meta';
 export * from './metadata/decor';

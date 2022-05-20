@@ -1,5 +1,5 @@
 import { ModuleWithProviders, type_obj } from '@tsdi/ioc';
-import { Module } from '../../metadata/decor';
+import { Module } from '@tsdi/core';
 import { HttpBackend, HttpHandler } from './handler';
 import { HttpInterceptingHandler, HTTP_CLIENT_INTERCEPTORS, NoopInterceptor } from './interceptor';
 import { HttpClient } from './client';

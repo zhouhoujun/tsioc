@@ -1,4 +1,6 @@
-import { HttpStatusCode, TransportError } from '@tsdi/core';
+import { TransportError } from '@tsdi/core';
+import { HttpStatusCode } from '@tsdi/common';
+
 
 /**
  * http error

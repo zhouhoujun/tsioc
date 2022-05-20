@@ -7,7 +7,6 @@ import {
     MiddlewareType, Interceptor, ModuleRef, Router, InterceptorType, ExecptionFilter,
     MiddlewareInst, InterceptorInst, ServerOptions,
 } from '@tsdi/core';
-import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { of, Subscription } from 'rxjs';
 import { ListenOptions } from 'node:net';
 import * as http from 'node:http';
@@ -32,6 +31,7 @@ import { CsrfMiddleware, CsrfOptions } from '../middlewares/csrf';
 import { CatchInterceptor, LogInterceptor, ResponseStatusFormater } from '../interceptors';
 import { HttpStatusFormater } from './formater';
 import { ResponsedInterceptor } from './interceptors/respond';
+import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 
 /**
  * http options.

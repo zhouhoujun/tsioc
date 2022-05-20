@@ -1,6 +1,6 @@
 import { Abstract, InvocationContext } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { Endpoint, EndpointBackend } from '../endpoint';
+import { Endpoint, EndpointBackend } from '@tsdi/core';
 import { HttpRequest } from './request';
 import { HttpEvent } from './response';
 

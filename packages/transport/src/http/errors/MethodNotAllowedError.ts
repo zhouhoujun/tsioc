@@ -1,4 +1,4 @@
-import { HttpStatusCode, statusMessage } from '@tsdi/core';
+import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { HttpError } from './HttpError';
 
 /**

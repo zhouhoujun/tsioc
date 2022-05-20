@@ -1,5 +1,5 @@
 {
-  "name": "@tsdi/boot",
+  "name": "@tsdi/core",
   "version": "6.0.31",
   "description": "Application bootstrap. base on AOP, Ioc container, via @tsdi/core .",
   "scripts": {

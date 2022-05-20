@@ -1,10 +1,10 @@
-import { ServerHttpClientModule, ServerLogsModule, ServerModule } from '@tsdi/platform-server';
+import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, Observable, of, throwError } from 'rxjs';
 import * as net from 'node:net';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { Application, HttpClient, HttpClientModule, LoggerModule, Module } from '@tsdi/core';
+import { Application, LoggerModule, Module } from '@tsdi/core';
 import { Http, HttpClientOptions, HttpModule, HttpServer } from '../src';
 
 @Module({

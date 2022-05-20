@@ -7,11 +7,11 @@
  */
 import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
 import { Observable, Observer } from 'rxjs';
-import { DOCUMENT } from '../../platform';
+import { HttpStatusCode } from './status';
 import { HttpBackend, HttpHandler } from './handler';
 import { HttpRequest } from './request';
 import { HttpErrorResponse, HttpEvent, HttpEventType, HttpResponse } from './response';
-import { HttpStatusCode } from './status';
+import { DOCUMENT } from '../platform';
 
 
 // Every request made through JSONP needs a callback name that's unique across the

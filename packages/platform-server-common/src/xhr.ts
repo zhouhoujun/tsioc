@@ -2,12 +2,12 @@
 /* eslint-disable @typescript-eslint/triple-slash-reference */
 /// <reference path="./type.d.ts" />
 import { EMPTY_OBJ, Injectable, Injector, InvocationContext, ProviderType, tokenId } from '@tsdi/ioc';
-import { HttpBackend, HttpEvent, HttpHandler, HttpInterceptingHandler, HttpRequest, Module, XhrFactory } from '@tsdi/core';
+import { Module } from '@tsdi/core';
+import { DOCUMENT, HttpBackend, HttpEvent, HttpHandler, HttpInterceptingHandler, HttpRequest, PLATFORM_ID, PLATFORM_SERVER_ID, XhrFactory } from '@tsdi/common';
 import * as xhr2 from 'xmlhttprequest-ssl';
-import { ListenOptions } from 'node:net';
 import { Observable } from 'rxjs';
-import { ServerModule } from './ServerModule';
-
+import * as domino from 'domino';
+import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 
 @Injectable()
 export class ServerXhr implements XhrFactory {
@@ -18,19 +18,6 @@ export class ServerXhr implements XhrFactory {
 
 
 const isAbsoluteUrl = /^[a-zA-Z\-\+.]+:\/\//;
-
-/**
- * http listen options.
- */
-export interface HttpListenOptions extends ListenOptions {
-  majorVersion?: number;
-  withCredentials?: boolean;
-}
-
-/**
- *  http server ListenOptions.
- */
-export const HTTP_LISTENOPTIONS = tokenId<HttpListenOptions>('HTTP_LISTENOPTIONS');
 
 /**
  * http client backend.
@@ -67,15 +54,14 @@ function interceptingHandler(backend: HttpBackend, injector: Injector) {
 
 
 export const HTTP_PROVIDERS: ProviderType[] = [
+  { provide: PLATFORM_ID, useValue: PLATFORM_SERVER_ID },
+  { provide: DOCUMENT, useValue: domino.createDocument() },
   { provide: XhrFactory, useClass: ServerXhr },
   { provide: HttpHandler, useFactory: interceptingHandler, deps: [HttpBackend, Injector] }
 ];
 
 
 @Module({
-  imports: [
-    ServerModule
-  ],
   providers: [
     ...HTTP_PROVIDERS
   ]
