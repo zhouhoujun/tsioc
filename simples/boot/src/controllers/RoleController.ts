@@ -1,5 +1,6 @@
-import { RouteMapping, DBRepository, Transactional, RequestParam } from '@tsdi/core';
+import { RouteMapping, RequestParam } from '@tsdi/core';
 import { ILogger, Log, Logger } from '@tsdi/logs';
+import { DBRepository, Transactional } from '@tsdi/repository';
 import { Repository } from 'typeorm';
 import { Role } from '../models/models';
 
