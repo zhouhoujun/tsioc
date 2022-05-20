@@ -1,14 +1,15 @@
-import { Module, ConnectionOptions, TransactionModule, LoggerModule } from '@tsdi/core';
+import { Module, LoggerModule } from '@tsdi/core';
 import { ServerModule } from '@tsdi/platform-server';
 import { HttpModule, HttpServer } from '@tsdi/transport';
 import { HttpClientModule } from '@tsdi/common';
 import { ServerHttpClientModule } from '@tsdi/platform-server-common';
 import { Connection } from 'typeorm';
-import { TypeOrmModule } from '../src';
+import { TypeOrmModule } from '@tsdi/typeorm-adapter';
 import { Role, User } from './models/models';
 import { UserController } from './mapping/UserController';
 import { RoleController } from './mapping/RoleController';
 import { UserRepository } from './repositories/UserRepository';
+import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
 
 
 

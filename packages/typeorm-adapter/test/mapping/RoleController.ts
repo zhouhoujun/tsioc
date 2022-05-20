@@ -1,5 +1,6 @@
-import { RouteMapping, DBRepository, Transactional, RequestParam, Controller, Post, Put, Get, Delete } from '@tsdi/core';
+import { RouteMapping, RequestParam, Controller, Post, Put, Get, Delete } from '@tsdi/core';
 import { Log, Logger } from '@tsdi/logs';
+import { DBRepository, Transactional } from '@tsdi/repository';
 import { InternalServerError } from '@tsdi/transport';
 import { Repository } from 'typeorm';
 import { Role } from '../models/models';

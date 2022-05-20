@@ -1,26 +1,8 @@
-import { Abstract, EMPTY, isArray, isDefined, tokenId, Type, Parameter } from '@tsdi/ioc';
-import { TransportContext } from '../transport/context';
+import { Abstract, EMPTY, isArray, isDefined, Type, Parameter } from '@tsdi/ioc';
+import { ModelArgumentResolver, TransportContext } from '@tsdi/core';
 import { composeFieldResolver, DBPropertyMetadata, MissingModelFieldError, missingPropError, ModelFieldResolver, MODEL_FIELD_RESOLVERS } from './field.resolver';
 
 
-
-/**
- * model parameter argument of an {@link OperationInvoker}.
- */
-export interface ModelArgumentResolver<C = any> {
-    /**
-     * Return whether an argument of the given {@code parameter} can be resolved.
-     * @param parameter argument type
-     * @param ctx InvocationContext
-     */
-    canResolve(parameter: Parameter, ctx: TransportContext): boolean;
-    /**
-     * Resolves an argument of the given {@code parameter}.
-     * @param parameter argument type
-     * @param ctx InvocationContext
-     */
-    resolve<T>(parameter: Parameter<T>, ctx: TransportContext): T;
-}
 
 /**
  * abstract model argument resolver. base implements {@link ModelArgumentResolver}.
@@ -123,11 +105,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
     protected abstract getFields(parameter: Parameter, ctx: TransportContext): Record<string, any>;
 }
 
-/**
- * model argument resolvers mutil token.
- * provider instances of {@link ModelArgumentResolver}
- */
-export const MODEL_RESOLVERS = tokenId<ModelArgumentResolver[]>('MODEL_RESOLVERS');
+
 
 /**
  * model resolver.

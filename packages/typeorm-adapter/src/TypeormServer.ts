@@ -1,11 +1,8 @@
 import 'reflect-metadata';
 import { Log, Logger } from '@tsdi/logs';
 import { Type, isString, Injector, isFunction, EMPTY, isNil } from '@tsdi/ioc';
-import {
-    ConnectionOptions, ComponentScan, Startup, createModelResolver, OnDispose,
-    DBPropertyMetadata, PipeTransform, missingPropPipeError, MODEL_RESOLVERS,
-    TransportParameter, TransportContext, CONNECTIONS, PROCESS_ROOT
-} from '@tsdi/core';
+import { ComponentScan, Startup, OnDispose, PipeTransform, TransportContext, TransportParameter, PROCESS_ROOT, MODEL_RESOLVERS } from '@tsdi/core';
+import { ConnectionOptions, createModelResolver, DBPropertyMetadata, missingPropPipeError, CONNECTIONS } from '@tsdi/repository';
 import {
     getConnection, createConnection, ConnectionOptions as OrmConnOptions, Connection,
     getMetadataArgsStorage, getConnectionManager, getManager

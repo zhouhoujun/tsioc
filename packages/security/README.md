@@ -1,9 +1,9 @@
-# packaged @tsdi/boot
+# packaged @tsdi/security
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
-`@tsdi/boot`： application bootstrap, via `@tsdi/core`.
+`@tsdi/security`： application security, via `@tsdi/core`.
 
 old packages:
 [`@ts-ioc/core`](https://www.npmjs.com/package/@ts-ioc/core) 
@@ -12,7 +12,7 @@ old packages:
 
 ```shell
 
-npm install @tsdi/boot
+npm install @tsdi/security
 
 // in browser
 npm install @tsdi/platform-browser
@@ -27,13 +27,6 @@ npm install @tsdi/platform-server
 ## boot
 DI Module manager, application bootstrap. base on AOP.
 
-*  `@DIModule` DIModule decorator, use to define class as DI Module.
-*  `@Boot` Boot decorator, use to define class as startup service for application.
-*  `@Configure` Configure decorator, define this class as configure register when bootstrap application.
-*  `@Handle`  Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
-*  `@RouteMapping` route mapping decorator, for class. use to define this class as message route.
-
-[mvc boot simple](https://github.com/zhouhoujun/type-mvc/tree/master/packages/simples)
 
 
 ### use bootstrap

@@ -1,4 +1,4 @@
-import { Module } from '../metadata/decor';
+import { Module } from '@tsdi/core';
 import { AuthorizationAspect } from './aspect';
 
 @Module({

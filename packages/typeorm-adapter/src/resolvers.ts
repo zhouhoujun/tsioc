@@ -1,5 +1,5 @@
 import { Joinpoint } from '@tsdi/aop';
-import { RepositoryArgumentResolver, RepositoryMetadata, TransactionManager, TransactionResolver } from '@tsdi/core';
+import { RepositoryArgumentResolver, RepositoryMetadata, TransactionManager, TransactionResolver } from '@tsdi/repository';
 import { Parameter, InvocationContext, Type, lang, Inject, ArgumentError, OperationArgumentResolver, isArray, composeResolver } from '@tsdi/ioc';
 import { getConnection, MongoRepository, Repository, TreeRepository, getManager } from 'typeorm';
 import { DEFAULT_CONNECTION } from './objectid.pipe';

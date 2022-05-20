@@ -29,6 +29,9 @@
       "@tsdi/common": [
         "packages/common/src"
       ],
+      "@tsdi/repository":[
+        "packages/repository/src"
+      ],
       "@tsdi/transport": [
         "packages/transport/src"
       ],

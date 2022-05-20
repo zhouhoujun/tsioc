@@ -1,9 +1,10 @@
 import {
     ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
-    MissingModelFieldError, TransportArgumentError, TransportError, TransportMissingError
+    TransportArgumentError, TransportError, TransportMissingError
 } from '@tsdi/core';
 import { Inject, Injectable, isFunction, isNumber } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
+import { MissingModelFieldError } from '@tsdi/repository';
 import { BadRequestError, HttpError, InternalServerError } from './errors';
 import { HttpContext } from './context';
 import { ev } from '../consts';

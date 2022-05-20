@@ -3,6 +3,7 @@ export * from './packet';
 export * from './endpoint';
 
 export * from './resolver';
+export * from './model';
 export * from './error';
 
 export * from './client';

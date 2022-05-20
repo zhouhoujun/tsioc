@@ -29,16 +29,10 @@ export * from './impl/context';
 export { DEFAULTA_PROVIDERS as APPLICTION_DEFAULTA_PROVIDERS } from './providers';
 export * from './Application';
 
-export * from './model';
+
 
 export * from './uuid';
 
 export * from './execptions';
 export * from './transport';
 export * from './router';
-
-// auth
-export * from './auth';
-
-// transaction
-export * from './transaction';

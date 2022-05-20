@@ -3,7 +3,7 @@ import {
     Injector, InvokeArguments, isArray, isDefined, isPrimitiveType,
     isString, MissingParameterError, Parameter, Token, Type
 } from '@tsdi/ioc';
-import { MODEL_RESOLVERS } from '../model/model.resolver';
+import { MODEL_RESOLVERS } from './model';
 import { PipeTransform } from '../pipes/pipe';
 import { TransportContext } from './context';
 import { TransportArgumentError } from './error';

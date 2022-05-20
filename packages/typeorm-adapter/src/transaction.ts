@@ -1,5 +1,5 @@
 import { ClassType, ctorName, Inject, lang, refl, Type } from '@tsdi/ioc';
-import { DBRepository, RepositoryMetadata, TransactionalMetadata, TransactionError, TransactionManager, TransactionStatus } from '@tsdi/core';
+import { DBRepository, RepositoryMetadata, TransactionalMetadata, TransactionError, TransactionManager, TransactionStatus } from '@tsdi/repository';
 import { Joinpoint } from '@tsdi/aop';
 import { Log, Logger } from '@tsdi/logs';
 import { EntityManager, getManager, MongoRepository, Repository, TreeRepository } from 'typeorm';
