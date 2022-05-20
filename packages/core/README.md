@@ -33,8 +33,6 @@ Module manager, application bootstrap. base on AOP.
 *  `@RequestParam` Request query parameter decorator for route mapping.
 *  `@RequestBody` Request body parameter decorator for route mapping.
 *  `@Pipe` Pipe decorator, define for class. use to define the class. it can setting provider to some token, singleton or not. it will execute  [`PipeLifecycle`]
-*  `@Repository` Repository Decorator, to autowired repository for paramerter or filed.
-*  `@Transactional` Transactional Decorator, define transaction propagation behaviors.
 
 [mvc boot simple](https://github.com/zhouhoujun/type-mvc/tree/master/packages/simples)
 

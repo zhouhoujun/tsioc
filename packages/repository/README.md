@@ -26,6 +26,14 @@ npm install @tsdi/platform-server
 
 ## repository
  application repository. base on AOP.
+ 
+## Decorators
+Module manager, application bootstrap. base on AOP.
+
+*  `@Repository` alias name `@DBRepository` Repository Decorator, to autowired repository for paramerter or filed.
+*  `@Transactional` Transactional Decorator, define transaction propagation behaviors.
+
+[mvc boot simple](https://github.com/zhouhoujun/type-mvc/tree/master/packages/simples)
 
 
 
