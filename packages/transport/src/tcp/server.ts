@@ -109,7 +109,7 @@ export class TcpServer extends TransportServer<TcpRequest, TcpResponse, TcpConte
     }
 
     protected createContext(request: TcpRequest, response: TcpResponse): TcpContext {
-        return new TcpContext(this.context.injector, request, response, this, { parent: this.context });
+        return new TcpContext(this.context.injector, request, response, this as TransportServer, { parent: this.context });
     }
 
     async close(): Promise<void> {

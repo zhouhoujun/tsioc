@@ -8,7 +8,8 @@ import { ResultValue } from './result';
 import { Middleware, MiddlewareFn } from '../transport/endpoint';
 import { RouteRef, RouteFactory, RouteFactoryResolver, joinprefix } from './route';
 import { ProtocolRouteMappingMetadata, RouteMappingMetadata } from './router';
-import { promisify, TransportContext } from '../transport/context';
+import { TransportContext } from '../transport/context';
+import { promisify } from './promisify';
 
 
 const isRest = /\/:/;
@@ -256,3 +257,4 @@ export class DefaultRouteFactoryResovler extends RouteFactoryResolver {
         return new DefaultRouteFactory<T>(isFunction(type) ? refl.get(type) : type)
     }
 }
+

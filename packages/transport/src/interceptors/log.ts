@@ -1,4 +1,4 @@
-import { Endpoint, Interceptor, TransportContext } from '@tsdi/core';
+import { Endpoint, Interceptor, ServerContext, TransportContext } from '@tsdi/core';
 import { Abstract, Injectable, isNumber } from '@tsdi/ioc';
 import { Logger, LoggerManager } from '@tsdi/logs';
 import * as chalk from 'chalk';
@@ -12,8 +12,8 @@ export class LogInterceptor<TRequest = any, TResponse = any> implements Intercep
 
     constructor() { }
 
-    intercept(req: TRequest, next: Endpoint<TRequest, TResponse>, ctx: TransportContext): Observable<TResponse> {
-        const logger: Logger = ctx.target?.logger ?? ctx.get(Logger) ?? ctx.get(LoggerManager).getLogger();
+    intercept(req: TRequest, next: Endpoint<TRequest, TResponse>, ctx: ServerContext): Observable<TResponse> {
+        const logger: Logger = ctx.target.logger ?? ctx.get(Logger) ?? ctx.get(LoggerManager).getLogger();
 
         const start = hrtime();
         const method = chalk.cyan(ctx.method);

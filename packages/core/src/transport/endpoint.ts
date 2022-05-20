@@ -1,6 +1,6 @@
-import { Abstract, Handler, InvocationContext, isFunction, Type, chain } from '@tsdi/ioc';
-import { from, Observable, mergeMap} from 'rxjs';
-import { TransportContext } from './context';
+import { Abstract, Handler, isFunction, Type, chain } from '@tsdi/ioc';
+import { from, Observable, mergeMap } from 'rxjs';
+import { EndpointContext, TransportContext } from './context';
 
 
 /**
@@ -12,10 +12,10 @@ export interface Endpoint<TRequest, TResponse> {
      * @param req request input.
      * @param context request context.
      */
-    handle(req: TRequest, context: InvocationContext): Observable<TResponse>;
+    handle(req: TRequest, context: EndpointContext): Observable<TResponse>;
 }
 
-export type EndpointFn<TRequest, TResponse> = (req: TRequest, context: InvocationContext) => Observable<TResponse>;
+export type EndpointFn<TRequest, TResponse> = (req: TRequest, context: EndpointContext) => Observable<TResponse>;
 
 
 /**
@@ -33,7 +33,7 @@ export abstract class EndpointBackend<TRequest, TResponse> implements Endpoint<T
      * @param req request input.
      * @param context request context.
      */
-    abstract handle(req: TRequest, context: InvocationContext): Observable<TResponse>;
+    abstract handle(req: TRequest, context: EndpointContext): Observable<TResponse>;
 }
 
 /**
@@ -48,13 +48,13 @@ export interface Interceptor<TRequest = any, TResponse = any> {
      * @param context request context.
      * @returns An observable of the event stream.
      */
-    intercept(req: TRequest, next: Endpoint<TRequest, TResponse>, context: InvocationContext): Observable<TResponse>;
+    intercept(req: TRequest, next: Endpoint<TRequest, TResponse>, context: EndpointContext): Observable<TResponse>;
 }
 
 /**
  * interceptor function.
  */
-export type InterceptorFn<TRequest, TResponse> = (req: TRequest, next: Endpoint<TRequest, TResponse>, context?: InvocationContext) => Observable<TResponse>;
+export type InterceptorFn<TRequest, TResponse> = (req: TRequest, next: Endpoint<TRequest, TResponse>, context: EndpointContext) => Observable<TResponse>;
 
 /**
  * interceptor instance.
@@ -100,7 +100,7 @@ export type MiddlewareType<T extends TransportContext = TransportContext> = Type
 export class InterceptorEndpoint<TRequest, TResponse> implements Endpoint<TRequest, TResponse> {
     constructor(private next: Endpoint<TRequest, TResponse>, private interceptor: Interceptor<TRequest, TResponse>) { }
 
-    handle(req: TRequest, context: InvocationContext): Observable<TResponse> {
+    handle(req: TRequest, context: EndpointContext): Observable<TResponse> {
         return this.interceptor.intercept(req, this.next, context)
     }
 }
@@ -120,7 +120,7 @@ export class InterceptorChain<TRequest, TResponse> implements Endpoint<TRequest,
         this.interceptors = interceptors.map(intercept => isFunction(intercept) ? ({ intercept }) : intercept)
     }
 
-    handle(req: TRequest, context: InvocationContext): Observable<TResponse> {
+    handle(req: TRequest, context: EndpointContext): Observable<TResponse> {
         if (!this.chain) {
             this.chain = this.interceptors.reduceRight(
                 (next, inteceptor) => new InterceptorEndpoint(next, inteceptor), this.backend)
@@ -133,7 +133,7 @@ export class CustomEndpoint<TRequest, TResponse> implements Endpoint<TRequest, T
 
     constructor(private fn: EndpointFn<TRequest, TResponse>) { }
 
-    handle(req: TRequest, context: InvocationContext<any>): Observable<TResponse> {
+    handle(req: TRequest, context: EndpointContext): Observable<TResponse> {
         return this.fn(req, context)
     }
 }

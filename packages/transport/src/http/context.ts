@@ -1,4 +1,4 @@
-import { HttpStatusCode, MiddlewareInst, Protocol, statusMessage, TransportContext } from '@tsdi/core';
+import { HttpStatusCode, MiddlewareInst, Protocol, ServerContext, statusMessage, TransportContext, TransportServer } from '@tsdi/core';
 import { Injector, InvokeArguments, isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import * as assert from 'node:assert';
 import * as http from 'node:http';
@@ -12,6 +12,7 @@ import { ctype, hdr } from '../consts';
 import { MimeAdapter } from '../mime';
 import { Negotiator } from '../negotiator';
 import { HttpError, InternalServerError } from './errors';
+import { HttpServer } from './server';
 
 
 
@@ -22,7 +23,7 @@ export type HttpServResponse = http.ServerResponse | http2.Http2ServerResponse;
 /**
  * http context for `HttpServer`.
  */
-export class HttpContext extends TransportContext<HttpServRequest, HttpServResponse> {
+export class HttpContext extends ServerContext<HttpServRequest, HttpServResponse> {
 
     protected _body: any;
     private _explicitStatus?: boolean;
@@ -32,7 +33,7 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
     readonly originalUrl: string;
     private _url: string;
 
-    constructor(injector: Injector, request: HttpServRequest, response: HttpServResponse, target?: any, options?: InvokeArguments) {
+    constructor(injector: Injector, request: HttpServRequest, response: HttpServResponse, target: TransportServer, options?: InvokeArguments) {
         super(injector, request, response, target, options);
         this.response.statusCode = 404;
         this.originalUrl = request.url?.toString() ?? '';
@@ -114,7 +115,7 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
      */
     get protocol(): Protocol {
         if ((this.socket as TLSSocket).encrypted) return 'https';
-        if (!this.target?.proxy) return 'http';
+        if (!(this.target as any)?.proxy) return 'http';
         const proto = this.getHeader(hdr.X_FORWARDED_PROTO) as string;
         return (proto ? proto.split(urlsplit, 1)[0] : 'http') as Protocol
     }
@@ -161,13 +162,13 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
      */
 
     get ips() {
-        const proxy = this.target.proxy;
-        const val = this.getHeader(this.target.proxyIpHeader) as string;
+        const proxy = (this.target as HttpServer)?.proxy;
+        const val = this.getHeader((this.target as any)?.proxyIpHeader) as string;
         let ips = proxy && val
             ? val.split(/\s*,\s*/)
             : [];
-        if (this.target.maxIpsCount > 0) {
-            ips = ips.slice(-this.target.maxIpsCount)
+        if ((this.target as HttpServer)?.maxIpsCount > 0) {
+            ips = ips.slice(-(this.target as any)?.maxIpsCount)
         }
         return ips
     }
@@ -201,7 +202,7 @@ export class HttpContext extends TransportContext<HttpServRequest, HttpServRespo
      * @api public
      */
     get host() {
-        const proxy = this.target?.proxy;
+        const proxy = (this.target as HttpServer)?.proxy;
         let host = proxy && this.getHeader(hdr.X_FORWARDED_HOST);
         if (!host) {
             if (this.request.httpVersionMajor >= 2) host = this.getHeader(hdr.AUTHORITY);

@@ -1,5 +1,5 @@
 import { ClassType, Type } from '../types';
-import { Destroyable, OnDestroy } from '../destroy';
+import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { forIn, remove, getClassName } from '../utils/lang';
 import {
     EMPTY, EMPTY_OBJ, isNumber, isPrimitiveType, isArray, isClassType, isDefined,
@@ -24,6 +24,10 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     protected _refs: InvocationContext[];
     protected _methodName?: string;
     private _injected = false;
+
+    private _dsryCbs = new Set<DestroyCallback>();
+    private _destroyed = false;
+
     /**
      * the invocation arguments resolver.
      */
@@ -239,6 +243,32 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     missingError(missings: Parameter<any>[], type: ClassType<any>, method: string): Error {
         return new MissingParameterError(missings, type, method)
+    }
+
+    get destroyed() {
+        return this._destroyed
+    }
+
+    destroy(): void | Promise<void> {
+        if (!this._destroyed) {
+            this._destroyed = true;
+
+            this._dsryCbs.forEach(c => isFunction(c) ? c() : c?.onDestroy())
+
+            this._dsryCbs.clear();
+            this.clear();
+            const injector = this.injector;
+            (this as any).parent = null;
+            (this as any).injector = null;
+            return injector.destroy();
+        }
+    }
+
+    onDestroy(callback?: DestroyCallback): void | Promise<void> {
+        if (!callback) {
+            return this.destroy()
+        }
+        this._dsryCbs.add(callback)
     }
 
     protected clear() {

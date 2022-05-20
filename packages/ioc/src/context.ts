@@ -18,9 +18,6 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
      * is this context injected in object or not.
      */
     abstract get injected(): boolean;
-
-    private _dsryCbs = new Set<DestroyCallback>();
-    private _destroyed = false;
     /**
      * parent {@link InvocationContext}.
      */
@@ -109,37 +106,17 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
      * @param method 
      */
     abstract missingError(missings: Parameter[], type: ClassType, method: string): Error;
+
+    abstract get destroyed(): boolean;
     /**
-     * finally clear.
+     * destroy this.
      */
-    protected abstract clear(): void;
-
-    get destroyed() {
-        return this._destroyed
-    }
-
-    destroy(): void | Promise<void> {
-        if (!this._destroyed) {
-            this._destroyed = true;
-
-            this._dsryCbs.forEach(c => isFunction(c) ? c() : c?.onDestroy())
-
-            this._dsryCbs.clear();
-            this.clear();
-            const injector = this.injector;
-            (this as any).parent = null;
-            (this as any).injector = null;
-            return injector.destroy();
-        }
-    }
-
-    onDestroy(callback?: DestroyCallback): void | Promise<void> {
-        if (!callback) {
-            return this.destroy()
-        }
-        this._dsryCbs.add(callback)
-    }
-
+    abstract destroy(): void | Promise<void>;
+    /**
+     * register callback on destroy.
+     * @param callback destroy callback
+     */
+    abstract onDestroy(callback?: DestroyCallback): void | Promise<void>;
 }
 
 

@@ -1,7 +1,8 @@
-import { EndpointBackend, ExecptionFilter, Interceptor, InterceptorInst, InterceptorType, OnDispose, TransportClient, UuidGenerator } from '@tsdi/core';
+import { EndpointBackend, EndpointContext, ExecptionFilter, Interceptor, InterceptorInst, InterceptorType, OnDispose, TransportClient, UuidGenerator } from '@tsdi/core';
 import { Abstract, EMPTY, Inject, Injectable, InvocationContext, isFunction, isString, lang, Nullable, Token, tokenId } from '@tsdi/ioc';
 import { Socket, SocketConstructorOpts, NetConnectOpts } from 'node:net';
 import { ev } from '../consts';
+import { DecodeInterceptor, EncodeInterceptor } from '../interceptors';
 import { TcpRequest, TcpResponse } from './packet';
 
 
@@ -19,6 +20,10 @@ export abstract class TcpClientOption {
 
 const defaults = {
     json: true,
+    interceptors:[
+        EncodeInterceptor,
+        DecodeInterceptor
+    ],
     connectOpts: {
         port: 3000,
         hostname: 'localhost'

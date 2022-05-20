@@ -1,5 +1,5 @@
 import { Abstract, ArgumentError, EMPTY_OBJ, Inject, Injectable, InvocationContext, lang, Nullable, Token, tokenId, type_str } from '@tsdi/ioc';
-import { Interceptor, RequestMethod, TransportClient, EndpointBackend, HttpRequest, HttpResponse, HttpEvent, OnDispose, CustomEndpoint, HttpParams, HttpHeaders, InterceptorType, HttpParamsOptions, InterceptorInst, ClientOptions } from '@tsdi/core';
+import { Interceptor, RequestMethod, TransportClient, EndpointBackend, HttpRequest, HttpResponse, HttpEvent, OnDispose, CustomEndpoint, HttpParams, HttpHeaders, InterceptorType, HttpParamsOptions, InterceptorInst, ClientOptions, EndpointContext } from '@tsdi/core';
 import { filter, concatMap, map, Observable, Observer, of } from 'rxjs';
 import * as http from 'node:http';
 import * as https from 'node:https';
@@ -150,7 +150,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         }
     }
 
-    protected override request(context: InvocationContext, first: string | HttpRequest<any>, options: HttpRequestOptions = EMPTY_OBJ): Observable<HttpEvent<any>> {
+    protected override request(context: EndpointContext, first: string | HttpRequest<any>, options: HttpRequestOptions = EMPTY_OBJ): Observable<HttpEvent<any>> {
         const req = this.buildRequest(first, options);
 
         // Start with an Observable.of() the initial request, and run the handler (which

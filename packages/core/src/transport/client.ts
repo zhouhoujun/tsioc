@@ -1,8 +1,9 @@
-import { Abstract, ArgumentError, createContext, EMPTY, InvocationContext, isFunction, isNil, isNumber, Token } from '@tsdi/ioc';
+import { Abstract, ArgumentError, EMPTY, InvocationContext, isFunction, isNil, isNumber, Token } from '@tsdi/ioc';
 import { Logger, Log } from '@tsdi/logs';
-import { defer, Observable, throwError,catchError, finalize, mergeMap } from 'rxjs';
+import { defer, Observable, throwError, catchError, finalize, mergeMap } from 'rxjs';
+import { EndpointContext } from './context';
 import { InterceptorChain, Endpoint, EndpointBackend, InterceptorInst, InterceptorType } from './endpoint';
-
+import { ClientContext } from './client.ctx';
 
 /**
  * client options.
@@ -15,10 +16,10 @@ export interface ClientOptions<TRequest, TResponse> {
  * abstract transport client.
  */
 @Abstract()
-export abstract class TransportClient<TRequest, TResponse, TOption = any> {
+export abstract class TransportClient<TRequest = any, TResponse = any, TOption = any> {
 
     @Log()
-    protected readonly logger!: Logger;
+    readonly logger!: Logger;
 
     private _chain?: Endpoint<TRequest, TResponse>;
     private _interceptors?: InterceptorInst<TRequest, TResponse>[];
@@ -102,7 +103,7 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> {
         if (isNil(req)) {
             return throwError(() => new ArgumentError('Invalid message'))
         }
-        let ctx: InvocationContext;
+        let ctx: EndpointContext;
         return defer(() => this.connect()).pipe(
             catchError((err, caught) => {
                 return throwError(() => this.onError(err))
@@ -117,7 +118,7 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> {
         )
     }
 
-    protected request(context: InvocationContext, req: TRequest | string, options?: TOption) {
+    protected request(context: EndpointContext, req: TRequest | string, options?: TOption) {
         return this.chain().handle(this.buildRequest(req, options), context);
     }
 
@@ -130,8 +131,8 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> {
      */
     protected abstract getBackend(): EndpointBackend<TRequest, TResponse>;
 
-    protected createContext(): InvocationContext {
-        return createContext(this.context);
+    protected createContext(): EndpointContext {
+        return new ClientContext(this.context.injector, this, { parent: this.context });
     }
 
     protected abstract buildRequest(url: TRequest | string, options?: TOption): TRequest;
@@ -139,3 +140,4 @@ export abstract class TransportClient<TRequest, TResponse, TOption = any> {
     protected abstract connect(): Promise<void>;
 
 }
+

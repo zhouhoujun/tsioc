@@ -1,10 +1,9 @@
-import { ExecptionFilter, MiddlewareInst, TransportContext } from '@tsdi/core';
+import { ServerContext, ExecptionFilter, MiddlewareInst } from '@tsdi/core';
 import { Injectable, tokenId } from '@tsdi/ioc';
 import { TcpRequest, TcpResponse } from './packet';
 
 @Injectable()
-export class TcpContext extends TransportContext<TcpRequest, TcpResponse> {
-
+export class TcpContext extends ServerContext<TcpRequest, TcpResponse> {
 
     private _url?: string;
     get url(): string {

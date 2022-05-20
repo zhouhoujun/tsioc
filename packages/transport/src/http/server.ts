@@ -41,6 +41,7 @@ export interface HttpOptions extends ServerOptions<HttpServRequest, HttpServResp
     cors?: boolean | CorsOptions;
     proxy?: boolean;
     proxyIpHeader?: string;
+    maxIpsCount?: number;
     /**
      * request timeout.
      */
@@ -157,6 +158,10 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
 
     get proxyIpHeader() {
         return this.options.proxyIpHeader
+    }
+
+    get maxIpsCount() {
+        return this.options.maxIpsCount ?? 0
     }
 
     override getExecptionsToken(): Token<ExecptionFilter[]> {
@@ -289,7 +294,7 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
     }
 
     protected override createContext(request: HttpServRequest, response: HttpServResponse): HttpContext {
-        return new HttpContext(this.context.injector, request, response, this)
+        return new HttpContext(this.context.injector, request, response, this as TransportServer)
     }
 
 }

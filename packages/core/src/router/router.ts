@@ -5,7 +5,8 @@ import { PipeTransform } from '../pipes/pipe';
 import { Route, RouteFactoryResolver } from './route';
 import { ModuleRef } from '../module.ref';
 import { Middleware, MiddlewareFn } from '../transport/endpoint';
-import { promisify, TransportContext } from '../transport';
+import { TransportContext } from '../transport/context';
+import { promisify } from './promisify';
 
 
 

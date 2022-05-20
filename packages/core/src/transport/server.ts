@@ -4,8 +4,8 @@ import { Subscription } from 'rxjs';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
 import { InterceptorChain, Endpoint, EndpointBackend, MiddlewareBackend, MiddlewareInst, InterceptorInst, MiddlewareType, InterceptorType } from './endpoint';
-import { TransportContext } from './context';
 import { ExecptionFilter } from '../execptions/filter';
+import { TransportContext } from './context';
 
 /**
  * server options.
@@ -24,7 +24,7 @@ export interface ServerOptions<TRequest, TResponse> {
 export abstract class TransportServer<TRequest = any, TResponse = any, Tx extends TransportContext = TransportContext> implements OnDispose {
 
     @Log()
-    protected readonly logger!: Logger;
+    readonly logger!: Logger;
 
     private _chain?: Endpoint<TRequest, TResponse>;
     private _middles?: MiddlewareInst<Tx>[];
@@ -111,7 +111,9 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
      * @param options 
      */
     protected initialize(options: ServerOptions<TRequest, TResponse>) {
-        this.context.injector.setValue(TransportServer, this as any);
+        const injector = this.context.injector;
+        injector.setValue(TransportServer, this as any);
+        injector.inject({ provide: Logger, useFactory: () => this.logger });
         if (options.middlewares && options.middlewares.length) {
             const mToken = this.getMiddlewaresToken();
             const middlewares = options.middlewares.map(m => {
@@ -121,7 +123,7 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
                     return { provide: mToken, useValue: m, multi: true }
                 }
             });
-            this.context.injector.inject(middlewares);
+            injector.inject(middlewares);
         }
 
         if (options.interceptors && options.interceptors.length) {
@@ -133,13 +135,13 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
                     return { provide: iToken, useValue: m, multi: true }
                 }
             });
-            this.context.injector.inject(interceptors);
+            injector.inject(interceptors);
         }
 
         if (options.execptions && options.execptions.length) {
             const eToken = this.getExecptionsToken();
             const filters = options.execptions.map(e => ({ provide: eToken, useClass: e, multi: true }) as ProviderType);
-            this.context.injector.inject(filters);
+            injector.inject(filters);
         }
     }
 
@@ -159,8 +161,6 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
 
     protected requestHandler(request: TRequest, response: TResponse) {
         const ctx = this.createContext(request, response) as Tx;
-        ctx.injector.setValue(Logger, this.logger);
-
         const cancel = this.chain().handle(request, ctx)
             .subscribe({
                 complete: () => {
