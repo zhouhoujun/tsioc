@@ -4,4 +4,4 @@ export * from './aspect';
 export * from './error';
 export * from './resolver';
 export * from './metadata';
-export * from './main';
+export * from './module';
