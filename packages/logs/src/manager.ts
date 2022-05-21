@@ -1,4 +1,4 @@
-import { ArgumentError, EMPTY_OBJ, getToken, Inject, Injectable, Injector, isFunction, isString, Singleton, Token, Type } from '@tsdi/ioc';
+import { ArgumentError, EMPTY_OBJ, getToken, Inject, Injectable, Injector, isFunction, isString, Token, Type } from '@tsdi/ioc';
 import { Logger } from './logger';
 import { LogConfigure } from './LogConfigure';
 import { Level, Levels } from './Level';
@@ -128,7 +128,7 @@ class ConsoleLog implements Logger {
     formatHeader = true;
 
     constructor(name?: string, public level: Level = 'debug') {
-        this.name = name
+        this.name = name;
     }
 
     protected machLevel(level: Levels): boolean {
@@ -141,13 +141,13 @@ class ConsoleLog implements Logger {
 
     trace(...args: any[]): void {
         if (this.machLevel(Levels.trace)) {
-            console.log(...args)
+            console.trace(...args)
         }
     }
     debug(...args: any[]): void {
         // console.debug in nuix will not console.
         if (this.machLevel(Levels.debug)) {
-            console.log(...args)
+            console.debug(...args)
         }
     }
     info(...args: any[]): void {
