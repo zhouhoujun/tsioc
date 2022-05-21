@@ -1,8 +1,8 @@
 import { Action, Actions } from '../action';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
-import { AnnotationType, ClassType, Type } from '../types';
+import { AnnotationType, ClassType, EMPTY, Type } from '../types';
 import { cleanObj, getParentClass } from '../utils/lang';
-import { EMPTY, isArray, isFunction } from '../utils/chk';
+import { isArray, isFunction } from '../utils/chk';
 import { runChain, Handler } from '../handler';
 import {
     ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata,

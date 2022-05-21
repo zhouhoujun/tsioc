@@ -1,8 +1,9 @@
 import { ChildModule, LoadType, Modules, PathModules, Type } from '../types';
-import { isArray, isFunction, isMetadataObject, isString } from '../utils/chk';
+import { isArray, isFunction, isString } from '../utils/chk';
 import { getTypes } from '../utils/lang';
 import { ModuleLoader } from '../module.loader';
 import { Injector } from '../injector';
+import { isMetadataObject } from '../utils/obj';
 
 /**
  * default module loader for {@link ModuleLoader}.

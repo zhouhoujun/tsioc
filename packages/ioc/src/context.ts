@@ -1,6 +1,5 @@
 import { ClassType } from './types';
 import { InjectFlags, Token } from './tokens';
-import { isFunction } from './utils/chk';
 import { Abstract } from './metadata/fac';
 import { DestroyCallback, Destroyable, OnDestroy } from './destroy';
 import { Injector } from './injector';

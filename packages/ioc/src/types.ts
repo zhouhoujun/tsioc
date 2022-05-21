@@ -4,6 +4,15 @@
  */
 export type Modules = Type | Type[] | Record<string, Type | Object>;
 
+/**
+ * empty array.
+ */
+export const EMPTY: any[] = [];
+
+/**
+ * empty object.
+ */
+export const EMPTY_OBJ: Record<string, any> = {};
 
 /**
  * object map. 

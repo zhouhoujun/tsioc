@@ -1,12 +1,13 @@
 import { ClassType, Type } from '../types';
 import { TypeReflect } from '../metadata/type';
-import { isFunction, isTypeObject } from '../utils/chk';
+import { isFunction } from '../utils/chk';
 import { Token } from '../tokens';
 import { get } from '../metadata/refl';
 import { ProviderType } from '../providers';
 import { createContext, InvocationContext, InvocationOption, InvokeArguments, InvokeOption } from '../context';
 import { ReflectiveRef, ReflectiveResolver, OperationInvoker } from '../operation';
 import { Injector, MethodType } from '../injector';
+import { isTypeObject } from '../utils/obj';
 
 
 
