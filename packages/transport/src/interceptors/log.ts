@@ -1,6 +1,6 @@
 import { Endpoint, Interceptor, ServerContext, TransportContext } from '@tsdi/core';
 import { Abstract, Injectable, isNumber } from '@tsdi/ioc';
-import { Logger, LoggerManager } from '@tsdi/logs';
+import { Levels, Logger, LoggerManager, matchLevel } from '@tsdi/logs';
 import * as chalk from 'chalk';
 import { Observable, map } from 'rxjs';
 import { hrtime } from 'node:process';
@@ -15,13 +15,17 @@ export class LogInterceptor<TRequest = any, TResponse = any> implements Intercep
     intercept(req: TRequest, next: Endpoint<TRequest, TResponse>, ctx: ServerContext): Observable<TResponse> {
         const logger: Logger = ctx.target.logger ?? ctx.get(Logger) ?? ctx.get(LoggerManager).getLogger();
 
+        if(!matchLevel(logger.level, Levels.debug)) {
+            return next.handle(req, ctx);
+        }
+
         const start = hrtime();
         const method = chalk.cyan(ctx.method);
-        logger.info(incoming, method, ctx.url);
+        logger.debug(incoming, method, ctx.url);
         return next.handle(req, ctx)
             .pipe(
                 map(res => {
-                    logger.info(outgoing, method, ctx.url, ...ctx.resolve(ResponseStatusFormater).format(ctx, hrtime(start)));
+                    logger.debug(outgoing, method, ctx.url, ...ctx.resolve(ResponseStatusFormater).format(ctx, hrtime(start)));
                     return res
                 })
             )

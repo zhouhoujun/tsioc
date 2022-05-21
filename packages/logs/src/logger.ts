@@ -1,4 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
+import { Level } from './Level';
 
 
 /**
@@ -87,10 +88,10 @@ export abstract class Logger implements ILogger {
     /**
      * logger level
      *
-     * @type {string}
+     * @type {Level}
      */
-    abstract get level(): string;
-    abstract set level(level: string);
+    abstract get level(): Level;
+    abstract set level(level: Level);
 
     abstract formatHeader?: boolean;
 
