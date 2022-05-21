@@ -1,5 +1,5 @@
-import { InjectToken, isInjectToken, Token } from '../tokens';
-import { isClassType, isFunction, type_func, type_str, type_symbol } from './chk';
+import { isInjectToken, Token } from '../tokens';
+import { isClassType, type_func, type_str, type_symbol } from './chk';
 
 
 /**

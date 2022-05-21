@@ -18,6 +18,7 @@ export * from './compile/facade';
 export * from './directivies/for';
 export * from './directivies/if';
 export * from './directivies/outlet';
+export * from './directivies/plural';
 export * from './directivies/switch';
 
 // i18n

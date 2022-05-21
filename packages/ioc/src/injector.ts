@@ -300,7 +300,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
     abstract load(...modules: LoadType[]): Promise<Type[]>;
 
     /**
-     * has destoryed or not.
+     * injector has destoryed or not.
      */
     abstract get destroyed(): boolean;
     /**

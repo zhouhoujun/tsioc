@@ -1,4 +1,4 @@
-import { lang, Injectable, ReflectiveRef, Decors, Type, TypeReflect, isFunction, refl } from '@tsdi/ioc';
+import { lang, Injectable, Decors, Type, TypeReflect, isFunction, refl, Injector, InvokeArguments } from '@tsdi/ioc';
 import { DefaultRunnableFactory, DefaultRunnableRef, RunnableFactory, RunnableFactoryResolver, RunnableRef } from '@tsdi/core';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata/decor';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata/meta';
@@ -13,15 +13,10 @@ import { UnitRunner } from './Runner';
  * @class SuiteRunner
  * @implements {IRunner<any>}
  */
-@Injectable()
 export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitRunner<T> {
 
     timeout!: number;
     describe!: string;
-
-    constructor(factory: ReflectiveRef<T>) {
-        super(factory)
-    }
 
     override async run(): Promise<void> {
         const desc = this.getSuiteDescribe();
@@ -34,9 +29,9 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
      * @returns {SuiteDescribe}
      */
     getSuiteDescribe(): SuiteDescribe {
-        const meta = this.factory.reflect.annotation as SuiteMetadata;
+        const meta = this.reflect.annotation as SuiteMetadata;
         this.timeout = (meta && meta.timeout) ? meta.timeout : (3 * 60 * 60 * 1000);
-        this.describe = meta.describe || this.factory.reflect.class.className;
+        this.describe = meta.describe || this.reflect.class.className;
         return {
             timeout: this.timeout,
             describe: this.describe,
@@ -53,7 +48,7 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
     runTimeout(key: string, describe: string, timeout?: number): Promise<any> {
         const instance = this.instance as any;
         const defer = lang.defer();
-        const injector = this.factory.injector;
+        const injector = this.injector;
         let timer = setTimeout(() => {
             if (timer) {
                 clearTimeout(timer);
@@ -67,7 +62,7 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
             }
         }, timeout || this.timeout);
 
-        Promise.resolve(this.factory.invoke(key, {
+        Promise.resolve(this.invoke(key, {
             providers: [
                 { provide: RunCaseToken, useValue: instance[key] },
                 { provide: RunSuiteToken, useValue: instance }
@@ -88,7 +83,7 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
     }
 
     async runBefore(describe: SuiteDescribe) {
-        const befores = this.factory.reflect.class.getDecorDefines<BeforeTestMetadata>(Before.toString(), Decors.method);
+        const befores = this.reflect.class.getDecorDefines<BeforeTestMetadata>(Before.toString(), Decors.method);
         await lang.step(
             befores.map(df => () => {
                 return this.runTimeout(
@@ -99,7 +94,7 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
     }
 
     async runBeforeEach() {
-        const befores = this.factory.reflect.class.getDecorDefines<BeforeEachTestMetadata>(BeforeEach.toString(), Decors.method);
+        const befores = this.reflect.class.getDecorDefines<BeforeEachTestMetadata>(BeforeEach.toString(), Decors.method);
         await lang.step(
             befores.map(df => () => {
                 return this.runTimeout(
@@ -110,7 +105,7 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
     }
 
     async runAfterEach() {
-        const afters = this.factory.reflect.class.getDecorDefines<BeforeEachTestMetadata>(AfterEach.toString(), Decors.method);
+        const afters = this.reflect.class.getDecorDefines<BeforeEachTestMetadata>(AfterEach.toString(), Decors.method);
         await lang.step(afters.map(df => () => {
             return this.runTimeout(
                 df.propertyKey,
@@ -120,7 +115,7 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
     }
 
     async runAfter(describe: SuiteDescribe) {
-        const afters = this.factory.reflect.class.getDecorDefines<BeforeTestMetadata>(After.toString(), Decors.method);
+        const afters = this.reflect.class.getDecorDefines<BeforeTestMetadata>(After.toString(), Decors.method);
         await lang.step(
             afters.map(df => () => {
                 return this.runTimeout(
@@ -131,7 +126,7 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
     }
 
     async runTest(desc: SuiteDescribe) {
-        const tests = this.factory.reflect.class.getDecorDefines<TestCaseMetadata>(Test.toString(), Decors.method);
+        const tests = this.reflect.class.getDecorDefines<TestCaseMetadata>(Test.toString(), Decors.method);
         await lang.step(
             tests.map(df => {
                 return {
@@ -168,17 +163,11 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
         return caseDesc
     }
 
-    protected destroying() {
-        this.factory = null!;
-        this.timeout = null!;
-        this.describe = null!
-    }
-
 }
 
 class SuiteRunnableFactory<T> extends DefaultRunnableFactory<T> {
-    protected override createInstance(factory: ReflectiveRef<T>): RunnableRef<T> {
-        return factory.resolve(SuiteRunner)
+    protected override createInstance(reflect: TypeReflect<T>, injector: Injector, options?: InvokeArguments, invokeMethod?: string): RunnableRef<T> {
+        return new SuiteRunner(reflect, injector, options, invokeMethod)
     }
 }
 

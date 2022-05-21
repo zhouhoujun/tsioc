@@ -24,14 +24,14 @@ export class Execption extends Error {
             (this as any).__proto__ = target.prototype
         }
     }
-    
+
 }
 
 
 /**
  * argument errror.
  */
- export class ArgumentError extends Execption {
+export class ArgumentError extends Execption {
     constructor(message?: string | string[]) {
         super(isArray(message) ? message.join('\n') : message || '')
     }

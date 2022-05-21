@@ -1,5 +1,4 @@
-import { InjectableMetadata, ProviderMetadata, PropertyMetadata, Type } from '@tsdi/ioc';
-import { MessageQueue } from '@tsdi/core';
+import { InjectableMetadata, PropertyMetadata, Type } from '@tsdi/ioc';
 
 /**
  * component metadata.
@@ -121,10 +120,7 @@ export interface HostListenerMetadata {
      * @memberof HostListenerMetadata
      */
     args?: string[];
-    /**
-     * listener from message queue.
-     */
-    queue?: Type<MessageQueue>;
+    
 }
 
 

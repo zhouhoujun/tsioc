@@ -2,7 +2,7 @@ import { ClassType, Type } from './types';
 import { Token } from './tokens';
 import { Abstract } from './metadata/fac';
 import { TypeReflect } from './metadata/type';
-import { OnDestroy } from './destroy';
+import { Destroyable, DestroyCallback, OnDestroy } from './destroy';
 import { Injector, MethodType } from './injector';
 import { InvocationContext, InvocationOption, InvokeArguments, InvokeOption } from './context';
 
@@ -52,7 +52,7 @@ export interface OperationInvoker<T = any> {
  * type reflectiveRef.
  */
 @Abstract()
-export abstract class ReflectiveRef<T = any> implements OnDestroy {
+export abstract class ReflectiveRef<T = any> implements Destroyable, OnDestroy {
     /**
      * injector.
      */
@@ -70,7 +70,7 @@ export abstract class ReflectiveRef<T = any> implements OnDestroy {
      */
     abstract get reflect(): TypeReflect<T>;
     /**
-     * execute target type.
+     * target type.
      */
     abstract get type(): Type<T>;
     /**
@@ -125,9 +125,18 @@ export abstract class ReflectiveRef<T = any> implements OnDestroy {
      */
     abstract createContext(parant: InvocationContext, option?: InvocationOption): InvocationContext;
     /**
-     * destroy invocation context.
+     * context destroyed or not.
      */
-    abstract onDestroy(): void | Promise<void>;
+    abstract get destroyed(): boolean;
+    /**
+     * destroy this.
+     */
+    abstract destroy(): void | Promise<void>;
+    /**
+     * register callback on destroy.
+     * @param callback destroy callback
+     */
+    abstract onDestroy(callback?: DestroyCallback): void | Promise<void>;
 }
 
 /**

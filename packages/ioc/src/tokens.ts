@@ -68,6 +68,11 @@ export function tokenRef<T>(token: Token<T>, target: Token): Token<T> {
     return `Ref ${formatToken(token)} for ${formatToken(target)}`
 }
 
+/**
+ * is target instance of {@link InjectToken} or not.
+ * @param target 
+ * @returns 
+ */
 export function isInjectToken<T>(target: any): target is InjectToken<T> {
     return target instanceof InjectToken
 }

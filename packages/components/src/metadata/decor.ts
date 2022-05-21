@@ -1,18 +1,14 @@
 import {
-    Token, Type, PropertyMetadata, InjectableMetadata, isBoolean, isArray, isString, getClass,
-    refl, lang, createDecorator, createPropDecorator, createParamDecorator, ClassMethodDecorator, ActionTypes
+    Token, PropertyMetadata, InjectableMetadata, isBoolean, isArray, getClass,
+    refl, createDecorator, createPropDecorator, createParamDecorator, ActionTypes
 } from '@tsdi/ioc';
-import {
-    MappingReflect, MessageQueue, Middlewares,
-    MiddlewareInst, RouteMappingMetadata, Router, RunnableFactoryResolver
-} from '@tsdi/core';
+import {  RunnableFactoryResolver } from '@tsdi/core';
 import {
     BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
     HostListenerMetadata, QueryMetadata, VaildateMetadata
 } from './meta';
 import { AnnotationReflect, ComponentReflect, DirectiveReflect } from '../reflect';
 import { CompilerFacade } from '../compile/facade';
-import { HostMappingRoot, HostMappingRoute } from '../router';
 import { ComponentFactoryResolver } from '../refs/component';
 
 
@@ -301,14 +297,14 @@ export interface HostListenerPropertyDecorator {
      */
     (eventName: string, args?: string[]): PropertyDecorator;
 
-    /**
-     * Decorator that binds a Message Queue event to a host listener and supplies configuration metadata.
-     * Components invokes the supplied handler method when the host element emits the specified event,
-     * and updates the bound element with the result.
-     *
-     * @param {string} eventName binding property name
-     */
-    (eventName: string, queue?: Type<MessageQueue>): PropertyDecorator;
+    // /**
+    //  * Decorator that binds a Message Queue event to a host listener and supplies configuration metadata.
+    //  * Components invokes the supplied handler method when the host element emits the specified event,
+    //  * and updates the bound element with the result.
+    //  *
+    //  * @param {string} eventName binding property name
+    //  */
+    // (eventName: string, queue?: Type<MessageQueue>): PropertyDecorator;
 
     /**
      * define HostListener property decorator with binding metadata.
@@ -332,111 +328,111 @@ export const HostListener: HostListenerPropertyDecorator = createPropDecorator<H
 });
 
 
-/**
- * decorator used to define Request route mapping.
- *
- * @export
- * @interface IHostMappingDecorator
- */
-export interface IHostMappingDecorator {
-    /**
-     * use component selector as route or use the component method name as an route.
-     */
-    (): ClassMethodDecorator;
-    /**
-     * route decorator. define the component method as an route.
-     *
-     * @param {string} route route sub path. default use component selector.
-     * @param {Type<Router>} [parent] the middlewares for the route.
-     */
-    (route: string, parent: Type<Router>): ClassDecorator;
-    /**
-     * route decorator. define the component method as an route.
-     *
-     * @param {string} route route sub path.
-     * @param {MiddlewareInst[]} [middlewares] the middlewares for the route.
-     */
-    (route: string, middlewares?: MiddlewareInst[]): ClassMethodDecorator;
+// /**
+//  * decorator used to define Request route mapping.
+//  *
+//  * @export
+//  * @interface IHostMappingDecorator
+//  */
+// export interface IHostMappingDecorator {
+//     /**
+//      * use component selector as route or use the component method name as an route.
+//      */
+//     (): ClassMethodDecorator;
+//     /**
+//      * route decorator. define the component method as an route.
+//      *
+//      * @param {string} route route sub path. default use component selector.
+//      * @param {Type<Router>} [parent] the middlewares for the route.
+//      */
+//     (route: string, parent: Type<Router>): ClassDecorator;
+//     /**
+//      * route decorator. define the component method as an route.
+//      *
+//      * @param {string} route route sub path.
+//      * @param {MiddlewareInst[]} [middlewares] the middlewares for the route.
+//      */
+//     (route: string, middlewares?: MiddlewareInst[]): ClassMethodDecorator;
 
-    /**
-     * route decorator. define the component method as an route.
-     *
-     * @param {string} route route sub path.
-     * @param {{ middlewares?: MiddlewareInst[], contentType?: string, method?: string}} options
-     *  [parent] set parent route.
-     *  [middlewares] the middlewares for the route.
-     */
-    (route: string, options: { parent?: Type<Router>, middlewares: MiddlewareInst[] }): ClassDecorator;
-    /**
-     * route decorator. define the controller method as an route.
-     *
-     * @param {string} route route sub path.
-     * @param {RequestMethod} [method] set request method.
-     */
-    (route: string, method: string): MethodDecorator;
+//     /**
+//      * route decorator. define the component method as an route.
+//      *
+//      * @param {string} route route sub path.
+//      * @param {{ middlewares?: MiddlewareInst[], contentType?: string, method?: string}} options
+//      *  [parent] set parent route.
+//      *  [middlewares] the middlewares for the route.
+//      */
+//     (route: string, options: { parent?: Type<Router>, middlewares: MiddlewareInst[] }): ClassDecorator;
+//     /**
+//      * route decorator. define the controller method as an route.
+//      *
+//      * @param {string} route route sub path.
+//      * @param {RequestMethod} [method] set request method.
+//      */
+//     (route: string, method: string): MethodDecorator;
 
-    /**
-     * route decorator. define the controller method as an route.
-     *
-     * @param {string} route route sub path.
-     * @param {{ middlewares?: MiddlewareInst[], contentType?: string, method?: string}} options
-     *  [middlewares] the middlewares for the route.
-     *  [contentType] set request contentType.
-     *  [method] set request method.
-     */
-    (route: string, options: { middlewares: MiddlewareInst[], contentType?: string, method?: string }): MethodDecorator;
+//     /**
+//      * route decorator. define the controller method as an route.
+//      *
+//      * @param {string} route route sub path.
+//      * @param {{ middlewares?: MiddlewareInst[], contentType?: string, method?: string}} options
+//      *  [middlewares] the middlewares for the route.
+//      *  [contentType] set request contentType.
+//      *  [method] set request method.
+//      */
+//     (route: string, options: { middlewares: MiddlewareInst[], contentType?: string, method?: string }): MethodDecorator;
 
-    /**
-     * route decorator. define the controller method as an route.
-     *
-     * @param {RouteMetadata} [metadata] route metadata.
-     */
-    (metadata: RouteMappingMetadata): ClassMethodDecorator;
-}
+//     /**
+//      * route decorator. define the controller method as an route.
+//      *
+//      * @param {RouteMetadata} [metadata] route metadata.
+//      */
+//     (metadata: RouteMappingMetadata): ClassMethodDecorator;
+// }
 
-/**
- * HostMapping decorator
- */
-export const HostMapping: IHostMappingDecorator = createDecorator<RouteMappingMetadata>('HostMapping', {
-    props: (route: string, arg2?: Type<Router> | MiddlewareInst[] | string | { middlewares: MiddlewareInst[], contentType?: string, method?: string }) => {
-        if (isArray(arg2)) {
-            return { route, middlewares: arg2 };
-        } else if (isString(arg2)) {
-            return { route, method: arg2 };
-        } else if (lang.isBaseOf(arg2, Router)) {
-            return { route, parent: arg2 };
-        } else {
-            return { ...arg2, route };
-        }
-    },
-    reflect: {
-        class: (ctx, next) => {
-            ctx.reflect.annotation = ctx.metadata;
-            return next();
-        }
-    },
-    design: {
-        afterAnnoation: (ctx, next) => {
-            const reflect = ctx.reflect as MappingReflect;
-            const { parent } = reflect.annotation;
-            const injector = ctx.injector;
-            let queue: Middlewares;
-            if (parent) {
-                queue = injector.get(parent);
-            } else {
-                queue = injector.get(HostMappingRoot);
-            }
+// /**
+//  * HostMapping decorator
+//  */
+// export const HostMapping: IHostMappingDecorator = createDecorator<RouteMappingMetadata>('HostMapping', {
+//     props: (route: string, arg2?: Type<Router> | MiddlewareInst[] | string | { middlewares: MiddlewareInst[], contentType?: string, method?: string }) => {
+//         if (isArray(arg2)) {
+//             return { route, middlewares: arg2 };
+//         } else if (isString(arg2)) {
+//             return { route, method: arg2 };
+//         } else if (lang.isBaseOf(arg2, Router)) {
+//             return { route, parent: arg2 };
+//         } else {
+//             return { ...arg2, route };
+//         }
+//     },
+//     reflect: {
+//         class: (ctx, next) => {
+//             ctx.reflect.annotation = ctx.metadata;
+//             return next();
+//         }
+//     },
+//     design: {
+//         afterAnnoation: (ctx, next) => {
+//             const reflect = ctx.reflect as MappingReflect;
+//             const { parent } = reflect.annotation;
+//             const injector = ctx.injector;
+//             let queue: Middlewares;
+//             if (parent) {
+//                 queue = injector.get(parent);
+//             } else {
+//                 queue = injector.get(HostMappingRoot);
+//             }
 
-            if (!queue) throw new Error(lang.getClassName(parent) + 'has not registered!');
-            if (!(queue instanceof Router)) throw new Error(lang.getClassName(queue) + 'is not message router!');
+//             if (!queue) throw new Error(lang.getClassName(parent) + 'has not registered!');
+//             if (!(queue instanceof Router)) throw new Error(lang.getClassName(queue) + 'is not message router!');
 
-            const mapping = new HostMappingRoute(reflect, injector, queue.getPath());
-            injector.onDestroy(() => queue.unuse(mapping));
-            queue.use(mapping);
-            next();
-        }
-    }
-});
+//             const mapping = new HostMappingRoute(reflect, injector, queue.getPath());
+//             injector.onDestroy(() => queue.unuse(mapping));
+//             queue.use(mapping);
+//             next();
+//         }
+//     }
+// });
 
 
 /**

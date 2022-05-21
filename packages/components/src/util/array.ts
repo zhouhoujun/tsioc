@@ -16,7 +16,7 @@ export function addAllToArray(items: any[], arr: any[]) {
 export function flatten(list: any[], dst?: any[]): any[] {
   if (dst === undefined) dst = list;
   for (let i = 0; i < list.length; i++) {
-    let item = list[i];
+    const item = list[i];
     if (Array.isArray(item)) {
       // we need to inline it.
       if (dst === list) {

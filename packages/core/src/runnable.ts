@@ -1,4 +1,4 @@
-import { Abstract, Type, Destroyable, OnDestroy, TypeReflect, Injector, DestroyCallback, InvokeOption } from '@tsdi/ioc';
+import { Abstract, Type, Destroyable, OnDestroy, TypeReflect, Injector, InvokeOption, ReflectiveRef } from '@tsdi/ioc';
 
 /**
  * runnable
@@ -14,34 +14,7 @@ export interface Runnable {
  * runner
  */
 @Abstract()
-export abstract class RunnableRef<T = any> implements Runnable, Destroyable, OnDestroy {
-    /**
-     * runnable target type.
-     *
-     * @readonly
-     * @abstract
-     * @type {Type<T>}
-     * @memberof RunnableRef
-     */
-    abstract get type(): Type<T>;
-    /**
-     * runnable target type reflect.
-     *
-     * @readonly
-     * @abstract
-     * @type {TypeReflect<T>}
-     * @memberof RunnableRef
-     */
-    abstract get reflect(): TypeReflect<T>;
-    /**
-     * injector. instance of {@link Injector}.
-     *
-     * @readonly
-     * @abstract
-     * @type {Injector}
-     * @memberof RunnableRef
-     */
-    abstract get injector(): Injector;
+export abstract class RunnableRef<T = any> extends ReflectiveRef<T> implements Runnable, Destroyable, OnDestroy {
     /**
      * target instance.
      *
@@ -56,20 +29,9 @@ export abstract class RunnableRef<T = any> implements Runnable, Destroyable, OnD
      */
     abstract run(): any;
     /**
-     * is destroyed or not.
+     * runnable ref has destroyed or not.
      */
     abstract get destroyed(): boolean;
-    /**
-     * Destroys the runnable instance and all of the data structures associated with it.
-     */
-    abstract destroy(): void;
-    /**
-     * A lifecycle hook that provides additional developer-defined cleanup
-     * functionality for the runnable.
-     * @param callback A handler function that cleans up developer-defined data
-     * associated with this runnable. Called when the `destroy()` method is invoked.
-     */
-    abstract onDestroy(callback?: DestroyCallback): void;
 }
 
 
