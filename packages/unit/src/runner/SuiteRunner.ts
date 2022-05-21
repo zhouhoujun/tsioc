@@ -13,12 +13,26 @@ import { UnitRunner } from './Runner';
  * @class SuiteRunner
  * @implements {IRunner<any>}
  */
-export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitRunner<T> {
+ @Injectable()
+export class SuiteRunner<T = any> implements UnitRunner<T> {
+
+ 
+    constructor(private runnable: RunnableRef<T>) {
+
+    }
+
+    get type(): Type<T> {
+        return this.runnable.type;
+    }
+
+    get reflect() {
+        return this.runnable.reflect;
+    }
 
     timeout!: number;
     describe!: string;
 
-    override async run(): Promise<void> {
+    async run(): Promise<void> {
         const desc = this.getSuiteDescribe();
         await this.runSuite(desc)
     }
@@ -46,9 +60,9 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
     }
 
     runTimeout(key: string, describe: string, timeout?: number): Promise<any> {
-        const instance = this.instance as any;
+        const instance = this.runnable.instance as any;
         const defer = lang.defer();
-        const injector = this.injector;
+        const injector = this.runnable.injector;
         let timer = setTimeout(() => {
             if (timer) {
                 clearTimeout(timer);
@@ -62,7 +76,7 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
             }
         }, timeout || this.timeout);
 
-        Promise.resolve(this.invoke(key, {
+        Promise.resolve(this.runnable.invoke(key, {
             providers: [
                 { provide: RunCaseToken, useValue: instance[key] },
                 { provide: RunSuiteToken, useValue: instance }
@@ -165,9 +179,16 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
 
 }
 
+
+class UnitRunnableRef<T> extends DefaultRunnableRef<T> {
+    override run() {
+        return this.context.get(SuiteRunner).run();
+    }
+} 
+
 class SuiteRunnableFactory<T> extends DefaultRunnableFactory<T> {
     protected override createInstance(reflect: TypeReflect<T>, injector: Injector, options?: InvokeArguments, invokeMethod?: string): RunnableRef<T> {
-        return new SuiteRunner(reflect, injector, options, invokeMethod)
+        return new UnitRunnableRef(reflect, injector, options, invokeMethod)
     }
 }
 
