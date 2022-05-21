@@ -1,12 +1,12 @@
 import { Injectable, lang, Type } from '@tsdi/ioc';
 import { ApplicationContext } from '@tsdi/core';
-import { OnDestroy } from '../lifecycle';
-import { ComponentFactory, ComponentRef } from './component';
-import { InternalViewRef } from './inter';
-import { ViewRef } from './view';
+import { OnDestroy } from './lifecycle';
+import { ComponentFactory, ComponentRef } from './refs/component';
+import { InternalViewRef } from './refs/inter';
+import { ViewRef } from './refs/view';
 
 @Injectable()
-export class ApplicationRef implements OnDestroy {
+export abstract class ComponentState<T = any> implements OnDestroy {
 
   constructor(public context: ApplicationContext) { }
 

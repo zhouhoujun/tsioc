@@ -4,7 +4,7 @@ import { VIEW_REFS } from './interfaces/container';
 import { CONTEXT, FLAGS, INJECTOR, LView, LViewFlags, PARENT, VIEW } from './interfaces/view';
 import { isLContainer } from './chk';
 import { collectNativeNodes } from './native_nodes';
-import { ApplicationContext } from 'packages/boot/src/Context';
+import { ApplicationContext } from '@tsdi/core';
 
 /**
  * viewRef implement.
