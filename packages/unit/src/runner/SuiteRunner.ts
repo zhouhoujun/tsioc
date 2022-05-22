@@ -1,10 +1,11 @@
-import { lang, Injectable, Decors, Type, TypeReflect, isFunction, refl, Injector, InvokeArguments } from '@tsdi/ioc';
+import { lang, Injectable, Decors, Type, TypeReflect, isFunction, refl, Injector, InvokeArguments, Platform } from '@tsdi/ioc';
 import { DefaultRunnableFactory, DefaultRunnableRef, RunnableFactory, RunnableFactoryResolver, RunnableRef } from '@tsdi/core';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata/decor';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata/meta';
 import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
 import { SuiteDescribe, ICaseDescribe } from '../reports/interface';
 import { UnitRunner } from './Runner';
+import { Advisor } from '@tsdi/aop';
 
 /**
  * Suite runner.
@@ -13,21 +14,8 @@ import { UnitRunner } from './Runner';
  * @class SuiteRunner
  * @implements {IRunner<any>}
  */
- @Injectable()
-export class SuiteRunner<T = any> implements UnitRunner<T> {
+export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitRunner<T> {
 
- 
-    constructor(private runnable: RunnableRef<T>) {
-
-    }
-
-    get type(): Type<T> {
-        return this.runnable.type;
-    }
-
-    get reflect() {
-        return this.runnable.reflect;
-    }
 
     timeout!: number;
     describe!: string;
@@ -60,9 +48,9 @@ export class SuiteRunner<T = any> implements UnitRunner<T> {
     }
 
     runTimeout(key: string, describe: string, timeout?: number): Promise<any> {
-        const instance = this.runnable.instance as any;
+        const instance = this.instance as any;
         const defer = lang.defer();
-        const injector = this.runnable.injector;
+        const injector = this.injector;
         let timer = setTimeout(() => {
             if (timer) {
                 clearTimeout(timer);
@@ -76,7 +64,7 @@ export class SuiteRunner<T = any> implements UnitRunner<T> {
             }
         }, timeout || this.timeout);
 
-        Promise.resolve(this.runnable.invoke(key, {
+        Promise.resolve(this.invoke(key, {
             providers: [
                 { provide: RunCaseToken, useValue: instance[key] },
                 { provide: RunSuiteToken, useValue: instance }
@@ -180,20 +168,26 @@ export class SuiteRunner<T = any> implements UnitRunner<T> {
 }
 
 
-class UnitRunnableRef<T> extends DefaultRunnableRef<T> {
-    override run() {
-        return this.context.get(SuiteRunner).run();
-    }
-} 
+// class UnitRunnableRef<T> extends DefaultRunnableRef<T> {
+//     override run() {
+//         return this.context.get(SuiteRunner).run();
+//     }
+// } 
 
 class SuiteRunnableFactory<T> extends DefaultRunnableFactory<T> {
     protected override createInstance(reflect: TypeReflect<T>, injector: Injector, options?: InvokeArguments, invokeMethod?: string): RunnableRef<T> {
-        return new UnitRunnableRef(reflect, injector, options, invokeMethod)
+        const runnableRef = new SuiteRunner(reflect, injector, options, invokeMethod);
+        injector.platform().getAction(Advisor).attach(refl.get(SuiteRunner, true), runnableRef)
+        return runnableRef;
     }
 }
 
 @Injectable()
 export class SuiteRunnableFactoryResolver extends RunnableFactoryResolver {
+    constructor(platform: Platform){
+        super()
+        platform.getAction(Advisor).register(SuiteRunner);
+    }
     resolve<T>(type: Type<T> | TypeReflect<T>): RunnableFactory<T> {
         return new SuiteRunnableFactory(isFunction(type) ? refl.get(type) : type)
     }

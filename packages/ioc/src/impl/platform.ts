@@ -26,6 +26,7 @@ export class DefaultPlatform implements Platform {
         this._pdrs = new Map();
         this._actions = new Map();
         this._singls = new Map();
+        this._singls.set(Platform, this);
         injector.onDestroy(this)
     }
 
@@ -85,7 +86,7 @@ export class DefaultPlatform implements Platform {
      * @returns {T}
      */
     getAction<T>(token: Token<T>, notFoundValue?: T): T {
-        if (this._actions.has(token)) {
+        if (!this._actions.has(token)) {
             this.registerAction(token as Type)
         }
         return this._actions.get(token) ?? notFoundValue

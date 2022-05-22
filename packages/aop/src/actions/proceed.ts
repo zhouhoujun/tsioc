@@ -9,6 +9,7 @@ import { Advices } from '../advices/Advices';
 import { Advicer } from '../advices/Advicer';
 import { AroundMetadata } from '../metadata/meta';
 import { Advisor } from '../Advisor';
+import { Proceeding } from '../Proceeding';
 
 const proxyFlag = '_proxy';
 const aExp = /^@/;
@@ -20,7 +21,7 @@ const aExp = /^@/;
  * @class ProxyMethod
  * @implements {IProxyMethod}
  */
-export class ProceedingScope extends IocActions<Joinpoint> implements ActionSetup {
+export class ProceedingScope extends IocActions<Joinpoint> implements Proceeding, ActionSetup {
 
 
     constructor(private platform: Platform) {
@@ -82,27 +83,19 @@ export class ProceedingScope extends IocActions<Joinpoint> implements ActionSetu
         if (advices && pointcut) {
             const methodName = pointcut.name;
             if (pointcut.descriptor && (pointcut.descriptor.get || pointcut.descriptor.set)) {
-                const getProxy = pointcut.descriptor.get ? this.proxy(pointcut.descriptor.get.bind(target), advices, target, targetType, pointcut) : emptyFunc;
-                const setProxy = pointcut.descriptor.set ? this.proxy(pointcut.descriptor.set.bind(target), advices, target, targetType, pointcut) : emptyFunc;
-                if (pointcut.descriptor.get && pointcut.descriptor.set) {
-                    Object.defineProperty(target, methodName, {
-                        get: () => {
-                            return getProxy()
-                        },
-                        set: () => {
-                            setProxy()
-                        }
-                    })
-                } else if (pointcut.descriptor.get) {
+                if (pointcut.descriptor.get) {
+                    const getProxy = this.proxy(pointcut.descriptor.get.bind(target), advices, target, targetType, pointcut);
                     Object.defineProperty(target, methodName, {
                         get: () => {
                             return getProxy()
                         }
                     })
-                } else if (pointcut.descriptor.set) {
+                }
+                if (pointcut.descriptor.set) {
+                    const setProxy = this.proxy(pointcut.descriptor.set.bind(target), advices, target, targetType, pointcut);
                     Object.defineProperty(target, methodName, {
-                        set: () => {
-                            setProxy()
+                        set: (val) => {
+                            setProxy(val)
                         }
                     })
                 }
