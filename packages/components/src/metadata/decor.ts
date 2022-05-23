@@ -16,9 +16,9 @@ import { ComponentFactoryResolver } from '../refs/component';
  * Directive decorator
  *
  * @export
- * @interface IDirectiveDecorator
+ * @interface Directive
  */
-export interface IDirectiveDecorator {
+export interface Directive {
     /**
      * Component decorator, define for class. use to define the class. it can setting provider to some token, singleton or not. it will execute  [`ComponentLifecycle`]
      *
@@ -42,7 +42,7 @@ export interface IDirectiveDecorator {
  *
  * @Component
  */
-export const Directive: IDirectiveDecorator = createDecorator<DirectiveMetadata>('Directive', {
+export const Directive: Directive = createDecorator<DirectiveMetadata>('Directive', {
     actionType: [ActionTypes.annoation, ActionTypes.typeProviders],
     props: (selector: string, option?: InjectableMetadata) => ({ selector, ...option }),
     reflect: {
@@ -78,9 +78,9 @@ export const Directive: IDirectiveDecorator = createDecorator<DirectiveMetadata>
  * Component decorator
  *
  * @export
- * @interface IComponentDecorator
+ * @interface Component
  */
-export interface IComponentDecorator {
+export interface Component {
     /**
      * Component decorator, define for class. use to define the class. it can setting provider to some token, singleton or not. it will execute  [`ComponentLifecycle`]
      *
@@ -104,7 +104,7 @@ export interface IComponentDecorator {
  *
  * @Component
  */
-export const Component: IComponentDecorator = createDecorator<ComponentMetadata>('Component', {
+export const Component: Component = createDecorator<ComponentMetadata>('Component', {
     actionType: [ActionTypes.annoation, ActionTypes.typeProviders],
     props: (selector: string, template?: any, option?: InjectableMetadata) => ({ selector, template, ...option }),
     reflect: {

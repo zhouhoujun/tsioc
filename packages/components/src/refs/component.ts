@@ -1,5 +1,5 @@
 import { Abstract, Injector, lang, Type } from '@tsdi/ioc';
-import { RunnableFactory, BootstrapOption, RunnableFactoryResolver, ApplicationContext, Runnable, RunnableRef } from '@tsdi/core';
+import { RunnableFactory, BootstrapOption, RunnableFactoryResolver, ApplicationContext, RunnableRef } from '@tsdi/core';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ElementRef } from './element';
 import { ViewRef } from './view';
@@ -13,7 +13,7 @@ import { ComponentReflect } from '../reflect';
  * @publicApi
  */
 @Abstract()
-export abstract class ComponentRef<C = any> implements RunnableRef<C> {
+export abstract class ComponentRef<C = any> extends RunnableRef<C> {
     /**
      * component type.
      */

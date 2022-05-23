@@ -161,6 +161,8 @@ export class Advisor implements OnDestroy {
                     }
                 } else if (isFunction(descriptor.value)) {
                     (instance as any)[name] = descriptor.value.bind(instance);
+                } else {
+                    (instance as any)[name] = (instance as any)[name];
                 }
             })
         }
