@@ -1,5 +1,5 @@
 import {
-    Abstract, ClassType, composeResolver, DefaultInvocationContext, EMPTY,
+    Abstract, ClassType, composeResolver, EMPTY,
     Injector, InvokeArguments, isArray, isDefined, isPrimitiveType,
     isString, MissingParameterError, Parameter, Token, Type
 } from '@tsdi/ioc';
@@ -15,7 +15,7 @@ import { TransportServer } from './server';
  * server transport context.
  */
 @Abstract()
-export abstract class ServerContext<TRequest = any, TResponse = any> extends DefaultInvocationContext implements TransportContext {
+export abstract class ServerContext<TRequest = any, TResponse = any> extends TransportContext {
     /**
      * target server.
      */

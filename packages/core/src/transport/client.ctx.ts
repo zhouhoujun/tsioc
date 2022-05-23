@@ -1,9 +1,9 @@
-import { DefaultInvocationContext, Injector, InvokeArguments } from '@tsdi/ioc';
+import { Injector, InvokeArguments } from '@tsdi/ioc';
 import { TransportClient } from './client';
 import { EndpointContext } from './context';
 
 
-export class ClientContext extends DefaultInvocationContext implements EndpointContext {
+export class ClientContext extends EndpointContext {
     /**
      * instance of TransportClient.
      */

@@ -1,8 +1,8 @@
-import { Abstract, InvocationContext } from '@tsdi/ioc';
+import { Abstract, DefaultInvocationContext } from '@tsdi/ioc';
 
 
 @Abstract()
-export abstract class EndpointContext extends InvocationContext {
+export abstract class EndpointContext extends DefaultInvocationContext {
     /**
      * host client or server. instance of  `TransportClient` or `TransportServer`
      */
