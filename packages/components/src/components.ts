@@ -1,7 +1,12 @@
 import { Module } from '@tsdi/core';
-import { Inject, IocExt, Injector, ROOT_INJECTOR } from '@tsdi/ioc';
+import { ForDirective } from './directivies/for';
+import { IfDirective } from './directivies/if';
+import { TemplateOutletDirective } from './directivies/outlet';
+import { Plural, PluralCase } from './directivies/plural';
+import { DirSwitch, DirSwitchCase, DirSwitchDefault } from './directivies/switch';
+import { AsyncPipe } from './pipes/async';
 import { ComponentFactoryResolver } from './refs/component';
-import { HostMappingRoot } from './router';
+
 
 
 /**
@@ -12,7 +17,18 @@ import { HostMappingRoot } from './router';
  */
 @Module({
     providers:[
-        HostMappingRoot
+        // {provide: ComponentFactoryResolver, useClass: }
+    ],
+    exports:[
+        DirSwitch,
+        DirSwitchCase,
+        DirSwitchDefault,
+        ForDirective,
+        IfDirective,
+        TemplateOutletDirective,
+        Plural,
+        PluralCase,
+        AsyncPipe
     ]
 })
 export class ComponentsModule {

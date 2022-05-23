@@ -1,4 +1,5 @@
-import { EMPTY, isDefined } from '../utils/chk';
+import { EMPTY } from '../types';
+import { isDefined } from '../utils/chk';
 import { runChain } from '../handler';
 import { ActionSetup } from '../action';
 import { RuntimeContext } from './ctx';

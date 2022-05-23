@@ -1,11 +1,11 @@
 import { OnDestroy, Destroyable, DestroyCallback } from './destroy';
-import { ClassType, LoadType, Modules, Type } from './types';
+import { ClassType, EMPTY, LoadType, Modules, Type } from './types';
 import { ClassProvider, ExistingProvider, FactoryProvider, ProviderType, ValueProvider } from './providers';
 import { Token, InjectFlags } from './tokens';
 import { Abstract } from './metadata/fac';
 import { TypeReflect } from './metadata/type';
 import { ProvidedInMetadata } from './metadata/meta';
-import { EMPTY, isArray, isFunction } from './utils/chk';
+import { isArray } from './utils/chk';
 import { Handler } from './handler';
 import { Action } from './action';
 import { InvocationContext, InvokeOption } from './context';
@@ -23,9 +23,6 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * none poincut for aop.
      */
     static ƿNPT = true;
-
-    private _destroyed = false;
-    protected _dsryCbs = new Set<DestroyCallback>();
 
     readonly scope?: InjectorScope;
     /**
@@ -301,67 +298,30 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @returns {Promise<Type[]>} async returnning array of class type.
      */
     abstract load(...modules: LoadType[]): Promise<Type[]>;
+
     /**
-     * has destoryed or not.
+     * injector has destoryed or not.
      */
-    get destroyed() {
-        return this._destroyed
-    }
+    abstract get destroyed(): boolean;
     /**
     * destroy this.
     */
-    destroy(): void | Promise<void> {
-        if (!this.lifecycle.destroyable) {
-            return this.lifecycle.dispose()
-                .finally(() => {
-                    this.tryDestroy();
-                    if (this.scope === 'root') {
-                        return this.parent?.destroy()
-                    }
-                })
-        } else {
-            this.tryDestroy();
-            if (this.scope === 'root') {
-                return this.parent?.destroy()
-            }
-        }
-
-    }
-
-    private tryDestroy() {
-        if (this._destroyed) return;
-        this._destroyed = true;
-        try {
-            this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy());
-            this.lifecycle?.runDestroy()
-        } finally {
-            this._dsryCbs.clear();
-            this.destroying()
-        }
-    }
-
+    abstract destroy(): void | Promise<void>;
     /**
      * destroy hook.
      */
-    onDestroy(): void;
+    abstract onDestroy(): void;
+     /**
+      * register callback on destroy.
+      * @param callback destroy callback
+      */
+    abstract onDestroy(callback: DestroyCallback): void;
     /**
-     * register callback on destroy.
-     * @param callback destroy callback
+     * unregister destroy callback.
+     * @param callback 
      */
-    onDestroy(callback: DestroyCallback): void;
-    onDestroy(callback?: DestroyCallback): void {
-        if (!callback) {
-            this.destroy()
-        } else {
-            this._dsryCbs.add(callback)
-        }
-    }
-
-    offDestroy(callback: DestroyCallback) {
-        this._dsryCbs.delete(callback)
-    }
-
-    protected abstract destroying(): void;
+    abstract offDestroy(callback: DestroyCallback): void;
+    
 
     protected abstract processRegister(platform: Platform, type: Type, reflect: TypeReflect, option?: TypeOption): void;
 

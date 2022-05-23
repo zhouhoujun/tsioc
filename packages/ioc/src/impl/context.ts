@@ -1,15 +1,14 @@
-import { ClassType, Type } from '../types';
+import { ClassType, EMPTY, EMPTY_OBJ, Type } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { forIn, remove, getClassName } from '../utils/lang';
-import {
-    EMPTY, EMPTY_OBJ, isNumber, isPrimitiveType, isArray, isClassType, isDefined,
-    isFunction, isPlainObject, isString, isTypeObject, isTypeReflect
-} from '../utils/chk';
+import { isNumber, isPrimitiveType, isArray, isClassType, isDefined, isFunction, isString } from '../utils/chk';
+import { isPlainObject, isTypeObject } from '../utils/obj'
 import { InjectFlags, Token } from '../tokens';
 import { Injector, isInjector } from '../injector';
 import { OperationArgumentResolver, Parameter, composeResolver, DEFAULT_RESOLVERS } from '../resolver';
 import { InvocationContext, InvocationOption, INVOCATION_CONTEXT_IMPL } from '../context';
 import { get } from '../metadata/refl';
+import { isTypeReflect } from '../metadata/type';
 import { ProviderType } from '../providers';
 import { Execption } from '../execption';
 

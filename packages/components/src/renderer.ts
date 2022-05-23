@@ -2,7 +2,7 @@ import { Abstract } from '@tsdi/ioc';
 import { ComponentRef } from './refs/component';
 
 /**
- * component renderer.  for application boot.
+ * component renderer. 
  */
 @Abstract()
 export abstract class Renderer<T = any> {

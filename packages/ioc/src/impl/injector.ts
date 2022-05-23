@@ -1,11 +1,8 @@
-import { LoadType, Modules, Type } from '../types';
-import { OnDestroy } from '../destroy';
+import { LoadType, Modules, Type, EMPTY } from '../types';
+import { DestroyCallback, OnDestroy } from '../destroy';
 import { cleanObj, deepForEach } from '../utils/lang';
 import { InjectFlags, Token } from '../tokens';
-import {
-    isArray, isDefined, isFunction, isPlainObject, isNumber, isTypeObject, isTypeReflect,
-    EMPTY, getClass, isString, isUndefined, isNil
-} from '../utils/chk';
+import { isArray, isDefined, isFunction, isNumber, getClass, isString, isUndefined, isNil } from '../utils/chk';
 import {
     ResolveOption, MethodType, FnType, InjectorScope, ResolverOption, RegisterOption, FactoryRecord,
     Platform, Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption
@@ -15,7 +12,7 @@ import { ModuleWithProviders, ProviderType, StaticProvider, StaticProviders } fr
 import { DesignContext } from '../actions/ctx';
 import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
-import { ModuleReflect, TypeReflect } from '../metadata/type';
+import { isTypeReflect, ModuleReflect, TypeReflect } from '../metadata/type';
 import { get } from '../metadata/refl';
 import { ReflectiveRef, ReflectiveResolver } from '../operation';
 import { DefaultModuleLoader } from './loader';
@@ -27,6 +24,7 @@ import { BASE_RESOLVERS } from './context';
 import { createContext, InvocationContext, InvokeOption } from '../context';
 import { DEFAULT_RESOLVERS } from '../resolver';
 import { Execption } from '../execption';
+import { isPlainObject, isTypeObject } from '../utils/obj';
 
 
 
@@ -35,6 +33,8 @@ import { Execption } from '../execption';
  */
 export class DefaultInjector extends Injector {
 
+    private _destroyed = false;
+    protected _dsryCbs = new Set<DestroyCallback>();
     protected _plat?: Platform;
     protected isStatic?: boolean;
     /**
@@ -488,6 +488,66 @@ export class DefaultInjector extends Injector {
         if (this.destroyed) {
             throw new Error('Injector has already been destroyed.')
         }
+    }
+
+    /**
+     * has destoryed or not.
+     */
+     get destroyed() {
+        return this._destroyed
+    }
+    /**
+    * destroy this.
+    */
+    destroy(): void | Promise<void> {
+        if (!this.lifecycle.destroyable) {
+            return this.lifecycle.dispose()
+                .finally(() => {
+                    this.tryDestroy();
+                    if (this.scope === 'root') {
+                        return this.parent?.destroy()
+                    }
+                })
+        } else {
+            this.tryDestroy();
+            if (this.scope === 'root') {
+                return this.parent?.destroy()
+            }
+        }
+
+    }
+
+    private tryDestroy() {
+        if (this._destroyed) return;
+        this._destroyed = true;
+        try {
+            this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy());
+            this.lifecycle?.runDestroy()
+        } finally {
+            this._dsryCbs.clear();
+            this.destroying()
+        }
+    }
+
+    /**
+     * destroy hook.
+     */
+    onDestroy(): void;
+    /**
+     * register callback on destroy.
+     * @param callback destroy callback
+     */
+    onDestroy(callback: DestroyCallback): void;
+    onDestroy(callback?: DestroyCallback): void {
+        if (!callback) {
+            this.destroy()
+        } else {
+            this._dsryCbs.add(callback)
+        }
+    }
+
+    offDestroy(callback: DestroyCallback) {
+        this._dsryCbs.delete(callback)
     }
 
 

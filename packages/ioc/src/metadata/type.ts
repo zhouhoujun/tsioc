@@ -1,4 +1,4 @@
-import { ClassType, DesignAnnotation, Type } from '../types';
+import { ClassType, DesignAnnotation, EMPTY, Type } from '../types';
 import { Handler } from '../handler';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { ModuleWithProviders, ProviderType } from '../providers';
@@ -10,7 +10,7 @@ import { InvocationContext, InvokeArguments } from '../context';
 import { Token } from '../tokens';
 import { ArgumentResolver, Parameter } from '../resolver';
 import { getClassAnnotation } from '../utils/util';
-import { EMPTY, isFunction, isPromise, isString } from '../utils/chk';
+import { isFunction, isPromise, isString } from '../utils/chk';
 import { forIn } from '../utils/lang';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 
@@ -144,6 +144,16 @@ export interface TypeReflect<T = any> extends ProvidedInMetadata, PatternMetadat
      */
     annotation?: any;
 
+}
+
+
+/**
+ * is type reflect.
+ * @param target 
+ * @returns 
+ */
+export function isTypeReflect(target: any): target is TypeReflect {
+    return target && isFunction(target.type) && target.type === target.class?.type
 }
 
 

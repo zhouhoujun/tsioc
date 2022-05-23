@@ -1,12 +1,14 @@
 import { ClassType, Type } from '../types';
 import { TypeReflect } from '../metadata/type';
-import { isFunction, isTypeObject } from '../utils/chk';
+import { isFunction } from '../utils/chk';
 import { Token } from '../tokens';
 import { get } from '../metadata/refl';
 import { ProviderType } from '../providers';
 import { createContext, InvocationContext, InvocationOption, InvokeArguments, InvokeOption } from '../context';
 import { ReflectiveRef, ReflectiveResolver, OperationInvoker } from '../operation';
 import { Injector, MethodType } from '../injector';
+import { isTypeObject } from '../utils/obj';
+import { DestroyCallback } from '../destroy';
 
 
 
@@ -88,7 +90,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         this._type = reflect.type as Type<T>;
         this.context = this.createContext(injector, options);
         this.context.setValue(ReflectiveRef, this);
-        injector.onDestroy(this)
+        this.context.onDestroy(this)
     }
 
     get type(): Type<T> {
@@ -192,12 +194,34 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         })
     }
 
-    onDestroy(): void | Promise<void> {
+    private _destroyed = false;
+    /**
+     * context destroyed or not.
+     */
+    get destroyed(): boolean {
+        return this._destroyed;
+    }
+    /**
+     * destroy this.
+     */
+    destroy(): void | Promise<void> {
+        if(this.destroyed) return;
         this._type = null!;
         this._tagPdrs = null!;
         (this as any).injector = null!;
         (this as any).reflect = null!;
-        return this.context?.destroy()
+        this._destroyed = true;
+        return this.context.destroy()
+    }
+    /**
+     * register callback on destroy.
+     * @param callback destroy callback
+     */
+    onDestroy(callback?: DestroyCallback): void | Promise<void> {
+        if (!callback) {
+            return this.destroy();
+        }
+        this.context.onDestroy(callback);
     }
 }
 

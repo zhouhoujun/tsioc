@@ -6,7 +6,6 @@ import { UnitTestRunner } from './runner/UnitTestRunner';
 import { RunAspect } from './aop/RunAspect';
 import { OldTestRunner } from './runner/OldTestRunner';
 import { DefaultTestReport } from './reports/TestReport';
-import { SuiteRunner } from './runner/SuiteRunner';
 
 
 @Module({
@@ -16,7 +15,6 @@ import { SuiteRunner } from './runner/SuiteRunner';
    providers: [
       UnitTestConfigureService,
       RunAspect,
-      SuiteRunner,
       OldTestRunner,
       UnitTestRunner,
       DefaultTestReport
@@ -32,7 +30,7 @@ export class UnitTest { }
  *
  * @export
  * @param {(string | Type | (string | Type)[])} src test source.
- * @param {(UnitTestConfigure} [config] test configure.
+ * @param {UnitTestConfigure} [config] test configure.
  * @param {...LoadType[]} deps custom set unit test dependencies.
  * @returns {Promise<any>}
  */

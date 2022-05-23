@@ -16,8 +16,11 @@ export * from './advices/Advicer';
 export * from './advices/Advices';
 
 
-export * from './Advisor';
 export * from './AdviceMatcher';
+export * from './Proceeding';
+export * from './Advisor';
+
+export * from './DefaultAdviceMatcher';
 export * from './AopModule';
 
 

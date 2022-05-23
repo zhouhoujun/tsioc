@@ -1,6 +1,5 @@
 import { ClassType } from './types';
 import { InjectFlags, Token } from './tokens';
-import { isFunction } from './utils/chk';
 import { Abstract } from './metadata/fac';
 import { DestroyCallback, Destroyable, OnDestroy } from './destroy';
 import { Injector } from './injector';
@@ -107,6 +106,9 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
      */
     abstract missingError(missings: Parameter[], type: ClassType, method: string): Error;
 
+    /**
+     * context destroyed or not.
+     */
     abstract get destroyed(): boolean;
     /**
      * destroy this.

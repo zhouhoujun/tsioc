@@ -2,8 +2,6 @@ export * from './type';
 export * from './EventEmitter';
 export * from './renderer';
 
-export * from './router';
-
 // metadata
 export * from './metadata/meta';
 export * from './metadata/decor';
@@ -20,6 +18,7 @@ export * from './compile/facade';
 export * from './directivies/for';
 export * from './directivies/if';
 export * from './directivies/outlet';
+export * from './directivies/plural';
 export * from './directivies/switch';
 
 // i18n

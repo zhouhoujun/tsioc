@@ -1,27 +1,44 @@
 import { Endpoint, Interceptor, ServerContext, TransportContext } from '@tsdi/core';
-import { Abstract, Injectable, isNumber } from '@tsdi/ioc';
-import { Logger, LoggerManager } from '@tsdi/logs';
+import { Abstract, Injectable, isNumber, Nullable } from '@tsdi/ioc';
+import { Level, Logger, LoggerManager, matchLevel } from '@tsdi/logs';
 import * as chalk from 'chalk';
 import { Observable, map } from 'rxjs';
 import { hrtime } from 'node:process';
 
 
+@Abstract()
+export abstract class LogInterceptorOptions {
+    abstract get level(): Level;
+}
+
+const defopts = {
+    level: 'debug'
+} as LogInterceptorOptions;
 
 @Injectable()
 export class LogInterceptor<TRequest = any, TResponse = any> implements Interceptor<TRequest, TResponse> {
 
-    constructor() { }
+    private options: LogInterceptorOptions;
+    constructor(@Nullable() options: LogInterceptorOptions) {
+        this.options = { ...defopts, ...options } as LogInterceptorOptions;
+    }
 
     intercept(req: TRequest, next: Endpoint<TRequest, TResponse>, ctx: ServerContext): Observable<TResponse> {
         const logger: Logger = ctx.target.logger ?? ctx.get(Logger) ?? ctx.get(LoggerManager).getLogger();
 
+        const level = this.options.level;
+        if (!matchLevel(logger.level, level)) {
+            return next.handle(req, ctx);
+        }
+
+        //todo console log and other. need to refactor formater.
         const start = hrtime();
         const method = chalk.cyan(ctx.method);
-        logger.info(incoming, method, ctx.url);
+        logger[level].call(logger, incoming, method, ctx.url);
         return next.handle(req, ctx)
             .pipe(
                 map(res => {
-                    logger.info(outgoing, method, ctx.url, ...ctx.resolve(ResponseStatusFormater).format(ctx, hrtime(start)));
+                    logger[level].call(logger, outgoing, method, ctx.url, ...ctx.resolve(ResponseStatusFormater).format(ctx, hrtime(start)));
                     return res
                 })
             )

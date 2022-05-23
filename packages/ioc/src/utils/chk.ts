@@ -1,5 +1,4 @@
 import { TypeReflect } from '../metadata/type';
-import { InjectToken } from '../tokens';
 import { AbstractType, AnnotationType, ClassType, Type } from '../types';
 import { clsNameExp } from './exps';
 import { getClassAnnotation } from './util';
@@ -18,16 +17,6 @@ export const type_bigint = 'bigint';
 export const type_obj = 'object';
 
 /**
- * empty array.
- */
-export const EMPTY: any[] = [];
-
-/**
- * empty object.
- */
-export const EMPTY_OBJ: Record<string, any> = {};
-
-/**
  * check target is function or not.
  *
  * @export
@@ -38,14 +27,7 @@ export function isFunction(target: any): target is Function {
     return typeof target === type_func
 }
 
-/**
- * is type reflect.
- * @param target 
- * @returns 
- */
-export function isTypeReflect(target: any): target is TypeReflect {
-    return target && isFunction(target.type) && target.type === target.class?.type
-}
+
 
 /**
  * is run in nodejs or not.
@@ -192,69 +174,10 @@ export function isObject(target: any): target is object {
 }
 
 
-const objTag = '[object Object]';
-const objName = 'Object';
-/**
- * is custom class type instance or not.
- *
- * @export
- * @param {*} target
- * @returns {boolean}
- */
-export function isTypeObject(target: any): boolean {
-    return toString.call(target) === objTag && target.constructor.name !== objName && !(target instanceof InjectToken)
-}
-
-
-/**
- * is target base object or not.
- * eg. {}, have not self constructor;
- *
- * Checks if `value` is a plain object, that is, an object created by the
- * `Object` constructor or one with a `[[Prototype]]` of `null`.
- * @export
- * @param {*} target
- * @returns {target is Promise<any>}
- */
-export function isPlainObject(target: any): target is Record<string, any> {
-    return toString.call(target) === objTag && target.constructor.name === objName
-}
-
-/**
- * is target base object or not.
- * eg. {}, have not self constructor;
- *
- * @deprecated use `isPlainObject` instead.
- */
-export const isBaseObject = isPlainObject;
-
-
 const hasOwnProperty = Object.hasOwnProperty;
 
 export function hasOwn(target: any, property: string) {
     return hasOwnProperty.call(target, property)
-}
-
-/**
- * is metadata object or not.
- *
- * @export
- * @param {*} target
- * @param {...(string|string[])[]} props
- * @returns {boolean}
- */
-export function isMetadataObject(target: any, ...props: (string | string[])[]): boolean {
-    if (!isPlainObject(target)) return false;
-    if (props.length) {
-        for (const n in target) {
-            if (props.some(ps => isString(ps) ? ps === n : ps.includes(n))) {
-                return true
-            }
-        }
-        return false
-    }
-
-    return true
 }
 
 const dateTag = '[object Date]';
@@ -419,3 +342,4 @@ export function getClass(target: any): Type {
     }
     return target.constructor || target.prototype.constructor
 }
+

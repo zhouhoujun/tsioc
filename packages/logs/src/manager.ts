@@ -1,4 +1,4 @@
-import { ArgumentError, EMPTY_OBJ, getToken, Inject, Injectable, Injector, isFunction, isString, Singleton, Token, Type } from '@tsdi/ioc';
+import { ArgumentError, EMPTY_OBJ, getToken, Inject, Injectable, Injector, isFunction, isString, Token, Type } from '@tsdi/ioc';
 import { Logger } from './logger';
 import { LogConfigure } from './LogConfigure';
 import { Level, Levels } from './Level';
@@ -127,12 +127,12 @@ class ConsoleLog implements Logger {
     readonly name: string | undefined;
     formatHeader = true;
 
-    constructor(name?: string, public level: Level = 'info') {
-        this.name = name
+    constructor(name?: string, public level: Level = 'debug') {
+        this.name = name;
     }
 
     protected machLevel(level: Levels): boolean {
-        return (Levels as any)[this.level] <= level
+        return (Levels as Record<Level, number>)[this.level] <= level
     }
 
     log(...args: any[]): void {
@@ -141,7 +141,7 @@ class ConsoleLog implements Logger {
 
     trace(...args: any[]): void {
         if (this.machLevel(Levels.trace)) {
-            console.debug(...args)
+            console.trace(...args)
         }
     }
     debug(...args: any[]): void {

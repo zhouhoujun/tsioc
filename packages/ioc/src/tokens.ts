@@ -1,5 +1,5 @@
 import { AbstractType, Type, ClassType } from './types';
-import { isClassType, isFunction, type_func, type_str, type_symbol } from './utils/chk';
+import { isFunction } from './utils/chk';
 import { getClassName } from './utils/lang';
 
 
@@ -69,29 +69,10 @@ export function tokenRef<T>(token: Token<T>, target: Token): Token<T> {
 }
 
 /**
- * check target is token or not.
- *
- * @export
- * @param {*} target
- * @returns {target is Token}
+ * is target instance of {@link InjectToken} or not.
+ * @param target 
+ * @returns 
  */
-export function isToken(target: any): target is Token {
-    if (!target) {
-        return false
-    }
-    const type = typeof target;
-    switch (type) {
-        case type_func:
-            return isClassType(target)
-        case type_str:
-            return true
-        case type_symbol:
-            return true
-    }
-
-    return isInjectToken(target)
-}
-
 export function isInjectToken<T>(target: any): target is InjectToken<T> {
     return target instanceof InjectToken
 }

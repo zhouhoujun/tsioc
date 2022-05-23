@@ -1,7 +1,8 @@
 // use core-js in browser.
 import { Type, Modules, ClassType } from '../types';
-import { getClass, isArray, isClass, isClassType, isFunction, isNil, isPlainObject } from './chk';
+import { getClass, isArray, isClass, isClassType, isFunction, isNil } from './chk';
 import { clsUglifyExp } from './exps';
+import { isPlainObject } from './obj';
 import { getClassAnnotation } from './util';
 
 /**

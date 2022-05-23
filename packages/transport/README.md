@@ -1,9 +1,9 @@
-# packaged @tsdi/boot
+# packaged @tsdi/transport
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
-`@tsdi/boot`： application bootstrap, via `@tsdi/core`.
+`@tsdi/transport`： application bootstrap, via `@tsdi/core`.
 
 old packages:
 [`@ts-ioc/core`](https://www.npmjs.com/package/@ts-ioc/core) 
@@ -12,7 +12,7 @@ old packages:
 
 ```shell
 
-npm install @tsdi/boot
+npm install @tsdi/transport
 
 // in browser
 npm install @tsdi/platform-browser

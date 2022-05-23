@@ -16,6 +16,16 @@ export function isLevel(target: any): target is Level {
 }
 
 /**
+ * match level.
+ * @param level 
+ * @param target 
+ * @returns 
+ */
+export function matchLevel(level: Level, target: Levels | Level) {
+    return (Levels as Record<Level, number>)[level] <= (isString(target) ? (Levels as Record<Level, number>)[target] : target);
+}
+
+/**
  * log levels
  *
  * @export
