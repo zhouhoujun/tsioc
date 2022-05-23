@@ -256,8 +256,6 @@ export const CtorBeforeAdviceAction = function (ctx: Joinpoint, next: () => void
 
 }
 
-const emptyFunc = function () { };
-
 export const CtorAfterAdviceAction = function (ctx: Joinpoint, next: () => void): void {
     if (ctx.state === JoinpointState.After) {
         const invoker = ctx.invokeHandle;

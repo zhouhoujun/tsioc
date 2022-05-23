@@ -71,7 +71,7 @@ export const MatchPointcutAction = function (ctx: RuntimeContext, next: () => vo
 
     const platform = ctx.injector.platform();
     const advisor = platform.getActionValue(Advisor);
-    advisor.register(ctx.type);
+    advisor.register(ctx.reflect);
 
     next()
 }

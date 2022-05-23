@@ -18,7 +18,9 @@ export class Advisor implements OnDestroy {
      * @type {Map<Type, Map<string, Advices>>}
      */
     advices: Map<Type, Map<string, Advices>>;
-
+    /**
+     * aspects.
+     */
     aspects: ReflectiveRef[];
 
     constructor(private platform: Platform) {
@@ -26,9 +28,10 @@ export class Advisor implements OnDestroy {
         this.aspects = []
     }
 
-    register(type: Type): void {
+    register(type: Type | TypeReflect): void {
         const matcher = this.platform.getAction(AdviceMatcher);
-        const typeRefl = refl.get<AopReflect>(type, true);
+        const typeRefl = isFunction(type) ? refl.get<AopReflect>(type, true) : type as AopReflect;
+        const ClassType = typeRefl.type as Type;
         this.aspects.forEach(aspect => {
             const aopRef = aspect.reflect as AopReflect;
             const matchpoints = matcher.match(aopRef, typeRefl, aopRef.advices);
@@ -36,7 +39,7 @@ export class Advisor implements OnDestroy {
                 const name = mpt.name;
                 const advice = mpt.advice;
 
-                let advices = this.getAdvices(type, name);
+                let advices = this.getAdvices(ClassType, name);
                 if (!advices) {
                     advices = {
                         Before: [],
@@ -46,7 +49,7 @@ export class Advisor implements OnDestroy {
                         AfterThrowing: [],
                         AfterReturning: []
                     } as Advices;
-                    this.setAdvices(type, name, advices)
+                    this.setAdvices(ClassType, name, advices)
                 }
 
                 const advicer = {
@@ -178,10 +181,6 @@ export class Advisor implements OnDestroy {
         map.set(key, advices)
     }
 
-    private hasAdvices(type: Type): boolean {
-        return this.advices.has(type)
-    }
-
     /**
      * get advices.
      *
@@ -192,16 +191,6 @@ export class Advisor implements OnDestroy {
         return this.advices.get(type)?.get(key) || null!
     }
 
-    // /**
-    //  * get advices.
-    //  *
-    //  * @param {string} key
-    //  * @returns {Advices}
-    //  */
-    // getAdviceMap(type: Type): Map<string, Advices> {
-    //     return this.advices.get(type)!
-    // }
-
     /**
      * add aspect.
      *
@@ -209,6 +198,7 @@ export class Advisor implements OnDestroy {
      * @param {Container} raiseContainer
      */
     add(aspect: ReflectiveRef): void {
+        if (this.aspects.some(a => a.type === aspect.type)) return;
         this.aspects.push(aspect)
     }
 
