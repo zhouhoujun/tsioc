@@ -42,8 +42,8 @@ export class QueryList<T> implements Iterable<T> {
   public readonly changes: Observable<any> = new EventEmitter();
 
   readonly length: number = 0;
-  readonly first: T;
-  readonly last: T;
+  readonly first!: T;
+  readonly last!: T;
 
   constructor() {
     // This function should be declared on the prototype, but doing so there will cause the class

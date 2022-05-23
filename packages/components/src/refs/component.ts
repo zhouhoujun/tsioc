@@ -1,9 +1,10 @@
-import { Abstract, Injector, lang, Type } from '@tsdi/ioc';
-import { RunnableFactory, BootstrapOption, RunnableFactoryResolver, ApplicationContext, RunnableRef } from '@tsdi/core';
+import { Abstract, Injector, Type } from '@tsdi/ioc';
+import { RunnableFactory, BootstrapOption, RunnableFactoryResolver, RunnableRef } from '@tsdi/core';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ElementRef } from './element';
 import { ViewRef } from './view';
 import { ComponentReflect } from '../reflect';
+import { ComponentState } from '../state';
 
 /**
  * Represents a component created by a `ComponentFactory`.
@@ -53,13 +54,12 @@ export abstract class ComponentRef<C = any> extends RunnableRef<C> {
      * @param context 
      * @returns 
      */
-    run(context?: ApplicationContext) {
-        if (context) {
-            this.onDestroy(() => {
-                lang.remove(context.runners.bootstraps, this);
-            });
-            context.runners.bootstraps.push(this);
+    run() {
+        const state = this.context.get(ComponentState);
+        if (state.componentTypes.indexOf(this.type) < 0) {
+            state.componentTypes.push(this.type);
         }
+        state.components.push(this);
         this.render();
     }
 

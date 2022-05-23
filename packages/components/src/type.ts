@@ -18,10 +18,13 @@ export enum RenderFlags {
     Update = 0b10
 }
 
+/**
+ * renderer style flags.
+ */
 export enum RendererStyleFlags {
     Important = 0b01,
     DashCase = 0b10
-  }
+}
 
 /**
  * Definition of what a template rendering function should look like for a component.
@@ -288,7 +291,7 @@ export type PipeTypesOrFactory = (() => PipeTypeList) | PipeTypeList;
  *
  * The function is necessary to be able to support forward declarations.
  */
- export type PipeDefListOrFactory = (() => PipeDefList)|PipeDefList;
+export type PipeDefListOrFactory = (() => PipeDefList) | PipeDefList;
 
 export type PipeDefList = PipeDef<any>[];
 

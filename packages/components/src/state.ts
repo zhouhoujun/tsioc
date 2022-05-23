@@ -6,7 +6,7 @@ import { InternalViewRef } from './refs/inter';
 import { ViewRef } from './refs/view';
 
 @Injectable()
-export abstract class ComponentState<T = any> implements OnDestroy {
+export class ComponentState<T = any> implements OnDestroy {
 
   constructor(public context: ApplicationContext) { }
 
