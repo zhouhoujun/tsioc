@@ -7,6 +7,11 @@ export abstract class EndpointContext extends DefaultInvocationContext {
      * host client or server. instance of  `TransportClient` or `TransportServer`
      */
     abstract get target(): any;
+
+    protected override clear(): void {
+        super.clear();
+        (this as any).target = null;
+    }
 }
 
 /**

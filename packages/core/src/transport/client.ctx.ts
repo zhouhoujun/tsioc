@@ -2,7 +2,9 @@ import { Injector, InvokeArguments } from '@tsdi/ioc';
 import { TransportClient } from './client';
 import { EndpointContext } from './context';
 
-
+/**
+ * clinet context.
+ */
 export class ClientContext extends EndpointContext {
     /**
      * instance of TransportClient.
@@ -14,9 +16,5 @@ export class ClientContext extends EndpointContext {
         this.target = target;
     }
 
-    protected override clear(): void {
-        super.clear();
-        (this as any).target = null;
-    }
 }
 
