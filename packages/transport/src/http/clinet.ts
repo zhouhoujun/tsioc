@@ -3239,8 +3239,9 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
             let onData: (chunk: string) => void;
             let onEnd: () => void;
             let status: number, statusText: string;
+            let method = req.method;
 
-            const onResponse = (hdrs: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader, flags: number) => {
+            const onResponse = async (hdrs: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader, flags: number) => {
                 let body: any;
                 let error: any;
                 let ok = false;
@@ -3257,7 +3258,111 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 status >= 200 && status < 300;
                 url = (hdrs[HTTP2_HEADER_AUTHORITY] as string ?? '' + hdrs[HTTP2_HEADER_PATH]) || req.url.trim();
 
-                // req.responseType
+                // HTTP fetch step 5
+                if (status && redirectStatus[status]) {
+                    // HTTP fetch step 5.2
+                    const location = headers.get(hdr.LOCATION);
+
+                    // HTTP fetch step 5.3
+                    let locationURL = null;
+                    try {
+                        locationURL = location === null ? null : new URL(location, req.url);
+                    } catch {
+                        // error here can only be invalid URL in Location: header
+                        // do not throw when options.redirect == manual
+                        // let the user extract the errorneous redirect URL
+                        if (rqstatus.redirect !== 'manual') {
+                            error = new HttpError(HttpStatusCode.BadRequest, `uri requested responds with an invalid redirect URL: ${location}`);
+                            ok = false;
+                        }
+                    }
+
+                    // HTTP fetch step 5.5
+                    switch (rqstatus.redirect) {
+                        case 'error':
+                            error = new HttpError(HttpStatusCode.BadRequest, `uri requested responds with a redirect, redirect mode is set to error: ${req.url}`);
+                            ok = false;
+                            break;
+                        case 'manual':
+                            // Nothing to do
+                            break;
+                        case 'follow': {
+                            // HTTP-redirect fetch step 2
+                            if (locationURL === null) {
+                                break;
+                            }
+
+                            // HTTP-redirect fetch step 5
+                            if (rqstatus.counter >= rqstatus.follow) {
+                                error = new HttpError(HttpStatusCode.BadRequest, `maximum redirect reached at: ${req.url}`);
+                                ok = false;
+                                break;
+                            }
+
+
+
+                            rqstatus.counter += 1;
+
+                            // HTTP-redirect fetch step 6 (counter increment)
+                            // Create a new Request object.
+
+                            let reqheaders = req.headers;
+                            let method = req.method;
+                            let body = req.body;
+
+                            // when forwarding sensitive headers like "Authorization",
+                            // "WWW-Authenticate", and "Cookie" to untrusted targets,
+                            // headers will be ignored when following a redirect to a domain
+                            // that is not a subdomain match or exact match of the initial domain.
+                            // For example, a redirect from "foo.com" to either "foo.com" or "sub.foo.com"
+                            // will forward the sensitive headers, but a redirect to "bar.com" will not.
+                            if (!isDomainOrSubdomain(req.url, locationURL)) {
+                                for (const name of ['authorization', 'www-authenticate', 'cookie', 'cookie2']) {
+                                    reqheaders = reqheaders.delete(name);
+                                }
+                            }
+
+                            // HTTP-redirect fetch step 9
+                            if (status !== 303 && req.body && req.body instanceof Readable) {
+                                error = new HttpError(HttpStatusCode.BadRequest, 'Cannot follow redirect with body being a readable stream');
+                                ok = false;
+                            }
+
+                            // HTTP-redirect fetch step 11
+                            if (status === 303 || ((status === 301 || status === 302) && method === 'POST')) {
+                                method = 'GET';
+                                body = undefined;
+                                reqheaders = reqheaders.delete('content-length');
+                            }
+
+                            // HTTP-redirect fetch step 14
+                            const responseReferrerPolicy = parseReferrerPolicyFromHeader(headers);
+                            if (responseReferrerPolicy) {
+                                reqheaders = reqheaders.set(hdr.REFERRER_POLICY, responseReferrerPolicy);
+                            }
+
+                            // HTTP-redirect fetch step 15
+
+                            req = req.clone({
+                                method,
+                                body,
+                                headers: reqheaders
+                            });
+                            (ctx.target as Http).send(req).subscribe(observer);
+                            return;
+                        }
+
+                        default:
+                            error = new TypeError(`Redirect option '${rqstatus.redirect}' is not a valid value of RequestRedirect`);
+                            ok = false;
+                            break;
+                    }
+                }
+
+
+                // HTTP-network fetch step 12.1.1.3
+                const codings = headers.get(hdr.CONTENT_ENCODING);
+
 
                 let strdata = '';
                 onData = (chunk: string) => {
@@ -3265,27 +3370,26 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 };
                 onEnd = () => {
                     body = strdata;
+                    if (ok) {
+                        observer.next(new HttpResponse({
+                            url,
+                            body,
+                            headers,
+                            status,
+                            statusText
+                        }));
+                        observer.complete();
+                    } else {
+                        observer.error(new HttpErrorResponse({
+                            url,
+                            error,
+                            status,
+                            statusText
+                        }));
+                    }
                 };
                 request.on(ev.DATA, onData);
                 request.on(ev.END, onEnd);
-
-                if(ok) {
-                    observer.next(new HttpResponse({
-                        url,
-                        body,
-                        headers,
-                        status,
-                        statusText
-                    }));
-                    observer.complete();
-                } else {
-                    observer.error(new HttpErrorResponse({
-                        url,
-                        error,
-                        status,
-                        statusText
-                    }));
-                }
             }
 
             const onError = (error: Error) => {
