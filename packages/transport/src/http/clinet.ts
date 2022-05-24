@@ -3169,9 +3169,7 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
             request.on(ev.ERROR, onError);
             request.on(ev.ABOUT, onError);
             request.on(ev.TIMEOUT, onError);
-            request.on(ev.END, () => {
-                observer.complete()
-            });
+    
             //todo send body.
             if (req.body === null) {
                 request.end();
@@ -3208,6 +3206,7 @@ const {
 } = http2.constants;
 
 const HTTP2_HEADER_STATUS = ':status';
+
 export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
     constructor(private option: HttpClientOptions) {
         super();
@@ -3239,7 +3238,6 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
             let onData: (chunk: string) => void;
             let onEnd: () => void;
             let status: number, statusText: string;
-            let method = req.method;
 
             const onResponse = async (hdrs: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader, flags: number) => {
                 let body: any;
