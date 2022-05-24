@@ -1,6 +1,6 @@
-import { Abstract, ArgumentError, EMPTY_OBJ, Inject, Injectable, InvocationContext, lang, Nullable, Token, tokenId, type_str } from '@tsdi/ioc';
+import { Abstract, ArgumentError, EMPTY_OBJ, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId, type_str } from '@tsdi/ioc';
 import { Interceptor, RequestMethod, TransportClient, EndpointBackend, OnDispose, InterceptorType, InterceptorInst, ClientOptions, EndpointContext } from '@tsdi/core';
-import { HttpRequest, HttpEvent, HttpHeaders, HttpParams, HttpParamsOptions, HttpResponse, HttpErrorResponse, HttpHeaderResponse, HttpStatusCode } from '@tsdi/common';
+import { HttpRequest, HttpEvent, HttpHeaders, HttpParams, HttpParamsOptions, HttpResponse, HttpErrorResponse, HttpHeaderResponse, HttpStatusCode, statusMessage } from '@tsdi/common';
 import { filter, concatMap, map, Observable, Observer, of, throwError } from 'rxjs';
 import * as zlib from 'node:zlib';
 import * as http from 'node:http';
@@ -165,6 +165,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
                 throw new Error(`Unreachable: unhandled observe type ${options.observe}}`)
         }
     }
+
     protected override buildRequest(first: string | HttpRequest<any>, options: RequestOptions): HttpRequest<any> {
         // First, check whether the primary argument is an instance of `HttpRequest`.
         if (first instanceof HttpRequest) {
@@ -3184,11 +3185,17 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                     request.emit(ev.CLOSE);
                 }
             }
-
         })
     }
 }
 
+
+const {
+    HTTP2_HEADER_PATH,
+    HTTP2_HEADER_STATUS,
+    HTTP2_HEADER_METHOD,
+    HTTP2_HEADER_ACCEPT
+} = http2.constants;
 
 export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
     constructor(private option: HttpClientOptions) {
@@ -3197,15 +3204,13 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
     handle(req: HttpRequest<any>, ctx: EndpointContext): Observable<HttpEvent<any>> {
         if (!this.option.authority) return throwError(() => new ArgumentError('http authority can not be empty.'))
         return new Observable((observer: Observer<HttpEvent<any>>) => {
-            const headers: Record<string, any> = {};
+            const reqHeaders: Record<string, any> = {};
             req.headers.forEach((name, values) => {
-                headers[name] = values
+                reqHeaders[name] = values
             });
 
             const onError = (err: Error) => observer.error(err);
-            const onData = (chunk: string) => {
-                // observer.next(chunk)
-            };
+
 
             let url = req.url.trim();
             if (abstUrlExp.test(url)) {
@@ -3213,17 +3218,30 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 url = url.substring(this.option.authority!.length)
             }
             const request = (ctx.target as Http).client!.request({
-                ...headers,
-                'accept': 'application/json, text/plain, */*',
-                method: req.method,
-                ':path': url
+                ...reqHeaders,
+                HTTP2_HEADER_ACCEPT: 'application/json, text/plain, */*',
+                HTTP2_HEADER_METHOD: req.method,
+                HTTP2_HEADER_PATH: url
             });
             request.setEncoding('utf8');
             let responsed: HttpEvent;
-
-            const onResponse = (headers: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader, flags: number) => {
-
+            let headers: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader;
+            let status: number, statusText: string;
+            const onResponse = (hdrs: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader, flags: number) => {
+                headers = hdrs;
+                status = hdrs[':status'] ?? 0;
+                statusText = statusMessage[status as HttpStatusCode] ?? 'OK';
             }
+
+            let strdata = '';
+            let buffData: Buffer;
+            const onData = (chunk: Buffer | string) => {
+                if (isString(chunk)) {
+                    strdata += chunk;
+                } else {
+
+                }
+            };
 
             request.on(ev.RESPONSE, onResponse);
             request.on(ev.DATA, onData);
