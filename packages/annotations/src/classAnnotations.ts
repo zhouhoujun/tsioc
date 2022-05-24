@@ -35,43 +35,43 @@ export function classAnnotations() {
 export function iocAnnotations(contents: string): string {
     // fix typescript '$' bug when create source file.
     contents = contents.replace(repl$, '"$"');
-    let sourceFile = ts.createSourceFile('cache.source.ts', contents, ts.ScriptTarget.Latest, true);
-    let eachChild = (node: ts.Node, annations?: any) => {
+    const sourceFile = ts.createSourceFile('cache.source.ts', contents, ts.ScriptTarget.Latest, true);
+    const eachChild = (node: ts.Node, annations?: any) => {
         if (ts.isClassDeclaration(node)) {
 
-            let className = node.name.text;
+            const className = node.name!.text;
             annations = {
                 name: className,
-                abstract: node.modifiers.some(s => s.getText() === 'abstract')
+                abstract: node.modifiers?.some(s => s.getText() === 'abstract')
             };
 
-            let oldclass = node.getText();
+            const oldclass = node.getText();
             if ((node.decorators && node.decorators.length) || (node.getChildren()?.some(n => n.decorators && n.decorators.length))) {
                 annations.params = {};
                 ts.forEachChild(node, (nd) => eachChild(nd, annations));
             }
 
-            let classAnnations = `
+            const classAnnations = `
                     static ƿAnn(): any {
                         return ${JSON.stringify(annations)};
                     }
                `;
-            let end = oldclass.replace(replEmpty, '').length - 1;
+            const end = oldclass.replace(replEmpty, '').length - 1;
             contents = contents.replace(oldclass, oldclass.substring(0, end) + classAnnations + oldclass.substring(end));
 
         } else if (ts.isConstructorDeclaration(node)) {
             if (annations && node.parameters.length) {
-                let paramNames = node.parameters.map(param => {
+                const paramNames = node.parameters.map(param => {
                     return param.name.getText();
                 });
                 annations.params[constructorName] = paramNames;
             }
         } else if (ts.isMethodDeclaration(node)) {
-            if (annations && node.parameters.length) {
-                let paramNames = node.parameters.map(param => {
+            if (annations && node.decorators && node.decorators.length && node.parameters.length) {
+                const paramNames = node.parameters.map(param => {
                     return param.name.getText();
                 });
-                let method = node.name.getText();
+                const method = node.name.getText();
                 annations.params[method] = paramNames;
             }
         }

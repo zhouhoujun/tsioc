@@ -1,13 +1,17 @@
 import { Abstract, ArgumentError, EMPTY_OBJ, Inject, Injectable, InvocationContext, lang, Nullable, Token, tokenId, type_str } from '@tsdi/ioc';
-import { Interceptor, RequestMethod, TransportClient, EndpointBackend, OnDispose, CustomEndpoint, InterceptorType, InterceptorInst, ClientOptions, EndpointContext } from '@tsdi/core';
-import { HttpRequest, HttpEvent, HttpHeaders, HttpParams, HttpParamsOptions, HttpResponse } from '@tsdi/common';
-import { filter, concatMap, map, Observable, Observer, of } from 'rxjs';
+import { Interceptor, RequestMethod, TransportClient, EndpointBackend, OnDispose, InterceptorType, InterceptorInst, ClientOptions, EndpointContext } from '@tsdi/core';
+import { HttpRequest, HttpEvent, HttpHeaders, HttpParams, HttpParamsOptions, HttpResponse, HttpErrorResponse, HttpHeaderResponse, HttpStatusCode } from '@tsdi/common';
+import { filter, concatMap, map, Observable, Observer, of, throwError } from 'rxjs';
+import * as zlib from 'node:zlib';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import * as http2 from 'node:http2';
+import { PassThrough, pipeline, Readable } from 'node:stream';
 import { Socket } from 'node:net';
-import { TLSSocket } from 'node:tls';
-import { ev } from '../consts';
+import { TLSSocket, KeyObject } from 'node:tls';
+import { ev, hdr } from '../consts';
+import { HttpError } from './errors';
+import { redirectStatus } from './status';
 
 
 // export type HttpResponse = http
@@ -30,26 +34,30 @@ export abstract class HttpClientOptions implements ClientOptions<HttpRequest, Ht
     abstract get options(): HttpSessionOptions | undefined;
 }
 
+export type HttpHeadersType = HttpHeaders | { [header: string]: string | string[] } | http.OutgoingHttpHeaders;
 export interface HttpRequestOptions {
     body?: any;
     method?: RequestMethod | undefined;
-    headers?: any;
+    headers?: HttpHeadersType;
     params?: any;
     majorVersion?: number;
     observe?: 'body' | 'events' | 'response' | undefined;
     reportProgress?: boolean | undefined;
     responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | undefined;
-    withCredentials?: boolean | undefined;
 }
+
+export type HttpNodeOptions = http.RequestOptions & https.RequestOptions;
+
+export type RequestOptions = HttpRequestOptions & HttpNodeOptions;
 
 /**
  * http client for nodejs
  */
 @Injectable()
-export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOptions> implements OnDispose {
+export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions> implements OnDispose {
 
     private _backend?: EndpointBackend<HttpRequest, HttpEvent>;
-    private client?: http2.ClientHttp2Session;
+    private _client?: http2.ClientHttp2Session;
 
     constructor(
         @Inject() readonly context: InvocationContext,
@@ -59,99 +67,36 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
         this.option && this.initialize(this.option);
     }
 
+    get client() {
+        return this._client;
+    }
+
     protected getInterceptorsToken(): Token<InterceptorInst<HttpRequest<any>, HttpEvent<any>>[]> {
         return HTTP_INTERCEPTORS;
     }
 
     protected getBackend(): EndpointBackend<HttpRequest, HttpEvent> {
         if (!this._backend) {
-            this._backend = new CustomEndpoint((req, ctx) => {
-                return new Observable((observer: Observer<HttpEvent<any>>) => {
-                    const headers: Record<string, any> = {};
-                    req.headers.forEach((name, values) => {
-                        headers[name] = values
-                    });
-
-                    const onError = (err: Error) => observer.error(err);
-                    const onData = (chunk: string) => {
-                        // observer.next(chunk)
-                    };
-                    let onResponse: any;
-                    let request: http.ClientRequest | http2.ClientHttp2Stream;
-                    if (this.option?.authority && this.client) {
-                        let url = req.url.trim();
-                        if (abstUrlExp.test(url)) {
-                            if (!url.startsWith(this.option.authority)) throw new ArgumentError('Absolute url not start with authority.');
-                            url = url.substring(this.option.authority.length)
-                        }
-                        request = this.client.request({
-                            ...headers,
-                            'accept': 'application/json, text/plain, */*',
-                            method: req.method,
-                            ':path': url
-                        });
-                        request.setEncoding('utf8');
-                        onResponse = (headers: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader, flags: number) => {
-
-                        }
-
-                    } else {
-                        const option = {
-                            method: req.method,
-                            headers: {
-                                ...headers,
-                                'accept': 'application/json, text/plain, */*',
-                            }
-                        };
-                        request = secureExp.test(req.url) ? https.request(option) : http.request(option);
-                        onResponse = (respone: http.IncomingMessage) => {
-                            respone.headers;
-                        }
-                    }
-
-                    request.on(ev.RESPONSE, onResponse);
-                    request.on(ev.DATA, onData);
-                    request.on(ev.ERROR, onError);
-                    request.on(ev.ABOUT, onError);
-                    request.on(ev.TIMEOUT, onError);
-                    request.on(ev.END, () => {
-                        observer.complete()
-                    });
-                    //todo send body.
-                    if (req.body) {
-                        request.write(req.body)
-                    }
-
-                    request.end();
-
-                    return () => {
-                        request.off(ev.RESPONSE, onResponse);
-                        request.off(ev.DATA, onData);
-                        request.off(ev.ERROR, onError);
-                        request.off(ev.ABOUT, onError);
-                        request.off(ev.TIMEOUT, onError);
-                        if (!ctx.destroyed) {
-                            request.emit(ev.CLOSE);
-                        }
-                    }
-
-                })
-            })
+            this._backend = this._client ? new Http2Backend(this.option!) : new Http1Backend();
         }
         return this._backend!
     }
 
     protected override async connect(): Promise<void> {
         if (this.option?.authority) {
-            if (this.client && !this.client.closed) return
-            this.client = http2.connect(this.option.authority, this.option.options);
-            this.client.on(ev.ERROR, (err) => {
+            if (this._client && !this._client.closed) return;
+            this._client = http2.connect(this.option.authority, this.option.options);
+            this._client.on(ev.ERROR, (err) => {
                 this.logger.error(err)
-            })
+            });
+
+            const defer = lang.defer();
+            this._client.once(ev.CONNECT, () => defer.resolve());
+            await defer.promise;
         }
     }
 
-    protected override request(context: EndpointContext, first: string | HttpRequest<any>, options: HttpRequestOptions = EMPTY_OBJ): Observable<HttpEvent<any>> {
+    protected override request(context: EndpointContext, first: string | HttpRequest<any>, options: RequestOptions = EMPTY_OBJ): Observable<HttpEvent<any>> {
         const req = this.buildRequest(first, options);
 
         // Start with an Observable.of() the initial request, and run the handler (which
@@ -220,7 +165,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
                 throw new Error(`Unreachable: unhandled observe type ${options.observe}}`)
         }
     }
-    protected override buildRequest(first: string | HttpRequest<any>, options: HttpRequestOptions): HttpRequest<any> {
+    protected override buildRequest(first: string | HttpRequest<any>, options: RequestOptions): HttpRequest<any> {
         // First, check whether the primary argument is an instance of `HttpRequest`.
         if (first instanceof HttpRequest) {
             // It is. The other arguments must be undefined (per the signatures) and can be
@@ -237,7 +182,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
             if (options.headers instanceof HttpHeaders) {
                 headers = options.headers
             } else {
-                headers = new HttpHeaders(options.headers)
+                headers = new HttpHeaders(options.headers as Record<string, any>)
             }
 
             // Sort out parameters.
@@ -252,12 +197,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
 
             // Construct the request.
             return new HttpRequest(options.method ?? 'GET', url!, (options.body !== undefined ? options.body : null), {
+                ...options,
                 headers,
                 params,
                 reportProgress: options.reportProgress,
                 // By default, JSON is assumed to be returned for all calls.
-                responseType: options.responseType || 'json',
-                withCredentials: options.withCredentials,
+                responseType: options.responseType || 'json'
             })
         }
     }
@@ -272,13 +217,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return  An `Observable` of the response body as an `ArrayBuffer`.
      */
     delete(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
-        withCredentials?: boolean,
         body?: any | null,
     }): Observable<ArrayBuffer>;
 
@@ -293,13 +237,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response body as a `Blob`.
      */
     delete(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
-        withCredentials?: boolean,
+
         body?: any | null,
     }): Observable<Blob>;
 
@@ -313,13 +257,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with the response body of type string.
      */
     delete(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
-        withCredentials?: boolean,
+
         body?: any | null,
     }): Observable<string>;
 
@@ -334,12 +278,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with response body as an `ArrayBuffer`.
      */
     delete(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
-        withCredentials?: boolean,
+
         body?: any | null
     }): Observable<HttpEvent<ArrayBuffer>>;
 
@@ -354,12 +298,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * `Blob`.
      */
     delete(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
-        withCredentials?: boolean,
+
         body?: any | null,
     }): Observable<HttpEvent<Blob>>;
 
@@ -374,12 +318,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * body of type string.
      */
     delete(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
-        withCredentials?: boolean,
+
         body?: any | null,
     }): Observable<HttpEvent<string>>;
 
@@ -394,13 +338,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * type `Object`.
      */
     delete(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
         body?: any | null,
     }): Observable<HttpEvent<object>>;
 
@@ -415,13 +359,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * body in the requested type.
      */
     delete<T>(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | (string | number | boolean)[] },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
         body?: any | null,
     }): Observable<HttpEvent<T>>;
 
@@ -435,12 +379,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the full `HttpResponse`, with the response body as an `ArrayBuffer`.
      */
     delete(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
-        withCredentials?: boolean,
+
         body?: any | null,
     }): Observable<HttpResponse<ArrayBuffer>>;
 
@@ -454,12 +398,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the `HttpResponse`, with the response body of type `Blob`.
      */
     delete(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
-        withCredentials?: boolean,
+
         body?: any | null,
     }): Observable<HttpResponse<Blob>>;
 
@@ -473,12 +417,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the full `HttpResponse`, with the response body of type string.
      */
     delete(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
-        withCredentials?: boolean,
+
         body?: any | null,
     }): Observable<HttpResponse<string>>;
 
@@ -493,13 +437,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      *
      */
     delete(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
         body?: any | null,
     }): Observable<HttpResponse<object>>;
 
@@ -513,13 +457,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the `HttpResponse`, with the response body of the requested type.
      */
     delete<T>(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
         body?: any | null,
     }): Observable<HttpResponse<T>>;
 
@@ -533,14 +477,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with the response body of type `Object`.
      */
     delete(url: string, options?: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
         body?: any | null,
     }): Observable<object>;
 
@@ -554,14 +498,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the `HttpResponse`, with response body in the requested type.
      */
     delete<T>(url: string, options?: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
         body?: any | null,
     }): Observable<T>;
 
@@ -575,14 +519,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      *
      */
     delete(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
-        withCredentials?: boolean,
+
         body?: any | null,
     } = {}): Observable<any> {
         return this.send<any>(url, merge(options, 'DELETE'));
@@ -599,13 +543,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with the response body as an `ArrayBuffer`.
      */
     get(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
-        withCredentials?: boolean,
+
     }): Observable<ArrayBuffer>;
 
     /**
@@ -618,13 +562,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with the response body as a `Blob`.
      */
     get(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
-        withCredentials?: boolean,
+
     }): Observable<Blob>;
 
     /**
@@ -637,13 +581,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with the response body of type string.
      */
     get(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
-        withCredentials?: boolean,
+
     }): Observable<string>;
 
     /**
@@ -657,12 +601,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * body as an `ArrayBuffer`.
      */
     get(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
-        withCredentials?: boolean,
+
     }): Observable<HttpEvent<ArrayBuffer>>;
 
     /**
@@ -675,12 +619,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with the response body as a `Blob`.
      */
     get(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
-        withCredentials?: boolean,
+
     }): Observable<HttpEvent<Blob>>;
 
     /**
@@ -693,12 +637,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with the response body of type string.
      */
     get(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
-        withCredentials?: boolean,
+
     }): Observable<HttpEvent<string>>;
 
     /**
@@ -711,13 +655,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with the response body of type `Object`.
      */
     get(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
     }): Observable<HttpEvent<object>>;
 
     /**
@@ -730,13 +674,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with a response body in the requested type.
      */
     get<T>(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
     }): Observable<HttpEvent<T>>;
 
     /**
@@ -750,12 +694,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with the response body as an `ArrayBuffer`.
      */
     get(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
-        withCredentials?: boolean,
+
     }): Observable<HttpResponse<ArrayBuffer>>;
 
     /**
@@ -769,12 +713,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with the response body as a `Blob`.
      */
     get(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
-        withCredentials?: boolean,
+
     }): Observable<HttpResponse<Blob>>;
 
     /**
@@ -788,12 +732,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with the response body of type string.
      */
     get(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
-        withCredentials?: boolean,
+
     }): Observable<HttpResponse<string>>;
 
     /**
@@ -807,13 +751,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with the response body of type `Object`.
      */
     get(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
     }): Observable<HttpResponse<object>>;
 
     /**
@@ -827,13 +771,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with a response body in the requested type.
      */
     get<T>(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
     }): Observable<HttpResponse<T>>;
 
     /**
@@ -847,14 +791,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response body as a JSON object.
      */
     get(url: string, options?: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
     }): Observable<object>;
 
     /**
@@ -867,14 +811,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the `HttpResponse`, with a response body in the requested type.
      */
     get<T>(url: string, options?: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
     }): Observable<T>;
 
     /**
@@ -883,14 +827,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * details on the return type.
      */
     get(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
-        withCredentials?: boolean,
+
     } = {}): Observable<any> {
         return this.send<any>(url, merge(options, 'GET'))
     }
@@ -906,13 +850,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with the response body as an `ArrayBuffer`.
      */
     head(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
-        withCredentials?: boolean,
+
     }): Observable<ArrayBuffer>;
 
     /**
@@ -926,13 +870,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      */
 
     head(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
-        withCredentials?: boolean,
+
     }): Observable<Blob>;
 
     /**
@@ -945,13 +889,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with the response body of type string.
      */
     head(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
-        withCredentials?: boolean,
+
     }): Observable<string>;
 
     /**
@@ -965,12 +909,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with the response body as an `ArrayBuffer`.
      */
     head(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
-        withCredentials?: boolean,
+
     }): Observable<HttpEvent<ArrayBuffer>>;
 
     /**
@@ -984,12 +928,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with the response body as a `Blob`.
      */
     head(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
-        withCredentials?: boolean,
+
     }): Observable<HttpEvent<Blob>>;
 
     /**
@@ -1003,12 +947,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * string.
      */
     head(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
-        withCredentials?: boolean,
+
     }): Observable<HttpEvent<string>>;
 
     /**
@@ -1022,13 +966,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * type `Object`.
      */
     head(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
     }): Observable<HttpEvent<object>>;
 
     /**
@@ -1042,13 +986,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @param options The HTTP options to send with the request.
      */
     head<T>(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
     }): Observable<HttpEvent<T>>;
 
     /**
@@ -1062,12 +1006,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with the response body as an `ArrayBuffer`.
      */
     head(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
-        withCredentials?: boolean,
+
     }): Observable<HttpResponse<ArrayBuffer>>;
 
     /**
@@ -1081,12 +1025,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with the response body as a blob.
      */
     head(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
-        withCredentials?: boolean,
+
     }): Observable<HttpResponse<Blob>>;
 
     /**
@@ -1100,12 +1044,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with the response body of type string.
      */
     head(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
-        withCredentials?: boolean,
+
     }): Observable<HttpResponse<string>>;
 
     /**
@@ -1119,13 +1063,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with the response body of type `object`.
      */
     head(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
     }): Observable<HttpResponse<object>>;
 
     /**
@@ -1139,13 +1083,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with a response body of the requested type.
      */
     head<T>(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
     }): Observable<HttpResponse<T>>;
 
     /**
@@ -1158,14 +1102,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with the response body as a JSON object.
      */
     head(url: string, options?: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
     }): Observable<object>;
 
     /**
@@ -1179,14 +1123,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with a response body of the given type.
      */
     head<T>(url: string, options?: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
     }): Observable<T>;
 
     /**
@@ -1197,14 +1141,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * details on the return type.
      */
     head(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
-        withCredentials?: boolean,
+
     } = {}): Observable<any> {
         return this.send<any>(url, merge(options, 'HEAD'))
     }
@@ -1270,13 +1214,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with the response body as an `ArrayBuffer`.
      */
     options(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
-        withCredentials?: boolean,
+
     }): Observable<ArrayBuffer>;
 
     /**
@@ -1289,13 +1233,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with the response body as a `Blob`.
      */
     options(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
-        withCredentials?: boolean,
+
     }): Observable<Blob>;
 
     /**
@@ -1308,13 +1252,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with the response body of type string.
      */
     options(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
-        withCredentials?: boolean,
+
     }): Observable<string>;
 
     /**
@@ -1328,12 +1272,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with the response body as an `ArrayBuffer`.
      */
     options(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
-        withCredentials?: boolean,
+
     }): Observable<HttpEvent<ArrayBuffer>>;
 
     /**
@@ -1347,12 +1291,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with the response body as a `Blob`.
      */
     options(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
-        withCredentials?: boolean,
+
     }): Observable<HttpEvent<Blob>>;
 
     /**
@@ -1366,12 +1310,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with the response body of type string.
      */
     options(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
-        withCredentials?: boolean,
+
     }): Observable<HttpEvent<string>>;
 
     /**
@@ -1385,13 +1329,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * body of type `Object`.
      */
     options(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
     }): Observable<HttpEvent<object>>;
 
     /**
@@ -1405,13 +1349,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with a response body in the requested type.
      */
     options<T>(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
     }): Observable<HttpEvent<T>>;
 
     /**
@@ -1425,12 +1369,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with the response body as an `ArrayBuffer`.
      */
     options(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
-        withCredentials?: boolean,
+
     }): Observable<HttpResponse<ArrayBuffer>>;
 
     /**
@@ -1444,12 +1388,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with the response body as a `Blob`.
      */
     options(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
-        withCredentials?: boolean,
+
     }): Observable<HttpResponse<Blob>>;
 
     /**
@@ -1463,12 +1407,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with the response body of type string.
      */
     options(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
-        withCredentials?: boolean,
+
     }): Observable<HttpResponse<string>>;
 
     /**
@@ -1482,13 +1426,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with the response body of type `Object`.
      */
     options(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
     }): Observable<HttpResponse<object>>;
 
     /**
@@ -1502,13 +1446,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with a response body in the requested type.
      */
     options<T>(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
     }): Observable<HttpResponse<T>>;
 
     /**
@@ -1521,14 +1465,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with the response body as a JSON object.
      */
     options(url: string, options?: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
     }): Observable<object>;
 
     /**
@@ -1541,14 +1485,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the `HttpResponse`, with a response body of the given type.
      */
     options<T>(url: string, options?: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
     }): Observable<T>;
 
     /**
@@ -1559,14 +1503,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * details on the return type.
      */
     options(url: string, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
-        withCredentials?: boolean,
+
     } = {}): Observable<any> {
         return this.send<any>(url, merge(options, 'OPTIONS'))
     }
@@ -1582,13 +1526,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with the response body as an `ArrayBuffer`.
      */
     patch(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
-        withCredentials?: boolean,
+
     }): Observable<ArrayBuffer>;
 
     /**
@@ -1602,13 +1546,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with the response body as a `Blob`.
      */
     patch(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
-        withCredentials?: boolean,
+
     }): Observable<Blob>;
 
     /**
@@ -1622,13 +1566,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with a response body of type string.
      */
     patch(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
-        withCredentials?: boolean,
+
     }): Observable<string>;
 
     /**
@@ -1644,12 +1588,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      */
 
     patch(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
-        withCredentials?: boolean,
+
     }): Observable<HttpEvent<ArrayBuffer>>;
 
     /**
@@ -1664,12 +1608,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * response body as `Blob`.
      */
     patch(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
-        withCredentials?: boolean,
+
     }): Observable<HttpEvent<Blob>>;
 
     /**
@@ -1684,12 +1628,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * response body of type string.
      */
     patch(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
-        withCredentials?: boolean,
+
     }): Observable<HttpEvent<string>>;
 
     /**
@@ -1704,13 +1648,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with a response body of type `Object`.
      */
     patch(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
     }): Observable<HttpEvent<object>>;
 
     /**
@@ -1725,13 +1669,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with a response body in the requested type.
      */
     patch<T>(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
     }): Observable<HttpEvent<T>>;
 
     /**
@@ -1746,12 +1690,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with the response body as an `ArrayBuffer`.
      */
     patch(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
-        withCredentials?: boolean,
+
     }): Observable<HttpResponse<ArrayBuffer>>;
 
     /**
@@ -1766,12 +1710,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with the response body as a `Blob`.
      */
     patch(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
-        withCredentials?: boolean,
+
     }): Observable<HttpResponse<Blob>>;
 
     /**
@@ -1786,12 +1730,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with a response body of type string.
      */
     patch(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
-        withCredentials?: boolean,
+
     }): Observable<HttpResponse<string>>;
 
     /**
@@ -1806,13 +1750,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with a response body in the requested type.
      */
     patch(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
     }): Observable<HttpResponse<object>>;
 
     /**
@@ -1827,13 +1771,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with a response body in the given type.
      */
     patch<T>(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
     }): Observable<HttpResponse<T>>;
 
     /**
@@ -1847,14 +1791,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with the response body as a JSON object.
      */
     patch(url: string, body: any | null, options?: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
     }): Observable<object>;
 
     /**
@@ -1869,14 +1813,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with a response body in the given type.
      */
     patch<T>(url: string, body: any | null, options?: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
+
     }): Observable<T>;
 
     /**
@@ -1885,14 +1829,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * details on the return type.
      */
     patch(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeaders | { [header: string]: string | string[] } | http.OutgoingHttpHeaders,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
-        withCredentials?: boolean,
+
     } = {}): Observable<any> {
         return this.send<any>(url, merge(options, 'PATCH', body))
     }
@@ -1908,14 +1852,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with the response body as an `ArrayBuffer`.
      */
     post(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
-        reportProgress?: boolean, responseType: 'arraybuffer',
-        withCredentials?: boolean,
-    }): Observable<ArrayBuffer>;
+        reportProgress?: boolean,
+        responseType: 'arraybuffer',
+    } & HttpNodeOptions): Observable<ArrayBuffer>;
 
     /**
      * Constructs a `POST` request that interprets the body as a `Blob` and returns the
@@ -1928,14 +1872,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with the response body as a `Blob`.
      */
     post(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
-        reportProgress?: boolean, responseType: 'blob',
-        withCredentials?: boolean,
-    }): Observable<Blob>;
+        reportProgress?: boolean,
+        responseType: 'blob',
+    } & HttpNodeOptions): Observable<Blob>;
 
     /**
      * Constructs a `POST` request that interprets the body as a text string and
@@ -1948,14 +1892,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with a response body of type string.
      */
     post(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
-        reportProgress?: boolean, responseType: 'text',
-        withCredentials?: boolean,
-    }): Observable<string>;
+        reportProgress?: boolean,
+        responseType: 'text',
+    } & HttpNodeOptions): Observable<string>;
 
     /**
      * Constructs a `POST` request that interprets the body as an `ArrayBuffer` and
@@ -1969,13 +1913,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with the response body as an `ArrayBuffer`.
      */
     post(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
-        reportProgress?: boolean, responseType: 'arraybuffer',
-        withCredentials?: boolean,
-    }): Observable<HttpEvent<ArrayBuffer>>;
+        reportProgress?: boolean,
+        responseType: 'arraybuffer',
+    } & HttpNodeOptions): Observable<HttpEvent<ArrayBuffer>>;
 
     /**
      * Constructs a `POST` request that interprets the body as a `Blob`
@@ -1988,13 +1932,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of all `HttpEvent`s for the request, with the response body as `Blob`.
      */
     post(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
-        reportProgress?: boolean, responseType: 'blob',
-        withCredentials?: boolean,
-    }): Observable<HttpEvent<Blob>>;
+        reportProgress?: boolean,
+        responseType: 'blob',
+    } & HttpNodeOptions): Observable<HttpEvent<Blob>>;
 
     /**
      * Constructs a `POST` request that interprets the body as a text string and returns the full
@@ -2008,13 +1952,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with a response body of type string.
      */
     post(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
-        reportProgress?: boolean, responseType: 'text',
-        withCredentials?: boolean,
-    }): Observable<HttpEvent<string>>;
+        reportProgress?: boolean,
+        responseType: 'text',
+    } & HttpNodeOptions): Observable<HttpEvent<string>>;
 
     /**
      * Constructs a POST request that interprets the body as a JSON object and returns the full event
@@ -2028,14 +1972,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with a response body of type `Object`.
      */
     post(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
-    }): Observable<HttpEvent<object>>;
+    } & HttpNodeOptions): Observable<HttpEvent<object>>;
 
     /**
      * Constructs a POST request that interprets the body as a JSON object and returns the full event
@@ -2049,14 +1992,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with a response body in the requested type.
      */
     post<T>(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
-    }): Observable<HttpEvent<T>>;
+    } & HttpNodeOptions): Observable<HttpEvent<T>>;
 
     /**
      * Constructs a POST request that interprets the body as an `ArrayBuffer`
@@ -2070,13 +2012,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * `ArrayBuffer`.
      */
     post(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
-        reportProgress?: boolean, responseType: 'arraybuffer',
-        withCredentials?: boolean,
-    }): Observable<HttpResponse<ArrayBuffer>>;
+        reportProgress?: boolean,
+        responseType: 'arraybuffer',
+    } & HttpNodeOptions): Observable<HttpResponse<ArrayBuffer>>;
 
     /**
      * Constructs a `POST` request that interprets the body as a `Blob` and returns the full
@@ -2090,13 +2032,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with the response body as a `Blob`.
      */
     post(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
-        reportProgress?: boolean, responseType: 'blob',
-        withCredentials?: boolean,
-    }): Observable<HttpResponse<Blob>>;
+        reportProgress?: boolean,
+        responseType: 'blob',
+    } & HttpNodeOptions): Observable<HttpResponse<Blob>>;
 
     /**
      * Constructs a `POST` request that interprets the body as a text stream and returns
@@ -2110,13 +2052,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with a response body of type string.
      */
     post(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
-        reportProgress?: boolean, responseType: 'text',
-        withCredentials?: boolean,
-    }): Observable<HttpResponse<string>>;
+        reportProgress?: boolean,
+        responseType: 'text',
+    } & HttpNodeOptions): Observable<HttpResponse<string>>;
 
     /**
      * Constructs a `POST` request that interprets the body as a JSON object
@@ -2130,14 +2072,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * `Object`.
      */
     post(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
-    }): Observable<HttpResponse<object>>;
+    } & HttpNodeOptions): Observable<HttpResponse<object>>;
 
     /**
      * Constructs a `POST` request that interprets the body as a JSON object and returns the full
@@ -2152,14 +2093,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * requested type.
      */
     post<T>(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
-    }): Observable<HttpResponse<T>>;
+    } & HttpNodeOptions): Observable<HttpResponse<T>>;
 
     /**
      * Constructs a `POST` request that interprets the body as a
@@ -2172,15 +2112,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with the response body as a JSON object.
      */
     post(url: string, body: any | null, options?: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
-    }): Observable<object>;
+    } & HttpNodeOptions): Observable<object>;
 
     /**
      * Constructs a `POST` request that interprets the body as a JSON object
@@ -2194,15 +2133,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * requested type.
      */
     post<T>(url: string, body: any | null, options?: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
-    }): Observable<T>;
+    } & HttpNodeOptions): Observable<T>;
 
     /**
      * Constructs an observable that, when subscribed, causes the configured
@@ -2211,15 +2149,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * details on the return type.
      */
     post(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
-        withCredentials?: boolean,
-    } = {}): Observable<any> {
+    } & HttpNodeOptions = {}): Observable<any> {
         return this.send<any>(url, merge(options, 'POST', body))
     }
 
@@ -2234,14 +2171,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with the response body as an `ArrayBuffer`.
      */
     put(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
-        withCredentials?: boolean,
-    }): Observable<ArrayBuffer>;
+    } & HttpNodeOptions): Observable<ArrayBuffer>;
 
     /**
      * Constructs a `PUT` request that interprets the body as a `Blob` and returns
@@ -2254,14 +2190,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with the response body as a `Blob`.
      */
     put(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
-        withCredentials?: boolean,
-    }): Observable<Blob>;
+    } & HttpNodeOptions): Observable<Blob>;
 
     /**
      * Constructs a `PUT` request that interprets the body as a text string and
@@ -2274,14 +2209,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response, with a response body of type string.
      */
     put(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
-        withCredentials?: boolean,
-    }): Observable<string>;
+    } & HttpNodeOptions): Observable<string>;
 
     /**
      * Constructs a `PUT` request that interprets the body as an `ArrayBuffer` and
@@ -2295,13 +2229,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with the response body as an `ArrayBuffer`.
      */
     put(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
-        reportProgress?: boolean, responseType: 'arraybuffer',
-        withCredentials?: boolean,
-    }): Observable<HttpEvent<ArrayBuffer>>;
+        reportProgress?: boolean,
+        responseType: 'arraybuffer',
+    } & HttpNodeOptions): Observable<HttpEvent<ArrayBuffer>>;
 
     /**
      * Constructs a `PUT` request that interprets the body as a `Blob` and returns the full event
@@ -2315,13 +2249,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with the response body as a `Blob`.
      */
     put(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
-        withCredentials?: boolean,
-    }): Observable<HttpEvent<Blob>>;
+    } & HttpNodeOptions): Observable<HttpEvent<Blob>>;
 
     /**
      * Constructs a `PUT` request that interprets the body as a text string and returns the full event
@@ -2335,13 +2268,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * of type string.
      */
     put(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
-        reportProgress?: boolean, responseType: 'text',
-        withCredentials?: boolean,
-    }): Observable<HttpEvent<string>>;
+        reportProgress?: boolean,
+        responseType: 'text',
+    } & HttpNodeOptions): Observable<HttpEvent<string>>;
 
     /**
      * Constructs a `PUT` request that interprets the body as a JSON object and returns the full event
@@ -2355,14 +2288,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * type `Object`.
      */
     put(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
-    }): Observable<HttpEvent<object>>;
+    } & HttpNodeOptions): Observable<HttpEvent<object>>;
 
     /**
      * Constructs a `PUT` request that interprets the body as a JSON object and returns the
@@ -2376,14 +2308,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with a response body in the requested type.
      */
     put<T>(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
-    }): Observable<HttpEvent<T>>;
+    } & HttpNodeOptions): Observable<HttpEvent<T>>;
 
     /**
      * Constructs a `PUT` request that interprets the body as an
@@ -2397,13 +2328,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * `ArrayBuffer`.
      */
     put(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
-        reportProgress?: boolean, responseType: 'arraybuffer',
-        withCredentials?: boolean,
-    }): Observable<HttpResponse<ArrayBuffer>>;
+        reportProgress?: boolean,
+        responseType: 'arraybuffer',
+    } & HttpNodeOptions): Observable<HttpResponse<ArrayBuffer>>;
 
     /**
      * Constructs a `PUT` request that interprets the body as a `Blob` and returns the
@@ -2417,13 +2348,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with the response body as a `Blob`.
      */
     put(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
-        reportProgress?: boolean, responseType: 'blob',
-        withCredentials?: boolean,
-    }): Observable<HttpResponse<Blob>>;
+        reportProgress?: boolean,
+        responseType: 'blob',
+    } & HttpNodeOptions): Observable<HttpResponse<Blob>>;
 
     /**
      * Constructs a `PUT` request that interprets the body as a text stream and returns the
@@ -2437,13 +2368,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * string.
      */
     put(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
-        reportProgress?: boolean, responseType: 'text',
-        withCredentials?: boolean,
-    }): Observable<HttpResponse<string>>;
+        reportProgress?: boolean,
+        responseType: 'text',
+    } & HttpNodeOptions): Observable<HttpResponse<string>>;
 
     /**
      * Constructs a `PUT` request that interprets the body as a JSON object and returns the full HTTP
@@ -2457,14 +2388,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * of type 'Object`.
      */
     put(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
-    }): Observable<HttpResponse<object>>;
+    } & HttpNodeOptions): Observable<HttpResponse<object>>;
 
     /**
      * Constructs a `PUT` request that interprets the body as an instance of the requested type and
@@ -2478,14 +2408,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * with a response body in the requested type.
      */
     put<T>(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
-    }): Observable<HttpResponse<T>>;
+    } & HttpNodeOptions): Observable<HttpResponse<T>>;
 
     /**
      * Constructs a `PUT` request that interprets the body as a JSON object
@@ -2498,15 +2427,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the response as a JSON object.
      */
     put(url: string, body: any | null, options?: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
-    }): Observable<object>;
+    } & HttpNodeOptions): Observable<object>;
 
     /**
      * Constructs a `PUT` request that interprets the body as an instance of the requested type
@@ -2519,15 +2447,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * @return An `Observable` of the requested type.
      */
     put<T>(url: string, body: any | null, options?: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-        withCredentials?: boolean,
-    }): Observable<T>;
+    } & HttpNodeOptions): Observable<T>;
 
     /**
      * Constructs an observable that, when subscribed, causes the configured
@@ -2536,15 +2463,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      * See the individual overloads for details on the return type.
      */
     put(url: string, body: any | null, options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
-        withCredentials?: boolean,
-    } = {}): Observable<any> {
+    } & HttpNodeOptions = {}): Observable<any> {
         return this.send<any>(url, merge(options, 'PUT', body))
     }
 
@@ -2568,14 +2494,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
     send(url: string, options: {
         method?: string;
         body?: any,
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
-        withCredentials?: boolean,
-    }): Observable<ArrayBuffer>;
+    } & HttpNodeOptions): Observable<ArrayBuffer>;
 
     /**
      * Constructs a request that interprets the body as a blob and returns
@@ -2589,14 +2514,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
     send(url: string, options: {
         method?: string,
         body?: any,
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
-        reportProgress?: boolean, responseType: 'blob',
-        withCredentials?: boolean,
-    }): Observable<Blob>;
+        reportProgress?: boolean,
+        responseType: 'blob',
+    } & HttpNodeOptions): Observable<Blob>;
 
     /**
      * Constructs a request that interprets the body as a text string and
@@ -2610,14 +2535,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
     send(url: string, options: {
         method?: string,
         body?: any,
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
-        reportProgress?: boolean, responseType: 'text',
-        withCredentials?: boolean,
-    }): Observable<string>;
+        reportProgress?: boolean,
+        responseType: 'text',
+    } & HttpNodeOptions): Observable<string>;
 
     /**
      * Constructs a request that interprets the body as an `ArrayBuffer` and returns the
@@ -2632,14 +2557,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
     send(url: string, options: {
         method?: string,
         body?: any,
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         observe: 'events',
-        reportProgress?: boolean, responseType: 'arraybuffer',
-        withCredentials?: boolean,
-    }): Observable<HttpEvent<ArrayBuffer>>;
+        reportProgress?: boolean,
+        responseType: 'arraybuffer',
+    } & HttpNodeOptions): Observable<HttpEvent<ArrayBuffer>>;
 
     /**
      * Constructs a request that interprets the body as a `Blob` and returns
@@ -2654,13 +2579,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
     send(url: string, options: {
         method?: string,
         body?: any,
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
-        reportProgress?: boolean, responseType: 'blob',
-        withCredentials?: boolean,
-    }): Observable<HttpEvent<Blob>>;
+        reportProgress?: boolean,
+        responseType: 'blob',
+    } & HttpNodeOptions): Observable<HttpEvent<Blob>>;
 
     /**
      * Constructs a request which interprets the body as a text string and returns the full event
@@ -2675,13 +2600,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
     send(url: string, options: {
         method?: string,
         body?: any,
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: HttpHeadersType, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
-        reportProgress?: boolean, responseType: 'text',
-        withCredentials?: boolean,
-    }): Observable<HttpEvent<string>>;
+        reportProgress?: boolean,
+        responseType: 'text',
+    } & HttpNodeOptions): Observable<HttpEvent<string>>;
 
     /**
      * Constructs a request which interprets the body as a JSON object and returns the full event
@@ -2696,14 +2621,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
     send(url: string, options: {
         method?: string,
         body?: any,
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         reportProgress?: boolean, observe: 'events',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         responseType?: 'json',
-        withCredentials?: boolean,
-    }): Observable<HttpEvent<any>>;
+    } & HttpNodeOptions): Observable<HttpEvent<any>>;
 
     /**
      * Constructs a request which interprets the body as a JSON object and returns the full event
@@ -2718,14 +2642,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
     send<R>(url: string, options: {
         method?: string,
         body?: any,
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         reportProgress?: boolean, observe: 'events',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         responseType?: 'json',
-        withCredentials?: boolean,
-    }): Observable<HttpEvent<R>>;
+    } & HttpNodeOptions): Observable<HttpEvent<R>>;
 
     /**
      * Constructs a request which interprets the body as an `ArrayBuffer`
@@ -2739,13 +2662,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
     send(url: string, options: {
         method?: string,
         body?: any,
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
-        reportProgress?: boolean, responseType: 'arraybuffer',
-        withCredentials?: boolean,
-    }): Observable<HttpResponse<ArrayBuffer>>;
+        reportProgress?: boolean,
+        responseType: 'arraybuffer',
+    } & HttpNodeOptions): Observable<HttpResponse<ArrayBuffer>>;
 
     /**
      * Constructs a request which interprets the body as a `Blob` and returns the full `HttpResponse`.
@@ -2757,13 +2680,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
      */
     send(method: string, url: string, options: {
         body?: any,
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
-        reportProgress?: boolean, responseType: 'blob',
-        withCredentials?: boolean,
-    }): Observable<HttpResponse<Blob>>;
+        reportProgress?: boolean,
+        responseType: 'blob',
+    } & HttpNodeOptions): Observable<HttpResponse<Blob>>;
 
     /**
      * Constructs a request which interprets the body as a text stream and returns the full
@@ -2777,13 +2700,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
     send(url: string, options: {
         method?: string,
         body?: any,
-        headers?: HttpHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: HttpHeadersType, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
-        withCredentials?: boolean,
-    }): Observable<HttpResponse<string>>;
+    } & HttpNodeOptions): Observable<HttpResponse<string>>;
 
     /**
      * Constructs a request which interprets the body as a JSON object and returns the full
@@ -2798,14 +2720,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
     send(url: string, options: {
         method?: string,
         body?: any,
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         reportProgress?: boolean, observe: 'response',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         responseType?: 'json',
-        withCredentials?: boolean,
-    }): Observable<HttpResponse<object>>;
+    } & HttpNodeOptions): Observable<HttpResponse<object>>;
 
     /**
      * Constructs a request which interprets the body as a JSON object and returns
@@ -2819,14 +2740,13 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
     send<R>(url: string, options: {
         method?: string,
         body?: any,
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         reportProgress?: boolean, observe: 'response',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         responseType?: 'json',
-        withCredentials?: boolean,
-    }): Observable<HttpResponse<R>>;
+    } & HttpNodeOptions): Observable<HttpResponse<R>>;
 
     /**
      * Constructs a request which interprets the body as a JSON object and returns the full
@@ -2840,15 +2760,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
     send(url: string, options?: {
         method?: string,
         body?: any,
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         responseType?: 'json',
         reportProgress?: boolean,
-        withCredentials?: boolean,
-    }): Observable<object>;
+    } & HttpNodeOptions): Observable<object>;
 
     /**
      * Constructs a request which interprets the body as a JSON object
@@ -2862,15 +2781,14 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
     send<R>(url: string, options?: {
         method?: string,
         body?: any,
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         responseType?: 'json',
         reportProgress?: boolean,
-        withCredentials?: boolean,
-    }): Observable<R>;
+    } & HttpNodeOptions): Observable<R>;
 
     /**
      * Constructs a request where response type and requested observable are not known statically.
@@ -2883,23 +2801,22 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
     send(url: string, options?: {
         method?: string,
         body?: any,
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         observe?: 'body' | 'events' | 'response',
         reportProgress?: boolean,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
-        withCredentials?: boolean,
-    }): Observable<any>;
+    } & HttpNodeOptions): Observable<any>;
     send(req: HttpRequest | string, options?: any): Observable<any> {
         return super.send(req as any, options)
     }
 
     async close(): Promise<void> {
-        if (this.client) {
+        if (this._client) {
             const defer = lang.defer();
-            this.client.close(() => defer.resolve());
+            this._client.close(() => defer.resolve());
             return defer.promise
         }
     }
@@ -2913,17 +2830,50 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpRequestOpt
 
 }
 
+export class RequestStauts {
+    public follow: number;
+    public counter: number;
+    public highWaterMark: number;
+    public insecureHTTPParser: boolean;
+    public referrerPolicy: ReferrerPolicy;
+    public redirect: 'manual' | 'error' | 'follow' | '';
+    readonly agent: http.Agent | boolean;
+    readonly compress: boolean;
+    constructor(init: {
+        compress?: boolean;
+        follow?: number;
+        counter?: number;
+        highWaterMark?: number;
+        insecureHTTPParser?: boolean;
+        referrerPolicy?: ReferrerPolicy;
+        redirect?: 'manual' | 'error' | 'follow' | '';
+        agent?: http.Agent | boolean;
+    } = EMPTY_OBJ) {
+        this.compress = init.compress ?? false;
+        this.follow = init.follow ?? 20;
+        this.counter = init.counter ?? 0;
+        this.highWaterMark = init.highWaterMark ?? 16384;
+        this.insecureHTTPParser = init.insecureHTTPParser ?? false;
+        this.redirect = init.redirect ?? '';
+        this.referrerPolicy = init.referrerPolicy ?? '';
+        this.agent = init.agent ?? false;
+
+    }
+}
+
+
+
 
 function merge<T>(
     options: {
-        headers?: HttpHeaders | { [header: string]: string | string[] },
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
-        withCredentials?: boolean,
+
     },
     method: string,
     body?: T | null): any {
@@ -2932,5 +2882,411 @@ function merge<T>(
         method,
         body
     }
+}
+
+export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
+    handle(req: HttpRequest<any>, ctx: EndpointContext): Observable<HttpEvent<any>> {
+        return new Observable((observer: Observer<HttpEvent<any>>) => {
+            const headers: Record<string, any> = {};
+            req.headers.forEach((name, values) => {
+                headers[name] = values
+            });
+
+            const option = {
+                method: req.method,
+                headers: {
+                    ...headers,
+                    'accept': 'application/json, text/plain, */*',
+                }
+            };
+            const request = secureExp.test(req.url) ? https.request(option) : http.request(option);
+
+            let responed: http.IncomingMessage;
+            let response: HttpEvent;
+            const onResponse = async (res: http.IncomingMessage) => {
+                responed = res;
+                let status = res.statusCode ?? 0;
+                const statusText = res.statusMessage;
+                const headers = new HttpHeaders(res.headers as Record<string, any>);
+                const url = headers.get('X-Request-URL') || req.url;
+
+                let body: any;
+                let error: any;
+
+                if (status !== HttpStatusCode.NoContent) {
+                    body = res.statusMessage;
+                }
+                if (status === 0) {
+                    status = body ? HttpStatusCode.Ok : 0
+                }
+
+                let ok = status >= 200 && status < 300;
+
+                const rqstatus = ctx.get(RequestStauts);
+
+                // HTTP fetch step 5
+                if (status && redirectStatus[status]) {
+                    // HTTP fetch step 5.2
+                    const location = headers.get(hdr.LOCATION);
+
+                    // HTTP fetch step 5.3
+                    let locationURL = null;
+                    try {
+                        locationURL = location === null ? null : new URL(location, req.url);
+                    } catch {
+                        // error here can only be invalid URL in Location: header
+                        // do not throw when options.redirect == manual
+                        // let the user extract the errorneous redirect URL
+                        if (rqstatus.redirect !== 'manual') {
+                            error = new HttpError(HttpStatusCode.BadRequest, `uri requested responds with an invalid redirect URL: ${location}`);
+                            ok = false;
+                        }
+                    }
+
+                    // HTTP fetch step 5.5
+                    switch (rqstatus.redirect) {
+                        case 'error':
+                            error = new HttpError(HttpStatusCode.BadRequest, `uri requested responds with a redirect, redirect mode is set to error: ${req.url}`);
+                            ok = false;
+                            break;
+                        case 'manual':
+                            // Nothing to do
+                            break;
+                        case 'follow': {
+                            // HTTP-redirect fetch step 2
+                            if (locationURL === null) {
+                                break;
+                            }
+
+                            // HTTP-redirect fetch step 5
+                            if (rqstatus.counter >= rqstatus.follow) {
+                                error = new HttpError(HttpStatusCode.BadRequest, `maximum redirect reached at: ${req.url}`);
+                                ok = false;
+                                break;
+                            }
+
+
+
+                            rqstatus.counter += 1;
+
+                            // HTTP-redirect fetch step 6 (counter increment)
+                            // Create a new Request object.
+
+                            let reqheaders = req.headers;
+                            let method = req.method;
+                            let body = req.body;
+
+                            // when forwarding sensitive headers like "Authorization",
+                            // "WWW-Authenticate", and "Cookie" to untrusted targets,
+                            // headers will be ignored when following a redirect to a domain
+                            // that is not a subdomain match or exact match of the initial domain.
+                            // For example, a redirect from "foo.com" to either "foo.com" or "sub.foo.com"
+                            // will forward the sensitive headers, but a redirect to "bar.com" will not.
+                            if (!isDomainOrSubdomain(req.url, locationURL)) {
+                                for (const name of ['authorization', 'www-authenticate', 'cookie', 'cookie2']) {
+                                    reqheaders = reqheaders.delete(name);
+                                }
+                            }
+
+                            // HTTP-redirect fetch step 9
+                            if (status !== 303 && req.body && req.body instanceof Readable) {
+                                error = new HttpError(HttpStatusCode.BadRequest, 'Cannot follow redirect with body being a readable stream');
+                                ok = false;
+                            }
+
+                            // HTTP-redirect fetch step 11
+                            if (status === 303 || ((status === 301 || status === 302) && request.method === 'POST')) {
+                                method = 'GET';
+                                body = undefined;
+                                reqheaders = reqheaders.delete('content-length');
+                            }
+
+                            // HTTP-redirect fetch step 14
+                            const responseReferrerPolicy = parseReferrerPolicyFromHeader(headers);
+                            if (responseReferrerPolicy) {
+                                reqheaders = reqheaders.set(hdr.REFERRER_POLICY, responseReferrerPolicy);
+                            }
+
+                            // HTTP-redirect fetch step 15
+
+                            req = req.clone({
+                                method,
+                                body,
+                                headers: reqheaders
+                            });
+                            (ctx.target as Http).send(req).subscribe(observer);
+                            return;
+                        }
+
+                        default:
+                            error = new TypeError(`Redirect option '${rqstatus.redirect}' is not a valid value of RequestRedirect`);
+                            ok = false;
+                            break;
+                    }
+                }
+
+
+                // HTTP-network fetch step 12.1.1.3
+                const codings = headers.get(hdr.CONTENT_ENCODING);
+
+                // HTTP-network fetch step 12.1.1.4: handle content codings
+                // in following scenarios we ignore compression support
+                // 1. compression support is disabled
+                // 2. HEAD request
+                // 3. no Content-Encoding header
+                // 4. no content response (204)
+                // 5. content not modified response (304)
+                if (!rqstatus.compress || request.method === 'HEAD' || codings === null || res.statusCode === 204 || res.statusCode === 304) {
+                    if (ok) {
+                        response = new HttpHeaderResponse({
+                            url,
+                            headers,
+                            status,
+                            statusText,
+                        });
+                        observer.next(response);
+                        observer.complete();
+                    } else {
+                        observer.error(new HttpErrorResponse({
+                            url,
+                            headers,
+                            status,
+                            statusText
+                        }));
+                    }
+                } else {
+                    body = pipeline(res, new PassThrough(), err => {
+                        if (err) {
+                            ok = false;
+                            error = err;
+                        }
+                    });
+
+                    // For Node v6+
+                    // Be less strict when decoding compressed responses, since sometimes
+                    // servers send slightly invalid responses that are still accepted
+                    // by common browsers.
+                    // Always using Z_SYNC_FLUSH is what cURL does.
+                    const zlibOptions = {
+                        flush: zlib.constants.Z_SYNC_FLUSH,
+                        finishFlush: zlib.constants.Z_SYNC_FLUSH
+                    };
+
+                    if (codings === 'gzip' || codings === 'x-gzip') { // For gzip
+                        body = pipeline(body, zlib.createGunzip(zlibOptions), err => {
+                            if (err) {
+                                ok = false;
+                                error = err;
+                            }
+                        });
+                    } else if (codings === 'deflate' || codings === 'x-deflate') { // For deflate
+                        // Handle the infamous raw deflate response from old servers
+                        // a hack for old IIS and Apache servers
+                        const raw = pipeline(res, new PassThrough(), err => {
+                            if (err) {
+                                ok = false;
+                                error = err;
+                            }
+                        });
+                        raw.once('data', chunk => {
+                            if ((chunk[0] & 0x0F) === 0x08) {
+                                body = pipeline(body, zlib.createInflate(), err => {
+                                    if (err) {
+                                        ok = false;
+                                        error = err;
+                                    }
+                                });
+                            } else {
+                                body = pipeline(body, zlib.createInflateRaw(), err => {
+                                    if (err) {
+                                        ok = false;
+                                        error = err;
+                                    }
+                                });
+                            }
+                        });
+
+                        const defer = lang.defer();
+                        raw.once('end', defer.resolve);
+                        await defer.promise;
+
+                    } else if (codings === 'br') { // For br
+                        body = pipeline(body, zlib.createBrotliDecompress(), err => {
+                            if (err) {
+                                ok = false;
+                                error = err;
+                            }
+                        })
+                    }
+
+                    if (ok) {
+                        observer.next(new HttpResponse({
+                            url,
+                            body,
+                            headers,
+                            status,
+                            statusText
+                        }));
+                        observer.complete();
+                    } else {
+                        observer.error(new HttpErrorResponse({
+                            url,
+                            error,
+                            headers,
+                            status,
+                            statusText
+                        }));
+                    }
+                }
+            };
+
+            const onError = (error: Error) => {
+                const res = new HttpErrorResponse({
+                    error,
+                    status: responed?.statusCode || 0,
+                    statusText: responed?.statusMessage || 'Unknown Error',
+                    url: responed.url || undefined,
+                });
+                observer.error(res)
+            };
+
+            // const onData = (chunk: string) => {
+            //     // observer.next(chunk)
+            // };
+
+            request.on(ev.RESPONSE, onResponse);
+            // request.on(ev.DATA, onData);
+            request.on(ev.ERROR, onError);
+            request.on(ev.ABOUT, onError);
+            request.on(ev.TIMEOUT, onError);
+            request.on(ev.END, () => {
+                observer.complete()
+            });
+            //todo send body.
+            if (req.body === null) {
+                request.end();
+            } else {
+                pipeline(req.body, request);
+            }
+
+
+            return () => {
+                request.off(ev.RESPONSE, onResponse);
+                // request.off(ev.DATA, onData);
+                request.off(ev.ERROR, onError);
+                request.off(ev.ABOUT, onError);
+                request.off(ev.TIMEOUT, onError);
+                if (!ctx.destroyed) {
+                    observer.error(new HttpErrorResponse({
+                        status: 0,
+                        statusText: 'The operation was aborted.'
+                    }));
+                    request.emit(ev.CLOSE);
+                }
+            }
+
+        })
+    }
+}
+
+
+export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
+    constructor(private option: HttpClientOptions) {
+        super();
+    }
+    handle(req: HttpRequest<any>, ctx: EndpointContext): Observable<HttpEvent<any>> {
+        if (!this.option.authority) return throwError(() => new ArgumentError('http authority can not be empty.'))
+        return new Observable((observer: Observer<HttpEvent<any>>) => {
+            const headers: Record<string, any> = {};
+            req.headers.forEach((name, values) => {
+                headers[name] = values
+            });
+
+            const onError = (err: Error) => observer.error(err);
+            const onData = (chunk: string) => {
+                // observer.next(chunk)
+            };
+
+            let url = req.url.trim();
+            if (abstUrlExp.test(url)) {
+                if (!url.startsWith(this.option.authority!)) throw new ArgumentError('Absolute url not start with authority.');
+                url = url.substring(this.option.authority!.length)
+            }
+            const request = (ctx.target as Http).client!.request({
+                ...headers,
+                'accept': 'application/json, text/plain, */*',
+                method: req.method,
+                ':path': url
+            });
+            request.setEncoding('utf8');
+            let responsed: HttpEvent;
+
+            const onResponse = (headers: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader, flags: number) => {
+
+            }
+
+            request.on(ev.RESPONSE, onResponse);
+            request.on(ev.DATA, onData);
+            request.on(ev.ERROR, onError);
+            request.on(ev.ABOUT, onError);
+            request.on(ev.TIMEOUT, onError);
+            request.on(ev.END, () => {
+                observer.complete()
+            });
+
+            //todo send body.
+            if (req.body === null) {
+                request.end();
+            } else {
+                pipeline(req.body, request);
+            }
+
+
+            return () => {
+                request.off(ev.RESPONSE, onResponse);
+                request.off(ev.DATA, onData);
+                request.off(ev.ERROR, onError);
+                request.off(ev.ABOUT, onError);
+                request.off(ev.TIMEOUT, onError);
+                if (!ctx.destroyed) {
+                    observer.error(new HttpError(0, 'The operation was aborted.'));
+                    request.emit(ev.CLOSE);
+                }
+            }
+        })
+    }
+}
+
+
+const isDomainOrSubdomain = (destination: string | URL, original: string | URL) => {
+    const orig = new URL(original).hostname;
+    const dest = new URL(destination).hostname;
+
+    return orig === dest || orig.endsWith(`.${dest}`);
+}
+
+export const referPolicys = new Set([
+    '',
+    'no-referrer',
+    'no-referrer-when-downgrade',
+    'same-origin',
+    'origin',
+    'strict-origin',
+    'origin-when-cross-origin',
+    'strict-origin-when-cross-origin',
+    'unsafe-url'
+]);
+
+const splitReg = /[,\s]+/;
+
+export function parseReferrerPolicyFromHeader(headers: HttpHeaders) {
+    const policyTokens = (headers.get('referrer-policy') || '').split(splitReg);
+    let policy = '';
+    for (const token of policyTokens) {
+        if (token && referPolicys.has(token)) {
+            policy = token;
+        }
+    }
+    return policy;
 }
 

@@ -56,6 +56,8 @@ export namespace hdr {
 
     export const REFERRER = 'referrer';
 
+    export const REFERRER_POLICY =  'referrer-policy';
+
     export const LOCATION = 'location';
 
     export const CONTENT_DISPOSITION = 'content-disposition';
