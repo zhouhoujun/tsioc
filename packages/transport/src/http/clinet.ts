@@ -1,7 +1,7 @@
 import { Abstract, ArgumentError, EMPTY_OBJ, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId, type_str } from '@tsdi/ioc';
 import { Interceptor, RequestMethod, TransportClient, EndpointBackend, OnDispose, InterceptorType, InterceptorInst, ClientOptions, EndpointContext } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpHeaders, HttpParams, HttpParamsOptions, HttpResponse, HttpErrorResponse, HttpHeaderResponse, HttpStatusCode, statusMessage } from '@tsdi/common';
-import { filter, concatMap, map, Observable, Observer, of, throwError } from 'rxjs';
+import { filter, concatMap, map, Observable, Observer, of, throwError, iif } from 'rxjs';
 import * as zlib from 'node:zlib';
 import * as http from 'node:http';
 import * as https from 'node:https';
@@ -32,6 +32,7 @@ export abstract class HttpClientOptions implements ClientOptions<HttpRequest, Ht
     abstract get interceptors(): InterceptorType<HttpRequest, HttpEvent>[] | undefined;
     abstract get authority(): string | undefined;
     abstract get options(): HttpSessionOptions | undefined;
+    abstract get requestOptions(): http2.ClientSessionRequestOptions | undefined;
 }
 
 export type HttpHeadersType = HttpHeaders | { [header: string]: string | string[] } | http.OutgoingHttpHeaders;
@@ -50,6 +51,7 @@ export type HttpNodeOptions = http.RequestOptions & https.RequestOptions;
 
 export type RequestOptions = HttpRequestOptions & HttpNodeOptions;
 
+export const CLIENT_HTTP2SESSION = tokenId<http2.ClientHttp2Session>('CLIENT_HTTP2SESSION');
 /**
  * http client for nodejs
  */
@@ -98,6 +100,9 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
 
     protected override request(context: EndpointContext, first: string | HttpRequest<any>, options: RequestOptions = EMPTY_OBJ): Observable<HttpEvent<any>> {
         const req = this.buildRequest(first, options);
+        if (this.client) {
+            context.setValue(CLIENT_HTTP2SESSION, this.client);
+        }
 
         // Start with an Observable.of() the initial request, and run the handler (which
         // includes all interceptors) inside a concatMap(). This way, the handler runs
@@ -2893,14 +2898,18 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 headers[name] = values
             });
 
+
+            const ac = new AbortController();
             const option = {
                 method: req.method,
                 headers: {
                     ...headers,
                     'accept': 'application/json, text/plain, */*',
-                }
-            };
-            const request = secureExp.test(req.url) ? https.request(option) : http.request(option);
+                },
+                abort: ac.signal
+            } as HttpNodeOptions;
+
+            const request = secureExp.test(req.url) ? https.request(req.url, option) : http.request(req.url, option);
 
             let responed: http.IncomingMessage;
             let response: HttpEvent;
@@ -3172,6 +3181,7 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
 
 
             return () => {
+                ac.abort();
                 request.off(ev.RESPONSE, onResponse);
                 // request.off(ev.DATA, onData);
                 request.off(ev.ERROR, onError);
@@ -3191,66 +3201,107 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
 
 
 const {
+    HTTP2_HEADER_AUTHORITY,
     HTTP2_HEADER_PATH,
-    HTTP2_HEADER_STATUS,
     HTTP2_HEADER_METHOD,
     HTTP2_HEADER_ACCEPT
 } = http2.constants;
 
+const HTTP2_HEADER_STATUS = ':status';
 export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
     constructor(private option: HttpClientOptions) {
         super();
     }
     handle(req: HttpRequest<any>, ctx: EndpointContext): Observable<HttpEvent<any>> {
-        if (!this.option.authority) return throwError(() => new ArgumentError('http authority can not be empty.'))
+        if (!this.option.authority) return throwError(() => new ArgumentError('http authority can not be empty.'));
+        let url = req.url.trim();
+        if (abstUrlExp.test(url)) {
+            if (!url.startsWith(this.option.authority!)) {
+                return throwError(() => new ArgumentError('Absolute url not start with authority.'));
+            }
+            url = url.substring(this.option.authority!.length);
+        }
         return new Observable((observer: Observer<HttpEvent<any>>) => {
             const reqHeaders: Record<string, any> = {};
             req.headers.forEach((name, values) => {
                 reqHeaders[name] = values
             });
 
-            const onError = (err: Error) => observer.error(err);
-
-
-            let url = req.url.trim();
-            if (abstUrlExp.test(url)) {
-                if (!url.startsWith(this.option.authority!)) throw new ArgumentError('Absolute url not start with authority.');
-                url = url.substring(this.option.authority!.length)
-            }
-            const request = (ctx.target as Http).client!.request({
-                ...reqHeaders,
-                HTTP2_HEADER_ACCEPT: 'application/json, text/plain, */*',
-                HTTP2_HEADER_METHOD: req.method,
-                HTTP2_HEADER_PATH: url
-            });
+            reqHeaders[HTTP2_HEADER_ACCEPT] = 'application/json, text/plain, */*';
+            reqHeaders[HTTP2_HEADER_METHOD] = req.method;
+            reqHeaders[HTTP2_HEADER_PATH] = url;
+            const ac = new AbortController();
+            const request = ctx.get(CLIENT_HTTP2SESSION).request(reqHeaders, { ...this.option.requestOptions, signal: ac.signal } as http2.ClientSessionRequestOptions);
             request.setEncoding('utf8');
-            let responsed: HttpEvent;
-            let headers: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader;
+
+
+            const rqstatus = ctx.get(RequestStauts);
+            let onData: (chunk: string) => void;
+            let onEnd: () => void;
             let status: number, statusText: string;
+
             const onResponse = (hdrs: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader, flags: number) => {
-                headers = hdrs;
-                status = hdrs[':status'] ?? 0;
+                let body: any;
+                let error: any;
+                let ok = false;
+                const headers = new HttpHeaders(hdrs as Record<string, any>);
+                status = hdrs[HTTP2_HEADER_STATUS] ?? 0;
+
+                if (status === 0) {
+                    status = body ? HttpStatusCode.Ok : 0
+                }
                 statusText = statusMessage[status as HttpStatusCode] ?? 'OK';
+                if (status !== HttpStatusCode.NoContent) {
+                    body = statusText;
+                }
+                status >= 200 && status < 300;
+                url = (hdrs[HTTP2_HEADER_AUTHORITY] as string ?? '' + hdrs[HTTP2_HEADER_PATH]) || req.url.trim();
+
+                // req.responseType
+
+                let strdata = '';
+                onData = (chunk: string) => {
+                    strdata += chunk;
+                };
+                onEnd = () => {
+                    body = strdata;
+                };
+                request.on(ev.DATA, onData);
+                request.on(ev.END, onEnd);
+
+                if(ok) {
+                    observer.next(new HttpResponse({
+                        url,
+                        body,
+                        headers,
+                        status,
+                        statusText
+                    }));
+                    observer.complete();
+                } else {
+                    observer.error(new HttpErrorResponse({
+                        url,
+                        error,
+                        status,
+                        statusText
+                    }));
+                }
             }
 
-            let strdata = '';
-            let buffData: Buffer;
-            const onData = (chunk: Buffer | string) => {
-                if (isString(chunk)) {
-                    strdata += chunk;
-                } else {
-
-                }
+            const onError = (error: Error) => {
+                const res = new HttpErrorResponse({
+                    url,
+                    error,
+                    status: status || 0,
+                    statusText: statusText || 'Unknown Error',
+                });
+                observer.error(res)
             };
 
             request.on(ev.RESPONSE, onResponse);
-            request.on(ev.DATA, onData);
             request.on(ev.ERROR, onError);
             request.on(ev.ABOUT, onError);
             request.on(ev.TIMEOUT, onError);
-            request.on(ev.END, () => {
-                observer.complete()
-            });
 
             //todo send body.
             if (req.body === null) {
@@ -3261,8 +3312,10 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
 
 
             return () => {
+                ac.abort();
                 request.off(ev.RESPONSE, onResponse);
                 request.off(ev.DATA, onData);
+                request.off(ev.END, onEnd);
                 request.off(ev.ERROR, onError);
                 request.off(ev.ABOUT, onError);
                 request.off(ev.TIMEOUT, onError);
