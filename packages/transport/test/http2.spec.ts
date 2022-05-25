@@ -213,9 +213,11 @@ describe('http2 server, Http', () => {
         client = injector.resolve(Http, {
             provide: HttpClientOptions,
             useValue: {
-                key,
-                cert
-            }
+                authority: 'https://localhost:3000',
+                options: {
+                    ca: cert
+                }
+            } as HttpClientOptions 
         });
     });
 

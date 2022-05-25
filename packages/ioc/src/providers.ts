@@ -81,7 +81,7 @@ export interface ValueProvider<T = any> extends ProvideProvider<T> {
      *
      * @type {*}
      */
-    useValue: any;
+    useValue: T;
 }
 
 /**

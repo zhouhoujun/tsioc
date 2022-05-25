@@ -1,6 +1,6 @@
-import { Abstract, EMPTY_OBJ, Inject, Injectable, InvocationContext, isDefined, isString, isUndefined, lang, Nullable, Token, tokenId, type_str, type_undef } from '@tsdi/ioc';
+import { Abstract, ArgumentError, EMPTY_OBJ, Inject, Injectable, InvocationContext, isDefined, isString, isUndefined, lang, Nullable, Token, tokenId, type_str, type_undef } from '@tsdi/ioc';
 import { Interceptor, RequestMethod, TransportClient, EndpointBackend, OnDispose, InterceptorType, InterceptorInst, ClientOptions, EndpointContext, Endpoint } from '@tsdi/core';
-import { global, isBlob, isFormData, HttpRequest, HttpEvent, HttpHeaders, HttpParams, HttpParamsOptions, HttpResponse, HttpErrorResponse, HttpHeaderResponse, HttpStatusCode, statusMessage, isArrayBuffer } from '@tsdi/common';
+import { global, isBlob, isFormData, HttpRequest, HttpEvent, HttpHeaders, HttpParams, HttpParamsOptions, HttpResponse, HttpErrorResponse, HttpHeaderResponse, HttpStatusCode, statusMessage, isArrayBuffer, HttpJsonParseError } from '@tsdi/common';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { filter, concatMap, map, Observable, Observer, of } from 'rxjs';
 import * as zlib from 'node:zlib';
@@ -8,13 +8,16 @@ import * as http from 'node:http';
 import * as https from 'node:https';
 import * as http2 from 'node:http2';
 import { PassThrough, pipeline, Readable, Stream } from 'node:stream';
+import { promisify } from 'node:util';
 import { Socket } from 'node:net';
 import { TLSSocket, KeyObject } from 'node:tls';
 import { ev, hdr } from '../consts';
 import { HttpError } from './errors';
-import { redirectStatus } from './status';
+import { emptyStatus, redirectStatus } from './status';
 import { isBuffer } from '../utils';
 import * as NodeFormData from 'form-data';
+
+const pmPipeline = promisify(pipeline);
 
 if (typeof global.FormData === type_undef) {
     global.FormData = NodeFormData;
@@ -28,9 +31,6 @@ if (typeof global.FormData === type_undef) {
 export const HTTP_INTERCEPTORS = tokenId<Interceptor<HttpRequest, HttpEvent>[]>('HTTP_INTERCEPTORS');
 
 export type HttpSessionOptions = http2.ClientSessionOptions | http2.SecureClientSessionOptions;
-
-const abstUrlExp = /^http(s)?:/;
-const secureExp = /^https:/;
 
 export const HTTP_SESSIONOPTIONS = tokenId<HttpSessionOptions>('HTTP_SESSIONOPTIONS');
 
@@ -2899,13 +2899,11 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
 
             const request = secureExp.test(url) ? https.request(url, option) : http.request(url, option);
 
-
-            let response: HttpEvent;
             let status: number, statusText: string | undefined;
             let error: any;
             let ok = false;
 
-            const onResponse = (res: http.IncomingMessage) => {
+            const onResponse = async (res: http.IncomingMessage) => {
                 status = res.statusCode ?? 0;
                 statusText = res.statusMessage;
                 const headers = new HttpHeaders(res.headers as Record<string, any>);
@@ -3007,7 +3005,6 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                             }
 
                             // HTTP-redirect fetch step 15
-
                             req = req.clone({
                                 method,
                                 body,
@@ -3024,35 +3021,34 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                     }
                 }
 
-                if (status === HttpStatusCode.NoContent) {
-                    if (ok) {
-                        response = new HttpResponse({
-                            url,
-                            body,
-                            headers,
-                            status,
-                            statusText,
-                        });
-                        observer.next(response);
-                        observer.complete();
-                    } else {
-                        observer.error(new HttpErrorResponse({
-                            url,
-                            headers,
-                            status,
-                            statusText
-                        }));
-                    }
+                if (!ok) {
+                    observer.error(new HttpErrorResponse({
+                        url,
+                        error,
+                        status,
+                        statusText
+                    }));
                     return;
                 }
 
-                body = pipeline(res, new PassThrough(), err => {
+                if (emptyStatus[status]) {
+                    observer.next(new HttpHeaderResponse({
+                        url,
+                        headers,
+                        status,
+                        statusText
+                    }));
+                    observer.complete();
+                    return;
+                }
+
+
+                body = pipeline(res, new PassThrough(), (err) => {
                     if (err) {
-                        ok = false;
                         error = err;
+                        ok = false;
                     }
                 });
-
 
                 // HTTP-network fetch step 12.1.1.3
                 const codings = headers.get(hdr.CONTENT_ENCODING);
@@ -3064,26 +3060,8 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 // 3. no Content-Encoding header
                 // 4. no content response (204)
                 // 5. content not modified response (304)
-                if (!rqstatus.compress || request.method === 'HEAD' || codings === null || res.statusCode === 204 || res.statusCode === 304) {
-                    if (ok) {
-                        response = new HttpResponse({
-                            url,
-                            body,
-                            headers,
-                            status,
-                            statusText,
-                        });
-                        observer.next(response);
-                        observer.complete();
-                    } else {
-                        observer.error(new HttpErrorResponse({
-                            url,
-                            headers,
-                            status,
-                            statusText
-                        }));
-                    }
-                } else {
+
+                if (rqstatus.compress && request.method !== 'HEAD' && codings) {
                     // For Node v6+
                     // Be less strict when decoding compressed responses, since sometimes
                     // servers send slightly invalid responses that are still accepted
@@ -3094,91 +3072,115 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                         finishFlush: zlib.constants.Z_SYNC_FLUSH
                     };
 
-                    if (codings === 'gzip' || codings === 'x-gzip') { // For gzip
-                        body = pipeline(body, zlib.createGunzip(zlibOptions), err => {
-                            if (err) {
-                                ok = false;
-                                error = err;
-                            }
-                        });
-                    } else if (codings === 'deflate' || codings === 'x-deflate') { // For deflate
-                        // Handle the infamous raw deflate response from old servers
-                        // a hack for old IIS and Apache servers
-                        const raw = pipeline(res, new PassThrough(), err => {
-                            if (err) {
-                                ok = false;
-                                error = err;
-                            }
-                        });
-                        raw.once('data', chunk => {
-                            if ((chunk[0] & 0x0F) === 0x08) {
-                                body = pipeline(body, zlib.createInflate(), err => {
-                                    if (err) {
-                                        ok = false;
-                                        error = err;
-                                    }
-                                });
-                            } else {
-                                body = pipeline(body, zlib.createInflateRaw(), err => {
-                                    if (err) {
-                                        ok = false;
-                                        error = err;
-                                    }
-                                });
-                            }
-                        });
-
-                        const defer = lang.defer();
-                        raw.once('end', defer.resolve);
-                        return defer.promise
-                            .then(b => {
-                                if (ok) {
-                                    observer.next(new HttpResponse({
-                                        url,
-                                        body,
-                                        headers,
-                                        status,
-                                        statusText
-                                    }));
-                                    observer.complete();
+                    try {
+                        if (codings === 'gzip' || codings === 'x-gzip') { // For gzip
+                            const unzip = zlib.createGunzip(zlibOptions);
+                            await pmPipeline(body, unzip);
+                            body = unzip;
+                        } else if (codings === 'deflate' || codings === 'x-deflate') { // For deflate
+                            // Handle the infamous raw deflate response from old servers
+                            // a hack for old IIS and Apache servers
+                            const raw = new PassThrough();
+                            await pmPipeline(res, raw);
+                            const defer = lang.defer();
+                            raw.once(ev.DATA, chunk => {
+                                if ((chunk[0] & 0x0F) === 0x08) {
+                                    body = pipeline(body, zlib.createInflate(), err => {
+                                        if (err) {
+                                            defer.reject(err);
+                                        }
+                                    });
                                 } else {
-                                    observer.error(new HttpErrorResponse({
-                                        url,
-                                        error,
-                                        headers,
-                                        status,
-                                        statusText
-                                    }));
+                                    body = pipeline(body, zlib.createInflateRaw(), err => {
+                                        if (err) {
+                                            defer.reject(err);
+                                        }
+                                    });
                                 }
                             });
 
-                    } else if (codings === 'br') { // For br
-                        body = pipeline(body, zlib.createBrotliDecompress(), err => {
-                            if (err) {
-                                ok = false;
-                                error = err;
-                            }
-                        })
-                    }
+                            raw.once('end', defer.resolve);
 
-                    if (ok) {
-                        observer.next(new HttpResponse({
-                            url,
-                            body,
-                            headers,
-                            status,
-                            statusText
-                        }));
-                        observer.complete();
-                    } else {
-                        observer.error(new HttpErrorResponse({
-                            url,
-                            error,
-                            headers,
-                            status,
-                            statusText
-                        }));
+                            await defer.promise;
+
+                        } else if (codings === 'br') { // For br
+                            const unBr = zlib.createBrotliDecompress();
+                            await pmPipeline(body, unBr);
+                            body = unBr;
+                        }
+                    } catch (err) {
+                        ok = false;
+                        error = err;
                     }
+                }
+
+
+                let buffer: Buffer | undefined
+                try {
+                    buffer = await toBuffer(body);
+                } catch (err) {
+                    ok = false;
+                    error = err;
+                }
+                let originalBody: any;
+
+                if (buffer) {
+                    switch (req.responseType) {
+                        case 'json':
+                            // Save the original body, before attempting XSSI prefix stripping.
+                            body = new TextDecoder().decode(buffer);
+                            originalBody = body;
+                            try {
+                                body = body.replace(XSSI_PREFIX, '');
+                                // Attempt the parse. If it fails, a parse error should be delivered to the user.
+                                body = body !== '' ? JSON.parse(body) : null
+                            } catch (err) {
+                                // Since the JSON.parse failed, it's reasonable to assume this might not have been a
+                                // JSON response. Restore the original body (including any XSSI prefix) to deliver
+                                // a better error response.
+                                body = originalBody;
+
+                                // If this was an error request to begin with, leave it as a string, it probably
+                                // just isn't JSON. Otherwise, deliver the parsing error to the user.
+                                if (ok) {
+                                    // Even though the response status was 2xx, this is still an error.
+                                    ok = false;
+                                    // The parse error contains the text of the body that failed to parse.
+                                    error = { error: err, text: body } as HttpJsonParseError
+                                }
+                            }
+                            break;
+
+                        case 'arraybuffer':
+                            body = buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+                            break;
+                        case 'blob':
+                            body = new Blob([buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)], {
+                                type: res.headers[hdr.CONTENT_TYPE]
+                            });
+                            break;
+                        case 'text':
+                        default:
+                            body = new TextDecoder().decode(buffer);
+                    }
+                }
+                if (ok) {
+                    observer.next(new HttpResponse({
+                        url,
+                        body,
+                        headers,
+                        status,
+                        statusText
+                    }));
+                    observer.complete();
+                } else {
+                    observer.error(new HttpErrorResponse({
+                        url,
+                        error,
+                        headers,
+                        status,
+                        statusText
+                    }));
                 }
             };
 
@@ -3209,7 +3211,7 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 } else if (isBuffer(data)) {
                     defer.resolve(Readable.from(data));
                 } else if (isBlob(data)) {
-                    Promise.resolve(data.text())
+                    Promise.resolve(data.arrayBuffer())
                         .then(src => {
                             defer.resolve(Readable.from(Buffer.from(src)));
                         }, err => defer.reject);
@@ -3228,13 +3230,12 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                     defer.resolve(Readable.from(Buffer.from(String(data))));
                 }
 
-                defer.promise.then(stream => pipeline(stream, request, (err) => {
-                    if (err) throw err;
-                })).catch(err => {
-                    ok = false;
-                    error = err;
-                    onError(err);
-                });
+                defer.promise.then(stream => pmPipeline(stream, request))
+                    .catch(err => {
+                        ok = false;
+                        error = err;
+                        onError(err);
+                    });
             }
 
 
@@ -3414,60 +3415,86 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                             ok = false;
                             break;
                     }
-
-                    completed = true;
-                    if (ok) {
-                        observer.next(new HttpHeaderResponse({
-                            url,
-                            headers,
-                            status,
-                            statusText
-                        }));
-                        observer.complete();
-                    } else {
-                        observer.error(new HttpErrorResponse({
-                            url,
-                            error,
-                            status,
-                            statusText
-                        }));
-                    }
                 }
 
-                if (status === HttpStatusCode.NoContent) {
+                if (!ok) {
                     completed = true;
-                    if (ok) {
-                        observer.next(new HttpHeaderResponse({
-                            url,
-                            headers,
-                            status,
-                            statusText
-                        }));
-                        observer.complete();
-                    } else {
-                        observer.error(new HttpErrorResponse({
-                            url,
-                            error,
-                            status,
-                            statusText
-                        }));
-                    }
+                    observer.error(new HttpErrorResponse({
+                        url,
+                        error,
+                        status,
+                        statusText
+                    }));
+                    return
+                }
+
+                if (emptyStatus[status]) {
+                    completed = true;
+                    observer.next(new HttpHeaderResponse({
+                        url,
+                        headers,
+                        status,
+                        statusText
+                    }));
+                    observer.complete();
                     return;
                 }
 
                 // HTTP-network fetch step 12.1.1.3
                 const codings = headers.get(hdr.CONTENT_ENCODING);
-
                 let strdata = '';
                 onData = (chunk: string) => {
                     strdata += chunk;
                 };
                 onEnd = () => {
+                    completed = true;
+                    body = strdata;
                     if (status === 0) {
                         status = isDefined(body) ? HttpStatusCode.Ok : 0
                     }
-                    completed = true;
-                    body = strdata;
+                    let originalBody: any;
+                    let buffer: Buffer;
+                    switch (req.responseType) {
+                        case 'json':
+                            // Save the original body, before attempting XSSI prefix stripping.
+                            // body = new TextDecoder().decode(buffer);
+                            originalBody = body;
+                            try {
+                                body = body.replace(XSSI_PREFIX, '');
+                                // Attempt the parse. If it fails, a parse error should be delivered to the user.
+                                body = body !== '' ? JSON.parse(body) : null
+                            } catch (err) {
+                                // Since the JSON.parse failed, it's reasonable to assume this might not have been a
+                                // JSON response. Restore the original body (including any XSSI prefix) to deliver
+                                // a better error response.
+                                body = originalBody;
+
+                                // If this was an error request to begin with, leave it as a string, it probably
+                                // just isn't JSON. Otherwise, deliver the parsing error to the user.
+                                if (ok) {
+                                    // Even though the response status was 2xx, this is still an error.
+                                    ok = false;
+                                    // The parse error contains the text of the body that failed to parse.
+                                    error = { error: err, text: body } as HttpJsonParseError
+                                }
+                            }
+                            break;
+
+                        case 'arraybuffer':
+                            buffer = Buffer.from(body);
+                            body = buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+                            break;
+                        case 'blob':
+                            buffer = Buffer.from(body);
+                            body = new Blob([buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)], {
+                                type: headers.get(hdr.CONTENT_TYPE) as string
+                            });
+                            break;
+                        case 'text':
+                        default:
+                            break;
+                    }
+
                     if (ok) {
                         observer.next(new HttpResponse({
                             url,
@@ -3488,6 +3515,7 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 };
                 request.on(ev.DATA, onData);
                 request.on(ev.END, onEnd);
+
             }
 
             const onError = (error: Error) => {
@@ -3517,7 +3545,7 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 } else if (isBuffer(data)) {
                     defer.resolve(Readable.from(data));
                 } else if (isBlob(data)) {
-                    Promise.resolve(data.text())
+                    Promise.resolve(data.arrayBuffer())
                         .then(src => {
                             defer.resolve(Readable.from(Buffer.from(src)));
                         }, err => defer.reject);
@@ -3536,13 +3564,12 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                     defer.resolve(Readable.from(Buffer.from(String(data))));
                 }
 
-                defer.promise.then(stream => pipeline(stream, request, (err) => {
-                    if (err) throw err;
-                })).catch(err => {
-                    ok = false;
-                    error = err;
-                    onError(err);
-                });
+                defer.promise.then(stream => pmPipeline(stream, request))
+                    .catch(err => {
+                        ok = false;
+                        error = err;
+                        onError(err);
+                    });
             }
 
 
@@ -3564,6 +3591,32 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
         })
     }
 }
+
+async function toBuffer(body: PassThrough, limit = 0, url?: string) {
+    const data = [];
+    let bytes = 0;
+
+    for await (const chunk of body) {
+        if (limit > 0 && bytes + chunk.length > limit) {
+            const error = new TypeError(`content size at ${url} over limit: ${limit}`);
+            body.destroy(error);
+            throw error;
+        }
+        bytes += chunk.length;
+        data.push(chunk);
+    }
+
+    if (data.every(c => typeof c === 'string')) {
+        return Buffer.from(data.join(''));
+    }
+    return Buffer.concat(data, bytes);
+
+}
+
+
+const abstUrlExp = /^http(s)?:/;
+const secureExp = /^https:/;
+const XSSI_PREFIX = /^\)\]\}',?\n/;
 
 export class HttpBackend extends EndpointBackend<HttpRequest, HttpEvent> {
     constructor(private option: HttpClientOptions) {
@@ -3618,7 +3671,6 @@ export class NormlizePathInterceptor implements Interceptor<HttpRequest, HttpEve
     }
 
 }
-
 
 const isDomainOrSubdomain = (destination: string | URL, original: string | URL) => {
     const orig = new URL(original).hostname;
