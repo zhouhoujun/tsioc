@@ -222,9 +222,7 @@ describe('http1.1 server, Http', () => {
         expect(a[1]).toBeInstanceOf(DeviceAStartupHandle);
     });
 
-
-    it('msg work', async () => {
-
+    it('fetch json', async ()=> {
         const res: any = await lastValueFrom(client.get('510100_full.json')
         .pipe(
             catchError((err, ct) => {
@@ -234,6 +232,9 @@ describe('http1.1 server, Http', () => {
 
         expect(res).toBeDefined();
         expect(isArray(res.features)).toBeTruthy();
+    })
+
+    it('msg work', async () => {
 
         const rep = await lastValueFrom(client.send<any>('/hdevice', { method: 'POST', observe: 'response', body: { type: 'startup' } }));
 

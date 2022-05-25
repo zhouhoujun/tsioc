@@ -240,17 +240,23 @@ describe('HttpClient', () => {
     });
 
 
-    it('msg work', async () => {
+    it('fetch json', async ()=> {
 
         const client = ctx.resolve(HttpClient);
-
-        const res: any = await lastValueFrom(client.get('510100_full.json'));
+        const res: any = await lastValueFrom(client.get('510100_full.json')
+        .pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
 
         expect(res).toBeDefined();
         expect(isArray(res.features)).toBeTruthy();
+    })
 
+    it('msg work', async () => {
+        const client = ctx.resolve(HttpClient);
         const rep = await lastValueFrom(client.request<any>('POST', '/hdevice', { observe: 'response', body: { type: 'startup' } }));
-
         const device = rep.body['device'];
         const aState = rep.body['deviceA_state'];
         const bState = rep.body['deviceB_state'];

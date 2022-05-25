@@ -235,12 +235,20 @@ describe('http2 server, Http', () => {
     });
 
 
-    it('msg work', async () => {
-
-        const res: any = await lastValueFrom(client.get('510100_full.json'));
+    it('fetch json', async ()=> {
+        const res: any = await lastValueFrom(client.get('510100_full.json')
+        .pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
 
         expect(res).toBeDefined();
         expect(isArray(res.features)).toBeTruthy();
+    })
+
+
+    it('msg work', async () => {
 
         const rep = await lastValueFrom(client.send<any>('/hdevice', { method: 'POST', observe: 'response', body: { type: 'startup' } }));
 
