@@ -3209,12 +3209,8 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 }
 
                 defer.promise.then(stream => pipeline(stream, request, (err) => {
-                    if (err) {
-                        ok = false;
-                        error = err;
-                        onError(err);
-                    }
-                }), err => {
+                    if (err) throw err;
+                })).catch(err => {
                     ok = false;
                     error = err;
                     onError(err);
@@ -3509,12 +3505,8 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 }
 
                 defer.promise.then(stream => pipeline(stream, request, (err) => {
-                    if (err) {
-                        ok = false;
-                        error = err;
-                        onError(err);
-                    }
-                }), err => {
+                    if (err) throw err;
+                })).catch(err => {
                     ok = false;
                     error = err;
                     onError(err);
