@@ -365,7 +365,12 @@ describe('http2 server, Http', () => {
 
 
     it('response with Observable', async () => {
-        const r = await lastValueFrom(client.get('/device/status', { observe: 'response', responseType: 'text' }));
+        const r = await lastValueFrom(client.get('/device/status', { observe: 'response', responseType: 'text' })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
         expect(r.status).toEqual(200);
         expect(r.body).toEqual('working');
     })

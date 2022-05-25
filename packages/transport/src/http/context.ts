@@ -16,6 +16,7 @@ import { HttpError, InternalServerError } from './errors';
 import { HttpServer } from './server';
 
 
+const AUTHORITY = http2.constants?.HTTP2_HEADER_AUTHORITY ?? ':authority';
 
 export type HttpServRequest = http.IncomingMessage | http2.Http2ServerRequest;
 
@@ -206,7 +207,7 @@ export class HttpContext extends ServerContext<HttpServRequest, HttpServResponse
         const proxy = (this.target as HttpServer)?.proxy;
         let host = proxy && this.getHeader(hdr.X_FORWARDED_HOST);
         if (!host) {
-            if (this.request.httpVersionMajor >= 2) host = this.getHeader(hdr.AUTHORITY);
+            if (this.request.httpVersionMajor >= 2) host = this.getHeader(AUTHORITY);
             if (!host) host = this.getHeader(hdr.HOST);
         }
         if (!host || isNumber(host)) return '';
@@ -679,7 +680,9 @@ export class HttpContext extends ServerContext<HttpServRequest, HttpServResponse
     }
 
     set statusMessage(msg: string) {
-        this.response.statusMessage = msg
+        if (this.request.httpVersionMajor < 2) {
+            this.response.statusMessage = msg
+        }
     }
 
     /**

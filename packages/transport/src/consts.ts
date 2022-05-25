@@ -78,14 +78,15 @@ export namespace hdr {
      */
     export const HOST = 'host';
 
-    export const AUTHORITY = ':authority';
-
     export const ORIGIN = 'origin';
 
     export const USER_AGENT = 'user-agent';
 
 
     export const VARY = 'vary';
+
+    export const X_REQUEST_URL = 'X-Request-URL';
+
     export const X_FORWARDED_PROTO = 'x-forwarded-proto';
     /**
      * header x-forwarded-host

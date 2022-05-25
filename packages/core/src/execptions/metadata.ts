@@ -80,7 +80,8 @@ export const ExecptionHandler: ExecptionHandler = createDecorator('ExecptionHand
                                 context.status = value.statusCode;
                                 context.statusMessage = value.message
                             } else {
-                                ctx.resolve(TransportContext).statusMessage = String(value)
+                                context.status = 500;
+                                context.statusMessage = String(value)
                             }
                         })
                     } else {

@@ -1,5 +1,5 @@
 import { Injector, Injectable, lang, ArgumentError, MissingParameterError, tokenId, isArray } from '@tsdi/ioc';
-import { catchError, lastValueFrom, Observable, of, throwError } from 'rxjs';import {
+import { catchError, lastValueFrom, Observable, of, throwError } from 'rxjs'; import {
     Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module,
     TransportContext, LoggerModule, Middleware, Chain
 } from '@tsdi/core';
@@ -225,7 +225,12 @@ describe('http1.1 server, Http', () => {
 
     it('msg work', async () => {
 
-        const res: any = await lastValueFrom(client.get('510100_full.json'));
+        const res: any = await lastValueFrom(client.get('510100_full.json')
+        .pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
 
         expect(res).toBeDefined();
         expect(isArray(res.features)).toBeTruthy();
@@ -353,7 +358,12 @@ describe('http1.1 server, Http', () => {
 
 
     it('response with Observable', async () => {
-        const r = await lastValueFrom(client.get('/device/status', { observe: 'response', responseType: 'text' }));
+        const r = await lastValueFrom(client.get('/device/status', { observe: 'response', responseType: 'text' })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
         expect(r.status).toEqual(200);
         expect(r.body).toEqual('working');
     })

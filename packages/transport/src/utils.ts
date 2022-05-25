@@ -20,7 +20,6 @@ export function isJson(body: any) {
   return true
 }
 
-
 const htmlRegExp = /["'&<>]/;
 
 /**

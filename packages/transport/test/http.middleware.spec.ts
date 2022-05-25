@@ -55,9 +55,11 @@ describe('middleware', () => {
         const http = ctx.injector.resolve(Http, {
             provide: HttpClientOptions,
             useValue: {
-                key,
-                cert
-            }
+                authority: 'https://localhost:3000',
+                options: {
+                    ca: cert
+                }
+            } as HttpClientOptions
         });
 
         // has no parent.

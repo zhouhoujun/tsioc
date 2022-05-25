@@ -46,7 +46,7 @@ function mightHaveBody(method: string): boolean {
  *
  * In some execution environments ArrayBuffer is not defined.
  */
-function isArrayBuffer(value: any): value is ArrayBuffer {
+export function isArrayBuffer(value: any): value is ArrayBuffer {
     return typeof ArrayBuffer !== type_undef && value instanceof ArrayBuffer
 }
 
@@ -55,7 +55,7 @@ function isArrayBuffer(value: any): value is ArrayBuffer {
  *
  * In some execution environments Blob is not defined.
  */
-function isBlob(value: any): value is Blob {
+export function isBlob(value: any): value is Blob {
     return typeof Blob !== type_undef && value instanceof Blob
 }
 
@@ -64,7 +64,7 @@ function isBlob(value: any): value is Blob {
  *
  * In some execution environments FormData is not defined.
  */
-function isFormData(value: any): value is FormData {
+export function isFormData(value: any): value is FormData {
     return typeof FormData !== type_undef && value instanceof FormData
 }
 
@@ -73,7 +73,7 @@ function isFormData(value: any): value is FormData {
  *
  * In some execution environments URLSearchParams is not defined.
  */
-function isUrlSearchParams(value: any): value is URLSearchParams {
+export function isUrlSearchParams(value: any): value is URLSearchParams {
     return typeof URLSearchParams !== type_undef && value instanceof URLSearchParams
 }
 
