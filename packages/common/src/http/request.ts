@@ -65,7 +65,7 @@ export function isBlob(value: any): value is Blob {
  * In some execution environments FormData is not defined.
  */
 export function isFormData(value: any): value is FormData {
-    return typeof FormData !== type_undef && value instanceof FormData
+    return typeof global.FormData !== type_undef && value instanceof global.FormData
 }
 
 /**

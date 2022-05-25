@@ -112,6 +112,7 @@
     "content-disposition": "^0.5.4",
     "csrf": "^3.1.0",
     "domino": "^2.1.6",
+    "form-data": "^4.0.0",
     "kafkajs": "^1.15.0",
     "modbus-serial": "^8.0.5",
     "qs": "^6.10.3",

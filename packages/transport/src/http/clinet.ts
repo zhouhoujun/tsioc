@@ -1,6 +1,6 @@
-import { Abstract, EMPTY_OBJ, Inject, Injectable, InvocationContext, isDefined, isString, isUndefined, lang, Nullable, Token, tokenId, type_str } from '@tsdi/ioc';
+import { Abstract, EMPTY_OBJ, Inject, Injectable, InvocationContext, isDefined, isString, isUndefined, lang, Nullable, Token, tokenId, type_str, type_undef } from '@tsdi/ioc';
 import { Interceptor, RequestMethod, TransportClient, EndpointBackend, OnDispose, InterceptorType, InterceptorInst, ClientOptions, EndpointContext, Endpoint } from '@tsdi/core';
-import { isBlob, isFormData, HttpRequest, HttpEvent, HttpHeaders, HttpParams, HttpParamsOptions, HttpResponse, HttpErrorResponse, HttpHeaderResponse, HttpStatusCode, statusMessage, isArrayBuffer } from '@tsdi/common';
+import { global, isBlob, isFormData, HttpRequest, HttpEvent, HttpHeaders, HttpParams, HttpParamsOptions, HttpResponse, HttpErrorResponse, HttpHeaderResponse, HttpStatusCode, statusMessage, isArrayBuffer } from '@tsdi/common';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { filter, concatMap, map, Observable, Observer, of } from 'rxjs';
 import * as zlib from 'node:zlib';
@@ -14,6 +14,12 @@ import { ev, hdr } from '../consts';
 import { HttpError } from './errors';
 import { redirectStatus } from './status';
 import { isBuffer } from '../utils';
+import * as NodeFormData from 'form-data';
+
+if (typeof global.FormData === type_undef) {
+    global.FormData = NodeFormData;
+}
+
 
 // export type HttpResponse = http
 /**
@@ -2875,13 +2881,18 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 headers[name] = values
             });
 
+            if (!headers[hdr.CONTENT_TYPE]) {
+                const detectedType = req.detectContentTypeHeader();
+                headers[hdr.CONTENT_TYPE] = detectedType;
+            }
+
             const url = req.urlWithParams.trim();
             const ac = new AbortController();
             const option = {
                 method: req.method,
                 headers: {
-                    ...headers,
                     'accept': 'application/json, text/plain, */*',
+                    ...headers,
                 },
                 abort: ac.signal
             } as HttpNodeOptions;
@@ -3203,7 +3214,16 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                             defer.resolve(Readable.from(Buffer.from(src)));
                         }, err => defer.reject);
                 } else if (isFormData(data)) {
-                    // stream = Readable.from(data)
+                    let form: NodeFormData;
+                    if (data instanceof NodeFormData) {
+                        form = data;
+                    } else {
+                        form = new NodeFormData();
+                        data.forEach((v, k, parent) => {
+                            form.append(k, v);
+                        });
+                    }
+                    defer.resolve(Readable.from(form.getBuffer()));
                 } else {
                     defer.resolve(Readable.from(Buffer.from(String(data))));
                 }
@@ -3265,6 +3285,10 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 reqHeaders[name] = values
             });
 
+            if (!reqHeaders[hdr.CONTENT_TYPE]) {
+                const detectedType = req.detectContentTypeHeader();
+                reqHeaders[hdr.CONTENT_TYPE] = detectedType;
+            }
             reqHeaders[HTTP2_HEADER_ACCEPT] = 'application/json, text/plain, */*';
             reqHeaders[HTTP2_HEADER_METHOD] = req.method;
             reqHeaders[HTTP2_HEADER_PATH] = url;
@@ -3482,7 +3506,6 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
             request.on(ev.TIMEOUT, onError);
 
             //todo send body.
-            //todo send body.
             const data = req.serializeBody();
             if (data === null) {
                 request.end();
@@ -3499,7 +3522,16 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                             defer.resolve(Readable.from(Buffer.from(src)));
                         }, err => defer.reject);
                 } else if (isFormData(data)) {
-                    // stream = Readable.from(data)
+                    let form: NodeFormData;
+                    if (data instanceof NodeFormData) {
+                        form = data;
+                    } else {
+                        form = new NodeFormData();
+                        data.forEach((v, k, parent) => {
+                            form.append(k, v);
+                        });
+                    }
+                    defer.resolve(Readable.from(form.getBuffer()));
                 } else {
                     defer.resolve(Readable.from(Buffer.from(String(data))));
                 }
