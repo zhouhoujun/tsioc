@@ -1,4 +1,3 @@
-import { RequestPacket } from '@tsdi/core';
 import { type_obj } from '@tsdi/ioc';
 import { IClientPublishOptions } from 'mqtt';
 

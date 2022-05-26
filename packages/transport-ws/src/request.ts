@@ -1,13 +1,15 @@
-import { RequestBase, TransportContext } from '@tsdi/core';
-
+import { RequestBase } from '@tsdi/core';
 
 export class WsRequest<T = any> extends RequestBase<T> {
+
     
     constructor(readonly url: string, options?: any) {
         super()
     }
     
-
+    get isUpdate(): boolean {
+        throw new Error('Method not implemented.');
+    }
     get params(): Record<string, any> {
         throw new Error('Method not implemented.');
     }
@@ -19,7 +21,4 @@ export class WsRequest<T = any> extends RequestBase<T> {
         throw new Error('Method not implemented.');
     }
 
-    isUpdate(): boolean {
-        throw new Error('Method not implemented.');
-    }
 }

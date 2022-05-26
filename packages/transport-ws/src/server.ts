@@ -1,5 +1,5 @@
-import { EndpointBackend, Interceptor, MiddlewareSet, TransportContext, TransportServer } from '@tsdi/core';
-import { Inject, Injectable, InvocationContext, lang, tokenId } from '@tsdi/ioc';
+import { EndpointBackend, ExecptionFilter, Interceptor, InterceptorInst, MiddlewareInst, TransportContext, TransportServer } from '@tsdi/core';
+import { Inject, Injectable, InvocationContext, lang, Token, tokenId } from '@tsdi/ioc';
 import { Subscription } from 'rxjs';
 import { WebSocket, WebSocketServer, ServerOptions } from 'ws';
 import { WsRequest } from './request';
@@ -39,13 +39,23 @@ export class WsServer extends TransportServer<WsRequest, WsResponse>{
     getInterceptors(): Interceptor<any, any>[] {
         throw new Error('Method not implemented.');
     }
+    
+    getExecptionsToken(): Token<ExecptionFilter[]> {
+        throw new Error('Method not implemented.');
+    }
 
     protected createContext(request: WsRequest<any>, response: WsResponse<any>): TransportContext<any, any> {
         throw new Error('Method not implemented.');
     }
-    protected createMidderwareSet(): MiddlewareSet<TransportContext<any, any>> {
+
+    protected getInterceptorsToken(): Token<InterceptorInst<WsRequest<any>, WsResponse<any>>[]> {
         throw new Error('Method not implemented.');
     }
+
+    protected getMiddlewaresToken(): Token<MiddlewareInst<TransportContext<any, any>>[]> {
+        throw new Error('Method not implemented.');
+    }
+
     protected bindEvent(ctx: TransportContext<any, any>, cancel: Subscription): void {
         // server.once('connection', (ws) => {
         //     this.logger.info(ws.url, 'connected.');
@@ -56,9 +66,6 @@ export class WsServer extends TransportServer<WsRequest, WsResponse>{
 
         //     });
         // });
-    }
-    protected respond(res: WsResponse<any>, ctx: TransportContext<any, any>): Promise<any> {
-        throw new Error('Method not implemented.');
     }
 
 }

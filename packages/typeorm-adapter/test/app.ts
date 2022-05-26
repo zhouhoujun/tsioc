@@ -3,6 +3,8 @@ import { ServerModule } from '@tsdi/platform-server';
 import { HttpModule, HttpServer } from '@tsdi/transport';
 import { HttpClientModule } from '@tsdi/common';
 import { ServerHttpClientModule } from '@tsdi/platform-server-common';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { Connection } from 'typeorm';
 import { TypeOrmModule } from '../src';
 import { Role, User } from './models/models';
@@ -39,6 +41,8 @@ export const option = {
 } as ConnectionOptions;
 
 
+const key = fs.readFileSync(path.join(__dirname, './localhost-privkey.pem'));
+export const cert = fs.readFileSync(path.join(__dirname, './localhost-cert.pem'));
 
 @Module({
     // baseURL: __dirname,
@@ -125,6 +129,35 @@ export class MockBootLoadTest {
     bootstrap: HttpServer
 })
 export class MockTransBootTest {
+
+}
+
+@Module({
+    // baseURL: __dirname,
+    imports: [
+        ServerModule,
+        LoggerModule,
+        HttpModule.withOption({
+            majorVersion: 2,
+            options: {
+                key,
+                cert
+            }
+        }),
+        TransactionModule,
+        TypeOrmModule.withConnection({
+            ...option,
+            entities: ['./models/**/*.ts'],
+            repositories: ['./repositories/**/*.ts']
+        })
+    ],
+    providers: [
+        UserController,
+        RoleController
+    ],
+    bootstrap: HttpServer
+})
+export class Http2TransBootTest {
 
 }
 
