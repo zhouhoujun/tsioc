@@ -1,171 +1,12 @@
-import { Injector, Injectable, lang, ArgumentError, MissingParameterError, tokenId, isArray } from '@tsdi/ioc';
-import { catchError, lastValueFrom, Observable, of, throwError } from 'rxjs'; import {
-    Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module,
-    TransportContext, LoggerModule, Middleware, Chain
-} from '@tsdi/core';
+import { Injector, isArray } from '@tsdi/ioc';
+import { catchError, lastValueFrom, of } from 'rxjs';
+import { Application, ApplicationContext, Module, LoggerModule } from '@tsdi/core';
 import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 
-import { Http, HttpClientOptions, HttpModule, HttpServer } from '../src';
+import { Http, HttpModule, HttpServer } from '../src';
+import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
 
-
-
-@RouteMapping('/device')
-class DeviceController {
-
-    @RouteMapping('/init', 'POST')
-    req(name: string) {
-        console.log('DeviceController init:', name);
-        return { name };
-    }
-
-    @RouteMapping('/usage', 'POST')
-    age(id: string, @RequestBody('age', { pipe: 'int' }) year: number, @RequestBody({ pipe: 'date' }) createAt: Date) {
-        console.log('usage:', id, year, createAt);
-        return { id, year, createAt };
-    }
-
-    @RouteMapping('/usege/find', 'GET')
-    agela(@RequestParam('age', { pipe: 'int' }) limit: number) {
-        console.log('limit:', limit);
-        return limit;
-    }
-
-    @RouteMapping('/:age/used', 'GET')
-    resfulquery(@RequestPath('age', { pipe: 'int' }) age1: number) {
-        console.log('age1:', age1);
-        return age1;
-    }
-
-
-    @RouteMapping('/update', 'POST')
-    async update(version: string) {
-        // do smth.
-        console.log('update version:', version);
-        const defer = lang.defer();
-
-        setTimeout(() => {
-            defer.resolve(version);
-        }, 10);
-
-        return await defer.promise;
-    }
-
-
-    @RouteMapping('/status', 'GET')
-    getLastStatus() {
-        return of('working');
-    }
-
-
-    @Handle({ cmd: 'xxx' })
-    async subMessage() {
-
-    }
-
-    @Handle(/dd./)
-    async subMessage1() {
-
-    }
-
-
-
-
-}
-
-
-
-@Handle('/hdevice')
-class DeviceQueue implements Middleware {
-
-    async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
-
-        console.log('device msg start.');
-        ctx.setValue('device', 'device data')
-
-
-        console.log('device msg start.');
-        ctx.setValue('device', 'device data')
-        await new Chain(ctx.resolve(DEVICE_MIDDLEWARES)).invoke(ctx);
-        ctx.setValue('device', 'device next');
-
-        const device = ctx.get('device');
-        const deviceA_state = ctx.get('deviceA_state');
-        const deviceB_state = ctx.get('deviceB_state');
-
-        ctx.body = {
-            device,
-            deviceA_state,
-            deviceB_state
-        };
-
-        console.log('device sub msg done.');
-        return await next();
-    }
-}
-
-
-@Injectable()
-class DeviceStartupHandle implements Middleware {
-
-    invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
-
-        console.log('DeviceStartupHandle.', 'resp:', ctx.playload.type, 'req:', ctx.playload.type)
-        if (ctx.playload.type === 'startup') {
-            // todo sth.
-            const ret = ctx.injector.get(MyService).dosth();
-            ctx.setValue('deviceB_state', ret);
-        }
-        return next();
-    }
-}
-
-@Injectable()
-class DeviceAStartupHandle implements Middleware {
-
-    invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
-        console.log('DeviceAStartupHandle.', 'resp:', ctx.playload.type, 'req:', ctx.playload.type)
-        if (ctx.playload.type === 'startup') {
-            // todo sth.
-            const ret = ctx.get(MyService).dosth();
-            ctx.setValue('deviceA_state', ret);
-        }
-        return next();
-    }
-}
-
-export const DEVICE_MIDDLEWARES = tokenId<Middleware[]>('DEVICE_MIDDLEWARES');
-
-@Module({
-    providers: [
-        DeviceQueue,
-        { provide: DEVICE_MIDDLEWARES, useClass: DeviceStartupHandle, multi: true },
-        { provide: DEVICE_MIDDLEWARES, useClass: DeviceAStartupHandle, multi: true },
-
-    ]
-})
-class DeviceManageModule {
-
-}
-
-@Injectable()
-class MyService {
-    dosth() {
-        return 'startuped';
-    }
-}
-
-@Module({
-    providers: [
-        MyService,
-        DeviceAStartupHandle
-    ]
-})
-class DeviceAModule {
-
-}
 
 
 @Module({
@@ -222,13 +63,13 @@ describe('http1.1 server, Http', () => {
         expect(a[1]).toBeInstanceOf(DeviceAStartupHandle);
     });
 
-    it('fetch json', async ()=> {
+    it('fetch json', async () => {
         const res: any = await lastValueFrom(client.get('510100_full.json')
-        .pipe(
-            catchError((err, ct) => {
-                ctx.getLogger().error(err);
-                return of(err);
-            })));
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
 
         expect(res).toBeDefined();
         expect(isArray(res.features)).toBeTruthy();

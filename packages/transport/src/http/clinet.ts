@@ -2,12 +2,12 @@ import { Abstract, ArgumentError, EMPTY_OBJ, Inject, Injectable, InvocationConte
 import { Interceptor, RequestMethod, TransportClient, EndpointBackend, OnDispose, InterceptorType, InterceptorInst, ClientOptions, EndpointContext, Endpoint } from '@tsdi/core';
 import { global, isBlob, isFormData, HttpRequest, HttpEvent, HttpHeaders, HttpParams, HttpParamsOptions, HttpResponse, HttpErrorResponse, HttpHeaderResponse, HttpStatusCode, statusMessage, isArrayBuffer, HttpJsonParseError } from '@tsdi/common';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
-import { filter, concatMap, map, Observable, Observer, of } from 'rxjs';
+import { filter, concatMap, map, Observable, Observer, of, defer, mergeMap } from 'rxjs';
 import * as zlib from 'node:zlib';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import * as http2 from 'node:http2';
-import { PassThrough, pipeline, Readable, Stream } from 'node:stream';
+import { PassThrough, pipeline, Readable, Writable, PipelineSource } from 'node:stream';
 import { promisify } from 'node:util';
 import { Socket } from 'node:net';
 import { TLSSocket, KeyObject } from 'node:tls';
@@ -80,7 +80,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
 
         this.option = { ...defOpts, ...option } as HttpClientOptions;
         this.context.injector.setValue(HttpClientOptions, this.option);
-        this.option.interceptors?.push(NormlizePathInterceptor);
+        this.option.interceptors?.push(NormlizePathInterceptor, NormlizeBodyInterceptor);
         this.initialize(this.option);
     }
 
@@ -103,7 +103,6 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         if (this.option.authority) {
             if (this._client && !this._client.closed) return;
             this._client = http2.connect(this.option.authority, this.option.options);
-
             const defer = lang.defer();
             this._client.once(ev.ERROR, (err) => {
                 this.logger.error(err);
@@ -2882,8 +2881,7 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
             });
 
             if (!headers[hdr.CONTENT_TYPE]) {
-                const detectedType = req.detectContentTypeHeader();
-                headers[hdr.CONTENT_TYPE] = detectedType;
+                headers[hdr.CONTENT_TYPE] = req.detectContentTypeHeader();
             }
 
             const url = req.urlWithParams.trim();
@@ -2962,8 +2960,6 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                                 break;
                             }
 
-
-
                             rqstatus.counter += 1;
 
                             // HTTP-redirect fetch step 6 (counter increment)
@@ -3019,16 +3015,6 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                             ok = false;
                             break;
                     }
-                }
-
-                if (!ok) {
-                    observer.error(new HttpErrorResponse({
-                        url,
-                        error,
-                        status,
-                        statusText
-                    }));
-                    return;
                 }
 
                 if (emptyStatus[status]) {
@@ -3204,38 +3190,10 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
             if (data === null) {
                 request.end();
             } else {
-                const defer = lang.defer<Readable>();
-
-                if (isArrayBuffer(data)) {
-                    defer.resolve(Readable.from(Buffer.from(data)));
-                } else if (isBuffer(data)) {
-                    defer.resolve(Readable.from(data));
-                } else if (isBlob(data)) {
-                    Promise.resolve(data.arrayBuffer())
-                        .then(src => {
-                            defer.resolve(Readable.from(Buffer.from(src)));
-                        }, err => defer.reject);
-                } else if (isFormData(data)) {
-                    let form: NodeFormData;
-                    if (data instanceof NodeFormData) {
-                        form = data;
-                    } else {
-                        form = new NodeFormData();
-                        data.forEach((v, k, parent) => {
-                            form.append(k, v);
-                        });
-                    }
-                    defer.resolve(Readable.from(form.getBuffer()));
-                } else {
-                    defer.resolve(Readable.from(Buffer.from(String(data))));
-                }
-
-                defer.promise.then(stream => pmPipeline(stream, request))
-                    .catch(err => {
-                        ok = false;
-                        error = err;
-                        onError(err);
-                    });
+                sendbody(
+                    data,
+                    request,
+                    err => onError(err));
             }
 
 
@@ -3287,16 +3245,15 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
             });
 
             if (!reqHeaders[hdr.CONTENT_TYPE]) {
-                const detectedType = req.detectContentTypeHeader();
-                reqHeaders[hdr.CONTENT_TYPE] = detectedType;
+                reqHeaders[hdr.CONTENT_TYPE] = req.detectContentTypeHeader();
             }
             reqHeaders[HTTP2_HEADER_ACCEPT] = 'application/json, text/plain, */*';
             reqHeaders[HTTP2_HEADER_METHOD] = req.method;
             reqHeaders[HTTP2_HEADER_PATH] = url;
+
             const ac = new AbortController();
             const request = ctx.get(CLIENT_HTTP2SESSION).request(reqHeaders, { ...this.option.requestOptions, signal: ac.signal } as http2.ClientSessionRequestOptions);
             request.setEncoding('utf8');
-
 
             const rqstatus = ctx.get(RequestStauts) ?? {};
             let onData: (chunk: string) => void;
@@ -3307,7 +3264,7 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
             let error: any;
             let ok = false;
 
-            const onResponse = async (hdrs: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader, flags: number) => {
+            const onResponse = (hdrs: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader, flags: number) => {
                 let body: any;
                 const headers = new HttpHeaders(hdrs as Record<string, any>);
                 status = hdrs[HTTP2_HEADER_STATUS] ?? 0;
@@ -3417,16 +3374,16 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                     }
                 }
 
-                if (!ok) {
-                    completed = true;
-                    observer.error(new HttpErrorResponse({
-                        url,
-                        error,
-                        status,
-                        statusText
-                    }));
-                    return
-                }
+                // if (!ok) {
+                //     completed = true;
+                //     observer.error(new HttpErrorResponse({
+                //         url,
+                //         error,
+                //         status,
+                //         statusText
+                //     }));
+                //     return
+                // }
 
                 if (emptyStatus[status]) {
                     completed = true;
@@ -3507,7 +3464,7 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                     } else {
                         observer.error(new HttpErrorResponse({
                             url,
-                            error,
+                            error: error ?? body,
                             status,
                             statusText
                         }));
@@ -3538,43 +3495,14 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
             if (data === null) {
                 request.end();
             } else {
-                const defer = lang.defer<Readable>();
-
-                if (isArrayBuffer(data)) {
-                    defer.resolve(Readable.from(Buffer.from(data)));
-                } else if (isBuffer(data)) {
-                    defer.resolve(Readable.from(data));
-                } else if (isBlob(data)) {
-                    Promise.resolve(data.arrayBuffer())
-                        .then(src => {
-                            defer.resolve(Readable.from(Buffer.from(src)));
-                        }, err => defer.reject);
-                } else if (isFormData(data)) {
-                    let form: NodeFormData;
-                    if (data instanceof NodeFormData) {
-                        form = data;
-                    } else {
-                        form = new NodeFormData();
-                        data.forEach((v, k, parent) => {
-                            form.append(k, v);
-                        });
-                    }
-                    defer.resolve(Readable.from(form.getBuffer()));
-                } else {
-                    defer.resolve(Readable.from(Buffer.from(String(data))));
-                }
-
-                defer.promise.then(stream => pmPipeline(stream, request))
-                    .catch(err => {
-                        ok = false;
-                        error = err;
-                        onError(err);
-                    });
+                sendbody(
+                    data,
+                    request,
+                    err => onError(err));
             }
 
-
             return () => {
-                if (isUndefined(status) || !completed) {
+                if (isUndefined(status)) {
                     ac.abort();
                 }
                 request.off(ev.RESPONSE, onResponse);
@@ -3589,6 +3517,37 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 }
             }
         })
+    }
+}
+
+
+export async function sendbody(data: any, request: Writable, error: (err: any) => void): Promise<void> {
+    let source: PipelineSource<any>;
+    try {
+        if (isArrayBuffer(data)) {
+            source = Buffer.from(data);
+        } else if (isBuffer(data)) {
+            source = data;
+        } else if (isBlob(data)) {
+            const arrbuff = await data.arrayBuffer();
+            source = Buffer.from(arrbuff);
+        } else if (isFormData(data)) {
+            let form: NodeFormData;
+            if (data instanceof NodeFormData) {
+                form = data;
+            } else {
+                form = new NodeFormData();
+                data.forEach((v, k, parent) => {
+                    form.append(k, v);
+                });
+            }
+            source = form.getBuffer();
+        } else {
+            source = String(data);
+        }
+        await pmPipeline(source, request)
+    } catch (err) {
+        error(err);
     }
 }
 
@@ -3669,8 +3628,54 @@ export class NormlizePathInterceptor implements Interceptor<HttpRequest, HttpEve
         }
         return next.handle(req, context);
     }
-
 }
+
+@Injectable()
+export class NormlizeBodyInterceptor implements Interceptor<HttpRequest, HttpEvent> {
+
+    constructor() { }
+
+    intercept(req: HttpRequest<any>, next: Endpoint<HttpRequest<any>, HttpEvent<any>>, context: EndpointContext): Observable<HttpEvent<any>> {
+        let body = req.serializeBody();
+        if (body == null) {
+            return next.handle(req, context);
+        }
+        return defer(async () => {
+            let headers = req.headers;
+            const contentType = req.detectContentTypeHeader();
+            if (!headers.has(hdr.CONTENT_TYPE) && contentType) {
+                headers = headers.set(hdr.CONTENT_TYPE, contentType);
+            }
+            if (!headers.has(hdr.CONTENT_LENGTH)) {
+                if (isBlob(body)) {
+                    const arrbuff = await body.arrayBuffer();
+                    body = Buffer.from(arrbuff);
+                } else if (isFormData(body)) {
+                    let form: NodeFormData;
+                    if (body instanceof NodeFormData) {
+                        form = body;
+                    } else {
+                        form = new NodeFormData();
+                        body.forEach((v, k, parent) => {
+                            form.append(k, v);
+                        });
+                    }
+                    body = form.getBuffer();
+                }
+                headers = headers.set(hdr.CONTENT_LENGTH, String(Buffer.byteLength(body as Buffer)));
+            }
+
+            return req.clone({
+                headers,
+                body
+            })
+
+        }).pipe(
+            mergeMap(req => next.handle(req, context))
+        );
+    }
+}
+
 
 const isDomainOrSubdomain = (destination: string | URL, original: string | URL) => {
     const orig = new URL(original).hostname;

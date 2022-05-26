@@ -1,24 +1,24 @@
-// import * as http2 from 'node:http2';
-// import * as fs from 'node:fs';
+import * as http2 from 'node:http2';
+import * as fs from 'node:fs';
 
 
-// const client = http2.connect('https://localhost:3000', {
-//   ca: fs.readFileSync('./localhost-cert.pem')
-// });
-// client.on('error', (err) => console.error(err));
+const client = http2.connect('https://localhost:3000', {
+  ca: fs.readFileSync('./localhost-cert.pem')
+});
+client.on('error', (err) => console.error(err));
 
-// const req = client.request({ ':path': '/users/admin' });
-// req.on('response', (headers, flags) => {
-//   for (const name in headers) {
-//     console.log(`${name}: ${headers[name]}`);
-//   }
-// });
+const req = client.request({ ':path': '/users/admin' });
+req.on('response', (headers, flags) => {
+  for (const name in headers) {
+    console.log(`${name}: ${headers[name]}`);
+  }
+});
 
-// req.setEncoding('utf8');
-// let data = '';
-// req.on('data', (chunk) => { data += chunk; });
-// req.on('end', () => {
-//   console.log(`\n${data}`);
-//   client.close();
-// });
-// req.end();
+req.setEncoding('utf8');
+let data = '';
+req.on('data', (chunk) => { data += chunk; });
+req.on('end', () => {
+  console.log(`\n${data}`);
+  client.close();
+});
+req.end();
