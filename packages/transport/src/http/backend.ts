@@ -419,9 +419,10 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
     }
     handle(req: HttpRequest<any>, ctx: EndpointContext): Observable<HttpEvent<any>> {
         return new Observable((observer: Observer<HttpEvent<any>>) => {
-            let url = req.urlWithParams.trim();
+            const url = req.urlWithParams.trim();
+            let path = url;
             if (this.option.authority) {
-                url = url.slice(this.option.authority.length);
+                path = path.slice(this.option.authority.length);
             }
             const reqHeaders: Record<string, any> = {};
             req.headers.forEach((name, values) => {
@@ -433,7 +434,7 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
             }
             reqHeaders[HTTP2_HEADER_ACCEPT] = 'application/json, text/plain, */*';
             reqHeaders[HTTP2_HEADER_METHOD] = req.method;
-            reqHeaders[HTTP2_HEADER_PATH] = url;
+            reqHeaders[HTTP2_HEADER_PATH] = path;
 
             const ac = new AbortController();
             const request = ctx.get(CLIENT_HTTP2SESSION).request(reqHeaders, { ...this.option.requestOptions, signal: ac.signal } as http2.ClientSessionRequestOptions);
@@ -733,7 +734,7 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
             }
 
             return () => {
-                if (isUndefined(status)) {
+                if (isUndefined(status) || !completed) {
                     ac.abort();
                 }
                 request.off(ev.RESPONSE, onResponse);
