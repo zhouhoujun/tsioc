@@ -1,4 +1,4 @@
-import { EMPTY_OBJ, Injectable, isDefined, isUndefined, lang, type_undef } from '@tsdi/ioc';
+import { EMPTY_OBJ, isDefined, isUndefined, lang, type_undef } from '@tsdi/ioc';
 import { EndpointBackend, EndpointContext } from '@tsdi/core';
 import {
     global, isBlob, isFormData, HttpRequest, HttpEvent, HttpHeaders, HttpResponse, HttpErrorResponse,
@@ -24,7 +24,9 @@ if (typeof global.FormData === type_undef) {
     global.FormData = NodeFormData;
 }
 
-
+/**
+ * http client backend.
+ */
 export class HttpBackend extends EndpointBackend<HttpRequest, HttpEvent> {
     constructor(private option: HttpClientOptions) {
         super();
@@ -55,8 +57,9 @@ export class HttpBackend extends EndpointBackend<HttpRequest, HttpEvent> {
 
 }
 
-
-@Injectable()
+/**
+ * http1 client backend.
+ */
 export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
     handle(req: HttpRequest<any>, ctx: EndpointContext): Observable<HttpEvent<any>> {
         return new Observable((observer: Observer<HttpEvent<any>>) => {
@@ -412,7 +415,9 @@ const {
 const HTTP2_HEADER_STATUS = ':status';
 
 
-@Injectable()
+/**
+ * http2 client backend.
+ */
 export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
     constructor(private option: HttpClientOptions) {
         super();
