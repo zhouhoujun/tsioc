@@ -404,7 +404,6 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
 }
 
 const {
-    HTTP2_HEADER_AUTHORITY,
     HTTP2_HEADER_PATH,
     HTTP2_HEADER_METHOD,
     HTTP2_HEADER_ACCEPT
@@ -559,17 +558,6 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                     }
                 }
 
-                // if (!ok) {
-                //     completed = true;
-                //     observer.error(new HttpErrorResponse({
-                //         url,
-                //         error,
-                //         status,
-                //         statusText
-                //     }));
-                //     return
-                // }
-
                 if (emptyStatus[status]) {
                     completed = true;
                     observer.next(new HttpHeaderResponse({
@@ -588,12 +576,70 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 onData = (chunk: string) => {
                     strdata += chunk;
                 };
-                onEnd = () => {
+                onEnd = async () => {
                     completed = true;
                     body = strdata;
                     if (status === 0) {
                         status = isDefined(body) ? HttpStatusCode.Ok : 0
                     }
+
+                    if (rqstatus.compress && req.method !== 'HEAD' && codings) {
+                        // For Node v6+
+                        // Be less strict when decoding compressed responses, since sometimes
+                        // servers send slightly invalid responses that are still accepted
+                        // by common browsers.
+                        // Always using Z_SYNC_FLUSH is what cURL does.
+                        const zlibOptions = {
+                            flush: zlib.constants.Z_SYNC_FLUSH,
+                            finishFlush: zlib.constants.Z_SYNC_FLUSH
+                        };
+
+                        try {
+                            if (codings === 'gzip' || codings === 'x-gzip') { // For gzip
+                                const unzip = zlib.createGunzip(zlibOptions);
+                                await pmPipeline(body, unzip);
+                                body = unzip;
+                            } else if (codings === 'deflate' || codings === 'x-deflate') { // For deflate
+                                // Handle the infamous raw deflate response from old servers
+                                // a hack for old IIS and Apache servers
+                                const raw = new PassThrough();
+                                await pmPipeline(body, raw);
+                                const defer = lang.defer();
+                                raw.once(ev.DATA, chunk => {
+                                    if ((chunk[0] & 0x0F) === 0x08) {
+                                        body = pipeline(body, zlib.createInflate(), err => {
+                                            if (err) {
+                                                defer.reject(err);
+                                            }
+                                        });
+                                    } else {
+                                        body = pipeline(body, zlib.createInflateRaw(), err => {
+                                            if (err) {
+                                                defer.reject(err);
+                                            }
+                                        });
+                                    }
+                                });
+
+                                raw.once('end', defer.resolve);
+
+                                await defer.promise;
+
+                            } else if (codings === 'br') { // For br
+                                const unBr = zlib.createBrotliDecompress();
+                                await pmPipeline(body, unBr);
+                                body = unBr;
+                            }
+                            if (body instanceof PassThrough) {
+                                const buffer = await toBuffer(body);
+                                body = new TextDecoder().decode(buffer);
+                            }
+                        } catch (err) {
+                            ok = false;
+                            error = err;
+                        }
+                    }
+
                     let originalBody: any;
                     let buffer: Buffer;
                     switch (req.responseType) {

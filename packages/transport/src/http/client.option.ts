@@ -6,9 +6,14 @@ import { HttpEvent, HttpRequest } from '@tsdi/common';
 
 export type HttpSessionOptions = http2.ClientSessionOptions | http2.SecureClientSessionOptions;
 
+/**
+ * client session
+ */
 export const CLIENT_HTTP2SESSION = tokenId<http2.ClientHttp2Session>('CLIENT_HTTP2SESSION');
 
-
+/**
+ * http client options.
+ */
 @Abstract()
 export abstract class HttpClientOptions implements ClientOptions<HttpRequest, HttpEvent> {
     abstract interceptors?: InterceptorType<HttpRequest, HttpEvent>[];
@@ -21,6 +26,8 @@ export abstract class HttpClientOptions implements ClientOptions<HttpRequest, Ht
  * http interceptors for {@link Http}.
  */
 export const HTTP_INTERCEPTORS = tokenId<InterceptorInst<HttpRequest, HttpEvent>[]>('HTTP_INTERCEPTORS');
-
+/**
+ * http serssion options.
+ */
 export const HTTP_SESSIONOPTIONS = tokenId<HttpSessionOptions>('HTTP_SESSIONOPTIONS');
 
