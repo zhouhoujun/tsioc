@@ -1,6 +1,6 @@
-import { ConnectionOptions } from '@tsdi/core';
 import { Type, LoadType, ProvidersMetadata, Abstract, Injector, tokenId, Token } from '@tsdi/ioc';
 import { LogConfigure } from '@tsdi/logs';
+import { ConnectionOptions } from '@tsdi/repository';
 
 /**
  * application Configuration.

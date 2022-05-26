@@ -1,10 +1,11 @@
-import { ModuleLoader, ProviderType, StaticProviders, Type } from '@tsdi/ioc';
+import { ModuleLoader, Modules, ProviderType, StaticProviders, Type } from '@tsdi/ioc';
 import { Application, ApplicationFactory, APPLICTION_DEFAULTA_PROVIDERS, LoggerModule, PROCESS_ROOT } from '@tsdi/core';
 import { ConfigureMergerImpl, DefaultConfigureManager } from './configure/manager';
 import { CONFIGURATION } from './configure/config';
 import { BootApplicationContext, BootApplicationOption, BootEnvironmentOption } from './context';
 import { BootApplicationFactory } from './impl/context';
 import { ConfigureFileLoader } from './configure/loader';
+import { MvcModule } from './mvc/mvc.module';
 
 
 const BOOT_DEFAULTA_PROVIDERS: ProviderType[] = [
@@ -12,6 +13,7 @@ const BOOT_DEFAULTA_PROVIDERS: ProviderType[] = [
     { provide: ApplicationFactory, useClass: BootApplicationFactory },
     ...APPLICTION_DEFAULTA_PROVIDERS.filter(p => (p as StaticProviders).provide !== ApplicationFactory)
 ];
+
 /**
  * boot application.
  *
@@ -32,6 +34,10 @@ export class BootApplication extends Application<BootApplicationContext> {
         this.root.register(DefaultConfigureManager, ConfigureMergerImpl);
         super.initRoot();
         this.root.setValue(BootApplication, this)
+    }
+
+    protected override getDeps(): Modules[] {
+        return [MvcModule];
     }
 
     protected async prepareContext(ctx: BootApplicationContext): Promise<void> {
