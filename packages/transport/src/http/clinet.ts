@@ -1,4 +1,4 @@
-import { EMPTY_OBJ, Inject, Injectable, InvocationContext, lang, Nullable, Token, type_str } from '@tsdi/ioc';
+import { EMPTY_OBJ, Inject, Injectable, InvocationContext, lang, Nullable, Providers, Token, type_str } from '@tsdi/ioc';
 import { RequestMethod, TransportClient, EndpointBackend, OnDispose, InterceptorInst, EndpointContext } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpHeaders, HttpParams, HttpParamsOptions, HttpResponse } from '@tsdi/common';
 import { filter, concatMap, map, Observable, of } from 'rxjs';
@@ -6,6 +6,8 @@ import * as http from 'node:http';
 import * as https from 'node:https';
 import * as http2 from 'node:http2';
 import { ev } from '../consts';
+import { MimeAdapter } from '../mime';
+import { HttpMimeAdapter } from './mime';
 import { HttpBackend } from './backend';
 import { NormlizePathInterceptor } from './interceptors/path';
 import { NormlizeBodyInterceptor } from './interceptors/body';
@@ -38,6 +40,9 @@ export type RequestOptions = HttpRequestOptions & HttpNodeOptions;
  * http client for nodejs
  */
 @Injectable()
+@Providers([
+    { provide: MimeAdapter, useClass: HttpMimeAdapter }
+])
 export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions> implements OnDispose {
 
     private _backend?: EndpointBackend<HttpRequest, HttpEvent>;

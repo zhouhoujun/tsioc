@@ -53,6 +53,13 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
      */
     abstract get arguments(): T;
     /**
+     * get value ify create by factory and register the value for the token.
+     * @param token the token to get value.
+     * @param factory the factory to create value for token.
+     * @returns the instance of token.
+     */
+    abstract getValueify<T>(token: Token<T>, factory: () => T): T;
+    /**
      * has token in the context or not.
      * @param token the token to check.
      * @param flags inject flags, type of {@link InjectFlags}.

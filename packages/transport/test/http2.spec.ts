@@ -227,6 +227,16 @@ describe('http2 server, Http', () => {
         expect(r.body).toEqual('working');
     })
 
+    it('redirect', async () => {
+        const result = 'reload';
+        const r = await lastValueFrom(client.get('/device/status', { observe: 'response', params: { redirect: 'reload' }, responseType: 'text' }).pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
+        expect(r.status).toEqual(200);
+        expect(r.body).toEqual(result);
+    })
 
     after(() => {
         return ctx.destroy();

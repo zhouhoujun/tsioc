@@ -109,7 +109,7 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption =
                 return throwError(() => this.onError(err))
             }),
             mergeMap(() => {
-                ctx = this.createContext();
+                ctx = this.createContext(options);
                 return this.request(ctx, req, options)
             }),
             finalize(() => {
@@ -131,8 +131,8 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption =
      */
     protected abstract getBackend(): EndpointBackend<TRequest, TResponse>;
 
-    protected createContext(): EndpointContext {
-        return new ClientContext(this.context.injector, this, { parent: this.context });
+    protected createContext(options?: TOption): EndpointContext {
+        return (options as any)?.context ?? new ClientContext(this.context.injector, this, { parent: this.context });
     }
 
     protected abstract buildRequest(url: TRequest | string, options?: TOption): TRequest;

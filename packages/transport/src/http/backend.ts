@@ -1,10 +1,10 @@
 import { EMPTY_OBJ, isDefined, isUndefined, lang, type_undef } from '@tsdi/ioc';
-import { EndpointBackend, EndpointContext } from '@tsdi/core';
+import { EndpointBackend, EndpointContext, TransportClient } from '@tsdi/core';
 import {
     global, isBlob, isFormData, HttpRequest, HttpEvent, HttpHeaders, HttpResponse, HttpErrorResponse,
-    HttpHeaderResponse, HttpStatusCode, statusMessage, isArrayBuffer, HttpJsonParseError
+    HttpHeaderResponse, HttpStatusCode, statusMessage, isArrayBuffer, HttpJsonParseError, HttpRequestMethod
 } from '@tsdi/common';
-import { Observable, Observer, } from 'rxjs';
+import { catchError, finalize, lastValueFrom, map, Observable, Observer, } from 'rxjs';
 import * as zlib from 'node:zlib';
 import * as http from 'node:http';
 import * as https from 'node:https';
@@ -14,9 +14,10 @@ import { promisify } from 'node:util';
 import { ev, hdr } from '../consts';
 import { HttpError } from './errors';
 import { emptyStatus, redirectStatus } from './status';
-import { isBuffer } from '../utils';
+import { isBuffer, jsonTypes, textTypes, xmlTypes } from '../utils';
 import * as NodeFormData from 'form-data';
 import { CLIENT_HTTP2SESSION, HttpClientOptions } from './client.option';
+import { MimeAdapter } from '../mime';
 
 const pmPipeline = promisify(pipeline);
 
@@ -73,7 +74,7 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
             }
 
             const url = req.urlWithParams.trim();
-            const ac = new AbortController();
+            const ac = ctx.getValueify(AbortController, () => new AbortController());
             const option = {
                 method: req.method,
                 headers: {
@@ -105,7 +106,18 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
 
                 ok = status >= 200 && status < 300;
 
-                const rqstatus = ctx.get(RequestStauts) ?? {};
+                if (emptyStatus[status]) {
+                    observer.next(new HttpHeaderResponse({
+                        url,
+                        headers,
+                        status,
+                        statusText
+                    }));
+                    observer.complete();
+                    return;
+                }
+
+                const rqstatus = ctx.getValueify(RequestStauts, () => new RequestStauts());
 
                 // HTTP fetch step 5
                 if (status && redirectStatus[status]) {
@@ -115,7 +127,7 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                     // HTTP fetch step 5.3
                     let locationURL = null;
                     try {
-                        locationURL = location === null ? null : new URL(location, req.url);
+                        locationURL = location === null ? null : new URL(location, req.url).toString();
                     } catch {
                         // error here can only be invalid URL in Location: header
                         // do not throw when options.redirect == manual
@@ -154,7 +166,7 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                             // Create a new Request object.
 
                             let reqheaders = req.headers;
-                            let method = req.method;
+                            let method = req.method as HttpRequestMethod;
                             let body = req.body;
 
                             // when forwarding sensitive headers like "Authorization",
@@ -187,14 +199,16 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                             if (responseReferrerPolicy) {
                                 reqheaders = reqheaders.set(hdr.REFERRER_POLICY, responseReferrerPolicy);
                             }
-
                             // HTTP-redirect fetch step 15
-                            req = req.clone({
+                            (ctx.target as TransportClient).send(locationURL, {
                                 method,
+                                headers: reqheaders,
                                 body,
-                                headers: reqheaders
-                            });
-                            ctx.target.send(req).subscribe(observer);
+                                context: ctx,
+                                observe: 'response'
+                            }).subscribe(observer);
+
+
                             return;
                         }
 
@@ -203,19 +217,27 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                             ok = false;
                             break;
                     }
-                }
-
-                if (emptyStatus[status]) {
-                    observer.next(new HttpHeaderResponse({
-                        url,
-                        headers,
-                        status,
-                        statusText
-                    }));
-                    observer.complete();
+                    if (ok) {
+                        observer.next(new HttpResponse({
+                            url,
+                            body,
+                            headers,
+                            status,
+                            statusText
+                        }));
+                        observer.complete();
+                    } else {
+                        observer.error(new HttpErrorResponse({
+                            url,
+                            error,
+                            headers,
+                            status,
+                            statusText
+                        }));
+                    }
                     return;
-                }
 
+                }
 
                 body = pipeline(res, new PassThrough(), (err) => {
                     if (err) {
@@ -299,7 +321,19 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 let originalBody: any;
 
                 if (buffer) {
-                    switch (req.responseType) {
+                    const contentType = res.headers[hdr.CONTENT_TYPE];
+                    let type = req.responseType;
+                    if (contentType) {
+                        const adapter = ctx.get(MimeAdapter);
+                        if (type === 'json' && !adapter.match(jsonTypes, contentType)) {
+                            if (adapter.match(xmlTypes, contentType) || adapter.match(textTypes, contentType)) {
+                                type = 'text';
+                            } else {
+                                type = 'blob';
+                            }
+                        }
+                    }
+                    switch (type) {
                         case 'json':
                             // Save the original body, before attempting XSSI prefix stripping.
                             body = new TextDecoder().decode(buffer);
@@ -441,11 +475,11 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
             reqHeaders[HTTP2_HEADER_METHOD] = req.method;
             reqHeaders[HTTP2_HEADER_PATH] = path;
 
-            const ac = new AbortController();
+            const ac = ctx.getValueify(AbortController, () => new AbortController());
             const request = ctx.get(CLIENT_HTTP2SESSION).request(reqHeaders, { ...this.option.requestOptions, signal: ac.signal } as http2.ClientSessionRequestOptions);
             request.setEncoding('utf8');
 
-            const rqstatus = ctx.get(RequestStauts) ?? {};
+
             let onData: (chunk: string) => void;
             let onEnd: () => void;
             let status: number, statusText: string;
@@ -462,108 +496,6 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 ok = status >= 200 && status < 300;
                 statusText = statusMessage[status as HttpStatusCode] ?? 'OK';
 
-                // HTTP fetch step 5
-                if (status && redirectStatus[status]) {
-                    // HTTP fetch step 5.2
-                    const location = headers.get(hdr.LOCATION);
-
-                    // HTTP fetch step 5.3
-                    let locationURL = null;
-                    try {
-                        locationURL = location === null ? null : new URL(location, req.url);
-                    } catch {
-                        // error here can only be invalid URL in Location: header
-                        // do not throw when options.redirect == manual
-                        // let the user extract the errorneous redirect URL
-                        if (rqstatus.redirect !== 'manual') {
-                            error = new HttpError(HttpStatusCode.BadRequest, `uri requested responds with an invalid redirect URL: ${location}`);
-                            ok = false;
-                        }
-                    }
-
-                    // HTTP fetch step 5.5
-                    switch (rqstatus.redirect) {
-                        case 'error':
-                            error = new HttpError(HttpStatusCode.BadRequest, `uri requested responds with a redirect, redirect mode is set to error: ${req.url}`);
-                            ok = false;
-                            break;
-                        case 'manual':
-                            // Nothing to do
-                            break;
-                        case 'follow': {
-                            // HTTP-redirect fetch step 2
-                            if (locationURL === null) {
-                                break;
-                            }
-
-                            // HTTP-redirect fetch step 5
-                            if (rqstatus.counter >= rqstatus.follow) {
-                                error = new HttpError(HttpStatusCode.BadRequest, `maximum redirect reached at: ${req.url}`);
-                                ok = false;
-                                break;
-                            }
-
-
-
-                            rqstatus.counter += 1;
-
-                            // HTTP-redirect fetch step 6 (counter increment)
-                            // Create a new Request object.
-
-                            let reqheaders = req.headers;
-                            let method = req.method;
-                            let body = req.body;
-
-                            // when forwarding sensitive headers like "Authorization",
-                            // "WWW-Authenticate", and "Cookie" to untrusted targets,
-                            // headers will be ignored when following a redirect to a domain
-                            // that is not a subdomain match or exact match of the initial domain.
-                            // For example, a redirect from "foo.com" to either "foo.com" or "sub.foo.com"
-                            // will forward the sensitive headers, but a redirect to "bar.com" will not.
-                            if (!isDomainOrSubdomain(req.url, locationURL)) {
-                                for (const name of ['authorization', 'www-authenticate', 'cookie', 'cookie2']) {
-                                    reqheaders = reqheaders.delete(name);
-                                }
-                            }
-
-                            // HTTP-redirect fetch step 9
-                            if (status !== 303 && req.body && req.body instanceof Readable) {
-                                error = new HttpError(HttpStatusCode.BadRequest, 'Cannot follow redirect with body being a readable stream');
-                                ok = false;
-                            }
-
-                            // HTTP-redirect fetch step 11
-                            if (status === 303 || ((status === 301 || status === 302) && method === 'POST')) {
-                                method = 'GET';
-                                body = undefined;
-                                reqheaders = reqheaders.delete('content-length');
-                            }
-
-                            // HTTP-redirect fetch step 14
-                            const responseReferrerPolicy = parseReferrerPolicyFromHeader(headers);
-                            if (responseReferrerPolicy) {
-                                reqheaders = reqheaders.set(hdr.REFERRER_POLICY, responseReferrerPolicy);
-                            }
-
-                            // HTTP-redirect fetch step 15
-
-                            req = req.clone({
-                                method,
-                                body,
-                                headers: reqheaders
-                            });
-                            ctx.target.send(req).subscribe(observer);
-                            completed = true;
-                            return;
-                        }
-
-                        default:
-                            error = new TypeError(`Redirect option '${rqstatus.redirect}' is not a valid value of RequestRedirect`);
-                            ok = false;
-                            break;
-                    }
-                }
-
                 if (emptyStatus[status]) {
                     completed = true;
                     observer.next(new HttpHeaderResponse({
@@ -575,6 +507,9 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                     observer.complete();
                     return;
                 }
+
+                const rqstatus = ctx.getValueify(RequestStauts, () => new RequestStauts());
+                // HTTP fetch step 5
 
                 // HTTP-network fetch step 12.1.1.3
                 const codings = headers.get(hdr.CONTENT_ENCODING);
@@ -589,104 +524,217 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                         status = isDefined(body) ? HttpStatusCode.Ok : 0
                     }
 
-                    if (rqstatus.compress && req.method !== 'HEAD' && codings) {
-                        // For Node v6+
-                        // Be less strict when decoding compressed responses, since sometimes
-                        // servers send slightly invalid responses that are still accepted
-                        // by common browsers.
-                        // Always using Z_SYNC_FLUSH is what cURL does.
-                        const zlibOptions = {
-                            flush: zlib.constants.Z_SYNC_FLUSH,
-                            finishFlush: zlib.constants.Z_SYNC_FLUSH
-                        };
+                    if (status && redirectStatus[status]) {
+                        completed = true;
+                        // HTTP fetch step 5.2
+                        const location = headers.get(hdr.LOCATION);
 
+                        // HTTP fetch step 5.3
+                        let locationURL = null;
                         try {
-                            if (codings === 'gzip' || codings === 'x-gzip') { // For gzip
-                                const unzip = zlib.createGunzip(zlibOptions);
-                                await pmPipeline(body, unzip);
-                                body = unzip;
-                            } else if (codings === 'deflate' || codings === 'x-deflate') { // For deflate
-                                // Handle the infamous raw deflate response from old servers
-                                // a hack for old IIS and Apache servers
-                                const raw = new PassThrough();
-                                await pmPipeline(body, raw);
-                                const defer = lang.defer();
-                                raw.once(ev.DATA, chunk => {
-                                    if ((chunk[0] & 0x0F) === 0x08) {
-                                        body = pipeline(body, zlib.createInflate(), err => {
-                                            if (err) {
-                                                defer.reject(err);
-                                            }
-                                        });
-                                    } else {
-                                        body = pipeline(body, zlib.createInflateRaw(), err => {
-                                            if (err) {
-                                                defer.reject(err);
-                                            }
-                                        });
-                                    }
-                                });
-
-                                raw.once('end', defer.resolve);
-
-                                await defer.promise;
-
-                            } else if (codings === 'br') { // For br
-                                const unBr = zlib.createBrotliDecompress();
-                                await pmPipeline(body, unBr);
-                                body = unBr;
+                            locationURL = location === null ? null : new URL(location, req.url).toString();
+                        } catch {
+                            // error here can only be invalid URL in Location: header
+                            // do not throw when options.redirect == manual
+                            // let the user extract the errorneous redirect URL
+                            if (rqstatus.redirect !== 'manual') {
+                                error = new HttpError(HttpStatusCode.BadRequest, `uri requested responds with an invalid redirect URL: ${location}`);
+                                ok = false;
                             }
-                            if (body instanceof PassThrough) {
-                                const buffer = await toBuffer(body);
-                                body = new TextDecoder().decode(buffer);
-                            }
-                        } catch (err) {
-                            ok = false;
-                            error = err;
                         }
-                    }
 
-                    let originalBody: any;
-                    let buffer: Buffer;
-                    switch (req.responseType) {
-                        case 'json':
-                            // Save the original body, before attempting XSSI prefix stripping.
-                            // body = new TextDecoder().decode(buffer);
-                            originalBody = body;
-                            try {
-                                body = body.replace(XSSI_PREFIX, '');
-                                // Attempt the parse. If it fails, a parse error should be delivered to the user.
-                                body = body !== '' ? JSON.parse(body) : null
-                            } catch (err) {
-                                // Since the JSON.parse failed, it's reasonable to assume this might not have been a
-                                // JSON response. Restore the original body (including any XSSI prefix) to deliver
-                                // a better error response.
-                                body = originalBody;
+                        // HTTP fetch step 5.5
+                        switch (rqstatus.redirect) {
+                            case 'error':
+                                error = new HttpError(HttpStatusCode.BadRequest, `uri requested responds with a redirect, redirect mode is set to error: ${req.url}`);
+                                ok = false;
+                                break;
+                            case 'manual':
+                                // Nothing to do
+                                break;
+                            case 'follow': {
+                                // HTTP-redirect fetch step 2
+                                if (locationURL === null) {
+                                    break;
+                                }
 
-                                // If this was an error request to begin with, leave it as a string, it probably
-                                // just isn't JSON. Otherwise, deliver the parsing error to the user.
-                                if (ok) {
-                                    // Even though the response status was 2xx, this is still an error.
+                                // HTTP-redirect fetch step 5
+                                if (rqstatus.counter >= rqstatus.follow) {
+                                    error = new HttpError(HttpStatusCode.BadRequest, `maximum redirect reached at: ${req.url}`);
                                     ok = false;
-                                    // The parse error contains the text of the body that failed to parse.
-                                    error = { error: err, text: body } as HttpJsonParseError
+                                    break;
+                                }
+
+                                rqstatus.counter += 1;
+
+                                // HTTP-redirect fetch step 6 (counter increment)
+                                // Create a new Request object.
+
+                                let reqheaders = req.headers;
+                                let method = req.method as HttpRequestMethod;
+                                let body = req.body;
+
+                                // when forwarding sensitive headers like "Authorization",
+                                // "WWW-Authenticate", and "Cookie" to untrusted targets,
+                                // headers will be ignored when following a redirect to a domain
+                                // that is not a subdomain match or exact match of the initial domain.
+                                // For example, a redirect from "foo.com" to either "foo.com" or "sub.foo.com"
+                                // will forward the sensitive headers, but a redirect to "bar.com" will not.
+                                if (!isDomainOrSubdomain(req.url, locationURL)) {
+                                    for (const name of ['authorization', 'www-authenticate', 'cookie', 'cookie2']) {
+                                        reqheaders = reqheaders.delete(name);
+                                    }
+                                }
+
+                                // HTTP-redirect fetch step 9
+                                if (status !== 303 && req.body && req.body instanceof Readable) {
+                                    error = new HttpError(HttpStatusCode.BadRequest, 'Cannot follow redirect with body being a readable stream');
+                                    ok = false;
+                                }
+
+                                // HTTP-redirect fetch step 11
+                                if (status === 303 || ((status === 301 || status === 302) && req.method === 'POST')) {
+                                    method = 'GET';
+                                    body = undefined;
+                                    reqheaders = reqheaders.delete('content-length');
+                                }
+
+                                // HTTP-redirect fetch step 14
+                                const responseReferrerPolicy = parseReferrerPolicyFromHeader(headers);
+                                if (responseReferrerPolicy) {
+                                    reqheaders = reqheaders.set(hdr.REFERRER_POLICY, responseReferrerPolicy);
+                                }
+                                // HTTP-redirect fetch step 15
+                                (ctx.target as TransportClient).send(locationURL, {
+                                    method,
+                                    headers: reqheaders,
+                                    body,
+                                    context: ctx,
+                                    observe: 'response'
+                                }).pipe(
+                                    finalize(() => completed = true)
+                                ).subscribe(observer);
+
+                                return;
+                            }
+
+                            default:
+                                error = new TypeError(`Redirect option '${rqstatus.redirect}' is not a valid value of RequestRedirect`);
+                                ok = false;
+                                break;
+                        }
+                    } else {
+                        if (rqstatus.compress && req.method !== 'HEAD' && codings) {
+                            // For Node v6+
+                            // Be less strict when decoding compressed responses, since sometimes
+                            // servers send slightly invalid responses that are still accepted
+                            // by common browsers.
+                            // Always using Z_SYNC_FLUSH is what cURL does.
+                            const zlibOptions = {
+                                flush: zlib.constants.Z_SYNC_FLUSH,
+                                finishFlush: zlib.constants.Z_SYNC_FLUSH
+                            };
+
+                            try {
+                                if (codings === 'gzip' || codings === 'x-gzip') { // For gzip
+                                    const unzip = zlib.createGunzip(zlibOptions);
+                                    await pmPipeline(body, unzip);
+                                    body = unzip;
+                                } else if (codings === 'deflate' || codings === 'x-deflate') { // For deflate
+                                    // Handle the infamous raw deflate response from old servers
+                                    // a hack for old IIS and Apache servers
+                                    const raw = new PassThrough();
+                                    await pmPipeline(body, raw);
+                                    const defer = lang.defer();
+                                    raw.once(ev.DATA, chunk => {
+                                        if ((chunk[0] & 0x0F) === 0x08) {
+                                            body = pipeline(body, zlib.createInflate(), err => {
+                                                if (err) {
+                                                    defer.reject(err);
+                                                }
+                                            });
+                                        } else {
+                                            body = pipeline(body, zlib.createInflateRaw(), err => {
+                                                if (err) {
+                                                    defer.reject(err);
+                                                }
+                                            });
+                                        }
+                                    });
+
+                                    raw.once('end', defer.resolve);
+
+                                    await defer.promise;
+
+                                } else if (codings === 'br') { // For br
+                                    const unBr = zlib.createBrotliDecompress();
+                                    await pmPipeline(body, unBr);
+                                    body = unBr;
+                                }
+                                if (body instanceof PassThrough) {
+                                    const buffer = await toBuffer(body);
+                                    body = new TextDecoder().decode(buffer);
+                                }
+                            } catch (err) {
+                                ok = false;
+                                error = err;
+                            }
+                        }
+
+                        let originalBody: any;
+                        let buffer: Buffer;
+                        const contentType = headers.get(hdr.CONTENT_TYPE);
+                        let type = req.responseType;
+                        if (contentType) {
+                            const adapter = ctx.get(MimeAdapter);
+                            if (type === 'json' && !adapter.match(jsonTypes, contentType)) {
+                                if (adapter.match(xmlTypes, contentType) || adapter.match(textTypes, contentType)) {
+                                    type = 'text';
+                                } else {
+                                    type = 'blob';
                                 }
                             }
-                            break;
+                        }
+                        switch (type) {
+                            case 'json':
+                                // Save the original body, before attempting XSSI prefix stripping.
+                                // body = new TextDecoder().decode(buffer);
+                                originalBody = body;
+                                try {
+                                    body = body.replace(XSSI_PREFIX, '');
+                                    // Attempt the parse. If it fails, a parse error should be delivered to the user.
+                                    body = body !== '' ? JSON.parse(body) : null
+                                } catch (err) {
+                                    // Since the JSON.parse failed, it's reasonable to assume this might not have been a
+                                    // JSON response. Restore the original body (including any XSSI prefix) to deliver
+                                    // a better error response.
+                                    body = originalBody;
 
-                        case 'arraybuffer':
-                            buffer = Buffer.from(body);
-                            body = buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-                            break;
-                        case 'blob':
-                            buffer = Buffer.from(body);
-                            body = new Blob([buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)], {
-                                type: headers.get(hdr.CONTENT_TYPE) as string
-                            });
-                            break;
-                        case 'text':
-                        default:
-                            break;
+                                    // If this was an error request to begin with, leave it as a string, it probably
+                                    // just isn't JSON. Otherwise, deliver the parsing error to the user.
+                                    if (ok) {
+                                        // Even though the response status was 2xx, this is still an error.
+                                        ok = false;
+                                        // The parse error contains the text of the body that failed to parse.
+                                        error = { error: err, text: body } as HttpJsonParseError
+                                    }
+                                }
+                                break;
+
+                            case 'arraybuffer':
+                                buffer = Buffer.from(body);
+                                body = buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+                                break;
+                            case 'blob':
+                                buffer = Buffer.from(body);
+                                body = new Blob([buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)], {
+                                    type: headers.get(hdr.CONTENT_TYPE) as string
+                                });
+                                break;
+                            case 'text':
+                            default:
+                                break;
+                        }
                     }
 
                     if (ok) {
@@ -821,7 +869,7 @@ export class RequestStauts {
     public insecureHTTPParser: boolean;
     public referrerPolicy: ReferrerPolicy;
     public redirect: 'manual' | 'error' | 'follow' | '';
-    readonly agent: http.Agent | boolean;
+    // readonly agent: http.Agent | boolean;
     readonly compress: boolean;
     constructor(init: {
         compress?: boolean;
@@ -838,9 +886,9 @@ export class RequestStauts {
         this.counter = init.counter ?? 0;
         this.highWaterMark = init.highWaterMark ?? 16384;
         this.insecureHTTPParser = init.insecureHTTPParser ?? false;
-        this.redirect = init.redirect ?? '';
+        this.redirect = init.redirect ?? 'follow';
         this.referrerPolicy = init.referrerPolicy ?? '';
-        this.agent = init.agent ?? false;
+        // this.agent = init.agent ?? false;
 
     }
 }

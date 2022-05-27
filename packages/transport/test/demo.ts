@@ -3,6 +3,7 @@ import { of } from 'rxjs'; import {
     RouteMapping, Handle, RequestBody, RequestParam, RequestPath, Module,
     TransportContext, Middleware, Chain
 } from '@tsdi/core';
+import { RedirectResult } from '../src/http';
 
 
 @RouteMapping('/device')
@@ -48,8 +49,16 @@ export class DeviceController {
 
 
     @RouteMapping('/status', 'GET')
-    getLastStatus() {
+    getLastStatus(@RequestParam('redirect', { nullable: true }) redirect: string) {
+        if (redirect === 'reload') {
+            return new RedirectResult('/device/reload');
+        }
         return of('working');
+    }
+
+    @RouteMapping('/reload', 'GET')
+    redirect() {
+        return 'reload';
     }
 
 

@@ -6,6 +6,7 @@ import { Readable } from 'node:stream';
 import * as getRaw from 'raw-body';
 import * as qslib from 'qs';
 import { hdr } from '../consts';
+import { formTypes, jsonTypes, textTypes, xmlTypes } from '../utils';
 
 
 @Abstract()
@@ -252,26 +253,3 @@ export interface ParseExtendTypes {
     xml: string[];
 }
 
-// default json types
-const jsonTypes = [
-    'application/json',
-    'application/json-patch+json',
-    'application/vnd.api+json',
-    'application/csp-report',
-];
-
-// default form types
-const formTypes = [
-    'application/x-www-form-urlencoded',
-];
-
-// default text types
-const textTypes = [
-    'text/plain',
-];
-
-// default xml types
-const xmlTypes = [
-    'text/xml',
-    'application/xml',
-];

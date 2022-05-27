@@ -1,6 +1,6 @@
 import { Injector, Injectable, lang, ArgumentError, MissingParameterError, tokenId, isArray } from '@tsdi/ioc';
 import { catchError, lastValueFrom, Observable, of, throwError } from 'rxjs';
-import { HttpModule, HttpServer } from '@tsdi/transport';
+import { HttpModule, HttpServer, RedirectResult } from '@tsdi/transport';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerHttpClientModule } from '@tsdi/platform-server-common';
 import expect = require('expect');
@@ -56,10 +56,17 @@ class DeviceController {
 
 
     @RouteMapping('/status', 'GET')
-    getLastStatus() {
+    getLastStatus(@RequestParam('redirect', { nullable: true }) redirect: string) {
+        if (redirect === 'reload') {
+            return new RedirectResult('/device/reload');
+        }
         return of('working');
     }
 
+    @RouteMapping('/reload', 'GET')
+    redirect() {
+        return 'reload';
+    }
 
     @Handle({ cmd: 'xxx' })
     async subMessage() {
@@ -240,15 +247,15 @@ describe('HttpClient', () => {
     });
 
 
-    it('fetch json', async ()=> {
+    it('fetch json', async () => {
 
         const client = ctx.resolve(HttpClient);
         const res: any = await lastValueFrom(client.get('510100_full.json')
-        .pipe(
-            catchError((err, ct) => {
-                ctx.getLogger().error(err);
-                return of(err);
-            })));
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
 
         expect(res).toBeDefined();
         expect(isArray(res.features)).toBeTruthy();
@@ -338,11 +345,11 @@ describe('HttpClient', () => {
 
     it('route with request param pipe throw argument err', async () => {
         const r = await lastValueFrom(ctx.resolve(HttpClient).get('/device/usege/find', { observe: 'response', params: { age: 'test' } })
-        .pipe(
-            catchError((err, ct) => {
-                ctx.getLogger().error(err);
-                return of(err);
-            })));
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
         expect(r.status).toEqual(500);
         // expect(r.error).toBeInstanceOf(ArgumentError)
     })
@@ -383,6 +390,11 @@ describe('HttpClient', () => {
         expect(r.body).toEqual('working');
     })
 
+    it('redirect', async () => {
+        const r = await lastValueFrom(ctx.resolve(HttpClient).get('/device/status', { observe: 'response', params: { redirect: 'reload' }, responseType: 'text' }));
+        expect(r.status).toEqual(200);
+        expect(r.body).toEqual('reload');
+    })
 
     after(() => {
         return ctx.destroy();

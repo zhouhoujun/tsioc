@@ -1,7 +1,7 @@
 import { ClassType, EMPTY, EMPTY_OBJ, Type } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { forIn, remove, getClassName } from '../utils/lang';
-import { isNumber, isPrimitiveType, isArray, isClassType, isDefined, isFunction, isString } from '../utils/chk';
+import { isNumber, isPrimitiveType, isArray, isClassType, isDefined, isFunction, isString, isNil } from '../utils/chk';
 import { isPlainObject, isTypeObject } from '../utils/obj'
 import { InjectFlags, Token } from '../tokens';
 import { Injector, isInjector } from '../injector';
@@ -124,6 +124,21 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     protected isSelf(token: Token) {
         return token === InvocationContext
+    }
+
+    /**
+     * get value ify create by factory and register the value for the token.
+     * @param token the token to get value.
+     * @param factory the factory to create value for token.
+     * @returns the instance of token.
+     */
+    getValueify<T>(token: Token<T>, factory: () => T): T {
+        let value = this.get(token);
+        if (isNil(value)) {
+            value = factory();
+            this.setValue(token, value);
+        }
+        return value;
     }
 
     /**

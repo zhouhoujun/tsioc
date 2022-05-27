@@ -980,8 +980,10 @@ export class HttpContext extends ServerContext<HttpServRequest, HttpServResponse
      */
     redirect(url: string, alt?: string): void {
         if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
+        if (!httptl.test(url)) {
+            url = new URL(url, this.origin).toString();
+        }
         this.setHeader(hdr.LOCATION, encodeUrl(url));
-
         // status
         if (!redirectStatus[this.status]) this.status = 302;
 
@@ -994,7 +996,7 @@ export class HttpContext extends ServerContext<HttpServRequest, HttpServResponse
         }
 
         // text
-        this.type = ctype.TEXT_PLAIN_UTF8;
+        this.type =  ctype.TEXT_PLAIN_UTF8;
         this.body = `Redirecting to ${url}.`
     }
 
