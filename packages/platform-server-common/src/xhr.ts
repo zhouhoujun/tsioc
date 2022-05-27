@@ -1,21 +1,18 @@
 /* eslint-disable no-useless-escape */
-/* eslint-disable @typescript-eslint/triple-slash-reference */
-/// <reference path="./type.d.ts" />
 import { EMPTY_OBJ, Injectable, Injector, InvocationContext, ProviderType } from '@tsdi/ioc';
 import { Module } from '@tsdi/core';
 import { DOCUMENT, HttpBackend, HttpEvent, HttpHandler, HttpInterceptingHandler, HttpRequest, PLATFORM_ID, PLATFORM_SERVER_ID, XhrFactory } from '@tsdi/common';
-import * as xhr2 from 'xmlhttprequest-ssl';
+import { XMLHttpRequest2 } from './xhr.request';
 import { Observable } from 'rxjs';
 import * as domino from 'domino';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 
 @Injectable()
 export class ServerXhr implements XhrFactory {
-  build(): XMLHttpRequest {
-    return new xhr2.XMLHttpRequest()
+  build() {
+    return new XMLHttpRequest2() as any
   }
 }
-
 
 const isAbsoluteUrl = /^[a-zA-Z\-\+.]+:\/\//;
 

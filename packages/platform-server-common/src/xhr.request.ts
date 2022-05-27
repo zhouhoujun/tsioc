@@ -6,6 +6,13 @@ import { URL } from 'node:url';
 import { spawn } from 'node:child_process';
 import { EMPTY_OBJ, isFunction } from '@tsdi/ioc';
 
+/**
+ * refactor XMLHttpRequest.js
+ * to fix redirect url error.
+ * https://github.com/driverdan/node-XMLHttpReques
+ * 
+ */
+
 
 export interface XhrOptions extends https.RequestOptions, http.RequestOptions {
     autoUnref?: boolean;
@@ -34,8 +41,8 @@ export class XMLHttpRequest2 {
     private disableHeaderCheck: boolean;
     private headers: Record<string, string | number | undefined>;
 
-    private request!: http.ClientRequest;
-    private response!: http.IncomingMessage;
+    private _request!: http.ClientRequest;
+    private _response!: http.IncomingMessage;
     private asyn?: boolean | (() => Promise<boolean>);
 
 
@@ -141,10 +148,10 @@ export class XMLHttpRequest2 {
     getResponseHeader(header: string) {
         if (typeof header === "string"
             && this.readyState > OPENED
-            && this.response.headers[header.toLowerCase()]
+            && this._response.headers[header.toLowerCase()]
             && !this.errorFlag
         ) {
-            return this.response.headers[header.toLowerCase()];
+            return this._response.headers[header.toLowerCase()];
         }
 
         return null;
@@ -161,10 +168,10 @@ export class XMLHttpRequest2 {
         }
         let result = "";
 
-        for (const i in this.response.headers) {
+        for (const i in this._response.headers) {
             // Cookie headers are excluded
             if (i !== "set-cookie" && i !== "set-cookie2") {
-                result += i + ": " + this.response.headers[i] + "\r\n";
+                result += i + ": " + this._response.headers[i] + "\r\n";
             }
         }
         return result.substring(0, result.length - 2);
@@ -328,13 +335,13 @@ export class XMLHttpRequest2 {
             const responseHandler = (resp: http.IncomingMessage) => {
                 // Set response var to the response we got back
                 // This is so it remains accessable outside this scope
-                this.response = resp;
+                this._response = resp;
                 // Check for redirect
                 // @TODO Prevent looped redirects
-                if (this.response.statusCode === 302 || this.response.statusCode === 303 || this.response.statusCode === 307) {
+                if (this._response.statusCode === 302 || this._response.statusCode === 303 || this._response.statusCode === 307) {
                     // Change URL to the redirect location
                     const origin = this.settings.url;
-                    const url = new URL(this.response.headers.location!, origin);
+                    const url = new URL(this._response.headers.location!, origin);
                     this.settings.url = url.href;
                     // Set host var in case it's used later
                     host = url.hostname;
@@ -343,7 +350,7 @@ export class XMLHttpRequest2 {
                         hostname: url.hostname,
                         port: url.port,
                         path: url.pathname,
-                        method: this.response.statusCode === 303 ? 'GET' : this.settings.method,
+                        method: this._response.statusCode === 303 ? 'GET' : this.settings.method,
                         headers: this.headers
                     };
 
@@ -358,20 +365,20 @@ export class XMLHttpRequest2 {
                     }
 
                     // Issue the new request
-                    this.request = doRequest(newOptions, responseHandler).on('error', errorHandler);
-                    this.request.end();
+                    this._request = doRequest(newOptions, responseHandler).on('error', errorHandler);
+                    this._request.end();
                     // @TODO Check if an XHR event needs to be fired here
                     return;
                 }
 
-                if (this.response && this.response.setEncoding) {
-                    this.response.setEncoding("utf8");
+                if (this._response && this._response.setEncoding) {
+                    this._response.setEncoding("utf8");
                 }
 
                 this.setState(HEADERS_RECEIVED);
-                this.status = this.response.statusCode;
+                this.status = this._response.statusCode;
 
-                this.response.on('data', (chunk) => {
+                this._response.on('data', (chunk) => {
                     // Make sure there's some data
                     if (chunk) {
                         this.responseText += chunk;
@@ -382,7 +389,7 @@ export class XMLHttpRequest2 {
                     }
                 });
 
-                this.response.on('end', () => {
+                this._response.on('end', () => {
                     if (this.sendFlag) {
                         // The sendFlag needs to be set before setState is called.  Otherwise if we are chaining callbacks
                         // there can be a timing issue (the callback is called and a new call is made before the flag is reset).
@@ -392,7 +399,7 @@ export class XMLHttpRequest2 {
                     }
                 });
 
-                this.response.on('error', (error) => {
+                this._response.on('error', (error) => {
                     this.handleError(error);
                 });
             }
@@ -403,20 +410,20 @@ export class XMLHttpRequest2 {
             }
 
             // Create the request
-            this.request = doRequest(options, responseHandler).on('error', errorHandler);
+            this._request = doRequest(options, responseHandler).on('error', errorHandler);
 
             if (this.opts.autoUnref) {
-                this.request.on('socket', (socket) => {
+                this._request.on('socket', (socket) => {
                     socket.unref();
                 });
             }
 
             // Node 0.4 and later won't accept empty data. Make sure it's needed.
             if (data) {
-                this.request.write(data);
+                this._request.write(data);
             }
 
-            this.request.end();
+            this._request.end();
 
             this.dispatchEvent("loadstart");
         } else { // Synchronous
@@ -488,9 +495,9 @@ export class XMLHttpRequest2 {
      * Aborts a request.
      */
     abort() {
-        if (this.request) {
-            this.request.destroy();
-            this.request = null!;
+        if (this._request) {
+            this._request.destroy();
+            this._request = null!;
         }
 
         this.headers = { ...defaultHeaders };

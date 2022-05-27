@@ -31,7 +31,6 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
-    "xmlhttprequest-ssl": "^2.0.0",
     "domino":"^2.1.6"
   },
   "directories": {
