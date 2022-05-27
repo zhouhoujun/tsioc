@@ -391,9 +391,10 @@ describe('HttpClient', () => {
     })
 
     it('redirect', async () => {
+        const result = 'reload';
         const r = await lastValueFrom(ctx.resolve(HttpClient).get('/device/status', { observe: 'response', params: { redirect: 'reload' }, responseType: 'text' }));
         expect(r.status).toEqual(200);
-        expect(r.body).toEqual('reload');
+        expect(r.body).toEqual(result);
     })
 
     after(() => {
