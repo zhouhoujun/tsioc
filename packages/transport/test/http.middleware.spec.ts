@@ -16,8 +16,8 @@ class ModuleB {
 
 }
 
-const key = fs.readFileSync(path.join(__dirname, './localhost-privkey.pem'));
-const cert = fs.readFileSync(path.join(__dirname, './localhost-cert.pem'));
+const key = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-privkey.pem'));
+const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.pem'));
 
 describe('middleware', () => {
 

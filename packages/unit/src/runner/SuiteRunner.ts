@@ -167,13 +167,6 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
 
 }
 
-
-// class UnitRunnableRef<T> extends DefaultRunnableRef<T> {
-//     override run() {
-//         return this.context.get(SuiteRunner).run();
-//     }
-// } 
-
 class SuiteRunnableFactory<T> extends DefaultRunnableFactory<T> {
     protected override createInstance(reflect: TypeReflect<T>, injector: Injector, options?: InvokeArguments, invokeMethod?: string): RunnableRef<T> {
         const runnableRef = new SuiteRunner(reflect, injector, options, invokeMethod);

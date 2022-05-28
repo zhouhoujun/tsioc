@@ -80,8 +80,12 @@ const logconfig = {
     }
 } as LogConfigure;
 
-const key = fs.readFileSync(path.join(__dirname, './localhost-privkey.pem'));
-const cert = fs.readFileSync(path.join(__dirname, './localhost-cert.pem'));
+
+// openssl req -x509 -days 3650 -newkey rsa:2048 -nodes -sha256 -subj '/CN=localhost' -keyout localhost-privkey.pem -out localhost-cert.pem
+
+const key = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-privkey.pem'));
+const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.pem'));
+
 
 @Module({
     baseURL: __dirname,

@@ -41,8 +41,9 @@ export const option = {
 } as ConnectionOptions;
 
 
-const key = fs.readFileSync(path.join(__dirname, './localhost-privkey.pem'));
-export const cert = fs.readFileSync(path.join(__dirname, './localhost-cert.pem'));
+export const key = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-privkey.pem'));
+export const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.pem'));
+
 
 @Module({
     // baseURL: __dirname,
