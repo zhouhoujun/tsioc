@@ -4,6 +4,8 @@ export * from './slice';
 export * from './sort';
 export * from './cases';
 export * from './date';
+export * from './times';
+export * from './bytes';
 
 //parses
 export * from './parses/bool.pipe';

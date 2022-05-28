@@ -1,5 +1,5 @@
-import { Endpoint, Interceptor, ServerContext, TransportContext } from '@tsdi/core';
-import { Abstract, Injectable, isNumber, Nullable } from '@tsdi/ioc';
+import { BytesPipe, Endpoint, Interceptor, ServerContext, TimesPipe, TransportContext } from '@tsdi/core';
+import { Abstract, Inject, Injectable, isNumber, Nullable } from '@tsdi/ioc';
 import { Level, Logger, LoggerManager, matchLevel } from '@tsdi/logs';
 import * as chalk from 'chalk';
 import { Observable, map } from 'rxjs';
@@ -51,33 +51,29 @@ export class LogInterceptor<TRequest = any, TResponse = any> implements Intercep
  */
 @Abstract()
 export abstract class ResponseStatusFormater {
+
+    @Inject()
+    protected bytes!: BytesPipe;
+    @Inject()
+    protected times!: TimesPipe;
+
+    constructor() {
+
+    }
+
     abstract format(ctx: TransportContext, hrtime: [number, number]): string[];
 
     protected formatSize(size?: number, precise = 2) {
         if (!isNumber(size)) return ''
-        let unit = '';
-        for (let i = 0; i < bits.length; i++) {
-            if (size >= bits[i]) {
-                unit = this.cleanZero((size / bits[i]).toFixed(precise)) + bitUnits[i];
-                break;
-            }
-        }
-        return chalk.gray(unit)
+        return chalk.gray(this.bytes.transform(size, precise))
     }
 
     protected formatHrtime(hrtime: [number, number], precise = 2): string {
         if (!hrtime) return '';
         const [s, ns] = hrtime;
-        const total = s + ns / 1e9;
+        const total = s * 1e3 + ns / 1e6;
 
-        let unitTime = '';
-        for (let i = 0; i < unitSize.length; i++) {
-            if (total >= unitSize[i]) {
-                unitTime = this.cleanZero((total / unitSize[i]).toFixed(precise)) + minimalDesc[i];
-                break;
-            }
-        }
-        return chalk.gray(unitTime)
+        return chalk.gray(this.times.transform(total, precise))
     }
 
     protected cleanZero(num: string) {
@@ -86,11 +82,5 @@ export abstract class ResponseStatusFormater {
 }
 
 const clrZReg = /\.?0+$/;
-
-const minimalDesc = ['h', 'min', 's', 'ms', 'μs', 'ns'];
-const unitSize = [60 * 60, 60, 1, 1e-3, 1e-6, 1e-9];
-
-const bits = [1024 * 1024 * 1024 * 1024, 1024 * 1024 * 1024, 1024 * 1024, 1024, 1];
-const bitUnits = ['tb', 'gb', 'mb', 'kb', 'b'];
 const incoming = chalk.gray('--->');
 const outgoing = chalk.gray('<---');

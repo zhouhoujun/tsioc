@@ -1,5 +1,5 @@
 import { Token, lang } from '@tsdi/ioc';
-import { Module } from '@tsdi/core';
+import { Module, TimesPipe } from '@tsdi/core';
 import { SuiteDescribe, RealtimeReporter, ICaseDescribe } from '@tsdi/unit';
 import { ServerModule, ServerLogsModule } from '@tsdi/platform-server';
 import * as chalk from 'chalk';
@@ -12,6 +12,10 @@ import * as chalk from 'chalk';
     ]
 })
 export class ConsoleReporter extends RealtimeReporter {
+
+    constructor(private timesPipe: TimesPipe) {
+        super();
+    }
 
     override track(error: Error): void {
         console.log(chalk.red(error.stack || error.message));
@@ -60,7 +64,7 @@ export class ConsoleReporter extends RealtimeReporter {
             reportStr = reportStr + ' ' + chalk.red(failed.toString() + ' failed')
         }
         if (sus.length) {
-            reportStr = reportStr + chalk.gray(` (${(last?.end ?? 0) - (first?.start ?? 0)}ms)`)
+            reportStr = reportStr + chalk.gray(` (${this.timesPipe.transform((last?.end ?? 0) - (first?.start ?? 0))})`)
         }
 
         reportStr += '\n';
