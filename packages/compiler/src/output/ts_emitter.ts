@@ -32,8 +32,8 @@ export type ReferenceFilter = (reference: o.ExternalReference) => boolean;
 
 export class TypeScriptEmitter implements OutputEmitter {
   emitStatementsAndContext(
-    genFilePath: string, stmts: o.Statement[], preamble: string = '',
-    emitSourceMaps: boolean = true, referenceFilter?: ReferenceFilter,
+    genFilePath: string, stmts: o.Statement[], preamble = '',
+    emitSourceMaps = true, referenceFilter?: ReferenceFilter,
     importFilter?: ReferenceFilter): { sourceText: string, context: EmitterVisitorContext } {
     const converter = new _TsEmitterVisitor(referenceFilter, importFilter);
 
@@ -67,7 +67,7 @@ export class TypeScriptEmitter implements OutputEmitter {
     return { sourceText: lines.join('\n'), context: ctx };
   }
 
-  emitStatements(genFilePath: string, stmts: o.Statement[], preamble: string = '') {
+  emitStatements(genFilePath: string, stmts: o.Statement[], preamble = '') {
     return this.emitStatementsAndContext(genFilePath, stmts, preamble).sourceText;
   }
 }
@@ -83,7 +83,7 @@ class _TsEmitterVisitor extends AbstractEmitterVisitor implements o.TypeVisitor 
   importsWithPrefixes = new Map<string, string>();
   reexports = new Map<string, { name: string, as: string }[]>();
 
-  visitType(t: o.Type | null, ctx: EmitterVisitorContext, defaultType: string = 'any') {
+  visitType(t: o.Type | null, ctx: EmitterVisitorContext, defaultType = 'any') {
     if (t) {
       this.typeExpression++;
       t.visitType(this, ctx);

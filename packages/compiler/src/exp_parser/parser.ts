@@ -1,3 +1,5 @@
+/* eslint-disable no-constant-condition */
+/* eslint-disable no-case-declarations */
 /**
  * @license
  * Copyright Google LLC All Rights Reserved.
@@ -214,7 +216,7 @@ export class Parser {
     let i = 0;
     let atInterpolation = false;
     let extendLastString = false;
-    let { start: interpStart, end: interpEnd } = markers;
+    const { start: interpStart, end: interpEnd } = markers;
     while (i < input.length) {
       if (!atInterpolation) {
         // parse until starting {{
@@ -394,7 +396,7 @@ export class _ParseAST {
   // and may change for subsequent expressions visited by the parser.
   private sourceSpanCache = new Map<string, AbsoluteSourceSpan>();
 
-  index: number = 0;
+  index = 0;
 
   constructor(
     public input: string, public location: string, public absoluteOffset: number,
@@ -584,8 +586,8 @@ export class _ParseAST {
         if (!this.parseAction) {
           this.error('Binding expression cannot contain chained expression');
         }
-        while (this.consumeOptionalCharacter(chars.$SEMICOLON)) {
-        }  // read all semicolons
+        while (this.consumeOptionalCharacter(chars.$SEMICOLON)) { // read all semicolons
+        }  
       } else if (this.index < this.tokens.length) {
         this.error(`Unexpected token '${this.next}'`);
       }
@@ -761,7 +763,7 @@ export class _ParseAST {
         case '+':
         case '-':
           this.advance();
-          let right = this.parseMultiplicative();
+          const right = this.parseMultiplicative();
           result = new Binary(this.span(start), this.sourceSpan(start), operator, result, right);
           continue;
       }
@@ -781,7 +783,7 @@ export class _ParseAST {
         case '%':
         case '/':
           this.advance();
-          let right = this.parsePrefix();
+          const right = this.parsePrefix();
           result = new Binary(this.span(start), this.sourceSpan(start), operator, result, right);
           continue;
       }

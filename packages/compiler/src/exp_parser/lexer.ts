@@ -1,3 +1,4 @@
+/* eslint-disable no-constant-condition */
 /**
  * @license
  * Copyright Google LLC All Rights Reserved.
@@ -157,8 +158,8 @@ export const EOF: Token = new Token(-1, -1, TokenType.Character, 0, '');
 
 class _Scanner {
   length: number;
-  peek: number = 0;
-  index: number = -1;
+  peek = 0;
+  index = -1;
 
   constructor(public input: string) {
     this.length = input.length;
@@ -346,7 +347,7 @@ class _Scanner {
     const quote: number = this.peek;
     this.advance();  // Skip initial quote.
 
-    let buffer: string = '';
+    let buffer = '';
     let marker: number = this.index;
     const input: string = this.input;
 
@@ -356,6 +357,7 @@ class _Scanner {
         this.advance();
         let unescapedCode: number;
         // Workaround for TS2.1-introduced type strictness
+        // eslint-disable-next-line no-self-assign
         this.peek = this.peek;
         if (this.peek == chars.$u) {
           // 4 character hex code for unicode character.
@@ -365,7 +367,7 @@ class _Scanner {
           } else {
             return this.error(`Invalid unicode escape [\\u${hex}]`, 0);
           }
-          for (let i: number = 0; i < 5; i++) {
+          for (let i = 0; i < 5; i++) {
             this.advance();
           }
         } else {
@@ -389,7 +391,7 @@ class _Scanner {
 
   scanQuestion(start: number): Token {
     this.advance();
-    let str: string = '?';
+    let str = '?';
     // Either `a ?? b` or 'a?.b'.
     if (this.peek === chars.$QUESTION || this.peek === chars.$PERIOD) {
       str += this.peek === chars.$PERIOD ? '.' : '?';

@@ -215,7 +215,7 @@ export abstract class AbstractJsEmitterVisitor extends AbstractEmitterVisitor {
 
 
 export class JavaScriptEmitter implements OutputEmitter {
-  emitStatements(genFilePath: string, stmts: o.Statement[], preamble: string = ''): string {
+  emitStatements(genFilePath: string, stmts: o.Statement[], preamble = ''): string {
     const converter = new JsEmitterVisitor();
     const ctx = EmitterVisitorContext.createRoot();
     converter.visitAllStatements(stmts, ctx);

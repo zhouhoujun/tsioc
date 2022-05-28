@@ -48,7 +48,7 @@ export class EmitterVisitorContext {
         return this._lines[this._lines.length - 1];
     }
 
-    println(from?: { sourceSpan: ParseSourceSpan | null } | null, lastPart: string = ''): void {
+    println(from?: { sourceSpan: ParseSourceSpan | null } | null, lastPart = ''): void {
         this.print(from || null, lastPart, true);
     }
 
@@ -60,7 +60,7 @@ export class EmitterVisitorContext {
         return this._currentLine.indent * _INDENT_WITH.length + this._currentLine.partsLength;
     }
 
-    print(from: { sourceSpan: ParseSourceSpan | null } | null, part: string, newLine: boolean = false) {
+    print(from: { sourceSpan: ParseSourceSpan | null } | null, part: string, newLine = false) {
         if (part.length > 0) {
             this._currentLine.parts.push(part);
             this._currentLine.partsLength += part.length;
@@ -109,7 +109,7 @@ export class EmitterVisitorContext {
             .join('\n');
     }
 
-    toSourceMapGenerator(genFilePath: string, startsAtLine: number = 0): SourceMapGenerator {
+    toSourceMapGenerator(genFilePath: string, startsAtLine = 0): SourceMapGenerator {
         const map = new SourceMapGenerator(genFilePath);
 
         let firstOffsetMapped = false;
@@ -584,7 +584,7 @@ export abstract class AbstractEmitterVisitor implements o.StatementVisitor, o.Ex
 }
 
 export function escapeIdentifier(
-    input: string, escapeDollar: boolean, alwaysQuote: boolean = true): any {
+    input: string, escapeDollar: boolean, alwaysQuote = true): any {
     if (input == null) {
         return null;
     }

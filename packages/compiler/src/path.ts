@@ -45,7 +45,7 @@ export class AstPath<T> {
 
     first<N extends T>(ctor: { new(...args: any[]): N }): N | undefined {
         for (let i = this.path.length - 1; i >= 0; i--) {
-            let item = this.path[i];
+            const item = this.path[i];
             if (item instanceof ctor) return <N>item;
         }
     }

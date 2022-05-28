@@ -226,7 +226,7 @@ export abstract class Expression {
   and(rhs: Expression, sourceSpan?: ParseSourceSpan | null): BinaryOperatorExpr {
     return new BinaryOperatorExpr(BinaryOperator.And, this, rhs, null, sourceSpan);
   }
-  bitwiseAnd(rhs: Expression, sourceSpan?: ParseSourceSpan | null, parens: boolean = true):
+  bitwiseAnd(rhs: Expression, sourceSpan?: ParseSourceSpan | null, parens = true):
     BinaryOperatorExpr {
     return new BinaryOperatorExpr(BinaryOperator.BitwiseAnd, this, rhs, null, sourceSpan, parens);
   }
@@ -1693,7 +1693,7 @@ class _ApplySourceSpanTransformer extends AstTransformer {
   }
   private _clone(obj: any): any {
     const clone = Object.create(obj.constructor.prototype);
-    for (let prop of Object.keys(obj)) {
+    for (const prop of Object.keys(obj)) {
       clone[prop] = obj[prop];
     }
     return clone;
@@ -1717,7 +1717,7 @@ class _ApplySourceSpanTransformer extends AstTransformer {
 }
 
 export function leadingComment(
-  text: string, multiline: boolean = false, trailingNewline: boolean = true): LeadingComment {
+  text: string, multiline = false, trailingNewline = true): LeadingComment {
   return new LeadingComment(text, multiline, trailingNewline);
 }
 

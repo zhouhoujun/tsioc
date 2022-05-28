@@ -9,17 +9,14 @@
 import { TagContentType, TagDefinition } from './tags';
 
 export class XmlTagDefinition implements TagDefinition {
-  closedByParent: boolean = false;
-  // TODO(issue/24571): remove '!'.
+  closedByParent = false;
   requiredParents!: { [key: string]: boolean };
-  // TODO(issue/24571): remove '!'.
   parentToAdd!: string;
-  // TODO(issue/24571): remove '!'.
   implicitNamespacePrefix!: string;
-  isVoid: boolean = false;
-  ignoreFirstLf: boolean = false;
-  canSelfClose: boolean = true;
-  preventNamespaceInheritance: boolean = false;
+  isVoid = false;
+  ignoreFirstLf = false;
+  canSelfClose = true;
+  preventNamespaceInheritance = false;
 
   requireExtraParent(currentParent: string): boolean {
     return false;

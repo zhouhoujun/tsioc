@@ -86,7 +86,7 @@ class HtmlAstToIvyAst implements html.Visitor {
   contentSelectors: string[] = [];
   // This array will be populated if `Render3ParseOptions['collectCommentNodes']` is true
   commentNodes: t.Comment[] = [];
-  private inI18nBlock: boolean = false;
+  private inI18nBlock = false;
 
   constructor(private bindingParser: BindingParser, private options: Render3ParseOptions) { }
 
@@ -455,7 +455,7 @@ class NonBindableVisitor implements html.Visitor {
     const children: t.Node[] = html.visitAll(this, ast.children, null);
     return new t.Element(
       ast.name, html.visitAll(this, ast.attrs) as t.TextAttribute[],
-         /* inputs */[], /* outputs */[], children,  /* references */[], ast.sourceSpan,
+         /* inputs */[], /* outputs */[], children, /* references */[], ast.sourceSpan,
       ast.startSourceSpan, ast.endSourceSpan);
   }
 

@@ -1,3 +1,5 @@
+/* eslint-disable no-useless-escape */
+/* eslint-disable no-cond-assign */
 /**
  * @license
  * Copyright Google LLC All Rights Reserved.
@@ -153,7 +155,7 @@
     * [MDN web link for more
     * info](https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors).
     * @param attr the attribute to escape.
-    * @returns the escaped string. 
+    * @returns the escaped string.
     */
    escapeAttribute(attr: string): string {
      return attr.replace(/\\/g, '\\\\').replace(/\$/g, '\\$');
@@ -196,7 +198,7 @@
      return result.concat(this.attrs);
    }
  
-   addAttribute(name: string, value: string = '') {
+   addAttribute(name: string, value = '') {
      this.attrs.push(name, value && value.toLowerCase() || '');
    }
  
@@ -258,7 +260,7 @@
     */
    private _addSelectable(
        cssSelector: CssSelector, callbackCtxt: T, listContext: SelectorListContext) {
-     let matcher: SelectorMatcher<T> = this;
+     let matcher = this as SelectorMatcher<T>;
      const element = cssSelector.element;
      const classNames = cssSelector.classNames;
      const attrs = cssSelector.attrs;
@@ -432,7 +434,7 @@
  
  
  export class SelectorListContext {
-   alreadyMatched: boolean = false;
+   alreadyMatched = false;
  
    constructor(public selectors: CssSelector[]) {}
  }

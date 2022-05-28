@@ -1,3 +1,4 @@
+/* eslint-disable no-constant-condition */
 /**
  * @license
  * Copyright Google LLC All Rights Reserved.
@@ -160,7 +161,7 @@ class _Tokenizer {
     private _currentTokenStart: CharacterCursor | null = null;
     private _currentTokenType: TokenType | null = null;
     private _expansionCaseStack: TokenType[] = [];
-    private _inInterpolation: boolean = false;
+    private _inInterpolation = false;
     private readonly _preserveLineEndings: boolean;
     private readonly _escapedString: boolean;
     private readonly _i18nNormalizeLineEndingsInICUs: boolean;
@@ -489,7 +490,7 @@ class _Tokenizer {
 
     private _consumePrefixAndName(): string[] {
         const nameOrPrefixStart = this._cursor.clone();
-        let prefix: string = '';
+        let prefix = '';
         while (this._cursor.peek() !== chars.$COLON && !isPrefixEnd(this._cursor.peek())) {
             this._cursor.advance();
         }
@@ -939,7 +940,7 @@ class PlainCharacterCursor implements CharacterCursor {
 
     getSpan(start?: this, leadingTriviaCodePoints?: number[]): ParseSourceSpan {
         start = start || this;
-        let fullStart = start;
+        const fullStart = start;
         if (leadingTriviaCodePoints) {
             while (this.diff(start) > 0 && leadingTriviaCodePoints.indexOf(start.peek()) !== -1) {
                 if (fullStart === start) {

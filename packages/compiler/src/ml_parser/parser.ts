@@ -1,3 +1,4 @@
+/* eslint-disable no-constant-condition */
 /**
  * @license
  * Copyright Google LLC All Rights Reserved.
@@ -41,7 +42,7 @@ export class Parser {
 }
 
 class _TreeBuilder {
-  private _index: number = -1;
+  private _index = -1;
   // `_peek` will be initialized by the call to `advance()` in the constructor.
   private _peek!: lex.Token;
   private _elementStack: html.Element[] = [];

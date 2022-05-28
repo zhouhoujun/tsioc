@@ -57,7 +57,7 @@ export class ExpansionError extends ParseError {
  * @internal
  */
 class _Expander implements html.Visitor {
-    isExpanded: boolean = false;
+    isExpanded = false;
     errors: ParseError[] = [];
 
     visitElement(element: html.Element, context: any): any {

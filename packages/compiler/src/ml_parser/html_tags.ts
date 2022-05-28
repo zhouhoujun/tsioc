@@ -13,11 +13,11 @@ export class HtmlTagDefinition implements TagDefinition {
   private contentType: TagContentType |
   { default: TagContentType, [namespace: string]: TagContentType };
 
-  closedByParent: boolean = false;
+  closedByParent = false;
   implicitNamespacePrefix: string | null;
   isVoid: boolean;
   ignoreFirstLf: boolean;
-  canSelfClose: boolean = false;
+  canSelfClose = false;
   preventNamespaceInheritance: boolean;
 
   constructor({

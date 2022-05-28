@@ -126,8 +126,8 @@ export class RecursiveVisitor implements Visitor {
 
     private visitChildren<T extends Node>(
         context: any, cb: (visit: (<V extends Node>(children: V[] | undefined) => void)) => void) {
-        let results: any[][] = [];
-        let t = this;
+        const results: any[][] = [];
+        const t = this as Visitor;
         function visit<T extends Node>(children: T[] | undefined) {
             if (children) results.push(visitAll(t, children, context));
         }

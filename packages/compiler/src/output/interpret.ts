@@ -1,3 +1,4 @@
+/* eslint-disable prefer-spread */
 /**
  * @license
  * Copyright Google LLC All Rights Reserved.
@@ -336,9 +337,8 @@ class StatementInterpreter implements o.StatementVisitor, o.ExpressionVisitor {
     }
   }
   visitReadPropExpr(ast: o.ReadPropExpr, ctx: _ExecutionContext): any {
-    let result: any;
     const receiver = ast.receiver.visitExpression(this, ctx);
-    result = receiver[ast.name];
+    const result = receiver[ast.name];
     return result;
   }
   visitReadKeyExpr(ast: o.ReadKeyExpr, ctx: _ExecutionContext): any {
