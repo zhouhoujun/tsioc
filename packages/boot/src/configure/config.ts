@@ -1,6 +1,8 @@
 import { Type, LoadType, ProvidersMetadata, Abstract, Injector, tokenId, Token } from '@tsdi/ioc';
 import { LogConfigure } from '@tsdi/logs';
 import { ConnectionOptions } from '@tsdi/repository';
+import { SecureContextOptions } from 'node:tls';
+
 
 /**
  * application Configuration.
@@ -53,47 +55,10 @@ export interface ApplicationConfiguration extends ProvidersMetadata, Record<stri
      */
     connections?: ConnectionOptions | ConnectionOptions[];
     /**
-     * application controllers.
+     * boot services.
      */
-    controllers?: Array<string | Type>;
-    /**
-     * service port
-     */
-    port?: number;
-    /**
-     * service hostname
-     */
-    hostname?: string;
-    /**
-     * subdomain offset.
-     */
-    subdomainOffset?: number;
-    /**
-     * server options
-     * 
-     * 
-     * @param {string | Buffer | Array<string | Buffer>} cert
-     * Cert chains in PEM format. One cert chain should be provided per
-     *  private key. Each cert chain should consist of the PEM formatted
-     *  certificate for a provided private key, followed by the PEM
-     *  formatted intermediate certificates (if any), in order, and not
-     *  including the root CA (the root CA must be pre-known to the peer,
-     *  see ca). When providing multiple cert chains, they do not have to
-     *  be in the same order as their private keys in key. If the
-     *  intermediate certificates are not provided, the peer will not be
-     *  able to validate the certificate, and the handshake will fail.
-     * 
-     * @param {string | Buffer | Array<Buffer | KeyObject>} key
-     * Private keys in PEM format. PEM allows the option of private keys
-     * being encrypted. Encrypted keys will be decrypted with
-     * options.passphrase. Multiple keys using different algorithms can be
-     * provided either as an array of unencrypted key strings or buffers,
-     * or an array of objects in the form {pem: <string|buffer>[,
-     * passphrase: <string>]}. The object form can only occur in an array.
-     * object.passphrase is optional. Encrypted keys will be decrypted with
-     * object.passphrase if provided, or options.passphrase if it is not.
-     */
-    serverOptions?: Record<string, any> | { key?: any, cert?: any };
+    boot: BootServiceOptions | BootServiceOptions[];
+
 }
 
 /**
@@ -115,6 +80,32 @@ export abstract class Settings implements Record<string, any> {
 
 }
 
+/**
+ * boot service options.
+ */
+export interface BootServiceOptions extends SecureContextOptions, Record<string, any> {
+    /**
+     * boot service type.
+     */
+    serviceType: 'http2' | 'http1' | 'tcp' | 'amqp' | 'grpc' | 'mqtt' | 'modbus' | 'kafka' | 'nats' | 'redis' | 'ws' | Type;
+    /**
+     * service controllers.
+     * default  ['./controllers/**\/*.(ts|js)'],
+     */
+    controllers?: Array<string | Type>;
+    /**
+     * service port
+     */
+    port?: number;
+    /**
+     * service hostname
+     */
+    hostname?: string;
+    /**
+     * subdomain offset.
+     */
+    subdomainOffset?: number;
+}
 
 /**
  * configure loader.

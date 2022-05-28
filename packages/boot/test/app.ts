@@ -6,8 +6,8 @@ import { ServerHttpClientModule } from '@tsdi/platform-server-common';
 import { Connection } from 'typeorm';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
 import { Role, User } from './models/models';
-import { UserController } from './mapping/UserController';
-import { RoleController } from './mapping/RoleController';
+import { UserController } from './controllers/UserController';
+import { RoleController } from './controllers/RoleController';
 import { UserRepository } from './repositories/UserRepository';
 import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
 
