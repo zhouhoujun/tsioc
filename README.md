@@ -1,13 +1,7 @@
-# packaged @tsdi/ioc
+tsioc is application frameworks.
 
-This repo is for distribution on `npm`. The source for this module is in the
-[main repo](https://github.com/zhouhoujun/tsioc).
 
-`@tsdi/ioc` is Ioc container, Injector, via typescript decorator.
-
-version 5+ of [`@ts-ioc/core`](https://www.npmjs.com/package/@ts-ioc/core) [`tsioc`](https://www.npmjs.com/package/tsioc)
-
-# builder
+# source build
 
 ```shell
 build: npm run build
@@ -22,15 +16,33 @@ npm run build -- --setvs=4.0.0-beta
 
 ```
 
-# Install
+
+# Install cli
 
 ```shell
-
-npm install @tsdi/ioc
-
+npm i -g @tsdi/cli
 ```
 
-## add extends modules
+# Quick start
+## new project
+
+```shell
+tsdi new [application name] 
+```
+
+## test project
+
+* use shell
+```shell
+tsdi test
+```
+* debug test use vscode debug
+
+
+
+# publish modules
+
+## ioc, module `@tsdi/ioc` 
 
 ### use aop
 
@@ -54,8 +66,6 @@ container.use(AopModule);
 container.register(AopModule);
 // or
 container.inject(AopModule)
-//or
-container.injectModule(AopModule)
 
 ```
 
@@ -84,16 +94,7 @@ container.use(LogModule);
 
 # Documentation
 
-## core
-
-### extends ioc
-1. `@IocExt` class decortator, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
-2. add service resolve.
-3. module inject.
-
-
-## Ioc
-
+## ioc, module `@tsdi/ioc`
 1. Register one class will auto register depdence class (must has a class decorator).
 
 2. get Instance can auto create constructor param.  (must has a class decorator or register in container).
@@ -101,24 +102,28 @@ container.use(LogModule);
 ### decorators
 
 1. `@Abstract`  abstract class decorator.
-2. `@AutoRun`   class, method decorator, use to define the class auto run (via a method or not) after registered.
-3. `@AutoWried`  property or param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
+2. `@Autorun`   class and method decorator, use to define the class auto run (via a method or not) after registered.
+3. `@Autowried` alias name `@AutoWried` property or param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
 4. `@Inject`  property or param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
 5. `@Injectable` class decortator, use to define the class. it can setting provider to some token, singleton or not.
-6. `@AutoWried` method decorator.
+6. `@IocExt` class decortator, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
 7. `@Param`   param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
-8. `@Singleton` class decortator, use to define the class is singleton.
-9. `@Providers` Providers decorator, for class. use to add private ref service for the class.
-10. `@Refs` Refs decorator, for class. use to define the class as a service for target.
+8. `@Singleton` class decortator, use to define the class is singleton in global.
+9. `@Static` class decortator, use to define the class is static in injector.
+10. `@Providers` Providers decorator, for class. use to add private ref service for the class.
+11. `@ProviderIn` alias `@Refs` ProviderIn decorator, for class. use to define the class as a service for target.
+12. `@Nullable` param decoator. define param can enable null.
+13. `@Optional` Parameter decorator to be used on constructor parameters, which marks the parameter as being an optional dependency. The DI framework provides `null` if the dependency is not found. Can be used together with other parameter decorators that modify how dependency injection operates.
+14. `@Self` Parameter decorator to be used on constructor parameters, which tells the DI framework to start dependency resolution from the local injector. Resolution works upward through the injector hierarchy, so the children of this class must configure their own providers or be prepared for a `null` result.
+15. `@SkipSelf` Parameter decorator to be used on constructor parameters, which tells the DI framework to start dependency resolution from the parent injector. Resolution works upward through the injector hierarchy, so the local injector is not checked for a provider.
+16. `@Host` Parameter decorator on a compose element provider parameter of a class constructor that tells the DI framework to resolve the view by checking injectors of child elements, and stop when reaching the host element of the current component.
 
-
-## AOP
-
+## aop, module `@tsdi/aop`
 It's a dynamic aop base on ioc.
 
 define a Aspect class, must with decorator:
 
-* `@Aspect` Aspect decorator, define for class.  use to define class as aspect. it can setting provider to some token, singleton or not.
+* `@Aspect()` Aspect decorator, define for class.  use to define class as aspect. it can setting provider to some token, singleton or not.
 
 * `@Before(matchstring|RegExp)` method decorator,  aop Before advice decorator.
 
@@ -135,14 +140,336 @@ define a Aspect class, must with decorator:
 
 see [simples](https://github.com/zhouhoujun/tsioc/tree/master/packages/aop/test/aop)
 
+## core, module `@tsdi/core`
+Application framework.
 
-## boot
-DI Module manager, application bootstrap. base on AOP.
+### Decorators
+Module manager, application bootstrap. base on AOP.
 
-*  `@DIModule` DIModule decorator, use to define class as DI Module.
-*  `@Bootstrap` Bootstrap decorator, use to define class as bootstrp module.
-*  `@Annotation` Annotation decorator, use to define class build metadata config.
-*  `@Message`  Message decorator, for class. use to define the class as message handle register in global message queue.
+*  `@Module` Module decorator, use to define class as ioc Module. alias name @DIModule.
+*  `@ComponentScan`ComponentScan decorator, use to auto scan server or client for application.
+*  `@Handle`  Handle decorator, for class. use to define the class as handle register in global handle queue or parent; for method as message handle, use to handle route message event, in class with decorator {@link RouteMapping}.
+*  `@RouteMapping` route mapping decorator, for class. use to define this class as message route.
+*  `@RequestPath` Request path parameter decorator for route mapping.
+*  `@RequestParam` Request query parameter decorator for route mapping.
+*  `@RequestBody` Request body parameter decorator for route mapping.
+*  `@Pipe` Pipe decorator, define for class. use to define the class. it can setting provider to some token, singleton or not. it will execute  [`PipeLifecycle`]
+
+[application simple](https://github.com/zhouhoujun/type-mvc/tree/master/packages/simples)
+
+
+### Quick start
+```ts
+import { Controller, Delete, Get, Post, Put, RequestParam } from '@tsdi/core';
+import { lang } from '@tsdi/ioc';
+import { Log, Logger } from '@tsdi/logs';
+import { Repository, Transactional } from '@tsdi/repository';
+import { InternalServerError } from '@tsdi/transport';
+import { User } from '../models/models';
+import { UserRepository } from '../repositories/UserRepository';
+
+@Controller('/users')
+export class UserController {
+
+    // @Inject() injector!: Injector;
+    // @Log() logger!: ILogger;
+
+    constructor(private usrRep: UserRepository, @Log() private logger: Logger) {
+
+    }
+
+
+    @Get('/:name')
+    getUser(name: string) {
+        this.logger.log('name:', name);
+        return this.usrRep.findByAccount(name);
+    }
+
+    @Transactional()
+    @Post('/')
+    @Put('/')
+    async modify(user: User, @RequestParam({ nullable: true }) check?: boolean) {
+        this.logger.log(lang.getClassName(this.usrRep), user);
+        const val = await this.usrRep.save(user);
+        if(check) throw new InternalServerError('check');
+        this.logger.log(val);
+        return val;
+    }
+
+    @Transactional()
+    @Post('/save')
+    @Put('/save')
+    async modify2(user: User, @Repository() userRepo: UserRepository, @RequestParam({ nullable: true }) check?: boolean) {
+        this.logger.log(lang.getClassName(this.usrRep), user);
+        const val = await userRepo.save(user);
+        if(check) throw new InternalServerError('check');
+        this.logger.log(val);
+        return val;
+    }
+
+    @Transactional()
+    @Delete('/:id')
+    async del(id: string) {
+        this.logger.log('id:', id);
+        await this.usrRep.delete(id);
+        return true;
+    }
+
+}
+
+
+
+@Controller('/roles')
+export class RoleController {
+
+    constructor(@DBRepository(Role) private repo: Repository<Role>, @Log() private logger: Logger) {
+
+    }
+
+    @Transactional()
+    @Post('/')
+    @Put('/')
+    async save(role: Role, @RequestParam({ nullable: true }) check?: boolean) {
+        this.logger.log(role);
+        console.log('save isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
+        const value = await this.repo.save(role);
+        if (check) throw new InternalServerError('check');
+        this.logger.info(value);
+        return value;
+    }
+
+    @Transactional()
+    @Post('/save2')
+    @Put('/save2')
+    async save2(role: Role, @DBRepository(Role) roleRepo: Repository<Role>, @RequestParam({ nullable: true }) check?: boolean) {
+        this.logger.log(role);
+        console.log('save2 isTransactionActive:', roleRepo.queryRunner?.isTransactionActive);
+        const value = await roleRepo.save(role);
+        if (check) throw new InternalServerError('check');
+        this.logger.info(value);
+        return value;
+    }
+
+
+    @Get('/:name')
+    async getRole(name: string) {
+        this.logger.log('name:', name);
+        console.log('getRole isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
+        return await this.repo.findOne({ where: { name } });
+    }
+
+
+    @Transactional()
+    @Delete('/:id')
+    async del(id: string) {
+        this.logger.log('id:', id);
+        console.log('del isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
+        await this.repo.delete(id);
+        return true;
+    }
+
+
+}
+
+
+```
+
+### service In nodejs.
+
+```ts
+import { Application, Module }  from '@tsdi/core';
+import { LogModule } from '@tsdi/logs';
+import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
+import { TypeOrmModule }  from '@tsdi/typeorm-adapter';
+import { Http, HttpClientOptions, HttpModule, HttpServer } from '@tsdi/transport';
+import { ServerModule } from '@tsdi/platform-server';
+
+const key = fs.readFileSync(path.join(__dirname, './cert/localhost-privkey.pem'));
+const cert = fs.readFileSync(path.join(__dirname, './cert/localhost-cert.pem'));
+
+@Module({
+    // baseURL: __dirname,
+    imports: [
+        ServerModule,
+        LoggerModule,
+        HttpModule.withOption({
+            majorVersion: 2,
+            options: {
+                allowHTTP1: true,
+                key,
+                cert
+            }
+        }),
+        TransactionModule,
+        TypeOrmModule.withConnection({
+            name: 'xx',
+            type: 'postgres',
+            host: 'localhost',
+            port: 5432,
+            username: 'postgres',
+            password: 'postgres',
+            database: 'testdb',
+            synchronize: true, // 同步数据库
+            logging: false  // 日志,
+            models: ['./models/**/*.ts'],
+            repositories: ['./repositories/**/*.ts'],
+        })
+    ],
+    declarations: [
+        UserController,
+        RoleController
+    ],
+    bootstrap: HttpServer
+})
+export class Http2ServerModule {
+
+}
+
+Application.run(Http2ServerModule);
+
+```
+
+
+### Service In Browser.
+
+```ts
+import { Application, Module }  from '@tsdi/core';
+import { LogModule } from '@tsdi/logs';
+import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
+import { TypeOrmModule }  from '@tsdi/typeorm-adapter';
+import { BrowserModule } from '@tsdi/platform-browser';
+
+@Module({
+    imports: [
+        LogModule,
+        BrowserModule,
+        // import TransactionModule can enable transaction by AOP.
+        TransactionModule, 
+        TypeOrmModule.withOptions({
+            host: 'localhost',
+            port: 5432,
+            username: 'postgres',
+            password: 'postgres',
+            database: 'testdb',
+            entities: [
+                Role,
+                User
+            ],
+            repositories: [UserRepository]
+        })
+    ],
+    providers: [
+        UserController,
+        RoleController
+    ]
+})
+export class MockTransBootTest {
+
+}
+
+Application.run(MockTransBootTest)
+
+```
+
+
+```ts
+// model flies in  ./models/**/*.ts
+import { Entity, Column, ManyToOne, PrimaryGeneratedColumn, OneToMany, EntityRepository, Repository, Connection } from 'typeorm';
+
+@Entity()
+export class Role {
+    @PrimaryGeneratedColumn('uuid')
+    id!: string;
+
+    @Column({ length: 50 })
+    name!: string;
+
+    @OneToMany(type => User, user => user.role, { nullable: true })
+    users!: User[]
+}
+
+
+@Entity()
+export class User {
+    constructor() {
+    }
+
+    @PrimaryGeneratedColumn('uuid')
+    id!: string;
+
+
+    @Column({ length: 50 })
+    name!: string;
+
+    @Column({
+        unique: true
+    })
+    account!: string;
+
+    @Column()
+    password!: string;
+
+    @Column({ nullable: true, length: 50 })
+    email!: string;
+
+    @Column({ nullable: true, length: 50 })
+    phone!: string;
+
+    @Column({ type: 'boolean', nullable: true })
+    gender!: boolean;
+
+    @Column({ type: 'int', nullable: true })
+    age!: number;
+
+    @ManyToOne(type => Role, role => role.users, { nullable: true })
+    role!: Role;
+
+}
+
+```
+
+```ts
+// repositories in  ./repositories/**/*.ts
+import { EntityRepository, Repository } from 'typeorm';
+import { User } from '../models';
+
+@EntityRepository(User)
+export class UserRepository extends Repository<User> {
+    
+    async findByAccount(account: string) {
+        return await this.findOne({ where: { account } });
+    }
+
+    search(key: string, skip?: number, take?: number) {
+        const keywords =  `%${key}%`;
+        return this.createQueryBuilder('usr')
+            .where('usr.name = :keywords OR usr.id = :key', { keywords, key })
+            .skip(skip)
+            .take(take)
+            .getManyAndCount();
+    }
+}
+
+
+```
+
+
+
+## repository, module `@tsdi/repository`
+orm repository for application.
+
+### Decorators
+application repository. base on AOP.
+
+*  `@Repository` alias name `@DBRepository` Repository Decorator, to autowired repository for paramerter or filed.
+*  `@Transactional` Transactional Decorator, define transaction propagation behaviors.
+
+[mvc boot simple](https://github.com/zhouhoujun/type-mvc/tree/master/packages/simples)
+
+
+
+## boot, module `@tsdi/boot`
+bootstrap app base on core with application configuration.
 
 [mvc boot simple](https://github.com/zhouhoujun/type-mvc/tree/master/packages/simples)
 
@@ -171,7 +498,7 @@ export class ModuleA {
 
 }
 
-@Injectable
+@Injectable()
 export class ClassSevice {
     @Inject('mark')
     mark: string;
@@ -181,7 +508,7 @@ export class ClassSevice {
     }
 }
 
-@Aspect
+@Aspect()
 export class Logger {
 
     @Around('execution(*.start)')
@@ -280,7 +607,7 @@ you can use yourself `MethodAccessor` by implement IMethodAccessor, register `Me
 
 ```ts
 
-@Injectable
+@Injectable()
 class Person {
     constructor() {
 
@@ -290,12 +617,12 @@ class Person {
     }
 }
 
-@Injectable
+@Injectable()
 class Child extends Person {
     constructor() {
         super();
     }
-    say() {
+    override say() {
         return 'Mama';
     }
 }
@@ -333,7 +660,7 @@ class MethodTest3 {
     }
 }
 
-@Injectable
+@Injectable()
 class Geet {
     constructor(private name: string){
 
@@ -370,29 +697,29 @@ container.invoke(MethodTest3, 'sayHello');
 
 ```ts
 
-import { Method, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, Aspect } from '@tsdi/core';
+import { Method, ContainerBuilder, Autowired, Injectable, Singleton, IContainer, ParameterMetadata, Param, Aspect } from '@tsdi/core';
 
 
 export class SimppleAutoWried {
     constructor() {
     }
 
-    @AutoWired
+    @Autowired()
     dateProperty: Date;
 }
 
-@Singleton
+@Singleton()
 export class Person {
     name = 'testor';
 }
 // > v0.3.5 all class decorator can depdence.
-@Singleton
-// @Injectable
+@Singleton()
+// @Injectable()
 export class RoomService {
     constructor() {
 
     }
-    @AutoWired
+    @Autowired()
     current: Date;
 }
 
@@ -414,14 +741,14 @@ export class MiddleSchoolStudent extends Student {
     constructor() {
         super();
     }
-    sayHi() {
+    override sayHi() {
         return 'I am a middle school student';
     }
 }
 
 @Injectable()
 export class MClassRoom {
-    @AutoWired(MiddleSchoolStudent)
+    @Autowired(MiddleSchoolStudent)
     leader: Student;
     constructor() {
 
@@ -434,26 +761,26 @@ export class CollegeStudent extends Student {
     constructor() {
         super();
     }
-    sayHi() {
+    override sayHi() {
         return 'I am a college student';
     }
 }
 
-@Injectable
+@Injectable()
 export class CollegeClassRoom {
     constructor(
         @Param(CollegeStudent)
-        @AutoWired(CollegeStudent)
+        @Autowired(CollegeStudent)
         public leader: Student) {
 
     }
 }
 
 
-@Injectable
+@Injectable()
 export class InjMClassRoom {
     // @Inject(MiddleSchoolStudent)
-    @Inject
+    @Inject()
     // @Inject({ type: MiddleSchoolStudent })
     // @Inject({ provider: MiddleSchoolStudent })
     leader: Student;
@@ -467,10 +794,10 @@ export interface IClassRoom {
     leader: Student;
 }
 
-@Injectable
+@Injectable()
 export class InjCollegeClassRoom {
     constructor(
-        // all below decorator can work, also @AutoWired, @Param is.
+        // all below decorator can work, also @Autowired(), @Param() is.
         // @Inject(new Registration(Student, 'college')) // need CollegeStudent also register.
         @Inject(CollegeStudent)
         // @Inject({ provider: CollegeStudent })
@@ -482,10 +809,10 @@ export class InjCollegeClassRoom {
     }
 }
 
-@Injectable
+@Injectable()
 export class InjCollegeAliasClassRoom {
     constructor(
-        // all below decorator can work, also @AutoWired, @Param is.
+        // all below decorator can work, also @Autowired(), @Param() is.
         @Inject(new Registration(Student, 'college')) // need CollegeStudent also register.
         // @Inject(CollegeStudent)
         // @Inject({ provider: CollegeStudent })
@@ -501,7 +828,7 @@ export class InjCollegeAliasClassRoom {
 @Injectable('StringClassRoom')
 export class StingMClassRoom {
     // @Inject(MiddleSchoolStudent)
-    @Inject
+    @Inject()
     // @Inject({ type: MiddleSchoolStudent })
     leader: Student;
     constructor() {
@@ -535,7 +862,7 @@ export class SymbolIdest {
     }
 }
 
-@Injectable
+@Injectable()
 class MethodTestPerson {
     say() {
         return 'hello word.'
@@ -617,11 +944,28 @@ Documentation is available on the
 * [@tsdi/core document](https://github.com/zhouhoujun/tsioc/tree/master/packages/core).
 * [@tsdi/boot document](https://github.com/zhouhoujun/tsioc/tree/master/packages/boot).
 * [@tsdi/components document](https://github.com/zhouhoujun/tsioc/tree/master/packages/components).
+* [@tsdi/compiler document](https://github.com/zhouhoujun/tsioc/tree/master/packages/compiler).
 * [@tsdi/activities document](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities).
+* [@tsdi/pack document](https://github.com/zhouhoujun/tsioc/tree/master/packages/pack).
 * [@tsdi/typeorm-adapter document](https://github.com/zhouhoujun/tsioc/tree/master/packages/typeorm-adapter).
 * [@tsdi/unit document](https://github.com/zhouhoujun/tsioc/tree/master/packages/unit).
 * [@tsdi/unit-console document](https://github.com/zhouhoujun/tsioc/tree/master/packages/unit-console).
 * [@tsdi/cli document](https://github.com/zhouhoujun/tsioc/tree/master/packages/cli).
+
+
+### packages
+[@tsdi/cli](https://www.npmjs.com/package/@tsdi/cli)
+[@tsdi/ioc](https://www.npmjs.com/package/@tsdi/ioc)
+[@tsdi/aop](https://www.npmjs.com/package/@tsdi/aop)
+[@tsdi/core](https://www.npmjs.com/package/@tsdi/core)
+[@tsdi/boot](https://www.npmjs.com/package/@tsdi/boot)
+[@tsdi/components](https://www.npmjs.com/package/@tsdi/components)
+[@tsdi/compiler](https://www.npmjs.com/package/@tsdi/compiler)
+[@tsdi/activities](https://www.npmjs.com/package/@tsdi/activities)
+[@tsdi/pack](https://www.npmjs.com/package/@tsdi/pack)
+[@tsdi/typeorm-adapter](https://www.npmjs.com/package/@tsdi/typeorm-adapter)
+[@tsdi/unit](https://www.npmjs.com/package/@tsdi/unit)
+[@tsdi/unit-console](https://www.npmjs.com/package/@tsdi/unit-console)
 
 ## License
 

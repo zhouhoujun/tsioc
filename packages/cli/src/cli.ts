@@ -42,9 +42,9 @@ program
             execSync('npm init', { cwd: processRoot });
         }
 
-        let packs = ['typescript', 'ts-node', 'tsconfig-paths', 'tslib', 'zone.js', 'bluebird'];
+        const packs = ['typescript', 'ts-node', 'tsconfig-paths', 'tslib', 'zone.js', 'bluebird'];
         let initcmds = `${packs.join('@latest ') + '@latest'} `;
-        let version = typeof options.version === 'string' ? `@${options.version || 'latest'} ` : '@latest ';
+        const version = typeof options.version === 'string' ? `@${options.version || 'latest'} ` : '@latest ';
         let cmds: string[];
         switch (action) {
             case 'activity':
@@ -143,8 +143,8 @@ function runActivity(fileName: string, options: any) {
         config.debug = options.debug;
     }
 
-    let md = requireCwd(fileName);
-    let activites = Object.values(md);
+    const md = requireCwd(fileName);
+    const activites = Object.values(md);
     if (activites.some(v => wf.isAcitvityClass(v))) {
         wf.Workflow.sequence(...activites.filter(v => wf.isAcitvityClass(v)));
     }
@@ -185,7 +185,7 @@ program
                 files = 'test/**/*.(js|ts)';
             }
         }
-        let unit = requireCwd('@tsdi/unit');
+        const unit = requireCwd('@tsdi/unit');
         let reporter;
         if (options.browser) {
             reporter = requireCwd('@tsdi/unit-karma');

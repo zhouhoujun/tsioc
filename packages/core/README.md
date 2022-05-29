@@ -41,65 +41,56 @@ Module manager, application bootstrap. base on AOP.
 
 ### Quick start
 ```ts
-import { Application, Module, Transactional, TransactionModule, RouteMapping, Repository }  from '@tsdi/core';
-import { ILogger, Logger, LogModule } from '@tsdi/logs';
-import { TypeOrmModule }  from '@tsdi/typeorm-adapter';
-import { ServerBootstrapModule } from '@tsdi/platform-server';
-import { Repository as ORMRepository } from 'typeorm';
+import { Controller, Delete, Get, Post, Put, RequestParam } from '@tsdi/core';
+import { lang } from '@tsdi/ioc';
+import { Log, Logger } from '@tsdi/logs';
+import { Repository, Transactional } from '@tsdi/repository';
+import { InternalServerError } from '@tsdi/transport';
+import { User } from '../models/models';
+import { UserRepository } from '../repositories/UserRepository';
 
-
-@RouteMapping('/users')
+@Controller('/users')
 export class UserController {
 
-    // as property inject
+    // @Inject() injector!: Injector;
     // @Log() logger!: ILogger;
 
-    constructor(private usrRep: UserRepository, @Log() private logger: ILogger) {
+    constructor(private usrRep: UserRepository, @Log() private logger: Logger) {
 
     }
 
 
-    @RouteMapping('/:name', 'get')
+    @Get('/:name')
     getUser(name: string) {
         this.logger.log('name:', name);
         return this.usrRep.findByAccount(name);
     }
 
     @Transactional()
-    @RouteMapping('/', 'post')
-    @RouteMapping('/', 'put')
-    async modify(@RequestBody() user: User, @RequestParam({ nullable: true }) check?: boolean) {
-        //will auto check user entity and user filed, throw MissingModelFieldError or ArgumentError missing pipe to transform property.
-        // if query user name lenght > 50, will throw ArgumentError "InvalidPipeArgument: 'name xxx' for pipe 'ParseStringPipe' more than max lenght: 50".
-
-        // RequestParam nullable will not throw MissingParameterError if request query has not check param.
-        // if query check param value as '1', will throw ArgumentError  "InvalidPipeArgument: '1' for pipe 'ParseBoolPipe'".
+    @Post('/')
+    @Put('/')
+    async modify(user: User, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(lang.getClassName(this.usrRep), user);
-        let val = await this.usrRep.save(user);
-        if(check) throw new Error('check');
+        const val = await this.usrRep.save(user);
+        if(check) throw new InternalServerError('check');
         this.logger.log(val);
         return val;
     }
 
     @Transactional()
-    @RouteMapping('/save', 'post')
-    @RouteMapping('/save', 'put')
+    @Post('/save')
+    @Put('/save')
     async modify2(user: User, @Repository() userRepo: UserRepository, @RequestParam({ nullable: true }) check?: boolean) {
-        //will auto check user entity and user filed, throw MissingModelFieldError or ArgumentError missing pipe to transform property.
-        // if query user name lenght > 50, will throw ArgumentError "InvalidPipeArgument: 'name xxx' for pipe 'ParseStringPipe' more than max lenght: 50".
-
-        // RequestParam nullable will not throw MissingParameterError if request query has not check param.
-        // if query check param value as '1', will throw ArgumentError  "InvalidPipeArgument: '1' for pipe 'ParseBoolPipe'".
         this.logger.log(lang.getClassName(this.usrRep), user);
-        let val = await userRepo.save(user);
-        if(check) throw new Error('check');
+        const val = await userRepo.save(user);
+        if(check) throw new InternalServerError('check');
         this.logger.log(val);
         return val;
     }
 
     @Transactional()
-    @RouteMapping('/:id', 'delete')
-    async del(id: string) { // if no path value id will throw MissingParameterError
+    @Delete('/:id')
+    async del(id: string) {
         this.logger.log('id:', id);
         await this.usrRep.delete(id);
         return true;
@@ -108,121 +99,145 @@ export class UserController {
 }
 
 
-@RouteMapping('/roles')
+
+@Controller('/roles')
 export class RoleController {
 
-    constructor(@Repository(Role) private repo: ORMRepository<Role>, @Log() private logger: ILogger) {
+    constructor(@DBRepository(Role) private repo: Repository<Role>, @Log() private logger: Logger) {
 
     }
 
     @Transactional()
-    @RouteMapping('/', 'post')
-    @RouteMapping('/', 'put')
+    @Post('/')
+    @Put('/')
     async save(role: Role, @RequestParam({ nullable: true }) check?: boolean) {
-        //will auto check role entity and role filed, throw MissingModelFieldError or ArgumentError missing pipe to transform property.
-        // if query role name lenght > 50, will throw ArgumentError "InvalidPipeArgument: 'name xxx' for pipe 'ParseStringPipe' more than max lenght: 50".
-
-        // RequestParam nullable will not throw MissingParameterError if request query has not check param.
-        // if query check param value as '1', will throw ArgumentError "InvalidPipeArgument: '1' for pipe 'ParseBoolPipe'".
         this.logger.log(role);
+        console.log('save isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
         const value = await this.repo.save(role);
-        if (check) throw new Error('check'); // if throw error will rollback transaction
+        if (check) throw new InternalServerError('check');
         this.logger.info(value);
         return value;
     }
 
     @Transactional()
-    @RouteMapping('/save2', 'post')
-    @RouteMapping('/save2', 'put')
-    async save2(role: Role, @Repository(Role) roleRepo: ORMRepository<Role>, @RequestParam({ nullable: true }) check?: boolean) {
-        //will auto check role entity and role filed, throw MissingModelFieldError or ArgumentError missing pipe to transform property.
-        // if query role name lenght > 50, will throw ArgumentError "InvalidPipeArgument: 'name xxx' for pipe 'ParseStringPipe' more than max lenght: 50".
-
-        // RequestParam nullable will not throw MissingParameterError if request query has not check param.
-        // if query check param value as '1', will throw ArgumentError "InvalidPipeArgument: '1' for pipe 'ParseBoolPipe'".
+    @Post('/save2')
+    @Put('/save2')
+    async save2(role: Role, @DBRepository(Role) roleRepo: Repository<Role>, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(role);
+        console.log('save2 isTransactionActive:', roleRepo.queryRunner?.isTransactionActive);
         const value = await roleRepo.save(role);
-        if (check) throw new Error('check');
+        if (check) throw new InternalServerError('check');
         this.logger.info(value);
         return value;
     }
 
 
-    @RouteMapping('/:name', 'get')
+    @Get('/:name')
     async getRole(name: string) {
         this.logger.log('name:', name);
+        console.log('getRole isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
         return await this.repo.findOne({ where: { name } });
     }
 
 
     @Transactional()
-    @RouteMapping('/:id', 'delete')
-    async del(id: string) {  // if no path value id will throw MissingParameterError
+    @Delete('/:id')
+    async del(id: string) {
         this.logger.log('id:', id);
+        console.log('del isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
         await this.repo.delete(id);
         return true;
     }
 
+
 }
+
 
 ```
 
-### In Server side.
+### service In nodejs.
 
 ```ts
-import { Application, Module, TransactionModule }  from '@tsdi/core';
+import { Application, Module }  from '@tsdi/core';
 import { LogModule } from '@tsdi/logs';
+import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
 import { TypeOrmModule }  from '@tsdi/typeorm-adapter';
-import { ServerBootstrapModule } from '@tsdi/platform-server';
+import { Http, HttpClientOptions, HttpModule, HttpServer } from '@tsdi/transport';
+import { ServerModule } from '@tsdi/platform-server';
+
+const key = fs.readFileSync(path.join(__dirname, './cert/localhost-privkey.pem'));
+const cert = fs.readFileSync(path.join(__dirname, './cert/localhost-cert.pem'));
 
 @Module({
     // baseURL: __dirname,
     imports: [
-        LogModule,
-        ServerBootstrapModule,
-        // import TransactionModule can enable transaction by AOP.
-        TransactionModule, 
-        TypeOrmModule
+        ServerModule,
+        LoggerModule,
+        HttpModule.withOption({
+            majorVersion: 2,
+            options: {
+                allowHTTP1: true,
+                key,
+                cert
+            }
+        }),
+        TransactionModule,
+        TypeOrmModule.withConnection({
+            name: 'xx',
+            type: 'postgres',
+            host: 'localhost',
+            port: 5432,
+            username: 'postgres',
+            password: 'postgres',
+            database: 'testdb',
+            synchronize: true, // 同步数据库
+            logging: false  // 日志,
+            models: ['./models/**/*.ts'],
+            repositories: ['./repositories/**/*.ts'],
+        })
     ],
-    providers: [
+    declarations: [
         UserController,
         RoleController
-    ]
+    ],
+    bootstrap: HttpServer
 })
-export class MockTransBootTest {
+export class Http2ServerModule {
 
 }
 
-Application.run({
-    type: MockTransBootTest,
-    baseURL: __dirname,
-    configures: [
-        {
-            models: ['./models/**/*.ts'],
-            repositories: ['./repositories/**/*.ts'],
-            connections: option
-        }
-    ]
-})
+Application.run(Http2ServerModule);
 
 ```
 
 
-### In Browser side.
+### Service In Browser.
 
 ```ts
-import { Application, Module, TransactionModule }  from '@tsdi/core';
+import { Application, Module }  from '@tsdi/core';
 import { LogModule } from '@tsdi/logs';
+import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
 import { TypeOrmModule }  from '@tsdi/typeorm-adapter';
-import { BrowserBootstrapModule } from '@tsdi/platform-browser';
+import { BrowserModule } from '@tsdi/platform-browser';
 
 @Module({
     imports: [
         LogModule,
-        BrowserBootstrapModule,
+        BrowserModule,
         // import TransactionModule can enable transaction by AOP.
         TransactionModule, 
-        TypeOrmModule
+        TypeOrmModule.withOptions({
+            host: 'localhost',
+            port: 5432,
+            username: 'postgres',
+            password: 'postgres',
+            database: 'testdb',
+            entities: [
+                Role,
+                User
+            ],
+            repositories: [UserRepository]
+        })
     ],
     providers: [
         UserController,
@@ -233,21 +248,7 @@ export class MockTransBootTest {
 
 }
 
-Application.run({
-    type: MockTransBootTest,
-    configures: [
-        {
-            connections: {
-                ...option,
-                entities: [
-                    Role,
-                    User
-                ]
-                repositories: [UserRepository]
-            }
-        }
-    ]
-})
+Application.run(MockTransBootTest)
 
 ```
 

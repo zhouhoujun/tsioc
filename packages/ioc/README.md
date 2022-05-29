@@ -83,16 +83,7 @@ container.use(LogModule);
 
 # Documentation
 
-## core
-
-### extends ioc
-1. `@IocExt()` class decortator, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
-2. add service resolve.
-3. module inject.
-
-
-## Ioc
-
+## ioc, module `@tsdi/ioc`
 1. Register one class will auto register depdence class (must has a class decorator).
 
 2. get Instance can auto create constructor param.  (must has a class decorator or register in container).
@@ -116,8 +107,7 @@ container.use(LogModule);
 15. `@SkipSelf` Parameter decorator to be used on constructor parameters, which tells the DI framework to start dependency resolution from the parent injector. Resolution works upward through the injector hierarchy, so the local injector is not checked for a provider.
 16. `@Host` Parameter decorator on a compose element provider parameter of a class constructor that tells the DI framework to resolve the view by checking injectors of child elements, and stop when reaching the host element of the current component.
 
-## AOP
-
+## aop, module `@tsdi/aop`
 It's a dynamic aop base on ioc.
 
 define a Aspect class, must with decorator:
@@ -139,14 +129,336 @@ define a Aspect class, must with decorator:
 
 see [simples](https://github.com/zhouhoujun/tsioc/tree/master/packages/aop/test/aop)
 
+## core, module `@tsdi/core`
+Application framework.
 
-## boot
-DI Module manager, application bootstrap. base on AOP.
+### Decorators
+Module manager, application bootstrap. base on AOP.
 
-*  `@DIModule` DIModule decorator, use to define class as DI Module.
-*  `@Bootstrap` Bootstrap decorator, use to define class as bootstrp module.
-*  `@Boot()` Boot decorator, use to define class as startup service for application.
-*  `@Message`  Message decorator, for class. use to define the class as message handle register in global message queue.
+*  `@Module` Module decorator, use to define class as ioc Module. alias name @DIModule.
+*  `@ComponentScan`ComponentScan decorator, use to auto scan server or client for application.
+*  `@Handle`  Handle decorator, for class. use to define the class as handle register in global handle queue or parent; for method as message handle, use to handle route message event, in class with decorator {@link RouteMapping}.
+*  `@RouteMapping` route mapping decorator, for class. use to define this class as message route.
+*  `@RequestPath` Request path parameter decorator for route mapping.
+*  `@RequestParam` Request query parameter decorator for route mapping.
+*  `@RequestBody` Request body parameter decorator for route mapping.
+*  `@Pipe` Pipe decorator, define for class. use to define the class. it can setting provider to some token, singleton or not. it will execute  [`PipeLifecycle`]
+
+[application simple](https://github.com/zhouhoujun/type-mvc/tree/master/packages/simples)
+
+
+### Quick start
+```ts
+import { Controller, Delete, Get, Post, Put, RequestParam } from '@tsdi/core';
+import { lang } from '@tsdi/ioc';
+import { Log, Logger } from '@tsdi/logs';
+import { Repository, Transactional } from '@tsdi/repository';
+import { InternalServerError } from '@tsdi/transport';
+import { User } from '../models/models';
+import { UserRepository } from '../repositories/UserRepository';
+
+@Controller('/users')
+export class UserController {
+
+    // @Inject() injector!: Injector;
+    // @Log() logger!: ILogger;
+
+    constructor(private usrRep: UserRepository, @Log() private logger: Logger) {
+
+    }
+
+
+    @Get('/:name')
+    getUser(name: string) {
+        this.logger.log('name:', name);
+        return this.usrRep.findByAccount(name);
+    }
+
+    @Transactional()
+    @Post('/')
+    @Put('/')
+    async modify(user: User, @RequestParam({ nullable: true }) check?: boolean) {
+        this.logger.log(lang.getClassName(this.usrRep), user);
+        const val = await this.usrRep.save(user);
+        if(check) throw new InternalServerError('check');
+        this.logger.log(val);
+        return val;
+    }
+
+    @Transactional()
+    @Post('/save')
+    @Put('/save')
+    async modify2(user: User, @Repository() userRepo: UserRepository, @RequestParam({ nullable: true }) check?: boolean) {
+        this.logger.log(lang.getClassName(this.usrRep), user);
+        const val = await userRepo.save(user);
+        if(check) throw new InternalServerError('check');
+        this.logger.log(val);
+        return val;
+    }
+
+    @Transactional()
+    @Delete('/:id')
+    async del(id: string) {
+        this.logger.log('id:', id);
+        await this.usrRep.delete(id);
+        return true;
+    }
+
+}
+
+
+
+@Controller('/roles')
+export class RoleController {
+
+    constructor(@DBRepository(Role) private repo: Repository<Role>, @Log() private logger: Logger) {
+
+    }
+
+    @Transactional()
+    @Post('/')
+    @Put('/')
+    async save(role: Role, @RequestParam({ nullable: true }) check?: boolean) {
+        this.logger.log(role);
+        console.log('save isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
+        const value = await this.repo.save(role);
+        if (check) throw new InternalServerError('check');
+        this.logger.info(value);
+        return value;
+    }
+
+    @Transactional()
+    @Post('/save2')
+    @Put('/save2')
+    async save2(role: Role, @DBRepository(Role) roleRepo: Repository<Role>, @RequestParam({ nullable: true }) check?: boolean) {
+        this.logger.log(role);
+        console.log('save2 isTransactionActive:', roleRepo.queryRunner?.isTransactionActive);
+        const value = await roleRepo.save(role);
+        if (check) throw new InternalServerError('check');
+        this.logger.info(value);
+        return value;
+    }
+
+
+    @Get('/:name')
+    async getRole(name: string) {
+        this.logger.log('name:', name);
+        console.log('getRole isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
+        return await this.repo.findOne({ where: { name } });
+    }
+
+
+    @Transactional()
+    @Delete('/:id')
+    async del(id: string) {
+        this.logger.log('id:', id);
+        console.log('del isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
+        await this.repo.delete(id);
+        return true;
+    }
+
+
+}
+
+
+```
+
+### service In nodejs.
+
+```ts
+import { Application, Module }  from '@tsdi/core';
+import { LogModule } from '@tsdi/logs';
+import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
+import { TypeOrmModule }  from '@tsdi/typeorm-adapter';
+import { Http, HttpClientOptions, HttpModule, HttpServer } from '@tsdi/transport';
+import { ServerModule } from '@tsdi/platform-server';
+
+const key = fs.readFileSync(path.join(__dirname, './cert/localhost-privkey.pem'));
+const cert = fs.readFileSync(path.join(__dirname, './cert/localhost-cert.pem'));
+
+@Module({
+    // baseURL: __dirname,
+    imports: [
+        ServerModule,
+        LoggerModule,
+        HttpModule.withOption({
+            majorVersion: 2,
+            options: {
+                allowHTTP1: true,
+                key,
+                cert
+            }
+        }),
+        TransactionModule,
+        TypeOrmModule.withConnection({
+            name: 'xx',
+            type: 'postgres',
+            host: 'localhost',
+            port: 5432,
+            username: 'postgres',
+            password: 'postgres',
+            database: 'testdb',
+            synchronize: true, // 同步数据库
+            logging: false  // 日志,
+            models: ['./models/**/*.ts'],
+            repositories: ['./repositories/**/*.ts'],
+        })
+    ],
+    declarations: [
+        UserController,
+        RoleController
+    ],
+    bootstrap: HttpServer
+})
+export class Http2ServerModule {
+
+}
+
+Application.run(Http2ServerModule);
+
+```
+
+
+### Service In Browser.
+
+```ts
+import { Application, Module }  from '@tsdi/core';
+import { LogModule } from '@tsdi/logs';
+import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
+import { TypeOrmModule }  from '@tsdi/typeorm-adapter';
+import { BrowserModule } from '@tsdi/platform-browser';
+
+@Module({
+    imports: [
+        LogModule,
+        BrowserModule,
+        // import TransactionModule can enable transaction by AOP.
+        TransactionModule, 
+        TypeOrmModule.withOptions({
+            host: 'localhost',
+            port: 5432,
+            username: 'postgres',
+            password: 'postgres',
+            database: 'testdb',
+            entities: [
+                Role,
+                User
+            ],
+            repositories: [UserRepository]
+        })
+    ],
+    providers: [
+        UserController,
+        RoleController
+    ]
+})
+export class MockTransBootTest {
+
+}
+
+Application.run(MockTransBootTest)
+
+```
+
+
+```ts
+// model flies in  ./models/**/*.ts
+import { Entity, Column, ManyToOne, PrimaryGeneratedColumn, OneToMany, EntityRepository, Repository, Connection } from 'typeorm';
+
+@Entity()
+export class Role {
+    @PrimaryGeneratedColumn('uuid')
+    id!: string;
+
+    @Column({ length: 50 })
+    name!: string;
+
+    @OneToMany(type => User, user => user.role, { nullable: true })
+    users!: User[]
+}
+
+
+@Entity()
+export class User {
+    constructor() {
+    }
+
+    @PrimaryGeneratedColumn('uuid')
+    id!: string;
+
+
+    @Column({ length: 50 })
+    name!: string;
+
+    @Column({
+        unique: true
+    })
+    account!: string;
+
+    @Column()
+    password!: string;
+
+    @Column({ nullable: true, length: 50 })
+    email!: string;
+
+    @Column({ nullable: true, length: 50 })
+    phone!: string;
+
+    @Column({ type: 'boolean', nullable: true })
+    gender!: boolean;
+
+    @Column({ type: 'int', nullable: true })
+    age!: number;
+
+    @ManyToOne(type => Role, role => role.users, { nullable: true })
+    role!: Role;
+
+}
+
+```
+
+```ts
+// repositories in  ./repositories/**/*.ts
+import { EntityRepository, Repository } from 'typeorm';
+import { User } from '../models';
+
+@EntityRepository(User)
+export class UserRepository extends Repository<User> {
+    
+    async findByAccount(account: string) {
+        return await this.findOne({ where: { account } });
+    }
+
+    search(key: string, skip?: number, take?: number) {
+        const keywords =  `%${key}%`;
+        return this.createQueryBuilder('usr')
+            .where('usr.name = :keywords OR usr.id = :key', { keywords, key })
+            .skip(skip)
+            .take(take)
+            .getManyAndCount();
+    }
+}
+
+
+```
+
+
+
+## repository, module `@tsdi/repository`
+orm repository for application.
+
+### Decorators
+application repository. base on AOP.
+
+*  `@Repository` alias name `@DBRepository` Repository Decorator, to autowired repository for paramerter or filed.
+*  `@Transactional` Transactional Decorator, define transaction propagation behaviors.
+
+[mvc boot simple](https://github.com/zhouhoujun/type-mvc/tree/master/packages/simples)
+
+
+
+## boot, module `@tsdi/boot`
+bootstrap app base on core with application configuration.
 
 [mvc boot simple](https://github.com/zhouhoujun/type-mvc/tree/master/packages/simples)
 
