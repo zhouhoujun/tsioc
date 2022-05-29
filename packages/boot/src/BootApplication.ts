@@ -1,7 +1,7 @@
 import { ModuleLoader, Modules, ProviderType, StaticProviders, Type } from '@tsdi/ioc';
 import { Application, ApplicationFactory, APPLICTION_DEFAULTA_PROVIDERS, LoggerModule, PROCESS_ROOT } from '@tsdi/core';
 import { ConfigureMergerImpl, DefaultConfigureManager } from './configure/manager';
-import { CONFIGURATION } from './configure/config';
+import { ApplicationConfiguration } from './configure/config';
 import { BootApplicationContext, BootApplicationOption, BootEnvironmentOption } from './context';
 import { BootApplicationFactory } from './impl/context';
 import { ConfigureFileLoader } from './configure/loader';
@@ -64,7 +64,7 @@ export class BootApplication extends Application<BootApplicationContext> {
             config.debug = injector.moduleReflect.annotation.debug
         }
 
-        injector.setValue(CONFIGURATION, config);
+        injector.setValue(ApplicationConfiguration, config);
 
         if (config.logConfig) {
             injector.import(LoggerModule.withOptions(config.logConfig, config.debug))

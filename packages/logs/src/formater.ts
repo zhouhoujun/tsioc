@@ -1,4 +1,4 @@
-import { Abstract, Singleton, Token } from '@tsdi/ioc';
+import { Abstract, Static, Token } from '@tsdi/ioc';
 import { Joinpoint, JoinpointState, NonePointcut } from '@tsdi/aop';
 import { Logger } from './logger';
 import { Level } from './Level';
@@ -29,7 +29,7 @@ export type LOGFormater = LogFormater | Token<LogFormater> | ((joinPoint?: Joinp
 
 
 @NonePointcut()
-@Singleton()
+@Static()
 export class DefaultLogFormater extends LogFormater {
 
     protected timestamp(time: Date): any {

@@ -1,4 +1,4 @@
-import { Singleton, ModuleLoader, isString, EMPTY } from '@tsdi/ioc';
+import { ModuleLoader, isString, EMPTY, Static } from '@tsdi/ioc';
 import { Module, PROCESS_ROOT, ApplicationExit, ApplicationArguments, ApplicationContext } from '@tsdi/core';
 import { runMainPath } from './toAbsolute';
 import { NodeModuleLoader } from './NodeModuleLoader';
@@ -81,7 +81,7 @@ export class ServerApplicationArguments extends ApplicationArguments {
     }
 }
 
-@Singleton()
+@Static()
 export class ServerApplicationExit extends ApplicationExit {
 
     constructor(readonly context: ApplicationContext) {

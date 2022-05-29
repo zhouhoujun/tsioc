@@ -1,6 +1,6 @@
 import { InvokeArguments } from '@tsdi/ioc';
 import { ApplicationFactory, DefaultApplicationContext, ModuleRef, PROCESS_ROOT } from '@tsdi/core';
-import { ApplicationConfiguration, CONFIGURATION, ConfigureManager } from '../configure/config';
+import { ApplicationConfiguration, ConfigureManager } from '../configure/config';
 import { BootApplicationContext, BootEnvironmentOption } from '../context';
 
 
@@ -10,7 +10,7 @@ export class BootApplicationContextImpl extends DefaultApplicationContext implem
      * configuration merge metadata config and all application config.
      */
     getConfiguration(): ApplicationConfiguration {
-        return this.injector.get(CONFIGURATION)
+        return this.injector.get(ApplicationConfiguration)
     }
 
     /**

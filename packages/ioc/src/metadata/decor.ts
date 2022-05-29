@@ -3,7 +3,7 @@ import { isString, isArray } from '../utils/chk';
 import { Token, getToken, InjectFlags } from '../tokens';
 import {
     ClassMetadata, RunnableMetadata, AutoWiredMetadata, InjectMetadata, PatternMetadata,
-    InjectableMetadata, ParameterMetadata, ProvidersMetadata, ProviderInMetadata
+    InjectableMetadata, ParameterMetadata, ProvidersMetadata, ProviderInMetadata, ProviderMetadata
 } from './meta';
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
 import { ProviderType, StaticProvider } from '../providers';
@@ -248,13 +248,13 @@ export const Inject: Inject = createDecorator<InjectMetadata>('Inject', {
 /**
  * @Nullable decoator. define param can enable null.
  */
- export interface Nullable {
+export interface Nullable {
     /**
      * @Nullable decoator. define param can enable null.
      */
     (): ParameterDecorator;
 
- }
+}
 export const Nullable = createDecorator<InjectMetadata>('Nullable', {
     appendProps: (meta) => {
         meta.nullable = true;
@@ -652,7 +652,44 @@ export const ProviderIn: ProviderIn = createDecorator<ProviderInMetadata>('Provi
 export const Refs = ProviderIn;
 
 /**
- * Singleton decorator, for class. use to define the class is singleton.
+ * Static decorator, for class. use to define the class is static in injector.
+ */
+export interface Static {
+    /**
+     * Static decorator, for class. use to define the class is static in injector.
+     *
+     * @Singleton()
+     *
+     * @param {Token} provide define this class provider for provide.
+     */
+    (provide?: Token): ClassDecorator;
+    /**
+     * Static decorator, for class. use to define the class is static in injector.
+     *
+     * @Singleton()
+     *
+     * @param {Token} provide define this class provider for provide.
+     * @param {string} alias define this class provider with alias for provide.
+     */
+    (provide: Token, alias: string): ClassDecorator;
+}
+
+/**
+ * Static decorator, for class. use to define the class is static in injector.
+ *
+ * @Static()
+ */
+ export const Static: Static = createDecorator<ClassMetadata>('Static', {
+    props: (provide: Token, alias?: string) => ({ provide: getToken(provide, alias) }),
+    appendProps: (meta) => {
+        meta.static = true
+    }
+});
+
+
+
+/**
+ * Singleton decorator, for class. use to define the class is singleton in global.
  *
  * @Singleton()
  *
@@ -661,7 +698,7 @@ export const Refs = ProviderIn;
  */
 export interface Singleton {
     /**
-     * Singleton decorator, for class. use to define the class is singleton.
+     * Singleton decorator, for class. use to define the class is singleton in global.
      *
      * @Singleton()
      *
@@ -670,7 +707,7 @@ export interface Singleton {
     (provide?: Token): ClassDecorator;
 
     /**
-     * Singleton decorator, for class. use to define the class is singleton.
+     * Singleton decorator, for class. use to define the class is singleton in global.
      *
      * @Singleton()
      *
@@ -679,14 +716,6 @@ export interface Singleton {
      */
     (provide: Token, alias: string): ClassDecorator;
 
-    /**
-     * Singleton decorator, for class. use to define the class is singleton.
-     *
-     * @Singleton()
-     *
-     * @param {ClassMetadata} metadata metadata map.
-     */
-    (metadata: ClassMetadata): ClassDecorator;
 }
 
 /**

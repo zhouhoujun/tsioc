@@ -1,10 +1,10 @@
-import { Singleton, Type, Inject } from '@tsdi/ioc';
+import { Singleton, Type, Inject, Static } from '@tsdi/ioc';
 import { Repository, MongoRepository, Connection, getConnection } from 'typeorm';
 import { DEFAULT_CONNECTION } from './objectid.pipe';
 
 
 
-@Singleton()
+@Static()
 export class TypeOrmHelper {
 
     constructor(@Inject(DEFAULT_CONNECTION, { nullable: true }) private conn: string) {

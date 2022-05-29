@@ -1,4 +1,4 @@
-import { Type, LoadType, ProvidersMetadata, Abstract, Injector, tokenId, Token } from '@tsdi/ioc';
+import { Type, LoadType, Abstract, Injector, tokenId, Token, ProviderType } from '@tsdi/ioc';
 import { LogConfigure } from '@tsdi/logs';
 import { ConnectionOptions } from '@tsdi/repository';
 import { SecureContextOptions } from 'node:tls';
@@ -7,64 +7,71 @@ import { SecureContextOptions } from 'node:tls';
 /**
  * application Configuration.
  *
- * @export
- * @interface Configuration
- * @extends {ProvidersMetadata}
  */
-export interface ApplicationConfiguration extends ProvidersMetadata, Record<string, any> {
+export abstract class ApplicationConfiguration implements Record<string, any> {
+    /**
+     * record
+     */
+    [x: string]: any;
     /**
      * module base url.
      *
      * @type {string}
      */
-    baseURL?: string;
+    abstract baseURL?: string;
     /**
      * deps.
      *
      * @type {LoadType[]}
      */
-    deps?: LoadType[];
+    abstract deps?: LoadType[];
+    /**
+     * provider services of the class.
+     *
+     * @type {KeyValue<Token, Token>}
+     */
+    abstract providers?: ProviderType[];
     /**
      * application name.
      *
      * @type {string}
      */
-    name?: string;
+    abstract name?: string;
     /**
      * set enable debug log or not.
      *
      * @type {boolean}
      */
-    debug?: boolean;
+    abstract debug?: boolean;
     /**
      * log config.
      *
      * @type {*}
      */
-    logConfig?: LogConfigure;
+    abstract logConfig?: LogConfigure;
     /**
      * custom config key value setting.
      *
      * @type {Record<string, any>}
      */
-    setting?: Record<string, any>;
+    abstract setting?: Record<string, any>;
     /**
      * custom config connections.
      *
      * @type {any}
      */
-    connections?: ConnectionOptions | ConnectionOptions[];
+    abstract connections?: ConnectionOptions | ConnectionOptions[];
     /**
      * boot services.
      */
-    boot: BootServiceOptions | BootServiceOptions[];
+    abstract boot: BootServiceOptions | BootServiceOptions[];
 
 }
 
 /**
  * config token.
  */
-export const CONFIGURATION = tokenId<ApplicationConfiguration>('CONFIGURATION');
+export const CONFIGURATION = ApplicationConfiguration;
 
 /**
  * default configuration token.

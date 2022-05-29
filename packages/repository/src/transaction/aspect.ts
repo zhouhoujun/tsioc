@@ -1,4 +1,4 @@
-import { ArgumentError, lang, Singleton } from '@tsdi/ioc';
+import { ArgumentError, lang } from '@tsdi/ioc';
 import { Aspect, Joinpoint, Before, AfterReturning, AfterThrowing } from '@tsdi/aop';
 import { TransactionalMetadata } from './metadata';
 import { TransactionManager } from './manager';
@@ -12,8 +12,7 @@ import { TransactionStatus } from './status';
  * @export
  * @class TransactionalAspect
  */
-@Singleton()
-@Aspect()
+@Aspect({ static: true })
 export class TransactionalAspect {
 
     @Before('@annotation(Transactional)', { sync: true, annotationName: 'Transactional', annotationArgName: 'annotation' })

@@ -1,4 +1,3 @@
-import { Singleton } from '@tsdi/ioc';
 import { Aspect, Around, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { Logger } from '../logger';
 import { LogAspect } from '../aspect';
@@ -12,8 +11,7 @@ import { Log } from '../metadata/log';
  * @class DebugLogAspect
  * @extends {LogAspect}
  */
-@Singleton()
-@Aspect()
+@Aspect({ static: true })
 export class DebugLogAspect extends LogAspect {
 
     @Log({ level: 'trace' }) logger!: Logger;

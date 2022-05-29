@@ -100,16 +100,21 @@ container.use(LogModule);
 ### decorators
 
 1. `@Abstract`  abstract class decorator.
-2. `@AutoRun`   class, method decorator, use to define the class auto run (via a method or not) after registered.
-3. `@AutoWried`  property or param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
-4. `@Inject()`  property or param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
-5. `@Injectable()` class decortator, use to define the class. it can setting provider to some token, singleton or not.
-6. `@AutoWried` method decorator.
-7. `@Param()`   param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
-8. `@Singleton()` class decortator, use to define the class is singleton.
-9. `@Providers` Providers decorator, for class. use to add private ref service for the class.
-10. `@Refs` Refs decorator, for class. use to define the class as a service for target.
-
+2. `@Autorun`   class and method decorator, use to define the class auto run (via a method or not) after registered.
+3. `@Autowried` alias name `@AutoWried` property or param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
+4. `@Inject`  property or param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
+5. `@Injectable` class decortator, use to define the class. it can setting provider to some token, singleton or not.
+6. `@IocExt` class decortator, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
+7. `@Param`   param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
+8. `@Singleton` class decortator, use to define the class is singleton in global.
+9. `@Static` class decortator, use to define the class is static in injector.
+10. `@Providers` Providers decorator, for class. use to add private ref service for the class.
+11. `@ProviderIn` alias `@Refs` ProviderIn decorator, for class. use to define the class as a service for target.
+12. `@Nullable` param decoator. define param can enable null.
+13. `@Optional` Parameter decorator to be used on constructor parameters, which marks the parameter as being an optional dependency. The DI framework provides `null` if the dependency is not found. Can be used together with other parameter decorators that modify how dependency injection operates.
+14. `@Self` Parameter decorator to be used on constructor parameters, which tells the DI framework to start dependency resolution from the local injector. Resolution works upward through the injector hierarchy, so the children of this class must configure their own providers or be prepared for a `null` result.
+15. `@SkipSelf` Parameter decorator to be used on constructor parameters, which tells the DI framework to start dependency resolution from the parent injector. Resolution works upward through the injector hierarchy, so the local injector is not checked for a provider.
+16. `@Host` Parameter decorator on a compose element provider parameter of a class constructor that tells the DI framework to resolve the view by checking injectors of child elements, and stop when reaching the host element of the current component.
 
 ## AOP
 

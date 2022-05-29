@@ -1,4 +1,4 @@
-import { Abstract, isFunction, isToken, isObject, isArray, Singleton, isNil, EMPTY_OBJ } from '@tsdi/ioc';
+import { Abstract, isFunction, isToken, isObject, isArray, isNil, EMPTY_OBJ } from '@tsdi/ioc';
 import { Aspect, Joinpoint, JoinpointState, Pointcut } from '@tsdi/aop';
 import { Logger } from './logger';
 import { LogMetadata } from './metadata/log';
@@ -124,8 +124,7 @@ export abstract class LogAspect extends LogProcess {
  * @class AnnotationLogAspect
  * @extends {LogAspect}
  */
-@Singleton()
-@Aspect()
+@Aspect({ static: true })
 export class AnnotationLogAspect extends LogAspect {
 
     @Pointcut('@annotation(Log)', 'annotation')

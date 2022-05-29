@@ -1,9 +1,7 @@
-import { Singleton } from '@tsdi/ioc';
 import { Aspect, Around, Joinpoint } from '@tsdi/aop';
 import { LogAspect } from '../src';
 
-@Singleton()
-@Aspect()
+@Aspect({ static: true })
 export class DebugLog1Aspect extends LogAspect {
 
     @Around('execution(*.*)')

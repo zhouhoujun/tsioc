@@ -1,9 +1,9 @@
-import { Singleton, MethodMetadata } from '@tsdi/ioc';
+import { MethodMetadata } from '@tsdi/ioc';
 import { Aspect, Joinpoint, Pointcut } from '@tsdi/aop';
 import { LogAspect } from '../src';
 
-@Singleton()
-@Aspect()
+
+@Aspect({ static: true })
 export class AnntotationLogAspect extends LogAspect {
 
     @Pointcut('@annotation(Logger)', { annotationArgName: 'logAnnotation', annotationName: '@Log'} )
