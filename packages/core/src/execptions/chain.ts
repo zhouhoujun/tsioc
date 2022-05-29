@@ -3,7 +3,9 @@ import { NEXT } from '../transport/endpoint';
 import { ExecptionContext } from './context';
 import { ExecptionFilter } from './filter';
 
-
+/**
+ * execption chain.
+ */
 export class ExecptionChain implements ExecptionFilter {
 
     private _chain?: Handler<ExecptionContext>;
