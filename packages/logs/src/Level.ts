@@ -5,8 +5,11 @@ import { isString } from '@tsdi/ioc';
  */
 export type Level = 'log' | 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 
-
+/**
+ * levels.
+ */
 const levels = ['log', 'trace', 'debug', 'info', 'warn', 'error', 'fatal'];
+
 /**
  * is level.
  * @param target

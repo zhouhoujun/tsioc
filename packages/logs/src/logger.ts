@@ -8,7 +8,7 @@ import { Level } from './Level';
  * @export
  * @interface ILogger
  */
- export interface ILogger {
+export interface ILogger {
     /**
      * logger name.
      */

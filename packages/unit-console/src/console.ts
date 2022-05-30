@@ -64,7 +64,7 @@ export class ConsoleReporter extends RealtimeReporter {
             reportStr = reportStr + ' ' + chalk.red(failed.toString() + ' failed')
         }
         if (sus.length) {
-            reportStr = reportStr + chalk.gray(` (${this.timesPipe.transform((last?.end ?? 0) - (first?.start ?? 0))})`)
+            reportStr = reportStr + chalk.gray(` (${this.timesPipe.transform((last?.end ?? 0) - (first?.start ?? 0), 3)})`)
         }
 
         reportStr += '\n';

@@ -73,10 +73,10 @@ export type FactoryFn<T> = {
  */
 export interface DirectiveDef<T = any> {
     /**
-    * A dictionary mapping the inputs' minified property names to their public API names, which
-    * are their aliases if any, or their original unminified property names
-    * (as in `@Input('alias') propertyName: any;`).
-    */
+     * A dictionary mapping the inputs' minified property names to their public API names, which
+     * are their aliases if any, or their original unminified property names
+     * (as in `@Input('alias') propertyName: any;`).
+     */
     readonly inputs: { [P in keyof T]: string };
 
     /**

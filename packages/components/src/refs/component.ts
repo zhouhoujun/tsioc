@@ -94,6 +94,9 @@ export abstract class ComponentFactory<T> extends RunnableFactory<T> {
     abstract create(injector: Injector, option: BootstrapOption): ComponentRef<T>;
 }
 
+/**
+ * component factory resolver.
+ */
 @Abstract()
 export abstract class ComponentFactoryResolver extends RunnableFactoryResolver {
 

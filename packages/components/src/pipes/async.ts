@@ -1,8 +1,8 @@
 import { isPromise, isObservable } from '@tsdi/ioc';
+import { PipeTransform, Pipe, invalidPipeArgumentError } from '@tsdi/core';
 import { Observable, SubscriptionLike } from 'rxjs';
 import { EventEmitter } from '../EventEmitter';
 import { OnDestroy } from '../lifecycle';
-import { PipeTransform, Pipe, invalidPipeArgumentError } from '@tsdi/core';
 import { ChangeDetectorRef } from '../chage/detector';
 
 /**

@@ -12,7 +12,7 @@ import { ComponentDef, DirectiveDef } from './type';
  /**
   * AnnotationReflect
   */
- export interface AnnotationReflect<T = any> extends TypeReflect {
+ export interface AnnotationReflect<T = any> extends TypeReflect<T> {
      /**
       * class type.
       */
