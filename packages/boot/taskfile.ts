@@ -17,8 +17,8 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
         bundles: [
             { target: 'es5', targetFolder: 'src', dtsMain: 'index.d.ts' },
             { input: 'src/index.js', moduleName: 'main', moduleFolder: 'bundle', outputFile: 'boot.umd.js', format: 'umd', uglify: true },
-            { input: 'src/index.js', moduleName: ['fesm5', 'esm5'], outputFile: 'boot.js', format: 'cjs' },
-            { target: 'es2017', input: 'es2017/index.js', moduleName: ['fesm2017', 'esm2017'], outputFile: 'boot.js', format: 'cjs' }
+            // { input: 'src/index.js', moduleName: ['fesm5', 'esm5'], outputFile: 'boot.js', format: 'cjs' },
+            // { target: 'es2017', input: 'es2017/index.js', moduleName: ['fesm2017', 'esm2017'], outputFile: 'boot.js', format: 'cjs' }
         ]
     }
 })
