@@ -8,7 +8,7 @@ export type Level = 'log' | 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fat
 /**
  * levels.
  */
-const levels = ['log', 'trace', 'debug', 'info', 'warn', 'error', 'fatal'];
+export const levels = ['log', 'trace', 'debug', 'info', 'warn', 'error', 'fatal'];
 
 /**
  * is level.

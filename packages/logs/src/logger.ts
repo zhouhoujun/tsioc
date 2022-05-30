@@ -78,7 +78,9 @@ export interface ILogger {
     fatal(...messages: any[]): void;
 }
 
-
+/**
+ * logger
+ */
 @Abstract()
 export abstract class Logger implements ILogger {
     /**
@@ -92,8 +94,6 @@ export abstract class Logger implements ILogger {
      */
     abstract get level(): Level;
     abstract set level(level: Level);
-
-    abstract formatHeader?: boolean;
 
     /**
      * log, base log.
@@ -149,4 +149,12 @@ export abstract class Logger implements ILogger {
      * @param {...any[]} messages
      */
     abstract fatal(...messages: any[]): void;
+}
+
+/**
+ * logger header formater.
+ */
+@Abstract()
+export abstract class HeaderFormater {
+    abstract format(name: string, level: string): string[];
 }

@@ -53,7 +53,7 @@ export class ClassSevice implements Runnable {
     state!: string;
 
     async run(): Promise<any> {
-        this.logger.log('ClassSevice running.....');
+        this.logger.info('ClassSevice running.....');
         // console.log(refs.get(ClassSevice));
 
         // console.log(this.container);
@@ -114,19 +114,19 @@ export class SocketService implements ConfigureService, OnDispose {
     private init_times = 0;
 
     async configureService(ctx: ApplicationContext): Promise<void> {
-        this.logger.log('SocketService init...');
+        this.logger.info('init...');
         const tcpServer = this.tcpServer = new net.Server();
         tcpServer.listen(8801);
         this.init_times++;
-        this.logger.log('destroyed state', 'init', this.init_times);
+        this.logger.info('destroyed state', 'init', this.init_times);
     }
 
     async onDispose() {
-        this.logger.log('SocketService destroying...');
+        this.logger.info('destroying...');
         this.tcpServer.removeAllListeners();
         const defer = lang.defer();
         this.tcpServer.close(() => {
-            this.logger.log('tcpServer closed...');
+            this.logger.info('tcpServer closed...');
             defer.resolve();
         });
         await defer.promise;

@@ -1,7 +1,7 @@
-import { ArgumentError, EMPTY_OBJ, getToken, Inject, Injectable, Injector, isFunction, isString, Token, Type } from '@tsdi/ioc';
-import { Logger } from './logger';
+import { ArgumentError, EMPTY_OBJ, getToken, Inject, Injectable, Injector, isFunction, isString, Nullable, Token, Type } from '@tsdi/ioc';
+import { HeaderFormater, Logger } from './logger';
 import { LogConfigure } from './LogConfigure';
-import { Level, Levels } from './Level';
+import { Level, Levels, levels } from './Level';
 import { LoggerConfig, LoggerManager } from './LoggerManager';
 
 /**
@@ -103,7 +103,7 @@ export class ConsoleLogManager implements LoggerManager {
     static ƿNPT = true;
     private config: ConsoleLoggerConfig | undefined;
 
-    constructor() {
+    constructor(@Nullable() private headerFormater: HeaderFormater) {
     }
 
     configure(config: ConsoleLoggerConfig) {
@@ -111,7 +111,7 @@ export class ConsoleLogManager implements LoggerManager {
     }
 
     getLogger(name?: string): Logger {
-        return new ConsoleLog(name, this.config?.level)
+        return new ConsoleLog(name, this.config?.level, this.headerFormater)
     }
 
 }
@@ -127,7 +127,7 @@ class ConsoleLog implements Logger {
     readonly name: string | undefined;
     formatHeader = true;
 
-    constructor(name?: string, public level: Level = 'debug') {
+    constructor(name?: string, public level: Level = 'debug', private headerFormater?: HeaderFormater|null) {
         this.name = name;
     }
 
@@ -135,41 +135,46 @@ class ConsoleLog implements Logger {
         return (Levels as Record<Level, number>)[this.level] <= level
     }
 
+    protected getHeader(level: string): string[] {
+        if (this.headerFormater) {
+            return this.headerFormater.format(this.name ?? '', level.toUpperCase());
+        }
+        return [`[${new Date().toISOString()}]`, `[${level.toUpperCase()}]`, this.name ?? '', '-'];
+    }
+
     log(...args: any[]): void {
-        console.log(...args)
+        console.log(...this.getHeader(levels[0]), ...args)
     }
 
     trace(...args: any[]): void {
         if (this.machLevel(Levels.trace)) {
-            console.trace(...args)
+            console.trace(...this.getHeader(levels[1]), ...args)
         }
     }
     debug(...args: any[]): void {
         // console.debug in nuix will not console.
         if (this.machLevel(Levels.debug)) {
-            console.debug(...args)
+            console.debug(...this.getHeader(levels[2]), ...args)
         }
     }
     info(...args: any[]): void {
         if (this.machLevel(Levels.info)) {
-            console.info(...args)
+            console.info(...this.getHeader(levels[3]), ...args)
         }
     }
     warn(...args: any[]): void {
         if (this.machLevel(Levels.warn)) {
-            console.warn(this.name, ...args)
+            console.warn(...this.getHeader(levels[4]), ...args)
         }
     }
     error(...args: any[]): void {
         if (this.machLevel(Levels.error)) {
-            console.error(...args)
+            console.error(...this.getHeader(levels[5]), ...args)
         }
     }
     fatal(...args: any[]): void {
         if (this.machLevel(Levels.fatal)) {
-            console.error(this.name, ...args)
+            console.error(...this.getHeader(levels[6]), ...args)
         }
     }
 }
-
-

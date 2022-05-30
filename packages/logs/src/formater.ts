@@ -71,14 +71,7 @@ export class DefaultLogFormater extends LogFormater {
             default:
                 break
         }
-        if (logger.formatHeader) {
-            messages.unshift((logger.name || 'default') + ' -');
-            if (level) {
-                messages.unshift(`[${level.toUpperCase()}]`)
-            }
-            const timestamp = this.timestamp(new Date());
-            if (timestamp) messages.unshift(timestamp)
-        }
+        
         return messages
     }
 }

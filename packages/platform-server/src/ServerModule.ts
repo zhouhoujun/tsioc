@@ -1,7 +1,9 @@
 import { ModuleLoader, isString, EMPTY, Static } from '@tsdi/ioc';
 import { Module, PROCESS_ROOT, ApplicationExit, ApplicationArguments, ApplicationContext } from '@tsdi/core';
+import { HeaderFormater } from '@tsdi/logs';
 import { runMainPath } from './toAbsolute';
 import { NodeModuleLoader } from './NodeModuleLoader';
+import { LogHeaderFormater } from './formater';
 
 const signls = [
     'SIGHUP',
@@ -120,7 +122,8 @@ export class ServerApplicationExit extends ApplicationExit {
         { provide: ApplicationArguments, useValue: new ServerApplicationArguments(process.env, process.argv.slice(2)) },
         { provide: PROCESS_ROOT, useValue: runMainPath(), asDefault: true },
         { provide: ModuleLoader, useValue: new NodeModuleLoader() },
-        { provide: ApplicationExit, useClass: ServerApplicationExit }
+        { provide: ApplicationExit, useClass: ServerApplicationExit },
+        { provide: HeaderFormater, useClass: LogHeaderFormater, asDefault: true },
     ]
 })
 export class ServerModule { }
