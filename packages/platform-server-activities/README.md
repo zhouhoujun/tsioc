@@ -104,7 +104,7 @@ Workflow.create()
 import { Workflow, IfActivityToken, SequenceActivityToken, ExecuteToken } from '@tsdi/activities';
 import { INodeActivityContext, Asset, BuildModule, AssetToken, ShellModule, TransformModule, NodeActivityContext } from '@tsdi/build';
 import * as through from 'through2';
-import * as path from 'node:path';
+import * as path from 'path';
 import { isPackClass, PackModule } from '@tsdi/pack';
 
 @Asset({

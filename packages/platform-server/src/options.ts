@@ -1,6 +1,6 @@
 
 import { tokenId } from '@tsdi/ioc';
-import { ListenOptions } from 'node:net';
+import { ListenOptions } from 'net';
 
 /**
  * http listen options.

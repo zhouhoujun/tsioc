@@ -1,8 +1,8 @@
 import { PROCESS_ROOT } from '@tsdi/core';
 import { Injectable, isArray } from '@tsdi/ioc';
-import { normalize, resolve, basename, extname, parse, sep, isAbsolute, join } from 'node:path';
-import { existsSync, stat, createReadStream } from 'node:fs';
-import { promisify } from 'node:util';
+import { normalize, resolve, basename, extname, parse, sep, isAbsolute, join } from 'path';
+import { existsSync, stat, createReadStream } from 'fs';
+import { promisify } from 'util';
 import { HttpContext } from './context';
 import { SendAdapter, SendOption } from '../middlewares/send';
 import { ev, hdr } from '../consts';

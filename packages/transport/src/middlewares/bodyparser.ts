@@ -1,8 +1,8 @@
 /* eslint-disable no-control-regex */
 import { Middleware, TransportContext, TransportError } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable } from '@tsdi/ioc';
-import * as zlib from 'node:zlib';
-import { Readable } from 'node:stream';
+import * as zlib from 'zlib';
+import { Readable } from 'stream';
 import * as getRaw from 'raw-body';
 import * as qslib from 'qs';
 import { hdr } from '../consts';

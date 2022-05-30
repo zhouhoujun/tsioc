@@ -1,7 +1,7 @@
 /* eslint-disable no-useless-escape */
 /* eslint-disable no-control-regex */
 import { Injectable, isString } from '@tsdi/ioc';
-import { extname } from 'node:path';
+import { extname } from 'path';
 import { MimeAdapter, MimeDb, SplitType } from '../mime';
 
 @Injectable()

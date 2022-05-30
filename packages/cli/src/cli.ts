@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-import * as fs from 'node:fs';
-import * as path from 'node:path';
+import * as fs from 'fs';
+import * as path from 'path';
 import * as chalk from 'chalk';
 import * as program from 'commander';
-import { execSync } from 'node:child_process';
+import { execSync } from 'child_process';
 const resolve = require('resolve');
 const cliRoot = path.join(path.normalize(__dirname), '../');
 const packageConf = require(cliRoot + '/package.json');

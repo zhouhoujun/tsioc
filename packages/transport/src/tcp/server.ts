@@ -1,6 +1,6 @@
 import { EndpointBackend, ExecptionFilter, Interceptor, InterceptorInst, InterceptorType, MiddlewareInst, MiddlewareType, ServerOptions, TransportContext, TransportServer, UuidGenerator } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, lang, Nullable, Token, tokenId, Type } from '@tsdi/ioc';
-import { Server, ListenOptions } from 'node:net';
+import { Server, ListenOptions } from 'net';
 import { Subscription } from 'rxjs';
 import { ev } from '../consts';
 import { CatchInterceptor, LogInterceptor, DecodeInterceptor, EncodeInterceptor } from '../interceptors';

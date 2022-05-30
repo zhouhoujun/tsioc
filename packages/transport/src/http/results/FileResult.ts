@@ -1,8 +1,8 @@
 import { isString } from '@tsdi/ioc';
 import { ApplicationContext, ResultValue } from '@tsdi/core';
-import { Stream } from 'node:stream';
-import { existsSync, createReadStream } from 'node:fs';
-import { join, isAbsolute } from 'node:path';
+import { Stream } from 'stream';
+import { existsSync, createReadStream } from 'fs';
+import { join, isAbsolute } from 'path';
 import { HttpContext } from '../context';
 
 /**

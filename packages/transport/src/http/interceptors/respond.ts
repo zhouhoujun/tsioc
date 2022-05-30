@@ -1,7 +1,7 @@
 import { Endpoint, Interceptor } from '@tsdi/core';
 import { Injectable, isString, lang } from '@tsdi/ioc';
 import { Observable, mergeMap } from 'rxjs';
-import { Readable } from 'node:stream';
+import { Readable } from 'stream';
 import { hdr, ev } from '../../consts';
 import { isBuffer, isStream } from '../../utils';
 import { HttpContext, HttpServRequest, HttpServResponse } from '../context';

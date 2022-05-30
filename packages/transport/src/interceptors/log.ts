@@ -3,7 +3,7 @@ import { Abstract, Inject, Injectable, isNumber, Nullable } from '@tsdi/ioc';
 import { Level, Logger, LoggerManager, matchLevel } from '@tsdi/logs';
 import * as chalk from 'chalk';
 import { Observable, map } from 'rxjs';
-import { hrtime } from 'node:process';
+import { hrtime } from 'process';
 
 
 @Abstract()

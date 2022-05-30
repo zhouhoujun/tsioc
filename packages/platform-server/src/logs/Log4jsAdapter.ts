@@ -3,7 +3,7 @@ import { NonePointcut } from '@tsdi/aop';
 import { PROCESS_ROOT } from '@tsdi/core';
 import { LoggerManager, Logger } from '@tsdi/logs';
 import * as log4js from 'log4js';
-import { isAbsolute, join } from 'node:path';
+import { isAbsolute, join } from 'path';
 
 /**
  * log4js logger manager adapter.

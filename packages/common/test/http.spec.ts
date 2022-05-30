@@ -4,8 +4,8 @@ import { HttpModule, HttpServer, RedirectResult } from '@tsdi/transport';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerHttpClientModule } from '@tsdi/platform-server-common';
 import expect = require('expect');
-import * as fs from 'node:fs';
-import * as path from 'node:path';
+import * as fs from 'fs';
+import * as path from 'path';
 import {
     Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module,
     TransportContext, LoggerModule, Middleware, Chain

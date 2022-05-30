@@ -1,6 +1,6 @@
 import { lang, ProviderType, tokenId } from '@tsdi/ioc';
 import { Application, ApplicationContext, ComponentScan, ConfigureService } from '@tsdi/core';
-import * as assert from 'node:assert';
+import * as assert from 'assert';
 import * as expect from 'expect';
 import { UnitTestConfigure } from './UnitTestConfigure';
 import { Assert } from './assert/assert';

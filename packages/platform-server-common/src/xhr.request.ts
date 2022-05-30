@@ -1,9 +1,9 @@
 
-import * as http from 'node:http';
-import * as https from 'node:https';
-import * as fs from 'node:fs';
-import { URL } from 'node:url';
-import { spawn } from 'node:child_process';
+import * as http from 'http';
+import * as https from 'https';
+import * as fs from 'fs';
+import { URL } from 'url';
+import { spawn } from 'child_process';
 import { EMPTY_OBJ, isFunction } from '@tsdi/ioc';
 
 /**

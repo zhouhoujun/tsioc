@@ -1,6 +1,6 @@
 import { Type, isString, lang } from '@tsdi/ioc';
 import { Workflow, Task, Activities, isAcitvityClass, Activity } from '@tsdi/activities';
-import * as path from 'node:path';
+import * as path from 'path';
 import { PackModule, NodeActivityContext, JsonReplaceActivityOption } from '@tsdi/pack';
 import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
 import * as through from 'through2';

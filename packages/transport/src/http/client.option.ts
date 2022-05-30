@@ -1,4 +1,4 @@
-import * as http2 from 'node:http2';
+import * as http2 from 'http2';
 import { Abstract, tokenId } from '@tsdi/ioc';
 import { ClientOptions, InterceptorInst, InterceptorType } from '@tsdi/core';
 import { HttpEvent, HttpRequest } from '@tsdi/common';

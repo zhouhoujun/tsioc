@@ -3,8 +3,8 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import { Application, ApplicationContext, Module, LoggerModule } from '@tsdi/core';
 import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
-import * as fs from 'node:fs';
-import * as path from 'node:path';
+import * as fs from 'fs';
+import * as path from 'path';
 
 import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
 

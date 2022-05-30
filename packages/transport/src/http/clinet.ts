@@ -2,9 +2,9 @@ import { EMPTY_OBJ, Inject, Injectable, InvocationContext, lang, Nullable, Provi
 import { RequestMethod, TransportClient, EndpointBackend, OnDispose, InterceptorInst, EndpointContext } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpHeaders, HttpParams, HttpParamsOptions, HttpResponse } from '@tsdi/common';
 import { filter, concatMap, map, Observable, of } from 'rxjs';
-import * as http from 'node:http';
-import * as https from 'node:https';
-import * as http2 from 'node:http2';
+import * as http from 'http';
+import * as https from 'https';
+import * as http2 from 'http2';
 import { ev } from '../consts';
 import { MimeAdapter } from '../mime';
 import { HttpMimeAdapter } from './mime';

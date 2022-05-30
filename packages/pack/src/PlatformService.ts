@@ -1,8 +1,8 @@
 import { Injectable, ObjectMap, isArray, isString, lang, isFunction } from '@tsdi/ioc';
 import { toAbsolutePath, syncRequire } from '@tsdi/platform-server';
 import { Src } from '@tsdi/activities';
-import { existsSync, readdirSync, lstatSync } from 'node:fs';
-import { join, dirname, normalize, relative, basename, extname } from 'node:path';
+import { existsSync, readdirSync, lstatSync } from 'fs';
+import { join, dirname, normalize, relative, basename, extname } from 'path';
 import {
     mkdir, cp, rm
     /* ls, test, cd, ShellString, pwd, ShellArray, find, mv, TestOptions, cat, sed */

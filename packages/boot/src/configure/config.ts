@@ -1,7 +1,7 @@
 import { Type, LoadType, Abstract, Injector, tokenId, Token, ProviderType } from '@tsdi/ioc';
 import { LogConfigure } from '@tsdi/logs';
 import { ConnectionOptions } from '@tsdi/repository';
-import { SecureContextOptions } from 'node:tls';
+import { SecureContextOptions } from 'tls';
 
 
 /**

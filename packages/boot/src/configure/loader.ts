@@ -3,8 +3,8 @@ import { Inject, Injectable } from '@tsdi/ioc';
 import { runMainPath } from '@tsdi/platform-server';
 import { ApplicationConfiguration, ConfigureLoader } from './config';
 
-import * as path from 'node:path';
-import * as fs from 'node:fs';
+import * as path from 'path';
+import * as fs from 'fs';
 
 /**
  * configure file loader.

@@ -4,13 +4,13 @@ import {
     global, isBlob, isFormData, HttpRequest, HttpEvent, HttpHeaders, HttpResponse, HttpErrorResponse,
     HttpHeaderResponse, HttpStatusCode, statusMessage, isArrayBuffer, HttpJsonParseError, HttpRequestMethod
 } from '@tsdi/common';
-import { catchError, finalize, lastValueFrom, map, Observable, Observer, } from 'rxjs';
-import * as zlib from 'node:zlib';
-import * as http from 'node:http';
-import * as https from 'node:https';
-import * as http2 from 'node:http2';
-import { PassThrough, pipeline, Readable, Writable, PipelineSource } from 'node:stream';
-import { promisify } from 'node:util';
+import { finalize, Observable, Observer } from 'rxjs';
+import * as zlib from 'zlib';
+import * as http from 'http';
+import * as https from 'https';
+import * as http2 from 'http2';
+import { PassThrough, pipeline, Readable, Writable, PipelineSource } from 'stream';
+import { promisify } from 'util';
 import { ev, hdr } from '../consts';
 import { HttpError } from './errors';
 import { emptyStatus, redirectStatus } from './status';

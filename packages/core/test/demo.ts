@@ -5,7 +5,7 @@ import {
 import { Injectable, Inject, lang, Abstract } from '@tsdi/ioc';
 import { Aspect, Around, Joinpoint } from '@tsdi/aop';
 import { Logger, LogConfigure, Log } from '@tsdi/logs';
-import * as net from 'node:net';
+import * as net from 'net';
 import { ServerModule, ServerLogsModule } from '@tsdi/platform-server';
 
 export class TestService {

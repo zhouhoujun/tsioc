@@ -1,5 +1,5 @@
 import { RequestBase, ResponseBase } from '@tsdi/core';
-import { Socket } from 'node:net';
+import { Socket } from 'net';
 
 
 export class TcpRequest<T = any> extends RequestBase<T> {
