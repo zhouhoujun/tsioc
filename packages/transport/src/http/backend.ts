@@ -74,14 +74,14 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
             }
 
             const url = req.urlWithParams.trim();
-            const ac = ctx.getValueify(AbortController, () => new AbortController());
+            const ac = this.getAbortSignal(ctx);
             const option = {
                 method: req.method,
                 headers: {
                     'accept': 'application/json, text/plain, */*',
                     ...headers,
                 },
-                abort: ac.signal
+                abort: ac?.signal
             };
 
             const request = secureExp.test(url) ? https.request(url, option) : http.request(url, option);
@@ -421,7 +421,7 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
 
             return () => {
                 if (isUndefined(status)) {
-                    ac.abort();
+                    ac?.abort();
                 }
                 request.off(ev.RESPONSE, onResponse);
                 // request.off(ev.DATA, onData);
@@ -438,6 +438,17 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
             }
         })
     }
+
+    getAbortSignal(ctx: EndpointContext): IAbortController {
+        return typeof AbortController === type_undef ? null! : ctx.getValueify(AbortController, () => new AbortController());
+    }
+}
+
+interface IAbortController {
+    /** Returns the AbortSignal object associated with this object. */
+    readonly signal: AbortSignal;
+    /** Invoking this method will set this object's AbortSignal's aborted flag and signal to any observers that the associated activity is to be aborted. */
+    abort(reason?: any): void;
 }
 
 const {
@@ -475,8 +486,8 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
             reqHeaders[HTTP2_HEADER_METHOD] = req.method;
             reqHeaders[HTTP2_HEADER_PATH] = path;
 
-            const ac = ctx.getValueify(AbortController, () => new AbortController());
-            const request = ctx.get(CLIENT_HTTP2SESSION).request(reqHeaders, { ...this.option.requestOptions, signal: ac.signal } as http2.ClientSessionRequestOptions);
+            const ac = this.getAbortSignal(ctx);
+            const request = ctx.get(CLIENT_HTTP2SESSION).request(reqHeaders, { ...this.option.requestOptions, signal: ac?.signal } as http2.ClientSessionRequestOptions);
             request.setEncoding('utf8');
 
 
@@ -788,7 +799,7 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
 
             return () => {
                 if (isUndefined(status) || !completed) {
-                    ac.abort();
+                    ac?.abort();
                 }
                 request.off(ev.RESPONSE, onResponse);
                 request.off(ev.DATA, onData);
@@ -802,6 +813,10 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 }
             }
         })
+    }
+
+    getAbortSignal(ctx: EndpointContext): IAbortController {
+        return typeof AbortController === type_undef ? null! : ctx.getValueify(AbortController, () => new AbortController());
     }
 }
 
