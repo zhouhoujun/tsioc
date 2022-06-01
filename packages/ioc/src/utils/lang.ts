@@ -168,13 +168,14 @@ export namespace lang {
      * @returns {string}
      */
     export function getClassName(target: any): string {
-        let classType = getClass(target);
+        let classType = isFunction(target) ? target : getClass(target);
         if (!isFunction(classType)) {
             return '';
         }
-        if (clsUglifyExp.test(classType.name)) {
-            let classAnnations = getClassAnnations(classType);
-            return classAnnations ? classAnnations.name : classType.name;
+
+        let classAnnations = getClassAnnations(classType);
+        if (classAnnations) {
+            return classAnnations.name;
         }
         return classType.name;
     }
