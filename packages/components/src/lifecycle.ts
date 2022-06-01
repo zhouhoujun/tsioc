@@ -128,7 +128,7 @@ export interface AfterViewInit {
  * completed checking a component's view for changes.
  *
  * @see `AfterContentChecked`
- * @see [Lifecycle hooks guide](guide/lifecycle-hooks)
+ * @see Lifecycle hooks guide](guide/lifecycle-hooks)
  *
  * @usageNotes
  * The following snippet shows how a component can implement this interface to

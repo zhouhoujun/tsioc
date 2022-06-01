@@ -6,8 +6,10 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import { isString } from '@tsdi/ioc';
+
 export function stringify(token: any): string {
-  if (typeof token === 'string') {
+  if (isString(token)) {
     return token;
   }
 
@@ -27,7 +29,7 @@ export function stringify(token: any): string {
     return `${token.name}`;
   }
 
-  const res = token.toString();
+  const res: string = token.toString();
 
   if (res == null) {
     return '' + res;

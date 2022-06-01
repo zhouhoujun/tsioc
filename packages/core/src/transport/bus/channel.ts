@@ -1,5 +1,8 @@
 import { Abstract } from '@tsdi/ioc';
 
+/**
+ * channel.
+ */
 @Abstract()
 export abstract class Channel {
 
