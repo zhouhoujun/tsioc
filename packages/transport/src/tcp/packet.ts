@@ -1,7 +1,9 @@
 import { RequestBase, ResponseBase } from '@tsdi/core';
 import { Socket } from 'net';
 
-
+/**
+ * TcpRequest.
+ */
 export class TcpRequest<T = any> extends RequestBase<T> {
 
     public readonly id: string;
@@ -34,6 +36,15 @@ export class TcpRequest<T = any> extends RequestBase<T> {
     }
 }
 
+export class TcpErrorResponse  {
+    constructor(readonly status: number, readonly statusMessage: string, readonly error?: any){
+
+    }
+}
+
+/**
+ * TcpResponse.
+ */
 export class TcpResponse<T = any> extends ResponseBase<T> {
 
     readonly type: number;

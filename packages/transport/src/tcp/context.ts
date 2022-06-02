@@ -2,6 +2,9 @@ import { ServerContext, ExecptionFilter, MiddlewareInst } from '@tsdi/core';
 import { Injectable, tokenId } from '@tsdi/ioc';
 import { TcpRequest, TcpResponse } from './packet';
 
+/**
+ * TCP context.
+ */
 @Injectable()
 export class TcpContext extends ServerContext<TcpRequest, TcpResponse> {
 
@@ -47,9 +50,9 @@ export class TcpContext extends ServerContext<TcpRequest, TcpResponse> {
 
     private _query?: Record<string, any>;
     get query(): Record<string, any> {
-        if(!this._query) {
+        if (!this._query) {
             const qs = this._query = {} as Record<string, any>;
-            this.URL.searchParams.forEach((v, k)=> {
+            this.URL.searchParams.forEach((v, k) => {
                 qs[k] = v;
             });
         }
@@ -64,7 +67,6 @@ export class TcpContext extends ServerContext<TcpRequest, TcpResponse> {
         return this.request.isUpdate;
     }
 
-    
 
     is(type: string | string[]): string | false | null {
         throw new Error('Method not implemented.');
@@ -105,7 +107,7 @@ export class TcpContext extends ServerContext<TcpRequest, TcpResponse> {
     redirect(url: string, alt?: string): void {
         throw new Error('Method not implemented.');
     }
-    
+
     throwError(status: number, message?: string): Error;
     throwError(message: string): Error;
     throwError(error: Error): Error;
@@ -129,6 +131,11 @@ export class TcpContext extends ServerContext<TcpRequest, TcpResponse> {
 
 }
 
+/**
+ * TCP Middlewares.
+ */
 export const TCP_MIDDLEWARES = tokenId<MiddlewareInst<TcpContext>[]>('TCP_MIDDLEWARES');
-
+/**
+ * TCP execption filters.
+ */
 export const TCP_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('HTTP_EXECPTION_FILTERS');

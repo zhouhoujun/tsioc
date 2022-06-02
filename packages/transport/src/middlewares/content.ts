@@ -2,6 +2,9 @@ import { Middleware, TransportContext, TransportError } from '@tsdi/core';
 import { Abstract, Injectable } from '@tsdi/ioc';
 import { SendAdapter, SendOption } from './send';
 
+/**
+ * Static Content options.
+ */
 @Abstract()
 export abstract class ContentOptions implements SendOption {
     abstract root: string | string[];

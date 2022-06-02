@@ -1,10 +1,11 @@
-import { EndpointBackend, EndpointContext, ExecptionFilter, Interceptor, InterceptorInst, InterceptorType, OnDispose, TransportClient, UuidGenerator } from '@tsdi/core';
-import { Abstract, EMPTY, Inject, Injectable, InvocationContext, isFunction, isString, lang, Nullable, Token, tokenId } from '@tsdi/ioc';
+import { CustomEndpoint, EndpointBackend, EndpointContext, Interceptor, InterceptorInst, InterceptorType, OnDispose, TransportClient, UuidGenerator } from '@tsdi/core';
+import { Abstract, Inject, Injectable, InvocationContext, isString, isUndefined, lang, Nullable, Token, tokenId, type_undef } from '@tsdi/ioc';
 import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
-import { ev } from '../consts';
 import { DecodeInterceptor, EncodeInterceptor } from '../interceptors';
-import { TcpRequest, TcpResponse } from './packet';
-
+import { TcpErrorResponse, TcpRequest, TcpResponse } from './packet';
+import { ev } from '../consts';
+import { TransactionError } from '@tsdi/repository';
+import { Observable, Observer } from 'rxjs';
 
 
 @Abstract()
@@ -20,7 +21,7 @@ export abstract class TcpClientOption {
 
 const defaults = {
     json: true,
-    interceptors:[
+    interceptors: [
         EncodeInterceptor,
         DecodeInterceptor
     ],
@@ -31,8 +32,14 @@ const defaults = {
 } as TcpClientOption;
 
 
+/**
+ * tcp interceptors.
+ */
 export const TCP_INTERCEPTORS = tokenId<Interceptor<TcpRequest, TcpResponse>[]>('TCP_INTERCEPTORS');
 
+/**
+ * TcpClient.
+ */
 @Injectable()
 export class TcpClient extends TransportClient<TcpRequest, TcpResponse> implements OnDispose {
 
@@ -52,7 +59,59 @@ export class TcpClient extends TransportClient<TcpRequest, TcpResponse> implemen
     }
 
     protected getBackend(): EndpointBackend<TcpRequest<any>, TcpResponse<any>> {
-        throw new Error('Method not implemented.')
+        const getAbortSignal = (ctx: EndpointContext) => {
+            return typeof AbortController === type_undef ? null! : ctx.getValueify(AbortController, () => new AbortController());
+        }
+        return new CustomEndpoint((req, ctx) => {
+            return new Observable((observer: Observer<any>) => {
+                if (!this.socket) throw new TransactionError('has not connected.');
+                const socket = this.socket;
+
+                const ac = getAbortSignal(ctx);
+                const onClose = (err?: any) => {
+                    this.connected = false;
+                    this.socket = null!;
+                    if (err) {
+                        this.logger.error(err);
+                    } else {
+                        this.logger.info(socket.address, 'closed');
+                    }
+                }
+                const onError = (err: any) => {
+                    this.connected = false;
+                    if (err.code !== ev.ECONNREFUSED) {
+                        this.logger.error(err);
+                    }
+                };
+
+
+                const onData = (data: Buffer) => {
+                    try {
+                        this.handleData(data);
+                    } catch (err) {
+                        socket.emit(ev.ERROR, (err as Error).message);
+                        socket.end();
+                    }
+                };
+                socket.on(ev.CLOSE, onClose);
+                socket.on(ev.ERROR, onError)
+                socket.on(ev.DATA, onData);
+
+                return () => {
+                    if (isUndefined(status)) {
+                        ac?.abort();
+                    }
+                    socket.off(ev.DATA, onData);
+                    socket.off(ev.ERROR, onError);
+                    socket.off(ev.ABOUT, onError);
+                    socket.off(ev.TIMEOUT, onError);
+                    if (!ctx.destroyed) {
+                        observer.error(new TcpErrorResponse(0, 'The operation was aborted.'));
+                        socket.emit(ev.CLOSE);
+                    }
+                }
+            });
+        });
     }
 
     protected async connect(): Promise<void> {

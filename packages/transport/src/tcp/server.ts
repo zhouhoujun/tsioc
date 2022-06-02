@@ -1,11 +1,11 @@
-import { EndpointBackend, ExecptionFilter, Interceptor, InterceptorInst, InterceptorType, MiddlewareInst, MiddlewareType, ServerOptions, TransportContext, TransportServer, UuidGenerator } from '@tsdi/core';
+import { EndpointBackend, ExecptionFilter, Interceptor, InterceptorInst, InterceptorType, MiddlewareInst, MiddlewareType, ServerOptions, TransportServer } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, lang, Nullable, Token, tokenId, Type } from '@tsdi/ioc';
 import { Server, ListenOptions } from 'net';
 import { Subscription } from 'rxjs';
-import { ev } from '../consts';
 import { CatchInterceptor, LogInterceptor, DecodeInterceptor, EncodeInterceptor } from '../interceptors';
 import { TcpContext, TCP_EXECPTION_FILTERS, TCP_MIDDLEWARES } from './context';
 import { TcpRequest, TcpResponse } from './packet';
+import { ev } from '../consts';
 
 
 
@@ -53,6 +53,9 @@ const defOpts = {
     }
 } as TcpServerOptions;
 
+/**
+ * Tcp server interceptors.
+ */
 export const TCP_SERV_INTERCEPTORS = tokenId<Interceptor<TcpRequest, TcpResponse>[]>('TCP_SERV_INTERCEPTORS');
 
 /**
