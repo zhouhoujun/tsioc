@@ -25,7 +25,9 @@ export interface TcpServerOpts {
     pauseOnConnect?: boolean | undefined;
 }
 
-
+/**
+ * TCP server options.
+ */
 @Abstract()
 export abstract class TcpServerOptions implements ServerOptions<TcpRequest, TcpResponse> {
     /**
@@ -106,9 +108,9 @@ export class TcpServer extends TransportServer<TcpRequest, TcpResponse, TcpConte
     }
 
     protected bindEvent(ctx: TcpContext, cancel: Subscription): void {
-        ctx.request.socket.on(ev.CLOSE, () => {
-            cancel?.unsubscribe();
-        });
+        // ctx.request.socket.on(ev.CLOSE, () => {
+        //     cancel?.unsubscribe();
+        // });
     }
 
     protected createContext(request: TcpRequest, response: TcpResponse): TcpContext {

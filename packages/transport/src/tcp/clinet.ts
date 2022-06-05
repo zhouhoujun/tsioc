@@ -5,7 +5,7 @@ import { DecodeInterceptor, EncodeInterceptor } from '../interceptors';
 import { TcpErrorResponse, TcpRequest, TcpResponse } from './packet';
 import { ev } from '../consts';
 import { TransactionError } from '@tsdi/repository';
-import { Observable, Observer } from 'rxjs';
+import { filter, Observable, Observer } from 'rxjs';
 
 
 @Abstract()
@@ -59,31 +59,35 @@ export class TcpClient extends TransportClient<TcpRequest, TcpResponse> implemen
     }
 
     protected getBackend(): EndpointBackend<TcpRequest<any>, TcpResponse<any>> {
-        const getAbortSignal = (ctx: EndpointContext) => {
-            return typeof AbortController === type_undef ? null! : ctx.getValueify(AbortController, () => new AbortController());
-        }
         return new CustomEndpoint((req, ctx) => {
+
             return new Observable((observer: Observer<any>) => {
                 if (!this.socket) throw new TransactionError('has not connected.');
                 const socket = this.socket;
+                
+                const { id, body } = req;
+                socket.write(body);
 
-                const ac = getAbortSignal(ctx);
+                const ac = this.getAbortSignal(ctx);
                 const onClose = (err?: any) => {
                     this.connected = false;
                     this.socket = null!;
                     if (err) {
                         this.logger.error(err);
+                        observer.error(err);
                     } else {
                         this.logger.info(socket.address, 'closed');
+                        observer.complete();
                     }
                 }
+
                 const onError = (err: any) => {
                     this.connected = false;
                     if (err.code !== ev.ECONNREFUSED) {
                         this.logger.error(err);
                     }
+                    observer.error(err);
                 };
-
 
                 const onData = (data: Buffer) => {
                     try {
@@ -91,17 +95,28 @@ export class TcpClient extends TransportClient<TcpRequest, TcpResponse> implemen
                     } catch (err) {
                         socket.emit(ev.ERROR, (err as Error).message);
                         socket.end();
+                        observer.error(err);
                     }
                 };
+
+                const onEnd = () => {
+                    this.connected = false;
+                    observer.complete();
+                };
+
                 socket.on(ev.CLOSE, onClose);
-                socket.on(ev.ERROR, onError)
+                socket.on(ev.ERROR, onError);
+                socket.on(ev.ABOUT, onError);
+                socket.on(ev.TIMEOUT, onError);
                 socket.on(ev.DATA, onData);
+                socket.on(ev.END, onEnd);
 
                 return () => {
                     if (isUndefined(status)) {
                         ac?.abort();
                     }
                     socket.off(ev.DATA, onData);
+                    socket.off(ev.END, onEnd);
                     socket.off(ev.ERROR, onError);
                     socket.off(ev.ABOUT, onError);
                     socket.off(ev.TIMEOUT, onError);
@@ -113,6 +128,7 @@ export class TcpClient extends TransportClient<TcpRequest, TcpResponse> implemen
             });
         });
     }
+
 
     protected async connect(): Promise<void> {
         if (this.connected) return;
@@ -131,6 +147,10 @@ export class TcpClient extends TransportClient<TcpRequest, TcpResponse> implemen
         this.socket.connect(this.option.connectOpts);
         await defer.promise;
         this.bindEvents(this.socket)
+    }
+
+    protected getAbortSignal(ctx: InvocationContext) {
+        return typeof AbortController === type_undef ? null! : ctx.getValueify(AbortController, () => new AbortController());
     }
 
     private bindEvents(socket: Socket) {

@@ -23,7 +23,7 @@ export function chain<T>(handlers: Handler<T, Promise<void>>[]): Handler<T, Prom
 export function syncChain<T>(handlers: Handler<T, void>[]): Handler<T, void> {
     return (ctx: T, next: () => void) => {
         runChain(handlers, ctx);
-        next && next()
+        if (next) next()
     }
 }
 

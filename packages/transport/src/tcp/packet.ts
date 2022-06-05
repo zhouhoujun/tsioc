@@ -1,5 +1,4 @@
 import { RequestBase, ResponseBase } from '@tsdi/core';
-import { Socket } from 'net';
 
 /**
  * TcpRequest.
@@ -9,13 +8,11 @@ export class TcpRequest<T = any> extends RequestBase<T> {
     public readonly id: string;
     public readonly url: string;
     public readonly method: string;
-    public readonly socket: Socket;
     public readonly params: Record<string, any>;
     public readonly body: T | null;
     private _update: boolean;
     constructor(id: string, option: {
         url: string;
-        socket: Socket;
         params?: Record<string, any>;
         method?: string;
         body?: T;
@@ -26,7 +23,6 @@ export class TcpRequest<T = any> extends RequestBase<T> {
         this.url = option.url;
         this.method = option.method ?? 'EES';
         this.params = option.params ?? {};
-        this.socket = option.socket;
         this.body = option.body ?? null;
         this._update = option.update === true;
     }
