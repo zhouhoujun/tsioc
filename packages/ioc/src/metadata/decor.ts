@@ -255,6 +255,9 @@ export interface Nullable {
     (): ParameterDecorator;
 
 }
+/**
+ * @Nullable decoator. define param can enable null.
+ */
 export const Nullable = createDecorator<InjectMetadata>('Nullable', {
     appendProps: (meta) => {
         meta.nullable = true;

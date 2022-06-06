@@ -5,9 +5,6 @@ import { DecodeInterceptor, EncodeInterceptor } from '../interceptors';
 import { TcpErrorResponse, TcpEvent, TcpJsonParseError, TcpRequest, TcpResponse } from './packet';
 import { ev, hdr } from '../consts';
 import { filter, mergeMap, Observable, Observer, of, throwError } from 'rxjs';
-import { status } from '@grpc/grpc-js';
-import { ClientTransformer } from '../transformer';
-import { map } from 'bluebird';
 
 
 @Abstract()
@@ -116,10 +113,11 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                             }
                         }
                         if (ok) {
-                            observer.next(new TcpResponse({
-                                status: 200,
-                                body
-                            }));
+                            observer.next(
+                                new TcpResponse({
+                                    status: 200,
+                                    body
+                                }));
                             observer.complete();
                         } else {
                             observer.error(new TcpErrorResponse(500, error?.text, error ?? body));
@@ -296,7 +294,6 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
             this.source = new Observable((observer: Observer<any>) => {
                 const socket = this.socket!;
 
-                const ac = this.getAbortSignal(this.context);
                 const onClose = (err?: any) => {
                     this.connected = false;
                     if (err) {
@@ -372,9 +369,6 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                 socket.on(ev.END, onEnd);
 
                 return () => {
-                    if (isUndefined(status)) {
-                        ac?.abort();
-                    }
                     socket.off(ev.DATA, onData);
                     socket.off(ev.END, onEnd);
                     socket.off(ev.ERROR, onError);

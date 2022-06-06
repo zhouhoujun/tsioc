@@ -1,12 +1,63 @@
-import { ServerContext, ExecptionFilter, MiddlewareInst } from '@tsdi/core';
-import { Injectable, tokenId } from '@tsdi/ioc';
-import { TcpRequest, TcpResponse } from './packet';
+import { HttpStatusCode, statusMessage } from '@tsdi/common';
+import { ServerContext, ExecptionFilter, MiddlewareInst, ResponseBase, RequestBase } from '@tsdi/core';
+import { EMPTY_OBJ, Injectable, tokenId } from '@tsdi/ioc';
+import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
+
+export class TcpServRequest extends RequestBase {
+    public readonly url: string;
+    public readonly method: string;
+    public readonly params: Record<string, any>;
+
+    body: any;
+
+    private _update: boolean;
+    constructor(readonly socket: Socket, option: {
+        id?: string,
+        url?: string;
+        params?: Record<string, any>;
+        method?: string;
+        update?: boolean;
+    } = EMPTY_OBJ) {
+        super();
+        this.url = option.url ?? '';
+        this.method = option.method ?? 'EES';
+        this.params = option.params ?? {};
+        this._update = option.update === true;
+    }
+
+    get isUpdate(): boolean {
+        return this._update
+    }
+}
+
+
+/**
+ * TcpResponse.
+ */
+export class TcpServResponse extends ResponseBase<any> {
+
+    type = 0;
+    status = 0;
+    statusMessage = '';
+
+    body: any;
+
+    constructor(readonly socket: Socket) {
+        super();
+    }
+
+    get ok(): boolean {
+        return this.status === 200;
+    }
+}
+
+
 
 /**
  * TCP context.
  */
 @Injectable()
-export class TcpContext extends ServerContext<TcpRequest, TcpResponse> {
+export class TcpContext extends ServerContext<TcpServRequest, TcpServResponse> {
 
     private _url?: string;
     get url(): string {
@@ -87,14 +138,16 @@ export class TcpContext extends ServerContext<TcpRequest, TcpResponse> {
         return this.response.status
     }
     set status(status: number) {
-        throw new Error('Method not implemented.');
+        this.response.status = status;
     }
     get statusMessage(): string {
-        throw new Error('Method not implemented.');
+        return this.response.statusMessage ?? statusMessage[this.status as HttpStatusCode]
     }
+
     set statusMessage(msg: string) {
         throw new Error('Method not implemented.');
     }
+
     get ok(): boolean {
         throw new Error('Method not implemented.');
     }

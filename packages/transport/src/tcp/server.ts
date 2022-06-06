@@ -1,10 +1,9 @@
-import { CustomEndpoint, EndpointBackend, ExecptionFilter, Interceptor, InterceptorInst, InterceptorType, MiddlewareInst, MiddlewareType, ServerOptions, TransportServer } from '@tsdi/core';
+import { CustomEndpoint, EndpointBackend, ExecptionFilter, Interceptor, InterceptorInst, InterceptorType, MiddlewareInst, MiddlewareType, ServerOptions, TransportError, TransportServer } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, lang, Nullable, Token, tokenId, Type } from '@tsdi/ioc';
 import { Server, ListenOptions } from 'net';
-import { Observable, Observer, of, Subscription } from 'rxjs';
+import { of, Subscription } from 'rxjs';
 import { CatchInterceptor, LogInterceptor, DecodeInterceptor, EncodeInterceptor } from '../interceptors';
-import { TcpContext, TCP_EXECPTION_FILTERS, TCP_MIDDLEWARES } from './context';
-import { TcpRequest, TcpResponse } from './packet';
+import { TcpContext, TcpServRequest, TcpServResponse, TCP_EXECPTION_FILTERS, TCP_MIDDLEWARES } from './context';
 import { ev } from '../consts';
 
 
@@ -29,20 +28,26 @@ export interface TcpServerOpts {
  * TCP server options.
  */
 @Abstract()
-export abstract class TcpServerOptions implements ServerOptions<TcpRequest, TcpResponse> {
+export abstract class TcpServerOptions implements ServerOptions<TcpServRequest, TcpServResponse> {
     /**
      * is json or not.
      */
     abstract json?: boolean;
+    /**
+     * socket timeout.
+     */
+    abstract timeout?: number;
+    abstract encoding?: BufferEncoding;
     abstract serverOpts?: TcpServerOpts | undefined;
     abstract listenOptions: ListenOptions;
-    abstract interceptors?: InterceptorType<TcpRequest, TcpResponse>[];
+    abstract interceptors?: InterceptorType<TcpServRequest, TcpServResponse>[];
     abstract execptions?: Type<ExecptionFilter>[];
     abstract middlewares?: MiddlewareType[];
 }
 
 const defOpts = {
     json: true,
+    encoding: 'utf8',
     interceptors: [
         LogInterceptor,
         CatchInterceptor,
@@ -58,13 +63,13 @@ const defOpts = {
 /**
  * Tcp server interceptors.
  */
-export const TCP_SERV_INTERCEPTORS = tokenId<Interceptor<TcpRequest, TcpResponse>[]>('TCP_SERV_INTERCEPTORS');
+export const TCP_SERV_INTERCEPTORS = tokenId<Interceptor<TcpServRequest, TcpServResponse>[]>('TCP_SERV_INTERCEPTORS');
 
 /**
  * TCP server.
  */
 @Injectable()
-export class TcpServer extends TransportServer<TcpRequest, TcpResponse, TcpContext> {
+export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, TcpContext> {
 
 
     private server?: Server;
@@ -82,7 +87,7 @@ export class TcpServer extends TransportServer<TcpRequest, TcpResponse, TcpConte
         return TCP_EXECPTION_FILTERS;
     }
 
-    protected getInterceptorsToken(): Token<InterceptorInst<TcpRequest, TcpResponse>[]> {
+    protected getInterceptorsToken(): Token<InterceptorInst<TcpServRequest, TcpServResponse>[]> {
         return TCP_SERV_INTERCEPTORS;
     }
     protected getMiddlewaresToken(): Token<MiddlewareInst<TcpContext>[]> {
@@ -99,29 +104,27 @@ export class TcpServer extends TransportServer<TcpRequest, TcpResponse, TcpConte
                 this.logger.error(err);
             }
         });
+
+        this.server.on(ev.CONNECTION, socket => this.requestHandler(new TcpServRequest(socket), new TcpServResponse(socket)));
+
         this.server.listen(this.options.listenOptions, defer.resolve);
         await defer.promise;
     }
 
-    protected getBackend(): EndpointBackend<TcpRequest, TcpResponse> {
-        return new CustomEndpoint((req, ctx) => {
-            return new Observable((observer: Observer<any>) => {
-                if (!this.server) return observer.error(500);
-                this.server.on(ev.CONNECTION, (socket) => {
-                    
-                });
-                of((ctx as TcpContext).response)
-            });
-        })
+    protected getBackend(): EndpointBackend<TcpServRequest, TcpServResponse> {
+        return new CustomEndpoint<TcpServRequest, TcpServResponse>((req, ctx) => of((ctx as TcpContext).response))
     }
 
     protected bindEvent(ctx: TcpContext, cancel: Subscription): void {
-        // ctx.request.socket.on(ev.CLOSE, () => {
-        //     cancel?.unsubscribe();
-        // });
+        ctx.request.socket.on(ev.TIMEOUT,()=> {
+            cancel?.unsubscribe();
+        })
+        ctx.request.socket.on(ev.CLOSE, () => {
+            cancel?.unsubscribe();
+        });
     }
 
-    protected createContext(request: TcpRequest, response: TcpResponse): TcpContext {
+    protected createContext(request: TcpServRequest, response: TcpServResponse): TcpContext {
         return new TcpContext(this.context.injector, request, response, this as TransportServer, { parent: this.context });
     }
 
