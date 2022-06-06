@@ -84,7 +84,7 @@ export class TcpContext extends ServerContext<TcpRequest, TcpResponse> {
     }
 
     get status(): number {
-        throw new Error('Method not implemented.');
+        return this.response.status
     }
     set status(status: number) {
         throw new Error('Method not implemented.');

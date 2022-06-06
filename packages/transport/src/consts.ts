@@ -16,6 +16,7 @@ export namespace ev {
     export const CONNECT = 'connect';
     export const CONNECT_FAILED = 'connectFailed';
     export const DISCONNECT = 'disconnect';
+    export const CONNECTION = 'connection';
 
     export const SOCKET = 'socket';
 

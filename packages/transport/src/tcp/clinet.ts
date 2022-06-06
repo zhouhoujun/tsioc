@@ -1,11 +1,13 @@
-import { CustomEndpoint, EndpointBackend, EndpointContext, Interceptor, InterceptorInst, InterceptorType, OnDispose, TransportClient, UuidGenerator } from '@tsdi/core';
+import { CustomEndpoint, EndpointBackend, EndpointContext, Interceptor, InterceptorInst, InterceptorType, OnDispose, TransportClient, TransportError, UuidGenerator } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, isUndefined, lang, Nullable, Token, tokenId, type_undef } from '@tsdi/ioc';
 import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
 import { DecodeInterceptor, EncodeInterceptor } from '../interceptors';
-import { TcpErrorResponse, TcpRequest, TcpResponse } from './packet';
-import { ev } from '../consts';
-import { TransactionError } from '@tsdi/repository';
-import { filter, Observable, Observer } from 'rxjs';
+import { TcpErrorResponse, TcpEvent, TcpJsonParseError, TcpRequest, TcpResponse } from './packet';
+import { ev, hdr } from '../consts';
+import { filter, mergeMap, Observable, Observer, of, throwError } from 'rxjs';
+import { status } from '@grpc/grpc-js';
+import { ClientTransformer } from '../transformer';
+import { map } from 'bluebird';
 
 
 @Abstract()
@@ -14,13 +16,15 @@ export abstract class TcpClientOption {
      * is json or not.
      */
     abstract json?: boolean;
+    abstract headerSplit?: string;
     abstract socketOpts?: SocketConstructorOpts;
     abstract connectOpts: NetConnectOpts;
-    abstract interceptors?: InterceptorType<TcpRequest, TcpResponse>[];
+    abstract interceptors?: InterceptorType<TcpRequest, TcpEvent>[];
 }
 
 const defaults = {
     json: true,
+    headerSplit: '#',
     interceptors: [
         EncodeInterceptor,
         DecodeInterceptor
@@ -35,16 +39,17 @@ const defaults = {
 /**
  * tcp interceptors.
  */
-export const TCP_INTERCEPTORS = tokenId<Interceptor<TcpRequest, TcpResponse>[]>('TCP_INTERCEPTORS');
+export const TCP_INTERCEPTORS = tokenId<Interceptor<TcpRequest, TcpEvent>[]>('TCP_INTERCEPTORS');
 
 /**
  * TcpClient.
  */
 @Injectable()
-export class TcpClient extends TransportClient<TcpRequest, TcpResponse> implements OnDispose {
+export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements OnDispose {
 
     private socket?: Socket;
     private connected: boolean;
+    private source!: Observable<string>;
     constructor(
         @Inject() readonly context: InvocationContext,
         @Nullable() private option: TcpClientOption = defaults
@@ -54,30 +59,251 @@ export class TcpClient extends TransportClient<TcpRequest, TcpResponse> implemen
         this.initialize(option);
     }
 
-    protected getInterceptorsToken(): Token<InterceptorInst<TcpRequest<any>, TcpResponse<any>>[]> {
+    protected getInterceptorsToken(): Token<InterceptorInst<TcpRequest<any>, TcpEvent<any>>[]> {
         return TCP_INTERCEPTORS;
     }
 
-    protected getBackend(): EndpointBackend<TcpRequest<any>, TcpResponse<any>> {
+    protected getBackend(): EndpointBackend<TcpRequest<any>, TcpEvent<any>> {
         return new CustomEndpoint((req, ctx) => {
 
-            return new Observable((observer: Observer<any>) => {
-                if (!this.socket) throw new TransactionError('has not connected.');
-                const socket = this.socket;
-                
-                const { id, body } = req;
-                socket.write(body);
+            if (!this.socket) return throwError(() => new TcpErrorResponse(0, 'has not connected.'));
 
-                const ac = this.getAbortSignal(ctx);
+            return this.source.pipe(
+                mergeMap(source => {
+                    let body = source as any;
+                    let error: any;
+                    let ok = false;
+                    const ac = this.getAbortSignal(ctx);
+                    return new Observable((observer: Observer<any>) => {
+                        if (body) {
+                            let buffer: Buffer;
+                            let originalBody: string;
+                            switch (req.responseType) {
+                                case 'arraybuffer':
+                                    buffer = Buffer.from(body);
+                                    body = buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+                                    ok = true;
+                                    break;
+                                case 'blob':
+                                    buffer = Buffer.from(body);
+                                    body = new Blob([buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)]);
+                                    ok = true;
+                                    break;
+                                case 'json':
+                                    originalBody = body;
+                                    try {
+                                        body = body.replace(XSSI_PREFIX, '');
+                                        // Attempt the parse. If it fails, a parse error should be delivered to the user.
+                                        body = body !== '' ? JSON.parse(body) : null
+                                    } catch (err) {
+                                        // Since the JSON.parse failed, it's reasonable to assume this might not have been a
+                                        // JSON response. Restore the original body (including any XSSI prefix) to deliver
+                                        // a better error response.
+                                        body = originalBody;
+
+                                        // If this was an error request to begin with, leave it as a string, it probably
+                                        // just isn't JSON. Otherwise, deliver the parsing error to the user.
+                                        if (ok) {
+                                            // Even though the response status was 2xx, this is still an error.
+                                            ok = false;
+                                            // The parse error contains the text of the body that failed to parse.
+                                            error = { error: err, text: body } as TcpJsonParseError
+                                        }
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                        if (ok) {
+                            observer.next(new TcpResponse({
+                                status: 200,
+                                body
+                            }));
+                            observer.complete();
+                        } else {
+                            observer.error(new TcpErrorResponse(500, error?.text, error ?? body));
+                        }
+                        return () => {
+                            if (ac && !ctx.destroyed) {
+                                ac.abort()
+                            }
+                            if (!ctx.destroyed) {
+                                observer.error(new TcpErrorResponse(0, 'The operation was aborted.'));
+                            }
+                        }
+                    });
+                })
+            )
+
+            // return new Observable((observer: Observer<any>) => {
+            //     const socket = this.socket!;
+
+            //     const { url, id, body } = req;
+            //     socket.write(body);
+
+            //     const ac = this.getAbortSignal(ctx);
+            //     const onClose = (err?: any) => {
+            //         if (err) {
+            //             observer.error(new TcpErrorResponse(500, err));
+            //         } else {
+            //             observer.complete();
+            //         }
+            //     }
+
+            //     const onError = (err: any) => {
+            //         observer.error(new TcpErrorResponse(500, err.message));
+            //     };
+
+            //     let buffer = '';
+            //     let length = -1;
+            //     const headerSplit = this.option.headerSplit!;
+            //     const onData = (data: Buffer | string) => {
+            //         try {
+            //             buffer += (isString(data) ? data : new TextDecoder().decode(data));
+            //             if (length === -1) {
+            //                 const i = buffer.indexOf(headerSplit);
+            //                 if (i !== -1) {
+            //                     const rawContentLength = buffer.substring(0, i);
+            //                     length = parseInt(rawContentLength, 10);
+
+            //                     if (isNaN(length)) {
+            //                         length = -1;
+            //                         buffer = '';
+            //                         throw new TransportError(0, 'socket packge error length' + rawContentLength);
+            //                     }
+            //                     buffer = buffer.substring(i + 1);
+            //                 }
+            //             }
+            //             let body: any;
+            //             let rest: string | undefined;
+            //             let error: any;
+            //             let ok = false;
+            //             if (length > 0) {
+            //                 const buflen = buffer.length;
+            //                 if (length === buflen) {
+            //                     body = buffer;
+            //                 } else if (buflen > length) {
+            //                     body = buffer.substring(0, length);
+            //                     rest = buffer.substring(length);
+            //                 }
+            //             } else if (length === 0) {
+            //                 ok = true;
+            //                 body = null;
+            //             }
+            //             if (body) {
+            //                 let buffer: Buffer;
+            //                 let originalBody: string;
+            //                 switch (req.responseType) {
+            //                     case 'arraybuffer':
+            //                         buffer = Buffer.from(body);
+            //                         body = buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+            //                         ok = true;
+            //                         break;
+            //                     case 'blob':
+            //                         buffer = Buffer.from(body);
+            //                         body = new Blob([buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)]);
+            //                         ok = true;
+            //                         break;
+            //                     case 'json':
+            //                         originalBody = body;
+            //                         try {
+            //                             body = body.replace(XSSI_PREFIX, '');
+            //                             // Attempt the parse. If it fails, a parse error should be delivered to the user.
+            //                             body = body !== '' ? JSON.parse(body) : null
+            //                         } catch (err) {
+            //                             // Since the JSON.parse failed, it's reasonable to assume this might not have been a
+            //                             // JSON response. Restore the original body (including any XSSI prefix) to deliver
+            //                             // a better error response.
+            //                             body = originalBody;
+
+            //                             // If this was an error request to begin with, leave it as a string, it probably
+            //                             // just isn't JSON. Otherwise, deliver the parsing error to the user.
+            //                             if (ok) {
+            //                                 // Even though the response status was 2xx, this is still an error.
+            //                                 ok = false;
+            //                                 // The parse error contains the text of the body that failed to parse.
+            //                                 error = { error: err, text: body } as TcpJsonParseError
+            //                             }
+            //                         }
+            //                         break;
+            //                     default:
+            //                         break;
+            //                 }
+            //             }
+            //             if (ok) {
+            //                 observer.next(new TcpResponse({
+            //                     status: 200,
+            //                     body
+            //                 }));
+            //                 if (rest) {
+            //                     onData(rest);
+            //                 } else {
+            //                     observer.complete();
+            //                 }
+            //             } else {
+            //                 observer.next(new TcpErrorResponse(500, error?.text, error ?? body));
+            //             }
+            //         } catch (err: any) {
+            //             socket.emit(ev.ERROR, err.message);
+            //             socket.end();
+            //             observer.error(new TcpErrorResponse(err.status ?? 500, err.message));
+            //         }
+            //     };
+
+            //     const onEnd = () => {
+            //         observer.complete();
+            //     };
+
+            //     socket.on(ev.CLOSE, onClose);
+            //     socket.on(ev.ERROR, onError);
+            //     socket.on(ev.ABOUT, onError);
+            //     socket.on(ev.TIMEOUT, onError);
+            //     socket.on(ev.DATA, onData);
+            //     socket.on(ev.END, onEnd);
+
+            //     return () => {
+            //         if (isUndefined(status)) {
+            //             ac?.abort();
+            //         }
+            //         socket.off(ev.DATA, onData);
+            //         socket.off(ev.END, onEnd);
+            //         socket.off(ev.ERROR, onError);
+            //         socket.off(ev.ABOUT, onError);
+            //         socket.off(ev.TIMEOUT, onError);
+            //         if (!ctx.destroyed) {
+            //             observer.error(new TcpErrorResponse(0, 'The operation was aborted.'));
+            //             socket.emit(ev.CLOSE);
+            //         }
+            //     }
+            // });
+        });
+    }
+
+
+    protected async connect(): Promise<void> {
+        if (this.connected) return;
+        if (this.socket) {
+            this.socket.destroy()
+        }
+        const socket = this.socket = new Socket(this.option.socketOpts);
+        const defer = lang.defer();
+        socket.once(ev.ERROR, defer.reject);
+        socket.once(ev.CONNECT, () => {
+            this.connected = true;
+            defer.resolve(true);
+            this.logger.info(socket.address, 'connected');
+            this.source = new Observable((observer: Observer<any>) => {
+                const socket = this.socket!;
+
+                const ac = this.getAbortSignal(this.context);
                 const onClose = (err?: any) => {
                     this.connected = false;
-                    this.socket = null!;
                     if (err) {
-                        this.logger.error(err);
-                        observer.error(err);
+                        observer.error(new TcpErrorResponse(500, err));
                     } else {
-                        this.logger.info(socket.address, 'closed');
                         observer.complete();
+                        this.logger.info(socket.address, 'closed');
                     }
                 }
 
@@ -86,16 +312,50 @@ export class TcpClient extends TransportClient<TcpRequest, TcpResponse> implemen
                     if (err.code !== ev.ECONNREFUSED) {
                         this.logger.error(err);
                     }
-                    observer.error(err);
+                    observer.error(new TcpErrorResponse(500, err.message));
                 };
 
-                const onData = (data: Buffer) => {
+                let buffer = '';
+                let length = -1;
+                const headerSplit = this.option.headerSplit!;
+                const onData = (data: Buffer | string) => {
                     try {
-                        this.handleData(data);
-                    } catch (err) {
-                        socket.emit(ev.ERROR, (err as Error).message);
+                        buffer += (isString(data) ? data : new TextDecoder().decode(data));
+                        if (length === -1) {
+                            const i = buffer.indexOf(headerSplit);
+                            if (i !== -1) {
+                                const rawContentLength = buffer.substring(0, i);
+                                length = parseInt(rawContentLength, 10);
+
+                                if (isNaN(length)) {
+                                    length = -1;
+                                    buffer = '';
+                                    throw new TransportError(0, 'socket packge error length' + rawContentLength);
+                                }
+                                buffer = buffer.substring(i + 1);
+                            }
+                        }
+                        let body: any;
+                        let rest: string | undefined;
+                        if (length >= 0) {
+                            const buflen = buffer.length;
+                            if (length === buflen) {
+                                body = buffer;
+                            } else if (buflen > length) {
+                                body = buffer.substring(0, length);
+                                rest = buffer.substring(length);
+                            }
+                        }
+                        if (body) {
+                            observer.next(body);
+                        }
+                        if (rest) {
+                            onData(rest);
+                        }
+                    } catch (err: any) {
+                        socket.emit(ev.ERROR, err.message);
                         socket.end();
-                        observer.error(err);
+                        observer.error(new TcpErrorResponse(err.status ?? 500, err.message));
                     }
                 };
 
@@ -120,28 +380,9 @@ export class TcpClient extends TransportClient<TcpRequest, TcpResponse> implemen
                     socket.off(ev.ERROR, onError);
                     socket.off(ev.ABOUT, onError);
                     socket.off(ev.TIMEOUT, onError);
-                    if (!ctx.destroyed) {
-                        observer.error(new TcpErrorResponse(0, 'The operation was aborted.'));
-                        socket.emit(ev.CLOSE);
-                    }
+                    socket.emit(ev.CLOSE);
                 }
             });
-        });
-    }
-
-
-    protected async connect(): Promise<void> {
-        if (this.connected) return;
-        if (this.socket) {
-            this.socket.destroy()
-        }
-        const socket = this.socket = new Socket(this.option.socketOpts);
-        const defer = lang.defer();
-        socket.once(ev.ERROR, defer.reject);
-        socket.once(ev.CONNECT, () => {
-            this.connected = true;
-            defer.resolve(true);
-            this.logger.info(socket.address, 'connected');
         });
 
         this.socket.connect(this.option.connectOpts);
@@ -169,18 +410,6 @@ export class TcpClient extends TransportClient<TcpRequest, TcpResponse> implemen
                 this.logger.error(err);
             }
         });
-        socket.on(ev.DATA, (data) => {
-            try {
-                this.handleData(data);
-            } catch (err) {
-                socket.emit(ev.ERROR, (err as Error).message);
-                socket.end();
-            }
-        });
-    }
-
-    protected handleData(data: Buffer) {
-
     }
 
     protected override buildRequest(req: string | TcpRequest<any>, options?: any): TcpRequest<any> {
@@ -200,3 +429,5 @@ export class TcpClient extends TransportClient<TcpRequest, TcpResponse> implemen
     }
 
 }
+
+const XSSI_PREFIX = /^\)\]\}',?\n/;

@@ -1,7 +1,7 @@
-import { EndpointBackend, ExecptionFilter, Interceptor, InterceptorInst, InterceptorType, MiddlewareInst, MiddlewareType, ServerOptions, TransportServer } from '@tsdi/core';
+import { CustomEndpoint, EndpointBackend, ExecptionFilter, Interceptor, InterceptorInst, InterceptorType, MiddlewareInst, MiddlewareType, ServerOptions, TransportServer } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, lang, Nullable, Token, tokenId, Type } from '@tsdi/ioc';
 import { Server, ListenOptions } from 'net';
-import { Subscription } from 'rxjs';
+import { Observable, Observer, of, Subscription } from 'rxjs';
 import { CatchInterceptor, LogInterceptor, DecodeInterceptor, EncodeInterceptor } from '../interceptors';
 import { TcpContext, TCP_EXECPTION_FILTERS, TCP_MIDDLEWARES } from './context';
 import { TcpRequest, TcpResponse } from './packet';
@@ -104,7 +104,15 @@ export class TcpServer extends TransportServer<TcpRequest, TcpResponse, TcpConte
     }
 
     protected getBackend(): EndpointBackend<TcpRequest, TcpResponse> {
-        throw new Error('Method not implemented.');
+        return new CustomEndpoint((req, ctx) => {
+            return new Observable((observer: Observer<any>) => {
+                if (!this.server) return observer.error(500);
+                this.server.on(ev.CONNECTION, (socket) => {
+                    
+                });
+                of((ctx as TcpContext).response)
+            });
+        })
     }
 
     protected bindEvent(ctx: TcpContext, cancel: Subscription): void {

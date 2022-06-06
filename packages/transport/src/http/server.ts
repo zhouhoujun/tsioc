@@ -135,7 +135,6 @@ export const HTTP_SERV_INTERCEPTORS = tokenId<Interceptor<HttpServRequest, HttpS
 ])
 export class HttpServer extends TransportServer<HttpServRequest, HttpServResponse, HttpContext>  {
 
-    private _backend?: EndpointBackend<HttpServRequest, HttpServResponse>;
     private _server?: http2.Http2Server | http.Server | https.Server;
     private options!: HttpServerOptions;
 
@@ -256,10 +255,7 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
 
 
     protected override getBackend(): EndpointBackend<HttpServRequest, HttpServResponse> {
-        if (!this._backend) {
-            this._backend = new CustomEndpoint<HttpServRequest, HttpServResponse>((req, ctx) => of((ctx as HttpContext).response))
-        }
-        return this._backend
+        return new CustomEndpoint<HttpServRequest, HttpServResponse>((req, ctx) => of((ctx as HttpContext).response))
     }
 
     protected override bindEvent(ctx: HttpContext, cancel: Subscription): void {
