@@ -3,7 +3,7 @@ import { Endpoint, EndpointContext, Interceptor } from '@tsdi/core';
 import { HttpEvent, HttpRequest } from '@tsdi/common';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { Observable } from 'rxjs';
-import { HttpClientOptions } from '../client.option';
+import { HttpClientOptions } from './option';
 
 const abstUrlExp = /^http(s)?:/;
 

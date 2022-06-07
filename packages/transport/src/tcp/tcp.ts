@@ -1,7 +1,7 @@
 import { Module, RouterModule, TransformModule } from '@tsdi/core';
 import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
-import { TcpClient } from './clinet';
-import { TcpServer, TcpServerOptions } from './server';
+import { TcpClient } from './client/clinet';
+import { TcpServer, TcpServerOptions } from './server/server';
 
 @Module({
     imports: [

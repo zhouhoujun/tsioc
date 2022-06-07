@@ -1,7 +1,7 @@
 /* eslint-disable no-useless-escape */
 import { Injectable, isArray, isString } from '@tsdi/ioc';
-import { hdr } from '../consts';
-import { Negotiator } from '../negotiator';
+import { hdr } from '../../consts';
+import { Negotiator } from '../../negotiator';
 import { HttpContext } from './context';
 
 

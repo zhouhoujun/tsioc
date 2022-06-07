@@ -2,9 +2,9 @@ import { CustomEndpoint, EndpointBackend, ExecptionFilter, Interceptor, Intercep
 import { Abstract, Inject, Injectable, InvocationContext, lang, Nullable, Token, tokenId, Type } from '@tsdi/ioc';
 import { Server, ListenOptions } from 'net';
 import { of, Subscription } from 'rxjs';
-import { CatchInterceptor, LogInterceptor, DecodeInterceptor, EncodeInterceptor } from '../interceptors';
+import { CatchInterceptor, LogInterceptor, DecodeInterceptor, EncodeInterceptor } from '../../interceptors';
 import { TcpContext, TcpServRequest, TcpServResponse, TCP_EXECPTION_FILTERS, TCP_MIDDLEWARES } from './context';
-import { ev } from '../consts';
+import { ev } from '../../consts';
 
 
 

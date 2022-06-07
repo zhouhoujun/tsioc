@@ -4,8 +4,8 @@ import { normalize, resolve, basename, extname, parse, sep, isAbsolute, join } f
 import { existsSync, stat, createReadStream } from 'fs';
 import { promisify } from 'util';
 import { HttpContext } from './context';
-import { SendAdapter, SendOption } from '../middlewares/send';
-import { ev, hdr } from '../consts';
+import { SendAdapter, SendOption } from '../../middlewares/send';
+import { ev, hdr } from '../../consts';
 
 
 const statify = promisify(stat);

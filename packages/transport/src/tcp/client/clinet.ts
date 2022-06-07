@@ -1,9 +1,10 @@
 import { CustomEndpoint, EndpointBackend, EndpointContext, Interceptor, InterceptorInst, InterceptorType, OnDispose, TransportClient, TransportError, UuidGenerator } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, isUndefined, lang, Nullable, Token, tokenId, type_undef } from '@tsdi/ioc';
 import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
-import { DecodeInterceptor, EncodeInterceptor } from '../interceptors';
-import { TcpErrorResponse, TcpEvent, TcpJsonParseError, TcpRequest, TcpResponse } from './packet';
-import { ev, hdr } from '../consts';
+import { DecodeInterceptor, EncodeInterceptor } from '../../interceptors';
+import { TcpRequest } from './request';
+import { TcpErrorResponse, TcpEvent, TcpJsonParseError, TcpResponse } from './response';
+import { ev, hdr } from '../../consts';
 import { filter, mergeMap, Observable, Observer, of, throwError } from 'rxjs';
 
 

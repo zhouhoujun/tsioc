@@ -11,13 +11,13 @@ import * as https from 'https';
 import * as http2 from 'http2';
 import { PassThrough, pipeline, Readable, Writable, PipelineSource } from 'stream';
 import { promisify } from 'util';
-import { ev, hdr } from '../consts';
-import { HttpError } from './errors';
-import { emptyStatus, redirectStatus } from './status';
-import { isBuffer, jsonTypes, textTypes, xmlTypes } from '../utils';
+import { ev, hdr } from '../../consts';
+import { HttpError } from '../errors';
+import { emptyStatus, redirectStatus } from '../status';
+import { isBuffer, jsonTypes, textTypes, xmlTypes } from '../../utils';
 import * as NodeFormData from 'form-data';
-import { CLIENT_HTTP2SESSION, HttpClientOptions } from './client.option';
-import { MimeAdapter } from '../mime';
+import { CLIENT_HTTP2SESSION, HttpClientOptions } from './option';
+import { MimeAdapter } from '../../mime';
 
 const pmPipeline = promisify(pipeline);
 

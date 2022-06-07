@@ -4,7 +4,7 @@ import { Observable, mergeMap } from 'rxjs';
 import { Readable } from 'stream';
 import { hdr, ev } from '../../consts';
 import { isBuffer, isStream } from '../../utils';
-import { HttpContext, HttpServRequest, HttpServResponse } from '../context';
+import { HttpContext, HttpServRequest, HttpServResponse } from './context';
 import { emptyStatus } from '../status';
 
 @Injectable()

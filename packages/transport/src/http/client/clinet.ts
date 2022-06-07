@@ -5,13 +5,13 @@ import { filter, concatMap, map, Observable, of } from 'rxjs';
 import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
-import { ev } from '../consts';
-import { MimeAdapter } from '../mime';
-import { HttpMimeAdapter } from './mime';
+import { ev } from '../../consts';
+import { MimeAdapter } from '../../mime';
+import { HttpMimeAdapter } from '../mime';
 import { HttpBackend } from './backend';
-import { NormlizePathInterceptor } from './interceptors/path';
-import { NormlizeBodyInterceptor } from './interceptors/body';
-import { HttpClientOptions, HTTP_INTERCEPTORS, CLIENT_HTTP2SESSION } from './client.option';
+import { NormlizePathInterceptor } from './path';
+import { NormlizeBodyInterceptor } from './body';
+import { HttpClientOptions, HTTP_INTERCEPTORS, CLIENT_HTTP2SESSION } from './option';
 
 
 

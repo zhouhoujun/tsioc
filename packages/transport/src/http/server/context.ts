@@ -6,13 +6,13 @@ import * as http from 'http';
 import * as http2 from 'http2';
 import { TLSSocket } from 'tls';
 import { extname } from 'path';
-import { append, encodeUrl, escapeHtml, isBuffer, isStream, parseTokenList } from '../utils';
-import { emptyStatus, redirectStatus } from './status';
+import { append, encodeUrl, escapeHtml, isBuffer, isStream, parseTokenList } from '../../utils';
+import { emptyStatus, redirectStatus } from '../status';
 import { CONTENT_DISPOSITION } from './content';
-import { ctype, hdr } from '../consts';
-import { MimeAdapter } from '../mime';
-import { Negotiator } from '../negotiator';
-import { HttpError, InternalServerError } from './errors';
+import { ctype, hdr } from '../../consts';
+import { MimeAdapter } from '../../mime';
+import { Negotiator } from '../../negotiator';
+import { HttpError, InternalServerError } from './../errors';
 import { HttpServer } from './server';
 
 
