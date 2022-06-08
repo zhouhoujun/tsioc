@@ -15,6 +15,11 @@ import { TcpServer, TcpServerOptions } from './server/server';
 })
 export class TcpModule {
 
+    /**
+     * Tcp Server options.
+     * @param options 
+     * @returns 
+     */
     static withOptions(options: TcpServerOptions): ModuleWithProviders<TcpModule> {
         const providers: ProviderType[] = [{ provide: TcpServerOptions, useValue: options }];
         return {

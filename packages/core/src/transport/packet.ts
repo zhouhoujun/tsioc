@@ -4,7 +4,7 @@ import { Abstract } from '@tsdi/ioc';
 /**
  * request method.
  */
-export type RequestMethod = 'HEAD' | 'OPTIONS' | 'GET' | 'DELETE' | 'PATCH' | 'POST' | 'PUT';
+export type RequestMethod = 'HEAD' | 'OPTIONS' | 'GET' | 'DELETE' | 'PATCH' | 'POST' | 'PUT' | 'JSONP';
 
 /**
  * mqtt protocol.
@@ -50,10 +50,8 @@ export abstract class RequestBase<T = any> {
      */
     abstract get body(): T | null;
 
-    /**
-     * is update modle resquest.
-     */
-    abstract get isUpdate(): boolean;
+    abstract get responseType(): 'arraybuffer' | 'blob' | 'json' | 'text';
+
 }
 
 
@@ -158,6 +156,19 @@ export abstract class ResponseBase<T = any> {
 }
 
 /**
+ * An error that represents a failed attempt to JSON.parse text coming back
+ * from the server.
+ *
+ * It bundles the Error object with the actual response body that failed to parse.
+ *
+ *
+ */
+export interface ResponseJsonParseError {
+    error: Error;
+    text: string;
+}
+
+/**
  * response headers.
  */
 export interface ResponseHeader<T = any> {
@@ -226,3 +237,5 @@ export interface ResponseHeader<T = any> {
      */
     removeHeader(field: string): void;
 }
+
+export type ResponseEvent<T> = ResponseBase<T> | ResponseHeader;

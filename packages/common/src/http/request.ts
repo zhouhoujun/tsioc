@@ -6,6 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import { RequestBase } from '@tsdi/core';
 import { isString, type_bool, type_num, type_obj, type_undef, InvocationContext } from '@tsdi/ioc';
 import { HttpHeaders } from './headers';
 import { HttpParams } from './params';
@@ -87,7 +88,7 @@ export function isUrlSearchParams(value: any): value is URLSearchParams {
  *
  * @publicApi
  */
-export class HttpRequest<T = any>  {
+export class HttpRequest<T = any> implements RequestBase<T> {
     /**
      * The request body, or `null` if one isn't set.
      *

@@ -14,6 +14,7 @@ export abstract class TcpClientOption {
      * is json or not.
      */
     abstract json?: boolean;
+    abstract encoding?: BufferEncoding;
     abstract headerSplit?: string;
     abstract socketOpts?: SocketConstructorOpts;
     abstract connectOpts: NetConnectOpts;
@@ -23,6 +24,7 @@ export abstract class TcpClientOption {
 const defaults = {
     json: true,
     headerSplit: '#',
+    encoding: 'utf8',
     interceptors: [
         EncodeInterceptor,
         DecodeInterceptor
@@ -66,13 +68,24 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
 
             if (!this.socket) return throwError(() => new TcpErrorResponse(0, 'has not connected.'));
 
-            return this.source.pipe(
-                mergeMap(source => {
-                    let body = source as any;
-                    let error: any;
-                    let ok = false;
-                    const ac = this.getAbortSignal(ctx);
-                    return new Observable((observer: Observer<any>) => {
+            const socket = this.socket;
+            let body: any, error: any, ok = false;
+
+            const ac = this.getAbortSignal(ctx);
+            return new Observable((observer: Observer<any>) => {
+
+                if (req.body) {
+                    socket.write(req.body, this.option.encoding, (err) => {
+                        ok = false;
+                        error = err;
+                    });
+                }
+
+                const sub = this.source.subscribe({
+                    complete: () => observer.complete(),
+                    error: (err) => observer.error(new TcpErrorResponse(err?.status ?? 500, err?.text, err ?? body)),
+                    next: (source) => {
+                        body = source;
                         if (body) {
                             let buffer: Buffer;
                             let originalBody: string;
@@ -109,31 +122,32 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                                         }
                                     }
                                     break;
-                                default:
-                                    break;
                             }
                         }
+
                         if (ok) {
-                            observer.next(
-                                new TcpResponse({
-                                    status: 200,
-                                    body
-                                }));
+                            observer.next(new TcpResponse({
+                                status: 200,
+                                body
+                            }));
                             observer.complete();
                         } else {
-                            observer.error(new TcpErrorResponse(500, error?.text, error ?? body));
+                            observer.error(new TcpErrorResponse(error?.status ?? 500, error?.text, error ?? body));
                         }
-                        return () => {
-                            if (ac && !ctx.destroyed) {
-                                ac.abort()
-                            }
-                            if (!ctx.destroyed) {
-                                observer.error(new TcpErrorResponse(0, 'The operation was aborted.'));
-                            }
-                        }
-                    });
-                })
-            )
+                    }
+                });
+
+
+                return () => {
+                    if (ac && !ctx.destroyed) {
+                        ac.abort()
+                    }
+                    sub && sub.unsubscribe();
+                    if (!ctx.destroyed) {
+                        observer.error(new TcpErrorResponse(0, 'The operation was aborted.'));
+                    }
+                }
+            });
 
             // return new Observable((observer: Observer<any>) => {
             //     const socket = this.socket!;
