@@ -1,15 +1,16 @@
 import { ResponseBase } from '@tsdi/core';
 
-export class TcpErrorResponse  {
+export class UdpErrorResponse  {
     constructor(readonly status: number, readonly statusMessage: string, readonly error?: any){
 
     }
 }
 
+
 /**
- * TcpResponse.
+ * UdpResponse.
  */
-export class TcpResponse<T = any> extends ResponseBase<T> {
+export class UdpResponse<T = any> extends ResponseBase<T> {
 
     readonly type: number;
     readonly status: number;
@@ -34,5 +35,5 @@ export class TcpResponse<T = any> extends ResponseBase<T> {
     }
 }
 
-export type TcpEvent<T = any> = TcpErrorResponse  | TcpResponse<T>;
+export type UdpEvent<T = any> = UdpErrorResponse | UdpResponse<T>;
 

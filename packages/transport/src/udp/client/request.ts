@@ -1,9 +1,10 @@
 import { RequestBase } from '@tsdi/core';
 
+
 /**
- * TcpRequest.
+ * UdpRequest.
  */
-export class TcpRequest<T = any> extends RequestBase<T> {
+ export class UdpRequest<T = any> extends RequestBase<T> {
 
     public readonly id: string;
     public readonly url: string;
@@ -16,7 +17,7 @@ export class TcpRequest<T = any> extends RequestBase<T> {
     * This is used to parse the response appropriately before returning it to
     * the requestee.
     */
-    readonly responseType: 'arraybuffer' | 'blob' | 'json' | 'text';
+   readonly responseType: 'arraybuffer' | 'blob' | 'json' | 'text';
 
     constructor(id: string, option: {
         url: string;
@@ -24,6 +25,7 @@ export class TcpRequest<T = any> extends RequestBase<T> {
         method?: string;
         responseType: 'arraybuffer' | 'blob' | 'json' | 'text';
         body?: T;
+        update?: boolean;
     }) {
         super();
         this.id = id;

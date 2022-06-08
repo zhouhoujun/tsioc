@@ -1,9 +1,9 @@
-import { CustomEndpoint, EndpointBackend, EndpointContext, Interceptor, InterceptorInst, InterceptorType, OnDispose, TransportClient, TransportError, UuidGenerator } from '@tsdi/core';
+import { CustomEndpoint, EndpointBackend, EndpointContext, Interceptor, InterceptorInst, InterceptorType, OnDispose, ResponseJsonParseError, TransportClient, TransportError, UuidGenerator } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, isUndefined, lang, Nullable, Token, tokenId, type_undef } from '@tsdi/ioc';
 import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
 import { DecodeInterceptor, EncodeInterceptor } from '../../interceptors';
 import { TcpRequest } from './request';
-import { TcpErrorResponse, TcpEvent, TcpJsonParseError, TcpResponse } from './response';
+import { TcpErrorResponse, TcpEvent, TcpResponse } from './response';
 import { ev, hdr } from '../../consts';
 import { filter, mergeMap, Observable, Observer, of, throwError } from 'rxjs';
 
@@ -118,7 +118,7 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                                             // Even though the response status was 2xx, this is still an error.
                                             ok = false;
                                             // The parse error contains the text of the body that failed to parse.
-                                            error = { error: err, text: body } as TcpJsonParseError
+                                            error = { error: err, text: body } as ResponseJsonParseError
                                         }
                                     }
                                     break;
