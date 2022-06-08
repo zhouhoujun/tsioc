@@ -1,14 +1,14 @@
 import { CustomEndpoint, EndpointBackend, EndpointContext, Interceptor, InterceptorInst, InterceptorType, OnDispose, ResponseJsonParseError, TransportClient, TransportError, UuidGenerator } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, isUndefined, lang, Nullable, Token, tokenId, type_undef } from '@tsdi/ioc';
-import { Socket, SocketOptions } from 'dgram';
+import { Socket, createSocket, SocketOptions } from 'dgram';
 import { DecodeInterceptor, EncodeInterceptor } from '../../interceptors';
 import { UdpRequest } from './request';
 import { UdpErrorResponse, UdpEvent, UdpResponse } from './response';
 import { ev, hdr } from '../../consts';
-import { filter, mergeMap, Observable, Observer, of, throwError } from 'rxjs';
+import { defer, filter, from, mergeMap, Observable, Observer, of, throwError } from 'rxjs';
 
 export interface Address {
-    port?: number;
+    port: number;
     address?: string
 }
 
@@ -20,7 +20,6 @@ export abstract class UdpClientOption {
     abstract json?: boolean;
     abstract encoding?: BufferEncoding;
     abstract headerSplit?: string;
-    abstract socketOpts?: SocketOptions;
     abstract address: Address;
     abstract interceptors?: InterceptorType<UdpRequest, UdpEvent>[];
 }
@@ -78,14 +77,11 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
             const ac = this.getAbortSignal(ctx);
             return new Observable((observer: Observer<any>) => {
 
-                if (req.body) {
-                    socket.send(req.body, this.option.address.port, this.option.address.address, (err) => {
-                        ok = false;
-                        error = err;
-                    });
-                }
-
-                const sub = this.source.subscribe({
+                const sub = defer(() => {
+                    const defer = lang.defer<any>();
+                    socket.send(req.body, err => err ? defer.reject(err) : defer.resolve());
+                    return defer.promise;
+                }).pipe(mergeMap(() => this.source)).subscribe({
                     complete: () => observer.complete(),
                     error: (err) => observer.error(new UdpErrorResponse(err?.status ?? 500, err?.text, err ?? body)),
                     next: (source) => {
@@ -161,12 +157,12 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
         if (this.socket) {
             this.socket.disconnect()
         }
-        const socket = this.socket = new Socket(this.option.socketOpts);
+        const socket = this.socket = new Socket();
         const defer = lang.defer();
-        socket.once(ev.ERROR, defer.reject);
-        socket.once(ev.CONNECT, () => {
+        const { port, address } = this.option.address;
+        this.socket.connect(port, address, (err?: any) => {
+            if(err) return defer.reject(err);
             this.connected = true;
-            defer.resolve(true);
             this.logger.info(socket.address, 'connected');
             this.source = new Observable((observer: Observer<any>) => {
                 const socket = this.socket!;
@@ -192,7 +188,7 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
                 let buffer = '';
                 let length = -1;
                 const headerSplit = this.option.headerSplit!;
-                const onData = (data: Buffer | string) => {
+                const onMessage = (data: Buffer | string) => {
                     try {
                         buffer += (isString(data) ? data : new TextDecoder().decode(data));
                         if (length === -1) {
@@ -224,64 +220,38 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
                             observer.next(body);
                         }
                         if (rest) {
-                            onData(rest);
+                            onMessage(rest);
                         }
                     } catch (err: any) {
                         socket.emit(ev.ERROR, err.message);
-                        socket.end();
+                        socket.close();
                         observer.error(new UdpErrorResponse(err.status ?? 500, err.message));
                     }
-                };
-
-                const onEnd = () => {
-                    this.connected = false;
-                    observer.complete();
                 };
 
                 socket.on(ev.CLOSE, onClose);
                 socket.on(ev.ERROR, onError);
                 socket.on(ev.ABOUT, onError);
                 socket.on(ev.TIMEOUT, onError);
-                socket.on(ev.DATA, onData);
-                socket.on(ev.END, onEnd);
+                socket.on(ev.MESSAGE, onMessage);
 
                 return () => {
-                    socket.off(ev.DATA, onData);
-                    socket.off(ev.END, onEnd);
+                    socket.off(ev.MESSAGE, onMessage);
                     socket.off(ev.ERROR, onError);
                     socket.off(ev.ABOUT, onError);
                     socket.off(ev.TIMEOUT, onError);
                     socket.emit(ev.CLOSE);
                 }
             });
+            defer.resolve(true);
         });
-
-        this.socket.connect(this.option.connectOpts);
         await defer.promise;
-        this.bindEvents(this.socket)
     }
 
     protected getAbortSignal(ctx: InvocationContext) {
         return typeof AbortController === type_undef ? null! : ctx.getValueify(AbortController, () => new AbortController());
     }
 
-    private bindEvents(socket: Socket) {
-        socket.on(ev.CLOSE, (err) => {
-            this.connected = false;
-            this.socket = null!;
-            if (err) {
-                this.logger.error(err);
-            } else {
-                this.logger.info(socket.address, 'closed');
-            }
-        });
-        socket.on(ev.ERROR, (err: any) => {
-            this.connected = false;
-            if (err.code !== ev.ECONNREFUSED) {
-                this.logger.error(err);
-            }
-        });
-    }
 
     protected override buildRequest(req: string | UdpRequest<any>, options?: any): UdpRequest<any> {
         return isString(req) ? new UdpRequest(this.context.resolve(UuidGenerator).generate(), options) : req
@@ -289,7 +259,7 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
 
     async close(): Promise<void> {
         this.connected = false;
-        this.socket?.end()
+        this.socket?.disconnect()
     }
 
     /**

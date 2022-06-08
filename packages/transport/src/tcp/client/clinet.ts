@@ -5,7 +5,7 @@ import { DecodeInterceptor, EncodeInterceptor } from '../../interceptors';
 import { TcpRequest } from './request';
 import { TcpErrorResponse, TcpEvent, TcpResponse } from './response';
 import { ev, hdr } from '../../consts';
-import { filter, mergeMap, Observable, Observer, of, throwError } from 'rxjs';
+import { defer, filter, mergeMap, Observable, Observer, of, throwError } from 'rxjs';
 
 
 @Abstract()
@@ -74,14 +74,17 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
             const ac = this.getAbortSignal(ctx);
             return new Observable((observer: Observer<any>) => {
 
-                if (req.body) {
-                    socket.write(req.body, this.option.encoding, (err) => {
-                        ok = false;
-                        error = err;
-                    });
-                }
 
-                const sub = this.source.subscribe({
+
+                const sub = defer(async () => {
+                    socket.emit(ev.DATA, req);
+                    // if (req.body) {
+                    //     socket.write(req.body, this.option.encoding, (err) => {
+                    //         ok = false;
+                    //         error = err;
+                    //     });
+                    // }
+                }).pipe(mergeMap(() => this.source)).subscribe({
                     complete: () => observer.complete(),
                     error: (err) => observer.error(new TcpErrorResponse(err?.status ?? 500, err?.text, err ?? body)),
                     next: (source) => {
@@ -149,147 +152,6 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                 }
             });
 
-            // return new Observable((observer: Observer<any>) => {
-            //     const socket = this.socket!;
-
-            //     const { url, id, body } = req;
-            //     socket.write(body);
-
-            //     const ac = this.getAbortSignal(ctx);
-            //     const onClose = (err?: any) => {
-            //         if (err) {
-            //             observer.error(new TcpErrorResponse(500, err));
-            //         } else {
-            //             observer.complete();
-            //         }
-            //     }
-
-            //     const onError = (err: any) => {
-            //         observer.error(new TcpErrorResponse(500, err.message));
-            //     };
-
-            //     let buffer = '';
-            //     let length = -1;
-            //     const headerSplit = this.option.headerSplit!;
-            //     const onData = (data: Buffer | string) => {
-            //         try {
-            //             buffer += (isString(data) ? data : new TextDecoder().decode(data));
-            //             if (length === -1) {
-            //                 const i = buffer.indexOf(headerSplit);
-            //                 if (i !== -1) {
-            //                     const rawContentLength = buffer.substring(0, i);
-            //                     length = parseInt(rawContentLength, 10);
-
-            //                     if (isNaN(length)) {
-            //                         length = -1;
-            //                         buffer = '';
-            //                         throw new TransportError(0, 'socket packge error length' + rawContentLength);
-            //                     }
-            //                     buffer = buffer.substring(i + 1);
-            //                 }
-            //             }
-            //             let body: any;
-            //             let rest: string | undefined;
-            //             let error: any;
-            //             let ok = false;
-            //             if (length > 0) {
-            //                 const buflen = buffer.length;
-            //                 if (length === buflen) {
-            //                     body = buffer;
-            //                 } else if (buflen > length) {
-            //                     body = buffer.substring(0, length);
-            //                     rest = buffer.substring(length);
-            //                 }
-            //             } else if (length === 0) {
-            //                 ok = true;
-            //                 body = null;
-            //             }
-            //             if (body) {
-            //                 let buffer: Buffer;
-            //                 let originalBody: string;
-            //                 switch (req.responseType) {
-            //                     case 'arraybuffer':
-            //                         buffer = Buffer.from(body);
-            //                         body = buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-            //                         ok = true;
-            //                         break;
-            //                     case 'blob':
-            //                         buffer = Buffer.from(body);
-            //                         body = new Blob([buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)]);
-            //                         ok = true;
-            //                         break;
-            //                     case 'json':
-            //                         originalBody = body;
-            //                         try {
-            //                             body = body.replace(XSSI_PREFIX, '');
-            //                             // Attempt the parse. If it fails, a parse error should be delivered to the user.
-            //                             body = body !== '' ? JSON.parse(body) : null
-            //                         } catch (err) {
-            //                             // Since the JSON.parse failed, it's reasonable to assume this might not have been a
-            //                             // JSON response. Restore the original body (including any XSSI prefix) to deliver
-            //                             // a better error response.
-            //                             body = originalBody;
-
-            //                             // If this was an error request to begin with, leave it as a string, it probably
-            //                             // just isn't JSON. Otherwise, deliver the parsing error to the user.
-            //                             if (ok) {
-            //                                 // Even though the response status was 2xx, this is still an error.
-            //                                 ok = false;
-            //                                 // The parse error contains the text of the body that failed to parse.
-            //                                 error = { error: err, text: body } as TcpJsonParseError
-            //                             }
-            //                         }
-            //                         break;
-            //                     default:
-            //                         break;
-            //                 }
-            //             }
-            //             if (ok) {
-            //                 observer.next(new TcpResponse({
-            //                     status: 200,
-            //                     body
-            //                 }));
-            //                 if (rest) {
-            //                     onData(rest);
-            //                 } else {
-            //                     observer.complete();
-            //                 }
-            //             } else {
-            //                 observer.next(new TcpErrorResponse(500, error?.text, error ?? body));
-            //             }
-            //         } catch (err: any) {
-            //             socket.emit(ev.ERROR, err.message);
-            //             socket.end();
-            //             observer.error(new TcpErrorResponse(err.status ?? 500, err.message));
-            //         }
-            //     };
-
-            //     const onEnd = () => {
-            //         observer.complete();
-            //     };
-
-            //     socket.on(ev.CLOSE, onClose);
-            //     socket.on(ev.ERROR, onError);
-            //     socket.on(ev.ABOUT, onError);
-            //     socket.on(ev.TIMEOUT, onError);
-            //     socket.on(ev.DATA, onData);
-            //     socket.on(ev.END, onEnd);
-
-            //     return () => {
-            //         if (isUndefined(status)) {
-            //             ac?.abort();
-            //         }
-            //         socket.off(ev.DATA, onData);
-            //         socket.off(ev.END, onEnd);
-            //         socket.off(ev.ERROR, onError);
-            //         socket.off(ev.ABOUT, onError);
-            //         socket.off(ev.TIMEOUT, onError);
-            //         if (!ctx.destroyed) {
-            //             observer.error(new TcpErrorResponse(0, 'The operation was aborted.'));
-            //             socket.emit(ev.CLOSE);
-            //         }
-            //     }
-            // });
         });
     }
 
@@ -308,7 +170,6 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
             this.logger.info(socket.address, 'connected');
             this.source = new Observable((observer: Observer<any>) => {
                 const socket = this.socket!;
-
                 const onClose = (err?: any) => {
                     this.connected = false;
                     if (err) {
@@ -396,29 +257,10 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
 
         this.socket.connect(this.option.connectOpts);
         await defer.promise;
-        this.bindEvents(this.socket)
     }
 
     protected getAbortSignal(ctx: InvocationContext) {
         return typeof AbortController === type_undef ? null! : ctx.getValueify(AbortController, () => new AbortController());
-    }
-
-    private bindEvents(socket: Socket) {
-        socket.on(ev.CLOSE, (err) => {
-            this.connected = false;
-            this.socket = null!;
-            if (err) {
-                this.logger.error(err);
-            } else {
-                this.logger.info(socket.address, 'closed');
-            }
-        });
-        socket.on(ev.ERROR, (err: any) => {
-            this.connected = false;
-            if (err.code !== ev.ECONNREFUSED) {
-                this.logger.error(err);
-            }
-        });
     }
 
     protected override buildRequest(req: string | TcpRequest<any>, options?: any): TcpRequest<any> {

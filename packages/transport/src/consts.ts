@@ -32,6 +32,8 @@ export namespace ev {
 
     export const SUBSCRIBE = 'subscribe';
     export const CANCELLED = 'cancelled';
+
+    export const LISTENING = 'listening';
 }
 
 /**
