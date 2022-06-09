@@ -129,6 +129,9 @@ export class InterceptorChain<TRequest, TResponse> implements Endpoint<TRequest,
     }
 }
 
+/**
+ * custom endpoint.
+ */
 export class CustomEndpoint<TRequest, TResponse> implements Endpoint<TRequest, TResponse>  {
 
     constructor(private fn: EndpointFn<TRequest, TResponse>) { }
@@ -176,7 +179,9 @@ export function compose<T extends TransportContext>(middlewares: MiddlewareInst<
  */
 export const NEXT = () => Promise.resolve();
 
-
+/**
+ * middleware chain.
+ */
 export class Chain implements Middleware {
 
     private _chainFn?: MiddlewareFn;

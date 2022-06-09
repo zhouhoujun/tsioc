@@ -23,7 +23,7 @@ export interface Parameter<T = any> extends ParameterMetadata {
 }
 
 /**
- * Resolver for an argument of an {@link OperationInvoker}.
+ * Resolver for an argument of an `{@link OperationInvoker}`.
  */
 export interface OperationArgumentResolver<C = any> {
     /**

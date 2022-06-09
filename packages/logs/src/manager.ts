@@ -1,4 +1,7 @@
-import { ArgumentError, EMPTY_OBJ, getToken, Inject, Injectable, Injector, isFunction, isString, Nullable, Token, Type } from '@tsdi/ioc';
+import {
+    ArgumentError, EMPTY_OBJ, getToken, Inject, Injectable,
+    Injector, isFunction, isString, Nullable, Token, Type
+} from '@tsdi/ioc';
 import { HeaderFormater, Logger } from './logger';
 import { LogConfigure } from './LogConfigure';
 import { Level, Levels, levels } from './Level';
@@ -127,7 +130,7 @@ class ConsoleLog implements Logger {
     readonly name: string | undefined;
     formatHeader = true;
 
-    constructor(name?: string, public level: Level = 'debug', private headerFormater?: HeaderFormater|null) {
+    constructor(name?: string, public level: Level = 'debug', private headerFormater?: HeaderFormater | null) {
         this.name = name;
     }
 

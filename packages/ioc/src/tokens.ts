@@ -42,6 +42,11 @@ export function tokenId<T = any>(key: string,): Token<T> {
     return Symbol(key)
 }
 
+/**
+ * format token.
+ * @param token 
+ * @returns 
+ */
 export function formatToken(token: Token) {
     return isFunction(token) ? `${getClassName(token)}` : token.toString()
 }
@@ -104,6 +109,9 @@ export enum InjectFlags {
     /** Inject `defaultValue` instead if token not found. */
     Optional = 0b1000,
 
+    /**
+     * HostOnly for InvocationContext.
+     */
     HostOnly = 0b10000,
 }
 

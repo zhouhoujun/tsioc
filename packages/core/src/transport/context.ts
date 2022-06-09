@@ -1,6 +1,8 @@
 import { Abstract, DefaultInvocationContext } from '@tsdi/ioc';
 
-
+/**
+ * endpoint context.
+ */
 @Abstract()
 export abstract class EndpointContext extends DefaultInvocationContext {
     /**

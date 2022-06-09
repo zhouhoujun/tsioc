@@ -439,6 +439,9 @@ export interface ClientOptions<TRequest, TResponse> {
     interceptors?: InterceptorType<TRequest, TResponse>[];
 }
 
+/**
+ * request option.
+ */
 export interface RequstOption {
     method?: string;
     body?: any;
@@ -447,6 +450,9 @@ export interface RequstOption {
     params?: Record<string, any>;
 }
 
+/**
+ * response option for request.
+ */
 export interface ResponseOption {
     observe?: 'body' | 'events' | 'response';
     responseType?: 'arraybuffer' | 'blob' | 'json' | 'text';

@@ -1,4 +1,4 @@
-import { Abstract, EMPTY, isArray, isDefined, Type, Parameter } from '@tsdi/ioc';
+import { Abstract, EMPTY, isArray, isDefined, Type, Parameter, OperationInvoker } from '@tsdi/ioc';
 import { ModelArgumentResolver, TransportContext } from '@tsdi/core';
 import { composeFieldResolver, DBPropertyMetadata, MissingModelFieldError, missingPropError, ModelFieldResolver, MODEL_FIELD_RESOLVERS } from './field.resolver';
 

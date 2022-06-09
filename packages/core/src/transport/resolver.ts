@@ -1,4 +1,4 @@
-import { OperationArgumentResolver, Parameter, Type } from '@tsdi/ioc';
+import { OperationArgumentResolver, Parameter, Type, OperationInvoker } from '@tsdi/ioc';
 import { PipeTransform } from '../pipes/pipe';
 import { TransportContext } from './context';
 

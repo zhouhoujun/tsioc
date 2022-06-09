@@ -1,7 +1,9 @@
 import { ActionTypes, createDecorator, ParamPropMetadata, PropParamDecorator, Type } from '@tsdi/ioc';
 import { RepositoryArgumentResolver } from './repository';
 
-
+/**
+ * repository metadata.
+ */
 export interface RepositoryMetadata extends ParamPropMetadata {
     model: Type;
     connection?: string;
