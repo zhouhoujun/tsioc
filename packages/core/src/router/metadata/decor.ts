@@ -21,11 +21,6 @@ export type HandleDecorator = <TFunction extends Type<Middleware>>(target: TFunc
  * @interface Handle
  */
 export interface Handle {
-    // /**
-    //  * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
-    //  *
-    //  */
-    // (): HandleDecorator;
     /**
      * Handle decorator, for class. use to define the class as route.
      *
@@ -52,36 +47,6 @@ export interface Handle {
         */
         guards?: Type<CanActivate>[];
     }): HandleDecorator;
-    // /**
-    //  * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
-    //  *
-    //  * @RegisterFor
-    //  *
-    //  * @param {Type<Middlewares>} parent the handle reg in the handle queue. default register in root handle queue.
-    //  * @param [option] register this handle handle before this handle.
-    //  */
-    // (parent: Type<Middlewares>, options?: {
-    //     /**
-    //      * register this handle handle before the handle.
-    //      */
-    //     before?: Type<Middleware>;
-    //     /**
-    //      * register this handle handle before the handle.
-    //      */
-    //     after?: Type<Middleware>;
-    //     /**
-    //     * route guards.
-    //     */
-    //     guards?: Type<CanActivate>[],
-    // }): HandleDecorator;
-    // /**
-    //  * RegisterFor decorator, for class. use to define the class as handle register in global handle queue or parent.
-    //  *
-    //  * @RegisterFor
-    //  *
-    //  * @param {ClassMetadata} [metadata] metadata map.
-    //  */
-    // (metadata: HandleMetadata): HandleDecorator;
 
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.

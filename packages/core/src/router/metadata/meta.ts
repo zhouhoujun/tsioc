@@ -2,6 +2,9 @@ import { PatternMetadata, Type, TypeMetadata } from '@tsdi/ioc';
 import { CanActivate } from '../guard';
 import { Router } from '../router';
 
+/**
+ * handle message pattern.
+ */
 export interface HandleMessagePattern {
     /**
      * message handle pattern for route mapping.

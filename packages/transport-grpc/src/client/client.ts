@@ -1,5 +1,6 @@
-import { EMPTY_OBJ, Inject, Injectable, InvocationContext, tokenId } from '@tsdi/ioc';
-import { Endpoint, EndpointBackend, HttpRequest, HttpResponse, Interceptor, TransportClient } from '@tsdi/core';
+import { EMPTY_OBJ, Inject, Injectable, InvocationContext, Token, tokenId } from '@tsdi/ioc';
+import { Endpoint, EndpointBackend, Interceptor, InterceptorInst, RequstOption, TransportClient } from '@tsdi/core';
+import { HttpRequest, HttpResponse } from '@tsdi/common';
 import { loadPackageDefinition, load, ServiceDefinition, ProtobufTypeDefinition } from '@grpc/grpc-js';
 import * as gload from '@grpc/proto-loader';
 
@@ -22,24 +23,17 @@ export class GrpcClient extends TransportClient<HttpRequest, HttpResponse> {
         @Inject(GRPC_CLIENT_OPTIONS) private options: GrpcClientOptions) {
         super()
     }
-    
-    async connect(): Promise<any> {
-        loadPackageDefinition(this.options.packageDef);
-    }    
-    
-    getInterceptors(): Interceptor<any, any>[] {
-        throw new Error('Method not implemented.');
-    }
 
-    getBackend(): EndpointBackend<HttpRequest, HttpResponse> {
+    protected getInterceptorsToken(): Token<InterceptorInst<HttpRequest<any>, HttpResponse<any>>[]> {
         throw new Error('Method not implemented.');
     }
-    
-    close(): Promise<void> {
+    protected getBackend(): EndpointBackend<HttpRequest<any>, HttpResponse<any>> {
         throw new Error('Method not implemented.');
     }
-
-    protected buildRequest(context: InvocationContext<any>, url: string | HttpRequest<any>, options?: any): HttpRequest<any> {
+    protected buildRequest(url: string | HttpRequest<any>, options?: RequstOption): HttpRequest<any> {
+        throw new Error('Method not implemented.');
+    }
+    protected connect(): Promise<void> {
         throw new Error('Method not implemented.');
     }
 
