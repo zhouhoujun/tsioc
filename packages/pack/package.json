@@ -57,7 +57,6 @@
     "rollup-pluginutils": "^2.8.2",
     "assert": "^2.0.0",
     "expect": "^26.0.1",
-    "vinyl-fs": "^3.0.3",
     "rxjs": "^6.3.3",
     "shelljs": "^0.8.4",
     "through2": "^3.0.1",
