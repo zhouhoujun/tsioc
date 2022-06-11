@@ -17,9 +17,9 @@ export interface SendOption {
 }
 
 /**
- * send adapter.
+ * Content send adapter.
  */
 @Abstract()
-export abstract class SendAdapter {
+export abstract class ContentSendAdapter {
     abstract send(ctx: TransportContext, options: SendOption): Promise<string>;
 }

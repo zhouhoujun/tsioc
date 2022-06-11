@@ -71,11 +71,6 @@ export class UdpContext extends ServerContext<UdpServRequest, UdpServResponse> {
         return this.request.isUpdate;
     }
 
-
-    is(type: string | string[]): string | false | null {
-        throw new Error('Method not implemented.');
-    }
-
     get body(): any {
         throw new Error('Method not implemented.');
     }
@@ -110,9 +105,6 @@ export class UdpContext extends ServerContext<UdpServRequest, UdpServResponse> {
     get sent(): boolean {
         throw new Error('Method not implemented.');
     }
-    redirect(url: string, alt?: string): void {
-        throw new Error('Method not implemented.');
-    }
 
     throwError(status: number, message?: string): Error;
     throwError(message: string): Error;
@@ -120,21 +112,7 @@ export class UdpContext extends ServerContext<UdpServRequest, UdpServResponse> {
     throwError(status: any, message?: any): Error {
         throw new Error('Method not implemented.');
     }
-    getHeader(field: string): string | number | string[] | undefined {
-        throw new Error('Method not implemented.');
-    }
-    hasHeader(field: string): boolean {
-        throw new Error('Method not implemented.');
-    }
-    setHeader(field: string, val: string | number | string[]): void;
-    setHeader(fields: Record<string, string | number | string[]>): void;
-    setHeader(field: any, val?: any): void {
-        throw new Error('Method not implemented.');
-    }
-    removeHeader(field: string): void {
-        throw new Error('Method not implemented.');
-    }
-
+    
 }
 
 /**

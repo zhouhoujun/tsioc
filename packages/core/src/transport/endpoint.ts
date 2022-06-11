@@ -37,7 +37,7 @@ export abstract class EndpointBackend<TRequest, TResponse> implements Endpoint<T
 }
 
 /**
- * Interceptor is a chainable behavior modifier for endpoints.
+ * Interceptor is a chainable behavior modifier for `endpoints`.
  */
 export interface Interceptor<TRequest = any, TResponse = any> {
     /**

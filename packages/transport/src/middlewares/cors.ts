@@ -1,4 +1,4 @@
-import { Middleware, RequestMethod, TransportContext } from '@tsdi/core';
+import { HeaderContext, Middleware, RequestMethod, TransportContext } from '@tsdi/core';
 import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
 import { hdr } from '../consts';
@@ -95,7 +95,7 @@ export class CorsMiddleware implements Middleware {
         return options as Options
     }
 
-    async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: TransportContext & HeaderContext, next: () => Promise<void>): Promise<void> {
         const requestOrigin = ctx.getHeader(hdr.ORIGIN);
         !ctx.sent && vary(ctx.response, hdr.ORIGIN);
         if (!requestOrigin) {

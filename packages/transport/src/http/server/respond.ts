@@ -1,4 +1,4 @@
-import { Endpoint, Interceptor } from '@tsdi/core';
+import { Endpoint, Interceptor, RespondTypeAdapter, TransportError } from '@tsdi/core';
 import { Injectable, isString, lang } from '@tsdi/ioc';
 import { Observable, mergeMap } from 'rxjs';
 import { Readable } from 'stream';
@@ -89,3 +89,24 @@ export class ResponsedInterceptor implements Interceptor<HttpServRequest, HttpSe
     }
 
 }
+
+
+@Injectable()
+export class HttpRespondTypeAdapter extends RespondTypeAdapter {
+    respond<T>(ctx: HttpContext, response: 'body' | 'header' | 'response', value: T): void {
+        if (response === 'body') {
+            ctx.body = value
+        } else if (response === 'header') {
+            ctx.setHeader(value as Record<string, any>);
+        } else if (response === 'response') {
+            if (value instanceof TransportError) {
+                ctx.status = value.statusCode;
+                ctx.statusMessage = value.message
+            } else {
+                ctx.status = 500;
+                ctx.statusMessage = String(value)
+            }
+        }
+    }
+}
+

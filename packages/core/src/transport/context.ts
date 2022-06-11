@@ -66,28 +66,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
      * The outgoing HTTP request method.
      */
     abstract get method(): string;
-    /**
-     * Check if the incoming request contains the "Content-Type"
-     * header field and if it contains any of the given mime `type`s.
-     * If there is no request body, `null` is returned.
-     * If there is no content type, `false` is returned.
-     * Otherwise, it returns the first `type` that matches.
-     *
-     * Examples:
-     *
-     *     // With Content-Type: text/html; charset=utf-8
-     *     this.is('html'); // => 'html'
-     *     this.is('text/html'); // => 'text/html'
-     *     this.is('text/*', 'application/json'); // => 'text/html'
-     *
-     *     // When Content-Type is application/json
-     *     this.is('json', 'urlencoded'); // => 'json'
-     *     this.is('application/json'); // => 'application/json'
-     *     this.is('html', 'application/*'); // => 'application/json'
-     *
-     *     this.is('html'); // => false
-     */
-    abstract is(type: string | string[]): string | null | false;
+ 
     /**
      * The request body, or `null` if one isn't set.
      *
@@ -149,26 +128,6 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
     abstract get sent(): boolean;
 
     /**
-     * Perform a 302 redirect to `url`.
-     *
-     * The string "back" is special-cased
-     * to provide Referrer support, when Referrer
-     * is not present `alt` or "/" is used.
-     *
-     * Examples:
-     *
-     *    this.redirect('back');
-     *    this.redirect('back', '/index.html');
-     *    this.redirect('/login');
-     *    this.redirect('http://google.com');
-     *
-     * @param {String} url
-     * @param {String} [alt]
-     * @api public
-     */
-    abstract redirect(url: string, alt?: string): void;
-
-    /**
      * create error instance of {@link TransportError}.
      * @param status transport status
      * @param messages transport messages.
@@ -189,6 +148,54 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
      */
     abstract throwError(error: Error): Error;
 
+}
+
+/**
+ * header context with tansport.
+ */
+export interface HeaderContext {
+    /**
+     * Check if the incoming request contains the "Content-Type"
+     * header field and if it contains any of the given mime `type`s.
+     * If there is no request body, `null` is returned.
+     * If there is no content type, `false` is returned.
+     * Otherwise, it returns the first `type` that matches.
+     *
+     * Examples:
+     *
+     *     // With Content-Type: text/html; charset=utf-8
+     *     this.is('html'); // => 'html'
+     *     this.is('text/html'); // => 'text/html'
+     *     this.is('text/*', 'application/json'); // => 'text/html'
+     *
+     *     // When Content-Type is application/json
+     *     this.is('json', 'urlencoded'); // => 'json'
+     *     this.is('application/json'); // => 'application/json'
+     *     this.is('html', 'application/*'); // => 'application/json'
+     *
+     *     this.is('html'); // => false
+     */
+    is(type: string | string[]): string | null | false;
+    
+    /**
+     * Perform a 302 redirect to `url`.
+     *
+     * The string "back" is special-cased
+     * to provide Referrer support, when Referrer
+     * is not present `alt` or "/" is used.
+     *
+     * Examples:
+     *
+     *    this.redirect('back');
+     *    this.redirect('back', '/index.html');
+     *    this.redirect('/login');
+     *    this.redirect('http://google.com');
+     *
+     * @param {String} url
+     * @param {String} [alt]
+     * @api public
+     */
+    redirect(url: string, alt?: string): void;
 
     /**
      * Return request header.
@@ -211,14 +218,14 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
      * @return {String}
      * @api public
      */
-    abstract getHeader(field: string): string | string[] | number | undefined;
+    getHeader(field: string): string | string[] | number | undefined;
 
 
     /**
      * has response header field or not.
      * @param field 
      */
-    abstract hasHeader(field: string): boolean;
+    hasHeader(field: string): boolean;
     /**
      * Set response header `field` to `val` or pass
      * an object of header fields.
@@ -233,7 +240,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
      * @param {String} val
      * @api public
      */
-    abstract setHeader(field: string, val: string | number | string[]): void;
+    setHeader(field: string, val: string | number | string[]): void;
     /**
      * Set response header `field` to `val` or pass
      * an object of header fields.
@@ -246,13 +253,12 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
      * @param {String} val
      * @api public
      */
-    abstract setHeader(fields: Record<string, string | number | string[]>): void;
+    setHeader(fields: Record<string, string | number | string[]>): void;
     /**
      * Remove response header `field`.
      *
      * @param {String} name
      * @api public
      */
-    abstract removeHeader(field: string): void;
-
+    removeHeader(field: string): void;
 }

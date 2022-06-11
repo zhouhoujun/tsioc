@@ -4,14 +4,14 @@ import { normalize, resolve, basename, extname, parse, sep, isAbsolute, join } f
 import { existsSync, stat, createReadStream } from 'fs';
 import { promisify } from 'util';
 import { HttpContext } from './context';
-import { SendAdapter, SendOption } from '../../middlewares/send';
+import { ContentSendAdapter, SendOption } from '../../middlewares/send';
 import { ev, hdr } from '../../consts';
 
 
 const statify = promisify(stat);
 
 @Injectable()
-export class HttpSendAdapter extends SendAdapter {
+export class HttpSendAdapter extends ContentSendAdapter {
     async send(ctx: HttpContext, opts: SendOption): Promise<string> {
         let path = ctx.pathname;
         const endSlash = path[path.length - 1] === '/';

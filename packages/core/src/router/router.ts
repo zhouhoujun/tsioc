@@ -5,8 +5,9 @@ import { PipeTransform } from '../pipes/pipe';
 import { Route, RouteFactoryResolver } from './route';
 import { ModuleRef } from '../module.ref';
 import { Middleware, MiddlewareFn } from '../transport/endpoint';
-import { TransportContext } from '../transport/context';
+import { HeaderContext, TransportContext } from '../transport/context';
 import { promisify } from './promisify';
+import { TransportError } from '../transport';
 
 
 
@@ -123,7 +124,11 @@ export class MappingRoute implements Middleware {
     }
 
     protected async redirect(ctx: TransportContext, url: string, alt?: string): Promise<void> {
-        ctx.redirect(url, alt)
+        const hctx = ctx as TransportContext & HeaderContext;
+        if (!isFunction(hctx.redirect)) {
+            throw new TransportError(500, 'the transport not implements redirect.');
+        }
+        hctx.redirect(url, alt)
     }
 
 }
@@ -188,12 +193,12 @@ export class MappingRouter extends Router implements OnDestroy {
 
         let url: string;
         if (this.prefix) {
-            if(!ctx.url.startsWith(this.prefix)) return;
+            if (!ctx.url.startsWith(this.prefix)) return;
             url = ctx.url.slice(this.prefix.length)
         } else {
             url = ctx.url ?? '/'
         }
-        
+
         const route = this.getRouteByUrl(ctx.url);
         if (route) {
             ctx.url = url

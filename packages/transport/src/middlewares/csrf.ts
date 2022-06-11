@@ -1,4 +1,4 @@
-import { Middleware, TransportContext } from '@tsdi/core';
+import { HeaderContext, Middleware, TransportContext } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
 import * as Tokens from 'csrf';
 import { hdr } from '../consts';
@@ -41,7 +41,7 @@ export class CsrfMiddleware implements Middleware {
         this.tokens = new Tokens(this.options);
     }
 
-    async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: TransportContext & HeaderContext, next: () => Promise<void>): Promise<void> {
 
         ctx.injector.inject({
             provide: CSRF,

@@ -5,7 +5,7 @@ import {
 import {
     TransportServer, EndpointBackend, CustomEndpoint, RunnableFactoryResolver,
     MiddlewareType, Interceptor, ModuleRef, Router, InterceptorType, ExecptionFilter,
-    MiddlewareInst, InterceptorInst, ServerOptions,
+    MiddlewareInst, InterceptorInst, ServerOptions, RespondTypeAdapter,
 } from '@tsdi/core';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { of, Subscription } from 'rxjs';
@@ -17,8 +17,10 @@ import * as assert from 'assert';
 import { CONTENT_DISPOSITION } from './content';
 import { HttpContext, HttpServRequest, HttpServResponse, HTTP_MIDDLEWARES } from './context';
 import { ev, LOCALHOST } from '../../consts';
-import { SendAdapter, CorsMiddleware, CorsOptions, EncodeJsonMiddleware, HelmetMiddleware, BodyparserMiddleware,
-    ContentMiddleware, ContentOptions, SessionMiddleware, SessionOptions, CsrfMiddleware, CsrfOptions } from '../../middlewares';
+import {
+    ContentSendAdapter, CorsMiddleware, CorsOptions, EncodeJsonMiddleware, HelmetMiddleware, BodyparserMiddleware,
+    ContentMiddleware, ContentOptions, SessionMiddleware, SessionOptions, CsrfMiddleware, CsrfOptions
+} from '../../middlewares';
 import { MimeAdapter, MimeDb, MimeSource } from '../../mime';
 import { db } from '../mimedb';
 import { HttpSendAdapter } from './send';
@@ -27,7 +29,7 @@ import { HttpNegotiator } from './negotiator';
 import { HttpMimeAdapter } from '../mime';
 import { CatchInterceptor, LogInterceptor, ResponseStatusFormater } from '../../interceptors';
 import { HttpStatusFormater } from './formater';
-import { ResponsedInterceptor } from './respond';
+import { HttpRespondTypeAdapter, ResponsedInterceptor } from './respond';
 
 /**
  * http options.
@@ -125,7 +127,8 @@ export const HTTP_SERV_INTERCEPTORS = tokenId<Interceptor<HttpServRequest, HttpS
 @Injectable()
 @Providers([
     { provide: ResponseStatusFormater, useClass: HttpStatusFormater },
-    { provide: SendAdapter, useClass: HttpSendAdapter },
+    { provide: RespondTypeAdapter, useClass: HttpRespondTypeAdapter },
+    { provide: ContentSendAdapter, useClass: HttpSendAdapter },
     { provide: MimeAdapter, useClass: HttpMimeAdapter },
     { provide: Negotiator, useClass: HttpNegotiator }
 ])
