@@ -53,11 +53,14 @@ export function iocAnnotations(contents: string): string {
 
             const classAnnations = `
                     static ƿAnn(): any {
-                        return ${JSON.stringify(annations)};
+                        return ƿAnn_${className};
                     }
                `;
+            const ann = `
+                const ƿAnn_${className} = ${JSON.stringify(annations)}
+            `;
             const end = oldclass.replace(replEmpty, '').length - 1;
-            contents = contents.replace(oldclass, oldclass.substring(0, end) + classAnnations + oldclass.substring(end));
+            contents = contents.replace(oldclass, oldclass.substring(0, end) + classAnnations + oldclass.substring(end) + ann);
 
         } else if (ts.isConstructorDeclaration(node)) {
             if (annations && node.parameters.length) {
