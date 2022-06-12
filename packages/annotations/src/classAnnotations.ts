@@ -34,7 +34,7 @@ export function classAnnotations() {
 
 export function iocAnnotations(contents: string): string {
     // fix typescript '$' bug when create source file.
-    contents = contents.replace(repl$, '"$"');
+    // contents = contents.replace(repl$, '"$"');
     const sourceFile = ts.createSourceFile('cache.source.ts', contents, ts.ScriptTarget.Latest, true);
     const eachChild = (node: ts.Node, annations?: any) => {
         if (ts.isClassDeclaration(node)) {
@@ -42,12 +42,13 @@ export function iocAnnotations(contents: string): string {
             const className = node.name!.text;
             annations = {
                 name: className,
+                type: node.name,
                 abstract: node.modifiers?.some(s => s.getText() === 'abstract')
             };
 
             const oldclass = node.getText();
             if ((node.decorators && node.decorators.length) || (node.getChildren()?.some(n => n.decorators && n.decorators.length))) {
-                annations.params = {};
+                annations.methods = {};
                 ts.forEachChild(node, (nd) => eachChild(nd, annations));
             }
 
@@ -65,17 +66,24 @@ export function iocAnnotations(contents: string): string {
         } else if (ts.isConstructorDeclaration(node)) {
             if (annations && node.parameters.length) {
                 const paramNames = node.parameters.map(param => {
-                    return param.name.getText();
+                    return {
+                        type: param.type?.getText(),
+                        name: param.name.getText()
+                    };
                 });
-                annations.params[constructorName] = paramNames;
+                annations.methods[constructorName] = paramNames;
             }
         } else if (ts.isMethodDeclaration(node)) {
             if (annations && node.decorators && node.decorators.length && node.parameters.length) {
-                const paramNames = node.parameters.map(param => {
-                    return param.name.getText();
+                const params = node.parameters.map(param => {
+                    return {
+                        type: param.type?.getText(),
+                        name: param.name.getText()
+                    }
                 });
                 const method = node.name.getText();
-                annations.params[method] = paramNames;
+                const returnType = node.type?.getText();
+                annations.methods[method] = { params, returnType };
             }
         }
     }

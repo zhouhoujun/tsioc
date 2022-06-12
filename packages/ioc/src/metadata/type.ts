@@ -1,4 +1,4 @@
-import { ClassType, DesignAnnotation, EMPTY, Type } from '../types';
+import { ClassType, Annotation, EMPTY, Type } from '../types';
 import { Handler } from '../handler';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { ModuleWithProviders, ProviderType } from '../providers';
@@ -130,15 +130,11 @@ export interface DecorContext extends DecorDefine {
 /**
  * type reflect metadata.
  */
-export interface TypeReflect<T = any> extends ProvidedInMetadata, PatternMetadata {
-    /**
-     * class type.
-     */
-    readonly type: ClassType<T>;
+export interface TypeReflect<T = any> extends ProvidedInMetadata, PatternMetadata, Annotation {
     /**
      * class reflective.
      */
-    class: Reflective;
+    class: Reflective<T>;
     /**
      * annotation metadata.
      */
@@ -205,7 +201,7 @@ export class Reflective<T = any> {
     readonly methodDecors: DecorDefine<MethodMetadata>[];
     readonly paramDecors: DecorDefine<ParameterMetadata>[];
 
-    readonly annotation: DesignAnnotation;
+    readonly annotation: Annotation;
     private params!: Map<string, any[]>;
 
     /**
@@ -261,8 +257,8 @@ export class Reflective<T = any> {
      */
     readonly runnables: RunableDefine[];
 
-    constructor(public readonly type: ClassType<T>, private parent?: Reflective) {
-        this.annotation = getClassAnnotation(type)!;
+    constructor(public readonly type: ClassType<T>, annotation?: Annotation, private parent?: Reflective) {
+        this.annotation = annotation ?? getClassAnnotation(type)!;
         this.className = this.annotation?.name || type.name;
         this.classDecors = [];
         if (parent) {
@@ -603,9 +599,9 @@ export class Reflective<T = any> {
 
     protected setParam(params: Map<string, any[]>) {
         const classAnnations = this.annotation;
-        if (classAnnations && classAnnations.params) {
-            forIn(classAnnations.params, (p, n) => {
-                params.set(n, p)
+        if (classAnnations && classAnnations.methods) {
+            forIn(classAnnations.methods, (p, n) => {
+                params.set(n, p.params)
             })
         } else {
             const descriptors = Object.getOwnPropertyDescriptors(this.type.prototype);

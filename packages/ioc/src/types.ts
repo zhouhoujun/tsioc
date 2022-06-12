@@ -23,33 +23,53 @@ export const EMPTY_OBJ: Record<string, any> = {};
 export type ObjectMap<T = any> = Record<string, T>;
 
 /**
- * class design annotation
+ * design param
+ */
+export interface DesignParam {
+    name: string;
+    type?: ClassType;
+}
+
+/**
+ * method annotation.
+ */
+export interface MethodAnnotation {
+    params: DesignParam[];
+    returnType?: ClassType;
+}
+
+/**
+ * class annotation
  *
  * @export
  */
-export interface DesignAnnotation {
+export interface Annotation<T = any> {
     /**
      * class name
      *
      * @type {string}
-     * @memberof DesignAnnotation
+     * @memberof Annotation
      */
     name: string;
-    /**
-     * class params declaration.
-     *
-     * @type {Record<string, string[]>}
-     * @memberof DesignAnnotation
-     */
-    params: Record<string, string[]>;
     /**
      * abstract or not.
      */
     abstract?: boolean;
     /**
-     * type Def.
+     * class type.
      */
-    def?: any;
+    readonly type: ClassType<T>;
+    /**
+     * class reflective.
+     */
+    class: unknown;
+    /**
+     * class params declaration.
+     *
+     * @type {Record<string, string[]>}
+     * @memberof Annotation
+     */
+    methods?: Record<string, MethodAnnotation>;
 }
 
 
@@ -87,15 +107,11 @@ export interface AnnotationType<T = any> extends Function {
     /**
      * class design annotation
      */
-    ƿAnn?(): DesignAnnotation;
+    ƿAnn?(): Annotation;
     /**
      * class flag. none poincut for aop.
      */
     ƿNPT?: boolean;
-    /**
-     * type reflect of this class.
-     */
-    ƿRfl?: () => any;
 }
 
 /**
