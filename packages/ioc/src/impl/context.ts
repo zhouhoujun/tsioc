@@ -377,13 +377,13 @@ export const BASE_RESOLVERS: OperationArgumentResolver[] = [
         }
     ),
     composeResolver(
-        (parameter, ctx) => isDefined(parameter.paramName),
+        (parameter, ctx) => isDefined(parameter.name),
         {
             canResolve(parameter, ctx) {
-                return ctx.has(parameter.paramName!, parameter.flags)
+                return ctx.has(parameter.name!, parameter.flags)
             },
             resolve(parameter, ctx) {
-                return ctx.get(parameter.paramName!, ctx, parameter.flags) as any
+                return ctx.get(parameter.name!, ctx, parameter.flags) as any
             }
         }
     ),

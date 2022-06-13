@@ -39,8 +39,8 @@ export class TypeormRepositoryArgumentResolver extends RepositoryArgumentResolve
 
     protected getLocal(parameter: Parameter<any>, ctx: InvocationContext<any>) {
         let local: string;
-        if (parameter.propertyKey && parameter.paramName) {
-            local = ` method ${ctx.methodName} param ${parameter.paramName} of class `
+        if (parameter.propertyKey && parameter.name) {
+            local = ` method ${ctx.methodName} param ${parameter.name} of class `
         } else if (parameter.propertyKey) {
             local = ` field ${parameter.propertyKey} of class `
         } else {

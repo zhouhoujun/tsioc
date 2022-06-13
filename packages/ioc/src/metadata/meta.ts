@@ -1,4 +1,4 @@
-import { ClassType, Modules, Type } from '../types';
+import { ClassType, DesignParam, Modules, Type } from '../types';
 import { InjectFlags, Token } from '../tokens';
 import { ModuleWithProviders, ProviderType } from '../providers';
 import { ArgumentResolver } from '../resolver';
@@ -38,6 +38,26 @@ export interface ProvideMetadata {
      * is mutil provider or not
      */
     mutil?: boolean;
+
+
+    /**
+     * inject flags.
+     */
+    flags?: InjectFlags
+    /**
+     * custom resolver to resolve property or parameter.
+     */
+    resolver?: ArgumentResolver;
+    /**
+     * null able or not.
+     */
+    nullable?: boolean;
+    /**
+     * default value
+     *
+     * @type {any}
+     */
+    defaultValue?: any;
 }
 
 
@@ -138,24 +158,6 @@ export interface PropertyMetadata extends ProvideMetadata {
      */
     propertyKey?: string;
 
-    /**
-     * inject flags.
-     */
-    flags?: InjectFlags
-    /**
-     * custom resolver to resolve property or parameter.
-     */
-    resolver?: ArgumentResolver;
-    /**
-     * null able or not.
-     */
-    nullable?: boolean;
-    /**
-     * default value
-     *
-     * @type {any}
-     */
-    defaultValue?: any;
 }
 
 /**
@@ -202,11 +204,13 @@ export interface MethodPropMetadata extends PropertyMetadata, MethodMetadata { }
  * @interface ParameterMetadata
  * @extends {PropertyMetadata}
  */
-export interface ParameterMetadata extends PropertyMetadata {
+export interface ParameterMetadata extends ProvideMetadata, DesignParam {
     /**
-     * parameter name.
+     * method property key
+     *
+     * @type {string}
      */
-    paramName?: string;
+    propertyKey?: string;
 }
 
 
@@ -214,7 +218,7 @@ export interface ParameterMetadata extends PropertyMetadata {
  * Inject metadata.
  *
  */
- export type InjectMetadata = ParameterMetadata;
+export type InjectMetadata = ParameterMetadata;
 
 /**
  * parameter property metadata.
@@ -345,17 +349,17 @@ export interface RunnableMetadata extends TypeMetadata, PatternMetadata, Provide
     /**
      * the method as runnable.
      */
-     method?: string;
-     /**
-      * run order.
-      */
-     order?: number;
-     /**
-      * runnable invoke args.
-      */
-     args?: InvokeArguments;
-     /**
-      * is auto run when created instance.
-      */
-     auto?: boolean;
+    method?: string;
+    /**
+     * run order.
+     */
+    order?: number;
+    /**
+     * runnable invoke args.
+     */
+    args?: InvokeArguments;
+    /**
+     * is auto run when created instance.
+     */
+    auto?: boolean;
 }

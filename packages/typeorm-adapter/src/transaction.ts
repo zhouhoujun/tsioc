@@ -56,7 +56,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
             });
 
             ctorName !== joinPoint.methodName && targetRef.class.getParameters(ctorName)?.forEach(metadata => {
-                const paramName = metadata.paramName;
+                const paramName = metadata.name;
                 if (paramName) {
                     const filed = joinPoint.target[paramName];
                     if (filed instanceof EntityManager) {

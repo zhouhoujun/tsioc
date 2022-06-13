@@ -26,7 +26,13 @@ export type ObjectMap<T = any> = Record<string, T>;
  * design param
  */
 export interface DesignParam {
-    name: string;
+    /**
+     * param name
+     */
+    name?: string;
+    /**
+     * param design type.
+     */
     type?: ClassType;
 }
 

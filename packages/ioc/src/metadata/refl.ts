@@ -237,7 +237,7 @@ export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
                 paramTypes = Reflect.getMetadata('design:paramtypes', ctx.target, propertyKey)
             }
             if (paramTypes) {
-                params = paramTypes.map((type, index) => ({ type, paramName: names[index] }));
+                params = paramTypes.map((type, index) => ({ type, name: names[index] }));
                 reflect.class.setParameters(propertyKey, params)
             }
         }
@@ -245,7 +245,7 @@ export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
             const idx = ctx.parameterIndex || 0;
             const desgmeta = params[idx];
             meta.type = desgmeta.type;
-            meta.paramName = desgmeta.paramName;
+            meta.name = desgmeta.name;
             params.splice(idx, 1, { ...meta, ...desgmeta })
         }
     }
@@ -285,7 +285,7 @@ export const InitCtorDesignParams = (ctx: DecorContext, next: () => void) => {
                 paramTypes = []
             }
             ctx.reflect.class.setParameters(ctorName, paramTypes.map((type, index) => {
-                return { type, paramName: names[index] }
+                return { type, name: names[index] }
             }))
         }
     }
@@ -357,7 +357,7 @@ export const InitMethodDesignParams = (ctx: DecorContext, next: () => void) => {
     if (!reflective.hasParameters(method)) {
         const names = reflective.getParamNames(method);
         reflective.setParameters(method,
-            (Reflect.getMetadata('design:paramtypes', ctx.target, method) as Type[]).map((type, idx) => ({ type, paramName: names[idx] })))
+            (Reflect.getMetadata('design:paramtypes', ctx.target, method) as Type[]).map((type, idx) => ({ type, name: names[idx] })))
     }
     const meta = ctx.metadata as MethodMetadata;
     if (!meta.type) {
