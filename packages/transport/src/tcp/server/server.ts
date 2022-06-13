@@ -1,4 +1,7 @@
-import { CustomEndpoint, EndpointBackend, ExecptionFilter, Interceptor, InterceptorInst, InterceptorType, MiddlewareInst, MiddlewareType, ServerOptions, TransportServer } from '@tsdi/core';
+import {
+    CustomEndpoint, EndpointBackend, ExecptionFilter, Interceptor, InterceptorInst,
+    InterceptorType, MiddlewareInst, MiddlewareType, ServerOptions, TransportServer
+} from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, lang, Nullable, Token, tokenId, Type } from '@tsdi/ioc';
 import { Server, ListenOptions } from 'net';
 import { of, Subscription } from 'rxjs';
@@ -73,7 +76,6 @@ export const TCP_SERV_INTERCEPTORS = tokenId<Interceptor<TcpServRequest, TcpServ
 @Injectable()
 export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, TcpContext> {
 
-
     private server?: Server;
     private options: TcpServerOptions;
     constructor(
@@ -118,7 +120,7 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
     }
 
     protected bindEvent(ctx: TcpContext, cancel: Subscription): void {
-        ctx.request.socket.on(ev.TIMEOUT,()=> {
+        ctx.request.socket.on(ev.TIMEOUT, () => {
             cancel?.unsubscribe();
         })
         ctx.request.socket.on(ev.CLOSE, () => {

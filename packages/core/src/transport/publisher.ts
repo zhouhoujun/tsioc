@@ -1,12 +1,12 @@
 import { Abstract } from '@tsdi/ioc';
-import { OnDispose } from '../../lifecycle';
-import { Runner } from '../../metadata/decor';
+import { OnDispose } from '../lifecycle';
+import { Runner } from '../metadata/decor';
 import { Channel } from './channel';
 
 
 @Abstract()
 @Runner('start')
-export abstract class Publisher implements OnDispose {
+export abstract class Publisher<TRequest = any, TResponse = any> implements OnDispose {
 
     /**
      * channel of publisher

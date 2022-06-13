@@ -1,4 +1,4 @@
-import { Endpoint, Publisher, RequestBase } from '@tsdi/core';
+import { Endpoint, Publisher, RequestBase, ResponseBase } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import * as amqp from 'amqplib';
 
@@ -13,7 +13,7 @@ export interface AmqpOptions {
 const defaultQueue = 'default';
 
 @Injectable()
-export class AmqpPublisher extends Publisher<RequestBase, WritableResponse> {
+export class AmqpPublisher extends Publisher<RequestBase, ResponseBase> {
     private connection?: amqp.Connection;
     private channel?: amqp.Channel;
     private queue: string;

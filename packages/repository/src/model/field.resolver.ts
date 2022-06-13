@@ -231,7 +231,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
                 const value = args[prop.name] ?? prop.default;
                 const dbtype = prop.dbtype!;
                 if (isNil(value)) return null;
-                let pipeName = '';
+                let pipeName = 'buffer';
                 if (dbtype === 'image') {
                     pipeName = 'image'
                 } else if (row.test(dbtype)) {
@@ -242,7 +242,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
                     pipeName = 'clob'
                 }
 
-                const pipe = ctx.get<PipeTransform>(dbtype) ?? ctx.get<PipeTransform>(pipeName || 'buffer');
+                const pipe = ctx.get<PipeTransform>(dbtype) ?? ctx.get<PipeTransform>(pipeName);
                 if (!pipe) throw missingPropPipeError(prop, target);
                 return pipe.transform(value)
             }

@@ -5,7 +5,13 @@ import { RepositoryArgumentResolver } from './repository';
  * repository metadata.
  */
 export interface RepositoryMetadata extends ParamPropMetadata {
+    /**
+     * model type.
+     */
     model: Type;
+    /**
+     * connection
+     */
     connection?: string;
 }
 

@@ -6,10 +6,10 @@ import { RequestBase } from '@tsdi/core';
 export class TcpRequest<T = any> extends RequestBase<T> {
 
     public readonly id: string;
-    public readonly url: string;
-    public readonly method: string;
-    public readonly params: Record<string, any>;
-    public readonly body: T | null;
+    public url: string;
+    public method: string;
+    public params: Record<string, any>;
+    public body: T | null;
     /**
     * The expected response type of the server.
     *
