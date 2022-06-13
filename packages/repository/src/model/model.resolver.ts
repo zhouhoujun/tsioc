@@ -31,7 +31,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
     canResolveModel(modelType: Type, ctx: TransportContext, args: Record<string, any>, nullable?: boolean): boolean {
         return nullable || !this.getPropertyMeta(modelType).some(p => {
             if (this.isModel(p.provider ?? p.type)) {
-                return !this.canResolveModel(p.provider ?? p.type, ctx, args[p.propertyKey], p.nullable)
+                return !this.canResolveModel(p.provider ?? p.type, ctx, args[p.name], p.nullable)
             }
             return !this.fieldResolver.canResolve(p, ctx, args, modelType)
         })
@@ -47,7 +47,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
 
         const props = this.getPropertyMeta(modelType);
         const missings = props.filter(p => !(this.isModel(p.provider ?? p.type) ?
-            this.canResolveModel(p.provider ?? p.type, ctx, fields[p.propertyKey], p.nullable)
+            this.canResolveModel(p.provider ?? p.type, ctx, fields[p.name], p.nullable)
             : this.fieldResolver.canResolve(p, ctx, fields, modelType)));
         if (missings.length) {
             throw new MissingModelFieldError(missings, modelType)
@@ -57,12 +57,12 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
         props.forEach(prop => {
             let val: any;
             if (this.isModel(prop.provider ?? prop.type)) {
-                val = this.resolveModel(prop.provider ?? prop.type, ctx, fields[prop.propertyKey], prop.nullable)
+                val = this.resolveModel(prop.provider ?? prop.type, ctx, fields[prop.name], prop.nullable)
             } else {
                 val = this.fieldResolver.resolve(prop, ctx, fields, modelType)
             }
             if (isDefined(val)) {
-                model[prop.propertyKey] = val
+                model[prop.name] = val
             }
         });
         return model
@@ -77,7 +77,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
         if (!this._resolver) {
             this._resolver = composeFieldResolver(
                 (p, ctx, fields) => p.nullable === true
-                    || (fields && isDefined(fields[p.propertyKey] ?? p.default))
+                    || (fields && isDefined(fields[p.name] ?? p.default))
                     || ((ctx as TransportContext).isUpdate?.() === false && p.primary === true),
                 ...this.resolvers ?? EMPTY,
                 ...MODEL_FIELD_RESOLVERS)

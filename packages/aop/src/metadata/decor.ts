@@ -199,7 +199,7 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
                 if (!(ctx.reflect as AopReflect).advices) {
                     (ctx.reflect as AopReflect).advices = []
                 }
-                (ctx.reflect as AopReflect).advices.push({ ...ctx.metadata, propertyKey: ctx.propertyKey });
+                (ctx.reflect as AopReflect).advices.push({ ...ctx.metadata, name: ctx.propertyKey });
                 return next()
             }
         },

@@ -186,7 +186,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements Proceeding
             joinPoint.addRef(context)
         }
 
-        let returning = advicer.aspect.invoke(advicer.advice.propertyKey!, joinPoint);
+        let returning = advicer.aspect.invoke(advicer.advice.name!, joinPoint);
 
         if (sync && isObservable(returning)) {
             const parser = joinPoint.get(ObservableParser)

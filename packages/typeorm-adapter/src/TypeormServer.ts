@@ -50,7 +50,7 @@ export class TypeormServer implements Startup, OnDispose {
             getMetadataArgsStorage().columns.filter(col => col.target === type)
                 .forEach(col => {
                     props?.push({
-                        propertyKey: col.propertyName,
+                        name: col.propertyName,
                         primary: col.options.primary,
                         nullable: col.options.nullable,
                         precision: col.options.precision,
@@ -66,7 +66,7 @@ export class TypeormServer implements Startup, OnDispose {
                 .forEach(col => {
                     const relaModel = isFunction(col.type) ? col.type() as Type : undefined;
                     props?.push({
-                        propertyKey: col.propertyName,
+                        name: col.propertyName,
                         provider: relaModel,
                         nullable: col.options.nullable,
                         mutil: (col.relationType === 'one-to-many' || col.relationType === 'many-to-many'),
@@ -98,7 +98,7 @@ export class TypeormServer implements Startup, OnDispose {
                 {
                     canResolve: (prop, ctx, fields) => prop.dbtype === 'objectId',
                     resolve: (prop, ctx, fields, target) => {
-                        const value = fields[prop.propertyKey];
+                        const value = fields[prop.name];
                         if (isNil(value)) return null;
                         const pipe = ctx.get<PipeTransform>('objectId');
                         if (!pipe) throw missingPropPipeError(prop, target)

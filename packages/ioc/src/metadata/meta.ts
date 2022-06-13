@@ -156,7 +156,7 @@ export interface PropertyMetadata extends ProvideMetadata {
      *
      * @type {string}
      */
-    propertyKey?: string;
+    name?: string;
 
 }
 
@@ -182,7 +182,7 @@ export interface MethodMetadata extends Record<string, any> {
      *
      * @type {string}
      */
-    propertyKey?: string;
+    name?: string;
 }
 
 

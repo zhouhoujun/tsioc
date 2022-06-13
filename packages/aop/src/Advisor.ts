@@ -219,5 +219,5 @@ export class Advisor implements OnDestroy {
 }
 
 function equals(a: Advicer, b: Advicer) {
-    return a.aspect.type === b.aspect.type && a.advice.propertyKey === b.advice.propertyKey
+    return a.aspect.type === b.aspect.type && a.advice.name === b.advice.name
 }

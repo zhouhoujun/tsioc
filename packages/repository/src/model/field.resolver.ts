@@ -23,7 +23,7 @@ export interface DBPropertyMetadata<T = any> extends PropertyMetadata {
     /**
      * property key.
      */
-    propertyKey: string;
+    name: string;
     /**
      * db type.
      */
@@ -135,7 +135,7 @@ const jsonExp = /^(\s|\w)*json(b)?$/;
  * @returns instance of {@link TransportArgumentError}
  */
 export function missingPropPipeError(prop: DBPropertyMetadata, type?: Type) {
-    return new TransportArgumentError(`missing pipe to transform property ${prop.propertyKey} of class ${type}`)
+    return new TransportArgumentError(`missing pipe to transform property ${prop.name} of class ${type}`)
 }
 
 
@@ -148,7 +148,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
         {
             canResolve: (prop, ctx, args) => prop.dbtype === 'enum',
             resolve: (prop, ctx, args, target) => {
-                const value = args[prop.propertyKey] ?? prop.default;
+                const value = args[prop.name] ?? prop.default;
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>('enum');
                 if (!pipe) throw missingPropPipeError(prop, target)
@@ -158,7 +158,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
         {
             canResolve: (prop, ctx, args) => boolExp.test(prop.dbtype!),
             resolve: (prop, ctx, args, target) => {
-                const value = args[prop.propertyKey];
+                const value = args[prop.name];
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('boolean');
                 if (!pipe) throw missingPropPipeError(prop, target);
@@ -168,7 +168,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
         {
             canResolve: (prop, ctx, args) => intExp.test(prop.dbtype!),
             resolve: (prop, ctx, args, target) => {
-                const value = args[prop.propertyKey] ?? prop.default;
+                const value = args[prop.name] ?? prop.default;
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('int');
                 if (!pipe) throw missingPropPipeError(prop, target);
@@ -178,7 +178,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
         {
             canResolve: (prop, ctx, args) => floatExp.test(prop.dbtype!),
             resolve: (prop, ctx, args, target) => {
-                const value = args[prop.propertyKey] ?? prop.default;
+                const value = args[prop.name] ?? prop.default;
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('float');
                 if (!pipe) throw missingPropPipeError(prop, target);
@@ -188,7 +188,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
         {
             canResolve: (prop, ctx, args) => doubleExp.test(prop.dbtype!),
             resolve: (prop, ctx, args, target) => {
-                const value = args[prop.propertyKey] ?? prop.default;
+                const value = args[prop.name] ?? prop.default;
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('double');
                 if (!pipe) throw missingPropPipeError(prop, target);
@@ -198,7 +198,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
         {
             canResolve: (prop, ctx, args) => decExp.test(prop.dbtype!),
             resolve: (prop, ctx, args, target) => {
-                const value = args[prop.propertyKey] ?? prop.default;
+                const value = args[prop.name] ?? prop.default;
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('number');
                 if (!pipe) throw missingPropPipeError(prop, target);
@@ -208,7 +208,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
         {
             canResolve: (prop, ctx, args) => strExp.test(prop.dbtype!),
             resolve: (prop, ctx, args, target) => {
-                const value = args[prop.propertyKey] ?? prop.default;
+                const value = args[prop.name] ?? prop.default;
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('string');
                 if (!pipe) throw missingPropPipeError(prop, target);
@@ -218,7 +218,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
         {
             canResolve: (prop, ctx, args) => jsonExp.test(prop.dbtype!),
             resolve: (prop, ctx, args, target) => {
-                const value = args[prop.propertyKey] ?? prop.default;
+                const value = args[prop.name] ?? prop.default;
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('json');
                 if (!pipe) throw missingPropPipeError(prop, target);
@@ -228,7 +228,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
         {
             canResolve: (prop, ctx, args) => bufferExp.test(prop.dbtype!),
             resolve: (prop, ctx, args, target) => {
-                const value = args[prop.propertyKey] ?? prop.default;
+                const value = args[prop.name] ?? prop.default;
                 const dbtype = prop.dbtype!;
                 if (isNil(value)) return null;
                 let pipeName = '';
@@ -250,7 +250,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
         {
             canResolve: (prop, ctx, args) => dateExp.test(prop.dbtype!),
             resolve: (prop, ctx, args, target) => {
-                const value = args[prop.propertyKey] ?? prop.default;
+                const value = args[prop.name] ?? prop.default;
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('date');
                 if (!pipe) throw missingPropPipeError(prop, target);
@@ -261,7 +261,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
     {
         canResolve: (prop, ctx, args) => !prop.mutil && isFunction(prop.provider ?? prop.type),
         resolve: (prop, ctx, args, target) => {
-            const value = args[prop.propertyKey] ?? prop.default;
+            const value = args[prop.name] ?? prop.default;
             if (isNil(value)) return null;
             const pipe = ctx.get<PipeTransform>((prop.provider ?? prop.type)?.name.toLowerCase());
             if (!pipe) throw missingPropPipeError(prop, target);
