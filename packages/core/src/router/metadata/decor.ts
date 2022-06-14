@@ -4,10 +4,10 @@ import {
 } from '@tsdi/ioc';
 import { PipeTransform } from '../../pipes/pipe';
 import { Middleware, MiddlewareFn } from '../../transport/endpoint';
-import { RequestMethod } from '../../transport/packet';
+import { Protocol, RequestMethod } from '../../transport/packet';
 import { CanActivate } from '../guard';
 import { joinprefix, normalize, RouteFactoryResolver } from '../route';
-import { MappingReflect, ProtocolRouteMappingMetadata, RouteMappingMetadata, Router } from '../router';
+import { MappingReflect, ProtocolRouteMappingMetadata, Router } from '../router';
 import { HandleMetadata, HandleMessagePattern } from './meta';
 
 
@@ -54,13 +54,22 @@ export interface Handle {
      * @param {string} pattern message match pattern.
      * @param {cmd?: string, pattern?: string } option message match option.
      */
-    (pattern: string | RegExp, option?: { cmd?: string }): MethodDecorator;
+    (pattern: string | RegExp, protocol?: Protocol, option?: Record<string, any>): MethodDecorator;
+
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
-     * @param {cmd?: string, pattern?: string } option message match option.
+     * @param {string} pattern message match pattern.
+     * @param {Record<string, any> & { protocol?: Protocol }} option message match option.
      */
-    (option: { cmd?: string, pattern?: string | RegExp }): MethodDecorator;
+    (pattern: string | RegExp, option?: Record<string, any> & { protocol?: Protocol }): MethodDecorator;
+
+    /**
+     * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
+     *
+     * @param {Record<string, any> & { protocol?: Protocol, pattern?: string | RegExp }} option message match option.
+     */
+    (option: Record<string, any> & { protocol?: Protocol, pattern?: string | RegExp }): MethodDecorator;
 }
 
 /**
@@ -71,7 +80,7 @@ export interface Handle {
  */
 export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePattern>('Handle', {
     actionType: [ActionTypes.annoation, ActionTypes.runnable],
-    props: (parent?: Type<Router> | string | RegExp, options?: { guards?: Type<CanActivate>[], parent?: Type<Router> | string, before?: Type<Middleware> }) =>
+    props: (parent?: Type<Router> | string | RegExp, options?: { guards?: Type<CanActivate>[], parent?: Type<Router> | string }) =>
         (isString(parent) || isRegExp(parent) ? ({ route: parent, ...options }) : ({ parent, ...options })) as HandleMetadata & HandleMessagePattern,
     reflect: {
         class: (ctx, next) => {
@@ -102,10 +111,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
                 router.use(url, (ctx, next) => (factory.resolve() as Middleware).invoke(ctx, next));
             }
             next();
-        },
-        // method: (ctx, next) => {
-        //     // todo register message handle
-        // }
+        }
     },
     appendProps: (meta) => {
         meta.singleton = true;
@@ -204,6 +210,10 @@ export interface RouteMapping {
          */
         contentType?: string;
         /**
+         * protocol.
+         */
+        protocol?: Protocol;
+        /**
          * request method.
          */
         method?: RequestMethod;
@@ -220,7 +230,7 @@ export interface RouteMapping {
      *
      * @param {RouteMappingMetadata} [metadata] route metadata.
      */
-    (metadata: RouteMappingMetadata): MethodDecorator;
+    (metadata: ProtocolRouteMappingMetadata): MethodDecorator;
 }
 
 

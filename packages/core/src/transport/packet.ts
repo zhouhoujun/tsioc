@@ -4,7 +4,8 @@ import { Abstract } from '@tsdi/ioc';
 /**
  * request method.
  */
-export type RequestMethod = 'HEAD' | 'OPTIONS' | 'GET' | 'DELETE' | 'PATCH' | 'POST' | 'PUT' | 'JSONP';
+export type RequestMethod = 'HEAD' | 'OPTIONS' | 'GET' | 'DELETE' | 'PATCH' | 'POST' | 'PUT' | 'JSONP' //http
+    | 'EVENT' | 'MESSAGE' | 'NO_STREAM' | 'RX_STREAM' | 'PT_STREAM'  | 'METHOD'; // event
 
 /**
  * mqtt protocol.

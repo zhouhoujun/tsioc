@@ -1,5 +1,5 @@
 import { Abstract, EMPTY, isFunction, isString, lang, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
-import { RequestMethod } from '../transport/packet';
+import { Protocol, RequestMethod } from '../transport/packet';
 import { CanActivate } from './guard';
 import { PipeTransform } from '../pipes/pipe';
 import { Route, RouteFactoryResolver } from './route';
@@ -270,6 +270,10 @@ export interface RouteMappingMetadata {
  * protocol route mapping metadata.
  */
 export interface ProtocolRouteMappingMetadata extends RouteMappingMetadata {
+    /**
+     * protocol.
+     */
+    protocol?: Protocol;
     /**
      * version of api.
      */

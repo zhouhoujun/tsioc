@@ -1,6 +1,6 @@
 import {
     CustomEndpoint, EndpointBackend, Interceptor, InterceptorInst, InterceptorType,
-    OnDispose, ResponseJsonParseError, TransportClient, TransportError, UuidGenerator
+    OnDispose, RequestContext, ResponseJsonParseError, TransportClient, TransportError, UuidGenerator
 } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId, type_undef } from '@tsdi/ioc';
 import { Socket, createSocket, SocketOptions } from 'dgram';
@@ -70,10 +70,10 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
     }
 
     protected getBackend(): EndpointBackend<UdpRequest<any>, UdpEvent<any>> {
-        return new CustomEndpoint((req, ctx) => {
+        return new CustomEndpoint((req, context) => {
 
             if (!this.socket) return throwError(() => new UdpErrorResponse(0, 'has not connected.'));
-
+            const ctx = context as RequestContext;
             const socket = this.socket;
             let body: any, error: any, ok = false;
 
@@ -92,7 +92,7 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
                         if (body) {
                             let buffer: Buffer;
                             let originalBody: string;
-                            switch (req.responseType) {
+                            switch (ctx.responseType) {
                                 case 'arraybuffer':
                                     buffer = Buffer.from(body);
                                     body = buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
