@@ -49,10 +49,6 @@ export abstract class RequestBase<T = any> {
      * idempotence by treating them as such.
      */
     abstract get body(): T | null;
-    /**
-     * response type for this request.
-     */
-    abstract get responseType(): 'arraybuffer' | 'blob' | 'json' | 'text';
 
 }
 

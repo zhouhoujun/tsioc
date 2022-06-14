@@ -1,5 +1,5 @@
 import { Inject, Injectable, InvocationContext, lang, Nullable, Providers, Token } from '@tsdi/ioc';
-import { RequestMethod, TransportClient, EndpointBackend, OnDispose, InterceptorInst, EndpointContext, RequstOption, ResponseOption } from '@tsdi/core';
+import { RequestMethod, TransportClient, EndpointBackend, OnDispose, InterceptorInst, RequstOption, ResponseAs, RequestContext } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpHeaders, HttpParams, HttpParamsOptions, HttpResponse } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import * as http from 'http';
@@ -90,7 +90,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         return response instanceof HttpResponse;
     }
 
-    protected override createContext(options?: RequestOptions): EndpointContext {
+    protected override createContext(options?: RequestOptions & ResponseAs): RequestContext {
         const ctx = super.createContext(options);
         if (this.client) {
             ctx.setValue(CLIENT_HTTP2SESSION, this.client);
@@ -98,7 +98,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         return ctx;
     }
 
-    protected override buildRequest(first: string | HttpRequest<any>, options: RequestOptions & ResponseOption): HttpRequest<any> {
+    protected override buildRequest(first: string | HttpRequest<any>, options: RequestOptions & ResponseAs): HttpRequest<any> {
         // First, check whether the primary argument is an instance of `HttpRequest`.
         if (first instanceof HttpRequest) {
             // It is. The other arguments must be undefined (per the signatures) and can be

@@ -1,7 +1,7 @@
 import { Abstract, ArgumentError, EMPTY, EMPTY_OBJ, InvocationContext, isFunction, isNil, isNumber, Token, type_str } from '@tsdi/ioc';
 import { Logger, Log } from '@tsdi/logs';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, filter, map } from 'rxjs';
-import { EndpointContext } from './context';
+import { RequestContext } from './context';
 import { InterceptorChain, Endpoint, EndpointBackend, InterceptorInst, InterceptorType } from './endpoint';
 import { ClientContext } from './client.ctx';
 import { RequestBase, ResponseBase, ResponseEvent } from './packet';
@@ -88,7 +88,7 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
      *
      * @return An `Observable` of the response, with the response body as a stream of `TResponse`s.
      */
-    send(url: string, options?: TOption & ResponseOption): Observable<TResponse>;
+    send(url: string, options?: TOption & ResponseAs): Observable<TResponse>;
     /**
      * Sends an `Request` and returns a stream of `TResponse`s.
      *
@@ -324,7 +324,7 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
         if (isNil(req)) {
             return throwError(() => new ArgumentError('Invalid message'))
         }
-        let ctx: EndpointContext;
+        let ctx: RequestContext;
         return defer(() => this.connect()).pipe(
             catchError((err, caught) => {
                 return throwError(() => this.onError(err))
@@ -339,7 +339,7 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
         )
     }
 
-    protected request(context: EndpointContext, first: TRequest | string, options: TOption & ResponseOption = EMPTY_OBJ as any): Observable<any> {
+    protected request(context: RequestContext, first: TRequest | string, options: TOption = EMPTY_OBJ as any): Observable<any> {
         const req = this.buildRequest(first, options);
 
         // Start with an Observable.of() the initial request, and run the handler (which
@@ -352,7 +352,7 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
         // If coming via the API signature which accepts a previously constructed HttpRequest,
         // the only option is to get the event stream. Otherwise, return the event stream if
         // that is what was requested.
-        if (first instanceof RequestBase || options.observe === 'events') {
+        if (first instanceof RequestBase || context.observe === 'events') {
             return events$
         }
 
@@ -360,16 +360,18 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
         // case, the first step is to filter the event stream to extract a stream of
         // responses(s).
         const res$: Observable<any> = events$.pipe(filter(event => this.isResponse(event)));
-
+        if ((req as ResponseAs).responseType) {
+            context.responseType = (req as ResponseAs).responseType!
+        }
         // Decide which stream to return.
-        switch (options.observe || 'body') {
+        switch (context.observe || 'body') {
             case 'body':
                 // The requested stream is the body. Map the response stream to the response
                 // body. This could be done more simply, but a misbehaving interceptor might
                 // transform the response body into a different format and ignore the requested
                 // responseType. Guard against this by validating that the response is of the
                 // requested type.
-                switch (req.responseType) {
+                switch (context.responseType) {
                     case 'arraybuffer':
                         return res$.pipe(map((res: ResponseBase) => {
                             // Validate that the body is an ArrayBuffer.
@@ -404,7 +406,7 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
                 return res$
             default:
                 // Guard against new future observe types being added.
-                throw new Error(`Unreachable: unhandled observe type ${options.observe}}`)
+                throw new Error(`Unreachable: unhandled observe type ${context.observe}}`)
         }
     }
 
@@ -421,8 +423,10 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
      */
     protected abstract getBackend(): EndpointBackend<TRequest, TResponse>;
 
-    protected createContext(options?: TOption): EndpointContext {
-        return (options as any)?.context ?? new ClientContext(this.context.injector, this as any, { parent: this.context });
+    protected createContext(options?: TOption & ResponseAs): RequestContext {
+        return (options as any)?.context ?? new ClientContext(
+            this.context.injector, this as any,
+            { parent: this.context, responseType: options?.responseType, observe: options?.observe });
     }
 
     protected abstract buildRequest(url: TRequest | string, options?: TOption): TRequest;
@@ -450,10 +454,18 @@ export interface RequstOption {
     params?: Record<string, any>;
 }
 
+
+
 /**
  * response option for request.
  */
-export interface ResponseOption {
+export interface ResponseAs {
+    /**
+     * response observe type
+     */
     observe?: 'body' | 'events' | 'response';
+    /**
+     * response data type.
+     */
     responseType?: 'arraybuffer' | 'blob' | 'json' | 'text';
 }

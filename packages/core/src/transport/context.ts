@@ -17,6 +17,21 @@ export abstract class EndpointContext extends DefaultInvocationContext {
 }
 
 /**
+ * request context.
+ */
+@Abstract()
+export abstract class RequestContext extends EndpointContext {
+    /**
+     * response observe type
+     */
+    abstract get observe(): 'body' | 'events' | 'response';
+    /**
+     * response data type.
+     */
+    abstract responseType: 'arraybuffer' | 'blob' | 'json' | 'text';
+}
+
+/**
  * transport context.
  */
 @Abstract()
@@ -66,7 +81,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
      * The outgoing HTTP request method.
      */
     abstract get method(): string;
- 
+
     /**
      * The request body, or `null` if one isn't set.
      *
@@ -176,7 +191,7 @@ export interface HeaderContext {
      *     this.is('html'); // => false
      */
     is(type: string | string[]): string | null | false;
-    
+
     /**
      * Perform a 302 redirect to `url`.
      *
