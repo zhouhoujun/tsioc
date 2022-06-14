@@ -30,8 +30,17 @@ export interface UdpServerOpts {
     pauseOnConnect?: boolean | undefined;
 }
 
+/**
+ * address.
+ */
 export interface Address {
+    /**
+     * port.
+     */
     port: number;
+    /**
+     * address.
+     */
     address?: string
 }
 
@@ -83,7 +92,6 @@ export const UDP_SERV_INTERCEPTORS = tokenId<Interceptor<UdpServRequest, UdpServ
  */
 @Injectable()
 export class UdpServer extends TransportServer<UdpServRequest, UdpServResponse, UdpContext> {
-
 
     private server?: Socket;
     private cancel?: Subscription;
