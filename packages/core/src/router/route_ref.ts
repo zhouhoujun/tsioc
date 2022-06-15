@@ -5,7 +5,7 @@ import {
 import { isObservable, lastValueFrom } from 'rxjs';
 import { CanActivate } from './guard';
 import { ResultValue } from './result';
-import { Middleware, MiddlewareFn } from '../transport/endpoint';
+import { Middleware, MiddlewareFn, MiddlewareInst } from '../transport/endpoint';
 import { RouteRef, RouteFactory, RouteFactoryResolver, joinprefix } from './route';
 import { ProtocolRouteMappingMetadata, RouteMappingMetadata } from './router';
 import { TransportContext } from '../transport/context';
@@ -70,52 +70,44 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     }
 
     async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
-        const method = await this.canActivate(ctx);
-
-        if (method) {
-            const metadate = method.metadata;
-            const key = `${metadate.method ?? ctx.method} ${method.propertyKey}`;
-            let endpoint = this._endpoints.get(key);
-            if (!endpoint) {
-                const endpoints = this.getRouteMiddleware(ctx, method)?.map(c => this.parse(c)) ?? [];
-                endpoints.push(async (c, n) => {
-                    await this.response(c, method)
-                });
-                endpoint = chain(endpoints);
-                this._endpoints.set(key, endpoint)
-            }
-            return await endpoint(ctx, next)
-        } else if (method === false) {
-            ctx.throwError(403)
-        } else {
-            return await next()
-        }
-    }
-
-    parse(middleware: Middleware): MiddlewareFn {
-        return (ctx, next) => middleware.invoke(ctx, next)
-    }
-
-    protected async canActivate(ctx: TransportContext) {
-        if (ctx.sent) return null;
+        if (ctx.sent) return await next();
         if (this.guards && this.guards.length) {
             if (!(await lang.some(
                 this.guards.map(guard => () => promisify(guard.canActivate(ctx))),
                 vaild => vaild === false))) {
-                return false
+                throw ctx.throwError(403);
             }
         }
-        const meta = this.getRouteMetaData(ctx) as DecorDefine<RouteMappingMetadata>;
-        if (!meta || !meta.propertyKey) return null;
-        const rmeta = meta.metadata;
+
+        const method = this.getRouteMetaData(ctx) as DecorDefine<RouteMappingMetadata>;
+        if (!method || !method.propertyKey) return await next();
+
+        const rmeta = method.metadata;
         if (rmeta.guards?.length) {
             if (!(await lang.some(
                 rmeta.guards.map(token => () => promisify(this.factory.resolve(token)?.canActivate(ctx))),
                 vaild => vaild === false))) {
-                return false
+                throw ctx.throwError(403);
             }
         }
-        return meta
+
+        const metadate = method.metadata;
+        const key = `${metadate.method ?? ctx.method} ${method.propertyKey}`;
+        let endpoint = this._endpoints.get(key);
+        if (!endpoint) {
+            const endpoints = this.getRouteMiddleware(ctx, method)?.map(c => this.parse(c)) ?? [];
+            endpoints.push(async (c, n) => {
+                await this.response(c, method)
+            });
+            endpoint = chain(endpoints);
+            this._endpoints.set(key, endpoint)
+        }
+        return await endpoint(ctx, next)
+
+    }
+
+    parse(middleware: Middleware): MiddlewareFn {
+        return (ctx, next) => middleware.invoke(ctx, next)
     }
 
     async response(ctx: TransportContext, meta: DecorDefine): Promise<void> {

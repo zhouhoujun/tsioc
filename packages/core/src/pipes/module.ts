@@ -1,5 +1,3 @@
-
-
 import { Module } from '../metadata/decor';
 import { BytesPipe } from './bytes';
 import { LowerCasePipe, UpperCasePipe } from './cases';

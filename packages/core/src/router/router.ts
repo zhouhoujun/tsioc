@@ -133,9 +133,6 @@ export class MappingRoute implements Middleware {
 
 }
 
-
-const endColon = /:$/;
-
 export class MappingRouter extends Router implements OnDestroy {
 
     readonly routes: Map<string, MiddlewareFn>;

@@ -4,7 +4,7 @@ import { RequestBase } from '@tsdi/core';
 /**
  * UdpRequest.
  */
- export class UdpRequest<T = any> extends RequestBase<T> {
+export class UdpRequest<T = any> extends RequestBase<T> {
 
     public readonly id: string;
     public readonly url: string;
