@@ -10,16 +10,16 @@ import { ArgumentError, Execption, isArray } from '@tsdi/ioc';
  */
 export class TransportError extends Execption {
 
-    constructor(readonly status: number, message?: string | string[]) {
+    constructor(message?: string | string[], readonly status?: number) {
         super(isArray(message) ? message.join('\n') : message || '')
     }
 
     get statusCode(): number {
-        return this.status
+        return this.status ?? 0;
     }
 
     toString() {
-        return `Transport Error: ${this.status}, ${this.message}`
+        return `Transport Error: ${this.statusCode}, ${this.message}`
     }
 }
 
@@ -32,3 +32,58 @@ export class TransportArgumentError extends ArgumentError {
     }
 }
 
+
+/**
+ * not found error.
+ *
+ * @export
+ * @class NotFoundError
+ * @extends {HttpError}
+ */
+ export class NotFoundError extends TransportError {
+    constructor(message = 'NotFound') {
+        super(message)
+    }
+}
+
+
+/**
+ * forbidden error.
+ *
+ * @export
+ * @class ForbiddenError
+ * @extends {TransportError}
+ */
+ export class ForbiddenError extends TransportError {
+    constructor(message = 'Forbidden') {
+        super(message)
+    }
+}
+
+
+/**
+ * bad request error.
+ *
+ * @export
+ * @class BadRequestError
+ * @extends {TransportError}
+ */
+ export class BadRequestError extends TransportError {
+    constructor(message = 'BadRequest') {
+        super(message)
+    }
+}
+
+
+/**
+ * unauthorized error.
+ *
+ * @export
+ * @class UnauthorizedError
+ * @extends {TransportError}
+ */
+ export class UnauthorizedError extends TransportError {
+    constructor(message = 'Unauthorized') {
+        super(message)
+    }
+}

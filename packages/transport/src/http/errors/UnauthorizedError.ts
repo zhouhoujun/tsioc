@@ -8,7 +8,7 @@ import { HttpError } from './HttpError';
  * @class UnauthorizedError
  * @extends {HttpError}
  */
-export class UnauthorizedError extends HttpError {
+export class HttpUnauthorizedError extends HttpError {
     constructor(message = statusMessage[HttpStatusCode.Unauthorized]) {
         super(HttpStatusCode.Unauthorized, message)
     }

@@ -7,7 +7,7 @@ import { ModuleRef } from '../module.ref';
 import { Middleware, MiddlewareFn } from '../transport/endpoint';
 import { HeaderContext, TransportContext } from '../transport/context';
 import { promisify } from './promisify';
-import { TransportError } from '../transport';
+import { BadRequestError, ForbiddenError, NotFoundError } from '../transport/error';
 
 
 
@@ -79,7 +79,7 @@ export class MappingRoute implements Middleware {
             }
             return this._middleware.invoke(ctx, next)
         } else {
-            throw ctx.throwError(403)
+            throw new ForbiddenError();
         }
     }
 
@@ -87,6 +87,7 @@ export class MappingRoute implements Middleware {
         if (!this._guards) {
             this._guards = this.route.guards?.map(token => ctx.resolve(token)) ?? EMPTY
         }
+        if (!this._guards.length) return true;
         return lang.some(this._guards.map(guard => () => promisify(guard.canActivate(ctx))), vaild => vaild === false)
     }
 
@@ -101,7 +102,7 @@ export class MappingRoute implements Middleware {
             const to = route.redirectTo
             return this.create((c, n) => this.redirect(c, to))
         } else if (route.controller) {
-            return ctx.resolve(RouteFactoryResolver).resolve(route.controller).last() ?? this.create((c, n) => { throw c.throwError(404) })
+            return ctx.resolve(RouteFactoryResolver).resolve(route.controller).last() ?? this.create((c, n) => { throw new NotFoundError() })
         } else if (route.children) {
             const router = new MappingRouter(route.path);
             route.children.forEach(route => router.use(route));
@@ -117,9 +118,9 @@ export class MappingRoute implements Middleware {
                 router.prefix = route.path ?? '';
                 return router
             }
-            return this.create((c, n) => { throw c.throwError(404) })
+            return this.create((c, n) => { throw new NotFoundError() })
         } else {
-            return this.create((c, n) => { throw c.throwError(404) })
+            return this.create((c, n) => { throw new NotFoundError() })
         }
     }
 
@@ -130,7 +131,7 @@ export class MappingRoute implements Middleware {
     protected async redirect(ctx: TransportContext, url: string, alt?: string): Promise<void> {
         const hctx = ctx as TransportContext & HeaderContext;
         if (!isFunction(hctx.redirect)) {
-            throw new TransportError(500, 'the transport not implements redirect.');
+            throw new BadRequestError();
         }
         hctx.redirect(url, alt)
     }

@@ -106,7 +106,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
                     throw new Error(lang.getClassName(router) + 'is not message router!');
                 }
                 const factory = injector.get(ReflectiveResolver).resolve(reflect, injector);
-                injector.onDestroy(() => router.unuse(path));
+                factory.onDestroy(() => router.unuse(path));
 
                 router.use({
                     path,

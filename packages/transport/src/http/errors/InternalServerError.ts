@@ -8,7 +8,7 @@ import { HttpError } from './HttpError';
  * @class InternalServerError
  * @extends {HttpError}
  */
-export class InternalServerError extends HttpError {
+export class HttpInternalServerError extends HttpError {
     constructor(message = statusMessage[HttpStatusCode.InternalServerError]) {
         super(HttpStatusCode.InternalServerError, message)
     }

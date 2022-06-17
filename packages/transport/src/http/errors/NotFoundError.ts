@@ -8,7 +8,7 @@ import { HttpError } from './HttpError';
  * @class NotFoundError
  * @extends {HttpError}
  */
-export class NotFoundError extends HttpError {
+export class HttpNotFoundError extends HttpError {
     constructor(message = statusMessage[HttpStatusCode.NotFound]) {
         super(HttpStatusCode.NotFound, message)
     }

@@ -249,7 +249,11 @@ describe('app message queue', () => {
         expect(res).toBeDefined();
         expect(isArray(res.features)).toBeTruthy();
 
-        const rep = await lastValueFrom(client.request<any>('POST', '/hdevice', { observe: 'response', body: { type: 'startup' } }));
+        const rep = await lastValueFrom(client.request<any>('POST', '/hdevice', { observe: 'response', body: { type: 'startup' } })
+            .pipe(catchError((err, cau)=> {
+                console.log(err);
+                return of(err);
+            })));
 
         const device = rep.body['device'];
         const aState = rep.body['deviceA_state'];

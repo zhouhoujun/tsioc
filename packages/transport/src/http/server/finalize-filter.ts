@@ -1,11 +1,14 @@
 import {
+    BadRequestError,
     ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
-    TransportArgumentError, TransportError, TransportMissingError
+    ForbiddenError,
+    NotFoundError,
+    TransportArgumentError, TransportError, TransportMissingError, UnauthorizedError
 } from '@tsdi/core';
 import { Inject, Injectable, isFunction, isNumber } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { MissingModelFieldError } from '@tsdi/repository';
-import { BadRequestError, HttpError, InternalServerError } from '../errors';
+import { HttpBadRequestError, HttpError, HttpForbiddenError, HttpInternalServerError, HttpNotFoundError, HttpUnauthorizedError } from '../errors';
 import { HttpContext } from './context';
 import { ev } from '../../consts';
 import { HttpServerOptions, HTTP_SERVEROPTIONS } from './server';
@@ -22,7 +25,7 @@ export class HttpFinalizeFilter implements ExecptionFilter {
             if (ctx.completed) return;
             err = ctx.execption as HttpError
         } catch (er) {
-            err = new InternalServerError((er as Error).message)
+            err = new HttpInternalServerError((er as Error).message)
         }
 
         //finllay defalt send error.
@@ -92,22 +95,42 @@ export class ArgumentErrorFilter implements ExecptionFilter {
         if (!ctx.completed) {
             return await next()
         }
-
     }
+
+    @ExecptionHandler(NotFoundError)
+    notFoundExecption(ctx: ExecptionContext, execption: NotFoundError) {
+        ctx.execption = new HttpNotFoundError(this.option.detailError ? execption.message : undefined)
+    }
+
+    @ExecptionHandler(ForbiddenError)
+    forbiddenExecption(ctx: ExecptionContext, execption: ForbiddenError) {
+        ctx.execption = new HttpForbiddenError(this.option.detailError ? execption.message : undefined)
+    }
+
+    @ExecptionHandler(BadRequestError)
+    badReqExecption(ctx: ExecptionContext, execption: BadRequestError) {
+        ctx.execption = new HttpBadRequestError(this.option.detailError ? execption.message : undefined)
+    }
+
+    @ExecptionHandler(UnauthorizedError)
+    unauthorized(ctx: ExecptionContext, execption: UnauthorizedError) {
+        ctx.execption = new HttpUnauthorizedError(this.option.detailError ? execption.message : undefined)
+    }
+    
 
     @ExecptionHandler(TransportArgumentError)
     anguExecption(ctx: ExecptionContext, execption: TransportArgumentError) {
-        ctx.execption = new BadRequestError(this.option.detailError ? execption.message : undefined)
+        ctx.execption = new HttpBadRequestError(this.option.detailError ? execption.message : undefined)
     }
 
     @ExecptionHandler(MissingModelFieldError)
     missFieldExecption(ctx: ExecptionContext, execption: MissingModelFieldError) {
-        ctx.execption = new BadRequestError(this.option.detailError ? execption.message : undefined)
+        ctx.execption = new HttpBadRequestError(this.option.detailError ? execption.message : undefined)
     }
 
     @ExecptionHandler(TransportMissingError)
     missExecption(ctx: ExecptionContext, execption: TransportMissingError) {
-        ctx.execption = new BadRequestError(this.option.detailError ? execption.message : undefined)
+        ctx.execption = new HttpBadRequestError(this.option.detailError ? execption.message : undefined)
     }
 
 }

@@ -8,7 +8,7 @@ import { HttpStatusCode } from '@tsdi/common';
  */
 export class HttpError extends TransportError {
     constructor(readonly status: HttpStatusCode, message?: string | string[]) {
-        super(status, message)
+        super(message, status)
     }
 
     get statusCode(): HttpStatusCode {

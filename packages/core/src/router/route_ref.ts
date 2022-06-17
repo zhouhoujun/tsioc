@@ -11,6 +11,7 @@ import { ProtocolRouteMappingMetadata, RouteMappingMetadata } from './router';
 import { TransportContext } from '../transport/context';
 import { promisify } from './promisify';
 import { Protocol } from '../transport/packet';
+import { ForbiddenError } from '../transport/error';
 
 
 const isRest = /\/:/;
@@ -80,7 +81,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
             if (!(await lang.some(
                 this.guards.map(guard => () => promisify(guard.canActivate(ctx))),
                 vaild => vaild === false))) {
-                throw ctx.throwError(403);
+                throw new ForbiddenError();
             }
         }
 
@@ -94,7 +95,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
             if (!(await lang.some(
                 metadate.guards.map(token => () => promisify(this.factory.resolve(token)?.canActivate(ctx))),
                 vaild => vaild === false))) {
-                throw ctx.throwError(403);
+                throw new ForbiddenError();
             }
         }
 

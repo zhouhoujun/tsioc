@@ -1,5 +1,5 @@
 /* eslint-disable no-control-regex */
-import { HeaderContext, Middleware, TransportContext, TransportError } from '@tsdi/core';
+import { HeaderContext, Middleware, TransportContext } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable } from '@tsdi/ioc';
 import * as zlib from 'zlib';
 import { Readable } from 'stream';
@@ -131,7 +131,7 @@ export class BodyparserMiddleware implements Middleware {
         }
     }
 
-    private getStream(ctx: TransportContext, encoding: string): Readable {
+    private getStream(ctx: TransportContext & HeaderContext, encoding: string): Readable {
         switch (encoding) {
             case 'gzip':
             case 'deflate':
@@ -139,7 +139,7 @@ export class BodyparserMiddleware implements Middleware {
             case 'identity':
                 return ctx.request
             default:
-                throw new TransportError(415, 'Unsupported Content-Encoding: ' + encoding);
+                throw ctx.throwError(415, 'Unsupported Content-Encoding: ' + encoding);
         }
         return (ctx.request as Readable).pipe(zlib.createUnzip())
     }

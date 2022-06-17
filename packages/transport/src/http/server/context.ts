@@ -12,7 +12,7 @@ import { CONTENT_DISPOSITION } from './content';
 import { ctype, hdr } from '../../consts';
 import { MimeAdapter } from '../../mime';
 import { Negotiator } from '../../negotiator';
-import { HttpError, InternalServerError } from './../errors';
+import { HttpError, HttpInternalServerError } from './../errors';
 import { HttpServer } from './server';
 
 
@@ -1074,7 +1074,7 @@ export class HttpContext extends ServerContext<HttpServRequest, HttpServResponse
     throwError(error: Error): Error;
     throwError(status: string | number | Error, message?: string): Error {
         if (isString(status)) {
-            return new InternalServerError(status)
+            return new HttpInternalServerError(status)
         } else if (isNumber(status)) {
             if (!statusMessage[status as HttpStatusCode]) {
                 status = 500

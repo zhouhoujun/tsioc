@@ -202,7 +202,7 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                                 if (isNaN(length)) {
                                     length = -1;
                                     buffer = '';
-                                    throw new TransportError(0, 'socket packge error length' + rawContentLength);
+                                    throw new TransportError('socket packge error length' + rawContentLength);
                                 }
                                 buffer = buffer.substring(i + 1);
                             }

@@ -147,27 +147,6 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
      */
     abstract get sent(): boolean;
 
-    /**
-     * create error instance of {@link TransportError}.
-     * @param status transport status
-     * @param messages transport messages.
-     * @returns instance of {@link TransportError}
-     */
-    abstract throwError(status: number, message?: string): Error;
-    /**
-     * create error instance of {@link TransportError}.
-     * @param status transport status
-     * @param messages transport messages.
-     * @returns instance of {@link TransportError}
-     */
-    abstract throwError(message: string): Error;
-    /**
-     * create error instance of {@link TransportError}.
-     * @param error error 
-     * @returns instance of {@link TransportError}
-     */
-    abstract throwError(error: Error): Error;
-
 }
 
 /**
@@ -281,4 +260,25 @@ export interface HeaderContext {
      * @api public
      */
     removeHeader(field: string): void;
+
+    /**
+     * create error instance of {@link TransportError}.
+     * @param status transport status
+     * @param messages transport messages.
+     * @returns instance of {@link TransportError}
+     */
+    throwError(status: number, message?: string): Error;
+    /**
+     * create error instance of {@link TransportError}.
+     * @param status transport status
+     * @param messages transport messages.
+     * @returns instance of {@link TransportError}
+     */
+    throwError(message: string): Error;
+    /**
+     * create error instance of {@link TransportError}.
+     * @param error error 
+     * @returns instance of {@link TransportError}
+     */
+    throwError(error: Error): Error;
 }

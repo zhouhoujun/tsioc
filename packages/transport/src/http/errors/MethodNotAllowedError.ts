@@ -8,7 +8,7 @@ import { HttpError } from './HttpError';
  * @class MethodNotAllowedError
  * @extends {HttpError}
  */
-export class MethodNotAllowedError extends HttpError {
+export class HttpMethodNotAllowedError extends HttpError {
     constructor(message = statusMessage[HttpStatusCode.MethodNotAllowed]) {
         super(HttpStatusCode.MethodNotAllowed, message)
     }
