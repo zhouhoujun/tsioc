@@ -1,5 +1,5 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
-import { ServerContext, ExecptionFilter, MiddlewareInst } from '@tsdi/core';
+import { ServerContext, ExecptionFilter, MiddlewareInst, Protocol } from '@tsdi/core';
 import { Injectable, tokenId } from '@tsdi/ioc';
 import { UdpServRequest } from './request';
 import { UdpServResponse } from './response';
@@ -12,6 +12,8 @@ import { UdpServResponse } from './response';
 @Injectable()
 export class UdpContext extends ServerContext<UdpServRequest, UdpServResponse> {
 
+    readonly protocol: Protocol = 'udp'; 
+    
     private _url?: string;
     get url(): string {
         if (!this._url) {

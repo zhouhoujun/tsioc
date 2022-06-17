@@ -5,11 +5,12 @@ import {
 import { isObservable, lastValueFrom } from 'rxjs';
 import { CanActivate } from './guard';
 import { ResultValue } from './result';
-import { Middleware, MiddlewareFn, MiddlewareInst } from '../transport/endpoint';
+import { Middleware, MiddlewareFn } from '../transport/endpoint';
 import { RouteRef, RouteFactory, RouteFactoryResolver, joinprefix } from './route';
 import { ProtocolRouteMappingMetadata, RouteMappingMetadata } from './router';
 import { TransportContext } from '../transport/context';
 import { promisify } from './promisify';
+import { Protocol } from '../transport/packet';
 
 
 const isRest = /\/:/;
@@ -33,9 +34,13 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
 
     constructor(private factory: ReflectiveRef<T>) {
         super()
-        this.metadata = factory.reflect.annotation as ProtocolRouteMappingMetadata;
+        this.metadata = factory.reflect.annotation as ProtocolRouteMappingMetadata
         this._url = joinprefix(this.metadata.prefix, this.metadata.version, this.metadata.route);
         this._endpoints = new Map()
+    }
+
+    get protocol(): Protocol | undefined {
+        return this.metadata.protocol;
     }
 
     get type() {
@@ -70,7 +75,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     }
 
     async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
-        if (ctx.sent) return await next();
+        if (ctx.sent || (this.protocol && this.protocol !== ctx.protocol)) return await next();
         if (this.guards && this.guards.length) {
             if (!(await lang.some(
                 this.guards.map(guard => () => promisify(guard.canActivate(ctx))),
@@ -79,19 +84,21 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
             }
         }
 
-        const method = this.getRouteMetaData(ctx) as DecorDefine<RouteMappingMetadata>;
+        const method = this.getRouteMetaData(ctx) as DecorDefine<ProtocolRouteMappingMetadata>;
         if (!method || !method.propertyKey) return await next();
 
-        const rmeta = method.metadata;
-        if (rmeta.guards?.length) {
+        const metadate = method.metadata;
+        if (metadate.protocol && this.protocol !== metadate.protocol) return await next();
+
+        if (metadate.guards?.length) {
             if (!(await lang.some(
-                rmeta.guards.map(token => () => promisify(this.factory.resolve(token)?.canActivate(ctx))),
+                metadate.guards.map(token => () => promisify(this.factory.resolve(token)?.canActivate(ctx))),
                 vaild => vaild === false))) {
                 throw ctx.throwError(403);
             }
         }
 
-        const metadate = method.metadata;
+
         const key = `${metadate.method ?? ctx.method} ${method.propertyKey}`;
         let endpoint = this._endpoints.get(key);
         if (!endpoint) {

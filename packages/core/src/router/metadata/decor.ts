@@ -92,7 +92,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
         afterAnnoation: (ctx, next) => {
             const reflect = ctx.reflect;
             const metadata = reflect.class.getMetadata<HandleMetadata>(ctx.currDecor);
-            const { route, prefix, version, parent } = metadata;
+            const { route, prefix, version, parent, protocol } = metadata;
             const injector = ctx.injector;
 
             if (!isString(route) && !parent) {
@@ -100,15 +100,19 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
             }
 
             if (isString(route)) {
-                const url = joinprefix(prefix, version, route);
+                const path = joinprefix(prefix, version, route);
                 const router = parent ? injector.get(parent) : injector.get(Router);
                 if (!(router instanceof Router)) {
                     throw new Error(lang.getClassName(router) + 'is not message router!');
                 }
                 const factory = injector.get(ReflectiveResolver).resolve(reflect, injector);
-                injector.onDestroy(() => router.unuse(url));
+                injector.onDestroy(() => router.unuse(path));
 
-                router.use(url, (ctx, next) => (factory.resolve() as Middleware).invoke(ctx, next));
+                router.use({
+                    path,
+                    protocol,
+                    middleware: factory.resolve() as Middleware
+                });
             }
             next();
         }

@@ -1,4 +1,5 @@
 import { PatternMetadata, Type, TypeMetadata } from '@tsdi/ioc';
+import { Protocol } from '../../transport/packet';
 import { CanActivate } from '../guard';
 import { Router } from '../router';
 
@@ -45,6 +46,11 @@ export interface HandleMetadata extends TypeMetadata, PatternMetadata {
      * default register in root handle queue.
      */
     parent?: Type<Router>;
+
+    /**
+     * transport protocol
+     */
+    protocol?: Protocol;
 }
 
 export interface HandlesMetadata extends HandleMetadata {

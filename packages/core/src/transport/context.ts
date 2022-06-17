@@ -1,4 +1,5 @@
 import { Abstract, DefaultInvocationContext } from '@tsdi/ioc';
+import { Protocol } from './packet';
 
 /**
  * endpoint context.
@@ -36,6 +37,10 @@ export abstract class RequestContext extends EndpointContext {
  */
 @Abstract()
 export abstract class TransportContext<TRequest = any, TResponse = any> extends EndpointContext {
+    /**
+     * server transport protocol.
+     */
+    abstract get protocol(): Protocol | undefined;
     /**
      * host client or server. instance of `TransportServer`
      */

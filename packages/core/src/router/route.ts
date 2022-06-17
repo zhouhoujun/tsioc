@@ -3,7 +3,8 @@ import {
     OnDestroy, tokenId, Type, TypeReflect
 } from '@tsdi/ioc';
 import { TransportContext } from '../transport/context';
-import { Middleware } from '../transport/endpoint';
+import { Middleware, MiddlewareFn } from '../transport/endpoint';
+import { Protocol } from '../transport/packet';
 import { CanActivate } from './guard';
 
 /**
@@ -35,6 +36,11 @@ export interface Route extends InvokeArguments {
     guards?: Type<CanActivate>[];
 
     /**
+     * transport protocol
+     */
+    protocol?: Protocol;
+
+    /**
      * An array of child `Route` objects that specifies a nested route
      * configuration.
      */
@@ -52,7 +58,12 @@ export interface Route extends InvokeArguments {
      * The middlewarable to instantiate when the path matches.
      * Can be empty if child routes specify middlewarable.
      */
-    middleware?: Type<Middleware>;
+    middleware?: Type<Middleware> | Middleware;
+    /**
+     * The middlewarable to instantiate when the path matches.
+     * Can be empty if child routes specify middlewarable.
+     */
+    middlewareFn?: MiddlewareFn;
 
 }
 
@@ -73,6 +84,10 @@ export abstract class RouteRef<T = any> implements Middleware, Destroyable, OnDe
      * controller type.
      */
     abstract get type(): Type<T>;
+    /**
+     * transport protocol.
+     */
+    abstract get protocol(): Protocol | undefined;
     /**
      * controller type reflect.
      */

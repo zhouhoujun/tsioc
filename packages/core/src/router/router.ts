@@ -72,7 +72,7 @@ export class MappingRoute implements Middleware {
     }
 
     async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
-
+        if (this.route.protocol && this.route.protocol !== ctx.protocol) return next();
         if (await this.canActive(ctx)) {
             if (!this._middleware) {
                 this._middleware = await this.parse(this.route, ctx)
@@ -92,7 +92,11 @@ export class MappingRoute implements Middleware {
 
     protected async parse(route: Route & { router?: Router }, ctx: TransportContext): Promise<Middleware> {
         if (route.middleware) {
-            return ctx.get(route.middleware)
+            return isFunction(route.middleware) ? ctx.get(route.middleware) : route.middleware
+        } else if (route.middlewareFn) {
+            return {
+                invoke: (ctx, next) => route.middlewareFn!(ctx, next)
+            } as Middleware
         } else if (route.redirectTo) {
             const to = route.redirectTo
             return this.create((c, n) => this.redirect(c, to))

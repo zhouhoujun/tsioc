@@ -1,5 +1,5 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
-import { ServerContext, ExecptionFilter, MiddlewareInst } from '@tsdi/core';
+import { ServerContext, ExecptionFilter, MiddlewareInst, Protocol } from '@tsdi/core';
 import { Injectable, tokenId } from '@tsdi/ioc';
 import { TcpServRequest } from './request';
 import { TcpServResponse } from './response';
@@ -11,6 +11,8 @@ import { TcpServResponse } from './response';
  */
 @Injectable()
 export class TcpContext extends ServerContext<TcpServRequest, TcpServResponse> {
+
+    readonly protocol: Protocol = 'tcp';  
 
     private _url?: string;
     get url(): string {
