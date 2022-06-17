@@ -8,7 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {
     Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module,
-    TransportContext, LoggerModule, Middleware, Chain
+    TransportContext, LoggerModule, Middleware, Chain, BadRequestError
 } from '@tsdi/core';
 import { HttpClient, HttpClientModule } from '../src';
 
@@ -37,6 +37,9 @@ class DeviceController {
     @RouteMapping('/:age/used', 'GET')
     resfulquery(@RequestPath('age', { pipe: 'int' }) age1: number) {
         console.log('age1:', age1);
+        if (age1 <= 0) {
+            throw new BadRequestError();
+        }
         return age1;
     }
 
@@ -272,6 +275,30 @@ describe('HttpClient', () => {
         expect(aState).toBe('startuped');
         expect(bState).toBe('startuped');
     });
+
+    it('not found', async () => {
+        const client = ctx.resolve(HttpClient);
+        const a = await lastValueFrom(client.post<any>('/device/init5', null, { observe: 'response', params: { name: 'test' } })
+            .pipe(
+                catchError(err => {
+                    console.log(err);
+                    return of(err)
+                })
+            ));
+        expect(a.status).toEqual(404);
+    });
+
+    it('bad request', async () => {
+        const client = ctx.resolve(HttpClient);
+        const a = await lastValueFrom(client.get('/device/-1/used', { observe: 'response', params: { age: '20' } })
+            .pipe(
+                catchError(err => {
+                    console.log(err);
+                    return of(err)
+                })
+            ));
+        expect(a.status).toEqual(400);
+    })
 
     it('post route response object', async () => {
         const a = await lastValueFrom(ctx.resolve(HttpClient).post<any>('/device/init', null, { observe: 'response', params: { name: 'test' } }));

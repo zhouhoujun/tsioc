@@ -88,6 +88,28 @@ describe('http1.1 server, Http', () => {
         expect(bState).toBe('startuped');
     });
 
+    it('not found', async () => {
+        const a = await lastValueFrom(client.post<any>('/device/init5', null, { observe: 'response', params: { name: 'test' } })
+            .pipe(
+                catchError(err=> {
+                    console.log(err);
+                    return of(err)
+                })
+            ));
+        expect(a.status).toEqual(404);
+    });
+
+    it('bad request', async () => {
+        const a = await lastValueFrom(client.get('/device/-1/used', { observe: 'response', params: { age: '20' } })
+        .pipe(
+            catchError(err=> {
+                console.log(err);
+                return of(err)
+            })
+        ));
+        expect(a.status).toEqual(400);
+    })
+
     it('post route response object', async () => {
         const a = await lastValueFrom(client.post<any>('/device/init', null, { observe: 'response', params: { name: 'test' } }));
         expect(a.status).toEqual(200);

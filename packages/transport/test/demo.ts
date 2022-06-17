@@ -1,7 +1,7 @@
 import { Injectable, lang, tokenId } from '@tsdi/ioc';
 import { of } from 'rxjs'; import {
     RouteMapping, Handle, RequestBody, RequestParam, RequestPath, Module,
-    TransportContext, Middleware, Chain
+    TransportContext, Middleware, Chain, BadRequestError
 } from '@tsdi/core';
 import { RedirectResult } from '../src/http';
 
@@ -30,6 +30,9 @@ export class DeviceController {
     @RouteMapping('/:age/used', 'GET')
     resfulquery(@RequestPath('age', { pipe: 'int' }) age1: number) {
         console.log('age1:', age1);
+        if(age1<=0){
+            throw new BadRequestError();
+        }
         return age1;
     }
 
