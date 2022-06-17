@@ -150,9 +150,35 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
 }
 
 /**
+ * throw able.
+ */
+export interface Throwable {
+    /**
+     * create error instance of {@link TransportError}.
+     * @param status transport status
+     * @param messages transport messages.
+     * @returns instance of {@link TransportError}
+     */
+    throwError(status: number, message?: string): Error;
+    /**
+     * create error instance of {@link TransportError}.
+     * @param status transport status
+     * @param messages transport messages.
+     * @returns instance of {@link TransportError}
+     */
+    throwError(message: string): Error;
+    /**
+     * create error instance of {@link TransportError}.
+     * @param error error 
+     * @returns instance of {@link TransportError}
+     */
+    throwError(error: Error): Error;
+}
+
+/**
  * header context with tansport.
  */
-export interface HeaderContext {
+export interface HeaderContext extends Throwable {
     /**
      * Check if the incoming request contains the "Content-Type"
      * header field and if it contains any of the given mime `type`s.
