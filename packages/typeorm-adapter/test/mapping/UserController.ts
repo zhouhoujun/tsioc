@@ -2,7 +2,7 @@ import { Controller, Delete, Get, Post, Put, RequestParam } from '@tsdi/core';
 import { lang } from '@tsdi/ioc';
 import { Log, Logger } from '@tsdi/logs';
 import { Repository, Transactional } from '@tsdi/repository';
-import { InternalServerError } from '@tsdi/transport';
+import { HttpInternalServerError } from '@tsdi/transport';
 import { User } from '../models/models';
 import { UserRepository } from '../repositories/UserRepository';
 
@@ -29,7 +29,7 @@ export class UserController {
     async modify(user: User, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(lang.getClassName(this.usrRep), user);
         const val = await this.usrRep.save(user);
-        if(check) throw new InternalServerError('check');
+        if(check) throw new HttpInternalServerError('check');
         this.logger.log(val);
         return val;
     }
@@ -40,7 +40,7 @@ export class UserController {
     async modify2(user: User, @Repository() userRepo: UserRepository, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(lang.getClassName(this.usrRep), user);
         const val = await userRepo.save(user);
-        if(check) throw new InternalServerError('check');
+        if(check) throw new HttpInternalServerError('check');
         this.logger.log(val);
         return val;
     }

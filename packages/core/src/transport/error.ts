@@ -41,7 +41,7 @@ export class TransportArgumentError extends ArgumentError {
  * @extends {HttpError}
  */
  export class NotFoundError extends TransportError {
-    constructor(message = 'NotFound') {
+    constructor(message = 'Not Found') {
         super(message)
     }
 }
@@ -69,7 +69,7 @@ export class TransportArgumentError extends ArgumentError {
  * @extends {TransportError}
  */
  export class BadRequestError extends TransportError {
-    constructor(message = 'BadRequest') {
+    constructor(message = 'Bad Request') {
         super(message)
     }
 }
@@ -84,6 +84,19 @@ export class TransportArgumentError extends ArgumentError {
  */
  export class UnauthorizedError extends TransportError {
     constructor(message = 'Unauthorized') {
+        super(message)
+    }
+}
+
+/**
+ * internal server error.
+ *
+ * @export
+ * @class InternalServerError
+ * @extends {HttpError}
+ */
+ export class InternalServerError extends TransportError {
+    constructor(message = 'Internal Server Error') {
         super(message)
     }
 }

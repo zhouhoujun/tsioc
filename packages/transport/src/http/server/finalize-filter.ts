@@ -2,6 +2,7 @@ import {
     BadRequestError,
     ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
     ForbiddenError,
+    InternalServerError,
     NotFoundError,
     TransportArgumentError, TransportError, TransportMissingError, UnauthorizedError
 } from '@tsdi/core';
@@ -99,24 +100,28 @@ export class ArgumentErrorFilter implements ExecptionFilter {
 
     @ExecptionHandler(NotFoundError)
     notFoundExecption(ctx: ExecptionContext, execption: NotFoundError) {
-        ctx.execption = new HttpNotFoundError(this.option.detailError ? execption.message : undefined)
+        ctx.execption = new HttpNotFoundError(execption.message)
     }
 
     @ExecptionHandler(ForbiddenError)
     forbiddenExecption(ctx: ExecptionContext, execption: ForbiddenError) {
-        ctx.execption = new HttpForbiddenError(this.option.detailError ? execption.message : undefined)
+        ctx.execption = new HttpForbiddenError(execption.message)
     }
 
     @ExecptionHandler(BadRequestError)
     badReqExecption(ctx: ExecptionContext, execption: BadRequestError) {
-        ctx.execption = new HttpBadRequestError(this.option.detailError ? execption.message : undefined)
+        ctx.execption = new HttpBadRequestError(execption.message)
     }
 
     @ExecptionHandler(UnauthorizedError)
     unauthorized(ctx: ExecptionContext, execption: UnauthorizedError) {
-        ctx.execption = new HttpUnauthorizedError(this.option.detailError ? execption.message : undefined)
+        ctx.execption = new HttpUnauthorizedError(execption.message)
     }
     
+    @ExecptionHandler(InternalServerError)
+    internalServerError(ctx: ExecptionContext, execption: InternalServerError) {
+        ctx.execption = new HttpInternalServerError(execption.message)
+    }
 
     @ExecptionHandler(TransportArgumentError)
     anguExecption(ctx: ExecptionContext, execption: TransportArgumentError) {
