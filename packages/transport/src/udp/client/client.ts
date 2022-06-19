@@ -1,6 +1,7 @@
 import {
+    BadRequestError,
     CustomEndpoint, EndpointBackend, Interceptor, InterceptorInst, InterceptorType,
-    OnDispose, RequestContext, ResponseJsonParseError, TransportClient, TransportError, UuidGenerator
+    OnDispose, RequestContext, ResponseJsonParseError, TransportClient, UuidGenerator
 } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId, type_undef } from '@tsdi/ioc';
 import { Socket, createSocket, SocketOptions } from 'dgram';
@@ -203,7 +204,7 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
                                 if (isNaN(length)) {
                                     length = -1;
                                     buffer = '';
-                                    throw new TransportError(0, 'socket packge error length' + rawContentLength);
+                                    throw new BadRequestError('socket packge error length' + rawContentLength);
                                 }
                                 buffer = buffer.substring(i + 1);
                             }

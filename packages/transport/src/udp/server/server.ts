@@ -1,7 +1,8 @@
 
 import {
+    BadRequestError,
     CustomEndpoint, EndpointBackend, ExecptionFilter, Interceptor, InterceptorInst,
-    InterceptorType, MiddlewareInst, MiddlewareType, ServerOptions, TransportError, TransportServer
+    InterceptorType, MiddlewareInst, MiddlewareType, ServerOptions, TransportServer
 } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId, Type } from '@tsdi/ioc';
 import { Socket, createSocket, SocketOptions, BindOptions, RemoteInfo } from 'dgram';
@@ -183,7 +184,7 @@ export class UdpServer extends TransportServer<UdpServRequest, UdpServResponse, 
                             if (isNaN(length)) {
                                 length = -1;
                                 buffer = '';
-                                throw new TransportError(0, 'socket packge error length' + rawContentLength);
+                                throw new BadRequestError('socket packge error length' + rawContentLength);
                             }
                             buffer = buffer.substring(i + 1);
                         }
