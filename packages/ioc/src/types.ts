@@ -76,6 +76,11 @@ export interface Annotation<T = any> {
      * @memberof Annotation
      */
     methods?: Record<string, MethodAnnotation>;
+
+    /**
+     * type Def.
+     */
+    def?: any;
 }
 
 

@@ -147,10 +147,9 @@ export class QueryList<T> implements Iterable<T> {
     (this.changes as EventEmitter<any>).unsubscribe();
   }
 
-  // The implementation of `Symbol.iterator` should be declared here, but this would cause
-  // tree-shaking issues with `QueryList. So instead, it's added in the constructor (see comments
-  // there) and this declaration is left here to ensure that TypeScript considers QueryList to
-  // implement the Iterable interface. This is required for template type-checking of NgFor loops
-  // over QueryLists to work correctly, since QueryList must be assignable to NgIterable.
-  [Symbol.iterator]: () => Iterator<T>;
+
+  [Symbol.iterator](): Iterator<T, any, undefined> {
+    return  (this._results as any)[Symbol.iterator]();
+  }
+
 }

@@ -3,7 +3,7 @@ import { isString, isArray } from '../utils/chk';
 import { Token, getToken, InjectFlags } from '../tokens';
 import {
     ClassMetadata, RunnableMetadata, AutoWiredMetadata, InjectMetadata, PatternMetadata,
-    InjectableMetadata, ParameterMetadata, ProvidersMetadata, ProviderInMetadata, ProviderMetadata
+    InjectableMetadata, ParameterMetadata, ProvidersMetadata, ProviderInMetadata
 } from './meta';
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
 import { ProviderType, StaticProvider } from '../providers';
