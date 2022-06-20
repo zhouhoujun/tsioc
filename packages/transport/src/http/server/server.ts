@@ -5,7 +5,7 @@ import {
 import {
     TransportServer, EndpointBackend, CustomEndpoint, RunnableFactoryResolver,
     MiddlewareType, Interceptor, ModuleRef, Router, InterceptorType, ExecptionFilter,
-    MiddlewareInst, InterceptorInst, ServerOptions, RespondTypeAdapter,
+    MiddlewareInst, InterceptorInst, PublisherOptions, RespondTypeAdapter,
 } from '@tsdi/core';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { of, Subscription } from 'rxjs';
@@ -34,7 +34,7 @@ import { HttpRespondTypeAdapter, ResponsedInterceptor } from './respond';
 /**
  * http options.
  */
-export interface HttpOptions extends ServerOptions<HttpServRequest, HttpServResponse> {
+export interface HttpOptions extends PublisherOptions<HttpServRequest, HttpServResponse> {
     majorVersion?: number;
     cors?: boolean | CorsOptions;
     proxy?: boolean;
