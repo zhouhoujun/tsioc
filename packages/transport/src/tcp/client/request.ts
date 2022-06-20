@@ -24,4 +24,8 @@ export class TcpRequest<T = any> extends RequestBase<T> {
         this.params = option.params ?? {};
         this.body = option.body ?? null;
     }
+
+    serialize(): Uint8Array | string {
+        throw new Error('Method not implemented.');
+    }
 }

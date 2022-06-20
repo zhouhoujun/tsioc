@@ -76,14 +76,13 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
             const ac = this.getAbortSignal(ctx);
             return new Observable((observer: Observer<any>) => {
 
-                const sub = defer(async () => {
-                    socket.emit(ev.DATA, req);
-                    // if (req.body) {
-                    //     socket.write(req.body, this.option.encoding, (err) => {
-                    //         ok = false;
-                    //         error = err;
-                    //     });
-                    // }
+                const sub = defer(() => {
+                    // socket.emit(ev.DATA, req);
+                    const defer = lang.defer<void>();
+                    socket.write(req.serialize(), this.option.encoding, (err) => {
+                        err ? defer.reject(err) : defer.resolve();
+                    });
+                    return defer.promise;
                 }).pipe(mergeMap(() => this.source)).subscribe({
                     complete: () => observer.complete(),
                     error: (err) => observer.error(new TcpErrorResponse(err?.status ?? 500, err?.text, err ?? body)),

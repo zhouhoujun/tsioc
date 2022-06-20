@@ -24,7 +24,6 @@ export class Execption extends Error {
             (this as any).__proto__ = target.prototype
         }
     }
-
 }
 
 

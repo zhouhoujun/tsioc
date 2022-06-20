@@ -7,14 +7,20 @@ export const LOCALE_ID: Token<string> = tokenId<string>('LOCALE_ID');
 
 
 @Abstract()
-export abstract class Localization  {
+export abstract class Localization {
     abstract getPluralCategory(value: any, locale?: string): string;
 }
 
 
-
-export function getPluralCategory(
-    value: number, cases: string[], localization: Localization, locale?: string): string {
+/**
+ * get plural category.
+ * @param value 
+ * @param cases 
+ * @param localization 
+ * @param locale 
+ * @returns 
+ */
+export function getPluralCategory(value: number, cases: string[], localization: Localization, locale?: string): string {
     let key = `=${value}`;
 
     if (cases.indexOf(key) > -1) {
