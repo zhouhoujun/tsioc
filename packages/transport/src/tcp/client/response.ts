@@ -1,5 +1,8 @@
 import { ResponseBase } from '@tsdi/core';
 
+/**
+ * tcp error response.
+ */
 export class TcpErrorResponse  {
     constructor(readonly status: number, readonly statusMessage: string, readonly error?: any){
 
