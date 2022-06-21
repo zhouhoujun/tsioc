@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { PipeTransform } from '../../pipes/pipe';
 import { Middleware, MiddlewareFn } from '../../transport/endpoint';
-import { Protocol, RequestMethod } from '../../transport/packet';
+import { mths, Protocol, RequestMethod } from '../../transport/packet';
 import { CanActivate } from '../guard';
 import { joinprefix, normalize, RouteFactoryResolver } from '../route';
 import { MappingReflect, ProtocolRouteMappingMetadata, Router } from '../router';
@@ -639,7 +639,7 @@ export interface HeadDecorator {
  *
  * @Head
  */
-export const Head: HeadDecorator = createRouteDecorator('HEAD');
+export const Head: HeadDecorator = createRouteDecorator(mths.HEAD);
 
 
 /**
@@ -749,7 +749,7 @@ export interface GetDecorator {
  *
  * @Get
  */
-export const Get: GetDecorator = createRouteDecorator('GET');
+export const Get: GetDecorator = createRouteDecorator(mths.GET);
 
 
 
@@ -805,7 +805,7 @@ export interface DeleteDecorator {
  *
  * @Delete
  */
-export const Delete: DeleteDecorator = createRouteDecorator('DELETE');
+export const Delete: DeleteDecorator = createRouteDecorator(mths.DELETE);
 
 
 
@@ -860,7 +860,7 @@ export interface PatchDecorator {
  *
  * @Patch
  */
-export const Patch: PatchDecorator = createRouteDecorator('PATCH');
+export const Patch: PatchDecorator = createRouteDecorator(mths.PATCH);
 
 
 
@@ -916,7 +916,7 @@ export interface PostDecorator {
  *
  * @Post
  */
-export const Post: PostDecorator = createRouteDecorator('POST');
+export const Post: PostDecorator = createRouteDecorator(mths.POST);
 
 
 
@@ -971,4 +971,4 @@ export interface PutDecorator {
  *
  * @Put
  */
-export const Put: PutDecorator = createRouteDecorator('PUT');
+export const Put: PutDecorator = createRouteDecorator(mths.PUT);

@@ -1,3 +1,4 @@
+import { mths } from '@tsdi/core';
 import { Inject, Injectable, InvocationContext, tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { DOCUMENT, PLATFORM_ID } from '../platform';
@@ -70,7 +71,7 @@ export class HttpXsrfInterceptor implements HttpInterceptor {
         // Non-mutating requests don't require a token, and absolute URLs require special handling
         // anyway as the cookie set
         // on our origin is not the same as the token expected by another origin.
-        if (req.method === 'GET' || req.method === 'HEAD' || lcUrl.startsWith('http://') ||
+        if (req.method === mths.GET || req.method === mths.HEAD || lcUrl.startsWith('http://') ||
             lcUrl.startsWith('https://')) {
             return next.handle(req, context)
         }

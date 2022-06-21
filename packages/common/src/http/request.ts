@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import { RequestBase } from '@tsdi/core';
+import { mths, RequestBase } from '@tsdi/core';
 import { isString, type_bool, type_num, type_obj, type_undef, InvocationContext } from '@tsdi/ioc';
 import { HttpHeaders } from './headers';
 import { HttpParams } from './params';
@@ -31,11 +31,11 @@ interface HttpRequestInit {
  */
 function mightHaveBody(method: string): boolean {
     switch (method) {
-        case 'DELETE':
-        case 'GET':
-        case 'HEAD':
-        case 'OPTIONS':
-        case 'JSONP':
+        case mths.DELETE:
+        case mths.GET:
+        case mths.HEAD:
+        case mths.OPTIONS:
+        case mths.JSONP:
             return false
         default:
             return true

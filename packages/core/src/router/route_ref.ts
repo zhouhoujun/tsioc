@@ -28,7 +28,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     private _dsryCbs = new Set<DestroyCallback>();
 
     private metadata: ProtocolRouteMappingMetadata;
-    protected sortRoutes: DecorDefine[] | undefined;
+    protected sortRoutes: DecorDefine<ProtocolRouteMappingMetadata>[] | undefined;
     private _url: string;
     private _instance: T | undefined;
     private _endpoints: Map<string, MiddlewareFn>;
@@ -170,9 +170,9 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         }
     }
 
-    protected getRouteMiddleware(ctx: TransportContext, meta: DecorDefine): Middleware[] {
-        if (this.metadata.middlewares?.length || (meta.metadata as RouteMappingMetadata).middlewares?.length) {
-            return [...this.metadata.middlewares || EMPTY, ...(meta.metadata as RouteMappingMetadata).middlewares || EMPTY]
+    protected getRouteMiddleware(ctx: TransportContext, meta: DecorDefine<ProtocolRouteMappingMetadata>): Middleware[] {
+        if (this.metadata.middlewares?.length || meta.metadata.middlewares?.length) {
+            return [...this.metadata.middlewares || EMPTY, ...meta.metadata.middlewares || EMPTY]
         }
         return EMPTY
     }
@@ -182,7 +182,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         if (!this.sortRoutes) {
             this.sortRoutes = this.reflect.class.methodDecors
                 .filter(m => m && isString((m.metadata as RouteMappingMetadata).route))
-                .sort((ra, rb) => ((rb.metadata as RouteMappingMetadata).route || '').length - ((ra.metadata as RouteMappingMetadata).route || '').length)
+                .sort((ra, rb) => ((rb.metadata as RouteMappingMetadata).route || '').length - ((ra.metadata as RouteMappingMetadata).route || '').length) as DecorDefine<ProtocolRouteMappingMetadata>[]
 
         }
 

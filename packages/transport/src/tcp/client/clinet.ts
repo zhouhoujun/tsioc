@@ -149,7 +149,6 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                     }
                 }
             });
-
         });
     }
 

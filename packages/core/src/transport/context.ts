@@ -83,7 +83,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
         return (this.request as any).body
     }
     /**
-     * The outgoing HTTP request method.
+     * The outgoing request method.
      */
     abstract get method(): string;
 

@@ -1,4 +1,4 @@
-import { Middleware, TransportContext, TransportError } from '@tsdi/core';
+import { Middleware, mths, TransportContext, TransportError } from '@tsdi/core';
 import { Abstract, Injectable } from '@tsdi/ioc';
 import { ContentSendAdapter, SendOption } from './send';
 
@@ -35,7 +35,7 @@ export class ContentMiddleware implements Middleware {
             await next()
         }
         let file = '';
-        if (ctx.method === 'HEAD' || ctx.method === 'GET') {
+        if (ctx.method === mths.HEAD || ctx.method === mths.GET) {
             try {
                 const sender = ctx.injector.get(ContentSendAdapter);
                 file = await sender.send(ctx, this.options)

@@ -1,5 +1,5 @@
 import { Inject, Injectable, InvocationContext, lang, Nullable, Providers, Token } from '@tsdi/ioc';
-import { RequestMethod, TransportClient, EndpointBackend, OnDispose, InterceptorInst, RequstOption, ResponseAs, RequestContext } from '@tsdi/core';
+import { RequestMethod, TransportClient, EndpointBackend, OnDispose, InterceptorInst, RequstOption, ResponseAs, RequestContext, mths } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpHeaders, HttpParams, HttpParamsOptions, HttpResponse } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import * as http from 'http';
@@ -129,7 +129,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
             }
 
             // Construct the request.
-            return new HttpRequest(options.method ?? 'GET', url!, (options.body !== undefined ? options.body : null), {
+            return new HttpRequest(options.method ?? mths.GET, url!, (options.body !== undefined ? options.body : null), {
                 ...options,
                 headers,
                 params,
@@ -448,7 +448,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         body?: any | null,
     } = {}): Observable<any> {
-        return this.send<any>(url, merge(options, 'DELETE'));
+        return this.send<any>(url, merge(options, mths.DELETE));
     }
 
 
@@ -743,7 +743,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         reportProgress?: boolean,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
     } = {}): Observable<any> {
-        return this.send<any>(url, merge(options, 'GET'))
+        return this.send<any>(url, merge(options, mths.GET))
     }
 
 
@@ -1051,7 +1051,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
 
     } = {}): Observable<any> {
-        return this.send<any>(url, merge(options, 'HEAD'))
+        return this.send<any>(url, merge(options, mths.HEAD))
     }
 
     /**
@@ -1098,7 +1098,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      */
     jsonp<T>(url: string, callbackParam: string): Observable<T> {
         return this.send<any>(url, {
-            method: 'JSONP',
+            method: mths.JSONP,
             params: new HttpParams().append(callbackParam, 'JSONP_CALLBACK'),
             observe: 'body',
             responseType: 'json',
@@ -1739,7 +1739,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
 
     } = {}): Observable<any> {
-        return this.send<any>(url, merge(options, 'PATCH', body))
+        return this.send<any>(url, merge(options, mths.PATCH, body))
     }
 
     /**
@@ -2058,7 +2058,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         reportProgress?: boolean,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
     } & HttpNodeOptions = {}): Observable<any> {
-        return this.send<any>(url, merge(options, 'POST', body))
+        return this.send<any>(url, merge(options, mths.POST, body))
     }
 
     /**
@@ -2372,7 +2372,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         reportProgress?: boolean,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
     } & HttpNodeOptions = {}): Observable<any> {
-        return this.send<any>(url, merge(options, 'PUT', body))
+        return this.send<any>(url, merge(options, mths.PUT, body))
     }
 
     async close(): Promise<void> {

@@ -1,6 +1,6 @@
 import {
-    Abstract, Destroyable, DestroyCallback, Injector, InvokeArguments, InvokeOption,
-    OnDestroy, tokenId, Type, TypeReflect
+    Abstract, Destroyable, DestroyCallback, Injector, InvokeArguments,
+    InvokeOption, OnDestroy, tokenId, Type, TypeReflect
 } from '@tsdi/ioc';
 import { TransportContext } from '../transport/context';
 import { Middleware, MiddlewareFn } from '../transport/endpoint';

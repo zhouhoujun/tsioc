@@ -6,7 +6,6 @@ export class TcpServRequest extends RequestBase {
     public readonly url: string;
     public readonly method: string;
     public readonly params: Record<string, any>;
-    public readonly responseType: 'arraybuffer' | 'blob' | 'json' | 'text';
 
     body: any;
 
@@ -16,14 +15,12 @@ export class TcpServRequest extends RequestBase {
         url?: string;
         params?: Record<string, any>;
         method?: string;
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text';
         update?: boolean;
     } = EMPTY_OBJ) {
         super();
         this.url = option.url ?? '';
-        this.method = option.method ?? 'EES';
+        this.method = option.method ?? '';
         this.params = option.params ?? {};
-        this.responseType = option.responseType ?? 'json';
         this._update = option.update === true;
     }
 

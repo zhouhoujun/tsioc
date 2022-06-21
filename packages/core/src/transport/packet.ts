@@ -4,8 +4,30 @@ import { Abstract } from '@tsdi/ioc';
 /**
  * request method.
  */
-export type RequestMethod = 'HEAD' | 'OPTIONS' | 'GET' | 'DELETE' | 'PATCH' | 'POST' | 'PUT' | 'JSONP' //http
-    | 'EVENT' | 'MESSAGE' | 'NO_STREAM' | 'RX_STREAM' | 'PT_STREAM'  | 'METHOD'; // event
+export type RequestMethod = 'HEAD' | 'OPTIONS' | 'GET' | 'DELETE' | 'PATCH' | 'POST' | 'PUT' | 'JSONP' | 'TRACE' //http
+    | 'EVENT' | 'MESSAGE' | 'NO_STREAM' | 'RX_STREAM' | 'PT_STREAM' | 'METHOD'; // event
+
+/**
+ * request method
+ */
+export namespace mths {
+    export const HEAD = 'HEAD';
+    export const OPTIONS = 'OPTIONS';
+    export const GET = 'GET';
+    export const DELETE = 'DELETE';
+    export const PATCH = 'PATCH';
+    export const POST = 'POST';
+    export const PUT = 'PUT';
+    export const TRACE = 'TRACE';
+    export const JSONP = 'JSONP';
+    export const EVENT = 'EVENT';
+    export const MESSAGE = 'MESSAGE';
+    export const NO_STREAM = 'NO_STREAM';
+    export const RX_STREAM = 'RX_STREAM';
+    export const PT_STREAM = 'PT_STREAM';
+    export const METHOD = 'METHOD';
+}
+
 
 /**
  * mqtt protocol.

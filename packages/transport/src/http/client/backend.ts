@@ -1,5 +1,5 @@
 import { EMPTY_OBJ, isDefined, isUndefined, lang, type_undef } from '@tsdi/ioc';
-import { EndpointBackend, EndpointContext, TransportClient } from '@tsdi/core';
+import { EndpointBackend, EndpointContext, mths, TransportClient } from '@tsdi/core';
 import {
     global, isBlob, isFormData, HttpRequest, HttpEvent, HttpHeaders, HttpResponse, HttpErrorResponse,
     HttpHeaderResponse, HttpStatusCode, statusMessage, isArrayBuffer, HttpJsonParseError, HttpRequestMethod
@@ -188,8 +188,8 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                             }
 
                             // HTTP-redirect fetch step 11
-                            if (status === 303 || ((status === 301 || status === 302) && request.method === 'POST')) {
-                                method = 'GET';
+                            if (status === 303 || ((status === 301 || status === 302) && request.method === mths.POST)) {
+                                method = mths.GET;
                                 body = undefined;
                                 reqheaders = reqheaders.delete('content-length');
                             }
@@ -257,7 +257,7 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 // 4. no content response (204)
                 // 5. content not modified response (304)
 
-                if (rqstatus.compress && request.method !== 'HEAD' && codings) {
+                if (rqstatus.compress && request.method !== mths.HEAD && codings) {
                     // For Node v6+
                     // Be less strict when decoding compressed responses, since sometimes
                     // servers send slightly invalid responses that are still accepted
@@ -604,8 +604,8 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                                 }
 
                                 // HTTP-redirect fetch step 11
-                                if (status === 303 || ((status === 301 || status === 302) && req.method === 'POST')) {
-                                    method = 'GET';
+                                if (status === 303 || ((status === 301 || status === 302) && req.method === mths.POST)) {
+                                    method = mths.GET;
                                     body = undefined;
                                     reqheaders = reqheaders.delete('content-length');
                                 }
@@ -635,7 +635,7 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                                 break;
                         }
                     } else {
-                        if (rqstatus.compress && req.method !== 'HEAD' && codings) {
+                        if (rqstatus.compress && req.method !== mths.HEAD && codings) {
                             // For Node v6+
                             // Be less strict when decoding compressed responses, since sometimes
                             // servers send slightly invalid responses that are still accepted

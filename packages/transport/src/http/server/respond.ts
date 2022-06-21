@@ -1,4 +1,4 @@
-import { Endpoint, Interceptor, RespondTypeAdapter, TransportError } from '@tsdi/core';
+import { Endpoint, Interceptor, mths, RespondTypeAdapter, TransportError } from '@tsdi/core';
 import { Injectable, isString, lang } from '@tsdi/ioc';
 import { Observable, mergeMap } from 'rxjs';
 import { Readable } from 'stream';
@@ -33,7 +33,7 @@ export class ResponsedInterceptor implements Interceptor<HttpServRequest, HttpSe
             return res.end()
         }
 
-        if ('HEAD' === ctx.method) {
+        if (mths.HEAD === ctx.method) {
             if (!res.headersSent && !res.hasHeader(hdr.CONTENT_LENGTH)) {
                 const length = ctx.length;
                 if (Number.isInteger(length)) ctx.length = length

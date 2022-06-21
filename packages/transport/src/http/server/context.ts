@@ -1,4 +1,4 @@
-import { HeaderContext, MiddlewareInst, Protocol, ServerContext, TransportContext, TransportServer } from '@tsdi/core';
+import { HeaderContext, MiddlewareInst, mths, Protocol, ServerContext, TransportContext, TransportServer } from '@tsdi/core';
 import { Injector, InvokeArguments, isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import * as assert from 'assert';
@@ -304,7 +304,7 @@ export class HttpContext extends ServerContext<HttpServRequest, HttpServResponse
     }
 
     isUpdate(): boolean {
-        return this.method === 'PUT'
+        return this.method === mths.PUT
     }
 
     get params(): URLSearchParams {
@@ -510,7 +510,7 @@ export class HttpContext extends ServerContext<HttpServRequest, HttpServResponse
         const s = this.status;
 
         // GET or HEAD for weak freshness validation only
-        if ('GET' !== method && 'HEAD' !== method) return false;
+        if (mths.GET !== method && mths.HEAD !== method) return false;
 
         // 2xx or 304 as per rfc2616 14.26
         if ((s >= 200 && s < 300) || 304 === s) {
@@ -1091,7 +1091,7 @@ const httptl = /^https?:\/\//i;
 const urlsplit = /\s*,\s*/;
 const xmlpat = /^\s*</;
 const no_cache = /(?:^|,)\s*?no-cache\s*?(?:,|$)/;
-const methods = ['GET', 'HEAD', 'PUT', 'DELETE', 'OPTIONS', 'TRACE'];
+const methods = [mths.GET, mths.HEAD, mths.PUT, mths.DELETE, mths.OPTIONS, mths.TRACE];
 
 
 function parseStamp(date?: string | number): number {

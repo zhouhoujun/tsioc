@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import { URL } from 'url';
 import { spawn } from 'child_process';
 import { EMPTY_OBJ, isFunction } from '@tsdi/ioc';
+import { mths } from '@tsdi/core';
 
 /**
  * refactor XMLHttpRequest.js
@@ -350,7 +351,7 @@ export class XMLHttpRequest2 {
                         hostname: url.hostname,
                         port: url.port,
                         path: url.pathname,
-                        method: this._response.statusCode === 303 ? 'GET' : this.settings.method,
+                        method: this._response.statusCode === 303 ? mths.GET : this.settings.method,
                         headers: this.headers
                     };
 
