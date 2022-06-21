@@ -1,7 +1,7 @@
 import { Endpoint, EndpointContext, Interceptor } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import { Observable, map } from 'rxjs';
-import { Transformer } from '../transformer';
+import { Encoder } from '../transformer';
 
 @Injectable()
 export class EncodeInterceptor<TRequest = any, TResponse = any> implements Interceptor<TRequest, TResponse> {
@@ -9,7 +9,7 @@ export class EncodeInterceptor<TRequest = any, TResponse = any> implements Inter
     intercept(req: TRequest, next: Endpoint<TRequest, TResponse>, context: EndpointContext): Observable<TResponse> {
         return next.handle(req, context)
             .pipe(
-                map(res=> context.get(Transformer).encode(res))
+                map(res => context.get(Encoder).encode(res))
             );
     }
 

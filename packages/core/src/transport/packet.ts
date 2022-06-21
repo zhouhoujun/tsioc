@@ -55,12 +55,40 @@ export type HttpProtocol = 'http' | 'https';
  */
 export type Protocol = 'tcp' | 'udp' | 'grpc' | 'rmq' | 'kafka' | 'redis' | 'amqp' | 'ssl' | 'msg' | HttpProtocol | MqttProtocol;
 
+/**
+ * packet.
+ */
+export interface Packet<T = any> {
+    /**
+     * packet id.
+     */
+    readonly id?: string;
+    /**
+     * The request body, or `null` if one isn't set.
+     *
+     * Bodies are not enforced to be immutable, as they can include a reference to any
+     * user-defined data type. However, middlewares should take care to preserve
+     * idempotence by treating them as such.
+     */
+    get body(): T | null;
+}
+
+/**
+ * package clonable.
+ */
+export interface PacketClonable<T = any> {
+    /**
+     * clone packet.
+     * @param data 
+     */
+    clone?(data: { body?: T }): this;
+}
 
 /**
  * request package.
  */
 @Abstract()
-export abstract class RequestBase<T = any> {
+export abstract class RequestBase<T = any> implements Packet<T> {
     /**
      * packet id.
      */
@@ -165,7 +193,7 @@ export interface RequestHeader<T = any> {
  * response base.
  */
 @Abstract()
-export abstract class ResponseBase<T = any> {
+export abstract class ResponseBase<T = any> implements Packet<T> {
     /**
      * Get response status code.
      */
