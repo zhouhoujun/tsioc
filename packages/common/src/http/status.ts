@@ -143,33 +143,3 @@ export const statusMessage = {
   510: "Not Extended",
   511: "Network Authentication Required"
 }
-
-export type HttpRequestMethod =
-  /**
-   * Get method.
-   */
-  'GET' |
-  /**
-   * Post method.
-   */
-  'POST' |
-  /**
-   * Put method.
-   */
-  'PUT' |
-  /**
-   * Delete method.
-   */
-  'DELETE' |
-  /**
-   * Options method.
-   */
-  'OPTIONS' |
-  /**
-   * Head method.
-   */
-  'HEAD' |
-  /**
-   * Patch method.
-   */
-  'PATCH'

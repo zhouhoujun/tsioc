@@ -2,15 +2,24 @@ import { Abstract } from '@tsdi/ioc';
 
 
 /**
+ * http request method.
+ */
+export type HttpRequestMethod = 'HEAD' | 'OPTIONS' | 'GET' | 'DELETE' | 'PATCH' | 'POST' | 'PUT' | 'JSONP' | 'TRACE';
+/**
+ * grpc request method.
+ */
+export type GrpcRequestMethod = 'NO_STREAM' | 'RX_STREAM' | 'PT_STREAM' | 'METHOD';
+
+/**
  * request method.
  */
-export type RequestMethod = 'HEAD' | 'OPTIONS' | 'GET' | 'DELETE' | 'PATCH' | 'POST' | 'PUT' | 'JSONP' | 'TRACE' //http
-    | 'EVENT' | 'MESSAGE' | 'NO_STREAM' | 'RX_STREAM' | 'PT_STREAM' | 'METHOD'; // event
+export type RequestMethod = HttpRequestMethod | GrpcRequestMethod | 'EVENT' | 'MESSAGE';// event
 
 /**
  * request method
  */
 export namespace mths {
+    //http
     export const HEAD = 'HEAD';
     export const OPTIONS = 'OPTIONS';
     export const GET = 'GET';
@@ -20,8 +29,12 @@ export namespace mths {
     export const PUT = 'PUT';
     export const TRACE = 'TRACE';
     export const JSONP = 'JSONP';
+
+    //message
     export const EVENT = 'EVENT';
     export const MESSAGE = 'MESSAGE';
+
+    //grpc
     export const NO_STREAM = 'NO_STREAM';
     export const RX_STREAM = 'RX_STREAM';
     export const PT_STREAM = 'PT_STREAM';
