@@ -27,7 +27,6 @@ export abstract class ModuleRef<T = any> extends Injector implements ModRef<T>, 
     abstract get moduleReflect(): ModuleReflect<T>;
     /**
      * shudown handlers.
-     *
      * @readonly
      * @abstract
      * @type {LifecycleHooks}

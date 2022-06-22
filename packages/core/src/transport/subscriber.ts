@@ -32,6 +32,9 @@ export abstract class Subscriber<TRequest = any, TResponse = any> {
         }
     }
 
+    /**
+     * get mutil token of interceptors.
+     */
     protected abstract getInterceptorsToken(): Token<InterceptorInst<TRequest, TResponse>[]>;
 
     /**

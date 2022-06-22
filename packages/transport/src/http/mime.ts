@@ -15,7 +15,6 @@ export class HttpMimeAdapter extends MimeAdapter {
             return false
         }
 
-        // TODO: use media-typer
         const match = EXTRACT_REGEXP.exec(type);
         const mime = match && this.db.get(match[1].toLowerCase());
 

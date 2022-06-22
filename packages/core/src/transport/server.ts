@@ -144,9 +144,13 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
             injector.inject(filters);
         }
     }
-
+    /**
+     * get mutil token of interceptors.
+     */
     protected abstract getInterceptorsToken(): Token<InterceptorInst<TRequest, TResponse>[]>;
-
+    /**
+     * get mutil token of middlewares.
+     */
     protected abstract getMiddlewaresToken(): Token<MiddlewareInst<Tx>[]>;
 
     /**
@@ -158,7 +162,11 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
      */
     protected abstract createContext(request: TRequest, response: TResponse): Tx;
 
-
+    /**
+     * request handler.
+     * @param request 
+     * @param response 
+     */
     protected requestHandler(request: TRequest, response: TResponse) {
         const ctx = this.createContext(request, response) as Tx;
         const cancel = this.chain().handle(request, ctx)

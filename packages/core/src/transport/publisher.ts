@@ -149,8 +149,13 @@ export abstract class Publisher<TRequest = any, TResponse = any, Tx extends Tran
         }
     }
 
+    /**
+     * get mutil token of interceptors.
+     */
     protected abstract getInterceptorsToken(): Token<InterceptorInst<TRequest, TResponse>[]>;
-
+    /**
+     * get mutil token of middlewares.
+     */
     protected abstract getMiddlewaresToken(): Token<MiddlewareInst<Tx>[]>;
 
     /**
@@ -162,7 +167,11 @@ export abstract class Publisher<TRequest = any, TResponse = any, Tx extends Tran
      */
     protected abstract createContext(request: TRequest, response: TResponse): Tx;
 
-
+    /**
+     * request handler.
+     * @param request 
+     * @param response 
+     */
     protected requestHandler(request: TRequest, response: TResponse) {
         const ctx = this.createContext(request, response) as Tx;
         const cancel = this.chain().handle(request, ctx)
@@ -177,7 +186,6 @@ export abstract class Publisher<TRequest = any, TResponse = any, Tx extends Tran
 
     protected abstract bindEvent(ctx: Tx, cancel: Subscription): void;
 
-
     /**
      * close server.
      */
@@ -188,6 +196,5 @@ export abstract class Publisher<TRequest = any, TResponse = any, Tx extends Tran
     async onDispose(): Promise<void> {
         await this.close()
     }
-
 
 }

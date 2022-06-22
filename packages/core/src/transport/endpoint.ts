@@ -15,6 +15,9 @@ export interface Endpoint<TRequest, TResponse> {
     handle(req: TRequest, context: EndpointContext): Observable<TResponse>;
 }
 
+/**
+ * Endpoint funcation.
+ */
 export type EndpointFn<TRequest, TResponse> = (req: TRequest, context: EndpointContext) => Observable<TResponse>;
 
 

@@ -39,6 +39,9 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
         }
     }
 
+    /**
+     * get mutil token of interceptors.
+     */
     protected abstract getInterceptorsToken(): Token<InterceptorInst<TRequest, TResponse>[]>;
 
     /**
