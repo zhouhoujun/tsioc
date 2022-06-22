@@ -30,11 +30,9 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
     private _middles?: MiddlewareInst<Tx>[];
     private _interceptors?: InterceptorInst<TRequest, TResponse>[];
 
-
-    /**
-     * server context.
-     */
-    abstract get context(): InvocationContext;
+    constructor(readonly context: InvocationContext, options?: ServerOptions<TRequest, TResponse>) {
+        this.initialize(this.initOption(options));
+    }
 
     /**
      * server middlewares.
@@ -105,6 +103,14 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
         return this._chain
     }
 
+    /**
+     * init options.
+     * @param options 
+     * @returns 
+     */
+    protected initOption(options?: ServerOptions<TRequest, TResponse>): ServerOptions<TRequest, TResponse> {
+        return options ?? {};
+    }
 
     /**
      * initialize middlewares, interceptors, execptions with options.

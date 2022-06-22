@@ -96,14 +96,15 @@ export class UdpServer extends TransportServer<UdpServRequest, UdpServResponse, 
 
     private server?: Socket;
     private cancel?: Subscription;
-    private options: UdpServerOptions;
-    constructor(
-        @Inject() readonly context: InvocationContext,
-        @Nullable() options: UdpServerOptions) {
-        super()
-        this.options = { ...defOpts, ...options };
-        this.initialize(this.options);
+    private options!: UdpServerOptions;
 
+    constructor(@Inject() context: InvocationContext, @Nullable() options: UdpServerOptions) {
+        super(context, options)
+    }
+
+    protected override initOption(options: UdpServerOptions): UdpServerOptions {
+        this.options = { ...defOpts, ...options };
+        return this.options;
     }
 
     getExecptionsToken(): Token<ExecptionFilter[]> {

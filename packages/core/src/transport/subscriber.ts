@@ -12,6 +12,17 @@ export abstract class Subscriber<TRequest = any, TResponse = any> {
     private _chain?: Endpoint<TRequest, TResponse>;
     private _interceptors?: InterceptorInst<TRequest, TResponse>[];
 
+    constructor(readonly context: InvocationContext, options?: SubscriberOptions<TRequest, TResponse>) {
+        this.initialize(this.initOption(options));
+    }
+
+    /**
+     * initialize interceptors with options.
+     * @param options 
+     */
+    protected initOption(options?: SubscriberOptions<TRequest, TResponse>): SubscriberOptions<TRequest, TResponse> {
+        return options ?? {};
+    }
 
     /**
      * initialize interceptors with options.
@@ -36,11 +47,6 @@ export abstract class Subscriber<TRequest = any, TResponse = any> {
      * get mutil token of interceptors.
      */
     protected abstract getInterceptorsToken(): Token<InterceptorInst<TRequest, TResponse>[]>;
-
-    /**
-     * client context.
-     */
-    abstract get context(): InvocationContext;
 
     /**
      * client interceptors.

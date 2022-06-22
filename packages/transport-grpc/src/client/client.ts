@@ -19,9 +19,9 @@ export const GRPC_CLIENT_OPTIONS = tokenId<GrpcClientOptions>('GRPC_CLIENT_OPTIO
 export class GrpcClient extends TransportClient<HttpRequest, HttpResponse> {
 
     constructor(
-        readonly context: InvocationContext,
+        @Inject() context: InvocationContext,
         @Inject(GRPC_CLIENT_OPTIONS) private options: GrpcClientOptions) {
-        super()
+        super(context, options)
     }
 
     protected getInterceptorsToken(): Token<InterceptorInst<HttpRequest<any>, HttpResponse<any>>[]> {

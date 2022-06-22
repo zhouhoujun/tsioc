@@ -12,7 +12,7 @@ import { Endpoint, EndpointBackend, InterceptorChain, InterceptorInst, Intercept
 /**
  * server options.
  */
-export interface PublisherOptions<TRequest, TResponse> {
+export abstract class PublisherOptions<TRequest, TResponse> {
     interceptors?: InterceptorType<TRequest, TResponse>[];
     execptions?: Type<ExecptionFilter>[];
     middlewares?: MiddlewareType[];
@@ -30,15 +30,15 @@ export abstract class Publisher<TRequest = any, TResponse = any, Tx extends Tran
     private _middles?: MiddlewareInst<Tx>[];
     private _interceptors?: InterceptorInst<TRequest, TResponse>[];
 
+    constructor(readonly context: InvocationContext, options?: PublisherOptions<TRequest, TResponse>) {
+        this.initialize(this.initOption(options));
+    }
+
 
     /**
      * channel of publisher
      */
     abstract get channel(): Channel;
-    /**
-     * server context.
-     */
-    abstract get context(): InvocationContext;
 
     /**
      * server middlewares.
@@ -109,6 +109,14 @@ export abstract class Publisher<TRequest = any, TResponse = any, Tx extends Tran
         return this._chain
     }
 
+    /**
+     * init options.
+     * @param options 
+     * @returns 
+     */
+    protected initOption(options?: PublisherOptions<TRequest, TResponse>): PublisherOptions<TRequest, TResponse> {
+        return options ?? {};
+    }
 
     /**
      * initialize middlewares, interceptors, execptions with options.

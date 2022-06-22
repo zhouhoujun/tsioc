@@ -19,12 +19,23 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
     private _chain?: Endpoint<TRequest, TResponse>;
     private _interceptors?: InterceptorInst<TRequest, TResponse>[];
 
+    constructor(readonly context: InvocationContext, options?: ClientOptions<TRequest, TResponse>) {
+        this.initialize(this.initOption(options));
+    }
 
     /**
      * initialize interceptors with options.
      * @param options 
      */
-    protected initialize(options: ClientOptions<TRequest, TResponse>) {
+    protected initOption(options?: ClientOptions<TRequest, TResponse>): ClientOptions<TRequest, TResponse> {
+        return options ?? {};
+    }
+
+    /**
+     * initialize interceptors with options.
+     * @param options 
+     */
+    protected initialize(options: ClientOptions<TRequest, TResponse>): void {
 
         if (options.interceptors && options.interceptors.length) {
             const iToken = this.getInterceptorsToken();
@@ -43,11 +54,6 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
      * get mutil token of interceptors.
      */
     protected abstract getInterceptorsToken(): Token<InterceptorInst<TRequest, TResponse>[]>;
-
-    /**
-     * client context.
-     */
-    abstract get context(): InvocationContext;
 
     /**
      * client interceptors.

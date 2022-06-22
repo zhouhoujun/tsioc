@@ -77,14 +77,18 @@ export const TCP_SERV_INTERCEPTORS = tokenId<Interceptor<TcpServRequest, TcpServ
 export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, TcpContext> {
 
     private server?: Server;
-    private options: TcpServerOptions;
+    private options!: TcpServerOptions;
     constructor(
         @Inject() readonly context: InvocationContext,
         @Nullable() options: TcpServerOptions) {
-        super()
-        this.options = { ...defOpts, ...options };
+        super(context, options)
         this.initialize(this.options);
 
+    }
+
+    protected override initOption(options: TcpServerOptions): TcpServerOptions {
+        this.options = { ...defOpts, ...options };
+        return this.options;
     }
 
     getExecptionsToken(): Token<ExecptionFilter[]> {

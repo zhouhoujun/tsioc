@@ -45,20 +45,23 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
 
     private _backend?: EndpointBackend<HttpRequest, HttpEvent>;
     private _client?: http2.ClientHttp2Session;
-    private option: HttpClientOptions;
+    private option!: HttpClientOptions;
     constructor(
-        @Inject() readonly context: InvocationContext,
+        @Inject() context: InvocationContext,
         @Nullable() option: HttpClientOptions) {
-        super()
+        super(context, option)
 
-        this.option = { ...defOpts, ...option } as HttpClientOptions;
-        this.context.injector.setValue(HttpClientOptions, this.option);
-        this.option.interceptors?.push(NormlizePathInterceptor, NormlizeBodyInterceptor);
-        this.initialize(this.option);
     }
 
     get client() {
         return this._client;
+    }
+
+    protected override initOption(options?: HttpClientOptions): HttpClientOptions {
+        this.option = { ...defOpts, ...options } as HttpClientOptions;
+        this.context.injector.setValue(HttpClientOptions, this.option);
+        this.option.interceptors?.push(NormlizePathInterceptor, NormlizeBodyInterceptor);
+        return this.option;
     }
 
     protected getInterceptorsToken(): Token<InterceptorInst<HttpRequest<any>, HttpEvent<any>>[]> {

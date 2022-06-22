@@ -138,12 +138,10 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
     private options!: HttpServerOptions;
 
     constructor(
-        @Inject() readonly context: InvocationContext,
+        @Inject() context: InvocationContext,
         @Inject(HTTP_SERVEROPTIONS, { nullable: true }) options: HttpServerOptions
     ) {
-        super()
-        this.initOption(options);
-        this.initialize(this.options);
+        super(context, options)
     }
 
     get server() {
@@ -166,7 +164,7 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         return HTTP_EXECPTION_FILTERS;
     }
 
-    protected initOption(options: HttpServerOptions) {
+    protected override initOption(options: HttpServerOptions): HttpServerOptions {
         if (options?.options) {
             options.options = { ...httpOpts.options, ...options.options }
         }
@@ -194,6 +192,8 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
             const mimedb = this.context.injector.get(MimeDb);
             mimedb.from(opts.mimeDb)
         }
+
+        return opts;
     }
 
     protected override getInterceptorsToken(): Token<InterceptorInst<HttpServRequest, HttpServResponse>[]> {

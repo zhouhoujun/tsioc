@@ -227,7 +227,7 @@ export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
         const reflect = ctx.reflect;
         const meta = ctx.metadata as ParameterMetadata;
         const propertyKey = ctx.propertyKey;
-        let params = reflect.class.getParameters(propertyKey);
+        let params = reflect.class.hasParameters(propertyKey)? reflect.class.getParameters(propertyKey) : null;
         if (!params) {
             const names = reflect.class.getParamNames(propertyKey);
             let paramTypes: any[];

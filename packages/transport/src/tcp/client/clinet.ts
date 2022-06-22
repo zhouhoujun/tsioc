@@ -54,12 +54,11 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
     private connected: boolean;
     private source!: Observable<string>;
     constructor(
-        @Inject() readonly context: InvocationContext,
+        @Inject() context: InvocationContext,
         @Nullable() private option: TcpClientOption = defaults
     ) {
-        super();
+        super(context, option);
         this.connected = false;
-        this.initialize(option);
     }
 
     protected getInterceptorsToken(): Token<InterceptorInst<TcpRequest<any>, TcpEvent<any>>[]> {

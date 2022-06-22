@@ -1,26 +1,27 @@
-import { Channel, Endpoint, EndpointBackend, ExecptionFilter, InterceptorInst, MiddlewareInst, Publisher, RequestBase, ResponseBase, TransportContext } from '@tsdi/core';
-import { Injectable, InvocationContext, Token } from '@tsdi/ioc';
+import { Channel, EndpointBackend, ExecptionFilter, InterceptorInst, MiddlewareInst, Publisher, PublisherOptions, RequestBase, ResponseBase, TransportContext } from '@tsdi/core';
+import { Abstract, Inject, Injectable, InvocationContext, Token } from '@tsdi/ioc';
 import * as amqp from 'amqplib';
 import { Subscription } from 'rxjs';
 
 export type amqpURL = string | amqp.Options.Connect;
 
-export interface AmqpOptions {
-    url: amqpURL;
+@Abstract()
+export abstract class AmqpOptions extends PublisherOptions<any, any> {
+    abstract url: amqpURL;
     queue?: string;
-    queueOptions?: amqp.Options.AssertQueue
+    queueOptions?: amqp.Options.AssertQueue;
 }
 
 const defaultQueue = 'default';
 
 @Injectable()
 export class AmqpPublisher extends Publisher<RequestBase, ResponseBase> {
-    
+
     private connection?: amqp.Connection;
     private _channel?: amqp.Channel;
     private queue: string;
-    constructor(private options: AmqpOptions) {
-        super();
+    constructor(@Inject() context: InvocationContext, private options: AmqpOptions) {
+        super(context, options);
         this.queue = this.options.queue ?? defaultQueue;
     }
 
@@ -40,14 +41,10 @@ export class AmqpPublisher extends Publisher<RequestBase, ResponseBase> {
         await this.connection?.close();
     }
 
-    get context(): InvocationContext<any> {
-        throw new Error('Method not implemented.');
-    }
-
     getExecptionsToken(): Token<ExecptionFilter[]> {
         throw new Error('Method not implemented.');
     }
-    
+
     protected getInterceptorsToken(): Token<InterceptorInst<RequestBase<any>, ResponseBase<any>>[]> {
         throw new Error('Method not implemented.');
     }

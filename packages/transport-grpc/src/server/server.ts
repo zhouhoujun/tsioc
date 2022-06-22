@@ -7,9 +7,6 @@ import { Subscription } from 'rxjs';
 @Injectable()
 export class GrpcServer extends TransportServer<Http2ServerRequest, Http2ServerResponse>  {
 
-    get context(): InvocationContext<any> {
-        throw new Error('Method not implemented.');
-    }
     getExecptionsToken(): Token<ExecptionFilter[]> {
         throw new Error('Method not implemented.');
     }
