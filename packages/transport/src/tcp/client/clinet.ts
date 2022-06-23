@@ -1,5 +1,6 @@
 import {
     CustomEndpoint, EndpointBackend, Interceptor, InterceptorInst, InterceptorType, OnDispose,
+    Packet,
     RequestContext, ResponseJsonParseError, TransportClient, TransportError, UuidGenerator
 } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId, type_undef } from '@tsdi/ioc';
@@ -8,7 +9,9 @@ import { DecodeInterceptor, EncodeInterceptor } from '../../interceptors';
 import { TcpRequest } from './request';
 import { TcpErrorResponse, TcpEvent, TcpResponse } from './response';
 import { ev, hdr } from '../../consts';
-import { defer, filter, mergeMap, Observable, Observer, of, throwError } from 'rxjs';
+import { defer, map, filter, mergeMap, Observable, Observer, of, throwError } from 'rxjs';
+import { Deserializer } from '../../deserializer';
+import { Serializer } from '../../serializer';
 
 
 @Abstract()
@@ -52,7 +55,7 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
 
     private socket?: Socket;
     private connected: boolean;
-    private source!: Observable<string>;
+    private source!: Observable<Packet>;
     constructor(
         @Inject() context: InvocationContext,
         @Nullable() private option: TcpClientOption = defaults
@@ -78,11 +81,13 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                 const sub = defer(() => {
                     // socket.emit(ev.DATA, req);
                     const defer = lang.defer<void>();
-                    socket.write(req.serialize(), this.option.encoding, (err) => {
+                    socket.write(ctx.get(Serializer).serialize(req), this.option.encoding, (err) => {
                         err ? defer.reject(err) : defer.resolve();
                     });
                     return defer.promise;
-                }).pipe(mergeMap(() => this.source)).subscribe({
+                }).pipe(
+                    mergeMap(() => this.source.pipe(filter(pk => pk.id === req.id)))
+                ).subscribe({
                     complete: () => observer.complete(),
                     error: (err) => observer.error(new TcpErrorResponse(err?.status ?? 500, err?.text, err ?? body)),
                     next: (source) => {
@@ -216,6 +221,7 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                             }
                         }
                         if (body) {
+                            body = this.context.get(Deserializer).deserialize<Packet>(body);
                             observer.next(body);
                         }
                         if (rest) {

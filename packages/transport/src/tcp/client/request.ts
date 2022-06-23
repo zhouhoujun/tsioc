@@ -25,7 +25,4 @@ export class TcpRequest<T = any> extends RequestBase<T> {
         this.body = option.body ?? null;
     }
 
-    serialize(): Uint8Array | string {
-        throw new Error('Method not implemented.');
-    }
 }

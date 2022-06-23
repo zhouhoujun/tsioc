@@ -13,19 +13,21 @@ export class TcpErrorResponse  {
  * TcpResponse.
  */
 export class TcpResponse<T = any> extends ResponseBase<T> {
-
+    readonly id: string;
     readonly type: number;
     readonly status: number;
     readonly statusMessage: string;
     readonly body: T | null;
 
     constructor(options: {
+        id?: string;
         type?: number;
         status: number;
         statusMessage?: string;
         body?: T;
     }) {
         super();
+        this.id = options.id ?? '';
         this.type = options.type ?? 0;
         this.status = options.status;
         this.statusMessage = options.statusMessage ?? '';
