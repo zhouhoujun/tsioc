@@ -233,7 +233,7 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
      * @return An `Observable` of the `HttpResponse`, with the response body as an `ArrayBuffer`.
      */
     send(url: string, options: TOption & {
-        observe?: 'response';
+        observe: 'response';
         responseType: 'arraybuffer';
     }): Observable<RequestBase<ArrayBuffer>>;
 
@@ -245,8 +245,8 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
      *
      * @return An `Observable` of the `HttpResponse`, with the response body of type `Blob`.
      */
-    send(method: string, url: string, options: TOption & {
-        observe?: 'response';
+    send(url: string, options: TOption & {
+        observe: 'response';
         responseType: 'blob';
     }): Observable<RequestBase<Blob>>;
 
@@ -260,7 +260,7 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
      * @return An `Observable` of the send response, with the response body of type string.
      */
     send(url: string, options: TOption & {
-        observe?: 'response';
+        observe: 'response';
         responseType: 'text';
     }): Observable<RequestBase<string>>;
 
@@ -275,7 +275,7 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
      * with the response body of type `Object`.
      */
     send(url: string, options: TOption & {
-        observe?: 'response';
+        observe: 'response';
         responseType?: 'json';
     }): Observable<RequestBase<object>>;
 
@@ -289,7 +289,7 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
      * @return  An `Observable` of the full `HttpResponse`, with the response body of type `R`.
      */
     send<R>(url: string, options: TOption & {
-        observe?: 'response';
+        observe: 'response';
         responseType?: 'json';
     }): Observable<RequestBase<R>>;
 

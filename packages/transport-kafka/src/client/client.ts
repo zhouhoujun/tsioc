@@ -3,6 +3,7 @@ import { TransportClient, Protocol, ClientOptions, RequestBase } from '@tsdi/cor
 import { Level } from '@tsdi/logs';
 import { BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerGroupJoinEvent, ConsumerRunConfig, ConsumerSubscribeTopic, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, Kafka, KafkaConfig, LogEntry, logLevel, MemberMetadata, PartitionAssigner, Producer, ProducerConfig, ProducerRecord } from 'kafkajs';
 import { DEFAULT_BROKERS } from '../const';
+import { scan } from 'rxjs';
 
 let kafkajs: any;
 let uuid: any;
