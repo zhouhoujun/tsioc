@@ -36,7 +36,6 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
      * @param options 
      */
     protected initialize(options: ClientOptions<TRequest, TResponse>): void {
-
         if (options.interceptors && options.interceptors.length) {
             const iToken = this.getInterceptorsToken();
             const interceptors = options.interceptors.map(m => {

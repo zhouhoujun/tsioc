@@ -14,7 +14,6 @@ export class DefaultRunnableRef<T> extends DefaultReflectiveRef<T> implements Ru
         this.context.setValue(RunnableRef, this);
     }
 
-
     get instance(): T {
         if (!this._instance) {
             this._instance = this.resolve()
@@ -33,7 +32,6 @@ export class DefaultRunnableRef<T> extends DefaultReflectiveRef<T> implements Ru
             return this.invoke(this.defaultInvoke, undefined, this.instance)
         }
     }
-
 
     override destroy(): void | Promise<void> {
         if (this.destroyed) return;
@@ -64,6 +62,7 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
     protected createInstance(reflect: TypeReflect<T>, injector: Injector, options?: InvokeArguments, invokeMethod?: string): RunnableRef<T> {
         return new DefaultRunnableRef(reflect, injector, options, invokeMethod)
     }
+
 }
 
 

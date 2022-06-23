@@ -1,32 +1,26 @@
-import { Inject, Injectable, isUndefined, ModuleLoader } from '@tsdi/ioc';
-import { TransportClient, Protocol } from '@tsdi/core';
+import { Inject, Injectable, InvocationContext, isUndefined, ModuleLoader } from '@tsdi/ioc';
+import { TransportClient, Protocol, ClientOptions, RequestBase } from '@tsdi/core';
 import { Level } from '@tsdi/logs';
-import {
-    BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerGroupJoinEvent, Producer,
-    ConsumerRunConfig, ConsumerSubscribeTopic, EachMessagePayload, Kafka, KafkaConfig, KafkaHeaders,
-    KafkaMessage, KafkaRequest, KafkaRequestSerializer, LogEntry, logLevel, PartitionAssigner,
-    ProducerConfig, ProducerRecord, KafkaResponseDeserializer, InvalidKafkaClientTopicError, GroupMember,
-    GroupMemberAssignment, GroupState, MemberMetadata, KafkaParser, DEFAULT_BROKERS
-} from './kafka.transform';
+import { BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerGroupJoinEvent, ConsumerRunConfig, ConsumerSubscribeTopic, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, Kafka, KafkaConfig, LogEntry, logLevel, MemberMetadata, PartitionAssigner, Producer, ProducerConfig, ProducerRecord } from 'kafkajs';
+import { DEFAULT_BROKERS } from '../const';
 
 let kafkajs: any;
 let uuid: any;
 
+export interface KafkaClientOption extends KafkaConfig, ClientOptions<any, any> {
+    postfixId?: string;
+    client?: KafkaConfig;
+    consumer?: ConsumerConfig;
+    run?: Omit<ConsumerRunConfig, 'eachBatch' | 'eachMessage'>;
+    subscribe?: Omit<ConsumerSubscribeTopic, 'topic'>;
+    producer?: ProducerConfig;
+    send?: Omit<ProducerRecord, 'topic' | 'messages'>;
+    keepBinary?: boolean;
+}
 
-@Injectable({
-    providers: [
-        { provide: Serializer, useClass: KafkaRequestSerializer },
-        { provide: Deserializer, useClass: KafkaResponseDeserializer }
-    ]
-})
+
+@Injectable()
 export class KafkaClient extends TransportClient {
-
-    get protocol(): Protocol {
-        throw new Error('Method not implemented.');
-    }
-    get handler(): TransportHandler<RequestPacket<any>, ResponsePacket<any>> {
-        throw new Error('Method not implemented.');
-    }
 
     protected client: Kafka | undefined;
     protected consumer!: Consumer;
@@ -36,36 +30,29 @@ export class KafkaClient extends TransportClient {
     protected consumerAssignments: { [key: string]: number } = {};
     protected clientId: string;
     protected groupId: string;
-    protected parser: KafkaParser;
-
-    @Inject() protected loader!: ModuleLoader;
 
 
-    constructor(private options: {
-        postfixId?: string;
-        client?: KafkaConfig;
-        consumer?: ConsumerConfig;
-        run?: Omit<ConsumerRunConfig, 'eachBatch' | 'eachMessage'>;
-        subscribe?: Omit<ConsumerSubscribeTopic, 'topic'>;
-        producer?: ProducerConfig;
-        send?: Omit<ProducerRecord, 'topic' | 'messages'>;
-        keepBinary?: boolean;
-    }) {
-        super()
+
+    constructor(context: InvocationContext, private options: KafkaClientOption) {
+        super(context, options);
         this.brokers = options.client?.brokers ?? DEFAULT_BROKERS;
         const postfixId = this.options.postfixId ?? '-client';
         this.clientId = (options.client?.clientId ?? 'boot-consumer') + postfixId;
         this.groupId = (options.consumer?.groupId ?? 'boot-group') + postfixId;
-        this.parser = new KafkaParser(options.keepBinary);
     }
 
-    async connect(): Promise<Producer> {
+    protected override initOption(options: KafkaClientOption): KafkaClientOption {
+        this.options = options;
+        this.brokers = options.client?.brokers ?? DEFAULT_BROKERS;
+        const postfixId = options.postfixId = options.postfixId ?? '-client';
+        this.clientId = (options.client?.clientId ?? 'boot-consumer') + postfixId;
+        this.groupId = (options.consumer?.groupId ?? 'boot-group') + postfixId;
+        return this.options;
+    }
+
+    async connect(): Promise<void> {
         if (this.client) {
-            return this.producer;
-        }
-        if (!kafkajs) {
-            kafkajs = await this.loader.require('kafkajs');
-            uuid = (await this.loader.require('uuid')).v4;
+            return;
         }
 
         const brokers = this.brokers;
@@ -99,7 +86,7 @@ export class KafkaClient extends TransportClient {
                 }
             };
 
-        const client: Kafka = this.client = new kafkajs.Kafka({
+        const client: Kafka = this.client = new Kafka({
             ...this.options.client,
             brokers,
             clientId,
@@ -135,7 +122,6 @@ export class KafkaClient extends TransportClient {
         await this.producer.connect();
         await this.consumer.connect();
         await this.bindTopics();
-        return this.producer;
     }
 
     public async bindTopics(): Promise<void> {

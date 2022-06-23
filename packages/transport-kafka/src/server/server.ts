@@ -1,59 +1,55 @@
-import { Inject, Injectable, isNil, Injector, getClass } from '@tsdi/ioc';
-import { TransportServer } from '@tsdi/core';
+import { Inject, Injectable, isNil, Injector, getClass, InvocationContext } from '@tsdi/ioc';
+import { ServerOptions, TransportServer } from '@tsdi/core';
 import { Level } from '@tsdi/logs';
-import { Observable } from 'rxjs';
+import { BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerGroupJoinEvent, ConsumerRunConfig, ConsumerSubscribeTopic, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, Kafka, KafkaConfig, LogEntry, logLevel, MemberMetadata, PartitionAssigner, Producer, ProducerConfig, ProducerRecord } from 'kafkajs';
+import { DEFAULT_BROKERS } from '../const';
+import { KafkaParser } from '../parser';
 
-import {
-    BrokersFunction, Consumer, ConsumerConfig, ConsumerRunConfig, KafkaParser, DEFAULT_BROKERS,
-    ConsumerSubscribeTopic, EachMessagePayload, Kafka, KafkaConfig, KafkaHeaders, KafkaMessage,
-    KafkaRequestSerializer, KafkaResponseDeserializer, LogEntry, logLevel, Message, Producer,
-    ProducerConfig, ProducerRecord, RecordMetadata
-} from './kafka.transform';
 
-let kafkajs: any;
 
-@Injectable({
-    providers: [
-        { provide: Serializer, useClass: KafkaRequestSerializer },
-        { provide: Deserializer, useClass: KafkaResponseDeserializer }
-    ]
-})
+
+export interface KafkaOptions extends KafkaConfig, ServerOptions<any, any> {
+    postfixId?: string;
+    client?: KafkaConfig;
+    consumer?: ConsumerConfig;
+    run?: Omit<ConsumerRunConfig, 'eachBatch' | 'eachMessage'>;
+    subscribe?: Omit<ConsumerSubscribeTopic, 'topic'>;
+    producer?: ProducerConfig;
+    send?: Omit<ProducerRecord, 'topic' | 'messages'>;
+    keepBinary?: boolean;
+}
+
+
+@Injectable()
 export class KafkaServer extends TransportServer {
 
     protected client: Kafka | undefined;
     protected consumer!: Consumer;
     protected producer!: Producer;
-    protected parser: KafkaParser;
 
     protected brokers: string[] | BrokersFunction;
     protected clientId: string;
     protected groupId: string;
 
-    constructor(
-        router: TransportRouter,
-        private injector: Injector,
-        private options: {
-            postfixId?: string;
-            client?: KafkaConfig;
-            consumer?: ConsumerConfig;
-            run?: Omit<ConsumerRunConfig, 'eachBatch' | 'eachMessage'>;
-            subscribe?: Omit<ConsumerSubscribeTopic, 'topic'>;
-            producer?: ProducerConfig;
-            send?: Omit<ProducerRecord, 'topic' | 'messages'>;
-            keepBinary?: boolean;
-        }) {
-        super(router)
+    constructor(@Inject() context: InvocationContext, private options: KafkaOptions) {
+        super(context, options);
         this.brokers = options.client?.brokers ?? DEFAULT_BROKERS;
         const postfixId = this.options.postfixId ?? '-server';
         this.clientId = (options.client?.clientId ?? 'boot-consumer') + postfixId;
         this.groupId = (options.consumer?.groupId ?? 'boot-group') + postfixId;
-        this.parser = new KafkaParser(options.keepBinary);
     }
 
-    async startup(): Promise<void> {
-        if (!kafkajs) {
-            kafkajs = await this.injector.getLoader().require('kafkajs');
-        }
+    protected override initOption(options: KafkaOptions): KafkaOptions {
+        this.options = options;
+        this.brokers = options.client?.brokers ?? DEFAULT_BROKERS;
+        const postfixId = this.options.postfixId ?? '-server';
+        this.clientId = (options.client?.clientId ?? 'boot-consumer') + postfixId;
+        this.groupId = (options.consumer?.groupId ?? 'boot-group') + postfixId;
+        return this.options;
+    }
+
+
+    async start(): Promise<void> {
 
         const brokers = this.brokers;
         const clientId = this.clientId;
@@ -86,7 +82,7 @@ export class KafkaServer extends TransportServer {
                 }
             };
 
-        const client: Kafka = this.client = new kafkajs.Kafka({
+        const client: Kafka = this.client = new Kafka({
             ...this.options.client,
             brokers,
             clientId,
@@ -103,7 +99,6 @@ export class KafkaServer extends TransportServer {
         await this.consumer.connect();
         await this.producer.connect();
         await this.bindEvents(this.consumer);
-
     }
 
     public async bindEvents(consumer: Consumer) {
@@ -160,7 +155,7 @@ export class KafkaServer extends TransportServer {
         //         err: `There is no matching message handler defined in the remote service.`,
         //     });
         // }
-        
+
         const response = this.router.handle(kafkaContext);
         response && this.send(response, publish);
     }
