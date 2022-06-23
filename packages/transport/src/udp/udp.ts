@@ -13,17 +13,17 @@ import { UdpServer, UdpServerOptions } from './server/server';
         UdpServer
     ]
 })
-export class TcpModule {
+export class UdpModule {
 
     /**
-     * Tcp Server options.
+     * Udp Server options.
      * @param options 
      * @returns 
      */
-    static withOptions(options: UdpServerOptions): ModuleWithProviders<TcpModule> {
+    static withOptions(options: UdpServerOptions): ModuleWithProviders<UdpModule> {
         const providers: ProviderType[] = [{ provide: UdpServerOptions, useValue: options }];
         return {
-            module: TcpModule,
+            module: UdpModule,
             providers
         }
     }
