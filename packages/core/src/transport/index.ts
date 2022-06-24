@@ -2,6 +2,9 @@ export * from './context';
 export * from './packet';
 export * from './endpoint';
 
+export * from './deserializer';
+export * from './serializer';
+
 export * from './resolver';
 export * from './model';
 export * from './error';

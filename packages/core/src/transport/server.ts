@@ -6,11 +6,15 @@ import { OnDispose } from '../lifecycle';
 import { InterceptorChain, Endpoint, EndpointBackend, MiddlewareBackend, MiddlewareInst, InterceptorInst, MiddlewareType, InterceptorType } from './endpoint';
 import { ExecptionFilter } from '../execptions/filter';
 import { TransportContext } from './context';
+import { Serializer } from './serializer';
+import { Deserializer } from './deserializer';
 
 /**
  * server options.
  */
 export interface ServerOptions<TRequest, TResponse> {
+    serializer?: Type<Serializer>;
+    deserializer?: Type<Deserializer>;
     interceptors?: InterceptorType<TRequest, TResponse>[];
     execptions?: Type<ExecptionFilter>[];
     middlewares?: MiddlewareType[];
@@ -96,7 +100,7 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
     /**
      * transport endpoint chain.
      */
-    chain(): Endpoint<TRequest, TResponse> {
+    protected chain(): Endpoint<TRequest, TResponse> {
         if (!this._chain) {
             this._chain = new InterceptorChain(new MiddlewareBackend(this.getBackend(), this.middlewares), this.interceptors)
         }
@@ -142,6 +146,13 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
                 }
             });
             injector.inject(interceptors);
+        }
+
+        if (options.serializer) {
+            injector.inject({ provide: Serializer, useClass: options.serializer });
+        }
+        if (options.deserializer) {
+            injector.inject({ provide: Deserializer, useClass: options.deserializer });
         }
 
         if (options.execptions && options.execptions.length) {

@@ -1,10 +1,15 @@
-import { Abstract } from '@tsdi/ioc';
+import { TransportError } from '@tsdi/core';
+import { Injectable, isString } from '@tsdi/ioc';
 
-@Abstract()
-export abstract class Deserializer {
-    /**
-     * deserialize input.
-     * @param input 
-     */
-    abstract deserialize<T>(input: string| Uint8Array): T;
+
+@Injectable()
+export class JsonDeserializer {
+    deserialize<T>(input: string | Uint8Array | Buffer): T {
+        const source = isString(input) ? input : new TextDecoder().decode(input);
+        try {
+            return (source !== '' ? JSON.parse(source) : null) as T
+        } catch (err) {
+            throw new TransportError((err as Error).message);
+        }
+    }
 }

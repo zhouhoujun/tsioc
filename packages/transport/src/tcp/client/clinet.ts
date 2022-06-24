@@ -1,26 +1,29 @@
 import {
-    CustomEndpoint, EndpointBackend, Interceptor, InterceptorInst, InterceptorType, OnDispose,
+    ClientOptions,
+    CustomEndpoint, Deserializer, EndpointBackend, Interceptor, InterceptorInst, InterceptorType, OnDispose,
     Packet,
-    RequestContext, ResponseJsonParseError, TransportClient, TransportError, UuidGenerator
+    RequestContext, ResponseJsonParseError, Serializer, TransportClient, TransportError, UuidGenerator
 } from '@tsdi/core';
-import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId, type_undef } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId, Type, type_undef } from '@tsdi/ioc';
 import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
 import { DecodeInterceptor, EncodeInterceptor } from '../../interceptors';
 import { TcpRequest } from './request';
 import { TcpErrorResponse, TcpEvent, TcpResponse } from './response';
 import { ev, hdr } from '../../consts';
 import { defer, map, filter, mergeMap, Observable, Observer, of, throwError } from 'rxjs';
-import { Deserializer } from '../../deserializer';
-import { Serializer } from '../../serializer';
+import { JsonDeserializer } from '../../deserializer';
+import { JsonSerializer } from '../../serializer';
 
 
 @Abstract()
-export abstract class TcpClientOption {
+export abstract class TcpClientOption implements ClientOptions<TcpRequest, TcpEvent> {
     /**
      * is json or not.
      */
     abstract json?: boolean;
     abstract encoding?: BufferEncoding;
+    abstract serializer?: Type<Serializer>;
+    abstract deserializer?: Type<Deserializer>;
     abstract headerSplit?: string;
     abstract socketOpts?: SocketConstructorOpts;
     abstract connectOpts: NetConnectOpts;
@@ -31,6 +34,8 @@ const defaults = {
     json: true,
     headerSplit: '#',
     encoding: 'utf8',
+    serializer: JsonSerializer,
+    deserializer: JsonDeserializer,
     interceptors: [
         EncodeInterceptor,
         DecodeInterceptor
@@ -64,11 +69,11 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
         this.connected = false;
     }
 
-    protected getInterceptorsToken(): Token<InterceptorInst<TcpRequest<any>, TcpEvent<any>>[]> {
+    protected getInterceptorsToken(): Token<InterceptorInst<TcpRequest, TcpEvent>[]> {
         return TCP_INTERCEPTORS;
     }
 
-    protected getBackend(): EndpointBackend<TcpRequest<any>, TcpEvent<any>> {
+    protected getBackend(): EndpointBackend<TcpRequest, TcpEvent> {
         return new CustomEndpoint((req, context) => {
             if (!this.socket) return throwError(() => new TcpErrorResponse(0, 'has not connected.'));
             const ctx = context as RequestContext;
@@ -86,13 +91,14 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                     });
                     return defer.promise;
                 }).pipe(
-                    mergeMap(() => this.source.pipe(filter(pk => pk.id === req.id)))
+                    mergeMap(() => this.source),
+                    filter(pk => pk.id === req.id)
                 ).subscribe({
                     complete: () => observer.complete(),
                     error: (err) => observer.error(new TcpErrorResponse(err?.status ?? 500, err?.text, err ?? body)),
-                    next: (source) => {
-                        body = source;
-                        if (body) {
+                    next: (pk) => {
+                        body = pk.body;
+                        if (isString(body)) {
                             let buffer: Buffer;
                             let originalBody: string;
                             switch (ctx.responseType) {
@@ -265,7 +271,7 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
         return typeof AbortController === type_undef ? null! : ctx.getValueify(AbortController, () => new AbortController());
     }
 
-    protected override buildRequest(req: string | TcpRequest<any>, options?: any): TcpRequest<any> {
+    protected override buildRequest(req: string | TcpRequest, options?: any): TcpRequest {
         return isString(req) ? new TcpRequest(this.context.resolve(UuidGenerator).generate(), options) : req
     }
 

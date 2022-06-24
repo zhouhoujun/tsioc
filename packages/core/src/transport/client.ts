@@ -1,10 +1,12 @@
-import { Abstract, ArgumentError, EMPTY, EMPTY_OBJ, InvocationContext, isFunction, isNil, isNumber, Token, type_str } from '@tsdi/ioc';
+import { Abstract, ArgumentError, EMPTY, EMPTY_OBJ, InvocationContext, isFunction, isNil, isNumber, Token, Type, type_str } from '@tsdi/ioc';
 import { Logger, Log } from '@tsdi/logs';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, filter, map } from 'rxjs';
 import { RequestContext } from './context';
 import { InterceptorChain, Endpoint, EndpointBackend, InterceptorInst, InterceptorType } from './endpoint';
 import { ClientContext } from './client.ctx';
 import { RequestBase, ResponseBase, ResponseEvent } from './packet';
+import { Serializer } from './serializer';
+import { Deserializer } from './deserializer';
 
 
 /**
@@ -36,6 +38,7 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
      * @param options 
      */
     protected initialize(options: ClientOptions<TRequest, TResponse>): void {
+        const injector = this.context.injector;
         if (options.interceptors && options.interceptors.length) {
             const iToken = this.getInterceptorsToken();
             const interceptors = options.interceptors.map(m => {
@@ -45,8 +48,16 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
                     return { provide: iToken, useValue: m, multi: true }
                 }
             });
-            this.context.injector.inject(interceptors);
+            injector.inject(interceptors);
         }
+
+        if (options.serializer) {
+            injector.inject({ provide: Serializer, useClass: options.serializer });
+        }
+        if (options.deserializer) {
+            injector.inject({ provide: Deserializer, useClass: options.deserializer });
+        }
+
     }
 
     /**
@@ -83,7 +94,7 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
     /**
      * transport endpoint chain.
      */
-    chain(): Endpoint<TRequest, TResponse> {
+    protected chain(): Endpoint<TRequest, TResponse> {
         if (!this._chain) {
             this._chain = new InterceptorChain(this.getBackend(), this.interceptors)
         }
@@ -448,6 +459,8 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
  * client options.
  */
 export interface ClientOptions<TRequest, TResponse> {
+    serializer?: Type<Serializer>;
+    deserializer?: Type<Deserializer>;
     interceptors?: InterceptorType<TRequest, TResponse>[];
 }
 
