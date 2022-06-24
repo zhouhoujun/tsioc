@@ -1,13 +1,14 @@
-import { Inject, Injectable, InvocationContext, lang, Token } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, InvocationContext, lang, Token } from '@tsdi/ioc';
 import { TransportClient, Protocol, ClientOptions, EndpointBackend, InterceptorInst, RequestBase, RequstOption } from '@tsdi/core';
 import { MqttClient as Client, connect, IClientOptions } from 'mqtt';
 import { EmptyError, first, fromEvent, lastValueFrom, map, merge, share, take, tap } from 'rxjs';
 import { ev } from '@tsdi/transport';
 
 
-export interface MqttClientOptions extends ClientOptions<any, any> {
-    url: string;
-    options: IClientOptions
+@Abstract()
+export abstract class MqttClientOptions extends ClientOptions<any, any> {
+    abstract url: string;
+    abstract options: IClientOptions
 }
 
 @Injectable()

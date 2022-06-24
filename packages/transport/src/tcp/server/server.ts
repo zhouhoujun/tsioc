@@ -1,10 +1,10 @@
 import {
-    CustomEndpoint, EndpointBackend, ExecptionFilter, Interceptor, InterceptorInst,
-    MiddlewareInst, ServerOptions, TransportServer
+    CustomEndpoint, Deserializer, EndpointBackend, ExecptionFilter, Interceptor, InterceptorInst,
+    MiddlewareInst, Packet, ServerOptions, TransportError, TransportServer
 } from '@tsdi/core';
-import { Abstract, Inject, Injectable, InvocationContext, lang, Nullable, Token, tokenId } from '@tsdi/ioc';
-import { Server, ListenOptions } from 'net';
-import { of, Subscription } from 'rxjs';
+import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId } from '@tsdi/ioc';
+import { Server, ListenOptions, Socket } from 'net';
+import { mergeMap, Observable, Observer, of, Subscription } from 'rxjs';
 import { ev } from '../../consts';
 import { CatchInterceptor, LogInterceptor, DecodeInterceptor, EncodeInterceptor } from '../../interceptors';
 import { TcpContext, TCP_EXECPTION_FILTERS, TCP_MIDDLEWARES } from './context';
@@ -35,9 +35,9 @@ export interface TcpServerOpts {
 @Abstract()
 export abstract class TcpServerOptions extends ServerOptions<TcpServRequest, TcpServResponse> {
     /**
-     * is json or not.
+     * header split code.
      */
-    abstract json?: boolean;
+    abstract headerSplit?: string;
     /**
      * socket timeout.
      */
@@ -48,8 +48,8 @@ export abstract class TcpServerOptions extends ServerOptions<TcpServRequest, Tcp
 }
 
 const defOpts = {
-    json: true,
     encoding: 'utf8',
+    headerSplit: '#',
     interceptors: [
         LogInterceptor,
         CatchInterceptor,
@@ -110,10 +110,101 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
             }
         });
 
-        this.server.on(ev.CONNECTION, socket => this.requestHandler(new TcpServRequest(socket), new TcpServResponse(socket)));
+        this.server.on(ev.CONNECTION, socket => {
+            defer.resolve();
+            this.createObservable(socket)
+                .subscribe(pk => {
+                    this.requestHandler(new TcpServRequest(socket, pk), new TcpServResponse(socket))
+                });
+        });
 
-        this.server.listen(this.options.listenOptions, defer.resolve);
+        this.server.listen(this.options.listenOptions);
         await defer.promise;
+    }
+
+    protected createObservable(socket: Socket): Observable<Packet> {
+        return new Observable((observer: Observer<any>) => {
+            const onClose = (err?: any) => {
+                if (err) {
+                    observer.error(err);
+                } else {
+                    observer.complete();
+                    this.logger.info(socket.address, 'closed');
+                }
+            }
+
+            const onError = (err: any) => {
+                if (err.code !== ev.ECONNREFUSED) {
+                    this.logger.error(err);
+                }
+                observer.error(err);
+            };
+
+            let buffer = '';
+            let length = -1;
+            const headerSplit = this.options.headerSplit!;
+            const onData = (data: Buffer | string) => {
+                try {
+                    buffer += (isString(data) ? data : new TextDecoder().decode(data));
+                    if (length === -1) {
+                        const i = buffer.indexOf(headerSplit);
+                        if (i !== -1) {
+                            const rawContentLength = buffer.substring(0, i);
+                            length = parseInt(rawContentLength, 10);
+
+                            if (isNaN(length)) {
+                                length = -1;
+                                buffer = '';
+                                throw new TransportError('socket packge error length' + rawContentLength);
+                            }
+                            buffer = buffer.substring(i + 1);
+                        }
+                    }
+                    let body: any;
+                    let rest: string | undefined;
+                    if (length >= 0) {
+                        const buflen = buffer.length;
+                        if (length === buflen) {
+                            body = buffer;
+                        } else if (buflen > length) {
+                            body = buffer.substring(0, length);
+                            rest = buffer.substring(length);
+                        }
+                    }
+                    if (body) {
+                        body = this.context.get(Deserializer).deserialize<Packet>(body);
+                        observer.next(body);
+                    }
+                    if (rest) {
+                        onData(rest);
+                    }
+                } catch (err: any) {
+                    socket.emit(ev.ERROR, err.message);
+                    socket.end();
+                    observer.error(err);
+                }
+            };
+
+            const onEnd = () => {
+                observer.complete();
+            };
+
+            socket.on(ev.CLOSE, onClose);
+            socket.on(ev.ERROR, onError);
+            socket.on(ev.ABOUT, onError);
+            socket.on(ev.TIMEOUT, onError);
+            socket.on(ev.DATA, onData);
+            socket.on(ev.END, onEnd);
+
+            return () => {
+                socket.off(ev.DATA, onData);
+                socket.off(ev.END, onEnd);
+                socket.off(ev.ERROR, onError);
+                socket.off(ev.ABOUT, onError);
+                socket.off(ev.TIMEOUT, onError);
+                socket.emit(ev.CLOSE);
+            }
+        });
     }
 
     protected getBackend(): EndpointBackend<TcpServRequest, TcpServResponse> {

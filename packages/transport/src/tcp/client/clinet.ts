@@ -1,8 +1,6 @@
 import {
-    ClientOptions,
-    CustomEndpoint, Deserializer, EndpointBackend, Interceptor, InterceptorInst, InterceptorType, OnDispose,
-    Packet,
-    RequestContext, ResponseJsonParseError, Serializer, TransportClient, TransportError, UuidGenerator
+    CustomEndpoint, Deserializer, EndpointBackend, Interceptor, InterceptorInst, OnDispose, ClientOptions,
+    Packet, RequestContext, ResponseJsonParseError, Serializer, TransportClient, TransportError, UuidGenerator
 } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId, Type, type_undef } from '@tsdi/ioc';
 import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
@@ -17,10 +15,6 @@ import { JsonSerializer } from '../../serializer';
 
 @Abstract()
 export abstract class TcpClientOption extends ClientOptions<TcpRequest, TcpEvent> {
-    /**
-     * is json or not.
-     */
-    abstract json?: boolean;
     abstract encoding?: BufferEncoding;
     abstract headerSplit?: string;
     abstract socketOpts?: SocketConstructorOpts;
@@ -28,7 +22,6 @@ export abstract class TcpClientOption extends ClientOptions<TcpRequest, TcpEvent
 }
 
 const defaults = {
-    json: true,
     headerSplit: '#',
     encoding: 'utf8',
     serializer: JsonSerializer,

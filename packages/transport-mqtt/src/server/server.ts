@@ -1,8 +1,10 @@
 import { EndpointBackend, ExecptionFilter, Interceptor, InterceptorInst, MiddlewareInst, Protocol, TransportContext, TransportServer } from '@tsdi/core';
-import { InvocationContext, Token } from '@tsdi/ioc';
+import { Injectable, InvocationContext, Token } from '@tsdi/ioc';
 import { Subscription } from 'rxjs';
 
+@Injectable()
 export class MqttServer extends TransportServer<any, any> {
+    
 
     getExecptionsToken(): Token<ExecptionFilter[]> {
         throw new Error('Method not implemented.');
