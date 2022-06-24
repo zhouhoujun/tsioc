@@ -16,18 +16,15 @@ import { JsonSerializer } from '../../serializer';
 
 
 @Abstract()
-export abstract class TcpClientOption implements ClientOptions<TcpRequest, TcpEvent> {
+export abstract class TcpClientOption extends ClientOptions<TcpRequest, TcpEvent> {
     /**
      * is json or not.
      */
     abstract json?: boolean;
     abstract encoding?: BufferEncoding;
-    abstract serializer?: Type<Serializer>;
-    abstract deserializer?: Type<Deserializer>;
     abstract headerSplit?: string;
     abstract socketOpts?: SocketConstructorOpts;
     abstract connectOpts: NetConnectOpts;
-    abstract interceptors?: InterceptorType<TcpRequest, TcpEvent>[];
 }
 
 const defaults = {

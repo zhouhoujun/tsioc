@@ -1,6 +1,6 @@
 import { Module, RouterModule, TransformModule } from '@tsdi/core';
-import { MqttClient } from './client/client';
-import { MqttServer } from './server/server';
+import { RedisClient } from './client/client';
+import { RedisServer } from './server/server';
 
 
 @Module({
@@ -9,10 +9,10 @@ import { MqttServer } from './server/server';
         RouterModule
     ],
     providers: [
-        MqttClient,
-        MqttServer
+        RedisClient,
+        RedisServer
     ]
 })
-export class MqttModule {
+export class RedisModule {
 
 }

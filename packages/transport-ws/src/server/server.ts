@@ -1,25 +1,36 @@
-import { EndpointBackend, ExecptionFilter, Interceptor, InterceptorInst, MiddlewareInst, TransportContext, TransportServer } from '@tsdi/core';
-import { Inject, Injectable, InvocationContext, lang, Token, tokenId } from '@tsdi/ioc';
+import { EndpointBackend, ExecptionFilter, Interceptor, InterceptorInst, MiddlewareInst, ServerOptions, TransportContext, TransportServer } from '@tsdi/core';
+import { Abstract, Inject, Injectable, InvocationContext, lang, Token, tokenId } from '@tsdi/ioc';
 import { Subscription } from 'rxjs';
-import { WebSocket, WebSocketServer, ServerOptions } from 'ws';
-import { WsRequest } from './request';
-import { WsResponse } from './response';
+import { WebSocket, WebSocketServer, ServerOptions as WsOptions } from 'ws';
+import { WsRequest } from '../request';
+import { WsResponse } from '../response';
 
-export const WS_SERVER_OPTIONS = tokenId<ServerOptions>('WS_SERVER_OPTIONS');
+
+@Abstract()
+export abstract class WsServerOptions extends ServerOptions<WsRequest, WsResponse> {
+    abstract options: WsOptions
+}
+
 
 @Injectable()
 export class WsServer extends TransportServer<WsRequest, WsResponse>{
 
+    private options!: WsServerOptions
     private server?: WebSocketServer;
     constructor(
-        readonly context: InvocationContext,
-        @Inject(WS_SERVER_OPTIONS) private options: ServerOptions) {
-        super();
+        context: InvocationContext,
+        options: WsServerOptions) {
+        super(context, options);
+    }
+
+    protected override initOption(options?: WsServerOptions): WsServerOptions {
+        this.options = { ... options } as WsServerOptions;
+        return this.options;
     }
 
     async start(): Promise<void> {
         const defer = lang.defer();
-        const server = this.server = new WebSocketServer(this.options, defer.resolve);
+        const server = this.server = new WebSocketServer(this.options.options, defer.resolve);
         server.once('error', defer.reject);
         await defer.promise;
 

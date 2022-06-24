@@ -1,30 +1,36 @@
-import { Endpoint, EndpointBackend, Interceptor, InterceptorInst, TransportClient, TransportContext } from '@tsdi/core';
-import { Inject, Injectable, InvocationContext, isString, lang, Token, tokenId } from '@tsdi/ioc';
-import { WebSocket, ClientOptions } from 'ws';
-import { WsRequest } from './request';
-import { WsResponse } from './response';
+import { ClientOptions, Endpoint, EndpointBackend, Interceptor, InterceptorInst, TransportClient, TransportContext } from '@tsdi/core';
+import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId } from '@tsdi/ioc';
+import { WebSocket, ClientOptions as WsOptions } from 'ws';
+import { WsRequest } from '../request';
+import { WsResponse } from '../response';
 
 
-export interface WSClitentOptions {
+@Abstract()
+export abstract class WSClitentOptions extends ClientOptions<WsRequest, WsResponse> {
     /**
      * url
      * etg.` wss://webscocket.com/`
      */
-    url: string;
-    options?: ClientOptions;
+    abstract url: string;
+    abstract options?: WsOptions;
 }
 
-export const WS_CLIENT_OPTIONS = tokenId<WSClitentOptions>('WS_CLIENT_OPTIONS');
 
 @Injectable()
 export class WsClient extends TransportClient<WsRequest, WsResponse> {
 
     private ws?: WebSocket;
     private connected?: boolean;
+    private options!: WSClitentOptions;
     constructor(
-        readonly context: InvocationContext,
-        @Inject(WS_CLIENT_OPTIONS) private options: WSClitentOptions) {
-        super();
+        @Inject() context: InvocationContext,
+        @Nullable() options: WSClitentOptions) {
+        super(context, options);
+    }
+
+    protected override initOption(options?: WSClitentOptions): WSClitentOptions {
+        this.options = { ...options } as WSClitentOptions;
+        return this.options;
     }
 
     getBackend(): EndpointBackend<WsRequest<any>, WsResponse<any>> {
@@ -58,13 +64,13 @@ export class WsClient extends TransportClient<WsRequest, WsResponse> {
 
         });
     }
-    
+
     protected getInterceptorsToken(): Token<InterceptorInst<WsRequest<any>, WsResponse<any>>[]> {
         throw new Error('Method not implemented.');
     }
 
-    protected buildRequest(req: string | WsRequest<any>, options?: any): WsRequest<any>  {
-        return isString(req) ?  new WsRequest(req, options): req;
+    protected buildRequest(req: string | WsRequest<any>, options?: any): WsRequest<any> {
+        return isString(req) ? new WsRequest(req, options) : req;
     }
 
     async close(): Promise<void> {

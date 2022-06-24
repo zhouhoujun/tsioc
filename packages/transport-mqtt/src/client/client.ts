@@ -1,6 +1,6 @@
 import { Inject, Injectable, InvocationContext, lang, Token } from '@tsdi/ioc';
 import { TransportClient, Protocol, ClientOptions, EndpointBackend, InterceptorInst, RequestBase, RequstOption } from '@tsdi/core';
-import { MqttClient, connect, IClientOptions } from 'mqtt';
+import { MqttClient as Client, connect, IClientOptions } from 'mqtt';
 import { EmptyError, first, fromEvent, lastValueFrom, map, merge, share, take, tap } from 'rxjs';
 import { ev } from '@tsdi/transport';
 
@@ -11,9 +11,9 @@ export interface MqttClientOptions extends ClientOptions<any, any> {
 }
 
 @Injectable()
-export class MQTTClient extends TransportClient {
+export class MqttClient extends TransportClient {
 
-    protected mqttClient: MqttClient | undefined;
+    protected mqttClient: Client | undefined;
     protected connection: Promise<any> | undefined;
     constructor(
         @Inject() context: InvocationContext,

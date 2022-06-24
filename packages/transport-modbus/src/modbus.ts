@@ -1,5 +1,6 @@
-
 import { Module, RouterModule, TransformModule } from '@tsdi/core';
+import { ModbusClient } from './client/client';
+import { ModbusServer } from './server/server';
 
 
 @Module({
@@ -8,9 +9,10 @@ import { Module, RouterModule, TransformModule } from '@tsdi/core';
         RouterModule
     ],
     providers: [
-        
+        ModbusClient,
+        ModbusServer
     ]
 })
-export class AMQPModule {
+export class ModbusModule {
 
 }

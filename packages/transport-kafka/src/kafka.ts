@@ -1,6 +1,6 @@
 import { Module, RouterModule, TransformModule } from '@tsdi/core';
-import { MqttClient } from './client/client';
-import { MqttServer } from './server/server';
+import { KafkaClient } from './client/client';
+import { KafkaServer } from './server/server';
 
 
 @Module({
@@ -9,10 +9,10 @@ import { MqttServer } from './server/server';
         RouterModule
     ],
     providers: [
-        MqttClient,
-        MqttServer
+        KafkaClient,
+        KafkaServer
     ]
 })
-export class MqttModule {
+export class KafkaModule {
 
 }

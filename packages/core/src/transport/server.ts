@@ -12,12 +12,28 @@ import { Deserializer } from './deserializer';
 /**
  * server options.
  */
-export interface ServerOptions<TRequest, TResponse> {
-    serializer?: Type<Serializer>;
-    deserializer?: Type<Deserializer>;
-    interceptors?: InterceptorType<TRequest, TResponse>[];
-    execptions?: Type<ExecptionFilter>[];
-    middlewares?: MiddlewareType[];
+@Abstract()
+export abstract class ServerOptions<TRequest, TResponse> {
+    /**
+     * serializer for response.
+     */
+    abstract serializer?: Type<Serializer>;
+    /**
+     * deserializer for incoming message.
+     */
+    abstract deserializer?: Type<Deserializer>;
+    /**
+     * interceptors of server
+     */
+    abstract interceptors?: InterceptorType<TRequest, TResponse>[];
+    /**
+     * execption filters of server.
+     */
+    abstract execptions?: Type<ExecptionFilter>[];
+    /**
+     * middlewares of server.
+     */
+    abstract middlewares?: MiddlewareType[];
 }
 
 /**

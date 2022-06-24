@@ -1,16 +1,14 @@
-import { EMPTY_OBJ, Inject, Injectable, InvocationContext, Token, tokenId } from '@tsdi/ioc';
-import { Endpoint, EndpointBackend, Interceptor, InterceptorInst, RequstOption, TransportClient } from '@tsdi/core';
+import { Abstract, EMPTY_OBJ, Inject, Injectable, InvocationContext, Token, tokenId } from '@tsdi/ioc';
+import { ClientOptions, Endpoint, EndpointBackend, Interceptor, InterceptorInst, RequstOption, TransportClient } from '@tsdi/core';
 import { HttpRequest, HttpResponse } from '@tsdi/common';
 import { loadPackageDefinition, load, ServiceDefinition, ProtobufTypeDefinition } from '@grpc/grpc-js';
 import * as gload from '@grpc/proto-loader';
 
 
-export interface GrpcClientOptions {
-    packageDef: Record<string, ServiceDefinition | ProtobufTypeDefinition>;
-
+@Abstract()
+export abstract class GrpcClientOptions extends ClientOptions<HttpRequest, HttpResponse> {
+    abstract packageDef: Record<string, ServiceDefinition | ProtobufTypeDefinition>;
 }
-
-export const GRPC_CLIENT_OPTIONS = tokenId<GrpcClientOptions>('GRPC_CLIENT_OPTIONS');
 
 /**
  * grpc client.
@@ -20,7 +18,7 @@ export class GrpcClient extends TransportClient<HttpRequest, HttpResponse> {
 
     constructor(
         @Inject() context: InvocationContext,
-        @Inject(GRPC_CLIENT_OPTIONS) private options: GrpcClientOptions) {
+        @Inject() private options: GrpcClientOptions) {
         super(context, options)
     }
 

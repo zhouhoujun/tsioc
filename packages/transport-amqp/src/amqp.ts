@@ -1,4 +1,7 @@
+
 import { Module, RouterModule, TransformModule } from '@tsdi/core';
+import { AmqpClient } from './client/client';
+import { AmqpServer } from './server/server';
 
 
 @Module({
@@ -7,9 +10,10 @@ import { Module, RouterModule, TransformModule } from '@tsdi/core';
         RouterModule
     ],
     providers: [
-        
+        AmqpClient,
+        AmqpServer
     ]
 })
-export class WSModule {
+export class AMQPModule {
 
 }

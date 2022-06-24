@@ -9,6 +9,27 @@ import { Serializer } from './serializer';
 import { Deserializer } from './deserializer';
 
 
+
+/**
+ * client options.
+ */
+@Abstract()
+export abstract class ClientOptions<TRequest, TResponse> {
+    /**
+     * serializer for request.
+     */
+    abstract serializer?: Type<Serializer>;
+    /**
+     * deserializer for response.
+     */
+    abstract deserializer?: Type<Deserializer>;
+    /**
+     * interceptors of client.
+     */
+    abstract interceptors?: InterceptorType<TRequest, TResponse>[];
+}
+
+
 /**
  * abstract transport client.
  */
@@ -454,15 +475,6 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
 
 }
 
-
-/**
- * client options.
- */
-export interface ClientOptions<TRequest, TResponse> {
-    serializer?: Type<Serializer>;
-    deserializer?: Type<Deserializer>;
-    interceptors?: InterceptorType<TRequest, TResponse>[];
-}
 
 /**
  * request option.

@@ -49,7 +49,7 @@ export interface Address {
  * UDP server options.
  */
 @Abstract()
-export abstract class UdpServerOptions implements ServerOptions<UdpServRequest, UdpServResponse> {
+export abstract class UdpServerOptions extends ServerOptions<UdpServRequest, UdpServResponse> {
     /**
      * is json or not.
      */
@@ -62,9 +62,6 @@ export abstract class UdpServerOptions implements ServerOptions<UdpServRequest, 
     abstract encoding?: BufferEncoding;
     abstract serverOpts: SocketOptions;
     abstract bindOptions: BindOptions;
-    abstract interceptors?: InterceptorType<UdpServRequest, UdpServResponse>[];
-    abstract execptions?: Type<ExecptionFilter>[];
-    abstract middlewares?: MiddlewareType[];
 }
 
 const defOpts = {

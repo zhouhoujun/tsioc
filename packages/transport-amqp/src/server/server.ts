@@ -1,4 +1,4 @@
-import { Channel, EndpointBackend, ExecptionFilter, InterceptorInst, MiddlewareInst, Publisher, PublisherOptions, RequestBase, ResponseBase, TransportContext } from '@tsdi/core';
+import { EndpointBackend, ExecptionFilter, InterceptorInst, MiddlewareInst, ServerOptions, RequestBase, ResponseBase, TransportContext, TransportServer } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, Token } from '@tsdi/ioc';
 import * as amqp from 'amqplib';
 import { Subscription } from 'rxjs';
@@ -6,7 +6,7 @@ import { Subscription } from 'rxjs';
 export type amqpURL = string | amqp.Options.Connect;
 
 @Abstract()
-export abstract class AmqpOptions extends PublisherOptions<any, any> {
+export abstract class AmqpOptions extends ServerOptions<any, any> {
     abstract url: amqpURL;
     queue?: string;
     queueOptions?: amqp.Options.AssertQueue;
@@ -15,29 +15,25 @@ export abstract class AmqpOptions extends PublisherOptions<any, any> {
 const defaultQueue = 'default';
 
 @Injectable()
-export class AmqpPublisher extends Publisher<RequestBase, ResponseBase> {
+export class AmqpServer extends TransportServer<RequestBase, ResponseBase> {
 
     private connection?: amqp.Connection;
-    private _channel?: amqp.Channel;
+    channel?: amqp.Channel;
     private queue: string;
     constructor(@Inject() context: InvocationContext, private options: AmqpOptions) {
         super(context, options);
         this.queue = this.options.queue ?? defaultQueue;
     }
 
-    get channel(): Channel {
-        return this._channel as Channel;
-    }
-
     async start(): Promise<void> {
         const connection = this.connection = await amqp.connect(this.options.url);
-        const channel = this._channel = await connection.createChannel();
+        const channel = this.channel = await connection.createChannel();
         const astQueue = await channel.assertQueue(this.queue, this.options.queueOptions);
 
     }
 
     async close(): Promise<void> {
-        await this._channel?.close();
+        await this.channel?.close();
         await this.connection?.close();
     }
 

@@ -1,11 +1,11 @@
 import {
     EMPTY_OBJ, Inject, Injectable, InvocationContext, isBoolean, isDefined,
-    isFunction, lang, Providers, Token, tokenId, Type
+    Abstract, isFunction, lang, Providers, Token, tokenId, Type
 } from '@tsdi/ioc';
 import {
     TransportServer, EndpointBackend, CustomEndpoint, RunnableFactoryResolver,
     MiddlewareType, Interceptor, ModuleRef, Router, InterceptorType, ExecptionFilter,
-    MiddlewareInst, InterceptorInst, PublisherOptions, RespondTypeAdapter,
+    MiddlewareInst, InterceptorInst, RespondTypeAdapter, ServerOptions,
 } from '@tsdi/core';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { of, Subscription } from 'rxjs';
@@ -34,7 +34,7 @@ import { HttpRespondTypeAdapter, ResponsedInterceptor } from './respond';
 /**
  * http options.
  */
-export interface HttpOptions extends PublisherOptions<HttpServRequest, HttpServResponse> {
+export interface HttpOptions extends ServerOptions<HttpServRequest, HttpServResponse> {
     majorVersion?: number;
     cors?: boolean | CorsOptions;
     proxy?: boolean;
@@ -51,9 +51,6 @@ export interface HttpOptions extends PublisherOptions<HttpServRequest, HttpServR
     detailError?: boolean;
     mimeDb?: Record<string, MimeSource>;
     listenOptions?: ListenOptions;
-    interceptors?: InterceptorType<HttpServRequest, HttpServResponse>[];
-    execptions?: Type<ExecptionFilter>[];
-    middlewares?: MiddlewareType[];
     content?: boolean | ContentOptions;
     session?: boolean | SessionOptions;
     csrf?: boolean | CsrfOptions;

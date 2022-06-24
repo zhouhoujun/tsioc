@@ -1,8 +1,8 @@
 import {
     CustomEndpoint, EndpointBackend, ExecptionFilter, Interceptor, InterceptorInst,
-    InterceptorType, MiddlewareInst, MiddlewareType, PublisherOptions, TransportServer
+    MiddlewareInst, ServerOptions, TransportServer
 } from '@tsdi/core';
-import { Abstract, Inject, Injectable, InvocationContext, lang, Nullable, Token, tokenId, Type } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, InvocationContext, lang, Nullable, Token, tokenId } from '@tsdi/ioc';
 import { Server, ListenOptions } from 'net';
 import { of, Subscription } from 'rxjs';
 import { ev } from '../../consts';
@@ -33,7 +33,7 @@ export interface TcpServerOpts {
  * TCP server options.
  */
 @Abstract()
-export abstract class TcpServerOptions implements PublisherOptions<TcpServRequest, TcpServResponse> {
+export abstract class TcpServerOptions extends ServerOptions<TcpServRequest, TcpServResponse> {
     /**
      * is json or not.
      */
@@ -45,9 +45,6 @@ export abstract class TcpServerOptions implements PublisherOptions<TcpServReques
     abstract encoding?: BufferEncoding;
     abstract serverOpts?: TcpServerOpts | undefined;
     abstract listenOptions: ListenOptions;
-    abstract interceptors?: InterceptorType<TcpServRequest, TcpServResponse>[];
-    abstract execptions?: Type<ExecptionFilter>[];
-    abstract middlewares?: MiddlewareType[];
 }
 
 const defOpts = {
