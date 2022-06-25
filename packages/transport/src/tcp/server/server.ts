@@ -207,10 +207,6 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
         });
     }
 
-    protected getBackend(): EndpointBackend<TcpServRequest, TcpServResponse> {
-        return new CustomEndpoint<TcpServRequest, TcpServResponse>((req, ctx) => of((ctx as TcpContext).response))
-    }
-
     protected bindEvent(ctx: TcpContext, cancel: Subscription): void {
         ctx.request.socket.on(ev.TIMEOUT, () => {
             cancel?.unsubscribe();

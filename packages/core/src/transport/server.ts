@@ -1,9 +1,9 @@
 import { Abstract, EMPTY, InvocationContext, isFunction, isNumber, ProviderType, Token, Type } from '@tsdi/ioc';
 import { Logger, Log } from '@tsdi/logs';
-import { Subscription } from 'rxjs';
+import { of, Subscription } from 'rxjs';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
-import { InterceptorChain, Endpoint, EndpointBackend, MiddlewareBackend, MiddlewareInst, InterceptorInst, MiddlewareType, InterceptorType } from './endpoint';
+import { InterceptorChain, Endpoint, EndpointBackend, MiddlewareBackend, MiddlewareInst, InterceptorInst, MiddlewareType, InterceptorType, CustomEndpoint } from './endpoint';
 import { ExecptionFilter } from '../execptions/filter';
 import { TransportContext } from './context';
 import { Serializer } from './serializer';
@@ -189,7 +189,9 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
     /**
      * get backend endpoint.
      */
-    protected abstract getBackend(): EndpointBackend<TRequest, TResponse>;
+    protected getBackend(): EndpointBackend<TRequest, TResponse> {
+        return new CustomEndpoint<TRequest, TResponse>((req, ctx) => of((ctx as TransportContext).response))
+    }
     /**
      * lazy create context.
      */

@@ -1,10 +1,9 @@
 import {
     EMPTY_OBJ, Inject, Injectable, InvocationContext, isBoolean, isDefined,
-    Abstract, isFunction, lang, Providers, Token, tokenId, Type
+    isFunction, lang, Providers, Token, tokenId, Type
 } from '@tsdi/ioc';
 import {
-    TransportServer, EndpointBackend, CustomEndpoint, RunnableFactoryResolver,
-    MiddlewareType, Interceptor, ModuleRef, Router, InterceptorType, ExecptionFilter,
+    TransportServer, RunnableFactoryResolver, Interceptor, ModuleRef, Router, ExecptionFilter,
     MiddlewareInst, InterceptorInst, RespondTypeAdapter, ServerOptions,
 } from '@tsdi/core';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
@@ -247,11 +246,6 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         injector.get(ModuleRef).setValue(HTTP_LISTENOPTIONS, { ...listenOptions, withCredentials: isDefined(cert), majorVersion: options.majorVersion });
         this.logger.info(lang.getClassName(this), 'listen:', listenOptions, '. access with url:', `http${cert ? 's' : ''}://${listenOptions?.host}:${listenOptions?.port}${listenOptions?.path ?? ''}`, '!')
         this._server.listen(listenOptions)
-    }
-
-
-    protected override getBackend(): EndpointBackend<HttpServRequest, HttpServResponse> {
-        return new CustomEndpoint<HttpServRequest, HttpServResponse>((req, ctx) => of((ctx as HttpContext).response))
     }
 
     protected override bindEvent(ctx: HttpContext, cancel: Subscription): void {
