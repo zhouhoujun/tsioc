@@ -1,10 +1,10 @@
-import { Abstract, EMPTY, isFunction, isString, lang, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
+import { Abstract, EMPTY, isClass, isFunction, isString, lang, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
 import { Protocol, RequestMethod } from '../transport/packet';
 import { CanActivate } from './guard';
 import { PipeTransform } from '../pipes/pipe';
 import { Route, RouteFactoryResolver } from './route';
 import { ModuleRef } from '../module.ref';
-import { Middleware, MiddlewareFn } from '../transport/endpoint';
+import { InterceptorInst, InterceptorMiddleware, InterceptorType, Middleware, MiddlewareFn } from '../transport/endpoint';
 import { HeaderContext, TransportContext } from '../transport/context';
 import { BadRequestError, ForbiddenError, NotFoundError } from '../transport/error';
 import { promisify } from './promisify';
@@ -61,8 +61,8 @@ export abstract class Router implements Middleware {
 
 export class MappingRoute implements Middleware {
 
-    private _guards?: CanActivate[];
     private _middleware?: Middleware;
+    private _guards?: CanActivate[];
     constructor(private route: Route) {
 
     }
@@ -75,9 +75,12 @@ export class MappingRoute implements Middleware {
         if (this.route.protocol && this.route.protocol !== ctx.protocol) return next();
         if (await this.canActive(ctx)) {
             if (!this._middleware) {
-                this._middleware = await this.parse(this.route, ctx)
+                this._middleware = await this.parse(this.route, ctx);
+                if (this.route.interceptors?.length) {
+                    this._middleware = new InterceptorMiddleware(this._middleware, this.route.interceptors.map(i => isClass(i) ? ctx.resolve(i) : i));
+                }
             }
-            return this._middleware.invoke(ctx, next)
+            return this._middleware.invoke(ctx, next);
         } else {
             throw new ForbiddenError();
         }
@@ -85,14 +88,16 @@ export class MappingRoute implements Middleware {
 
     protected canActive(ctx: TransportContext) {
         if (!this._guards) {
-            this._guards = this.route.guards?.map(token => ctx.resolve(token)) ?? EMPTY
+            this._guards = this.route.guards?.map(g => isFunction(g) ? ctx.resolve(g) : g) ?? EMPTY
         }
         if (!this._guards.length) return true;
         return lang.some(this._guards.map(guard => () => promisify(guard.canActivate(ctx))), vaild => vaild === false)
     }
 
     protected async parse(route: Route & { router?: Router }, ctx: TransportContext): Promise<Middleware> {
-        if (route.middleware) {
+        if (route.invoke) {
+            return route as Middleware;
+        } else if (route.middleware) {
             return isFunction(route.middleware) ? ctx.get(route.middleware) : route.middleware
         } else if (route.middlewareFn) {
             return {
@@ -252,12 +257,9 @@ export interface RouteMappingMetadata {
      */
     contentType?: string;
     /**
-     * middlewares for the route.
-     *
-     * @type {(MiddlewareFn| Type<Middleware>)[]}
-     * @memberof RouteMetadata
+     * interceptors of route.
      */
-    middlewares?: (MiddlewareFn | Type<Middleware>)[];
+    interceptors?: InterceptorType[];
     /**
      * pipes for the route.
      */

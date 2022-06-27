@@ -1,9 +1,9 @@
 import {
     isArray, isString, lang, Type, isRegExp, createDecorator, OperationArgumentResolver,
-    ClassMethodDecorator, createParamDecorator, ParameterMetadata, ActionTypes, ReflectiveResolver
+    ClassMethodDecorator, createParamDecorator, ParameterMetadata, ActionTypes, ReflectiveResolver, isClass
 } from '@tsdi/ioc';
 import { PipeTransform } from '../../pipes/pipe';
-import { Middleware, MiddlewareFn } from '../../transport/endpoint';
+import { InterceptorType, Middleware, MiddlewareFn } from '../../transport/endpoint';
 import { mths, Protocol, RequestMethod } from '../../transport/packet';
 import { CanActivate } from '../guard';
 import { joinprefix, normalize, RouteFactoryResolver } from '../route';
@@ -46,6 +46,10 @@ export interface Handle {
         * route guards.
         */
         guards?: Type<CanActivate>[];
+        /**
+         * interceptors of route.
+         */
+        interceptors?: InterceptorType[];
     }): HandleDecorator;
 
     /**
@@ -92,7 +96,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
         afterAnnoation: (ctx, next) => {
             const reflect = ctx.reflect;
             const metadata = reflect.class.getMetadata<HandleMetadata>(ctx.currDecor);
-            const { route, prefix, version, parent, protocol } = metadata;
+            const { route, prefix, version, parent, protocol, interceptors } = metadata;
             const injector = ctx.injector;
 
             if (!isString(route) && !parent) {
@@ -111,6 +115,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
                 router.use({
                     path,
                     protocol,
+                    interceptors: interceptors?.map(i => isClass(i) ? factory.resolve(i) : i),
                     middleware: factory.resolve() as Middleware
                 });
             }
@@ -171,9 +176,9 @@ export interface RouteMapping {
          */
         guards?: Type<CanActivate>[];
         /**
-         * middlewares for the route.
+         * interceptors of route.
          */
-        middlewares: Array<MiddlewareFn | Type<Middleware>>;
+        interceptors?: InterceptorType[];
         /**
         * pipes for the route.
         */
@@ -202,9 +207,9 @@ export interface RouteMapping {
          */
         guards?: Type<CanActivate>[];
         /**
-         * middlewares for the route.
+         * interceptors of route.
          */
-        middlewares: Array<MiddlewareFn | Type<Middleware>>;
+        interceptors?: InterceptorType[];
         /**
          * pipes for the route.
          */
@@ -275,7 +280,7 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
                 const routeRef = injector.get(RouteFactoryResolver).resolve(reflect).create(injector);
                 const path = routeRef.path;
                 routeRef.onDestroy(() => router.unuse(path));
-                router.use(path, routeRef);
+                router.use(routeRef);
 
                 next();
             }

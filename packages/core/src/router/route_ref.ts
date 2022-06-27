@@ -1,11 +1,11 @@
 import {
     DecorDefine, Type, Injector, lang, EMPTY, refl, isPromise, isString, isFunction, isDefined, OnDestroy,
-    ReflectiveResolver, TypeReflect, ReflectiveRef, DestroyCallback, InvokeOption, chain
+    ReflectiveResolver, TypeReflect, ReflectiveRef, DestroyCallback, InvokeOption, isClass
 } from '@tsdi/ioc';
 import { isObservable, lastValueFrom } from 'rxjs';
 import { CanActivate } from './guard';
 import { ResultValue } from './result';
-import { Middleware, MiddlewareFn } from '../transport/endpoint';
+import { InterceptorInst, InterceptorMiddleware, InterceptorType, Middleware, MiddlewareFn } from '../transport/endpoint';
 import { RouteRef, RouteFactory, RouteFactoryResolver, joinprefix } from './route';
 import { ProtocolRouteMappingMetadata, RouteMappingMetadata } from './router';
 import { TransportContext } from '../transport/context';
@@ -70,20 +70,29 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     private _guards?: CanActivate[];
     get guards(): CanActivate[] {
         if (!this._guards) {
-            this._guards = this.metadata.guards?.map(token => () => this.factory.resolve(token)) ?? EMPTY
+            this._guards = this.metadata.guards?.map(g => isFunction(g)? this.factory.resolve(g) : g) ?? EMPTY
         }
         return this._guards
     }
 
+
+    private _intptors?: InterceptorInst[];
+    get interceptors(): InterceptorInst[] {
+        if (!this._intptors) {
+            this._intptors = this.metadata.interceptors?.map(i => isClass(i) ? this.factory.resolve(i) : i) ?? EMPTY;
+        }
+        return this._intptors;
+    }
+
     async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         if (ctx.sent || (this.protocol && this.protocol !== ctx.protocol)) return await next();
-        if (this.guards && this.guards.length) {
-            if (!(await lang.some(
-                this.guards.map(guard => () => promisify(guard.canActivate(ctx))),
-                vaild => vaild === false))) {
-                throw new ForbiddenError();
-            }
-        }
+        // if (this.guards && this.guards.length) {
+        //     if (!(await lang.some(
+        //         this.guards.map(guard => () => promisify(guard.canActivate(ctx))),
+        //         vaild => vaild === false))) {
+        //         throw new ForbiddenError();
+        //     }
+        // }
 
         const method = this.getRouteMetaData(ctx) as DecorDefine<ProtocolRouteMappingMetadata>;
         if (!method || !method.propertyKey) return await next();
@@ -103,11 +112,12 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         const key = `${metadate.method ?? ctx.method} ${method.propertyKey}`;
         let endpoint = this._endpoints.get(key);
         if (!endpoint) {
-            const endpoints = this.getRouteMiddleware(ctx, method)?.map(c => this.parse(c)) ?? [];
-            endpoints.push(async (c, n) => {
-                await this.response(c, method)
-            });
-            endpoint = chain(endpoints);
+            const endpoints = this.getRouteInterceptors(ctx, method)?.map(c => (this.injector.get(c as Type, null) ?? c) as InterceptorInst) ?? [];
+            // endpoints.push(async (c, n) => {
+            //     await this.response(c, method)
+            // });
+            // endpoint = chain(endpoints);
+            endpoint = endpoints.length ? this.parse(new InterceptorMiddleware(c => this.response(c, method), endpoints)) : (ctx, next) => this.response(ctx, method);
             this._endpoints.set(key, endpoint)
         }
         return await endpoint(ctx, next)
@@ -170,9 +180,9 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         }
     }
 
-    protected getRouteMiddleware(ctx: TransportContext, meta: DecorDefine<ProtocolRouteMappingMetadata>): Middleware[] {
-        if (this.metadata.middlewares?.length || meta.metadata.middlewares?.length) {
-            return [...this.metadata.middlewares || EMPTY, ...meta.metadata.middlewares || EMPTY]
+    protected getRouteInterceptors(ctx: TransportContext, meta: DecorDefine<ProtocolRouteMappingMetadata>): InterceptorType[] {
+        if (meta.metadata.interceptors?.length) {
+            return [...meta.metadata.interceptors || EMPTY]
         }
         return EMPTY
     }

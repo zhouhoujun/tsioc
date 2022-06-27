@@ -1,4 +1,5 @@
 import { PatternMetadata, Type, TypeMetadata } from '@tsdi/ioc';
+import { InterceptorType } from '../../transport/endpoint';
 import { Protocol } from '../../transport/packet';
 import { CanActivate } from '../guard';
 import { Router } from '../router';
@@ -42,6 +43,10 @@ export interface HandleMetadata extends TypeMetadata, PatternMetadata {
      */
     guards?: Type<CanActivate>[];
     /**
+     * interceptors of route.
+     */
+    interceptors?: InterceptorType[];
+    /**
      * handle parent.
      * default register in root handle queue.
      */
@@ -51,9 +56,4 @@ export interface HandleMetadata extends TypeMetadata, PatternMetadata {
      * transport protocol
      */
     protocol?: Protocol;
-}
-
-export interface HandlesMetadata extends HandleMetadata {
-
-    autorun?: string;
 }

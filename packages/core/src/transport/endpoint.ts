@@ -1,5 +1,5 @@
-import { Abstract, Handler, isFunction, Type, chain } from '@tsdi/ioc';
-import { from, Observable, mergeMap } from 'rxjs';
+import { Abstract, Handler, isFunction, Type, chain, lang } from '@tsdi/ioc';
+import { from, Observable, mergeMap, of, lastValueFrom, defer } from 'rxjs';
 import { EndpointContext, TransportContext } from './context';
 
 
@@ -199,4 +199,39 @@ export class Chain implements Middleware {
         return this._chainFn(ctx, next ?? NEXT)
     }
 
+}
+
+
+export class InterceptorMiddleware<TRequest, TResponse> implements Middleware {
+
+    private _chainFn?: MiddlewareFn;
+    private interceptors: Interceptor<TRequest, TResponse>[];
+    private middleware: Middleware;
+    constructor(middleware: MiddlewareInst, interceptors: InterceptorInst<TRequest, TResponse>[]) {
+        this.middleware = isFunction(middleware) ? { invoke: middleware } : middleware;
+        this.interceptors = interceptors.map(intercept => isFunction(intercept) ? ({ intercept }) : intercept);
+    }
+
+    invoke<T extends TransportContext>(ctx: T, next: () => Promise<void>): Promise<void> {
+        if (!this._chainFn) {
+            const chain = new InterceptorChain<TRequest, TResponse>((req, ctx) => defer(async () => {
+                await this.middleware.invoke(ctx as T, next);
+                return (ctx as T).response;
+            }), this.interceptors);
+            this._chainFn = (ctx: TransportContext) => {
+                const defer = lang.defer<void>();
+                chain.handle(ctx.request, ctx)
+                    .subscribe({
+                        error: (err) => {
+                            defer.reject(err);
+                        },
+                        next: (val) => {
+                            defer.resolve();
+                        }
+                    });
+                return defer.promise;
+            }
+        }
+        return this._chainFn(ctx, next ?? NEXT)
+    }
 }
