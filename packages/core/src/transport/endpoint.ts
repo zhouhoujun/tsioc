@@ -220,7 +220,7 @@ export class InterceptorMiddleware<TRequest, TResponse> implements Middleware {
             }), this.interceptors);
             this._chainFn = (ctx: TransportContext) => {
                 const defer = lang.defer<void>();
-                chain.handle(ctx.request, ctx)
+                const cancel = chain.handle(ctx.request, ctx)
                     .subscribe({
                         error: (err) => {
                             defer.reject(err);
@@ -229,6 +229,8 @@ export class InterceptorMiddleware<TRequest, TResponse> implements Middleware {
                             defer.resolve();
                         }
                     });
+                ctx.onDestroy(()=> cancel?.unsubscribe());
+                
                 return defer.promise;
             }
         }
