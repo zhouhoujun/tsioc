@@ -4,7 +4,7 @@ import { CanActivate } from './guard';
 import { PipeTransform } from '../pipes/pipe';
 import { Route, RouteFactoryResolver } from './route';
 import { ModuleRef } from '../module.ref';
-import { InterceptorInst, InterceptorMiddleware, InterceptorType, Middleware, MiddlewareFn } from '../transport/endpoint';
+import { InterceptorMiddleware, InterceptorType, Middleware, MiddlewareFn } from '../transport/endpoint';
 import { HeaderContext, TransportContext } from '../transport/context';
 import { BadRequestError, ForbiddenError, NotFoundError } from '../transport/error';
 import { promisify } from './promisify';

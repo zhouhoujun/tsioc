@@ -16,7 +16,6 @@ import { ForbiddenError } from '../transport/error';
 
 const isRest = /\/:/;
 const restParms = /^\S*:/;
-// const noParms = /\/\s*$/;
 
 
 /**
@@ -86,13 +85,6 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
 
     async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         if (ctx.sent || (this.protocol && this.protocol !== ctx.protocol)) return await next();
-        // if (this.guards && this.guards.length) {
-        //     if (!(await lang.some(
-        //         this.guards.map(guard => () => promisify(guard.canActivate(ctx))),
-        //         vaild => vaild === false))) {
-        //         throw new ForbiddenError();
-        //     }
-        // }
 
         const method = this.getRouteMetaData(ctx) as DecorDefine<ProtocolRouteMappingMetadata>;
         if (!method || !method.propertyKey) return await next();
@@ -112,12 +104,8 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         const key = `${metadate.method ?? ctx.method} ${method.propertyKey}`;
         let endpoint = this._endpoints.get(key);
         if (!endpoint) {
-            const endpoints = this.getRouteInterceptors(ctx, method)?.map(c => (this.injector.get(c as Type, null) ?? c) as InterceptorInst) ?? [];
-            // endpoints.push(async (c, n) => {
-            //     await this.response(c, method)
-            // });
-            // endpoint = chain(endpoints);
-            endpoint = endpoints.length ? this.parse(new InterceptorMiddleware(c => this.response(c, method), endpoints)) : (ctx, next) => this.response(ctx, method);
+            const inptors = this.getRouteInterceptors(ctx, method)?.map(c => (this.injector.get(c as Type, null) ?? c) as InterceptorInst) ?? [];
+            endpoint = inptors.length ? this.parse(new InterceptorMiddleware(c => this.response(c, method), inptors)) : (ctx, next) => this.response(ctx, method);
             this._endpoints.set(key, endpoint)
         }
         return await endpoint(ctx, next)
