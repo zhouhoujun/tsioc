@@ -1,8 +1,8 @@
-import { Abstract, EMPTY, isClass, isFunction, isString, lang, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
+import { Abstract, EMPTY, Inject, Injectable, InjectFlags, isClass, isFunction, isString, lang, Nullable, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
 import { Protocol, RequestMethod } from '../transport/packet';
 import { CanActivate } from './guard';
 import { PipeTransform } from '../pipes/pipe';
-import { Route, RouteFactoryResolver } from './route';
+import { Route, RouteFactoryResolver, ROUTES, Routes } from './route';
 import { ModuleRef } from '../module.ref';
 import { InterceptorMiddleware, InterceptorType, Middleware, MiddlewareFn } from '../transport/endpoint';
 import { HeaderContext, TransportContext } from '../transport/context';
@@ -21,10 +21,6 @@ export abstract class Router implements Middleware {
      * route prefix.
      */
     abstract get prefix(): string;
-    /**
-     * route prefix.
-     */
-    abstract set prefix(value: string);
     /**
      * routes.
      */
@@ -59,6 +55,9 @@ export abstract class Router implements Middleware {
     abstract unuse(route: string): this;
 }
 
+/**
+ * Mapping route.
+ */
 export class MappingRoute implements Middleware {
 
     private _middleware?: Middleware;
@@ -118,7 +117,7 @@ export class MappingRoute implements Middleware {
             if (!platform.modules.has(module)) {
                 ctx.injector.get(ModuleRef).import(module, true)
             }
-            const router = platform.modules.get(module)?.injector.get(Router);
+            const router = platform.modules.get(module)?.injector.get(Router) as MappingRouter;
             if (router) {
                 router.prefix = route.path ?? '';
                 return router
@@ -143,13 +142,20 @@ export class MappingRoute implements Middleware {
 
 }
 
+/**
+ * Mapping router.
+ */
+@Injectable()
 export class MappingRouter extends Router implements OnDestroy {
 
     readonly routes: Map<string, MiddlewareFn>;
 
-    constructor(public prefix = '') {
+    constructor(@Nullable() public prefix: string = '', @Inject(ROUTES, { nullable: true, flags: InjectFlags.Self }) routes?: Routes) {
         super()
-        this.routes = new Map<string, MiddlewareFn>()
+        this.routes = new Map<string, MiddlewareFn>();
+        if (routes) {
+            routes.forEach(r => this.use(r));
+        }
     }
 
     has(route: string | Route): boolean {

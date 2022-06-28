@@ -201,7 +201,9 @@ export class Chain implements Middleware {
 
 }
 
-
+/**
+ * interceptor middleware.
+ */
 export class InterceptorMiddleware<TRequest, TResponse> implements Middleware {
 
     private _chainFn?: MiddlewareFn;
