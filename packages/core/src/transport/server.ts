@@ -210,7 +210,7 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
                     ctx.destroy()
                 }
             });
-
+        ctx.onDestroy(()=> cancel?.unsubscribe());
         this.bindEvent(ctx, cancel)
     }
 
