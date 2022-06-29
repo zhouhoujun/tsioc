@@ -1,12 +1,10 @@
-import { Abstract, ArgumentError, EMPTY, EMPTY_OBJ, InvocationContext, isFunction, isNil, isNumber, Token, Type, type_str } from '@tsdi/ioc';
+import { Abstract, ArgumentError, EMPTY, EMPTY_OBJ, Injector, InvocationContext, isFunction, isNil, isNumber, Token, Type, type_str } from '@tsdi/ioc';
 import { Logger, Log } from '@tsdi/logs';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, filter, map } from 'rxjs';
 import { InterceptorChain, Endpoint, EndpointBackend, InterceptorLike, InterceptorType } from './endpoint';
 import { RequestBase, ResponseBase, ResponseEvent } from './packet';
 import { RequestContext } from './context';
 import { ClientContext } from './client.ctx';
-import { Serializer } from './serializer';
-import { Deserializer } from './deserializer';
 
 
 
@@ -16,17 +14,29 @@ import { Deserializer } from './deserializer';
 @Abstract()
 export abstract class ClientOptions<TRequest, TResponse> {
     /**
-     * serializer for request.
+     * before intereptors
      */
-    abstract serializer?: Type<Serializer>;
+    abstract befores?: InterceptorType<any, TRequest>[];
     /**
-     * deserializer for response.
+     * the mutil token to register before intereptors in the server context.
      */
-    abstract deserializer?: Type<Deserializer>;
+    abstract beforesToken?: Token<InterceptorLike<any, TRequest>[]>;
     /**
      * interceptors of client.
      */
     abstract interceptors?: InterceptorType<TRequest, TResponse>[];
+    /**
+     * the mutil token to register intereptors in the client context.
+     */
+    abstract interceptorsToken?: Token<InterceptorLike<TRequest, TResponse>[]>;
+    /**
+     * after intereptors
+     */
+    abstract afters?: InterceptorType<TResponse, any>[];
+    /**
+     * the mutil token to register after intereptors in the client context.
+     */
+    abstract aftersToken?: Token<InterceptorLike<TResponse, any>[]>;
 }
 
 
@@ -40,7 +50,15 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
     readonly logger!: Logger;
 
     private _chain?: Endpoint<TRequest, TResponse>;
+
+    private _befores?: InterceptorLike<any, TRequest>[];
+    private _befToken?: Token<InterceptorLike<any, TRequest>[]>;
+
+    private _afters?: InterceptorLike<TResponse, any>[];
+    private _aftToken?: Token<InterceptorLike<TResponse, any>[]>;
+
     private _interceptors?: InterceptorLike<TRequest, TResponse>[];
+    private _iptToken?: Token<InterceptorLike<TRequest, TResponse>[]>;
 
     constructor(readonly context: InvocationContext, options?: ClientOptions<TRequest, TResponse>) {
         this.initialize(this.initOption(options));
@@ -60,40 +78,71 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
      */
     protected initialize(options: ClientOptions<TRequest, TResponse>): void {
         const injector = this.context.injector;
-        if (options.interceptors && options.interceptors.length) {
-            const iToken = this.getInterceptorsToken();
-            const interceptors = options.interceptors.map(m => {
-                if (isFunction(m)) {
-                    return { provide: iToken, useClass: m, multi: true }
-                } else {
-                    return { provide: iToken, useValue: m, multi: true }
-                }
-            });
-            injector.inject(interceptors);
+        if (options.befores && options.befores.length) {
+            const iToken = this._befToken = options.beforesToken;
+            if (!iToken) {
+                throw new ArgumentError('client options beforesToken is missing.');
+            }
+            this.mutilInject(injector, iToken, options.befores);
         }
 
-        if (options.serializer) {
-            injector.inject({ provide: Serializer, useClass: options.serializer });
+        if (options.interceptors && options.interceptors.length) {
+            const iToken = this._iptToken = options.interceptorsToken;
+            if (!iToken) {
+                throw new ArgumentError('client options interceptorsToken is missing.');
+            }
+            this.mutilInject(injector, iToken, options.interceptors);
         }
-        if (options.deserializer) {
-            injector.inject({ provide: Deserializer, useClass: options.deserializer });
+
+        if (options.afters && options.afters.length) {
+            const iToken = this._aftToken = options.aftersToken;
+            if (!iToken) {
+                throw new ArgumentError('client options aftersToken is missing.');
+            }
+            this.mutilInject(injector, iToken, options.afters);
         }
 
     }
 
+    private mutilInject<T>(injector: Injector, provide: Token, types: (Type<T> | T)[]): void {
+        const providers = types.map(m => {
+            if (isFunction(m)) {
+                return { provide, useClass: m, multi: true }
+            } else {
+                return { provide, useValue: m, multi: true }
+            }
+        });
+        injector.inject(providers);
+    }
+
     /**
-     * get mutil token of interceptors.
+     * server interceptors.
      */
-    protected abstract getInterceptorsToken(): Token<InterceptorLike<TRequest, TResponse>[]>;
+    get befores(): InterceptorLike<any, TRequest>[] {
+        if (!this._befores) {
+            this._befores = this._befToken ? [...this.context.injector.get(this._befToken, EMPTY)] : []
+        }
+        return this._befores
+    }
 
     /**
      * client interceptors.
      */
     get interceptors(): InterceptorLike<TRequest, TResponse>[] {
         if (!this._interceptors) {
-            this._interceptors = [...this.context.injector.get(this.getInterceptorsToken(), EMPTY)]
+            this._interceptors = this._iptToken ? [...this.context.injector.get(this._iptToken, EMPTY)] : []
         }
         return this._interceptors
+    }
+
+    /**
+     * server interceptors.
+     */
+    get afters(): InterceptorLike<TResponse, any>[] {
+        if (!this._afters) {
+            this._afters = this._aftToken ? [...this.context.injector.get(this._aftToken, EMPTY)] : []
+        }
+        return this._afters
     }
 
     /**
@@ -107,6 +156,38 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
             this.interceptors.splice(order, 0, interceptor)
         } else {
             this.interceptors.push(interceptor)
+        }
+        this._chain = null!;
+        return this
+    }
+
+    /**
+     * use intercept before request with interceptor.
+     * @param interceptor 
+     * @param order 
+     * @returns 
+     */
+    useBefore(interceptor: InterceptorLike<any, TRequest>, order?: number): this {
+        if (isNumber(order)) {
+            this.befores.splice(order, 0, interceptor)
+        } else {
+            this.befores.push(interceptor)
+        }
+        this._chain = null!;
+        return this
+    }
+
+    /**
+     * use intercept after serve response with interceptor.
+     * @param interceptor 
+     * @param order 
+     * @returns 
+     */
+    useAfter(interceptor: InterceptorLike<TResponse, any>, order?: number): this {
+        if (isNumber(order)) {
+            this.afters.splice(order, 0, interceptor)
+        } else {
+            this.afters.push(interceptor)
         }
         this._chain = null!;
         return this

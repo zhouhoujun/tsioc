@@ -17,7 +17,8 @@ import { HttpClientOptions, HTTP_INTERCEPTORS, CLIENT_HTTP2SESSION } from './opt
 
 
 const defOpts = {
-    interceptors: []
+    interceptors: [],
+    interceptorsToken: HTTP_INTERCEPTORS
 } as HttpClientOptions;
 
 export type HttpHeadersType = HttpHeaders | { [header: string]: string | string[] } | http.OutgoingHttpHeaders;

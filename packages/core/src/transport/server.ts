@@ -1,4 +1,4 @@
-import { Abstract, ArgumentError, EMPTY, Injector, InvocationContext, isFunction, isNumber, ProviderType, Token, Type } from '@tsdi/ioc';
+import { Abstract, ArgumentError, EMPTY, Injector, InvocationContext, isFunction, isNumber, Token, Type } from '@tsdi/ioc';
 import { Logger, Log } from '@tsdi/logs';
 import { of, Subscription } from 'rxjs';
 import { Runner } from '../metadata/decor';
@@ -6,8 +6,6 @@ import { OnDispose } from '../lifecycle';
 import { InterceptorChain, Endpoint, EndpointBackend, MiddlewareBackend, MiddlewareLike, InterceptorLike, MiddlewareType, InterceptorType, CustomEndpoint } from './endpoint';
 import { ExecptionFilter } from '../execptions/filter';
 import { TransportContext } from './context';
-import { Serializer } from './serializer';
-import { Deserializer } from './deserializer';
 
 /**
  * server options.
@@ -261,13 +259,6 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
             }
             this.mutilInject(injector, iToken, options.afters);
         }
-
-        // if (options.serializer) {
-        //     injector.inject({ provide: Serializer, useClass: options.serializer });
-        // }
-        // if (options.deserializer) {
-        //     injector.inject({ provide: Deserializer, useClass: options.deserializer });
-        // }
 
         const eToken = this._exptToken = options.execptionsToken;
         if (options.execptions && options.execptions.length) {
