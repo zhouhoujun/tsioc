@@ -1,8 +1,8 @@
 
 import {
     BadRequestError,
-    CustomEndpoint, EndpointBackend, ExecptionFilter, Interceptor, InterceptorInst,
-    InterceptorType, MiddlewareInst, MiddlewareType, ServerOptions, TransportServer
+    CustomEndpoint, EndpointBackend, ExecptionFilter, Interceptor, InterceptorLike,
+    InterceptorType, MiddlewareLike, MiddlewareType, ServerOptions, TransportServer
 } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId, Type } from '@tsdi/ioc';
 import { Socket, createSocket, SocketOptions, BindOptions, RemoteInfo } from 'dgram';
@@ -108,10 +108,10 @@ export class UdpServer extends TransportServer<UdpServRequest, UdpServResponse, 
         return TCP_EXECPTION_FILTERS;
     }
 
-    protected getInterceptorsToken(): Token<InterceptorInst<UdpServRequest, UdpServResponse>[]> {
+    protected getInterceptorsToken(): Token<InterceptorLike<UdpServRequest, UdpServResponse>[]> {
         return UDP_SERV_INTERCEPTORS;
     }
-    protected getMiddlewaresToken(): Token<MiddlewareInst<UdpContext>[]> {
+    protected getMiddlewaresToken(): Token<MiddlewareLike<UdpContext>[]> {
         return TCP_MIDDLEWARES;
     }
 

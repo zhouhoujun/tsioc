@@ -3,7 +3,7 @@ import {
     InvokeOption, OnDestroy, tokenId, Type, TypeReflect
 } from '@tsdi/ioc';
 import { TransportContext } from '../transport/context';
-import { InterceptorInst, Middleware, MiddlewareFn } from '../transport/endpoint';
+import { InterceptorLike, Middleware, MiddlewareFn } from '../transport/endpoint';
 import { Protocol } from '../transport/packet';
 import { CanActivate } from './guard';
 
@@ -37,7 +37,7 @@ export interface Route extends InvokeArguments {
     /**
      * interceptors of route.
      */
-    interceptors?: InterceptorInst[];
+    interceptors?: InterceptorLike[];
     /**
      * transport protocol
      */
@@ -119,7 +119,7 @@ export abstract class RouteRef<T = any> implements Middleware, Destroyable, OnDe
     /**
      * interceptors of route.
      */
-    abstract get interceptors(): InterceptorInst[];
+    abstract get interceptors(): InterceptorLike[];
     /**
      * route handle.
      *

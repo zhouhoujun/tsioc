@@ -30,7 +30,7 @@ export type EndpointFn<TRequest, TResponse> = (req: TRequest, context: EndpointC
  * through the interceptor chain.
  */
 @Abstract()
-export abstract class EndpointBackend<TRequest, TResponse> implements Endpoint<TRequest, TResponse> {
+export abstract class EndpointBackend<TRequest = any, TResponse = any> implements Endpoint<TRequest, TResponse> {
     /**
      * transport endpoint handle.
      * @param req request input.
@@ -60,9 +60,9 @@ export interface Interceptor<TRequest = any, TResponse = any> {
 export type InterceptorFn<TRequest, TResponse> = (req: TRequest, next: Endpoint<TRequest, TResponse>, context: EndpointContext) => Observable<TResponse>;
 
 /**
- * interceptor instance.
+ * interceptor like.
  */
-export type InterceptorInst<TRequest = any, TResponse = any> = Interceptor<TRequest, TResponse> | InterceptorFn<TRequest, TResponse>;
+export type InterceptorLike<TRequest = any, TResponse = any> = Interceptor<TRequest, TResponse> | InterceptorFn<TRequest, TResponse>;
 
 /**
  * interceptor function.
@@ -88,9 +88,9 @@ export interface Middleware<T extends TransportContext = TransportContext> {
  */
 export type MiddlewareFn<T extends TransportContext = TransportContext> = Handler<T, Promise<void>>;
 /**
- * middleware instance.
+ * middleware like.
  */
-export type MiddlewareInst<T extends TransportContext = TransportContext> = Middleware<T> | MiddlewareFn<T>;
+export type MiddlewareLike<T extends TransportContext = TransportContext> = Middleware<T> | MiddlewareFn<T>;
 /**
  * middleware type.
  */
@@ -118,7 +118,7 @@ export class InterceptorChain<TRequest, TResponse> implements Endpoint<TRequest,
     private chain!: Endpoint<TRequest, TResponse>;
     private backend: EndpointBackend<TRequest, TResponse>;
     private interceptors: Interceptor<TRequest, TResponse>[];
-    constructor(backend: EndpointBackend<TRequest, TResponse> | EndpointFn<TRequest, TResponse>, interceptors: InterceptorInst<TRequest, TResponse>[]) {
+    constructor(backend: EndpointBackend<TRequest, TResponse> | EndpointFn<TRequest, TResponse>, interceptors: InterceptorLike<TRequest, TResponse>[]) {
         this.backend = isFunction(backend) ? { handle: backend } : backend;
         this.interceptors = interceptors.map(intercept => isFunction(intercept) ? ({ intercept }) : intercept)
     }
@@ -150,7 +150,7 @@ export class CustomEndpoint<TRequest, TResponse> implements Endpoint<TRequest, T
 export class MiddlewareBackend<TRequest, TResponse, Tx extends TransportContext> implements EndpointBackend<TRequest, TResponse> {
 
     private _middleware?: MiddlewareFn<Tx>;
-    constructor(private backend: EndpointBackend<TRequest, TResponse>, private middlewares: MiddlewareInst<Tx>[]) {
+    constructor(private backend: EndpointBackend<TRequest, TResponse>, private middlewares: MiddlewareLike<Tx>[]) {
 
     }
 
@@ -172,7 +172,7 @@ export class MiddlewareBackend<TRequest, TResponse, Tx extends TransportContext>
  * compose middlewares
  * @param middlewares 
  */
-export function compose<T extends TransportContext>(middlewares: MiddlewareInst<T>[]): MiddlewareFn<T> {
+export function compose<T extends TransportContext>(middlewares: MiddlewareLike<T>[]): MiddlewareFn<T> {
     const middleFns = middlewares.filter(m => m).map(m => isFunction(m) ? m : ((ctx, next) => m.invoke(ctx, next)) as MiddlewareFn<T>);
     return chain(middleFns)
 }
@@ -209,7 +209,7 @@ export class InterceptorMiddleware<TRequest, TResponse> implements Middleware {
     private _chainFn?: MiddlewareFn;
     private interceptors: Interceptor<TRequest, TResponse>[];
     private middleware: Middleware;
-    constructor(middleware: MiddlewareInst, interceptors: InterceptorInst<TRequest, TResponse>[]) {
+    constructor(middleware: MiddlewareLike, interceptors: InterceptorLike<TRequest, TResponse>[]) {
         this.middleware = isFunction(middleware) ? { invoke: middleware } : middleware;
         this.interceptors = interceptors.map(intercept => isFunction(intercept) ? ({ intercept }) : intercept);
     }
@@ -231,8 +231,8 @@ export class InterceptorMiddleware<TRequest, TResponse> implements Middleware {
                             defer.resolve();
                         }
                     });
-                ctx.onDestroy(()=> cancel?.unsubscribe());
-                
+                ctx.onDestroy(() => cancel?.unsubscribe());
+
                 return defer.promise;
             }
         }

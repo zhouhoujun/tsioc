@@ -5,7 +5,7 @@ import {
 import { isObservable, lastValueFrom } from 'rxjs';
 import { CanActivate } from './guard';
 import { ResultValue } from './result';
-import { InterceptorInst, InterceptorMiddleware, InterceptorType, Middleware, MiddlewareFn } from '../transport/endpoint';
+import { InterceptorLike, InterceptorMiddleware, InterceptorType, Middleware, MiddlewareFn } from '../transport/endpoint';
 import { RouteRef, RouteFactory, RouteFactoryResolver, joinprefix } from './route';
 import { ProtocolRouteMappingMetadata, RouteMappingMetadata } from './router';
 import { TransportContext } from '../transport/context';
@@ -75,8 +75,8 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     }
 
 
-    private _intptors?: InterceptorInst[];
-    get interceptors(): InterceptorInst[] {
+    private _intptors?: InterceptorLike[];
+    get interceptors(): InterceptorLike[] {
         if (!this._intptors) {
             this._intptors = this.metadata.interceptors?.map(i => isClass(i) ? this.factory.resolve(i) : i) ?? EMPTY;
         }
@@ -104,7 +104,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         const key = `${metadate.method ?? ctx.method} ${method.propertyKey}`;
         let endpoint = this._endpoints.get(key);
         if (!endpoint) {
-            const inptors = this.getRouteInterceptors(ctx, method)?.map(c => (this.injector.get(c as Type, null) ?? c) as InterceptorInst) ?? [];
+            const inptors = this.getRouteInterceptors(ctx, method)?.map(c => (this.injector.get(c as Type, null) ?? c) as InterceptorLike) ?? [];
             endpoint = inptors.length ? this.parse(new InterceptorMiddleware(c => this.response(c, method), inptors)) : (ctx, next) => this.response(ctx, method);
             this._endpoints.set(key, endpoint)
         }

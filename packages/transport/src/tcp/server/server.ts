@@ -1,6 +1,6 @@
 import {
-    CustomEndpoint, Deserializer, EndpointBackend, ExecptionFilter, Interceptor, InterceptorInst,
-    MiddlewareInst, Packet, ServerOptions, TransportError, TransportServer
+    CustomEndpoint, Deserializer, EndpointBackend, ExecptionFilter, Interceptor, InterceptorLike,
+    MiddlewareLike, Packet, ServerOptions, TransportError, TransportServer
 } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId } from '@tsdi/ioc';
 import { Server, ListenOptions, Socket } from 'net';
@@ -92,10 +92,10 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
         return TCP_EXECPTION_FILTERS;
     }
 
-    protected getInterceptorsToken(): Token<InterceptorInst<TcpServRequest, TcpServResponse>[]> {
+    protected getInterceptorsToken(): Token<InterceptorLike<TcpServRequest, TcpServResponse>[]> {
         return TCP_SERV_INTERCEPTORS;
     }
-    protected getMiddlewaresToken(): Token<MiddlewareInst<TcpContext>[]> {
+    protected getMiddlewaresToken(): Token<MiddlewareLike<TcpContext>[]> {
         return TCP_MIDDLEWARES;
     }
 

@@ -1,5 +1,5 @@
 import { Inject, Injectable, InvocationContext, lang, Nullable, Providers, Token } from '@tsdi/ioc';
-import { RequestMethod, TransportClient, EndpointBackend, OnDispose, InterceptorInst, RequstOption, ResponseAs, RequestContext, mths } from '@tsdi/core';
+import { RequestMethod, TransportClient, EndpointBackend, OnDispose, InterceptorLike, RequstOption, ResponseAs, RequestContext, mths } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpHeaders, HttpParams, HttpParamsOptions, HttpResponse } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import * as http from 'http';
@@ -64,7 +64,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         return this.option;
     }
 
-    protected getInterceptorsToken(): Token<InterceptorInst<HttpRequest<any>, HttpEvent<any>>[]> {
+    protected getInterceptorsToken(): Token<InterceptorLike<HttpRequest<any>, HttpEvent<any>>[]> {
         return HTTP_INTERCEPTORS;
     }
 

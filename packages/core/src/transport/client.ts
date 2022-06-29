@@ -1,7 +1,7 @@
 import { Abstract, ArgumentError, EMPTY, EMPTY_OBJ, InvocationContext, isFunction, isNil, isNumber, Token, Type, type_str } from '@tsdi/ioc';
 import { Logger, Log } from '@tsdi/logs';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, filter, map } from 'rxjs';
-import { InterceptorChain, Endpoint, EndpointBackend, InterceptorInst, InterceptorType } from './endpoint';
+import { InterceptorChain, Endpoint, EndpointBackend, InterceptorLike, InterceptorType } from './endpoint';
 import { RequestBase, ResponseBase, ResponseEvent } from './packet';
 import { RequestContext } from './context';
 import { ClientContext } from './client.ctx';
@@ -40,7 +40,7 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
     readonly logger!: Logger;
 
     private _chain?: Endpoint<TRequest, TResponse>;
-    private _interceptors?: InterceptorInst<TRequest, TResponse>[];
+    private _interceptors?: InterceptorLike<TRequest, TResponse>[];
 
     constructor(readonly context: InvocationContext, options?: ClientOptions<TRequest, TResponse>) {
         this.initialize(this.initOption(options));
@@ -84,12 +84,12 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
     /**
      * get mutil token of interceptors.
      */
-    protected abstract getInterceptorsToken(): Token<InterceptorInst<TRequest, TResponse>[]>;
+    protected abstract getInterceptorsToken(): Token<InterceptorLike<TRequest, TResponse>[]>;
 
     /**
      * client interceptors.
      */
-    get interceptors(): InterceptorInst<TRequest, TResponse>[] {
+    get interceptors(): InterceptorLike<TRequest, TResponse>[] {
         if (!this._interceptors) {
             this._interceptors = [...this.context.injector.get(this.getInterceptorsToken(), EMPTY)]
         }
@@ -102,7 +102,7 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
      * @param order 
      * @returns 
      */
-    use(interceptor: InterceptorInst<TRequest, TResponse>, order?: number): this {
+    use(interceptor: InterceptorLike<TRequest, TResponse>, order?: number): this {
         if (isNumber(order)) {
             this.interceptors.splice(order, 0, interceptor)
         } else {

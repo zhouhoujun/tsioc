@@ -1,10 +1,10 @@
 import {
-    EMPTY_OBJ, Inject, Injectable, InvocationContext, isBoolean, isDefined,
-    isFunction, lang, Providers, Token, tokenId, Type
+    Inject, Injectable, InvocationContext, isBoolean, isDefined,
+    isFunction, lang, Providers, tokenId, Type, EMPTY_OBJ
 } from '@tsdi/ioc';
 import {
     TransportServer, RunnableFactoryResolver, Interceptor, ModuleRef, Router, ExecptionFilter,
-    MiddlewareInst, InterceptorInst, RespondTypeAdapter, ServerOptions,
+    RespondTypeAdapter, ServerOptions,
 } from '@tsdi/core';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { of, Subscription } from 'rxjs';
@@ -73,10 +73,25 @@ export interface Http2ServerOptions extends HttpOptions {
  * http server options.
  */
 export type HttpServerOptions = Http1ServerOptions | Http2ServerOptions;
+
+
+/**
+ * http server opptions.
+ */
+export const HTTP_SERVEROPTIONS = tokenId<HttpServerOptions>('HTTP_SERVEROPTIONS');
+
+
+export const HTTP_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('HTTP_EXECPTION_FILTERS');
+
+/**
+ * http server Interceptor tokens for {@link HttpServer}.
+ */
+export const HTTP_SERV_INTERCEPTORS = tokenId<Interceptor<HttpServRequest, HttpServResponse>[]>('HTTP_SERV_INTERCEPTORS');
+
 /**
  * default options.
  */
-const httpOpts = {
+ const httpOpts = {
     majorVersion: 2,
     options: { allowHTTP1: true },
     listenOptions: { port: 3000, host: LOCALHOST } as ListenOptions,
@@ -85,6 +100,9 @@ const httpOpts = {
     content: {
         root: 'public'
     },
+    interceptorsToken: HTTP_SERV_INTERCEPTORS,
+    middlewaresToken: HTTP_MIDDLEWARES,
+    execptionsToken: HTTP_EXECPTION_FILTERS,
     detailError: true,
     interceptors: [
         LogInterceptor,
@@ -102,20 +120,6 @@ const httpOpts = {
         Router
     ]
 } as Http2ServerOptions;
-
-/**
- * http server opptions.
- */
-export const HTTP_SERVEROPTIONS = tokenId<HttpServerOptions>('HTTP_SERVEROPTIONS');
-
-
-export const HTTP_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('HTTP_EXECPTION_FILTERS');
-
-/**
- * http server Interceptor tokens for {@link HttpServer}.
- */
-export const HTTP_SERV_INTERCEPTORS = tokenId<Interceptor<HttpServRequest, HttpServResponse>[]>('HTTP_SERV_INTERCEPTORS');
-
 
 /**
  * http server.
@@ -156,10 +160,6 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         return this.options.maxIpsCount ?? 0
     }
 
-    override getExecptionsToken(): Token<ExecptionFilter[]> {
-        return HTTP_EXECPTION_FILTERS;
-    }
-
     protected override initOption(options: HttpServerOptions): HttpServerOptions {
         if (options?.options) {
             options.options = { ...httpOpts.options, ...options.options }
@@ -191,15 +191,6 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
 
         return opts;
     }
-
-    protected override getInterceptorsToken(): Token<InterceptorInst<HttpServRequest, HttpServResponse>[]> {
-        return HTTP_SERV_INTERCEPTORS;
-    }
-
-    protected override getMiddlewaresToken(): Token<MiddlewareInst<HttpContext>[]> {
-        return HTTP_MIDDLEWARES;
-    }
-
 
     async start(): Promise<void> {
         const options = this.options;

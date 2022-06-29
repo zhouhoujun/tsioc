@@ -1,4 +1,4 @@
-import { HeaderContext, MiddlewareInst, mths, Protocol, ServerContext, TransportContext, TransportServer } from '@tsdi/core';
+import { HeaderContext, MiddlewareLike, mths, Protocol, ServerContext, TransportContext, TransportServer } from '@tsdi/core';
 import { Injector, InvokeArguments, isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import * as assert from 'assert';
@@ -1105,7 +1105,7 @@ function parseStamp(date?: string | number): number {
 /**
  * http middleware.
  */
-export type HttpMiddleware = MiddlewareInst<HttpContext>;
+export type HttpMiddleware = MiddlewareLike<HttpContext>;
 
 /**
  * http middlewares token.

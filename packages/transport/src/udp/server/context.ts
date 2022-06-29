@@ -1,5 +1,5 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
-import { ServerContext, ExecptionFilter, MiddlewareInst, Protocol } from '@tsdi/core';
+import { ServerContext, ExecptionFilter, MiddlewareLike, Protocol } from '@tsdi/core';
 import { Injectable, tokenId } from '@tsdi/ioc';
 import { UdpServRequest } from './request';
 import { UdpServResponse } from './response';
@@ -120,7 +120,7 @@ export class UdpContext extends ServerContext<UdpServRequest, UdpServResponse> {
 /**
  * TCP Middlewares.
  */
-export const TCP_MIDDLEWARES = tokenId<MiddlewareInst<UdpContext>[]>('TCP_MIDDLEWARES');
+export const TCP_MIDDLEWARES = tokenId<MiddlewareLike<UdpContext>[]>('TCP_MIDDLEWARES');
 /**
  * TCP execption filters.
  */

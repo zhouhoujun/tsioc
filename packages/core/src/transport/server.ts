@@ -1,9 +1,9 @@
-import { Abstract, EMPTY, InvocationContext, isFunction, isNumber, ProviderType, Token, Type } from '@tsdi/ioc';
+import { Abstract, ArgumentError, EMPTY, Injector, InvocationContext, isFunction, isNumber, ProviderType, Token, Type } from '@tsdi/ioc';
 import { Logger, Log } from '@tsdi/logs';
 import { of, Subscription } from 'rxjs';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
-import { InterceptorChain, Endpoint, EndpointBackend, MiddlewareBackend, MiddlewareInst, InterceptorInst, MiddlewareType, InterceptorType, CustomEndpoint } from './endpoint';
+import { InterceptorChain, Endpoint, EndpointBackend, MiddlewareBackend, MiddlewareLike, InterceptorLike, MiddlewareType, InterceptorType, CustomEndpoint } from './endpoint';
 import { ExecptionFilter } from '../execptions/filter';
 import { TransportContext } from './context';
 import { Serializer } from './serializer';
@@ -15,25 +15,47 @@ import { Deserializer } from './deserializer';
 @Abstract()
 export abstract class ServerOptions<TRequest, TResponse> {
     /**
-     * serializer for response.
+     * before intereptors
      */
-    abstract serializer?: Type<Serializer>;
+    abstract befores?: InterceptorType<any, TRequest>[];
     /**
-     * deserializer for incoming message.
+     * the mutil token to register before intereptors in the server context.
      */
-    abstract deserializer?: Type<Deserializer>;
+    abstract beforesToken?: Token<InterceptorLike<any, TRequest>[]>;
     /**
      * interceptors of server
      */
     abstract interceptors?: InterceptorType<TRequest, TResponse>[];
     /**
+     * the mutil token to register intereptors in the server context.
+     */
+    abstract interceptorsToken?: Token<InterceptorLike<TRequest, TResponse>[]>;
+    /**
+     * after intereptors
+     */
+    abstract afters?: InterceptorType<TResponse, any>[];
+    /**
+     * the mutil token to register after intereptors in the server context.
+     */
+    abstract aftersToken?: Token<InterceptorLike<TResponse, any>[]>;
+
+    /**
      * execption filters of server.
      */
     abstract execptions?: Type<ExecptionFilter>[];
     /**
+     * the mutil token to register execption filters in the server context.
+     */
+    abstract execptionsToken?: Token<ExecptionFilter[]>;
+
+    /**
      * middlewares of server.
      */
     abstract middlewares?: MiddlewareType[];
+    /**
+     * the mutil token to register middlewares in the server context.
+     */
+    abstract middlewaresToken?: Token<MiddlewareLike[]>;
 }
 
 /**
@@ -47,8 +69,20 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
     readonly logger!: Logger;
 
     private _chain?: Endpoint<TRequest, TResponse>;
-    private _middles?: MiddlewareInst<Tx>[];
-    private _interceptors?: InterceptorInst<TRequest, TResponse>[];
+
+    private _middles?: MiddlewareLike<Tx>[];
+    private _midlsToken?: Token<MiddlewareLike[]>;
+
+    private _befores?: InterceptorLike<any, TRequest>[];
+    private _befToken?: Token<InterceptorLike<any, TRequest>[]>;
+
+    private _afters?: InterceptorLike<TResponse, any>[];
+    private _aftToken?: Token<InterceptorLike<TResponse, any>[]>;
+
+    private _interceptors?: InterceptorLike<TRequest, TResponse>[];
+    private _iptToken?: Token<InterceptorLike<TRequest, TResponse>[]>;
+
+    private _exptToken?: Token<ExecptionFilter[]>;
 
     constructor(readonly context: InvocationContext, options?: ServerOptions<TRequest, TResponse>) {
         this.initialize(this.initOption(options));
@@ -57,9 +91,9 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
     /**
      * server middlewares.
      */
-    get middlewares(): MiddlewareInst<Tx>[] {
+    get middlewares(): MiddlewareLike<Tx>[] {
         if (!this._middles) {
-            this._middles = [...this.context.injector.get(this.getMiddlewaresToken(), EMPTY)]
+            this._middles = this._midlsToken ? [...this.context.injector.get(this._midlsToken, EMPTY)] : []
         }
         return this._middles
     }
@@ -67,29 +101,68 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
     /**
      * server interceptors.
      */
-    get interceptors(): InterceptorInst<TRequest, TResponse>[] {
-        if (!this._interceptors) {
-            this._interceptors = [...this.context.injector.get(this.getInterceptorsToken(), EMPTY)]
+    get befores(): InterceptorLike<any, TRequest>[] {
+        if (!this._befores) {
+            this._befores = this._befToken ? [...this.context.injector.get(this._befToken, EMPTY)] : []
         }
-        return this._interceptors
+        return this._befores
     }
 
     /**
      * server execptions token.
      */
-    abstract getExecptionsToken(): Token<ExecptionFilter[]>;
+    getExecptionsToken(): Token<ExecptionFilter[]> {
+        return this._exptToken!;
+    }
+
+    /**
+     * server interceptors.
+     */
+    get interceptors(): InterceptorLike<TRequest, TResponse>[] {
+        if (!this._interceptors) {
+            this._interceptors = this._iptToken ? [...this.context.injector.get(this._iptToken, EMPTY)] : []
+        }
+        return this._interceptors
+    }
+
+    /**
+     * server interceptors.
+     */
+    get afters(): InterceptorLike<TResponse, any>[] {
+        if (!this._afters) {
+            this._afters = this._aftToken ? [...this.context.injector.get(this._aftToken, EMPTY)] : []
+        }
+        return this._afters
+    }
+
     /**
      * start server.
      */
     abstract start(): Promise<void>;
 
     /**
-     * use interceptors.
+     * use intercept before request with interceptor.
      * @param interceptor 
      * @param order 
      * @returns 
      */
-    usetInterceptor(interceptor: InterceptorInst<TRequest, TResponse>, order?: number): this {
+    useBefore(interceptor: InterceptorLike<any, TRequest>, order?: number): this {
+        if (isNumber(order)) {
+            this.befores.splice(order, 0, interceptor)
+        } else {
+            this.befores.push(interceptor)
+        }
+        this._chain = null!;
+        return this
+    }
+
+    /**
+     * use intercept before request with interceptor.
+     * @param interceptor 
+     * @param order 
+     * @returns 
+     */
+    intercept(interceptor: InterceptorLike, order?: number): this {
         if (isNumber(order)) {
             this.interceptors.splice(order, 0, interceptor)
         } else {
@@ -98,12 +171,29 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
         this._chain = null!;
         return this
     }
+
+    /**
+     * use intercept after serve responed with interceptor.
+     * @param interceptor 
+     * @param order 
+     * @returns 
+     */
+    useAfter(interceptor: InterceptorLike<TResponse, any>, order?: number): this {
+        if (isNumber(order)) {
+            this.afters.splice(order, 0, interceptor)
+        } else {
+            this.afters.push(interceptor)
+        }
+        this._chain = null!;
+        return this
+    }
+
     /**
      * middlewares are executed on the transport request object before the
      * request is decoded.
      * @param middleware 
      */
-    use(middleware: MiddlewareInst<Tx>, order?: number): this {
+    use(middleware: MiddlewareLike<Tx>, order?: number): this {
         if (isNumber(order)) {
             this.middlewares.splice(order, 0, middleware)
         } else {
@@ -141,50 +231,63 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
         injector.setValue(TransportServer, this as any);
         injector.inject({ provide: Logger, useFactory: () => this.logger });
         if (options.middlewares && options.middlewares.length) {
-            const mToken = this.getMiddlewaresToken();
-            const middlewares = options.middlewares.map(m => {
-                if (isFunction(m)) {
-                    return { provide: mToken, useClass: m, multi: true }
-                } else {
-                    return { provide: mToken, useValue: m, multi: true }
-                }
-            });
-            injector.inject(middlewares);
+            const mToken = this._midlsToken = options.middlewaresToken;
+            if (!mToken) {
+                throw new ArgumentError('server options middlewaresToken is missing.');
+            }
+            this.mutilInject(injector, mToken, options.middlewares);
+        }
+
+        if (options.befores && options.befores.length) {
+            const iToken = this._befToken = options.beforesToken;
+            if (!iToken) {
+                throw new ArgumentError('server options beforesToken is missing.');
+            }
+            this.mutilInject(injector, iToken, options.befores);
         }
 
         if (options.interceptors && options.interceptors.length) {
-            const iToken = this.getInterceptorsToken();
-            const interceptors = options.interceptors.map(m => {
-                if (isFunction(m)) {
-                    return { provide: iToken, useClass: m, multi: true }
-                } else {
-                    return { provide: iToken, useValue: m, multi: true }
-                }
-            });
-            injector.inject(interceptors);
+            const iToken = this._iptToken = options.interceptorsToken;
+            if (!iToken) {
+                throw new ArgumentError('server options interceptorsToken is missing.');
+            }
+            this.mutilInject(injector, iToken, options.interceptors);
         }
 
-        if (options.serializer) {
-            injector.inject({ provide: Serializer, useClass: options.serializer });
-        }
-        if (options.deserializer) {
-            injector.inject({ provide: Deserializer, useClass: options.deserializer });
+        if (options.afters && options.afters.length) {
+            const iToken = this._aftToken = options.aftersToken;
+            if (!iToken) {
+                throw new ArgumentError('server options aftersToken is missing.');
+            }
+            this.mutilInject(injector, iToken, options.afters);
         }
 
+        // if (options.serializer) {
+        //     injector.inject({ provide: Serializer, useClass: options.serializer });
+        // }
+        // if (options.deserializer) {
+        //     injector.inject({ provide: Deserializer, useClass: options.deserializer });
+        // }
+
+        const eToken = this._exptToken = options.execptionsToken;
         if (options.execptions && options.execptions.length) {
-            const eToken = this.getExecptionsToken();
-            const filters = options.execptions.map(e => ({ provide: eToken, useClass: e, multi: true }) as ProviderType);
-            injector.inject(filters);
+            if (!eToken) {
+                throw new ArgumentError('server options aftersToken is missing.');
+            }
+            this.mutilInject(injector, eToken, options.execptions);
         }
     }
-    /**
-     * get mutil token of interceptors.
-     */
-    protected abstract getInterceptorsToken(): Token<InterceptorInst<TRequest, TResponse>[]>;
-    /**
-     * get mutil token of middlewares.
-     */
-    protected abstract getMiddlewaresToken(): Token<MiddlewareInst<Tx>[]>;
+
+    private mutilInject<T>(injector: Injector, provide: Token, types: (Type<T> | T)[]): void {
+        const providers = types.map(m => {
+            if (isFunction(m)) {
+                return { provide, useClass: m, multi: true }
+            } else {
+                return { provide, useValue: m, multi: true }
+            }
+        });
+        injector.inject(providers);
+    }
 
     /**
      * get backend endpoint.
@@ -210,7 +313,7 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
                     ctx.destroy()
                 }
             });
-        ctx.onDestroy(()=> cancel?.unsubscribe());
+
         this.bindEvent(ctx, cancel)
     }
 

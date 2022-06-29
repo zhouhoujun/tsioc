@@ -1,6 +1,6 @@
 import {
     BadRequestError, ClientOptions,
-    CustomEndpoint, EndpointBackend, Interceptor, InterceptorInst,
+    CustomEndpoint, EndpointBackend, Interceptor, InterceptorLike,
     OnDispose, RequestContext, ResponseJsonParseError, TransportClient, UuidGenerator
 } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId, type_undef } from '@tsdi/ioc';
@@ -64,7 +64,7 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
         this.connected = false;
     }
 
-    protected getInterceptorsToken(): Token<InterceptorInst<UdpRequest<any>, UdpEvent<any>>[]> {
+    protected getInterceptorsToken(): Token<InterceptorLike<UdpRequest<any>, UdpEvent<any>>[]> {
         return UDP_INTERCEPTORS;
     }
 
