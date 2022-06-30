@@ -21,7 +21,7 @@ export abstract class ClientOptions<TRequest, TResponse> extends TransportOption
  * abstract transport client.
  */
 @Abstract()
-export abstract class TransportClient<TRequest extends RequestBase = RequestBase, TResponse = any, TOption extends RequstOption = RequstOption> extends TransportEndpoint<TRequest, TResponse> {
+export abstract class TransportClient<TRequest = any, TResponse = any, TOption extends RequstOption = RequstOption> extends TransportEndpoint<TRequest, TResponse> {
 
     constructor(context: InvocationContext, options?: ClientOptions<TRequest, TResponse>) {
         super(context, options);

@@ -15,7 +15,10 @@ import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModu
         ServerModule,
         LoggerModule,
         HttpModule.withOption({
-            majorVersion: 1
+            majorVersion: 1,
+            listenOptions: {
+                port: 3200
+            }
         }),
         DeviceManageModule,
         DeviceAModule
@@ -40,8 +43,8 @@ describe('http1.1 server, Http', () => {
     let client: Http;
 
     before(async () => {
-        const uri1 = new URL('redis://192.168.20.56:3000/pathname');
-        const uri2 = new URL('tcp://192.168.20.56:3000/users?name=z');
+        const uri1 = new URL('redis://192.168.20.56:3200/pathname');
+        const uri2 = new URL('tcp://192.168.20.56:3200/users?name=z');
 
         ctx = await Application.run(MainApp);
         injector = ctx.injector;

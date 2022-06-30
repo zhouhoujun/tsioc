@@ -4,10 +4,10 @@ import {
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
 import { RunnableFactory, BootstrapOption, RunnableRef } from './runnable';
+import { ApplicationEvent, ApplicationEventPublisher } from './events';
 import { ApplicationRunners } from './runners';
 import { ModuleOption } from './module.factory';
 import { ModuleRef } from './module.ref';
-import { ApplicationEvent, ApplicationEventPublisher } from './events';
 import { ApplicationArguments } from './args';
 
 /**

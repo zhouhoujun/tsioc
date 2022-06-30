@@ -34,6 +34,9 @@ describe('middleware', () => {
                         allowHTTP1: true,
                         key,
                         cert
+                    },
+                    listenOptions: {
+                        port: 3200
                     }
                 })
             ]
@@ -55,7 +58,7 @@ describe('middleware', () => {
         const http = ctx.injector.resolve(Http, {
             provide: HttpClientOptions,
             useValue: {
-                authority: 'https://localhost:3000',
+                authority: 'https://localhost:3200',
                 options: {
                     ca: cert
                 }

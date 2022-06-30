@@ -25,6 +25,9 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
                 allowHTTP1: true,
                 key,
                 cert
+            },
+            listenOptions: {
+                port: 3200
             }
         }),
         DeviceManageModule,
@@ -55,7 +58,7 @@ describe('http2 server, Http', () => {
         client = injector.resolve(Http, {
             provide: HttpClientOptions,
             useValue: {
-                authority: 'https://localhost:3000',
+                authority: 'https://localhost:3200',
                 options: {
                     ca: cert
                 }

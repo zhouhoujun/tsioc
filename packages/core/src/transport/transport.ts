@@ -7,8 +7,8 @@ import { Endpoint, EndpointBackend, InterceptorChain, InterceptorLike, Intercept
 /**
  * transport endpoint options.
  */
- @Abstract()
- export abstract class TransportOptions<TRequest, TResponse> {
+@Abstract()
+export abstract class TransportOptions<TRequest, TResponse> {
     /**
      * before intereptors
      */
@@ -33,7 +33,6 @@ import { Endpoint, EndpointBackend, InterceptorChain, InterceptorLike, Intercept
      * the mutil token to register after intereptors in the endpoint context.
      */
     abstract aftersToken?: Token<InterceptorLike<TResponse, any>[]>;
-
     /**
      * execption filters of server.
      */
@@ -42,9 +41,8 @@ import { Endpoint, EndpointBackend, InterceptorChain, InterceptorLike, Intercept
      * the mutil token to register execption filters in the server context.
      */
     abstract execptionsToken?: Token<ExecptionFilter[]>;
-
+    
 }
-
 
 
 /**
@@ -69,7 +67,7 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any> {
 
     private _exptChain?: ExecptionFilter;
     private _filters?: ExecptionFilter[];
-    private _exptToken?: Token<ExecptionFilter[]>;
+    private _filterToken?: Token<ExecptionFilter[]>;
 
     constructor(readonly context: InvocationContext, options?: TransportOptions<TRequest, TResponse>) {
         this.initialize(this.initOption(options));
@@ -115,7 +113,7 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any> {
         }
 
         if (options.execptions && options.execptions.length) {
-            const eToken = this._exptToken = options.execptionsToken;
+            const eToken = this._filterToken = options.execptionsToken;
             if (!eToken) {
                 throw new ArgumentError(lang.getClassName(this) + ' options aftersToken is missing.');
             }
@@ -170,7 +168,7 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any> {
      */
     get filters(): ExecptionFilter[] {
         if (!this._filters) {
-            this._filters = this._exptToken ? this.context.injector.get(this._exptToken, []) : [];
+            this._filters = this._filterToken ? this.context.injector.get(this._filterToken, []) : [];
         }
         return this._filters;
     }

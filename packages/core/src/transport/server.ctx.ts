@@ -49,6 +49,7 @@ export abstract class ServerContext<TRequest = any, TResponse = any> extends Tra
     override missingError(missings: Parameter<any>[], type: ClassType<any>, method: string): MissingParameterError {
         return new TransportMissingError(missings, type, method)
     }
+
 }
 
 export class TransportMissingError extends MissingParameterError {
@@ -121,7 +122,7 @@ const primitiveResolvers: TransportArgumentResolver[] = [
                 resolve(parameter, ctx) {
                     const value = ctx.playload[parameter.field ?? parameter.name!];
                     const values: any[] = isString(value) ? value.split(',') : value;
-                    const pipe = ctx.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase());
+                    const pipe = ctx.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase())!;
                     if (!pipe) throw missingPipeError(parameter, ctx.targetType, ctx.methodName)
                     return values.map(val => pipe.transform(val, ...parameter.args || EMPTY)) as any
                 }

@@ -1,7 +1,7 @@
 import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, Injector, Modules } from '@tsdi/ioc';
-import { PROCESS_ROOT } from './metadata/tk';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption } from './context';
 import { DEFAULTA_PROVIDERS } from './providers';
+import { PROCESS_ROOT } from './metadata/tk';
 import { ApplicationExit } from './exit';
 import { ModuleRef } from './module.ref';
 import { ModuleFactoryResolver } from './module.factory';
