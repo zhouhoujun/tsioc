@@ -2,7 +2,9 @@ import { Abstract, ArgumentError, EMPTY, Injector, InvocationContext, isFunction
 import { Log, Logger } from '@tsdi/logs';
 import { ExecptionChain } from '../execptions/chain';
 import { ExecptionFilter } from '../execptions/filter';
+import { Deserializer } from './deserializer';
 import { Endpoint, EndpointBackend, InterceptorChain, InterceptorLike, InterceptorType } from './endpoint';
+import { Serializer } from './serializer';
 
 /**
  * transport endpoint options.
@@ -41,6 +43,15 @@ export abstract class TransportOptions<TRequest, TResponse> {
      * the mutil token to register execption filters in the server context.
      */
     abstract execptionsToken?: Token<ExecptionFilter[]>;
+
+    /**
+     * serializer for request.
+     */
+     abstract serializer?: Type<Serializer>;
+     /**
+      * deserializer for response.
+      */
+     abstract deserializer?: Type<Deserializer>;
 
 }
 
@@ -116,6 +127,13 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any> {
                 throw new ArgumentError(lang.getClassName(this) + ' options aftersToken is missing.');
             }
             this.regMulti(injector, eToken, options.execptions);
+        }
+
+        if (options.serializer) {
+            injector.inject({ provide: Serializer, useClass: options.serializer });
+        }
+        if (options.deserializer) {
+            injector.inject({ provide: Deserializer, useClass: options.deserializer });
         }
 
     }
