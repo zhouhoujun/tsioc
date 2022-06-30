@@ -39,7 +39,7 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
     /**
      * server middlewares.
      */
-    get middlewares(): MiddlewareLike<Tx>[] {
+    protected get middlewares(): MiddlewareLike<Tx>[] {
         if (!this._middles) {
             this._middles = this._midlsToken ? [...this.context.injector.get(this._midlsToken, EMPTY)] : []
         }
@@ -62,7 +62,7 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
         } else {
             this.middlewares.push(middleware)
         }
-        this._chain = null!;
+        this.resetEndpoint();
         return this
     }
 

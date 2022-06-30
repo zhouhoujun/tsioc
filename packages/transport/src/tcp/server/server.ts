@@ -47,9 +47,17 @@ export abstract class TcpServerOptions extends ServerOptions<TcpServRequest, Tcp
     abstract listenOptions: ListenOptions;
 }
 
+/**
+ * Tcp server interceptors.
+ */
+export const TCP_SERV_INTERCEPTORS = tokenId<Interceptor<TcpServRequest, TcpServResponse>[]>('TCP_SERV_INTERCEPTORS');
+
 const defOpts = {
     encoding: 'utf8',
     headerSplit: '#',
+    interceptorsToken: TCP_SERV_INTERCEPTORS,
+    execptionsToken: TCP_EXECPTION_FILTERS,
+    middlewaresToken: TCP_MIDDLEWARES,
     interceptors: [
         LogInterceptor,
         CatchInterceptor,
@@ -62,10 +70,6 @@ const defOpts = {
     }
 } as TcpServerOptions;
 
-/**
- * Tcp server interceptors.
- */
-export const TCP_SERV_INTERCEPTORS = tokenId<Interceptor<TcpServRequest, TcpServResponse>[]>('TCP_SERV_INTERCEPTORS');
 
 /**
  * TCP server.
@@ -86,17 +90,6 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
     protected override initOption(options: TcpServerOptions): TcpServerOptions {
         this.options = { ...defOpts, ...options };
         return this.options;
-    }
-
-    getExecptionsToken(): Token<ExecptionFilter[]> {
-        return TCP_EXECPTION_FILTERS;
-    }
-
-    protected getInterceptorsToken(): Token<InterceptorLike<TcpServRequest, TcpServResponse>[]> {
-        return TCP_SERV_INTERCEPTORS;
-    }
-    protected getMiddlewaresToken(): Token<MiddlewareLike<TcpContext>[]> {
-        return TCP_MIDDLEWARES;
     }
 
     async start(): Promise<void> {

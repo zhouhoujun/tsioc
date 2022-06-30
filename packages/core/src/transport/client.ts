@@ -28,13 +28,11 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption e
     }
 
     /**
-     * use interceptors.
-     * @param interceptor 
-     * @param order 
-     * @returns 
+     * initialize interceptors with options.
+     * @param options 
      */
-    use(interceptor: InterceptorLike<TRequest, TResponse>, order?: number): this {
-        return this.intercept(interceptor, order);
+    protected override initOption(options?: ClientOptions<TRequest, TResponse>): ClientOptions<TRequest, TResponse> {
+        return options ?? {};
     }
 
     /**

@@ -1,6 +1,6 @@
 import {
     CustomEndpoint, Deserializer, EndpointBackend, Interceptor, InterceptorLike, OnDispose, ClientOptions,
-    Packet, RequestContext, ResponseJsonParseError, Serializer, TransportClient, TransportError, UuidGenerator
+    Packet, RequestContext, ResponseJsonParseError, Serializer, TransportClient, TransportError, UuidGenerator, TransportOptions
 } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId, Type, type_undef } from '@tsdi/ioc';
 import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
@@ -21,11 +21,17 @@ export abstract class TcpClientOption extends ClientOptions<TcpRequest, TcpEvent
     abstract connectOpts: NetConnectOpts;
 }
 
+/**
+ * tcp interceptors.
+ */
+export const TCP_INTERCEPTORS = tokenId<Interceptor<TcpRequest, TcpEvent>[]>('TCP_INTERCEPTORS');
+
 const defaults = {
     headerSplit: '#',
     encoding: 'utf8',
     serializer: JsonSerializer,
     deserializer: JsonDeserializer,
+    interceptorsToken: TCP_INTERCEPTORS,
     interceptors: [
         EncodeInterceptor,
         DecodeInterceptor
@@ -36,11 +42,6 @@ const defaults = {
     }
 } as TcpClientOption;
 
-
-/**
- * tcp interceptors.
- */
-export const TCP_INTERCEPTORS = tokenId<Interceptor<TcpRequest, TcpEvent>[]>('TCP_INTERCEPTORS');
 
 /**
  * TcpClient.
@@ -57,10 +58,6 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
     ) {
         super(context, option);
         this.connected = false;
-    }
-
-    protected getInterceptorsToken(): Token<InterceptorLike<TcpRequest, TcpEvent>[]> {
-        return TCP_INTERCEPTORS;
     }
 
     protected getBackend(): EndpointBackend<TcpRequest, TcpEvent> {
@@ -151,7 +148,6 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
             });
         });
     }
-
 
     protected async connect(): Promise<void> {
         if (this.connected) return;
