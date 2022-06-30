@@ -11,14 +11,15 @@ import { HttpMimeAdapter } from '../mime';
 import { HttpBackend } from './backend';
 import { NormlizePathInterceptor } from './path';
 import { NormlizeBodyInterceptor } from './body';
-import { HttpClientOptions, HTTP_INTERCEPTORS, CLIENT_HTTP2SESSION } from './option';
+import { HttpClientOptions, HTTP_INTERCEPTORS, CLIENT_HTTP2SESSION, HTTP_EXECPTIONFILTERS } from './option';
 
 
 
 
 const defOpts = {
     interceptors: [],
-    interceptorsToken: HTTP_INTERCEPTORS
+    interceptorsToken: HTTP_INTERCEPTORS,
+    execptionsToken: HTTP_EXECPTIONFILTERS,
 } as HttpClientOptions;
 
 export type HttpHeadersType = HttpHeaders | { [header: string]: string | string[] } | http.OutgoingHttpHeaders;

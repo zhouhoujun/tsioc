@@ -1,6 +1,6 @@
 import {
     BadRequestError, ClientOptions,
-    CustomEndpoint, EndpointBackend, Interceptor, InterceptorLike,
+    CustomEndpoint, EndpointBackend, ExecptionFilter, Interceptor, InterceptorLike,
     OnDispose, RequestContext, ResponseJsonParseError, TransportClient, UuidGenerator
 } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId, type_undef } from '@tsdi/ioc';
@@ -27,10 +27,22 @@ export abstract class UdpClientOption extends ClientOptions<UdpRequest, UdpEvent
     abstract address: Address;
 }
 
+/**
+ * udp client interceptors.
+ */
+export const UDP_INTERCEPTORS = tokenId<Interceptor<UdpRequest, UdpEvent>[]>('UDP_INTERCEPTORS');
+
+/**
+ * udp client interceptors.
+ */
+export const UDP_EXECPTIONFILTERS = tokenId<ExecptionFilter[]>('UDP_EXECPTIONFILTERS');
+
 const defaults = {
     json: true,
     headerSplit: '#',
     encoding: 'utf8',
+    interceptorsToken: UDP_INTERCEPTORS,
+    execptionsToken: UDP_EXECPTIONFILTERS,
     interceptors: [
         EncodeInterceptor,
         DecodeInterceptor
@@ -42,10 +54,6 @@ const defaults = {
 } as UdpClientOption;
 
 
-/**
- * udp interceptors.
- */
-export const UDP_INTERCEPTORS = tokenId<Interceptor<UdpRequest, UdpEvent>[]>('UDP_INTERCEPTORS');
 
 /**
  * UdpClient.
@@ -62,10 +70,6 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
     ) {
         super(context, option);
         this.connected = false;
-    }
-
-    protected getInterceptorsToken(): Token<InterceptorLike<UdpRequest<any>, UdpEvent<any>>[]> {
-        return UDP_INTERCEPTORS;
     }
 
     protected getBackend(): EndpointBackend<UdpRequest<any>, UdpEvent<any>> {

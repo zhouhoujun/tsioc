@@ -1,6 +1,6 @@
 import {
     CustomEndpoint, Deserializer, EndpointBackend, Interceptor, InterceptorLike, OnDispose, ClientOptions,
-    Packet, RequestContext, ResponseJsonParseError, Serializer, TransportClient, TransportError, UuidGenerator, TransportOptions
+    Packet, RequestContext, ResponseJsonParseError, Serializer, TransportClient, TransportError, UuidGenerator, TransportOptions, ExecptionFilter
 } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId, Type, type_undef } from '@tsdi/ioc';
 import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
@@ -22,9 +22,13 @@ export abstract class TcpClientOption extends ClientOptions<TcpRequest, TcpEvent
 }
 
 /**
- * tcp interceptors.
+ * tcp client interceptors.
  */
 export const TCP_INTERCEPTORS = tokenId<Interceptor<TcpRequest, TcpEvent>[]>('TCP_INTERCEPTORS');
+/**
+ * tcp client interceptors.
+ */
+export const TCP_EXECPTIONFILTERS = tokenId<ExecptionFilter[]>('TCP_EXECPTIONFILTERS');
 
 const defaults = {
     headerSplit: '#',
@@ -32,6 +36,7 @@ const defaults = {
     serializer: JsonSerializer,
     deserializer: JsonDeserializer,
     interceptorsToken: TCP_INTERCEPTORS,
+    execptionsToken: TCP_EXECPTIONFILTERS,
     interceptors: [
         EncodeInterceptor,
         DecodeInterceptor
