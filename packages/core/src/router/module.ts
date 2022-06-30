@@ -4,7 +4,6 @@ import { RouteFactoryResolver, ROUTES, Routes } from './route';
 import { DefaultRouteFactoryResovler } from './route_ref';
 import { MappingRouter, Router } from './router';
 import { ExecptionModule } from '../execptions';
-import { ResponseExecptionFilter } from './filter';
 
 /*
  * Middleware module.
@@ -16,7 +15,6 @@ import { ResponseExecptionFilter } from './filter';
     providers: [
         { provide: Router, useClass: MappingRouter, static: true },
         { provide: RouteFactoryResolver, useValue: new DefaultRouteFactoryResovler() },
-        ResponseExecptionFilter
     ]
 })
 export class RouterModule {

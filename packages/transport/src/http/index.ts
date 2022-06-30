@@ -8,6 +8,7 @@ export * from './client/backend';
 export * from './client/option';
 export * from './client/clinet';
 
+export * from './server/options';
 export * from './server/results';
 export * from './server/content';
 export * from './server/context';

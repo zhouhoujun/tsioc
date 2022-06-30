@@ -1,9 +1,9 @@
 import { Module, RouterModule, TransformModule } from '@tsdi/core';
 import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
 import { BasicMimeDb, MimeDb } from '../mime';
-import { ArgumentErrorFilter, HttpFinalizeFilter } from './server/finalize-filter';
-import { HttpServer, HttpServerOptions, HTTP_EXECPTION_FILTERS, HTTP_SERVEROPTIONS } from './server/server';
+import { HttpServer } from './server/server';
 import { Http } from './client/clinet';
+import { HttpServerOptions, HTTP_SERVEROPTIONS } from './server/options';
 
 /**
  * http module.
@@ -14,8 +14,6 @@ import { Http } from './client/clinet';
         RouterModule
     ],
     providers: [
-        { provide: HTTP_EXECPTION_FILTERS, useClass: HttpFinalizeFilter, multi: true },
-        { provide: HTTP_EXECPTION_FILTERS, useClass: ArgumentErrorFilter, multi: true },
         { provide: MimeDb, useClass: BasicMimeDb, asDefault: true },
 
         HttpServer,

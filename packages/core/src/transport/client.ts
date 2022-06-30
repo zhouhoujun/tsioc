@@ -1,10 +1,10 @@
-import { Abstract, ArgumentError, EMPTY, EMPTY_OBJ, Injector, InvocationContext, isFunction, isNil, isNumber, Token, Type, type_str } from '@tsdi/ioc';
-import { Logger, Log } from '@tsdi/logs';
+import { Abstract, ArgumentError, EMPTY_OBJ, InvocationContext, isNil, type_str } from '@tsdi/ioc';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, filter, map } from 'rxjs';
-import { InterceptorChain, Endpoint, EndpointBackend, InterceptorLike, InterceptorType } from './endpoint';
+import { EndpointBackend, InterceptorLike } from './endpoint';
 import { RequestBase, ResponseBase, ResponseEvent } from './packet';
 import { RequestContext } from './context';
 import { ClientContext } from './client.ctx';
+import { TransportOptions, TransportEndpoint } from './transport';
 
 
 
@@ -12,31 +12,8 @@ import { ClientContext } from './client.ctx';
  * client options.
  */
 @Abstract()
-export abstract class ClientOptions<TRequest, TResponse> {
-    /**
-     * before intereptors
-     */
-    abstract befores?: InterceptorType<any, TRequest>[];
-    /**
-     * the mutil token to register before intereptors in the server context.
-     */
-    abstract beforesToken?: Token<InterceptorLike<any, TRequest>[]>;
-    /**
-     * interceptors of client.
-     */
-    abstract interceptors?: InterceptorType<TRequest, TResponse>[];
-    /**
-     * the mutil token to register intereptors in the client context.
-     */
-    abstract interceptorsToken?: Token<InterceptorLike<TRequest, TResponse>[]>;
-    /**
-     * after intereptors
-     */
-    abstract afters?: InterceptorType<TResponse, any>[];
-    /**
-     * the mutil token to register after intereptors in the client context.
-     */
-    abstract aftersToken?: Token<InterceptorLike<TResponse, any>[]>;
+export abstract class ClientOptions<TRequest, TResponse> extends TransportOptions<TRequest, TResponse> {
+
 }
 
 
@@ -44,105 +21,10 @@ export abstract class ClientOptions<TRequest, TResponse> {
  * abstract transport client.
  */
 @Abstract()
-export abstract class TransportClient<TRequest extends RequestBase = RequestBase, TResponse = any, TOption extends RequstOption = RequstOption> {
+export abstract class TransportClient<TRequest extends RequestBase = RequestBase, TResponse = any, TOption extends RequstOption = RequstOption> extends TransportEndpoint<TRequest, TResponse> {
 
-    @Log()
-    readonly logger!: Logger;
-
-    private _chain?: Endpoint<TRequest, TResponse>;
-
-    private _befores?: InterceptorLike<any, TRequest>[];
-    private _befToken?: Token<InterceptorLike<any, TRequest>[]>;
-
-    private _afters?: InterceptorLike<TResponse, any>[];
-    private _aftToken?: Token<InterceptorLike<TResponse, any>[]>;
-
-    private _interceptors?: InterceptorLike<TRequest, TResponse>[];
-    private _iptToken?: Token<InterceptorLike<TRequest, TResponse>[]>;
-
-    constructor(readonly context: InvocationContext, options?: ClientOptions<TRequest, TResponse>) {
-        this.initialize(this.initOption(options));
-    }
-
-    /**
-     * initialize interceptors with options.
-     * @param options 
-     */
-    protected initOption(options?: ClientOptions<TRequest, TResponse>): ClientOptions<TRequest, TResponse> {
-        return options ?? {};
-    }
-
-    /**
-     * initialize interceptors with options.
-     * @param options 
-     */
-    protected initialize(options: ClientOptions<TRequest, TResponse>): void {
-        const injector = this.context.injector;
-        if (options.befores && options.befores.length) {
-            const iToken = this._befToken = options.beforesToken;
-            if (!iToken) {
-                throw new ArgumentError('client options beforesToken is missing.');
-            }
-            this.mutilInject(injector, iToken, options.befores);
-        }
-
-        if (options.interceptors && options.interceptors.length) {
-            const iToken = this._iptToken = options.interceptorsToken;
-            if (!iToken) {
-                throw new ArgumentError('client options interceptorsToken is missing.');
-            }
-            this.mutilInject(injector, iToken, options.interceptors);
-        }
-
-        if (options.afters && options.afters.length) {
-            const iToken = this._aftToken = options.aftersToken;
-            if (!iToken) {
-                throw new ArgumentError('client options aftersToken is missing.');
-            }
-            this.mutilInject(injector, iToken, options.afters);
-        }
-
-    }
-
-    private mutilInject<T>(injector: Injector, provide: Token, types: (Type<T> | T)[]): void {
-        const providers = types.map(m => {
-            if (isFunction(m)) {
-                return { provide, useClass: m, multi: true }
-            } else {
-                return { provide, useValue: m, multi: true }
-            }
-        });
-        injector.inject(providers);
-    }
-
-    /**
-     * server interceptors.
-     */
-    get befores(): InterceptorLike<any, TRequest>[] {
-        if (!this._befores) {
-            this._befores = this._befToken ? [...this.context.injector.get(this._befToken, EMPTY)] : []
-        }
-        return this._befores
-    }
-
-    /**
-     * client interceptors.
-     */
-    get interceptors(): InterceptorLike<TRequest, TResponse>[] {
-        if (!this._interceptors) {
-            this._interceptors = this._iptToken ? [...this.context.injector.get(this._iptToken, EMPTY)] : []
-        }
-        return this._interceptors
-    }
-
-    /**
-     * server interceptors.
-     */
-    get afters(): InterceptorLike<TResponse, any>[] {
-        if (!this._afters) {
-            this._afters = this._aftToken ? [...this.context.injector.get(this._aftToken, EMPTY)] : []
-        }
-        return this._afters
+    constructor(context: InvocationContext, options?: ClientOptions<TRequest, TResponse>) {
+        super(context, options);
     }
 
     /**
@@ -152,57 +34,8 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
      * @returns 
      */
     use(interceptor: InterceptorLike<TRequest, TResponse>, order?: number): this {
-        if (isNumber(order)) {
-            this.interceptors.splice(order, 0, interceptor)
-        } else {
-            this.interceptors.push(interceptor)
-        }
-        this._chain = null!;
-        return this
+        return this.intercept(interceptor, order);
     }
-
-    /**
-     * use intercept before request with interceptor.
-     * @param interceptor 
-     * @param order 
-     * @returns 
-     */
-    useBefore(interceptor: InterceptorLike<any, TRequest>, order?: number): this {
-        if (isNumber(order)) {
-            this.befores.splice(order, 0, interceptor)
-        } else {
-            this.befores.push(interceptor)
-        }
-        this._chain = null!;
-        return this
-    }
-
-    /**
-     * use intercept after serve response with interceptor.
-     * @param interceptor 
-     * @param order 
-     * @returns 
-     */
-    useAfter(interceptor: InterceptorLike<TResponse, any>, order?: number): this {
-        if (isNumber(order)) {
-            this.afters.splice(order, 0, interceptor)
-        } else {
-            this.afters.push(interceptor)
-        }
-        this._chain = null!;
-        return this
-    }
-
-    /**
-     * transport endpoint chain.
-     */
-    protected chain(): Endpoint<TRequest, TResponse> {
-        if (!this._chain) {
-            this._chain = new InterceptorChain(this.getBackend(), this.interceptors)
-        }
-        return this._chain
-    }
-
 
     /**
      * Sends an `Request` and returns a stream of `TResponse`s.
@@ -258,7 +91,6 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
         observe?: 'body';
         responseType: 'text';
     }): Observable<string>;
-
 
 
     /**
@@ -468,7 +300,7 @@ export abstract class TransportClient<TRequest extends RequestBase = RequestBase
         // inside an Observable chain, which causes interceptors to be re-run on every
         // subscription (this also makes retries re-run the handler, including interceptors).
         const events$: Observable<TResponse> =
-            of(req).pipe(concatMap((req: TRequest) => this.chain().handle(req, context)));
+            of(req).pipe(concatMap((req: TRequest) => this.endpoint().handle(req, context)));
 
         // If coming via the API signature which accepts a previously constructed HttpRequest,
         // the only option is to get the event stream. Otherwise, return the event stream if
@@ -567,7 +399,6 @@ export interface RequstOption {
     context?: InvocationContext;
     params?: Record<string, any>;
 }
-
 
 
 /**

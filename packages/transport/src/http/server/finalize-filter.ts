@@ -9,7 +9,7 @@ import { MissingModelFieldError } from '@tsdi/repository';
 import { HttpBadRequestError, HttpError, HttpForbiddenError, HttpInternalServerError, HttpNotFoundError, HttpUnauthorizedError } from '../errors';
 import { HttpContext } from './context';
 import { ev } from '../../consts';
-import { HttpServerOptions, HTTP_SERVEROPTIONS } from './server';
+import { HttpServerOptions, HTTP_SERVEROPTIONS } from './options';
 
 
 @Injectable({ static: true })

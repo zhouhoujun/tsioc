@@ -1,5 +1,6 @@
 import { Abstract, DefaultInvocationContext } from '@tsdi/ioc';
 import { Protocol } from './packet';
+import { TransportEndpoint } from './transport';
 
 /**
  * endpoint context.
@@ -9,7 +10,7 @@ export abstract class EndpointContext extends DefaultInvocationContext {
     /**
      * host client or server. instance of  `TransportClient` or `TransportServer`
      */
-    abstract get target(): any;
+    abstract get target(): TransportEndpoint;
 
     protected override clear(): void {
         super.clear();
@@ -44,7 +45,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
     /**
      * host client or server. instance of `TransportServer`
      */
-    abstract get target(): any;
+    abstract get target(): TransportEndpoint;
     /**
      * transport request.
      */

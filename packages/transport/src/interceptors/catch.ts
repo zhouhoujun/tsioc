@@ -1,4 +1,4 @@
-import { createExecptionContext, Endpoint, Interceptor, ResponseExecptionFilter, TransportContext } from '@tsdi/core';
+import { createExecptionContext, Endpoint, Interceptor, TransportContext } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
 import { from, Observable, catchError } from 'rxjs';
@@ -17,7 +17,7 @@ export class CatchInterceptor<TRequest = any, TResponse = any> implements Interc
                     // log error
                     ctx.get(Logger).error(err);
                     // handle error
-                    const filter = ctx.get(ResponseExecptionFilter);
+                    const filter = ctx.target.getExecptionFilter();
                     const context = createExecptionContext(ctx, err);
                     return from(filter.handle(context, async () => {
                         await context.destroy()

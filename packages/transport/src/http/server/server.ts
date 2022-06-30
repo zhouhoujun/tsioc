@@ -1,11 +1,8 @@
 import {
     Inject, Injectable, InvocationContext, isBoolean, isDefined,
-    isFunction, lang, Providers, tokenId, Type, EMPTY_OBJ
+    isFunction, lang, Providers, EMPTY_OBJ
 } from '@tsdi/ioc';
-import {
-    TransportServer, RunnableFactoryResolver, Interceptor, ModuleRef, Router, ExecptionFilter,
-    RespondTypeAdapter, ServerOptions,
-} from '@tsdi/core';
+import { TransportServer, RunnableFactoryResolver, ModuleRef, Router, RespondTypeAdapter } from '@tsdi/core';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { of, Subscription } from 'rxjs';
 import { ListenOptions } from 'net';
@@ -17,10 +14,10 @@ import { CONTENT_DISPOSITION } from './content';
 import { HttpContext, HttpServRequest, HttpServResponse, HTTP_MIDDLEWARES } from './context';
 import { ev, LOCALHOST } from '../../consts';
 import {
-    ContentSendAdapter, CorsMiddleware, CorsOptions, EncodeJsonMiddleware, HelmetMiddleware, BodyparserMiddleware,
-    ContentMiddleware, ContentOptions, SessionMiddleware, SessionOptions, CsrfMiddleware, CsrfOptions
+    ContentSendAdapter, CorsMiddleware, EncodeJsonMiddleware, HelmetMiddleware, BodyparserMiddleware,
+    ContentMiddleware, ContentOptions, SessionMiddleware, CsrfMiddleware
 } from '../../middlewares';
-import { MimeAdapter, MimeDb, MimeSource } from '../../mime';
+import { MimeAdapter, MimeDb } from '../../mime';
 import { db } from '../mimedb';
 import { HttpSendAdapter } from './send';
 import { Negotiator } from '../../negotiator';
@@ -29,69 +26,14 @@ import { HttpMimeAdapter } from '../mime';
 import { CatchInterceptor, LogInterceptor, ResponseStatusFormater } from '../../interceptors';
 import { HttpStatusFormater } from './formater';
 import { HttpRespondTypeAdapter, ResponsedInterceptor } from './respond';
+import { ArgumentErrorFilter, HttpFinalizeFilter } from './finalize-filter';
+import { Http2ServerOptions, HttpServerOptions, HTTP_EXECPTION_FILTERS, HTTP_SERVEROPTIONS, HTTP_SERV_INTERCEPTORS } from './options';
 
-/**
- * http options.
- */
-export interface HttpOptions extends ServerOptions<HttpServRequest, HttpServResponse> {
-    majorVersion?: number;
-    cors?: boolean | CorsOptions;
-    proxy?: boolean;
-    proxyIpHeader?: string;
-    maxIpsCount?: number;
-    /**
-     * request timeout.
-     */
-    timeout?: number;
-    /**
-     * delay some time to clean up after request client close.
-     */
-    closeDelay?: number;
-    detailError?: boolean;
-    mimeDb?: Record<string, MimeSource>;
-    listenOptions?: ListenOptions;
-    content?: boolean | ContentOptions;
-    session?: boolean | SessionOptions;
-    csrf?: boolean | CsrfOptions;
-    /**
-     * share with thie http server.
-     * eg. ws, socket.io server.
-     */
-    sharing?: Type<TransportServer<any, any>>[];
-}
-
-export interface Http1ServerOptions extends HttpOptions {
-    majorVersion: 1,
-    options?: http.ServerOptions | https.ServerOptions;
-}
-export interface Http2ServerOptions extends HttpOptions {
-    majorVersion: 2,
-    options?: http2.ServerOptions | http2.SecureServerOptions;
-}
-
-/**
- * http server options.
- */
-export type HttpServerOptions = Http1ServerOptions | Http2ServerOptions;
-
-
-/**
- * http server opptions.
- */
-export const HTTP_SERVEROPTIONS = tokenId<HttpServerOptions>('HTTP_SERVEROPTIONS');
-
-
-export const HTTP_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('HTTP_EXECPTION_FILTERS');
-
-/**
- * http server Interceptor tokens for {@link HttpServer}.
- */
-export const HTTP_SERV_INTERCEPTORS = tokenId<Interceptor<HttpServRequest, HttpServResponse>[]>('HTTP_SERV_INTERCEPTORS');
 
 /**
  * default options.
  */
- const httpOpts = {
+const httpOpts = {
     majorVersion: 2,
     options: { allowHTTP1: true },
     listenOptions: { port: 3000, host: LOCALHOST } as ListenOptions,
@@ -103,6 +45,10 @@ export const HTTP_SERV_INTERCEPTORS = tokenId<Interceptor<HttpServRequest, HttpS
     interceptorsToken: HTTP_SERV_INTERCEPTORS,
     middlewaresToken: HTTP_MIDDLEWARES,
     execptionsToken: HTTP_EXECPTION_FILTERS,
+    execptions: [
+        HttpFinalizeFilter,
+        ArgumentErrorFilter
+    ],
     detailError: true,
     interceptors: [
         LogInterceptor,
@@ -178,10 +124,10 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
                 return true
             });
         }
-        this.context.injector.setValue(HTTP_SERVEROPTIONS, opts);
+        this.context.setValue(HTTP_SERVEROPTIONS, opts);
 
         if (opts.content && !isBoolean(opts.content)) {
-            this.context.injector.setValue(ContentOptions, opts.content)
+            this.context.setValue(ContentOptions, opts.content)
         }
 
         if (opts.mimeDb) {
