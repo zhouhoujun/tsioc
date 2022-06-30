@@ -8,7 +8,7 @@ import { TransportEndpoint } from './transport';
 @Abstract()
 export abstract class EndpointContext extends DefaultInvocationContext {
     /**
-     * host client or server. instance of  `TransportClient` or `TransportServer`
+     * host transport endpoint. instance of {@link TransportEndpoint}.
      */
     abstract get target(): TransportEndpoint;
 
@@ -43,7 +43,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
      */
     abstract get protocol(): Protocol | undefined;
     /**
-     * host client or server. instance of `TransportServer`
+     * host transport endpoint. instance of {@link TransportEndpoint}.
      */
     abstract get target(): TransportEndpoint;
     /**
