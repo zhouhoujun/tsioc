@@ -4,7 +4,7 @@ import { CanActivate } from './guard';
 import { PipeTransform } from '../pipes/pipe';
 import { Route, RouteFactoryResolver, ROUTES, Routes } from './route';
 import { ModuleRef } from '../module.ref';
-import { InterceptorMiddleware, InterceptorType, Middleware, MiddlewareFn } from '../transport/endpoint';
+import { createMiddleware, InterceptorMiddleware, InterceptorType, Middleware, MiddlewareFn } from '../transport/endpoint';
 import { HeaderContext, TransportContext } from '../transport/context';
 import { BadRequestError, ForbiddenError, NotFoundError } from '../transport/error';
 import { promisify } from './promisify';
@@ -99,14 +99,12 @@ export class MappingRoute implements Middleware {
         } else if (route.middleware) {
             return isFunction(route.middleware) ? ctx.get(route.middleware) : route.middleware
         } else if (route.middlewareFn) {
-            return {
-                invoke: (ctx, next) => route.middlewareFn!(ctx, next)
-            } as Middleware
+            return createMiddleware(route.middlewareFn);
         } else if (route.redirectTo) {
             const to = route.redirectTo
-            return this.create((c, n) => this.redirect(c, to))
+            return createMiddleware((c, n) => this.redirect(c, to))
         } else if (route.controller) {
-            return ctx.resolve(RouteFactoryResolver).resolve(route.controller).last() ?? this.create((c, n) => { throw new NotFoundError() })
+            return ctx.resolve(RouteFactoryResolver).resolve(route.controller).last() ?? createMiddleware((c, n) => { throw new NotFoundError() })
         } else if (route.children) {
             const router = new MappingRouter(route.path);
             route.children.forEach(route => router.use(route));
@@ -122,15 +120,12 @@ export class MappingRoute implements Middleware {
                 router.prefix = route.path ?? '';
                 return router
             }
-            return this.create((c, n) => { throw new NotFoundError() })
+            return createMiddleware((c, n) => { throw new NotFoundError() })
         } else {
-            return this.create((c, n) => { throw new NotFoundError() })
+            return createMiddleware((c, n) => { throw new NotFoundError() })
         }
     }
 
-    protected create(invoke: MiddlewareFn) {
-        return { invoke }
-    }
 
     protected async redirect(ctx: TransportContext, url: string, alt?: string): Promise<void> {
         const hctx = ctx as TransportContext & HeaderContext;

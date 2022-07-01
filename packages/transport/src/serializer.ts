@@ -1,5 +1,5 @@
 import { Serializer, TransportError } from '@tsdi/core';
-import { Abstract, Injectable, isDefined } from '@tsdi/ioc';
+import { Injectable, isDefined } from '@tsdi/ioc';
 
 @Injectable()
 export class JsonSerializer implements Serializer {

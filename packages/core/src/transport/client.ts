@@ -1,5 +1,5 @@
 import { Abstract, ArgumentError, EMPTY_OBJ, InvocationContext, isNil, type_str } from '@tsdi/ioc';
-import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, filter, map } from 'rxjs';
+import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map } from 'rxjs';
 import { RequestBase, ResponseBase, ResponseEvent } from './packet';
 import { RequestContext } from './context';
 import { ClientContext } from './client.ctx';
@@ -361,6 +361,7 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption e
     }
 
     protected onError(err: Error): Error {
+        this.logger.error(err);
         return err;
     }
 
