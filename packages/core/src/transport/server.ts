@@ -1,8 +1,8 @@
 import { Abstract, ArgumentError, EMPTY, lang, InvocationContext, isNumber, Token } from '@tsdi/ioc';
-import { of, Subscription } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
-import { EndpointBackend, MiddlewareBackend, MiddlewareLike, MiddlewareType, CustomEndpoint } from './endpoint';
+import { EndpointBackend, MiddlewareBackend, MiddlewareLike, MiddlewareType } from './endpoint';
 import { TransportContext } from './context';
 import { TransportEndpoint, TransportOptions } from './transport';
 
@@ -98,7 +98,7 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
      * get backend endpoint.
      */
     protected override getBackend(): EndpointBackend<TRequest, TResponse> {
-        return new MiddlewareBackend(new CustomEndpoint<TRequest, TResponse>((req, ctx) => of((ctx as TransportContext).response)), this.middlewares)
+        return new MiddlewareBackend(this.middlewares);
     }
     /**
      * lazy create context.

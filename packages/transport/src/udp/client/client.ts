@@ -1,6 +1,5 @@
 import {
-    BadRequestError, ClientOptions,
-    CustomEndpoint, EndpointBackend, ExecptionFilter, Interceptor, InterceptorLike,
+    BadRequestError, ClientOptions, createEndpoint, EndpointBackend, ExecptionFilter, Interceptor,
     OnDispose, RequestContext, ResponseJsonParseError, TransportClient, UuidGenerator
 } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId, type_undef } from '@tsdi/ioc';
@@ -73,7 +72,7 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
     }
 
     protected getBackend(): EndpointBackend<UdpRequest<any>, UdpEvent<any>> {
-        return new CustomEndpoint((req, context) => {
+        return createEndpoint((req, context) => {
 
             if (!this.socket) return throwError(() => new UdpErrorResponse(0, 'has not connected.'));
             const ctx = context as RequestContext;

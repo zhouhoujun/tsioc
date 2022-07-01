@@ -1,12 +1,11 @@
 
 import {
-    BadRequestError,
-    CustomEndpoint, EndpointBackend, ExecptionFilter, Interceptor, InterceptorLike,
-    InterceptorType, MiddlewareLike, MiddlewareType, ServerOptions, TransportServer
+    BadRequestError, ExecptionFilter, Interceptor, InterceptorLike,
+    MiddlewareLike, ServerOptions, TransportServer
 } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId, Type } from '@tsdi/ioc';
 import { Socket, createSocket, SocketOptions, BindOptions, RemoteInfo } from 'dgram';
-import { Observable, Observer, of, Subscribable, Subscription } from 'rxjs';
+import { Observable, Observer, Subscription } from 'rxjs';
 import { ev } from '../../consts';
 import { CatchInterceptor, LogInterceptor, DecodeInterceptor, EncodeInterceptor } from '../../interceptors';
 import { UdpContext, TCP_EXECPTION_FILTERS, TCP_MIDDLEWARES } from './context';
@@ -225,10 +224,6 @@ export class UdpServer extends TransportServer<UdpServRequest, UdpServResponse, 
                 server.emit(ev.CLOSE);
             }
         });
-    }
-
-    protected getBackend(): EndpointBackend<UdpServRequest, UdpServResponse> {
-        return new CustomEndpoint<UdpServRequest, UdpServResponse>((req, ctx) => of((ctx as UdpContext).response))
     }
 
     protected bindEvent(ctx: UdpContext, cancel: Subscription): void {

@@ -2,9 +2,8 @@ import { Abstract, ArgumentError, EMPTY, Injector, InvocationContext, isFunction
 import { Log, Logger } from '@tsdi/logs';
 import { ExecptionChain } from '../execptions/chain';
 import { ExecptionFilter } from '../execptions/filter';
-import { Deserializer } from './deserializer';
 import { Endpoint, EndpointBackend, InterceptorChain, InterceptorLike, InterceptorType } from './endpoint';
-import { Serializer } from './serializer';
+
 
 /**
  * transport endpoint options.
@@ -19,22 +18,6 @@ export abstract class TransportOptions<TRequest, TResponse> {
      * the mutil token to register intereptors in the endpoint context.
      */
     abstract interceptorsToken?: Token<InterceptorLike<TRequest, TResponse>[]>;
-    // /**
-    //  * before intereptors
-    //  */
-    // abstract befores?: InterceptorType<any, TRequest>[];
-    // /**
-    //  * the mutil token to register before intereptors in the endpoint context.
-    //  */
-    // abstract beforesToken?: Token<InterceptorLike<any, TRequest>[]>;
-    // /**
-    //  * after intereptors
-    //  */
-    // abstract afters?: InterceptorType<TResponse, any>[];
-    // /**
-    //  * the mutil token to register after intereptors in the endpoint context.
-    //  */
-    // abstract aftersToken?: Token<InterceptorLike<TResponse, any>[]>;
     /**
      * execption filters of server.
      */
@@ -43,15 +26,6 @@ export abstract class TransportOptions<TRequest, TResponse> {
      * the mutil token to register execption filters in the server context.
      */
     abstract execptionsToken?: Token<ExecptionFilter[]>;
-
-    /**
-     * serializer for request.
-     */
-     abstract serializer?: Type<Serializer>;
-     /**
-      * deserializer for response.
-      */
-     abstract deserializer?: Type<Deserializer>;
 
 }
 
@@ -66,12 +40,6 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any> {
     readonly logger!: Logger;
 
     private _chain?: Endpoint<TRequest, TResponse>;
-
-    // private _befores?: InterceptorLike<any, TRequest>[];
-    // private _befToken?: Token<InterceptorLike<any, TRequest>[]>;
-
-    // private _afters?: InterceptorLike<TResponse, any>[];
-    // private _aftToken?: Token<InterceptorLike<TResponse, any>[]>;
 
     private _interceptors?: InterceptorLike<TRequest, TResponse>[];
     private _iptToken?: Token<InterceptorLike<TRequest, TResponse>[]>;
@@ -97,13 +65,6 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any> {
     protected initialize(options: TransportOptions<TRequest, TResponse>): void {
         const injector = this.context.injector;
         injector.inject({ provide: Logger, useFactory: () => this.logger });
-        // if (options.befores && options.befores.length) {
-        //     const iToken = this._befToken = options.beforesToken;
-        //     if (!iToken) {
-        //         throw new ArgumentError(lang.getClassName(this) + ' options beforesToken is missing.');
-        //     }
-        //     this.regMulti(injector, iToken, options.befores);
-        // }
 
         if (options.interceptors && options.interceptors.length) {
             const iToken = this._iptToken = options.interceptorsToken;
@@ -113,27 +74,12 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any> {
             this.regMulti(injector, iToken, options.interceptors);
         }
 
-        // if (options.afters && options.afters.length) {
-        //     const iToken = this._aftToken = options.aftersToken;
-        //     if (!iToken) {
-        //         throw new ArgumentError(lang.getClassName(this) + ' options aftersToken is missing.');
-        //     }
-        //     this.regMulti(injector, iToken, options.afters);
-        // }
-
         if (options.execptions && options.execptions.length) {
             const eToken = this._filterToken = options.execptionsToken;
             if (!eToken) {
                 throw new ArgumentError(lang.getClassName(this) + ' options aftersToken is missing.');
             }
             this.regMulti(injector, eToken, options.execptions);
-        }
-
-        if (options.serializer) {
-            injector.inject({ provide: Serializer, useClass: options.serializer });
-        }
-        if (options.deserializer) {
-            injector.inject({ provide: Deserializer, useClass: options.deserializer });
         }
 
     }
@@ -149,16 +95,6 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any> {
         injector.inject(providers);
     }
 
-    // /**
-    //  * endpoint before interceptors.
-    //  */
-    // get befores(): InterceptorLike<any, TRequest>[] {
-    //     if (!this._befores) {
-    //         this._befores = this._befToken ? [...this.context.injector.get(this._befToken, EMPTY)] : []
-    //     }
-    //     return this._befores
-    // }
-
     /**
      * endpoint interceptors.
      */
@@ -169,16 +105,6 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any> {
         return this._interceptors
     }
 
-    // /**
-    //  * endpoint after interceptors.
-    //  */
-    // get afters(): InterceptorLike<TResponse, any>[] {
-    //     if (!this._afters) {
-    //         this._afters = this._aftToken ? [...this.context.injector.get(this._aftToken, EMPTY)] : []
-    //     }
-    //     return this._afters
-    // }
-
     /**
      * execption filters.
      */
@@ -188,23 +114,6 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any> {
         }
         return this._filters;
     }
-
-
-    // /**
-    //  * use intercept before request with interceptor.
-    //  * @param interceptor 
-    //  * @param order 
-    //  * @returns 
-    //  */
-    // useBefore(interceptor: InterceptorLike<any, TRequest>, order?: number): this {
-    //     if (isNumber(order)) {
-    //         this.befores.splice(order, 0, interceptor)
-    //     } else {
-    //         this.befores.push(interceptor)
-    //     }
-    //     this.resetEndpoint();
-    //     return this
-    // }
 
     /**
      * use interceptors.
@@ -221,22 +130,6 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any> {
         this.resetEndpoint();
         return this
     }
-
-    // /**
-    //  * use intercept after serve response with interceptor.
-    //  * @param interceptor 
-    //  * @param order 
-    //  * @returns 
-    //  */
-    // useAfter(interceptor: InterceptorLike<TResponse, any>, order?: number): this {
-    //     if (isNumber(order)) {
-    //         this.afters.splice(order, 0, interceptor)
-    //     } else {
-    //         this.afters.push(interceptor)
-    //     }
-    //     this.resetEndpoint();
-    //     return this
-    // }
 
     /**
      * use execption filter.

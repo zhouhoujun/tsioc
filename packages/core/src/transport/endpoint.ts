@@ -1,5 +1,5 @@
 import { Abstract, Handler, isFunction, Type, chain, lang } from '@tsdi/ioc';
-import { from, Observable, mergeMap, defer } from 'rxjs';
+import { from, Observable, defer } from 'rxjs';
 import { EndpointContext, TransportContext } from './context';
 
 
@@ -119,7 +119,7 @@ export class InterceptorChain<TRequest, TResponse> implements Endpoint<TRequest,
     private backend: EndpointBackend<TRequest, TResponse>;
     private interceptors: Interceptor<TRequest, TResponse>[];
     constructor(backend: EndpointBackend<TRequest, TResponse> | EndpointFn<TRequest, TResponse>, interceptors: InterceptorLike<TRequest, TResponse>[]) {
-        this.backend = isFunction(backend) ? { handle: backend } : backend;
+        this.backend = isFunction(backend) ? createEndpoint(backend) : backend;
         this.interceptors = interceptors.map(intercept => isFunction(intercept) ? ({ intercept }) : intercept)
     }
 
@@ -135,7 +135,7 @@ export class InterceptorChain<TRequest, TResponse> implements Endpoint<TRequest,
 /**
  * custom endpoint.
  */
-export class CustomEndpoint<TRequest, TResponse> implements Endpoint<TRequest, TResponse>  {
+class CustomEndpoint<TRequest, TResponse> implements Endpoint<TRequest, TResponse>  {
 
     constructor(private fn: EndpointFn<TRequest, TResponse>) { }
 
@@ -145,25 +145,32 @@ export class CustomEndpoint<TRequest, TResponse> implements Endpoint<TRequest, T
 }
 
 /**
+ * create endpoint by EndpointFn
+ * @param fn 
+ * @returns 
+ */
+export function createEndpoint<TRequest, TResponse>(fn: EndpointFn<TRequest, TResponse>): Endpoint<TRequest, TResponse> {
+    return new CustomEndpoint(fn);
+}
+
+/**
  * middleware backend.
  */
 export class MiddlewareBackend<TRequest, TResponse, Tx extends TransportContext> implements EndpointBackend<TRequest, TResponse> {
 
     private _middleware?: MiddlewareFn<Tx>;
-    constructor(private backend: EndpointBackend<TRequest, TResponse>, private middlewares: MiddlewareLike<Tx>[]) {
+    constructor(private middlewares: MiddlewareLike<Tx>[]) {
 
     }
 
     handle(req: TRequest, context: Tx): Observable<TResponse> {
-        return this.backend.handle(req, context)
-            .pipe(
-                mergeMap(resp => {
-                    if (!this._middleware) {
-                        this._middleware = compose(this.middlewares)
-                    }
-                    return from(this._middleware(context, NEXT).then(c => resp))
-                })
-            )
+        return defer(async () => {
+            if (!this._middleware) {
+                this._middleware = compose(this.middlewares)
+            }
+            await this._middleware(context, NEXT);
+            return context.response
+        })
     }
 
 }

@@ -1,6 +1,6 @@
 import {
-    CustomEndpoint, Deserializer, EndpointBackend, Interceptor, InterceptorLike, OnDispose, ClientOptions,
-    Packet, RequestContext, ResponseJsonParseError, Serializer, TransportClient, TransportError, UuidGenerator, TransportOptions, ExecptionFilter
+    Deserializer, EndpointBackend, Interceptor, OnDispose, ClientOptions,
+    Packet, RequestContext, ResponseJsonParseError, Serializer, TransportClient, TransportError, UuidGenerator, ExecptionFilter, createEndpoint
 } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId, Type, type_undef } from '@tsdi/ioc';
 import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
@@ -66,7 +66,7 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
     }
 
     protected getBackend(): EndpointBackend<TcpRequest, TcpEvent> {
-        return new CustomEndpoint((req, context) => {
+        return createEndpoint((req, context) => {
             if (!this.socket) return throwError(() => new TcpErrorResponse(0, 'has not connected.'));
             const ctx = context as RequestContext;
             const socket = this.socket;
