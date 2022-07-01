@@ -309,7 +309,7 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption e
         // The requested stream contains either the full response or the body. In either
         // case, the first step is to filter the event stream to extract a stream of
         // responses(s).
-        const res$: Observable<any> = events$.pipe(filter(event => this.isResponse(event)));
+        const res$: Observable<any> = events$;
         if ((req as ResponseAs).responseType) {
             context.responseType = (req as ResponseAs).responseType!
         }
@@ -358,10 +358,6 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption e
                 // Guard against new future observe types being added.
                 throw new Error(`Unreachable: unhandled observe type ${context.observe}}`)
         }
-    }
-
-    protected isResponse(response: any): boolean {
-        return response instanceof ResponseBase;
     }
 
     protected onError(err: Error): Error {

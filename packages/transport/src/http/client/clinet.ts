@@ -91,10 +91,6 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         }
     }
 
-    protected override isResponse(response: any): boolean {
-        return response instanceof HttpResponse;
-    }
-
     protected override createContext(options?: RequestOptions & ResponseAs): RequestContext {
         const ctx = super.createContext(options);
         if (this.client) {

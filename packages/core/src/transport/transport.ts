@@ -77,7 +77,7 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any> {
         if (options.execptions && options.execptions.length) {
             const eToken = this._filterToken = options.execptionsToken;
             if (!eToken) {
-                throw new ArgumentError(lang.getClassName(this) + ' options aftersToken is missing.');
+                throw new ArgumentError(lang.getClassName(this) + ' options execptionsToken is missing.');
             }
             this.regMulti(injector, eToken, options.execptions);
         }
