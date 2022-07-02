@@ -1,50 +1,11 @@
-import { BytesPipe, Endpoint, Interceptor, ServerContext, TimesPipe, TransportContext } from '@tsdi/core';
+import { BytesPipe, Endpoint, EndpointContext, Interceptor, ReqPacket, TimesPipe, TransportContext } from '@tsdi/core';
 import { Abstract, Inject, Injectable, isNumber, Nullable } from '@tsdi/ioc';
-import { Level, Logger, LoggerManager, matchLevel } from '@tsdi/logs';
+import { Level, Logger, matchLevel } from '@tsdi/logs';
 import * as chalk from 'chalk';
 import { Observable, map } from 'rxjs';
 import { hrtime } from 'process';
 
 
-@Abstract()
-export abstract class LogInterceptorOptions {
-    abstract get level(): Level;
-}
-
-const defopts = {
-    level: 'debug'
-} as LogInterceptorOptions;
-
-@Injectable()
-export class LogInterceptor<TRequest = any, TResponse = any> implements Interceptor<TRequest, TResponse> {
-
-    private options: LogInterceptorOptions;
-    constructor(@Nullable() options: LogInterceptorOptions) {
-        this.options = { ...defopts, ...options } as LogInterceptorOptions;
-    }
-
-    intercept(req: TRequest, next: Endpoint<TRequest, TResponse>, ctx: ServerContext): Observable<TResponse> {
-        const logger: Logger = ctx.target.logger ?? ctx.get(Logger) ?? ctx.get(LoggerManager).getLogger();
-
-        const level = this.options.level;
-        if (!matchLevel(logger.level, level)) {
-            return next.handle(req, ctx);
-        }
-
-        //todo console log and other. need to refactor formater.
-        const start = hrtime();
-        const method = chalk.cyan(ctx.method);
-        logger[level].call(logger, incoming, method, ctx.url);
-        return next.handle(req, ctx)
-            .pipe(
-                map(res => {
-                    logger[level].call(logger, outgoing, method, ctx.url, ...ctx.resolve(ResponseStatusFormater).format(ctx, hrtime(start)));
-                    return res
-                })
-            )
-    }
-
-}
 
 /**
  * status formater.
@@ -61,7 +22,7 @@ export abstract class ResponseStatusFormater {
 
     }
 
-    abstract format(ctx: TransportContext, hrtime: [number, number]): string[];
+    abstract format(ctx: EndpointContext, hrtime: [number, number]): string[];
 
     protected formatSize(size?: number, precise = 2) {
         if (!isNumber(size)) return ''
@@ -80,6 +41,51 @@ export abstract class ResponseStatusFormater {
         return num.replace(clrZReg, '');
     }
 }
+
+@Abstract()
+export abstract class LogInterceptorOptions {
+    abstract get level(): Level;
+}
+
+const defopts = {
+    level: 'debug'
+} as LogInterceptorOptions;
+
+/**
+ * Log interceptor.
+ */
+@Injectable()
+export class LogInterceptor implements Interceptor {
+
+    private options: LogInterceptorOptions;
+    constructor(@Nullable() options: LogInterceptorOptions, private formatter: ResponseStatusFormater) {
+        this.options = { ...defopts, ...options } as LogInterceptorOptions;
+    }
+
+    intercept(req: ReqPacket, next: Endpoint, ctx: EndpointContext): Observable<any> {
+        const logger: Logger = ctx.target.logger ?? ctx.get(Logger);
+
+        const level = this.options.level;
+        if (!matchLevel(logger.level, level)) {
+            return next.handle(req, ctx);
+        }
+
+        //todo console log and other. need to refactor formater.
+        const start = hrtime();
+        const method = chalk.cyan((ctx as TransportContext).method ?? req.method);
+        const url = (ctx as TransportContext).url ?? req.url;
+        logger[level].call(logger, incoming, method, url);
+        return next.handle(req, ctx)
+            .pipe(
+                map(res => {
+                    logger[level].call(logger, outgoing, method, url, ...this.formatter.format(ctx, hrtime(start)));
+                    return res
+                })
+            )
+    }
+
+}
+
 
 const clrZReg = /\.?0+$/;
 const incoming = chalk.gray('--->');

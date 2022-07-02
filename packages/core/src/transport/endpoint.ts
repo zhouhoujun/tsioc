@@ -6,7 +6,7 @@ import { EndpointContext, TransportContext } from './context';
 /**
  * Endpoint is the fundamental building block of servers and clients.
  */
-export interface Endpoint<TRequest, TResponse> {
+export interface Endpoint<TRequest = any, TResponse = any> {
     /**
      * transport endpoint handle.
      * @param req request input.
@@ -142,6 +142,11 @@ export function createEndpoint<TRequest, TResponse>(handle: EndpointFn<TRequest,
     return { handle };
 }
 
+/**
+ * parse to Endpoint if not. 
+ * @param e type of {@link EndpointLike}
+ * @returns 
+ */
 export function endpointify<TRequest, TResponse>(e: EndpointLike<TRequest, TResponse>): Endpoint<TRequest, TResponse> {
     return isFunction(e) ? createEndpoint(e) : e;
 }
@@ -155,25 +160,40 @@ export function createInterceptor<TRequest, TResponse>(intercept: InterceptorFn<
     return { intercept };
 }
 
+/**
+ * parse to Interceptor if not. 
+ * @param i type of {@link InterceptorLike}
+ * @returns 
+ */
 export function interceptorify<TRequest, TResponse>(i: InterceptorLike<TRequest, TResponse>): Interceptor<TRequest, TResponse> {
     return isFunction(i) ? createInterceptor(i) : i;
 }
 
 /**
  * create middleware
- * @param intercept 
+ * @param invoke 
  * @returns 
  */
 export function createMiddleware<T extends TransportContext>(invoke: MiddlewareFn<T>): Middleware<T> {
     return { invoke };
 }
 
+/**
+ * parse to Middeware if not. 
+ * @param m type of {@link MiddlewareLike}
+ * @returns 
+ */
 export function middlewareify<T extends TransportContext>(m: MiddlewareLike<T>): Middleware<T> {
     return isFunction(m) ? createMiddleware(m) : m;
 }
 
-export function middlewareFnify<T extends TransportContext>(m: MiddlewareLike<T>): MiddlewareFn<T>  {
-    return isFunction(m) ? m : ((ctx, next) => m.invoke(ctx, next)) as MiddlewareFn<T>;
+/**
+ * parse to MiddewareFn if not. 
+ * @param m type of {@link MiddlewareLike}
+ * @returns 
+ */
+export function middlewareFnify<T extends TransportContext>(m: MiddlewareLike<T>): MiddlewareFn<T> {
+    return isFunction(m) ? m : ((ctx, next) => m.invoke(ctx, next));
 }
 
 /**

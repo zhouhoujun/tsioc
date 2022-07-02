@@ -84,6 +84,13 @@ export interface PacketClonable<T = any> {
     clone?(data: { body?: T }): this;
 }
 
+
+export interface ReqPacket<T = any> extends Packet<T> {
+    method?: string;
+    url: string;
+    params?: Record<string, any>;
+} 
+
 /**
  * request package.
  */

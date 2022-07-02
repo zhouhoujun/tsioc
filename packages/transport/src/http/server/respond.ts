@@ -1,24 +1,16 @@
-import { Endpoint, Interceptor, mths, RespondTypeAdapter, TransportError } from '@tsdi/core';
+import { mths, ExecptionRespondTypeAdapter, TransportError } from '@tsdi/core';
 import { Injectable, isString, lang } from '@tsdi/ioc';
-import { Observable, mergeMap } from 'rxjs';
 import { Readable } from 'stream';
 import { hdr, ev } from '../../consts';
 import { isBuffer, isStream } from '../../utils';
-import { HttpContext, HttpServRequest, HttpServResponse } from './context';
+import { HttpContext, HttpServResponse } from './context';
 import { emptyStatus } from '../status';
+import { RespondAdapter } from '../../interceptors/respond';
 
 @Injectable()
-export class ResponsedInterceptor implements Interceptor<HttpServRequest, HttpServResponse> {
-    intercept(req: HttpServRequest, next: Endpoint<HttpServRequest, HttpServResponse>, ctx: HttpContext): Observable<HttpServResponse> {
-        return next.handle(req, ctx)
-            .pipe(
-                mergeMap(res => {
-                    return this.respond(res, ctx)
-                })
-            )
-    }
+export class HttpRespondAdapter implements RespondAdapter {
 
-    protected async respond(res: HttpServResponse, ctx: HttpContext): Promise<any> {
+    async respond(res: HttpServResponse, ctx: HttpContext): Promise<any> {
         if (ctx.destroyed) return;
 
         if (!ctx.writable) return;
@@ -92,7 +84,7 @@ export class ResponsedInterceptor implements Interceptor<HttpServRequest, HttpSe
 
 
 @Injectable()
-export class HttpRespondTypeAdapter extends RespondTypeAdapter {
+export class HttpExecptionRespondTypeAdapter extends ExecptionRespondTypeAdapter {
     respond<T>(ctx: HttpContext, response: 'body' | 'header' | 'response', value: T): void {
         if (response === 'body') {
             ctx.body = value
