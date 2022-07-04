@@ -1,4 +1,4 @@
-import { ClientOptions, Endpoint, EndpointBackend, Interceptor, InterceptorInst, TransportClient, TransportContext } from '@tsdi/core';
+import { ClientOptions, Endpoint, EndpointBackend, Interceptor, TransportClient, TransportContext } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId } from '@tsdi/ioc';
 import { WebSocket, ClientOptions as WsOptions } from 'ws';
 import { WsRequest } from '../request';
@@ -63,10 +63,6 @@ export class WsClient extends TransportClient<WsRequest, WsResponse> {
         ws.on('message', (data, isBinary) => {
 
         });
-    }
-
-    protected getInterceptorsToken(): Token<InterceptorInst<WsRequest<any>, WsResponse<any>>[]> {
-        throw new Error('Method not implemented.');
     }
 
     protected buildRequest(req: string | WsRequest<any>, options?: any): WsRequest<any> {

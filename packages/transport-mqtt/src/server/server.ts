@@ -1,24 +1,10 @@
-import { EndpointBackend, ExecptionFilter, Interceptor, InterceptorInst, MiddlewareInst, Protocol, TransportContext, TransportServer } from '@tsdi/core';
-import { Injectable, InvocationContext, Token } from '@tsdi/ioc';
+import { TransportContext, TransportServer } from '@tsdi/core';
+import { Injectable } from '@tsdi/ioc';
 import { Subscription } from 'rxjs';
 
 @Injectable()
 export class MqttServer extends TransportServer<any, any> {
-    
-
-    getExecptionsToken(): Token<ExecptionFilter[]> {
-        throw new Error('Method not implemented.');
-    }
     start(): Promise<void> {
-        throw new Error('Method not implemented.');
-    }
-    protected getInterceptorsToken(): Token<InterceptorInst<any, any>[]> {
-        throw new Error('Method not implemented.');
-    }
-    protected getMiddlewaresToken(): Token<MiddlewareInst<TransportContext<any, any>>[]> {
-        throw new Error('Method not implemented.');
-    }
-    protected getBackend(): EndpointBackend<any, any> {
         throw new Error('Method not implemented.');
     }
     protected createContext(request: any, response: any): TransportContext<any, any> {

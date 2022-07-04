@@ -1,5 +1,5 @@
 import { Abstract, Inject, Injectable, InvocationContext, lang, Token } from '@tsdi/ioc';
-import { TransportClient, Protocol, ClientOptions, EndpointBackend, InterceptorInst, RequestBase, RequstOption } from '@tsdi/core';
+import { TransportClient, Protocol, ClientOptions, EndpointBackend, RequestBase, RequstOption } from '@tsdi/core';
 import { MqttClient as Client, connect, IClientOptions } from 'mqtt';
 import { EmptyError, first, fromEvent, lastValueFrom, map, merge, share, take, tap } from 'rxjs';
 import { ev } from '@tsdi/transport';
@@ -13,6 +13,7 @@ export abstract class MqttClientOptions extends ClientOptions<any, any> {
 
 @Injectable()
 export class MqttClient extends TransportClient {
+
 
     protected mqttClient: Client | undefined;
     protected connection: Promise<any> | undefined;
@@ -50,13 +51,11 @@ export class MqttClient extends TransportClient {
         this.connection = null!;
     }
 
-    protected getInterceptorsToken(): Token<InterceptorInst<RequestBase<any>, any>[]> {
+    protected buildRequest(url: any, options?: RequstOption | undefined) {
         throw new Error('Method not implemented.');
     }
-    protected getBackend(): EndpointBackend<RequestBase<any>, any> {
-        throw new Error('Method not implemented.');
-    }
-    protected buildRequest(url: string | RequestBase<any>, options?: RequstOption | undefined): RequestBase<any> {
+
+    protected getBackend(): EndpointBackend<any, any> {
         throw new Error('Method not implemented.');
     }
 
