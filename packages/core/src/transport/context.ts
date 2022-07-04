@@ -181,49 +181,6 @@ export interface Throwable {
  */
 export interface HeaderContext extends Throwable {
     /**
-     * Check if the incoming request contains the "Content-Type"
-     * header field and if it contains any of the given mime `type`s.
-     * If there is no request body, `null` is returned.
-     * If there is no content type, `false` is returned.
-     * Otherwise, it returns the first `type` that matches.
-     *
-     * Examples:
-     *
-     *     // With Content-Type: text/html; charset=utf-8
-     *     this.is('html'); // => 'html'
-     *     this.is('text/html'); // => 'text/html'
-     *     this.is('text/*', 'application/json'); // => 'text/html'
-     *
-     *     // When Content-Type is application/json
-     *     this.is('json', 'urlencoded'); // => 'json'
-     *     this.is('application/json'); // => 'application/json'
-     *     this.is('html', 'application/*'); // => 'application/json'
-     *
-     *     this.is('html'); // => false
-     */
-    is(type: string | string[]): string | null | false;
-
-    /**
-     * Perform a 302 redirect to `url`.
-     *
-     * The string "back" is special-cased
-     * to provide Referrer support, when Referrer
-     * is not present `alt` or "/" is used.
-     *
-     * Examples:
-     *
-     *    this.redirect('back');
-     *    this.redirect('back', '/index.html');
-     *    this.redirect('/login');
-     *    this.redirect('http://google.com');
-     *
-     * @param {String} url
-     * @param {String} [alt]
-     * @api public
-     */
-    redirect(url: string, alt?: string): void;
-
-    /**
      * Return request header.
      *
      * The `Referrer` header field is special-cased,
@@ -288,24 +245,58 @@ export interface HeaderContext extends Throwable {
      */
     removeHeader(field: string): void;
 
+}
+
+/**
+ * redirect context.
+ */
+export interface RedirectContext {
     /**
-     * create error instance of {@link TransportError}.
-     * @param status transport status
-     * @param messages transport messages.
-     * @returns instance of {@link TransportError}
+     * Perform a 302 redirect to `url`.
+     *
+     * The string "back" is special-cased
+     * to provide Referrer support, when Referrer
+     * is not present `alt` or "/" is used.
+     *
+     * Examples:
+     *
+     *    this.redirect('back');
+     *    this.redirect('back', '/index.html');
+     *    this.redirect('/login');
+     *    this.redirect('http://google.com');
+     *
+     * @param {String} url
+     * @param {String} [alt]
+     * @api public
      */
-    throwError(status: number, message?: string): Error;
+    redirect(url: string, alt?: string): void;
+}
+
+/**
+ * asset context.
+ */
+export interface AssetContext {
     /**
-     * create error instance of {@link TransportError}.
-     * @param status transport status
-     * @param messages transport messages.
-     * @returns instance of {@link TransportError}
+     * Check if the incoming request contains the "Content-Type"
+     * header field and if it contains any of the given mime `type`s.
+     * If there is no request body, `null` is returned.
+     * If there is no content type, `false` is returned.
+     * Otherwise, it returns the first `type` that matches.
+     *
+     * Examples:
+     *
+     *     // With Content-Type: text/html; charset=utf-8
+     *     this.is('html'); // => 'html'
+     *     this.is('text/html'); // => 'text/html'
+     *     this.is('text/*', 'application/json'); // => 'text/html'
+     *
+     *     // When Content-Type is application/json
+     *     this.is('json', 'urlencoded'); // => 'json'
+     *     this.is('application/json'); // => 'application/json'
+     *     this.is('html', 'application/*'); // => 'application/json'
+     *
+     *     this.is('html'); // => false
      */
-    throwError(message: string): Error;
-    /**
-     * create error instance of {@link TransportError}.
-     * @param error error 
-     * @returns instance of {@link TransportError}
-     */
-    throwError(error: Error): Error;
+    is(type: string | string[]): string | null | false;
+
 }

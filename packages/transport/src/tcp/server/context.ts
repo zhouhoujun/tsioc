@@ -74,10 +74,10 @@ export class TcpContext extends ServerContext<TcpServRequest, TcpServResponse> {
     }
 
     get body(): any {
-        throw new Error('Method not implemented.');
+        return this.response.body;
     }
     set body(value: any) {
-        throw new Error('Method not implemented.');
+        this.response.body = value;
     }
 
     get length(): number | undefined {

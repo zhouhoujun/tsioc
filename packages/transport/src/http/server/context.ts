@@ -1,4 +1,4 @@
-import { HeaderContext, MiddlewareLike, mths, Protocol, ServerContext, TransportContext, TransportServer } from '@tsdi/core';
+import { AssetContext, HeaderContext, MiddlewareLike, mths, Protocol, ServerContext, TransportContext, TransportServer } from '@tsdi/core';
 import { Injector, InvokeArguments, isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import * as assert from 'assert';
@@ -25,7 +25,7 @@ export type HttpServResponse = http.ServerResponse | http2.Http2ServerResponse;
 /**
  * http context for `HttpServer`.
  */
-export class HttpContext extends ServerContext<HttpServRequest, HttpServResponse> implements HeaderContext {
+export class HttpContext extends ServerContext<HttpServRequest, HttpServResponse> implements HeaderContext, AssetContext {
 
     protected _body: any;
     private _explicitStatus?: boolean;

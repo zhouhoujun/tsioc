@@ -76,6 +76,7 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
 
     protected override initOption(options: TcpServerOptions): TcpServerOptions {
         this.options = { ...defOpts, ...options };
+        this.context.setValue(TcpServerOptions, this.options);
         return this.options;
     }
 
@@ -91,14 +92,13 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
         });
 
         this.server.on(ev.CONNECTION, socket => {
-            defer.resolve();
             this.createObservable(socket)
                 .subscribe(pk => {
                     this.requestHandler(new TcpServRequest(socket, pk), new TcpServResponse(socket, pk.id))
                 });
         });
 
-        this.server.listen(this.options.listenOptions);
+        this.server.listen(this.options.listenOptions, defer.resolve);
         await defer.promise;
     }
 
@@ -109,7 +109,7 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
                     observer.error(err);
                 } else {
                     observer.complete();
-                    this.logger.info(socket.address, 'closed');
+                    this.logger.info(socket.address(), 'closed');
                 }
             }
 

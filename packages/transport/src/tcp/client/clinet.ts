@@ -1,14 +1,14 @@
 import {
-    EndpointBackend, Interceptor, OnDispose, ClientOptions, Packet, RequestContext, ResponseJsonParseError, 
+    EndpointBackend, Interceptor, OnDispose, ClientOptions, Packet, RequestContext, ResponseJsonParseError,
     TransportClient, TransportError, UuidGenerator, ExecptionFilter, createEndpoint, Encoder, Decoder
 } from '@tsdi/core';
-import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId, Type, type_undef } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, tokenId, type_undef } from '@tsdi/ioc';
 import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
+import { defer, filter, mergeMap, Observable, Observer, throwError } from 'rxjs';
 import { TcpRequest } from './request';
 import { TcpErrorResponse, TcpEvent, TcpResponse } from './response';
-import { ev } from '../../consts';
-import { defer, filter, mergeMap, Observable, Observer, throwError } from 'rxjs';
 import { JsonDecoder, JsonEncoder } from '../../coder';
+import { ev } from '../../consts';
 
 
 @Abstract()
@@ -53,12 +53,19 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
     private socket?: Socket;
     private connected: boolean;
     private source!: Observable<Packet>;
+    private option!: TcpClientOptions;
     constructor(
         @Inject() context: InvocationContext,
-        @Nullable() private option: TcpClientOptions = defaults
+        @Nullable() option: TcpClientOptions
     ) {
         super(context, option);
         this.connected = false;
+    }
+
+    protected override initOption(options?: TcpClientOptions): TcpClientOptions {
+        this.option = { ...defaults, ...options };
+        this.context.setValue(TcpClientOptions, this.option);
+        return this.option;
     }
 
     protected getBackend(): EndpointBackend<TcpRequest, TcpEvent> {
@@ -72,9 +79,11 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
             return new Observable((observer: Observer<any>) => {
 
                 const sub = defer(() => {
-                    // socket.emit(ev.DATA, req);
                     const defer = lang.defer<void>();
-                    socket.write(ctx.get(Encoder).encode(req), this.option.encoding, (err) => {
+                    const buf = ctx.get(Encoder).encode(req);
+                    const split = ctx.get(TcpClientOptions).headerSplit;
+                    const data = `${buf.length}${split}${buf}`;
+                    socket.write(data, this.option.encoding, (err) => {
                         err ? defer.reject(err) : defer.resolve();
                     });
                     return defer.promise;
@@ -161,7 +170,7 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
         socket.once(ev.CONNECT, () => {
             this.connected = true;
             defer.resolve(true);
-            this.logger.info(socket.address, 'connected');
+            this.logger.info(socket.address(), 'connected');
             this.source = new Observable((observer: Observer<any>) => {
                 const socket = this.socket!;
                 const onClose = (err?: any) => {
@@ -170,7 +179,7 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                         observer.error(new TcpErrorResponse(500, err));
                     } else {
                         observer.complete();
-                        this.logger.info(socket.address, 'closed');
+                        this.logger.info(socket.address(), 'closed');
                     }
                 }
 
