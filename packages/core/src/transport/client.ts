@@ -1,6 +1,6 @@
-import { Abstract, ArgumentError, EMPTY_OBJ, InvocationContext, isNil, type_str } from '@tsdi/ioc';
+import { Abstract, ArgumentError, EMPTY_OBJ, InvocationContext, isNil, isString, type_str } from '@tsdi/ioc';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map } from 'rxjs';
-import { RequestBase, ResponseBase, ResponseEvent } from './packet';
+import { RequestPacket, RequestMethod, ResponsePacket, ResponseEvent } from './packet';
 import { RequestContext } from './context';
 import { ClientContext } from './client.ctx';
 import { TransportOptions, TransportEndpoint } from './transport';
@@ -34,12 +34,7 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption e
         return options ?? {};
     }
 
-    /**
-     * Sends an `Request` and returns a stream of `TResponse`s.
-     *
-     * @return An `Observable` of the response, with the response body as a stream of `TResponse`s.
-     */
-    send(url: string, options?: TOption & ResponseAs): Observable<TResponse>;
+
     /**
      * Sends an `Request` and returns a stream of `TResponse`s.
      *
@@ -177,7 +172,7 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption e
     send(url: string, options: TOption & {
         observe: 'response';
         responseType: 'arraybuffer';
-    }): Observable<RequestBase<ArrayBuffer>>;
+    }): Observable<ResponsePacket<ArrayBuffer>>;
 
     /**
      * Constructs a request which interprets the body as a `Blob` and returns the full `HttpResponse`.
@@ -190,7 +185,7 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption e
     send(url: string, options: TOption & {
         observe: 'response';
         responseType: 'blob';
-    }): Observable<RequestBase<Blob>>;
+    }): Observable<ResponsePacket<Blob>>;
 
     /**
      * Constructs a request which interprets the body as a text stream and returns the full
@@ -204,7 +199,7 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption e
     send(url: string, options: TOption & {
         observe: 'response';
         responseType: 'text';
-    }): Observable<RequestBase<string>>;
+    }): Observable<ResponsePacket<string>>;
 
     /**
      * Constructs a request which interprets the body as a JSON object and returns the full
@@ -219,7 +214,7 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption e
     send(url: string, options: TOption & {
         observe: 'response';
         responseType?: 'json';
-    }): Observable<RequestBase<object>>;
+    }): Observable<ResponsePacket<object>>;
 
     /**
      * Constructs a request which interprets the body as a JSON object and returns
@@ -233,7 +228,7 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption e
     send<R>(url: string, options: TOption & {
         observe: 'response';
         responseType?: 'json';
-    }): Observable<RequestBase<R>>;
+    }): Observable<ResponsePacket<R>>;
 
     /**
      * Constructs a request which interprets the body as a JSON object and returns the full
@@ -262,6 +257,13 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption e
         observe?: 'body';
         responseType?: 'json';
     }): Observable<R>;
+
+    /**
+     * Sends an `Request` and returns a stream of `TResponse`s.
+     *
+     * @return An `Observable` of the response, with the response body as a stream of `TResponse`s.
+     */
+    send(url: string, options: TOption & ResponseAs): Observable<TResponse>;
     /**
      * Constructs a request where response type and requested observable are not known statically.
      *
@@ -280,7 +282,7 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption e
                 return throwError(() => this.onError(err))
             }),
             mergeMap(() => {
-                ctx = this.createContext(options);
+                ctx = this.createContext(req, options);
                 return this.request(ctx, req, options)
             }),
             finalize(() => {
@@ -302,7 +304,7 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption e
         // If coming via the API signature which accepts a previously constructed HttpRequest,
         // the only option is to get the event stream. Otherwise, return the event stream if
         // that is what was requested.
-        if (first instanceof RequestBase || context.observe === 'events') {
+        if (context.observe === 'events') {
             return events$
         }
 
@@ -323,7 +325,7 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption e
                 // requested type.
                 switch (context.responseType) {
                     case 'arraybuffer':
-                        return res$.pipe(map((res: ResponseBase) => {
+                        return res$.pipe(map((res: ResponsePacket) => {
                             // Validate that the body is an ArrayBuffer.
                             if (res.body !== null && !(res.body instanceof ArrayBuffer)) {
                                 throw new Error('Response is not an ArrayBuffer.')
@@ -331,7 +333,7 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption e
                             return res.body
                         }));
                     case 'blob':
-                        return res$.pipe(map((res: ResponseBase<any>) => {
+                        return res$.pipe(map((res: ResponsePacket<any>) => {
                             // Validate that the body is a Blob.
                             if (res.body !== null && !(res.body instanceof Blob)) {
                                 throw new Error('Response is not a Blob.')
@@ -339,7 +341,7 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption e
                             return res.body
                         }));
                     case 'text':
-                        return res$.pipe(map((res: ResponseBase<any>) => {
+                        return res$.pipe(map((res: ResponsePacket<any>) => {
                             // Validate that the body is a string.
                             if (res.body !== null && typeof res.body !== type_str) {
                                 throw new Error('Response is not a string.')
@@ -349,7 +351,7 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption e
                     case 'json':
                     default:
                         // No validation needed for JSON responses, as they can be of any type.
-                        return res$.pipe(map((res: ResponseBase<any>) => res.body))
+                        return res$.pipe(map((res: ResponsePacket<any>) => res.body))
                 }
             case 'response':
                 // The response stream was requested directly, so return it.
@@ -365,10 +367,10 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption e
         return err;
     }
 
-    protected createContext(options?: TOption & ResponseAs): RequestContext {
+    protected createContext(req: TRequest | string, options?: TOption & ResponseAs): RequestContext {
         return (options as any)?.context ?? new ClientContext(
             this.context.injector, this as any,
-            { parent: this.context, responseType: options?.responseType, observe: options?.observe });
+            { parent: this.context, responseType: options?.responseType, observe: isString(req) ? options?.observe : 'events' });
     }
 
     protected abstract buildRequest(url: TRequest | string, options?: TOption): TRequest;
@@ -382,7 +384,7 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption e
  * request option.
  */
 export interface RequstOption {
-    method?: string;
+    method?: RequestMethod;
     body?: any;
     headers?: Record<string, any>;
     context?: InvocationContext;

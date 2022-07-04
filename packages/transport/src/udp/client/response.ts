@@ -1,4 +1,4 @@
-import { ResponseBase } from '@tsdi/core';
+import { ResponsePacket } from '@tsdi/core';
 
 export class UdpErrorResponse  {
     constructor(readonly status: number, readonly statusMessage: string, readonly error?: any){
@@ -10,7 +10,7 @@ export class UdpErrorResponse  {
 /**
  * UdpResponse.
  */
-export class UdpResponse<T = any> extends ResponseBase<T> {
+export class UdpResponse<T = any> implements ResponsePacket<T> {
 
     readonly type: number;
     readonly status: number;
@@ -23,7 +23,6 @@ export class UdpResponse<T = any> extends ResponseBase<T> {
         statusMessage?: string;
         body?: T;
     }) {
-        super();
         this.type = options.type ?? 0;
         this.status = options.status;
         this.statusMessage = options.statusMessage ?? '';

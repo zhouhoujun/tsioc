@@ -12,7 +12,7 @@ import { JsonDecoder, JsonEncoder } from '../../coder';
 
 
 @Abstract()
-export abstract class TcpClientOption extends ClientOptions<TcpRequest, TcpEvent> {
+export abstract class TcpClientOptions extends ClientOptions<TcpRequest, TcpEvent> {
     abstract encoding?: BufferEncoding;
     abstract headerSplit?: string;
     abstract socketOpts?: SocketConstructorOpts;
@@ -41,7 +41,7 @@ const defaults = {
         port: 3000,
         hostname: 'localhost'
     }
-} as TcpClientOption;
+} as TcpClientOptions;
 
 
 /**
@@ -55,7 +55,7 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
     private source!: Observable<Packet>;
     constructor(
         @Inject() context: InvocationContext,
-        @Nullable() private option: TcpClientOption = defaults
+        @Nullable() private option: TcpClientOptions = defaults
     ) {
         super(context, option);
         this.connected = false;

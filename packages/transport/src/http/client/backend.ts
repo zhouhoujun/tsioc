@@ -206,7 +206,7 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                                 body,
                                 context: ctx,
                                 observe: 'response'
-                            }).subscribe(observer);
+                            }).subscribe(observer as any);
 
 
                             return;
@@ -624,7 +624,7 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                                     observe: 'response'
                                 }).pipe(
                                     finalize(() => completed = true)
-                                ).subscribe(observer);
+                                ).subscribe(observer as any);
 
                                 return;
                             }

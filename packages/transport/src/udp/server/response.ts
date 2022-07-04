@@ -1,10 +1,10 @@
-import { ResponseBase } from '@tsdi/core';
+import { ResponsePacket } from '@tsdi/core';
 import { Socket } from 'dgram';
 
 /**
  * UdpServResponse.
  */
-export class UdpServResponse extends ResponseBase<any> {
+export class UdpServResponse implements ResponsePacket<any> {
 
     type = 0;
     status = 0;
@@ -12,8 +12,8 @@ export class UdpServResponse extends ResponseBase<any> {
 
     body: any;
 
-    constructor(readonly socket: Socket) {
-        super();
+    constructor(readonly socket: Socket, readonly id?: string) {
+
     }
 
     get ok(): boolean {

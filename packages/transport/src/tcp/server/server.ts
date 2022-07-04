@@ -1,6 +1,6 @@
 import { Decoder, ExecptionRespondTypeAdapter, Interceptor, Packet, ServerOptions, TransportError, TransportServer } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Providers, tokenId } from '@tsdi/ioc';
-import { Server, ListenOptions, Socket } from 'net';
+import { Server, ListenOptions, Socket, ServerOpts as TcpServerOpts } from 'net';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { JsonDecoder, JsonEncoder } from '../../coder';
 import { ev } from '../../consts';
@@ -12,22 +12,6 @@ import { TcpExecptionRespondTypeAdapter, TcpRespondAdapter } from './respond';
 import { TcpServResponse } from './response';
 
 
-
-/**
- * TCP server options.
- */
-export interface TcpServerOpts {
-    /**
-     * Indicates whether half-opened TCP connections are allowed.
-     * @default false
-     */
-    allowHalfOpen?: boolean | undefined;
-    /**
-     * Indicates whether the socket should be paused on incoming connections.
-     * @default false
-     */
-    pauseOnConnect?: boolean | undefined;
-}
 
 /**
  * TCP server options.

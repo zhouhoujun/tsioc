@@ -1,10 +1,10 @@
-import { RequestBase } from '@tsdi/core';
+import { RequestPacket } from '@tsdi/core';
 
 
 /**
  * UdpRequest.
  */
-export class UdpRequest<T = any> extends RequestBase<T> {
+export class UdpRequest<T = any> implements RequestPacket<T> {
 
     public readonly id: string;
     public readonly url: string;
@@ -19,7 +19,6 @@ export class UdpRequest<T = any> extends RequestBase<T> {
         body?: T;
         update?: boolean;
     }) {
-        super();
         this.id = id;
         this.url = option.url;
         this.method = option.method ?? 'EES';

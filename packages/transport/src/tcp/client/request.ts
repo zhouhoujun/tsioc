@@ -1,9 +1,9 @@
-import { mths, RequestBase } from '@tsdi/core';
+import { mths, RequestPacket } from '@tsdi/core';
 
 /**
  * TcpRequest.
  */
-export class TcpRequest<T = any> extends RequestBase<T> {
+export class TcpRequest<T = any> implements RequestPacket<T> {
 
     public readonly id: string;
     public url: string;
@@ -17,7 +17,6 @@ export class TcpRequest<T = any> extends RequestBase<T> {
         method?: 'MESSAGE' | 'EVENT';
         body?: T;
     }) {
-        super();
         this.id = id;
         this.url = option.url;
         this.method = option.method ?? mths.MESSAGE;

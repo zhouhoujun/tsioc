@@ -1,8 +1,8 @@
-import { RequestBase } from '@tsdi/core';
+import { RequestPacket } from '@tsdi/core';
 import { EMPTY_OBJ } from '@tsdi/ioc';
 import { Socket } from 'net';
 
-export class TcpServRequest extends RequestBase {
+export class TcpServRequest implements RequestPacket {
     public readonly url: string;
     public readonly method: string;
     public readonly params: Record<string, any>;
@@ -17,7 +17,6 @@ export class TcpServRequest extends RequestBase {
         method?: string;
         update?: boolean;
     } = EMPTY_OBJ) {
-        super();
         this.url = option.url ?? '';
         this.method = option.method ?? '';
         this.params = option.params ?? {};

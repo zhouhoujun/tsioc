@@ -91,8 +91,8 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         }
     }
 
-    protected override createContext(options?: RequestOptions & ResponseAs): RequestContext {
-        const ctx = super.createContext(options);
+    protected override createContext(req: HttpRequest | string, options?: RequestOptions & ResponseAs): RequestContext {
+        const ctx = super.createContext(req, options);
         if (this.client) {
             ctx.setValue(CLIENT_HTTP2SESSION, this.client);
         }

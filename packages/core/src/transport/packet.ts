@@ -1,5 +1,3 @@
-import { Abstract } from '@tsdi/ioc';
-
 
 /**
  * http request method.
@@ -92,10 +90,10 @@ export interface ReqPacket<T = any> extends Packet<T> {
 } 
 
 /**
- * request package.
+ * request packet.
  */
-@Abstract()
-export abstract class RequestBase<T = any> implements Packet<T> {
+
+export interface RequestPacket<T = any> extends Packet<T> {
     /**
      * packet id.
      */
@@ -103,15 +101,15 @@ export abstract class RequestBase<T = any> implements Packet<T> {
     /**
      * Outgoing URL
      */
-    abstract get url(): string;
+    get url(): string;
     /**
      * Outgoing URL parameters.
      */
-    abstract get params(): Record<string, string | string[] | number | any>;
+    get params(): Record<string, string | string[] | number | any>;
     /**
      * The outgoing request method.
      */
-    abstract get method(): string | undefined;
+    get method(): string | undefined;
     /**
      * The request body, or `null` if one isn't set.
      *
@@ -119,7 +117,7 @@ export abstract class RequestBase<T = any> implements Packet<T> {
      * user-defined data type. However, middlewares should take care to preserve
      * idempotence by treating them as such.
      */
-    abstract get body(): T | null;
+    get body(): T | null;
 
 }
 
@@ -197,31 +195,30 @@ export interface RequestHeader<T = any> {
 }
 
 /**
- * response base.
+ * response packet.
  */
-@Abstract()
-export abstract class ResponseBase<T = any> implements Packet<T> {
+export interface ResponsePacket<T = any> extends Packet<T> {
     /**
      * Get response status code.
      */
-    abstract get status(): number;
+    get status(): number;
     /**
      * Textual description of response status code, defaults to OK.
      *
      * Do not depend on this.
      */
-    abstract get statusMessage(): string;
+    get statusMessage(): string;
     /**
      * Whether the status code is ok
      */
-    abstract get ok(): boolean;
+    get ok(): boolean;
     /**
      * Get response body.
      *
      * @return {T}
      * @api public
      */
-    abstract get body(): T | null;
+    get body(): T | null;
 }
 
 /**
@@ -307,4 +304,4 @@ export interface ResponseHeader<T = any> {
     removeHeader(field: string): void;
 }
 
-export type ResponseEvent<T> = ResponseBase<T> | ResponseHeader;
+export type ResponseEvent<T> = ResponsePacket<T> | ResponseHeader;

@@ -1,10 +1,10 @@
-import { ResponseBase } from '@tsdi/core';
+import { ResponsePacket } from '@tsdi/core';
 import { Socket } from 'net';
 
 /**
  * TcpResponse.
  */
-export class TcpServResponse extends ResponseBase<any> {
+export class TcpServResponse implements ResponsePacket {
 
     type = 0;
     status = 0;
@@ -13,7 +13,7 @@ export class TcpServResponse extends ResponseBase<any> {
     body: any;
 
     constructor(readonly socket: Socket, readonly id?: string) {
-        super();
+
     }
 
     get ok(): boolean {
