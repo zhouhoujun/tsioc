@@ -30,11 +30,11 @@ export abstract class TransportOptions<TRequest, TResponse> {
     /**
      * encoder input.
      */
-     abstract encoder?: Type<Encoder>;
-     /**
-      * decoder input.
-      */
-     abstract decoder?: Type<Decoder>;
+    abstract encoder?: Type<Encoder>;
+    /**
+     * decoder input.
+     */
+    abstract decoder?: Type<Decoder>;
 
 }
 

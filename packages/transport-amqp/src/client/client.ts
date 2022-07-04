@@ -1,20 +1,21 @@
-import { EndpointBackend, RequestBase, RequstOption, ResponseBase, TransportClient } from '@tsdi/core';
+import { EndpointBackend, RequstOption, TransportClient } from '@tsdi/core';
 import { Inject, InvocationContext, Token } from '@tsdi/ioc';
 import * as amqp from 'amqplib';
 
-export class AmqpClient extends TransportClient<RequestBase, ResponseBase> {
-
+export class AmqpClient extends TransportClient {
     constructor(@Inject() context: InvocationContext, options: any) {
         super(context, options)
     }
-    protected buildRequest(url: string | RequestBase<any>, options?: RequstOption | undefined): RequestBase<any> {
+    
+    protected buildRequest(url: any, options?: RequstOption | undefined) {
         throw new Error('Method not implemented.');
     }
     protected connect(): Promise<void> {
         throw new Error('Method not implemented.');
     }
-    protected getBackend(): EndpointBackend<RequestBase<any>, ResponseBase<any>> {
+    protected getBackend(): EndpointBackend<any, any> {
         throw new Error('Method not implemented.');
     }
+
 
 }

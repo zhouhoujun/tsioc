@@ -20,6 +20,9 @@ export interface Endpoint<TRequest = any, TResponse = any> {
  */
 export type EndpointFn<TRequest, TResponse> = (req: TRequest, context: EndpointContext) => Observable<TResponse>;
 
+/**
+ * endpoint like.
+ */
 export type EndpointLike<TRequest, TResponse> = Endpoint<TRequest, TResponse> | EndpointFn<TRequest, TResponse>;
 
 /**

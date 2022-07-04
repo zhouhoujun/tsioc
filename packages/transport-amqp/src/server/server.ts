@@ -1,4 +1,4 @@
-import { ServerOptions, RequestBase, ResponseBase, TransportServer, TransportContext } from '@tsdi/core';
+import { ServerOptions, TransportServer, TransportContext } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, Token } from '@tsdi/ioc';
 import * as amqp from 'amqplib';
 import { Subscription } from 'rxjs';
@@ -15,8 +15,7 @@ export abstract class AmqpOptions extends ServerOptions<any, any> {
 const defaultQueue = 'default';
 
 @Injectable()
-export class AmqpServer extends TransportServer<RequestBase, ResponseBase> {
-
+export class AmqpServer extends TransportServer {
 
     private connection?: amqp.Connection;
     channel?: amqp.Channel;
@@ -38,10 +37,11 @@ export class AmqpServer extends TransportServer<RequestBase, ResponseBase> {
         await this.connection?.close();
     }
     
-    protected createContext(request: RequestBase<any>, response: ResponseBase<any>): TransportContext<any, any> {
+    protected createContext(request: any, response: any): TransportContext<any, any> {
         throw new Error('Method not implemented.');
     }
     protected bindEvent(ctx: TransportContext<any, any>, cancel: Subscription): void {
         throw new Error('Method not implemented.');
     }
+
 }
