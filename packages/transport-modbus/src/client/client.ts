@@ -1,4 +1,4 @@
-import { EndpointBackend, RequestBase, RequstOption, TransportClient } from '@tsdi/core';
+import { EndpointBackend, RequstOption, TransportClient } from '@tsdi/core';
 import { Injectable, Token } from '@tsdi/ioc';
 
 @Injectable()

@@ -1,5 +1,5 @@
 import { Inject, Injectable, InvocationContext, isUndefined, ModuleLoader } from '@tsdi/ioc';
-import { TransportClient, Protocol, ClientOptions, RequestBase } from '@tsdi/core';
+import { TransportClient, Protocol, ClientOptions, EndpointBackend, RequstOption } from '@tsdi/core';
 import { Level } from '@tsdi/logs';
 import { BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerGroupJoinEvent, ConsumerRunConfig, ConsumerSubscribeTopic, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, Kafka, KafkaConfig, LogEntry, logLevel, MemberMetadata, PartitionAssigner, Producer, ProducerConfig, ProducerRecord } from 'kafkajs';
 import { DEFAULT_BROKERS } from '../const';
@@ -22,24 +22,26 @@ export interface KafkaClientOption extends KafkaConfig, ClientOptions<any, any> 
 
 @Injectable()
 export class KafkaClient extends TransportClient {
+    protected buildRequest(url: any, options?: RequstOption | undefined) {
+        throw new Error('Method not implemented.');
+    }
+    protected getBackend(): EndpointBackend<any, any> {
+        throw new Error('Method not implemented.');
+    }
 
     protected client: Kafka | undefined;
     protected consumer!: Consumer;
     protected producer!: Producer;
-    protected brokers: string[] | BrokersFunction;
+    protected brokers!: string[] | BrokersFunction;
     protected responsePatterns: string[] = [];
     protected consumerAssignments: { [key: string]: number } = {};
-    protected clientId: string;
-    protected groupId: string;
+    protected clientId!: string;
+    protected groupId!: string;
 
 
 
     constructor(context: InvocationContext, private options: KafkaClientOption) {
         super(context, options);
-        this.brokers = options.client?.brokers ?? DEFAULT_BROKERS;
-        const postfixId = this.options.postfixId ?? '-client';
-        this.clientId = (options.client?.clientId ?? 'boot-consumer') + postfixId;
-        this.groupId = (options.consumer?.groupId ?? 'boot-group') + postfixId;
     }
 
     protected override initOption(options: KafkaClientOption): KafkaClientOption {
