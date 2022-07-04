@@ -1,15 +1,18 @@
 import {
-    BadRequestError, ClientOptions, createEndpoint, EndpointBackend, ExecptionFilter, Interceptor,
-    OnDispose, RequestContext, ResponseJsonParseError, TransportClient, UuidGenerator
+    BadRequestError, ClientOptions, createEndpoint, Decoder, Encoder, EndpointBackend, ExecptionFilter, Interceptor,
+    OnDispose, Packet, RequestContext, ResponseJsonParseError, TransportClient, UuidGenerator
 } from '@tsdi/core';
-import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId, type_undef } from '@tsdi/ioc';
-import { Socket, createSocket, SocketOptions } from 'dgram';
-import { DecodeInterceptor, EncodeInterceptor } from '../../interceptors';
+import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, tokenId, type_undef } from '@tsdi/ioc';
+import { Socket } from 'dgram';
 import { UdpRequest } from './request';
 import { UdpErrorResponse, UdpEvent, UdpResponse } from './response';
-import { ev, hdr } from '../../consts';
-import { defer, filter, from, mergeMap, Observable, Observer, of, throwError } from 'rxjs';
+import { ev } from '../../consts';
+import { defer, filter, mergeMap, Observable, Observer, throwError } from 'rxjs';
+import { JsonDecoder, JsonEncoder } from '../../coder';
 
+/**
+ * address.
+ */
 export interface Address {
     port: number;
     address?: string
@@ -42,9 +45,9 @@ const defaults = {
     encoding: 'utf8',
     interceptorsToken: UDP_INTERCEPTORS,
     execptionsToken: UDP_EXECPTIONFILTERS,
+    encoder: JsonEncoder,
+    decoder: JsonDecoder,
     interceptors: [
-        EncodeInterceptor,
-        DecodeInterceptor
     ],
     address: {
         port: 3000,
@@ -62,7 +65,7 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
 
     private socket?: Socket;
     private connected: boolean;
-    private source!: Observable<string>;
+    private source!: Observable<Packet>;
     constructor(
         @Inject() context: InvocationContext,
         @Nullable() private option: UdpClientOption = defaults
@@ -84,13 +87,16 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
 
                 const sub = defer(() => {
                     const defer = lang.defer<any>();
-                    socket.send(req.body, err => err ? defer.reject(err) : defer.resolve());
+                    socket.send(ctx.get(Encoder).encode(req), err => err ? defer.reject(err) : defer.resolve());
                     return defer.promise;
-                }).pipe(mergeMap(() => this.source)).subscribe({
+                }).pipe(
+                    mergeMap(() => this.source),
+                    filter(pk => pk.id === req.id)
+                ).subscribe({
                     complete: () => observer.complete(),
                     error: (err) => observer.error(new UdpErrorResponse(err?.status ?? 500, err?.text, err ?? body)),
-                    next: (source) => {
-                        body = source;
+                    next: (pk) => {
+                        body = pk.body;
                         if (body) {
                             let buffer: Buffer;
                             let originalBody: string;
@@ -222,6 +228,7 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
                             }
                         }
                         if (body) {
+                            body = this.context.get(Decoder).decode<Packet>(body);
                             observer.next(body);
                         }
                         if (rest) {

@@ -2,6 +2,7 @@ import { Abstract, ArgumentError, EMPTY, Injector, InvocationContext, isFunction
 import { Log, Logger } from '@tsdi/logs';
 import { ExecptionChain } from '../execptions/chain';
 import { ExecptionFilter } from '../execptions/filter';
+import { Decoder, Encoder } from './coder';
 import { Endpoint, EndpointBackend, InterceptorChain, InterceptorLike, InterceptorType } from './endpoint';
 
 
@@ -26,6 +27,14 @@ export abstract class TransportOptions<TRequest, TResponse> {
      * the mutil token to register execption filters in the server context.
      */
     abstract execptionsToken?: Token<ExecptionFilter[]>;
+    /**
+     * encoder input.
+     */
+     abstract encoder?: Type<Encoder>;
+     /**
+      * decoder input.
+      */
+     abstract decoder?: Type<Decoder>;
 
 }
 
@@ -80,6 +89,13 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any> {
                 throw new ArgumentError(lang.getClassName(this) + ' options execptionsToken is missing.');
             }
             this.regMulti(injector, eToken, options.execptions);
+        }
+
+        if (options.encoder) {
+            injector.inject({ provide: Encoder, useClass: options.encoder });
+        }
+        if (options.decoder) {
+            injector.inject({ provide: Decoder, useClass: options.decoder });
         }
 
     }

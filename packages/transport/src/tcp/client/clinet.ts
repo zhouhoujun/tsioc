@@ -1,16 +1,14 @@
 import {
-    Deserializer, EndpointBackend, Interceptor, OnDispose, ClientOptions,
-    Packet, RequestContext, ResponseJsonParseError, Serializer, TransportClient, TransportError, UuidGenerator, ExecptionFilter, createEndpoint
+    EndpointBackend, Interceptor, OnDispose, ClientOptions, Packet, RequestContext, ResponseJsonParseError, 
+    TransportClient, TransportError, UuidGenerator, ExecptionFilter, createEndpoint, Encoder, Decoder
 } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId, Type, type_undef } from '@tsdi/ioc';
 import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
-import { DecodeInterceptor, EncodeInterceptor } from '../../interceptors';
 import { TcpRequest } from './request';
 import { TcpErrorResponse, TcpEvent, TcpResponse } from './response';
 import { ev } from '../../consts';
 import { defer, filter, mergeMap, Observable, Observer, throwError } from 'rxjs';
-import { JsonDeserializer } from '../../deserializer';
-import { JsonSerializer } from '../../serializer';
+import { JsonDecoder, JsonEncoder } from '../../coder';
 
 
 @Abstract()
@@ -33,13 +31,11 @@ export const TCP_EXECPTIONFILTERS = tokenId<ExecptionFilter[]>('TCP_EXECPTIONFIL
 const defaults = {
     headerSplit: '#',
     encoding: 'utf8',
-    serializer: JsonSerializer,
-    deserializer: JsonDeserializer,
+    encoder: JsonEncoder,
+    decoder: JsonDecoder,
     interceptorsToken: TCP_INTERCEPTORS,
     execptionsToken: TCP_EXECPTIONFILTERS,
     interceptors: [
-        EncodeInterceptor,
-        DecodeInterceptor
     ],
     connectOpts: {
         port: 3000,
@@ -78,7 +74,7 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                 const sub = defer(() => {
                     // socket.emit(ev.DATA, req);
                     const defer = lang.defer<void>();
-                    socket.write(ctx.get(Serializer).serialize(req), this.option.encoding, (err) => {
+                    socket.write(ctx.get(Encoder).encode(req), this.option.encoding, (err) => {
                         err ? defer.reject(err) : defer.resolve();
                     });
                     return defer.promise;
@@ -218,7 +214,7 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                             }
                         }
                         if (body) {
-                            body = this.context.get(Deserializer).deserialize<Packet>(body);
+                            body = this.context.get(Decoder).decode<Packet>(body);
                             observer.next(body);
                         }
                         if (rest) {

@@ -7,7 +7,7 @@ import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullab
 import { Socket, createSocket, SocketOptions, BindOptions, RemoteInfo } from 'dgram';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { ev } from '../../consts';
-import { CatchInterceptor, LogInterceptor, DecodeInterceptor, EncodeInterceptor } from '../../interceptors';
+import { CatchInterceptor, LogInterceptor, RespondInterceptor } from '../../interceptors';
 import { UdpContext, TCP_EXECPTION_FILTERS, TCP_MIDDLEWARES } from './context';
 import { UdpServRequest } from './request';
 import { UdpServResponse } from './response';
@@ -70,8 +70,7 @@ const defOpts = {
     interceptors: [
         LogInterceptor,
         CatchInterceptor,
-        DecodeInterceptor,
-        EncodeInterceptor
+        RespondInterceptor
     ],
     bindOptions: {
         port: 3000,

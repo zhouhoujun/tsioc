@@ -12,7 +12,7 @@ export class TcpServResponse extends ResponseBase<any> {
 
     body: any;
 
-    constructor(readonly socket: Socket) {
+    constructor(readonly socket: Socket, readonly id?: string) {
         super();
     }
 

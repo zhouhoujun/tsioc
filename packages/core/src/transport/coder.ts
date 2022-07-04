@@ -4,22 +4,22 @@ import { Abstract } from '@tsdi/ioc';
  * Decoder
  */
 @Abstract()
-export abstract class Decoder<T> {
+export abstract class Decoder {
     /**
      * decode to object T.
      * @param str 
      */
-    abstract decode(str: string): T;
+    abstract decode<T>(str: string | Uint8Array): T;
 }
 
 /**
  * Encoder
  */
 @Abstract()
-export abstract class Encoder<T> {
+export abstract class Encoder {
     /**
      * encode object.
      * @param obj 
      */
-    abstract encode(obj: T): string;
+    abstract encode<T>(obj: T): string;
 }

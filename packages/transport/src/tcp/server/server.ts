@@ -1,13 +1,14 @@
-import {
-    Deserializer, Interceptor, Packet, ServerOptions, TransportError, TransportServer
-} from '@tsdi/core';
-import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId } from '@tsdi/ioc';
+import { Decoder, ExecptionRespondTypeAdapter, Interceptor, Packet, ServerOptions, TransportError, TransportServer } from '@tsdi/core';
+import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Providers, tokenId } from '@tsdi/ioc';
 import { Server, ListenOptions, Socket } from 'net';
-import { mergeMap, Observable, Observer, of, Subscription } from 'rxjs';
+import { Observable, Observer, Subscription } from 'rxjs';
+import { JsonDecoder, JsonEncoder } from '../../coder';
 import { ev } from '../../consts';
-import { CatchInterceptor, LogInterceptor, DecodeInterceptor, EncodeInterceptor } from '../../interceptors';
+import { CatchInterceptor, LogInterceptor, RespondAdapter, RespondInterceptor, ResponseStatusFormater } from '../../interceptors';
 import { TcpContext, TCP_EXECPTION_FILTERS, TCP_MIDDLEWARES } from './context';
+import { TcpStatusFormater } from './formater';
 import { TcpServRequest } from './request';
+import { TcpExecptionRespondTypeAdapter, TcpRespondAdapter } from './respond';
 import { TcpServResponse } from './response';
 
 
@@ -57,11 +58,12 @@ const defOpts = {
     interceptorsToken: TCP_SERV_INTERCEPTORS,
     execptionsToken: TCP_EXECPTION_FILTERS,
     middlewaresToken: TCP_MIDDLEWARES,
+    encoder: JsonEncoder,
+    decoder: JsonDecoder,
     interceptors: [
         LogInterceptor,
         CatchInterceptor,
-        DecodeInterceptor,
-        EncodeInterceptor
+        RespondInterceptor
     ],
     listenOptions: {
         port: 3000,
@@ -74,16 +76,18 @@ const defOpts = {
  * TCP server.
  */
 @Injectable()
+@Providers([
+    { provide: ResponseStatusFormater, useClass: TcpStatusFormater },
+    { provide: RespondAdapter, useClass: TcpRespondAdapter },
+    { provide: ExecptionRespondTypeAdapter, useClass: TcpExecptionRespondTypeAdapter },
+])
 export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, TcpContext> {
 
     private server?: Server;
     private options!: TcpServerOptions;
-    constructor(
-        @Inject() readonly context: InvocationContext,
-        @Nullable() options: TcpServerOptions) {
+    constructor(@Inject() readonly context: InvocationContext, @Nullable() options: TcpServerOptions) {
         super(context, options)
         this.initialize(this.options);
-
     }
 
     protected override initOption(options: TcpServerOptions): TcpServerOptions {
@@ -106,7 +110,7 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
             defer.resolve();
             this.createObservable(socket)
                 .subscribe(pk => {
-                    this.requestHandler(new TcpServRequest(socket, pk), new TcpServResponse(socket))
+                    this.requestHandler(new TcpServRequest(socket, pk), new TcpServResponse(socket, pk.id))
                 });
         });
 
@@ -164,7 +168,7 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
                         }
                     }
                     if (body) {
-                        body = this.context.get(Deserializer).deserialize<Packet>(body);
+                        body = this.context.get(Decoder).decode<Packet>(body);
                         observer.next(body);
                     }
                     if (rest) {
