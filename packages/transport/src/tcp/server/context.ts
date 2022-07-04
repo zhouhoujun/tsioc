@@ -72,7 +72,7 @@ export class TcpContext extends ServerContext<TcpServRequest, TcpServResponse> i
     }
 
     isUpdate(): boolean {
-        return this.request.isUpdate;
+        return this.request.getHeader(hdr.OPERATION) === 'update';
     }
 
     get body(): any {

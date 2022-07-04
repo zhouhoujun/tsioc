@@ -1,4 +1,5 @@
 import { ResponsePacket } from '@tsdi/core';
+import { MapHeaders, ResHeaderItemType } from '../../header';
 
 /**
  * tcp error response.
@@ -12,7 +13,7 @@ export class TcpErrorResponse  {
 /**
  * TcpResponse.
  */
-export class TcpResponse<T = any> implements ResponsePacket<T> {
+export class TcpResponse<T = any> extends MapHeaders<ResHeaderItemType> implements ResponsePacket<T> {
     readonly id: string;
     readonly type: number;
     readonly status: number;
@@ -26,6 +27,7 @@ export class TcpResponse<T = any> implements ResponsePacket<T> {
         statusMessage?: string;
         body?: T;
     }) {
+        super();
         this.id = options.id ?? '';
         this.type = options.type ?? 0;
         this.status = options.status;

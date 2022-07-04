@@ -3,6 +3,9 @@ import { ResponseStatusFormater } from '../../interceptors/log';
 import { TcpContext } from './context';
 import * as chalk from 'chalk';
 
+/**
+ * status formater.
+ */
 @Injectable()
 export class TcpStatusFormater extends ResponseStatusFormater {
 

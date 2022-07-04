@@ -1,8 +1,9 @@
 import { RequestHeader, RequestPacket } from '@tsdi/core';
 import { EMPTY_OBJ } from '@tsdi/ioc';
 import { Socket } from 'net';
+import { MapHeaders } from '../../header';
 
-export class TcpServRequest implements RequestPacket, RequestHeader {
+export class TcpServRequest extends MapHeaders implements RequestPacket, RequestHeader {
 
     public readonly id: string;
     public readonly url: string;
@@ -11,7 +12,6 @@ export class TcpServRequest implements RequestPacket, RequestHeader {
 
     body: any;
 
-    private _update: boolean;
     constructor(readonly socket: Socket, option: {
         id?: string,
         url?: string;
@@ -19,33 +19,11 @@ export class TcpServRequest implements RequestPacket, RequestHeader {
         method?: string;
         update?: boolean;
     } = EMPTY_OBJ) {
+        super();
         this.id = option.id ?? '';
         this.url = option.url ?? '';
         this.method = option.method ?? '';
         this.params = option.params ?? {};
-        this._update = option.update === true;
-    }
-
-    getHeaders() {
-        throw new Error('Method not implemented.');
-    }
-    hasHeader(field: string): boolean {
-        throw new Error('Method not implemented.');
-    }
-    getHeader(field: string): string | number | string[] | undefined {
-        throw new Error('Method not implemented.');
-    }
-    setHeader(field: string, val: string | number | string[]): void;
-    setHeader(fields: Record<string, string | number | string[]>): void;
-    setHeader(field: unknown, val?: unknown): void {
-        throw new Error('Method not implemented.');
-    }
-    removeHeader(field: string): void {
-        throw new Error('Method not implemented.');
-    }
-
-    get isUpdate(): boolean {
-        return this._update
     }
 }
 

@@ -129,7 +129,7 @@ export function isNull(target: any): target is null {
  * @param {*} target
  * @returns {boolean}
  */
-export function isNil(target: any): boolean {
+export function isNil(target: any): target is (null | undefined) {
     return isNull(target) || isUndefined(target)
 }
 

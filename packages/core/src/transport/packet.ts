@@ -259,7 +259,7 @@ export interface ResponseHeader<T = any> {
      * @return {String}
      * @api public
      */
-    getHeader(field: string): string | string[] | number | undefined;
+    getHeader(field: string): string | number | boolean | string[] | undefined;
     /**
      * Set header `field` to `val` or pass
      * an object of header fields.
@@ -274,7 +274,7 @@ export interface ResponseHeader<T = any> {
      * @param {String} val
      * @api public
      */
-    setHeader(field: string, val: string | number | string[]): void;
+    setHeader(field: string, val: string | number | boolean | string[]): void;
     /**
      * Set header `field` to `val` or pass
      * an object of header fields.
@@ -283,11 +283,11 @@ export interface ResponseHeader<T = any> {
      *
      *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
      *
-     * @param {Record<string, string | number | string[]>} fields
+     * @param {Record<string, string | number | boolean | string[]>} fields
      * @param {String} val
      * @api public
      */
-    setHeader(fields: Record<string, string | number | string[]>): void;
+    setHeader(fields: Record<string, string | number | boolean | string[]>): void;
     /**
      * Remove header `field`.
      *

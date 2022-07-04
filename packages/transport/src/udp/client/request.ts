@@ -1,10 +1,11 @@
 import { RequestHeader, RequestPacket } from '@tsdi/core';
+import { MapHeaders } from '../../header';
 
 
 /**
  * UdpRequest.
  */
-export class UdpRequest<T = any> implements RequestPacket<T>, RequestHeader {
+export class UdpRequest<T = any> extends MapHeaders implements RequestPacket<T>, RequestHeader {
 
     public readonly id: string;
     public readonly url: string;
@@ -19,6 +20,7 @@ export class UdpRequest<T = any> implements RequestPacket<T>, RequestHeader {
         body?: T;
         update?: boolean;
     }) {
+        super()
         this.id = id;
         this.url = option.url;
         this.method = option.method ?? 'EES';
@@ -26,21 +28,4 @@ export class UdpRequest<T = any> implements RequestPacket<T>, RequestHeader {
         this.body = option.body ?? null;
     }
     
-    getHeaders() {
-        throw new Error('Method not implemented.');
-    }
-    hasHeader(field: string): boolean {
-        throw new Error('Method not implemented.');
-    }
-    getHeader(field: string): string | number | string[] | undefined {
-        throw new Error('Method not implemented.');
-    }
-    setHeader(field: string, val: string | number | string[]): void;
-    setHeader(fields: Record<string, string | number | string[]>): void;
-    setHeader(field: unknown, val?: unknown): void {
-        throw new Error('Method not implemented.');
-    }
-    removeHeader(field: string): void {
-        throw new Error('Method not implemented.');
-    }
 }

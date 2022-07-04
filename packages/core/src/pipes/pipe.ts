@@ -25,6 +25,6 @@ export interface PipeTransform<TReturn = any, T = any> {
  * @param message 
  * @returns 
  */
-export function invalidPipeArgumentError(type: any, value: Object, message?: string) {
+export function invalidPipeArgumentError(type: any, value: any, message?: string) {
     return new ArgumentError(`InvalidPipeArgument: '${value}' for pipe '${lang.getClassName(type)}'${message || ''}`)
 }

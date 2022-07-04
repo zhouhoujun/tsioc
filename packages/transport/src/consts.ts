@@ -122,6 +122,9 @@ export namespace hdr {
     export const ACCESS_CONTROL_REQUEST_HEADERS = 'access-control-request-headers';
     export const ACCESS_CONTROL_ALLOW_HEADERS = 'access-control-allow-headers';
     export const ACCESS_CONTROL_EXPOSE_HEADERS = 'access-control-expose-headers';
+
+
+    export const OPERATION = 'operation';
 }
 
 /**
