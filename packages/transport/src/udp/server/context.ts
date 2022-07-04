@@ -1,5 +1,5 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
-import { ServerContext, ExecptionFilter, MiddlewareLike, Protocol } from '@tsdi/core';
+import { ServerContext, ExecptionFilter, MiddlewareLike, Protocol, HeaderContext, AssetContext } from '@tsdi/core';
 import { Injectable, tokenId } from '@tsdi/ioc';
 import { UdpServRequest } from './request';
 import { UdpServResponse } from './response';
@@ -10,7 +10,7 @@ import { UdpServResponse } from './response';
  * UDP context.
  */
 @Injectable()
-export class UdpContext extends ServerContext<UdpServRequest, UdpServResponse> {
+export class UdpContext extends ServerContext<UdpServRequest, UdpServResponse> implements HeaderContext, AssetContext {
 
     readonly protocol: Protocol = 'udp'; 
     
@@ -108,10 +108,27 @@ export class UdpContext extends ServerContext<UdpServRequest, UdpServResponse> {
         throw new Error('Method not implemented.');
     }
 
-    throwError(status: number, message?: string): Error;
-    throwError(message: string): Error;
-    throwError(error: Error): Error;
-    throwError(status: any, message?: any): Error {
+    is(type: string | string[]): string | false | null {
+        throw new Error('Method not implemented.');
+    }
+    get contentType(): string {
+        throw new Error('Method not implemented.');
+    }
+    set contentType(type: string) {
+        throw new Error('Method not implemented.');
+    }
+    getHeader(field: string): string | number | string[] | undefined {
+        throw new Error('Method not implemented.');
+    }
+    hasHeader(field: string): boolean {
+        throw new Error('Method not implemented.');
+    }
+    setHeader(field: string, val: string | number | string[]): void;
+    setHeader(fields: Record<string, string | number | string[]>): void;
+    setHeader(field: unknown, val?: unknown): void {
+        throw new Error('Method not implemented.');
+    }
+    removeHeader(field: string): void {
         throw new Error('Method not implemented.');
     }
     

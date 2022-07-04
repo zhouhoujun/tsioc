@@ -1,4 +1,4 @@
-import { ResponsePacket } from '@tsdi/core';
+import { ResponseHeader, ResponsePacket } from '@tsdi/core';
 
 export class UdpErrorResponse  {
     constructor(readonly status: number, readonly statusMessage: string, readonly error?: any){
@@ -10,7 +10,7 @@ export class UdpErrorResponse  {
 /**
  * UdpResponse.
  */
-export class UdpResponse<T = any> implements ResponsePacket<T> {
+export class UdpResponse<T = any> implements ResponsePacket<T>, ResponseHeader {
 
     readonly type: number;
     readonly status: number;
@@ -27,6 +27,23 @@ export class UdpResponse<T = any> implements ResponsePacket<T> {
         this.status = options.status;
         this.statusMessage = options.statusMessage ?? '';
         this.body = options.body ?? null;
+    }
+    getHeaders() {
+        throw new Error('Method not implemented.');
+    }
+    hasHeader(field: string): boolean {
+        throw new Error('Method not implemented.');
+    }
+    getHeader(field: string): string | number | string[] | undefined {
+        throw new Error('Method not implemented.');
+    }
+    setHeader(field: string, val: string | number | string[]): void;
+    setHeader(fields: Record<string, string | number | string[]>): void;
+    setHeader(field: unknown, val?: unknown): void {
+        throw new Error('Method not implemented.');
+    }
+    removeHeader(field: string): void {
+        throw new Error('Method not implemented.');
     }
 
     get ok(): boolean {

@@ -1,6 +1,8 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
-import { ServerContext, ExecptionFilter, MiddlewareLike, Protocol } from '@tsdi/core';
-import { Injectable, tokenId } from '@tsdi/ioc';
+import { ServerContext, ExecptionFilter, MiddlewareLike, Protocol, HeaderContext, AssetContext } from '@tsdi/core';
+import { Injectable, isNumber, isString, tokenId } from '@tsdi/ioc';
+import { ctype, hdr } from '../../consts';
+import { isStream, xmlRegExp } from '../../utils';
 import { TcpServRequest } from './request';
 import { TcpServResponse } from './response';
 
@@ -10,7 +12,7 @@ import { TcpServResponse } from './response';
  * TCP context.
  */
 @Injectable()
-export class TcpContext extends ServerContext<TcpServRequest, TcpServResponse> {
+export class TcpContext extends ServerContext<TcpServRequest, TcpServResponse> implements HeaderContext, AssetContext {
 
     readonly protocol: Protocol = 'tcp';  
 
@@ -78,10 +80,37 @@ export class TcpContext extends ServerContext<TcpServRequest, TcpServResponse> {
     }
     set body(value: any) {
         this.response.body = value;
+        const setType = !this.hasHeader(hdr.CONTENT_TYPE);
+        if(isString(value)){
+            if (setType) this.contentType = xmlRegExp.test(value) ? ctype.TEXT_HTML : ctype.TEXT_PLAIN;
+            this.length = Buffer.byteLength(value);
+        }
     }
 
     get length(): number | undefined {
-        throw new Error('Method not implemented.');
+        if (this.hasHeader(hdr.CONTENT_LENGTH)) {
+            return this.response.getHeader(hdr.CONTENT_LENGTH) as number || 0
+        }
+
+        const { body } = this;
+        if (!body || isStream(body)) return undefined;
+        if (isString(body)) return Buffer.byteLength(body);
+        if (Buffer.isBuffer(body)) return body.length;
+        return Buffer.byteLength(JSON.stringify(body))
+    }
+
+    /**
+     * Set Content-Length field to `n`.
+     *
+     * @param {Number} n
+     * @api public
+     */
+     set length(n: number | undefined) {
+        if (isNumber(n) && !this.hasHeader(hdr.TRANSFER_ENCODING)) {
+            this.setHeader(hdr.CONTENT_LENGTH, n)
+        } else {
+            this.removeHeader(hdr.CONTENT_LENGTH)
+        }
     }
 
     get status(): number {
@@ -108,13 +137,29 @@ export class TcpContext extends ServerContext<TcpServRequest, TcpServResponse> {
         throw new Error('Method not implemented.');
     }
 
-    throwError(status: number, message?: string): Error;
-    throwError(message: string): Error;
-    throwError(error: Error): Error;
-    throwError(status: any, message?: any): Error {
+    is(type: string | string[]): string | false | null {
         throw new Error('Method not implemented.');
     }
-    
+    get contentType(): string {
+        throw new Error('Method not implemented.');
+    }
+    set contentType(type: string) {
+        throw new Error('Method not implemented.');
+    }
+    getHeader(field: string): string | number | string[] | undefined {
+        throw new Error('Method not implemented.');
+    }
+    hasHeader(field: string): boolean {
+        throw new Error('Method not implemented.');
+    }
+    setHeader(field: string, val: string | number | string[]): void;
+    setHeader(fields: Record<string, string | number | string[]>): void;
+    setHeader(field: unknown, val?: unknown): void {
+        throw new Error('Method not implemented.');
+    }
+    removeHeader(field: string): void {
+        throw new Error('Method not implemented.');
+    }
 
 }
 

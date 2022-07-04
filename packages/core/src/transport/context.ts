@@ -179,7 +179,7 @@ export interface Throwable {
 /**
  * header context with tansport.
  */
-export interface HeaderContext extends Throwable {
+export interface HeaderContext {
     /**
      * Return request header.
      *
@@ -202,7 +202,6 @@ export interface HeaderContext extends Throwable {
      * @api public
      */
     getHeader(field: string): string | string[] | number | undefined;
-
 
     /**
      * has response header field or not.
@@ -298,5 +297,44 @@ export interface AssetContext {
      *     this.is('html'); // => false
      */
     is(type: string | string[]): string | null | false;
+
+    /**
+     * content type.
+     */
+    get contentType(): string;
+    /**
+     * Set Content-Type response header with `type` through `mime.lookup()`
+     * when it does not contain a charset.
+     *
+     * Examples:
+     *
+     *     this.contentType = 'application/json';
+     *     this.contentType = 'application/octet-stream';  // buffer stream
+     *     this.contentType = 'image/png';      // png
+     *     this.contentType = 'image/pjpeg';   //jpeg
+     *     this.contentType = 'text/plain';    // text, txt
+     *     this.contentType = 'text/html';    // html, htm, shtml
+     *     this.contextType = 'text/javascript'; // javascript text
+     *     this.contentType = 'application/javascript'; //javascript file .js, .mjs
+     *
+     * @param {String} type
+     * @api public
+     */
+    set contentType(type: string);
+
+    /**
+     * Set Content-Length field to `n`.
+     *
+     * @param {Number} n
+     * @api public
+     */
+    set length(n: number | undefined);
+    /**
+     * Return parsed response Content-Length when present.
+     *
+     * @return {Number}
+     * @api public
+     */
+    get length(): number | undefined
 
 }

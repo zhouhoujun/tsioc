@@ -1,4 +1,4 @@
-import { AssetContext, HeaderContext, MiddlewareLike, mths, Protocol, ServerContext, TransportContext, TransportServer } from '@tsdi/core';
+import { AssetContext, HeaderContext, MiddlewareLike, mths, Protocol, ServerContext, Throwable, TransportContext, TransportServer } from '@tsdi/core';
 import { Injector, InvokeArguments, isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import * as assert from 'assert';
@@ -6,7 +6,7 @@ import * as http from 'http';
 import * as http2 from 'http2';
 import { TLSSocket } from 'tls';
 import { extname } from 'path';
-import { append, encodeUrl, escapeHtml, isBuffer, isStream, parseTokenList } from '../../utils';
+import { append, encodeUrl, escapeHtml, isBuffer, isStream, parseTokenList, xmlRegExp } from '../../utils';
 import { emptyStatus, redirectStatus } from '../status';
 import { CONTENT_DISPOSITION } from './content';
 import { ctype, hdr } from '../../consts';
@@ -25,7 +25,7 @@ export type HttpServResponse = http.ServerResponse | http2.Http2ServerResponse;
 /**
  * http context for `HttpServer`.
  */
-export class HttpContext extends ServerContext<HttpServRequest, HttpServResponse> implements HeaderContext, AssetContext {
+export class HttpContext extends ServerContext<HttpServRequest, HttpServResponse> implements HeaderContext, AssetContext, Throwable {
 
     protected _body: any;
     private _explicitStatus?: boolean;
@@ -724,7 +724,7 @@ export class HttpContext extends ServerContext<HttpServRequest, HttpServResponse
 
         // string
         if (isString(val)) {
-            if (setType) this.contentType = xmlpat.test(val) ? ctype.TEXT_HTML : ctype.TEXT_PLAIN;
+            if (setType) this.contentType = xmlRegExp.test(val) ? ctype.TEXT_HTML : ctype.TEXT_PLAIN;
             this.length = Buffer.byteLength(val);
             return
         }
@@ -1089,7 +1089,6 @@ export class HttpContext extends ServerContext<HttpServRequest, HttpServResponse
 
 const httptl = /^https?:\/\//i;
 const urlsplit = /\s*,\s*/;
-const xmlpat = /^\s*</;
 const no_cache = /(?:^|,)\s*?no-cache\s*?(?:,|$)/;
 const methods = [mths.GET, mths.HEAD, mths.PUT, mths.DELETE, mths.OPTIONS, mths.TRACE];
 

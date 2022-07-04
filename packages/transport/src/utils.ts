@@ -20,7 +20,14 @@ export function isJson(body: any) {
   return true
 }
 
-const htmlRegExp = /["'&<>]/;
+/**
+ * xml reg exp check.
+ */
+export const xmlRegExp = /^\s*</;
+/**
+ * html RegExp
+ */
+export const htmlRegExp = /["'&<>]/;
 
 /**
  * Escape special characters in the given string of html.
