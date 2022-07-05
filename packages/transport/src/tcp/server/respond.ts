@@ -1,7 +1,8 @@
 import { Encoder, ExecptionRespondTypeAdapter, TransportError } from '@tsdi/core';
 import { Injectable, lang } from '@tsdi/ioc';
 import { RespondAdapter } from '../../interceptors/respond';
-import { TcpResponse } from '../client/response';
+import { writeSocket } from '../../utils';
+import { TcpServResponse } from './response';
 import { TcpContext } from './context';
 import { TcpServerOptions } from './server';
 
@@ -9,15 +10,14 @@ import { TcpServerOptions } from './server';
 @Injectable()
 export class TcpRespondAdapter extends RespondAdapter {
 
-    async respond(res: TcpResponse, ctx: TcpContext): Promise<any> {
-        const buffer = ctx.get(Encoder).encode(res);
-        const split = ctx.get(TcpServerOptions).headerSplit;
-        const data = `${buffer.length}${split}${buffer}`;
-        const defer = lang.defer();
-        ctx.response.socket.write(data, (err) => {
-            err ? defer.reject(err) : defer.resolve();
-        });
-        await defer.promise;
+    async respond(res: TcpServResponse, ctx: TcpContext): Promise<any> {
+        const encoder = ctx.get(Encoder);
+        const headers = res.getHeaders();
+        const { headerSplit, encoding } = ctx.get(TcpServerOptions);
+        await writeSocket(res.socket, encoder.encode({ id: res.id, headers }), headerSplit, encoding);
+        if (ctx.length) {
+            await writeSocket(res.socket, encoder.encode({ id: res.id, body: res.body }), headerSplit, encoding);
+        }
         return res;
     }
 

@@ -1,7 +1,7 @@
 import { RequestHeader, RequestPacket } from '@tsdi/core';
 import { EMPTY_OBJ } from '@tsdi/ioc';
 import { Socket } from 'net';
-import { MapHeaders } from '../../headers';
+import { MapHeaders, ReqHeaderItemType } from '../../headers';
 
 export class TcpServRequest extends MapHeaders implements RequestPacket, RequestHeader {
 
@@ -15,6 +15,8 @@ export class TcpServRequest extends MapHeaders implements RequestPacket, Request
     constructor(readonly socket: Socket, option: {
         id?: string,
         url?: string;
+        body?: any,
+        headers?: Record<string, ReqHeaderItemType>;
         params?: Record<string, any>;
         method?: string;
         update?: boolean;
@@ -22,8 +24,12 @@ export class TcpServRequest extends MapHeaders implements RequestPacket, Request
         super();
         this.id = option.id ?? '';
         this.url = option.url ?? '';
+        this.body = option.body;
         this.method = option.method ?? '';
         this.params = option.params ?? {};
+        if(option.headers){
+            this.setHeader(option.headers);
+        }
     }
 }
 

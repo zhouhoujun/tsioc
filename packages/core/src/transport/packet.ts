@@ -61,7 +61,7 @@ export interface Packet<T = any> {
      * packet id.
      */
     readonly id?: string;
-    readonly headers?: Record<string, string | string[] | number | boolean>;
+    readonly headers?: Record<string, any>;
     /**
      * The request body, or `null` if one isn't set.
      *

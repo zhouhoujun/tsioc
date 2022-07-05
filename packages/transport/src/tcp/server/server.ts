@@ -1,9 +1,10 @@
 import { Decoder, ExecptionRespondTypeAdapter, Interceptor, Packet, ServerOptions, TransportError, TransportServer } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Providers, tokenId } from '@tsdi/ioc';
+import { filter } from 'bluebird';
 import { Server, ListenOptions, Socket, ServerOpts as TcpServerOpts } from 'net';
-import { Observable, Observer, Subscription } from 'rxjs';
+import { Observable, Observer, reduce, Subscription } from 'rxjs';
 import { JsonDecoder, JsonEncoder } from '../../coder';
-import { ev } from '../../consts';
+import { ev, hdr } from '../../consts';
 import { CatchInterceptor, LogInterceptor, RespondAdapter, RespondInterceptor, ResponseStatusFormater } from '../../interceptors';
 import { TcpContext, TCP_EXECPTION_FILTERS, TCP_MIDDLEWARES } from './context';
 import { TcpStatusFormater } from './formater';
@@ -96,9 +97,28 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
         });
 
         this.server.on(ev.CONNECTION, socket => {
+            let headers: Record<string, any>;
+            let body = '';
+            let len = 0;
+            let id: string | undefined;
             this.createObservable(socket)
                 .subscribe(pk => {
-                    this.requestHandler(new TcpServRequest(socket, pk), new TcpServResponse(socket, pk.id))
+                    if (pk.headers) {
+                        headers = pk.headers;
+                        id = pk.id;
+                        body = ''
+                        len = headers[hdr.CONTENT_LENGTH];
+                        if (!len) {
+                            this.requestHandler(new TcpServRequest(socket, pk), new TcpServResponse(socket, pk.id))
+                        }
+                    } else if (pk.id === id) {
+                        body += pk.body;
+                        if (Buffer.byteLength(body) >= len) {
+                            this.requestHandler(new TcpServRequest(socket, { id: pk.id, headers, body }), new TcpServResponse(socket, pk.id));
+                            len = -1;
+                            body = '';
+                        }
+                    }
                 });
         });
 
