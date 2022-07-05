@@ -61,6 +61,7 @@ export interface Packet<T = any> {
      * packet id.
      */
     readonly id?: string;
+    readonly headers?: Record<string, string | string[] | number | boolean>;
     /**
      * The request body, or `null` if one isn't set.
      *
@@ -68,7 +69,7 @@ export interface Packet<T = any> {
      * user-defined data type. However, middlewares should take care to preserve
      * idempotence by treating them as such.
      */
-    get body(): T | null;
+    readonly body?: T | null;
 }
 
 /**

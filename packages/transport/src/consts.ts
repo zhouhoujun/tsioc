@@ -124,6 +124,8 @@ export namespace hdr {
     export const ACCESS_CONTROL_EXPOSE_HEADERS = 'access-control-expose-headers';
 
 
+    export const STATUS = 'status';
+    export const STATUS_MESSAGE = 'status-message';
     export const OPERATION = 'operation';
 }
 

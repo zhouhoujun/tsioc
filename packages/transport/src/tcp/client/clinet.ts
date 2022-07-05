@@ -2,13 +2,15 @@ import {
     EndpointBackend, Interceptor, OnDispose, ClientOptions, Packet, RequestContext, ResponseJsonParseError,
     TransportClient, TransportError, UuidGenerator, ExecptionFilter, createEndpoint, Encoder, Decoder
 } from '@tsdi/core';
-import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, tokenId, type_undef } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, InvocationContext, isDefined, isString, lang, Nullable, tokenId, type_undef } from '@tsdi/ioc';
 import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
 import { defer, filter, mergeMap, Observable, Observer, throwError } from 'rxjs';
 import { TcpRequest } from './request';
 import { TcpErrorResponse, TcpEvent, TcpResponse } from './response';
 import { JsonDecoder, JsonEncoder } from '../../coder';
-import { ev } from '../../consts';
+import { ev, hdr } from '../../consts';
+import { writeSocket } from '../../utils';
+import { ResHeaderItemType } from '../../headers';
 
 
 @Abstract()
@@ -73,20 +75,26 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
             if (!this.socket) return throwError(() => new TcpErrorResponse(0, 'has not connected.'));
             const ctx = context as RequestContext;
             const socket = this.socket;
+            let headers: Record<string, ResHeaderItemType>;
             let body: any, error: any, ok = false;
+            let bodybuf = '';
+            let status: number;
+            let statusMessage = '';
+            let bodyType: string, bodyLen = 0;
 
             const ac = this.getAbortSignal(ctx);
             return new Observable((observer: Observer<any>) => {
 
-                const sub = defer(() => {
-                    const defer = lang.defer<void>();
-                    const buf = ctx.get(Encoder).encode(req);
+                const sub = defer(async () => {
+                    const encoder = ctx.get(Encoder);
+                    const buf = encoder.encode({ id: req.id, headers: req.getHeaders() });
                     const split = ctx.get(TcpClientOptions).headerSplit;
-                    const data = `${buf.length}${split}${buf}`;
-                    socket.write(data, this.option.encoding, (err) => {
-                        err ? defer.reject(err) : defer.resolve();
-                    });
-                    return defer.promise;
+
+                    await writeSocket(socket, buf, split, this.option.encoding);
+
+                    if (isDefined(req.body)) {
+                        await writeSocket(socket, encoder.encode({ id: req.id, body: req.body }), split, this.option.encoding)
+                    }
                 }).pipe(
                     mergeMap(() => this.source),
                     filter(pk => pk.id === req.id)
@@ -94,49 +102,72 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                     complete: () => observer.complete(),
                     error: (err) => observer.error(new TcpErrorResponse(err?.status ?? 500, err?.text, err ?? body)),
                     next: (pk) => {
-                        body = pk.body;
-                        if (isString(body)) {
-                            let buffer: Buffer;
-                            let originalBody: string;
-                            switch (ctx.responseType) {
-                                case 'arraybuffer':
-                                    buffer = Buffer.from(body);
-                                    body = buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-                                    ok = true;
-                                    break;
-                                case 'blob':
-                                    buffer = Buffer.from(body);
-                                    body = new Blob([buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)]);
-                                    ok = true;
-                                    break;
-                                case 'json':
-                                    originalBody = body;
-                                    try {
-                                        body = body.replace(XSSI_PREFIX, '');
-                                        // Attempt the parse. If it fails, a parse error should be delivered to the user.
-                                        body = body !== '' ? JSON.parse(body) : null
-                                    } catch (err) {
-                                        // Since the JSON.parse failed, it's reasonable to assume this might not have been a
-                                        // JSON response. Restore the original body (including any XSSI prefix) to deliver
-                                        // a better error response.
-                                        body = originalBody;
-
-                                        // If this was an error request to begin with, leave it as a string, it probably
-                                        // just isn't JSON. Otherwise, deliver the parsing error to the user.
-                                        if (ok) {
-                                            // Even though the response status was 2xx, this is still an error.
-                                            ok = false;
-                                            // The parse error contains the text of the body that failed to parse.
-                                            error = { error: err, text: body } as ResponseJsonParseError
-                                        }
-                                    }
-                                    break;
+                        if (pk.headers) {
+                            headers = pk.headers;
+                            bodyLen = headers[hdr.CONTENT_LENGTH] as number ?? 0;
+                            bodyType = headers[hdr.CONTENT_TYPE] as string;
+                            status = headers[hdr.STATUS] as number ?? 0;
+                            statusMessage = headers[hdr.STATUS_MESSAGE] as string;
+                            if (!bodyType) {
+                                observer.next(new TcpResponse({
+                                    id: pk.id,
+                                    status,
+                                    statusMessage
+                                }));
+                                observer.complete();
+                            }
+                            return;
+                        }
+                        if (pk.body) {
+                            bodybuf += pk.body;
+                            if (bodyLen > Buffer.byteLength(bodybuf)) {
+                                return;
                             }
                         }
+                        body = bodybuf;
+
+                        let buffer: Buffer;
+                        let originalBody: string;
+                        switch (ctx.responseType) {
+                            case 'arraybuffer':
+                                buffer = Buffer.from(body);
+                                body = buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+                                ok = true;
+                                break;
+                            case 'blob':
+                                buffer = Buffer.from(body);
+                                body = new Blob([buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)]);
+                                ok = true;
+                                break;
+                            case 'json':
+                                originalBody = body;
+                                try {
+                                    body = body.replace(XSSI_PREFIX, '');
+                                    // Attempt the parse. If it fails, a parse error should be delivered to the user.
+                                    body = body !== '' ? JSON.parse(body) : null
+                                } catch (err) {
+                                    // Since the JSON.parse failed, it's reasonable to assume this might not have been a
+                                    // JSON response. Restore the original body (including any XSSI prefix) to deliver
+                                    // a better error response.
+                                    body = originalBody;
+
+                                    // If this was an error request to begin with, leave it as a string, it probably
+                                    // just isn't JSON. Otherwise, deliver the parsing error to the user.
+                                    if (ok) {
+                                        // Even though the response status was 2xx, this is still an error.
+                                        ok = false;
+                                        // The parse error contains the text of the body that failed to parse.
+                                        error = { error: err, text: body } as ResponseJsonParseError
+                                    }
+                                }
+                                break;
+                        }
+
 
                         if (ok) {
                             observer.next(new TcpResponse({
-                                status: 200,
+                                status,
+                                statusMessage,
                                 body
                             }));
                             observer.complete();

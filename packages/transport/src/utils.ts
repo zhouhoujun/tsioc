@@ -1,6 +1,7 @@
-import { ArgumentError, isFunction, isString } from '@tsdi/ioc';
+import { ArgumentError, isFunction, isString, lang } from '@tsdi/ioc';
 import { ResponseHeader } from '@tsdi/core';
 import { Stream } from 'stream';
+import { Socket } from 'net';
 import { EventEmitter } from 'events';
 
 
@@ -89,6 +90,31 @@ export function encodeUrl(url: string) {
   return url
     .replace(UNMATCHED_SURROGATE_PAIR_REGEXP, UNMATCHED_SURROGATE_PAIR_REPLACE)
     .replace(ENCODE_CHARS_REGEXP, encodeURI)
+}
+
+/**
+ * 
+ * @param socket 
+ * @param buffer base64 string or buffer.
+ * @param headerSplit 
+ * @param encoding 
+ * @returns 
+ */
+export function writeSocket(socket: Socket, buffer: Buffer | Uint8Array | ArrayBuffer | string, headerSplit?: string, encoding?: BufferEncoding) {
+  const defer = lang.defer<void>();
+  let buf: string;
+  if (isString(buffer)) {
+    buf = buffer
+  } else if (isBuffer(buffer)) {
+    buf = buffer.toString('base64');
+  } else {
+    buf = Buffer.from(buffer).toString('base64');
+  }
+  const data = headerSplit ? `${Buffer.byteLength(buf)}${headerSplit}${buf}` : buf;
+  socket.write(data, encoding, (err) => {
+    err ? defer.reject(err) : defer.resolve();
+  });
+  return defer.promise
 }
 
 /**
