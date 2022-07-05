@@ -6,6 +6,7 @@ export type ResHeaderItemType = string | number | boolean | string[];
 export class MapHeaders<T = ReqHeaderItemType> {
 
     private _hdrs: Map<string, T>;
+    private _rcd?: Record<string, T>;
     body: any;
 
     constructor() {
@@ -13,7 +14,13 @@ export class MapHeaders<T = ReqHeaderItemType> {
     }
 
     getHeaders() {
-        return this._hdrs;
+        if (!this._rcd) {
+            const rcd = this._rcd = {} as Record<string, T>;
+            this._hdrs.forEach((v, k) => {
+                rcd[k] = v;
+            });
+        }
+        return this._rcd;
     }
     hasHeader(field: string): boolean {
         return this._hdrs.has(field);
@@ -24,6 +31,7 @@ export class MapHeaders<T = ReqHeaderItemType> {
     setHeader(field: string, val: T): void;
     setHeader(fields: Record<string, T>): void;
     setHeader(field: any, val?: T): void {
+        this._rcd = null!;
         if (isString(field)) {
             isNil(val) ? this._hdrs.delete(field) : this._hdrs.set(field, val);
         } else if (field) {
@@ -34,7 +42,8 @@ export class MapHeaders<T = ReqHeaderItemType> {
         }
     }
     removeHeader(field: string): void {
-        this._hdrs.delete(field)
+        this._hdrs.delete(field);
+        this._rcd = null!;
     }
 }
 

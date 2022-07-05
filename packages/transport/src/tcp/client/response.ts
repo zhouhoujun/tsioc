@@ -1,5 +1,5 @@
 import { ResponsePacket } from '@tsdi/core';
-import { MapHeaders, ResHeaderItemType } from '../../header';
+import { MapHeaders, ResHeaderItemType } from '../../headers';
 
 /**
  * tcp error response.

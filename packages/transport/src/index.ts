@@ -6,6 +6,6 @@ export * from './tcp';
 export * from './stringify';
 export * from './utils';
 export * from './coder';
-export * from './header';
+export * from './headers';
 export * from './interceptors';
 export * from './middlewares';

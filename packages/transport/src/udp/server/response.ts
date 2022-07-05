@@ -1,6 +1,6 @@
 import { ResponseHeader, ResponsePacket } from '@tsdi/core';
 import { Socket } from 'dgram';
-import { MapHeaders, ResHeaderItemType } from '../../header';
+import { MapHeaders, ResHeaderItemType } from '../../headers';
 
 /**
  * UdpServResponse.

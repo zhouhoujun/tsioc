@@ -1,7 +1,7 @@
 import { RequestHeader, RequestPacket } from '@tsdi/core';
 import { EMPTY_OBJ } from '@tsdi/ioc';
 import { Socket } from 'net';
-import { MapHeaders } from '../../header';
+import { MapHeaders } from '../../headers';
 
 export class TcpServRequest extends MapHeaders implements RequestPacket, RequestHeader {
 
