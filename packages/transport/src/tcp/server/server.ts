@@ -77,7 +77,8 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
     }
 
     protected override initOption(options: TcpServerOptions): TcpServerOptions {
-        this.options = { ...defOpts, ...options };
+        const listenOptions = { ...defOpts.listenOptions, ...options?.listenOptions };
+        this.options = { ...defOpts, ...options, listenOptions };
         this.context.setValue(TcpServerOptions, this.options);
         return this.options;
     }

@@ -65,7 +65,8 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
     }
 
     protected override initOption(options?: TcpClientOptions): TcpClientOptions {
-        this.option = { ...defaults, ...options };
+        const connectOpts = { ...defaults.connectOpts, ...options?.connectOpts };
+        this.option = { ...defaults, ...options, connectOpts };
         this.context.setValue(TcpClientOptions, this.option);
         return this.option;
     }
