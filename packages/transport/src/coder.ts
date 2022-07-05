@@ -1,13 +1,13 @@
-import { Decoder, Encoder, TransportError } from '@tsdi/core';
+import { Decoder, Encoder, Packet, TransportError } from '@tsdi/core';
 import { Injectable, isDefined, isString } from '@tsdi/ioc';
 
 
 @Injectable()
-export class JsonDecoder implements Decoder {
-    decode<T>(input: string | Uint8Array | Buffer): T {
+export class JsonDecoder implements Decoder<string | Uint8Array | Buffer> {
+    decode(input: string | Uint8Array | Buffer): Packet {
         const source = Buffer.from(isString(input) ? input : new TextDecoder().decode(input), 'base64').toString('utf8');
         try {
-            return (source !== '' ? JSON.parse(source) : null) as T
+            return (source !== '' ? JSON.parse(source) : null);
         } catch (err) {
             throw new TransportError((err as Error).message);
         }

@@ -223,7 +223,7 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                             }
                         }
                         if (body) {
-                            body = this.context.get(Decoder).decode<Packet>(body);
+                            body = this.context.get(Decoder).decode(body);
                             observer.next(body);
                         }
                         if (rest) {

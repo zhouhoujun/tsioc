@@ -1,25 +1,26 @@
 import { Abstract } from '@tsdi/ioc';
+import { Packet } from './packet';
 
 /**
  * Decoder
  */
 @Abstract()
-export abstract class Decoder {
+export abstract class Decoder<T = string | Uint8Array> {
     /**
-     * decode to object T.
-     * @param str 
+     * decode buffer to Packet.
+     * @param buffer 
      */
-    abstract decode<T>(str: string | Uint8Array): T;
+    abstract decode(buffer: T): Packet;
 }
 
 /**
  * Encoder
  */
 @Abstract()
-export abstract class Encoder {
+export abstract class Encoder<T = string | Uint8Array> {
     /**
-     * encode object.
-     * @param obj 
+     * encode Packet to buffer.
+     * @param pkt 
      */
-    abstract encode<T>(obj: T): string;
+    abstract encode(pkt: Packet): T;
 }

@@ -76,7 +76,7 @@ export class DeviceController {
         TcpModule.withOptions({
             timeout: 1000,
             listenOptions: {
-                port: 5000
+                port: 2000
             }
         })
     ],
@@ -104,7 +104,7 @@ describe('Tcp Server & Tcp Client', () => {
             useValue: {
                 connectOpts: {
                     path: '',
-                    port: 5000
+                    port: 2000
                 }
             } as TcpClientOptions
         });

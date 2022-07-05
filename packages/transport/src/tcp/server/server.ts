@@ -22,6 +22,7 @@ export abstract class TcpServerOptions extends ServerOptions<TcpServRequest, Tcp
      * header split code.
      */
     abstract headerSplit?: string;
+    abstract maxConnections?: number;
     /**
      * socket timeout.
      */
@@ -82,6 +83,9 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
 
     async start(): Promise<void> {
         this.server = new Server(this.options.serverOpts);
+        if (this.options.maxConnections) {
+            this.server.maxConnections = this.options.maxConnections
+        }
         const defer = lang.defer();
         this.server.once(ev.ERROR, (err: any) => {
             if (err?.code === ev.EADDRINUSE || err?.code === ev.ECONNREFUSED) {
@@ -117,6 +121,8 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
                 if (err.code !== ev.ECONNREFUSED) {
                     this.logger.error(err);
                 }
+                socket.emit(ev.ERROR, err.message);
+                socket.end();
                 observer.error(err);
             };
 
@@ -152,8 +158,7 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
                         }
                     }
                     if (body) {
-                        body = this.context.get(Decoder).decode<Packet>(body);
-                        observer.next(body);
+                        observer.next(this.context.get(Decoder).decode(body));
                     }
                     if (rest) {
                         onData(rest);
@@ -166,6 +171,7 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
             };
 
             const onEnd = () => {
+                socket.end();
                 observer.complete();
             };
 
