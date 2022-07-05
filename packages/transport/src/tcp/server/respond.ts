@@ -30,8 +30,7 @@ export class TcpExecptionRespondTypeAdapter extends ExecptionRespondTypeAdapter 
         if (response === 'body') {
             ctx.body = value
         } else if (response === 'header') {
-            // throw new TransportError('Tcp not support header response');
-            // ctx.setHeader(value as Record<string, any>);
+            ctx.setHeader(value as Record<string, any>);
         } else if (response === 'response') {
             if (value instanceof TransportError) {
                 ctx.status = value.statusCode;
