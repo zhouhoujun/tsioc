@@ -11,13 +11,22 @@ export class TcpServResponse extends MapHeaders<ResHeaderItemType> implements Re
     status = 0;
     statusMessage = '';
     body: any;
+    private _sent = false;
 
     constructor(readonly socket: Socket, readonly id?: string) {
         super()
     }
-    
+
     get ok(): boolean {
         return this.status === 200;
+    }
+
+    get sent() {
+        return this._sent;
+    }
+
+    respond() {
+    
     }
 }
 

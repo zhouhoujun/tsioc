@@ -1,8 +1,8 @@
 import { Inject, Injectable, InvocationContext, isUndefined, ModuleLoader } from '@tsdi/ioc';
-import { TransportClient, Protocol, ClientOptions, EndpointBackend, RequstOption } from '@tsdi/core';
+import { TransportClient, Protocol, ClientOptions, EndpointBackend, RequstOption, RequestPacket, ResponsePacket } from '@tsdi/core';
 import { Level } from '@tsdi/logs';
 import { BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerGroupJoinEvent, ConsumerRunConfig, ConsumerSubscribeTopic, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, Kafka, KafkaConfig, LogEntry, logLevel, MemberMetadata, PartitionAssigner, Producer, ProducerConfig, ProducerRecord } from 'kafkajs';
-import { DEFAULT_BROKERS } from '../const';
+import { DEFAULT_BROKERS, KafkaHeaders } from '../const';
 import { scan } from 'rxjs';
 
 let kafkajs: any;
@@ -187,7 +187,7 @@ export class KafkaClient extends TransportClient {
     protected publish(partialPacket: RequestPacket<any>, callback: (packet: ResponsePacket<any>) => void): () => void {
         const packet = this.assignPacketId(partialPacket);
         try {
-            const pattern = this.normalizePattern(partialPacket.pattern);
+            const pattern = this.normalizePattern(partialPacket.url);
             const replyTopic = this.getResponsePatternName(pattern);
             const replyPartition = this.getReplyTopicPartition(replyTopic);
 

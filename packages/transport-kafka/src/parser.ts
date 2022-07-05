@@ -1,4 +1,4 @@
-import { isNil } from "@tsdi/ioc";
+import { isNil, isObject } from "@tsdi/ioc";
 
 export class KafkaRequestSerializer implements Serializer<any, KafkaRequest> {
     serialize(value: any): KafkaRequest {

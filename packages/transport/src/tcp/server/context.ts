@@ -14,7 +14,7 @@ import { TcpServResponse } from './response';
 @Injectable()
 export class TcpContext extends ServerContext<TcpServRequest, TcpServResponse> implements HeaderContext, AssetContext {
 
-    readonly protocol: Protocol = 'tcp';  
+    readonly protocol: Protocol = 'tcp';
 
     private _url?: string;
     get url(): string {
@@ -72,7 +72,7 @@ export class TcpContext extends ServerContext<TcpServRequest, TcpServResponse> i
     }
 
     isUpdate(): boolean {
-        return this.request.getHeader(hdr.OPERATION) === 'update';
+        return this.request.method === 'PUT' || this.request.getHeader(hdr.OPERATION) === 'update';
     }
 
     get body(): any {
@@ -81,7 +81,7 @@ export class TcpContext extends ServerContext<TcpServRequest, TcpServResponse> i
     set body(value: any) {
         this.response.body = value;
         const setType = !this.hasHeader(hdr.CONTENT_TYPE);
-        if(isString(value)){
+        if (isString(value)) {
             if (setType) this.contentType = xmlRegExp.test(value) ? ctype.TEXT_HTML : ctype.TEXT_PLAIN;
             this.length = Buffer.byteLength(value);
         }
@@ -105,7 +105,7 @@ export class TcpContext extends ServerContext<TcpServRequest, TcpServResponse> i
      * @param {Number} n
      * @api public
      */
-     set length(n: number | undefined) {
+    set length(n: number | undefined) {
         if (isNumber(n) && !this.hasHeader(hdr.TRANSFER_ENCODING)) {
             this.setHeader(hdr.CONTENT_LENGTH, n)
         } else {
@@ -124,41 +124,39 @@ export class TcpContext extends ServerContext<TcpServRequest, TcpServResponse> i
     }
 
     set statusMessage(msg: string) {
-        throw new Error('Method not implemented.');
+        this.response.statusMessage = msg;
     }
 
     get ok(): boolean {
-        throw new Error('Method not implemented.');
+        return this.response.ok;
     }
-    set ok(ok: boolean) {
-        throw new Error('Method not implemented.');
-    }
+
     get sent(): boolean {
-        throw new Error('Method not implemented.');
+        return this.response.sent;
     }
 
     is(type: string | string[]): string | false | null {
         throw new Error('Method not implemented.');
     }
     get contentType(): string {
-        throw new Error('Method not implemented.');
+        return this.response.getHeader(hdr.CONTENT_TYPE) as string;
     }
     set contentType(type: string) {
-        throw new Error('Method not implemented.');
+        this.setHeader(hdr.CONTENT_TYPE, type);
     }
     getHeader(field: string): string | number | string[] | undefined {
-        throw new Error('Method not implemented.');
+        return this.request.getHeader(field);
     }
     hasHeader(field: string): boolean {
-        throw new Error('Method not implemented.');
+        return this.response.hasHeader(field);
     }
     setHeader(field: string, val: string | number | string[]): void;
     setHeader(fields: Record<string, string | number | string[]>): void;
-    setHeader(field: unknown, val?: unknown): void {
-        throw new Error('Method not implemented.');
+    setHeader(field: any, val?: any): void {
+        this.response.setHeader(field, val);
     }
     removeHeader(field: string): void {
-        throw new Error('Method not implemented.');
+        this.response.removeHeader(field);
     }
 
 }

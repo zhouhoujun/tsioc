@@ -1,5 +1,5 @@
 import { Abstract, Inject, Injectable, InvocationContext, lang, Token } from '@tsdi/ioc';
-import { TransportClient, Protocol, ClientOptions, EndpointBackend, RequestBase, RequstOption } from '@tsdi/core';
+import { TransportClient, Protocol, ClientOptions, EndpointBackend, RequstOption } from '@tsdi/core';
 import { MqttClient as Client, connect, IClientOptions } from 'mqtt';
 import { EmptyError, first, fromEvent, lastValueFrom, map, merge, share, take, tap } from 'rxjs';
 import { ev } from '@tsdi/transport';
@@ -45,7 +45,7 @@ export class MqttClient extends TransportClient {
 
     async close(): Promise<void> {
         const defer = lang.defer();
-        this.mqttClient?.end(undefined, undefined, err => err ? defer.reject(err) : defer.resolve);
+        this.mqttClient?.end(true, undefined, err => err ? defer.reject(err) : defer.resolve);
         await defer.promise;
         this.mqttClient = null!;
         this.connection = null!;
