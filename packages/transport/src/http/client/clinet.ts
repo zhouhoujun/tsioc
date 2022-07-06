@@ -7,7 +7,7 @@ import * as https from 'https';
 import * as http2 from 'http2';
 import { ev } from '../../consts';
 import { MimeAdapter } from '../../mime';
-import { HttpMimeAdapter } from '../mime';
+import { TrasportMimeAdapter } from '../../impl/mime';
 import { HttpBackend } from './backend';
 import { NormlizePathInterceptor } from './path';
 import { NormlizeBodyInterceptor } from './body';
@@ -41,7 +41,7 @@ export type RequestOptions = HttpRequestOptions & HttpNodeOptions;
  */
 @Injectable()
 @Providers([
-    { provide: MimeAdapter, useClass: HttpMimeAdapter }
+    { provide: MimeAdapter, useClass: TrasportMimeAdapter }
 ])
 export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions> implements OnDispose {
 

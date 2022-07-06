@@ -1,11 +1,16 @@
 import { Decoder, ExecptionRespondTypeAdapter, Interceptor, Packet, ServerOptions, TransportError, TransportServer } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Providers, tokenId } from '@tsdi/ioc';
-import { filter } from 'bluebird';
 import { Server, ListenOptions, Socket, ServerOpts as TcpServerOpts } from 'net';
 import { Observable, Observer, reduce, Subscription } from 'rxjs';
 import { JsonDecoder, JsonEncoder } from '../../coder';
 import { ev, hdr } from '../../consts';
+import { TrasportMimeAdapter } from '../../impl/mime';
+import { TransportNegotiator } from '../../impl/negotiator';
+import { TransportSendAdapter } from '../../impl/send';
 import { CatchInterceptor, LogInterceptor, RespondAdapter, RespondInterceptor, ResponseStatusFormater } from '../../interceptors';
+import { ContentSendAdapter } from '../../middlewares/send';
+import { MimeAdapter } from '../../mime';
+import { Negotiator } from '../../negotiator';
 import { TcpContext, TCP_EXECPTION_FILTERS, TCP_MIDDLEWARES } from './context';
 import { TcpStatusFormater } from './formater';
 import { TcpServRequest } from './request';
@@ -66,6 +71,9 @@ const defOpts = {
     { provide: ResponseStatusFormater, useClass: TcpStatusFormater },
     { provide: RespondAdapter, useClass: TcpRespondAdapter },
     { provide: ExecptionRespondTypeAdapter, useClass: TcpExecptionRespondTypeAdapter },
+    { provide: ContentSendAdapter, useClass: TransportSendAdapter },
+    { provide: MimeAdapter, useClass: TrasportMimeAdapter },
+    { provide: Negotiator, useClass: TransportNegotiator }
 ])
 export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, TcpContext> {
 

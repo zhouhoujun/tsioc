@@ -13,7 +13,7 @@ export class MapHeaders<T = ReqHeaderItemType> {
         this._hdrs = new Map();
     }
 
-    getHeaders() {
+    getHeaders(): Record<string, T> {
         if (!this._rcd) {
             const rcd = this._rcd = {} as Record<string, T>;
             this._hdrs.forEach((v, k) => {
@@ -22,24 +22,24 @@ export class MapHeaders<T = ReqHeaderItemType> {
         }
         return this._rcd;
     }
+
+    setHeaders(headers: Record<string, T>): void {
+        for (const f in headers) {
+            const v = headers[f];
+            isNil(v) ? this._hdrs.delete(f) : this._hdrs.set(f, v);
+        }
+        this._rcd = null!;
+    }
+
     hasHeader(field: string): boolean {
         return this._hdrs.has(field);
     }
     getHeader(field: string): T | undefined {
         return this._hdrs.get(field);
     }
-    setHeader(field: string, val: T): void;
-    setHeader(fields: Record<string, T>): void;
-    setHeader(field: any, val?: T): void {
+    setHeader(field: string, val: T): void {
+        isNil(val) ? this._hdrs.delete(field) : this._hdrs.set(field, val);
         this._rcd = null!;
-        if (isString(field)) {
-            isNil(val) ? this._hdrs.delete(field) : this._hdrs.set(field, val);
-        } else if (field) {
-            for (const f in field) {
-                const v = field[f];
-                isNil(v) ? this._hdrs.delete(f) : this._hdrs.set(f, v);
-            }
-        }
     }
     removeHeader(field: string): void {
         this._hdrs.delete(field);

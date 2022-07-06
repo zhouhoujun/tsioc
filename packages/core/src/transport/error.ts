@@ -40,7 +40,7 @@ export class TransportArgumentError extends ArgumentError {
  * @class NotFoundError
  * @extends {HttpError}
  */
- export class NotFoundError extends TransportError {
+export class NotFoundError extends TransportError {
     constructor(message = 'Not Found') {
         super(message)
     }
@@ -54,7 +54,7 @@ export class TransportArgumentError extends ArgumentError {
  * @class ForbiddenError
  * @extends {TransportError}
  */
- export class ForbiddenError extends TransportError {
+export class ForbiddenError extends TransportError {
     constructor(message = 'Forbidden') {
         super(message)
     }
@@ -68,7 +68,7 @@ export class TransportArgumentError extends ArgumentError {
  * @class BadRequestError
  * @extends {TransportError}
  */
- export class BadRequestError extends TransportError {
+export class BadRequestError extends TransportError {
     constructor(message = 'Bad Request') {
         super(message)
     }
@@ -82,7 +82,7 @@ export class TransportArgumentError extends ArgumentError {
  * @class UnauthorizedError
  * @extends {TransportError}
  */
- export class UnauthorizedError extends TransportError {
+export class UnauthorizedError extends TransportError {
     constructor(message = 'Unauthorized') {
         super(message)
     }
@@ -95,8 +95,17 @@ export class TransportArgumentError extends ArgumentError {
  * @class InternalServerError
  * @extends {HttpError}
  */
- export class InternalServerError extends TransportError {
+export class InternalServerError extends TransportError {
     constructor(message = 'Internal Server Error') {
+        super(message)
+    }
+}
+
+/**
+ * unsupported media type.
+ */
+export class UnsupportedMediaTypeError extends TransportError {
+    constructor(message = 'Unsupported Media Type') {
         super(message)
     }
 }

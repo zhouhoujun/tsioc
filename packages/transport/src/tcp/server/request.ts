@@ -28,7 +28,7 @@ export class TcpServRequest extends MapHeaders implements RequestPacket, Request
         this.method = option.method ?? '';
         this.params = option.params ?? {};
         if(option.headers){
-            this.setHeader(option.headers);
+            this.setHeaders(option.headers);
         }
     }
 }

@@ -1,14 +1,15 @@
 /* eslint-disable no-useless-escape */
+import { AssetContext, TransportContext } from '@tsdi/core';
 import { Injectable, isArray, isString } from '@tsdi/ioc';
-import { hdr } from '../../consts';
-import { Negotiator } from '../../negotiator';
-import { HttpContext } from './context';
+import { AssetServerContext } from '../asset.ctx';
+import { hdr } from '../consts';
+import { Negotiator } from '../negotiator';
 
 
 
 @Injectable()
-export class HttpNegotiator extends Negotiator {
-  constructor(private ctx: HttpContext) {
+export class TransportNegotiator extends Negotiator {
+  constructor(private ctx: AssetServerContext) {
     super()
   }
 

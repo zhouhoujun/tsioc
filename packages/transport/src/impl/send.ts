@@ -1,18 +1,18 @@
-import { PROCESS_ROOT } from '@tsdi/core';
+import { AssetContext, BadRequestError, ForbiddenError, InternalServerError, NotFoundError, PROCESS_ROOT, TransportContext } from '@tsdi/core';
 import { Injectable, isArray } from '@tsdi/ioc';
 import { normalize, resolve, basename, extname, parse, sep, isAbsolute, join } from 'path';
 import { existsSync, stat, createReadStream } from 'fs';
 import { promisify } from 'util';
-import { HttpContext } from './context';
-import { ContentSendAdapter, SendOption } from '../../middlewares/send';
-import { ev, hdr } from '../../consts';
+import { ContentSendAdapter, SendOption } from '../middlewares/send';
+import { ev, hdr } from '../consts';
+import { AssetServerContext } from '../asset.ctx';
 
 
 const statify = promisify(stat);
 
 @Injectable()
-export class HttpSendAdapter extends ContentSendAdapter {
-    async send(ctx: HttpContext, opts: SendOption): Promise<string> {
+export class TransportSendAdapter extends ContentSendAdapter {
+    async send(ctx: AssetServerContext, opts: SendOption): Promise<string> {
         let path = ctx.pathname;
         const endSlash = path[path.length - 1] === '/';
         path = path.substring(parse(path).root.length);
@@ -20,16 +20,16 @@ export class HttpSendAdapter extends ContentSendAdapter {
         try {
             path = decodeURIComponent(path)
         } catch {
-            throw ctx.throwError(400, 'failed to decode url')
+            throw new BadRequestError('failed to decode url');
         }
         const index = opts.index;
         if (index && endSlash) path += index;
         const baseUrl = ctx.get(PROCESS_ROOT);
         if (isAbsolute(path) || winAbsPath.test(path)) {
-            throw ctx.throwError(400, 'Malicious Path');
+            throw new BadRequestError('Malicious Path');
         }
         if (UP_REGEXP.test(normalize('.' + sep + path))) {
-            throw ctx.throwError(403)
+            throw new ForbiddenError();
         }
         let filename = '', encodingExt = '';
         roots.some(root => {
@@ -82,9 +82,9 @@ export class HttpSendAdapter extends ContentSendAdapter {
             }
         } catch (err) {
             if (notfound.includes((err as any).code)) {
-                throw ctx.throwError(404, (err as Error).message)
+                throw new NotFoundError((err as Error).message)
             }
-            throw ctx.throwError(500)
+            throw new InternalServerError()
         }
 
         if (opts.setHeaders) opts.setHeaders(ctx, filename, stats);

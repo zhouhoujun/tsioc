@@ -1,5 +1,5 @@
 /* eslint-disable no-control-regex */
-import { AssetContext, HeaderContext, Middleware, Throwable, TransportContext } from '@tsdi/core';
+import { AssetContext, HeaderContext, Middleware, TransportContext, UnsupportedMediaTypeError } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable } from '@tsdi/ioc';
 import * as zlib from 'zlib';
 import { Readable } from 'stream';
@@ -78,7 +78,7 @@ export class BodyparserMiddleware implements Middleware {
         this.enableXml = this.chkType('xml');
     }
 
-    async invoke(ctx: TransportContext & HeaderContext & AssetContext & Throwable, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: TransportContext & AssetContext, next: () => Promise<void>): Promise<void> {
         if (!isUndefined(ctx.request.body)) return await next();
         const res = await this.parseBody(ctx);
         ctx.request.body = res.body ?? {};
@@ -86,7 +86,7 @@ export class BodyparserMiddleware implements Middleware {
         await next()
     }
 
-    parseBody(ctx: TransportContext & HeaderContext & AssetContext & Throwable): Promise<{ raw?: any, body?: any }> {
+    parseBody(ctx: TransportContext & AssetContext): Promise<{ raw?: any, body?: any }> {
         const extendTypes = this.options.extendTypes;
         if (this.enableJson && ctx.is(extendTypes.json)) {
             return this.parseJson(ctx)
@@ -104,7 +104,7 @@ export class BodyparserMiddleware implements Middleware {
         return Promise.resolve(EMPTY_OBJ)
     }
 
-    protected async parseJson(ctx: TransportContext & HeaderContext & Throwable): Promise<{ raw?: any, body?: any }> {
+    protected async parseJson(ctx: TransportContext & HeaderContext): Promise<{ raw?: any, body?: any }> {
         const len = ctx.getHeader(hdr.CONTENT_LENGTH);
         const hdrcode = ctx.getHeader(hdr.CONTENT_ENCODING) as string || hdr.IDENTITY;
         let length: number | undefined;
@@ -131,7 +131,7 @@ export class BodyparserMiddleware implements Middleware {
         }
     }
 
-    private getStream(ctx: TransportContext & HeaderContext & Throwable, encoding: string): Readable {
+    private getStream(ctx: TransportContext & HeaderContext, encoding: string): Readable {
         switch (encoding) {
             case 'gzip':
             case 'deflate':
@@ -139,7 +139,7 @@ export class BodyparserMiddleware implements Middleware {
             case 'identity':
                 return ctx.request
             default:
-                throw ctx.throwError(415, 'Unsupported Content-Encoding: ' + encoding);
+                throw new UnsupportedMediaTypeError('Unsupported Content-Encoding: ' + encoding);
         }
         return (ctx.request as Readable).pipe(zlib.createUnzip())
     }
@@ -155,7 +155,7 @@ export class BodyparserMiddleware implements Middleware {
         return JSON.parse(str)
     }
 
-    protected async parseForm(ctx: TransportContext & HeaderContext & Throwable): Promise<{ raw?: any, body?: any }> {
+    protected async parseForm(ctx: TransportContext & HeaderContext): Promise<{ raw?: any, body?: any }> {
         const len = ctx.getHeader(hdr.CONTENT_LENGTH);
         const hdrcode = ctx.getHeader(hdr.CONTENT_ENCODING) as string || hdr.IDENTITY;
         let length: number | undefined;
@@ -187,7 +187,7 @@ export class BodyparserMiddleware implements Middleware {
         }
     }
 
-    protected async parseText(ctx: TransportContext & HeaderContext & Throwable): Promise<{ raw?: any, body?: any }> {
+    protected async parseText(ctx: TransportContext & HeaderContext): Promise<{ raw?: any, body?: any }> {
         const len = ctx.getHeader(hdr.CONTENT_LENGTH);
         const hdrcode = ctx.getHeader(hdr.CONTENT_ENCODING) as string || hdr.IDENTITY;
         let length: number | undefined;

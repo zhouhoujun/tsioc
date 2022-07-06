@@ -201,7 +201,7 @@ export interface HeaderContext {
      * @return {String}
      * @api public
      */
-    getHeader(field: string): string | string[] | number | undefined;
+    getHeader(field: string): string | string[] | undefined;
 
     /**
      * has response header field or not.
@@ -274,7 +274,7 @@ export interface RedirectContext {
 /**
  * asset context.
  */
-export interface AssetContext {
+export interface AssetContext extends HeaderContext {
     /**
      * Check if the incoming request contains the "Content-Type"
      * header field and if it contains any of the given mime `type`s.
@@ -335,6 +335,142 @@ export interface AssetContext {
      * @return {Number}
      * @api public
      */
-    get length(): number | undefined
+    get length(): number | undefined;
+
+
+    /**
+     * Set Content-Type response header with `type` through `mime.lookup()`
+     * when it does not contain a charset.
+     *
+     * Examples:
+     *
+     *     this.type = '.html';
+     *     this.type = 'html';
+     *     this.type = 'json';
+     *     this.type = 'application/json';
+     *     this.type = 'png';
+     *
+     * @param {String} type
+     * @api public
+     */
+    set type(type: string);
+
+    /**
+     * Return the response mime type void of
+     * parameters such as "charset".
+     *
+     * @return {String}
+     * @api public
+     */
+    get type(): string;
+
+    /**
+     * Check if the given `type(s)` is acceptable, returning
+     * the best match when true, otherwise `false`, in which
+     * case you should respond with 406 "Not Acceptable".
+     *
+     * The `type` value may be a single mime type string
+     * such as "application/json", the extension name
+     * such as "json" or an array `["json", "html", "text/plain"]`. When a list
+     * or array is given the _best_ match, if any is returned.
+     *
+     * Examples:
+     *
+     *     // Accept: text/html
+     *     this.accepts('html');
+     *     // => "html"
+     *
+     *     // Accept: text/*, application/json
+     *     this.accepts('html');
+     *     // => "html"
+     *     this.accepts('text/html');
+     *     // => "text/html"
+     *     this.accepts('json', 'text');
+     *     // => "json"
+     *     this.accepts('application/json');
+     *     // => "application/json"
+     *
+     *     // Accept: text/*, application/json
+     *     this.accepts('image/png');
+     *     this.accepts('png');
+     *     // => false
+     *
+     *     // Accept: text/*;q=.5, application/json
+     *     this.accepts('html', 'json');
+     *     // => "json"
+     *
+     * @param {String|Array} type(s)...
+     * @return {String|Array|false}
+     * @api public
+     */
+
+    accepts(...args: string[]): string | string[] | false;
+    /**
+    * Return accepted encodings or best fit based on `encodings`.
+    *
+    * Given `Accept-Encoding: gzip, deflate`
+    * an array sorted by quality is returned:
+    *
+    *     ['gzip', 'deflate']
+    *
+    * @param {String|Array} encoding(s)...
+    * @return {String|Array}
+    * @api public
+    */
+    acceptsEncodings(...encodings: string[]): string | string[] | false;
+    /**
+     * Return accepted charsets or best fit based on `charsets`.
+     *
+     * Given `Accept-Charset: utf-8, iso-8859-1;q=0.2, utf-7;q=0.5`
+     * an array sorted by quality is returned:
+     *
+     *     ['utf-8', 'utf-7', 'iso-8859-1']
+     *
+     * @param {String|Array} charset(s)...
+     * @return {String|Array}
+     * @api public
+     */
+    acceptsCharsets(...charsets: string[]): string | string[] | false;
+
+    /**
+     * Return accepted languages or best fit based on `langs`.
+     *
+     * Given `Accept-Language: en;q=0.8, es, pt`
+     * an array sorted by quality is returned:
+     *
+     *     ['es', 'pt', 'en']
+     *
+     * @param {String|Array} lang(s)...
+     * @return {Array|String}
+     * @api public
+     */
+    acceptsLanguages(...langs: string[]): string | string[];
+
+
+    /**
+    * Set Content-Disposition header to "attachment" with optional `filename`.
+    *
+    * @param filname file name for download.
+    * @param options content disposition.
+    * @api public
+    */
+    attachment(filename: string, options?: {
+        contentType?: string;
+        /**
+        * Specifies the disposition type.
+        * This can also be "inline", or any other value (all values except `inline` are treated like attachment,
+        * but can convey additional information if both parties agree to it).
+        * The `type` is normalized to lower-case.
+        * @default 'attachment'
+        */
+        type?: 'attachment' | 'inline' | string | undefined;
+        /**
+         * If the filename option is outside ISO-8859-1,
+         * then the file name is actually stored in a supplemental field for clients
+         * that support Unicode file names and a ISO-8859-1 version of the file name is automatically generated
+         * @default true
+         */
+        fallback?: string | boolean | undefined;
+    }): void
 
 }

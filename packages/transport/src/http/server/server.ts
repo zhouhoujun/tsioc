@@ -10,7 +10,7 @@ import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
 import * as assert from 'assert';
-import { CONTENT_DISPOSITION } from './content';
+import { CONTENT_DISPOSITION } from '../../content';
 import { HttpContext, HttpServRequest, HttpServResponse, HTTP_MIDDLEWARES } from './context';
 import { ev, LOCALHOST } from '../../consts';
 import {
@@ -18,13 +18,13 @@ import {
     ContentMiddleware, ContentOptions, SessionMiddleware, CsrfMiddleware
 } from '../../middlewares';
 import { MimeAdapter, MimeDb } from '../../mime';
-import { db } from '../mimedb';
-import { HttpSendAdapter } from './send';
 import { Negotiator } from '../../negotiator';
-import { HttpNegotiator } from './negotiator';
-import { HttpMimeAdapter } from '../mime';
 import { CatchInterceptor, LogInterceptor, ResponseStatusFormater } from '../../interceptors';
 import { HttpStatusFormater } from './formater';
+import { db } from '../../impl/mimedb';
+import { TrasportMimeAdapter } from '../../impl/mime';
+import { TransportSendAdapter } from '../../impl/send';
+import { TransportNegotiator } from '../../impl/negotiator';
 import { HttpExecptionRespondTypeAdapter, HttpRespondAdapter } from './respond';
 import { ArgumentErrorFilter, HttpFinalizeFilter } from './finalize-filter';
 import { Http2ServerOptions, HttpServerOptions, HTTP_EXECPTION_FILTERS, HTTP_SERVEROPTIONS, HTTP_SERV_INTERCEPTORS } from './options';
@@ -76,9 +76,9 @@ const httpOpts = {
     { provide: ResponseStatusFormater, useClass: HttpStatusFormater },
     { provide: RespondAdapter, useClass: HttpRespondAdapter },
     { provide: ExecptionRespondTypeAdapter, useClass: HttpExecptionRespondTypeAdapter },
-    { provide: ContentSendAdapter, useClass: HttpSendAdapter },
-    { provide: MimeAdapter, useClass: HttpMimeAdapter },
-    { provide: Negotiator, useClass: HttpNegotiator }
+    { provide: ContentSendAdapter, useClass: TransportSendAdapter },
+    { provide: MimeAdapter, useClass: TrasportMimeAdapter },
+    { provide: Negotiator, useClass: TransportNegotiator }
 ])
 export class HttpServer extends TransportServer<HttpServRequest, HttpServResponse, HttpContext>  {
 

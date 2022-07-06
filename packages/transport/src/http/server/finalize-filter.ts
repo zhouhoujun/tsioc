@@ -1,7 +1,7 @@
 import {
     BadRequestError, ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
     ForbiddenError, InternalServerError, NotFoundError, TransportArgumentError, TransportError,
-    TransportMissingError, UnauthorizedError
+    TransportMissingError, UnauthorizedError, UnsupportedMediaTypeError
 } from '@tsdi/core';
 import { Inject, Injectable, isFunction, isNumber } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
@@ -118,6 +118,11 @@ export class ArgumentErrorFilter implements ExecptionFilter {
     @ExecptionHandler(InternalServerError)
     internalServerError(ctx: ExecptionContext, execption: InternalServerError) {
         ctx.execption = new HttpInternalServerError(execption.message)
+    }
+
+    @ExecptionHandler(UnsupportedMediaTypeError)
+    unsupported(ctx: ExecptionContext, execption: UnsupportedMediaTypeError) {
+        ctx.execption = new HttpError(415, execption.message)
     }
 
     @ExecptionHandler(TransportArgumentError)

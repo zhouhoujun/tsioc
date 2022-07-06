@@ -150,7 +150,7 @@ export interface RequestHeader<T = any> {
      * @return {String}
      * @api public
      */
-    getHeader(field: string): string | string[] | number | undefined;
+    getHeader(field: string): string | number | string[] | undefined;
     /**
      * Set header `field` to `val` or pass
      * an object of header fields.
@@ -166,19 +166,6 @@ export interface RequestHeader<T = any> {
      * @api public
      */
     setHeader(field: string, val: string | number | string[]): void;
-    /**
-     * Set header `field` to `val` or pass
-     * an object of header fields.
-     *
-     * Examples:
-     *
-     *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
-     *
-     * @param {Record<string, string | number | string[]>} fields
-     * @param {String} val
-     * @api public
-     */
-    setHeader(fields: Record<string, string | number | string[]>): void;
     /**
      * Remove header `field`.
      *
@@ -260,7 +247,7 @@ export interface ResponseHeader<T = any> {
      * @return {String}
      * @api public
      */
-    getHeader(field: string): string | number | boolean | string[] | undefined;
+    getHeader(field: string): string | number | boolean | readonly string[] | undefined;
     /**
      * Set header `field` to `val` or pass
      * an object of header fields.
@@ -275,20 +262,7 @@ export interface ResponseHeader<T = any> {
      * @param {String} val
      * @api public
      */
-    setHeader(field: string, val: string | number | boolean | string[]): void;
-    /**
-     * Set header `field` to `val` or pass
-     * an object of header fields.
-     *
-     * Examples:
-     *
-     *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
-     *
-     * @param {Record<string, string | number | boolean | string[]>} fields
-     * @param {String} val
-     * @api public
-     */
-    setHeader(fields: Record<string, string | number | boolean | string[]>): void;
+    setHeader(field: string, val: string | number | boolean | readonly string[]): void;
     /**
      * Remove header `field`.
      *

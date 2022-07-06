@@ -74,7 +74,7 @@ const primitiveResolvers: TransportArgumentResolver[] = [
                     return parameter.scope === 'query' && isDefined(ctx.query[parameter.field ?? parameter.name!])
                 },
                 resolve(parameter, ctx) {
-                    const pipe = ctx.get<PipeTransform>(parameter.pipe ?? (parameter.type as Type)?.name.toLowerCase());
+                    const pipe = ctx.get<PipeTransform>(parameter.pipe ?? (parameter.type as Type)?.name.toLowerCase())!;
                     if (!pipe) throw missingPipeError(parameter, ctx.targetType, ctx.methodName)
                     return pipe.transform(ctx.query[parameter.field ?? parameter.name!], ...parameter.args || EMPTY)
                 }
@@ -102,7 +102,7 @@ const primitiveResolvers: TransportArgumentResolver[] = [
             {
                 canResolve(parameter, ctx) {
                     const field = parameter.field ?? parameter.name!;
-                    return !parameter.scope && isDefined(ctx.query[field] ?? ctx.restfulParams?.[field] ?? ctx.playload[field])
+                    return !parameter.scope && isDefined(ctx.query[field] ?? ctx.restfulParams?.[field] ?? ctx.playload?.[field])
                 },
                 resolve(parameter, ctx) {
                     const field = parameter.field ?? parameter.name!;

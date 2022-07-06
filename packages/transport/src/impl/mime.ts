@@ -5,7 +5,7 @@ import { extname } from 'path';
 import { MimeAdapter, MimeDb, SplitType } from '../mime';
 
 @Injectable()
-export class HttpMimeAdapter extends MimeAdapter {
+export class TrasportMimeAdapter extends MimeAdapter {
     constructor(private db: MimeDb) {
         super();
     }

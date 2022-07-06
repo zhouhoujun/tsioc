@@ -1,8 +1,9 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
-import { ServerContext, ExecptionFilter, MiddlewareLike, Protocol, HeaderContext, AssetContext } from '@tsdi/core';
-import { Injectable, isNumber, isString, tokenId } from '@tsdi/ioc';
+import { ExecptionFilter, MiddlewareLike, Protocol, HeaderContext, AssetContext, ServerContext, TransportContext } from '@tsdi/core';
+import { Injectable, isString, Token, tokenId } from '@tsdi/ioc';
+import { AssetServerContext } from '../../asset.ctx';
 import { ctype, hdr } from '../../consts';
-import { isStream, xmlRegExp } from '../../utils';
+import { xmlRegExp } from '../../utils';
 import { TcpServRequest } from './request';
 import { TcpServResponse } from './response';
 
@@ -12,7 +13,7 @@ import { TcpServResponse } from './response';
  * TCP context.
  */
 @Injectable()
-export class TcpContext extends ServerContext<TcpServRequest, TcpServResponse> implements HeaderContext, AssetContext {
+export class TcpContext extends AssetServerContext<TcpServRequest, TcpServResponse> implements HeaderContext, AssetContext {
 
     readonly protocol: Protocol = 'tcp';
 
@@ -87,31 +88,6 @@ export class TcpContext extends ServerContext<TcpServRequest, TcpServResponse> i
         }
     }
 
-    get length(): number | undefined {
-        if (this.hasHeader(hdr.CONTENT_LENGTH)) {
-            return this.response.getHeader(hdr.CONTENT_LENGTH) as number || 0
-        }
-
-        const { body } = this;
-        if (!body || isStream(body)) return undefined;
-        if (isString(body)) return Buffer.byteLength(body);
-        if (Buffer.isBuffer(body)) return body.length;
-        return Buffer.byteLength(JSON.stringify(body))
-    }
-
-    /**
-     * Set Content-Length field to `n`.
-     *
-     * @param {Number} n
-     * @api public
-     */
-    set length(n: number | undefined) {
-        if (isNumber(n) && !this.hasHeader(hdr.TRANSFER_ENCODING)) {
-            this.setHeader(hdr.CONTENT_LENGTH, n)
-        } else {
-            this.removeHeader(hdr.CONTENT_LENGTH)
-        }
-    }
 
     get status(): number {
         return this.response.status
@@ -135,28 +111,8 @@ export class TcpContext extends ServerContext<TcpServRequest, TcpServResponse> i
         return this.response.sent;
     }
 
-    is(type: string | string[]): string | false | null {
-        throw new Error('Method not implemented.');
-    }
-    get contentType(): string {
-        return this.response.getHeader(hdr.CONTENT_TYPE) as string;
-    }
-    set contentType(type: string) {
-        this.setHeader(hdr.CONTENT_TYPE, type);
-    }
-    getHeader(field: string): string | number | string[] | undefined {
-        return this.request.getHeader(field);
-    }
-    hasHeader(field: string): boolean {
-        return this.response.hasHeader(field);
-    }
-    setHeader(field: string, val: string | number | string[]): void;
-    setHeader(fields: Record<string, string | number | string[]>): void;
-    setHeader(field: any, val?: any): void {
-        this.response.setHeader(field, val);
-    }
-    removeHeader(field: string): void {
-        this.response.removeHeader(field);
+    protected isSelf(token: Token) {
+        return token === TcpContext|| token === AssetServerContext  || token === ServerContext || token === TransportContext;
     }
 
 }
