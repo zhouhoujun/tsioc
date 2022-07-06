@@ -29,7 +29,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
 
         const runInTransaction = (entityManager: EntityManager) => {
 
-            this.logger.log('begin transaction of', joinPoint?.fullName, 'active:', entityManager.queryRunner?.isTransactionActive, 'isolation:', isolation, 'propagation:', propagation);
+            this.logger.debug('begin transaction of', joinPoint?.fullName, 'active:', entityManager.queryRunner?.isTransactionActive, 'isolation:', isolation, 'propagation:', propagation);
             joinPoint.setValue(EntityManager, entityManager);
 
             joinPoint.params?.length && targetRef.class.paramDecors.filter(dec => {
@@ -164,13 +164,13 @@ export class TypeormTransactionManager extends TransactionManager {
     async commit(status: TypeormTransactionStatus): Promise<void> {
         const joinPoint = status.getPoint();
         joinPoint?.setValue(EntityManager, null);
-        this.logger.log('commit transaction of', joinPoint?.fullName, 'with args:', joinPoint?.args)
+        this.logger.debug('commit transaction of', joinPoint?.fullName, 'with args:', joinPoint?.args)
     }
 
     async rollback(status: TypeormTransactionStatus): Promise<void> {
         const joinPoint = status.getPoint();
         joinPoint?.setValue(EntityManager, null);
-        this.logger.log('rollback transaction of', joinPoint?.fullName, 'with args', joinPoint?.args, 'case by', joinPoint?.throwing)
+        this.logger.debug('rollback transaction of', joinPoint?.fullName, 'with args', joinPoint?.args, 'case by', joinPoint?.throwing)
     }
 
 }
