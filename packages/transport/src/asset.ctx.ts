@@ -1,11 +1,11 @@
 import { AssetContext, Packet, RequestHeader, ResponseHeader, ServerContext } from '@tsdi/core';
 import { Abstract, isArray, isNil, isNumber, isString, lang } from '@tsdi/ioc';
 import { extname } from 'path';
-import { hdr } from './consts';
+import { ctype, hdr } from './consts';
 import { CONTENT_DISPOSITION } from './content';
 import { MimeAdapter } from './mime';
 import { Negotiator } from './negotiator';
-import { isStream } from './utils';
+import { isBuffer, isStream, xmlRegExp } from './utils';
 
 
 @Abstract()
@@ -117,6 +117,79 @@ export abstract class AssetServerContext<TRequest extends RequestHeader | Packet
         }
     }
 
+    protected _body: any;
+    protected _explicitStatus?: boolean;
+    /**
+     * Get response body.
+     *
+     * @return {Mixed}
+     * @api public
+     */
+    get body() {
+        return this._body
+    }
+
+    /**
+     * Set response body.
+     *
+     * @param {String|Buffer|Object|Stream} val
+     * @api public
+     */
+
+    set body(val) {
+        const original = this._body;
+        this._body = val;
+
+        // no content
+        if (null == val) {
+            if (!this.isEmptyStatus(this.status)) this.status = 204;
+            if (val === null) this.onNullBody();
+            this.removeHeader(hdr.CONTENT_TYPE);
+            this.removeHeader(hdr.CONTENT_LENGTH);
+            this.removeHeader(hdr.TRANSFER_ENCODING);
+            return
+        }
+
+        // set the status
+        if (!this._explicitStatus) this.status = 200;
+
+        // set the content-type only if not yet set
+        const setType = !this.hasHeader(hdr.CONTENT_TYPE);
+
+        // string
+        if (isString(val)) {
+            if (setType) this.contentType = xmlRegExp.test(val) ? ctype.TEXT_HTML : ctype.TEXT_PLAIN;
+            this.length = Buffer.byteLength(val);
+            return
+        }
+
+        // buffer
+        if (isBuffer(val)) {
+            if (setType) this.contentType = ctype.OCTET_STREAM;
+            this.length = val.length;
+            return
+        }
+
+        // stream
+        if (isStream(val)) {
+            if (original != val) {
+                // overwriting
+                if (null != original) this.removeHeader(hdr.CONTENT_LENGTH)
+            }
+
+            if (setType) this.contentType = ctype.OCTET_STREAM;
+            return
+        }
+
+        // json
+        this.removeHeader(hdr.CONTENT_LENGTH);
+        this.contentType = ctype.APPL_JSON;
+    }
+
+    protected onNullBody() { }
+
+    protected abstract isEmptyStatus(status: number): boolean;
+
     /**
      * Set Content-Length field to `n`.
      *
@@ -149,6 +222,7 @@ export abstract class AssetServerContext<TRequest extends RequestHeader | Packet
         if (Buffer.isBuffer(body)) return body.length;
         return Buffer.byteLength(JSON.stringify(body))
     }
+
 
     /**
      * Check if the given `type(s)` is acceptable, returning

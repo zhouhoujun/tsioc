@@ -24,8 +24,6 @@ export type HttpServResponse = http.ServerResponse | http2.Http2ServerResponse;
  */
 export class HttpContext extends AssetServerContext<HttpServRequest, HttpServResponse> implements HeaderContext, AssetContext, Throwable {
 
-    protected _body: any;
-    private _explicitStatus?: boolean;
     public _explicitNullBody?: boolean;
     private _URL?: URL;
     private _ip?: string;
@@ -469,7 +467,7 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
         this._explicitStatus = true;
         this.response.statusCode = code;
         if (this.request.httpVersionMajor < 2) this.response.statusMessage = statusMessage[code];
-        if (this.body && emptyStatus[code]) this.body = null;
+        if (this.body && this.isEmptyStatus(code)) this.body = null;
     }
 
     get statusMessage() {
@@ -482,71 +480,12 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
         }
     }
 
-    /**
-     * Get response body.
-     *
-     * @return {Mixed}
-     * @api public
-     */
-    get body() {
-        return this._body
+    protected override onNullBody(): void {
+        this._explicitNullBody = true;
     }
 
-    /**
-     * Set response body.
-     *
-     * @param {String|Buffer|Object|Stream} val
-     * @api public
-     */
-
-    set body(val) {
-        const original = this._body;
-        this._body = val;
-
-        // no content
-        if (null == val) {
-            if (!emptyStatus[this.status]) this.status = 204;
-            if (val === null) this._explicitNullBody = true;
-            this.removeHeader(hdr.CONTENT_TYPE);
-            this.removeHeader(hdr.CONTENT_LENGTH);
-            this.removeHeader(hdr.TRANSFER_ENCODING);
-            return
-        }
-
-        // set the status
-        if (!this._explicitStatus) this.status = 200;
-
-        // set the content-type only if not yet set
-        const setType = !this.hasHeader(hdr.CONTENT_TYPE);
-
-        // string
-        if (isString(val)) {
-            if (setType) this.contentType = xmlRegExp.test(val) ? ctype.TEXT_HTML : ctype.TEXT_PLAIN;
-            this.length = Buffer.byteLength(val);
-            return
-        }
-
-        // buffer
-        if (isBuffer(val)) {
-            if (setType) this.contentType = ctype.OCTET_STREAM;
-            this.length = val.length;
-            return
-        }
-
-        // stream
-        if (isStream(val)) {
-            if (original != val) {
-                // overwriting
-                if (null != original) this.removeHeader(hdr.CONTENT_LENGTH)
-            }
-
-            if (setType) this.contentType = ctype.OCTET_STREAM;
-            return
-        }
-
-        // json
-        this.removeHeader(hdr.CONTENT_LENGTH);
-        this.contentType = ctype.APPL_JSON;
+    protected override isEmptyStatus(status: number): boolean {
+        return emptyStatus[status]
     }
 
     /**

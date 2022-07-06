@@ -1,8 +1,9 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
-import { ExecptionFilter, MiddlewareLike, Protocol, HeaderContext, AssetContext, ServerContext, TransportContext } from '@tsdi/core';
+import { ExecptionFilter, MiddlewareLike, Protocol, HeaderContext, AssetContext, TransportContext } from '@tsdi/core';
 import { Injectable, isString, Token, tokenId } from '@tsdi/ioc';
 import { AssetServerContext } from '../../asset.ctx';
 import { ctype, hdr } from '../../consts';
+import { emptyStatus } from '../../http';
 import { xmlRegExp } from '../../utils';
 import { TcpServRequest } from './request';
 import { TcpServResponse } from './response';
@@ -76,25 +77,20 @@ export class TcpContext extends AssetServerContext<TcpServRequest, TcpServRespon
         return this.request.method === 'PUT' || this.request.getHeader(hdr.OPERATION) === 'update';
     }
 
-    get body(): any {
-        return this.response.body;
-    }
-    set body(value: any) {
-        this.response.body = value;
-        const setType = !this.hasHeader(hdr.CONTENT_TYPE);
-        if (isString(value)) {
-            if (setType) this.contentType = xmlRegExp.test(value) ? ctype.TEXT_HTML : ctype.TEXT_PLAIN;
-            this.length = Buffer.byteLength(value);
-        }
-    }
-
 
     get status(): number {
         return this.response.status
     }
+
     set status(status: number) {
+        if (this.sent) return;
+        this._explicitStatus = true;
         this.response.status = status;
+        if(this.body && this.isEmptyStatus(status)) {
+            this.body = null;
+        }
     }
+
     get statusMessage(): string {
         return this.response.statusMessage ?? statusMessage[this.status as HttpStatusCode]
     }
@@ -112,7 +108,11 @@ export class TcpContext extends AssetServerContext<TcpServRequest, TcpServRespon
     }
 
     protected isSelf(token: Token) {
-        return token === TcpContext|| token === AssetServerContext  || token === ServerContext || token === TransportContext;
+        return token === TcpContext|| token === AssetServerContext || token === TransportContext;
+    }
+
+    protected override isEmptyStatus(status: number): boolean {
+        return emptyStatus[status];
     }
 
 }
