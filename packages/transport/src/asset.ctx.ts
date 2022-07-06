@@ -151,7 +151,7 @@ export abstract class AssetServerContext<TRequest extends RequestHeader | Packet
         }
 
         // set the status
-        if (!this._explicitStatus) this.status = 200;
+        if (!this._explicitStatus) this.ok = true;
 
         // set the content-type only if not yet set
         const setType = !this.hasHeader(hdr.CONTENT_TYPE);
