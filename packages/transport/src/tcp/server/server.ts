@@ -1,7 +1,7 @@
 import { Decoder, ExecptionRespondTypeAdapter, Interceptor, Packet, ServerOptions, TransportError, TransportServer } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Providers, tokenId } from '@tsdi/ioc';
 import { Server, ListenOptions, Socket, ServerOpts as TcpServerOpts } from 'net';
-import { Observable, Observer, reduce, Subscription } from 'rxjs';
+import { Observable, Observer, Subscription } from 'rxjs';
 import { JsonDecoder, JsonEncoder } from '../../coder';
 import { ev, hdr } from '../../consts';
 import { TrasportMimeAdapter } from '../../impl/mime';

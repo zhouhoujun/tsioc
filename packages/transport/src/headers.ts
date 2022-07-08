@@ -1,4 +1,4 @@
-import { isNil, isString } from '@tsdi/ioc';
+import { isNil } from '@tsdi/ioc';
 
 export type ReqHeaderItemType = string | number | string[];
 export type ResHeaderItemType = string | number | boolean | string[];

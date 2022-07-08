@@ -41,7 +41,7 @@ const defaults = {
     ],
     connectOpts: {
         port: 3000,
-        hostname: 'localhost'
+        host: 'localhost'
     }
 } as TcpClientOptions;
 

@@ -10,7 +10,7 @@ import { ArgumentError, Execption, isArray } from '@tsdi/ioc';
  */
 export class TransportError extends Execption {
 
-    constructor(message?: string | string[], readonly status?: number) {
+    constructor(message?: string | string[], public status?: number) {
         super(isArray(message) ? message.join('\n') : message || '')
     }
 
