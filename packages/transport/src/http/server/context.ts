@@ -1,11 +1,11 @@
-import { AssetContext, HeaderContext, MiddlewareLike, mths, Protocol, ServerContext, Throwable, TransportContext, TransportServer } from '@tsdi/core';
+import { AssetContext, HeaderContext, MiddlewareLike, mths, Protocol, Throwable, TransportContext, TransportServer } from '@tsdi/core';
 import { Injector, InvokeArguments, isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import * as assert from 'assert';
 import * as http from 'http';
 import * as http2 from 'http2';
 import { TLSSocket } from 'tls';
-import { append, encodeUrl, escapeHtml, isBuffer, isStream, parseTokenList, xmlRegExp } from '../../utils';
+import { append, encodeUrl, escapeHtml, parseTokenList } from '../../utils';
 import { emptyStatus, redirectStatus } from '../status';
 import { ctype, hdr } from '../../consts';
 import { HttpError, HttpInternalServerError } from './../errors';

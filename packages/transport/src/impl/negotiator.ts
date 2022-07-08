@@ -1,5 +1,4 @@
 /* eslint-disable no-useless-escape */
-import { AssetContext, TransportContext } from '@tsdi/core';
 import { Injectable, isArray, isString } from '@tsdi/ioc';
 import { AssetServerContext } from '../asset.ctx';
 import { hdr } from '../consts';

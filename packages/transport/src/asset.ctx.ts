@@ -263,7 +263,6 @@ export abstract class AssetServerContext<TRequest extends RequestHeader | Packet
      * @return {String|Array|false}
      * @api public
      */
-
     accepts(...args: string[]): string | string[] | false {
         const negotiator = this.resolve(Negotiator);
         if (!args.length) {

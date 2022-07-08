@@ -1,4 +1,4 @@
-import { AssetContext, BadRequestError, ForbiddenError, InternalServerError, NotFoundError, PROCESS_ROOT, TransportContext } from '@tsdi/core';
+import { BadRequestError, ForbiddenError, InternalServerError, NotFoundError, PROCESS_ROOT } from '@tsdi/core';
 import { Injectable, isArray } from '@tsdi/ioc';
 import { normalize, resolve, basename, extname, parse, sep, isAbsolute, join } from 'path';
 import { existsSync, stat, createReadStream } from 'fs';

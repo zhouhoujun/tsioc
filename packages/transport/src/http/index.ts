@@ -1,8 +1,5 @@
 export * from './errors';
 export * from './status';
-// export * from './mime';
-// export * from './negotiator';
-// export * from './send';
 export * from './client/endpoint';
 export * from './client/backend';
 export * from './client/option';
