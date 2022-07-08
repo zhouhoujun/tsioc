@@ -23,7 +23,7 @@ export abstract class ServerContext<TRequest = any, TResponse = any> extends Tra
     /**
      * transport request.
      */
-    readonly request: TRequest;
+    public request: TRequest;
     /**
      * transport response.
      */
