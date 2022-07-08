@@ -1,4 +1,4 @@
-import { mths, RequestPacket } from '@tsdi/core';
+import { mths, Packet, RequestPacket } from '@tsdi/core';
 import { MapHeaders } from '../../headers';
 
 /**
@@ -24,6 +24,14 @@ export class TcpRequest<T = any> extends MapHeaders implements RequestPacket<T> 
         this.method = option.method ?? mths.MESSAGE;
         this.params = option.params ?? {};
         this.body = option.body ?? null;
+    }
+
+    serializeHeader(): Packet {
+        return { id: this.id, url: this.url, method: this.method, params: this.params, headers: this.getHeaders() };
+    }
+
+    serializeBody(): Packet {
+        return { id: this.id, body: this.body };
     }
 
 }

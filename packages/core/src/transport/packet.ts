@@ -56,7 +56,7 @@ export type Protocol = 'tcp' | 'udp' | 'grpc' | 'rmq' | 'kafka' | 'redis' | 'amq
 /**
  * packet.
  */
-export interface Packet<T = any> {
+export interface Packet<T = any> extends Record<string, any> {
     /**
      * packet id.
      */
@@ -71,6 +71,7 @@ export interface Packet<T = any> {
      */
     readonly body?: T | null;
 }
+
 
 /**
  * package clonable.

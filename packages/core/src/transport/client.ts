@@ -1,6 +1,6 @@
 import { Abstract, ArgumentError, EMPTY_OBJ, InvocationContext, isNil, isString, type_str } from '@tsdi/ioc';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map } from 'rxjs';
-import { RequestPacket, RequestMethod, ResponsePacket, ResponseEvent } from './packet';
+import { RequestMethod, ResponsePacket, ResponseEvent } from './packet';
 import { RequestContext } from './context';
 import { ClientContext } from './client.ctx';
 import { TransportOptions, TransportEndpoint } from './transport';

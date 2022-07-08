@@ -1,4 +1,4 @@
-import { ResponsePacket } from '@tsdi/core';
+import { Packet, ResponsePacket } from '@tsdi/core';
 import { MapHeaders, ResHeaderItemType } from '../../headers';
 
 /**

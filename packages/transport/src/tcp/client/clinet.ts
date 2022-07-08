@@ -1,6 +1,6 @@
 import {
     EndpointBackend, Interceptor, OnDispose, ClientOptions, Packet, RequestContext, ResponseJsonParseError,
-    TransportClient, TransportError, UuidGenerator, ExecptionFilter, createEndpoint, Encoder, Decoder
+    TransportClient, TransportError, UuidGenerator, ExecptionFilter, createEndpoint, Encoder, Decoder, RequestPacket
 } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isDefined, isString, lang, Nullable, tokenId, type_undef } from '@tsdi/ioc';
 import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
@@ -88,13 +88,13 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
 
                 const sub = defer(async () => {
                     const encoder = ctx.get(Encoder);
-                    const buf = encoder.encode({ id: req.id, headers: req.getHeaders() });
+                    const buf = encoder.encode(req.serializeHeader());
                     const split = ctx.get(TcpClientOptions).headerSplit;
 
                     await writeSocket(socket, buf, split, this.option.encoding);
 
                     if (isDefined(req.body)) {
-                        await writeSocket(socket, encoder.encode({ id: req.id, body: req.body }), split, this.option.encoding)
+                        await writeSocket(socket, encoder.encode(req.serializeBody()), split, this.option.encoding)
                     }
                 }).pipe(
                     mergeMap(() => this.source),
@@ -109,7 +109,7 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                             bodyType = headers[hdr.CONTENT_TYPE] as string;
                             status = headers[hdr.STATUS] as number ?? 0;
                             statusMessage = headers[hdr.STATUS_MESSAGE] as string;
-                            if (!bodyType) {
+                            if (!bodyLen) {
                                 observer.next(new TcpResponse({
                                     id: pk.id,
                                     status,

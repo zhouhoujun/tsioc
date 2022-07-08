@@ -1,5 +1,5 @@
 import { Encoder, ExecptionRespondTypeAdapter, TransportError } from '@tsdi/core';
-import { Injectable, lang } from '@tsdi/ioc';
+import { Injectable } from '@tsdi/ioc';
 import { RespondAdapter } from '../../interceptors/respond';
 import { writeSocket } from '../../utils';
 import { TcpServResponse } from './response';
@@ -12,11 +12,10 @@ export class TcpRespondAdapter extends RespondAdapter {
 
     async respond(res: TcpServResponse, ctx: TcpContext): Promise<any> {
         const encoder = ctx.get(Encoder);
-        const headers = res.getHeaders();
         const { headerSplit, encoding } = ctx.get(TcpServerOptions);
-        await writeSocket(res.socket, encoder.encode({ id: res.id, headers }), headerSplit, encoding);
+        await writeSocket(res.socket, encoder.encode(res.serializeHeader()), headerSplit, encoding);
         if (ctx.length) {
-            await writeSocket(res.socket, encoder.encode({ id: res.id, body: res.body }), headerSplit, encoding);
+            await writeSocket(res.socket, encoder.encode(res.serializeBody()), headerSplit, encoding);
         }
         return res;
     }

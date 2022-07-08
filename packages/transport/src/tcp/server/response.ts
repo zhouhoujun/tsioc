@@ -1,4 +1,4 @@
-import { ResponseHeader, ResponsePacket } from '@tsdi/core';
+import { Packet, ResponseHeader, ResponsePacket } from '@tsdi/core';
 import { Socket } from 'net';
 import { MapHeaders, ResHeaderItemType } from '../../headers';
 
@@ -25,8 +25,13 @@ export class TcpServResponse extends MapHeaders<ResHeaderItemType> implements Re
         return this._sent;
     }
 
-    respond() {
-    
+    serializeHeader(): Packet {
+        this._sent = true;
+        return { id: this.id, status: this.status, statusMessage: this.statusMessage, headers: this.getHeaders() };
+    }
+
+    serializeBody(): Packet {
+        return { id: this.id, body: this.body };
     }
 }
 
