@@ -1,6 +1,6 @@
 import {
     EndpointBackend, Interceptor, OnDispose, ClientOptions, Packet, RequestContext, ResponseJsonParseError,
-    TransportClient, TransportError, UuidGenerator, ExecptionFilter, createEndpoint, Encoder, Decoder, RequestPacket
+    TransportClient, TransportError, UuidGenerator, ExecptionFilter, createEndpoint, Encoder, Decoder
 } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isDefined, isString, lang, Nullable, tokenId, type_undef } from '@tsdi/ioc';
 import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
@@ -256,6 +256,7 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                         }
                         if (body) {
                             body = this.context.get(Decoder).decode(body);
+                            buffer = '';
                             observer.next(body);
                         }
                         if (rest) {
@@ -300,7 +301,7 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
     }
 
     protected override buildRequest(req: string | TcpRequest, options?: any): TcpRequest {
-        return isString(req) ? new TcpRequest(this.context.resolve(UuidGenerator).generate(), options) : req
+        return isString(req) ? new TcpRequest(this.context.resolve(UuidGenerator).generate(), { ...options, url: req }) : req
     }
 
     async close(): Promise<void> {

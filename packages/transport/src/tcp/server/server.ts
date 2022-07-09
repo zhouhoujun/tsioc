@@ -187,7 +187,9 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
                         }
                     }
                     if (body) {
-                        observer.next(this.context.get(Decoder).decode(body));
+                        body = this.context.get(Decoder).decode(body);
+                        buffer = '';
+                        observer.next(body);
                     }
                     if (rest) {
                         onData(rest);
