@@ -1,5 +1,5 @@
 import {
-    BadRequestError, ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
+    BadRequestError, Encoder, ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
     ForbiddenError, InternalServerError, NotFoundError, TransportArgumentError, TransportError,
     TransportMissingError, UnauthorizedError, UnsupportedMediaTypeError
 } from '@tsdi/core';
@@ -9,6 +9,7 @@ import { MissingModelFieldError } from '@tsdi/repository';
 import { ev } from '../../consts';
 import { TcpContext } from './context';
 import { TcpServerOptions } from './server';
+import { writeSocket } from '../../utils';
 
 
 @Injectable({ static: true })
@@ -70,7 +71,10 @@ export class TcpFinalizeFilter implements ExecptionFilter {
         }
         hctx.status = statusCode;
         hctx.length = Buffer.byteLength(msg);
-        // res.end(msg)
+
+        const encoder = ctx.get(Encoder);
+        const { headerSplit, encoding } = ctx.get(TcpServerOptions);
+        await writeSocket(res.socket, encoder.encode(res.serializeHeader()), headerSplit, encoding);
     }
 
 }
