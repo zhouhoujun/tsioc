@@ -41,8 +41,8 @@ export class TransportArgumentError extends ArgumentError {
  * @extends {HttpError}
  */
 export class NotFoundError extends TransportError {
-    constructor(message = 'Not Found') {
-        super(message)
+    constructor(message = 'Not Found', status?: number) {
+        super(message, status)
     }
 }
 
@@ -55,8 +55,8 @@ export class NotFoundError extends TransportError {
  * @extends {TransportError}
  */
 export class ForbiddenError extends TransportError {
-    constructor(message = 'Forbidden') {
-        super(message)
+    constructor(message = 'Forbidden', status?: number) {
+        super(message, status)
     }
 }
 
@@ -69,8 +69,8 @@ export class ForbiddenError extends TransportError {
  * @extends {TransportError}
  */
 export class BadRequestError extends TransportError {
-    constructor(message = 'Bad Request') {
-        super(message)
+    constructor(message = 'Bad Request', status?: number) {
+        super(message, status)
     }
 }
 
@@ -83,8 +83,8 @@ export class BadRequestError extends TransportError {
  * @extends {TransportError}
  */
 export class UnauthorizedError extends TransportError {
-    constructor(message = 'Unauthorized') {
-        super(message)
+    constructor(message = 'Unauthorized', status?: number) {
+        super(message, status)
     }
 }
 
@@ -96,8 +96,8 @@ export class UnauthorizedError extends TransportError {
  * @extends {HttpError}
  */
 export class InternalServerError extends TransportError {
-    constructor(message = 'Internal Server Error') {
-        super(message)
+    constructor(message = 'Internal Server Error', status?: number) {
+        super(message, status)
     }
 }
 
@@ -105,7 +105,7 @@ export class InternalServerError extends TransportError {
  * unsupported media type.
  */
 export class UnsupportedMediaTypeError extends TransportError {
-    constructor(message = 'Unsupported Media Type') {
-        super(message)
+    constructor(message = 'Unsupported Media Type', status?: number) {
+        super(message, status)
     }
 }

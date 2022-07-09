@@ -1,5 +1,5 @@
-import { Decoder, ExecptionRespondTypeAdapter, Interceptor, Packet, ServerOptions, TransportError, TransportServer } from '@tsdi/core';
-import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Providers, tokenId } from '@tsdi/ioc';
+import { Decoder, ExecptionRespondTypeAdapter, Interceptor, Packet, Router, ServerOptions, TransportError, TransportServer } from '@tsdi/core';
+import { Abstract, Inject, Injectable, InvocationContext, isBoolean, isString, lang, Nullable, Providers, tokenId } from '@tsdi/ioc';
 import { Server, ListenOptions, Socket, ServerOpts as TcpServerOpts } from 'net';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { JsonDecoder, JsonEncoder } from '../../coder';
@@ -8,15 +8,17 @@ import { TrasportMimeAdapter } from '../../impl/mime';
 import { TransportNegotiator } from '../../impl/negotiator';
 import { TransportSendAdapter } from '../../impl/send';
 import { CatchInterceptor, LogInterceptor, RespondAdapter, RespondInterceptor, ResponseStatusFormater } from '../../interceptors';
+import { BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMiddleware, SessionMiddleware, SessionOptions } from '../../middlewares';
 import { ContentSendAdapter } from '../../middlewares/send';
-import { MimeAdapter } from '../../mime';
+import { MimeAdapter, MimeDb, MimeSource } from '../../mime';
 import { Negotiator } from '../../negotiator';
 import { TcpContext, TCP_EXECPTION_FILTERS, TCP_MIDDLEWARES } from './context';
 import { TcpStatusFormater } from './formater';
 import { TcpServRequest } from './request';
 import { TcpExecptionRespondTypeAdapter, TcpRespondAdapter } from './respond';
 import { TcpServResponse } from './response';
-
+import { db } from '../../impl/mimedb';
+import { TcpArgumentErrorFilter, TcpFinalizeFilter } from './finalize-filter';
 
 
 /**
@@ -34,6 +36,9 @@ export abstract class TcpServerOptions extends ServerOptions<TcpServRequest, Tcp
      */
     abstract timeout?: number;
     abstract encoding?: BufferEncoding;
+    abstract mimeDb?: Record<string, MimeSource>;
+    abstract content?: boolean | ContentOptions;
+    abstract session?: boolean | SessionOptions;
     abstract serverOpts?: TcpServerOpts | undefined;
     abstract listenOptions: ListenOptions;
 }
@@ -51,10 +56,25 @@ const defOpts = {
     middlewaresToken: TCP_MIDDLEWARES,
     encoder: JsonEncoder,
     decoder: JsonDecoder,
+    content: {
+        root: 'public'
+    },
+    mimeDb: db,
     interceptors: [
         LogInterceptor,
         CatchInterceptor,
         RespondInterceptor
+    ],
+    execptions: [
+        TcpFinalizeFilter,
+        TcpArgumentErrorFilter
+    ],
+    middlewares:[
+        ContentMiddleware,
+        SessionMiddleware,
+        EncodeJsonMiddleware,
+        BodyparserMiddleware,
+        Router
     ],
     listenOptions: {
         port: 3000,
@@ -81,14 +101,30 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
     private options!: TcpServerOptions;
     constructor(@Inject() readonly context: InvocationContext, @Nullable() options: TcpServerOptions) {
         super(context, options)
-        this.initialize(this.options);
     }
 
     protected override initOption(options: TcpServerOptions): TcpServerOptions {
         const listenOptions = { ...defOpts.listenOptions, ...options?.listenOptions };
-        this.options = { ...defOpts, ...options, listenOptions };
+        const opts = this.options = { ...defOpts, ...options, listenOptions };
         this.context.setValue(TcpServerOptions, this.options);
-        return this.options;
+        
+        if (opts.middlewares) {
+            opts.middlewares = opts.middlewares.filter(m => {
+                if (!opts.session && m === SessionMiddleware) return false;
+                if (!opts.content && m === ContentMiddleware) return false;
+                return true
+            });
+        }
+
+        if (opts.content && !isBoolean(opts.content)) {
+            this.context.setValue(ContentOptions, opts.content)
+        }
+
+        if (opts.mimeDb) {
+            const mimedb = this.context.injector.get(MimeDb);
+            mimedb.from(opts.mimeDb)
+        }
+        return opts;
     }
 
     async start(): Promise<void> {

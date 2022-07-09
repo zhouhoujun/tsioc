@@ -1,5 +1,6 @@
 import { Module, RouterModule, TransformModule } from '@tsdi/core';
 import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
+import { BasicMimeDb, MimeDb } from '../mime';
 import { TcpClient } from './client/clinet';
 import { TcpServer, TcpServerOptions } from './server/server';
 
@@ -9,6 +10,7 @@ import { TcpServer, TcpServerOptions } from './server/server';
         RouterModule
     ],
     providers: [
+        { provide: MimeDb, useClass: BasicMimeDb, asDefault: true },
         TcpClient,
         TcpServer
     ]
