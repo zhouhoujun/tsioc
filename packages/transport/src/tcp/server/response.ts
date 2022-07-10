@@ -30,8 +30,5 @@ export class TcpServResponse extends MapHeaders<ResHeaderItemType> implements Re
         return { id: this.id, status: this.status, statusMessage: this.statusMessage, headers: this.getHeaders() };
     }
 
-    serializeBody(): Packet {
-        return { id: this.id, body: this.body };
-    }
 }
 

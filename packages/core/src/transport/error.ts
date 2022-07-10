@@ -32,20 +32,18 @@ export class TransportArgumentError extends ArgumentError {
     }
 }
 
-
 /**
  * not found error.
  *
  * @export
  * @class NotFoundError
- * @extends {HttpError}
+ * @extends {TransportError}
  */
 export class NotFoundError extends TransportError {
     constructor(message = 'Not Found', status?: number) {
         super(message, status)
     }
 }
-
 
 /**
  * forbidden error.
@@ -60,7 +58,6 @@ export class ForbiddenError extends TransportError {
     }
 }
 
-
 /**
  * bad request error.
  *
@@ -73,7 +70,6 @@ export class BadRequestError extends TransportError {
         super(message, status)
     }
 }
-
 
 /**
  * unauthorized error.

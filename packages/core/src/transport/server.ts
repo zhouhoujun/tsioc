@@ -3,8 +3,8 @@ import { Subscription } from 'rxjs';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
 import { EndpointBackend, MiddlewareBackend, MiddlewareLike, MiddlewareType } from './endpoint';
-import { TransportContext } from './context';
 import { TransportEndpoint, TransportOptions } from './transport';
+import { TransportContext } from './context';
 
 /**
  * server options.
