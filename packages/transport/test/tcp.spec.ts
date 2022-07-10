@@ -1,5 +1,5 @@
 import { Application, ApplicationContext, BadRequestError, Handle, LoggerModule, Module, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
-import { Injector, lang } from '@tsdi/ioc';
+import { Injector, isArray, lang } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -70,6 +70,7 @@ export class DeviceController {
 }
 
 @Module({
+    baseURL: __dirname,
     imports: [
         ServerModule,
         LoggerModule,
@@ -111,17 +112,17 @@ describe('Tcp Server & Tcp Client', () => {
     });
 
 
-    // it('fetch json', async () => {
-    //     const res: any = await lastValueFrom(client.get('510100_full.json')
-    //         .pipe(
-    //             catchError((err, ct) => {
-    //                 ctx.getLogger().error(err);
-    //                 return of(err);
-    //             })));
+    it('fetch json', async () => {
+        const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET' })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
 
-    //     expect(res).toBeDefined();
-    //     expect(isArray(res.features)).toBeTruthy();
-    // })
+        expect(res).toBeDefined();
+        expect(isArray(res.features)).toBeTruthy();
+    })
 
 
     it('not found', async () => {

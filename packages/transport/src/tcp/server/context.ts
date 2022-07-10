@@ -1,6 +1,6 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
-import { ExecptionFilter, MiddlewareLike, Protocol, HeaderContext, AssetContext, TransportContext } from '@tsdi/core';
-import { Injectable, Token, tokenId } from '@tsdi/ioc';
+import { ExecptionFilter, MiddlewareLike, HeaderContext, AssetContext, TransportContext, TransportServer } from '@tsdi/core';
+import { Injector, InvokeArguments, Token, tokenId } from '@tsdi/ioc';
 import { AssetServerContext } from '../../asset.ctx';
 import { hdr } from '../../consts';
 import { emptyStatus } from '../../http';
@@ -9,13 +9,16 @@ import { TcpServResponse } from './response';
 
 
 
+const abstUrlExp = /^(tcp|icp):/;
+
 /**
  * TCP context.
  */
-@Injectable()
 export class TcpContext extends AssetServerContext<TcpServRequest, TcpServResponse> implements HeaderContext, AssetContext {
 
-    readonly protocol: Protocol = 'tcp';
+    constructor(injector: Injector, readonly protocol: 'tcp' | 'ipc', request: TcpServRequest, response: TcpServResponse, target: TransportServer, options?: InvokeArguments) {
+        super(injector, request, response, target, options)
+    }
 
     private _url?: string;
     get url(): string {
@@ -45,7 +48,7 @@ export class TcpContext extends AssetServerContext<TcpServRequest, TcpServRespon
         if (!this._URL) {
             const originalUrl = this.originalUrl || ''; // avoid undefined in template string
             try {
-                this._URL = new URL(`tcp://${originalUrl}`);
+                this._URL = abstUrlExp.test(originalUrl) ? new URL(originalUrl) : new URL(`${this.protocol}://${originalUrl}`);
             } catch (err) {
                 this._URL = Object.create(null);
             }
@@ -85,7 +88,7 @@ export class TcpContext extends AssetServerContext<TcpServRequest, TcpServRespon
         if (this.sent) return;
         this._explicitStatus = true;
         this.response.status = status;
-        if(this.body && this.isEmptyStatus(status)) {
+        if (this.body && this.isEmptyStatus(status)) {
             this.body = null;
         }
     }
@@ -107,7 +110,7 @@ export class TcpContext extends AssetServerContext<TcpServRequest, TcpServRespon
     }
 
     protected isSelf(token: Token) {
-        return token === TcpContext|| token === AssetServerContext || token === TransportContext;
+        return token === TcpContext || token === AssetServerContext || token === TransportContext;
     }
 
     protected override isEmptyStatus(status: number): boolean {

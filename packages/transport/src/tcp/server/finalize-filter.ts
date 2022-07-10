@@ -8,7 +8,7 @@ import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { MissingModelFieldError } from '@tsdi/repository';
 import { ev } from '../../consts';
 import { TcpContext } from './context';
-import { TcpServerOptions } from './server';
+import { TcpServerOptions } from './options';
 import { writeSocket } from '../../utils';
 
 

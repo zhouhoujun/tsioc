@@ -8,14 +8,14 @@ export class TcpRequest<T = any> extends MapHeaders implements RequestPacket<T> 
 
     public readonly id: string;
     public url: string;
-    public method: 'MESSAGE' | 'EVENT';
+    public method: string;
     public params: Record<string, any>;
     public body: T | null;
 
     constructor(id: string, option: {
         url: string;
         params?: Record<string, any>;
-        method?: 'MESSAGE' | 'EVENT';
+        method?: string;
         body?: T;
     }) {
         super();

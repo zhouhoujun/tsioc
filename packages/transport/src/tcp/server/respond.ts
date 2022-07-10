@@ -4,7 +4,7 @@ import { RespondAdapter } from '../../interceptors/respond';
 import { writeSocket } from '../../utils';
 import { TcpServResponse } from './response';
 import { TcpContext } from './context';
-import { TcpServerOptions } from './server';
+import { TcpServerOptions } from './options';
 
 
 @Injectable()

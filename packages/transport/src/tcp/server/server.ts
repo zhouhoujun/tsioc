@@ -1,6 +1,6 @@
-import { Decoder, ExecptionRespondTypeAdapter, Interceptor, Packet, Router, ServerOptions, TransportError, TransportServer } from '@tsdi/core';
-import { Abstract, Inject, Injectable, InvocationContext, isBoolean, isString, lang, Nullable, Providers, tokenId } from '@tsdi/ioc';
-import { Server, ListenOptions, Socket, ServerOpts as TcpServerOpts } from 'net';
+import { Decoder, ExecptionRespondTypeAdapter, Packet, Router, TransportError, TransportServer } from '@tsdi/core';
+import { Inject, Injectable, InvocationContext, isBoolean, isString, lang, Nullable, Providers } from '@tsdi/ioc';
+import { Server, Socket } from 'net';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { JsonDecoder, JsonEncoder } from '../../coder';
 import { ev, hdr } from '../../consts';
@@ -8,9 +8,9 @@ import { TrasportMimeAdapter } from '../../impl/mime';
 import { TransportNegotiator } from '../../impl/negotiator';
 import { TransportSendAdapter } from '../../impl/send';
 import { CatchInterceptor, LogInterceptor, RespondAdapter, RespondInterceptor, ResponseStatusFormater } from '../../interceptors';
-import { BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMiddleware, SessionMiddleware, SessionOptions } from '../../middlewares';
+import { BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMiddleware, SessionMiddleware } from '../../middlewares';
 import { ContentSendAdapter } from '../../middlewares/send';
-import { MimeAdapter, MimeDb, MimeSource } from '../../mime';
+import { MimeAdapter, MimeDb } from '../../mime';
 import { Negotiator } from '../../negotiator';
 import { TcpContext, TCP_EXECPTION_FILTERS, TCP_MIDDLEWARES } from './context';
 import { TcpStatusFormater } from './formater';
@@ -19,34 +19,8 @@ import { TcpExecptionRespondTypeAdapter, TcpRespondAdapter } from './respond';
 import { TcpServResponse } from './response';
 import { db } from '../../impl/mimedb';
 import { TcpArgumentErrorFilter, TcpFinalizeFilter } from './finalize-filter';
+import { TcpServerOptions, TCP_SERV_INTERCEPTORS } from './options';
 
-
-/**
- * TCP server options.
- */
-@Abstract()
-export abstract class TcpServerOptions extends ServerOptions<TcpServRequest, TcpServResponse> {
-    /**
-     * header split code.
-     */
-    abstract headerSplit?: string;
-    abstract maxConnections?: number;
-    /**
-     * socket timeout.
-     */
-    abstract timeout?: number;
-    abstract encoding?: BufferEncoding;
-    abstract mimeDb?: Record<string, MimeSource>;
-    abstract content?: boolean | ContentOptions;
-    abstract session?: boolean | SessionOptions;
-    abstract serverOpts?: TcpServerOpts | undefined;
-    abstract listenOptions: ListenOptions;
-}
-
-/**
- * Tcp server interceptors.
- */
-export const TCP_SERV_INTERCEPTORS = tokenId<Interceptor<TcpServRequest, TcpServResponse>[]>('TCP_SERV_INTERCEPTORS');
 
 const defOpts = {
     encoding: 'utf8',
@@ -77,14 +51,13 @@ const defOpts = {
         Router
     ],
     listenOptions: {
-        port: 3000,
         host: 'localhost'
     }
 } as TcpServerOptions;
 
 
 /**
- * TCP server.
+ * TCP server. server of `tcp` or `ipc`. 
  */
 @Injectable()
 @Providers([
@@ -270,7 +243,7 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
     }
 
     protected createContext(request: TcpServRequest, response: TcpServResponse): TcpContext {
-        return new TcpContext(this.context.injector, request, response, this as TransportServer, { parent: this.context });
+        return new TcpContext(this.context.injector, !this.options.listenOptions.port && this.options.listenOptions.path? 'ipc': 'tcp', request, response, this as TransportServer, { parent: this.context });
     }
 
     async close(): Promise<void> {

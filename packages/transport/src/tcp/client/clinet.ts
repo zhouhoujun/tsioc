@@ -1,9 +1,9 @@
 import {
-    EndpointBackend, Interceptor, OnDispose, ClientOptions, Packet, RequestContext, ResponseJsonParseError,
-    TransportClient, TransportError, UuidGenerator, ExecptionFilter, createEndpoint, Encoder, Decoder
+    EndpointBackend, OnDispose, Packet, RequestContext, ResponseJsonParseError,
+    TransportClient, TransportError, UuidGenerator, createEndpoint, Encoder, Decoder
 } from '@tsdi/core';
-import { Abstract, Inject, Injectable, InvocationContext, isDefined, isString, lang, Nullable, tokenId, type_undef } from '@tsdi/ioc';
-import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
+import { EMPTY, Inject, Injectable, InvocationContext, isDefined, isString, lang, Nullable, tokenId, type_undef } from '@tsdi/ioc';
+import { Socket, NetConnectOpts } from 'net';
 import { defer, filter, mergeMap, Observable, Observer, throwError } from 'rxjs';
 import { TcpRequest } from './request';
 import { TcpErrorResponse, TcpEvent, TcpResponse } from './response';
@@ -11,24 +11,11 @@ import { JsonDecoder, JsonEncoder } from '../../coder';
 import { ev, hdr } from '../../consts';
 import { writeSocket } from '../../utils';
 import { ResHeaderItemType } from '../../headers';
+import { TcpPathInterceptor } from './path';
+import { TcpClientOptions, TCP_EXECPTIONFILTERS, TCP_INTERCEPTORS } from './options';
 
 
-@Abstract()
-export abstract class TcpClientOptions extends ClientOptions<TcpRequest, TcpEvent> {
-    abstract encoding?: BufferEncoding;
-    abstract headerSplit?: string;
-    abstract socketOpts?: SocketConstructorOpts;
-    abstract connectOpts: NetConnectOpts;
-}
 
-/**
- * tcp client interceptors.
- */
-export const TCP_INTERCEPTORS = tokenId<Interceptor<TcpRequest, TcpEvent>[]>('TCP_INTERCEPTORS');
-/**
- * tcp client interceptors.
- */
-export const TCP_EXECPTIONFILTERS = tokenId<ExecptionFilter[]>('TCP_EXECPTIONFILTERS');
 
 const defaults = {
     headerSplit: '#',
@@ -37,17 +24,14 @@ const defaults = {
     decoder: JsonDecoder,
     interceptorsToken: TCP_INTERCEPTORS,
     execptionsToken: TCP_EXECPTIONFILTERS,
-    interceptors: [
-    ],
     connectOpts: {
-        port: 3000,
         host: 'localhost'
-    }
+    } as NetConnectOpts
 } as TcpClientOptions;
 
 
 /**
- * TcpClient.
+ * TcpClient. client of  `tcp` or `ipc`. 
  */
 @Injectable()
 export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements OnDispose {
@@ -66,7 +50,8 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
 
     protected override initOption(options?: TcpClientOptions): TcpClientOptions {
         const connectOpts = { ...defaults.connectOpts, ...options?.connectOpts };
-        this.option = { ...defaults, ...options, connectOpts };
+        const interceptors = [TcpPathInterceptor, ...options?.interceptors ?? EMPTY];
+        this.option = { ...defaults, ...options, connectOpts, interceptors };
         this.context.setValue(TcpClientOptions, this.option);
         return this.option;
     }
