@@ -3,7 +3,7 @@ import {
     ForbiddenError, InternalServerError, NotFoundError, TransportArgumentError, TransportError,
     TransportMissingError, UnauthorizedError, UnsupportedMediaTypeError
 } from '@tsdi/core';
-import { Inject, Injectable, isFunction, isNumber } from '@tsdi/ioc';
+import { Injectable, isNumber } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { MissingModelFieldError } from '@tsdi/repository';
 import { ev } from '../../consts';
@@ -44,11 +44,10 @@ export class TcpFinalizeFilter implements ExecptionFilter {
         const res = hctx.response;
 
         // first unset all headers
-        // if (isFunction(res.getHeaderNames)) {
-        //     res.getHeaderNames().forEach(name => res.removeHeader(name))
-        // } else {
-        //     (res as any)._headers = {} // Node < 7.7
-        // }
+        for (const n in res.getHeaders()) {
+            res.removeHeader(n);
+        }
+
 
         // then set those specified
         if (err.headers) hctx.setHeader(err.headers);
@@ -70,7 +69,8 @@ export class TcpFinalizeFilter implements ExecptionFilter {
             msg = statusMessage[statusCode]
         }
         hctx.status = statusCode;
-        hctx.length = Buffer.byteLength(msg);
+        hctx.statusMessage = msg;
+        // hctx.length = Buffer.byteLength(msg);
 
         const encoder = ctx.get(Encoder);
         const { headerSplit, encoding } = ctx.get(TcpServerOptions);
