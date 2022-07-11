@@ -160,7 +160,6 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
                 if (err.code !== ev.ECONNREFUSED) {
                     this.logger.error(err);
                 }
-                socket.emit(ev.ERROR, err.message);
                 socket.end();
                 observer.error(err);
             };
@@ -231,7 +230,7 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
                 socket.off(ev.TIMEOUT, onError);
                 socket.emit(ev.CLOSE);
             }
-        }).pipe(share());
+        });
     }
 
     protected bindEvent(ctx: TcpContext, cancel: Subscription): void {

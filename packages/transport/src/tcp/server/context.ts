@@ -23,7 +23,7 @@ export class TcpContext extends AssetServerContext<TcpServRequest, TcpServRespon
     private _url?: string;
     get url(): string {
         if (!this._url) {
-            this._url = this.request.url;
+            this._url = this.pathname + this.URL.search;
         }
         return this._url;
     }
