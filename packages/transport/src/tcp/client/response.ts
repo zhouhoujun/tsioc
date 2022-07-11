@@ -1,11 +1,12 @@
 import { ResponsePacket } from '@tsdi/core';
+import { hdr } from '../../consts';
 import { MapHeaders, ResHeaderItemType } from '../../headers';
 
 /**
  * tcp error response.
  */
-export class TcpErrorResponse  {
-    constructor(readonly status: number, readonly statusMessage: string, readonly error?: any){
+export class TcpErrorResponse {
+    constructor(readonly status: number, readonly statusMessage: string, readonly error?: any) {
 
     }
 }
@@ -15,24 +16,25 @@ export class TcpErrorResponse  {
  */
 export class TcpResponse<T = any> extends MapHeaders<ResHeaderItemType> implements ResponsePacket<T> {
     readonly id: string;
-    readonly type: number;
-    readonly status: number;
-    readonly statusMessage: string;
     readonly body: T | null;
 
     constructor(options: {
         id?: string;
-        type?: number;
-        status: number;
-        statusMessage?: string;
+        headers?: Record<string, ResHeaderItemType>;
         body?: T;
     }) {
         super();
         this.id = options.id ?? '';
-        this.type = options.type ?? 0;
-        this.status = options.status;
-        this.statusMessage = options.statusMessage ?? '';
+        options.headers && this.setHeaders(options.headers);
         this.body = options.body ?? null;
+    }
+
+    get status(): number {
+        return this.getHeader(hdr.STATUS) as number ?? 0;
+    }
+
+    get statusMessage(): string {
+        return this.getHeader(hdr.STATUS_MESSAGE) as string;
     }
 
     get ok(): boolean {
@@ -40,5 +42,5 @@ export class TcpResponse<T = any> extends MapHeaders<ResHeaderItemType> implemen
     }
 }
 
-export type TcpEvent<T = any> = TcpErrorResponse  | TcpResponse<T>;
+export type TcpEvent<T = any> = TcpErrorResponse | TcpResponse<T>;
 

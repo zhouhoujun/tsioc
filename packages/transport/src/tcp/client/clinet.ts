@@ -65,7 +65,6 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
             let body: any, error: any, ok = false;
             let bodybuf = '';
             let status: number;
-            let statusMessage = '';
             let bodyType: string, bodyLen = 0;
 
             const ac = this.getAbortSignal(ctx);
@@ -93,12 +92,10 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                             bodyLen = headers[hdr.CONTENT_LENGTH] as number ?? 0;
                             bodyType = headers[hdr.CONTENT_TYPE] as string;
                             status = headers[hdr.STATUS] as number ?? 0;
-                            statusMessage = headers[hdr.STATUS_MESSAGE] as string;
                             if (!bodyLen) {
                                 observer.next(new TcpResponse({
                                     id: pk.id,
-                                    status,
-                                    statusMessage
+                                    headers
                                 }));
                                 observer.complete();
                             }
@@ -152,8 +149,7 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
 
                         if (ok) {
                             observer.next(new TcpResponse({
-                                status,
-                                statusMessage,
+                                headers,
                                 body
                             }));
                             observer.complete();
