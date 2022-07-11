@@ -273,4 +273,7 @@ export interface ResponseHeader<T = any> {
     removeHeader(field: string): void;
 }
 
+/**
+ * response event.
+ */
 export type ResponseEvent<T> = ResponsePacket<T> | ResponseHeader;

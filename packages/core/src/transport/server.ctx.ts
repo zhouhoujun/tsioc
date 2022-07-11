@@ -1,7 +1,6 @@
 import {
-    Abstract, ClassType, composeResolver, EMPTY,
-    Injector, InvokeArguments, isArray, isDefined, isPrimitiveType,
-    isString, MissingParameterError, Parameter, Token, Type
+    Abstract, ClassType, composeResolver, isArray, isDefined, isPrimitiveType, isString,
+    Injector, InvokeArguments, MissingParameterError, Parameter, Token, Type, EMPTY
 } from '@tsdi/ioc';
 import { MODEL_RESOLVERS } from './model';
 import { PipeTransform } from '../pipes/pipe';

@@ -6,7 +6,7 @@ import { ArgumentError, Execption, isArray } from '@tsdi/ioc';
  *
  * @export
  * @class TransportError
- * @extends {Error}
+ * @extends {Execption}
  */
 export class TransportError extends Execption {
 

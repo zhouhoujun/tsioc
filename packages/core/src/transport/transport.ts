@@ -103,6 +103,9 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any> {
         return this._chain
     }
 
+    /**
+     * reset endpoint.
+     */
     protected resetEndpoint() {
         this._chain = null!;
     }
@@ -113,9 +116,9 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any> {
     protected abstract getBackend(): EndpointBackend<TRequest, TResponse>;
 
     /**
-    * initialize options.
-    * @param options 
-    */
+     * initialize options.
+     * @param options 
+     */
     protected abstract initOption(options?: TransportOptions<TRequest, TResponse>): TransportOptions<TRequest, TResponse>;
 
     /**

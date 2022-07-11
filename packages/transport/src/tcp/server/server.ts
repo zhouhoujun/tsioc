@@ -1,7 +1,7 @@
 import { Decoder, ExecptionRespondTypeAdapter, Packet, Router, TransportError, TransportServer } from '@tsdi/core';
 import { Inject, Injectable, InvocationContext, isBoolean, isString, lang, Nullable, Providers } from '@tsdi/ioc';
 import { Server, Socket } from 'net';
-import { Observable, Observer, Subscription } from 'rxjs';
+import { Observable, Observer, share, Subscription } from 'rxjs';
 import { JsonDecoder, JsonEncoder } from '../../coder';
 import { ev, hdr } from '../../consts';
 import { TrasportMimeAdapter } from '../../impl/mime';
@@ -145,13 +145,14 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
     }
 
     protected createObservable(socket: Socket): Observable<Packet> {
+        this.logger.info(socket.remoteFamily, socket.remoteAddress, socket.remotePort, 'connection');
         return new Observable((observer: Observer<any>) => {
             const onClose = (err?: any) => {
                 if (err) {
                     observer.error(err);
                 } else {
                     observer.complete();
-                    this.logger.info(socket.address(), 'closed');
+                    this.logger.info(socket.remoteFamily, socket.remoteAddress, socket.remotePort, 'disconnected');
                 }
             }
 
@@ -230,7 +231,7 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
                 socket.off(ev.TIMEOUT, onError);
                 socket.emit(ev.CLOSE);
             }
-        });
+        }).pipe(share());
     }
 
     protected bindEvent(ctx: TcpContext, cancel: Subscription): void {

@@ -333,7 +333,7 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption e
                             return res.body
                         }));
                     case 'blob':
-                        return res$.pipe(map((res: ResponsePacket<any>) => {
+                        return res$.pipe(map((res: ResponsePacket) => {
                             // Validate that the body is a Blob.
                             if (res.body !== null && !(res.body instanceof Blob)) {
                                 throw new Error('Response is not a Blob.')
@@ -341,7 +341,7 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption e
                             return res.body
                         }));
                     case 'text':
-                        return res$.pipe(map((res: ResponsePacket<any>) => {
+                        return res$.pipe(map((res: ResponsePacket) => {
                             // Validate that the body is a string.
                             if (res.body !== null && typeof res.body !== type_str) {
                                 throw new Error('Response is not a string.')
@@ -351,7 +351,7 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption e
                     case 'json':
                     default:
                         // No validation needed for JSON responses, as they can be of any type.
-                        return res$.pipe(map((res: ResponsePacket<any>) => res.body))
+                        return res$.pipe(map((res: ResponsePacket) => res.body))
                 }
             case 'response':
                 // The response stream was requested directly, so return it.

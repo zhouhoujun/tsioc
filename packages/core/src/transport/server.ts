@@ -66,7 +66,7 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
      */
     protected override initialize(options: ServerOptions<TRequest, TResponse>) {
         const injector = this.context.injector;
-        injector.setValue(TransportServer, this as any);
+        injector.setValue(TransportServer, this);
         super.initialize(options);
 
         const mToken = this._midlsToken = options.middlewaresToken!;

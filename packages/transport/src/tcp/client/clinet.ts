@@ -4,7 +4,7 @@ import {
 } from '@tsdi/core';
 import { EMPTY, Inject, Injectable, InvocationContext, isDefined, isString, lang, Nullable, type_undef } from '@tsdi/ioc';
 import { Socket, NetConnectOpts } from 'net';
-import { defer, filter, mergeMap, Observable, Observer, throwError } from 'rxjs';
+import { defer, filter, mergeMap, Observable, Observer, share, throwError } from 'rxjs';
 import { TcpRequest } from './request';
 import { TcpErrorResponse, TcpEvent, TcpResponse } from './response';
 import { JsonDecoder, JsonEncoder } from '../../coder';
@@ -183,11 +183,12 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
         }
         const socket = this.socket = new Socket(this.option.socketOpts);
         const defer = lang.defer();
+
         socket.once(ev.ERROR, defer.reject);
         socket.once(ev.CONNECT, () => {
             this.connected = true;
             defer.resolve(true);
-            this.logger.info(socket.address(), 'connected');
+            this.logger.info(socket.remoteFamily, socket.remoteAddress, socket.remotePort, 'connected');
             this.source = new Observable((observer: Observer<any>) => {
                 const socket = this.socket!;
                 const onClose = (err?: any) => {
@@ -196,7 +197,7 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                         observer.error(new TcpErrorResponse(500, err));
                     } else {
                         observer.complete();
-                        this.logger.info(socket.address(), 'closed');
+                        this.logger.info(socket.remoteFamily, socket.remoteAddress, socket.remotePort, 'closed');
                     }
                 }
 
@@ -274,7 +275,7 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                     socket.off(ev.TIMEOUT, onError);
                     socket.emit(ev.CLOSE);
                 }
-            });
+            }).pipe(share());
         });
 
         this.socket.connect(this.option.connectOpts);
