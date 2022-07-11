@@ -1,4 +1,4 @@
-import { Abstract, ArgumentError, EMPTY, lang, InvocationContext, isNumber, Token } from '@tsdi/ioc';
+import { Abstract, ArgumentError, EMPTY, lang, InvocationContext, Token } from '@tsdi/ioc';
 import { Subscription } from 'rxjs';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
@@ -28,22 +28,10 @@ export abstract class ServerOptions<TRequest, TResponse> extends TransportOption
 @Runner('start')
 export abstract class TransportServer<TRequest = any, TResponse = any, Tx extends TransportContext = TransportContext> extends TransportEndpoint<TRequest, TResponse> implements OnDispose {
 
-
-    private _middles?: MiddlewareLike<Tx>[];
-    private _midlsToken?: Token<MiddlewareLike[]>;
+    private _midlsToken!: Token<MiddlewareLike[]>;
 
     constructor(context: InvocationContext, options?: ServerOptions<TRequest, TResponse>) {
         super(context, options);
-    }
-
-    /**
-     * server middlewares.
-     */
-    protected get middlewares(): MiddlewareLike<Tx>[] {
-        if (!this._middles) {
-            this._middles = this._midlsToken ? [...this.context.injector.get(this._midlsToken, EMPTY)] : []
-        }
-        return this._middles
     }
 
     /**
@@ -56,12 +44,8 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
      * request is decoded.
      * @param middleware 
      */
-    use(middleware: MiddlewareLike<Tx>, order?: number): this {
-        if (isNumber(order)) {
-            this.middlewares.splice(order, 0, middleware)
-        } else {
-            this.middlewares.push(middleware)
-        }
+    use(middleware: MiddlewareType<Tx>, order?: number): this {
+        this.regMultiOrder(this._midlsToken, middleware, order);
         this.resetEndpoint();
         return this
     }
@@ -84,13 +68,14 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
         const injector = this.context.injector;
         injector.setValue(TransportServer, this as any);
         super.initialize(options);
-        
+
+        const mToken = this._midlsToken = options.middlewaresToken!;
+        if (!mToken) {
+            throw new ArgumentError(lang.getClassName(this) + ' options middlewaresToken is missing.');
+        }
+
         if (options.middlewares && options.middlewares.length) {
-            const mToken = this._midlsToken = options.middlewaresToken;
-            if (!mToken) {
-                throw new ArgumentError(lang.getClassName(this) + ' options middlewaresToken is missing.');
-            }
-            this.regMulti(injector, mToken, options.middlewares);
+            this.regMulti(mToken, options.middlewares);
         }
     }
 
@@ -98,7 +83,7 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
      * get backend endpoint.
      */
     protected override getBackend(): EndpointBackend<TRequest, TResponse> {
-        return new MiddlewareBackend(this.middlewares);
+        return new MiddlewareBackend(this.context.injector.get(this._midlsToken, EMPTY))
     }
     /**
      * lazy create context.

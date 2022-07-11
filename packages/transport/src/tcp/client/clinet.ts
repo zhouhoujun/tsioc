@@ -2,7 +2,7 @@ import {
     EndpointBackend, OnDispose, Packet, RequestContext, ResponseJsonParseError,
     TransportClient, TransportError, UuidGenerator, createEndpoint, Encoder, Decoder
 } from '@tsdi/core';
-import { EMPTY, Inject, Injectable, InvocationContext, isDefined, isString, lang, Nullable, tokenId, type_undef } from '@tsdi/ioc';
+import { EMPTY, Inject, Injectable, InvocationContext, isDefined, isString, lang, Nullable, type_undef } from '@tsdi/ioc';
 import { Socket, NetConnectOpts } from 'net';
 import { defer, filter, mergeMap, Observable, Observer, throwError } from 'rxjs';
 import { TcpRequest } from './request';

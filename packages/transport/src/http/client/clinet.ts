@@ -47,7 +47,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
 
     private _backend?: EndpointBackend<HttpRequest, HttpEvent>;
     private _client?: http2.ClientHttp2Session;
-    private option!: HttpClientOptions;
+    private opts!: HttpClientOptions;
     constructor(
         @Inject() context: InvocationContext,
         @Nullable() option: HttpClientOptions) {
@@ -60,10 +60,10 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
     }
 
     protected override initOption(options?: HttpClientOptions): HttpClientOptions {
-        this.option = { ...defOpts, ...options } as HttpClientOptions;
-        this.context.injector.setValue(HttpClientOptions, this.option);
-        this.option.interceptors?.push(NormlizePathInterceptor, NormlizeBodyInterceptor);
-        return this.option;
+        this.opts = { ...defOpts, ...options } as HttpClientOptions;
+        this.context.setValue(HttpClientOptions, this.opts);
+        this.opts.interceptors?.push(NormlizePathInterceptor, NormlizeBodyInterceptor);
+        return this.opts;
     }
 
     protected getInterceptorsToken(): Token<InterceptorLike<HttpRequest<any>, HttpEvent<any>>[]> {
@@ -72,15 +72,15 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
 
     protected getBackend(): EndpointBackend<HttpRequest, HttpEvent> {
         if (!this._backend) {
-            this._backend = new HttpBackend(this.option);
+            this._backend = this.context.resolve(HttpBackend);
         }
         return this._backend
     }
 
     protected override async connect(): Promise<void> {
-        if (this.option.authority) {
+        if (this.opts.authority) {
             if (this._client && !this._client.closed) return;
-            this._client = http2.connect(this.option.authority, this.option.options);
+            this._client = http2.connect(this.opts.authority, this.opts.options);
             const defer = lang.defer();
             this._client.once(ev.ERROR, (err) => {
                 this.logger.error(err);

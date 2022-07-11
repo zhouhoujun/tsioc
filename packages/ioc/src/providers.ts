@@ -21,6 +21,10 @@ export interface ProvideProvider<T = any> {
      */
     multi?: boolean;
     /**
+     * multi order.
+     */
+    multiOrder?: number;
+    /**
      * provide as default. if has exist the provide will not inject.
      */
     asDefault?: boolean;

@@ -222,7 +222,14 @@ export class DefaultInjector extends Injector {
                     deps: []
                 })
             }
-            multiPdr.deps?.push({ token: generateRecord(platfrom, this, provider), options: OptionFlags.Default })
+            if (multiPdr.deps) {
+                const mtltk = { token: generateRecord(platfrom, this, provider), options: OptionFlags.Default };
+                if (isNumber(provider.multiOrder)) {
+                    multiPdr.deps.splice(provider.multiOrder, 0, mtltk)
+                } else {
+                    multiPdr.deps.push(mtltk)
+                }
+            }
         } else {
             this.records.set(provider.provide, generateRecord(platfrom, this, provider))
         }
@@ -259,7 +266,7 @@ export class DefaultInjector extends Injector {
         return false
     }
 
- 
+
     setValue<T>(token: Token<T>, value: T, type?: Type<T>): this {
         this.assertNotDestroyed();
         const isp = this.records.get(token);
@@ -493,7 +500,7 @@ export class DefaultInjector extends Injector {
     /**
      * has destoryed or not.
      */
-     get destroyed() {
+    get destroyed() {
         return this._destroyed
     }
     /**
@@ -878,7 +885,7 @@ export class DestroyLifecycleHooks extends LifecycleHooks {
             this.platform = null!;
             await Promise.all(Array.from(platform.modules.values())
                 .reverse()
-                .map(m =>   m.lifecycle.dispose()))
+                .map(m => m.lifecycle.dispose()))
         }
     }
 

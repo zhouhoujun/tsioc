@@ -1,4 +1,4 @@
-import { EMPTY_OBJ, isDefined, isUndefined, lang, type_undef } from '@tsdi/ioc';
+import { EMPTY_OBJ, Injectable, isDefined, isUndefined, lang, type_undef } from '@tsdi/ioc';
 import { EndpointBackend, EndpointContext, HttpRequestMethod, mths, TransportClient } from '@tsdi/core';
 import {
     global, isBlob, isFormData, HttpRequest, HttpEvent, HttpHeaders, HttpResponse, HttpErrorResponse,
@@ -28,6 +28,7 @@ if (typeof global.FormData === type_undef) {
 /**
  * http client backend.
  */
+@Injectable()
 export class HttpBackend extends EndpointBackend<HttpRequest, HttpEvent> {
     constructor(private option: HttpClientOptions) {
         super();

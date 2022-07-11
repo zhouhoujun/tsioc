@@ -1,6 +1,6 @@
 import { ClientOptions, ExecptionFilter, Interceptor } from '@tsdi/core';
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { Socket, SocketConstructorOpts, NetConnectOpts } from 'net';
+import { SocketConstructorOpts, NetConnectOpts } from 'net';
 import { TcpRequest } from './request';
 import { TcpEvent } from './response';
 

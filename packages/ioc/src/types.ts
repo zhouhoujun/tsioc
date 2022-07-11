@@ -111,6 +111,11 @@ export interface Type<T = any> extends Function {
 }
 
 /**
+ * type or type instance.
+ */
+export type TypeOf<T> = Type<T> | T;
+
+/**
  * annotation class type
  */
 export interface AnnotationType<T = any> extends Function {

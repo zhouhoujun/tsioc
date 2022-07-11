@@ -71,7 +71,7 @@ export type InterceptorLike<TRequest = any, TResponse = any> = Interceptor<TRequ
 /**
  * interceptor function.
  */
-export type InterceptorType<TRequest = any, TResponse = any> = Type<Interceptor<TRequest, TResponse>> | Interceptor<TRequest, TResponse>;
+export type InterceptorType<TRequest = any, TResponse = any> = Type<Interceptor<TRequest, TResponse>> | InterceptorLike<TRequest, TResponse>;
 
 
 /**
@@ -98,7 +98,7 @@ export type MiddlewareLike<T extends TransportContext = TransportContext> = Midd
 /**
  * middleware type.
  */
-export type MiddlewareType<T extends TransportContext = TransportContext> = Type<Middleware<T>> | Middleware<T>;
+export type MiddlewareType<T extends TransportContext = TransportContext> = Type<Middleware<T>> | MiddlewareLike<T>;
 
 
 /**
