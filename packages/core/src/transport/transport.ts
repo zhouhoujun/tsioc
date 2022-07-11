@@ -1,4 +1,4 @@
-import { Abstract, ArgumentError, EMPTY, InvocationContext, isClass, isClassType, lang, Token, Type, TypeOf } from '@tsdi/ioc';
+import { Abstract, ArgumentError, EMPTY, InvocationContext, isClassType, lang, Token, Type, TypeOf } from '@tsdi/ioc';
 import { Log, Logger } from '@tsdi/logs';
 import { ExecptionChain } from '../execptions/chain';
 import { ExecptionFilter } from '../execptions/filter';
@@ -49,10 +49,9 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any> {
     readonly logger!: Logger;
 
     private _chain?: Endpoint<TRequest, TResponse>;
-
     private _iptToken!: Token<InterceptorLike<TRequest, TResponse>[]>;
     private _filterToken!: Token<ExecptionFilter[]>;
-    private _exptChain?: ExecptionFilter;
+    private _filter?: ExecptionFilter;
 
     constructor(readonly context: InvocationContext, options?: TransportOptions<TRequest, TResponse>) {
         const opts = this.initOption(options);
@@ -60,13 +59,67 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any> {
     }
 
     /**
-     * initialize interceptors with options.
-     * @param options 
+     * use interceptors.
+     * @param interceptor 
+     * @param order 
+     * @returns 
      */
+    intercept(interceptor: InterceptorType<TRequest, TResponse>, order?: number): this {
+        this.regMultiOrder(this._iptToken, interceptor, order);
+        this.resetEndpoint();
+        return this
+    }
+
+    /**
+     * use execption filter.
+     * @param filter 
+     */
+    useFilter(filter: TypeOf<ExecptionFilter>, order?: number): this {
+        if (!this._filterToken) {
+            throw new ArgumentError(lang.getClassName(this) + ' options execptionsToken is missing.');
+        }
+        this.regMultiOrder(this._filterToken, filter, order);
+        this._filter = null!;
+        return this;
+    }
+
+    /**
+     * execption filter chain.
+     */
+    filter(): ExecptionFilter {
+        if (!this._filter) {
+            this._filter = new ExecptionChain(this.context.injector.get(this._filterToken, EMPTY));
+        }
+        return this._filter;
+    }
+
+    /**
+     * transport endpoint chain.
+     */
+    endpoint(): Endpoint<TRequest, TResponse> {
+        if (!this._chain) {
+            this._chain = new InterceptorChain(this.getBackend(), this.context.injector.get(this._iptToken, EMPTY));
+        }
+        return this._chain
+    }
+
+    protected resetEndpoint() {
+        this._chain = null!;
+    }
+
+    /**
+     *  get backend endpoint. 
+     */
+    protected abstract getBackend(): EndpointBackend<TRequest, TResponse>;
+
+    /**
+    * initialize options.
+    * @param options 
+    */
     protected abstract initOption(options?: TransportOptions<TRequest, TResponse>): TransportOptions<TRequest, TResponse>;
 
     /**
-     * initialize interceptors with options.
+     * initialize context with options.
      * @param options 
      */
     protected initialize(options: TransportOptions<TRequest, TResponse>): void {
@@ -117,60 +170,6 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any> {
             this.context.injector.inject({ provide, useValue: target, multi: true, multiOrder })
         }
     }
-
-    /**
-     * use interceptors.
-     * @param interceptor 
-     * @param order 
-     * @returns 
-     */
-    intercept(interceptor: InterceptorType<TRequest, TResponse>, order?: number): this {
-        this.regMultiOrder(this._iptToken, interceptor, order);
-        this.resetEndpoint();
-        return this
-    }
-
-    /**
-     * use execption filter.
-     * @param filter 
-     */
-    useFilter(filter: TypeOf<ExecptionFilter>, order?: number): this {
-        if (!this._filterToken) {
-            throw new ArgumentError(lang.getClassName(this) + ' options execptionsToken is missing.');
-        }
-        this.regMultiOrder(this._filterToken, filter, order);
-        this._exptChain = null!;
-        return this;
-    }
-
-    /**
-     * execption filter chain.
-     */
-    getExecptionFilter(): ExecptionFilter {
-        if (!this._exptChain) {
-            this._exptChain = new ExecptionChain(this.context.injector.get(this._filterToken, EMPTY));
-        }
-        return this._exptChain;
-    }
-
-    /**
-     * transport endpoint chain.
-     */
-    endpoint(): Endpoint<TRequest, TResponse> {
-        if (!this._chain) {
-            this._chain = new InterceptorChain(this.getBackend(), this.context.injector.get(this._iptToken, EMPTY));
-        }
-        return this._chain
-    }
-
-    protected resetEndpoint() {
-        this._chain = null!;
-    }
-
-    /**
-     *  get backend endpoint. 
-     */
-    protected abstract getBackend(): EndpointBackend<TRequest, TResponse>;
 
 }
 

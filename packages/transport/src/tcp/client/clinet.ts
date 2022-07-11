@@ -285,7 +285,8 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
         return typeof AbortController === type_undef ? null! : ctx.getValueify(AbortController, () => new AbortController());
     }
 
-    protected override buildRequest(req: string | TcpRequest, options?: any): TcpRequest {
+    protected override buildRequest(context: RequestContext, req: string | TcpRequest, options?: any): TcpRequest {
+        context.setValue(Socket, this.socket);
         return isString(req) ? new TcpRequest(this.context.resolve(UuidGenerator).generate(), { ...options, url: req }) : req
     }
 

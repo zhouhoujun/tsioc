@@ -228,7 +228,7 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
                             }
                         }
                         if (body) {
-                            body = this.context.get(Decoder).decode<Packet>(body);
+                            body = this.context.get(Decoder).decode(body);
                             observer.next(body);
                         }
                         if (rest) {
@@ -265,7 +265,8 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
     }
 
 
-    protected override buildRequest(req: string | UdpRequest<any>, options?: any): UdpRequest<any> {
+    protected override buildRequest(context: RequestContext, req: string | UdpRequest<any>, options?: any): UdpRequest<any> {
+        context.setValue(Socket, this.socket);
         return isString(req) ? new UdpRequest(this.context.resolve(UuidGenerator).generate(), options) : req
     }
 

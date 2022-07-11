@@ -292,7 +292,7 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption e
     }
 
     protected request(context: RequestContext, first: TRequest | string, options: TOption = EMPTY_OBJ as any): Observable<any> {
-        const req = this.buildRequest(first, options);
+        const req = this.buildRequest(context, first, options);
 
         // Start with an Observable.of() the initial request, and run the handler (which
         // includes all interceptors) inside a concatMap(). This way, the handler runs
@@ -373,7 +373,7 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption e
             { parent: this.context, responseType: options?.responseType, observe: isString(req) ? options?.observe : 'events' });
     }
 
-    protected abstract buildRequest(url: TRequest | string, options?: TOption): TRequest;
+    protected abstract buildRequest(context: RequestContext, url: TRequest | string, options?: TOption): TRequest;
 
     protected abstract connect(): Promise<void>;
 

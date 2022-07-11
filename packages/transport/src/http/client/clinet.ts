@@ -99,7 +99,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         return ctx;
     }
 
-    protected override buildRequest(first: string | HttpRequest<any>, options: RequestOptions & ResponseAs): HttpRequest<any> {
+    protected override buildRequest(context: RequestContext, first: string | HttpRequest<any>, options: RequestOptions & ResponseAs): HttpRequest<any> {
         // First, check whether the primary argument is an instance of `HttpRequest`.
         if (first instanceof HttpRequest) {
             // It is. The other arguments must be undefined (per the signatures) and can be
