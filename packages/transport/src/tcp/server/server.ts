@@ -147,14 +147,23 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
     }
 
     protected createObservable(socket: Socket): Observable<Packet> {
-        this.logger.info(socket.remoteFamily, socket.remoteAddress, socket.remotePort, '->', socket.address(), 'connection');
+        const isIPC = !!this.options.listenOptions.path;
+        if (isIPC) {
+            this.logger.info('Ipc client connection')
+        } else {
+            this.logger.info('Tcp client', socket.remoteFamily, socket.remoteAddress, socket.remotePort, 'connection');
+        }
         return new Observable((observer: Observer<any>) => {
             const onClose = (err?: any) => {
                 if (err) {
                     observer.error(err);
                 } else {
                     observer.complete();
-                    this.logger.info(socket.remoteFamily, socket.remoteAddress, socket.remotePort, '->', socket.address(), 'disconnected');
+                    if (isIPC) {
+                        this.logger.info('Ipc client disconnected')
+                    } else {
+                        this.logger.info('Tcp client', socket.remoteFamily, socket.remoteAddress, socket.remotePort, 'disconnected');
+                    }
                 }
             }
 
@@ -245,7 +254,7 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
     }
 
     protected createContext(request: TcpServRequest, response: TcpServResponse): TcpContext {
-        return new TcpContext(this.context.injector, !this.options.listenOptions.port && this.options.listenOptions.path ? 'ipc' : 'tcp', request, response, this as TransportServer, { parent: this.context });
+        return new TcpContext(this.context.injector, request, response, this as TransportServer, { parent: this.context });
     }
 
     async close(): Promise<void> {

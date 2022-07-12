@@ -19,7 +19,7 @@ export class TcpPathInterceptor implements Interceptor<TcpRequest, TcpEvent> {
             if (!this.option.connectOpts) throw new TransportArgumentError('no connect options.');
             if ((this.option.connectOpts as IpcNetConnectOpts).path && !(this.option.connectOpts as TcpNetConnectOpts).port) {
                 // const { path } = this.option.connectOpts as IpcNetConnectOpts;
-                const baseUrl = new URL('ipc://localhost/');
+                const baseUrl = new URL('tcp://localhost/');
                 url = new URL(url, baseUrl).toString();
             } else {
                 const { host, port } = this.option.connectOpts as TcpNetConnectOpts;

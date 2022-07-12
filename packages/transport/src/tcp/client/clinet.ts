@@ -3,7 +3,7 @@ import {
     TransportClient, TransportError, UuidGenerator, createEndpoint, Encoder, Decoder
 } from '@tsdi/core';
 import { EMPTY, Inject, Injectable, InvocationContext, isDefined, isString, lang, Nullable, type_undef } from '@tsdi/ioc';
-import { Socket, NetConnectOpts } from 'net';
+import { Socket, NetConnectOpts, IpcNetConnectOpts } from 'net';
 import { defer, filter, mergeMap, Observable, Observer, share, throwError } from 'rxjs';
 import { TcpRequest } from './request';
 import { TcpErrorResponse, TcpEvent, TcpResponse } from './response';
@@ -180,11 +180,16 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
         const socket = this.socket = new Socket(this.option.socketOpts);
         const defer = lang.defer();
 
+        const isIPC = !!(this.option.connectOpts as IpcNetConnectOpts).path;
         socket.once(ev.ERROR, defer.reject);
         socket.once(ev.CONNECT, () => {
             this.connected = true;
             defer.resolve(true);
-            this.logger.info(socket.address(), '->', socket.remoteFamily, socket.remoteAddress, socket.remotePort, 'connected');
+            if (isIPC) {
+                this.logger.info('Connected ipc server');
+            } else {
+                this.logger.info('Connected tcp server', socket.remoteFamily, socket.remoteAddress, socket.remotePort);
+            }
             this.source = new Observable((observer: Observer<any>) => {
                 const socket = this.socket!;
                 const onClose = (err?: any) => {
@@ -193,7 +198,11 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                         observer.error(new TcpErrorResponse(500, err));
                     } else {
                         observer.complete();
-                        this.logger.info(socket.address(), '->', socket.remoteFamily, socket.remoteAddress, socket.remotePort, 'closed');
+                        if (isIPC) {
+                            this.logger.info('Disconnected ipc server');
+                        } else {
+                            this.logger.info('Disconnected tcp server', socket.remoteFamily, socket.remoteAddress, socket.remotePort);
+                        }
                     }
                 }
 

@@ -1,8 +1,9 @@
 import { Application, ApplicationContext, BadRequestError, Handle, LoggerModule, Module, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
 import { Injector, isArray, lang } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
-import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
+import expect = require('expect');
+import del = require('del');
 import { TcpClient, TcpClientOptions, TcpModule, TcpServer } from '../src/tcp';
 
 
@@ -77,7 +78,7 @@ export class DeviceController {
         TcpModule.withOptions({
             timeout: 1000,
             listenOptions: {
-                port: 2000
+                path: '\\\\?\\pipe'
             }
         })
     ],
@@ -86,25 +87,26 @@ export class DeviceController {
     ],
     bootstrap: TcpServer
 })
-export class TcpTestModule {
+export class IPCTestModule {
 
 }
 
 
-describe('TCP Server & TCP Client', () => {
+describe('IPC Server & IPC Client', () => {
     let ctx: ApplicationContext;
     let injector: Injector;
 
     let client: TcpClient;
 
     before(async () => {
-        ctx = await Application.run(TcpTestModule);
+        
+        ctx = await Application.run(IPCTestModule);
         injector = ctx.injector;
         client = injector.resolve(TcpClient, {
             provide: TcpClientOptions,
             useValue: {
                 connectOpts: {
-                    port: 2000
+                    path: '\\\\?\\pipe'
                 }
             } as TcpClientOptions
         });
@@ -269,7 +271,7 @@ describe('TCP Server & TCP Client', () => {
     })
 
 
-    after(() => {
-        return ctx.destroy();
+    after(async () => {
+        await ctx.destroy();
     })
 });

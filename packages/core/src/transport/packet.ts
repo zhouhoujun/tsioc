@@ -51,7 +51,7 @@ export type HttpProtocol = 'http' | 'https';
 /**
  * transport protocol.
  */
-export type Protocol = 'tcp' | 'ipc' | 'udp' | 'grpc' | 'rmq' | 'kafka' | 'redis' | 'amqp' | 'ssl' | 'msg' | HttpProtocol | MqttProtocol;
+export type Protocol = 'tcp' | 'udp' | 'grpc' | 'rmq' | 'kafka' | 'redis' | 'amqp' | 'ssl' | 'msg' | HttpProtocol | MqttProtocol;
 
 /**
  * packet.

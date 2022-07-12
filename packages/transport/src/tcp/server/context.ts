@@ -1,5 +1,5 @@
-import { ExecptionFilter, MiddlewareLike, HeaderContext, AssetContext, TransportContext, TransportServer } from '@tsdi/core';
-import { Injector, InvokeArguments, Token, tokenId } from '@tsdi/ioc';
+import { ExecptionFilter, MiddlewareLike, HeaderContext, AssetContext, TransportContext, TransportServer, Protocol } from '@tsdi/core';
+import { Token, tokenId } from '@tsdi/ioc';
 import { AssetServerContext } from '../../asset.ctx';
 import { hdr } from '../../consts';
 import { TcpServRequest } from './request';
@@ -7,16 +7,14 @@ import { TcpServResponse } from './response';
 
 
 
-const abstUrlExp = /^(tcp|icp):/;
+const abstUrlExp = /^tcp:/;
 
 /**
  * TCP context.
  */
 export class TcpContext extends AssetServerContext<TcpServRequest, TcpServResponse> implements HeaderContext, AssetContext {
 
-    constructor(injector: Injector, readonly protocol: 'tcp' | 'ipc', request: TcpServRequest, response: TcpServResponse, target: TransportServer, options?: InvokeArguments) {
-        super(injector, request, response, target, options)
-    }
+    readonly protocol = 'tcp';
 
     private _url?: string;
     get url(): string {
