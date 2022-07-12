@@ -1,4 +1,4 @@
-import { Decoder, ExecptionRespondTypeAdapter, Packet, Router, TransportError, TransportServer, TransportStatus } from '@tsdi/core';
+import { Decoder, ExecptionRespondTypeAdapter, Packet, Router, TransportError, TransportServer, TransportStatus, UuidGenerator } from '@tsdi/core';
 import { Inject, Injectable, InvocationContext, isBoolean, isString, lang, Nullable, Providers } from '@tsdi/ioc';
 import { Server, Socket } from 'net';
 import { Observable, Observer, Subscription } from 'rxjs';
@@ -25,7 +25,7 @@ import { TcpServerOptions, TCP_SERV_INTERCEPTORS } from './options';
 
 const defOpts = {
     encoding: 'utf8',
-    headerSplit: '#',
+    delimiter: '\r\n',
     interceptorsToken: TCP_SERV_INTERCEPTORS,
     execptionsToken: TCP_EXECPTION_FILTERS,
     middlewaresToken: TCP_MIDDLEWARES,
@@ -175,43 +175,38 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
             };
 
             let buffer = '';
-            let length = -1;
-            const headerSplit = this.options.headerSplit!;
+            const delimiter = this.options.delimiter!;
+            const uuidgr = this.context.resolve(UuidGenerator);
             const onData = (data: Buffer | string) => {
                 try {
                     buffer += (isString(data) ? data : new TextDecoder().decode(data));
-                    if (length === -1) {
-                        const i = buffer.indexOf(headerSplit);
-                        if (i !== -1) {
-                            const rawContentLength = buffer.substring(0, i);
-                            length = parseInt(rawContentLength, 10);
+                    buffer += (isString(data) ? data : new TextDecoder().decode(data));
+                    const idx = buffer.indexOf(delimiter);
+                    if (idx <= 0) {
+                        if (idx === 0) {
+                            buffer = '';
+                        }
+                        return;
+                    }
 
-                            if (isNaN(length)) {
-                                length = -1;
-                                buffer = '';
-                                throw new TransportError('socket packge error length' + rawContentLength);
-                            }
-                            buffer = buffer.substring(i + 1);
-                        }
-                    }
-                    let body: any;
                     let rest: string | undefined;
-                    if (length >= 0) {
-                        const buflen = buffer.length;
-                        if (length === buflen) {
-                            body = buffer;
-                        } else if (buflen > length) {
-                            body = buffer.substring(0, length);
-                            rest = buffer.substring(length);
-                        }
+
+                    const pkg = buffer.substring(0, idx);
+                    if (idx < buffer.length - 1) {
+                        rest = buffer.substring(idx + 1);
                     }
-                    if (body) {
-                        body = this.context.get(Decoder).decode(body);
+                    if (pkg) {
                         buffer = '';
-                        observer.next(body);
-                    }
-                    if (rest) {
-                        onData(rest);
+                        const pktype = parseInt(pkg.slice(0, 1));
+                        const pidx = uuidgr.uuidLen + 1;
+                        const id = pkg.slice(1, pidx);
+                        if (pktype == 0) {
+                            const packet = this.context.get(Decoder).decode(pkg.slice(pidx));
+                            observer.next({ ...packet, id });
+                        } else if (pktype == 1) {
+                            const body = pkg.slice(pidx);
+                            observer.next({ id, body });
+                        }
                     }
                 } catch (err: any) {
                     socket.emit(ev.ERROR, err.message);

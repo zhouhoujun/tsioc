@@ -72,8 +72,8 @@ export class TcpFinalizeFilter implements ExecptionFilter {
         // hctx.length = Buffer.byteLength(msg);
 
         const encoder = ctx.get(Encoder);
-        const { headerSplit, encoding } = ctx.get(TcpServerOptions);
-        await writeSocket(res.socket, encoder.encode(res.serializeHeader()), headerSplit, encoding);
+        const { delimiter, encoding } = ctx.get(TcpServerOptions);
+        await writeSocket(res.socket, encoder.encode(res.serializeHeader()), delimiter!, 0, encoding);
     }
 
 }

@@ -1,6 +1,6 @@
 import {
     EndpointBackend, OnDispose, Packet, RequestContext, ResponseJsonParseError,
-    TransportClient, TransportError, UuidGenerator, createEndpoint, Encoder, Decoder
+    TransportClient, UuidGenerator, createEndpoint, Encoder, Decoder
 } from '@tsdi/core';
 import { EMPTY, Inject, Injectable, InvocationContext, isString, lang, Nullable, type_undef } from '@tsdi/ioc';
 import { Socket, IpcNetConnectOpts } from 'net';
@@ -18,7 +18,7 @@ import { TcpClientOptions, TCP_EXECPTIONFILTERS, TCP_INTERCEPTORS } from './opti
 
 
 const defaults = {
-    headerSplit: '#',
+    delimiter: '\r\n',
     encoding: 'utf8',
     encoder: JsonEncoder,
     decoder: JsonDecoder,
@@ -148,10 +148,10 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
 
                 const encoder = ctx.get(Encoder);
                 const buf = encoder.encode(req.serializeHeader());
-                const split = ctx.get(TcpClientOptions).headerSplit;
+                const { delimiter, encoding } = this.option;
 
-                writeSocket(socket, buf, split, this.option.encoding);
-                writeSocket(socket, encoder.encode(req.serializeBody()), split, this.option.encoding)
+                writeSocket(socket, buf, delimiter!, 0, encoding);
+                writeSocket(socket, encoder.encode(req.serializeBody()), delimiter!, 1, encoding)
 
 
                 return () => {
@@ -210,40 +210,37 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                 };
 
                 let buffer = '';
-                let length = -1;
-                const headerSplit = this.option.headerSplit!;
+                const delimiter = this.option.delimiter!;
+                const uuidgr = this.context.resolve(UuidGenerator);
                 const onData = (data: Buffer | string) => {
                     try {
                         buffer += (isString(data) ? data : new TextDecoder().decode(data));
-                        if (length === -1) {
-                            const i = buffer.indexOf(headerSplit);
-                            if (i !== -1) {
-                                const rawContentLength = buffer.substring(0, i);
-                                length = parseInt(rawContentLength, 10);
+                        const idx = buffer.indexOf(delimiter);
+                        if (idx <= 0) {
+                            if (idx === 0) {
+                                buffer = '';
+                            }
+                            return;
+                        }
 
-                                if (isNaN(length)) {
-                                    length = -1;
-                                    buffer = '';
-                                    throw new TransportError('socket packge error length' + rawContentLength);
-                                }
-                                buffer = buffer.substring(i + 1);
-                            }
-                        }
-                        let body: any;
                         let rest: string | undefined;
-                        if (length >= 0) {
-                            const buflen = buffer.length;
-                            if (length === buflen) {
-                                body = buffer;
-                            } else if (buflen > length) {
-                                body = buffer.substring(0, length);
-                                rest = buffer.substring(length);
-                            }
+
+                        const pkg = buffer.substring(0, idx);
+                        if (idx < buffer.length - 1) {
+                            rest = buffer.substring(idx + 1);
                         }
-                        if (body) {
-                            body = this.context.get(Decoder).decode(body);
+                        if (pkg) {
                             buffer = '';
-                            observer.next(body);
+                            const pktype = parseInt(pkg.slice(0, 1));
+                            const pidx = uuidgr.uuidLen + 1;
+                            const id = pkg.slice(1, pidx);
+                            if (pktype == 0) {
+                                const packet = this.context.get(Decoder).decode(pkg.slice(pidx));
+                                observer.next({ ...packet, id });
+                            } else if (pktype == 1) {
+                                const body = pkg.slice(pidx);
+                                observer.next({ id, body });
+                            }
                         }
                         if (rest) {
                             onData(rest);

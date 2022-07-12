@@ -14,9 +14,9 @@ import { TcpServResponse } from './response';
 @Abstract()
 export abstract class TcpServerOptions extends ServerOptions<TcpServRequest, TcpServResponse> {
     /**
-     * header split code.
+     * package delimiter code.
      */
-    abstract headerSplit?: string;
+    abstract delimiter?: string;
     abstract maxConnections?: number;
     /**
      * socket timeout.

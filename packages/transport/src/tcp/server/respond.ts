@@ -1,4 +1,4 @@
-import { Encoder, ExecptionRespondTypeAdapter, TransportError } from '@tsdi/core';
+import { Encoder, ExecptionRespondTypeAdapter, InternalServerError, TransportError } from '@tsdi/core';
 import { Injectable, isNil, isString, lang } from '@tsdi/ioc';
 import { Readable } from 'stream';
 import { RespondAdapter } from '../../interceptors/respond';
@@ -14,29 +14,33 @@ export class TcpRespondAdapter extends RespondAdapter {
 
     async respond(res: TcpServResponse, ctx: TcpContext): Promise<any> {
         const encoder = ctx.get(Encoder);
-        const { headerSplit, encoding } = ctx.get(TcpServerOptions);
+        const { delimiter, encoding } = ctx.get(TcpServerOptions);
 
+        if (!delimiter) {
+            throw new InternalServerError();
+        }
         let body = ctx.body;
         if (isNil(body)) {
-            if (!res.sent) await writeSocket(res.socket, encoder.encode(res.serializeHeader()), headerSplit, encoding);
+            if (!res.sent) await writeSocket(res.socket, encoder.encode(res.serializeHeader()), delimiter, 0, encoding);
             return res;
         }
 
 
         if (isString(body)) {
-            if (!res.sent) await writeSocket(res.socket, encoder.encode(res.serializeHeader()), headerSplit, encoding);
-            await writeSocket(res.socket, encoder.encode({ id: res.id, body }), headerSplit, encoding);
+            if (!res.sent) await writeSocket(res.socket, encoder.encode(res.serializeHeader()), delimiter, 0, encoding);
+            await writeSocket(res.socket, encoder.encode({ id: res.id, body }), delimiter, 0, encoding);
             return res;
         }
 
         if (isBuffer(body)) {
-            if (!res.sent) await writeSocket(res.socket, encoder.encode(res.serializeHeader()), headerSplit, encoding);
-            await writeSocket(res.socket, encoder.encode({ id: res.id, body }), headerSplit, encoding);
+            if (!res.sent) await writeSocket(res.socket, encoder.encode(res.serializeHeader()), delimiter, 0, encoding);
+            await writeSocket(res.socket, encoder.encode({ id: res.id, body }), delimiter, 1, encoding);
             return res;
-        } 
-        
+        }
+
         if (isStream(body)) {
-            if (!res.sent) await writeSocket(res.socket, encoder.encode(res.serializeHeader()), headerSplit, encoding);
+            if (!res.sent) await writeSocket(res.socket, encoder.encode(res.serializeHeader()), delimiter, 0, encoding);
+            res.socket.write(1 + res.id!);
             const defer = lang.defer();
             body.once(ev.ERROR, (err) => {
                 defer.reject(err)
@@ -51,13 +55,13 @@ export class TcpRespondAdapter extends RespondAdapter {
                     return res;
                 })
         }
-        
+
         body = JSON.stringify(body);
         if (!res.sent) {
             ctx.length = Buffer.byteLength(body);
-            await writeSocket(res.socket, encoder.encode(res.serializeHeader()), headerSplit, encoding);
+            await writeSocket(res.socket, encoder.encode(res.serializeHeader()), delimiter, 0, encoding);
         }
-        await writeSocket(res.socket, encoder.encode({ id: res.id, body }), headerSplit, encoding);
+        await writeSocket(res.socket, encoder.encode({ id: res.id, body }), delimiter, 1, encoding);
         return res;
     }
 

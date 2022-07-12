@@ -96,11 +96,11 @@ export function encodeUrl(url: string) {
  * 
  * @param socket 
  * @param buffer base64 string or buffer.
- * @param headerSplit 
+ * @param delimiter 
  * @param encoding 
  * @returns 
  */
-export function writeSocket(socket: Socket, buffer: Buffer | Uint8Array | ArrayBuffer | string, headerSplit?: string, encoding?: BufferEncoding) {
+export function writeSocket(socket: Socket, buffer: Buffer | Uint8Array | ArrayBuffer | string, delimiter: string, packetType: number, encoding?: BufferEncoding) {
   const defer = lang.defer<void>();
   let buf: string;
   if (isString(buffer)) {
@@ -110,7 +110,7 @@ export function writeSocket(socket: Socket, buffer: Buffer | Uint8Array | ArrayB
   } else {
     buf = Buffer.from(buffer).toString('base64');
   }
-  const data = headerSplit ? `${Buffer.byteLength(buf)}${headerSplit}${buf}` : buf;
+  const data =  packetType + delimiter + buf;
   socket.write(data, encoding, (err) => {
     err ? defer.reject(err) : defer.resolve();
   });

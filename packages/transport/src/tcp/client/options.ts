@@ -6,8 +6,14 @@ import { TcpEvent } from './response';
 
 @Abstract()
 export abstract class TcpClientOptions extends ClientOptions<TcpRequest, TcpEvent> {
+    /**
+     * buffer encoding.
+     */
     abstract encoding?: BufferEncoding;
-    abstract headerSplit?: string;
+    /**
+     * package delimiter code.
+     */
+    abstract delimiter?: string;
     abstract socketOpts?: SocketConstructorOpts;
     abstract connectOpts: NetConnectOpts;
 }
