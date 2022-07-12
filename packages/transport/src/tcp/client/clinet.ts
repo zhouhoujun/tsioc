@@ -2,9 +2,9 @@ import {
     EndpointBackend, OnDispose, Packet, RequestContext, ResponseJsonParseError,
     TransportClient, TransportError, UuidGenerator, createEndpoint, Encoder, Decoder
 } from '@tsdi/core';
-import { EMPTY, Inject, Injectable, InvocationContext, isDefined, isString, lang, Nullable, type_undef } from '@tsdi/ioc';
-import { Socket, NetConnectOpts, IpcNetConnectOpts } from 'net';
-import { defer, filter, mergeMap, Observable, Observer, share, throwError } from 'rxjs';
+import { EMPTY, Inject, Injectable, InvocationContext, isString, lang, Nullable, type_undef } from '@tsdi/ioc';
+import { Socket, IpcNetConnectOpts } from 'net';
+import { filter, Observable, Observer, share, throwError } from 'rxjs';
 import { TcpRequest } from './request';
 import { TcpErrorResponse, TcpEvent, TcpResponse } from './response';
 import { JsonDecoder, JsonEncoder } from '../../coder';
@@ -58,27 +58,17 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
             if (!this.socket) return throwError(() => new TcpErrorResponse(0, 'has not connected.'));
             const ctx = context as RequestContext;
             const socket = this.socket;
-            let headers: Record<string, ResHeaderItemType>;
-            let body: any, error: any, ok = false;
-            let bodybuf = '';
-            let status: number;
-            let bodyType: string, bodyLen = 0;
 
             const ac = this.getAbortSignal(ctx);
             return new Observable((observer: Observer<any>) => {
 
-                const sub = defer(async () => {
-                    const encoder = ctx.get(Encoder);
-                    const buf = encoder.encode(req.serializeHeader());
-                    const split = ctx.get(TcpClientOptions).headerSplit;
+                let headers: Record<string, ResHeaderItemType>;
+                let body: any, error: any, ok = false;
+                let bodybuf = '';
+                let status: number;
+                let bodyType: string, bodyLen = 0;
 
-                    await writeSocket(socket, buf, split, this.option.encoding);
-
-                    if (isDefined(req.body)) {
-                        await writeSocket(socket, encoder.encode(req.serializeBody()), split, this.option.encoding)
-                    }
-                }).pipe(
-                    mergeMap(() => this.source),
+                const sub = this.source.pipe(
                     filter(pk => pk.id === req.id)
                 ).subscribe({
                     complete: () => observer.complete(),
@@ -155,6 +145,14 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                         }
                     }
                 });
+
+                const encoder = ctx.get(Encoder);
+                const buf = encoder.encode(req.serializeHeader());
+                const split = ctx.get(TcpClientOptions).headerSplit;
+
+                writeSocket(socket, buf, split, this.option.encoding);
+                writeSocket(socket, encoder.encode(req.serializeBody()), split, this.option.encoding)
+
 
                 return () => {
                     if (ac && !ctx.destroyed) {
