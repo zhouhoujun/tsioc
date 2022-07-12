@@ -441,19 +441,6 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
         return true
     }
 
-    /**
-     * Whether the status code is ok
-     */
-    get ok(): boolean {
-        return this.status >= 200 && this.status < 300
-    }
-    /**
-     * Whether the status code is ok
-     */
-    set ok(ok: boolean) {
-        this.status = ok ? 200 : 404
-    }
-
     get status(): HttpStatusCode {
         return this.response.statusCode
     }

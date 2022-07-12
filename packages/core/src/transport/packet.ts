@@ -191,10 +191,6 @@ export interface ResponsePacket<T = any> extends Packet<T> {
      */
     get statusMessage(): string;
     /**
-     * Whether the status code is ok
-     */
-    get ok(): boolean;
-    /**
      * Get response body.
      *
      * @return {T}

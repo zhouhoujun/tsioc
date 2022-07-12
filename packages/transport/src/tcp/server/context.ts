@@ -101,10 +101,6 @@ export class TcpContext extends AssetServerContext<TcpServRequest, TcpServRespon
         this.response.statusMessage = msg;
     }
 
-    get ok(): boolean {
-        return this.response.ok;
-    }
-
     get sent(): boolean {
         return this.response.sent;
     }

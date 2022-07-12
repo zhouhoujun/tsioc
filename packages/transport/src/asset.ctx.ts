@@ -117,6 +117,21 @@ export abstract class AssetServerContext<TRequest extends RequestHeader | Packet
         }
     }
 
+
+    /**
+     * Whether the status code is ok
+     */
+    get ok(): boolean {
+        return this.adapter.isOk(this.status);
+    }
+    /**
+     * Whether the status code is ok
+     */
+    set ok(ok: boolean) {
+        this.status = ok ? this.adapter.ok : this.adapter.notFound
+    }
+
+
     protected _body: any;
     protected _explicitStatus?: boolean;
     /**

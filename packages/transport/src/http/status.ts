@@ -70,7 +70,7 @@ export class HttpStatus extends TransportStatus {
     }
 
     isOk(status: number): boolean {
-        return status === HttpStatusCode.Ok;
+        return status >= 200 && status < 300;
     }
 
     isRetry(status: number): boolean {

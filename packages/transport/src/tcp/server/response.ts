@@ -16,9 +16,6 @@ export class TcpServResponse extends MapHeaders<ResHeaderItemType> implements Re
         super()
     }
 
-    get ok(): boolean {
-        return this.status === 200;
-    }
 
     get status(): number {
         return this.getHeader(hdr.STATUS) as number ?? 0
