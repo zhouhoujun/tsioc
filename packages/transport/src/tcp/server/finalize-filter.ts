@@ -1,7 +1,7 @@
 import {
     BadRequestError, Encoder, ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
     ForbiddenError, InternalServerError, NotFoundError, TransportArgumentError, TransportError,
-    TransportMissingError, UnauthorizedError, UnsupportedMediaTypeError
+    TransportMissingError, TransportStatus, UnauthorizedError, UnsupportedMediaTypeError
 } from '@tsdi/core';
 import { Injectable, isNumber } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
@@ -60,13 +60,13 @@ export class TcpFinalizeFilter implements ExecptionFilter {
             msg = err.message
         } else {
             // ENOENT support
-            if (ev.ENOENT === err.code) statusCode = 404;
+            if (ev.ENOENT === err.code) statusCode = hctx.adapter.notFound;
 
-            // default to 500
-            if (!isNumber(statusCode) || !statusMessage[statusCode]) statusCode = 500;
+            // default to server error.
+            if (!isNumber(statusCode) || !hctx.adapter.message(statusCode)) statusCode = hctx.adapter.serverError;
 
             // respond
-            msg = statusMessage[statusCode]
+            msg = hctx.adapter.message(statusCode);
         }
         hctx.status = statusCode;
         hctx.statusMessage = msg;
@@ -83,7 +83,7 @@ export class TcpFinalizeFilter implements ExecptionFilter {
 @Injectable({ static: true })
 export class TcpArgumentErrorFilter implements ExecptionFilter {
 
-    constructor() {
+    constructor(private adapter: TransportStatus) {
 
     }
 
@@ -100,53 +100,53 @@ export class TcpArgumentErrorFilter implements ExecptionFilter {
 
     @ExecptionHandler(NotFoundError)
     notFoundExecption(ctx: ExecptionContext, execption: NotFoundError) {
-        execption.status = 404;
+        execption.status = this.adapter.notFound;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(ForbiddenError)
     forbiddenExecption(ctx: ExecptionContext, execption: ForbiddenError) {
-        execption.status = 403
+        execption.status = this.adapter.forbidden;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(BadRequestError)
     badReqExecption(ctx: ExecptionContext, execption: BadRequestError) {
-        execption.status = 400;
+        execption.status = this.adapter.badRequest;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(UnauthorizedError)
     unauthorized(ctx: ExecptionContext, execption: UnauthorizedError) {
-        execption.status = 401;
+        execption.status = this.adapter.unauthorized;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(InternalServerError)
     internalServerError(ctx: ExecptionContext, execption: InternalServerError) {
-        execption.status = 500;
+        execption.status = this.adapter.serverError;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(UnsupportedMediaTypeError)
     unsupported(ctx: ExecptionContext, execption: UnsupportedMediaTypeError) {
-        execption.status = 415;
+        execption.status = this.adapter.unsupportedMediaType;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(TransportArgumentError)
     anguExecption(ctx: ExecptionContext, execption: TransportArgumentError) {
-        ctx.execption = new BadRequestError(execption.message, 400)
+        ctx.execption = new BadRequestError(execption.message, this.adapter.badRequest)
     }
 
     @ExecptionHandler(MissingModelFieldError)
     missFieldExecption(ctx: ExecptionContext, execption: MissingModelFieldError) {
-        ctx.execption = new BadRequestError(execption.message, 400)
+        ctx.execption = new BadRequestError(execption.message, this.adapter.badRequest)
     }
 
     @ExecptionHandler(TransportMissingError)
     missExecption(ctx: ExecptionContext, execption: TransportMissingError) {
-        ctx.execption = new BadRequestError(execption.message, 400)
+        ctx.execption = new BadRequestError(execption.message, this.adapter.badRequest)
     }
 
 }

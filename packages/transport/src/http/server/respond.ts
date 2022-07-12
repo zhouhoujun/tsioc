@@ -4,7 +4,6 @@ import { Readable } from 'stream';
 import { hdr, ev } from '../../consts';
 import { isBuffer, isStream } from '../../utils';
 import { HttpContext, HttpServResponse } from './context';
-import { emptyStatus } from '../status';
 import { RespondAdapter } from '../../interceptors/respond';
 
 @Injectable()
@@ -19,7 +18,7 @@ export class HttpRespondAdapter implements RespondAdapter {
         const code = ctx.status;
 
         // ignore body
-        if (emptyStatus[code]) {
+        if (ctx.adapter.isEmpty(code)) {
             // strip headers
             ctx.body = null;
             return res.end()

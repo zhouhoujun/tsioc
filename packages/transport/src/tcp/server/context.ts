@@ -88,13 +88,13 @@ export class TcpContext extends AssetServerContext<TcpServRequest, TcpServRespon
         if (this.sent) return;
         this._explicitStatus = true;
         this.response.status = status;
-        if (this.body && this.isEmptyStatus(status)) {
+        if (this.body && this.adapter.isEmpty(status)) {
             this.body = null;
         }
     }
 
     get statusMessage(): string {
-        return this.response.statusMessage ?? statusMessage[this.status as HttpStatusCode]
+        return this.response.statusMessage ?? this.adapter.message(this.status)
     }
 
     set statusMessage(msg: string) {
@@ -111,10 +111,6 @@ export class TcpContext extends AssetServerContext<TcpServRequest, TcpServRespon
 
     protected isSelf(token: Token) {
         return token === TcpContext || token === AssetServerContext || token === TransportContext;
-    }
-
-    protected override isEmptyStatus(status: number): boolean {
-        return emptyStatus[status];
     }
 
 }

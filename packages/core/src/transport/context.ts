@@ -1,5 +1,6 @@
 import { Abstract, DefaultInvocationContext } from '@tsdi/ioc';
 import { Packet, Protocol } from './packet';
+import { TransportStatus } from './status';
 import { TransportEndpoint } from './transport';
 
 /**
@@ -15,6 +16,17 @@ export abstract class EndpointContext extends DefaultInvocationContext {
     protected override clear(): void {
         super.clear();
         (this as any).target = null;
+    }
+
+    private _tstatus?: TransportStatus;
+    /**
+     * transport status adapter.
+     */
+    get adapter(): TransportStatus {
+        if(!this._tstatus) {
+            this._tstatus = this.get(TransportStatus);
+        }
+        return this._tstatus;
     }
 }
 

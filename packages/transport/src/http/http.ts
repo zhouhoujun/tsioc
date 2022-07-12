@@ -15,7 +15,6 @@ import { HttpServerOptions, HTTP_SERVEROPTIONS } from './server/options';
     ],
     providers: [
         { provide: MimeDb, useClass: BasicMimeDb, asDefault: true },
-
         HttpServer,
         Http
     ]

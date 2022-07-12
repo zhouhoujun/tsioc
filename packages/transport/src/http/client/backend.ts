@@ -14,7 +14,6 @@ import { promisify } from 'util';
 import * as NodeFormData from 'form-data';
 import { ev, hdr } from '../../consts';
 import { HttpError } from '../errors';
-import { emptyStatus, redirectStatus } from '../status';
 import { isBuffer, jsonTypes, textTypes, xmlTypes } from '../../utils';
 import { CLIENT_HTTP2SESSION, HttpClientOptions } from './option';
 import { MimeAdapter } from '../../mime';
@@ -107,7 +106,7 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
 
                 ok = status >= 200 && status < 300;
 
-                if (emptyStatus[status]) {
+                if (ctx.adapter.isEmpty(status)) {
                     observer.next(new HttpHeaderResponse({
                         url,
                         headers,
@@ -121,7 +120,7 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 const rqstatus = ctx.getValueify(RequestStauts, () => new RequestStauts());
 
                 // HTTP fetch step 5
-                if (status && redirectStatus[status]) {
+                if (status && ctx.adapter.isRedirect(status)) {
                     // HTTP fetch step 5.2
                     const location = headers.get(hdr.LOCATION);
 
@@ -508,7 +507,7 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 ok = status >= 200 && status < 300;
                 statusText = statusMessage[status as HttpStatusCode] ?? 'OK';
 
-                if (emptyStatus[status]) {
+                if (ctx.adapter.isEmpty(status)) {
                     completed = true;
                     observer.next(new HttpHeaderResponse({
                         url,
@@ -536,7 +535,7 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                         status = isDefined(body) ? HttpStatusCode.Ok : 0
                     }
 
-                    if (status && redirectStatus[status]) {
+                    if (status && ctx.adapter.isRedirect(status)) {
                         completed = true;
                         // HTTP fetch step 5.2
                         const location = headers.get(hdr.LOCATION);

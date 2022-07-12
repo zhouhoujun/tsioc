@@ -1,6 +1,7 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { ServerContext, ExecptionFilter, MiddlewareLike, Protocol, HeaderContext, AssetContext } from '@tsdi/core';
 import { Injectable, tokenId } from '@tsdi/ioc';
+import { hdr } from '../../consts';
 import { UdpServRequest } from './request';
 import { UdpServResponse } from './response';
 
@@ -70,7 +71,7 @@ export class UdpContext extends ServerContext<UdpServRequest, UdpServResponse> i
     }
 
     isUpdate(): boolean {
-        return this.request.isUpdate;
+        return this.request.method === 'PUT' || this.request.getHeader(hdr.OPERATION) === 'update';
     }
 
     get body(): any {

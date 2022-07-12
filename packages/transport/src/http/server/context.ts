@@ -6,7 +6,6 @@ import * as http from 'http';
 import * as http2 from 'http2';
 import { TLSSocket } from 'tls';
 import { append, encodeUrl, escapeHtml, parseTokenList } from '../../utils';
-import { emptyStatus, redirectStatus } from '../status';
 import { ctype, hdr } from '../../consts';
 import { HttpError, HttpInternalServerError } from './../errors';
 import { HttpServer } from './server';
@@ -466,12 +465,12 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
         assert(code >= 100 && code <= 999, `invalid status code: ${code}`);
         this._explicitStatus = true;
         this.response.statusCode = code;
-        if (this.request.httpVersionMajor < 2) this.response.statusMessage = statusMessage[code];
-        if (this.body && this.isEmptyStatus(code)) this.body = null;
+        if (this.request.httpVersionMajor < 2) this.response.statusMessage = this.adapter.message(code);
+        if (this.body && this.adapter.isEmpty(code)) this.body = null;
     }
 
     get statusMessage() {
-        return this.response.statusMessage || statusMessage[this.status]
+        return this.response.statusMessage || this.adapter.message(this.status)
     }
 
     set statusMessage(msg: string) {
@@ -482,10 +481,6 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
 
     protected override onNullBody(): void {
         this._explicitNullBody = true;
-    }
-
-    protected override isEmptyStatus(status: number): boolean {
-        return emptyStatus[status]
     }
 
     /**
@@ -616,7 +611,7 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
         if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
         this.setHeader(hdr.LOCATION, encodeUrl(url));
         // status
-        if (!redirectStatus[this.status]) this.status = 302;
+        if (!this.adapter.isRedirect(this.status)) this.status = 302;
 
         // html
         if (this.accepts('html')) {

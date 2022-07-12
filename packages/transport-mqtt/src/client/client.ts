@@ -1,5 +1,5 @@
 import { Abstract, Inject, Injectable, InvocationContext, lang, Token } from '@tsdi/ioc';
-import { TransportClient, Protocol, ClientOptions, EndpointBackend, RequstOption } from '@tsdi/core';
+import { TransportClient, Protocol, ClientOptions, EndpointBackend, RequstOption, RequestContext } from '@tsdi/core';
 import { MqttClient as Client, connect, IClientOptions } from 'mqtt';
 import { EmptyError, first, fromEvent, lastValueFrom, map, merge, share, take, tap } from 'rxjs';
 import { ev } from '@tsdi/transport';
@@ -51,7 +51,7 @@ export class MqttClient extends TransportClient {
         this.connection = null!;
     }
 
-    protected buildRequest(url: any, options?: RequstOption | undefined) {
+    protected override buildRequest(context: RequestContext, url: any, options?: RequstOption | undefined) {
         throw new Error('Method not implemented.');
     }
 

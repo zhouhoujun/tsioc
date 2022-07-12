@@ -142,7 +142,7 @@ export abstract class AssetServerContext<TRequest extends RequestHeader | Packet
 
         // no content
         if (null == val) {
-            if (!this.isEmptyStatus(this.status)) this.status = 204;
+            if (!this.adapter.isEmpty(this.status)) this.status = this.adapter.noContent;
             if (val === null) this.onNullBody();
             this.removeHeader(hdr.CONTENT_TYPE);
             this.removeHeader(hdr.CONTENT_LENGTH);
@@ -151,7 +151,7 @@ export abstract class AssetServerContext<TRequest extends RequestHeader | Packet
         }
 
         // set the status
-        if (!this._explicitStatus) this.status = 200;
+        if (!this._explicitStatus) this.status = this.adapter.ok;
 
         // set the content-type only if not yet set
         const setType = !this.hasHeader(hdr.CONTENT_TYPE);
@@ -187,8 +187,6 @@ export abstract class AssetServerContext<TRequest extends RequestHeader | Packet
     }
 
     protected onNullBody() { }
-
-    protected abstract isEmptyStatus(status: number): boolean;
 
     /**
      * Set Content-Length field to `n`.

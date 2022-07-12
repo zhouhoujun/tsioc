@@ -1,4 +1,4 @@
-import { Abstract, ArgumentError, EMPTY, InvocationContext, isClassType, lang, Token, Type, TypeOf } from '@tsdi/ioc';
+import { Abstract, ArgumentError, EMPTY, InvocationContext, isClassType, lang, ProviderType, Token, Type, TypeOf } from '@tsdi/ioc';
 import { Log, Logger } from '@tsdi/logs';
 import { ExecptionChain } from '../execptions/chain';
 import { ExecptionFilter } from '../execptions/filter';
@@ -11,6 +11,10 @@ import { Endpoint, EndpointBackend, InterceptorChain, InterceptorLike, Intercept
  */
 @Abstract()
 export abstract class TransportOptions<TRequest, TResponse> {
+    /**
+     * providers for transport.
+     */
+    abstract providers?: ProviderType[];
     /**
      * interceptors of endpoint.
      */
@@ -128,7 +132,9 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any> {
     protected initialize(options: TransportOptions<TRequest, TResponse>): void {
         const injector = this.context.injector;
         injector.inject({ provide: Logger, useFactory: () => this.logger });
-
+        if (options.providers && options.providers.length) {
+            injector.inject(options.providers);
+        }
         const iToken = this._iptToken = options.interceptorsToken!;
         if (!iToken) {
             throw new ArgumentError(lang.getClassName(this) + ' options interceptorsToken is missing.');

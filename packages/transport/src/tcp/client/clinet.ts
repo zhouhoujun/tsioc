@@ -184,7 +184,7 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
         socket.once(ev.CONNECT, () => {
             this.connected = true;
             defer.resolve(true);
-            this.logger.info(socket.remoteFamily, socket.remoteAddress, socket.remotePort, 'connected');
+            this.logger.info(socket.address(), '->', socket.remoteFamily, socket.remoteAddress, socket.remotePort, 'connected');
             this.source = new Observable((observer: Observer<any>) => {
                 const socket = this.socket!;
                 const onClose = (err?: any) => {
@@ -193,7 +193,7 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                         observer.error(new TcpErrorResponse(500, err));
                     } else {
                         observer.complete();
-                        this.logger.info(socket.remoteFamily, socket.remoteAddress, socket.remotePort, 'closed');
+                        this.logger.info(socket.address(), '->', socket.remoteFamily, socket.remoteAddress, socket.remotePort, 'closed');
                     }
                 }
 

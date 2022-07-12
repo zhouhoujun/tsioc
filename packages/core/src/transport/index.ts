@@ -3,6 +3,7 @@ export * from './packet';
 export * from './endpoint';
 
 export * from './coder';
+export * from './status';
 
 export * from './resolver';
 export * from './model';

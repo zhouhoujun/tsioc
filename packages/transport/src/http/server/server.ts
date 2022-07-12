@@ -1,5 +1,5 @@
-import { Inject, Injectable, InvocationContext, isBoolean, isDefined, isFunction, lang, Providers, EMPTY_OBJ} from '@tsdi/ioc';
-import { TransportServer, RunnableFactoryResolver, ModuleRef, Router, ExecptionRespondTypeAdapter } from '@tsdi/core';
+import { Inject, Injectable, InvocationContext, isBoolean, isDefined, isFunction, lang, Providers, EMPTY_OBJ } from '@tsdi/ioc';
+import { TransportServer, RunnableFactoryResolver, ModuleRef, Router, ExecptionRespondTypeAdapter, TransportStatus } from '@tsdi/core';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { Subscription } from 'rxjs';
 import { ListenOptions } from 'net';
@@ -17,7 +17,7 @@ import {
 import { MimeAdapter, MimeDb } from '../../mime';
 import { Negotiator } from '../../negotiator';
 import { CatchInterceptor, LogInterceptor, ResponseStatusFormater, RespondAdapter, RespondInterceptor } from '../../interceptors';
-import { HttpStatusFormater } from './formater';
+import { DefaultStatusFormater } from '../../interceptors/formater';
 import { db } from '../../impl/mimedb';
 import { TrasportMimeAdapter } from '../../impl/mime';
 import { TransportSendAdapter } from '../../impl/send';
@@ -25,6 +25,7 @@ import { TransportNegotiator } from '../../impl/negotiator';
 import { HttpExecptionRespondTypeAdapter, HttpRespondAdapter } from './respond';
 import { ArgumentErrorFilter, HttpFinalizeFilter } from './finalize-filter';
 import { Http2ServerOptions, HttpServerOptions, HTTP_EXECPTION_FILTERS, HTTP_SERVEROPTIONS, HTTP_SERV_INTERCEPTORS } from './options';
+import { HttpStatus } from '../status';
 
 
 
@@ -70,12 +71,13 @@ const httpOpts = {
  */
 @Injectable()
 @Providers([
-    { provide: ResponseStatusFormater, useClass: HttpStatusFormater },
-    { provide: RespondAdapter, useClass: HttpRespondAdapter },
-    { provide: ExecptionRespondTypeAdapter, useClass: HttpExecptionRespondTypeAdapter },
-    { provide: ContentSendAdapter, useClass: TransportSendAdapter },
-    { provide: MimeAdapter, useClass: TrasportMimeAdapter },
-    { provide: Negotiator, useClass: TransportNegotiator }
+    { provide: ResponseStatusFormater, useClass: DefaultStatusFormater, asDefault: true },
+    { provide: RespondAdapter, useClass: HttpRespondAdapter, asDefault: true },
+    { provide: ExecptionRespondTypeAdapter, useClass: HttpExecptionRespondTypeAdapter, asDefault: true },
+    { provide: ContentSendAdapter, useClass: TransportSendAdapter, asDefault: true },
+    { provide: MimeAdapter, useClass: TrasportMimeAdapter, asDefault: true },
+    { provide: Negotiator, useClass: TransportNegotiator, asDefault: true },
+    { provide: TransportStatus, useClass: HttpStatus, asDefault: true }
 ])
 export class HttpServer extends TransportServer<HttpServRequest, HttpServResponse, HttpContext>  {
 

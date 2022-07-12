@@ -1,4 +1,4 @@
-import { HeaderContext, Middleware, RequestMethod, TransportContext } from '@tsdi/core';
+import { HeaderContext, Middleware, RequestMethod, TransportContext, TransportError } from '@tsdi/core';
 import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
 import { hdr } from '../consts';
@@ -150,7 +150,7 @@ export class CorsMiddleware implements Middleware {
                     ...{ vary: varyWithOrigin },
                 };
 
-                ctx.status = err instanceof HttpError ? err.status || 500 : 500;
+                ctx.status = err instanceof TransportError ? err.status || ctx.adapter.serverError : ctx.adapter.serverError;
                 ctx.statusMessage = err.message || err.toString() || '';
                 ctx.get(Logger)?.error(err)
             }
@@ -183,7 +183,7 @@ export class CorsMiddleware implements Middleware {
             if (allowHeaders) {
                 ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_HEADERS, allowHeaders)
             }
-            ctx.status = 204
+            ctx.status = ctx.adapter.noContent
         }
     }
 }
