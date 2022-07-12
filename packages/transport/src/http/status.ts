@@ -1,37 +1,6 @@
-import { HttpStatusCode, statusMessage } from "@tsdi/common"
-import { TransportStatus } from "@tsdi/core"
-import { Injectable } from "@tsdi/ioc"
-
-/**
- * status codes for redirects
- */
-export const redirectStatus: Record<number, boolean> = {
-    300: true,
-    301: true,
-    302: true,
-    303: true,
-    305: true,
-    307: true,
-    308: true
-}
-
-/**
- * status codes for empty bodies
- */
-export const emptyStatus: Record<number, boolean> = {
-    204: true,
-    205: true,
-    304: true
-}
-
-/**
- * status codes for when you should retry the request
- */
-export const retryStatus: Record<number, boolean> = {
-    502: true,
-    503: true,
-    504: true
-}
+import { HttpStatusCode, statusMessage } from '@tsdi/common';
+import { TransportStatus } from '@tsdi/core';
+import { Injectable } from '@tsdi/ioc';
 
 @Injectable()
 export class HttpStatus extends TransportStatus {
@@ -92,4 +61,35 @@ export class HttpStatus extends TransportStatus {
         return statusMessage[status as HttpStatusCode];
     }
 
+}
+
+/**
+ * status codes for redirects
+ */
+const redirectStatus: Record<number, boolean> = {
+    300: true,
+    301: true,
+    302: true,
+    303: true,
+    305: true,
+    307: true,
+    308: true
+}
+
+/**
+ * status codes for empty bodies
+ */
+const emptyStatus: Record<number, boolean> = {
+    204: true,
+    205: true,
+    304: true
+}
+
+/**
+ * status codes for when you should retry the request
+ */
+const retryStatus: Record<number, boolean> = {
+    502: true,
+    503: true,
+    504: true
 }

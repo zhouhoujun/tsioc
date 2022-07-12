@@ -4,7 +4,6 @@ import {
     TransportMissingError, TransportStatus, UnauthorizedError, UnsupportedMediaTypeError
 } from '@tsdi/core';
 import { Injectable, isNumber } from '@tsdi/ioc';
-import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { MissingModelFieldError } from '@tsdi/repository';
 import { ev } from '../../consts';
 import { TcpContext } from './context';
@@ -54,7 +53,7 @@ export class TcpFinalizeFilter implements ExecptionFilter {
 
         // force text/plain
         hctx.type = 'text';
-        let statusCode = (err.status || err.statusCode) as HttpStatusCode;
+        let statusCode = (err.status || err.statusCode) as number;
         let msg: string;
         if (err instanceof TransportError) {
             msg = err.message

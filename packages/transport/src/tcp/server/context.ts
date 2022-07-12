@@ -1,9 +1,7 @@
-import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { ExecptionFilter, MiddlewareLike, HeaderContext, AssetContext, TransportContext, TransportServer } from '@tsdi/core';
 import { Injector, InvokeArguments, Token, tokenId } from '@tsdi/ioc';
 import { AssetServerContext } from '../../asset.ctx';
 import { hdr } from '../../consts';
-import { emptyStatus } from '../../http';
 import { TcpServRequest } from './request';
 import { TcpServResponse } from './response';
 
