@@ -174,7 +174,7 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
         this.socket.connect(port, address, (err?: any) => {
             if (err) return defer.reject(err);
             this.connected = true;
-            this.logger.info(socket.address, 'connected');
+            this.logger.info(socket.address(), 'connected');
             this.source = new Observable((observer: Observer<any>) => {
                 const socket = this.socket!;
 
@@ -184,7 +184,7 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
                         observer.error(new UdpErrorResponse(500, err));
                     } else {
                         observer.complete();
-                        this.logger.info(socket.address, 'closed');
+                        this.logger.info(socket.address(), 'closed');
                     }
                 }
 

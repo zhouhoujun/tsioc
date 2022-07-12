@@ -3,9 +3,9 @@ import { Injector, isArray, lang } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
+import path = require('path');
 import del = require('del');
 import { TcpClient, TcpClientOptions, TcpModule, TcpServer } from '../src/tcp';
-
 
 
 @RouteMapping('/device')
@@ -70,6 +70,8 @@ export class DeviceController {
 
 }
 
+const ipcpath = path.join(__dirname, 'myipctmp')
+
 @Module({
     baseURL: __dirname,
     imports: [
@@ -78,7 +80,7 @@ export class DeviceController {
         TcpModule.withOptions({
             timeout: 1000,
             listenOptions: {
-                path: '\\\\?\\pipe'
+                path: ipcpath
             }
         })
     ],
@@ -99,14 +101,14 @@ describe('IPC Server & IPC Client', () => {
     let client: TcpClient;
 
     before(async () => {
-        
+        await del(ipcpath);
         ctx = await Application.run(IPCTestModule);
         injector = ctx.injector;
         client = injector.resolve(TcpClient, {
             provide: TcpClientOptions,
             useValue: {
                 connectOpts: {
-                    path: '\\\\?\\pipe'
+                    path: ipcpath
                 }
             } as TcpClientOptions
         });
@@ -273,5 +275,7 @@ describe('IPC Server & IPC Client', () => {
 
     after(async () => {
         await ctx.destroy();
+        await del(ipcpath);
     })
 });
+

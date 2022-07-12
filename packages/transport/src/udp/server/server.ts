@@ -154,7 +154,7 @@ export class UdpServer extends TransportServer<UdpServRequest, UdpServResponse, 
                     observer.error(err);
                 } else {
                     observer.complete();
-                    this.logger.info(server.address, 'closed');
+                    this.logger.info(server.address(), 'closed');
                 }
             }
 

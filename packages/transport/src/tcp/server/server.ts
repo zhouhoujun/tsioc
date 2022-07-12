@@ -52,7 +52,6 @@ const defOpts = {
         Router
     ],
     listenOptions: {
-        host: 'localhost'
     }
 } as TcpServerOptions;
 

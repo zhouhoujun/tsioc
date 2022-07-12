@@ -23,10 +23,7 @@ const defaults = {
     encoder: JsonEncoder,
     decoder: JsonDecoder,
     interceptorsToken: TCP_INTERCEPTORS,
-    execptionsToken: TCP_EXECPTIONFILTERS,
-    connectOpts: {
-        host: 'localhost'
-    } as NetConnectOpts
+    execptionsToken: TCP_EXECPTIONFILTERS
 } as TcpClientOptions;
 
 
