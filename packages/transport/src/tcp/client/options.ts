@@ -1,11 +1,12 @@
 import { ClientOptions, ExecptionFilter, Interceptor } from '@tsdi/core';
 import { Abstract, tokenId } from '@tsdi/ioc';
 import { SocketConstructorOpts, NetConnectOpts } from 'net';
+import { PacketProtocolOpions } from '../packet';
 import { TcpRequest } from './request';
 import { TcpEvent } from './response';
 
 @Abstract()
-export abstract class TcpClientOptions extends ClientOptions<TcpRequest, TcpEvent> {
+export abstract class TcpClientOptions extends ClientOptions<TcpRequest, TcpEvent> implements PacketProtocolOpions {
     /**
      * buffer encoding.
      */

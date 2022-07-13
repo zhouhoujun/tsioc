@@ -1,4 +1,4 @@
-import { Decoder, ExecptionRespondTypeAdapter, Packet, Router, TransportError, TransportServer, TransportStatus, UuidGenerator } from '@tsdi/core';
+import { Decoder, ExecptionRespondTypeAdapter, Packet, Router, TransportServer, TransportStatus, UuidGenerator } from '@tsdi/core';
 import { Inject, Injectable, InvocationContext, isBoolean, isString, lang, Nullable, Providers } from '@tsdi/ioc';
 import { Server, Socket } from 'net';
 import { Observable, Observer, Subscription } from 'rxjs';
@@ -21,6 +21,7 @@ import { HttpStatus } from '../../http/status';
 import { DefaultStatusFormater } from '../../interceptors/formater';
 import { TcpArgumentErrorFilter, TcpFinalizeFilter } from './finalize-filter';
 import { TcpServerOptions, TCP_SERV_INTERCEPTORS } from './options';
+import { PacketProtocol, PacketProtocolOpions } from '../packet';
 
 
 const defOpts = {
@@ -81,6 +82,7 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
         const listenOptions = { ...defOpts.listenOptions, ...options?.listenOptions };
         const opts = this.options = { ...defOpts, ...options, listenOptions };
         this.context.setValue(TcpServerOptions, this.options);
+        this.context.setValue(PacketProtocolOpions, this.options);
 
         if (opts.middlewares) {
             opts.middlewares = opts.middlewares.filter(m => {
@@ -120,7 +122,29 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
             let body = '';
             let len = 0;
             let id: string | undefined;
-            this.createObservable(socket)
+            const isIPC = !!this.options.listenOptions.path;
+            if (isIPC) {
+                this.logger.info('Ipc client connection')
+            } else {
+                this.logger.info('Tcp client', socket.remoteFamily, socket.remoteAddress, socket.remotePort, 'connection');
+            }
+            const onClose = (err?: any) => {
+                if (err) {
+                    if (err.code !== ev.ECONNREFUSED) {
+                        this.logger.error(err);
+                    }
+                    socket.end();
+                }
+                if (isIPC) {
+                    this.logger.info('Ipc client disconnected')
+                } else {
+                    this.logger.info('Tcp client', socket.remoteFamily, socket.remoteAddress, socket.remotePort, 'disconnected');
+                }
+            }
+            socket.on(ev.CLOSE, onClose);
+            socket.on(ev.END, onClose);
+            const protocol = this.context.get(PacketProtocol);
+            protocol.read(socket)
                 .subscribe(pk => {
                     if (pk.headers) {
                         headers = pk.headers;
@@ -128,12 +152,12 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
                         body = ''
                         len = headers[hdr.CONTENT_LENGTH];
                         if (!len) {
-                            this.requestHandler(new TcpServRequest(socket, pk), new TcpServResponse(socket, pk.id))
+                            this.requestHandler(new TcpServRequest(socket, pk), new TcpServResponse(socket, pk.id!))
                         }
                     } else if (pk.id === id) {
                         body += pk.body;
                         if (Buffer.byteLength(body) >= len) {
-                            this.requestHandler(new TcpServRequest(socket, { id: pk.id, headers, body }), new TcpServResponse(socket, pk.id));
+                            this.requestHandler(new TcpServRequest(socket, { id: pk.id, headers, body }), new TcpServResponse(socket, pk.id!));
                             len = -1;
                             body = '';
                         }
@@ -143,99 +167,6 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
 
         this.server.listen(this.options.listenOptions, defer.resolve);
         await defer.promise;
-    }
-
-    protected createObservable(socket: Socket): Observable<Packet> {
-        const isIPC = !!this.options.listenOptions.path;
-        if (isIPC) {
-            this.logger.info('Ipc client connection')
-        } else {
-            this.logger.info('Tcp client', socket.remoteFamily, socket.remoteAddress, socket.remotePort, 'connection');
-        }
-        return new Observable((observer: Observer<any>) => {
-            const onClose = (err?: any) => {
-                if (err) {
-                    observer.error(err);
-                } else {
-                    observer.complete();
-                    if (isIPC) {
-                        this.logger.info('Ipc client disconnected')
-                    } else {
-                        this.logger.info('Tcp client', socket.remoteFamily, socket.remoteAddress, socket.remotePort, 'disconnected');
-                    }
-                }
-            }
-
-            const onError = (err: any) => {
-                if (err.code !== ev.ECONNREFUSED) {
-                    this.logger.error(err);
-                }
-                socket.end();
-                observer.error(err);
-            };
-
-            let buffer = '';
-            const delimiter = this.options.delimiter!;
-            const uuidgr = this.context.resolve(UuidGenerator);
-            const onData = (data: Buffer | string) => {
-                try {
-                    buffer += (isString(data) ? data : new TextDecoder().decode(data));
-                    buffer += (isString(data) ? data : new TextDecoder().decode(data));
-                    const idx = buffer.indexOf(delimiter);
-                    if (idx <= 0) {
-                        if (idx === 0) {
-                            buffer = '';
-                        }
-                        return;
-                    }
-
-                    let rest: string | undefined;
-
-                    const pkg = buffer.substring(0, idx);
-                    if (idx < buffer.length - 1) {
-                        rest = buffer.substring(idx + 1);
-                    }
-                    if (pkg) {
-                        buffer = '';
-                        const pktype = parseInt(pkg.slice(0, 1));
-                        const pidx = uuidgr.uuidLen + 1;
-                        const id = pkg.slice(1, pidx);
-                        if (pktype == 0) {
-                            const packet = this.context.get(Decoder).decode(pkg.slice(pidx));
-                            observer.next({ ...packet, id });
-                        } else if (pktype == 1) {
-                            const body = pkg.slice(pidx);
-                            observer.next({ id, body });
-                        }
-                    }
-                } catch (err: any) {
-                    socket.emit(ev.ERROR, err.message);
-                    socket.end();
-                    observer.error(err);
-                }
-            };
-
-            const onEnd = () => {
-                socket.end();
-                observer.complete();
-            };
-
-            socket.on(ev.CLOSE, onClose);
-            socket.on(ev.ERROR, onError);
-            socket.on(ev.ABOUT, onError);
-            socket.on(ev.TIMEOUT, onError);
-            socket.on(ev.DATA, onData);
-            socket.on(ev.END, onEnd);
-
-            return () => {
-                socket.off(ev.DATA, onData);
-                socket.off(ev.END, onEnd);
-                socket.off(ev.ERROR, onError);
-                socket.off(ev.ABOUT, onError);
-                socket.off(ev.TIMEOUT, onError);
-                socket.emit(ev.CLOSE);
-            }
-        });
     }
 
     protected bindEvent(ctx: TcpContext, cancel: Subscription): void {

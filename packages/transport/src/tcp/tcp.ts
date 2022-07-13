@@ -2,6 +2,7 @@ import { Module, RouterModule, TransformModule } from '@tsdi/core';
 import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
 import { BasicMimeDb, MimeDb } from '../mime';
 import { TcpClient } from './client/clinet';
+import { DelimiterProtocol, PacketProtocol } from './packet';
 import { TcpServerOptions } from './server/options';
 import { TcpServer } from './server/server';
 
@@ -12,6 +13,7 @@ import { TcpServer } from './server/server';
     ],
     providers: [
         { provide: MimeDb, useClass: BasicMimeDb, asDefault: true },
+        { provide: PacketProtocol, useClass: DelimiterProtocol, asDefault: true },
         TcpClient,
         TcpServer
     ]

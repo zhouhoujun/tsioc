@@ -1,18 +1,19 @@
 import {
     EndpointBackend, OnDispose, Packet, RequestContext, ResponseJsonParseError,
-    TransportClient, UuidGenerator, createEndpoint, Encoder, Decoder
+    TransportClient, UuidGenerator, createEndpoint
 } from '@tsdi/core';
 import { EMPTY, Inject, Injectable, InvocationContext, isString, lang, Nullable, type_undef } from '@tsdi/ioc';
 import { Socket, IpcNetConnectOpts } from 'net';
-import { filter, Observable, Observer, share, throwError } from 'rxjs';
+import { filter, Observable, Observer, throwError } from 'rxjs';
 import { TcpRequest } from './request';
 import { TcpErrorResponse, TcpEvent, TcpResponse } from './response';
 import { JsonDecoder, JsonEncoder } from '../../coder';
 import { ev, hdr } from '../../consts';
-import { writeSocket } from '../../utils';
 import { ResHeaderItemType } from '../../headers';
 import { TcpPathInterceptor } from './path';
 import { TcpClientOptions, TCP_EXECPTIONFILTERS, TCP_INTERCEPTORS } from './options';
+import { TcpBodyInterceptor } from './body';
+import { PacketProtocolOpions, PacketProtocol } from '../packet';
 
 
 
@@ -47,9 +48,10 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
 
     protected override initOption(options?: TcpClientOptions): TcpClientOptions {
         const connectOpts = { ...defaults.connectOpts, ...options?.connectOpts };
-        const interceptors = [TcpPathInterceptor, ...options?.interceptors ?? EMPTY];
+        const interceptors = [...options?.interceptors ?? EMPTY, TcpPathInterceptor, TcpBodyInterceptor];
         this.option = { ...defaults, ...options, connectOpts, interceptors };
         this.context.setValue(TcpClientOptions, this.option);
+        this.context.setValue(PacketProtocolOpions, this.option);
         return this.option;
     }
 
@@ -58,7 +60,6 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
             if (!this.socket) return throwError(() => new TcpErrorResponse(0, 'has not connected.'));
             const ctx = context as RequestContext;
             const socket = this.socket;
-
             const ac = this.getAbortSignal(ctx);
             return new Observable((observer: Observer<any>) => {
 
@@ -68,7 +69,9 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                 let status: number;
                 let bodyType: string, bodyLen = 0;
 
-                const sub = this.source.pipe(
+                const protocol = this.context.get(PacketProtocol);
+
+                const sub = protocol.read(socket).pipe(
                     filter(pk => pk.id === req.id)
                 ).subscribe({
                     complete: () => observer.complete(),
@@ -95,6 +98,7 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                             }
                         }
                         body = bodybuf;
+
 
                         let buffer: Buffer;
                         let originalBody: string;
@@ -146,13 +150,13 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                     }
                 });
 
-                const encoder = ctx.get(Encoder);
-                const buf = encoder.encode(req.serializeHeader());
-                const { delimiter, encoding } = this.option;
-
-                writeSocket(socket, buf, delimiter!, 0, encoding);
-                writeSocket(socket, encoder.encode(req.serializeBody()), delimiter!, 1, encoding)
-
+                if (!req.hasHeader(hdr.ACCEPT)) {
+                    req.setHeader(hdr.ACCEPT, 'application/json, text/plain, */*');
+                }
+                protocol.write(socket, req.serializePacket());
+                // const buf = encoder.encode({ id: req.id, url: req.url, method: req.method, params: req.params, headers: req.getHeaders() });
+                // writeSocket(socket, req.id, 0, buf, delimiter!, encoding);
+                // writeSocket(socket, req.id, 1, encoder.encode(req.body), delimiter!, encoding)
 
                 return () => {
                     if (ac && !ctx.destroyed) {
@@ -169,13 +173,24 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
 
     protected async connect(): Promise<void> {
         if (this.connected) return;
-        if (this.socket) {
-            this.socket.destroy()
-        }
-        const socket = this.socket = new Socket(this.option.socketOpts);
-        const defer = lang.defer();
 
+        const socket = this.socket ?? new Socket(this.option.socketOpts);
+        if (!this.socket) {
+            this.socket = socket;
+            const closed =  () => {
+                this.connected = false;
+                if (isIPC) {
+                    this.logger.info('Disconnected ipc server');
+                } else {
+                    this.logger.info('Disconnected tcp server', socket.remoteFamily, socket.remoteAddress, socket.remotePort);
+                }
+            };
+            socket.on(ev.CLOSE, closed);
+            socket.on(ev.END, closed);
+        }
+        const defer = lang.defer();
         const isIPC = !!(this.option.connectOpts as IpcNetConnectOpts).path;
+
         socket.once(ev.ERROR, defer.reject);
         socket.once(ev.CONNECT, () => {
             this.connected = true;
@@ -185,94 +200,6 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
             } else {
                 this.logger.info('Connected tcp server', socket.remoteFamily, socket.remoteAddress, socket.remotePort);
             }
-            this.source = new Observable((observer: Observer<any>) => {
-                const socket = this.socket!;
-                const onClose = (err?: any) => {
-                    this.connected = false;
-                    if (err) {
-                        observer.error(new TcpErrorResponse(500, err));
-                    } else {
-                        observer.complete();
-                        if (isIPC) {
-                            this.logger.info('Disconnected ipc server');
-                        } else {
-                            this.logger.info('Disconnected tcp server', socket.remoteFamily, socket.remoteAddress, socket.remotePort);
-                        }
-                    }
-                }
-
-                const onError = (err: any) => {
-                    this.connected = false;
-                    if (err.code !== ev.ECONNREFUSED) {
-                        this.logger.error(err);
-                    }
-                    observer.error(new TcpErrorResponse(500, err.message));
-                };
-
-                let buffer = '';
-                const delimiter = this.option.delimiter!;
-                const uuidgr = this.context.resolve(UuidGenerator);
-                const onData = (data: Buffer | string) => {
-                    try {
-                        buffer += (isString(data) ? data : new TextDecoder().decode(data));
-                        const idx = buffer.indexOf(delimiter);
-                        if (idx <= 0) {
-                            if (idx === 0) {
-                                buffer = '';
-                            }
-                            return;
-                        }
-
-                        let rest: string | undefined;
-
-                        const pkg = buffer.substring(0, idx);
-                        if (idx < buffer.length - 1) {
-                            rest = buffer.substring(idx + 1);
-                        }
-                        if (pkg) {
-                            buffer = '';
-                            const pktype = parseInt(pkg.slice(0, 1));
-                            const pidx = uuidgr.uuidLen + 1;
-                            const id = pkg.slice(1, pidx);
-                            if (pktype == 0) {
-                                const packet = this.context.get(Decoder).decode(pkg.slice(pidx));
-                                observer.next({ ...packet, id });
-                            } else if (pktype == 1) {
-                                const body = pkg.slice(pidx);
-                                observer.next({ id, body });
-                            }
-                        }
-                        if (rest) {
-                            onData(rest);
-                        }
-                    } catch (err: any) {
-                        socket.emit(ev.ERROR, err.message);
-                        socket.end();
-                        observer.error(new TcpErrorResponse(err.status ?? 500, err.message));
-                    }
-                };
-
-                const onEnd = () => {
-                    this.connected = false;
-                    observer.complete();
-                };
-
-                socket.on(ev.CLOSE, onClose);
-                socket.on(ev.ERROR, onError);
-                socket.on(ev.ABOUT, onError);
-                socket.on(ev.TIMEOUT, onError);
-                socket.on(ev.DATA, onData);
-                socket.on(ev.END, onEnd);
-
-                return () => {
-                    socket.off(ev.DATA, onData);
-                    socket.off(ev.END, onEnd);
-                    socket.off(ev.ERROR, onError);
-                    socket.off(ev.ABOUT, onError);
-                    socket.off(ev.TIMEOUT, onError);
-                    socket.emit(ev.CLOSE);
-                }
-            }).pipe(share());
         });
 
         this.socket.connect(this.option.connectOpts);

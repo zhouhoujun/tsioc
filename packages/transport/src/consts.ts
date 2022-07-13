@@ -41,6 +41,7 @@ export namespace ev {
  */
 export namespace hdr {
 
+    export const REQUEST_TYPE = 'req-type';
     /**
      * Set or get Content-Type response header with `type`.
      */
@@ -59,7 +60,7 @@ export namespace hdr {
 
     export const REFERRER = 'referrer';
 
-    export const REFERRER_POLICY =  'referrer-policy';
+    export const REFERRER_POLICY = 'referrer-policy';
 
     export const LOCATION = 'location';
 

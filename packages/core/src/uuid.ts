@@ -2,8 +2,10 @@ import { Abstract, Injectable } from '@tsdi/ioc';
 
 @Abstract()
 export abstract class UuidGenerator {
-
-    abstract get uuidLen(): number;
+    /**
+     * len of uuid.
+     */
+    abstract get len(): number;
     /**
      * generate uuid.
      *
@@ -21,7 +23,7 @@ export class RandomUuidGenerator implements UuidGenerator {
 
     }
 
-    readonly uuidLen = 36;
+    readonly len = 36;
 
     /**
      * generate uuid.

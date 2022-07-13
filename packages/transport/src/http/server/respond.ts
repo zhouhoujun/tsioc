@@ -36,6 +36,7 @@ export class HttpRespondAdapter implements RespondAdapter {
         if (null == body) {
             if (ctx._explicitNullBody) {
                 res.removeHeader(hdr.CONTENT_TYPE);
+                res.removeHeader(hdr.CONTENT_LENGTH);
                 res.removeHeader(hdr.TRANSFER_ENCODING);
                 return res.end()
             }

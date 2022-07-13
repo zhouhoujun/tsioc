@@ -1,14 +1,13 @@
 import {
-    BadRequestError, Encoder, ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
+    BadRequestError, ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
     ForbiddenError, InternalServerError, NotFoundError, TransportArgumentError, TransportError,
     TransportMissingError, TransportStatus, UnauthorizedError, UnsupportedMediaTypeError
 } from '@tsdi/core';
 import { Injectable, isNumber } from '@tsdi/ioc';
 import { MissingModelFieldError } from '@tsdi/repository';
 import { ev } from '../../consts';
+import { PacketProtocol } from '../packet';
 import { TcpContext } from './context';
-import { TcpServerOptions } from './options';
-import { writeSocket } from '../../utils';
 
 
 @Injectable({ static: true })
@@ -71,9 +70,10 @@ export class TcpFinalizeFilter implements ExecptionFilter {
         hctx.statusMessage = msg;
         // hctx.length = Buffer.byteLength(msg);
 
-        const encoder = ctx.get(Encoder);
-        const { delimiter, encoding } = ctx.get(TcpServerOptions);
-        await writeSocket(res.socket, encoder.encode(res.serializeHeader()), delimiter!, 0, encoding);
+        ctx.get(PacketProtocol).write(res.socket, res.serializePacket());
+        // const encoder = ctx.get(Encoder);
+        // const { delimiter, encoding } = ctx.get(TcpServerOptions);
+        // await writeSocket(res.socket, res.id, 0, encoder.encode(res.serializeHeader()), delimiter!,encoding);
     }
 
 }

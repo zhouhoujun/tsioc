@@ -1,4 +1,4 @@
-import { Inject, Injectable, InvocationContext, lang, Nullable, Providers, Token } from '@tsdi/ioc';
+import { EMPTY, Inject, Injectable, InvocationContext, lang, Nullable, Providers, Token } from '@tsdi/ioc';
 import { RequestMethod, TransportClient, EndpointBackend, OnDispose, InterceptorLike, RequstOption, ResponseAs, RequestContext, mths, TransportStatus } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpHeaders, HttpParams, HttpParamsOptions, HttpResponse } from '@tsdi/common';
 import { Observable } from 'rxjs';
@@ -18,7 +18,6 @@ import { HttpStatus } from '../status';
 
 
 const defOpts = {
-    interceptors: [],
     interceptorsToken: HTTP_INTERCEPTORS,
     execptionsToken: HTTP_EXECPTIONFILTERS,
 } as HttpClientOptions;
@@ -62,9 +61,9 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
     }
 
     protected override initOption(options?: HttpClientOptions): HttpClientOptions {
-        this.opts = { ...defOpts, ...options } as HttpClientOptions;
+        const interceptors = [...options?.interceptors ?? EMPTY, NormlizePathInterceptor, NormlizeBodyInterceptor]
+        this.opts = { ...defOpts, ...options, interceptors } as HttpClientOptions;
         this.context.setValue(HttpClientOptions, this.opts);
-        this.opts.interceptors?.push(NormlizePathInterceptor, NormlizeBodyInterceptor);
         return this.opts;
     }
 

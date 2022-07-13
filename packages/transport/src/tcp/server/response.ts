@@ -12,7 +12,7 @@ export class TcpServResponse extends MapHeaders<ResHeaderItemType> implements Re
     body: any;
     private _sent = false;
 
-    constructor(readonly socket: Socket, readonly id?: string) {
+    constructor(readonly socket: Socket, readonly id: string) {
         super()
     }
 
@@ -37,10 +37,10 @@ export class TcpServResponse extends MapHeaders<ResHeaderItemType> implements Re
         return this._sent;
     }
 
-    serializeHeader(): Packet {
-        this._sent = true;
-        return { id: this.id, headers: this.getHeaders() };
+    serializePacket(): Packet {
+        return { id: this.id, headers: this.getHeaders(), body: this.body };
     }
+
 
 }
 

@@ -4,6 +4,7 @@ import { ListenOptions, ServerOpts as TcpServerOpts } from 'net';
 import { SessionOptions, ContentOptions } from '../../middlewares';
 
 import { MimeSource } from '../../mime';
+import { PacketProtocolOpions } from '../packet';
 import { TcpServRequest } from './request';
 import { TcpServResponse } from './response';
 
@@ -12,7 +13,7 @@ import { TcpServResponse } from './response';
  * TCP server options.
  */
 @Abstract()
-export abstract class TcpServerOptions extends ServerOptions<TcpServRequest, TcpServResponse> {
+export abstract class TcpServerOptions extends ServerOptions<TcpServRequest, TcpServResponse> implements PacketProtocolOpions  {
     /**
      * package delimiter code.
      */
