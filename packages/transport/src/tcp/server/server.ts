@@ -150,8 +150,9 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
                         headers = pk.headers;
                         id = pk.id;
                         body = ''
+                        const ctype = headers[hdr.CONTENT_TYPE];
                         len = headers[hdr.CONTENT_LENGTH];
-                        if (!len) {
+                        if (!ctype) {
                             this.requestHandler(new TcpServRequest(socket, pk), new TcpServResponse(socket, pk.id!))
                         }
                     } else if (pk.id === id) {

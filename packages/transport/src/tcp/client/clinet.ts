@@ -82,7 +82,7 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                             bodyLen = headers[hdr.CONTENT_LENGTH] as number ?? 0;
                             bodyType = headers[hdr.CONTENT_TYPE] as string;
                             status = headers[hdr.STATUS] as number ?? 0;
-                            if (!bodyLen) {
+                            if (!bodyType) {
                                 observer.next(new TcpResponse({
                                     id: pk.id,
                                     headers
@@ -118,7 +118,8 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
                                 try {
                                     body = body.replace(XSSI_PREFIX, '');
                                     // Attempt the parse. If it fails, a parse error should be delivered to the user.
-                                    body = body !== '' ? JSON.parse(body) : null
+                                    body = body !== '' ? JSON.parse(body) : null;
+                                    ok = true;
                                 } catch (err) {
                                     // Since the JSON.parse failed, it's reasonable to assume this might not have been a
                                     // JSON response. Restore the original body (including any XSSI prefix) to deliver

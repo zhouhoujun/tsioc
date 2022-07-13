@@ -49,9 +49,9 @@ export class DelimiterProtocol extends PacketProtocol {
     }
 
     async write(socket: Socket, data: Packet): Promise<void> {
-        const { id, headers, body } = data;
+        const { id, body } = data;
         let defer = lang.defer();
-        const hpkg = this.encoder.encode({ ...data, body: null }) + this.option.delimiter!;
+        const hpkg = this.encoder.encode(lang.omit(data, 'body')) + this.option.delimiter!;
         socket.write(hpkg, this.option.encoding, err => {
             if (!err) return defer.resolve();
             defer.reject(err);
