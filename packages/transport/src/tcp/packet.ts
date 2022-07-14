@@ -5,7 +5,7 @@ import { Socket } from 'net';
 import { Readable } from 'stream';
 import { TcpErrorResponse } from './client/response';
 import { ev } from '../consts';
-import { isBuffer, isStream } from '../utils';
+import { isStream } from '../utils';
 
 /**
  * Packet Protocol options.
@@ -33,7 +33,7 @@ export class DelimiterProtocol extends PacketProtocol {
 
     constructor(private option: PacketProtocolOpions, private encoder: Encoder, private decoder: Decoder) {
         super();
-        if(!option.delimiter) {
+        if (!option.delimiter) {
             throw new ArgumentError('no delimiter of Protocol option')
         }
     }
@@ -50,9 +50,11 @@ export class DelimiterProtocol extends PacketProtocol {
 
     async write(socket: Socket, data: Packet): Promise<void> {
         const { id, body } = data;
+        const delimiter = this.option.delimiter!;
+        const encoding = this.option.encoding;
         let defer = lang.defer();
-        const hpkg = this.encoder.encode(lang.omit(data, 'body')) + this.option.delimiter!;
-        socket.write(hpkg, this.option.encoding, err => {
+        const hpkg = this.encoder.encode(lang.omit(data, 'body')) + delimiter;
+        socket.write(hpkg, encoding, err => {
             if (!err) return defer.resolve();
             defer.reject(err);
             socket.emit(ev.ERROR, err);
@@ -63,6 +65,7 @@ export class DelimiterProtocol extends PacketProtocol {
             defer = lang.defer();
             if (isStream(body)) {
                 const defer = lang.defer();
+                id && socket.write(id, encoding);
                 body.once(ev.ERROR, (err) => {
                     defer.reject(err)
                 });
@@ -72,12 +75,13 @@ export class DelimiterProtocol extends PacketProtocol {
                 body.pipe(socket);
                 return await defer.promise
                     .then(() => {
+                        socket.write(delimiter);
                         if (body instanceof Readable) body.destroy();
                     })
             }
 
-            const bpkg = this.encoder.encode({ id, body }) + this.option.delimiter!;
-            socket.write(bpkg, this.option.encoding, err => {
+            const bpkg = this.encoder.encode({ id, body }) + delimiter;
+            socket.write(bpkg, encoding, err => {
                 if (!err) return defer.resolve();
                 defer.reject(err);
                 socket.emit(ev.ERROR, err);
@@ -90,14 +94,14 @@ export class DelimiterProtocol extends PacketProtocol {
         return new Observable((observer: Observer<any>) => {
             const onClose = (err?: any) => {
                 if (err) {
-                    observer.error(new TcpErrorResponse(500, err));
+                    observer.error(err);
                 } else {
                     observer.complete();
                 }
             }
 
             const onError = (err: any) => {
-                observer.error(new TcpErrorResponse(500, err.message));
+                observer.error(err);
             };
 
             let buffer = '';
@@ -117,7 +121,7 @@ export class DelimiterProtocol extends PacketProtocol {
 
                     const pkg = buffer.substring(0, idx);
                     if (idx < buffer.length - 1) {
-                        rest = buffer.substring(idx + 1);
+                        rest = buffer.substring(idx + delimiter.length);
                     }
                     if (pkg) {
                         buffer = '';
@@ -130,7 +134,7 @@ export class DelimiterProtocol extends PacketProtocol {
                 } catch (err: any) {
                     socket.emit(ev.ERROR, err.message);
                     socket.end();
-                    observer.error(new TcpErrorResponse(err.status ?? 500, err.message));
+                    observer.error(err);
                 }
             };
 

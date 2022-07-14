@@ -87,7 +87,10 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         if (ctx.sent || (this.protocol && this.protocol !== ctx.protocol)) return await next();
 
         const method = this.getRouteMetaData(ctx) as DecorDefine<ProtocolRouteMappingMetadata>;
-        if (!method || !method.propertyKey) return await next();
+        if (!method || !method.propertyKey) {
+            ctx.status = ctx.adapter.notFound;
+            return await next();
+        }
 
         const metadate = method.metadata;
         if (metadate.protocol && this.protocol !== metadate.protocol) return await next();

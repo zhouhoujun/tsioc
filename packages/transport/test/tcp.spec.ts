@@ -22,13 +22,13 @@ export class DeviceController {
         return { id, year, createAt };
     }
 
-    @RouteMapping('/usege/find', 'GET')
+    @RouteMapping('/usege/find', 'MESSAGE')
     agela(@RequestParam('age', { pipe: 'int' }) limit: number) {
         console.log('limit:', limit);
         return limit;
     }
 
-    @RouteMapping('/:age/used', 'GET')
+    @RouteMapping('/:age/used', 'MESSAGE')
     resfulquery(@RequestPath('age', { pipe: 'int' }) age1: number) {
         console.log('age1:', age1);
         if (age1 <= 0) {
@@ -125,7 +125,7 @@ describe('TCP Server & TCP Client', () => {
 
 
     it('not found', async () => {
-        const a = await lastValueFrom(client.send('/device/init5', { method: 'EVENT', params: { name: 'test' } })
+        const a = await lastValueFrom(client.send('/device/init5', { method: 'GET', params: { name: 'test' } })
             .pipe(
                 catchError(err => {
                     console.log(err);

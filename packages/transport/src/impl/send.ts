@@ -1,7 +1,7 @@
 import { BadRequestError, ForbiddenError, InternalServerError, NotFoundError, PROCESS_ROOT } from '@tsdi/core';
 import { Injectable, isArray } from '@tsdi/ioc';
 import { normalize, resolve, basename, extname, parse, sep, isAbsolute, join } from 'path';
-import { existsSync, stat, createReadStream } from 'fs';
+import { existsSync, Stats, stat, createReadStream } from 'fs';
 import { promisify } from 'util';
 import { ContentSendAdapter, SendOption } from '../middlewares/send';
 import { ev, hdr } from '../consts';
@@ -66,7 +66,7 @@ export class TransportSendAdapter extends ContentSendAdapter {
         });
         if (!filename) return filename;
         // stat
-        let stats
+        let stats: Stats;
         try {
             stats = await statify(filename);
             // Format the path to serve static file servers

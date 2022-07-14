@@ -65,43 +65,6 @@ export class TcpRespondAdapter extends RespondAdapter {
         }
         return protocol.write(res.socket, res.serializePacket());
 
-        // if (isString(body)) {
-        //     if (!res.sent) await writeSocket(res.socket, res.id, 0, encoder.encode(res.serializeHeader()), delimiter, encoding);
-        //     await writeSocket(res.socket, res.id!, 1, encoder.encode({ id: res.id, body }), delimiter, encoding);
-        //     return res;
-        // }
-
-        // if (isBuffer(body)) {
-        //     if (!res.sent) await writeSocket(res.socket, res.id, 0, encoder.encode(res.serializeHeader()), delimiter, encoding);
-        //     await writeSocket(res.socket, res.id!, 1, encoder.encode({ id: res.id, body }), delimiter, encoding);
-        //     return res;
-        // }
-
-        // if (isStream(body)) {
-        //     if (!res.sent) await writeSocket(res.socket, res.id, 0, encoder.encode(res.serializeHeader()), delimiter, encoding);
-        //     res.socket.write(1 + res.id!);
-        //     const defer = lang.defer();
-        //     body.once(ev.ERROR, (err) => {
-        //         defer.reject(err)
-        //     });
-        //     body.once(ev.END, () => {
-        //         defer.resolve()
-        //     });
-        //     body.pipe(res.socket);
-        //     return await defer.promise
-        //         .then(() => {
-        //             if (body instanceof Readable) body.destroy();
-        //             return res;
-        //         })
-        // }
-
-        // body = JSON.stringify(body);
-        // if (!res.sent) {
-        //     ctx.length = Buffer.byteLength(body);
-        //     await writeSocket(res.socket, res.id, 0, encoder.encode(res.serializeHeader()), delimiter, encoding);
-        // }
-        // await writeSocket(res.socket, res.id, 1, encoder.encode({ body }), delimiter, encoding);
-        // return res;
     }
 
 }

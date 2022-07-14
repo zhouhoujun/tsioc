@@ -112,7 +112,6 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
      * @param method 
      */
     abstract missingError(missings: Parameter[], type: ClassType, method: string): Error;
-
     /**
      * context destroyed or not.
      */

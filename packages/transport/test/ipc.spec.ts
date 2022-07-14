@@ -23,13 +23,13 @@ export class DeviceController {
         return { id, year, createAt };
     }
 
-    @RouteMapping('/usege/find', 'GET')
+    @RouteMapping('/usege/find', 'MESSAGE')
     agela(@RequestParam('age', { pipe: 'int' }) limit: number) {
         console.log('limit:', limit);
         return limit;
     }
 
-    @RouteMapping('/:age/used', 'GET')
+    @RouteMapping('/:age/used', 'MESSAGE')
     resfulquery(@RequestPath('age', { pipe: 'int' }) age1: number) {
         console.log('age1:', age1);
         if (age1 <= 0) {
@@ -129,7 +129,7 @@ describe('IPC Server & IPC Client', () => {
 
 
     it('not found', async () => {
-        const a = await lastValueFrom(client.send('/device/init5', { method: 'EVENT', params: { name: 'test' } })
+        const a = await lastValueFrom(client.send('/device/init5', { method: 'GET', params: { name: 'test' } })
             .pipe(
                 catchError(err => {
                     console.log(err);
@@ -140,7 +140,7 @@ describe('IPC Server & IPC Client', () => {
     });
 
     it('bad request', async () => {
-        const a = await lastValueFrom(client.send('/device/-1/used', { observe: 'response', method: 'GET', params: { age: '20' } })
+        const a = await lastValueFrom(client.send('/device/-1/used', { observe: 'response', params: { age: '20' } })
             .pipe(
                 catchError(err => {
                     console.log(err);

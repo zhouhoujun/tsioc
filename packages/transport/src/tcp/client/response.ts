@@ -1,45 +1,70 @@
 import { ResponsePacket } from '@tsdi/core';
-import { hdr } from '../../consts';
-import { MapHeaders, ResHeaderItemType } from '../../headers';
+import { ResHeaderItemType } from '../../headers';
 
 /**
  * tcp error response.
  */
 export class TcpErrorResponse {
-    constructor(readonly status: number, readonly statusMessage: string, readonly error?: any) {
+    readonly id: string;
+    readonly error: any;
+    readonly url: string;
+    readonly status: number;
+    get statusText(): string {
+        return this.statusMessage;
+    }
+    readonly statusMessage: string;
+    readonly headers: Record<string, ResHeaderItemType>;
 
+    constructor(options: {
+        id: string;
+        url?: string,
+        headers?: Record<string, ResHeaderItemType>;
+        status: number;
+        error?: any;
+        statusText?: string;
+        statusMessage?: string;
+    }) {
+        this.id = options.id;
+        this.url = options.url ?? '';
+        this.status = options.status;
+        this.statusMessage = options.statusMessage ?? options.statusText ?? '';
+        this.error = options.error;
+        this.headers = options.headers ?? {};
     }
 }
 
 /**
  * TcpResponse.
  */
-export class TcpResponse<T = any> extends MapHeaders<ResHeaderItemType> implements ResponsePacket<T> {
+export class TcpResponse<T = any> implements ResponsePacket<T> {
     readonly id: string;
     readonly body: T | null;
+    readonly url: string;
+    readonly status: number;
+    get statusText(): string {
+        return this.statusMessage;
+    }
+
+    readonly statusMessage: string;
+    readonly headers: Record<string, ResHeaderItemType>;
 
     constructor(options: {
-        id?: string;
+        id: string;
+        url?: string,
         headers?: Record<string, ResHeaderItemType>;
+        status: number;
+        statusText?: string;
+        statusMessage?: string;
         body?: T;
     }) {
-        super();
         this.id = options.id ?? '';
-        options.headers && this.setHeaders(options.headers);
+        this.url = options.url ?? '';
+        this.status = options.status;
+        this.statusMessage = options.statusMessage ?? options.statusText ?? '';
         this.body = options.body ?? null;
+        this.headers = options.headers ?? {};
     }
 
-    get status(): number {
-        return this.getHeader(hdr.STATUS) as number ?? 0;
-    }
-
-    get statusMessage(): string {
-        return this.getHeader(hdr.STATUS_MESSAGE) as string;
-    }
-
-    get ok(): boolean {
-        return this.status === 200;
-    }
 }
 
 export type TcpEvent<T = any> = TcpErrorResponse | TcpResponse<T>;

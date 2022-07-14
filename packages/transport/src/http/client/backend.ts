@@ -104,7 +104,7 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                     status = body ? HttpStatusCode.Ok : 0
                 }
 
-                ok = status >= 200 && status < 300;
+                ok = ctx.adapter.isOk(status);
 
                 if (ctx.adapter.isEmpty(status)) {
                     observer.next(new HttpHeaderResponse({
@@ -504,7 +504,7 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 const headers = new HttpHeaders(hdrs as Record<string, any>);
                 status = hdrs[HTTP2_HEADER_STATUS] ?? 0;
 
-                ok = status >= 200 && status < 300;
+                ok = ctx.adapter.isOk(status);
                 statusText = statusMessage[status as HttpStatusCode] ?? 'OK';
 
                 if (ctx.adapter.isEmpty(status)) {
