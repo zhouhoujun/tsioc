@@ -1,4 +1,4 @@
-import { EMPTY_OBJ, Injectable, isDefined, isUndefined, lang, type_undef } from '@tsdi/ioc';
+import { EMPTY_OBJ, Injectable, isDefined, isString, isUndefined, lang, type_undef } from '@tsdi/ioc';
 import { EndpointBackend, EndpointContext, HttpRequestMethod, mths, TransportClient } from '@tsdi/core';
 import {
     global, isBlob, isFormData, HttpRequest, HttpEvent, HttpHeaders, HttpResponse, HttpErrorResponse,
@@ -488,10 +488,10 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
 
             const ac = this.getAbortSignal(ctx);
             const request = ctx.get(CLIENT_HTTP2SESSION).request(reqHeaders, { ...this.option.requestOptions, signal: ac?.signal } as http2.ClientSessionRequestOptions);
-            request.setEncoding('utf8');
+            // request.setEncoding('utf8');
 
 
-            let onData: (chunk: string) => void;
+            let onData: (chunk: Buffer) => void;
             let onEnd: () => void;
             let status: number, statusText: string;
             let completed = false;
@@ -524,15 +524,20 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
 
                 // HTTP-network fetch step 12.1.1.3
                 const codings = headers.get(hdr.CONTENT_ENCODING);
-                let strdata = '';
-                onData = (chunk: string) => {
-                    strdata += chunk;
+                const data: any[] = [];
+                let bytes = 0;
+                // let strdata = '';
+                onData = (chunk: Buffer) => {
+                    // strdata += chunk;
+                    bytes += chunk.length;
+                    data.push(chunk);
                 };
                 onEnd = async () => {
                     completed = true;
-                    body = strdata;
+                    // body = strdata;
+                    body = Buffer.concat(data, bytes);
                     if (status === 0) {
-                        status = isDefined(body) ? HttpStatusCode.Ok : 0
+                        status = bytes ? HttpStatusCode.Ok : 0
                     }
 
                     if (status && ctx.adapter.isRedirect(status)) {
@@ -683,8 +688,7 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                                     body = unBr;
                                 }
                                 if (body instanceof PassThrough) {
-                                    const buffer = await toBuffer(body);
-                                    body = new TextDecoder().decode(buffer);
+                                    body = await toBuffer(body);
                                 }
                             } catch (err) {
                                 ok = false;
@@ -709,7 +713,9 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                         switch (type) {
                             case 'json':
                                 // Save the original body, before attempting XSSI prefix stripping.
-                                // body = new TextDecoder().decode(buffer);
+                                if (isBuffer(body)) {
+                                    body = new TextDecoder().decode(body);
+                                }
                                 originalBody = body;
                                 try {
                                     body = body.replace(XSSI_PREFIX, '');
@@ -733,16 +739,18 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                                 break;
 
                             case 'arraybuffer':
-                                buffer = Buffer.from(body);
+                                buffer = body;
                                 body = buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
                                 break;
                             case 'blob':
-                                buffer = Buffer.from(body);
+                                buffer = body;
                                 body = new Blob([buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)], {
                                     type: headers.get(hdr.CONTENT_TYPE) as string
                                 });
                                 break;
                             case 'text':
+                                body = new TextDecoder().decode(body);
+                                break;
                             default:
                                 break;
                         }

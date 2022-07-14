@@ -1,4 +1,4 @@
-import { ArgumentError, isFunction, isString, lang } from '@tsdi/ioc';
+import { ArgumentError, isFunction, isString } from '@tsdi/ioc';
 import { ResponseHeader } from '@tsdi/core';
 import { Stream, PassThrough } from 'stream';
 import { EventEmitter } from 'events';
@@ -90,18 +90,18 @@ export async function toBuffer(body: PassThrough, limit = 0, url?: string) {
   let bytes = 0;
 
   for await (const chunk of body) {
-      if (limit > 0 && bytes + chunk.length > limit) {
-          const error = new TypeError(`content size at ${url} over limit: ${limit}`);
-          body.destroy(error);
-          throw error;
-      }
-      bytes += chunk.length;
-      data.push(chunk);
+    if (limit > 0 && bytes + chunk.length > limit) {
+      const error = new TypeError(`content size at ${url} over limit: ${limit}`);
+      body.destroy(error);
+      throw error;
+    }
+    bytes += chunk.length;
+    data.push(chunk);
   }
 
-  if (data.every(c => typeof c === 'string')) {
-      return Buffer.from(data.join(''));
-  }
+  // if (data.every(c => isString(c))) {
+  //   return Buffer.from(data.join(''));
+  // }
   return Buffer.concat(data, bytes);
 
 }

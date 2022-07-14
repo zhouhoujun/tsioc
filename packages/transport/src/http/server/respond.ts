@@ -45,6 +45,7 @@ export class HttpRespondAdapter implements RespondAdapter {
             } else {
                 body = ctx.statusMessage || String(code)
             }
+            body = Buffer.from(body)
             if (!res.headersSent) {
                 ctx.type = 'text';
                 ctx.length = Buffer.byteLength(body)
@@ -54,7 +55,7 @@ export class HttpRespondAdapter implements RespondAdapter {
 
         // responses
         if (isBuffer(body)) return res.end(body);
-        if (isString(body)) return res.end(body);
+        if (isString(body)) return res.end(Buffer.from(body));
         if (isStream(body)) {
             const defer = lang.defer();
             body.once(ev.ERROR, (err) => {
@@ -67,12 +68,12 @@ export class HttpRespondAdapter implements RespondAdapter {
             return await defer.promise
                 .then(() => {
                     res.end();
-                    if (body instanceof Readable) body.destroy();
+                    body instanceof Readable && body.destroy();
                 })
         }
 
         // body: json
-        body = JSON.stringify(body);
+        body = Buffer.from(JSON.stringify(body));
         if (!res.headersSent) {
             ctx.length = Buffer.byteLength(body)
         }

@@ -56,7 +56,7 @@ export class HttpFinalizeFilter implements ExecptionFilter {
         // force text/plain
         hctx.type = 'text';
         let statusCode = (err.status || err.statusCode) as HttpStatusCode;
-        let msg: string;
+        let msg;
         if (err instanceof TransportError) {
             msg = err.message
         } else {
@@ -70,6 +70,7 @@ export class HttpFinalizeFilter implements ExecptionFilter {
             msg = statusMessage[statusCode]
         }
         hctx.status = statusCode;
+        msg = Buffer.from(msg);
         hctx.length = Buffer.byteLength(msg);
         res.end(msg)
     }

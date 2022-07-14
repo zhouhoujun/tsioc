@@ -3,7 +3,6 @@ import { Abstract, ArgumentError, Injectable, isString, lang } from '@tsdi/ioc';
 import { Observable, Observer, share } from 'rxjs';
 import { Socket } from 'net';
 import { Readable } from 'stream';
-import { TcpErrorResponse } from './client/response';
 import { ev } from '../consts';
 import { isStream } from '../utils';
 
