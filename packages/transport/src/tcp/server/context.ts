@@ -59,7 +59,7 @@ export class TcpContext extends AssetServerContext<TcpServRequest, TcpServRespon
     private _query?: Record<string, any>;
     get query(): Record<string, any> {
         if (!this._query) {
-            const qs = this._query = {} as Record<string, any>;
+            const qs = this._query = { ...this.request.params } as Record<string, any>;
             this.URL.searchParams.forEach((v, k) => {
                 qs[k] = v;
             });

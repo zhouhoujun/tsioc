@@ -64,7 +64,7 @@ export class TcpBackend implements EndpointBackend<TcpRequest, TcpEvent> {
                             if (adapter.isEmpty(status)) {
                                 if (ok) {
                                     observer.next(new TcpResponse({
-                                        id: id,
+                                        id,
                                         url,
                                         headers,
                                         status,

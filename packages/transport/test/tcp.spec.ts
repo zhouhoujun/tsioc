@@ -136,7 +136,7 @@ describe('TCP Server & TCP Client', () => {
     });
 
     it('bad request', async () => {
-        const a = await lastValueFrom(client.send('/device/-1/used', { observe: 'response', method: 'GET', params: { age: '20' } })
+        const a = await lastValueFrom(client.send('/device/-1/used', { observe: 'response', params: { age: '20' } })
             .pipe(
                 catchError(err => {
                     console.log(err);
