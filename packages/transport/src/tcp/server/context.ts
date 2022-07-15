@@ -1,7 +1,8 @@
 import { ExecptionFilter, MiddlewareLike, HeaderContext, AssetContext, TransportContext } from '@tsdi/core';
-import { Token, tokenId } from '@tsdi/ioc';
+import { isFunction, Token, tokenId } from '@tsdi/ioc';
 import { AssetServerContext } from '../../asset.ctx';
 import { hdr } from '../../consts';
+import { PacketProtocol } from '../packet';
 import { TcpServRequest } from './request';
 import { TcpServResponse } from './response';
 
@@ -13,7 +14,7 @@ const abstUrlExp = /^tcp:/;
  * TCP context.
  */
 export class TcpContext extends AssetServerContext<TcpServRequest, TcpServResponse> implements HeaderContext, AssetContext {
- 
+
 
     readonly protocol = 'tcp';
 
@@ -106,7 +107,14 @@ export class TcpContext extends AssetServerContext<TcpServRequest, TcpServRespon
     write(chunk: string | Uint8Array, encoding: BufferEncoding, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean;
     write(chunk: string | Uint8Array, encoding?: BufferEncoding | ((err?: Error | null | undefined) => void) | undefined, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean;
     write(chunk: string | Uint8Array, encoding?: any, cb?: any): boolean {
-        this.response.socket.write(chunk, encoding ?? cb, cb);
+        const protocol = this.get(PacketProtocol);
+        if (isFunction(encoding)) {
+            cb = encoding;
+            encoding = undefined;
+        }
+        protocol.write(this.response.socket, { id: this.response.id, body: chunk }, encoding)
+            .then(() => cb && cb())
+            .catch(err => cb && cb(err));
         return true;
     }
 

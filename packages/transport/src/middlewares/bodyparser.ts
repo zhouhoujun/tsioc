@@ -1,6 +1,6 @@
 /* eslint-disable no-control-regex */
 import { AssetContext, HeaderContext, Middleware, TransportContext, UnsupportedMediaTypeError } from '@tsdi/core';
-import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable } from '@tsdi/ioc';
+import { Abstract, EMPTY_OBJ, Injectable, isFunction, isUndefined, Nullable } from '@tsdi/ioc';
 import * as zlib from 'zlib';
 import { Readable } from 'stream';
 import * as getRaw from 'raw-body';
@@ -141,7 +141,7 @@ export class BodyparserMiddleware implements Middleware {
             default:
                 throw new UnsupportedMediaTypeError('Unsupported Content-Encoding: ' + encoding);
         }
-        return (ctx.request as Readable).pipe(zlib.createUnzip())
+        return isFunction(ctx.request.pipe)? (ctx.request as Readable).pipe(zlib.createUnzip()) : ctx.request.socket?.pip(zlib.createUnzip()) 
     }
 
     private jsonify(str: string, strict?: boolean) {

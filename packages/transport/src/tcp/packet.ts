@@ -24,7 +24,7 @@ export abstract class PacketProtocolOpions {
 @Abstract()
 export abstract class PacketProtocol {
     abstract read(socket: Socket): Observable<Packet>;
-    abstract write(socket: Socket, data: Packet): Promise<void>;
+    abstract write(socket: Socket, data: Packet, encoding?: BufferEncoding): Promise<void>;
 }
 
 @Injectable()
@@ -56,9 +56,9 @@ export class DelimiterProtocol extends PacketProtocol {
         return obser;
     }
 
-    async write(socket: Socket, data: Packet): Promise<void> {
+    async write(socket: Socket, data: Packet, encoding?: BufferEncoding): Promise<void> {
         const { id, headers, body } = data;
-        const encoding = this.option.encoding;
+        encoding = encoding ?? this.option.encoding;
         const delimiter = this._delimBuf;
         let defer: Defer | undefined;
         if (headers) {
