@@ -9,7 +9,7 @@ import { isBuffer, isStream, xmlRegExp } from './utils';
 
 
 @Abstract()
-export abstract class AssetServerContext<TRequest extends RequestHeader | Packet = any, TResponse extends ResponseHeader = any> extends ServerContext<TRequest, TResponse> implements AssetContext {
+export abstract class AssetServerContext<TRequest extends RequestHeader | Packet = any, TResponse extends Packet | ResponseHeader = any> extends ServerContext<TRequest, TResponse> implements AssetContext {
 
     /**
      * Check if the incoming request contains the "Content-Type"
@@ -154,6 +154,7 @@ export abstract class AssetServerContext<TRequest extends RequestHeader | Packet
     set body(val) {
         const original = this._body;
         this._body = val;
+        (this.response as any).body = val;
 
         // no content
         if (null == val) {

@@ -80,7 +80,8 @@ export class DelimiterProtocol extends PacketProtocol {
             const idbuf = Buffer.from(id!);
             if (isStream(body)) {
                 const defer = lang.defer();
-                socket.write(idbuf, encoding);
+                const pref = Buffer.concat([this._body, idbuf],  this._body.length + idbuf.length);
+                socket.write(pref, encoding);
                 body.once(ev.ERROR, (err) => {
                     defer.reject(err)
                 });
@@ -105,6 +106,7 @@ export class DelimiterProtocol extends PacketProtocol {
             return await defer.promise;
         }
     }
+
 
     protected createObservable(socket: Socket): Observable<Packet> {
         return new Observable((observer: Observer<any>) => {
