@@ -61,14 +61,14 @@ export class MapHeaders<T extends ReqHeaderType | ResHeaderType = ReqHeaderType>
         return this._hdrs.get(name.toLowerCase());
     }
 
-    setHeader(field: string, val: T): this {
-        const key = field.toLowerCase();
+    setHeader(name: string, val: T): this {
+        const key = name.toLowerCase();
         if (isNil(val)) {
             this._hdrs.delete(key);
             this._normal.delete(key);
             return this;
         }
-        this._normal.set(key, field);
+        this._normal.set(key, name);
         this._hdrs.set(key, val)
 
         this._rcd = null!;
@@ -97,8 +97,8 @@ export class MapHeaders<T extends ReqHeaderType | ResHeaderType = ReqHeaderType>
         return this;
     }
 
-    removeHeader(field: string): this {
-        this._hdrs.delete(field);
+    removeHeader(name: string): this {
+        this._hdrs.delete(name);
         this._rcd = null!;
         return this;
     }

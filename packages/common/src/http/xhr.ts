@@ -1,11 +1,12 @@
-import { Injectable, InvocationContext, isString, isUndefined } from '@tsdi/ioc';
+import { Injectable, InvocationContext, isArray, isString, isUndefined } from '@tsdi/ioc';
+import { mths } from '@tsdi/core';
 import { Observable, Observer } from 'rxjs';
 import { HttpStatusCode, statusMessage } from './status';
 import { HttpBackend, XhrFactory } from './handler';
 import { HttpHeaders } from './headers';
 import { HttpRequest } from './request';
 import { HttpDownloadProgressEvent, HttpErrorResponse, HttpEvent, HttpEventType, HttpHeaderResponse, HttpJsonParseError, HttpResponse, HttpUploadProgressEvent } from './response';
-import { mths } from '@tsdi/core';
+
 
 
 
@@ -59,7 +60,7 @@ export class HttpXhrBackend implements HttpBackend {
             }
 
             // Add all the requested headers.
-            req.headers.forEach((name, values) => xhr.setRequestHeader(name, values.join(',')));
+            req.headers.forEach((name, values) => xhr.setRequestHeader(name, isArray(values)? values.join(','):  String(values)));
 
             // Add an Accept header if one isn't present already.
             if (!req.headers.has('Accept')) {
