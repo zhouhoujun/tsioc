@@ -1,5 +1,5 @@
 import { Decoder, Encoder, Packet } from '@tsdi/core';
-import { Abstract, ArgumentError, Injectable, isString, lang } from '@tsdi/ioc';
+import { Abstract, ArgumentError, Defer, Injectable, isString, lang } from '@tsdi/ioc';
 import { Observable, Observer, share } from 'rxjs';
 import { Socket } from 'net';
 import { Readable } from 'stream';
@@ -30,11 +30,20 @@ export abstract class PacketProtocol {
 @Injectable()
 export class DelimiterProtocol extends PacketProtocol {
 
-    constructor(private option: PacketProtocolOpions, private encoder: Encoder, private decoder: Decoder) {
+    private _delimBuf: Buffer;
+    private _header: Buffer;
+    private _body: Buffer;
+    constructor(
+        private option: PacketProtocolOpions,
+        private encoder: Encoder<Buffer>,
+        private decoder: Decoder<Buffer>) {
         super();
         if (!option.delimiter) {
             throw new ArgumentError('no delimiter of Protocol option')
         }
+        this._delimBuf = Buffer.from(option.delimiter);
+        this._header = Buffer.from('0');
+        this._body = Buffer.from('1');
     }
 
 
@@ -48,23 +57,30 @@ export class DelimiterProtocol extends PacketProtocol {
     }
 
     async write(socket: Socket, data: Packet): Promise<void> {
-        const { id, body } = data;
-        const delimiter = this.option.delimiter!;
+        const { id, headers, body } = data;
         const encoding = this.option.encoding;
-        let defer = lang.defer();
-        const hpkg = this.encoder.encode(lang.omit(data, 'body')) + delimiter;
-        socket.write(hpkg, encoding, err => {
-            if (!err) return defer.resolve();
-            defer.reject(err);
-            socket.emit(ev.ERROR, err);
-        });
+        const delimiter = this._delimBuf;
+        let defer: Defer | undefined;
+        if (headers) {
+            defer = lang.defer();
+            const hdbuf = this.encoder.encode(lang.omit(data, 'body'));
+            const hpkg = Buffer.concat([this._header, hdbuf, delimiter], this._header.length + hdbuf.length + delimiter.length);
+            socket.write(hpkg, encoding, err => {
+                if (!err) return defer!.resolve();
+                defer!.reject(err);
+                socket.emit(ev.ERROR, err);
+            });
+        }
 
         if (body !== null) {
-            await defer.promise;
+            if (defer) {
+                await defer.promise;
+            }
             defer = lang.defer();
+            const idbuf = Buffer.from(id!);
             if (isStream(body)) {
                 const defer = lang.defer();
-                id && socket.write(id, encoding);
+                socket.write(idbuf, encoding);
                 body.once(ev.ERROR, (err) => {
                     defer.reject(err)
                 });
@@ -74,15 +90,16 @@ export class DelimiterProtocol extends PacketProtocol {
                 body.pipe(socket);
                 return await defer.promise
                     .then(() => {
-                        socket.write(delimiter);
+                        socket.write(delimiter, encoding);
                         if (body instanceof Readable) body.destroy();
                     })
             }
 
-            const bpkg = this.encoder.encode({ id, body }) + delimiter;
+            const bodybuf = this.encoder.encode(body);
+            const bpkg = Buffer.concat([this._body, idbuf, bodybuf, delimiter], this._body.length + idbuf.length + bodybuf.length + delimiter.length);
             socket.write(bpkg, encoding, err => {
-                if (!err) return defer.resolve();
-                defer.reject(err);
+                if (!err) return defer!.resolve();
+                defer!.reject(err);
                 socket.emit(ev.ERROR, err);
             });
             return await defer.promise;
@@ -103,28 +120,33 @@ export class DelimiterProtocol extends PacketProtocol {
                 observer.error(err);
             };
 
-            let buffer = '';
-            const delimiter = this.option.delimiter!;
-            const onData = (data: Buffer | string) => {
+            let buffer: Buffer | null;
+            let bytes = 0;
+            const delimiter = this._delimBuf;
+            const onData = (data: Buffer) => {
                 try {
-                    buffer += (isString(data) ? data : data.toString(this.option.encoding));
+                    bytes += data.length;
+                    buffer = buffer ? Buffer.concat([buffer, data], bytes) : data;
+
                     const idx = buffer.indexOf(delimiter);
                     if (idx <= 0) {
                         if (idx === 0) {
-                            buffer = '';
+                            buffer = null;
+                            bytes = 0;
                         }
                         return;
                     }
 
-                    let rest: string | undefined;
+                    let rest: Buffer | undefined;
 
-                    const pkg = buffer.substring(0, idx);
+                    const pkg = buffer.slice(0, idx);
                     if (idx < buffer.length - 1) {
-                        rest = buffer.substring(idx + delimiter.length);
+                        rest = buffer.slice(idx + delimiter.length);
                     }
                     if (pkg) {
-                        buffer = '';
-                        const packet = this.decoder.decode(pkg);
+                        buffer = null;
+                        bytes = 0;
+                        const packet = this.decoder.decode(pkg, this.option.encoding);
                         observer.next(packet);
                     }
                     if (rest) {

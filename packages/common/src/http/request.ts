@@ -120,7 +120,6 @@ export class HttpRequest<T = any> {
     });
     constructor(method: string, url: string, body: T | null, init?: {
         headers?: HttpHeaders,
-
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -129,7 +128,6 @@ export class HttpRequest<T = any> {
     constructor(
         method: string, readonly url: string, third?: T | {
             headers?: HttpHeaders,
-
             reportProgress?: boolean,
             params?: HttpParams,
             responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -137,7 +135,6 @@ export class HttpRequest<T = any> {
         } | null,
         fourth?: {
             headers?: HttpHeaders,
-
             reportProgress?: boolean,
             params?: HttpParams,
             responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -184,11 +181,6 @@ export class HttpRequest<T = any> {
         if (!this.headers) {
             this.headers = new HttpHeaders()
         }
-
-        // If no context have been passed in, construct a new InvocationContext instance.
-        // if (!this.context) {
-        //     this.context = new InvocationContext();
-        // }
 
         // If no parameters have been passed in, construct a new HttpUrlEncodedParams instance.
         if (!this.params) {
@@ -303,7 +295,6 @@ export class HttpRequest<T = any> {
     }): HttpRequest<T>;
     clone<V>(update: {
         headers?: HttpHeaders,
-
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -316,7 +307,6 @@ export class HttpRequest<T = any> {
     }): HttpRequest<V>;
     clone(update: {
         headers?: HttpHeaders,
-
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',

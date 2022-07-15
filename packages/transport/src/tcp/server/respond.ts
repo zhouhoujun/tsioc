@@ -43,27 +43,29 @@ export class TcpRespondAdapter extends RespondAdapter {
             return protocol.write(res.socket, res.serializePacket());
         }
 
-        if (isStream(body)) {
-            if (ctx.type === ctype.APPL_JSON) {
-                const raw = new PassThrough();
-                body.pipe(raw);
-                const buffers = await toBuffer(raw);
-                const json = buffers.toString('utf8');
-                ctx.length = Buffer.byteLength(json);
-                res.body = json;
-            }
-            return protocol.write(res.socket, res.serializePacket());
-        }
-
-        if (isBuffer(body) || isString(body)) {
-            return protocol.write(res.socket, res.serializePacket());
-        }
-        const jsonbody = JSON.stringify(body);
-        res.body = jsonbody;
-        if (!res.sent) {
-            ctx.length = Buffer.byteLength(jsonbody);
-        }
         return protocol.write(res.socket, res.serializePacket());
+
+        // if (isStream(body)) {
+        //     if (ctx.type === ctype.APPL_JSON) {
+        //         const raw = new PassThrough();
+        //         body.pipe(raw);
+        //         const buffers = await toBuffer(raw);
+        //         const json = buffers.toString('utf8');
+        //         ctx.length = Buffer.byteLength(json);
+        //         res.body = json;
+        //     }
+        //     return protocol.write(res.socket, res.serializePacket());
+        // }
+
+        // if (isBuffer(body) || isString(body)) {
+        //     return protocol.write(res.socket, res.serializePacket());
+        // }
+        // const jsonbody = JSON.stringify(body);
+        // res.body = jsonbody;
+        // if (!res.sent) {
+        //     ctx.length = Buffer.byteLength(jsonbody);
+        // }
+        // return protocol.write(res.socket, res.serializePacket());
 
     }
 

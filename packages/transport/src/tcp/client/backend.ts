@@ -3,6 +3,7 @@ import { Injectable, InvocationContext, type_undef } from '@tsdi/ioc';
 import { Socket } from 'net';
 import { filter, Observable, Observer, throwError } from 'rxjs';
 import { hdr } from '../../consts';
+import { isBuffer } from '../../utils';
 import { PacketProtocol } from '../packet';
 import { TcpClientOptions } from './options';
 import { TcpRequest } from './request';
@@ -33,7 +34,8 @@ export class TcpBackend implements EndpointBackend<TcpRequest, TcpEvent> {
 
             let headers: Record<string, ResHeaderType>;
             let body: any, error: any, ok = false;
-            let bodybuf = '';
+            let bodybuf: any[] = [];
+            let bodyBetys = 0;
             let status: number;
             let statusText: string;
             let bodyType: string, bodyLen = 0;
@@ -81,30 +83,33 @@ export class TcpBackend implements EndpointBackend<TcpRequest, TcpEvent> {
                             }
                             return;
                         }
-                        if (pk.body) {
-                            bodybuf += pk.body;
-                            if (bodyLen > Buffer.byteLength(bodybuf)) {
-                                return;
-                            }
+
+
+                        body = isBuffer(pk.body) ? pk.body : Buffer.from(pk.body)
+                        bodybuf.push(body);
+                        bodyBetys += body.length;
+
+                        if (bodyLen > bodyBetys) {
+                            return;
                         }
-                        body = bodybuf;
+
+                        const buffer = Buffer.concat(bodybuf, bodyBetys);
+                        bodybuf = [];
+                        bodyBetys = 0;
 
 
-                        let buffer: Buffer;
                         let originalBody: string;
                         switch (ctx.responseType) {
                             case 'arraybuffer':
-                                buffer = Buffer.from(body);
                                 body = buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
                                 ok = true;
                                 break;
                             case 'blob':
-                                buffer = Buffer.from(body);
                                 body = new Blob([buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)]);
                                 ok = true;
                                 break;
                             case 'json':
-                                originalBody = body;
+                                originalBody = new TextDecoder().decode(buffer);
                                 try {
                                     body = body.replace(XSSI_PREFIX, '');
                                     // Attempt the parse. If it fails, a parse error should be delivered to the user.
@@ -125,6 +130,9 @@ export class TcpBackend implements EndpointBackend<TcpRequest, TcpEvent> {
                                     }
                                 }
                                 break;
+                            case 'text':
+                            default:
+                                body = new TextDecoder().decode(buffer);
                         }
 
 

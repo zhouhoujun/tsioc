@@ -5,22 +5,22 @@ import { Packet } from './packet';
  * Decoder
  */
 @Abstract()
-export abstract class Decoder<T = string | Uint8Array> {
+export abstract class Decoder<T = any> {
     /**
      * decode buffer to Packet.
      * @param buffer 
      */
-    abstract decode(buffer: T): Packet;
+    abstract decode(buffer: T, encoding?: any): Packet;
 }
 
 /**
  * Encoder
  */
 @Abstract()
-export abstract class Encoder<T = string | Uint8Array> {
+export abstract class Encoder<T = any> {
     /**
-     * encode Packet to buffer.
-     * @param pkt 
+     * encode data to buffer.
+     * @param data 
      */
-    abstract encode(pkt: Packet): T;
+    abstract encode(data: any): T;
 }

@@ -21,7 +21,7 @@ const defaults = {
     encoder: JsonEncoder,
     decoder: JsonDecoder,
     interceptorsToken: TCP_INTERCEPTORS,
-    execptionsToken: TCP_EXECPTIONFILTERS
+    execptionsToken: TCP_EXECPTIONFILTERS,
 } as TcpClientOptions;
 
 
@@ -112,4 +112,3 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
 
 }
 
-const XSSI_PREFIX = /^\)\]\}',?\n/;

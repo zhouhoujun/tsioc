@@ -119,9 +119,11 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
 
         this.server.on(ev.CONNECTION, socket => {
             let headers: Record<string, any>;
-            let body = '';
             let len = 0;
+            let bodybuf: any[] = [];
+            let bodyBetys = 0;
             let id: string | undefined;
+
             const isIPC = !!this.options.listenOptions.path;
             if (isIPC) {
                 this.logger.info('Ipc client connection')
@@ -149,19 +151,23 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
                     if (pk.headers) {
                         headers = pk.headers;
                         id = pk.id;
-                        body = ''
                         const ctype = headers[hdr.CONTENT_TYPE];
                         len = headers[hdr.CONTENT_LENGTH];
                         if (!ctype) {
                             this.requestHandler(new TcpServRequest(socket, pk), new TcpServResponse(socket, pk.id!))
                         }
                     } else if (pk.id === id) {
-                        body += pk.body;
-                        if (Buffer.byteLength(body) >= len) {
-                            this.requestHandler(new TcpServRequest(socket, { id: pk.id, headers, body }), new TcpServResponse(socket, pk.id!));
-                            len = -1;
-                            body = '';
+                        bodybuf.push(pk.body);
+                        bodyBetys += pk.body.length;
+                        if (len > bodyBetys) {
+                            return;
                         }
+                        const body = Buffer.concat(bodybuf, bodyBetys);
+                        bodybuf = [];
+                        bodyBetys = 0;
+                        this.requestHandler(new TcpServRequest(socket, { id: pk.id, headers, body }), new TcpServResponse(socket, pk.id!));
+
+
                     }
                 });
         });

@@ -749,9 +749,8 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                                 });
                                 break;
                             case 'text':
-                                body = new TextDecoder().decode(body);
-                                break;
                             default:
+                                body = new TextDecoder().decode(body);
                                 break;
                         }
                     }
