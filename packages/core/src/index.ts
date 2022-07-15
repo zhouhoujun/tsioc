@@ -28,7 +28,7 @@ export * from './impl/context';
 
 export { DEFAULTA_PROVIDERS as APPLICTION_DEFAULTA_PROVIDERS } from './providers';
 export * from './Application';
-
+export * from './global';
 
 
 export * from './uuid';

@@ -85,10 +85,82 @@ export interface PacketClonable<T = any> {
 }
 
 /**
+ * request headers.
+ */
+export interface RequestHeader<T = any> {
+    /**
+     * Get all response headers.
+     */
+    getHeaders(): T;
+    /**
+     * has header field or not.
+     * @param field 
+     */
+    hasHeader(field: string): boolean;
+    /**
+     * Return request header.
+     *
+     * The `Referrer` header field is special-cased,
+     * both `Referrer` and `Referer` are interchangeable.
+     *
+     * Examples:
+     *
+     *     this.getHeader('Content-Type');
+     *     // => "text/plain"
+     *
+     *     this.getHeader('content-type');
+     *     // => "text/plain"
+     *
+     *     this.getHeader('Something');
+     *     // => ''
+     *
+     * @param {String} field
+     * @return {String}
+     * @api public
+     */
+    getHeader(field: string): string | number | string[] | undefined;
+    /**
+     * Set header `field` to `val` or pass
+     * an object of header fields.
+     *
+     * Examples:
+     *
+     *    this.setHeader('Foo', ['bar', 'baz']);
+     *    this.setHeader('Accept', 'application/json');
+     *
+     * @param {String|Object|Array} field
+     * @param {String} val
+     * @api public
+     */
+    setHeader(field: string, val: string | number | string[]): void;
+    /**
+     * append header `field` to `val` or pass
+     * an object of header fields.
+     *
+     * Examples:
+     *
+     *    this.appendHeader('Foo', ['bar', 'baz']);
+     *    this.appendHeader('Accept', 'application/json');
+     *
+     * @param {String|Object|Array} field
+     * @param {String} val
+     * @api public
+     */
+    appendHeader?(field: string, val: string | number | boolean | readonly string[]): void;
+    /**
+     * Remove header `field`.
+     *
+     * @param {String} name
+     * @api public
+     */
+    removeHeader(field: string): void;
+}
+
+/**
  * request packet.
  */
 
-export interface RequestPacket<T = any> extends Packet<T> {
+export interface RequestPacket<T = any> extends Packet<T>, RequestHeader {
     /**
      * packet id.
      */
@@ -116,65 +188,28 @@ export interface RequestPacket<T = any> extends Packet<T> {
 
 }
 
-
 /**
- * request headers.
+ * client request packet
  */
-export interface RequestHeader<T = any> {
+export interface ClientReqPacket<T = any> extends RequestPacket<T> {
+
     /**
-     * Get all response headers.
+     * Transform the free-form body into a serialized format suitable for
+     * transmission to the server.
+     * 
+     * @returns type of  ArrayBuffer | Stream | Buffer | Blob | FormData | string | null
      */
-    getHeaders(): T;
+    serializeBody(): any;
+
     /**
-     * has header field or not.
-     * @param field 
+     * Examine the body and attempt to infer an appropriate MIME type
+     * for it.
+     *
+     * If no such type can be inferred, this method will return `null`.
      */
-    hasHeader(field: string): boolean;
-    /**
-     * Return request header.
-     *
-     * The `Referrer` header field is special-cased,
-     * both `Referrer` and `Referer` are interchangeable.
-     *
-     * Examples:
-     *
-     *     this.get('Content-Type');
-     *     // => "text/plain"
-     *
-     *     this.get('content-type');
-     *     // => "text/plain"
-     *
-     *     this.get('Something');
-     *     // => ''
-     *
-     * @param {String} field
-     * @return {String}
-     * @api public
-     */
-    getHeader(field: string): string | number | string[] | undefined;
-    /**
-     * Set header `field` to `val` or pass
-     * an object of header fields.
-     *
-     * Examples:
-     *
-     *    this.set('Foo', ['bar', 'baz']);
-     *    this.set('Accept', 'application/json');
-     *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
-     *
-     * @param {String|Object|Array} field
-     * @param {String} val
-     * @api public
-     */
-    setHeader(field: string, val: string | number | string[]): void;
-    /**
-     * Remove header `field`.
-     *
-     * @param {String} name
-     * @api public
-     */
-    removeHeader(field: string): void;
+    detectContentTypeHeader(): string | null
 }
+
 
 /**
  * response packet.
@@ -231,13 +266,13 @@ export interface ResponseHeader<T = any> {
      *
      * Examples:
      *
-     *     this.get('Content-Type');
+     *     this.getHeader('Content-Type');
      *     // => "text/plain"
      *
-     *     this.get('content-type');
+     *     this.getHeader('content-type');
      *     // => "text/plain"
      *
-     *     this.get('Something');
+     *     this.getHeader('Something');
      *     // => ''
      *
      * @param {String} field
@@ -251,15 +286,28 @@ export interface ResponseHeader<T = any> {
      *
      * Examples:
      *
-     *    this.set('Foo', ['bar', 'baz']);
-     *    this.set('Accept', 'application/json');
-     *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
+     *    this.setHeader('Foo', ['bar', 'baz']);
+     *    this.setHeader('Accept', 'application/json');
      *
      * @param {String|Object|Array} field
      * @param {String} val
      * @api public
      */
     setHeader(field: string, val: string | number | boolean | readonly string[]): void;
+    /**
+     * append header `field` to `val` or pass
+     * an object of header fields.
+     *
+     * Examples:
+     *
+     *    this.appendHeader('Foo', ['bar', 'baz']);
+     *    this.appendHeader('Accept', 'application/json');
+     *
+     * @param {String|Object|Array} field
+     * @param {String} val
+     * @api public
+     */
+    appendHeader?(field: string, val: string | number | boolean | readonly string[]): void;
     /**
      * Remove header `field`.
      *
@@ -272,4 +320,4 @@ export interface ResponseHeader<T = any> {
 /**
  * response event.
  */
-export type ResponseEvent<T> = ResponsePacket<T> | ResponseHeader;
+export type ResponseEvent<T = any> = ResponsePacket<T> | ResponseHeader;

@@ -1,14 +1,12 @@
-import { isArrayBuffer, isBlob, isFormData, isUrlSearchParams } from '@tsdi/common';
-import { mths, Packet, RequestPacket } from '@tsdi/core';
+import { ClientReqPacket, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, MapHeaders, mths, Packet } from '@tsdi/core';
 import { isString, type_bool, type_num, type_obj } from '@tsdi/ioc';
 import { Stream } from 'form-data';
-import { MapHeaders } from '../../headers';
 import { isBuffer, isStream } from '../../utils';
 
 /**
  * TcpRequest.
  */
-export class TcpRequest<T = any> extends MapHeaders implements RequestPacket<T> {
+export class TcpRequest<T = any> extends MapHeaders implements ClientReqPacket<T> {
 
     public readonly id: string;
     public url: string;

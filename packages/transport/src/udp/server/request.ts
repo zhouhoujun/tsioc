@@ -1,6 +1,5 @@
-import { RequestHeader, RequestPacket } from '@tsdi/core';
+import { MapHeaders, RequestHeader, RequestPacket } from '@tsdi/core';
 import { EMPTY_OBJ } from '@tsdi/ioc';
-import { MapHeaders } from '../../headers';
 
 export class UdpServRequest extends MapHeaders implements RequestPacket, RequestHeader {
     public readonly url: string;

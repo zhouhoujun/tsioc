@@ -6,8 +6,8 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import { mths, RequestPacket } from '@tsdi/core';
-import { isString, type_bool, type_num, type_obj, type_undef, InvocationContext } from '@tsdi/ioc';
+import { isArrayBuffer, isBlob, isFormData, isUrlSearchParams, mths } from '@tsdi/core';
+import { isString, type_bool, type_num, type_obj, InvocationContext } from '@tsdi/ioc';
 import { HttpHeaders } from './headers';
 import { HttpParams } from './params';
 
@@ -43,42 +43,6 @@ function mightHaveBody(method: string): boolean {
 }
 
 /**
- * Safely assert whether the given value is an ArrayBuffer.
- *
- * In some execution environments ArrayBuffer is not defined.
- */
-export function isArrayBuffer(value: any): value is ArrayBuffer {
-    return typeof ArrayBuffer !== type_undef && value instanceof ArrayBuffer
-}
-
-/**
- * Safely assert whether the given value is a Blob.
- *
- * In some execution environments Blob is not defined.
- */
-export function isBlob(value: any): value is Blob {
-    return typeof Blob !== type_undef && value instanceof Blob
-}
-
-/**
- * Safely assert whether the given value is a FormData instance.
- *
- * In some execution environments FormData is not defined.
- */
-export function isFormData(value: any): value is FormData {
-    return typeof global.FormData !== type_undef && value instanceof global.FormData
-}
-
-/**
- * Safely assert whether the given value is a URLSearchParams instance.
- *
- * In some execution environments URLSearchParams is not defined.
- */
-export function isUrlSearchParams(value: any): value is URLSearchParams {
-    return typeof URLSearchParams !== type_undef && value instanceof URLSearchParams
-}
-
-/**
  * An outgoing HTTP request with an optional typed body.
  *
  * `HttpRequest` represents an outgoing request, including URL, method,
@@ -88,7 +52,7 @@ export function isUrlSearchParams(value: any): value is URLSearchParams {
  *
  * @publicApi
  */
-export class HttpRequest<T = any> implements RequestPacket<T> {
+export class HttpRequest<T = any> {
     /**
      * The request body, or `null` if one isn't set.
      *

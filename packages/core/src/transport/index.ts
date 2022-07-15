@@ -1,7 +1,9 @@
 export * from './context';
 export * from './packet';
+export * from './headers';
 export * from './endpoint';
 
+export * from './utils';
 export * from './coder';
 export * from './status';
 

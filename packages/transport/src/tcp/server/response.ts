@@ -1,12 +1,11 @@
-import { Packet, ResponseHeader, ResponsePacket } from '@tsdi/core';
+import { MapHeaders, Packet, ResHeaderType, ResponseHeader, ResponsePacket } from '@tsdi/core';
 import { Socket } from 'net';
 import { hdr } from '../../consts';
-import { MapHeaders, ResHeaderItemType } from '../../headers';
 
 /**
  * TcpResponse.
  */
-export class TcpServResponse extends MapHeaders<ResHeaderItemType> implements ResponsePacket, ResponseHeader {
+export class TcpServResponse extends MapHeaders<ResHeaderType> implements ResponsePacket, ResponseHeader {
 
 
     body: any;

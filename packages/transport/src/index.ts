@@ -7,7 +7,6 @@ export * from './impl';
 export * from './stringify';
 export * from './utils';
 export * from './coder';
-export * from './headers';
 export * from './interceptors';
 export * from './middlewares';
 

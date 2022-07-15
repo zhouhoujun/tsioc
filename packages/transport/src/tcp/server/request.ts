@@ -1,7 +1,6 @@
-import { RequestHeader, RequestPacket } from '@tsdi/core';
+import { MapHeaders, ReqHeaderType, RequestHeader, RequestPacket } from '@tsdi/core';
 import { EMPTY_OBJ } from '@tsdi/ioc';
 import { Socket } from 'net';
-import { MapHeaders, ReqHeaderItemType } from '../../headers';
 
 export class TcpServRequest extends MapHeaders implements RequestPacket, RequestHeader {
 
@@ -16,7 +15,7 @@ export class TcpServRequest extends MapHeaders implements RequestPacket, Request
         id?: string,
         url?: string;
         body?: any,
-        headers?: Record<string, ReqHeaderItemType>;
+        headers?: Record<string, ReqHeaderType>;
         params?: Record<string, any>;
         method?: string;
         update?: boolean;

@@ -1,6 +1,7 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
-import { ServerContext, ExecptionFilter, MiddlewareLike, Protocol, HeaderContext, AssetContext } from '@tsdi/core';
+import { ExecptionFilter, MiddlewareLike, Protocol, HeaderContext, AssetContext } from '@tsdi/core';
 import { Injectable, tokenId } from '@tsdi/ioc';
+import { AssetServerContext } from '../../asset.ctx';
 import { hdr } from '../../consts';
 import { UdpServRequest } from './request';
 import { UdpServResponse } from './response';
@@ -11,10 +12,10 @@ import { UdpServResponse } from './response';
  * UDP context.
  */
 @Injectable()
-export class UdpContext extends ServerContext<UdpServRequest, UdpServResponse> implements HeaderContext, AssetContext {
+export class UdpContext extends AssetServerContext<UdpServRequest, UdpServResponse> implements HeaderContext, AssetContext {
 
-    readonly protocol: Protocol = 'udp'; 
-    
+    readonly protocol: Protocol = 'udp';
+
     private _url?: string;
     get url(): string {
         if (!this._url) {
@@ -58,7 +59,7 @@ export class UdpContext extends ServerContext<UdpServRequest, UdpServResponse> i
     private _query?: Record<string, any>;
     get query(): Record<string, any> {
         if (!this._query) {
-            const qs = this._query = {} as Record<string, any>;
+            const qs = this._query = { ...this.request.params } as Record<string, any>;
             this.URL.searchParams.forEach((v, k) => {
                 qs[k] = v;
             });
@@ -74,14 +75,14 @@ export class UdpContext extends ServerContext<UdpServRequest, UdpServResponse> i
         return this.request.method === 'PUT' || this.request.getHeader(hdr.OPERATION) === 'update';
     }
 
-    get body(): any {
+    get statusMessage(): string {
         throw new Error('Method not implemented.');
     }
-    set body(value: any) {
+    set statusMessage(msg: string) {
         throw new Error('Method not implemented.');
     }
-
-    get length(): number | undefined {
+    
+    get sent(): boolean {
         throw new Error('Method not implemented.');
     }
 
@@ -91,48 +92,8 @@ export class UdpContext extends ServerContext<UdpServRequest, UdpServResponse> i
     set status(status: number) {
         this.response.status = status;
     }
-    get statusMessage(): string {
-        return this.response.statusMessage ?? statusMessage[this.status as HttpStatusCode]
-    }
 
-    set statusMessage(msg: string) {
-        throw new Error('Method not implemented.');
-    }
 
-    get ok(): boolean {
-        throw new Error('Method not implemented.');
-    }
-    set ok(ok: boolean) {
-        throw new Error('Method not implemented.');
-    }
-    get sent(): boolean {
-        throw new Error('Method not implemented.');
-    }
-
-    is(type: string | string[]): string | false | null {
-        throw new Error('Method not implemented.');
-    }
-    get contentType(): string {
-        throw new Error('Method not implemented.');
-    }
-    set contentType(type: string) {
-        throw new Error('Method not implemented.');
-    }
-    getHeader(field: string): string | number | string[] | undefined {
-        throw new Error('Method not implemented.');
-    }
-    hasHeader(field: string): boolean {
-        throw new Error('Method not implemented.');
-    }
-    setHeader(field: string, val: string | number | string[]): void;
-    setHeader(fields: Record<string, string | number | string[]>): void;
-    setHeader(field: unknown, val?: unknown): void {
-        throw new Error('Method not implemented.');
-    }
-    removeHeader(field: string): void {
-        throw new Error('Method not implemented.');
-    }
-    
 }
 
 /**
