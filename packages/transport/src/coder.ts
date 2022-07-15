@@ -23,7 +23,7 @@ export class JsonDecoder implements Decoder<string | Uint8Array | Buffer> {
                 source = source.slice(1);
                 return {
                     id: source.slice(0, 36).toString(encoding),
-                    body: source.slice(37)
+                    body: source.slice(36)
                 }
             } else if (type === '0') {
                 source = source.slice(1);

@@ -3,7 +3,7 @@ import { Injector, isArray, lang } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { TcpClient, TcpClientOptions, TcpModule, TcpServer } from '../src/tcp';
+import { RedirectResult, TcpClient, TcpClientOptions, TcpModule, TcpServer } from '../src';
 
 
 
@@ -49,6 +49,19 @@ export class DeviceController {
         }, 10);
 
         return await defer.promise;
+    }
+
+    @RouteMapping('/status', 'MESSAGE')
+    getLastStatus(@RequestParam('redirect', { nullable: true }) redirect: string) {
+        if (redirect === 'reload') {
+            return new RedirectResult('/device/reload');
+        }
+        return of('working');
+    }
+
+    @RouteMapping('/reload', 'MESSAGE')
+    redirect() {
+        return 'reload';
     }
 
 

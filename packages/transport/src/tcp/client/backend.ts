@@ -109,7 +109,7 @@ export class TcpBackend implements EndpointBackend<TcpRequest, TcpEvent> {
                                 ok = true;
                                 break;
                             case 'json':
-                                originalBody = new TextDecoder().decode(buffer);
+                                body = originalBody = new TextDecoder().decode(buffer);
                                 try {
                                     body = body.replace(XSSI_PREFIX, '');
                                     // Attempt the parse. If it fails, a parse error should be delivered to the user.

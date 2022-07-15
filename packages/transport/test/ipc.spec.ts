@@ -5,7 +5,7 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import path = require('path');
 import del = require('del');
-import { TcpClient, TcpClientOptions, TcpModule, TcpServer } from '../src/tcp';
+import { RedirectResult, TcpClient, TcpClientOptions, TcpModule, TcpServer } from '../src';
 
 
 @RouteMapping('/device')
@@ -50,6 +50,19 @@ export class DeviceController {
         }, 10);
 
         return await defer.promise;
+    }
+
+    @RouteMapping('/status', 'MESSAGE')
+    getLastStatus(@RequestParam('redirect', { nullable: true }) redirect: string) {
+        if (redirect === 'reload') {
+            return new RedirectResult('/device/reload');
+        }
+        return of('working');
+    }
+
+    @RouteMapping('/reload', 'MESSAGE')
+    redirect() {
+        return 'reload';
     }
 
 

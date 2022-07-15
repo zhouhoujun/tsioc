@@ -13,6 +13,7 @@ const abstUrlExp = /^tcp:/;
  * TCP context.
  */
 export class TcpContext extends AssetServerContext<TcpServRequest, TcpServResponse> implements HeaderContext, AssetContext {
+ 
 
     readonly protocol = 'tcp';
 
@@ -99,6 +100,14 @@ export class TcpContext extends AssetServerContext<TcpServRequest, TcpServRespon
 
     get sent(): boolean {
         return this.response.sent;
+    }
+
+    write(chunk: string | Uint8Array, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean;
+    write(chunk: string | Uint8Array, encoding: BufferEncoding, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean;
+    write(chunk: string | Uint8Array, encoding?: BufferEncoding | ((err?: Error | null | undefined) => void) | undefined, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean;
+    write(chunk: string | Uint8Array, encoding?: any, cb?: any): boolean {
+        this.response.socket.write(chunk, encoding ?? cb, cb);
+        return true;
     }
 
     protected isSelf(token: Token) {

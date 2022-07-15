@@ -5,7 +5,7 @@ import { ctype, hdr } from './consts';
 import { CONTENT_DISPOSITION } from './content';
 import { MimeAdapter } from './mime';
 import { Negotiator } from './negotiator';
-import { isBuffer, isStream, xmlRegExp } from './utils';
+import { encodeUrl, escapeHtml, isBuffer, isStream, xmlRegExp } from './utils';
 
 
 @Abstract()
@@ -383,6 +383,47 @@ export abstract class AssetServerContext<TRequest extends RequestHeader | Packet
         this.response.setHeader(hdr.CONTENT_DISPOSITION, func(filename, options))
     }
 
+
+    /**
+     * Perform a 302 redirect to `url`.
+     *
+     * The string "back" is special-cased
+     * to provide Referrer support, when Referrer
+     * is not present `alt` or "/" is used.
+     *
+     * Examples:
+     *
+     *    this.redirect('back');
+     *    this.redirect('back', '/index.html');
+     *    this.redirect('/login');
+     *    this.redirect('http://google.com');
+     *
+     * @param {String} url
+     * @param {String} [alt]
+     * @api public
+     */
+    redirect(url: string, alt?: string): void {
+        if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
+        this.setHeader(hdr.LOCATION, encodeUrl(url));
+        // status
+        if (!this.adapter.isRedirect(this.status)) this.status = 302;
+
+        // html
+        if (this.accepts('html')) {
+            url = escapeHtml(url);
+            this.type = ctype.TEXT_HTML_UTF8;
+            this.body = `Redirecting to <a href="${url}">${url}</a>.`;
+            return
+        }
+
+        // text
+        this.type = ctype.TEXT_PLAIN_UTF8;
+        this.body = `Redirecting to ${url}.`
+    }
+
+    abstract write(chunk: string | Uint8Array, cb?: (err?: Error | null) => void): boolean;
+    abstract write(chunk: string | Uint8Array, encoding: BufferEncoding, cb?: (err?: Error | null) => void): boolean;
+    abstract write(chunk: string | Uint8Array, encoding?: BufferEncoding | ((err?: Error | null) => void), cb?: (err?: Error | null) => void): boolean;
 
 
     getHeader(field: string): string | string[] | undefined {

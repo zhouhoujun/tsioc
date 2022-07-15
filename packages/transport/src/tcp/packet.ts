@@ -65,48 +65,44 @@ export class DelimiterProtocol extends PacketProtocol {
             defer = lang.defer();
             const hdbuf = this.encoder.encode(lang.omit(data, 'body'));
             const hpkg = Buffer.concat([this._header, hdbuf, delimiter], this._header.length + hdbuf.length + delimiter.length);
-            socket.write(hpkg, encoding, err => {
-                if (!err) return defer!.resolve();
-                defer!.reject(err);
-                socket.emit(ev.ERROR, err);
-            });
+            await this.writeBuff(socket, hpkg, encoding);
         }
 
         if (body !== null) {
-            if (defer) {
-                await defer.promise;
-            }
-            defer = lang.defer();
             const idbuf = Buffer.from(id!);
             if (isStream(body)) {
                 const defer = lang.defer();
-                const pref = Buffer.concat([this._body, idbuf],  this._body.length + idbuf.length);
+                const pref = Buffer.concat([this._body, idbuf], this._body.length + idbuf.length);
                 socket.write(pref, encoding);
+
                 body.once(ev.ERROR, (err) => {
                     defer.reject(err)
                 });
                 body.once(ev.END, () => {
                     defer.resolve()
                 });
-                body.pipe(socket);
+                body.pipe(socket, { end: false });
                 return await defer.promise
                     .then(() => {
-                        socket.write(delimiter, encoding);
                         if (body instanceof Readable) body.destroy();
+                        return this.writeBuff(socket, delimiter, encoding);
                     })
             }
 
             const bodybuf = this.encoder.encode(body);
-            const bpkg = Buffer.concat([this._body, idbuf, bodybuf, delimiter], this._body.length + idbuf.length + bodybuf.length + delimiter.length);
-            socket.write(bpkg, encoding, err => {
-                if (!err) return defer!.resolve();
-                defer!.reject(err);
-                socket.emit(ev.ERROR, err);
-            });
-            return await defer.promise;
+            return await this.writeBuff(socket, Buffer.concat([this._body, idbuf, bodybuf, delimiter], this._body.length + idbuf.length + bodybuf.length + delimiter.length), encoding);
         }
     }
 
+    protected writeBuff(socket: Socket, buff: Buffer, encoding?: BufferEncoding) {
+        const defer = lang.defer();
+        socket.write(buff, encoding, err => {
+            if (!err) return defer!.resolve();
+            defer!.reject(err);
+            socket.emit(ev.ERROR, err);
+        });
+        return defer.promise;
+    }
 
     protected createObservable(socket: Socket): Observable<Packet> {
         return new Observable((observer: Observer<any>) => {

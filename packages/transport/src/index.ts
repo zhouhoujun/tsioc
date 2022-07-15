@@ -3,6 +3,7 @@ export * from './mime';
 export * from './negotiator';
 export * from './content';
 export * from './asset.ctx';
+export * from './results';
 export * from './impl';
 export * from './stringify';
 export * from './utils';

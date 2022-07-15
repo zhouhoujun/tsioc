@@ -3,7 +3,7 @@ import { ApplicationContext, ResultValue } from '@tsdi/core';
 import { Stream } from 'stream';
 import { existsSync, createReadStream } from 'fs';
 import { join, isAbsolute } from 'path';
-import { HttpContext } from '../context';
+import { AssetServerContext } from '../asset.ctx';
 
 /**
  * controller method return result type of file.
@@ -53,7 +53,7 @@ export class FileResult extends ResultValue {
         super(options?.contentType || 'application/octet-stream');
     }
 
-    async sendValue(ctx: HttpContext) {
+    async sendValue(ctx: AssetServerContext) {
         const file = this.file;
         const contentType = this.contentType;
         if (this.options && this.options.filename) {

@@ -3,7 +3,7 @@ import { of } from 'rxjs'; import {
     RouteMapping, Handle, RequestBody, RequestParam, RequestPath, Module,
     TransportContext, Middleware, Chain, BadRequestError
 } from '@tsdi/core';
-import { RedirectResult } from '../src/http';
+import { RedirectResult } from '../src';
 
 
 @RouteMapping('/device')
