@@ -140,6 +140,7 @@ export class TcpBackend implements EndpointBackend<TcpRequest, TcpEvent> {
                             observer.next(new TcpResponse({
                                 id,
                                 url,
+                                ok,
                                 headers,
                                 body,
                                 status,

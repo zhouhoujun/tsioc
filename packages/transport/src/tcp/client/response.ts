@@ -39,6 +39,7 @@ export class TcpResponse<T = any> implements ResponsePacket<T> {
     readonly id: string;
     readonly body: T | null;
     readonly url: string;
+    readonly ok: boolean;
     readonly status: number;
     get statusText(): string {
         return this.statusMessage;
@@ -50,6 +51,7 @@ export class TcpResponse<T = any> implements ResponsePacket<T> {
     constructor(options: {
         id: string;
         url?: string,
+        ok?: boolean;
         headers?: Record<string, ResHeaderType>;
         status: number;
         statusText?: string;
@@ -59,6 +61,7 @@ export class TcpResponse<T = any> implements ResponsePacket<T> {
         this.id = options.id ?? '';
         this.url = options.url ?? '';
         this.status = options.status;
+        this.ok = options.ok ?? false;
         this.statusMessage = options.statusMessage ?? options.statusText ?? '';
         this.body = options.body ?? null;
         this.headers = options.headers ?? {};
