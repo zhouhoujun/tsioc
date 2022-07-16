@@ -118,11 +118,6 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
         });
 
         this.server.on(ev.CONNECTION, socket => {
-            let headers: Record<string, any>;
-            let len = 0;
-            let bodybuf: any[] = [];
-            let bodyBetys = 0;
-            let id: string | undefined;
 
             const isIPC = !!this.options.listenOptions.path;
             if (isIPC) {
@@ -136,6 +131,7 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
                         this.logger.error(err);
                     }
                     socket.end();
+                    packets.clear();
                 }
                 if (isIPC) {
                     this.logger.info('Ipc client disconnected')
@@ -146,28 +142,30 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
             socket.on(ev.CLOSE, onClose);
             socket.on(ev.END, onClose);
             const protocol = this.context.get(PacketProtocol);
+
+            const packets = new Map<string, { pk: Packet, len: number, body: any[], bytes: number }>();
+
             protocol.read(socket)
                 .subscribe(pk => {
-                    if (pk.headers) {
-                        headers = pk.headers;
-                        id = pk.id;
-                        const ctype = headers[hdr.CONTENT_TYPE];
-                        len = headers[hdr.CONTENT_LENGTH];
+                    const req = packets.get(pk.id!);
+                    if (!req && pk.headers) {
+                        const ctype = pk.headers[hdr.CONTENT_TYPE];
                         if (!ctype) {
                             this.requestHandler(new TcpServRequest(socket, pk), new TcpServResponse(socket, pk.id!))
+                        } else {
+                            const len = pk.headers[hdr.CONTENT_LENGTH];
+                            packets.set(pk.id!, { pk, len, body: [], bytes: 0 });
                         }
-                    } else if (pk.id === id) {
-                        bodybuf.push(pk.body);
-                        bodyBetys += pk.body.length;
-                        if (len > bodyBetys) {
+                    } else if (req && pk.body) {
+                        req.body.push(pk.body)
+                        req.bytes += pk.body.length;
+                        if (req.len > req.bytes) {
                             return;
                         }
-                        const body = Buffer.concat(bodybuf, bodyBetys);
-                        bodybuf = [];
-                        bodyBetys = 0;
-                        this.requestHandler(new TcpServRequest(socket, { id: pk.id, headers, body }), new TcpServResponse(socket, pk.id!));
-
-
+                        const body = Buffer.concat(req.body, req.bytes);
+                        const fpk = { ...req.pk, body };
+                        packets.delete(pk.id!);
+                        this.requestHandler(new TcpServRequest(socket, fpk), new TcpServResponse(socket, pk.id!));
                     }
                 });
         });
