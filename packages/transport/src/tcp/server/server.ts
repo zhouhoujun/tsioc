@@ -131,7 +131,6 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
                         this.logger.error(err);
                     }
                     socket.end();
-                    packets.clear();
                 }
                 if (isIPC) {
                     this.logger.info('Ipc client disconnected')
@@ -143,29 +142,10 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
             socket.on(ev.END, onClose);
             const protocol = this.context.get(PacketProtocol);
 
-            const packets = new Map<string, { pk: Packet, len: number, body: any[], bytes: number }>();
-
             protocol.read(socket)
                 .subscribe(pk => {
-                    const req = packets.get(pk.id!);
-                    if (!req && pk.headers) {
-                        const ctype = pk.headers[hdr.CONTENT_TYPE];
-                        if (!ctype) {
-                            this.requestHandler(new TcpServRequest(socket, pk), new TcpServResponse(socket, pk.id!))
-                        } else {
-                            const len = pk.headers[hdr.CONTENT_LENGTH];
-                            packets.set(pk.id!, { pk, len, body: [], bytes: 0 });
-                        }
-                    } else if (req && pk.body) {
-                        req.body.push(pk.body)
-                        req.bytes += pk.body.length;
-                        if (req.len > req.bytes) {
-                            return;
-                        }
-                        const body = Buffer.concat(req.body, req.bytes);
-                        const fpk = { ...req.pk, body };
-                        packets.delete(pk.id!);
-                        this.requestHandler(new TcpServRequest(socket, fpk), new TcpServResponse(socket, pk.id!));
+                    if (pk.id && pk.headers) {
+                        this.requestHandler(new TcpServRequest(protocol, socket, pk), new TcpServResponse(socket, pk.id!))
                     }
                 });
         });

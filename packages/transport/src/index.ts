@@ -2,6 +2,7 @@ export * from './consts';
 export * from './mime';
 export * from './negotiator';
 export * from './content';
+export * from './incoming';
 export * from './asset.ctx';
 export * from './results';
 export * from './impl';

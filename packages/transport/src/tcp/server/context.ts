@@ -77,7 +77,6 @@ export class TcpContext extends AssetServerContext<TcpServRequest, TcpServRespon
         return this.request.method === 'PUT' || this.request.getHeader(hdr.OPERATION) === 'update';
     }
 
-
     get status(): number {
         return this.response.status
     }
@@ -121,6 +120,11 @@ export class TcpContext extends AssetServerContext<TcpServRequest, TcpServRespon
     protected isSelf(token: Token) {
         return token === TcpContext || token === AssetServerContext || token === TransportContext;
     }
+
+    protected override onBodyChanged(newVal: any, oldVal: any): void {
+        this.response.body = newVal;
+    }
+
 
 }
 

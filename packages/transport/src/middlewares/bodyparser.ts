@@ -141,7 +141,7 @@ export class BodyparserMiddleware implements Middleware {
             default:
                 throw new UnsupportedMediaTypeError('Unsupported Content-Encoding: ' + encoding);
         }
-        return isFunction(ctx.request.pipe)? (ctx.request as Readable).pipe(zlib.createUnzip()) : ctx.request.socket?.pip(zlib.createUnzip()) 
+        return (ctx.request as Readable).pipe(zlib.createUnzip())
     }
 
     private jsonify(str: string, strict?: boolean) {

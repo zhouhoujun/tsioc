@@ -1,8 +1,13 @@
-import { MapHeaders, ReqHeaderType, RequestHeader, RequestPacket } from '@tsdi/core';
-import { EMPTY_OBJ } from '@tsdi/ioc';
+import { MapHeaders, ReqHeaderType, RequestHeader } from '@tsdi/core';
+import { EMPTY_OBJ, isNull } from '@tsdi/ioc';
 import { Socket } from 'net';
+import { Writable } from 'stream';
+import { filter } from 'rxjs';
+import { hdr } from '../../consts';
+import { IncomingRequest } from '../../incoming';
+import { PacketProtocol } from '../packet';
 
-export class TcpServRequest extends MapHeaders implements RequestPacket, RequestHeader {
+export class TcpServRequest extends MapHeaders implements IncomingRequest, RequestHeader {
 
     public readonly id: string;
     public readonly url: string;
@@ -11,7 +16,7 @@ export class TcpServRequest extends MapHeaders implements RequestPacket, Request
 
     body: any;
 
-    constructor(readonly socket: Socket, option: {
+    constructor(private protocol: PacketProtocol, readonly socket: Socket, option: {
         id?: string,
         url?: string;
         body?: any,
@@ -26,9 +31,34 @@ export class TcpServRequest extends MapHeaders implements RequestPacket, Request
         this.body = option.body;
         this.method = option.method ?? '';
         this.params = option.params ?? {};
-        if(option.headers){
+        if (option.headers) {
             this.setHeaders(option.headers);
         }
+    }
+
+    pipe<T extends Writable>(destination: T, options?: { end?: boolean | undefined; } | undefined): T {
+        const len = this.getHeader(hdr.CONTENT_LENGTH) ?? 0
+        if (!len) {
+            return destination;
+        }
+        let bytes = 0;
+        const bodys: any[] = [];
+        this.protocol.read(this.socket)
+            .pipe(
+                filter(p => p.id === this.id && !isNull(p.body))
+            ).subscribe(pk => {
+                bodys.push(pk.body)
+                bytes += pk.body.length;
+                if (len > bytes) {
+                    destination.write(pk.body)
+                    return;
+                } else {
+                    destination.end();
+                }
+                // destination.write(pk.body)
+                // const body = Buffer.concat(bodys, bytes);
+            });
+        return destination;
     }
 }
 

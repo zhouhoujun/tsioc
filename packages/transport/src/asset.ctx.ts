@@ -1,4 +1,4 @@
-import { AssetContext, Packet, RequestHeader, ResponseHeader, ServerContext } from '@tsdi/core';
+import { AssetContext, Packet, RequestHeader, RequestPacket, ResponseHeader, ServerContext } from '@tsdi/core';
 import { Abstract, isArray, isNil, isNumber, isString, lang } from '@tsdi/ioc';
 import { extname } from 'path';
 import { ctype, hdr } from './consts';
@@ -6,6 +6,7 @@ import { CONTENT_DISPOSITION } from './content';
 import { MimeAdapter } from './mime';
 import { Negotiator } from './negotiator';
 import { encodeUrl, escapeHtml, isBuffer, isStream, xmlRegExp } from './utils';
+
 
 
 @Abstract()
@@ -154,7 +155,9 @@ export abstract class AssetServerContext<TRequest extends RequestHeader | Packet
     set body(val) {
         const original = this._body;
         this._body = val;
-        (this.response as any).body = val;
+        if (original != val) {
+            this.onBodyChanged(val, original);
+        }
 
         // no content
         if (null == val) {
@@ -202,6 +205,15 @@ export abstract class AssetServerContext<TRequest extends RequestHeader | Packet
         this.contentType = ctype.APPL_JSON;
     }
 
+    /**
+     * on body changed. default do nothing.
+     * @param newVal 
+     * @param oldVal 
+     */
+    protected onBodyChanged(newVal: any, oldVal: any) { }
+    /**
+     * on body set null. default do nothing.
+     */
     protected onNullBody() { }
 
     /**
