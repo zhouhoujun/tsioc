@@ -2,7 +2,7 @@
 import { AssetContext, HeaderContext, Middleware, TransportContext, UnsupportedMediaTypeError } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, Injectable, isFunction, isUndefined, Nullable } from '@tsdi/ioc';
 import * as zlib from 'zlib';
-import { Readable } from 'stream';
+import { Stream, Readable, PassThrough } from 'stream';
 import * as getRaw from 'raw-body';
 import * as qslib from 'qs';
 import { hdr } from '../consts';
@@ -137,7 +137,10 @@ export class BodyparserMiddleware implements Middleware {
             case 'deflate':
                 break
             case 'identity':
-                return ctx.request
+                if (ctx.request instanceof Readable) {
+                    return ctx.request
+                }
+                return (ctx.request as Stream).pipe(new PassThrough());
             default:
                 throw new UnsupportedMediaTypeError('Unsupported Content-Encoding: ' + encoding);
         }

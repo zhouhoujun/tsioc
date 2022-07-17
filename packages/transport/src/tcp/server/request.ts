@@ -38,25 +38,28 @@ export class TcpServRequest extends MapHeaders implements IncomingRequest, Reque
 
     pipe<T extends Writable>(destination: T, options?: { end?: boolean | undefined; } | undefined): T {
         const len = this.getHeader(hdr.CONTENT_LENGTH) ?? 0
-        if (!len) {
+        const hdrcode = this.getHeader(hdr.CONTENT_ENCODING) as string || hdr.IDENTITY;
+        let length = 0;
+        if (len && hdrcode === hdr.IDENTITY) {
+            length = ~~len
+        }
+        if (!length) {
             return destination;
         }
         let bytes = 0;
         const bodys: any[] = [];
-        this.protocol.read(this.socket)
+        const sub = this.protocol.read(this.socket)
             .pipe(
                 filter(p => p.id === this.id && !isNull(p.body))
             ).subscribe(pk => {
                 bodys.push(pk.body)
                 bytes += pk.body.length;
-                if (len > bytes) {
-                    destination.write(pk.body)
-                    return;
-                } else {
+                destination.write(pk.body)
+
+                if (length <= bytes && options?.end !== false) {
                     destination.end();
+                    sub && sub.unsubscribe();
                 }
-                // destination.write(pk.body)
-                // const body = Buffer.concat(bodys, bytes);
             });
         return destination;
     }

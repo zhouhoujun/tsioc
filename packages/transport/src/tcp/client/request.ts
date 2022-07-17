@@ -1,6 +1,6 @@
 import { ClientReqPacket, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, MapHeaders, mths, Packet } from '@tsdi/core';
 import { isString, type_bool, type_num, type_obj } from '@tsdi/ioc';
-import { Stream } from 'form-data';
+import { Stream } from 'stream';
 import { isBuffer, isStream } from '../../utils';
 
 /**
