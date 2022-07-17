@@ -1,7 +1,9 @@
 import { MapHeaders, RequestHeader, RequestPacket } from '@tsdi/core';
 import { EMPTY_OBJ } from '@tsdi/ioc';
+import { Writable } from 'form-data';
+import { IncomingRequest } from '../../incoming';
 
-export class UdpServRequest extends MapHeaders implements RequestPacket, RequestHeader {
+export class UdpServRequest extends MapHeaders implements IncomingRequest, RequestHeader {
     public readonly url: string;
     public readonly method: string;
     public readonly params: Record<string, any>;
@@ -23,5 +25,10 @@ export class UdpServRequest extends MapHeaders implements RequestPacket, Request
         this.body = option.body ?? null;
         this.params = option.params ?? {};
     }
+ 
+    pipe<T extends Writable>(destination: T, options?: { end?: boolean | undefined; } | undefined): T {
+        throw new Error('Method not implemented.');
+    }
+
 }
 

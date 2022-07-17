@@ -1,4 +1,4 @@
-import { AssetContext, Packet, RequestHeader, RequestPacket, ResponseHeader, ServerContext } from '@tsdi/core';
+import { AssetContext, ClientReqPacket, Packet, RequestHeader, ResponseHeader, ServerContext } from '@tsdi/core';
 import { Abstract, isArray, isNil, isNumber, isString, lang } from '@tsdi/ioc';
 import { extname } from 'path';
 import { ctype, hdr } from './consts';
@@ -10,7 +10,7 @@ import { encodeUrl, escapeHtml, isBuffer, isStream, xmlRegExp } from './utils';
 
 
 @Abstract()
-export abstract class AssetServerContext<TRequest extends RequestHeader | Packet = any, TResponse extends Packet | ResponseHeader = any> extends ServerContext<TRequest, TResponse> implements AssetContext {
+export abstract class AssetServerContext<TRequest extends Packet | RequestHeader = ClientReqPacket, TResponse extends Packet & ResponseHeader = any> extends ServerContext<TRequest, TResponse> implements AssetContext {
 
     /**
      * Check if the incoming request contains the "Content-Type"

@@ -56,11 +56,14 @@ export type Protocol = 'tcp' | 'udp' | 'grpc' | 'rmq' | 'kafka' | 'redis' | 'amq
 /**
  * packet.
  */
-export interface Packet<T = any> extends Record<string, any> {
+export interface Packet<T = any> {
     /**
      * packet id.
      */
     readonly id?: string;
+    /**
+     * headers
+     */
     readonly headers?: Record<string, any>;
     /**
      * The request body, or `null` if one isn't set.
@@ -160,7 +163,7 @@ export interface RequestHeader<T = any> {
  * request packet.
  */
 
-export interface RequestPacket<T = any> extends Packet<T>, RequestHeader {
+export interface RequestPacket<T = any> extends Packet<T> {
     /**
      * packet id.
      */
@@ -191,7 +194,7 @@ export interface RequestPacket<T = any> extends Packet<T>, RequestHeader {
 /**
  * client request packet
  */
-export interface ClientReqPacket<T = any> extends RequestPacket<T> {
+export interface ClientReqPacket<T = any> extends RequestPacket<T>, RequestHeader {
 
     /**
      * Transform the free-form body into a serialized format suitable for
@@ -215,6 +218,14 @@ export interface ClientReqPacket<T = any> extends RequestPacket<T> {
  * response packet.
  */
 export interface ResponsePacket<T = any> extends Packet<T> {
+    /**
+     * request url.
+     */
+    readonly url?: string;
+    /**
+     * is response status ok or not.
+     */
+    readonly ok?: boolean;
     /**
      * Get response status code.
      */

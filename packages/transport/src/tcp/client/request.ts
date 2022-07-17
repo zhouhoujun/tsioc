@@ -1,7 +1,7 @@
-import { ClientReqPacket, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, MapHeaders, mths, Packet } from '@tsdi/core';
+import { ClientReqPacket, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, MapHeaders, mths, RequestPacket } from '@tsdi/core';
 import { isString, type_bool, type_num, type_obj } from '@tsdi/ioc';
-import { Stream } from 'stream';
 import { isBuffer, isStream } from '../../utils';
+import { Stream } from 'stream';
 
 /**
  * TcpRequest.
@@ -53,7 +53,7 @@ export class TcpRequest<T = any> extends MapHeaders implements ClientReqPacket<T
         return (this.body as any).toString()
     }
 
-    serializePacket(): Packet {
+    serializePacket(): RequestPacket {
         return { id: this.id, url: this.url, method: this.method, params: this.params, headers: this.getHeaders(), body: this.serializeBody() };
     }
 

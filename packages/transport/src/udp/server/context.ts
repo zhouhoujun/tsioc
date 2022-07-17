@@ -1,4 +1,3 @@
-import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { ExecptionFilter, MiddlewareLike, Protocol, HeaderContext, AssetContext } from '@tsdi/core';
 import { Injectable, tokenId } from '@tsdi/ioc';
 import { AssetServerContext } from '../../asset.ctx';
@@ -92,7 +91,13 @@ export class UdpContext extends AssetServerContext<UdpServRequest, UdpServRespon
     set status(status: number) {
         this.response.status = status;
     }
-
+    
+    write(chunk: string | Uint8Array, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean;
+    write(chunk: string | Uint8Array, encoding: BufferEncoding, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean;
+    write(chunk: string | Uint8Array, encoding?: BufferEncoding | ((err?: Error | null | undefined) => void) | undefined, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean;
+    write(chunk: unknown, encoding?: unknown, cb?: unknown): boolean {
+        throw new Error('Method not implemented.');
+    }
 
 }
 

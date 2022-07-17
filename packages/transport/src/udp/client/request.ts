@@ -1,5 +1,4 @@
-import { RequestHeader, RequestPacket } from '@tsdi/core';
-import { MapHeaders } from '../../headers';
+import { MapHeaders, RequestHeader, RequestPacket } from '@tsdi/core';
 
 
 /**

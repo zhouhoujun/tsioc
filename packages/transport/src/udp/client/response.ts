@@ -1,5 +1,4 @@
-import { ResponseHeader, ResponsePacket } from '@tsdi/core';
-import { MapHeaders, ResHeaderItemType } from '../../headers';
+import { MapHeaders, ResHeaderType, ResponseHeader, ResponsePacket } from '@tsdi/core';
 
 export class UdpErrorResponse  {
     constructor(readonly status: number, readonly statusMessage: string, readonly error?: any){
@@ -11,7 +10,7 @@ export class UdpErrorResponse  {
 /**
  * UdpResponse.
  */
-export class UdpResponse<T = any> extends MapHeaders<ResHeaderItemType> implements ResponsePacket<T>, ResponseHeader {
+export class UdpResponse<T = any> extends MapHeaders<ResHeaderType> implements ResponsePacket<T>, ResponseHeader {
 
     readonly type: number;
     readonly status: number;
