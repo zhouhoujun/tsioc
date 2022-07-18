@@ -19,7 +19,7 @@ export interface Address {
 }
 
 @Abstract()
-export abstract class UdpClientOption extends ClientOpts<UdpRequest, UdpEvent> {
+export abstract class UdpClientOpts extends ClientOpts<UdpRequest, UdpEvent> {
     /**
      * is json or not.
      */
@@ -53,7 +53,7 @@ const defaults = {
         port: 3000,
         hostname: 'localhost'
     }
-} as UdpClientOption;
+} as UdpClientOpts;
 
 
 
@@ -68,7 +68,7 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
     private source!: Observable<Packet>;
     constructor(
         @Inject() context: InvocationContext,
-        @Nullable() private option: UdpClientOption = defaults
+        @Nullable() private option: UdpClientOpts = defaults
     ) {
         super(context, option);
         this.connected = false;

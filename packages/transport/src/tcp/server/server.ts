@@ -52,7 +52,7 @@ const defOpts = {
         BodyparserMiddleware,
         Router
     ],
-    listenOptions: {
+    listenOpts: {
     }
 } as TcpServerOpts;
 
@@ -79,8 +79,8 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
     }
 
     protected override initOption(options: TcpServerOpts): TcpServerOpts {
-        const listenOptions = { ...defOpts.listenOptions, ...options?.listenOptions };
-        const opts = this.options = { ...defOpts, ...options, listenOptions };
+        const listenOptions = { ...defOpts.listenOpts, ...options?.listenOpts };
+        const opts = this.options = { ...defOpts, ...options, listenOpts: listenOptions };
         this.context.setValue(TcpServerOpts, this.options);
         this.context.setValue(PacketProtocolOpts, this.options);
 
@@ -119,7 +119,7 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
 
         this.server.on(ev.CONNECTION, socket => {
 
-            const isIPC = !!this.options.listenOptions.path;
+            const isIPC = !!this.options.listenOpts.path;
             if (isIPC) {
                 this.logger.info('Ipc client connection')
             } else {
@@ -161,7 +161,7 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
                 });
         });
 
-        this.server.listen(this.options.listenOptions, defer.resolve);
+        this.server.listen(this.options.listenOpts, defer.resolve);
         await defer.promise;
     }
 

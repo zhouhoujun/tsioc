@@ -23,7 +23,7 @@ const defOpts = {
 } as HttpClientOpts;
 
 export type HttpHeadersType = HttpHeaders | { [header: string]: string | string[] } | http.OutgoingHttpHeaders;
-export interface HttpRequestOptions extends RequstOption {
+export interface HttpRequestOpts extends RequstOption {
     body?: any;
     method?: RequestMethod | undefined;
     headers?: HttpHeadersType;
@@ -32,9 +32,9 @@ export interface HttpRequestOptions extends RequstOption {
     reportProgress?: boolean | undefined;
 }
 
-export type HttpNodeOptions = http.RequestOptions & https.RequestOptions;
+export type HttpNodeOpts = http.RequestOptions & https.RequestOptions;
 
-export type RequestOptions = HttpRequestOptions & HttpNodeOptions;
+export type RequestOptions = HttpRequestOpts & HttpNodeOpts;
 
 /**
  * http client for nodejs
@@ -1762,7 +1762,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType: 'arraybuffer',
-    } & HttpNodeOptions): Observable<ArrayBuffer>;
+    } & HttpNodeOpts): Observable<ArrayBuffer>;
 
     /**
      * Constructs a `POST` request that interprets the body as a `Blob` and returns the
@@ -1782,7 +1782,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType: 'blob',
-    } & HttpNodeOptions): Observable<Blob>;
+    } & HttpNodeOpts): Observable<Blob>;
 
     /**
      * Constructs a `POST` request that interprets the body as a text string and
@@ -1802,7 +1802,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType: 'text',
-    } & HttpNodeOptions): Observable<string>;
+    } & HttpNodeOpts): Observable<string>;
 
     /**
      * Constructs a `POST` request that interprets the body as an `ArrayBuffer` and
@@ -1822,7 +1822,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType: 'arraybuffer',
-    } & HttpNodeOptions): Observable<HttpEvent<ArrayBuffer>>;
+    } & HttpNodeOpts): Observable<HttpEvent<ArrayBuffer>>;
 
     /**
      * Constructs a `POST` request that interprets the body as a `Blob`
@@ -1841,7 +1841,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType: 'blob',
-    } & HttpNodeOptions): Observable<HttpEvent<Blob>>;
+    } & HttpNodeOpts): Observable<HttpEvent<Blob>>;
 
     /**
      * Constructs a `POST` request that interprets the body as a text string and returns the full
@@ -1861,7 +1861,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType: 'text',
-    } & HttpNodeOptions): Observable<HttpEvent<string>>;
+    } & HttpNodeOpts): Observable<HttpEvent<string>>;
 
     /**
      * Constructs a POST request that interprets the body as a JSON object and returns the full event
@@ -1881,7 +1881,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-    } & HttpNodeOptions): Observable<HttpEvent<object>>;
+    } & HttpNodeOpts): Observable<HttpEvent<object>>;
 
     /**
      * Constructs a POST request that interprets the body as a JSON object and returns the full event
@@ -1901,7 +1901,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-    } & HttpNodeOptions): Observable<HttpEvent<T>>;
+    } & HttpNodeOpts): Observable<HttpEvent<T>>;
 
     /**
      * Constructs a POST request that interprets the body as an `ArrayBuffer`
@@ -1921,7 +1921,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType: 'arraybuffer',
-    } & HttpNodeOptions): Observable<HttpResponse<ArrayBuffer>>;
+    } & HttpNodeOpts): Observable<HttpResponse<ArrayBuffer>>;
 
     /**
      * Constructs a `POST` request that interprets the body as a `Blob` and returns the full
@@ -1941,7 +1941,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType: 'blob',
-    } & HttpNodeOptions): Observable<HttpResponse<Blob>>;
+    } & HttpNodeOpts): Observable<HttpResponse<Blob>>;
 
     /**
      * Constructs a `POST` request that interprets the body as a text stream and returns
@@ -1961,7 +1961,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType: 'text',
-    } & HttpNodeOptions): Observable<HttpResponse<string>>;
+    } & HttpNodeOpts): Observable<HttpResponse<string>>;
 
     /**
      * Constructs a `POST` request that interprets the body as a JSON object
@@ -1981,7 +1981,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-    } & HttpNodeOptions): Observable<HttpResponse<object>>;
+    } & HttpNodeOpts): Observable<HttpResponse<object>>;
 
     /**
      * Constructs a `POST` request that interprets the body as a JSON object and returns the full
@@ -2002,7 +2002,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-    } & HttpNodeOptions): Observable<HttpResponse<T>>;
+    } & HttpNodeOpts): Observable<HttpResponse<T>>;
 
     /**
      * Constructs a `POST` request that interprets the body as a
@@ -2022,7 +2022,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-    } & HttpNodeOptions): Observable<object>;
+    } & HttpNodeOpts): Observable<object>;
 
     /**
      * Constructs a `POST` request that interprets the body as a JSON object
@@ -2043,7 +2043,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-    } & HttpNodeOptions): Observable<T>;
+    } & HttpNodeOpts): Observable<T>;
 
     /**
      * Constructs an observable that, when subscribed, causes the configured
@@ -2059,7 +2059,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
-    } & HttpNodeOptions = {}): Observable<any> {
+    } & HttpNodeOpts = {}): Observable<any> {
         return this.send<any>(url, merge(options, mths.POST, body))
     }
 
@@ -2080,7 +2080,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'arraybuffer',
-    } & HttpNodeOptions): Observable<ArrayBuffer>;
+    } & HttpNodeOpts): Observable<ArrayBuffer>;
 
     /**
      * Constructs a `PUT` request that interprets the body as a `Blob` and returns
@@ -2099,7 +2099,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
-    } & HttpNodeOptions): Observable<Blob>;
+    } & HttpNodeOpts): Observable<Blob>;
 
     /**
      * Constructs a `PUT` request that interprets the body as a text string and
@@ -2118,7 +2118,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'text',
-    } & HttpNodeOptions): Observable<string>;
+    } & HttpNodeOpts): Observable<string>;
 
     /**
      * Constructs a `PUT` request that interprets the body as an `ArrayBuffer` and
@@ -2138,7 +2138,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType: 'arraybuffer',
-    } & HttpNodeOptions): Observable<HttpEvent<ArrayBuffer>>;
+    } & HttpNodeOpts): Observable<HttpEvent<ArrayBuffer>>;
 
     /**
      * Constructs a `PUT` request that interprets the body as a `Blob` and returns the full event
@@ -2157,7 +2157,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean, responseType: 'blob',
-    } & HttpNodeOptions): Observable<HttpEvent<Blob>>;
+    } & HttpNodeOpts): Observable<HttpEvent<Blob>>;
 
     /**
      * Constructs a `PUT` request that interprets the body as a text string and returns the full event
@@ -2177,7 +2177,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType: 'text',
-    } & HttpNodeOptions): Observable<HttpEvent<string>>;
+    } & HttpNodeOpts): Observable<HttpEvent<string>>;
 
     /**
      * Constructs a `PUT` request that interprets the body as a JSON object and returns the full event
@@ -2197,7 +2197,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-    } & HttpNodeOptions): Observable<HttpEvent<object>>;
+    } & HttpNodeOpts): Observable<HttpEvent<object>>;
 
     /**
      * Constructs a `PUT` request that interprets the body as a JSON object and returns the
@@ -2217,7 +2217,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-    } & HttpNodeOptions): Observable<HttpEvent<T>>;
+    } & HttpNodeOpts): Observable<HttpEvent<T>>;
 
     /**
      * Constructs a `PUT` request that interprets the body as an
@@ -2237,7 +2237,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType: 'arraybuffer',
-    } & HttpNodeOptions): Observable<HttpResponse<ArrayBuffer>>;
+    } & HttpNodeOpts): Observable<HttpResponse<ArrayBuffer>>;
 
     /**
      * Constructs a `PUT` request that interprets the body as a `Blob` and returns the
@@ -2257,7 +2257,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType: 'blob',
-    } & HttpNodeOptions): Observable<HttpResponse<Blob>>;
+    } & HttpNodeOpts): Observable<HttpResponse<Blob>>;
 
     /**
      * Constructs a `PUT` request that interprets the body as a text stream and returns the
@@ -2277,7 +2277,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType: 'text',
-    } & HttpNodeOptions): Observable<HttpResponse<string>>;
+    } & HttpNodeOpts): Observable<HttpResponse<string>>;
 
     /**
      * Constructs a `PUT` request that interprets the body as a JSON object and returns the full HTTP
@@ -2297,7 +2297,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-    } & HttpNodeOptions): Observable<HttpResponse<object>>;
+    } & HttpNodeOpts): Observable<HttpResponse<object>>;
 
     /**
      * Constructs a `PUT` request that interprets the body as an instance of the requested type and
@@ -2317,7 +2317,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-    } & HttpNodeOptions): Observable<HttpResponse<T>>;
+    } & HttpNodeOpts): Observable<HttpResponse<T>>;
 
     /**
      * Constructs a `PUT` request that interprets the body as a JSON object
@@ -2337,7 +2337,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-    } & HttpNodeOptions): Observable<object>;
+    } & HttpNodeOpts): Observable<object>;
 
     /**
      * Constructs a `PUT` request that interprets the body as an instance of the requested type
@@ -2357,7 +2357,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'json',
-    } & HttpNodeOptions): Observable<T>;
+    } & HttpNodeOpts): Observable<T>;
 
     /**
      * Constructs an observable that, when subscribed, causes the configured
@@ -2373,7 +2373,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
-    } & HttpNodeOptions = {}): Observable<any> {
+    } & HttpNodeOpts = {}): Observable<any> {
         return this.send<any>(url, merge(options, mths.PUT, body))
     }
 

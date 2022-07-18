@@ -48,7 +48,7 @@ export interface Address {
  * UDP server options.
  */
 @Abstract()
-export abstract class UdpServerOptions extends ServerOpts<UdpServRequest, UdpServResponse> {
+export abstract class UdpServerOpts extends ServerOpts<UdpServRequest, UdpServResponse> {
     /**
      * is json or not.
      */
@@ -60,7 +60,7 @@ export abstract class UdpServerOptions extends ServerOpts<UdpServRequest, UdpSer
     abstract headerSplit?: string;
     abstract encoding?: BufferEncoding;
     abstract serverOpts: SocketOptions;
-    abstract bindOptions: BindOptions;
+    abstract bindOpts: BindOptions;
 }
 
 const defOpts = {
@@ -72,11 +72,11 @@ const defOpts = {
         CatchInterceptor,
         RespondInterceptor
     ],
-    bindOptions: {
+    bindOpts: {
         port: 3000,
         address: 'localhost'
     }
-} as UdpServerOptions;
+} as UdpServerOpts;
 
 /**
  * UDP server interceptors.
@@ -91,13 +91,13 @@ export class UdpServer extends TransportServer<UdpServRequest, UdpServResponse, 
 
     private server?: Socket;
     private cancel?: Subscription;
-    private options!: UdpServerOptions;
+    private options!: UdpServerOpts;
 
-    constructor(@Inject() context: InvocationContext, @Nullable() options: UdpServerOptions) {
+    constructor(@Inject() context: InvocationContext, @Nullable() options: UdpServerOpts) {
         super(context, options)
     }
 
-    protected override initOption(options: UdpServerOptions): UdpServerOptions {
+    protected override initOption(options: UdpServerOpts): UdpServerOpts {
         this.options = { ...defOpts, ...options };
         return this.options;
     }
@@ -124,7 +124,7 @@ export class UdpServer extends TransportServer<UdpServRequest, UdpServResponse, 
             this.logger.error(err);
         });
 
-        const { port, address } = this.options.bindOptions;
+        const { port, address } = this.options.bindOpts;
         server.bind(port, address, (err?: any) => {
             if (err) {
                 this.logger.error(err);

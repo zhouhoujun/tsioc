@@ -3,7 +3,7 @@ import { Injectable, isArray } from '@tsdi/ioc';
 import { normalize, resolve, basename, extname, parse, sep, isAbsolute, join } from 'path';
 import { existsSync, Stats, stat, createReadStream } from 'fs';
 import { promisify } from 'util';
-import { ContentSendAdapter, SendOption } from '../middlewares/send';
+import { ContentSendAdapter, SendOptions } from '../middlewares/send';
 import { ev, hdr } from '../consts';
 import { AssetServerContext } from '../asset.ctx';
 
@@ -12,7 +12,7 @@ const statify = promisify(stat);
 
 @Injectable()
 export class TransportSendAdapter extends ContentSendAdapter {
-    async send(ctx: AssetServerContext, opts: SendOption): Promise<string> {
+    async send(ctx: AssetServerContext, opts: SendOptions): Promise<string> {
         let path = ctx.pathname;
         const endSlash = path[path.length - 1] === '/';
         path = path.substring(parse(path).root.length);

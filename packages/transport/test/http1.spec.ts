@@ -16,7 +16,7 @@ import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModu
         LoggerModule,
         HttpModule.withOption({
             majorVersion: 1,
-            listenOptions: {
+            listenOpts: {
                 port: 3200
             }
         }),

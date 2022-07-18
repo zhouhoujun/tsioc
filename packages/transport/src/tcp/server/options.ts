@@ -32,7 +32,7 @@ export abstract class TcpServerOpts extends ServerOpts<TcpServRequest, TcpServRe
     abstract content?: boolean | ContentOptions;
     abstract session?: boolean | SessionOptions;
     abstract serverOpts?: NetServerOpts | undefined;
-    abstract listenOptions: ListenOptions;
+    abstract listenOpts: ListenOptions;
 }
 
 /**

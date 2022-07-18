@@ -3,7 +3,7 @@ import { Abstract } from '@tsdi/ioc';
 import { Stats } from 'fs';
 
 
-export interface SendOption {
+export interface SendOptions {
     root: string | string[];
     index?: string;
     maxAge?: number;
@@ -21,5 +21,5 @@ export interface SendOption {
  */
 @Abstract()
 export abstract class ContentSendAdapter {
-    abstract send(ctx: TransportContext, options: SendOption): Promise<string>;
+    abstract send(ctx: TransportContext, options: SendOptions): Promise<string>;
 }

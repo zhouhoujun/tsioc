@@ -35,7 +35,7 @@ describe('middleware', () => {
                         key,
                         cert
                     },
-                    listenOptions: {
+                    listenOpts: {
                         port: 3200
                     }
                 })

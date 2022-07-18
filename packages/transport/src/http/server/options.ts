@@ -32,7 +32,7 @@ import { CsrfOptions } from '../../middlewares/csrf';
     mimeDb?: Record<string, MimeSource>;
     content?: boolean | ContentOptions;
     session?: boolean | SessionOptions;
-    listenOptions?: ListenOptions;
+    listenOpts?: ListenOptions;
     csrf?: boolean | CsrfOptions;
     /**
      * share with thie http server.

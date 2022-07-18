@@ -92,7 +92,7 @@ const ipcpath = path.join(__dirname, 'myipctmp')
         LoggerModule,
         TcpModule.withOptions({
             timeout: 1000,
-            listenOptions: {
+            listenOpts: {
                 path: ipcpath
             }
         })

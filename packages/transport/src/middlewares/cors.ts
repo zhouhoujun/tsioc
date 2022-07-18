@@ -3,7 +3,6 @@ import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '
 import { Logger } from '@tsdi/logs';
 import { hdr } from '../consts';
 import { append, vary } from '../utils';
-import { HttpError } from '../http/errors';
 
 
 

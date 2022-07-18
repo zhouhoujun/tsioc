@@ -89,7 +89,7 @@ export class DeviceController {
         LoggerModule,
         TcpModule.withOptions({
             timeout: 1000,
-            listenOptions: {
+            listenOpts: {
                 port: 2000
             }
         })

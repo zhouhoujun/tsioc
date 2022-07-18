@@ -1,7 +1,7 @@
 import { Module, RouterModule, TransformModule } from '@tsdi/core';
 import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
 import { UdpClient } from './client/client';
-import { UdpServer, UdpServerOptions } from './server/server';
+import { UdpServer, UdpServerOpts } from './server/server';
 
 @Module({
     imports: [
@@ -20,8 +20,8 @@ export class UdpModule {
      * @param options 
      * @returns 
      */
-    static withOptions(options: UdpServerOptions): ModuleWithProviders<UdpModule> {
-        const providers: ProviderType[] = [{ provide: UdpServerOptions, useValue: options }];
+    static withOptions(options: UdpServerOpts): ModuleWithProviders<UdpModule> {
+        const providers: ProviderType[] = [{ provide: UdpServerOpts, useValue: options }];
         return {
             module: UdpModule,
             providers

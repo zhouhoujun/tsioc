@@ -35,7 +35,7 @@ import { HttpStatus } from '../status';
 const httpOpts = {
     majorVersion: 2,
     options: { allowHTTP1: true },
-    listenOptions: { port: 3000, host: LOCALHOST } as ListenOptions,
+    listenOpts: { port: 3000, host: LOCALHOST } as ListenOptions,
     mimeDb: db,
     closeDelay: 500,
     content: {
@@ -111,8 +111,8 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         if (options?.options) {
             options.options = { ...httpOpts.options, ...options.options }
         }
-        if (options?.listenOptions) {
-            options.listenOptions = { ...httpOpts.listenOptions, ...options.listenOptions }
+        if (options?.listenOpts) {
+            options.listenOpts = { ...httpOpts.listenOpts, ...options.listenOpts }
         }
         const opts = this.options = { ...httpOpts, ...options } as HttpServerOpts;
 
@@ -180,7 +180,7 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
             }))
         }
 
-        const listenOptions = this.options.listenOptions;
+        const listenOptions = this.options.listenOpts;
         injector.get(ModuleRef).setValue(HTTP_LISTENOPTIONS, { ...listenOptions, withCredentials: isDefined(cert), majorVersion: options.majorVersion });
         this.logger.info(lang.getClassName(this), 'listen:', listenOptions, '. access with url:', `http${cert ? 's' : ''}://${listenOptions?.host}:${listenOptions?.port}${listenOptions?.path ?? ''}`, '!')
         this._server.listen(listenOptions)
@@ -209,7 +209,7 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
                 this.logger.error(err);
                 defer.reject(err)
             } else {
-                this.logger.info(lang.getClassName(this), this.options.listenOptions, 'closed !');
+                this.logger.info(lang.getClassName(this), this.options.listenOpts, 'closed !');
                 defer.resolve()
             }
         });

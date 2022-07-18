@@ -26,7 +26,7 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
                 key,
                 cert
             },
-            listenOptions: {
+            listenOpts: {
                 port: 3200
             }
         }),
