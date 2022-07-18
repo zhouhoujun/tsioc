@@ -7,7 +7,7 @@ import { JsonDecoder, JsonEncoder } from '../../coder';
 import { ev } from '../../consts';
 import { TcpPathInterceptor } from './path';
 import { TcpClientOpts, TCP_EXECPTIONFILTERS, TCP_INTERCEPTORS } from './options';
-import { TcpBodyInterceptor } from './body';
+import { TcpBodyInterceptor } from '../../interceptors/body';
 import { PacketProtocolOpts } from '../packet';
 import { TcpBackend } from './backend';
 import { HttpStatus } from '../../http/status';

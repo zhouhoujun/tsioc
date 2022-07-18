@@ -1,16 +1,9 @@
-import { ServerOptions, TransportServer, TransportContext } from '@tsdi/core';
-import { Abstract, Inject, Injectable, InvocationContext, Token } from '@tsdi/ioc';
+import { TransportServer, TransportContext } from '@tsdi/core';
+import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
 import * as amqp from 'amqplib';
 import { Subscription } from 'rxjs';
+import { AmqpOptions } from './options';
 
-export type amqpURL = string | amqp.Options.Connect;
-
-@Abstract()
-export abstract class AmqpOptions extends ServerOptions<any, any> {
-    abstract url: amqpURL;
-    queue?: string;
-    queueOptions?: amqp.Options.AssertQueue;
-}
 
 const defaultQueue = 'default';
 

@@ -195,6 +195,18 @@ export interface RequestPacket<T = any> extends Packet<T> {
  * client request packet
  */
 export interface ClientReqPacket<T = any> extends RequestPacket<T>, RequestHeader {
+    /**
+     * The request body, or `null` if one isn't set.
+     *
+     * Bodies are not enforced to be immutable, as they can include a reference to any
+     * user-defined data type. However, middlewares should take care to preserve
+     * idempotence by treating them as such.
+     */
+    get body(): T | null;
+    /**
+     * set body.
+     */
+    set body(val: T | null);
 
     /**
      * Transform the free-form body into a serialized format suitable for
