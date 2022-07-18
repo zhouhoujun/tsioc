@@ -15,7 +15,7 @@ import * as NodeFormData from 'form-data';
 import { ev, hdr } from '../../consts';
 import { HttpError } from '../errors';
 import { toBuffer, isBuffer, jsonTypes, textTypes, xmlTypes } from '../../utils';
-import { CLIENT_HTTP2SESSION, HttpClientOptions } from './option';
+import { CLIENT_HTTP2SESSION, HttpClientOpts } from './option';
 import { MimeAdapter } from '../../mime';
 
 const pmPipeline = promisify(pipeline);
@@ -29,7 +29,7 @@ if (typeof global.FormData === type_undef) {
  */
 @Injectable()
 export class HttpBackend extends EndpointBackend<HttpRequest, HttpEvent> {
-    constructor(private option: HttpClientOptions) {
+    constructor(private option: HttpClientOpts) {
         super();
     }
 
@@ -464,7 +464,7 @@ const HTTP2_HEADER_STATUS = ':status';
  * http2 client backend.
  */
 export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
-    constructor(private option: HttpClientOptions) {
+    constructor(private option: HttpClientOpts) {
         super();
     }
     handle(req: HttpRequest<any>, ctx: EndpointContext): Observable<HttpEvent<any>> {

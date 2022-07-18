@@ -1,5 +1,5 @@
 import { Decoder, Encoder, Packet } from '@tsdi/core';
-import { Abstract, ArgumentError, Defer, Injectable, isString, lang } from '@tsdi/ioc';
+import { Abstract, ArgumentError, Defer, Injectable, lang } from '@tsdi/ioc';
 import { Observable, Observer, share } from 'rxjs';
 import { Socket } from 'net';
 import { Readable } from 'stream';
@@ -10,7 +10,11 @@ import { isStream } from '../utils';
  * Packet Protocol options.
  */
 @Abstract()
-export abstract class PacketProtocolOpions {
+export abstract class PacketProtocolOpts {
+    /**
+     * packet size limit.
+     */
+    sizeLimit?: number;
     /**
      * package delimiter code.
      */
@@ -34,7 +38,7 @@ export class DelimiterProtocol extends PacketProtocol {
     private _header: Buffer;
     private _body: Buffer;
     constructor(
-        private option: PacketProtocolOpions,
+        private option: PacketProtocolOpts,
         private encoder: Encoder<Buffer>,
         private decoder: Decoder<Buffer>) {
         super();

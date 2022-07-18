@@ -11,7 +11,7 @@ import { TrasportMimeAdapter } from '../../impl/mime';
 import { HttpBackend } from './backend';
 import { NormlizePathInterceptor } from './path';
 import { NormlizeBodyInterceptor } from './body';
-import { HttpClientOptions, HTTP_INTERCEPTORS, CLIENT_HTTP2SESSION, HTTP_EXECPTIONFILTERS } from './option';
+import { HttpClientOpts, HTTP_INTERCEPTORS, CLIENT_HTTP2SESSION, HTTP_EXECPTIONFILTERS } from './option';
 import { HttpStatus } from '../status';
 
 
@@ -20,7 +20,7 @@ import { HttpStatus } from '../status';
 const defOpts = {
     interceptorsToken: HTTP_INTERCEPTORS,
     execptionsToken: HTTP_EXECPTIONFILTERS,
-} as HttpClientOptions;
+} as HttpClientOpts;
 
 export type HttpHeadersType = HttpHeaders | { [header: string]: string | string[] } | http.OutgoingHttpHeaders;
 export interface HttpRequestOptions extends RequstOption {
@@ -48,10 +48,10 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
 
     private _backend?: EndpointBackend<HttpRequest, HttpEvent>;
     private _client?: http2.ClientHttp2Session;
-    private opts!: HttpClientOptions;
+    private opts!: HttpClientOpts;
     constructor(
         @Inject() context: InvocationContext,
-        @Nullable() option: HttpClientOptions) {
+        @Nullable() option: HttpClientOpts) {
         super(context, option)
 
     }
@@ -60,10 +60,10 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
         return this._client;
     }
 
-    protected override initOption(options?: HttpClientOptions): HttpClientOptions {
+    protected override initOption(options?: HttpClientOpts): HttpClientOpts {
         const interceptors = [...options?.interceptors ?? EMPTY, NormlizePathInterceptor, NormlizeBodyInterceptor]
-        this.opts = { ...defOpts, ...options, interceptors } as HttpClientOptions;
-        this.context.setValue(HttpClientOptions, this.opts);
+        this.opts = { ...defOpts, ...options, interceptors } as HttpClientOpts;
+        this.context.setValue(HttpClientOpts, this.opts);
         return this.opts;
     }
 

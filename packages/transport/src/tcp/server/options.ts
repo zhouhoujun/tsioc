@@ -1,10 +1,10 @@
-import { Interceptor, ServerOptions } from '@tsdi/core';
+import { Interceptor, ServerOpts } from '@tsdi/core';
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { ListenOptions, ServerOpts as TcpServerOpts } from 'net';
+import { ListenOptions, ServerOpts as NetServerOpts } from 'net';
 import { SessionOptions, ContentOptions } from '../../middlewares';
 
 import { MimeSource } from '../../mime';
-import { PacketProtocolOpions } from '../packet';
+import { PacketProtocolOpts } from '../packet';
 import { TcpServRequest } from './request';
 import { TcpServResponse } from './response';
 
@@ -13,9 +13,13 @@ import { TcpServResponse } from './response';
  * TCP server options.
  */
 @Abstract()
-export abstract class TcpServerOptions extends ServerOptions<TcpServRequest, TcpServResponse> implements PacketProtocolOpions  {
+export abstract class TcpServerOpts extends ServerOpts<TcpServRequest, TcpServResponse> implements PacketProtocolOpts  {
     /**
-     * package delimiter code.
+     * packet size limit.
+     */
+    abstract sizeLimit?: number;
+    /**
+     * packet delimiter code.
      */
     abstract delimiter?: string;
     abstract maxConnections?: number;
@@ -27,7 +31,7 @@ export abstract class TcpServerOptions extends ServerOptions<TcpServRequest, Tcp
     abstract mimeDb?: Record<string, MimeSource>;
     abstract content?: boolean | ContentOptions;
     abstract session?: boolean | SessionOptions;
-    abstract serverOpts?: TcpServerOpts | undefined;
+    abstract serverOpts?: NetServerOpts | undefined;
     abstract listenOptions: ListenOptions;
 }
 

@@ -1,7 +1,7 @@
-import { Decoder, ExecptionRespondTypeAdapter, Packet, Router, TransportServer, TransportStatus, UuidGenerator } from '@tsdi/core';
-import { Inject, Injectable, InvocationContext, isBoolean, isString, lang, Nullable, Providers } from '@tsdi/ioc';
-import { Server, Socket } from 'net';
-import { Observable, Observer, Subscription } from 'rxjs';
+import { BadRequestError, ExecptionRespondTypeAdapter, Router, TransportServer, TransportStatus } from '@tsdi/core';
+import { Inject, Injectable, InvocationContext, isBoolean, lang, Nullable, Providers } from '@tsdi/ioc';
+import { Server } from 'net';
+import { Subscription } from 'rxjs';
 import { JsonDecoder, JsonEncoder } from '../../coder';
 import { ev, hdr } from '../../consts';
 import { TrasportMimeAdapter } from '../../impl/mime';
@@ -20,8 +20,8 @@ import { db } from '../../impl/mimedb';
 import { HttpStatus } from '../../http/status';
 import { DefaultStatusFormater } from '../../interceptors/formater';
 import { TcpArgumentErrorFilter, TcpFinalizeFilter } from './finalize-filter';
-import { TcpServerOptions, TCP_SERV_INTERCEPTORS } from './options';
-import { PacketProtocol, PacketProtocolOpions } from '../packet';
+import { TcpServerOpts, TCP_SERV_INTERCEPTORS } from './options';
+import { PacketProtocol, PacketProtocolOpts } from '../packet';
 
 
 const defOpts = {
@@ -54,7 +54,7 @@ const defOpts = {
     ],
     listenOptions: {
     }
-} as TcpServerOptions;
+} as TcpServerOpts;
 
 
 /**
@@ -73,16 +73,16 @@ const defOpts = {
 export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, TcpContext> {
 
     private server?: Server;
-    private options!: TcpServerOptions;
-    constructor(@Inject() readonly context: InvocationContext, @Nullable() options: TcpServerOptions) {
+    private options!: TcpServerOpts;
+    constructor(@Inject() readonly context: InvocationContext, @Nullable() options: TcpServerOpts) {
         super(context, options)
     }
 
-    protected override initOption(options: TcpServerOptions): TcpServerOptions {
+    protected override initOption(options: TcpServerOpts): TcpServerOpts {
         const listenOptions = { ...defOpts.listenOptions, ...options?.listenOptions };
         const opts = this.options = { ...defOpts, ...options, listenOptions };
-        this.context.setValue(TcpServerOptions, this.options);
-        this.context.setValue(PacketProtocolOpions, this.options);
+        this.context.setValue(TcpServerOpts, this.options);
+        this.context.setValue(PacketProtocolOpts, this.options);
 
         if (opts.middlewares) {
             opts.middlewares = opts.middlewares.filter(m => {
@@ -145,6 +145,17 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
             protocol.read(socket)
                 .subscribe(pk => {
                     if (pk.id && pk.headers) {
+                        let length = 0;
+                        const len = pk.headers[hdr.CONTENT_LENGTH] as number ?? 0;
+                        const hdrcode = pk.headers[hdr.CONTENT_ENCODING] as string || hdr.IDENTITY;
+                        if (len && hdrcode === hdr.IDENTITY) {
+                            length = ~~len
+                        }
+                        if (this.options.sizeLimit && length > this.options.sizeLimit) {
+                            const msg = 'Packet size limit ' + this.options.sizeLimit;
+                            socket.emit(ev.ERROR, msg);
+                            throw new BadRequestError(msg);
+                        }
                         this.requestHandler(new TcpServRequest(protocol, socket, pk), new TcpServResponse(socket, pk.id!))
                     }
                 });

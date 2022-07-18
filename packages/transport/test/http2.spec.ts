@@ -8,7 +8,7 @@ import * as path from 'path';
 
 import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
 
-import { Http, HttpClientOptions, HttpModule, HttpServer } from '../src';
+import { Http, HttpClientOpts, HttpModule, HttpServer } from '../src';
 
 
 const key = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-privkey.pem'));
@@ -56,13 +56,13 @@ describe('http2 server, Http', () => {
         ctx = await Application.run(MainApp);
         injector = ctx.injector;
         client = injector.resolve(Http, {
-            provide: HttpClientOptions,
+            provide: HttpClientOpts,
             useValue: {
                 authority: 'https://localhost:3200',
                 options: {
                     ca: cert
                 }
-            } as HttpClientOptions
+            } as HttpClientOpts
         });
     });
 

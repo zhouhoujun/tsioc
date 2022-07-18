@@ -10,7 +10,7 @@ import { Endpoint, EndpointBackend, InterceptorChain, InterceptorLike, Intercept
  * transport endpoint options.
  */
 @Abstract()
-export abstract class TransportOptions<TRequest, TResponse> {
+export abstract class TransportOpts<TRequest, TResponse> {
     /**
      * providers for transport.
      */
@@ -57,7 +57,7 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any> {
     private _filterToken!: Token<ExecptionFilter[]>;
     private _filter?: ExecptionFilter;
 
-    constructor(readonly context: InvocationContext, options?: TransportOptions<TRequest, TResponse>) {
+    constructor(readonly context: InvocationContext, options?: TransportOpts<TRequest, TResponse>) {
         const opts = this.initOption(options);
         this.initialize(opts);
     }
@@ -123,13 +123,13 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any> {
      * initialize options.
      * @param options 
      */
-    protected abstract initOption(options?: TransportOptions<TRequest, TResponse>): TransportOptions<TRequest, TResponse>;
+    protected abstract initOption(options?: TransportOpts<TRequest, TResponse>): TransportOpts<TRequest, TResponse>;
 
     /**
      * initialize context with options.
      * @param options 
      */
-    protected initialize(options: TransportOptions<TRequest, TResponse>): void {
+    protected initialize(options: TransportOpts<TRequest, TResponse>): void {
         const injector = this.context.injector;
         injector.inject({ provide: Logger, useFactory: () => this.logger });
         if (options.providers && options.providers.length) {

@@ -1,5 +1,5 @@
 import {
-    BadRequestError, ClientOptions, createEndpoint, Decoder, Encoder, EndpointBackend, ExecptionFilter, Interceptor,
+    BadRequestError, ClientOpts, createEndpoint, Decoder, Encoder, EndpointBackend, ExecptionFilter, Interceptor,
     OnDispose, Packet, RequestContext, ResponseJsonParseError, TransportClient, UuidGenerator
 } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, tokenId, type_undef } from '@tsdi/ioc';
@@ -19,7 +19,7 @@ export interface Address {
 }
 
 @Abstract()
-export abstract class UdpClientOption extends ClientOptions<UdpRequest, UdpEvent> {
+export abstract class UdpClientOption extends ClientOpts<UdpRequest, UdpEvent> {
     /**
      * is json or not.
      */

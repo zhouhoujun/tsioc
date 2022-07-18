@@ -5,7 +5,7 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import path = require('path');
 import del = require('del');
-import { RedirectResult, TcpClient, TcpClientOptions, TcpModule, TcpServer } from '../src';
+import { RedirectResult, TcpClient, TcpClientOpts, TcpModule, TcpServer } from '../src';
 
 
 @RouteMapping('/device')
@@ -118,12 +118,12 @@ describe('IPC Server & IPC Client', () => {
         ctx = await Application.run(IPCTestModule);
         injector = ctx.injector;
         client = injector.resolve(TcpClient, {
-            provide: TcpClientOptions,
+            provide: TcpClientOpts,
             useValue: {
                 connectOpts: {
                     path: ipcpath
                 }
-            } as TcpClientOptions
+            } as TcpClientOpts
         });
     });
 

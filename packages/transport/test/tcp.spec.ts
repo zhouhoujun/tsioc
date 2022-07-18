@@ -3,7 +3,7 @@ import { Injector, isArray, lang } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { RedirectResult, TcpClient, TcpClientOptions, TcpModule, TcpServer } from '../src';
+import { RedirectResult, TcpClient, TcpClientOpts, TcpModule, TcpServer } from '../src';
 
 
 
@@ -114,12 +114,12 @@ describe('TCP Server & TCP Client', () => {
         ctx = await Application.run(TcpTestModule);
         injector = ctx.injector;
         client = injector.resolve(TcpClient, {
-            provide: TcpClientOptions,
+            provide: TcpClientOpts,
             useValue: {
                 connectOpts: {
                     port: 2000
                 }
-            } as TcpClientOptions
+            } as TcpClientOpts
         });
     });
 

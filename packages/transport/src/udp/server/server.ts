@@ -1,7 +1,7 @@
 
 import {
     BadRequestError, ExecptionFilter, Interceptor, InterceptorLike,
-    MiddlewareLike, ServerOptions, TransportServer
+    MiddlewareLike, ServerOpts, TransportServer
 } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId, Type } from '@tsdi/ioc';
 import { Socket, createSocket, SocketOptions, BindOptions, RemoteInfo } from 'dgram';
@@ -48,7 +48,7 @@ export interface Address {
  * UDP server options.
  */
 @Abstract()
-export abstract class UdpServerOptions extends ServerOptions<UdpServRequest, UdpServResponse> {
+export abstract class UdpServerOptions extends ServerOpts<UdpServRequest, UdpServResponse> {
     /**
      * is json or not.
      */

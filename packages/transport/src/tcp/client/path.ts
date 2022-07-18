@@ -2,7 +2,7 @@ import { Injectable } from '@tsdi/ioc';
 import { Endpoint, EndpointContext, Interceptor, TransportArgumentError } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { TcpNetConnectOpts, IpcNetConnectOpts } from 'net';
-import { TcpClientOptions } from './options';
+import { TcpClientOpts } from './options';
 import { TcpRequest } from './request';
 import { TcpEvent } from './response';
 
@@ -11,7 +11,7 @@ const abstUrlExp = /^tcp:/;
 @Injectable()
 export class TcpPathInterceptor implements Interceptor<TcpRequest, TcpEvent> {
 
-    constructor(private option: TcpClientOptions) { }
+    constructor(private option: TcpClientOpts) { }
 
     intercept(req: TcpRequest, next: Endpoint<TcpRequest, TcpEvent>, context: EndpointContext): Observable<TcpEvent> {
         let url = req.url.trim();

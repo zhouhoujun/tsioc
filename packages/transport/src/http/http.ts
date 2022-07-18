@@ -3,7 +3,7 @@ import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
 import { BasicMimeDb, MimeDb } from '../mime';
 import { HttpServer } from './server/server';
 import { Http } from './client/clinet';
-import { HttpServerOptions, HTTP_SERVEROPTIONS } from './server/options';
+import { HttpServerOpts, HTTP_SERVEROPTIONS } from './server/options';
 
 /**
  * http module.
@@ -21,7 +21,7 @@ import { HttpServerOptions, HTTP_SERVEROPTIONS } from './server/options';
 })
 export class HttpModule {
 
-    static withOption(option: HttpServerOptions): ModuleWithProviders<HttpModule> {
+    static withOption(option: HttpServerOpts): ModuleWithProviders<HttpModule> {
         const providers: ProviderType[] = [{ provide: HTTP_SERVEROPTIONS, useValue: option }];
         return {
             module: HttpModule,

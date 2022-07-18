@@ -1,13 +1,13 @@
 import * as http2 from 'http2';
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { ClientOptions, ExecptionFilter, InterceptorLike } from '@tsdi/core';
+import { ClientOpts, ExecptionFilter, InterceptorLike } from '@tsdi/core';
 import { HttpEvent, HttpRequest } from '@tsdi/common';
 
 
 /**
  * http serssion options.
  */
-export type HttpSessionOptions = http2.ClientSessionOptions | http2.SecureClientSessionOptions;
+export type HttpSessionOpts = http2.ClientSessionOptions | http2.SecureClientSessionOptions;
 
 /**
  * client session
@@ -18,7 +18,7 @@ export const CLIENT_HTTP2SESSION = tokenId<http2.ClientHttp2Session>('CLIENT_HTT
  * http client options.
  */
 @Abstract()
-export abstract class HttpClientOptions extends ClientOptions<HttpRequest, HttpEvent> {
+export abstract class HttpClientOpts extends ClientOpts<HttpRequest, HttpEvent> {
     /**
      * http2 authority.
      */
@@ -26,7 +26,7 @@ export abstract class HttpClientOptions extends ClientOptions<HttpRequest, HttpE
     /**
      * http2 session options.
      */
-    abstract options?: HttpSessionOptions;
+    abstract options?: HttpSessionOpts;
     /**
      * request options.
      */
@@ -44,5 +44,5 @@ export const HTTP_EXECPTIONFILTERS = tokenId<ExecptionFilter[]>('HTTP_EXECPTIONF
 /**
  * http serssion options.
  */
-export const HTTP_SESSIONOPTIONS = tokenId<HttpSessionOptions>('HTTP_SESSIONOPTIONS');
+export const HTTP_SESSIONOPTIONS = tokenId<HttpSessionOpts>('HTTP_SESSIONOPTIONS');
 

@@ -2,10 +2,10 @@ import { EndpointBackend, mths, RequestContext, ResHeaderType, ResponseJsonParse
 import { Injectable, InvocationContext, type_undef } from '@tsdi/ioc';
 import { Socket } from 'net';
 import { filter, Observable, Observer, throwError } from 'rxjs';
-import { hdr } from '../../consts';
+import { ev, hdr } from '../../consts';
 import { isBuffer } from '../../utils';
 import { PacketProtocol } from '../packet';
-import { TcpClientOptions } from './options';
+import { TcpClientOpts } from './options';
 import { TcpRequest } from './request';
 import { TcpErrorResponse, TcpEvent, TcpResponse } from './response';
 
@@ -15,7 +15,7 @@ import { TcpErrorResponse, TcpEvent, TcpResponse } from './response';
 @Injectable()
 export class TcpBackend implements EndpointBackend<TcpRequest, TcpEvent> {
 
-    constructor(private option: TcpClientOptions) {
+    constructor(private option: TcpClientOpts) {
 
     }
 
@@ -57,7 +57,21 @@ export class TcpBackend implements EndpointBackend<TcpRequest, TcpEvent> {
                     next: (pk) => {
                         if (pk.headers) {
                             headers = pk.headers;
-                            bodyLen = headers[hdr.CONTENT_LENGTH] as number ?? 0;
+                            const len = headers[hdr.CONTENT_LENGTH] as number ?? 0;
+                            const hdrcode = headers[hdr.CONTENT_ENCODING] as string || hdr.IDENTITY;
+                            if (len && hdrcode === hdr.IDENTITY) {
+                                bodyLen = ~~len
+                            }
+                            if (this.option.sizeLimit && len > this.option.sizeLimit) {
+                                const msg = 'Packet size limit ' + this.option.sizeLimit;
+                                socket.emit(ev.ERROR, msg);
+                                observer.error(new TcpErrorResponse({
+                                    id,
+                                    url,
+                                    status: 0,
+                                    statusMessage: 'Packet size limit ' + this.option.sizeLimit
+                                }))
+                            }
                             bodyType = headers[hdr.CONTENT_TYPE] as string;
                             status = headers[hdr.STATUS] as number ?? 0;
                             statusText = headers[hdr.STATUS_MESSAGE] as string ?? adapter.message(status);
@@ -164,6 +178,14 @@ export class TcpBackend implements EndpointBackend<TcpRequest, TcpEvent> {
                 }
             }
 
+            if (this.option.sizeLimit && (req.getHeader(hdr.CONTENT_LENGTH) as number ?? 0) > this.option.sizeLimit) {
+                observer.error(new TcpErrorResponse({
+                    id,
+                    url,
+                    status: 0,
+                    statusMessage: 'Packet size limit ' + this.option.sizeLimit
+                }))
+            }
             protocol.write(socket, req.serializePacket());
 
             if (req.method === mths.EVENT) {

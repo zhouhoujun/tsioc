@@ -3,14 +3,14 @@ import { Endpoint, EndpointContext, Interceptor } from '@tsdi/core';
 import { HttpEvent, HttpRequest } from '@tsdi/common';
 import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 import { Observable } from 'rxjs';
-import { HttpClientOptions } from './option';
+import { HttpClientOpts } from './option';
 
 const abstUrlExp = /^http(s)?:/;
 
 @Injectable()
 export class NormlizePathInterceptor implements Interceptor<HttpRequest, HttpEvent> {
 
-    constructor(private option: HttpClientOptions) { }
+    constructor(private option: HttpClientOpts) { }
 
     intercept(req: HttpRequest<any>, next: Endpoint<HttpRequest<any>, HttpEvent<any>>, context: EndpointContext): Observable<HttpEvent<any>> {
         let url = req.url.trim();

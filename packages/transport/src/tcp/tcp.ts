@@ -3,7 +3,7 @@ import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
 import { BasicMimeDb, MimeDb } from '../mime';
 import { TcpClient } from './client/clinet';
 import { DelimiterProtocol, PacketProtocol } from './packet';
-import { TcpServerOptions } from './server/options';
+import { TcpServerOpts } from './server/options';
 import { TcpServer } from './server/server';
 
 @Module({
@@ -25,8 +25,8 @@ export class TcpModule {
      * @param options 
      * @returns 
      */
-    static withOptions(options: TcpServerOptions): ModuleWithProviders<TcpModule> {
-        const providers: ProviderType[] = [{ provide: TcpServerOptions, useValue: options }];
+    static withOptions(options: TcpServerOpts): ModuleWithProviders<TcpModule> {
+        const providers: ProviderType[] = [{ provide: TcpServerOpts, useValue: options }];
         return {
             module: TcpModule,
             providers

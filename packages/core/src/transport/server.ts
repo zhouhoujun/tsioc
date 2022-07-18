@@ -3,14 +3,14 @@ import { Subscription } from 'rxjs';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
 import { EndpointBackend, MiddlewareBackend, MiddlewareLike, MiddlewareType } from './endpoint';
-import { TransportEndpoint, TransportOptions } from './transport';
+import { TransportEndpoint, TransportOpts } from './transport';
 import { TransportContext } from './context';
 
 /**
  * server options.
  */
 @Abstract()
-export abstract class ServerOptions<TRequest, TResponse> extends TransportOptions<TRequest, TResponse> {
+export abstract class ServerOpts<TRequest, TResponse> extends TransportOpts<TRequest, TResponse> {
     /**
      * middlewares of server.
      */
@@ -30,7 +30,7 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
 
     private _midlsToken!: Token<MiddlewareLike[]>;
 
-    constructor(context: InvocationContext, options?: ServerOptions<TRequest, TResponse>) {
+    constructor(context: InvocationContext, options?: ServerOpts<TRequest, TResponse>) {
         super(context, options);
     }
 
@@ -56,7 +56,7 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
      * @param options 
      * @returns 
      */
-    protected override initOption(options?: ServerOptions<TRequest, TResponse>): ServerOptions<TRequest, TResponse> {
+    protected override initOption(options?: ServerOpts<TRequest, TResponse>): ServerOpts<TRequest, TResponse> {
         return options ?? {};
     }
 
@@ -64,7 +64,7 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
      * initialize middlewares, interceptors, execptions with options.
      * @param options 
      */
-    protected override initialize(options: ServerOptions<TRequest, TResponse>) {
+    protected override initialize(options: ServerOpts<TRequest, TResponse>) {
         const injector = this.context.injector;
         injector.setValue(TransportServer, this);
         super.initialize(options);

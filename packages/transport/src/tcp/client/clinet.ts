@@ -6,9 +6,9 @@ import { TcpEvent } from './response';
 import { JsonDecoder, JsonEncoder } from '../../coder';
 import { ev } from '../../consts';
 import { TcpPathInterceptor } from './path';
-import { TcpClientOptions, TCP_EXECPTIONFILTERS, TCP_INTERCEPTORS } from './options';
+import { TcpClientOpts, TCP_EXECPTIONFILTERS, TCP_INTERCEPTORS } from './options';
 import { TcpBodyInterceptor } from './body';
-import { PacketProtocolOpions } from '../packet';
+import { PacketProtocolOpts } from '../packet';
 import { TcpBackend } from './backend';
 import { HttpStatus } from '../../http/status';
 
@@ -22,7 +22,7 @@ const defaults = {
     decoder: JsonDecoder,
     interceptorsToken: TCP_INTERCEPTORS,
     execptionsToken: TCP_EXECPTIONFILTERS,
-} as TcpClientOptions;
+} as TcpClientOpts;
 
 
 /**
@@ -36,21 +36,21 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
 
     private socket?: Socket;
     private connected: boolean;
-    private option!: TcpClientOptions;
+    private option!: TcpClientOpts;
     constructor(
         @Inject() context: InvocationContext,
-        @Nullable() option: TcpClientOptions
+        @Nullable() option: TcpClientOpts
     ) {
         super(context, option);
         this.connected = false;
     }
 
-    protected override initOption(options?: TcpClientOptions): TcpClientOptions {
+    protected override initOption(options?: TcpClientOpts): TcpClientOpts {
         const connectOpts = { ...defaults.connectOpts, ...options?.connectOpts };
         const interceptors = [...options?.interceptors ?? EMPTY, TcpPathInterceptor, TcpBodyInterceptor];
         this.option = { ...defaults, ...options, connectOpts, interceptors };
-        this.context.setValue(TcpClientOptions, this.option);
-        this.context.setValue(PacketProtocolOpions, this.option);
+        this.context.setValue(TcpClientOpts, this.option);
+        this.context.setValue(PacketProtocolOpts, this.option);
         return this.option;
     }
 

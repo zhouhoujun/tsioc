@@ -24,7 +24,7 @@ import { TransportSendAdapter } from '../../impl/send';
 import { TransportNegotiator } from '../../impl/negotiator';
 import { HttpExecptionRespondTypeAdapter, HttpRespondAdapter } from './respond';
 import { ArgumentErrorFilter, HttpFinalizeFilter } from './finalize-filter';
-import { Http2ServerOptions, HttpServerOptions, HTTP_EXECPTION_FILTERS, HTTP_SERVEROPTIONS, HTTP_SERV_INTERCEPTORS } from './options';
+import { Http2ServerOpts, HttpServerOpts, HTTP_EXECPTION_FILTERS, HTTP_SERVEROPTIONS, HTTP_SERV_INTERCEPTORS } from './options';
 import { HttpStatus } from '../status';
 
 
@@ -64,7 +64,7 @@ const httpOpts = {
         BodyparserMiddleware,
         Router
     ]
-} as Http2ServerOptions;
+} as Http2ServerOpts;
 
 /**
  * http server.
@@ -82,11 +82,11 @@ const httpOpts = {
 export class HttpServer extends TransportServer<HttpServRequest, HttpServResponse, HttpContext>  {
 
     private _server?: http2.Http2Server | http.Server | https.Server;
-    private options!: HttpServerOptions;
+    private options!: HttpServerOpts;
 
     constructor(
         @Inject() context: InvocationContext,
-        @Inject(HTTP_SERVEROPTIONS, { nullable: true }) options: HttpServerOptions
+        @Inject(HTTP_SERVEROPTIONS, { nullable: true }) options: HttpServerOpts
     ) {
         super(context, options)
     }
@@ -107,14 +107,14 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         return this.options.maxIpsCount ?? 0
     }
 
-    protected override initOption(options: HttpServerOptions): HttpServerOptions {
+    protected override initOption(options: HttpServerOpts): HttpServerOpts {
         if (options?.options) {
             options.options = { ...httpOpts.options, ...options.options }
         }
         if (options?.listenOptions) {
             options.listenOptions = { ...httpOpts.listenOptions, ...options.listenOptions }
         }
-        const opts = this.options = { ...httpOpts, ...options } as HttpServerOptions;
+        const opts = this.options = { ...httpOpts, ...options } as HttpServerOpts;
 
         if (opts.middlewares) {
             opts.middlewares = opts.middlewares.filter(m => {

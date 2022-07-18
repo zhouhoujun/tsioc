@@ -1,4 +1,4 @@
-import { ExecptionFilter, Interceptor, ServerOptions, TransportServer } from '@tsdi/core';
+import { ExecptionFilter, Interceptor, ServerOpts, TransportServer } from '@tsdi/core';
 import { tokenId, Type } from '@tsdi/ioc';
 import * as http from 'http';
 import * as https from 'https';
@@ -14,7 +14,7 @@ import { CsrfOptions } from '../../middlewares/csrf';
 /**
  * http options.
  */
- export interface HttpOptions extends ServerOptions<HttpServRequest, HttpServResponse> {
+ export interface HttpOpts extends ServerOpts<HttpServRequest, HttpServResponse> {
     majorVersion?: number;
     cors?: boolean | CorsOptions;
     proxy?: boolean;
@@ -41,11 +41,11 @@ import { CsrfOptions } from '../../middlewares/csrf';
     sharing?: Type<TransportServer<any, any>>[];
 }
 
-export interface Http1ServerOptions extends HttpOptions {
+export interface Http1ServerOpts extends HttpOpts {
     majorVersion: 1,
     options?: http.ServerOptions | https.ServerOptions;
 }
-export interface Http2ServerOptions extends HttpOptions {
+export interface Http2ServerOpts extends HttpOpts {
     majorVersion: 2,
     options?: http2.ServerOptions | http2.SecureServerOptions;
 }
@@ -53,13 +53,13 @@ export interface Http2ServerOptions extends HttpOptions {
 /**
  * http server options.
  */
-export type HttpServerOptions = Http1ServerOptions | Http2ServerOptions;
+export type HttpServerOpts = Http1ServerOpts | Http2ServerOpts;
 
 
 /**
  * http server opptions.
  */
-export const HTTP_SERVEROPTIONS = tokenId<HttpServerOptions>('HTTP_SERVEROPTIONS');
+export const HTTP_SERVEROPTIONS = tokenId<HttpServerOpts>('HTTP_SERVEROPTIONS');
 
 
 export const HTTP_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('HTTP_EXECPTION_FILTERS');

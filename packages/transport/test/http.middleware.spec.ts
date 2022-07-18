@@ -5,7 +5,7 @@ import * as net from 'net';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Application, LoggerModule, Module } from '@tsdi/core';
-import { Http, HttpClientOptions, HttpModule, HttpServer } from '../src';
+import { Http, HttpClientOpts, HttpModule, HttpServer } from '../src';
 
 @Module({
     imports: [
@@ -56,13 +56,13 @@ describe('middleware', () => {
         await runable.run();
 
         const http = ctx.injector.resolve(Http, {
-            provide: HttpClientOptions,
+            provide: HttpClientOpts,
             useValue: {
                 authority: 'https://localhost:3200',
                 options: {
                     ca: cert
                 }
-            } as HttpClientOptions
+            } as HttpClientOpts
         });
 
         // has no parent.

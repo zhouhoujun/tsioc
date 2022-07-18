@@ -1,7 +1,7 @@
 import { Abstract, ArgumentError, EMPTY_OBJ, InvocationContext, isNil, isString, type_str } from '@tsdi/ioc';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map } from 'rxjs';
 import { RequestMethod, ResponsePacket, ResponseEvent } from './packet';
-import { TransportOptions, TransportEndpoint } from './transport';
+import { TransportOpts, TransportEndpoint } from './transport';
 import { RequestContext } from './context';
 import { ClientContext } from './client.ctx';
 
@@ -11,7 +11,7 @@ import { ClientContext } from './client.ctx';
  * client options.
  */
 @Abstract()
-export abstract class ClientOptions<TRequest, TResponse> extends TransportOptions<TRequest, TResponse> {
+export abstract class ClientOpts<TRequest, TResponse> extends TransportOpts<TRequest, TResponse> {
 
 }
 
@@ -22,7 +22,7 @@ export abstract class ClientOptions<TRequest, TResponse> extends TransportOption
 @Abstract()
 export abstract class TransportClient<TRequest = any, TResponse = any, TOption extends RequstOption = RequstOption> extends TransportEndpoint<TRequest, TResponse> {
 
-    constructor(context: InvocationContext, options?: ClientOptions<TRequest, TResponse>) {
+    constructor(context: InvocationContext, options?: ClientOpts<TRequest, TResponse>) {
         super(context, options);
     }
 
@@ -30,7 +30,7 @@ export abstract class TransportClient<TRequest = any, TResponse = any, TOption e
      * initialize interceptors with options.
      * @param options 
      */
-    protected override initOption(options?: ClientOptions<TRequest, TResponse>): ClientOptions<TRequest, TResponse> {
+    protected override initOption(options?: ClientOpts<TRequest, TResponse>): ClientOpts<TRequest, TResponse> {
         return options ?? {};
     }
 
