@@ -433,11 +433,6 @@ export abstract class AssetServerContext<TRequest extends Packet | RequestHeader
         this.body = `Redirecting to ${url}.`
     }
 
-    abstract write(chunk: string | Uint8Array, cb?: (err?: Error | null) => void): boolean;
-    abstract write(chunk: string | Uint8Array, encoding: BufferEncoding, cb?: (err?: Error | null) => void): boolean;
-    abstract write(chunk: string | Uint8Array, encoding?: BufferEncoding | ((err?: Error | null) => void), cb?: (err?: Error | null) => void): boolean;
-
-
     getHeader(field: string): string | string[] | undefined {
         const h = (this.request as Packet).headers ? (this.request as Packet).headers?.[field] : (this.request as RequestHeader).getHeader(field);
         if (isNil(h)) return undefined;

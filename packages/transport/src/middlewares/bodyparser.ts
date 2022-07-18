@@ -5,7 +5,7 @@ import * as zlib from 'zlib';
 import { Stream, Readable, PassThrough } from 'stream';
 import * as getRaw from 'raw-body';
 import * as qslib from 'qs';
-import { hdr } from '../consts';
+import { hdr, identity } from '../consts';
 import { formTypes, jsonTypes, textTypes, xmlTypes } from '../utils';
 
 
@@ -106,9 +106,9 @@ export class BodyparserMiddleware implements Middleware {
 
     protected async parseJson(ctx: TransportContext & HeaderContext): Promise<{ raw?: any, body?: any }> {
         const len = ctx.getHeader(hdr.CONTENT_LENGTH);
-        const hdrcode = ctx.getHeader(hdr.CONTENT_ENCODING) as string || hdr.IDENTITY;
+        const hdrcode = ctx.getHeader(hdr.CONTENT_ENCODING) as string || identity;
         let length: number | undefined;
-        if (len && hdrcode === hdr.IDENTITY) {
+        if (len && hdrcode === identity) {
             length = ~~len
         }
         const { limit, strict, encoding } = this.options.json;
@@ -160,9 +160,9 @@ export class BodyparserMiddleware implements Middleware {
 
     protected async parseForm(ctx: TransportContext & HeaderContext): Promise<{ raw?: any, body?: any }> {
         const len = ctx.getHeader(hdr.CONTENT_LENGTH);
-        const hdrcode = ctx.getHeader(hdr.CONTENT_ENCODING) as string || hdr.IDENTITY;
+        const hdrcode = ctx.getHeader(hdr.CONTENT_ENCODING) as string || identity;
         let length: number | undefined;
-        if (len && hdrcode === hdr.IDENTITY) {
+        if (len && hdrcode === identity) {
             length = ~~len
         }
 
@@ -192,9 +192,9 @@ export class BodyparserMiddleware implements Middleware {
 
     protected async parseText(ctx: TransportContext & HeaderContext): Promise<{ raw?: any, body?: any }> {
         const len = ctx.getHeader(hdr.CONTENT_LENGTH);
-        const hdrcode = ctx.getHeader(hdr.CONTENT_ENCODING) as string || hdr.IDENTITY;
+        const hdrcode = ctx.getHeader(hdr.CONTENT_ENCODING) as string || identity;
         let length: number | undefined;
-        if (len && hdrcode === hdr.IDENTITY) {
+        if (len && hdrcode === identity) {
             length = ~~len
         }
         const { limit, encoding } = this.options.text;

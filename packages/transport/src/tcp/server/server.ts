@@ -3,7 +3,7 @@ import { Inject, Injectable, InvocationContext, isBoolean, lang, Nullable, Provi
 import { Server } from 'net';
 import { Subscription } from 'rxjs';
 import { JsonDecoder, JsonEncoder } from '../../coder';
-import { ev, hdr } from '../../consts';
+import { ev, hdr, identity } from '../../consts';
 import { TrasportMimeAdapter } from '../../impl/mime';
 import { TransportNegotiator } from '../../impl/negotiator';
 import { TransportSendAdapter } from '../../impl/send';
@@ -141,14 +141,13 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
             socket.on(ev.CLOSE, onClose);
             socket.on(ev.END, onClose);
             const protocol = this.context.get(PacketProtocol);
-
             protocol.read(socket)
                 .subscribe(pk => {
                     if (pk.id && pk.headers) {
                         let length = 0;
                         const len = pk.headers[hdr.CONTENT_LENGTH] as number ?? 0;
-                        const hdrcode = pk.headers[hdr.CONTENT_ENCODING] as string || hdr.IDENTITY;
-                        if (len && hdrcode === hdr.IDENTITY) {
+                        const hdrcode = pk.headers[hdr.CONTENT_ENCODING] as string || identity;
+                        if (len && hdrcode === identity) {
                             length = ~~len
                         }
                         if (this.options.sizeLimit && length > this.options.sizeLimit) {

@@ -2,7 +2,7 @@ import { EndpointBackend, mths, RequestContext, ResHeaderType, ResponseJsonParse
 import { Injectable, InvocationContext, type_undef } from '@tsdi/ioc';
 import { Socket } from 'net';
 import { filter, Observable, Observer, throwError } from 'rxjs';
-import { ev, hdr } from '../../consts';
+import { ev, hdr, identity } from '../../consts';
 import { isBuffer } from '../../utils';
 import { PacketProtocol } from '../packet';
 import { TcpClientOpts } from './options';
@@ -58,8 +58,8 @@ export class TcpBackend implements EndpointBackend<TcpRequest, TcpEvent> {
                         if (pk.headers) {
                             headers = pk.headers;
                             const len = headers[hdr.CONTENT_LENGTH] as number ?? 0;
-                            const hdrcode = headers[hdr.CONTENT_ENCODING] as string || hdr.IDENTITY;
-                            if (len && hdrcode === hdr.IDENTITY) {
+                            const hdrcode = headers[hdr.CONTENT_ENCODING] as string || identity;
+                            if (len && hdrcode === identity) {
                                 bodyLen = ~~len
                             }
                             if (this.option.sizeLimit && len > this.option.sizeLimit) {

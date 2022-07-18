@@ -392,13 +392,13 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
 
     protected freshHeader(): boolean {
         const reqHeaders = this.request.headers;
-        const modifSince = reqHeaders[hdr.IF_MODIFIED_SINCE];
-        const nonMatch = reqHeaders[hdr.IF_NONE_MATCH];
+        const modifSince = reqHeaders[hdr.IF_MODIFIED_SINCE] as string;
+        const nonMatch = reqHeaders[hdr.IF_NONE_MATCH] as string;
         if (!modifSince && !nonMatch) {
             return false
         }
 
-        const cacheControl = reqHeaders[hdr.CACHE_CONTROL];
+        const cacheControl = reqHeaders[hdr.CACHE_CONTROL] as string;
         if (cacheControl && no_cache.test(cacheControl)) {
             return false
         }
@@ -597,16 +597,16 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
         return socket.writable
     }
 
-    write(chunk: string | Uint8Array, cb?: (err?: Error | null) => void): boolean;
-    write(chunk: string | Uint8Array, encoding: BufferEncoding, cb?: (err?: Error | null) => void): boolean;
-    write(chunk: string | Uint8Array, encoding?: BufferEncoding | ((err?: Error | null) => void), cb?: (err?: Error | null) => void): boolean {
-        if (this.sent) return false;
-        if (this.response instanceof http.ServerResponse) {
-            return isString(encoding) ? this.response.write(chunk, encoding, cb) : this.response.write(chunk, encoding)
-        } else {
-            return isString(encoding) ? this.response.write(chunk, encoding, cb) : this.response.write(chunk, encoding)
-        }
-    }
+    // write(chunk: string | Uint8Array, cb?: (err?: Error | null) => void): boolean;
+    // write(chunk: string | Uint8Array, encoding: BufferEncoding, cb?: (err?: Error | null) => void): boolean;
+    // write(chunk: string | Uint8Array, encoding?: BufferEncoding | ((err?: Error | null) => void), cb?: (err?: Error | null) => void): boolean {
+    //     if (this.sent) return false;
+    //     if (this.response instanceof http.ServerResponse) {
+    //         return isString(encoding) ? this.response.write(chunk, encoding, cb) : this.response.write(chunk, encoding)
+    //     } else {
+    //         return isString(encoding) ? this.response.write(chunk, encoding, cb) : this.response.write(chunk, encoding)
+    //     }
+    // }
 
     flushHeaders() {
         if (this.response instanceof http.ServerResponse) {

@@ -1,8 +1,7 @@
 import { ExecptionFilter, MiddlewareLike, HeaderContext, AssetContext, TransportContext } from '@tsdi/core';
-import { isFunction, Token, tokenId } from '@tsdi/ioc';
+import { Token, tokenId } from '@tsdi/ioc';
 import { AssetServerContext } from '../../asset.ctx';
 import { hdr } from '../../consts';
-import { PacketProtocol } from '../packet';
 import { TcpServRequest } from './request';
 import { TcpServResponse } from './response';
 
@@ -102,20 +101,20 @@ export class TcpContext extends AssetServerContext<TcpServRequest, TcpServRespon
         return this.response.sent;
     }
 
-    write(chunk: string | Uint8Array, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean;
-    write(chunk: string | Uint8Array, encoding: BufferEncoding, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean;
-    write(chunk: string | Uint8Array, encoding?: BufferEncoding | ((err?: Error | null | undefined) => void) | undefined, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean;
-    write(chunk: string | Uint8Array, encoding?: any, cb?: any): boolean {
-        const protocol = this.get(PacketProtocol);
-        if (isFunction(encoding)) {
-            cb = encoding;
-            encoding = undefined;
-        }
-        protocol.write(this.response.socket, { id: this.response.id, body: chunk }, encoding)
-            .then(() => cb && cb())
-            .catch(err => cb && cb(err));
-        return true;
-    }
+    // write(chunk: string | Uint8Array, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean;
+    // write(chunk: string | Uint8Array, encoding: BufferEncoding, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean;
+    // write(chunk: string | Uint8Array, encoding?: BufferEncoding | ((err?: Error | null | undefined) => void) | undefined, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean;
+    // write(chunk: string | Uint8Array, encoding?: any, cb?: any): boolean {
+    //     const protocol = this.get(PacketProtocol);
+    //     if (isFunction(encoding)) {
+    //         cb = encoding;
+    //         encoding = undefined;
+    //     }
+    //     protocol.write(this.response.socket, { id: this.response.id, body: chunk }, encoding)
+    //         .then(() => cb && cb())
+    //         .catch(err => cb && cb(err));
+    //     return true;
+    // }
 
     protected isSelf(token: Token) {
         return token === TcpContext || token === AssetServerContext || token === TransportContext;

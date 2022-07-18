@@ -321,7 +321,7 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 let originalBody: any;
 
                 if (buffer) {
-                    const contentType = res.headers[hdr.CONTENT_TYPE];
+                    const contentType = res.headers[hdr.CONTENT_TYPE] as string;
                     let type = req.responseType;
                     if (contentType) {
                         const adapter = ctx.get(MimeAdapter);
@@ -364,7 +364,7 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                             break;
                         case 'blob':
                             body = new Blob([buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)], {
-                                type: res.headers[hdr.CONTENT_TYPE]
+                                type: res.headers[hdr.CONTENT_TYPE] as string
                             });
                             break;
                         case 'text':

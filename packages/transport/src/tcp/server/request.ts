@@ -3,7 +3,7 @@ import { EMPTY_OBJ, isNull } from '@tsdi/ioc';
 import { Socket } from 'net';
 import { Writable } from 'stream';
 import { filter } from 'rxjs';
-import { hdr } from '../../consts';
+import { hdr, identity } from '../../consts';
 import { IncomingRequest } from '../../incoming';
 import { PacketProtocol } from '../packet';
 
@@ -37,10 +37,10 @@ export class TcpServRequest extends MapHeaders implements IncomingRequest, Reque
     }
 
     pipe<T extends Writable>(destination: T, options?: { end?: boolean | undefined; } | undefined): T {
-        const len = this.getHeader(hdr.CONTENT_LENGTH) ?? 0
-        const hdrcode = this.getHeader(hdr.CONTENT_ENCODING) as string || hdr.IDENTITY;
+        const len = this.getHeader(hdr.CONTENT_LENGTH) ?? 0;
+        const hdrcode = this.getHeader(hdr.CONTENT_ENCODING) as string || identity;
         let length = 0;
-        if (len && hdrcode === hdr.IDENTITY) {
+        if (len && hdrcode === identity) {
             length = ~~len
         }
         if (!length) {
