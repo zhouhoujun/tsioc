@@ -1,7 +1,7 @@
-import { MapHeaders, RequestHeader, RequestPacket } from '@tsdi/core';
+import { MapHeaders, RequestHeader } from '@tsdi/core';
 import { EMPTY_OBJ } from '@tsdi/ioc';
 import { Writable } from 'form-data';
-import { IncomingRequest } from '../../incoming';
+import { IncomingRequest } from '@tsdi/transport';
 
 export class UdpServRequest extends MapHeaders implements IncomingRequest, RequestHeader {
     public readonly url: string;

@@ -3,14 +3,11 @@ import {
     OnDispose, Packet, Redirector, RequestContext, ResponseJsonParseError, TransportClient, TransportStatus, UuidGenerator
 } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Providers, tokenId, type_undef } from '@tsdi/ioc';
+import { ev, JsonDecoder, JsonEncoder, TcpStatus, AssetRedirector } from '@tsdi/transport';
 import { Socket } from 'dgram';
 import { UdpRequest } from './request';
 import { UdpErrorResponse, UdpEvent, UdpResponse } from './response';
-import { ev } from '../../consts';
 import { defer, filter, mergeMap, Observable, Observer, throwError } from 'rxjs';
-import { JsonDecoder, JsonEncoder } from '../../coder';
-import { HttpStatus } from '../../http/status';
-import { AssetRedirector } from '../../redirector';
 
 /**
  * address.
@@ -64,7 +61,7 @@ const defaults = {
  */
 @Injectable()
 @Providers([
-    { provide: TransportStatus, useClass: HttpStatus, asDefault: true },
+    { provide: TransportStatus, useClass: TcpStatus, asDefault: true },
     { provide: Redirector, useClass: AssetRedirector, asDefault: true }
 ])
 export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements OnDispose {

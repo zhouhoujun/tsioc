@@ -1,5 +1,5 @@
 /* eslint-disable no-case-declarations */
-import { BadRequestError, EndpointContext, mths, RequestHeader, RequestPacket, TransportHeaders, TransportClient, RequestMethod, Redirector } from '@tsdi/core';
+import { BadRequestError, EndpointContext, RequestHeader, RequestPacket, TransportHeaders, TransportClient, RequestMethod, Redirector } from '@tsdi/core';
 import { EMPTY_OBJ, Injectable } from '@tsdi/ioc';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { Readable } from 'stream';
@@ -53,7 +53,7 @@ export class AssetRedirector extends Redirector {
                     // HTTP-redirect fetch step 6 (counter increment)
                     // Create a new Request object.
 
-                    let reqheaders = new TransportHeaders(req.headers ?? (req as any as RequestHeader).getHeaders?.());
+                    let reqhdrs = new TransportHeaders(req.headers ?? (req as any as RequestHeader).getHeaders?.());
                     let method = req.method as RequestMethod;
                     let body = req.body;
 
@@ -64,9 +64,10 @@ export class AssetRedirector extends Redirector {
                     // For example, a redirect from "foo.com" to either "foo.com" or "sub.foo.com"
                     // will forward the sensitive headers, but a redirect to "bar.com" will not.
                     if (!isDomainOrSubdomain(req.url, locationURL)) {
-                        for (const name of ['authorization', 'www-authenticate', 'cookie', 'cookie2']) {
-                            reqheaders = reqheaders.delete(name);
-                        }
+                        reqhdrs.delete(hdr.AUTHORIZATION)
+                            .delete(hdr.WWW_AUTHENTICATE)
+                            .delete(hdr.COOKIE)
+                            .delete(hdr.COOKIE2);
                     }
 
                     // HTTP-redirect fetch step 9
@@ -79,18 +80,18 @@ export class AssetRedirector extends Redirector {
                     if (!ctx.adapter.redirectBodify(status, req.method)) {
                         method = ctx.adapter.redirectDefaultMethod() as RequestMethod;
                         body = undefined;
-                        reqheaders = reqheaders.delete('content-length');
+                        reqhdrs = reqhdrs.delete(hdr.CONTENT_LENGTH);
                     }
 
                     // HTTP-redirect fetch step 14
                     const responseReferrerPolicy = parseReferrerPolicyFromHeader(headers);
                     if (responseReferrerPolicy) {
-                        reqheaders = reqheaders.set(hdr.REFERRER_POLICY, responseReferrerPolicy);
+                        reqhdrs = reqhdrs.set(hdr.REFERRER_POLICY, responseReferrerPolicy);
                     }
                     // HTTP-redirect fetch step 15
                     sub = (ctx.target as TransportClient).send(locationURL, {
                         method,
-                        headers: reqheaders,
+                        headers: reqhdrs,
                         body,
                         context: ctx,
                         observe: 'response'
@@ -134,7 +135,7 @@ export const referPolicys = new Set([
 const splitReg = /[,\s]+/;
 
 export function parseReferrerPolicyFromHeader(headers: TransportHeaders) {
-    const policyTokens = (headers.get('referrer-policy') || '').split(splitReg);
+    const policyTokens = (headers.get(hdr.REFERRER_POLICY) || '').split(splitReg);
     let policy = '';
     for (const token of policyTokens) {
         if (token && referPolicys.has(token)) {

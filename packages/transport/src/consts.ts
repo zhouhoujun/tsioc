@@ -118,6 +118,7 @@ export namespace hdr {
      * cookie.
      */
     export const COOKIE = 'cookie';
+    export const COOKIE2 = 'cookie2';
     export const DATE = 'date';
     export const ETAG = 'etag';
     export const EXPECT = 'expect';

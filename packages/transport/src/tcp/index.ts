@@ -1,6 +1,7 @@
 export * from './client/request';
 export * from './client/response';
 export * from './client/options';
+export * from './client/status';
 export * from './client/clinet';
 
 
