@@ -1,4 +1,4 @@
-import { EndpointBackend, OnDispose, RequestContext, TransportClient, TransportStatus, UuidGenerator } from '@tsdi/core';
+import { EndpointBackend, OnDispose, Redirector, RequestContext, TransportClient, TransportStatus, UuidGenerator } from '@tsdi/core';
 import { EMPTY, Inject, Injectable, InvocationContext, isString, lang, Nullable, Providers } from '@tsdi/ioc';
 import { Socket, IpcNetConnectOpts } from 'net';
 import { TcpRequest } from './request';
@@ -10,7 +10,8 @@ import { TcpClientOpts, TCP_EXECPTIONFILTERS, TCP_INTERCEPTORS } from './options
 import { TcpBodyInterceptor } from '../../interceptors/body';
 import { PacketProtocolOpts } from '../packet';
 import { TcpBackend } from './backend';
-import { HttpStatus } from '../../http/status';
+import { AssetRedirector } from '../../redirector';
+import { TcpStatus } from './status';
 
 
 
@@ -30,7 +31,8 @@ const defaults = {
  */
 @Injectable()
 @Providers([
-    { provide: TransportStatus, useClass: HttpStatus, asDefault: true }
+    { provide: TransportStatus, useClass: TcpStatus, asDefault: true },
+    { provide: Redirector, useClass: AssetRedirector, asDefault: true }
 ])
 export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements OnDispose {
 

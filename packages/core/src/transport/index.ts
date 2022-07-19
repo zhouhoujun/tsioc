@@ -6,6 +6,7 @@ export * from './endpoint';
 export * from './utils';
 export * from './coder';
 export * from './status';
+export * from './redirector';
 
 export * from './resolver';
 export * from './model';

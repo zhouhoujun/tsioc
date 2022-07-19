@@ -1,5 +1,5 @@
 import { EMPTY_OBJ, Injectable, isUndefined, lang, type_undef } from '@tsdi/ioc';
-import { EndpointBackend, EndpointContext, mths, global, isArrayBuffer, isBlob, isFormData } from '@tsdi/core';
+import { EndpointBackend, EndpointContext, mths, global, isArrayBuffer, isBlob, isFormData, Redirector } from '@tsdi/core';
 import {
     HttpRequest, HttpEvent, HttpHeaders, HttpResponse, HttpErrorResponse,
     HttpHeaderResponse, HttpStatusCode, statusMessage, HttpJsonParseError
@@ -121,7 +121,7 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
 
                 // HTTP fetch step 5
                 if (status && ctx.adapter.isRedirect(status)) {
-                    ctx.adapter.redirect<HttpEvent<any>>(ctx, req, status, headers)
+                    ctx.get(Redirector).redirect<HttpEvent<any>>(ctx, req, status, headers)
                         .subscribe(observer)
                     return;
                 }
@@ -430,7 +430,7 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                     if (status && ctx.adapter.isRedirect(status)) {
                         completed = true;
                         // HTTP fetch step 5.2
-                        ctx.adapter.redirect<HttpEvent<any>>(ctx, req, status, headers)
+                        ctx.get(Redirector).redirect<HttpEvent<any>>(ctx, req, status, headers)
                             .pipe(
                                 finalize(() => completed = true)
                             ).subscribe(observer);

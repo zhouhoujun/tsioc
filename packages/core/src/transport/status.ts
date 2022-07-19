@@ -1,8 +1,4 @@
 import { Abstract } from '@tsdi/ioc';
-import { Observable } from 'rxjs';
-import { EndpointContext } from './context';
-import { TransportHeaders } from './headers';
-import { RequestPacket, ResponsePacket } from './packet';
 
 @Abstract()
 export abstract class TransportStatus {
@@ -60,15 +56,23 @@ export abstract class TransportStatus {
     abstract isRetry(status: number): boolean;
 
     /**
-     * is reddirect status or not.
+     * is redirect status or not.
      * @param status
      */
     abstract isRedirect(status: number): boolean;
+
     /**
-     * redirect to 
-     * @param req 
+     * redirect default request method.
      */
-    abstract redirect<T>(ctx: EndpointContext, req: RequestPacket, status: number, headers: TransportHeaders): Observable<T>
+    abstract redirectDefaultMethod(): string;
+    
+    /**
+     * redirect can with body or not.
+     * @param status 
+     * @param method 
+     */
+    abstract redirectBodify(status: number, method?: string): boolean;
+
     /**
      * is request failed status or not.
      * @param status 
