@@ -1,4 +1,4 @@
-import { EndpointBackend, ExecptionFilter, Interceptor, ServerOptions, TransportContext, TransportServer } from '@tsdi/core';
+import { EndpointBackend, ExecptionFilter, Interceptor, ServerOpts, TransportContext, TransportServer } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, lang, Token, tokenId } from '@tsdi/ioc';
 import { Subscription } from 'rxjs';
 import { WebSocket, WebSocketServer, ServerOptions as WsOptions } from 'ws';
@@ -7,7 +7,7 @@ import { WsResponse } from '../response';
 
 
 @Abstract()
-export abstract class WsServerOptions extends ServerOptions<WsRequest, WsResponse> {
+export abstract class WsServerOpts extends ServerOpts<WsRequest, WsResponse> {
     abstract options: WsOptions
 }
 
@@ -15,16 +15,16 @@ export abstract class WsServerOptions extends ServerOptions<WsRequest, WsRespons
 @Injectable()
 export class WsServer extends TransportServer<WsRequest, WsResponse>{
 
-    private options!: WsServerOptions
+    private options!: WsServerOpts
     private server?: WebSocketServer;
     constructor(
         context: InvocationContext,
-        options: WsServerOptions) {
+        options: WsServerOpts) {
         super(context, options);
     }
 
-    protected override initOption(options?: WsServerOptions): WsServerOptions {
-        this.options = { ... options } as WsServerOptions;
+    protected override initOption(options?: WsServerOpts): WsServerOpts {
+        this.options = { ... options } as WsServerOpts;
         return this.options;
     }
 

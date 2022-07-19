@@ -281,6 +281,12 @@ describe('TCP Server & TCP Client', () => {
         expect(r.body).toEqual('working');
     })
 
+    it('redirect', async () => {
+        const result = 'reload';
+        const r = await lastValueFrom(client.send('/device/status', { observe: 'response', params: { redirect: 'reload' }, responseType: 'text' }));
+        expect(r.status).toEqual(200);
+        expect(r.body).toEqual(result);
+    })
 
     after(() => {
         return ctx.destroy();

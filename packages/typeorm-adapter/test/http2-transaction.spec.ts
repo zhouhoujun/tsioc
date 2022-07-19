@@ -1,6 +1,6 @@
 import { HttpClient } from '@tsdi/common';
 import { Application, ApplicationContext } from '@tsdi/core';
-import { Http, HttpClientOptions } from '@tsdi/transport';
+import { Http, HttpClientOpts } from '@tsdi/transport';
 import { After, Before, Suite, Test } from '@tsdi/unit';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -23,13 +23,13 @@ export class Http2TransactionTest {
         });
 
         this.client = this.ctx.injector.resolve(Http, {
-            provide: HttpClientOptions,
+            provide: HttpClientOpts,
             useValue: {
                 authority: 'https://localhost:3000',
                 options: {
                     ca: cert
                 }
-            } as HttpClientOptions
+            } as HttpClientOpts
         });
 
         const urep = this.ctx.injector.get(UserRepository);

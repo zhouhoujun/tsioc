@@ -1,12 +1,12 @@
-import { ClientOptions, Endpoint, EndpointBackend, Interceptor, TransportClient, TransportContext } from '@tsdi/core';
-import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId } from '@tsdi/ioc';
+import { ClientOpts, EndpointBackend, RequestContext, RequstOption, TransportClient, TransportContext } from '@tsdi/core';
+import { Abstract, Inject, Injectable, InvocationContext, lang, Nullable, Token, tokenId } from '@tsdi/ioc';
 import { WebSocket, ClientOptions as WsOptions } from 'ws';
 import { WsRequest } from '../request';
 import { WsResponse } from '../response';
 
 
 @Abstract()
-export abstract class WSClitentOptions extends ClientOptions<WsRequest, WsResponse> {
+export abstract class WSClitentOptions extends ClientOpts<WsRequest, WsResponse> {
     /**
      * url
      * etg.` wss://webscocket.com/`
@@ -18,6 +18,7 @@ export abstract class WSClitentOptions extends ClientOptions<WsRequest, WsRespon
 
 @Injectable()
 export class WsClient extends TransportClient<WsRequest, WsResponse> {
+
 
     private ws?: WebSocket;
     private connected?: boolean;
@@ -54,6 +55,10 @@ export class WsClient extends TransportClient<WsRequest, WsResponse> {
         this.bindEvents(ws);
     }
 
+    protected buildRequest(context: RequestContext, url: string | WsRequest<any>, options?: RequstOption | undefined): WsRequest<any> {
+        throw new Error('Method not implemented.');
+    }
+
     protected bindEvents(ws: WebSocket) {
         ws.on('error', (err) => {
             this.connected = false;
@@ -63,10 +68,6 @@ export class WsClient extends TransportClient<WsRequest, WsResponse> {
         ws.on('message', (data, isBinary) => {
 
         });
-    }
-
-    protected buildRequest(req: string | WsRequest<any>, options?: any): WsRequest<any> {
-        return isString(req) ? new WsRequest(req, options) : req;
     }
 
     async close(): Promise<void> {

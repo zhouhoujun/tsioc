@@ -13,7 +13,7 @@ export class MapHeaders<T extends ReqHeaderType | ResHeaderType = ReqHeaderType>
     private _rcd?: Record<string, T>;
     private _normal: Map<string, string>;
 
-    constructor(headers?: string | Record<string, T>) {
+    constructor(headers?: string | Record<string, T> | MapHeaders<T>) {
         this._hdrs = new Map();
         this._normal = new Map();
         if (headers) {
@@ -26,6 +26,10 @@ export class MapHeaders<T extends ReqHeaderType | ResHeaderType = ReqHeaderType>
                         this.appendHeader(name, value as T);
                     }
                 })
+            } else if (headers instanceof MapHeaders) {
+                headers.eachHeader((n, v) => {
+                    this.setHeader(n, v as T);
+                });
             } else {
                 this.setHeaders(headers);
             }
@@ -116,3 +120,28 @@ export class MapHeaders<T extends ReqHeaderType | ResHeaderType = ReqHeaderType>
     }
 }
 
+
+export class TransportHeaders<T extends ReqHeaderType | ResHeaderType = any> extends MapHeaders<T> {
+
+    set(name: string, val: T): this {
+        return this.setHeader(name, val);
+    }
+
+    get(name: string): string | null {
+        const values = this.getHeader(name);
+        if (isNil(values)) return null;
+        return isArray(values) && values.length ? values[0] : String(values);
+    }
+
+    delete(name: string) {
+        return this.removeHeader(name);
+    }
+
+    has(name: string): boolean {
+        return this.hasHeader(name);
+    }
+
+    forEach(fn: (name: string, values: T) => void): void {
+        this.eachHeader(fn);
+    }
+}
