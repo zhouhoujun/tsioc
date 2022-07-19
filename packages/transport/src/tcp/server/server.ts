@@ -1,4 +1,4 @@
-import { BadRequestError, ExecptionRespondTypeAdapter, Router, TransportServer, TransportStatus } from '@tsdi/core';
+import { BadRequestError, EADDRINUSE, ECONNREFUSED, ExecptionRespondTypeAdapter, Router, TransportServer, TransportStatus } from '@tsdi/core';
 import { Inject, Injectable, InvocationContext, isBoolean, lang, Nullable, Providers } from '@tsdi/ioc';
 import { Server } from 'net';
 import { Subscription } from 'rxjs';
@@ -110,7 +110,7 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
         }
         const defer = lang.defer();
         this.server.once(ev.ERROR, (err: any) => {
-            if (err?.code === ev.EADDRINUSE || err?.code === ev.ECONNREFUSED) {
+            if (err?.code === EADDRINUSE || err?.code === ECONNREFUSED) {
                 defer.reject(err);
             } else {
                 this.logger.error(err);
@@ -127,7 +127,7 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
             }
             const onClose = (err?: any) => {
                 if (err) {
-                    if (err.code !== ev.ECONNREFUSED) {
+                    if (err.code !== ECONNREFUSED) {
                         this.logger.error(err);
                     }
                     socket.end();

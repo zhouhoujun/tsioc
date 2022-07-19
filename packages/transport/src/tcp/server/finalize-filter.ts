@@ -1,11 +1,10 @@
 import {
-    BadRequestError, ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
+    BadRequestError, ENOENT, ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
     ForbiddenError, InternalServerError, NotFoundError, TransportArgumentError, TransportError,
     TransportMissingError, TransportStatus, UnauthorizedError, UnsupportedMediaTypeError
 } from '@tsdi/core';
 import { Injectable, isNumber } from '@tsdi/ioc';
 import { MissingModelFieldError } from '@tsdi/repository';
-import { ev } from '../../consts';
 import { PacketProtocol } from '../packet';
 import { TcpContext } from './context';
 
@@ -58,7 +57,7 @@ export class TcpFinalizeFilter implements ExecptionFilter {
             msg = err.message
         } else {
             // ENOENT support
-            if (ev.ENOENT === err.code) statusCode = hctx.adapter.notFound;
+            if (ENOENT === err.code) statusCode = hctx.adapter.notFound;
 
             // default to server error.
             if (!isNumber(statusCode) || !hctx.adapter.message(statusCode)) statusCode = hctx.adapter.serverError;

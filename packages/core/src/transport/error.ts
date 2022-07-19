@@ -105,3 +105,38 @@ export class UnsupportedMediaTypeError extends TransportError {
         super(message, status)
     }
 }
+
+
+/**
+ * connection refused error.
+ * socket error code
+ */
+export const ECONNREFUSED = 'ECONNREFUSED';
+/**
+ * Address already in use error.
+ * socket error code
+ */
+export const EADDRINUSE = 'EADDRINUSE';
+/**
+ * connection read timeout.
+ * socket error code
+ */
+export const ECONNRESET = 'ECONNRESET';
+/**
+ * Address not found in dns.
+ * socket error code
+ */
+export const ENOTFOUND = 'ENOTFOUND';
+
+/**
+ * not directory.
+ */
+export const ENOTDIR = 'ENOTDIR';
+/**
+ * No such file or directory.
+ */
+export const ENOENT = 'ENOENT';
+/**
+ * name too long.
+ */
+export const ENAMETOOLONG = 'ENAMETOOLONG';

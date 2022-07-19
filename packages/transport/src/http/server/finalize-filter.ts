@@ -1,5 +1,5 @@
 import {
-    BadRequestError, ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
+    BadRequestError, ENOENT, ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
     ForbiddenError, InternalServerError, NotFoundError, TransportArgumentError, TransportError,
     TransportMissingError, UnauthorizedError, UnsupportedMediaTypeError
 } from '@tsdi/core';
@@ -8,7 +8,6 @@ import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { MissingModelFieldError } from '@tsdi/repository';
 import { HttpBadRequestError, HttpError, HttpForbiddenError, HttpInternalServerError, HttpNotFoundError, HttpUnauthorizedError } from '../errors';
 import { HttpContext } from './context';
-import { ev } from '../../consts';
 import { HttpServerOpts, HTTP_SERVEROPTIONS } from './options';
 
 
@@ -61,7 +60,7 @@ export class HttpFinalizeFilter implements ExecptionFilter {
             msg = err.message
         } else {
             // ENOENT support
-            if (ev.ENOENT === err.code) statusCode = 404;
+            if (ENOENT === err.code) statusCode = 404;
 
             // default to 500
             if (!isNumber(statusCode) || !statusMessage[statusCode]) statusCode = 500;

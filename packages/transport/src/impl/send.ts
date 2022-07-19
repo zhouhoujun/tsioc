@@ -1,4 +1,4 @@
-import { BadRequestError, ForbiddenError, InternalServerError, NotFoundError, PROCESS_ROOT } from '@tsdi/core';
+import { BadRequestError, ENAMETOOLONG, ENOENT, ENOTDIR, ForbiddenError, InternalServerError, NotFoundError, PROCESS_ROOT } from '@tsdi/core';
 import { Injectable, isArray } from '@tsdi/ioc';
 import { normalize, resolve, basename, extname, parse, sep, isAbsolute, join } from 'path';
 import { existsSync, Stats, stat, createReadStream } from 'fs';
@@ -123,6 +123,6 @@ function isHidden(root: string, path: string) {
     return false
 }
 
-const notfound = [ev.ENOENT, ev.ENAMETOOLONG, ev.ENOTDIR];
+const notfound = [ENOENT, ENAMETOOLONG, ENOTDIR];
 const winAbsPath = /^[a-zA-Z]+:\//;
 const UP_REGEXP = /(?:^|[\\/])\.\.(?:[\\/]|$)/
