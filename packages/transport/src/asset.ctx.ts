@@ -1,4 +1,4 @@
-import { AssetContext, ClientReqPacket, Packet, RequestHeader, ResponseHeader, ServerContext } from '@tsdi/core';
+import { AssetContext, HeaderLike, ReqHeaderType, RequestHeader, ResHeaderType, ResponseHeader, ServerContext } from '@tsdi/core';
 import { Abstract, isArray, isNil, isNumber, isString, lang } from '@tsdi/ioc';
 import { extname } from 'path';
 import { ctype, hdr } from './consts';
@@ -7,10 +7,11 @@ import { MimeAdapter } from './mime';
 import { Negotiator } from './negotiator';
 import { encodeUrl, escapeHtml, isBuffer, isStream, xmlRegExp } from './utils';
 
-
+export type ReqLike = HeaderLike<ReqHeaderType> | RequestHeader;
+export type ResLike = HeaderLike<ResHeaderType> | ResponseHeader;
 
 @Abstract()
-export abstract class AssetServerContext<TRequest extends Packet | RequestHeader = ClientReqPacket, TResponse extends Packet & ResponseHeader = any> extends ServerContext<TRequest, TResponse> implements AssetContext {
+export abstract class AssetServerContext<TRequest extends ReqLike = ReqLike, TResponse extends ResLike = ResLike> extends ServerContext<TRequest, TResponse> implements AssetContext {
 
     /**
      * Check if the incoming request contains the "Content-Type"
@@ -88,7 +89,7 @@ export abstract class AssetServerContext<TRequest extends Packet | RequestHeader
      * content type.
      */
     get contentType(): string {
-        const ctype = this.response.getHeader(hdr.CONTENT_TYPE);
+        const ctype = this.getRespHeader(hdr.CONTENT_TYPE);
         return (isArray(ctype) ? lang.first(ctype) : ctype) as string ?? ''
     }
 
@@ -112,9 +113,9 @@ export abstract class AssetServerContext<TRequest extends Packet | RequestHeader
      */
     set contentType(type: string) {
         if (type) {
-            this.response.setHeader(hdr.CONTENT_TYPE, type)
+            this.setHeader(hdr.CONTENT_TYPE, type)
         } else {
-            this.response.removeHeader(hdr.CONTENT_TYPE)
+            this.removeHeader(hdr.CONTENT_TYPE)
         }
     }
 
@@ -239,7 +240,7 @@ export abstract class AssetServerContext<TRequest extends Packet | RequestHeader
 
     get length(): number | undefined {
         if (this.hasHeader(hdr.CONTENT_LENGTH)) {
-            return this.response.getHeader(hdr.CONTENT_LENGTH) as number || 0
+            return this.getRespHeader(hdr.CONTENT_LENGTH) as number || 0
         }
 
         const { body } = this;
@@ -392,7 +393,7 @@ export abstract class AssetServerContext<TRequest extends Packet | RequestHeader
             this.type = extname(filename);
         }
         const func = this.get(CONTENT_DISPOSITION);
-        this.response.setHeader(hdr.CONTENT_DISPOSITION, func(filename, options))
+        this.setHeader(hdr.CONTENT_DISPOSITION, func(filename, options))
     }
 
 
@@ -434,7 +435,7 @@ export abstract class AssetServerContext<TRequest extends Packet | RequestHeader
     }
 
     getHeader(field: string): string | string[] | undefined {
-        const h = (this.request as Packet).headers ? (this.request as Packet).headers?.[field] : (this.request as RequestHeader).getHeader(field);
+        const h = (this.request as RequestHeader).getHeader ? (this.request as RequestHeader).getHeader(field) : (this.request as HeaderLike).headers![field];
         if (isNil(h)) return undefined;
         return isArray(h) ? h : String(h);
     }
@@ -453,7 +454,7 @@ export abstract class AssetServerContext<TRequest extends Packet | RequestHeader
      * @api public
      */
     hasHeader(field: string) {
-        return this.response.hasHeader(field)
+        return (this.response as ResponseHeader).hasHeader ? (this.response as ResponseHeader).hasHeader(field) : !isNil((this.response as HeaderLike).headers![field])
     }
 
     /**
@@ -486,15 +487,29 @@ export abstract class AssetServerContext<TRequest extends Packet | RequestHeader
     setHeader(fields: Record<string, string | number | string[]>): void;
     setHeader(field: string | Record<string, string | number | string[]>, val?: string | number | string[]) {
         if (this.sent) return;
-
-        if (val) {
-            this.response.setHeader(field as string, val)
-        } else {
-            const fields = field as Record<string, string | number | string[]>;
-            for (const key in fields) {
-                this.response.setHeader(key, fields[key])
+        if ((this.response as ResponseHeader).setHeader) {
+            if (val) {
+                (this.response as ResponseHeader).setHeader(field as string, val)
+            } else {
+                const fields = field as Record<string, string | number | string[]>;
+                for (const key in fields) {
+                    (this.response as ResponseHeader).setHeader(key, fields[key])
+                }
+            }
+        } else if ((this.response as HeaderLike).headers) {
+            if (val) {
+                (this.response as HeaderLike).headers![field as string] = val;
+            } else {
+                const fields = field as Record<string, string | number | string[]>;
+                for (const key in fields) {
+                    (this.response as HeaderLike).headers![key] = fields[key];
+                }
             }
         }
+    }
+
+    getRespHeader(field: string) {
+        return (this.response as ResponseHeader).getHeader ? (this.response as ResponseHeader).getHeader(field) : (this.response as HeaderLike).headers![field]
     }
 
     /**
@@ -505,7 +520,7 @@ export abstract class AssetServerContext<TRequest extends Packet | RequestHeader
      */
     removeHeader(field: string): void {
         if (this.sent) return;
-        this.response.removeHeader(field);
+        (this.response as ResponseHeader).removeHeader ? (this.response as ResponseHeader).removeHeader(field) : (this.response as HeaderLike).headers![field] = null!;
     }
 
 }

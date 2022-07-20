@@ -1,13 +1,12 @@
 import { isArray, isNil, isString } from '@tsdi/ioc';
-import { ResponseHeader } from './packet';
+import { Header, ReqHeaderType, ResHeaderType } from './packet';
 
-export type ReqHeaderType = string | number | string[];
-export type ResHeaderType = ReqHeaderType | boolean;
+
 
 /**
  * transport headers.
  */
-export class MapHeaders<T extends ReqHeaderType | ResHeaderType = ReqHeaderType> implements ResponseHeader {
+export class MapHeaders<T extends ReqHeaderType | ResHeaderType = ReqHeaderType> implements Header<T> {
 
     private _hdrs: Map<string, T>;
     private _rcd?: Record<string, T>;

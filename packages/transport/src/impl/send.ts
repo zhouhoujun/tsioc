@@ -91,8 +91,8 @@ export class TransportSendAdapter extends ContentSendAdapter {
 
         const maxAge = opts.maxAge ?? 0;
         ctx.setHeader(hdr.CONTENT_LENGTH, stats.size);
-        if (!ctx.response.getHeader(hdr.LAST_MODIFIED)) ctx.setHeader(hdr.LAST_MODIFIED, stats.mtime.toUTCString())
-        if (!ctx.response.getHeader(hdr.CACHE_CONTROL)) {
+        if (!ctx.getRespHeader(hdr.LAST_MODIFIED)) ctx.setHeader(hdr.LAST_MODIFIED, stats.mtime.toUTCString())
+        if (!ctx.getRespHeader(hdr.CACHE_CONTROL)) {
             const directives = [`max-age=${(maxAge / 1000 | 0)}`];
             if (opts.immutable) {
                 directives.push('immutable')

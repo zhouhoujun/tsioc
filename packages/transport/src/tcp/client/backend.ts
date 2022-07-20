@@ -187,7 +187,7 @@ export class TcpBackend implements EndpointBackend<TcpRequest, TcpEvent> {
                 }
             }
 
-            if (this.option.sizeLimit && (req.getHeader(hdr.CONTENT_LENGTH) as number ?? 0) > this.option.sizeLimit) {
+            if (this.option.sizeLimit && (parseInt(req.getHeader(hdr.CONTENT_LENGTH) as string ?? '0')) > this.option.sizeLimit) {
                 observer.error(new TcpErrorResponse({
                     id,
                     url,

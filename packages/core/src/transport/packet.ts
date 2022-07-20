@@ -60,10 +60,9 @@ export interface Packet<T = any> {
     /**
      * packet id.
      */
-    readonly id?: string;
-    /**
-     * headers
-     */
+    readonly id?: string;/**
+    * headers
+    */
     readonly headers?: Record<string, any>;
     /**
      * The request body, or `null` if one isn't set.
@@ -87,24 +86,32 @@ export interface PacketClonable<T = any> {
     clone?(data: { body?: T }): this;
 }
 
-/**
- * request headers.
- */
-export interface RequestHeader<T = any> {
+export type ReqHeaderType = string | readonly string[] | undefined;
+export type ResHeaderType = ReqHeaderType | number;
+
+export interface HeaderLike<T = any> {
     /**
-     * Get all response headers.
+     * headers
      */
-    getHeaders(): T;
+    readonly headers: Record<string, T>;
+}
+
+/**
+ * headers.
+ */
+export interface Header<T> {
+    /**
+     * Get all headers.
+     */
+    getHeaders(): Record<string, T>;
+
     /**
      * has header field or not.
      * @param field 
      */
     hasHeader(field: string): boolean;
     /**
-     * Return request header.
-     *
-     * The `Referrer` header field is special-cased,
-     * both `Referrer` and `Referer` are interchangeable.
+     * Return header.
      *
      * Examples:
      *
@@ -121,7 +128,7 @@ export interface RequestHeader<T = any> {
      * @return {String}
      * @api public
      */
-    getHeader(field: string): string | number | string[] | undefined;
+    getHeader(field: string): T | undefined;
     /**
      * Set header `field` to `val` or pass
      * an object of header fields.
@@ -135,7 +142,7 @@ export interface RequestHeader<T = any> {
      * @param {String} val
      * @api public
      */
-    setHeader(field: string, val: string | number | string[]): void;
+    setHeader(field: string, val: T): void;
     /**
      * append header `field` to `val` or pass
      * an object of header fields.
@@ -149,7 +156,7 @@ export interface RequestHeader<T = any> {
      * @param {String} val
      * @api public
      */
-    appendHeader?(field: string, val: string | number | boolean | readonly string[]): void;
+    appendHeader?(field: string, val: T): void;
     /**
      * Remove header `field`.
      *
@@ -157,6 +164,12 @@ export interface RequestHeader<T = any> {
      * @api public
      */
     removeHeader(field: string): void;
+}
+
+/**
+ * request headers.
+ */
+export interface RequestHeader extends Header<ReqHeaderType> {
 }
 
 /**
@@ -270,74 +283,8 @@ export interface ResponseJsonParseError {
     text: string;
 }
 
-/**
- * response headers.
- */
-export interface ResponseHeader<T = any> {
-    /**
-     * Get all response headers.
-     */
-    getHeaders(): T;
+export interface ResponseHeader extends Header<ResHeaderType> {
 
-    /**
-     * has header field or not.
-     * @param field 
-     */
-    hasHeader(field: string): boolean;
-    /**
-     * Return response header.
-     *
-     * Examples:
-     *
-     *     this.getHeader('Content-Type');
-     *     // => "text/plain"
-     *
-     *     this.getHeader('content-type');
-     *     // => "text/plain"
-     *
-     *     this.getHeader('Something');
-     *     // => ''
-     *
-     * @param {String} field
-     * @return {String}
-     * @api public
-     */
-    getHeader(field: string): string | number | boolean | readonly string[] | undefined;
-    /**
-     * Set header `field` to `val` or pass
-     * an object of header fields.
-     *
-     * Examples:
-     *
-     *    this.setHeader('Foo', ['bar', 'baz']);
-     *    this.setHeader('Accept', 'application/json');
-     *
-     * @param {String|Object|Array} field
-     * @param {String} val
-     * @api public
-     */
-    setHeader(field: string, val: string | number | boolean | readonly string[]): void;
-    /**
-     * append header `field` to `val` or pass
-     * an object of header fields.
-     *
-     * Examples:
-     *
-     *    this.appendHeader('Foo', ['bar', 'baz']);
-     *    this.appendHeader('Accept', 'application/json');
-     *
-     * @param {String|Object|Array} field
-     * @param {String} val
-     * @api public
-     */
-    appendHeader?(field: string, val: string | number | boolean | readonly string[]): void;
-    /**
-     * Remove header `field`.
-     *
-     * @param {String} name
-     * @api public
-     */
-    removeHeader(field: string): void;
 }
 
 /**

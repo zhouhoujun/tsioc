@@ -1,9 +1,9 @@
-import { MapHeaders, RequestHeader } from '@tsdi/core';
+import { MapHeaders, ReqHeaderType, RequestHeader } from '@tsdi/core';
 import { EMPTY_OBJ } from '@tsdi/ioc';
 import { Writable } from 'form-data';
 import { IncomingRequest } from '../../incoming';
 
-export class UdpServRequest extends MapHeaders implements IncomingRequest, RequestHeader {
+export class UdpServRequest extends MapHeaders<ReqHeaderType> implements IncomingRequest, RequestHeader {
     public readonly url: string;
     public readonly method: string;
     public readonly params: Record<string, any>;

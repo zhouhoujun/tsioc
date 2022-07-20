@@ -37,7 +37,7 @@ export class TcpBodyInterceptor implements Interceptor<ClientReqPacket, Response
                     body = form.getBuffer();
                 }
                 req.body = body;
-                req.setHeader(hdr.CONTENT_LENGTH, Buffer.byteLength(body as Buffer));
+                req.setHeader(hdr.CONTENT_LENGTH, Buffer.byteLength(body as Buffer).toString());
             }
 
             return req;
