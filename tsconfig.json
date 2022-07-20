@@ -59,8 +59,8 @@
       "@tsdi/transport-ws": [
         "packages/transport-ws/src"
       ],
-      "@tsdi/transport-udp": [
-        "packages/transport-udp/src"
+      "@tsdi/transport-coap": [
+        "packages/transport-coap/src"
       ],
       "@tsdi/security": [
         "packages/security/src"

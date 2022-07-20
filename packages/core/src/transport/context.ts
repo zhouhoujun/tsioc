@@ -158,7 +158,6 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
      * Whether the status code is ok
      */
     abstract set ok(ok: boolean);
-
     /**
      * has sent or not.
      */
