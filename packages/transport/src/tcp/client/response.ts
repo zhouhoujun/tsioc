@@ -1,4 +1,4 @@
-import { OutgoingHeader, OutgoingHeaders, ResHeaders, ResHeadersLike, ResponsePacket } from '@tsdi/core';
+import { OutgoingHeader, ResHeaders, ResHeadersLike, ResponsePacket } from '@tsdi/core';
 
 /**
  * tcp error response.
