@@ -7,7 +7,7 @@ import { JsonDecoder, JsonEncoder } from '../../coder';
 import { ev } from '../../consts';
 import { TcpPathInterceptor } from './path';
 import { TcpClientOpts, TCP_EXECPTIONFILTERS, TCP_INTERCEPTORS } from './options';
-import { TcpBodyInterceptor } from '../../interceptors/body';
+import { DetectBodyInterceptor } from '../../interceptors/body';
 import { PacketProtocolOpts } from '../packet';
 import { TcpBackend } from './backend';
 import { AssetRedirector } from '../../redirector';
@@ -49,7 +49,7 @@ export class TcpClient extends TransportClient<Request, ResponseEvent> implement
 
     protected override initOption(options?: TcpClientOpts): TcpClientOpts {
         const connectOpts = { ...defaults.connectOpts, ...options?.connectOpts };
-        const interceptors = [...options?.interceptors ?? EMPTY, TcpPathInterceptor, TcpBodyInterceptor];
+        const interceptors = [...options?.interceptors ?? EMPTY, TcpPathInterceptor, DetectBodyInterceptor];
         this.option = { ...defaults, ...options, connectOpts, interceptors };
         this.context.setValue(TcpClientOpts, this.option);
         this.context.setValue(PacketProtocolOpts, this.option);

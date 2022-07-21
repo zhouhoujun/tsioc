@@ -6,7 +6,7 @@ import { hdr } from '../consts';
 
 
 @Injectable()
-export class TcpBodyInterceptor implements Interceptor<ClientReqPacket, ResponseEvent> {
+export class DetectBodyInterceptor implements Interceptor<ClientReqPacket, ResponseEvent> {
 
     constructor() { }
 
