@@ -1,16 +1,16 @@
-import { OutgoingHeader, ResponseHeaders } from '@tsdi/core';
+import { HeaderAccessor, OutgoingHeader } from '@tsdi/core';
 import { Writable } from 'stream';
 import { TransportStream } from './stream';
 
 
 
-export class ServerResponse extends Writable implements ResponseHeaders {
-    constructor(readonly stream: TransportStream, readonly headers: ResponseHeaders) {
+export class ServerResponse extends Writable implements HeaderAccessor<OutgoingHeader> {
+    constructor(readonly stream: TransportStream, readonly headers: HeaderAccessor<OutgoingHeader>) {
         super();
     }
-    writeHead(statusCode: number, headers?: ResponseHeaders): this;
-    writeHead(statusCode: number, statusMessage: string, headers?: ResponseHeaders): this;
-    writeHead(statusCode: number, statusMessage?: string | ResponseHeaders, headers?: ResponseHeaders): this {
+    writeHead(statusCode: number, headers?: HeaderAccessor<OutgoingHeader>): this;
+    writeHead(statusCode: number, statusMessage: string, headers?: HeaderAccessor<OutgoingHeader>): this;
+    writeHead(statusCode: number, statusMessage?: string | HeaderAccessor<OutgoingHeader>, headers?: HeaderAccessor<OutgoingHeader>): this {
         return this;
     }
 

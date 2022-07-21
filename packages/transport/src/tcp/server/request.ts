@@ -1,4 +1,4 @@
-import { HeaderSet, IncommingHeader, IncommingHeaders, RequestHeaders } from '@tsdi/core';
+import { HeaderAccessor, HeaderSet, IncommingHeader, IncommingHeaders } from '@tsdi/core';
 import { EMPTY_OBJ, isNull } from '@tsdi/ioc';
 import { Socket } from 'net';
 import { Writable } from 'stream';
@@ -7,7 +7,7 @@ import { hdr, identity } from '../../consts';
 import { IncomingRequest } from '../../incoming';
 import { PacketProtocol } from '../packet';
 
-export class TcpServRequest extends HeaderSet<IncommingHeader> implements IncomingRequest, RequestHeaders {
+export class TcpServRequest extends HeaderSet<IncommingHeader> implements IncomingRequest, HeaderAccessor<IncommingHeader> {
 
     public readonly id: string;
     public readonly url: string;

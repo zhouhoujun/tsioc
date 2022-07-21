@@ -1,7 +1,8 @@
 import { ArgumentError, isFunction, isString } from '@tsdi/ioc';
-import { ResponseHeaders } from '@tsdi/core';
+import { HeaderAccessor, HeaderPacket, ResHeaderLike } from '@tsdi/core';
 import { Stream, PassThrough } from 'stream';
 import { EventEmitter } from 'events';
+import { hdr } from './consts';
 
 
 export function isBuffer(body: any): body is Buffer {
@@ -184,16 +185,20 @@ const field_name = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
 * @public
 */
 
-export function vary(res: ResponseHeaders, field: string) {
+export function vary(res: ResHeaderLike, field: string) {
   // get existing header
-  let val = res.getHeader('Vary') || '';
+  let val = ((res as HeaderAccessor).getHeader ? (res as HeaderAccessor).getHeader(hdr.VARY) : (res as HeaderPacket).headers[field]) || '';
   const header = Array.isArray(val)
     ? val.join(', ')
     : String(val);
 
   // set new header
   if ((val = append(header, field))) {
-    res.setHeader('Vary', val)
+    if ((res as HeaderAccessor).setHeader) {
+      (res as HeaderAccessor).setHeader(hdr.VARY, val)
+    } else {
+      (res as HeaderPacket).headers[hdr.VARY, val];
+    }
   }
 }
 

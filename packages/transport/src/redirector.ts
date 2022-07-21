@@ -1,5 +1,5 @@
 /* eslint-disable no-case-declarations */
-import { BadRequestError, EndpointContext, RequestHeaders, RequestPacket, ResponseHeaders, TransportClient, RequestMethod, Redirector, ReqHeaders, ResHeaders } from '@tsdi/core';
+import { BadRequestError, EndpointContext, RequestPacket, TransportClient, RequestMethod, Redirector, ReqHeaders, ResHeaders, IncommingHeader, HeaderAccessor, OutgoingHeader } from '@tsdi/core';
 import { EMPTY_OBJ, Injectable } from '@tsdi/ioc';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { Readable } from 'stream';
@@ -53,7 +53,7 @@ export class AssetRedirector extends Redirector {
                     // HTTP-redirect fetch step 6 (counter increment)
                     // Create a new Request object.
 
-                    let reqhdrs = new ReqHeaders(req.headers ?? (req as any as RequestHeaders).getHeaders?.());
+                    let reqhdrs = new ReqHeaders(req.headers ?? (req as any as HeaderAccessor<IncommingHeader>).getHeaders?.());
                     let method = req.method as RequestMethod;
                     let body = req.body;
 
@@ -134,7 +134,7 @@ export const referPolicys = new Set([
 
 const splitReg = /[,\s]+/;
 
-export function parseReferrerPolicyFromHeader(headers: ResponseHeaders) {
+export function parseReferrerPolicyFromHeader(headers: HeaderAccessor<OutgoingHeader>) {
     const policyTokens = (headers.getHeader(hdr.REFERRER_POLICY) as string || '').split(splitReg);
     let policy = '';
     for (const token of policyTokens) {

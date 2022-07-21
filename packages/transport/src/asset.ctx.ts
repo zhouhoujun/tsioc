@@ -1,4 +1,4 @@
-import { AssetContext, HeaderPacket, RequestHeaders, OutgoingHeader, ResponseHeaders, ServerContext, ReqHeaderLike, ResHeaderLike } from '@tsdi/core';
+import { AssetContext, HeaderPacket, OutgoingHeader, ServerContext, ReqHeaderLike, ResHeaderLike, IncommingHeader, HeaderAccessor, OutgoingHeaders } from '@tsdi/core';
 import { Abstract, isArray, isNil, isNumber, isString, lang } from '@tsdi/ioc';
 import { extname } from 'path';
 import { ctype, hdr } from './consts';
@@ -7,7 +7,9 @@ import { MimeAdapter } from './mime';
 import { Negotiator } from './negotiator';
 import { encodeUrl, escapeHtml, isBuffer, isStream, xmlRegExp } from './utils';
 
-
+/**
+ * asset server context.
+ */
 @Abstract()
 export abstract class AssetServerContext<TRequest extends ReqHeaderLike = ReqHeaderLike, TResponse extends ResHeaderLike = ResHeaderLike> extends ServerContext<TRequest, TResponse> implements AssetContext {
 
@@ -432,10 +434,42 @@ export abstract class AssetServerContext<TRequest extends ReqHeaderLike = ReqHea
         this.body = `Redirecting to ${url}.`
     }
 
-    getHeader(field: string): string | string[] | undefined {
-        const h = (this.request as RequestHeaders).getHeader ? (this.request as RequestHeaders).getHeader(field) : (this.request as HeaderPacket).headers![field];
-        if (isNil(h)) return undefined;
-        return isArray(h) ? h : String(h);
+    /**
+     * Return request header.
+     *
+     * The `Referrer` header field is special-cased,
+     * both `Referrer` and `Referer` are interchangeable.
+     *
+     * Examples:
+     *
+     *     this.get('Content-Type');
+     *     // => "text/plain"
+     *
+     *     this.get('content-type');
+     *     // => "text/plain"
+     *
+     *     this.get('Something');
+     *     // => ''
+     *
+     * @param {String} field
+     * @return {String}
+     * @api public
+     */
+    getHeader(field: string): string {
+        field = field.toLowerCase();
+        let h: IncommingHeader;
+        switch (field = field.toLowerCase()) {
+            case 'referer':
+            case 'referrer':
+                h = (this.request as HeaderAccessor).getHeader ? (this.request as HeaderAccessor).getHeader('referrer') ?? (this.request as HeaderAccessor).getHeader('referr')
+                    : (this.request as HeaderPacket).headers!['referrer'] ?? (this.request as HeaderPacket).headers!['referer'];
+                break;
+            default:
+                h = (this.request as HeaderAccessor).getHeader ? (this.request as HeaderAccessor).getHeader(field) : (this.request as HeaderPacket).headers![field];
+                break;
+        }
+        if (isNil(h)) return '';
+        return isArray(h) ? h[0] : String(h);
     }
 
     /**
@@ -452,7 +486,8 @@ export abstract class AssetServerContext<TRequest extends ReqHeaderLike = ReqHea
      * @api public
      */
     hasHeader(field: string) {
-        return (this.response as ResponseHeaders).hasHeader ? (this.response as ResponseHeaders).hasHeader(field) : !isNil((this.response as HeaderPacket).headers![field])
+        field = field.toLowerCase();
+        return (this.response as HeaderAccessor).hasHeader ? (this.response as HeaderAccessor).hasHeader(field) : !isNil((this.response as HeaderPacket).headers![field])
     }
 
     /**
@@ -478,27 +513,27 @@ export abstract class AssetServerContext<TRequest extends ReqHeaderLike = ReqHea
      *
      *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
      *
-     * @param {Record<string, string | number | string[]>} fields
+     * @param {OutgoingHeaders} fields
      * @param {String} val
      * @api public
      */
-    setHeader(fields: Record<string, string | number | string[]>): void;
-    setHeader(field: string | Record<string, string | number | string[]>, val?: string | number | string[]) {
+    setHeader(fields: OutgoingHeaders): void;
+    setHeader(field: string | OutgoingHeaders, val?: string | number | string[]) {
         if (this.sent) return;
-        if ((this.response as ResponseHeaders).setHeader) {
+        if ((this.response as HeaderAccessor).setHeader) {
             if (val) {
-                (this.response as ResponseHeaders).setHeader(field as string, val)
+                (this.response as HeaderAccessor).setHeader(field as string, val)
             } else {
-                const fields = field as Record<string, string | number | string[]>;
+                const fields = field as OutgoingHeaders;
                 for (const key in fields) {
-                    (this.response as ResponseHeaders).setHeader(key, fields[key])
+                    (this.response as HeaderAccessor).setHeader(key, fields[key])
                 }
             }
         } else if ((this.response as HeaderPacket).headers) {
             if (val) {
                 (this.response as HeaderPacket).headers![field as string] = val;
             } else {
-                const fields = field as Record<string, string | number | string[]>;
+                const fields = field as OutgoingHeaders;
                 for (const key in fields) {
                     (this.response as HeaderPacket).headers![key] = fields[key];
                 }
@@ -507,7 +542,8 @@ export abstract class AssetServerContext<TRequest extends ReqHeaderLike = ReqHea
     }
 
     getRespHeader(field: string): OutgoingHeader {
-        return (this.response as ResponseHeaders).getHeader ? (this.response as ResponseHeaders).getHeader(field) : (this.response as HeaderPacket).headers![field]
+        field = field.toLowerCase();
+        return (this.response as HeaderAccessor).getHeader ? (this.response as HeaderAccessor).getHeader(field) : (this.response as HeaderPacket).headers![field]
     }
 
     /**
@@ -518,8 +554,9 @@ export abstract class AssetServerContext<TRequest extends ReqHeaderLike = ReqHea
      */
     removeHeader(field: string): void {
         if (this.sent) return;
-        if ((this.response as ResponseHeaders).removeHeader) {
-            (this.response as ResponseHeaders).removeHeader(field)
+        field = field.toLowerCase();
+        if ((this.response as HeaderAccessor<OutgoingHeader>).removeHeader) {
+            (this.response as HeaderAccessor<OutgoingHeader>).removeHeader(field)
         } else {
             (this.response as HeaderPacket).headers![field] = null!;
         }

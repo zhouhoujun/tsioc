@@ -108,7 +108,7 @@ export type OutgoingHeaders = Record<string, OutgoingHeader>;
 /**
  * headers.
  */
-export interface HeaderAccessor<T> {
+export interface HeaderAccessor<T = any> {
     /**
      * Get all headers.
      */
@@ -175,16 +175,10 @@ export interface HeaderAccessor<T> {
     removeHeader(field: string): void;
 }
 
-/**
- * request headers.
- */
-export interface RequestHeaders extends HeaderAccessor<IncommingHeader> {
-}
 
 /**
  * request packet.
  */
-
 export interface RequestPacket<T = any> extends Packet<T> {
     /**
      * packet id.
@@ -216,7 +210,7 @@ export interface RequestPacket<T = any> extends Packet<T> {
 /**
  * client request packet
  */
-export interface ClientReqPacket<T = any> extends RequestPacket<T>, RequestHeaders {
+export interface ClientReqPacket<T = any> extends RequestPacket<T>, HeaderAccessor<IncommingHeader> {
     /**
      * The request body, or `null` if one isn't set.
      *
@@ -292,16 +286,11 @@ export interface ResponseJsonParseError {
     text: string;
 }
 
-/**
- * response headers
- */
-export interface ResponseHeaders extends HeaderAccessor<OutgoingHeader> {
-}
 
 /**
  * response event.
  */
-export type ResponseEvent<T = any> = ResponsePacket<T> | ResponseHeaders;
+export type ResponseEvent<T = any> = ResponsePacket<T> | HeaderAccessor<OutgoingHeader>;
 
-export type ReqHeaderLike = HeaderPacket<IncommingHeader> | RequestHeaders;
-export type ResHeaderLike = HeaderPacket<OutgoingHeader> | ResponseHeaders;
+export type ReqHeaderLike = HeaderPacket<IncommingHeader> | HeaderAccessor<IncommingHeader>;
+export type ResHeaderLike = HeaderPacket<OutgoingHeader> | HeaderAccessor<OutgoingHeader>;

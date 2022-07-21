@@ -1,5 +1,5 @@
 import { EMPTY, Inject, Injectable, InvocationContext, lang, Nullable, Providers, Token } from '@tsdi/ioc';
-import { RequestMethod, TransportClient, EndpointBackend, OnDispose, InterceptorLike, RequstOption, ResponseAs, RequestContext, mths, TransportStatus, Redirector, ReqHeaders } from '@tsdi/core';
+import { RequestMethod, TransportClient, EndpointBackend, OnDispose, InterceptorLike, RequstOption, ResponseAs, RequestContext, mths, TransportStatus, Redirector, ReqHeaders, IncommingHeaders } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpParams, HttpParamsOptions, HttpResponse } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import * as http from 'http';
@@ -23,7 +23,7 @@ const defOpts = {
     execptionsToken: HTTP_EXECPTIONFILTERS,
 } as HttpClientOpts;
 
-export type HttpHeadersType = ReqHeaders | { [header: string]: string | string[] } | http.OutgoingHttpHeaders;
+export type HttpHeadersType = ReqHeaders | IncommingHeaders | http.IncomingHttpHeaders;
 export interface HttpRequestOpts extends RequstOption {
     body?: any;
     method?: RequestMethod | undefined;
@@ -1734,7 +1734,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * details on the return type.
      */
     patch(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] } | http.OutgoingHttpHeaders,
+        headers?: HttpHeadersType,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |

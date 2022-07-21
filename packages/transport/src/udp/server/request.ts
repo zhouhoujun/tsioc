@@ -1,9 +1,9 @@
-import { HeaderSet, IncommingHeader, RequestHeaders } from '@tsdi/core';
+import { HeaderAccessor, HeaderSet, IncommingHeader } from '@tsdi/core';
 import { EMPTY_OBJ } from '@tsdi/ioc';
 import { Writable } from 'form-data';
 import { IncomingRequest } from '../../incoming';
 
-export class UdpServRequest extends HeaderSet<IncommingHeader> implements IncomingRequest, RequestHeaders {
+export class UdpServRequest extends HeaderSet<IncommingHeader> implements IncomingRequest, HeaderAccessor<IncommingHeader> {
     public readonly url: string;
     public readonly method: string;
     public readonly params: Record<string, any>;

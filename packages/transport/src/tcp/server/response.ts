@@ -1,11 +1,11 @@
-import { HeaderSet, Packet, OutgoingHeader, ResponseHeaders, ResponsePacket } from '@tsdi/core';
+import { HeaderSet, Packet, OutgoingHeader, ResponsePacket, HeaderAccessor } from '@tsdi/core';
 import { Socket } from 'net';
 import { hdr } from '../../consts';
 
 /**
  * TcpResponse.
  */
-export class TcpServResponse extends HeaderSet<OutgoingHeader> implements ResponsePacket, ResponseHeaders {
+export class TcpServResponse extends HeaderSet<OutgoingHeader> implements ResponsePacket, HeaderAccessor<OutgoingHeader> {
 
 
     body: any;
@@ -40,6 +40,4 @@ export class TcpServResponse extends HeaderSet<OutgoingHeader> implements Respon
         return { id: this.id, headers: this.getHeaders(), body: this.body };
     }
 
-
 }
-

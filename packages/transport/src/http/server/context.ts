@@ -67,38 +67,6 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
     }
 
     /**
-     * Return request header.
-     *
-     * The `Referrer` header field is special-cased,
-     * both `Referrer` and `Referer` are interchangeable.
-     *
-     * Examples:
-     *
-     *     this.get('Content-Type');
-     *     // => "text/plain"
-     *
-     *     this.get('content-type');
-     *     // => "text/plain"
-     *
-     *     this.get('Something');
-     *     // => ''
-     *
-     * @param {String} field
-     * @return {String}
-     * @api public
-     */
-    getHeader(field: string) {
-        const req = this.request;
-        switch (field = field.toLowerCase()) {
-            case 'referer':
-            case 'referrer':
-                return req.headers.referrer || req.headers.referer
-            default:
-                return req.headers[field]
-        }
-    }
-
-    /**
      * Return the protocol string "http" or "https"
      * when requested with TLS. When the proxy setting
      * is enabled the "X-Forwarded-Proto" header
