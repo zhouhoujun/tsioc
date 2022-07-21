@@ -1,4 +1,4 @@
-import { AssetContext, HeaderLike, ReqHeaderType, RequestHeader, ResHeaderType, ResponseHeader, ServerContext } from '@tsdi/core';
+import { AssetContext, HeaderPacket, RequestHeaders, OutgoingHeader, ResponseHeaders, ServerContext, ReqHeaderLike, ResHeaderLike } from '@tsdi/core';
 import { Abstract, isArray, isNil, isNumber, isString, lang } from '@tsdi/ioc';
 import { extname } from 'path';
 import { ctype, hdr } from './consts';
@@ -7,11 +7,9 @@ import { MimeAdapter } from './mime';
 import { Negotiator } from './negotiator';
 import { encodeUrl, escapeHtml, isBuffer, isStream, xmlRegExp } from './utils';
 
-export type ReqLike = HeaderLike<ReqHeaderType> | RequestHeader;
-export type ResLike = HeaderLike<ResHeaderType> | ResponseHeader;
 
 @Abstract()
-export abstract class AssetServerContext<TRequest extends ReqLike = ReqLike, TResponse extends ResLike = ResLike> extends ServerContext<TRequest, TResponse> implements AssetContext {
+export abstract class AssetServerContext<TRequest extends ReqHeaderLike = ReqHeaderLike, TResponse extends ResHeaderLike = ResHeaderLike> extends ServerContext<TRequest, TResponse> implements AssetContext {
 
     /**
      * Check if the incoming request contains the "Content-Type"
@@ -435,7 +433,7 @@ export abstract class AssetServerContext<TRequest extends ReqLike = ReqLike, TRe
     }
 
     getHeader(field: string): string | string[] | undefined {
-        const h = (this.request as RequestHeader).getHeader ? (this.request as RequestHeader).getHeader(field) : (this.request as HeaderLike).headers![field];
+        const h = (this.request as RequestHeaders).getHeader ? (this.request as RequestHeaders).getHeader(field) : (this.request as HeaderPacket).headers![field];
         if (isNil(h)) return undefined;
         return isArray(h) ? h : String(h);
     }
@@ -454,7 +452,7 @@ export abstract class AssetServerContext<TRequest extends ReqLike = ReqLike, TRe
      * @api public
      */
     hasHeader(field: string) {
-        return (this.response as ResponseHeader).hasHeader ? (this.response as ResponseHeader).hasHeader(field) : !isNil((this.response as HeaderLike).headers![field])
+        return (this.response as ResponseHeaders).hasHeader ? (this.response as ResponseHeaders).hasHeader(field) : !isNil((this.response as HeaderPacket).headers![field])
     }
 
     /**
@@ -487,29 +485,29 @@ export abstract class AssetServerContext<TRequest extends ReqLike = ReqLike, TRe
     setHeader(fields: Record<string, string | number | string[]>): void;
     setHeader(field: string | Record<string, string | number | string[]>, val?: string | number | string[]) {
         if (this.sent) return;
-        if ((this.response as ResponseHeader).setHeader) {
+        if ((this.response as ResponseHeaders).setHeader) {
             if (val) {
-                (this.response as ResponseHeader).setHeader(field as string, val)
+                (this.response as ResponseHeaders).setHeader(field as string, val)
             } else {
                 const fields = field as Record<string, string | number | string[]>;
                 for (const key in fields) {
-                    (this.response as ResponseHeader).setHeader(key, fields[key])
+                    (this.response as ResponseHeaders).setHeader(key, fields[key])
                 }
             }
-        } else if ((this.response as HeaderLike).headers) {
+        } else if ((this.response as HeaderPacket).headers) {
             if (val) {
-                (this.response as HeaderLike).headers![field as string] = val;
+                (this.response as HeaderPacket).headers![field as string] = val;
             } else {
                 const fields = field as Record<string, string | number | string[]>;
                 for (const key in fields) {
-                    (this.response as HeaderLike).headers![key] = fields[key];
+                    (this.response as HeaderPacket).headers![key] = fields[key];
                 }
             }
         }
     }
 
-    getRespHeader(field: string) {
-        return (this.response as ResponseHeader).getHeader ? (this.response as ResponseHeader).getHeader(field) : (this.response as HeaderLike).headers![field]
+    getRespHeader(field: string): OutgoingHeader {
+        return (this.response as ResponseHeaders).getHeader ? (this.response as ResponseHeaders).getHeader(field) : (this.response as HeaderPacket).headers![field]
     }
 
     /**
@@ -520,7 +518,11 @@ export abstract class AssetServerContext<TRequest extends ReqLike = ReqLike, TRe
      */
     removeHeader(field: string): void {
         if (this.sent) return;
-        (this.response as ResponseHeader).removeHeader ? (this.response as ResponseHeader).removeHeader(field) : (this.response as HeaderLike).headers![field] = null!;
+        if ((this.response as ResponseHeaders).removeHeader) {
+            (this.response as ResponseHeaders).removeHeader(field)
+        } else {
+            (this.response as HeaderPacket).headers![field] = null!;
+        }
     }
 
 }

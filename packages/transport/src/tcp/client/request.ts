@@ -1,4 +1,4 @@
-import { ClientReqPacket, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, MapHeaders, mths, RequestPacket } from '@tsdi/core';
+import { ClientReqPacket, IncommingHeaders, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, mths, ReqHeaders, RequestPacket } from '@tsdi/core';
 import { isString, type_bool, type_num, type_obj } from '@tsdi/ioc';
 import { isBuffer, isStream } from '../../utils';
 import { Stream } from 'stream';
@@ -6,17 +6,17 @@ import { Stream } from 'stream';
 /**
  * TcpRequest.
  */
-export class TcpRequest<T = any> extends MapHeaders implements ClientReqPacket<T> {
+export class TcpRequest<T = any> extends ReqHeaders implements ClientReqPacket<T> {
 
     public readonly id: string;
     public url: string;
     public method: string;
-    public params: Record<string, any>;
+    public params: IncommingHeaders;
     public body: T | null;
 
     constructor(id: string, option: {
         url: string;
-        params?: Record<string, any>;
+        params?: IncommingHeaders;
         method?: string;
         body?: T;
     }) {

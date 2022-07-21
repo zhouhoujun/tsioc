@@ -1,7 +1,7 @@
 import { Abstract } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { EndpointContext } from './context';
-import { TransportHeaders } from './headers';
+import { ResHeaders } from './headers';
 import { RequestPacket } from './packet';
 
 /**
@@ -16,5 +16,5 @@ export abstract class Redirector {
      * @param status response status
      * @param headers response headers.
      */
-    abstract redirect<T>(ctx: EndpointContext, req: RequestPacket, status: number, headers: TransportHeaders): Observable<T>;
+    abstract redirect<T>(ctx: EndpointContext, req: RequestPacket, status: number, headers: ResHeaders): Observable<T>;
 }

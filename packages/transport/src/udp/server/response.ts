@@ -1,10 +1,10 @@
-import { MapHeaders, ResHeaderType, ResponseHeader, ResponsePacket } from '@tsdi/core';
+import { HeaderSet, OutgoingHeader, ResponseHeaders, ResponsePacket } from '@tsdi/core';
 import { Socket } from 'dgram';
 
 /**
  * UdpServResponse.
  */
-export class UdpServResponse extends MapHeaders<ResHeaderType> implements ResponsePacket, ResponseHeader {
+export class UdpServResponse extends HeaderSet<OutgoingHeader> implements ResponsePacket, ResponseHeaders {
 
     type = 0;
     status = 0;

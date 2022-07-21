@@ -1,9 +1,8 @@
 import { Injectable, InvocationContext, isArray, isString, isUndefined } from '@tsdi/ioc';
-import { mths } from '@tsdi/core';
+import { mths, ReqHeaders } from '@tsdi/core';
 import { Observable, Observer } from 'rxjs';
 import { HttpStatusCode, statusMessage } from './status';
 import { HttpBackend, XhrFactory } from './handler';
-import { HttpHeaders } from './headers';
 import { HttpRequest } from './request';
 import { HttpDownloadProgressEvent, HttpErrorResponse, HttpEvent, HttpEventType, HttpHeaderResponse, HttpJsonParseError, HttpResponse, HttpUploadProgressEvent } from './response';
 
@@ -111,7 +110,7 @@ export class HttpXhrBackend implements HttpBackend {
                 const statusText = xhr.statusText ?? statusMessage[status as HttpStatusCode] ?? 'OK';
 
                 // Parse headers from XMLHttpRequest - this step is lazy.
-                const headers = new HttpHeaders(xhr.getAllResponseHeaders());
+                const headers = new ReqHeaders(xhr.getAllResponseHeaders());
 
                 // Read the response URL from the XMLHttpResponse instance and fall back on the
                 // request URL.

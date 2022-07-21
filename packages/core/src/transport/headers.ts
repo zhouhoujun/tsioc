@@ -1,18 +1,18 @@
 import { isArray, isNil, isString } from '@tsdi/ioc';
-import { Header, ReqHeaderType, ResHeaderType } from './packet';
+import { HeaderAccessor, IncommingHeader, OutgoingHeader } from './packet';
 
 
 
 /**
  * transport headers.
  */
-export class MapHeaders<T extends ReqHeaderType | ResHeaderType = ReqHeaderType> implements Header<T> {
+export class HeaderSet<T extends IncommingHeader | OutgoingHeader = IncommingHeader> implements HeaderAccessor<T> {
 
     private _hdrs: Map<string, T>;
     private _rcd?: Record<string, T>;
     private _normal: Map<string, string>;
 
-    constructor(headers?: string | Record<string, T> | MapHeaders<T>) {
+    constructor(headers?: string | Record<string, T> | HeaderSet<T>) {
         this._hdrs = new Map();
         this._normal = new Map();
         if (headers) {
@@ -25,8 +25,8 @@ export class MapHeaders<T extends ReqHeaderType | ResHeaderType = ReqHeaderType>
                         this.appendHeader(name, value as T);
                     }
                 })
-            } else if (headers instanceof MapHeaders) {
-                headers.eachHeader((n, v) => {
+            } else if (headers instanceof HeaderSet) {
+                headers.forEach((n, v) => {
                     this.setHeader(n, v as T);
                 });
             } else {
@@ -42,7 +42,7 @@ export class MapHeaders<T extends ReqHeaderType | ResHeaderType = ReqHeaderType>
     getHeaders(): Record<string, T> {
         if (!this._rcd) {
             const rcd = this._rcd = {} as Record<string, T>;
-            this.eachHeader((v, k) => {
+            this.forEach((v, k) => {
                 rcd[v] = k;
             });
         }
@@ -106,11 +106,10 @@ export class MapHeaders<T extends ReqHeaderType | ResHeaderType = ReqHeaderType>
         return this;
     }
 
-    eachHeader(fn: (name: string, values: T) => void) {
+    forEach(fn: (name: string, values: T) => void) {
         Array.from(this._normal.keys())
             .forEach(key => fn(this._normal.get(key)!, this._hdrs.get(key)!))
     }
-
 
     private setNormalizedName(name: string, lcName: string): void {
         if (!this._normal.has(lcName)) {
@@ -120,14 +119,13 @@ export class MapHeaders<T extends ReqHeaderType | ResHeaderType = ReqHeaderType>
 }
 
 
-export class TransportHeaders<T extends ReqHeaderType | ResHeaderType = any> extends MapHeaders<T> {
-
-    set(name: string, val: T): this {
-        return this.setHeader(name, val);
-    }
+/**
+ * client request headers.
+ */
+export class ReqHeaders extends HeaderSet<IncommingHeader> {
 
     get(name: string): string | null {
-        const values = this.getHeader(name);
+        const values = this.get(name);
         if (isNil(values)) return null;
         return isArray(values) && values.length ? values[0] : String(values);
     }
@@ -140,7 +138,31 @@ export class TransportHeaders<T extends ReqHeaderType | ResHeaderType = any> ext
         return this.hasHeader(name);
     }
 
-    forEach(fn: (name: string, values: T) => void): void {
-        this.eachHeader(fn);
+    set(name: string, val: IncommingHeader): this {
+        return this.setHeader(name, val);
+    }
+}
+
+/**
+ * client response headers.
+ */
+export class ResHeaders extends HeaderSet<OutgoingHeader>  {
+    
+    get(name: string): string | number | null {
+        const values = this.getHeader(name);
+        if (isNil(values)) return null;
+        return isArray(values) && values.length ? values[0] : values;
+    }
+
+    delete(name: string) {
+        return this.removeHeader(name);
+    }
+
+    has(name: string): boolean {
+        return this.hasHeader(name);
+    }
+
+    set(name: string, val: IncommingHeader): this {
+        return this.setHeader(name, val);
     }
 }

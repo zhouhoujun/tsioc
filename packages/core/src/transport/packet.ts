@@ -54,15 +54,27 @@ export type HttpProtocol = 'http' | 'https';
 export type Protocol = 'tcp' | 'udp' | 'grpc' | 'rmq' | 'kafka' | 'redis' | 'amqp' | 'ssl' | 'msg' | HttpProtocol | MqttProtocol;
 
 /**
+ * header packet.
+ */
+export interface HeaderPacket<T = any> {
+    /**
+     * headers
+     */
+    readonly headers: Record<string, T>;
+}
+
+
+/**
  * packet.
  */
 export interface Packet<T = any> {
     /**
      * packet id.
      */
-    readonly id?: string;/**
-    * headers
-    */
+    readonly id?: string;
+    /**
+     * headers
+     */
     readonly headers?: Record<string, any>;
     /**
      * The request body, or `null` if one isn't set.
@@ -86,20 +98,17 @@ export interface PacketClonable<T = any> {
     clone?(data: { body?: T }): this;
 }
 
-export type ReqHeaderType = string | readonly string[] | undefined;
-export type ResHeaderType = ReqHeaderType | number;
+export type IncommingHeader = string | readonly string[] | undefined;
+export type OutgoingHeader = IncommingHeader | number;
 
-export interface HeaderLike<T = any> {
-    /**
-     * headers
-     */
-    readonly headers: Record<string, T>;
-}
+export type IncommingHeaders = Record<string, IncommingHeader>;
+export type OutgoingHeaders = Record<string, OutgoingHeader>;
+
 
 /**
  * headers.
  */
-export interface Header<T> {
+export interface HeaderAccessor<T> {
     /**
      * Get all headers.
      */
@@ -169,7 +178,7 @@ export interface Header<T> {
 /**
  * request headers.
  */
-export interface RequestHeader extends Header<ReqHeaderType> {
+export interface RequestHeaders extends HeaderAccessor<IncommingHeader> {
 }
 
 /**
@@ -207,7 +216,7 @@ export interface RequestPacket<T = any> extends Packet<T> {
 /**
  * client request packet
  */
-export interface ClientReqPacket<T = any> extends RequestPacket<T>, RequestHeader {
+export interface ClientReqPacket<T = any> extends RequestPacket<T>, RequestHeaders {
     /**
      * The request body, or `null` if one isn't set.
      *
@@ -283,11 +292,16 @@ export interface ResponseJsonParseError {
     text: string;
 }
 
-export interface ResponseHeader extends Header<ResHeaderType> {
-
+/**
+ * response headers
+ */
+export interface ResponseHeaders extends HeaderAccessor<OutgoingHeader> {
 }
 
 /**
  * response event.
  */
-export type ResponseEvent<T = any> = ResponsePacket<T> | ResponseHeader;
+export type ResponseEvent<T = any> = ResponsePacket<T> | ResponseHeaders;
+
+export type ReqHeaderLike = HeaderPacket<IncommingHeader> | RequestHeaders;
+export type ResHeaderLike = HeaderPacket<OutgoingHeader> | ResponseHeaders;

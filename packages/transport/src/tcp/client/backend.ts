@@ -1,4 +1,4 @@
-import { EndpointBackend, mths, Redirector, RequestContext, ResHeaderType, ResponseJsonParseError, TransportHeaders } from '@tsdi/core';
+import { EndpointBackend, mths, Redirector, RequestContext, ResponseJsonParseError, ResHeaders, OutgoingHeaders } from '@tsdi/core';
 import { Injectable, InvocationContext, type_undef } from '@tsdi/ioc';
 import { Socket } from 'net';
 import { filter, Observable, Observer, throwError } from 'rxjs';
@@ -32,7 +32,7 @@ export class TcpBackend implements EndpointBackend<TcpRequest, TcpEvent> {
         const ac = this.getAbortSignal(ctx);
         return new Observable((observer: Observer<any>) => {
 
-            let headers: Record<string, ResHeaderType>;
+            let headers: OutgoingHeaders;
             let body: any, error: any, ok = false;
             let bodybuf: any[] = [];
             let bodyBetys = 0;
@@ -97,7 +97,7 @@ export class TcpBackend implements EndpointBackend<TcpRequest, TcpEvent> {
                             }
 
                             if (!bodyLen && ctx.adapter.isRedirect(status)) {
-                               return ctx.get(Redirector).redirect(ctx, req, status, new TransportHeaders<ResHeaderType>(headers))
+                               return ctx.get(Redirector).redirect(ctx, req, status, new ResHeaders(headers))
                                     .subscribe(observer);
                             }
                             return;
@@ -155,7 +155,7 @@ export class TcpBackend implements EndpointBackend<TcpRequest, TcpEvent> {
                         }
 
                         if (ctx.adapter.isRedirect(status)) {
-                            return ctx.get(Redirector).redirect(ctx, req, status, new TransportHeaders<ResHeaderType>(headers))
+                            return ctx.get(Redirector).redirect(ctx, req, status, new ResHeaders(headers))
                                  .subscribe(observer);
                          }
 

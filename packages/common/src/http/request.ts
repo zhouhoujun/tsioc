@@ -1,7 +1,6 @@
 
-import { isArrayBuffer, isBlob, isFormData, isUrlSearchParams, mths } from '@tsdi/core';
+import { isArrayBuffer, isBlob, isFormData, isUrlSearchParams, mths, ReqHeaders } from '@tsdi/core';
 import { isString, type_bool, type_num, type_obj, InvocationContext } from '@tsdi/ioc';
-import { HttpHeaders } from './headers';
 import { HttpParams } from './params';
 
 
@@ -11,7 +10,7 @@ import { HttpParams } from './params';
  * All values are optional and will override default values if provided.
  */
 interface HttpRequestInit {
-    headers?: HttpHeaders;
+    headers?: ReqHeaders;
     context?: InvocationContext;
     reportProgress?: boolean;
     params?: HttpParams;
@@ -58,7 +57,7 @@ export class HttpRequest<T = any> {
     /**
      * Outgoing headers for this request.
      */
-    readonly headers!: HttpHeaders;
+    readonly headers!: ReqHeaders;
 
     /**
      * Whether this request should be made in a way that exposes progress events.
@@ -105,21 +104,21 @@ export class HttpRequest<T = any> {
     readonly urlWithParams: string;
 
     constructor(method: 'DELETE' | 'GET' | 'HEAD' | 'JSONP' | 'OPTIONS', url: string, init?: {
-        headers?: HttpHeaders,
+        headers?: ReqHeaders,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
     });
     constructor(method: 'POST' | 'PUT' | 'PATCH', url: string, body: T | null, init?: {
-        headers?: HttpHeaders,
+        headers?: ReqHeaders,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
     });
     constructor(method: string, url: string, body: T | null, init?: {
-        headers?: HttpHeaders,
+        headers?: ReqHeaders,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -127,14 +126,14 @@ export class HttpRequest<T = any> {
     });
     constructor(
         method: string, readonly url: string, third?: T | {
-            headers?: HttpHeaders,
+            headers?: ReqHeaders,
             reportProgress?: boolean,
             params?: HttpParams,
             responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
             withCredentials?: boolean,
         } | null,
         fourth?: {
-            headers?: HttpHeaders,
+            headers?: ReqHeaders,
             reportProgress?: boolean,
             params?: HttpParams,
             responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -177,9 +176,9 @@ export class HttpRequest<T = any> {
             }
         }
 
-        // If no headers have been passed in, construct a new HttpHeaders instance.
+        // If no headers have been passed in, construct a new ReqHeaders instance.
         if (!this.headers) {
-            this.headers = new HttpHeaders()
+            this.headers = new ReqHeaders()
         }
 
         // If no parameters have been passed in, construct a new HttpUrlEncodedParams instance.
@@ -281,7 +280,7 @@ export class HttpRequest<T = any> {
 
     clone(): HttpRequest<T>;
     clone(update: {
-        headers?: HttpHeaders,
+        headers?: ReqHeaders,
 
         reportProgress?: boolean,
         params?: HttpParams,
@@ -294,7 +293,7 @@ export class HttpRequest<T = any> {
         setParams?: { [param: string]: string },
     }): HttpRequest<T>;
     clone<V>(update: {
-        headers?: HttpHeaders,
+        headers?: ReqHeaders,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -306,7 +305,7 @@ export class HttpRequest<T = any> {
         setParams?: { [param: string]: string },
     }): HttpRequest<V>;
     clone(update: {
-        headers?: HttpHeaders,
+        headers?: ReqHeaders,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',

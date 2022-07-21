@@ -1,4 +1,4 @@
-import { MapHeaders, ReqHeaderType, RequestHeader } from '@tsdi/core';
+import { HeaderSet, IncommingHeader, IncommingHeaders, RequestHeaders } from '@tsdi/core';
 import { EMPTY_OBJ, isNull } from '@tsdi/ioc';
 import { Socket } from 'net';
 import { Writable } from 'stream';
@@ -7,7 +7,7 @@ import { hdr, identity } from '../../consts';
 import { IncomingRequest } from '../../incoming';
 import { PacketProtocol } from '../packet';
 
-export class TcpServRequest extends MapHeaders implements IncomingRequest, RequestHeader {
+export class TcpServRequest extends HeaderSet<IncommingHeader> implements IncomingRequest, RequestHeaders {
 
     public readonly id: string;
     public readonly url: string;
@@ -20,7 +20,7 @@ export class TcpServRequest extends MapHeaders implements IncomingRequest, Reque
         id?: string,
         url?: string;
         body?: any,
-        headers?: Record<string, ReqHeaderType>;
+        headers?: IncommingHeaders;
         params?: Record<string, any>;
         method?: string;
         update?: boolean;

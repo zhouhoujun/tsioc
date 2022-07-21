@@ -1,5 +1,5 @@
 /* eslint-disable no-case-declarations */
-import { BadRequestError, EndpointContext, RequestHeader, RequestPacket, TransportHeaders, TransportClient, RequestMethod, Redirector } from '@tsdi/core';
+import { BadRequestError, EndpointContext, RequestHeaders, RequestPacket, ResponseHeaders, TransportClient, RequestMethod, Redirector, ReqHeaders, ResHeaders } from '@tsdi/core';
 import { EMPTY_OBJ, Injectable } from '@tsdi/ioc';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { Readable } from 'stream';
@@ -8,11 +8,11 @@ import { hdr } from './consts';
 @Injectable()
 export class AssetRedirector extends Redirector {
 
-    redirect<T>(ctx: EndpointContext, req: RequestPacket, status: number, headers: TransportHeaders): Observable<T> {
+    redirect<T>(ctx: EndpointContext, req: RequestPacket, status: number, headers: ResHeaders): Observable<T> {
         return new Observable((observer: Observer<T>) => {
             const rdstatus = ctx.getValueify(RedirectStauts, () => new RedirectStauts());
             // HTTP fetch step 5.2
-            const location = headers.get(hdr.LOCATION);
+            const location = headers.get(hdr.LOCATION) as string;
 
             // HTTP fetch step 5.3
             let locationURL = null;
@@ -53,7 +53,7 @@ export class AssetRedirector extends Redirector {
                     // HTTP-redirect fetch step 6 (counter increment)
                     // Create a new Request object.
 
-                    let reqhdrs = new TransportHeaders(req.headers ?? (req as any as RequestHeader).getHeaders?.());
+                    let reqhdrs = new ReqHeaders(req.headers ?? (req as any as RequestHeaders).getHeaders?.());
                     let method = req.method as RequestMethod;
                     let body = req.body;
 
@@ -134,8 +134,8 @@ export const referPolicys = new Set([
 
 const splitReg = /[,\s]+/;
 
-export function parseReferrerPolicyFromHeader(headers: TransportHeaders) {
-    const policyTokens = (headers.get(hdr.REFERRER_POLICY) || '').split(splitReg);
+export function parseReferrerPolicyFromHeader(headers: ResponseHeaders) {
+    const policyTokens = (headers.getHeader(hdr.REFERRER_POLICY) as string || '').split(splitReg);
     let policy = '';
     for (const token of policyTokens) {
         if (token && referPolicys.has(token)) {

@@ -1,10 +1,10 @@
-import { MapHeaders, RequestHeader, RequestPacket } from '@tsdi/core';
+import { HeaderSet, IncommingHeader, RequestHeaders, RequestPacket } from '@tsdi/core';
 
 
 /**
  * UdpRequest.
  */
-export class UdpRequest<T = any> extends MapHeaders implements RequestPacket<T>, RequestHeader {
+export class UdpRequest<T = any> extends HeaderSet<IncommingHeader> implements RequestPacket<T>, RequestHeaders {
 
     public readonly id: string;
     public readonly url: string;

@@ -1,5 +1,5 @@
 import { HttpStatusCode } from './status';
-import { HttpHeaders } from './headers';
+import { ResHeaders } from '@tsdi/core';
 
 /**
  * Type enumeration for the different kinds of `HttpEvent`.
@@ -141,7 +141,7 @@ export abstract class HttpResponseBase {
     /**
      * All response headers.
      */
-    readonly headers: HttpHeaders;
+    readonly headers: ResHeaders;
 
     /**
      * Response status code.
@@ -189,7 +189,7 @@ export abstract class HttpResponseBase {
      */
     constructor(
         init: {
-            headers?: HttpHeaders,
+            headers?: ResHeaders,
             status?: number,
             statusText?: string,
             url?: string,
@@ -197,7 +197,7 @@ export abstract class HttpResponseBase {
         defaultStatus: number = HttpStatusCode.Ok, defaultStatusText = 'OK') {
         // If the hash has values passed, use them to initialize the response.
         // Otherwise use the default values.
-        this.headers = init.headers || new HttpHeaders();
+        this.headers = init.headers || new ResHeaders();
         this.status = init.status !== undefined ? init.status : defaultStatus;
         this._message = init.statusText || defaultStatusText;
         this.url = init.url || null
@@ -220,7 +220,7 @@ export class HttpHeaderResponse extends HttpResponseBase {
      * Create a new `HttpHeaderResponse` with the given parameters.
      */
     constructor(init: {
-        headers?: HttpHeaders,
+        headers?: ResHeaders,
         status?: number,
         statusText?: string,
         url?: string,
@@ -234,7 +234,7 @@ export class HttpHeaderResponse extends HttpResponseBase {
      * Copy this `HttpHeaderResponse`, overriding its contents with the
      * given parameter hash.
      */
-    clone(update: { headers?: HttpHeaders; status?: number; statusText?: string; url?: string; } = {}):
+    clone(update: { headers?: ResHeaders; status?: number; statusText?: string; url?: string; } = {}):
         HttpHeaderResponse {
         // Perform a straightforward initialization of the new HttpHeaderResponse,
         // overriding the current parameters with new ones if given.
@@ -267,7 +267,7 @@ export class HttpResponse<T = any> extends HttpResponseBase {
      */
     constructor(init: {
         body?: T | null,
-        headers?: HttpHeaders;
+        headers?: ResHeaders;
         status?: number;
         statusText?: string;
         url?: string;
@@ -279,18 +279,18 @@ export class HttpResponse<T = any> extends HttpResponseBase {
     override readonly type: HttpEventType.Response = HttpEventType.Response;
 
     clone(): HttpResponse<T>;
-    clone(update: { headers?: HttpHeaders; status?: number; statusText?: string; url?: string; }):
+    clone(update: { headers?: ResHeaders; status?: number; statusText?: string; url?: string; }):
         HttpResponse<T>;
     clone<V>(update: {
         body?: V | null,
-        headers?: HttpHeaders;
+        headers?: ResHeaders;
         status?: number;
         statusText?: string;
         url?: string;
     }): HttpResponse<V>;
     clone(update: {
         body?: any | null;
-        headers?: HttpHeaders;
+        headers?: ResHeaders;
         status?: number;
         statusText?: string;
         url?: string;
@@ -326,7 +326,7 @@ export class HttpErrorResponse extends HttpResponseBase implements Error {
 
     constructor(init: {
         error?: any;
-        headers?: HttpHeaders;
+        headers?: ResHeaders;
         status?: number;
         statusText?: string;
         url?: string;

@@ -1,5 +1,5 @@
 import { ArgumentError, isFunction, isString } from '@tsdi/ioc';
-import { ResponseHeader } from '@tsdi/core';
+import { ResponseHeaders } from '@tsdi/core';
 import { Stream, PassThrough } from 'stream';
 import { EventEmitter } from 'events';
 
@@ -184,7 +184,7 @@ const field_name = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
 * @public
 */
 
-export function vary(res: ResponseHeader, field: string) {
+export function vary(res: ResponseHeaders, field: string) {
   // get existing header
   let val = res.getHeader('Vary') || '';
   const header = Array.isArray(val)

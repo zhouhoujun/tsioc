@@ -1,7 +1,7 @@
 import { EMPTY_OBJ, Injectable, isUndefined, lang, type_undef } from '@tsdi/ioc';
-import { EndpointBackend, EndpointContext, mths, global, isArrayBuffer, isBlob, isFormData, Redirector } from '@tsdi/core';
+import { EndpointBackend, EndpointContext, mths, global, isArrayBuffer, isBlob, isFormData, Redirector, ResHeaders } from '@tsdi/core';
 import {
-    HttpRequest, HttpEvent, HttpHeaders, HttpResponse, HttpErrorResponse,
+    HttpRequest, HttpEvent, HttpResponse, HttpErrorResponse,
     HttpHeaderResponse, HttpStatusCode, statusMessage, HttpJsonParseError
 } from '@tsdi/common';
 import { finalize, Observable, Observer } from 'rxjs';
@@ -93,7 +93,7 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
             const onResponse = async (res: http.IncomingMessage) => {
                 status = res.statusCode ?? 0;
                 statusText = res.statusMessage;
-                const headers = new HttpHeaders(res.headers as Record<string, any>);
+                const headers = new ResHeaders(res.headers as Record<string, any>);
 
                 let body: any;
 
@@ -388,7 +388,7 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
 
             const onResponse = (hdrs: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader, flags: number) => {
                 let body: any;
-                const headers = new HttpHeaders(hdrs as Record<string, any>);
+                const headers = new ResHeaders(hdrs as Record<string, any>);
                 status = hdrs[HTTP2_HEADER_STATUS] ?? 0;
 
                 ok = ctx.adapter.isOk(status);
@@ -495,7 +495,7 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
 
                     let originalBody: any;
                     let buffer: Buffer;
-                    const contentType = headers.get(hdr.CONTENT_TYPE);
+                    const contentType = headers.get(hdr.CONTENT_TYPE) as string;
                     let type = req.responseType;
                     if (contentType) {
                         const adapter = ctx.get(MimeAdapter);
