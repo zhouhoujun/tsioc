@@ -1,10 +1,10 @@
-import { HeaderAccessor, HeaderSet, OutgoingHeader, ResponsePacket } from '@tsdi/core';
+import {  OutgoingHeader, OutgoingPacket } from '@tsdi/core';
 import { Socket } from 'dgram';
 
 /**
  * UdpServResponse.
  */
-export class UdpServResponse extends HeaderSet<OutgoingHeader> implements ResponsePacket, HeaderAccessor<OutgoingHeader> {
+export class UdpServResponse implements OutgoingPacket {
 
     type = 0;
     status = 0;
@@ -13,7 +13,28 @@ export class UdpServResponse extends HeaderSet<OutgoingHeader> implements Respon
     body: any;
 
     constructor(readonly socket: Socket, readonly id?: string) {
-        super()
+
+    }
+    get statusCode(): number {
+        throw new Error('Method not implemented.');
+    }
+    set statusCode(status: number) {
+        throw new Error('Method not implemented.');
+    }
+    getHeaders(): Record<string, OutgoingHeader> {
+        throw new Error('Method not implemented.');
+    }
+    hasHeader(field: string): boolean {
+        throw new Error('Method not implemented.');
+    }
+    getHeader(field: string): OutgoingHeader {
+        throw new Error('Method not implemented.');
+    }
+    setHeader(field: string, val: OutgoingHeader): void {
+        throw new Error('Method not implemented.');
+    }
+    removeHeader(field: string): void {
+        throw new Error('Method not implemented.');
     }
 
     get ok(): boolean {

@@ -1,4 +1,4 @@
-import { HttpRequestMethod, mths, ReqHeaders } from '@tsdi/core';
+import { HttpRequestMethod, mths, ReqHeaders, ReqHeadersLike } from '@tsdi/core';
 import { Injectable, InvocationContext, type_str } from '@tsdi/ioc';
 import { concatMap, filter, map, Observable, of } from 'rxjs';
 import { HttpHandler } from './handler';
@@ -37,7 +37,7 @@ export class HttpClient {
      */
     request(method: HttpRequestMethod, url: string, options: {
         body?: any,
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -58,7 +58,7 @@ export class HttpClient {
      */
     request(method: HttpRequestMethod, url: string, options: {
         body?: any,
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -79,7 +79,7 @@ export class HttpClient {
      */
     request(method: HttpRequestMethod, url: string, options: {
         body?: any,
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -101,7 +101,7 @@ export class HttpClient {
      */
     request(method: HttpRequestMethod, url: string, options: {
         body?: any,
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -123,7 +123,7 @@ export class HttpClient {
      */
     request(method: HttpRequestMethod, url: string, options: {
         body?: any,
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -144,7 +144,7 @@ export class HttpClient {
      */
     request(method: HttpRequestMethod, url: string, options: {
         body?: any,
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -165,7 +165,7 @@ export class HttpClient {
      */
     request(method: HttpRequestMethod, url: string, options: {
         body?: any,
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         reportProgress?: boolean, observe: 'events',
         params?: HttpParams |
@@ -187,7 +187,7 @@ export class HttpClient {
      */
     request<R>(method: HttpRequestMethod, url: string, options: {
         body?: any,
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         reportProgress?: boolean, observe: 'events',
         params?: HttpParams |
@@ -208,7 +208,7 @@ export class HttpClient {
      */
     request(method: HttpRequestMethod, url: string, options: {
         body?: any,
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -227,7 +227,7 @@ export class HttpClient {
      */
     request(method: HttpRequestMethod, url: string, options: {
         body?: any,
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -247,7 +247,7 @@ export class HttpClient {
      */
     request(method: HttpRequestMethod, url: string, options: {
         body?: any,
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -268,7 +268,7 @@ export class HttpClient {
      */
     request(method: HttpRequestMethod, url: string, options: {
         body?: any,
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         reportProgress?: boolean, observe: 'response',
         params?: HttpParams |
@@ -289,7 +289,7 @@ export class HttpClient {
      */
     request<R>(method: HttpRequestMethod, url: string, options: {
         body?: any,
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         reportProgress?: boolean, observe: 'response',
         params?: HttpParams |
@@ -310,7 +310,7 @@ export class HttpClient {
      */
     request(method: HttpRequestMethod, url: string, options?: {
         body?: any,
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -332,7 +332,7 @@ export class HttpClient {
      */
     request<R>(method: HttpRequestMethod, url: string, options?: {
         body?: any,
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -353,7 +353,7 @@ export class HttpClient {
      */
     request(method: HttpRequestMethod, url: string, options?: {
         body?: any,
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -391,7 +391,7 @@ export class HttpClient {
      */
     request(first: string | HttpRequest<any>, url?: string, options: {
         body?: any,
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
@@ -520,7 +520,7 @@ export class HttpClient {
      * @return  An `Observable` of the response body as an `ArrayBuffer`.
      */
     delete(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -541,7 +541,7 @@ export class HttpClient {
      * @return An `Observable` of the response body as a `Blob`.
      */
     delete(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -561,7 +561,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with the response body of type string.
      */
     delete(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -582,7 +582,7 @@ export class HttpClient {
      * with response body as an `ArrayBuffer`.
      */
     delete(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -602,7 +602,7 @@ export class HttpClient {
      * `Blob`.
      */
     delete(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -622,7 +622,7 @@ export class HttpClient {
      * body of type string.
      */
     delete(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -642,7 +642,7 @@ export class HttpClient {
      * type `Object`.
      */
     delete(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -663,7 +663,7 @@ export class HttpClient {
      * body in the requested type.
      */
     delete<T>(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | (string | number | boolean)[] },
@@ -683,7 +683,7 @@ export class HttpClient {
      * @return An `Observable` of the full `HttpResponse`, with the response body as an `ArrayBuffer`.
      */
     delete(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -702,7 +702,7 @@ export class HttpClient {
      * @return An `Observable` of the `HttpResponse`, with the response body of type `Blob`.
      */
     delete(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -721,7 +721,7 @@ export class HttpClient {
      * @return An `Observable` of the full `HttpResponse`, with the response body of type string.
      */
     delete(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -741,7 +741,7 @@ export class HttpClient {
      *
      */
     delete(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -761,7 +761,7 @@ export class HttpClient {
      * @return An `Observable` of the `HttpResponse`, with the response body of the requested type.
      */
     delete<T>(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -781,7 +781,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with the response body of type `Object`.
      */
     delete(url: string, options?: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -802,7 +802,7 @@ export class HttpClient {
      * @return An `Observable` of the `HttpResponse`, with response body in the requested type.
      */
     delete<T>(url: string, options?: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -823,7 +823,7 @@ export class HttpClient {
      *
      */
     delete(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
@@ -847,7 +847,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with the response body as an `ArrayBuffer`.
      */
     get(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -866,7 +866,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with the response body as a `Blob`.
      */
     get(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -885,7 +885,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with the response body of type string.
      */
     get(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -905,7 +905,7 @@ export class HttpClient {
      * body as an `ArrayBuffer`.
      */
     get(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -923,7 +923,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with the response body as a `Blob`.
      */
     get(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -941,7 +941,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with the response body of type string.
      */
     get(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -959,7 +959,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with the response body of type `Object`.
      */
     get(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -978,7 +978,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with a response body in the requested type.
      */
     get<T>(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -998,7 +998,7 @@ export class HttpClient {
      * with the response body as an `ArrayBuffer`.
      */
     get(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1017,7 +1017,7 @@ export class HttpClient {
      * with the response body as a `Blob`.
      */
     get(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1036,7 +1036,7 @@ export class HttpClient {
      * with the response body of type string.
      */
     get(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1055,7 +1055,7 @@ export class HttpClient {
      * with the response body of type `Object`.
      */
     get(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1075,7 +1075,7 @@ export class HttpClient {
      * with a response body in the requested type.
      */
     get<T>(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1095,7 +1095,7 @@ export class HttpClient {
      * @return An `Observable` of the response body as a JSON object.
      */
     get(url: string, options?: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1115,7 +1115,7 @@ export class HttpClient {
      * @return An `Observable` of the `HttpResponse`, with a response body in the requested type.
      */
     get<T>(url: string, options?: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1131,7 +1131,7 @@ export class HttpClient {
      * details on the return type.
      */
     get(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
@@ -1154,7 +1154,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with the response body as an `ArrayBuffer`.
      */
     head(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1174,7 +1174,7 @@ export class HttpClient {
      */
 
     head(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1193,7 +1193,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with the response body of type string.
      */
     head(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1213,7 +1213,7 @@ export class HttpClient {
      * with the response body as an `ArrayBuffer`.
      */
     head(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1232,7 +1232,7 @@ export class HttpClient {
      * with the response body as a `Blob`.
      */
     head(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1251,7 +1251,7 @@ export class HttpClient {
      * string.
      */
     head(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1270,7 +1270,7 @@ export class HttpClient {
      * type `Object`.
      */
     head(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1290,7 +1290,7 @@ export class HttpClient {
      * @param options The HTTP options to send with the request.
      */
     head<T>(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1310,7 +1310,7 @@ export class HttpClient {
      * with the response body as an `ArrayBuffer`.
      */
     head(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1329,7 +1329,7 @@ export class HttpClient {
      * with the response body as a blob.
      */
     head(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1348,7 +1348,7 @@ export class HttpClient {
      * with the response body of type string.
      */
     head(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1367,7 +1367,7 @@ export class HttpClient {
      * with the response body of type `Object`.
      */
     head(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1387,7 +1387,7 @@ export class HttpClient {
      * with a response body of the requested type.
      */
     head<T>(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1406,7 +1406,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with the response body as a JSON object.
      */
     head(url: string, options?: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1427,7 +1427,7 @@ export class HttpClient {
      * with a response body of the given type.
      */
     head<T>(url: string, options?: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1445,7 +1445,7 @@ export class HttpClient {
      * details on the return type.
      */
     head(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
@@ -1517,7 +1517,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with the response body as an `ArrayBuffer`.
      */
     options(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1536,7 +1536,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with the response body as a `Blob`.
      */
     options(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1555,7 +1555,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with the response body of type string.
      */
     options(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1575,7 +1575,7 @@ export class HttpClient {
      * with the response body as an `ArrayBuffer`.
      */
     options(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1594,7 +1594,7 @@ export class HttpClient {
      * with the response body as a `Blob`.
      */
     options(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1613,7 +1613,7 @@ export class HttpClient {
      * with the response body of type string.
      */
     options(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1632,7 +1632,7 @@ export class HttpClient {
      * body of type `Object`.
      */
     options(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1652,7 +1652,7 @@ export class HttpClient {
      * with a response body in the requested type.
      */
     options<T>(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1672,7 +1672,7 @@ export class HttpClient {
      * with the response body as an `ArrayBuffer`.
      */
     options(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1691,7 +1691,7 @@ export class HttpClient {
      * with the response body as a `Blob`.
      */
     options(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1710,7 +1710,7 @@ export class HttpClient {
      * with the response body of type string.
      */
     options(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1729,7 +1729,7 @@ export class HttpClient {
      * with the response body of type `Object`.
      */
     options(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1749,7 +1749,7 @@ export class HttpClient {
      * with a response body in the requested type.
      */
     options<T>(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1768,7 +1768,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with the response body as a JSON object.
      */
     options(url: string, options?: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1788,7 +1788,7 @@ export class HttpClient {
      * @return An `Observable` of the `HttpResponse`, with a response body of the given type.
      */
     options<T>(url: string, options?: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1806,7 +1806,7 @@ export class HttpClient {
      * details on the return type.
      */
     options(url: string, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
@@ -1829,7 +1829,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with the response body as an `ArrayBuffer`.
      */
     patch(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1849,7 +1849,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with the response body as a `Blob`.
      */
     patch(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1869,7 +1869,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with a response body of type string.
      */
     patch(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1891,7 +1891,7 @@ export class HttpClient {
      */
 
     patch(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1911,7 +1911,7 @@ export class HttpClient {
      * response body as `Blob`.
      */
     patch(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1931,7 +1931,7 @@ export class HttpClient {
      * response body of type string.
      */
     patch(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1951,7 +1951,7 @@ export class HttpClient {
      * with a response body of type `Object`.
      */
     patch(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1972,7 +1972,7 @@ export class HttpClient {
      * with a response body in the requested type.
      */
     patch<T>(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1993,7 +1993,7 @@ export class HttpClient {
      * with the response body as an `ArrayBuffer`.
      */
     patch(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2013,7 +2013,7 @@ export class HttpClient {
      * with the response body as a `Blob`.
      */
     patch(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2033,7 +2033,7 @@ export class HttpClient {
      * with a response body of type string.
      */
     patch(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2053,7 +2053,7 @@ export class HttpClient {
      * with a response body in the requested type.
      */
     patch(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2074,7 +2074,7 @@ export class HttpClient {
      * with a response body in the given type.
      */
     patch<T>(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2094,7 +2094,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with the response body as a JSON object.
      */
     patch(url: string, body: any | null, options?: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -2116,7 +2116,7 @@ export class HttpClient {
      * with a response body in the given type.
      */
     patch<T>(url: string, body: any | null, options?: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -2132,7 +2132,7 @@ export class HttpClient {
      * details on the return type.
      */
     patch(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
@@ -2155,7 +2155,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with the response body as an `ArrayBuffer`.
      */
     post(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -2175,7 +2175,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with the response body as a `Blob`.
      */
     post(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -2195,7 +2195,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with a response body of type string.
      */
     post(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -2216,7 +2216,7 @@ export class HttpClient {
      * with the response body as an `ArrayBuffer`.
      */
     post(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2235,7 +2235,7 @@ export class HttpClient {
      * @return An `Observable` of all `HttpEvent`s for the request, with the response body as `Blob`.
      */
     post(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2255,7 +2255,7 @@ export class HttpClient {
      * with a response body of type string.
      */
     post(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2275,7 +2275,7 @@ export class HttpClient {
      * with a response body of type `Object`.
      */
     post(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2296,7 +2296,7 @@ export class HttpClient {
      * with a response body in the requested type.
      */
     post<T>(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2317,7 +2317,7 @@ export class HttpClient {
      * `ArrayBuffer`.
      */
     post(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2337,7 +2337,7 @@ export class HttpClient {
      * with the response body as a `Blob`.
      */
     post(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2357,7 +2357,7 @@ export class HttpClient {
      * with a response body of type string.
      */
     post(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2377,7 +2377,7 @@ export class HttpClient {
      * `Object`.
      */
     post(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2399,7 +2399,7 @@ export class HttpClient {
      * requested type.
      */
     post<T>(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2419,7 +2419,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with the response body as a JSON object.
      */
     post(url: string, body: any | null, options?: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -2441,7 +2441,7 @@ export class HttpClient {
      * requested type.
      */
     post<T>(url: string, body: any | null, options?: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -2458,7 +2458,7 @@ export class HttpClient {
      * details on the return type.
      */
     post(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
@@ -2481,7 +2481,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with the response body as an `ArrayBuffer`.
      */
     put(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -2501,7 +2501,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with the response body as a `Blob`.
      */
     put(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -2521,7 +2521,7 @@ export class HttpClient {
      * @return An `Observable` of the response, with a response body of type string.
      */
     put(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -2542,7 +2542,7 @@ export class HttpClient {
      * with the response body as an `ArrayBuffer`.
      */
     put(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2562,7 +2562,7 @@ export class HttpClient {
      * with the response body as a `Blob`.
      */
     put(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2582,7 +2582,7 @@ export class HttpClient {
      * of type string.
      */
     put(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2602,7 +2602,7 @@ export class HttpClient {
      * type `Object`.
      */
     put(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2623,7 +2623,7 @@ export class HttpClient {
      * with a response body in the requested type.
      */
     put<T>(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2644,7 +2644,7 @@ export class HttpClient {
      * `ArrayBuffer`.
      */
     put(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2664,7 +2664,7 @@ export class HttpClient {
      * with the response body as a `Blob`.
      */
     put(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2684,7 +2684,7 @@ export class HttpClient {
      * string.
      */
     put(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2704,7 +2704,7 @@ export class HttpClient {
      * of type 'Object`.
      */
     put(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2725,7 +2725,7 @@ export class HttpClient {
      * with a response body in the requested type.
      */
     put<T>(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] }, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2745,7 +2745,7 @@ export class HttpClient {
      * @return An `Observable` of the response as a JSON object.
      */
     put(url: string, body: any | null, options?: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -2766,7 +2766,7 @@ export class HttpClient {
      * @return An `Observable` of the requested type.
      */
     put<T>(url: string, body: any | null, options?: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -2783,7 +2783,7 @@ export class HttpClient {
      * See the individual overloads for details on the return type.
      */
     put(url: string, body: any | null, options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
@@ -2799,7 +2799,7 @@ export class HttpClient {
 
 function addBody<T>(
     options: {
-        headers?: ReqHeaders | { [header: string]: string | string[] },
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |

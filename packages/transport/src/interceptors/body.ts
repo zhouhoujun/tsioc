@@ -17,10 +17,10 @@ export class TcpBodyInterceptor implements Interceptor<ClientReqPacket, Response
         }
         return defer(async () => {
             const contentType = req.detectContentTypeHeader();
-            if (!req.hasHeader(hdr.CONTENT_TYPE) && contentType) {
-                req.setHeader(hdr.CONTENT_TYPE, contentType);
+            if (!req.headers.get(hdr.CONTENT_TYPE) && contentType) {
+                req.headers.set(hdr.CONTENT_TYPE, contentType);
             }
-            if (!req.hasHeader(hdr.CONTENT_LENGTH)) {
+            if (!req.headers.has(hdr.CONTENT_LENGTH)) {
                 if (isBlob(body)) {
                     const arrbuff = await body.arrayBuffer();
                     body = Buffer.from(arrbuff);
@@ -37,7 +37,7 @@ export class TcpBodyInterceptor implements Interceptor<ClientReqPacket, Response
                     body = form.getBuffer();
                 }
                 req.body = body;
-                req.setHeader(hdr.CONTENT_LENGTH, Buffer.byteLength(body as Buffer).toString());
+                req.headers.set(hdr.CONTENT_LENGTH, Buffer.byteLength(body as Buffer).toString());
             }
 
             return req;

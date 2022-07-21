@@ -73,17 +73,17 @@ export class TcpContext extends AssetServerContext<TcpServRequest, TcpServRespon
     }
 
     isUpdate(): boolean {
-        return this.request.method === 'PUT' || this.request.getHeader(hdr.OPERATION) === 'update';
+        return this.request.method === 'PUT' || this.getHeader(hdr.OPERATION) === 'update';
     }
 
     get status(): number {
-        return this.response.status
+        return this.response.statusCode
     }
 
     set status(status: number) {
         if (this.sent) return;
         this._explicitStatus = true;
-        this.response.status = status;
+        this.response.statusCode = status;
         if (this.body && this.adapter.isEmpty(status)) {
             this.body = null;
         }

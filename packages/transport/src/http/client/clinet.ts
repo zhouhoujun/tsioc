@@ -1,5 +1,5 @@
 import { EMPTY, Inject, Injectable, InvocationContext, lang, Nullable, Providers, Token } from '@tsdi/ioc';
-import { RequestMethod, TransportClient, EndpointBackend, OnDispose, InterceptorLike, RequstOption, ResponseAs, RequestContext, mths, TransportStatus, Redirector, ReqHeaders, IncommingHeaders } from '@tsdi/core';
+import { RequestMethod, TransportClient, EndpointBackend, OnDispose, InterceptorLike, RequstOption, ResponseAs, RequestContext, mths, TransportStatus, Redirector, ReqHeaders, IncommingHeaders, ReqHeadersLike } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpParams, HttpParamsOptions, HttpResponse } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import * as http from 'http';
@@ -23,11 +23,11 @@ const defOpts = {
     execptionsToken: HTTP_EXECPTIONFILTERS,
 } as HttpClientOpts;
 
-export type HttpHeadersType = ReqHeaders | IncommingHeaders | http.IncomingHttpHeaders;
+
 export interface HttpRequestOpts extends RequstOption {
     body?: any;
     method?: RequestMethod | undefined;
-    headers?: HttpHeadersType;
+    headers?: ReqHeadersLike;
     params?: any;
     majorVersion?: number;
     reportProgress?: boolean | undefined;
@@ -154,7 +154,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return  An `Observable` of the response body as an `ArrayBuffer`.
      */
     delete(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -174,7 +174,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response body as a `Blob`.
      */
     delete(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -193,7 +193,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with the response body of type string.
      */
     delete(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe?: 'body',
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -212,7 +212,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with response body as an `ArrayBuffer`.
      */
     delete(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'events',
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
         reportProgress?: boolean,
@@ -231,7 +231,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * `Blob`.
      */
     delete(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'events',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -251,7 +251,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * body of type string.
      */
     delete(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'events',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -271,7 +271,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * type `Object`.
      */
     delete(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'events',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -291,7 +291,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * body in the requested type.
      */
     delete<T>(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'events',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | (string | number | boolean)[] },
@@ -310,7 +310,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the full `HttpResponse`, with the response body as an `ArrayBuffer`.
      */
     delete(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'response',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -329,7 +329,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the `HttpResponse`, with the response body of type `Blob`.
      */
     delete(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'response',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -348,7 +348,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the full `HttpResponse`, with the response body of type string.
      */
     delete(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'response',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -368,7 +368,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      *
      */
     delete(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'response',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -387,7 +387,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the `HttpResponse`, with the response body of the requested type.
      */
     delete<T>(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'response',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -406,7 +406,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with the response body of type `Object`.
      */
     delete(url: string, options?: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -425,7 +425,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the `HttpResponse`, with response body in the requested type.
      */
     delete<T>(url: string, options?: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -444,7 +444,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      *
      */
     delete(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -466,7 +466,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with the response body as an `ArrayBuffer`.
      */
     get(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -484,7 +484,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with the response body as a `Blob`.
      */
     get(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -503,7 +503,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with the response body of type string.
      */
     get(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -522,7 +522,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * body as an `ArrayBuffer`.
      */
     get(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'events',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -540,7 +540,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with the response body as a `Blob`.
      */
     get(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'events',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -558,7 +558,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with the response body of type string.
      */
     get(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'events',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -576,7 +576,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with the response body of type `Object`.
      */
     get(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'events',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -594,7 +594,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with a response body in the requested type.
      */
     get<T>(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'events',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -613,7 +613,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with the response body as an `ArrayBuffer`.
      */
     get(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'response',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -632,7 +632,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with the response body as a `Blob`.
      */
     get(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'response',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -651,7 +651,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with the response body of type string.
      */
     get(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'response',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -670,7 +670,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with the response body of type `Object`.
      */
     get(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'response',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -689,7 +689,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with a response body in the requested type.
      */
     get<T>(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'response',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -708,7 +708,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response body as a JSON object.
      */
     get(url: string, options?: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -726,7 +726,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the `HttpResponse`, with a response body in the requested type.
      */
     get<T>(url: string, options?: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -740,7 +740,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * details on the return type.
      */
     get(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -761,7 +761,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with the response body as an `ArrayBuffer`.
      */
     head(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -780,7 +780,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      */
 
     head(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -798,7 +798,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with the response body of type string.
      */
     head(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -817,7 +817,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with the response body as an `ArrayBuffer`.
      */
     head(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'events',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -836,7 +836,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with the response body as a `Blob`.
      */
     head(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'events',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -855,7 +855,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * string.
      */
     head(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'events',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -874,7 +874,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * type `Object`.
      */
     head(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'events',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -893,7 +893,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @param options The HTTP options to send with the request.
      */
     head<T>(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'events',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -912,7 +912,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with the response body as an `ArrayBuffer`.
      */
     head(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'response',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -931,7 +931,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with the response body as a blob.
      */
     head(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'response',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -950,7 +950,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with the response body of type string.
      */
     head(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'response',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -969,7 +969,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with the response body of type `object`.
      */
     head(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         observe: 'response',
         context?: InvocationContext,
         params?: HttpParams | { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -988,7 +988,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with a response body of the requested type.
      */
     head<T>(url: string, options: {
-        headers?: HttpHeadersType, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1007,7 +1007,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with the response body as a JSON object.
      */
     head(url: string, options?: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1028,7 +1028,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with a response body of the given type.
      */
     head<T>(url: string, options?: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1046,7 +1046,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * details on the return type.
      */
     head(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
@@ -1119,7 +1119,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with the response body as an `ArrayBuffer`.
      */
     options(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1138,7 +1138,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with the response body as a `Blob`.
      */
     options(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1157,7 +1157,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with the response body of type string.
      */
     options(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1177,7 +1177,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with the response body as an `ArrayBuffer`.
      */
     options(url: string, options: {
-        headers?: HttpHeadersType, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1196,7 +1196,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with the response body as a `Blob`.
      */
     options(url: string, options: {
-        headers?: HttpHeadersType, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1215,7 +1215,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with the response body of type string.
      */
     options(url: string, options: {
-        headers?: HttpHeadersType, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1234,7 +1234,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * body of type `Object`.
      */
     options(url: string, options: {
-        headers?: HttpHeadersType, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1254,7 +1254,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with a response body in the requested type.
      */
     options<T>(url: string, options: {
-        headers?: HttpHeadersType, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1274,7 +1274,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with the response body as an `ArrayBuffer`.
      */
     options(url: string, options: {
-        headers?: HttpHeadersType, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1293,7 +1293,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with the response body as a `Blob`.
      */
     options(url: string, options: {
-        headers?: HttpHeadersType, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1312,7 +1312,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with the response body of type string.
      */
     options(url: string, options: {
-        headers?: HttpHeadersType, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1331,7 +1331,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with the response body of type `Object`.
      */
     options(url: string, options: {
-        headers?: HttpHeadersType, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1351,7 +1351,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with a response body in the requested type.
      */
     options<T>(url: string, options: {
-        headers?: HttpHeadersType, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1370,7 +1370,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with the response body as a JSON object.
      */
     options(url: string, options?: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1390,7 +1390,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the `HttpResponse`, with a response body of the given type.
      */
     options<T>(url: string, options?: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1408,7 +1408,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * details on the return type.
      */
     options(url: string, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
@@ -1431,7 +1431,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with the response body as an `ArrayBuffer`.
      */
     patch(url: string, body: any | null, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1451,7 +1451,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with the response body as a `Blob`.
      */
     patch(url: string, body: any | null, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1471,7 +1471,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with a response body of type string.
      */
     patch(url: string, body: any | null, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1493,7 +1493,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      */
 
     patch(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1513,7 +1513,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * response body as `Blob`.
      */
     patch(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1533,7 +1533,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * response body of type string.
      */
     patch(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1553,7 +1553,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with a response body of type `Object`.
      */
     patch(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1574,7 +1574,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with a response body in the requested type.
      */
     patch<T>(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1595,7 +1595,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with the response body as an `ArrayBuffer`.
      */
     patch(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1615,7 +1615,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with the response body as a `Blob`.
      */
     patch(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1635,7 +1635,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with a response body of type string.
      */
     patch(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1655,7 +1655,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with a response body in the requested type.
      */
     patch(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1676,7 +1676,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with a response body in the given type.
      */
     patch<T>(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1696,7 +1696,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with the response body as a JSON object.
      */
     patch(url: string, body: any | null, options?: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1718,7 +1718,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with a response body in the given type.
      */
     patch<T>(url: string, body: any | null, options?: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1734,7 +1734,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * details on the return type.
      */
     patch(url: string, body: any | null, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
@@ -1757,7 +1757,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with the response body as an `ArrayBuffer`.
      */
     post(url: string, body: any | null, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1777,7 +1777,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with the response body as a `Blob`.
      */
     post(url: string, body: any | null, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1797,7 +1797,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with a response body of type string.
      */
     post(url: string, body: any | null, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -1818,7 +1818,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with the response body as an `ArrayBuffer`.
      */
     post(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1837,7 +1837,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of all `HttpEvent`s for the request, with the response body as `Blob`.
      */
     post(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1857,7 +1857,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with a response body of type string.
      */
     post(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1877,7 +1877,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with a response body of type `Object`.
      */
     post(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1897,7 +1897,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with a response body in the requested type.
      */
     post<T>(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1917,7 +1917,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * `ArrayBuffer`.
      */
     post(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1937,7 +1937,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with the response body as a `Blob`.
      */
     post(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1957,7 +1957,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with a response body of type string.
      */
     post(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1977,7 +1977,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * `Object`.
      */
     post(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -1998,7 +1998,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * requested type.
      */
     post<T>(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2017,7 +2017,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with the response body as a JSON object.
      */
     post(url: string, body: any | null, options?: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -2038,7 +2038,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * requested type.
      */
     post<T>(url: string, body: any | null, options?: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -2054,7 +2054,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * details on the return type.
      */
     post(url: string, body: any | null, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
@@ -2076,7 +2076,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with the response body as an `ArrayBuffer`.
      */
     put(url: string, body: any | null, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -2095,7 +2095,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with the response body as a `Blob`.
      */
     put(url: string, body: any | null, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -2114,7 +2114,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response, with a response body of type string.
      */
     put(url: string, body: any | null, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -2134,7 +2134,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with the response body as an `ArrayBuffer`.
      */
     put(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2154,7 +2154,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with the response body as a `Blob`.
      */
     put(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2173,7 +2173,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * of type string.
      */
     put(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2193,7 +2193,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * type `Object`.
      */
     put(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2213,7 +2213,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with a response body in the requested type.
      */
     put<T>(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'events',
+        headers?: ReqHeadersLike, observe: 'events',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2233,7 +2233,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * `ArrayBuffer`.
      */
     put(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2253,7 +2253,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with the response body as a `Blob`.
      */
     put(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2273,7 +2273,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * string.
      */
     put(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2293,7 +2293,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * of type 'Object`.
      */
     put(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2313,7 +2313,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * with a response body in the requested type.
      */
     put<T>(url: string, body: any | null, options: {
-        headers?: HttpHeadersType, observe: 'response',
+        headers?: ReqHeadersLike, observe: 'response',
         context?: InvocationContext,
         params?: HttpParams |
         { [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean> },
@@ -2332,7 +2332,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the response as a JSON object.
      */
     put(url: string, body: any | null, options?: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -2352,7 +2352,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * @return An `Observable` of the requested type.
      */
     put<T>(url: string, body: any | null, options?: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body',
         params?: HttpParams |
@@ -2368,7 +2368,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
      * See the individual overloads for details on the return type.
      */
     put(url: string, body: any | null, options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |
@@ -2399,7 +2399,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
 
 function merge<T>(
     options: {
-        headers?: HttpHeadersType,
+        headers?: ReqHeadersLike,
         context?: InvocationContext,
         observe?: 'body' | 'events' | 'response',
         params?: HttpParams |

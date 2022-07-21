@@ -1,26 +1,27 @@
-import { HeaderSet, Packet, OutgoingHeader, ResponsePacket, HeaderAccessor } from '@tsdi/core';
+import { Packet, OutgoingPacket, OutgoingHeader, ResHeaders } from '@tsdi/core';
 import { Socket } from 'net';
 import { hdr } from '../../consts';
 
 /**
  * TcpResponse.
  */
-export class TcpServResponse extends HeaderSet<OutgoingHeader> implements ResponsePacket, HeaderAccessor<OutgoingHeader> {
+export class TcpServResponse implements OutgoingPacket {
 
 
     body: any;
     private _sent = false;
+    private _hdr: ResHeaders;
 
     constructor(readonly socket: Socket, readonly id: string) {
-        super()
+        this._hdr = new ResHeaders();
     }
 
 
-    get status(): number {
+    get statusCode(): number {
         return this.getHeader(hdr.STATUS) as number ?? 0
     }
 
-    set status(val: number) {
+    set statusCode(val: number) {
         this.setHeader(hdr.STATUS, val);
     }
 
@@ -38,6 +39,24 @@ export class TcpServResponse extends HeaderSet<OutgoingHeader> implements Respon
 
     serializePacket(): Packet {
         return { id: this.id, headers: this.getHeaders(), body: this.body };
+    }
+
+    getHeaders(): Record<string, OutgoingHeader> {
+        return this._hdr.getHeaders();
+    }
+
+    hasHeader(field: string): boolean {
+        return this._hdr.has(field);
+    }
+
+    getHeader(field: string): OutgoingHeader {
+        return this._hdr.get(field) as OutgoingHeader;
+    }
+    setHeader(field: string, val: OutgoingHeader): void {
+        this._hdr.set(field, val);
+    }
+    removeHeader(field: string): void {
+        this._hdr.delete(field);
     }
 
 }

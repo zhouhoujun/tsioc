@@ -1,23 +1,26 @@
-import { HeaderAccessor, OutgoingHeader } from '@tsdi/core';
+import { OutgoingHeader, OutgoingHeaders, OutgoingPacket } from '@tsdi/core';
 import { Writable } from 'stream';
 import { TransportStream } from './stream';
 
 
 
-export class ServerResponse extends Writable implements HeaderAccessor<OutgoingHeader> {
-    constructor(readonly stream: TransportStream, readonly headers: HeaderAccessor<OutgoingHeader>) {
+export class ServerResponse extends Writable implements OutgoingPacket {
+    constructor(readonly stream: TransportStream, readonly headers: OutgoingHeaders) {
         super();
     }
-    writeHead(statusCode: number, headers?: HeaderAccessor<OutgoingHeader>): this;
-    writeHead(statusCode: number, statusMessage: string, headers?: HeaderAccessor<OutgoingHeader>): this;
-    writeHead(statusCode: number, statusMessage?: string | HeaderAccessor<OutgoingHeader>, headers?: HeaderAccessor<OutgoingHeader>): this {
-        return this;
+    
+    get statusCode(): number {
+        throw new Error('Method not implemented.');
     }
-
-    override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
-        
+    set statusCode(status: number) {
+        throw new Error('Method not implemented.');
     }
-
+    get statusMessage(): string {
+        throw new Error('Method not implemented.');
+    }
+    set statusMessage(msg: string) {
+        throw new Error('Method not implemented.');
+    }
     getHeaders(): Record<string, OutgoingHeader> {
         throw new Error('Method not implemented.');
     }
@@ -33,5 +36,16 @@ export class ServerResponse extends Writable implements HeaderAccessor<OutgoingH
     removeHeader(field: string): void {
         throw new Error('Method not implemented.');
     }
+    writeHead(statusCode: number, headers?: OutgoingHeaders): this;
+    writeHead(statusCode: number, statusMessage: string, headers?: OutgoingHeaders): this;
+    writeHead(statusCode: number, statusMessage?: string | OutgoingHeaders, headers?: OutgoingHeaders): this {
+        return this;
+    }
+
+    override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
+        
+    }
+
+    
 
 }

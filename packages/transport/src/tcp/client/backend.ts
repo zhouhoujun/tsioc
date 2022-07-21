@@ -182,12 +182,12 @@ export class TcpBackend implements EndpointBackend<TcpRequest, TcpEvent> {
                     }
                 });
 
-                if (!req.hasHeader(hdr.ACCEPT)) {
-                    req.setHeader(hdr.ACCEPT, 'application/json, text/plain, */*');
+                if (!req.headers.has(hdr.ACCEPT)) {
+                    req.headers.set(hdr.ACCEPT, 'application/json, text/plain, */*');
                 }
             }
 
-            if (this.option.sizeLimit && (parseInt(req.getHeader(hdr.CONTENT_LENGTH) as string ?? '0')) > this.option.sizeLimit) {
+            if (this.option.sizeLimit && (parseInt(req.headers.get(hdr.CONTENT_LENGTH) as string ?? '0')) > this.option.sizeLimit) {
                 observer.error(new TcpErrorResponse({
                     id,
                     url,

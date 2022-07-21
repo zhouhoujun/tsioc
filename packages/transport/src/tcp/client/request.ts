@@ -1,4 +1,4 @@
-import { ClientReqPacket, IncommingHeaders, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, mths, ReqHeaders, RequestPacket } from '@tsdi/core';
+import { ClientReqPacket, IncommingHeaders, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, mths, Packet, ReqHeaders, ReqHeadersLike, RequestPacket } from '@tsdi/core';
 import { isString, type_bool, type_num, type_obj } from '@tsdi/ioc';
 import { isBuffer, isStream } from '../../utils';
 import { Stream } from 'stream';
@@ -6,26 +6,29 @@ import { Stream } from 'stream';
 /**
  * TcpRequest.
  */
-export class TcpRequest<T = any> extends ReqHeaders implements ClientReqPacket<T> {
+export class TcpRequest<T = any>  implements ClientReqPacket<T> {
 
     public readonly id: string;
     public url: string;
     public method: string;
     public params: IncommingHeaders;
     public body: T | null;
+    readonly headers: ReqHeaders;
 
     constructor(id: string, option: {
         url: string;
+        headers?: ReqHeadersLike;
         params?: IncommingHeaders;
         method?: string;
         body?: T;
     }) {
-        super();
+
         this.id = id;
         this.url = option.url;
         this.method = option.method ?? mths.MESSAGE;
         this.params = option.params ?? {};
         this.body = option.body ?? null;
+        this.headers = new ReqHeaders(option.headers);
     }
 
     /**
@@ -53,8 +56,8 @@ export class TcpRequest<T = any> extends ReqHeaders implements ClientReqPacket<T
         return (this.body as any).toString()
     }
 
-    serializePacket(): RequestPacket {
-        return { id: this.id, url: this.url, method: this.method, params: this.params, headers: this.getHeaders(), body: this.serializeBody() };
+    serializePacket(): Packet {
+        return { id: this.id, url: this.url, method: this.method, params: this.params, headers: this.headers.getHeaders(), body: this.serializeBody() } as Packet;
     }
 
     /**

@@ -1,4 +1,4 @@
-import { OutgoingHeader, OutgoingHeaders, ResponsePacket } from '@tsdi/core';
+import { OutgoingHeader, OutgoingHeaders, ResHeaders, ResHeadersLike, ResponsePacket } from '@tsdi/core';
 
 /**
  * tcp error response.
@@ -46,13 +46,13 @@ export class TcpResponse<T = any> implements ResponsePacket<T> {
     }
 
     readonly statusMessage: string;
-    readonly headers: OutgoingHeaders;
+    readonly headers: ResHeaders;
 
     constructor(options: {
         id: string;
         url?: string,
         ok?: boolean;
-        headers?: OutgoingHeaders;
+        headers?: ResHeadersLike;
         status: number;
         statusText?: string;
         statusMessage?: string;
@@ -64,7 +64,7 @@ export class TcpResponse<T = any> implements ResponsePacket<T> {
         this.ok = options.ok ?? false;
         this.statusMessage = options.statusMessage ?? options.statusText ?? '';
         this.body = options.body ?? null;
-        this.headers = options.headers ?? {};
+        this.headers = new ResHeaders(options.headers ?? {});
     }
 
 }
