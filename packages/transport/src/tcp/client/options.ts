@@ -2,14 +2,14 @@ import { ClientOpts, ExecptionFilter, Interceptor } from '@tsdi/core';
 import { Abstract, tokenId } from '@tsdi/ioc';
 import { SocketConstructorOpts, NetConnectOpts } from 'net';
 import { PacketProtocolOpts } from '../packet';
-import { TcpRequest } from './request';
-import { TcpEvent } from './response';
+import { Request } from '../../request';
+import { ResponseEvent } from '../../response';
 
 /**
  * tcp client options.
  */
 @Abstract()
-export abstract class TcpClientOpts extends ClientOpts<TcpRequest, TcpEvent> implements PacketProtocolOpts {
+export abstract class TcpClientOpts extends ClientOpts<Request, ResponseEvent> implements PacketProtocolOpts {
     /**
      * packet size limit.
      */
@@ -35,7 +35,7 @@ export abstract class TcpClientOpts extends ClientOpts<TcpRequest, TcpEvent> imp
 /**
  * tcp client interceptors.
  */
-export const TCP_INTERCEPTORS = tokenId<Interceptor<TcpRequest, TcpEvent>[]>('TCP_INTERCEPTORS');
+export const TCP_INTERCEPTORS = tokenId<Interceptor<Request, ResponseEvent>[]>('TCP_INTERCEPTORS');
 /**
  * tcp client interceptors.
  */

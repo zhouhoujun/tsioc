@@ -1,8 +1,8 @@
 import { EndpointBackend, OnDispose, Redirector, RequestContext, TransportClient, TransportStatus, UuidGenerator } from '@tsdi/core';
 import { EMPTY, Inject, Injectable, InvocationContext, isString, lang, Nullable, Providers } from '@tsdi/ioc';
 import { Socket, IpcNetConnectOpts } from 'net';
-import { TcpRequest } from './request';
-import { TcpEvent } from './response';
+import { Request } from '../../request';
+import { ResponseEvent } from '../../response';
 import { JsonDecoder, JsonEncoder } from '../../coder';
 import { ev } from '../../consts';
 import { TcpPathInterceptor } from './path';
@@ -34,7 +34,7 @@ const defaults = {
     { provide: TransportStatus, useClass: TcpStatus, asDefault: true },
     { provide: Redirector, useClass: AssetRedirector, asDefault: true }
 ])
-export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements OnDispose {
+export class TcpClient extends TransportClient<Request, ResponseEvent> implements OnDispose {
 
     private socket?: Socket;
     private connected: boolean;
@@ -56,7 +56,7 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
         return this.option;
     }
 
-    protected getBackend(): EndpointBackend<TcpRequest, TcpEvent> {
+    protected getBackend(): EndpointBackend<Request, ResponseEvent> {
         return this.context.resolve(TcpBackend);
     }
 
@@ -95,9 +95,9 @@ export class TcpClient extends TransportClient<TcpRequest, TcpEvent> implements 
         await defer.promise;
     }
 
-    protected override buildRequest(context: RequestContext, req: string | TcpRequest, options?: any): TcpRequest {
+    protected override buildRequest(context: RequestContext, req: string | Request, options?: any): Request {
         context.setValue(Socket, this.socket);
-        return isString(req) ? new TcpRequest(this.context.resolve(UuidGenerator).generate(), { ...options, url: req }) : req
+        return isString(req) ? new Request(this.context.resolve(UuidGenerator).generate(), { ...options, url: req }) : req
     }
 
     async close(): Promise<void> {

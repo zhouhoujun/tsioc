@@ -1,12 +1,12 @@
-import { ClientReqPacket, IncommingHeaders, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, mths, Packet, ReqHeaders, ReqHeadersLike, RequestPacket } from '@tsdi/core';
+import { ClientReqPacket, IncommingHeaders, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, mths, Packet, ReqHeaders, ReqHeadersLike } from '@tsdi/core';
 import { isString, type_bool, type_num, type_obj } from '@tsdi/ioc';
-import { isBuffer, isStream } from '../../utils';
+import { isBuffer, isStream } from './utils';
 import { Stream } from 'stream';
 
 /**
- * TcpRequest.
+ * Client Request.
  */
-export class TcpRequest<T = any>  implements ClientReqPacket<T> {
+export class Request<T = any> implements ClientReqPacket<T> {
 
     public readonly id: string;
     public url: string;

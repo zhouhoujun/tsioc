@@ -1,4 +1,4 @@
-import { IncommingHeaders, OutgoingHeader, OutgoingHeaders, ReqHeaders, ResHeaders } from "./headers";
+import { IncommingHeaders, OutgoingHeader, OutgoingHeaders, ReqHeaders, ResHeaders } from './headers';
 
 
 /**

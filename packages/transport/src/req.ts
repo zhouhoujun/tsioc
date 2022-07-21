@@ -1,8 +1,10 @@
-import { IncommingHeaders } from '@tsdi/core';
-import { Readable } from 'stream';
+import { IncomingPacket, IncommingHeaders } from '@tsdi/core';
+import { Readable, Writable } from 'stream';
 import { TransportStream } from './stream';
 
-export class ServerRequest extends Readable {
+
+
+export class ServerRequest extends Readable implements IncomingPacket<Writable> {
     constructor(readonly stream: TransportStream, readonly headers: IncommingHeaders) {
         super();
         

@@ -1,9 +1,9 @@
 import { OutgoingHeader, ResHeaders, ResHeadersLike, ResponsePacket } from '@tsdi/core';
 
 /**
- * tcp error response.
+ * client error response.
  */
-export class TcpErrorResponse {
+export class ErrorResponse {
     readonly id: string;
     readonly error: any;
     readonly url: string;
@@ -33,9 +33,9 @@ export class TcpErrorResponse {
 }
 
 /**
- * TcpResponse.
+ * client receive Response.
  */
-export class TcpResponse<T = any> implements ResponsePacket<T> {
+export class Response<T = any> implements ResponsePacket<T> {
     readonly id: string;
     readonly body: T | null;
     readonly url: string;
@@ -69,5 +69,5 @@ export class TcpResponse<T = any> implements ResponsePacket<T> {
 
 }
 
-export type TcpEvent<T = any> = TcpErrorResponse | TcpResponse<T>;
+export type ResponseEvent<T = any> = ErrorResponse | Response<T>;
 

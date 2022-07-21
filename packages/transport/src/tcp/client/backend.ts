@@ -6,23 +6,23 @@ import { ev, hdr, identity } from '../../consts';
 import { isBuffer } from '../../utils';
 import { PacketProtocol } from '../packet';
 import { TcpClientOpts } from './options';
-import { TcpRequest } from './request';
-import { TcpErrorResponse, TcpEvent, TcpResponse } from './response';
+import { Request } from '../../request';
+import { ErrorResponse, ResponseEvent, Response } from '../../response';
 
 /**
  * tcp backend.
  */
 @Injectable()
-export class TcpBackend implements EndpointBackend<TcpRequest, TcpEvent> {
+export class TcpBackend implements EndpointBackend<Request, ResponseEvent> {
 
     constructor(private option: TcpClientOpts) {
 
     }
 
-    handle(req: TcpRequest, ctx: RequestContext): Observable<TcpEvent> {
+    handle(req: Request, ctx: RequestContext): Observable<ResponseEvent> {
         const socket = ctx.get(Socket);
         const { id, url } = req;
-        if (!socket) return throwError(() => new TcpErrorResponse({
+        if (!socket) return throwError(() => new ErrorResponse({
             id,
             url,
             status: 0,
@@ -47,7 +47,7 @@ export class TcpBackend implements EndpointBackend<TcpRequest, TcpEvent> {
                     filter(pk => pk.id === id)
                 ).subscribe({
                     complete: () => observer.complete(),
-                    error: (err) => observer.error(new TcpErrorResponse({
+                    error: (err) => observer.error(new ErrorResponse({
                         id,
                         url,
                         status: err?.status ?? 0,
@@ -65,7 +65,7 @@ export class TcpBackend implements EndpointBackend<TcpRequest, TcpEvent> {
                             if (this.option.sizeLimit && len > this.option.sizeLimit) {
                                 const msg = 'Packet size limit ' + this.option.sizeLimit;
                                 socket.emit(ev.ERROR, msg);
-                                observer.error(new TcpErrorResponse({
+                                observer.error(new ErrorResponse({
                                     id,
                                     url,
                                     status: 0,
@@ -77,7 +77,7 @@ export class TcpBackend implements EndpointBackend<TcpRequest, TcpEvent> {
                             ok = adapter.isOk(status);
                             if (adapter.isEmpty(status)) {
                                 if (ok) {
-                                    observer.next(new TcpResponse({
+                                    observer.next(new Response({
                                         id,
                                         url,
                                         headers,
@@ -86,7 +86,7 @@ export class TcpBackend implements EndpointBackend<TcpRequest, TcpEvent> {
                                     }));
                                     observer.complete();
                                 } else {
-                                    observer.error(new TcpErrorResponse({
+                                    observer.error(new ErrorResponse({
                                         id,
                                         url,
                                         status,
@@ -160,7 +160,7 @@ export class TcpBackend implements EndpointBackend<TcpRequest, TcpEvent> {
                          }
 
                         if (ok) {
-                            observer.next(new TcpResponse({
+                            observer.next(new Response({
                                 id,
                                 url,
                                 ok,
@@ -171,7 +171,7 @@ export class TcpBackend implements EndpointBackend<TcpRequest, TcpEvent> {
                             }));
                             observer.complete();
                         } else {
-                            observer.error(new TcpErrorResponse({
+                            observer.error(new ErrorResponse({
                                 id,
                                 url,
                                 error,
@@ -188,7 +188,7 @@ export class TcpBackend implements EndpointBackend<TcpRequest, TcpEvent> {
             }
 
             if (this.option.sizeLimit && (parseInt(req.headers.get(hdr.CONTENT_LENGTH) as string ?? '0')) > this.option.sizeLimit) {
-                observer.error(new TcpErrorResponse({
+                observer.error(new ErrorResponse({
                     id,
                     url,
                     status: 0,
@@ -207,7 +207,7 @@ export class TcpBackend implements EndpointBackend<TcpRequest, TcpEvent> {
                     ac.abort()
                 }
                 if (!ctx.destroyed) {
-                    observer.error(new TcpErrorResponse({
+                    observer.error(new ErrorResponse({
                         id,
                         url,
                         status: 0,

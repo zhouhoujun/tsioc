@@ -4,8 +4,8 @@ import {
 } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Providers, tokenId, type_undef } from '@tsdi/ioc';
 import { Socket } from 'dgram';
-import { UdpRequest } from './request';
-import { UdpErrorResponse, UdpEvent, UdpResponse } from './response';
+import { Request } from '../../request';
+import { Response, ErrorResponse, ResponseEvent } from '../../response';
 import { defer, filter, mergeMap, Observable, Observer, throwError } from 'rxjs';
 import { JsonDecoder, JsonEncoder } from '../../coder';
 import { TcpStatus } from '../../tcp';
@@ -21,7 +21,7 @@ export interface Address {
 }
 
 @Abstract()
-export abstract class UdpClientOpts extends ClientOpts<UdpRequest, UdpEvent> {
+export abstract class UdpClientOpts extends ClientOpts<Request, ResponseEvent> {
     /**
      * is json or not.
      */
@@ -34,7 +34,7 @@ export abstract class UdpClientOpts extends ClientOpts<UdpRequest, UdpEvent> {
 /**
  * udp client interceptors.
  */
-export const UDP_INTERCEPTORS = tokenId<Interceptor<UdpRequest, UdpEvent>[]>('UDP_INTERCEPTORS');
+export const UDP_INTERCEPTORS = tokenId<Interceptor<Request, ResponseEvent>[]>('UDP_INTERCEPTORS');
 
 /**
  * udp client interceptors.
@@ -67,7 +67,7 @@ const defaults = {
     { provide: TransportStatus, useClass: TcpStatus, asDefault: true },
     { provide: Redirector, useClass: AssetRedirector, asDefault: true }
 ])
-export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements OnDispose {
+export class UdpClient extends TransportClient<Request, ResponseEvent> implements OnDispose {
 
     private socket?: Socket;
     private connected: boolean;
@@ -80,10 +80,10 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
         this.connected = false;
     }
 
-    protected getBackend(): EndpointBackend<UdpRequest<any>, UdpEvent<any>> {
+    protected getBackend(): EndpointBackend<Request<any>, ResponseEvent<any>> {
         return createEndpoint((req, context) => {
-
-            if (!this.socket) return throwError(() => new UdpErrorResponse(0, 'has not connected.'));
+            const { id, url } = req;
+            if (!this.socket) return throwError(() => new ErrorResponse({ id, url, status: 0, statusMessage: 'has not connected.' }));
             const ctx = context as RequestContext;
             const socket = this.socket;
             let body: any, error: any, ok = false;
@@ -100,7 +100,13 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
                     filter(pk => pk.id === req.id)
                 ).subscribe({
                     complete: () => observer.complete(),
-                    error: (err) => observer.error(new UdpErrorResponse(err?.status ?? 500, err?.text, err ?? body)),
+                    error: (err) => observer.error(new ErrorResponse({
+                        id, 
+                        url,
+                        error: err,
+                        status: err?.status ?? 500,
+                        statusMessage: err?.message 
+                    })),
                     next: (pk) => {
                         body = pk.body;
                         if (body) {
@@ -143,13 +149,22 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
                         }
 
                         if (ok) {
-                            observer.next(new UdpResponse({
+                            observer.next(new Response({
+                                id,
+                                url,
                                 status: 200,
+                                
                                 body
                             }));
                             observer.complete();
                         } else {
-                            observer.error(new UdpErrorResponse(error?.status ?? 500, error?.text, error ?? body));
+                            observer.error(new ErrorResponse({
+                                id, 
+                                url,
+                                error,
+                                status: error?.status ?? 500,
+                                statusMessage: error?.message 
+                            }));
                         }
                     }
                 });
@@ -161,7 +176,12 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
                     }
                     sub && sub.unsubscribe();
                     if (!ctx.destroyed) {
-                        observer.error(new UdpErrorResponse(0, 'The operation was aborted.'));
+                        observer.error(new ErrorResponse({
+                            id,
+                            url,
+                            status: 0, 
+                            statusMessage: 'The operation was aborted.'
+                        }));
                     }
                 }
             });
@@ -187,7 +207,12 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
                 const onClose = (err?: any) => {
                     this.connected = false;
                     if (err) {
-                        observer.error(new UdpErrorResponse(500, err));
+                        observer.error(new ErrorResponse({
+                            id:'',
+                            url:'',
+                            status: 500,
+                            error: err
+                        }));
                     } else {
                         observer.complete();
                         this.logger.info(socket.address(), 'closed');
@@ -199,7 +224,12 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
                     if (err.code !== ECONNREFUSED) {
                         this.logger.error(err);
                     }
-                    observer.error(new UdpErrorResponse(500, err.message));
+                    observer.error(new ErrorResponse({
+                        id:'',
+                        url:'',
+                        status: err?.status ?? 500,
+                        error: err
+                    }));
                 };
 
                 let buffer = '';
@@ -243,7 +273,12 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
                     } catch (err: any) {
                         socket.emit(ev.ERROR, err.message);
                         socket.close();
-                        observer.error(new UdpErrorResponse(err.status ?? 500, err.message));
+                        observer.error(new ErrorResponse({
+                            id:'',
+                            url:'',
+                            status: err?.status ?? 500,
+                            error: err
+                        }));
                     }
                 };
 
@@ -271,9 +306,9 @@ export class UdpClient extends TransportClient<UdpRequest, UdpEvent> implements 
     }
 
 
-    protected override buildRequest(context: RequestContext, req: string | UdpRequest<any>, options?: any): UdpRequest<any> {
+    protected override buildRequest(context: RequestContext, req: string | Request<any>, options?: any): Request<any> {
         context.setValue(Socket, this.socket);
-        return isString(req) ? new UdpRequest(this.context.resolve(UuidGenerator).generate(), options) : req
+        return isString(req) ? new Request(this.context.resolve(UuidGenerator).generate(), options) : req
     }
 
     async close(): Promise<void> {
