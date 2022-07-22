@@ -7,7 +7,7 @@ import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
 import * as assert from 'assert';
-import { CONTENT_DISPOSITION } from '../../content';
+import { CONTENT_DISPOSITION } from '../../server/content';
 import { HttpContext, HttpServRequest, HttpServResponse, HTTP_MIDDLEWARES } from './context';
 import { ev, LOCALHOST } from '../../consts';
 import {

@@ -4,12 +4,12 @@ import {
 } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Providers, tokenId, type_undef } from '@tsdi/ioc';
 import { Socket } from 'dgram';
-import { TransportRequest } from '../../request';
-import { TransportResponse, ErrorResponse, TransportEvent } from '../../response';
+import { TransportRequest } from '../../client/request';
+import { TransportResponse, ErrorResponse, TransportEvent } from '../../client/response';
 import { defer, filter, mergeMap, Observable, Observer, throwError } from 'rxjs';
 import { JsonDecoder, JsonEncoder } from '../../coder';
 import { TcpStatus } from '../../tcp';
-import { AssetRedirector } from '../../redirector';
+import { AssetRedirector } from '../../client/redirector';
 import { ev } from '../../consts';
 
 /**

@@ -1,16 +1,16 @@
 import { EndpointBackend, OnDispose, Redirector, RequestContext, TransportClient, TransportStatus, UuidGenerator } from '@tsdi/core';
 import { EMPTY, Inject, Injectable, InvocationContext, isString, lang, Nullable, Providers } from '@tsdi/ioc';
 import { Socket, IpcNetConnectOpts } from 'net';
-import { TransportRequest } from '../../request';
-import { TransportEvent } from '../../response';
+import { TransportRequest } from '../../client/request';
+import { TransportEvent } from '../../client/response';
 import { JsonDecoder, JsonEncoder } from '../../coder';
 import { ev } from '../../consts';
 import { TcpPathInterceptor } from './path';
 import { TcpClientOpts, TCP_EXECPTIONFILTERS, TCP_INTERCEPTORS } from './options';
-import { DetectBodyInterceptor } from '../../interceptors/body';
+import { DetectBodyInterceptor } from '../../client/body';
 import { PacketProtocolOpts } from '../packet';
 import { TcpBackend } from './backend';
-import { AssetRedirector } from '../../redirector';
+import { AssetRedirector } from '../../client/redirector';
 import { TcpStatus } from './status';
 
 

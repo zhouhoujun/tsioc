@@ -6,8 +6,8 @@ import { ev, hdr, identity } from '../../consts';
 import { isBuffer } from '../../utils';
 import { PacketProtocol } from '../packet';
 import { TcpClientOpts } from './options';
-import { TransportRequest } from '../../request';
-import { ErrorResponse, TransportEvent, TransportResponse } from '../../response';
+import { TransportRequest } from '../../client/request';
+import { ErrorResponse, TransportEvent, TransportResponse } from '../../client/response';
 
 /**
  * tcp backend.

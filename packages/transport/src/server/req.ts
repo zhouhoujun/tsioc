@@ -1,8 +1,8 @@
 import { IncomingPacket, IncommingHeaders } from '@tsdi/core';
 import { EMPTY_OBJ } from '@tsdi/ioc';
 import { Readable, Writable } from 'stream';
-import { TransportProtocol } from './protocol';
-import { TransportStream } from './stream';
+import { TransportProtocol } from '../protocol';
+import { TransportStream } from '../stream';
 
 
 /**
@@ -15,6 +15,7 @@ export class ServerRequest extends Readable implements IncomingPacket<Writable> 
     readonly params: Record<string, any>;
     readonly headers: IncommingHeaders;
     body: any;
+    private _bodyIdx = 0;
     constructor(
         readonly stream: TransportStream,
         private protocol: TransportProtocol,
@@ -37,6 +38,16 @@ export class ServerRequest extends Readable implements IncomingPacket<Writable> 
     }
 
     override _read(size: number): void {
+        const end = this._bodyIdx + size
+        const start = this._bodyIdx
+        const payload = this.stream.read(size);
+        let buf: any = null
 
+        if (payload != null && start < payload.length) {
+            buf = payload.slice(start, end)
+        }
+
+        this._bodyIdx = end;
+        this.push(buf)
     }
 }

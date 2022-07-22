@@ -1,4 +1,4 @@
-import {  OutgoingHeader, OutgoingPacket } from '@tsdi/core';
+import {  OutgoingHeader, OutgoingHeaders, OutgoingPacket } from '@tsdi/core';
 import { Socket } from 'dgram';
 
 /**
@@ -14,6 +14,14 @@ export class UdpServResponse implements OutgoingPacket {
 
     constructor(readonly socket: Socket, readonly id?: string) {
 
+    }
+    get headersSent(): boolean {
+        throw new Error('Method not implemented.');
+    }
+    writeHead(statusCode: number, headers?: OutgoingHeaders | OutgoingHeader[] | undefined): this;
+    writeHead(statusCode: number, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[] | undefined): this;
+    writeHead(statusCode: unknown, statusMessage?: unknown, headers?: unknown): this {
+        throw new Error('Method not implemented.');
     }
     get statusCode(): number {
         throw new Error('Method not implemented.');

@@ -1,6 +1,6 @@
 import { ExecptionFilter, MiddlewareLike, Protocol, HeaderContext, AssetContext } from '@tsdi/core';
 import { Injectable, tokenId } from '@tsdi/ioc';
-import { AssetServerContext } from '../../asset.ctx';
+import { AssetServerContext } from '../../server/asset.ctx';
 import { hdr } from '../../consts';
 import { UdpServRequest } from './request';
 import { UdpServResponse } from './response';
@@ -71,7 +71,7 @@ export class UdpContext extends AssetServerContext<UdpServRequest, UdpServRespon
     }
 
     isUpdate(): boolean {
-        return this.request.method === 'PUT' || this.request.getHeader(hdr.OPERATION) === 'update';
+        return this.request.method === 'PUT' || this.getHeader(hdr.OPERATION) === 'update';
     }
 
     get statusMessage(): string {

@@ -1,9 +1,9 @@
 /* eslint-disable no-case-declarations */
-import { BadRequestError, EndpointContext, RequestPacket, TransportClient, RequestMethod, Redirector, ReqHeaders, ResHeaders, IncommingHeader, OutgoingHeader, HeaderSet } from '@tsdi/core';
+import { BadRequestError, EndpointContext, RequestPacket, TransportClient, RequestMethod, Redirector, ReqHeaders, ResHeaders, HeaderSet } from '@tsdi/core';
 import { EMPTY_OBJ, Injectable } from '@tsdi/ioc';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { Readable } from 'stream';
-import { hdr } from './consts';
+import { hdr } from '../consts';
 
 @Injectable()
 export class AssetRedirector extends Redirector {

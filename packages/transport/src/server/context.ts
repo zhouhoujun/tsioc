@@ -1,21 +1,31 @@
 import { ExecptionFilter, MiddlewareLike, HeaderContext, AssetContext, TransportContext } from '@tsdi/core';
 import { Token, tokenId } from '@tsdi/ioc';
-import { AssetServerContext } from '../../server/asset.ctx';
-import { hdr } from '../../consts';
-import { TcpServRequest } from './request';
-import { TcpServResponse } from './response';
+import { AssetServerContext } from '../server/asset.ctx';
+import { hdr } from '../consts';
+import { ServerRequest } from './req';
+import { ServerResponse } from './res';
+import { TransportProtocol } from '../protocol';
 
-
-
-const abstUrlExp = /^tcp:/;
 
 /**
- * TCP context.
+ * Transport protocol context.
  */
-export class TcpContext extends AssetServerContext<TcpServRequest, TcpServResponse> implements HeaderContext, AssetContext {
+export class PrototcolContext extends AssetServerContext<ServerRequest, ServerResponse> implements HeaderContext, AssetContext {
 
 
-    readonly protocol = 'tcp';
+    private _protocol?: TransportProtocol;
+
+    get transProtocol() {
+        if (!this._protocol) {
+            this._protocol = this.get(TransportProtocol);
+        }
+        return this._protocol;
+    }
+
+    get protocol() {
+        return this.transProtocol.protocol;
+    }
+
 
     private _url?: string;
     get url(): string {
@@ -45,7 +55,7 @@ export class TcpContext extends AssetServerContext<TcpServRequest, TcpServRespon
         if (!this._URL) {
             const originalUrl = this.originalUrl || ''; // avoid undefined in template string
             try {
-                this._URL = abstUrlExp.test(originalUrl) ? new URL(originalUrl) : new URL(`${this.protocol}://${originalUrl}`);
+                this._URL = this.transProtocol.parseURL(originalUrl);
             } catch (err) {
                 this._URL = Object.create(null);
             }
@@ -117,21 +127,21 @@ export class TcpContext extends AssetServerContext<TcpServRequest, TcpServRespon
     // }
 
     protected isSelf(token: Token) {
-        return token === TcpContext || token === AssetServerContext || token === TransportContext;
+        return token === PrototcolContext || token === AssetServerContext || token === TransportContext;
     }
 
     protected override onBodyChanged(newVal: any, oldVal: any): void {
-        this.response.body = newVal;
+        // this.response.body = newVal;
     }
 
 
 }
 
 /**
- * TCP Middlewares.
+ * Prototcol Middlewares.
  */
-export const TCP_MIDDLEWARES = tokenId<MiddlewareLike<TcpContext>[]>('TCP_MIDDLEWARES');
+export const PROTOTCOL_MIDDLEWARES = tokenId<MiddlewareLike<PrototcolContext>[]>('TCP_MIDDLEWARES');
 /**
- * TCP execption filters.
+ * Prototcol execption filters.
  */
-export const TCP_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('HTTP_EXECPTION_FILTERS');
+export const PROTOTCOL_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('HTTP_EXECPTION_FILTERS');

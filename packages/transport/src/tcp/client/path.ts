@@ -3,8 +3,8 @@ import { Endpoint, EndpointContext, Interceptor, TransportArgumentError } from '
 import { Observable } from 'rxjs';
 import { TcpNetConnectOpts, IpcNetConnectOpts } from 'net';
 import { TcpClientOpts } from './options';
-import { TransportRequest } from '../../request';
-import { TransportEvent } from '../../response';
+import { TransportRequest } from '../../client/request';
+import { TransportEvent } from '../../client/response';
 
 const abstUrlExp = /^tcp:/;
 

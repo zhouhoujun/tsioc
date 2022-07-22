@@ -1,11 +1,11 @@
 import { AssetContext, OutgoingHeader, ServerContext, IncommingHeader, OutgoingHeaders, IncomingPacket, OutgoingPacket } from '@tsdi/core';
 import { Abstract, isArray, isNil, isNumber, isString, lang } from '@tsdi/ioc';
 import { extname } from 'path';
-import { ctype, hdr } from './consts';
+import { ctype, hdr } from '../consts';
 import { CONTENT_DISPOSITION } from './content';
-import { MimeAdapter } from './mime';
-import { Negotiator } from './negotiator';
-import { encodeUrl, escapeHtml, isBuffer, isStream, xmlRegExp } from './utils';
+import { MimeAdapter } from '../mime';
+import { Negotiator } from '../negotiator';
+import { encodeUrl, escapeHtml, isBuffer, isStream, xmlRegExp } from '../utils';
 
 /**
  * asset server context.
@@ -48,6 +48,166 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
         const types = isArray(type) ? type : [type];
         return adapter.match(types, normaled)
     }
+
+    /**
+     * Return request header, alias as request.header
+     *
+     * @return {Object}
+     * @api public
+     */
+    get headers() {
+        return this.request.headers
+    }
+
+    /**
+     * Return request header.
+     *
+     * The `Referrer` header field is special-cased,
+     * both `Referrer` and `Referer` are interchangeable.
+     *
+     * Examples:
+     *
+     *     this.get('Content-Type');
+     *     // => "text/plain"
+     *
+     *     this.get('content-type');
+     *     // => "text/plain"
+     *
+     *     this.get('Something');
+     *     // => ''
+     *
+     * @param {String} field
+     * @return {String}
+     * @api public
+     */
+    getHeader(field: string): string {
+        field = field.toLowerCase();
+        let h: IncommingHeader;
+        switch (field = field.toLowerCase()) {
+            case 'referer':
+            case 'referrer':
+                h = this.request.headers.referrer ?? this.request.headers.referr;
+                break;
+            default:
+                h = this.request.headers[field];
+                break;
+        }
+        if (isNil(h)) return '';
+        return isArray(h) ? h[0] : String(h);
+    }
+
+
+    /**
+     * Check if the given `type(s)` is acceptable, returning
+     * the best match when true, otherwise `false`, in which
+     * case you should respond with 406 "Not Acceptable".
+     *
+     * The `type` value may be a single mime type string
+     * such as "application/json", the extension name
+     * such as "json" or an array `["json", "html", "text/plain"]`. When a list
+     * or array is given the _best_ match, if any is returned.
+     *
+     * Examples:
+     *
+     *     // Accept: text/html
+     *     this.accepts('html');
+     *     // => "html"
+     *
+     *     // Accept: text/*, application/json
+     *     this.accepts('html');
+     *     // => "html"
+     *     this.accepts('text/html');
+     *     // => "text/html"
+     *     this.accepts('json', 'text');
+     *     // => "json"
+     *     this.accepts('application/json');
+     *     // => "application/json"
+     *
+     *     // Accept: text/*, application/json
+     *     this.accepts('image/png');
+     *     this.accepts('png');
+     *     // => false
+     *
+     *     // Accept: text/*;q=.5, application/json
+     *     this.accepts('html', 'json');
+     *     // => "json"
+     *
+     * @param {String|Array} type(s)...
+     * @return {String|Array|false}
+     * @api public
+     */
+    accepts(...args: string[]): string | string[] | false {
+        const negotiator = this.resolve(Negotiator);
+        if (!args.length) {
+            return negotiator.mediaTypes()
+        }
+        const mimeAdapter = this.resolve(MimeAdapter);
+        const medias = args.map(a => a.indexOf('/') === -1 ? mimeAdapter.lookup(a) : a).filter(a => isString(a)) as string[];
+        return lang.first(negotiator.mediaTypes(...medias)) ?? false
+    }
+
+    /**
+     * Return accepted encodings or best fit based on `encodings`.
+     *
+     * Given `Accept-Encoding: gzip, deflate`
+     * an array sorted by quality is returned:
+     *
+     *     ['gzip', 'deflate']
+     *
+     * @param {String|Array} encoding(s)...
+     * @return {String|Array}
+     * @api public
+     */
+    acceptsEncodings(...encodings: string[]): string | string[] | false {
+        const negotiator = this.resolve(Negotiator);
+        if (!encodings.length) {
+            return negotiator.encodings()
+        }
+        return lang.first(negotiator.encodings(...encodings)) ?? false
+    }
+
+    /**
+     * Return accepted charsets or best fit based on `charsets`.
+     *
+     * Given `Accept-Charset: utf-8, iso-8859-1;q=0.2, utf-7;q=0.5`
+     * an array sorted by quality is returned:
+     *
+     *     ['utf-8', 'utf-7', 'iso-8859-1']
+     *
+     * @param {String|Array} charset(s)...
+     * @return {String|Array}
+     * @api public
+     */
+    acceptsCharsets(...charsets: string[]): string | string[] | false {
+        const negotiator = this.resolve(Negotiator);
+        if (!charsets.length) {
+            return negotiator.charsets()
+        }
+        return lang.first(negotiator.charsets(...charsets)) ?? false
+    }
+
+    /**
+     * Return accepted languages or best fit based on `langs`.
+     *
+     * Given `Accept-Language: en;q=0.8, es, pt`
+     * an array sorted by quality is returned:
+     *
+     *     ['es', 'pt', 'en']
+     *
+     * @param {String|Array} lang(s)...
+     * @return {Array|String}
+     * @api public
+     */
+    acceptsLanguages(...langs: string[]): string | string[] {
+        const negotiator = this.resolve(Negotiator);
+        if (!langs.length) {
+            return negotiator.languages()
+        }
+        return lang.first(negotiator.languages(...langs)) ?? false
+    }
+
+
+
 
     /**
      * Set Content-Type response header with `type` through `mime.lookup()`
@@ -119,13 +279,13 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
         }
     }
 
-
     /**
      * Whether the status code is ok
      */
     get ok(): boolean {
         return this.adapter.isOk(this.status);
     }
+
     /**
      * Whether the status code is ok
      */
@@ -250,118 +410,6 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
         return Buffer.byteLength(JSON.stringify(body))
     }
 
-
-    /**
-     * Check if the given `type(s)` is acceptable, returning
-     * the best match when true, otherwise `false`, in which
-     * case you should respond with 406 "Not Acceptable".
-     *
-     * The `type` value may be a single mime type string
-     * such as "application/json", the extension name
-     * such as "json" or an array `["json", "html", "text/plain"]`. When a list
-     * or array is given the _best_ match, if any is returned.
-     *
-     * Examples:
-     *
-     *     // Accept: text/html
-     *     this.accepts('html');
-     *     // => "html"
-     *
-     *     // Accept: text/*, application/json
-     *     this.accepts('html');
-     *     // => "html"
-     *     this.accepts('text/html');
-     *     // => "text/html"
-     *     this.accepts('json', 'text');
-     *     // => "json"
-     *     this.accepts('application/json');
-     *     // => "application/json"
-     *
-     *     // Accept: text/*, application/json
-     *     this.accepts('image/png');
-     *     this.accepts('png');
-     *     // => false
-     *
-     *     // Accept: text/*;q=.5, application/json
-     *     this.accepts('html', 'json');
-     *     // => "json"
-     *
-     * @param {String|Array} type(s)...
-     * @return {String|Array|false}
-     * @api public
-     */
-    accepts(...args: string[]): string | string[] | false {
-        const negotiator = this.resolve(Negotiator);
-        if (!args.length) {
-            return negotiator.mediaTypes()
-        }
-        const mimeAdapter = this.resolve(MimeAdapter);
-        const medias = args.map(a => a.indexOf('/') === -1 ? mimeAdapter.lookup(a) : a).filter(a => isString(a)) as string[];
-        return lang.first(negotiator.mediaTypes(...medias)) ?? false
-    }
-
-    /**
-     * Return accepted encodings or best fit based on `encodings`.
-     *
-     * Given `Accept-Encoding: gzip, deflate`
-     * an array sorted by quality is returned:
-     *
-     *     ['gzip', 'deflate']
-     *
-     * @param {String|Array} encoding(s)...
-     * @return {String|Array}
-     * @api public
-     */
-    acceptsEncodings(...encodings: string[]): string | string[] | false {
-        const negotiator = this.resolve(Negotiator);
-        if (!encodings.length) {
-            return negotiator.encodings()
-        }
-        return lang.first(negotiator.encodings(...encodings)) ?? false
-    }
-
-    /**
-     * Return accepted charsets or best fit based on `charsets`.
-     *
-     * Given `Accept-Charset: utf-8, iso-8859-1;q=0.2, utf-7;q=0.5`
-     * an array sorted by quality is returned:
-     *
-     *     ['utf-8', 'utf-7', 'iso-8859-1']
-     *
-     * @param {String|Array} charset(s)...
-     * @return {String|Array}
-     * @api public
-     */
-    acceptsCharsets(...charsets: string[]): string | string[] | false {
-        const negotiator = this.resolve(Negotiator);
-        if (!charsets.length) {
-            return negotiator.charsets()
-        }
-        return lang.first(negotiator.charsets(...charsets)) ?? false
-    }
-
-
-    /**
-     * Return accepted languages or best fit based on `langs`.
-     *
-     * Given `Accept-Language: en;q=0.8, es, pt`
-     * an array sorted by quality is returned:
-     *
-     *     ['es', 'pt', 'en']
-     *
-     * @param {String|Array} lang(s)...
-     * @return {Array|String}
-     * @api public
-     */
-
-    acceptsLanguages(...langs: string[]): string | string[] {
-        const negotiator = this.resolve(Negotiator);
-        if (!langs.length) {
-            return negotiator.languages()
-        }
-        return lang.first(negotiator.languages(...langs)) ?? false
-    }
-
     /**
     * Set Content-Disposition header to "attachment" with optional `filename`.
     *
@@ -432,43 +480,6 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
         // text
         this.type = ctype.TEXT_PLAIN_UTF8;
         this.body = `Redirecting to ${url}.`
-    }
-
-    /**
-     * Return request header.
-     *
-     * The `Referrer` header field is special-cased,
-     * both `Referrer` and `Referer` are interchangeable.
-     *
-     * Examples:
-     *
-     *     this.get('Content-Type');
-     *     // => "text/plain"
-     *
-     *     this.get('content-type');
-     *     // => "text/plain"
-     *
-     *     this.get('Something');
-     *     // => ''
-     *
-     * @param {String} field
-     * @return {String}
-     * @api public
-     */
-    getHeader(field: string): string {
-        field = field.toLowerCase();
-        let h: IncommingHeader;
-        switch (field = field.toLowerCase()) {
-            case 'referer':
-            case 'referrer':
-                h = this.request.headers.referrer ?? this.request.headers.referr;
-                break;
-            default:
-                h = this.request.headers[field];
-                break;
-        }
-        if (isNil(h)) return '';
-        return isArray(h) ? h[0] : String(h);
     }
 
     /**

@@ -7,7 +7,7 @@ import { hdr } from '../../consts';
 
 
 @Injectable()
-export class NormlizeBodyInterceptor implements Interceptor<HttpRequest, HttpEvent> {
+export class HttpBodyInterceptor implements Interceptor<HttpRequest, HttpEvent> {
 
     constructor() { }
 

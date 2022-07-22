@@ -9,11 +9,11 @@ import { ev } from '../../consts';
 import { MimeAdapter } from '../../mime';
 import { TrasportMimeAdapter } from '../../impl/mime';
 import { HttpBackend } from './backend';
-import { NormlizePathInterceptor } from './path';
-import { NormlizeBodyInterceptor } from './body';
+import { HttpPathInterceptor } from './path';
+import { HttpBodyInterceptor } from './body';
 import { HttpClientOpts, HTTP_INTERCEPTORS, CLIENT_HTTP2SESSION, HTTP_EXECPTIONFILTERS } from './option';
 import { HttpStatus } from '../status';
-import { AssetRedirector } from '../../redirector';
+import { AssetRedirector } from '../../client/redirector';
 
 
 
@@ -63,7 +63,7 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
     }
 
     protected override initOption(options?: HttpClientOpts): HttpClientOpts {
-        const interceptors = [...options?.interceptors ?? EMPTY, NormlizePathInterceptor, NormlizeBodyInterceptor]
+        const interceptors = [...options?.interceptors ?? EMPTY, HttpPathInterceptor, HttpBodyInterceptor]
         this.opts = { ...defOpts, ...options, interceptors } as HttpClientOpts;
         this.context.setValue(HttpClientOpts, this.opts);
         return this.opts;

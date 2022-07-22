@@ -1,6 +1,6 @@
 import { ClientRequsetPacket, IncommingHeaders, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, mths, Packet, ReqHeaders, ReqHeadersLike } from '@tsdi/core';
 import { isString, type_bool, type_num, type_obj } from '@tsdi/ioc';
-import { isBuffer, isStream } from './utils';
+import { isBuffer, isStream } from '../utils';
 import { Stream } from 'stream';
 
 /**

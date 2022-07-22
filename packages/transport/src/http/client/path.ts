@@ -8,7 +8,7 @@ import { HttpClientOpts } from './option';
 const abstUrlExp = /^http(s)?:/;
 
 @Injectable()
-export class NormlizePathInterceptor implements Interceptor<HttpRequest, HttpEvent> {
+export class HttpPathInterceptor implements Interceptor<HttpRequest, HttpEvent> {
 
     constructor(private option: HttpClientOpts) { }
 

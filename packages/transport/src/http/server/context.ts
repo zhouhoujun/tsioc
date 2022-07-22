@@ -1,15 +1,15 @@
-import { AssetContext, HeaderContext, MiddlewareLike, mths, OutgoingPacket, Protocol, Throwable, TransportContext, TransportServer } from '@tsdi/core';
+import { AssetContext, HeaderContext, MiddlewareLike, mths, Protocol, Throwable, TransportContext, TransportServer } from '@tsdi/core';
 import { Injector, InvokeArguments, isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import * as assert from 'assert';
 import * as http from 'http';
 import * as http2 from 'http2';
 import { TLSSocket } from 'tls';
-import { append, parseTokenList } from '../../utils';
 import { hdr } from '../../consts';
+import { append, parseTokenList } from '../../utils';
 import { HttpError, HttpInternalServerError } from './../errors';
 import { HttpServer } from './server';
-import { AssetServerContext } from '../../asset.ctx';
+import { AssetServerContext } from '../../server/asset.ctx';
 
 
 const AUTHORITY = http2.constants?.HTTP2_HEADER_AUTHORITY ?? ':authority';
@@ -53,17 +53,6 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
 
     get socket() {
         return this.request.socket
-    }
-
-    /**
-     * Return request header, alias as request.header
-     *
-     * @return {Object}
-     * @api public
-     */
-
-    get headers() {
-        return this.request.headers
     }
 
     /**
@@ -544,7 +533,7 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
         return this.setHeader(field, val)
     }
 
-    
+
 
     /**
      * Checks if the request is writable.

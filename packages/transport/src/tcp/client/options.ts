@@ -2,8 +2,8 @@ import { ClientOpts, ExecptionFilter, Interceptor } from '@tsdi/core';
 import { Abstract, tokenId } from '@tsdi/ioc';
 import { SocketConstructorOpts, NetConnectOpts } from 'net';
 import { PacketProtocolOpts } from '../packet';
-import { TransportRequest } from '../../request';
-import { TransportEvent } from '../../response';
+import { TransportRequest } from '../../client/request';
+import { TransportEvent } from '../../client/response';
 
 /**
  * tcp client options.

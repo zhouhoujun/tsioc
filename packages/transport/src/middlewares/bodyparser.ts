@@ -1,6 +1,6 @@
 /* eslint-disable no-control-regex */
 import { AssetContext, HeaderContext, Middleware, TransportContext, UnsupportedMediaTypeError } from '@tsdi/core';
-import { Abstract, EMPTY_OBJ, Injectable, isFunction, isUndefined, Nullable } from '@tsdi/ioc';
+import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable } from '@tsdi/ioc';
 import * as zlib from 'zlib';
 import { Stream, Readable, PassThrough } from 'stream';
 import * as getRaw from 'raw-body';

@@ -1,8 +1,8 @@
 import { OutgoingHeader, OutgoingHeaders, OutgoingPacket, ResHeaders } from '@tsdi/core';
 import { Writable } from 'stream';
-import { hdr } from './consts';
-import { TransportProtocol } from './protocol';
-import { TransportStream } from './stream';
+import { hdr } from '../consts';
+import { TransportProtocol } from '../protocol';
+import { TransportStream } from '../stream';
 
 
 /**
