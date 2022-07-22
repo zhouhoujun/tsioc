@@ -1,6 +1,6 @@
 import { ExecptionFilter, MiddlewareLike, Protocol, HeaderContext, AssetContext } from '@tsdi/core';
 import { Injectable, tokenId } from '@tsdi/ioc';
-import { AssetServerContext } from '../../server/asset.ctx';
+import { AssetServerContext } from '../../asset.ctx';
 import { hdr } from '../../consts';
 import { UdpServRequest } from './request';
 import { UdpServResponse } from './response';

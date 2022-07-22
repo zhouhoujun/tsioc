@@ -5,7 +5,7 @@ import { existsSync, Stats, stat, createReadStream } from 'fs';
 import { promisify } from 'util';
 import { ContentSendAdapter, SendOptions } from '../middlewares/send';
 import { ev, hdr } from '../consts';
-import { AssetServerContext } from '../server/asset.ctx';
+import { AssetServerContext } from '../asset.ctx';
 
 
 const statify = promisify(stat);

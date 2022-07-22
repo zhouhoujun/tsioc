@@ -9,7 +9,7 @@ import { hdr } from '../../consts';
 import { append, parseTokenList } from '../../utils';
 import { HttpError, HttpInternalServerError } from './../errors';
 import { HttpServer } from './server';
-import { AssetServerContext } from '../../server/asset.ctx';
+import { AssetServerContext } from '../../asset.ctx';
 
 
 const AUTHORITY = http2.constants?.HTTP2_HEADER_AUTHORITY ?? ':authority';

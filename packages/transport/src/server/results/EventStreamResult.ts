@@ -1,5 +1,5 @@
 import { ResultValue } from '@tsdi/core';
-import { AssetServerContext } from '../asset.ctx';
+import { AssetServerContext } from '../../asset.ctx';
 import { Stream } from 'stream';
 import { hdr } from '../../consts';
 

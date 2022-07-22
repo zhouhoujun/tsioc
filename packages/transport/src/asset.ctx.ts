@@ -1,11 +1,11 @@
 import { AssetContext, OutgoingHeader, ServerContext, IncommingHeader, OutgoingHeaders, IncomingPacket, OutgoingPacket } from '@tsdi/core';
 import { Abstract, isArray, isNil, isNumber, isString, lang } from '@tsdi/ioc';
 import { extname } from 'path';
-import { ctype, hdr } from '../consts';
+import { ctype, hdr } from './consts';
 import { CONTENT_DISPOSITION } from './content';
-import { MimeAdapter } from '../mime';
-import { Negotiator } from '../negotiator';
-import { encodeUrl, escapeHtml, isBuffer, isStream, xmlRegExp } from '../utils';
+import { MimeAdapter } from './mime';
+import { Negotiator } from './negotiator';
+import { encodeUrl, escapeHtml, isBuffer, isStream, xmlRegExp } from './utils';
 
 /**
  * asset server context.

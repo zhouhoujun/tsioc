@@ -1,6 +1,6 @@
 import { ExecptionFilter, MiddlewareLike, HeaderContext, AssetContext, TransportContext } from '@tsdi/core';
 import { Token, tokenId } from '@tsdi/ioc';
-import { AssetServerContext } from '../server/asset.ctx';
+import { AssetServerContext } from '../asset.ctx';
 import { hdr } from '../consts';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';

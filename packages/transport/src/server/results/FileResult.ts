@@ -3,7 +3,7 @@ import { ApplicationContext, ResultValue } from '@tsdi/core';
 import { Stream } from 'stream';
 import { existsSync, createReadStream } from 'fs';
 import { join, isAbsolute } from 'path';
-import { AssetServerContext } from '../asset.ctx';
+import { AssetServerContext } from '../../asset.ctx';
 
 /**
  * controller method return result type of file.
