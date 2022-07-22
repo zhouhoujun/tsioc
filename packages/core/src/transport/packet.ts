@@ -128,7 +128,7 @@ export interface RequestPacket<T = any> extends Packet<T> {
 /**
  * client request packet
  */
-export interface ClientReqPacket<T = any> extends RequestPacket<T> {
+export interface ClientRequsetPacket<T = any> extends RequestPacket<T> {
     /**
      * The request body, or `null` if one isn't set.
      *

@@ -4,8 +4,8 @@ import {
 } from '@tsdi/core';
 import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Providers, tokenId, type_undef } from '@tsdi/ioc';
 import { Socket } from 'dgram';
-import { Request } from '../../request';
-import { Response, ErrorResponse, ResponseEvent } from '../../response';
+import { TransportRequest } from '../../request';
+import { TransportResponse, ErrorResponse, TransportEvent } from '../../response';
 import { defer, filter, mergeMap, Observable, Observer, throwError } from 'rxjs';
 import { JsonDecoder, JsonEncoder } from '../../coder';
 import { TcpStatus } from '../../tcp';
@@ -21,7 +21,7 @@ export interface Address {
 }
 
 @Abstract()
-export abstract class UdpClientOpts extends ClientOpts<Request, ResponseEvent> {
+export abstract class UdpClientOpts extends ClientOpts<TransportRequest, TransportEvent> {
     /**
      * is json or not.
      */
@@ -34,7 +34,7 @@ export abstract class UdpClientOpts extends ClientOpts<Request, ResponseEvent> {
 /**
  * udp client interceptors.
  */
-export const UDP_INTERCEPTORS = tokenId<Interceptor<Request, ResponseEvent>[]>('UDP_INTERCEPTORS');
+export const UDP_INTERCEPTORS = tokenId<Interceptor<TransportRequest, TransportEvent>[]>('UDP_INTERCEPTORS');
 
 /**
  * udp client interceptors.
@@ -67,7 +67,7 @@ const defaults = {
     { provide: TransportStatus, useClass: TcpStatus, asDefault: true },
     { provide: Redirector, useClass: AssetRedirector, asDefault: true }
 ])
-export class UdpClient extends TransportClient<Request, ResponseEvent> implements OnDispose {
+export class UdpClient extends TransportClient<TransportRequest, TransportEvent> implements OnDispose {
 
     private socket?: Socket;
     private connected: boolean;
@@ -80,7 +80,7 @@ export class UdpClient extends TransportClient<Request, ResponseEvent> implement
         this.connected = false;
     }
 
-    protected getBackend(): EndpointBackend<Request<any>, ResponseEvent<any>> {
+    protected getBackend(): EndpointBackend<TransportRequest<any>, TransportEvent<any>> {
         return createEndpoint((req, context) => {
             const { id, url } = req;
             if (!this.socket) return throwError(() => new ErrorResponse({ id, url, status: 0, statusMessage: 'has not connected.' }));
@@ -149,7 +149,7 @@ export class UdpClient extends TransportClient<Request, ResponseEvent> implement
                         }
 
                         if (ok) {
-                            observer.next(new Response({
+                            observer.next(new TransportResponse({
                                 id,
                                 url,
                                 status: 200,
@@ -306,9 +306,9 @@ export class UdpClient extends TransportClient<Request, ResponseEvent> implement
     }
 
 
-    protected override buildRequest(context: RequestContext, req: string | Request<any>, options?: any): Request<any> {
+    protected override buildRequest(context: RequestContext, req: string | TransportRequest<any>, options?: any): TransportRequest<any> {
         context.setValue(Socket, this.socket);
-        return isString(req) ? new Request(this.context.resolve(UuidGenerator).generate(), options) : req
+        return isString(req) ? new TransportRequest(this.context.resolve(UuidGenerator).generate(), options) : req
     }
 
     async close(): Promise<void> {

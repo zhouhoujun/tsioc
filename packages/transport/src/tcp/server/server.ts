@@ -1,4 +1,4 @@
-import { BadRequestError, EADDRINUSE, ECONNREFUSED, ExecptionRespondTypeAdapter, Router, TransportServer, TransportStatus } from '@tsdi/core';
+import { BadRequestError, BytesPipe, EADDRINUSE, ECONNREFUSED, ExecptionRespondTypeAdapter, Router, TransportServer, TransportStatus } from '@tsdi/core';
 import { Inject, Injectable, InvocationContext, isBoolean, lang, Nullable, Providers } from '@tsdi/ioc';
 import { Server } from 'net';
 import { Subscription } from 'rxjs';
@@ -27,6 +27,7 @@ import { PacketProtocol, PacketProtocolOpts } from '../packet';
 const defOpts = {
     encoding: 'utf8',
     delimiter: '\r\n',
+    sizeLimit: 10 * 1024 * 1024,
     interceptorsToken: TCP_SERV_INTERCEPTORS,
     execptionsToken: TCP_EXECPTION_FILTERS,
     middlewaresToken: TCP_MIDDLEWARES,
@@ -151,7 +152,8 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
                             length = ~~len
                         }
                         if (this.options.sizeLimit && length > this.options.sizeLimit) {
-                            const msg = 'Packet size limit ' + this.options.sizeLimit;
+                            const pipe = this.context.get(BytesPipe);
+                            const msg = `Packet size limit ${pipe.transform(this.options.sizeLimit)}, this request packet size ${pipe.transform(len)}`;
                             socket.emit(ev.ERROR, msg);
                             throw new BadRequestError(msg);
                         }

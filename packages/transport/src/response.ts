@@ -35,7 +35,7 @@ export class ErrorResponse {
 /**
  * client receive Response.
  */
-export class Response<T = any> implements ResponsePacket<T> {
+export class TransportResponse<T = any> implements ResponsePacket<T> {
     readonly id: string;
     readonly body: T | null;
     readonly url: string;
@@ -69,5 +69,5 @@ export class Response<T = any> implements ResponsePacket<T> {
 
 }
 
-export type ResponseEvent<T = any> = ErrorResponse | Response<T>;
+export type TransportEvent<T = any> = ErrorResponse | TransportResponse<T>;
 

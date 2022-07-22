@@ -3,7 +3,9 @@ import { Readable, Writable } from 'stream';
 import { TransportStream } from './stream';
 
 
-
+/**
+ * Server request.
+ */
 export class ServerRequest extends Readable implements IncomingPacket<Writable> {
     constructor(readonly stream: TransportStream, readonly headers: IncommingHeaders) {
         super();

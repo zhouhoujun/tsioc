@@ -1,4 +1,4 @@
-import { EndpointBackend, mths, Redirector, RequestContext, ResponseJsonParseError, ResHeaders, OutgoingHeaders } from '@tsdi/core';
+import { EndpointBackend, mths, Redirector, RequestContext, ResponseJsonParseError, ResHeaders, OutgoingHeaders, BytesPipe } from '@tsdi/core';
 import { Injectable, InvocationContext, type_undef } from '@tsdi/ioc';
 import { Socket } from 'net';
 import { filter, Observable, Observer, throwError } from 'rxjs';
@@ -6,20 +6,20 @@ import { ev, hdr, identity } from '../../consts';
 import { isBuffer } from '../../utils';
 import { PacketProtocol } from '../packet';
 import { TcpClientOpts } from './options';
-import { Request } from '../../request';
-import { ErrorResponse, ResponseEvent, Response } from '../../response';
+import { TransportRequest } from '../../request';
+import { ErrorResponse, TransportEvent, TransportResponse } from '../../response';
 
 /**
  * tcp backend.
  */
 @Injectable()
-export class TcpBackend implements EndpointBackend<Request, ResponseEvent> {
+export class TcpBackend implements EndpointBackend<TransportRequest, TransportEvent> {
 
     constructor(private option: TcpClientOpts) {
 
     }
 
-    handle(req: Request, ctx: RequestContext): Observable<ResponseEvent> {
+    handle(req: TransportRequest, ctx: RequestContext): Observable<TransportEvent> {
         const socket = ctx.get(Socket);
         const { id, url } = req;
         if (!socket) return throwError(() => new ErrorResponse({
@@ -63,7 +63,8 @@ export class TcpBackend implements EndpointBackend<Request, ResponseEvent> {
                                 bodyLen = ~~len
                             }
                             if (this.option.sizeLimit && len > this.option.sizeLimit) {
-                                const msg = 'Packet size limit ' + this.option.sizeLimit;
+                                const pipe = ctx.get(BytesPipe);
+                                const msg = `Packet size limit ${pipe.transform(this.option.sizeLimit)}, this response packet size ${pipe.transform(len)}`;
                                 socket.emit(ev.ERROR, msg);
                                 observer.error(new ErrorResponse({
                                     id,
@@ -77,7 +78,7 @@ export class TcpBackend implements EndpointBackend<Request, ResponseEvent> {
                             ok = adapter.isOk(status);
                             if (adapter.isEmpty(status)) {
                                 if (ok) {
-                                    observer.next(new Response({
+                                    observer.next(new TransportResponse({
                                         id,
                                         url,
                                         headers,
@@ -160,7 +161,7 @@ export class TcpBackend implements EndpointBackend<Request, ResponseEvent> {
                          }
 
                         if (ok) {
-                            observer.next(new Response({
+                            observer.next(new TransportResponse({
                                 id,
                                 url,
                                 ok,

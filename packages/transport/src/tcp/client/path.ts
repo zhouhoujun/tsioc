@@ -3,17 +3,17 @@ import { Endpoint, EndpointContext, Interceptor, TransportArgumentError } from '
 import { Observable } from 'rxjs';
 import { TcpNetConnectOpts, IpcNetConnectOpts } from 'net';
 import { TcpClientOpts } from './options';
-import { Request } from '../../request';
-import { ResponseEvent } from '../../response';
+import { TransportRequest } from '../../request';
+import { TransportEvent } from '../../response';
 
 const abstUrlExp = /^tcp:/;
 
 @Injectable()
-export class TcpPathInterceptor implements Interceptor<Request, ResponseEvent> {
+export class TcpPathInterceptor implements Interceptor<TransportRequest, TransportEvent> {
 
     constructor(private option: TcpClientOpts) { }
 
-    intercept(req: Request, next: Endpoint<Request, ResponseEvent>, context: EndpointContext): Observable<ResponseEvent> {
+    intercept(req: TransportRequest, next: Endpoint<TransportRequest, TransportEvent>, context: EndpointContext): Observable<TransportEvent> {
         let url = req.url.trim();
         if (!abstUrlExp.test(url)) {
             if (!this.option.connectOpts) throw new TransportArgumentError('no connect options.');
