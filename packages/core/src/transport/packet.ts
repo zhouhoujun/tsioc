@@ -277,6 +277,11 @@ export interface OutgoingPacket {
      * Do not depend on this.
      */
     set statusMessage(msg: string);
+
+    /**
+     * headers has sent or not.
+     */
+    get headersSent(): boolean;
     /**
      * Get all headers.
      */
@@ -341,5 +346,19 @@ export interface OutgoingPacket {
      * @api public
      */
     removeHeader(field: string): void;
+
+    /**
+     * write head
+     * @param statusCode 
+     * @param headers 
+     */
+    writeHead(statusCode: number, headers?: OutgoingHeaders | OutgoingHeader[]): this;
+    /**
+     * write head
+     * @param statusCode 
+     * @param statusMessage 
+     * @param headers 
+     */
+    writeHead(statusCode: number, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[]): this;
 }
 

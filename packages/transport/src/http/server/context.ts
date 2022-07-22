@@ -1,4 +1,4 @@
-import { AssetContext, HeaderContext, MiddlewareLike, mths, Protocol, Throwable, TransportContext, TransportServer } from '@tsdi/core';
+import { AssetContext, HeaderContext, MiddlewareLike, mths, OutgoingPacket, Protocol, Throwable, TransportContext, TransportServer } from '@tsdi/core';
 import { Injector, InvokeArguments, isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import * as assert from 'assert';

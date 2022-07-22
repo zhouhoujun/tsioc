@@ -69,5 +69,8 @@ export class TransportResponse<T = any> implements ResponsePacket<T> {
 
 }
 
+/**
+ * transport event.
+ */
 export type TransportEvent<T = any> = ErrorResponse | TransportResponse<T>;
 

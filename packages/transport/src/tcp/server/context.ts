@@ -98,7 +98,7 @@ export class TcpContext extends AssetServerContext<TcpServRequest, TcpServRespon
     }
 
     get sent(): boolean {
-        return this.response.sent;
+        return this.response.headersSent;
     }
 
     // write(chunk: string | Uint8Array, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean;

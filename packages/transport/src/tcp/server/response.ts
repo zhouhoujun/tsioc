@@ -1,4 +1,4 @@
-import { Packet, OutgoingPacket, OutgoingHeader, ResHeaders } from '@tsdi/core';
+import { Packet, OutgoingPacket, OutgoingHeader, ResHeaders, OutgoingHeaders } from '@tsdi/core';
 import { Socket } from 'net';
 import { hdr } from '../../consts';
 
@@ -14,6 +14,12 @@ export class TcpServResponse implements OutgoingPacket {
 
     constructor(readonly socket: Socket, readonly id: string) {
         this._hdr = new ResHeaders();
+    }
+    
+    writeHead(statusCode: number, headers?: OutgoingHeaders | OutgoingHeader[] | undefined): this;
+    writeHead(statusCode: number, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[] | undefined): this;
+    writeHead(statusCode: unknown, statusMessage?: unknown, headers?: unknown): this {
+        throw new Error('Method not implemented.');
     }
 
 
@@ -33,7 +39,7 @@ export class TcpServResponse implements OutgoingPacket {
         this.setHeader(hdr.STATUS_MESSAGE, val);
     }
 
-    get sent() {
+    get headersSent() {
         return this._sent;
     }
 

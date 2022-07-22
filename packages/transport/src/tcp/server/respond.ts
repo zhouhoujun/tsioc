@@ -26,7 +26,7 @@ export class TcpRespondAdapter extends RespondAdapter {
         }
 
         if (mths.HEAD === ctx.method) {
-            if (!res.sent && !res.hasHeader(hdr.CONTENT_LENGTH)) {
+            if (!res.headersSent && !res.hasHeader(hdr.CONTENT_LENGTH)) {
                 const length = ctx.length;
                 if (Number.isInteger(length)) ctx.length = length
             }
