@@ -35,6 +35,11 @@ export abstract class TransportStatus {
      */
     abstract get unsupportedMediaType(): number;
     /**
+     * is the status code vaild or not.
+     * @param statusCode 
+     */
+    abstract isVaild(statusCode: number): boolean;
+    /**
      * is not found status or not.
      * @param status 
      */
@@ -90,6 +95,5 @@ export abstract class TransportStatus {
      * @param status 
      */
     abstract message(status: number): string;
-
 
 }

@@ -348,6 +348,11 @@ export interface OutgoingPacket {
     removeHeader(field: string): void;
 
     /**
+     * get header names
+     */
+    getHeaderNames(): string[];
+
+    /**
      * write head
      * @param statusCode 
      * @param headers 

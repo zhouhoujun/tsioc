@@ -3,7 +3,7 @@ import {
     ForbiddenError, InternalServerError, NotFoundError, TransportArgumentError, TransportError,
     TransportMissingError, TransportStatus, UnauthorizedError, UnsupportedMediaTypeError
 } from '@tsdi/core';
-import { Injectable, isNumber } from '@tsdi/ioc';
+import { Injectable, isFunction, isNumber } from '@tsdi/ioc';
 import { MissingModelFieldError } from '@tsdi/repository';
 import { TransportProtocol } from '../protocol';
 import { PrototcolContext } from './context';
@@ -24,10 +24,10 @@ export class ProtocolFinalizeFilter implements ExecptionFilter {
         }
 
         //finllay defalt send error.
-
+        const protocol = ctx.get(TransportProtocol);
         const hctx = ctx.get(PrototcolContext);
         let headerSent = false;
-        if (hctx.sent) {
+        if (hctx.sent || !hctx.writable) {
             headerSent = err.headerSent = true
         }
 
@@ -41,10 +41,11 @@ export class ProtocolFinalizeFilter implements ExecptionFilter {
         const res = hctx.response;
 
         // first unset all headers
-        for (const n in res.getHeaders()) {
-            res.removeHeader(n);
+        if (isFunction(res.getHeaderNames)) {
+            res.getHeaderNames().forEach(name => res.removeHeader(name))
+        } else {
+            (res as any)._headers = {} // Node < 7.7
         }
-
 
         // then set those specified
         if (err.headers) hctx.setHeader(err.headers);
@@ -52,27 +53,23 @@ export class ProtocolFinalizeFilter implements ExecptionFilter {
         // force text/plain
         hctx.type = 'text';
         let statusCode = (err.status || err.statusCode) as number;
-        let msg: string;
+        let msg;
         if (err instanceof TransportError) {
             msg = err.message
         } else {
             // ENOENT support
-            if (ENOENT === err.code) statusCode = hctx.adapter.notFound;
+            if (ENOENT === err.code) statusCode = protocol.status.notFound;
 
             // default to server error.
-            if (!isNumber(statusCode) || !hctx.adapter.message(statusCode)) statusCode = hctx.adapter.serverError;
+            if (!isNumber(statusCode) || !protocol.status.isVaild(statusCode)) statusCode = protocol.status.serverError;
 
             // respond
-            msg = hctx.adapter.message(statusCode);
+            msg = protocol.status.message(statusCode)
         }
         hctx.status = statusCode;
-        hctx.statusMessage = msg;
-        // hctx.length = Buffer.byteLength(msg);
-
-        ctx.get(TransportProtocol).write(res, msg);
-        // const encoder = ctx.get(Encoder);
-        // const { delimiter, encoding } = ctx.get(TcpServerOptions);
-        // await writeSocket(res.socket, res.id, 0, encoder.encode(res.serializeHeader()), delimiter!,encoding);
+        msg = Buffer.from(msg);
+        hctx.length = Buffer.byteLength(msg);
+        res.end(msg)
     }
 
 }

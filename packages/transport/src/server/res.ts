@@ -21,6 +21,10 @@ export class ServerResponse extends Writable implements OutgoingPacket {
         this._hdr = new ResHeaders();
     }
 
+    getHeaderNames(): string[] {
+        return this._hdr.getHeaderNames();
+    }
+
     get statusCode(): number {
         return this.getHeader(hdr.STATUS) as number ?? 0
     }

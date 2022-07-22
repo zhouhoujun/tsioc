@@ -206,6 +206,12 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
         return lang.first(negotiator.languages(...langs)) ?? false
     }
 
+    /**
+     * Checks if the request is writable.
+     * Tests for the existence of the socket
+     * as node sometimes does not set it.
+     */
+    abstract get writable(): boolean;
 
 
 

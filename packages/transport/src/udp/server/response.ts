@@ -15,6 +15,9 @@ export class UdpServResponse implements OutgoingPacket {
     constructor(readonly socket: Socket, readonly id?: string) {
 
     }
+    getHeaderNames(): string[] {
+        throw new Error('Method not implemented.');
+    }
     get headersSent(): boolean {
         throw new Error('Method not implemented.');
     }

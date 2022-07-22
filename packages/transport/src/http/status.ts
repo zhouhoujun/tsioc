@@ -41,6 +41,10 @@ export class HttpStatus extends TransportStatus {
         return HttpStatusCode.UnsupportedMediaType;
     }
 
+    isVaild(statusCode: number): boolean {
+        return !!statusMessage[statusCode as HttpStatusCode];
+    }
+    
     isNotFound(status: number): boolean {
         return status === HttpStatusCode.NotFound;
     }

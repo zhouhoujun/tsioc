@@ -47,6 +47,10 @@ export class TcpServResponse implements OutgoingPacket {
         return { id: this.id, headers: this.getHeaders(), body: this.body };
     }
 
+    getHeaderNames(): string[] {
+        return this._hdr.getHeaderNames();
+    }
+
     getHeaders(): Record<string, OutgoingHeader> {
         return this._hdr.getHeaders();
     }

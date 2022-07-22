@@ -44,6 +44,10 @@ export class HeaderSet<T extends IncommingHeader | OutgoingHeader> {
         return this.getHeaders();
     }
 
+    getHeaderNames(): string[] {
+        return Array.from(this._normal.keys())
+    }
+
     getHeaders(): Record<string, T> {
         if (!this._rcd) {
             const rcd = this._rcd = {} as Record<string, T>;

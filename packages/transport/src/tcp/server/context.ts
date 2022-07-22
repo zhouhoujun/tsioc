@@ -76,6 +76,10 @@ export class TcpContext extends AssetServerContext<TcpServRequest, TcpServRespon
         return this.request.method === 'PUT' || this.getHeader(hdr.OPERATION) === 'update';
     }
 
+    get writable(): boolean {
+       return this.request.socket.writable 
+    }
+
     get status(): number {
         return this.response.statusCode
     }
