@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { TransportContext } from '../transport/context';
 import { InterceptorLike, Middleware, MiddlewareFn } from '../transport/endpoint';
-import { Protocol } from '../transport/packet';
+import { ProtocolType } from '../transport/packet';
 import { CanActivate } from './guard';
 
 /**
@@ -41,7 +41,7 @@ export interface Route extends InvokeArguments {
     /**
      * transport protocol
      */
-    protocol?: Protocol;
+    protocol?: ProtocolType;
 
     /**
      * An array of child `Route` objects that specifies a nested route
@@ -95,7 +95,7 @@ export abstract class RouteRef<T = any> implements Middleware, Destroyable, OnDe
     /**
      * transport protocol.
      */
-    abstract get protocol(): Protocol | undefined;
+    abstract get protocol(): ProtocolType | undefined;
     /**
      * controller type reflect.
      */

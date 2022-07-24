@@ -1,6 +1,6 @@
 import {
     Abstract, ClassType, composeResolver, isArray, isDefined, isPrimitiveType, isString,
-    Injector, InvokeArguments, MissingParameterError, Parameter, Token, Type, EMPTY
+    Injector, InvokeArguments, MissingParameterError, Parameter, Token, Type, EMPTY, TypeOf, isFunction
 } from '@tsdi/ioc';
 import { MODEL_RESOLVERS } from './model';
 import { PipeTransform } from '../pipes/pipe';
@@ -8,7 +8,11 @@ import { TransportContext } from './context';
 import { TransportArgumentError } from './error';
 import { TransportArgumentResolver, TransportParameter } from './resolver';
 import { TransportServer } from './server';
+import { Protocol } from './protocol';
 
+export interface ServerContextOpts extends InvokeArguments {
+    protocol?: TypeOf<Protocol>
+}
 
 /**
  * server transport context.
@@ -16,18 +20,11 @@ import { TransportServer } from './server';
 @Abstract()
 export abstract class ServerContext<TRequest = any, TResponse = any> extends TransportContext {
     /**
-     * target server.
+     * context protocol.
      */
-    readonly target: TransportServer;
-    /**
-     * transport request.
-     */
-    public request: TRequest;
-    /**
-     * transport response.
-     */
-    readonly response: TResponse;
-    constructor(injector: Injector, request: TRequest, response: TResponse, target: TransportServer, options?: InvokeArguments) {
+    readonly protocol: Protocol;
+
+    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: TransportServer, options?: ServerContextOpts) {
         super(injector, {
             ...options,
             resolvers: [
@@ -36,9 +33,11 @@ export abstract class ServerContext<TRequest = any, TResponse = any> extends Tra
                 ...injector.get(MODEL_RESOLVERS, EMPTY)
             ]
         });
-        this.target = target;
-        this.request = request;
-        this.response = response;
+        if (options?.protocol) {
+            this.protocol = isFunction(options.protocol) ? this.resolve(options.protocol) : options.protocol;
+        } else {
+            this.protocol = injector.get(Protocol);
+        }
     }
 
     protected isSelf(token: Token) {

@@ -15,7 +15,7 @@ export class NormlizePathInterceptor implements Interceptor<TransportRequest, Tr
         const url = req.url.trim();
         if (!this.protocol.isAbsoluteUrl(url)) {
             if (!this.protocol) throw new TransportArgumentError('no protocol provider.');
-            req.url = this.protocol.normlizeUrl(req);
+            req.url = this.protocol.normlizeUrl(req.url);
         }
         return next.handle(req, context);
     }

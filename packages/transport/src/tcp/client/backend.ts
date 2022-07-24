@@ -1,4 +1,4 @@
-import { EndpointBackend, mths, Redirector, RequestContext, ResponseJsonParseError, ResHeaders, OutgoingHeaders, BytesPipe } from '@tsdi/core';
+import { EndpointBackend, mths, RequestContext, ResponseJsonParseError, ResHeaders, OutgoingHeaders, BytesPipe } from '@tsdi/core';
 import { Injectable, InvocationContext, type_undef } from '@tsdi/ioc';
 import { Socket } from 'net';
 import { filter, Observable, Observer, throwError } from 'rxjs';
@@ -28,7 +28,7 @@ export class TcpBackend implements EndpointBackend<TransportRequest, TransportEv
             status: 0,
             statusMessage: 'has not connected.'
         }));
-        const adapter = ctx.adapter;
+        const adapter = ctx.protocol.status;
         const ac = this.getAbortSignal(ctx);
         return new Observable((observer: Observer<any>) => {
 
@@ -97,8 +97,8 @@ export class TcpBackend implements EndpointBackend<TransportRequest, TransportEv
                                 return;
                             }
 
-                            if (!bodyLen && ctx.adapter.isRedirect(status)) {
-                               return ctx.get(Redirector).redirect(ctx, req, status, new ResHeaders(headers))
+                            if (!bodyLen && ctx.protocol.status.isRedirect(status)) {
+                               return ctx.protocol.redirector.redirect(ctx, req, status, new ResHeaders(headers))
                                     .subscribe(observer);
                             }
                             return;
@@ -155,8 +155,8 @@ export class TcpBackend implements EndpointBackend<TransportRequest, TransportEv
                                 body = new TextDecoder().decode(buffer);
                         }
 
-                        if (ctx.adapter.isRedirect(status)) {
-                            return ctx.get(Redirector).redirect(ctx, req, status, new ResHeaders(headers))
+                        if (ctx.protocol.status.isRedirect(status)) {
+                            return ctx.protocol.redirector.redirect(ctx, req, status, new ResHeaders(headers))
                                  .subscribe(observer);
                          }
 

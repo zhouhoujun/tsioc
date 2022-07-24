@@ -45,15 +45,15 @@ export namespace mths {
 /**
  * mqtt protocol.
  */
-export type MqttProtocol = 'mqtt' | 'mqtts' | 'tls' | 'ws' | 'wss' | 'wxs' | 'alis';
+export type MqttProtocolType = 'mqtt' | 'mqtts' | 'tls' | 'ws' | 'wss' | 'wxs' | 'alis';
 /**
  * http protocol.
  */
-export type HttpProtocol = 'http' | 'https';
+export type HttpProtocolType = 'http' | 'https';
 /**
  * transport protocol.
  */
-export type Protocol = 'tcp' | 'udp' | 'grpc' | 'rmq' | 'kafka' | 'redis' | 'amqp' | 'ssl' | 'msg' | HttpProtocol | MqttProtocol;
+export type ProtocolType = 'tcp' | 'udp' | 'grpc' | 'rmq' | 'kafka' | 'redis' | 'amqp' | 'ssl' | 'msg' | HttpProtocolType | MqttProtocolType;
 
 
 /**
@@ -245,6 +245,8 @@ export interface IncomingPacket<T = any> extends Packet<any> {
      * The outgoing request method.
      */
     readonly method?: string;
+
+    readonly socket?: any;
     /**
      * pipe
      * @param destination 

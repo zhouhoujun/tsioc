@@ -29,6 +29,8 @@ export abstract class ServerOpts<TRequest, TResponse> extends TransportOpts<TReq
 export abstract class TransportServer<TRequest = any, TResponse = any, Tx extends TransportContext = TransportContext> extends TransportEndpoint<TRequest, TResponse> implements OnDispose {
 
     private _midlsToken!: Token<MiddlewareLike[]>;
+    
+    abstract get proxy(): boolean;
 
     constructor(context: InvocationContext, options?: ServerOpts<TRequest, TResponse>) {
         super(context, options);

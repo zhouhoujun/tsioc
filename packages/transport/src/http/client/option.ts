@@ -34,11 +34,11 @@ export abstract class HttpClientOpts extends ClientOpts<HttpRequest, HttpEvent> 
 }
 
 /**
- * http client interceptors for {@link Http}.
+ * http client interceptors for `Http`.
  */
 export const HTTP_INTERCEPTORS = tokenId<InterceptorLike<HttpRequest, HttpEvent>[]>('HTTP_INTERCEPTORS');
 /**
- * http client execption filters for {@link Http}.
+ * http client execption filters for `Http`.
  */
 export const HTTP_EXECPTIONFILTERS = tokenId<ExecptionFilter[]>('HTTP_EXECPTIONFILTERS');
 /**

@@ -23,6 +23,7 @@ export abstract class TcpServerOpts extends ServerOpts<TcpServRequest, TcpServRe
      */
     abstract delimiter?: string;
     abstract maxConnections?: number;
+    abstract proxy?: boolean;
     /**
      * socket timeout.
      */

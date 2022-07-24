@@ -1,11 +1,11 @@
 /* eslint-disable no-useless-escape */
 import { EMPTY_OBJ, Injectable, Injector, InvocationContext, ProviderType } from '@tsdi/ioc';
 import { Module } from '@tsdi/core';
+import { LISTEN_OPTS } from '@tsdi/platform-server';
 import { DOCUMENT, HttpBackend, HttpEvent, HttpHandler, HttpInterceptingHandler, HttpRequest, PLATFORM_ID, PLATFORM_SERVER_ID, XhrFactory } from '@tsdi/common';
 import { XMLHttpRequest2 } from './xhr.request';
 import { Observable } from 'rxjs';
 import * as domino from 'domino';
-import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
 
 @Injectable()
 export class ServerXhr implements XhrFactory {
@@ -29,7 +29,7 @@ export class HttpClientBackend implements HttpBackend {
     return new Observable(observer => process.nextTick(() => {
       let request: HttpRequest;
       if (!isAbsoluteUrl.test(req.url)) {
-        const { host, port, path, withCredentials } = context?.get(HTTP_LISTENOPTIONS) ?? this.injector.get(HTTP_LISTENOPTIONS, EMPTY_OBJ);
+        const { host, port, path, withCredentials } = context?.get(LISTEN_OPTS) ?? this.injector.get(LISTEN_OPTS, EMPTY_OBJ);
         const protocol = (req.withCredentials || withCredentials) ? 'https' : 'http';
         const urlPrefix = `${protocol}://${host ?? 'localhost'}:${port ?? 3000}${path ?? ''}`;
         const baseUrl = new URL(urlPrefix);

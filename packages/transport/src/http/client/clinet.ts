@@ -1,5 +1,5 @@
 import { EMPTY, Inject, Injectable, InvocationContext, lang, Nullable, Providers, Token } from '@tsdi/ioc';
-import { RequestMethod, TransportClient, EndpointBackend, OnDispose, InterceptorLike, RequstOption, ResponseAs, RequestContext, mths, TransportStatus, Redirector, ReqHeaders, IncommingHeaders, ReqHeadersLike } from '@tsdi/core';
+import { RequestMethod, TransportClient, EndpointBackend, OnDispose, InterceptorLike, RequstOption, ResponseAs, RequestContext, mths, ReqHeaders, ReqHeadersLike, Protocol } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpParams, HttpParamsOptions, HttpResponse } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import * as http from 'http';
@@ -12,8 +12,7 @@ import { HttpBackend } from './backend';
 import { HttpPathInterceptor } from './path';
 import { HttpBodyInterceptor } from './body';
 import { HttpClientOpts, HTTP_INTERCEPTORS, CLIENT_HTTP2SESSION, HTTP_EXECPTIONFILTERS } from './option';
-import { HttpStatus } from '../status';
-import { AssetRedirector } from '../../client/redirector';
+import { HttpProtocol } from '../protocol';
 
 
 
@@ -43,8 +42,7 @@ export type RequestOptions = HttpRequestOpts & HttpNodeOpts;
 @Injectable()
 @Providers([
     { provide: MimeAdapter, useClass: TrasportMimeAdapter, asDefault: true },
-    { provide: TransportStatus, useClass: HttpStatus, asDefault: true },
-    { provide: Redirector, useClass: AssetRedirector, asDefault: true }
+    { provide: Protocol, useClass: HttpProtocol, asDefault: true}
 ])
 export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions> implements OnDispose {
 

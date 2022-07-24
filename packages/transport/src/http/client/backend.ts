@@ -1,5 +1,5 @@
 import { EMPTY_OBJ, Injectable, isUndefined, lang, type_undef } from '@tsdi/ioc';
-import { EndpointBackend, EndpointContext, mths, global, isArrayBuffer, isBlob, isFormData, Redirector, ResHeaders } from '@tsdi/core';
+import { EndpointBackend, EndpointContext, mths, global, isArrayBuffer, isBlob, isFormData, ResHeaders } from '@tsdi/core';
 import {
     HttpRequest, HttpEvent, HttpResponse, HttpErrorResponse,
     HttpHeaderResponse, HttpStatusCode, statusMessage, HttpJsonParseError
@@ -104,9 +104,9 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                     status = body ? HttpStatusCode.Ok : 0
                 }
 
-                ok = ctx.adapter.isOk(status);
+                ok = ctx.protocol.status.isOk(status);
 
-                if (ctx.adapter.isEmpty(status)) {
+                if (ctx.protocol.status.isEmpty(status)) {
                     observer.next(new HttpHeaderResponse({
                         url,
                         headers,
@@ -120,8 +120,8 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 const rqstatus = ctx.getValueify(RequestStauts, () => new RequestStauts());
 
                 // HTTP fetch step 5
-                if (status && ctx.adapter.isRedirect(status)) {
-                    ctx.get(Redirector).redirect<HttpEvent<any>>(ctx, req, status, headers)
+                if (status && ctx.protocol.status.isRedirect(status)) {
+                    ctx.protocol.redirector.redirect<HttpEvent<any>>(ctx, req, status, headers)
                         .subscribe(observer)
                     return;
                 }
@@ -391,10 +391,10 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 const headers = new ResHeaders(hdrs as Record<string, any>);
                 status = hdrs[HTTP2_HEADER_STATUS] ?? 0;
 
-                ok = ctx.adapter.isOk(status);
+                ok = ctx.protocol.status.isOk(status);
                 statusText = statusMessage[status as HttpStatusCode] ?? 'OK';
 
-                if (ctx.adapter.isEmpty(status)) {
+                if (ctx.protocol.status.isEmpty(status)) {
                     completed = true;
                     observer.next(new HttpHeaderResponse({
                         url,
@@ -427,10 +427,10 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                         status = bytes ? HttpStatusCode.Ok : 0
                     }
 
-                    if (status && ctx.adapter.isRedirect(status)) {
+                    if (status && ctx.protocol.status.isRedirect(status)) {
                         completed = true;
                         // HTTP fetch step 5.2
-                        ctx.get(Redirector).redirect<HttpEvent<any>>(ctx, req, status, headers)
+                        ctx.protocol.redirector.redirect<HttpEvent<any>>(ctx, req, status, headers)
                             .pipe(
                                 finalize(() => completed = true)
                             ).subscribe(observer);

@@ -14,64 +14,6 @@ const abstUrlExp = /^tcp:/;
  */
 export class TcpContext extends AssetServerContext<TcpServRequest, TcpServResponse> implements HeaderContext, AssetContext {
 
-
-    readonly protocol = 'tcp';
-
-    private _url?: string;
-    get url(): string {
-        if (!this._url) {
-            this._url = this.pathname + this.URL.search;
-        }
-        return this._url;
-    }
-    set url(value: string) {
-        this._url = value;
-    }
-
-    get originalUrl(): string {
-        return this.request.url;
-    }
-
-    private _URL?: URL;
-    /**
-     * Get WHATWG parsed URL.
-     * Lazily memoized.
-     *
-     * @return {URL|Object}
-     * @api public
-     */
-    get URL(): URL {
-        /* istanbul ignore else */
-        if (!this._URL) {
-            const originalUrl = this.originalUrl || ''; // avoid undefined in template string
-            try {
-                this._URL = abstUrlExp.test(originalUrl) ? new URL(originalUrl) : new URL(`${this.protocol}://${originalUrl}`);
-            } catch (err) {
-                this._URL = Object.create(null);
-            }
-        }
-        return this._URL!;
-    }
-
-    get pathname(): string {
-        return this.URL.pathname;
-    }
-
-    private _query?: Record<string, any>;
-    get query(): Record<string, any> {
-        if (!this._query) {
-            const qs = this._query = { ...this.request.params } as Record<string, any>;
-            this.URL.searchParams.forEach((v, k) => {
-                qs[k] = v;
-            });
-        }
-        return this._query;
-    }
-
-    get method(): string {
-        return this.request.method;
-    }
-
     isUpdate(): boolean {
         return this.request.method === 'PUT' || this.getHeader(hdr.OPERATION) === 'update';
     }
@@ -88,13 +30,13 @@ export class TcpContext extends AssetServerContext<TcpServRequest, TcpServRespon
         if (this.sent) return;
         this._explicitStatus = true;
         this.response.statusCode = status;
-        if (this.body && this.adapter.isEmpty(status)) {
+        if (this.body && this.protocol.status.isEmpty(status)) {
             this.body = null;
         }
     }
 
     get statusMessage(): string {
-        return this.response.statusMessage ?? this.adapter.message(this.status)
+        return this.response.statusMessage ?? this.protocol.status.message(this.status)
     }
 
     set statusMessage(msg: string) {

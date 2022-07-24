@@ -20,9 +20,11 @@ const defaults = {
     execptionsToken: CLIENT_EXECPTIONFILTERS,
 } as ProtocolClientOpts;
 
-
+/**
+ * Transport Protocol Client.
+ */
 @Injectable()
-export class TransportProtocolClient extends TransportClient<TransportRequest, TransportEvent> {
+export class ProtocolClient extends TransportClient<TransportRequest, TransportEvent> {
 
     private option!: ProtocolClientOpts;
     constructor(
@@ -52,8 +54,9 @@ export class TransportProtocolClient extends TransportClient<TransportRequest, T
     protected buildRequest(context: RequestContext, url: string | TransportRequest<any>, options?: RequstOption | undefined): TransportRequest<any> {
         return isString(url) ? new TransportRequest(this.context.resolve(UuidGenerator).generate(), { ...options, url }) : url
     }
+    
     protected connect(): Promise<void> {
-        return this.protocol.connect();
+        return this.protocol.connect(this.option.connectOpts);
     }
 
     protected getBackend(): EndpointBackend<TransportRequest<any>, TransportEvent<any>> {

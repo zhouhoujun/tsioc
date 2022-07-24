@@ -1,10 +1,11 @@
-import { AssetContext, OutgoingHeader, ServerContext, IncommingHeader, OutgoingHeaders, IncomingPacket, OutgoingPacket } from '@tsdi/core';
-import { Abstract, isArray, isNil, isNumber, isString, lang } from '@tsdi/ioc';
+import { AssetContext, OutgoingHeader, ServerContext, IncommingHeader, OutgoingHeaders, IncomingPacket, OutgoingPacket, TransportServer } from '@tsdi/core';
+import { Abstract, Injector, InvokeArguments, isArray, isNil, isNumber, isString, lang } from '@tsdi/ioc';
 import { extname } from 'path';
 import { ctype, hdr } from './consts';
 import { CONTENT_DISPOSITION } from './content';
 import { MimeAdapter } from './mime';
 import { Negotiator } from './negotiator';
+import { TransportProtocol } from './protocol';
 import { encodeUrl, escapeHtml, isBuffer, isStream, xmlRegExp } from './utils';
 
 /**
@@ -12,6 +13,168 @@ import { encodeUrl, escapeHtml, isBuffer, isStream, xmlRegExp } from './utils';
  */
 @Abstract()
 export abstract class AssetServerContext<TRequest extends IncomingPacket = IncomingPacket, TResponse extends OutgoingPacket = OutgoingPacket> extends ServerContext<TRequest, TResponse> implements AssetContext {
+    public _explicitNullBody?: boolean;
+    private _URL?: URL;
+    readonly originalUrl: string;
+    private _url?: string;
+
+    readonly protocol!: TransportProtocol
+
+    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: TransportServer, options?: InvokeArguments) {
+        super(injector, request, response, target, options);
+
+        this.response.statusCode = this.protocol.status.notFound;
+        this.originalUrl = request.url?.toString() ?? '';
+        this._url = request.url ?? '';
+
+        if (this.protocol.isAbsoluteUrl(this._url)) {
+            this._url = this.URL.pathname;
+        } else {
+            const sidx = this._url.indexOf('?');
+            if (sidx > 0) {
+                this._url = this._url.slice(0, sidx);
+            }
+        }
+    }
+
+    /**
+     * Get url path.
+     *
+     * @return {String}
+     * @api public
+     */
+    get url(): string {
+        if (!this._url) {
+            this._url = this.pathname + this.URL.search;
+        }
+        return this._url
+    }
+
+    /**
+     * Set url path
+     */
+    set url(value: string) {
+        this._url = value
+    }
+
+    /**
+     * Get WHATWG parsed URL.
+     * Lazily memoized.
+     *
+     * @return {URL|Object}
+     * @api public
+     */
+    get URL(): URL {
+        /* istanbul ignore else */
+        if (!this._URL) {
+            this._URL = this.createURL();
+        }
+        return this._URL!;
+    }
+
+    protected createURL() {
+        try {
+            return this.protocol.parse(this.request, this.target.proxy);
+        } catch (err) {
+            return Object.create(null);
+        }
+    }
+
+    /**
+     * is secure protocol or not.
+     *
+     * @return {Boolean}
+     * @api public
+     */
+    get secure(): boolean {
+        return this.protocol.secure
+    }
+
+    get pathname(): string {
+        return this.URL.pathname
+    }
+
+    get params(): URLSearchParams {
+        return this.URL.searchParams
+    }
+
+    /**
+     * Get full request URL.
+     *
+     * @return {String}
+     * @api public
+     */
+
+    get href() {
+        return this.URL.href;
+    }
+
+    private _query?: Record<string, any>;
+    get query(): Record<string, any> {
+        if (!this._query) {
+            const qs = this._query = { ...this.request.params } as Record<string, any>;
+            this.URL.searchParams?.forEach((v, k) => {
+                qs[k] = v;
+            });
+        }
+        return this._query;
+    }
+
+    /**
+     * Get the search string. Same as the query string
+     * except it includes the leading ?.
+     *
+     * @return {String}
+     * @api public
+     */
+    get search() {
+        return this.URL.search
+    }
+
+    /**
+     * Set the search string. Same as
+     * request.querystring= but included for ubiquity.
+     *
+     * @param {String} str
+     * @api public
+     */
+    set search(str: string) {
+        this.URL.search = str;
+        this._query = null!
+    }
+
+    /**
+     * Get query string.
+     *
+     * @return {String}
+     * @api public
+     */
+
+    get querystring() {
+        return this.URL.search?.slice(1)
+    }
+
+    /**
+     * Set query string.
+     *
+     * @param {String} str
+     * @api public
+     */
+
+    set querystring(str) {
+        this.search = `?${str}`
+    }
+
+    /**
+     * Get request method.
+     *
+     * @return {String}
+     * @api public
+     */
+
+    get method(): string {
+        return this.request.method ?? ''
+    }
 
     /**
      * Check if the incoming request contains the "Content-Type"
@@ -289,14 +452,14 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
      * Whether the status code is ok
      */
     get ok(): boolean {
-        return this.adapter.isOk(this.status);
+        return this.protocol.status.isOk(this.status);
     }
 
     /**
      * Whether the status code is ok
      */
     set ok(ok: boolean) {
-        this.status = ok ? this.adapter.ok : this.adapter.notFound
+        this.status = ok ? this.protocol.status.ok : this.protocol.status.notFound
     }
 
 
@@ -328,7 +491,7 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
 
         // no content
         if (null == val) {
-            if (!this.adapter.isEmpty(this.status)) this.status = this.adapter.noContent;
+            if (!this.protocol.status.isEmpty(this.status)) this.status = this.protocol.status.noContent;
             if (val === null) this.onNullBody();
             this.removeHeader(hdr.CONTENT_TYPE);
             this.removeHeader(hdr.CONTENT_LENGTH);
@@ -337,7 +500,7 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
         }
 
         // set the status
-        if (!this._explicitStatus) this.status = this.adapter.ok;
+        if (!this._explicitStatus) this.status = this.protocol.status.ok;
 
         // set the content-type only if not yet set
         const setType = !this.hasHeader(hdr.CONTENT_TYPE);
@@ -379,9 +542,11 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
      */
     protected onBodyChanged(newVal: any, oldVal: any) { }
     /**
-     * on body set null. default do nothing.
+     * on body set null.
      */
-    protected onNullBody() { }
+    protected onNullBody() {
+        this._explicitNullBody = true;
+    }
 
     /**
      * Set Content-Length field to `n`.
@@ -473,7 +638,7 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
         if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
         this.setHeader(hdr.LOCATION, encodeUrl(url));
         // status
-        if (!this.adapter.isRedirect(this.status)) this.status = 302;
+        if (!this.protocol.status.isRedirect(this.status)) this.status = this.protocol.status.found;
 
         // html
         if (this.accepts('html')) {

@@ -1,33 +1,19 @@
 import { Abstract } from '@tsdi/ioc';
-import { Packet, Protocol, Redirector, TransportStatus } from '@tsdi/core';
+import { Packet, Protocol } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { Readable, Writable } from 'stream';
-import { TransportRequest } from './client';
 
 /**
- * transport protocol.
+ * transport protocol .
  */
 @Abstract()
-export abstract class TransportProtocol {
-    
-    abstract connect(): Promise<void>;
-    
-    abstract get redirector(): Redirector;
+export abstract class TransportProtocol extends Protocol {
+
     /**
-     * protocol name.
+     * connect
      */
-    abstract get protocol(): Protocol;
-    /**
-     * status of transport.
-     */
-    abstract get status(): TransportStatus;
-    /**
-     * url parse.
-     * @param url 
-     */
-    abstract parseURL(url: string): URL;
-    abstract normlizeUrl(req: TransportRequest<any>): string;
-    abstract isAbsoluteUrl(url: string): boolean;
+    abstract connect(options: Record<string, any>): Promise<void>;
+
     /**
      * read stream
      * @param stream 
@@ -42,3 +28,5 @@ export abstract class TransportProtocol {
      */
     abstract write(stream: Writable, data: any, encoding?: BufferEncoding): Observable<Packet>;
 }
+
+

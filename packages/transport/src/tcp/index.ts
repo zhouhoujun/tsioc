@@ -1,6 +1,6 @@
 
 export * from './client/options';
-export * from './client/status';
+export * from './status';
 export * from './client/clinet';
 
 

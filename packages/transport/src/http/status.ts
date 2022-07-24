@@ -5,16 +5,7 @@ import { Injectable } from '@tsdi/ioc';
 
 @Injectable()
 export class HttpStatus extends TransportStatus {
-
-    redirectDefaultMethod(): string {
-        return mths.GET;
-    }
-
-    redirectBodify(status: number, method?: string | undefined): boolean {
-        if (status === 303) return false;
-        return method ? (status === 301 || status === 302) && method !== mths.POST : true;
-    }
-
+    
     get ok(): number {
         return HttpStatusCode.Ok;
     }
@@ -23,6 +14,9 @@ export class HttpStatus extends TransportStatus {
     }
     get notFound(): number {
         return HttpStatusCode.NotFound;
+    }
+    get found(): number {
+        return HttpStatusCode.Found
     }
     get unauthorized(): number {
         return HttpStatusCode.Unauthorized;
@@ -39,6 +33,15 @@ export class HttpStatus extends TransportStatus {
 
     get unsupportedMediaType(): number {
         return HttpStatusCode.UnsupportedMediaType;
+    }
+
+    redirectDefaultMethod(): string {
+        return mths.GET;
+    }
+
+    redirectBodify(status: number, method?: string | undefined): boolean {
+        if (status === 303) return false;
+        return method ? (status === 301 || status === 302) && method !== mths.POST : true;
     }
 
     isVaild(statusCode: number): boolean {

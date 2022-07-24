@@ -22,19 +22,19 @@ export class DefaultStatusFormater extends ResponseStatusFormater {
     private formatStatus(ctx: TransportContext): [string, string] {
         const { status, statusMessage } = ctx;
 
-        if (ctx.adapter.isOk(status)) {
+        if (ctx.protocol.status.isOk(status)) {
             return [chalk.green(status), statusMessage ? chalk.green(statusMessage) : '']
         }
 
-        if (ctx.adapter.isRedirect(status)) {
+        if (ctx.protocol.status.isRedirect(status)) {
             return [chalk.yellow(status), statusMessage ? chalk.yellow(statusMessage) : '']
         }
 
-        if (ctx.adapter.isRequestFailed(status)) {
+        if (ctx.protocol.status.isRequestFailed(status)) {
             return [chalk.magentaBright(status), statusMessage ? chalk.magentaBright(statusMessage) : '']
         }
 
-        if (ctx.adapter.isServerError(status)) {
+        if (ctx.protocol.status.isServerError(status)) {
             return [chalk.red(status), statusMessage ? chalk.red(statusMessage) : '']
         }
 

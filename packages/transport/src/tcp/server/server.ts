@@ -1,4 +1,4 @@
-import { BadRequestError, BytesPipe, EADDRINUSE, ECONNREFUSED, ExecptionRespondTypeAdapter, Router, TransportServer, TransportStatus } from '@tsdi/core';
+import { BadRequestError, BytesPipe, EADDRINUSE, ECONNREFUSED, ExecptionRespondTypeAdapter, Protocol, Router, TransportServer, TransportStatus } from '@tsdi/core';
 import { Inject, Injectable, InvocationContext, isBoolean, lang, Nullable, Providers } from '@tsdi/ioc';
 import { Server } from 'net';
 import { Subscription } from 'rxjs';
@@ -17,11 +17,13 @@ import { TcpServRequest } from './request';
 import { TcpExecptionRespondTypeAdapter, TcpRespondAdapter } from './respond';
 import { TcpServResponse } from './response';
 import { db } from '../../impl/mimedb';
-import { HttpStatus } from '../../http/status';
 import { DefaultStatusFormater } from '../../interceptors/formater';
 import { TcpArgumentErrorFilter, TcpFinalizeFilter } from './finalize-filter';
 import { TcpServerOpts, TCP_SERV_INTERCEPTORS } from './options';
 import { PacketProtocol, PacketProtocolOpts } from '../packet';
+import { TcpStatus } from '../status';
+import { TcpProtocol } from '../protocol';
+import { LISTEN_OPTS } from '@tsdi/platform-server';
 
 
 const defOpts = {
@@ -69,9 +71,13 @@ const defOpts = {
     { provide: ContentSendAdapter, useClass: TransportSendAdapter, asDefault: true },
     { provide: MimeAdapter, useClass: TrasportMimeAdapter, asDefault: true },
     { provide: Negotiator, useClass: TransportNegotiator, asDefault: true },
-    { provide: TransportStatus, useClass: HttpStatus, asDefault: true }
+    { provide: Protocol, useClass: TcpProtocol, asDefault: true }
 ])
 export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, TcpContext> {
+
+    get proxy(): boolean {
+        return this.options.proxy === true;
+    }
 
     private server?: Server;
     private options!: TcpServerOpts;
@@ -101,6 +107,8 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
             const mimedb = this.context.injector.get(MimeDb);
             mimedb.from(opts.mimeDb)
         }
+
+        this.context.setValue(LISTEN_OPTS, this.options.listenOpts);
         return opts;
     }
 

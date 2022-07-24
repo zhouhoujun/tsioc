@@ -9,6 +9,7 @@ import { ServerResponse } from './res';
 
 @Abstract()
 export abstract class ProtocolServerOpts extends ServerOpts<ServerRequest, ServerResponse> {
+    abstract proxy?: boolean;
     /**
      * packet size limit.
      */
@@ -29,6 +30,7 @@ export abstract class ProtocolServerOpts extends ServerOpts<ServerRequest, Serve
     abstract serverOpts?: NetServerOpts | undefined;
     abstract listenOpts: ListenOptions;
 }
+
 
 /**
  * Protocol server interceptors.

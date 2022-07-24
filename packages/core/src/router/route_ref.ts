@@ -10,7 +10,7 @@ import { RouteRef, RouteFactory, RouteFactoryResolver, joinprefix } from './rout
 import { ProtocolRouteMappingMetadata, RouteMappingMetadata } from './router';
 import { TransportContext } from '../transport/context';
 import { promisify } from './promisify';
-import { Protocol } from '../transport/packet';
+import { ProtocolType } from '../transport/packet';
 import { ForbiddenError } from '../transport/error';
 
 
@@ -39,7 +39,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         this._endpoints = new Map()
     }
 
-    get protocol(): Protocol | undefined {
+    get protocol(): ProtocolType | undefined {
         return this.metadata.protocol;
     }
 
@@ -69,7 +69,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     private _guards?: CanActivate[];
     get guards(): CanActivate[] {
         if (!this._guards) {
-            this._guards = this.metadata.guards?.map(g => isFunction(g)? this.factory.resolve(g) : g) ?? EMPTY
+            this._guards = this.metadata.guards?.map(g => isFunction(g) ? this.factory.resolve(g) : g) ?? EMPTY
         }
         return this._guards
     }
@@ -84,16 +84,16 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     }
 
     async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
-        if (ctx.sent || (this.protocol && this.protocol !== ctx.protocol)) return await next();
+        if (ctx.sent || (this.protocol && !ctx.protocol.match(this.protocol))) return await next();
 
         const method = this.getRouteMetaData(ctx) as DecorDefine<ProtocolRouteMappingMetadata>;
         if (!method || !method.propertyKey) {
-            ctx.status = ctx.adapter.notFound;
+            ctx.status = ctx.protocol.status.notFound;
             return await next();
         }
 
         const metadate = method.metadata;
-        if (metadate.protocol && this.protocol !== metadate.protocol) return await next();
+        if (metadate.protocol && !ctx.protocol.match(metadate.protocol)) return await next();
 
         if (metadate.guards?.length) {
             if (!(await lang.some(

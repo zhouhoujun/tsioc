@@ -1,6 +1,6 @@
 import { Inject, Injectable, InvocationContext, isBoolean, isDefined, isFunction, lang, Providers, EMPTY_OBJ } from '@tsdi/ioc';
-import { TransportServer, RunnableFactoryResolver, ModuleRef, Router, ExecptionRespondTypeAdapter, TransportStatus } from '@tsdi/core';
-import { HTTP_LISTENOPTIONS } from '@tsdi/platform-server';
+import { TransportServer, RunnableFactoryResolver, ModuleRef, Router, ExecptionRespondTypeAdapter, TransportStatus, Protocol } from '@tsdi/core';
+import { LISTEN_OPTS } from '@tsdi/platform-server';
 import { Subscription } from 'rxjs';
 import { ListenOptions } from 'net';
 import * as http from 'http';
@@ -26,6 +26,7 @@ import { HttpExecptionRespondTypeAdapter, HttpRespondAdapter } from './respond';
 import { ArgumentErrorFilter, HttpFinalizeFilter } from './finalize-filter';
 import { Http2ServerOpts, HttpServerOpts, HTTP_EXECPTION_FILTERS, HTTP_SERVEROPTIONS, HTTP_SERV_INTERCEPTORS } from './options';
 import { HttpStatus } from '../status';
+import { HttpProtocol } from '../protocol';
 
 
 
@@ -77,7 +78,8 @@ const httpOpts = {
     { provide: ContentSendAdapter, useClass: TransportSendAdapter, asDefault: true },
     { provide: MimeAdapter, useClass: TrasportMimeAdapter, asDefault: true },
     { provide: Negotiator, useClass: TransportNegotiator, asDefault: true },
-    { provide: TransportStatus, useClass: HttpStatus, asDefault: true }
+    { provide: TransportStatus, useClass: HttpStatus, asDefault: true },
+    { provide: Protocol, useClass: HttpProtocol, asDefault: true}
 ])
 export class HttpServer extends TransportServer<HttpServRequest, HttpServResponse, HttpContext>  {
 
@@ -96,7 +98,7 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
     }
 
     get proxy() {
-        return this.options.proxy
+        return this.options.proxy === true
     }
 
     get proxyIpHeader() {
@@ -181,7 +183,7 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         }
 
         const listenOptions = this.options.listenOpts;
-        injector.get(ModuleRef).setValue(HTTP_LISTENOPTIONS, { ...listenOptions, withCredentials: isDefined(cert), majorVersion: options.majorVersion });
+        injector.get(ModuleRef).setValue(LISTEN_OPTS, { ...listenOptions, withCredentials: isDefined(cert), majorVersion: options.majorVersion });
         this.logger.info(lang.getClassName(this), 'listen:', listenOptions, '. access with url:', `http${cert ? 's' : ''}://${listenOptions?.host}:${listenOptions?.port}${listenOptions?.path ?? ''}`, '!')
         this._server.listen(listenOptions)
     }

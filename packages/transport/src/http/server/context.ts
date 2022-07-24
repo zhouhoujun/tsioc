@@ -1,5 +1,5 @@
-import { AssetContext, HeaderContext, MiddlewareLike, mths, Protocol, Throwable, TransportContext, TransportServer } from '@tsdi/core';
-import { Injector, InvokeArguments, isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
+import { AssetContext, HeaderContext, MiddlewareLike, mths, Throwable, TransportContext } from '@tsdi/core';
+import { isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import * as assert from 'assert';
 import * as http from 'http';
@@ -23,22 +23,6 @@ export type HttpServResponse = http.ServerResponse | http2.Http2ServerResponse;
  */
 export class HttpContext extends AssetServerContext<HttpServRequest, HttpServResponse> implements HeaderContext, AssetContext, Throwable {
 
-    public _explicitNullBody?: boolean;
-    private _URL?: URL;
-    private _ip?: string;
-    readonly originalUrl: string;
-    private _url: string;
-
-    constructor(injector: Injector, request: HttpServRequest, response: HttpServResponse, target: TransportServer, options?: InvokeArguments) {
-        super(injector, request, response, target, options);
-        this.response.statusCode = 404;
-        this.originalUrl = request.url?.toString() ?? '';
-        this._url = request.url ?? '';
-        const sidx = this._url.indexOf('?');
-        if (sidx > 0) {
-            this._url = this._url.slice(0, sidx);
-        }
-    }
 
     protected isSelf(token: Token) {
         return token === HttpContext || token === AssetServerContext || token === TransportContext;
@@ -55,52 +39,24 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
         return this.request.socket
     }
 
-    /**
-     * Return the protocol string "http" or "https"
-     * when requested with TLS. When the proxy setting
-     * is enabled the "X-Forwarded-Proto" header
-     * field will be trusted. If you're running behind
-     * a reverse proxy that supplies https for you this
-     * may be enabled.
-     *
-     * @return {String}
-     * @api public
-     */
-    get protocol(): Protocol {
-        if ((this.socket as TLSSocket).encrypted) return 'https';
-        if (!(this.target as any)?.proxy) return 'http';
-        const proto = this.getHeader(hdr.X_FORWARDED_PROTO) as string;
-        return (proto ? proto.split(urlsplit, 1)[0] : 'http') as Protocol
-    }
+    // /**
+    //  * Return the protocol string "http" or "https"
+    //  * when requested with TLS. When the proxy setting
+    //  * is enabled the "X-Forwarded-Proto" header
+    //  * field will be trusted. If you're running behind
+    //  * a reverse proxy that supplies https for you this
+    //  * may be enabled.
+    //  *
+    //  * @return {String}
+    //  * @api public
+    //  */
+    // get protocol(): ProtocolType {
+    //     if ((this.socket as TLSSocket).encrypted) return 'https';
+    //     if (!(this.target as any)?.proxy) return 'http';
+    //     const proto = this.getHeader(hdr.X_FORWARDED_PROTO) as string;
+    //     return (proto ? proto.split(urlsplit, 1)[0] : 'http') as ProtocolType
+    // }
 
-    /**
-     * Short-hand for:
-     *
-     *    this.protocol == 'https'
-     *
-     * @return {Boolean}
-     * @api public
-     */
-    get secure(): boolean {
-        return this.protocol === 'https'
-    }
-
-    /**
-     * Get url path.
-     *
-     * @return {String}
-     * @api public
-     */
-    get url(): string {
-        return this._url
-    }
-
-    /**
-     * Set url path
-     */
-    set url(value: string) {
-        this._url = value
-    }
 
     /**
      * When `httpServer.proxy` is `true`, parse
@@ -126,6 +82,7 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
         return ips
     }
 
+    private _ip?: string;
     /**
      * Return request's remote address
      * When `app.proxy` is `true`, parse
@@ -146,168 +103,77 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
         this._ip = ip
     }
 
-    /**
-     * Parse the "Host" header field host
-     * and support X-Forwarded-Host when a
-     * proxy is enabled.
-     *
-     * @return {String} hostname:port
-     * @api public
-     */
-    get host() {
-        const proxy = (this.target as HttpServer)?.proxy;
-        let host = proxy && this.getHeader(hdr.X_FORWARDED_HOST);
-        if (!host) {
-            if (this.request.httpVersionMajor >= 2) host = this.getHeader(AUTHORITY);
-            if (!host) host = this.getHeader(hdr.HOST);
-        }
-        if (!host || isNumber(host)) return '';
-        return isString(host) ? host.split(urlsplit, 1)[0] : host[0]
-    }
+    // /**
+    //  * Parse the "Host" header field host
+    //  * and support X-Forwarded-Host when a
+    //  * proxy is enabled.
+    //  *
+    //  * @return {String} hostname:port
+    //  * @api public
+    //  */
+    // get host() {
+    //     const proxy = (this.target as HttpServer)?.proxy;
+    //     let host = proxy && this.getHeader(hdr.X_FORWARDED_HOST);
+    //     if (!host) {
+    //         if (this.request.httpVersionMajor >= 2) host = this.getHeader(AUTHORITY);
+    //         if (!host) host = this.getHeader(hdr.HOST);
+    //     }
+    //     if (!host || isNumber(host)) return '';
+    //     return isString(host) ? host.split(urlsplit, 1)[0] : host[0]
+    // }
 
-    /**
-     * Parse the "Host" header field hostname
-     * and support X-Forwarded-Host when a
-     * proxy is enabled.
-     *
-     * @return {String} hostname
-     * @api public
-     */
-    get hostname(): string {
-        const host = this.host;
-        if (!host) return '';
-        if ('[' === host[0]) return this.URL.hostname || ''; // IPv6
-        return host.split(':', 1)[0]
-    }
+    // /**
+    //  * Parse the "Host" header field hostname
+    //  * and support X-Forwarded-Host when a
+    //  * proxy is enabled.
+    //  *
+    //  * @return {String} hostname
+    //  * @api public
+    //  */
+    // get hostname(): string {
+    //     const host = this.host;
+    //     if (!host) return '';
+    //     if ('[' === host[0]) return this.URL.hostname || ''; // IPv6
+    //     return host.split(':', 1)[0]
+    // }
 
-    get pathname(): string {
-        return this.URL.pathname
-    }
+    // protected override createURL() {
+    //     const originalUrl = this.originalUrl || ''; // avoid undefined in template string
+    //     try {
+    //         return new URL(`${this.origin}${originalUrl}`);
+    //     } catch (err) {
+    //         return Object.create(null);
+    //     }
+    // }
 
-    /**
-     * Get WHATWG parsed URL.
-     * Lazily memoized.
-     *
-     * @return {URL|Object}
-     * @api public
-     */
-    get URL(): URL {
-        /* istanbul ignore else */
-        if (!this._URL) {
-            const originalUrl = this.originalUrl || ''; // avoid undefined in template string
-            try {
-                this._URL = new URL(`${this.origin}${originalUrl}`);
-            } catch (err) {
-                this._URL = Object.create(null);
-            }
-        }
-        return this._URL!;
-    }
+    // /**
+    //  * Get origin of URL.
+    //  *
+    //  * @return {String}
+    //  * @api public
+    //  */
 
-    /**
-     * Get origin of URL.
-     *
-     * @return {String}
-     * @api public
-     */
+    // get origin() {
+    //     return `${this.protocol}://${this.host}`;
+    // }
 
-    get origin() {
-        return `${this.protocol}://${this.host}`;
-    }
+    // /**
+    //  * Get full request URL.
+    //  *
+    //  * @return {String}
+    //  * @api public
+    //  */
 
-    /**
-     * Get full request URL.
-     *
-     * @return {String}
-     * @api public
-     */
+    // get href() {
+    //     if (httptl.test(this.originalUrl)) return this.originalUrl;
+    //     return this.origin + this.originalUrl
+    // }
 
-    get href() {
-        if (httptl.test(this.originalUrl)) return this.originalUrl;
-        return this.origin + this.originalUrl
-    }
-
-    /**
-     * Get request method.
-     *
-     * @return {String}
-     * @api public
-     */
-
-    get method(): string {
-        return this.request.method ?? ''
-    }
 
     isUpdate(): boolean {
         return this.method === mths.PUT
     }
 
-    get params(): URLSearchParams {
-        return this.URL.searchParams
-    }
-
-    private _query?: Record<string, any>;
-    get query(): Record<string, any> {
-        if (!this._query) {
-            const q: Record<string, any> = {};
-            this.URL.searchParams.forEach((v, k) => {
-                q[k] = v
-            });
-            this._query = q
-        }
-        return this._query
-    }
-
-    /**
-     * Get the search string. Same as the query string
-     * except it includes the leading ?.
-     *
-     * @return {String}
-     * @api public
-     */
-
-    get search() {
-        return this.URL.search
-    }
-
-    /**
-     * Set the search string. Same as
-     * request.querystring= but included for ubiquity.
-     *
-     * @param {String} str
-     * @api public
-     */
-
-    set search(str: string) {
-        this.URL.search = str;
-        this._query = null!
-    }
-
-    /**
-     * Get query string.
-     *
-     * @return {String}
-     * @api public
-     */
-
-    get querystring() {
-        return this.URL.search?.slice(1)
-    }
-
-    /**
-     * Set query string.
-     *
-     * @param {String} str
-     * @api public
-     */
-
-    set querystring(str) {
-        this.search = `?${str}`
-    }
-
-    get playload(): any {
-        return (this.request as any).body
-    }
 
     /**
      * Check if the request is idempotent.
@@ -409,12 +275,12 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
         assert(code >= 100 && code <= 999, `invalid status code: ${code}`);
         this._explicitStatus = true;
         this.response.statusCode = code;
-        if (this.request.httpVersionMajor < 2) this.response.statusMessage = this.adapter.message(code);
-        if (this.body && this.adapter.isEmpty(code)) this.body = null;
+        if (this.request.httpVersionMajor < 2) this.response.statusMessage = this.protocol.status.message(code);
+        if (this.body && this.protocol.status.isEmpty(code)) this.body = null;
     }
 
     get statusMessage() {
-        return this.response.statusMessage || this.adapter.message(this.status)
+        return this.response.statusMessage || this.protocol.status.message(this.status)
     }
 
     set statusMessage(msg: string) {

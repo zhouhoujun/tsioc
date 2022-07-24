@@ -1,3 +1,4 @@
+export * from './protocol';
 export * from './context';
 export * from './packet';
 export * from './headers';

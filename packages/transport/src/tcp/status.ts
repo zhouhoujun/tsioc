@@ -1,6 +1,6 @@
 import { mths } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
-import { HttpStatus } from '../../http';
+import { HttpStatus } from '../http';
 
 @Injectable()
 export class TcpStatus extends HttpStatus {

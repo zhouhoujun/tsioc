@@ -57,7 +57,7 @@ const defOpts = {
 
 
 /**
- * TCP server. server of `tcp` or `ipc`. 
+ * Transport Protocol Server
  */
 @Injectable()
 @Providers([
@@ -68,12 +68,26 @@ const defOpts = {
     { provide: MimeAdapter, useClass: TrasportMimeAdapter, asDefault: true },
     { provide: Negotiator, useClass: TransportNegotiator, asDefault: true }
 ])
-export class TcpServer extends TransportServer<ServerRequest, ServerResponse, PrototcolContext> {
+export class ProtocolServer extends TransportServer<ServerRequest, ServerResponse, PrototcolContext> {
 
+    
 
     private options!: ProtocolServerOpts;
     constructor(@Inject() readonly context: InvocationContext, @Nullable() options: ProtocolServerOpts) {
         super(context, options)
+    }
+
+
+    get proxy(): boolean {
+        return this.options.proxy === true;
+    }
+
+    start(): Promise<void> {
+        throw new Error('Method not implemented.');
+    } 
+    
+    close(): Promise<void> {
+        throw new Error('Method not implemented.');
     }
 
     protected override initOption(options: ProtocolServerOpts): ProtocolServerOpts {
@@ -100,17 +114,12 @@ export class TcpServer extends TransportServer<ServerRequest, ServerResponse, Pr
         return opts;
     }
 
-    start(): Promise<void> {
-        throw new Error('Method not implemented.');
-    }
     protected createContext(request: ServerRequest, response: ServerResponse): PrototcolContext {
         throw new Error('Method not implemented.');
     }
     protected bindEvent(ctx: PrototcolContext, cancel: Subscription): void {
         throw new Error('Method not implemented.');
     }
-    close(): Promise<void> {
-        throw new Error('Method not implemented.');
-    }
+   
 
 }

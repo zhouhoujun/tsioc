@@ -125,7 +125,7 @@ export class BodyparserMiddleware implements Middleware {
                 body
             }
         } catch (err) {
-            (err as any).status = ctx.adapter.badRequest;
+            (err as any).status = ctx.protocol.status.badRequest;
             (err as any).body = str;
             throw err
         }
@@ -184,7 +184,7 @@ export class BodyparserMiddleware implements Middleware {
                 body
             }
         } catch (err) {
-            (err as any).status = ctx.adapter.badRequest;
+            (err as any).status = ctx.protocol.status.badRequest;
             (err as any).body = str;
             throw err
         }

@@ -2,15 +2,16 @@
 import { tokenId } from '@tsdi/ioc';
 import { ListenOptions } from 'net';
 
+
 /**
- * http listen options.
+ * transport server listen options.
  */
-export interface HttpListenOptions extends ListenOptions {
+ export interface ListenOpts extends ListenOptions {
   majorVersion?: number;
   withCredentials?: boolean;
 }
 
 /**
- *  http server ListenOptions.
+ *  transport server listen options.
  */
-export const HTTP_LISTENOPTIONS = tokenId<HttpListenOptions>('HTTP_LISTENOPTIONS');
+export const LISTEN_OPTS = tokenId<ListenOpts>('LISTEN_OPTS');

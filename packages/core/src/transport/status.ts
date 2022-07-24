@@ -15,6 +15,10 @@ export abstract class TransportStatus {
      */
     abstract get notFound(): number;
     /**
+     * found status.
+     */
+    abstract get found(): number;
+    /**
      * Unauthorized status code.
      */
     abstract get unauthorized(): number;

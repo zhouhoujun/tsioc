@@ -88,6 +88,9 @@ export const UDP_SERV_INTERCEPTORS = tokenId<Interceptor<UdpServRequest, UdpServ
  */
 @Injectable()
 export class UdpServer extends TransportServer<UdpServRequest, UdpServResponse, UdpContext> {
+    get proxy(): boolean {
+        throw new Error('Method not implemented.');
+    }
 
     private server?: Socket;
     private cancel?: Subscription;

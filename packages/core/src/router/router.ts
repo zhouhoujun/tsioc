@@ -1,5 +1,5 @@
 import { Abstract, EMPTY, Inject, Injectable, InjectFlags, isClass, isFunction, isString, lang, Nullable, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
-import { Protocol, RequestMethod } from '../transport/packet';
+import { ProtocolType, RequestMethod } from '../transport/packet';
 import { CanActivate } from './guard';
 import { PipeTransform } from '../pipes/pipe';
 import { Route, RouteFactoryResolver, ROUTES, Routes } from './route';
@@ -71,7 +71,7 @@ export class MappingRoute implements Middleware {
     }
 
     async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
-        if (this.route.protocol && this.route.protocol !== ctx.protocol) return next();
+        if (this.route.protocol && !ctx.protocol.match(this.route.protocol)) return next();
         if (await this.canActive(ctx)) {
             if (!this._middleware) {
                 this._middleware = await this.parse(this.route, ctx);
@@ -197,7 +197,7 @@ export class MappingRouter extends Router implements OnDestroy {
     }
 
     protected getRoute(ctx: TransportContext): MiddlewareFn | undefined {
-        if (ctx.status && !ctx.adapter.isNotFound(ctx.status)) return;
+        if (ctx.status && !ctx.protocol.status.isNotFound(ctx.status)) return;
 
         let url: string;
         if (this.prefix) {
@@ -278,7 +278,7 @@ export interface ProtocolRouteMappingMetadata extends RouteMappingMetadata {
     /**
      * protocol.
      */
-    protocol?: Protocol;
+    protocol?: ProtocolType;
     /**
      * version of api.
      */
