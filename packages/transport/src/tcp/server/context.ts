@@ -19,7 +19,7 @@ export class TcpContext extends AssetServerContext<TcpServRequest, TcpServRespon
     }
 
     get writable(): boolean {
-       return this.request.socket.writable 
+        return this.response.socket.writable
     }
 
     get status(): number {

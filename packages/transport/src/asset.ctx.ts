@@ -617,6 +617,63 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
 
 
     /**
+     * Set the Last-Modified date using a string or a Date.
+     *
+     *     this.response.lastModified = new Date();
+     *
+     * @param {String|Date} type
+     * @api public
+     */
+
+    set lastModified(val: Date | null) {
+        if (!val) {
+            this.removeHeader(hdr.LAST_MODIFIED);
+            return
+        }
+        this.setHeader(hdr.LAST_MODIFIED, val.toUTCString())
+    }
+
+    /**
+     * Get the Last-Modified date in Date form, if it exists.
+     *
+     * @return {Date}
+     * @api public
+     */
+
+    get lastModified(): Date | null {
+        const date = this.response.getHeader(hdr.LAST_MODIFIED) as string;
+        return date ? new Date(date) : null
+    }
+
+    /**
+     * Set the etag of a response.
+     * This will normalize the quotes if necessary.
+     *
+     *     this.response.etag = 'md5hashsum';
+     *     this.response.etag = '"md5hashsum"';
+     *     this.response.etag = 'W/"123456789"';
+     *
+     * @param {String} etag
+     * @api public
+     */
+
+    set etag(val: string) {
+        if (!/^(W\/)?"/.test(val)) val = `"${val}"`;
+        this.setHeader(hdr.ETAG, val)
+    }
+
+    /**
+     * Get the etag of a response.
+     *
+     * @return {String}
+     * @api public
+     */
+    get etag(): string {
+        return this.response.getHeader(hdr.ETAG) as string
+    }
+
+
+    /**
      * Perform a 302 redirect to `url`.
      *
      * The string "back" is special-cased
@@ -723,6 +780,33 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
     removeHeader(field: string): void {
         if (this.sent) return;
         this.response.removeHeader(field)
+    }
+
+
+    /**
+     * Append additional header `field` with value `val`.
+     *
+     * Examples:
+     *
+     * ```
+     * this.append('Link', ['<http://localhost/>', '<http://localhost:3000/>']);
+     * this.append('Set-Cookie', 'foo=bar; Path=/; HttpOnly');
+     * this.append('Warning', '199 Miscellaneous warning');
+     * ```
+     *
+     * @param {String} field
+     * @param {String|Array} val
+     * @api public
+     */
+    appendHeader(field: string, val: string | number | string[]) {
+        const prev = this.response.getHeader(field);
+        if (prev) {
+            val = Array.isArray(prev)
+                ? prev.concat(Array.isArray(val) ? val : String(val))
+                : [String(prev)].concat(Array.isArray(val) ? val : String(val))
+        }
+
+        return this.setHeader(field, val)
     }
 
 }

@@ -1,6 +1,8 @@
-import { EndpointBackend, RequestContext, RequstOption, TransportClient, UuidGenerator } from '@tsdi/core';
-import { EMPTY, Inject, Injectable, InvocationContext, isString, Nullable } from '@tsdi/ioc';
+import { EndpointBackend, Protocol, RequestContext, RequstOption, TransportClient, UuidGenerator } from '@tsdi/core';
+import { EMPTY, Inject, Injectable, InvocationContext, isString, Nullable, Providers } from '@tsdi/ioc';
 import { JsonDecoder, JsonEncoder } from '../coder';
+import { TrasportMimeAdapter } from '../impl/mime';
+import { MimeAdapter } from '../mime';
 import { TransportProtocol } from '../protocol';
 import { ProtocolBackend } from './backend';
 import { DetectBodyInterceptor } from './body';
@@ -24,6 +26,10 @@ const defaults = {
  * Transport Protocol Client.
  */
 @Injectable()
+@Providers([
+    { provide: MimeAdapter, useClass: TrasportMimeAdapter, asDefault: true },
+    { provide: Protocol, useExisting: TransportProtocol }
+])
 export class ProtocolClient extends TransportClient<TransportRequest, TransportEvent> {
 
     private option!: ProtocolClientOpts;
@@ -54,7 +60,7 @@ export class ProtocolClient extends TransportClient<TransportRequest, TransportE
     protected buildRequest(context: RequestContext, url: string | TransportRequest<any>, options?: RequstOption | undefined): TransportRequest<any> {
         return isString(url) ? new TransportRequest(this.context.resolve(UuidGenerator).generate(), { ...options, url }) : url
     }
-    
+
     protected connect(): Promise<void> {
         return this.protocol.connect(this.option.connectOpts);
     }

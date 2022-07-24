@@ -1,4 +1,4 @@
-import { ExecptionRespondTypeAdapter, Router, TransportServer } from '@tsdi/core';
+import { ExecptionRespondTypeAdapter, Protocol, Router, TransportServer } from '@tsdi/core';
 import { Inject, Injectable, InvocationContext, isBoolean, Nullable, Providers } from '@tsdi/ioc';
 import { Subscription } from 'rxjs';
 import { JsonDecoder, JsonEncoder } from '../coder';
@@ -19,6 +19,7 @@ import { TcpArgumentErrorFilter, ProtocolFinalizeFilter } from './finalize-filte
 import { ProtocolServerOpts, PROTOTCOL_SERV_INTERCEPTORS } from './options';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';
+import { TransportProtocol } from '../protocol';
 
 
 
@@ -66,7 +67,8 @@ const defOpts = {
     { provide: ExecptionRespondTypeAdapter, useClass: TcpExecptionRespondTypeAdapter, asDefault: true },
     { provide: ContentSendAdapter, useClass: TransportSendAdapter, asDefault: true },
     { provide: MimeAdapter, useClass: TrasportMimeAdapter, asDefault: true },
-    { provide: Negotiator, useClass: TransportNegotiator, asDefault: true }
+    { provide: Negotiator, useClass: TransportNegotiator, asDefault: true },
+    { provide: Protocol, useExisting: TransportProtocol }
 ])
 export class ProtocolServer extends TransportServer<ServerRequest, ServerResponse, PrototcolContext> {
 

@@ -20,7 +20,7 @@ export class ProtocolRespondAdapter extends RespondAdapter {
         const code = ctx.status;
 
         // ignore body
-        if (ctx.adapter.isEmpty(code)) {
+        if (ctx.protocol.status.isEmpty(code)) {
             // strip headers
             ctx.body = null;
             return res.end()
@@ -36,12 +36,12 @@ export class ProtocolRespondAdapter extends RespondAdapter {
 
         // status body
         if (null == body) {
-            // if (ctx._explicitNullBody) {
-            //     res.removeHeader(hdr.CONTENT_TYPE);
-            //     res.removeHeader(hdr.CONTENT_LENGTH);
-            //     res.removeHeader(hdr.TRANSFER_ENCODING);
-            //     return res.end()
-            // }
+            if (ctx._explicitNullBody) {
+                res.removeHeader(hdr.CONTENT_TYPE);
+                res.removeHeader(hdr.CONTENT_LENGTH);
+                res.removeHeader(hdr.TRANSFER_ENCODING);
+                return res.end()
+            }
 
             body = ctx.statusMessage || String(code)
             body = Buffer.from(body)

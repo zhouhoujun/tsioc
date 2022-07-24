@@ -11,14 +11,6 @@ import { ServerResponse } from './res';
  */
 export class PrototcolContext extends AssetServerContext<ServerRequest, ServerResponse> implements HeaderContext, AssetContext {
 
-    get writable(): boolean {
-        return this.response.writable;
-    }
-
-
-    isUpdate(): boolean {
-        return this.request.method === 'PUT' || this.getHeader(hdr.OPERATION) === 'update';
-    }
 
     get status(): number {
         return this.response.statusCode
@@ -43,6 +35,15 @@ export class PrototcolContext extends AssetServerContext<ServerRequest, ServerRe
 
     get sent(): boolean {
         return this.response.headersSent;
+    }
+
+    get writable(): boolean {
+        if(this.response.finished) return false;
+        return this.response.writable;
+    }
+
+    isUpdate(): boolean {
+        return this.request.method === 'PUT' || this.getHeader(hdr.OPERATION) === 'update';
     }
 
     // write(chunk: string | Uint8Array, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean;

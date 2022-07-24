@@ -4,7 +4,6 @@ import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import * as assert from 'assert';
 import * as http from 'http';
 import * as http2 from 'http2';
-import { TLSSocket } from 'tls';
 import { hdr } from '../../consts';
 import { append, parseTokenList } from '../../utils';
 import { HttpError, HttpInternalServerError } from './../errors';
@@ -38,25 +37,6 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
     get socket() {
         return this.request.socket
     }
-
-    // /**
-    //  * Return the protocol string "http" or "https"
-    //  * when requested with TLS. When the proxy setting
-    //  * is enabled the "X-Forwarded-Proto" header
-    //  * field will be trusted. If you're running behind
-    //  * a reverse proxy that supplies https for you this
-    //  * may be enabled.
-    //  *
-    //  * @return {String}
-    //  * @api public
-    //  */
-    // get protocol(): ProtocolType {
-    //     if ((this.socket as TLSSocket).encrypted) return 'https';
-    //     if (!(this.target as any)?.proxy) return 'http';
-    //     const proto = this.getHeader(hdr.X_FORWARDED_PROTO) as string;
-    //     return (proto ? proto.split(urlsplit, 1)[0] : 'http') as ProtocolType
-    // }
-
 
     /**
      * When `httpServer.proxy` is `true`, parse
@@ -102,72 +82,6 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
     set ip(ip: string) {
         this._ip = ip
     }
-
-    // /**
-    //  * Parse the "Host" header field host
-    //  * and support X-Forwarded-Host when a
-    //  * proxy is enabled.
-    //  *
-    //  * @return {String} hostname:port
-    //  * @api public
-    //  */
-    // get host() {
-    //     const proxy = (this.target as HttpServer)?.proxy;
-    //     let host = proxy && this.getHeader(hdr.X_FORWARDED_HOST);
-    //     if (!host) {
-    //         if (this.request.httpVersionMajor >= 2) host = this.getHeader(AUTHORITY);
-    //         if (!host) host = this.getHeader(hdr.HOST);
-    //     }
-    //     if (!host || isNumber(host)) return '';
-    //     return isString(host) ? host.split(urlsplit, 1)[0] : host[0]
-    // }
-
-    // /**
-    //  * Parse the "Host" header field hostname
-    //  * and support X-Forwarded-Host when a
-    //  * proxy is enabled.
-    //  *
-    //  * @return {String} hostname
-    //  * @api public
-    //  */
-    // get hostname(): string {
-    //     const host = this.host;
-    //     if (!host) return '';
-    //     if ('[' === host[0]) return this.URL.hostname || ''; // IPv6
-    //     return host.split(':', 1)[0]
-    // }
-
-    // protected override createURL() {
-    //     const originalUrl = this.originalUrl || ''; // avoid undefined in template string
-    //     try {
-    //         return new URL(`${this.origin}${originalUrl}`);
-    //     } catch (err) {
-    //         return Object.create(null);
-    //     }
-    // }
-
-    // /**
-    //  * Get origin of URL.
-    //  *
-    //  * @return {String}
-    //  * @api public
-    //  */
-
-    // get origin() {
-    //     return `${this.protocol}://${this.host}`;
-    // }
-
-    // /**
-    //  * Get full request URL.
-    //  *
-    //  * @return {String}
-    //  * @api public
-    //  */
-
-    // get href() {
-    //     if (httptl.test(this.originalUrl)) return this.originalUrl;
-    //     return this.origin + this.originalUrl
-    // }
 
 
     isUpdate(): boolean {
@@ -293,62 +207,6 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
         this._explicitNullBody = true;
     }
 
-    /**
-     * Set the Last-Modified date using a string or a Date.
-     *
-     *     this.response.lastModified = new Date();
-     *
-     * @param {String|Date} type
-     * @api public
-     */
-
-    set lastModified(val: Date | null) {
-        if (!val) {
-            this.removeHeader(hdr.LAST_MODIFIED);
-            return
-        }
-        this.setHeader(hdr.LAST_MODIFIED, val.toUTCString())
-    }
-
-    /**
-     * Get the Last-Modified date in Date form, if it exists.
-     *
-     * @return {Date}
-     * @api public
-     */
-
-    get lastModified(): Date | null {
-        const date = this.response.getHeader(hdr.LAST_MODIFIED) as string;
-        return date ? new Date(date) : null
-    }
-
-    /**
-     * Set the etag of a response.
-     * This will normalize the quotes if necessary.
-     *
-     *     this.response.etag = 'md5hashsum';
-     *     this.response.etag = '"md5hashsum"';
-     *     this.response.etag = 'W/"123456789"';
-     *
-     * @param {String} etag
-     * @api public
-     */
-
-    set etag(val: string) {
-        if (!/^(W\/)?"/.test(val)) val = `"${val}"`;
-        this.setHeader(hdr.ETAG, val)
-    }
-
-    /**
-     * Get the etag of a response.
-     *
-     * @return {String}
-     * @api public
-     */
-    get etag(): string {
-        return this.response.getHeader(hdr.ETAG) as string
-    }
-
     vary(field: string) {
         if (this.sent) return;
         let val = this.response.getHeader(hdr.VARY) ?? '';
@@ -371,35 +229,6 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
     get sent() {
         return this.response.headersSent
     }
-
-    /**
-     * Append additional header `field` with value `val`.
-     *
-     * Examples:
-     *
-     * ```
-     * this.append('Link', ['<http://localhost/>', '<http://localhost:3000/>']);
-     * this.append('Set-Cookie', 'foo=bar; Path=/; HttpOnly');
-     * this.append('Warning', '199 Miscellaneous warning');
-     * ```
-     *
-     * @param {String} field
-     * @param {String|Array} val
-     * @api public
-     */
-
-    appendHeader(field: string, val: string | number | string[]) {
-        const prev = this.response.getHeader(field);
-        if (prev) {
-            val = Array.isArray(prev)
-                ? prev.concat(Array.isArray(val) ? val : String(val))
-                : [String(prev)].concat(Array.isArray(val) ? val : String(val))
-        }
-
-        return this.setHeader(field, val)
-    }
-
-
 
     /**
      * Checks if the request is writable.

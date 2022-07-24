@@ -1,7 +1,7 @@
 import {
-    BadRequestError, ENOENT, ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
-    ForbiddenError, InternalServerError, NotFoundError, TransportArgumentError, TransportError,
-    TransportMissingError, TransportStatus, UnauthorizedError, UnsupportedMediaTypeError
+    BadRequestError,ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
+    ForbiddenError, InternalServerError, NotFoundError, Protocol, TransportArgumentError, TransportError,
+    ENOENT, TransportMissingError, UnauthorizedError, UnsupportedMediaTypeError
 } from '@tsdi/core';
 import { Injectable, isFunction, isNumber } from '@tsdi/ioc';
 import { MissingModelFieldError } from '@tsdi/repository';
@@ -78,7 +78,7 @@ export class ProtocolFinalizeFilter implements ExecptionFilter {
 @Injectable({ static: true })
 export class TcpArgumentErrorFilter implements ExecptionFilter {
 
-    constructor(private adapter: TransportStatus) {
+    constructor() {
 
     }
 
@@ -95,53 +95,53 @@ export class TcpArgumentErrorFilter implements ExecptionFilter {
 
     @ExecptionHandler(NotFoundError)
     notFoundExecption(ctx: ExecptionContext, execption: NotFoundError) {
-        execption.status = this.adapter.notFound;
+        execption.status = ctx.get(Protocol).status.notFound;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(ForbiddenError)
     forbiddenExecption(ctx: ExecptionContext, execption: ForbiddenError) {
-        execption.status = this.adapter.forbidden;
+        execption.status = ctx.get(Protocol).status.forbidden;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(BadRequestError)
     badReqExecption(ctx: ExecptionContext, execption: BadRequestError) {
-        execption.status = this.adapter.badRequest;
+        execption.status = ctx.get(Protocol).status.badRequest;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(UnauthorizedError)
     unauthorized(ctx: ExecptionContext, execption: UnauthorizedError) {
-        execption.status = this.adapter.unauthorized;
+        execption.status = ctx.get(Protocol).status.unauthorized;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(InternalServerError)
     internalServerError(ctx: ExecptionContext, execption: InternalServerError) {
-        execption.status = this.adapter.serverError;
+        execption.status = ctx.get(Protocol).status.serverError;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(UnsupportedMediaTypeError)
     unsupported(ctx: ExecptionContext, execption: UnsupportedMediaTypeError) {
-        execption.status = this.adapter.unsupportedMediaType;
+        execption.status = ctx.get(Protocol).status.unsupportedMediaType;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(TransportArgumentError)
     anguExecption(ctx: ExecptionContext, execption: TransportArgumentError) {
-        ctx.execption = new BadRequestError(execption.message, this.adapter.badRequest)
+        ctx.execption = new BadRequestError(execption.message, ctx.get(Protocol).status.badRequest)
     }
 
     @ExecptionHandler(MissingModelFieldError)
     missFieldExecption(ctx: ExecptionContext, execption: MissingModelFieldError) {
-        ctx.execption = new BadRequestError(execption.message, this.adapter.badRequest)
+        ctx.execption = new BadRequestError(execption.message, ctx.get(Protocol).status.badRequest)
     }
 
     @ExecptionHandler(TransportMissingError)
     missExecption(ctx: ExecptionContext, execption: TransportMissingError) {
-        ctx.execption = new BadRequestError(execption.message, this.adapter.badRequest)
+        ctx.execption = new BadRequestError(execption.message, ctx.get(Protocol).status.badRequest)
     }
 
 }
