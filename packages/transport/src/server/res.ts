@@ -1,4 +1,5 @@
 import { OutgoingHeader, OutgoingHeaders, OutgoingPacket, ResHeaders } from '@tsdi/core';
+import { isArray, isFunction, isString } from '@tsdi/ioc';
 import { Writable } from 'stream';
 import { hdr } from '../consts';
 import { TransportProtocol } from '../protocol';
@@ -22,7 +23,7 @@ export class ServerResponse extends Writable implements OutgoingPacket {
     }
 
     get finished(): boolean {
-        return false;        
+        return false;
     }
 
     getHeaderNames(): string[] {
@@ -68,10 +69,32 @@ export class ServerResponse extends Writable implements OutgoingPacket {
         this._hdr.delete(field);
     }
 
+    override end(cb?: (() => void) | undefined): this;
+    override end(chunk: any, cb?: (() => void) | undefined): this;
+    override end(chunk: any, encoding: BufferEncoding, cb?: (() => void) | undefined): this;
+    override end(chunk?: unknown, encoding?: any, cb?: (() => void) | undefined): this {
+        if (isFunction(encoding)) {
+            cb = encoding
+            encoding = undefined;
+        }
+        super.end(chunk, encoding, cb);
+        return this;
+    }
+
     writeHead(statusCode: number, headers?: OutgoingHeaders | OutgoingHeader[]): this;
     writeHead(statusCode: number, statusMessage: string, headers?: OutgoingHeaders): this;
     writeHead(statusCode: number, statusMessage?: string | OutgoingHeaders | OutgoingHeader[], headers?: OutgoingHeaders | OutgoingHeader[]): this {
-
+        let msg: string;
+        if (isString(statusMessage)) {
+            msg = statusMessage
+        } else {
+            headers = statusMessage;
+        }
+        if (headers) {
+            isArray(headers) ? headers.forEach(i => {
+                //todo set header
+            }) : this._hdr.setHeaders(headers);
+        }
         return this;
     }
 
