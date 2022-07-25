@@ -1,4 +1,4 @@
-import { mths, ExecptionRespondTypeAdapter, TransportError } from '@tsdi/core';
+import { mths, ExecptionTypedRespond, TransportError } from '@tsdi/core';
 import { Injectable, isString, lang } from '@tsdi/ioc';
 import { Readable } from 'stream';
 import { hdr, ev } from '../../consts';
@@ -85,7 +85,7 @@ export class HttpRespondAdapter implements RespondAdapter {
 
 
 @Injectable()
-export class HttpExecptionRespondTypeAdapter extends ExecptionRespondTypeAdapter {
+export class HttpExecptionTypedRespond extends ExecptionTypedRespond {
     respond<T>(ctx: HttpContext, response: 'body' | 'header' | 'response', value: T): void {
         if (response === 'body') {
             ctx.body = value

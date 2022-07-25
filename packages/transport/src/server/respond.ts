@@ -1,4 +1,4 @@
-import { ExecptionRespondTypeAdapter, mths, TransportError } from '@tsdi/core';
+import { ExecptionTypedRespond, mths, TransportError } from '@tsdi/core';
 import { Injectable, isString, lang } from '@tsdi/ioc';
 import { Readable } from 'stream';
 import { RespondAdapter } from '../interceptors/respond';
@@ -85,7 +85,7 @@ export class ProtocolRespondAdapter extends RespondAdapter {
 
 
 @Injectable()
-export class TcpExecptionRespondTypeAdapter extends ExecptionRespondTypeAdapter {
+export class ProtocolExecptionTypedRespond extends ExecptionTypedRespond {
     respond<T>(ctx: PrototcolContext, response: 'body' | 'header' | 'response', value: T): void {
         if (response === 'body') {
             ctx.body = value

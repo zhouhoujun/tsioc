@@ -1,4 +1,4 @@
-import { ExecptionRespondTypeAdapter, Protocol, Router, TransportServer } from '@tsdi/core';
+import { ExecptionTypedRespond, Protocol, Router, TransportServer } from '@tsdi/core';
 import { Inject, Injectable, InvocationContext, isBoolean, Nullable, Providers } from '@tsdi/ioc';
 import { Subscription } from 'rxjs';
 import { JsonDecoder, JsonEncoder } from '../coder';
@@ -11,8 +11,7 @@ import { ContentSendAdapter } from '../middlewares/send';
 import { MimeAdapter, MimeDb } from '../mime';
 import { Negotiator } from '../negotiator';
 import { PrototcolContext, PROTOTCOL_EXECPTION_FILTERS, PROTOTCOL_MIDDLEWARES } from './context';
-
-import { TcpExecptionRespondTypeAdapter, ProtocolRespondAdapter } from './respond';
+import { ProtocolExecptionTypedRespond, ProtocolRespondAdapter } from './respond';
 import { db } from '../impl/mimedb';
 import { DefaultStatusFormater } from '../interceptors/formater';
 import { TcpArgumentErrorFilter, ProtocolFinalizeFilter } from './finalize-filter';
@@ -20,6 +19,7 @@ import { ProtocolServerOpts, PROTOTCOL_SERV_INTERCEPTORS } from './options';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';
 import { TransportProtocol } from '../protocol';
+import { LISTEN_OPTS } from '@tsdi/platform-server';
 
 
 
@@ -64,7 +64,7 @@ const defOpts = {
 @Providers([
     { provide: ResponseStatusFormater, useClass: DefaultStatusFormater, asDefault: true },
     { provide: RespondAdapter, useClass: ProtocolRespondAdapter, asDefault: true },
-    { provide: ExecptionRespondTypeAdapter, useClass: TcpExecptionRespondTypeAdapter, asDefault: true },
+    { provide: ExecptionTypedRespond, useClass: ProtocolExecptionTypedRespond, asDefault: true },
     { provide: ContentSendAdapter, useClass: TransportSendAdapter, asDefault: true },
     { provide: MimeAdapter, useClass: TrasportMimeAdapter, asDefault: true },
     { provide: Negotiator, useClass: TransportNegotiator, asDefault: true },
@@ -96,7 +96,7 @@ export class ProtocolServer extends TransportServer<ServerRequest, ServerRespons
         const listenOptions = { ...defOpts.listenOpts, ...options?.listenOpts };
         const opts = this.options = { ...defOpts, ...options, listenOpts: listenOptions };
         this.context.setValue(ProtocolServerOpts, this.options);
-
+        this.context.setValue(LISTEN_OPTS, opts.listenOpts);
         if (opts.middlewares) {
             opts.middlewares = opts.middlewares.filter(m => {
                 if (!opts.session && m === SessionMiddleware) return false;
@@ -108,6 +108,7 @@ export class ProtocolServer extends TransportServer<ServerRequest, ServerRespons
         if (opts.content && !isBoolean(opts.content)) {
             this.context.setValue(ContentOptions, opts.content)
         }
+        
 
         if (opts.mimeDb) {
             const mimedb = this.context.injector.get(MimeDb);
@@ -117,8 +118,9 @@ export class ProtocolServer extends TransportServer<ServerRequest, ServerRespons
     }
 
     protected createContext(request: ServerRequest, response: ServerResponse): PrototcolContext {
-        throw new Error('Method not implemented.');
+        return new PrototcolContext(this.context.injector, request, response, this as TransportServer, { parent: this.context });
     }
+
     protected bindEvent(ctx: PrototcolContext, cancel: Subscription): void {
         throw new Error('Method not implemented.');
     }

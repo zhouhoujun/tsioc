@@ -1,6 +1,6 @@
 import { createDecorator, Decors, isClass, isFunction, ReflectiveResolver, Type } from '@tsdi/ioc';
 import { TransportContext } from '../transport';
-import { ExecptionRespondAdapter, ExecptionRespondTypeAdapter } from './adapter';
+import { ExecptionRespond, ExecptionTypedRespond } from './adapter';
 import { ExecptionHandlerMethodResolver } from './resolver';
 
 /**
@@ -18,7 +18,7 @@ export interface ExecptionHandlerMetadata {
     /**
      * handle expection as response type.
      */
-    response?: 'body' | 'header' | 'response' | Type<ExecptionRespondAdapter> | ((ctx: TransportContext, returnning: any) => void)
+    response?: 'body' | 'header' | 'response' | Type<ExecptionRespond> | ((ctx: TransportContext, returnning: any) => void)
 }
 
 
@@ -44,7 +44,7 @@ export interface ExecptionHandler {
         /**
          * handle expection as response type.
          */
-        response?: 'body' | 'header' | 'response' | Type<ExecptionRespondAdapter> | ((ctx: TransportContext, returnning: any) => void)
+        response?: 'body' | 'header' | 'response' | Type<ExecptionRespond> | ((ctx: TransportContext, returnning: any) => void)
     }): MethodDecorator;
 }
 
@@ -76,7 +76,7 @@ export const ExecptionHandler: ExecptionHandler = createDecorator('ExecptionHand
                         })
                     } else {
                         invoker.onReturnning((ctx, value) => {
-                            ctx.resolve(ExecptionRespondTypeAdapter).respond(ctx.resolve(TransportContext), response, value);
+                            ctx.resolve(ExecptionTypedRespond).respond(ctx.resolve(TransportContext), response, value);
                         })
                     }
                 }

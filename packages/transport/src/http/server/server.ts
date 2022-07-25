@@ -1,5 +1,5 @@
 import { Inject, Injectable, InvocationContext, isBoolean, isDefined, isFunction, lang, Providers, EMPTY_OBJ } from '@tsdi/ioc';
-import { TransportServer, RunnableFactoryResolver, ModuleRef, Router, ExecptionRespondTypeAdapter, TransportStatus, Protocol } from '@tsdi/core';
+import { TransportServer, RunnableFactoryResolver, ModuleRef, Router, ExecptionTypedRespond, TransportStatus, Protocol } from '@tsdi/core';
 import { LISTEN_OPTS } from '@tsdi/platform-server';
 import { Subscription } from 'rxjs';
 import { ListenOptions } from 'net';
@@ -22,7 +22,7 @@ import { db } from '../../impl/mimedb';
 import { TrasportMimeAdapter } from '../../impl/mime';
 import { TransportSendAdapter } from '../../impl/send';
 import { TransportNegotiator } from '../../impl/negotiator';
-import { HttpExecptionRespondTypeAdapter, HttpRespondAdapter } from './respond';
+import { HttpExecptionTypedRespond, HttpRespondAdapter } from './respond';
 import { ArgumentErrorFilter, HttpFinalizeFilter } from './finalize-filter';
 import { Http2ServerOpts, HttpServerOpts, HTTP_EXECPTION_FILTERS, HTTP_SERVEROPTIONS, HTTP_SERV_INTERCEPTORS } from './options';
 import { HttpStatus } from '../status';
@@ -74,7 +74,7 @@ const httpOpts = {
 @Providers([
     { provide: ResponseStatusFormater, useClass: DefaultStatusFormater, asDefault: true },
     { provide: RespondAdapter, useClass: HttpRespondAdapter, asDefault: true },
-    { provide: ExecptionRespondTypeAdapter, useClass: HttpExecptionRespondTypeAdapter, asDefault: true },
+    { provide: ExecptionTypedRespond, useClass: HttpExecptionTypedRespond, asDefault: true },
     { provide: ContentSendAdapter, useClass: TransportSendAdapter, asDefault: true },
     { provide: MimeAdapter, useClass: TrasportMimeAdapter, asDefault: true },
     { provide: Negotiator, useClass: TransportNegotiator, asDefault: true },

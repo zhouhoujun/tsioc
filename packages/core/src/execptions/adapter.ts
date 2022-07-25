@@ -2,10 +2,10 @@ import { Abstract } from '@tsdi/ioc';
 import { TransportContext } from '../transport/context';
 
 /**
- * Execption respond adapter.
+ * Execption respond.
  */
 @Abstract()
-export abstract class ExecptionRespondAdapter {
+export abstract class ExecptionRespond {
     /**
      * respond with execption handled data.
      * @param ctx transport context. instance of {@link TransportContext}.
@@ -18,7 +18,7 @@ export abstract class ExecptionRespondAdapter {
  * Execption respond adapter with response type.
  */
 @Abstract()
-export abstract class ExecptionRespondTypeAdapter {
+export abstract class ExecptionTypedRespond {
     /**
      * respond with execption handled data.
      * @param ctx transport context. instance of {@link TransportContext}.

@@ -1,5 +1,6 @@
-import { BadRequestError, BytesPipe, EADDRINUSE, ECONNREFUSED, ExecptionRespondTypeAdapter, Protocol, Router, TransportServer, TransportStatus } from '@tsdi/core';
+import { BadRequestError, BytesPipe, EADDRINUSE, ECONNREFUSED, ExecptionTypedRespond, Protocol, Router, TransportServer } from '@tsdi/core';
 import { Inject, Injectable, InvocationContext, isBoolean, lang, Nullable, Providers } from '@tsdi/ioc';
+import { LISTEN_OPTS } from '@tsdi/platform-server';
 import { Server } from 'net';
 import { Subscription } from 'rxjs';
 import { JsonDecoder, JsonEncoder } from '../../coder';
@@ -14,16 +15,14 @@ import { MimeAdapter, MimeDb } from '../../mime';
 import { Negotiator } from '../../negotiator';
 import { TcpContext, TCP_EXECPTION_FILTERS, TCP_MIDDLEWARES } from './context';
 import { TcpServRequest } from './request';
-import { TcpExecptionRespondTypeAdapter, TcpRespondAdapter } from './respond';
+import { TcpExecptionTypedRespond, TcpRespondAdapter } from './respond';
 import { TcpServResponse } from './response';
 import { db } from '../../impl/mimedb';
 import { DefaultStatusFormater } from '../../interceptors/formater';
 import { TcpArgumentErrorFilter, TcpFinalizeFilter } from './finalize-filter';
 import { TcpServerOpts, TCP_SERV_INTERCEPTORS } from './options';
 import { PacketProtocol, PacketProtocolOpts } from '../packet';
-import { TcpStatus } from '../status';
 import { TcpProtocol } from '../protocol';
-import { LISTEN_OPTS } from '@tsdi/platform-server';
 
 
 const defOpts = {
@@ -67,7 +66,7 @@ const defOpts = {
 @Providers([
     { provide: ResponseStatusFormater, useClass: DefaultStatusFormater, asDefault: true },
     { provide: RespondAdapter, useClass: TcpRespondAdapter, asDefault: true },
-    { provide: ExecptionRespondTypeAdapter, useClass: TcpExecptionRespondTypeAdapter, asDefault: true },
+    { provide: ExecptionTypedRespond, useClass: TcpExecptionTypedRespond, asDefault: true },
     { provide: ContentSendAdapter, useClass: TransportSendAdapter, asDefault: true },
     { provide: MimeAdapter, useClass: TrasportMimeAdapter, asDefault: true },
     { provide: Negotiator, useClass: TransportNegotiator, asDefault: true },
