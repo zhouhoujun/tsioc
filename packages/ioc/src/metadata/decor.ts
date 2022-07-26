@@ -786,7 +786,7 @@ export const IocExt: IocExt = createDecorator<RunnableMetadata>('IocExt', {
  */
 export interface Autorun {
     /**
-     * Autorun decorator, for class.  use to define the class auto run (via a method or not) after registered.
+     * Autorun decorator, for class. to auto create singleton instance and call this method.
      * @Autorun
      *
      * @param {string} [autorun] the special method name when define to class.
@@ -795,6 +795,8 @@ export interface Autorun {
     (autorun: string, args?: InvokeArguments): ClassDecorator;
     /**
      * Autorun decorator, for class or method. use to define the class auto run (via a method or not) after registered.
+     * for class, to auto create singleton instance and call this method.
+     * for method,  to auto this method after create new instance.
      * @Autorun
      *
      * @param {RunnableMetadata} [metadata] metadata map.
@@ -802,7 +804,7 @@ export interface Autorun {
     (metadata: RunnableMetadata): ClassMethodDecorator;
 
     /**
-     * Autorun decorator, for method.  use to define the method auto run (via a method or not) after registered.
+     * Autorun decorator, for method.  to auto this method after create new instance.
      * @Autorun
      *
      * @param {string} [autorun] the special method name when define to class.

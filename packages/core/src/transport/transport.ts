@@ -70,6 +70,9 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any, Opts ex
         this._opts = this.initOption(options);
     }
 
+    /**
+     * auto run endpoint init after create new instance.
+     */
     @Autorun()
     protected onEndpointInit() {
         const opts = this.getOptions();
