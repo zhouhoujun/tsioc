@@ -5,7 +5,6 @@ import { TransportRequest } from '../../client/request';
 import { TransportEvent } from '../../client/response';
 import { JsonDecoder, JsonEncoder } from '../../coder';
 import { ev } from '../../consts';
-import { TcpPathInterceptor } from './path';
 import { TcpClientOpts, TCP_EXECPTIONFILTERS, TCP_INTERCEPTORS } from './options';
 import { DetectBodyInterceptor } from '../../client/body';
 import { PacketProtocolOpts } from '../packet';
@@ -13,6 +12,7 @@ import { TcpBackend } from './backend';
 import { MimeAdapter } from '../../mime';
 import { TrasportMimeAdapter } from '../../impl/mime';
 import { TcpProtocol } from '../protocol';
+import { NormlizePathInterceptor } from '../../client/path';
 
 
 
@@ -50,7 +50,7 @@ export class TcpClient extends TransportClient<TransportRequest, TransportEvent>
 
     protected override initOption(options?: TcpClientOpts): TcpClientOpts {
         const connectOpts = { ...defaults.connectOpts, ...options?.connectOpts };
-        const interceptors = [...options?.interceptors ?? EMPTY, TcpPathInterceptor, DetectBodyInterceptor];
+        const interceptors = [...options?.interceptors ?? EMPTY, NormlizePathInterceptor, DetectBodyInterceptor];
         this.option = { ...defaults, ...options, connectOpts, interceptors };
         this.context.setValue(TcpClientOpts, this.option);
         this.context.setValue(PacketProtocolOpts, this.option);

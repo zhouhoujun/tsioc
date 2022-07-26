@@ -14,6 +14,8 @@ export class ServerResponse extends Writable implements OutgoingPacket {
     private _sent = false;
     private _hdr: ResHeaders;
 
+    socket?: any;
+
     constructor(
         readonly stream: TransportStream,
         private protocol: TransportProtocol,

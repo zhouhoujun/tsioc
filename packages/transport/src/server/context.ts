@@ -38,7 +38,8 @@ export class PrototcolContext extends AssetServerContext<ServerRequest, ServerRe
     }
 
     get writable(): boolean {
-        if(this.response.finished) return false;
+        if (this.response.writableEnded || this.response.finished) return false;
+        if (!this.response.socket) return true;
         return this.response.writable;
     }
 

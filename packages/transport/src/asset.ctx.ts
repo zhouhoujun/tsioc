@@ -711,6 +711,16 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
     }
 
     /**
+     * Check if a header has been written to the socket.
+     *
+     * @return {Boolean}
+     * @api public
+     */
+     get sent() {
+        return this.response.headersSent
+    }
+
+    /**
      * Returns true if the header identified by name is currently set in the outgoing headers.
      * The header name matching is case-insensitive.
      *

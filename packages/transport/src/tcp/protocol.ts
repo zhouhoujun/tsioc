@@ -13,12 +13,9 @@ import { ProtocolPacket } from '../packet';
     { provide: Redirector, useClass: AssetRedirector }
 ])
 export class TcpProtocol extends TransportProtocol {
-    get packet(): ProtocolPacket {
-        throw new Error('Method not implemented.');
-    }
 
     private _name = 'tcp';
-    constructor(@Inject(LISTEN_OPTS, {defaultValue: EMPTY_OBJ}) private listenOpts: ListenOpts, readonly status: TransportStatus, readonly redirector: Redirector) {
+    constructor(@Inject(LISTEN_OPTS, { defaultValue: EMPTY_OBJ }) private listenOpts: ListenOpts, readonly status: TransportStatus, readonly redirector: Redirector) {
         super();
 
     }
@@ -50,6 +47,10 @@ export class TcpProtocol extends TransportProtocol {
     get name(): string {
         return this._name;
     }
+    
+    get packet(): ProtocolPacket {
+        throw new Error('Method not implemented.');
+    }
 
     parse(req: IncomingPacket, proxy?: boolean | undefined): URL {
         const url = req.url ?? '';
@@ -57,8 +58,16 @@ export class TcpProtocol extends TransportProtocol {
             return new URL(url);
         } else {
             const { host, port, path } = this.listenOpts;
-            const baseUrl = new URL(`${this.name}://${host}:${port ?? 3000}`, path);
-            return new URL(url, baseUrl);
+            const isIPC = !host && !port;
+            if (isIPC) {
+                this._name = 'ipc'
+            }
+            const baseUrl = isIPC ? new URL(`tcp://${host ?? 'localhost'}`) : new URL(`${this.name}://${host}:${port ?? 3000}`, path);
+            const uri = new URL(url, baseUrl);
+            if (isIPC) {
+                uri.protocol = 'ipc';
+            }
+            return uri;
         }
 
     }
@@ -66,9 +75,17 @@ export class TcpProtocol extends TransportProtocol {
     normlizeUrl(url: string): string {
         if (!this.isAbsoluteUrl(url)) {
             const { host, port, path } = this.listenOpts;
-            const urlPrefix = `${this.name}://${host ?? 'localhost'}:${port ?? 3000}`;
+            const isIPC = !host && !port;
+            if (isIPC) {
+                this._name = 'ipc';
+            }
+            const urlPrefix = isIPC ? new URL(`tcp://${host ?? 'localhost'}`) : `tcp://${host ?? 'localhost'}:${port ?? 3000}`;
             const baseUrl = new URL(urlPrefix, path);
-            url = new URL(url, baseUrl).toString();
+            const uri = new URL(url, baseUrl);
+            if (isIPC) {
+                uri.protocol = 'ipc';
+            }
+            url = uri.toString();
         } else {
             const uri = new URL(url);
             this._name = uri.protocol.replace('://', '');
@@ -87,4 +104,4 @@ export class TcpProtocol extends TransportProtocol {
 }
 
 
-const tcptl = /^tcp:\/\//i;
+const tcptl = /^(tcp|ipc):\/\//i;

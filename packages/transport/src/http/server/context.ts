@@ -221,16 +221,6 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
     }
 
     /**
-     * Check if a header has been written to the socket.
-     *
-     * @return {Boolean}
-     * @api public
-     */
-    get sent() {
-        return this.response.headersSent
-    }
-
-    /**
      * Checks if the request is writable.
      * Tests for the existence of the socket
      * as node sometimes does not set it.
@@ -241,7 +231,7 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
         // https://nodejs.org/api/http.html#http_response_writableended
         // response.finished is undocumented feature of previous Node versions
         // https://stackoverflow.com/questions/16254385/undocumented-response-finished-in-node-js
-        if ((this.response as http.ServerResponse).writableEnded || this.response.finished) return false;
+        if (this.response.writableEnded || this.response.finished) return false;
         const socket = this.response.socket;
         // There are already pending outgoing res, but still writable
         // https://github.com/nodejs/node/blob/v4.4.7/lib/_http_server.js#L486
