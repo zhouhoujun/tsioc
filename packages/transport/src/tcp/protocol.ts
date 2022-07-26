@@ -6,12 +6,16 @@ import { Observable } from 'rxjs';
 import { AssetRedirector } from '../client/redirector';
 import { TransportProtocol } from '../protocol';
 import { TcpStatus } from './status';
+import { ProtocolPacket } from '../packet';
 
 @Providers([
     { provide: TransportStatus, useClass: TcpStatus },
     { provide: Redirector, useClass: AssetRedirector }
 ])
 export class TcpProtocol extends TransportProtocol {
+    get packet(): ProtocolPacket {
+        throw new Error('Method not implemented.');
+    }
 
     private _name = 'tcp';
     constructor(@Inject(LISTEN_OPTS, {defaultValue: EMPTY_OBJ}) private listenOpts: ListenOpts, readonly status: TransportStatus, readonly redirector: Redirector) {

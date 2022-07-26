@@ -2,12 +2,18 @@ import { Abstract } from '@tsdi/ioc';
 import { Packet, Protocol } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { Readable, Writable } from 'stream';
+import { ProtocolPacket } from './packet';
 
 /**
  * transport protocol .
  */
 @Abstract()
 export abstract class TransportProtocol extends Protocol {
+
+    /**
+     * get protcol packet.
+     */
+    abstract get packet(): ProtocolPacket;
 
     /**
      * connect

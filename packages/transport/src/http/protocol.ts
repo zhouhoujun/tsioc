@@ -10,6 +10,7 @@ import { AssetRedirector } from '../client/redirector';
 import { TransportProtocol } from '../protocol';
 import { HttpStatus } from './status';
 import { hdr } from '../consts';
+import { ProtocolPacket } from '../packet';
 
 @Providers([
     { provide: TransportStatus, useClass: HttpStatus },
@@ -32,6 +33,10 @@ export class HttpProtocol extends TransportProtocol {
      */
     get secure(): boolean {
         return this.name === 'https'
+    }
+
+    get packet(): ProtocolPacket {
+        throw new Error('Method not implemented.');
     }
 
     connect(options: Record<string, any>): Promise<void> {
