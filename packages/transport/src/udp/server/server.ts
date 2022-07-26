@@ -3,7 +3,7 @@ import {
     BadRequestError, EADDRINUSE, ECONNREFUSED, ExecptionFilter, Interceptor, InterceptorLike,
     MiddlewareLike, ServerOpts, TransportServer
 } from '@tsdi/core';
-import { Abstract, Inject, Injectable, InvocationContext, isString, lang, Nullable, Token, tokenId } from '@tsdi/ioc';
+import { Abstract, Injectable, isString, lang, Nullable, Token, tokenId } from '@tsdi/ioc';
 import { Socket, createSocket, SocketOptions, BindOptions, RemoteInfo } from 'dgram';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { ev } from '../../consts';
@@ -96,8 +96,8 @@ export class UdpServer extends TransportServer<UdpServRequest, UdpServResponse, 
     private cancel?: Subscription;
     private options!: UdpServerOpts;
 
-    constructor(@Inject() context: InvocationContext, @Nullable() options: UdpServerOpts) {
-        super(context, options)
+    constructor(@Nullable() options: UdpServerOpts) {
+        super(options)
     }
 
     protected override initOption(options: UdpServerOpts): UdpServerOpts {

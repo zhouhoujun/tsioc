@@ -31,21 +31,21 @@ const defaults = {
     { provide: MimeAdapter, useClass: TrasportMimeAdapter, asDefault: true },
     { provide: Protocol, useExisting: TransportProtocol }
 ])
-export class ProtocolClient extends TransportClient<TransportRequest, TransportEvent> {
+export class ProtocolClient extends TransportClient<TransportRequest, TransportEvent, ProtocolClientOpts> {
 
-    private option!: ProtocolClientOpts;
-    constructor(
-        @Inject() context: InvocationContext,
-        @Nullable() options: ProtocolClientOpts) {
-        super(context, options);
+    constructor(@Nullable() options: ProtocolClientOpts) {
+        super(options);
     }
 
     protected override initOption(options?: ProtocolClientOpts): ProtocolClientOpts {
         const connectOpts = { ...defaults.connectOpts, ...options?.connectOpts };
         const interceptors = [...options?.interceptors ?? EMPTY, NormlizePathInterceptor, DetectBodyInterceptor];
-        this.option = { ...defaults, ...options, connectOpts, interceptors };
-        this.context.setValue(ProtocolClientOpts, this.option);
-        return this.option;
+        return { ...defaults, ...options, connectOpts, interceptors };
+    }
+
+    protected override initContext(options: ProtocolClientOpts): void {
+        this.context.setValue(ProtocolClientOpts, options);
+        super.initContext(options);
     }
 
 
@@ -58,7 +58,7 @@ export class ProtocolClient extends TransportClient<TransportRequest, TransportE
     }
 
     protected getBackend(): EndpointBackend<TransportRequest<any>, TransportEvent<any>> {
-        return this.context.get(this.option.backend!);
+        return this.context.get(this.getOptions().backend!);
     }
 
 }

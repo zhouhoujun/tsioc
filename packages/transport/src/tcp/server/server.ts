@@ -72,23 +72,20 @@ const defOpts = {
     { provide: Negotiator, useClass: TransportNegotiator, asDefault: true },
     { provide: Protocol, useClass: TcpProtocol, asDefault: true }
 ])
-export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, TcpContext> {
+export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, TcpContext, TcpServerOpts> {
 
     get proxy(): boolean {
-        return this.options.proxy === true;
+        return this.getOptions().proxy === true;
     }
 
     private server?: Server;
-    private options!: TcpServerOpts;
-    constructor(@Inject() readonly context: InvocationContext, @Nullable() options: TcpServerOpts) {
-        super(context, options)
+    constructor(@Nullable() options: TcpServerOpts) {
+        super(options)
     }
 
     protected override initOption(options: TcpServerOpts): TcpServerOpts {
         const listenOptions = { ...defOpts.listenOpts, ...options?.listenOpts };
-        const opts = this.options = { ...defOpts, ...options, listenOpts: listenOptions };
-        this.context.setValue(TcpServerOpts, this.options);
-        this.context.setValue(PacketProtocolOpts, this.options);
+        const opts = { ...defOpts, ...options, listenOpts: listenOptions };
 
         if (opts.middlewares) {
             opts.middlewares = opts.middlewares.filter(m => {
@@ -97,24 +94,32 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
                 return true
             });
         }
-
-        if (opts.content && !isBoolean(opts.content)) {
-            this.context.setValue(ContentOptions, opts.content)
-        }
-
-        if (opts.mimeDb) {
-            const mimedb = this.context.injector.get(MimeDb);
-            mimedb.from(opts.mimeDb)
-        }
-
-        this.context.setValue(LISTEN_OPTS, this.options.listenOpts);
+        
         return opts;
     }
 
+    protected override initContext(options: TcpServerOpts): void {
+        this.context.setValue(TcpServerOpts, options);
+        this.context.setValue(PacketProtocolOpts, options);
+
+        if (options.content && !isBoolean(options.content)) {
+            this.context.setValue(ContentOptions, options.content)
+        }
+
+        if (options.mimeDb) {
+            const mimedb = this.context.injector.get(MimeDb);
+            mimedb.from(options.mimeDb)
+        }
+
+        this.context.setValue(LISTEN_OPTS, options.listenOpts);
+        super.initContext(options);
+    }
+
     async start(): Promise<void> {
-        this.server = new Server(this.options.serverOpts);
-        if (this.options.maxConnections) {
-            this.server.maxConnections = this.options.maxConnections
+        const opts = this.getOptions();
+        this.server = new Server(opts.serverOpts);
+        if (opts.maxConnections) {
+            this.server.maxConnections = opts.maxConnections
         }
         const defer = lang.defer();
         this.server.once(ev.ERROR, (err: any) => {
@@ -127,7 +132,7 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
 
         this.server.on(ev.CONNECTION, socket => {
 
-            const isIPC = !!this.options.listenOpts.path;
+            const isIPC = !!opts.listenOpts.path;
             if (isIPC) {
                 this.logger.info('Ipc client connection')
             } else {
@@ -158,9 +163,9 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
                         if (len && hdrcode === identity) {
                             length = ~~len
                         }
-                        if (this.options.sizeLimit && length > this.options.sizeLimit) {
+                        if (opts.sizeLimit && length > opts.sizeLimit) {
                             const pipe = this.context.get(BytesPipe);
-                            const msg = `Packet size limit ${pipe.transform(this.options.sizeLimit)}, this request packet size ${pipe.transform(len)}`;
+                            const msg = `Packet size limit ${pipe.transform(opts.sizeLimit)}, this request packet size ${pipe.transform(len)}`;
                             socket.emit(ev.ERROR, msg);
                             throw new BadRequestError(msg);
                         }
@@ -169,7 +174,7 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
                 });
         });
 
-        this.server.listen(this.options.listenOpts, defer.resolve);
+        this.server.listen(opts.listenOpts, defer.resolve);
         await defer.promise;
     }
 

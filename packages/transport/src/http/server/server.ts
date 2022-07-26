@@ -1,5 +1,5 @@
 import { Inject, Injectable, InvocationContext, isBoolean, isDefined, isFunction, lang, Providers, EMPTY_OBJ } from '@tsdi/ioc';
-import { TransportServer, RunnableFactoryResolver, ModuleRef, Router, ExecptionTypedRespond, TransportStatus, Protocol } from '@tsdi/core';
+import { TransportServer, RunnableFactoryResolver, ModuleRef, Router, ExecptionTypedRespond, TransportStatus, Protocol, ServerOpts } from '@tsdi/core';
 import { LISTEN_OPTS } from '@tsdi/platform-server';
 import { Subscription } from 'rxjs';
 import { ListenOptions } from 'net';
@@ -79,18 +79,14 @@ const httpOpts = {
     { provide: MimeAdapter, useClass: TrasportMimeAdapter, asDefault: true },
     { provide: Negotiator, useClass: TransportNegotiator, asDefault: true },
     { provide: TransportStatus, useClass: HttpStatus, asDefault: true },
-    { provide: Protocol, useClass: HttpProtocol, asDefault: true}
+    { provide: Protocol, useClass: HttpProtocol, asDefault: true }
 ])
-export class HttpServer extends TransportServer<HttpServRequest, HttpServResponse, HttpContext>  {
+export class HttpServer extends TransportServer<HttpServRequest, HttpServResponse, HttpContext, HttpServerOpts>  {
 
     private _server?: http2.Http2Server | http.Server | https.Server;
-    private options!: HttpServerOpts;
 
-    constructor(
-        @Inject() context: InvocationContext,
-        @Inject(HTTP_SERVEROPTIONS, { nullable: true }) options: HttpServerOpts
-    ) {
-        super(context, options)
+    constructor(@Inject(HTTP_SERVEROPTIONS, { nullable: true }) options: HttpServerOpts) {
+        super(options)
     }
 
     get server() {
@@ -98,15 +94,15 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
     }
 
     get proxy() {
-        return this.options.proxy === true
+        return this.getOptions().proxy === true
     }
 
     get proxyIpHeader() {
-        return this.options.proxyIpHeader
+        return this.getOptions().proxyIpHeader
     }
 
     get maxIpsCount() {
-        return this.options.maxIpsCount ?? 0
+        return this.getOptions().maxIpsCount ?? 0
     }
 
     protected override initOption(options: HttpServerOpts): HttpServerOpts {
@@ -116,7 +112,7 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         if (options?.listenOpts) {
             options.listenOpts = { ...httpOpts.listenOpts, ...options.listenOpts }
         }
-        const opts = this.options = { ...httpOpts, ...options } as HttpServerOpts;
+        const opts = { ...httpOpts, ...options } as HttpServerOpts;
 
         if (opts.middlewares) {
             opts.middlewares = opts.middlewares.filter(m => {
@@ -127,22 +123,25 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
                 return true
             });
         }
-        this.context.setValue(HTTP_SERVEROPTIONS, opts);
-
-        if (opts.content && !isBoolean(opts.content)) {
-            this.context.setValue(ContentOptions, opts.content)
-        }
-
-        if (opts.mimeDb) {
-            const mimedb = this.context.injector.get(MimeDb);
-            mimedb.from(opts.mimeDb)
-        }
-
         return opts;
     }
 
+    protected override initContext(options: HttpServerOpts): void {
+        this.context.setValue(HTTP_SERVEROPTIONS, options);
+
+        if (options.content && !isBoolean(options.content)) {
+            this.context.setValue(ContentOptions, options.content)
+        }
+
+        if (options.mimeDb) {
+            const mimedb = this.context.injector.get(MimeDb);
+            mimedb.from(options.mimeDb)
+        }
+        super.initContext(options);
+    }
+
     async start(): Promise<void> {
-        const options = this.options;
+        const opts = this.getOptions();
         const injector = this.context.injector;
         if (this.context.has(CONTENT_DISPOSITION)) {
             const func = await injector.getLoader().require('content-disposition');
@@ -151,8 +150,8 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         }
 
         let cert: any;
-        if (options.majorVersion === 2) {
-            const option = options.options ?? EMPTY_OBJ;
+        if (opts.majorVersion === 2) {
+            const option = opts.options ?? EMPTY_OBJ;
             cert = option.cert;
             const server = cert ? http2.createSecureServer(option, (req, res) => this.requestHandler(req, res)) : http2.createServer(option, (req, res) => this.requestHandler(req, res));
             this._server = server;
@@ -160,7 +159,7 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
                 this.logger.error(err)
             })
         } else {
-            const option = options.options ?? EMPTY_OBJ;
+            const option = opts.options ?? EMPTY_OBJ;
             cert = option.cert;
             const server = cert ? https.createServer(option, (req, res) => this.requestHandler(req, res)) : http.createServer(option, (req, res) => this.requestHandler(req, res));
             this._server = server;
@@ -170,32 +169,33 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         }
 
         //sharing servers
-        if (this.options.sharing) {
+        if (opts.sharing) {
             const resolver = injector.get(RunnableFactoryResolver);
             const providers = [
                 { provide: HttpServer, useValue: this },
-                { provide: HTTP_SERVEROPTIONS, useValue: this.options }
+                { provide: HTTP_SERVEROPTIONS, useValue: opts }
             ];
-            await Promise.all(this.options.sharing.map(sr => {
+            await Promise.all(opts.sharing.map(sr => {
                 const runnable = resolver.resolve(sr);
                 return runnable.create(injector, { providers }).run()
             }))
         }
 
-        const listenOptions = this.options.listenOpts;
-        injector.get(ModuleRef).setValue(LISTEN_OPTS, { ...listenOptions, withCredentials: isDefined(cert), majorVersion: options.majorVersion });
+        const listenOptions = opts.listenOpts;
+        injector.get(ModuleRef).setValue(LISTEN_OPTS, { ...listenOptions, withCredentials: isDefined(cert), majorVersion: opts.majorVersion });
         this.logger.info(lang.getClassName(this), 'listen:', listenOptions, '. access with url:', `http${cert ? 's' : ''}://${listenOptions?.host}:${listenOptions?.port}${listenOptions?.path ?? ''}`, '!')
         this._server.listen(listenOptions)
     }
 
     protected override bindEvent(ctx: HttpContext, cancel: Subscription): void {
         const req = ctx.request;
-        this.options.timeout && req.setTimeout(this.options.timeout, () => {
+        const opts = this.getOptions();
+        opts.timeout && req.setTimeout(opts.timeout, () => {
             req.emit(ev.TIMEOUT);
             cancel?.unsubscribe()
         });
         req.once(ev.CLOSE, async () => {
-            await lang.delay(this.options.closeDelay ?? 500);
+            await lang.delay(opts.closeDelay ?? 500);
             cancel?.unsubscribe();
             if (!ctx.sent) {
                 ctx.response.end()
@@ -211,7 +211,7 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
                 this.logger.error(err);
                 defer.reject(err)
             } else {
-                this.logger.info(lang.getClassName(this), this.options.listenOpts, 'closed !');
+                this.logger.info(lang.getClassName(this), this.getOptions().listenOpts, 'closed !');
                 defer.resolve()
             }
         });

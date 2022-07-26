@@ -329,13 +329,14 @@ export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
 const runnableDecors: Record<string, boolean> = { '@Autorun': true, '@IocExt': true };
 export const RunnableAction = (ctx: DecorContext, next: () => void) => {
     if (runnableDecors[ctx.decor]) {
-        ctx.reflect.class.runnables.push({
+        ctx.metadata = {
             decorType: ctx.decorType,
             args: (ctx.metadata as RunnableMetadata).args,
             auto: (ctx.metadata as RunnableMetadata).auto,
             method: (ctx.metadata as RunnableMetadata).method ?? ctx.propertyKey,
             order: ctx.decorType === Decors.CLASS ? 0 : (ctx.metadata as RunnableMetadata).order
-        });
+        }
+        ctx.reflect.class.runnables.push(ctx.metadata);
         ctx.reflect.class.runnables.sort((au1, au2) => au1.order! - au2.order!)
     }
     return next()

@@ -167,7 +167,7 @@ export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void
 export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void) {
     if (ctx.reflect.class.runnables.length) {
         const { injector: injector, type, instance, context } = ctx;
-        ctx.reflect.class.runnables.filter(c => c.auto).forEach(aut => {
+        ctx.reflect.class.runnables.filter(c => c.auto && c.decorType === Decors.method).forEach(aut => {
             injector.invoke(instance || type, aut.method, context)
         })
     }
@@ -199,7 +199,7 @@ export const RegSingletionAction = function (ctx: RuntimeContext, next: () => vo
  */
 export class RuntimeAnnoScope extends IocRegScope<RuntimeContext> implements ActionSetup {
     setup() {
-        this.use(IocSetCacheAction, RegSingletionAction, RuntimeAnnoDecorHandle)
+        this.use(IocSetCacheAction, RegSingletionAction, RuntimeAnnoDecorHandle, MthAutorunAction)
     }
 }
 

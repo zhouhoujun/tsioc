@@ -1,4 +1,4 @@
-import { Abstract, ArgumentError, EMPTY, InvocationContext, isClassType, lang, ProviderType, Token, Type, TypeOf } from '@tsdi/ioc';
+import { Abstract, ArgumentError, Autorun, AutoWired, EMPTY, InvocationContext, isClassType, lang, ProviderType, Token, Type, TypeOf } from '@tsdi/ioc';
 import { Log, Logger } from '@tsdi/logs';
 import { ExecptionChain } from '../execptions/chain';
 import { ExecptionFilter } from '../execptions/filter';
@@ -47,19 +47,37 @@ export abstract class TransportOpts<TRequest, TResponse> {
  * abstract transport endpoint.
  */
 @Abstract()
-export abstract class TransportEndpoint<TRequest = any, TResponse = any> {
+export abstract class TransportEndpoint<TRequest = any, TResponse = any, Opts extends TransportOpts<TRequest, TResponse> = any> {
 
+    /**
+     * logger of endpoint.
+     */
     @Log()
     readonly logger!: Logger;
+    /**
+     * context of the endpoint.
+     */
+    @AutoWired()
+    readonly context!: InvocationContext;
 
     private _chain?: Endpoint<TRequest, TResponse>;
     private _iptToken!: Token<InterceptorLike<TRequest, TResponse>[]>;
     private _filterToken!: Token<ExecptionFilter[]>;
     private _filter?: ExecptionFilter;
+    private _opts: Opts;
 
-    constructor(readonly context: InvocationContext, options?: TransportOpts<TRequest, TResponse>) {
-        const opts = this.initOption(options);
-        this.initialize(opts);
+    constructor(options?: Opts) {
+        this._opts = this.initOption(options);
+    }
+
+    @Autorun()
+    protected onEndpointInit() {
+        const opts = this.getOptions();
+        this.initContext(opts);
+    }
+
+    getOptions(): Opts {
+        return this._opts;
     }
 
     /**
@@ -123,13 +141,13 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any> {
      * initialize options.
      * @param options 
      */
-    protected abstract initOption(options?: TransportOpts<TRequest, TResponse>): TransportOpts<TRequest, TResponse>;
+    protected abstract initOption(options?: Opts): Opts;
 
     /**
      * initialize context with options.
      * @param options 
      */
-    protected initialize(options: TransportOpts<TRequest, TResponse>): void {
+    protected initContext(options: Opts): void {
         const injector = this.context.injector;
         injector.inject({ provide: Logger, useFactory: () => this.logger });
         if (options.providers && options.providers.length) {

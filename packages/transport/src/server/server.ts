@@ -1,5 +1,5 @@
 import { ExecptionTypedRespond, Protocol, Router, TransportServer } from '@tsdi/core';
-import { Inject, Injectable, InvocationContext, isBoolean, Nullable, Providers } from '@tsdi/ioc';
+import { Injectable, isBoolean, Nullable, Providers } from '@tsdi/ioc';
 import { Subscription } from 'rxjs';
 import { JsonDecoder, JsonEncoder } from '../coder';
 import { TrasportMimeAdapter } from '../impl/mime';
@@ -70,13 +70,13 @@ const defOpts = {
     { provide: Negotiator, useClass: TransportNegotiator, asDefault: true },
     { provide: Protocol, useExisting: TransportProtocol }
 ])
-export class ProtocolServer extends TransportServer<ServerRequest, ServerResponse, PrototcolContext> {
+export class ProtocolServer extends TransportServer<ServerRequest, ServerResponse, PrototcolContext, ProtocolServerOpts> {
 
 
 
     private options!: ProtocolServerOpts;
-    constructor(@Inject() readonly context: InvocationContext, @Nullable() options: ProtocolServerOpts) {
-        super(context, options)
+    constructor(@Nullable() options: ProtocolServerOpts) {
+        super(options)
     }
 
 
@@ -104,17 +104,18 @@ export class ProtocolServer extends TransportServer<ServerRequest, ServerRespons
                 return true
             });
         }
-
-        if (opts.content && !isBoolean(opts.content)) {
-            this.context.setValue(ContentOptions, opts.content)
-        }
-
-
-        if (opts.mimeDb) {
-            const mimedb = this.context.injector.get(MimeDb);
-            mimedb.from(opts.mimeDb)
-        }
         return opts;
+    }
+
+    protected override initContext(options: ProtocolServerOpts<any>): void {
+        if (options.content && !isBoolean(options.content)) {
+            this.context.setValue(ContentOptions, options.content)
+        }
+
+        if (options.mimeDb) {
+            const mimedb = this.context.injector.get(MimeDb);
+            mimedb.from(options.mimeDb)
+        }
     }
 
     protected createContext(request: ServerRequest, response: ServerResponse): PrototcolContext {

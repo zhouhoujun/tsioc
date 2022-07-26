@@ -1,5 +1,5 @@
 import { EMPTY, Inject, Injectable, InvocationContext, lang, Nullable, Providers, Token } from '@tsdi/ioc';
-import { RequestMethod, TransportClient, EndpointBackend, OnDispose, InterceptorLike, RequstOption, ResponseAs, RequestContext, mths, ReqHeaders, ReqHeadersLike, Protocol } from '@tsdi/core';
+import { RequestMethod, TransportClient, EndpointBackend, OnDispose, InterceptorLike, RequstOption, ResponseAs, RequestContext, mths, ReqHeaders, ReqHeadersLike, Protocol, TransportOpts } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpParams, HttpParamsOptions, HttpResponse } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import * as http from 'http';
@@ -42,17 +42,14 @@ export type RequestOptions = HttpRequestOpts & HttpNodeOpts;
 @Injectable()
 @Providers([
     { provide: MimeAdapter, useClass: TrasportMimeAdapter, asDefault: true },
-    { provide: Protocol, useClass: HttpProtocol, asDefault: true}
+    { provide: Protocol, useClass: HttpProtocol, asDefault: true }
 ])
-export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions> implements OnDispose {
+export class Http extends TransportClient<HttpRequest, HttpEvent, HttpClientOpts, RequestOptions> implements OnDispose {
 
     private _backend?: EndpointBackend<HttpRequest, HttpEvent>;
     private _client?: http2.ClientHttp2Session;
-    private opts!: HttpClientOpts;
-    constructor(
-        @Inject() context: InvocationContext,
-        @Nullable() option: HttpClientOpts) {
-        super(context, option)
+    constructor(@Nullable() option: HttpClientOpts) {
+        super(option)
 
     }
 
@@ -62,9 +59,12 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
 
     protected override initOption(options?: HttpClientOpts): HttpClientOpts {
         const interceptors = [...options?.interceptors ?? EMPTY, HttpPathInterceptor, HttpBodyInterceptor]
-        this.opts = { ...defOpts, ...options, interceptors } as HttpClientOpts;
-        this.context.setValue(HttpClientOpts, this.opts);
-        return this.opts;
+        return { ...defOpts, ...options, interceptors } as HttpClientOpts;
+    }
+
+    protected override initContext(options: HttpClientOpts): void {
+        super.initContext(options);
+        this.context.setValue(HttpClientOpts, options);
     }
 
     protected getInterceptorsToken(): Token<InterceptorLike<HttpRequest<any>, HttpEvent<any>>[]> {
@@ -79,9 +79,10 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, RequestOptions
     }
 
     protected override async connect(): Promise<void> {
-        if (this.opts.authority) {
+        const opts = this.getOptions();
+        if (opts.authority) {
             if (this._client && !this._client.closed) return;
-            this._client = http2.connect(this.opts.authority, this.opts.options);
+            this._client = http2.connect(opts.authority, opts.options);
             const defer = lang.defer();
             this._client.once(ev.ERROR, (err) => {
                 this.logger.error(err);

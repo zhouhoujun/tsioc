@@ -26,15 +26,11 @@ export abstract class ServerOpts<TRequest, TResponse> extends TransportOpts<TReq
  */
 @Abstract()
 @Runner('start')
-export abstract class TransportServer<TRequest = any, TResponse = any, Tx extends TransportContext = TransportContext> extends TransportEndpoint<TRequest, TResponse> implements OnDispose {
+export abstract class TransportServer<TRequest = any, TResponse = any, Tx extends TransportContext = TransportContext, Opts extends ServerOpts<TRequest, TResponse> = any> extends TransportEndpoint<TRequest, TResponse, Opts> implements OnDispose {
 
     private _midlsToken!: Token<MiddlewareLike[]>;
     
     abstract get proxy(): boolean;
-
-    constructor(context: InvocationContext, options?: ServerOpts<TRequest, TResponse>) {
-        super(context, options);
-    }
 
     /**
      * start server.
@@ -58,18 +54,18 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
      * @param options 
      * @returns 
      */
-    protected override initOption(options?: ServerOpts<TRequest, TResponse>): ServerOpts<TRequest, TResponse> {
-        return options ?? {};
+    protected override initOption(options?: Opts): Opts {
+        return options ?? {} as Opts;
     }
 
     /**
      * initialize middlewares, interceptors, execptions with options.
      * @param options 
      */
-    protected override initialize(options: ServerOpts<TRequest, TResponse>) {
+    protected override initContext(options: Opts) {
         const injector = this.context.injector;
         injector.setValue(TransportServer, this);
-        super.initialize(options);
+        super.initContext(options);
 
         const mToken = this._midlsToken = options.middlewaresToken!;
         if (!mToken) {

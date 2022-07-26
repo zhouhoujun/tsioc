@@ -682,7 +682,7 @@ export interface Static {
  *
  * @Static()
  */
- export const Static: Static = createDecorator<ClassMetadata>('Static', {
+export const Static: Static = createDecorator<ClassMetadata>('Static', {
     props: (provide: Token, alias?: string) => ({ provide: getToken(provide, alias) }),
     appendProps: (meta) => {
         meta.static = true
@@ -823,8 +823,10 @@ export const Autorun: Autorun = createDecorator<RunnableMetadata>('Autorun', {
         }
         return { order: arg, args }
     },
-    appendProps: (meta) => {
-        meta.auto = true;
-        meta.singleton = true
+    afterInit: (ctx) => {
+        ctx.metadata.auto = true;
+        if (ctx.decorType === 'class') {
+            ctx.metadata.singleton = true
+        }
     }
 });

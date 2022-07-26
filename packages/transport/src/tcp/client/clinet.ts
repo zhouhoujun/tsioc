@@ -33,28 +33,27 @@ const defaults = {
 @Injectable()
 @Providers([
     { provide: MimeAdapter, useClass: TrasportMimeAdapter, asDefault: true },
-    { provide: Protocol, useClass: TcpProtocol, asDefault: true}
+    { provide: Protocol, useClass: TcpProtocol, asDefault: true }
 ])
-export class TcpClient extends TransportClient<TransportRequest, TransportEvent> implements OnDispose {
+export class TcpClient extends TransportClient<TransportRequest, TransportEvent, TcpClientOpts> implements OnDispose {
 
     private socket?: Socket;
     private connected: boolean;
-    private option!: TcpClientOpts;
-    constructor(
-        @Inject() context: InvocationContext,
-        @Nullable() option: TcpClientOpts
-    ) {
-        super(context, option);
+    constructor(@Nullable() options: TcpClientOpts) {
+        super(options);
         this.connected = false;
     }
 
     protected override initOption(options?: TcpClientOpts): TcpClientOpts {
         const connectOpts = { ...defaults.connectOpts, ...options?.connectOpts };
         const interceptors = [...options?.interceptors ?? EMPTY, NormlizePathInterceptor, DetectBodyInterceptor];
-        this.option = { ...defaults, ...options, connectOpts, interceptors };
-        this.context.setValue(TcpClientOpts, this.option);
-        this.context.setValue(PacketProtocolOpts, this.option);
-        return this.option;
+        return { ...defaults, ...options, connectOpts, interceptors };
+    }
+
+    protected override initContext(options: TcpClientOpts): void {
+        this.context.setValue(TcpClientOpts, options);
+        this.context.setValue(PacketProtocolOpts, options);
+        super.initContext(options);
     }
 
     protected getBackend(): EndpointBackend<TransportRequest, TransportEvent> {
@@ -63,8 +62,8 @@ export class TcpClient extends TransportClient<TransportRequest, TransportEvent>
 
     protected async connect(): Promise<void> {
         if (this.connected) return;
-
-        const socket = this.socket ?? new Socket(this.option.socketOpts);
+        const opts = this.getOptions();
+        const socket = this.socket ?? new Socket(opts.socketOpts);
         if (!this.socket) {
             this.socket = socket;
             const closed = () => {
@@ -79,7 +78,7 @@ export class TcpClient extends TransportClient<TransportRequest, TransportEvent>
             socket.on(ev.END, closed);
         }
         const defer = lang.defer();
-        const isIPC = !!(this.option.connectOpts as IpcNetConnectOpts).path;
+        const isIPC = !!(opts.connectOpts as IpcNetConnectOpts).path;
 
         socket.once(ev.ERROR, defer.reject);
         socket.once(ev.CONNECT, () => {
@@ -92,7 +91,7 @@ export class TcpClient extends TransportClient<TransportRequest, TransportEvent>
             }
         });
 
-        this.socket.connect(this.option.connectOpts);
+        this.socket.connect(opts.connectOpts);
         await defer.promise;
     }
 

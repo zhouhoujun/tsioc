@@ -20,18 +20,14 @@ export abstract class ClientOpts<TRequest, TResponse> extends TransportOpts<TReq
  * abstract transport client.
  */
 @Abstract()
-export abstract class TransportClient<TRequest = any, TResponse = any, TOption extends RequstOption = RequstOption> extends TransportEndpoint<TRequest, TResponse> {
-
-    constructor(context: InvocationContext, options?: ClientOpts<TRequest, TResponse>) {
-        super(context, options);
-    }
-
+export abstract class TransportClient<TRequest = any, TResponse = any, Opts extends ClientOpts<TRequest, TResponse> = any, TOption extends RequstOption = RequstOption> extends TransportEndpoint<TRequest, TResponse, Opts> {
+    
     /**
      * initialize interceptors with options.
      * @param options 
      */
-    protected override initOption(options?: ClientOpts<TRequest, TResponse>): ClientOpts<TRequest, TResponse> {
-        return options ?? {};
+    protected override initOption(options?: Opts): Opts {
+        return options ?? {} as Opts;
     }
 
 
