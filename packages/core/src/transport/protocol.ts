@@ -3,6 +3,9 @@ import { IncomingPacket } from './packet';
 import { Redirector } from './redirector';
 import { TransportStatus } from './status';
 
+/**
+ * protocol for transport.
+ */
 @Abstract()
 export abstract class Protocol {
     /**
@@ -18,6 +21,10 @@ export abstract class Protocol {
      * @param url 
      */
     abstract parse(req: IncomingPacket, proxy?: boolean): URL;
+    /**
+     * match protocol or not.
+     * @param protocol 
+     */
     abstract match(protocol: string): boolean;
 
     /**
@@ -25,7 +32,7 @@ export abstract class Protocol {
      */
     abstract get status(): TransportStatus;
     /**
-     * redirector
+     * redirector of protocol.
      */
     abstract get redirector(): Redirector;
 }

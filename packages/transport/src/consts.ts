@@ -38,7 +38,6 @@ export namespace ev {
  */
 export namespace hdr {
 
-
     export const IDENTITY = 'identity';
     export const LOCATION = 'location';
 

@@ -72,7 +72,7 @@ const defOpts = {
 ])
 export class ProtocolServer extends TransportServer<ServerRequest, ServerResponse, PrototcolContext> {
 
-    
+
 
     private options!: ProtocolServerOpts;
     constructor(@Inject() readonly context: InvocationContext, @Nullable() options: ProtocolServerOpts) {
@@ -86,8 +86,8 @@ export class ProtocolServer extends TransportServer<ServerRequest, ServerRespons
 
     start(): Promise<void> {
         throw new Error('Method not implemented.');
-    } 
-    
+    }
+
     close(): Promise<void> {
         throw new Error('Method not implemented.');
     }
@@ -108,7 +108,7 @@ export class ProtocolServer extends TransportServer<ServerRequest, ServerRespons
         if (opts.content && !isBoolean(opts.content)) {
             this.context.setValue(ContentOptions, opts.content)
         }
-        
+
 
         if (opts.mimeDb) {
             const mimedb = this.context.injector.get(MimeDb);
@@ -124,6 +124,6 @@ export class ProtocolServer extends TransportServer<ServerRequest, ServerRespons
     protected bindEvent(ctx: PrototcolContext, cancel: Subscription): void {
         throw new Error('Method not implemented.');
     }
-   
+
 
 }

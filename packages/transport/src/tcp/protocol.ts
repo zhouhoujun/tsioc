@@ -1,12 +1,10 @@
-import { IncomingPacket, Packet, Redirector, TransportStatus } from '@tsdi/core';
+import { IncomingPacket, Redirector, TransportStatus } from '@tsdi/core';
 import { EMPTY_OBJ, Inject, Providers } from '@tsdi/ioc';
 import { ListenOpts, LISTEN_OPTS } from '@tsdi/platform-server';
-import { Readable, Writable } from 'stream';
-import { Observable } from 'rxjs';
 import { AssetRedirector } from '../client/redirector';
 import { TransportProtocol } from '../protocol';
 import { TcpStatus } from './status';
-import { ProtocolPacket } from '../packet';
+import { PacketTransform } from '../packet';
 
 @Providers([
     { provide: TransportStatus, useClass: TcpStatus },
@@ -32,23 +30,11 @@ export class TcpProtocol extends TransportProtocol {
         return this.name === 'tsl'
     }
 
-    connect(options: Record<string, any>): Promise<void> {
-        throw new Error('Method not implemented.');
-    }
-
-    read(stream: Readable, encoding?: BufferEncoding | undefined): Observable<Packet<any>> {
-        throw new Error('Method not implemented.');
-    }
-
-    write(stream: Writable, data: any, encoding?: BufferEncoding | undefined): Observable<Packet<any>> {
-        throw new Error('Method not implemented.');
-    }
-
     get name(): string {
         return this._name;
     }
-    
-    get packet(): ProtocolPacket {
+
+    get transform(): PacketTransform {
         throw new Error('Method not implemented.');
     }
 

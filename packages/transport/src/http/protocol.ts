@@ -10,7 +10,7 @@ import { AssetRedirector } from '../client/redirector';
 import { TransportProtocol } from '../protocol';
 import { HttpStatus } from './status';
 import { hdr } from '../consts';
-import { ProtocolPacket } from '../packet';
+import { PacketTransform } from '../packet';
 
 @Providers([
     { provide: TransportStatus, useClass: HttpStatus },
@@ -35,21 +35,10 @@ export class HttpProtocol extends TransportProtocol {
         return this.name === 'https'
     }
 
-    get packet(): ProtocolPacket {
+    get transform(): PacketTransform {
         throw new Error('Method not implemented.');
     }
 
-    connect(options: Record<string, any>): Promise<void> {
-        throw new Error('Method not implemented.');
-    }
-
-    read(stream: Readable, encoding?: BufferEncoding | undefined): Observable<Packet<any>> {
-        throw new Error('Method not implemented.');
-    }
-
-    write(stream: Writable, data: any, encoding?: BufferEncoding | undefined): Observable<Packet<any>> {
-        throw new Error('Method not implemented.');
-    }
 
     get name(): string {
         return this._name;

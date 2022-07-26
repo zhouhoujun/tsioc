@@ -672,7 +672,6 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
         return this.response.getHeader(hdr.ETAG) as string
     }
 
-
     /**
      * Perform a 302 redirect to `url`.
      *
@@ -716,7 +715,7 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
      * @return {Boolean}
      * @api public
      */
-     get sent() {
+    get sent() {
         return this.response.headersSent
     }
 
@@ -791,7 +790,6 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
         if (this.sent) return;
         this.response.removeHeader(field)
     }
-
 
     /**
      * Append additional header `field` with value `val`.

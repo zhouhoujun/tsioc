@@ -7,7 +7,6 @@ import { TcpServResponse } from './response';
 
 
 
-const abstUrlExp = /^tcp:/;
 
 /**
  * TCP context.

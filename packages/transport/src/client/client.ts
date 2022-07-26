@@ -40,15 +40,6 @@ export class ProtocolClient extends TransportClient<TransportRequest, TransportE
         super(context, options);
     }
 
-    private _protocol?: TransportProtocol;
-
-    get protocol() {
-        if (!this._protocol) {
-            this._protocol = this.context.get(TransportProtocol);
-        }
-        return this._protocol;
-    }
-
     protected override initOption(options?: ProtocolClientOpts): ProtocolClientOpts {
         const connectOpts = { ...defaults.connectOpts, ...options?.connectOpts };
         const interceptors = [...options?.interceptors ?? EMPTY, NormlizePathInterceptor, DetectBodyInterceptor];
@@ -63,7 +54,7 @@ export class ProtocolClient extends TransportClient<TransportRequest, TransportE
     }
 
     protected connect(): Promise<void> {
-        return this.protocol.connect(this.option.connectOpts);
+        throw new Error('Method not implemented.');
     }
 
     protected getBackend(): EndpointBackend<TransportRequest<any>, TransportEvent<any>> {
