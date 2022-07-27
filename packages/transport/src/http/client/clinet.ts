@@ -1,4 +1,4 @@
-import { EMPTY, Inject, Injectable, InvocationContext, lang, Nullable, Providers, Token } from '@tsdi/ioc';
+import { EMPTY, Injectable, InvocationContext, lang, Nullable, Token } from '@tsdi/ioc';
 import { RequestMethod, TransportClient, EndpointBackend, OnDispose, InterceptorLike, RequstOption, ResponseAs, RequestContext, mths, ReqHeaders, ReqHeadersLike, Protocol, TransportOpts } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpParams, HttpParamsOptions, HttpResponse } from '@tsdi/common';
 import { Observable } from 'rxjs';
@@ -6,13 +6,11 @@ import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
 import { ev } from '../../consts';
-import { MimeAdapter } from '../../mime';
-import { TrasportMimeAdapter } from '../../impl/mime';
 import { HttpBackend } from './backend';
 import { HttpPathInterceptor } from './path';
 import { HttpBodyInterceptor } from './body';
 import { HttpClientOpts, HTTP_INTERCEPTORS, CLIENT_HTTP2SESSION, HTTP_EXECPTIONFILTERS } from './option';
-import { HttpProtocol } from '../protocol';
+import { HTTP_CLIENT_PROVIDERS } from './providers';
 
 
 
@@ -40,10 +38,6 @@ export type RequestOptions = HttpRequestOpts & HttpNodeOpts;
  * http client for nodejs
  */
 @Injectable()
-@Providers([
-    { provide: MimeAdapter, useClass: TrasportMimeAdapter, asDefault: true },
-    { provide: Protocol, useClass: HttpProtocol, asDefault: true }
-])
 export class Http extends TransportClient<HttpRequest, HttpEvent, HttpClientOpts, RequestOptions> implements OnDispose {
 
     private _backend?: EndpointBackend<HttpRequest, HttpEvent>;
@@ -59,7 +53,8 @@ export class Http extends TransportClient<HttpRequest, HttpEvent, HttpClientOpts
 
     protected override initOption(options?: HttpClientOpts): HttpClientOpts {
         const interceptors = [...options?.interceptors ?? EMPTY, HttpPathInterceptor, HttpBodyInterceptor]
-        return { ...defOpts, ...options, interceptors } as HttpClientOpts;
+        const providers = options && options.providers ? [...HTTP_CLIENT_PROVIDERS, ...options.providers] : HTTP_CLIENT_PROVIDERS;
+        return { ...defOpts, ...options, interceptors, providers } as HttpClientOpts;
     }
 
     protected override initContext(options: HttpClientOpts): void {

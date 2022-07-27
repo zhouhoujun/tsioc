@@ -1,13 +1,11 @@
-import { EndpointBackend, Protocol, RequestContext, RequstOption, TransportClient, UuidGenerator } from '@tsdi/core';
-import { EMPTY, Injectable, isString, Nullable, Providers } from '@tsdi/ioc';
+import { EndpointBackend, RequestContext, RequstOption, TransportClient, UuidGenerator } from '@tsdi/core';
+import { EMPTY, Injectable, isString, Nullable } from '@tsdi/ioc';
 import { JsonDecoder, JsonEncoder } from '../coder';
-import { TrasportMimeAdapter } from '../impl/mime';
-import { MimeAdapter } from '../mime';
-import { TransportProtocol } from '../protocol';
 import { ProtocolBackend } from './backend';
 import { DetectBodyInterceptor } from './body';
 import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, ProtocolClientOpts } from './options';
 import { NormlizePathInterceptor } from './path';
+import { PROTOCOL_CLIENT_PROVIDERS } from './providers';
 import { TransportRequest } from './request';
 import { TransportEvent } from './response';
 
@@ -22,14 +20,11 @@ const defaults = {
     execptionsToken: CLIENT_EXECPTIONFILTERS,
 } as ProtocolClientOpts;
 
+
 /**
  * Transport Protocol Client.
  */
 @Injectable()
-@Providers([
-    { provide: MimeAdapter, useClass: TrasportMimeAdapter, asDefault: true },
-    { provide: Protocol, useExisting: TransportProtocol }
-])
 export class ProtocolClient extends TransportClient<TransportRequest, TransportEvent, ProtocolClientOpts> {
 
     constructor(@Nullable() options: ProtocolClientOpts) {
@@ -39,7 +34,9 @@ export class ProtocolClient extends TransportClient<TransportRequest, TransportE
     protected override initOption(options?: ProtocolClientOpts): ProtocolClientOpts {
         const connectOpts = { ...defaults.connectOpts, ...options?.connectOpts };
         const interceptors = [...options?.interceptors ?? EMPTY, NormlizePathInterceptor, DetectBodyInterceptor];
-        return { ...defaults, ...options, connectOpts, interceptors };
+        const providers = options && options.providers ? [...PROTOCOL_CLIENT_PROVIDERS, ...options.providers] : PROTOCOL_CLIENT_PROVIDERS;
+        const opts = { ...defaults, ...options, connectOpts, interceptors, providers };
+        return opts;
     }
 
     protected override initContext(options: ProtocolClientOpts): void {

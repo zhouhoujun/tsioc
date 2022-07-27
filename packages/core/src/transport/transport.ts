@@ -90,7 +90,7 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any, Opts ex
      * @returns 
      */
     intercept(interceptor: InterceptorType<TRequest, TResponse>, order?: number): this {
-        this.regMultiOrder(this._iptToken, interceptor, order);
+        this.multiOrder(this._iptToken, interceptor, order);
         this.resetEndpoint();
         return this
     }
@@ -103,7 +103,7 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any, Opts ex
         if (!this._filterToken) {
             throw new ArgumentError(lang.getClassName(this) + ' options execptionsToken is missing.');
         }
-        this.regMultiOrder(this._filterToken, filter, order);
+        this.multiOrder(this._filterToken, filter, order);
         this._filter = null!;
         return this;
     }
@@ -161,7 +161,7 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any, Opts ex
             throw new ArgumentError(lang.getClassName(this) + ' options interceptorsToken is missing.');
         }
         if (options.interceptors && options.interceptors.length) {
-            this.regMulti(iToken, options.interceptors);
+            this.multiReg(iToken, options.interceptors);
         }
 
         const eToken = this._filterToken = options.execptionsToken!;
@@ -170,7 +170,7 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any, Opts ex
         }
         if (options.execptions && options.execptions.length) {
 
-            this.regMulti(eToken, options.execptions);
+            this.multiReg(eToken, options.execptions);
         }
 
         if (options.encoder) {
@@ -182,7 +182,7 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any, Opts ex
 
     }
 
-    protected regMulti<T>(provide: Token, types: (Type<T> | T)[]): void {
+    protected multiReg<T>(provide: Token, types: (Type<T> | T)[]): void {
         const providers = types.map(m => {
             if (isClassType(m)) {
                 return { provide, useClass: m, multi: true }
@@ -193,7 +193,7 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any, Opts ex
         this.context.injector.inject(providers);
     }
 
-    protected regMultiOrder<T>(provide: Token, target: Type<T> | T, multiOrder?: number) {
+    protected multiOrder<T>(provide: Token, target: Type<T> | T, multiOrder?: number) {
         if (isClassType(target)) {
             this.context.injector.inject({ provide, useClass: target, multi: true, multiOrder })
         } else {

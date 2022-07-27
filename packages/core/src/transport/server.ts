@@ -56,7 +56,7 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
      * @param middleware 
      */
     use(middleware: MiddlewareType<Tx>, order?: number): this {
-        this.regMultiOrder(this._midlsToken, middleware, order);
+        this.multiOrder(this._midlsToken, middleware, order);
         this.resetEndpoint();
         return this
     }
@@ -86,7 +86,7 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
         }
 
         if (options.middlewares && options.middlewares.length) {
-            this.regMulti(mToken, options.middlewares);
+            this.multiReg(mToken, options.middlewares);
         }
     }
 

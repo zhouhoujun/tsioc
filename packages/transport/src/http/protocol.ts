@@ -1,21 +1,14 @@
-import { Packet, Redirector, TransportStatus } from '@tsdi/core';
-import { EMPTY_OBJ, Inject, isNumber, isString, Providers } from '@tsdi/ioc';
+import { Redirector, TransportStatus } from '@tsdi/core';
+import { EMPTY_OBJ, Inject, Injectable, isNumber, isString } from '@tsdi/ioc';
 import { ListenOpts, LISTEN_OPTS } from '@tsdi/platform-server';
-import { Readable, Writable } from 'stream';
 import * as http from 'http';
 import * as http2 from 'http2';
 import { TLSSocket } from 'tls';
-import { Observable } from 'rxjs';
-import { AssetRedirector } from '../client/redirector';
 import { TransportProtocol } from '../protocol';
-import { HttpStatus } from './status';
 import { hdr } from '../consts';
 import { PacketTransform } from '../packet';
 
-@Providers([
-    { provide: TransportStatus, useClass: HttpStatus },
-    { provide: Redirector, useClass: AssetRedirector }
-])
+@Injectable()
 export class HttpProtocol extends TransportProtocol {
 
     private _name = 'http';

@@ -1,5 +1,5 @@
-import { Inject, Injectable, isBoolean, isDefined, isFunction, lang, Providers, EMPTY_OBJ } from '@tsdi/ioc';
-import { TransportServer, RunnableFactoryResolver, ModuleRef, Router, ExecptionTypedRespond, TransportStatus, Protocol, HandlerBinding } from '@tsdi/core';
+import { Inject, Injectable, isBoolean, isDefined, isFunction, lang, EMPTY_OBJ, EMPTY } from '@tsdi/ioc';
+import { TransportServer, RunnableFactoryResolver, ModuleRef, Router } from '@tsdi/core';
 import { LISTEN_OPTS } from '@tsdi/platform-server';
 import { ListenOptions } from 'net';
 import * as http from 'http';
@@ -10,23 +10,15 @@ import { CONTENT_DISPOSITION } from '../../content';
 import { HttpContext, HttpServRequest, HttpServResponse, HTTP_MIDDLEWARES } from './context';
 import { ev, LOCALHOST } from '../../consts';
 import {
-    ContentSendAdapter, CorsMiddleware, EncodeJsonMiddleware, HelmetMiddleware, BodyparserMiddleware,
+    CorsMiddleware, EncodeJsonMiddleware, HelmetMiddleware, BodyparserMiddleware,
     ContentMiddleware, ContentOptions, SessionMiddleware, CsrfMiddleware
 } from '../../middlewares';
-import { MimeAdapter, MimeDb } from '../../mime';
-import { Negotiator } from '../../negotiator';
-import { CatchInterceptor, LogInterceptor, ResponseStatusFormater, RespondAdapter, RespondInterceptor } from '../../interceptors';
-import { DefaultStatusFormater } from '../../interceptors/formater';
+import { MimeDb } from '../../mime';
+import { CatchInterceptor, LogInterceptor, RespondInterceptor } from '../../interceptors';
 import { db } from '../../impl/mimedb';
-import { TrasportMimeAdapter } from '../../impl/mime';
-import { TransportSendAdapter } from '../../impl/send';
-import { TransportNegotiator } from '../../impl/negotiator';
-import { HttpExecptionTypedRespond, HttpRespondAdapter } from './respond';
 import { ArgumentErrorFilter, HttpFinalizeFilter } from './finalize-filter';
 import { Http2ServerOpts, HttpServerOpts, HTTP_EXECPTION_FILTERS, HTTP_SERVEROPTIONS, HTTP_SERV_INTERCEPTORS } from './options';
-import { HttpStatus } from '../status';
-import { HttpProtocol } from '../protocol';
-import { HttpHandlerBinding } from './binding';
+import { HTTP_SERVR_PROVIDERS } from './providers';
 
 
 
@@ -67,21 +59,11 @@ const httpOpts = {
     ]
 } as Http2ServerOpts;
 
+
 /**
  * http server.
  */
 @Injectable()
-@Providers([
-    { provide: ResponseStatusFormater, useClass: DefaultStatusFormater, asDefault: true },
-    { provide: RespondAdapter, useClass: HttpRespondAdapter, asDefault: true },
-    { provide: ExecptionTypedRespond, useClass: HttpExecptionTypedRespond, asDefault: true },
-    { provide: ContentSendAdapter, useClass: TransportSendAdapter, asDefault: true },
-    { provide: MimeAdapter, useClass: TrasportMimeAdapter, asDefault: true },
-    { provide: Negotiator, useClass: TransportNegotiator, asDefault: true },
-    { provide: TransportStatus, useClass: HttpStatus, asDefault: true },
-    { provide: Protocol, useClass: HttpProtocol, asDefault: true },
-    { provide: HandlerBinding, useClass: HttpHandlerBinding, asDefault: true }
-])
 export class HttpServer extends TransportServer<HttpServRequest, HttpServResponse, HttpContext, HttpServerOpts>  {
 
     private _server?: http2.Http2Server | http.Server | https.Server;
@@ -113,7 +95,8 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         if (options?.listenOpts) {
             options.listenOpts = { ...httpOpts.listenOpts, ...options.listenOpts }
         }
-        const opts = { ...httpOpts, ...options } as HttpServerOpts;
+        const providers = options && options.providers? [...HTTP_SERVR_PROVIDERS, ...options.providers] : HTTP_SERVR_PROVIDERS;
+        const opts = { ...httpOpts, ...options, providers } as HttpServerOpts;
 
         if (opts.middlewares) {
             opts.middlewares = opts.middlewares.filter(m => {
