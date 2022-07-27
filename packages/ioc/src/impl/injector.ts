@@ -313,7 +313,7 @@ export class DefaultInjector extends Injector {
 
     protected tryResolve(token: Token, record: FactoryRecord | undefined, platform: Platform, parent: Injector | undefined,
         context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, lifecycle?: LifecycleHooks) {
-        return tryResolveToken(token, record, this.records, platform, parent, context, notFoundValue, flags, lifecycle, this.isStatic)
+        return tryResolveToken(token, record, this.records, platform, parent, context, notFoundValue, flags, lifecycle, record?.isStatic ?? this.isStatic)
     }
 
     resolve<T>(option: ResolveOption<T>): T;
@@ -775,12 +775,12 @@ export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, rec
         if (isDef && token !== Injector && token !== INJECTOR && rd && rd.fn !== IDENT && rd.fn !== MUTIL && lifecycle && isTypeObject(value)) {
             lifecycle.register(value)
         }
-        if (isDef && (isStatic || rd?.isStatic)) {
+        if (isDef && isStatic) {
             if (rd) {
                 if (isNil(rd.value)) {
                     rd.value = value
                 }
-            } else if (isStatic) {
+            } else {
                 records.set(token, { value })
             }
         }

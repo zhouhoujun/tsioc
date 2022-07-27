@@ -1,6 +1,7 @@
-import { Injector, lang } from '@tsdi/ioc';
+import { createContext, Injector, lang } from '@tsdi/ioc';
 import expect = require('expect');
 import { Module, Application, ConfigureService, ApplicationContext, ComponentScan } from '../src';
+import { ConfiguraionManger, Settings } from './demo';
 
 @ComponentScan()
 export class MyStartupService implements ConfigureService {
@@ -93,6 +94,7 @@ class DeviceAModule {
         DeviceAModule
     ],
     providers: [
+        ConfiguraionManger,
         MyStartupService,
         MyStartupService1
     ]
@@ -127,6 +129,30 @@ describe('app message queue', () => {
         const a = injector.get(DeviceAService);
         expect(a.data.connid).toEqual('device_connect0')
     });
+
+    
+
+    it('has bean setting', ()=> {
+        const settings = ctx.get(Settings) as Record<string, any>;
+        expect(settings).toBeDefined();
+        expect(settings.id).toEqual(1);
+        expect(settings.v).toEqual(1);
+        const settings2 = ctx.get(Settings) as Record<string, any>;
+        expect(settings2.id).toEqual(2);
+        expect(settings2.v).toEqual(1);
+    })
+
+    it('bean provide cache in context', ()=> {
+        const context = createContext(ctx);
+        const settings = context.get(Settings) as Record<string, any>;
+        expect(settings).toBeDefined();
+        expect(settings.id).toEqual(3);
+        expect(settings.v).toEqual(1);
+        const settings2 = context.get(Settings) as Record<string, any>;
+        expect(settings2.id).toEqual(3);
+        expect(settings2.v).toEqual(1);
+    })
+
 
     after(() => {
         ctx.destroy();

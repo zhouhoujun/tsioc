@@ -196,12 +196,16 @@ export const logConfig = {
 export abstract class Settings implements Record<string, any> {
 
 }
+
+let id = 0;
 @Configuration()
 export class ConfiguraionManger {
 
     @Bean()
     settings(): Settings {
+        id++;
         return {
+            id,
             v: 1
         };
     }

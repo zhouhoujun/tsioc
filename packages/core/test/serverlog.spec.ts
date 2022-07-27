@@ -3,7 +3,7 @@ import { ConfigureLoggerManager, ILogger, LogConfigure } from '@tsdi/logs';
 import { After, Before, Suite, Test } from '@tsdi/unit';
 import expect = require('expect');
 import { ApplicationContext, Application, formatDate, PROCESS_ROOT } from '../src';
-import { ConfiguraionManger, logConfig, ServerMainModule, Settings } from './demo';
+import { logConfig, ServerMainModule } from './demo';
 import * as log4js from 'log4js';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -22,7 +22,6 @@ export class ServerBootTest {
         this.ctx = await Application.run({
             module: ServerMainModule,
             providers: [
-                ConfiguraionManger,
                 { provide: PROCESS_ROOT, useValue: dir },
                 { provide: LogConfigure, useValue: logConfig }
             ]
@@ -55,13 +54,6 @@ export class ServerBootTest {
         const content = fs.readFileSync(this.logfile, 'utf-8');
         expect(isString(content)).toBeTruthy();
         expect(content.indexOf(msg)).toBeGreaterThan(0);
-    }
-
-    @Test()
-    hasSetting() {
-        const settings = this.ctx.get(Settings) as Record<string, any>;
-        expect(settings).toBeDefined();
-        expect(settings.v).toEqual(1);
     }
 
 

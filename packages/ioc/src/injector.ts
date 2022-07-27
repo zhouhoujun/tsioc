@@ -311,17 +311,17 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * destroy hook.
      */
     abstract onDestroy(): void;
-     /**
-      * register callback on destroy.
-      * @param callback destroy callback
-      */
+    /**
+     * register callback on destroy.
+     * @param callback destroy callback
+     */
     abstract onDestroy(callback: DestroyCallback): void;
     /**
      * unregister destroy callback.
      * @param callback 
      */
     abstract offDestroy(callback: DestroyCallback): void;
-    
+
 
     protected abstract processRegister(platform: Platform, type: Type, reflect: TypeReflect, option?: TypeOption): void;
 
@@ -589,7 +589,7 @@ export interface FactoryRecord<T = any> {
     /**
      * is static for fn create once.
      */
-     isStatic?: boolean;
+    isStatic?: boolean;
 
     /**
      * cache value.
