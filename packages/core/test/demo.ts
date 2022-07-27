@@ -202,7 +202,7 @@ export class ConfiguraionManger {
     @Bean()
     settings(): Settings {
         return {
-
+            v: 1
         };
     }
 
