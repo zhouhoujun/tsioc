@@ -1,5 +1,5 @@
-import { EndpointBackend, OnDispose, Protocol, RequestContext, TransportClient, UuidGenerator } from '@tsdi/core';
-import { EMPTY, Inject, Injectable, InvocationContext, isString, lang, Nullable, Providers } from '@tsdi/ioc';
+import { EndpointBackend, OnDispose, Protocol, RequestContext, TransportClient, TransportStatus, UuidGenerator } from '@tsdi/core';
+import { EMPTY, Injectable, isString, lang, Nullable } from '@tsdi/ioc';
 import { Socket, IpcNetConnectOpts } from 'net';
 import { TransportRequest } from '../../client/request';
 import { TransportEvent } from '../../client/response';
@@ -9,10 +9,10 @@ import { TcpClientOpts, TCP_EXECPTIONFILTERS, TCP_INTERCEPTORS } from './options
 import { DetectBodyInterceptor } from '../../client/body';
 import { PacketProtocolOpts } from '../packet';
 import { TcpBackend } from './backend';
-import { MimeAdapter } from '../../mime';
-import { TrasportMimeAdapter } from '../../impl/mime';
 import { TcpProtocol } from '../protocol';
 import { NormlizePathInterceptor } from '../../client/path';
+import { TcpStatus } from '../status';
+import { MIME_PROVIDERS } from '../../asset.pdr';
 
 
 
@@ -27,14 +27,16 @@ const defaults = {
 } as TcpClientOpts;
 
 
+export const TCP_CLIENT_PROVIDERS = [
+    ...MIME_PROVIDERS,
+    { provide: TransportStatus, useClass: TcpStatus },
+    { provide: Protocol, useClass: TcpProtocol },
+]
+
 /**
  * TcpClient. client of  `tcp` or `ipc`. 
  */
 @Injectable()
-@Providers([
-    { provide: MimeAdapter, useClass: TrasportMimeAdapter, asDefault: true },
-    { provide: Protocol, useClass: TcpProtocol, asDefault: true }
-])
 export class TcpClient extends TransportClient<TransportRequest, TransportEvent, TcpClientOpts> implements OnDispose {
 
     private socket?: Socket;
@@ -47,7 +49,8 @@ export class TcpClient extends TransportClient<TransportRequest, TransportEvent,
     protected override initOption(options?: TcpClientOpts): TcpClientOpts {
         const connectOpts = { ...defaults.connectOpts, ...options?.connectOpts };
         const interceptors = [...options?.interceptors ?? EMPTY, NormlizePathInterceptor, DetectBodyInterceptor];
-        return { ...defaults, ...options, connectOpts, interceptors };
+        const providers = options && options.providers ? [...TCP_CLIENT_PROVIDERS, ...options.providers] : TCP_CLIENT_PROVIDERS;
+        return { ...defaults, ...options, connectOpts, interceptors, providers };
     }
 
     protected override initContext(options: TcpClientOpts): void {

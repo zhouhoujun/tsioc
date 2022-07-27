@@ -1,29 +1,24 @@
-import { BadRequestError, BytesPipe, EADDRINUSE, ECONNREFUSED, ExecptionTypedRespond, HandlerBinding, Protocol, Router, TransportServer } from '@tsdi/core';
-import { Inject, Injectable, InvocationContext, isBoolean, lang, Nullable, Providers } from '@tsdi/ioc';
+import { BadRequestError, BytesPipe, EADDRINUSE, ECONNREFUSED, ExecptionTypedRespond, HandlerBinding, Protocol, Router, TransportServer, TransportStatus } from '@tsdi/core';
+import { Injectable, isBoolean, lang, Nullable, ProviderType } from '@tsdi/ioc';
 import { LISTEN_OPTS } from '@tsdi/platform-server';
 import { Server } from 'net';
-import { Subscription } from 'rxjs';
 import { JsonDecoder, JsonEncoder } from '../../coder';
 import { ev, hdr, identity } from '../../consts';
-import { TrasportMimeAdapter } from '../../impl/mime';
-import { TransportNegotiator } from '../../impl/negotiator';
-import { TransportSendAdapter } from '../../impl/send';
-import { CatchInterceptor, LogInterceptor, RespondAdapter, RespondInterceptor, ResponseStatusFormater } from '../../interceptors';
+import { CatchInterceptor, LogInterceptor, RespondAdapter, RespondInterceptor } from '../../interceptors';
 import { BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMiddleware, SessionMiddleware } from '../../middlewares';
-import { ContentSendAdapter } from '../../middlewares/send';
-import { MimeAdapter, MimeDb } from '../../mime';
-import { Negotiator } from '../../negotiator';
+import { MimeDb } from '../../mime';
 import { TcpContext, TCP_EXECPTION_FILTERS, TCP_MIDDLEWARES } from './context';
 import { TcpServRequest } from './request';
 import { TcpExecptionTypedRespond, TcpRespondAdapter } from './respond';
 import { TcpServResponse } from './response';
 import { db } from '../../impl/mimedb';
-import { DefaultStatusFormater } from '../../interceptors/formater';
 import { TcpArgumentErrorFilter, TcpFinalizeFilter } from './finalize-filter';
 import { TcpServerOpts, TCP_SERV_INTERCEPTORS } from './options';
 import { PacketProtocol, PacketProtocolOpts } from '../packet';
 import { TcpProtocol } from '../protocol';
 import { TcpHandlerBinding } from './binding';
+import { TcpStatus } from '../status';
+import { ASSET_SERVR_PROVIDERS } from '../../asset.pdr';
 
 
 const defOpts = {
@@ -59,21 +54,19 @@ const defOpts = {
     }
 } as TcpServerOpts;
 
+export const TCP_SERV_PROVIDERS: ProviderType[] = [
+    ...ASSET_SERVR_PROVIDERS,
+    { provide: RespondAdapter, useClass: TcpRespondAdapter },
+    { provide: ExecptionTypedRespond, useClass: TcpExecptionTypedRespond },
+    { provide: TransportStatus, useClass: TcpStatus },
+    { provide: Protocol, useClass: TcpProtocol },
+    { provide: HandlerBinding, useClass: TcpHandlerBinding }
+]
 
 /**
  * TCP server. server of `tcp` or `ipc`. 
  */
 @Injectable()
-@Providers([
-    { provide: ResponseStatusFormater, useClass: DefaultStatusFormater, asDefault: true },
-    { provide: RespondAdapter, useClass: TcpRespondAdapter, asDefault: true },
-    { provide: ExecptionTypedRespond, useClass: TcpExecptionTypedRespond, asDefault: true },
-    { provide: ContentSendAdapter, useClass: TransportSendAdapter, asDefault: true },
-    { provide: MimeAdapter, useClass: TrasportMimeAdapter, asDefault: true },
-    { provide: Negotiator, useClass: TransportNegotiator, asDefault: true },
-    { provide: Protocol, useClass: TcpProtocol, asDefault: true },
-    { provide: HandlerBinding, useClass: TcpHandlerBinding, asDefault: true }
-])
 export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, TcpContext, TcpServerOpts> {
 
     get proxy(): boolean {
@@ -87,7 +80,8 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
 
     protected override initOption(options: TcpServerOpts): TcpServerOpts {
         const listenOptions = { ...defOpts.listenOpts, ...options?.listenOpts };
-        const opts = { ...defOpts, ...options, listenOpts: listenOptions };
+        const providers = options && options.providers ? [...TCP_SERV_PROVIDERS, options.providers] : TCP_SERV_PROVIDERS;
+        const opts = { ...defOpts, ...options, listenOpts: listenOptions, providers };
 
         if (opts.middlewares) {
             opts.middlewares = opts.middlewares.filter(m => {
@@ -97,7 +91,7 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
             });
         }
 
-        return opts;
+        return opts as TcpServerOpts;
     }
 
     protected override initContext(options: TcpServerOpts): void {

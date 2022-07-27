@@ -1,15 +1,10 @@
 import { IncomingPacket, Redirector, TransportStatus } from '@tsdi/core';
-import { EMPTY_OBJ, Inject, Providers } from '@tsdi/ioc';
+import { EMPTY_OBJ, Inject, Injectable } from '@tsdi/ioc';
 import { ListenOpts, LISTEN_OPTS } from '@tsdi/platform-server';
-import { AssetRedirector } from '../client/redirector';
 import { TransportProtocol } from '../protocol';
-import { TcpStatus } from './status';
 import { PacketTransform } from '../packet';
 
-@Providers([
-    { provide: TransportStatus, useClass: TcpStatus },
-    { provide: Redirector, useClass: AssetRedirector }
-])
+@Injectable()
 export class TcpProtocol extends TransportProtocol {
 
     private _name = 'tcp';

@@ -5,6 +5,7 @@ import { DestroyCallback, Destroyable, OnDestroy } from './destroy';
 import { Injector } from './injector';
 import { ArgumentResolver, Parameter } from './resolver';
 import { ProviderType } from './providers';
+import { OperationInvoker } from './operation';
 
 
 /**

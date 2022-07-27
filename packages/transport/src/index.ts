@@ -10,6 +10,7 @@ export * from './coder';
 export * from './protocol';
 
 export * from './asset.ctx';
+export * from './asset.pdr';
 export * from './interceptors';
 export * from './middlewares';
 
