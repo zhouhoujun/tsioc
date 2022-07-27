@@ -72,8 +72,6 @@ const defOpts = {
 ])
 export class ProtocolServer extends TransportServer<ServerRequest, ServerResponse, PrototcolContext, ProtocolServerOpts> {
 
-
-
     private options!: ProtocolServerOpts;
     constructor(@Nullable() options: ProtocolServerOpts) {
         super(options)

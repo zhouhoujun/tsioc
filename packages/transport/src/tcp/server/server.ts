@@ -1,4 +1,4 @@
-import { BadRequestError, BytesPipe, EADDRINUSE, ECONNREFUSED, ExecptionTypedRespond, Protocol, Router, TransportServer } from '@tsdi/core';
+import { BadRequestError, BytesPipe, EADDRINUSE, ECONNREFUSED, ExecptionTypedRespond, HandlerBinding, Protocol, Router, TransportServer } from '@tsdi/core';
 import { Inject, Injectable, InvocationContext, isBoolean, lang, Nullable, Providers } from '@tsdi/ioc';
 import { LISTEN_OPTS } from '@tsdi/platform-server';
 import { Server } from 'net';
@@ -23,6 +23,7 @@ import { TcpArgumentErrorFilter, TcpFinalizeFilter } from './finalize-filter';
 import { TcpServerOpts, TCP_SERV_INTERCEPTORS } from './options';
 import { PacketProtocol, PacketProtocolOpts } from '../packet';
 import { TcpProtocol } from '../protocol';
+import { TcpHandlerBinding } from './binding';
 
 
 const defOpts = {
@@ -70,7 +71,8 @@ const defOpts = {
     { provide: ContentSendAdapter, useClass: TransportSendAdapter, asDefault: true },
     { provide: MimeAdapter, useClass: TrasportMimeAdapter, asDefault: true },
     { provide: Negotiator, useClass: TransportNegotiator, asDefault: true },
-    { provide: Protocol, useClass: TcpProtocol, asDefault: true }
+    { provide: Protocol, useClass: TcpProtocol, asDefault: true },
+    { provide: HandlerBinding, useClass: TcpHandlerBinding, asDefault: true }
 ])
 export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, TcpContext, TcpServerOpts> {
 
@@ -94,7 +96,7 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
                 return true
             });
         }
-        
+
         return opts;
     }
 
@@ -169,22 +171,13 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
                             socket.emit(ev.ERROR, msg);
                             throw new BadRequestError(msg);
                         }
-                        this.requestHandler(new TcpServRequest(protocol, socket, pk), new TcpServResponse(socket, pk.id!))
+                        this.onRequestHandler(new TcpServRequest(protocol, socket, pk), new TcpServResponse(socket, pk.id!))
                     }
                 });
         });
 
         this.server.listen(opts.listenOpts, defer.resolve);
         await defer.promise;
-    }
-
-    protected bindEvent(ctx: TcpContext, cancel: Subscription): void {
-        ctx.request.socket.on(ev.TIMEOUT, () => {
-            cancel?.unsubscribe();
-        })
-        ctx.request.socket.on(ev.CLOSE, () => {
-            cancel?.unsubscribe();
-        });
     }
 
     protected createContext(request: TcpServRequest, response: TcpServResponse): TcpContext {

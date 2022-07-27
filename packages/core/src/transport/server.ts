@@ -1,8 +1,7 @@
-import { Abstract, ArgumentError, EMPTY, lang, InvocationContext, Token } from '@tsdi/ioc';
-import { Subscription } from 'rxjs';
+import { Abstract, ArgumentError, EMPTY, lang, Token } from '@tsdi/ioc';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
-import { EndpointBackend, MiddlewareBackend, MiddlewareLike, MiddlewareType } from './endpoint';
+import { Endpoint, EndpointBackend, MiddlewareBackend, MiddlewareLike, MiddlewareType } from './endpoint';
 import { TransportEndpoint, TransportOpts } from './transport';
 import { TransportContext } from './context';
 
@@ -22,6 +21,20 @@ export abstract class ServerOpts<TRequest, TResponse> extends TransportOpts<TReq
 }
 
 /**
+ * binding request handler
+ */
+@Abstract()
+export abstract class HandlerBinding<T extends TransportContext = TransportContext> {
+    /**
+     * binding handler for tansport context.
+     * @param ctx 
+     * @param endpoint 
+     */
+    abstract binding(ctx: T, handler: Endpoint): void;
+}
+
+
+/**
  * abstract transport server.
  */
 @Abstract()
@@ -29,7 +42,7 @@ export abstract class ServerOpts<TRequest, TResponse> extends TransportOpts<TReq
 export abstract class TransportServer<TRequest = any, TResponse = any, Tx extends TransportContext = TransportContext, Opts extends ServerOpts<TRequest, TResponse> = any> extends TransportEndpoint<TRequest, TResponse, Opts> implements OnDispose {
 
     private _midlsToken!: Token<MiddlewareLike[]>;
-    
+
     abstract get proxy(): boolean;
 
     /**
@@ -83,6 +96,7 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
     protected override getBackend(): EndpointBackend<TRequest, TResponse> {
         return new MiddlewareBackend(this.context.injector.get(this._midlsToken, EMPTY))
     }
+    
     /**
      * lazy create context.
      */
@@ -93,19 +107,10 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
      * @param request 
      * @param response 
      */
-    protected requestHandler(request: TRequest, response: TResponse) {
+    protected onRequestHandler(request: TRequest, response: TResponse) {
         const ctx = this.createContext(request, response) as Tx;
-        const cancel = this.endpoint().handle(request, ctx)
-            .subscribe({
-                complete: () => {
-                    ctx.destroy()
-                }
-            });
-
-        this.bindEvent(ctx, cancel)
+        this.context.injector.get(HandlerBinding).binding(ctx, this.endpoint());
     }
-
-    protected abstract bindEvent(ctx: Tx, cancel: Subscription): void;
 
 
     /**

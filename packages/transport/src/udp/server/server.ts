@@ -139,7 +139,7 @@ export class UdpServer extends TransportServer<UdpServRequest, UdpServResponse, 
             this.logger.info(`server listening ${address.address}:${address.port}`);
             this.cancel = this.createSource(server).subscribe(data => {
                 const { remoteInfo, body } = data;
-                this.requestHandler(new UdpServRequest({
+                this.onRequestHandler(new UdpServRequest({
                     body,
                     url: remoteInfo.address,
                 }), new UdpServResponse(server))

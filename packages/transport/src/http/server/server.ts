@@ -1,7 +1,6 @@
-import { Inject, Injectable, InvocationContext, isBoolean, isDefined, isFunction, lang, Providers, EMPTY_OBJ } from '@tsdi/ioc';
-import { TransportServer, RunnableFactoryResolver, ModuleRef, Router, ExecptionTypedRespond, TransportStatus, Protocol, ServerOpts } from '@tsdi/core';
+import { Inject, Injectable, isBoolean, isDefined, isFunction, lang, Providers, EMPTY_OBJ } from '@tsdi/ioc';
+import { TransportServer, RunnableFactoryResolver, ModuleRef, Router, ExecptionTypedRespond, TransportStatus, Protocol, HandlerBinding } from '@tsdi/core';
 import { LISTEN_OPTS } from '@tsdi/platform-server';
-import { Subscription } from 'rxjs';
 import { ListenOptions } from 'net';
 import * as http from 'http';
 import * as https from 'https';
@@ -27,6 +26,7 @@ import { ArgumentErrorFilter, HttpFinalizeFilter } from './finalize-filter';
 import { Http2ServerOpts, HttpServerOpts, HTTP_EXECPTION_FILTERS, HTTP_SERVEROPTIONS, HTTP_SERV_INTERCEPTORS } from './options';
 import { HttpStatus } from '../status';
 import { HttpProtocol } from '../protocol';
+import { HttpHandlerBinding } from './binding';
 
 
 
@@ -79,7 +79,8 @@ const httpOpts = {
     { provide: MimeAdapter, useClass: TrasportMimeAdapter, asDefault: true },
     { provide: Negotiator, useClass: TransportNegotiator, asDefault: true },
     { provide: TransportStatus, useClass: HttpStatus, asDefault: true },
-    { provide: Protocol, useClass: HttpProtocol, asDefault: true }
+    { provide: Protocol, useClass: HttpProtocol, asDefault: true },
+    { provide: HandlerBinding, useClass: HttpHandlerBinding, asDefault: true }
 ])
 export class HttpServer extends TransportServer<HttpServRequest, HttpServResponse, HttpContext, HttpServerOpts>  {
 
@@ -153,7 +154,7 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         if (opts.majorVersion === 2) {
             const option = opts.options ?? EMPTY_OBJ;
             cert = option.cert;
-            const server = cert ? http2.createSecureServer(option, (req, res) => this.requestHandler(req, res)) : http2.createServer(option, (req, res) => this.requestHandler(req, res));
+            const server = cert ? http2.createSecureServer(option, (req, res) => this.onRequestHandler(req, res)) : http2.createServer(option, (req, res) => this.onRequestHandler(req, res));
             this._server = server;
             server.on(ev.ERROR, (err) => {
                 this.logger.error(err)
@@ -161,7 +162,7 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         } else {
             const option = opts.options ?? EMPTY_OBJ;
             cert = option.cert;
-            const server = cert ? https.createServer(option, (req, res) => this.requestHandler(req, res)) : http.createServer(option, (req, res) => this.requestHandler(req, res));
+            const server = cert ? https.createServer(option, (req, res) => this.onRequestHandler(req, res)) : http.createServer(option, (req, res) => this.onRequestHandler(req, res));
             this._server = server;
             server.on(ev.ERROR, (err) => {
                 this.logger.error(err)
@@ -185,22 +186,6 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         injector.get(ModuleRef).setValue(LISTEN_OPTS, { ...listenOptions, withCredentials: isDefined(cert), majorVersion: opts.majorVersion });
         this.logger.info(lang.getClassName(this), 'listen:', listenOptions, '. access with url:', `http${cert ? 's' : ''}://${listenOptions?.host}:${listenOptions?.port}${listenOptions?.path ?? ''}`, '!')
         this._server.listen(listenOptions)
-    }
-
-    protected override bindEvent(ctx: HttpContext, cancel: Subscription): void {
-        const req = ctx.request;
-        const opts = this.getOptions();
-        opts.timeout && req.setTimeout(opts.timeout, () => {
-            req.emit(ev.TIMEOUT);
-            cancel?.unsubscribe()
-        });
-        req.once(ev.CLOSE, async () => {
-            await lang.delay(opts.closeDelay ?? 500);
-            cancel?.unsubscribe();
-            if (!ctx.sent) {
-                ctx.response.end()
-            }
-        })
     }
 
     async close(): Promise<void> {
