@@ -72,8 +72,8 @@ function regProvider(records: Map<Token, FactoryRecord>, platform: Platform, inj
             cleanObj(ctx);
             return instance
         },
-        isStatic,
-        fnType: FnType.Inj,
+        stic: isStatic,
+        fy: FnType.Inj,
         unreg: () => platform.clearTypeProvider(type)
     } as FactoryRecord;
     records.set(provide, recd)

@@ -576,8 +576,10 @@ export interface FactoryRecord<T = any> {
      * factory.
      */
     fn?: Function;
-
-    fnType?: FnType;
+    /**
+     * fn type.
+     */
+    fy?: FnType;
 
     deps?: DependencyRecord[];
 
@@ -589,7 +591,7 @@ export interface FactoryRecord<T = any> {
     /**
      * is static for fn create once.
      */
-    isStatic?: boolean;
+    stic?: boolean;
 
     /**
      * cache value.

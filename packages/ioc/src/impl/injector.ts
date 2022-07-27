@@ -216,7 +216,7 @@ export class DefaultInjector extends Injector {
             let multiPdr = this.records.get(provider.provide);
             if (!multiPdr) {
                 this.records.set(provider.provide, multiPdr = {
-                    fnType: FnType.Fac,
+                    fy: FnType.Fac,
                     fn: MUTIL,
                     value: EMPTY,
                     deps: []
@@ -313,7 +313,7 @@ export class DefaultInjector extends Injector {
 
     protected tryResolve(token: Token, record: FactoryRecord | undefined, platform: Platform, parent: Injector | undefined,
         context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, lifecycle?: LifecycleHooks) {
-        return tryResolveToken(token, record, this.records, platform, parent, context, notFoundValue, flags, lifecycle, record?.isStatic ?? this.isStatic)
+        return tryResolveToken(token, record, this.records, platform, parent, context, notFoundValue, flags, lifecycle, record?.stic ?? this.isStatic)
     }
 
     resolve<T>(option: ResolveOption<T>): T;
@@ -704,7 +704,7 @@ export function generateRecord<T>(platfrom: Platform, injector: Injector, provid
             }
         }
     }
-    return { value, fn, fnType, deps, type, isStatic }
+    return { value, fn, fy: fnType, deps, type, stic: isStatic }
 }
 
 function computeDeps(provider: StaticProviders): DependencyRecord[] {
@@ -835,7 +835,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
         if (context && rd.fn !== IDENT && rd.fn !== MUTIL) {
             deps.push(context)
         }
-        switch (rd.fnType) {
+        switch (rd.fy) {
             case FnType.Cotr:
                 return new (rd.fn as Type)(...deps)
             case FnType.Fac:
