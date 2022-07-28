@@ -1,4 +1,4 @@
-import { TransportContext } from '@tsdi/core';
+import { AssetContext } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
 import { Stats } from 'fs';
 
@@ -13,7 +13,7 @@ export interface SendOptions {
     extensions?: string[] | false;
     brotli?: boolean;
     gzip?: boolean;
-    setHeaders?: (ctx: TransportContext, path: string, stats: Stats) => void;
+    setHeaders?: (ctx: AssetContext, path: string, stats: Stats) => void;
 }
 
 /**
@@ -21,5 +21,5 @@ export interface SendOptions {
  */
 @Abstract()
 export abstract class ContentSendAdapter {
-    abstract send(ctx: TransportContext, options: SendOptions): Promise<string>;
+    abstract send(ctx: AssetContext, options: SendOptions): Promise<string>;
 }

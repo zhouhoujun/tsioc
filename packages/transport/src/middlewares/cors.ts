@@ -1,4 +1,4 @@
-import { HeaderContext, Middleware, RequestMethod, TransportContext, TransportError } from '@tsdi/core';
+import { AssetContext, Middleware, RequestMethod, TransportContext, TransportError } from '@tsdi/core';
 import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
 import { hdr } from '../consts';
@@ -13,7 +13,7 @@ export abstract class CorsOptions {
      *
      * @memberof CorsOptions
      */
-    origin?: string | ((ctx: TransportContext) => string | Promise<string>);
+    origin?: string | ((ctx: AssetContext) => string | Promise<string>);
     /**
      * enable Access-Control-Allow-Credentials
      *
@@ -94,7 +94,7 @@ export class CorsMiddleware implements Middleware {
         return options as Options
     }
 
-    async invoke(ctx: TransportContext & HeaderContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
         const requestOrigin = ctx.getHeader(hdr.ORIGIN);
         !ctx.sent && vary(ctx.response, hdr.ORIGIN);
         if (!requestOrigin) {

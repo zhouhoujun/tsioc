@@ -1,4 +1,4 @@
-import { Middleware, mths, TransportContext, TransportError } from '@tsdi/core';
+import { Middleware, mths, AssetContext, TransportError } from '@tsdi/core';
 import { Abstract, Injectable } from '@tsdi/ioc';
 import { ContentSendAdapter, SendOptions } from './send';
 
@@ -30,7 +30,7 @@ export class ContentMiddleware implements Middleware {
         this.options = { ...defOpts, ...options };
     }
 
-    async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
         if (this.options.defer) {
             await next()
         }

@@ -178,9 +178,9 @@ export interface Throwable {
 }
 
 /**
- * header context with tansport.
+ * tansport context with headers.
  */
-export interface HeaderContext {
+export interface HeadersContext extends TransportContext {
     /**
      * Return request header.
      *
@@ -248,34 +248,9 @@ export interface HeaderContext {
 }
 
 /**
- * redirect context.
- */
-export interface RedirectContext {
-    /**
-     * Perform a 302 redirect to `url`.
-     *
-     * The string "back" is special-cased
-     * to provide Referrer support, when Referrer
-     * is not present `alt` or "/" is used.
-     *
-     * Examples:
-     *
-     *    this.redirect('back');
-     *    this.redirect('back', '/index.html');
-     *    this.redirect('/login');
-     *    this.redirect('http://google.com');
-     *
-     * @param {String} url
-     * @param {String} [alt]
-     * @api public
-     */
-    redirect(url: string, alt?: string): void;
-}
-
-/**
  * asset context.
  */
-export interface AssetContext extends HeaderContext {
+export interface AssetContext extends HeadersContext {
     /**
      * Check if the incoming request contains the "Content-Type"
      * header field and if it contains any of the given mime `type`s.
@@ -472,6 +447,27 @@ export interface AssetContext extends HeaderContext {
          * @default true
          */
         fallback?: string | boolean | undefined;
-    }): void
+    }): void;
+
+
+    /**
+     * Perform a 302 redirect to `url`.
+     *
+     * The string "back" is special-cased
+     * to provide Referrer support, when Referrer
+     * is not present `alt` or "/" is used.
+     *
+     * Examples:
+     *
+     *    this.redirect('back');
+     *    this.redirect('back', '/index.html');
+     *    this.redirect('/login');
+     *    this.redirect('http://google.com');
+     *
+     * @param {String} url
+     * @param {String} [alt]
+     * @api public
+     */
+    redirect(url: string, alt?: string): void;
 
 }

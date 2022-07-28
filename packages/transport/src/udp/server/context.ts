@@ -1,4 +1,4 @@
-import { ExecptionFilter, MiddlewareLike, ProtocolType, HeaderContext, AssetContext } from '@tsdi/core';
+import { ExecptionFilter, MiddlewareLike, ProtocolType, HeadersContext, AssetContext } from '@tsdi/core';
 import { Injectable, tokenId } from '@tsdi/ioc';
 import { AssetServerContext } from '../../asset.ctx';
 import { hdr } from '../../consts';
@@ -11,7 +11,7 @@ import { UdpServResponse } from './response';
  * UDP context.
  */
 @Injectable()
-export class UdpContext extends AssetServerContext<UdpServRequest, UdpServResponse> implements HeaderContext, AssetContext {
+export class UdpContext extends AssetServerContext<UdpServRequest, UdpServResponse> implements HeadersContext, AssetContext {
     get writable(): boolean {
         throw new Error('Method not implemented.');
     }

@@ -5,7 +5,7 @@ import { PipeTransform } from '../pipes/pipe';
 import { Route, RouteFactoryResolver, ROUTES, Routes } from './route';
 import { ModuleRef } from '../module.ref';
 import { createMiddleware, InterceptorMiddleware, InterceptorType, Middleware, MiddlewareFn } from '../transport/endpoint';
-import { RedirectContext, TransportContext } from '../transport/context';
+import { AssetContext, TransportContext } from '../transport/context';
 import { BadRequestError, ForbiddenError, NotFoundError } from '../transport/error';
 import { promisify } from './promisify';
 
@@ -128,7 +128,7 @@ export class MappingRoute implements Middleware {
 
 
     protected async redirect(ctx: TransportContext, url: string, alt?: string): Promise<void> {
-        const hctx = ctx as TransportContext & RedirectContext;
+        const hctx = ctx as AssetContext;
         if (!isFunction(hctx.redirect)) {
             throw new BadRequestError();
         }

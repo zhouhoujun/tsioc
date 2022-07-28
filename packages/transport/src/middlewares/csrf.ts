@@ -1,4 +1,4 @@
-import { HeaderContext, Middleware, mths, Throwable, TransportContext } from '@tsdi/core';
+import { AssetContext, ForbiddenError, Middleware, mths } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
 import * as Tokens from 'csrf';
 import { hdr } from '../consts';
@@ -7,8 +7,7 @@ import { Session } from './session';
 
 @Abstract()
 export abstract class CsrfOptions implements Tokens.Options {
-    invalidTokenMessage?: string | ((ctx: TransportContext) => string);
-    invalidTokenStatusCode?: number;
+    invalidTokenMessage?: string | ((ctx: AssetContext) => string);
     excludedMethods?: string[];
     disableQuery?: boolean;
     /**
@@ -24,7 +23,6 @@ export abstract class CsrfOptions implements Tokens.Options {
 
 const defOpts = {
     invalidTokenMessage: 'Invalid CSRF token',
-    invalidTokenStatusCode: 403,
     excludedMethods: [mths.GET, mths.HEAD, mths.OPTIONS],
     disableQuery: false
 } as CsrfOptions;
@@ -41,7 +39,7 @@ export class CsrfMiddleware implements Middleware {
         this.tokens = new Tokens(this.options);
     }
 
-    async invoke(ctx: TransportContext & HeaderContext & Throwable, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
 
         ctx.injector.inject({
             provide: CSRF,
@@ -75,11 +73,11 @@ export class CsrfMiddleware implements Middleware {
             || ctx.getHeader(hdr.X_XSRF_TOKEN);
 
         if (!token) {
-            throw ctx.throwError(this.options.invalidTokenStatusCode!, typeof this.options.invalidTokenMessage === 'function' ? this.options.invalidTokenMessage(ctx) : this.options.invalidTokenMessage)
+            throw new ForbiddenError(typeof this.options.invalidTokenMessage === 'function' ? this.options.invalidTokenMessage(ctx) : this.options.invalidTokenMessage)
         }
 
         if (!this.tokens.verify(session.secret, token)) {
-            throw ctx.throwError(this.options.invalidTokenStatusCode!, typeof this.options.invalidTokenMessage === 'function' ? this.options.invalidTokenMessage(ctx) : this.options.invalidTokenMessage)
+            throw new ForbiddenError(typeof this.options.invalidTokenMessage === 'function' ? this.options.invalidTokenMessage(ctx) : this.options.invalidTokenMessage)
         }
 
         return next()

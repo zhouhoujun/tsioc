@@ -1,4 +1,4 @@
-import { HeaderContext, Middleware, TransportContext } from '@tsdi/core';
+import { HeadersContext, Middleware } from '@tsdi/core';
 import { Abstract, hasOwn, Injectable, Nullable } from '@tsdi/ioc';
 import { ctype, hdr } from '../consts';
 import { JsonStreamStringify } from '../stringify';
@@ -23,7 +23,7 @@ export class EncodeJsonMiddleware implements Middleware {
         this.paramName = option?.param ?? '';
     }
 
-    async invoke(ctx: TransportContext & HeaderContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: HeadersContext, next: () => Promise<void>): Promise<void> {
 
         await next();
 

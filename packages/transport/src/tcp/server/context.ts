@@ -1,4 +1,4 @@
-import { ExecptionFilter, MiddlewareLike, HeaderContext, AssetContext, TransportContext } from '@tsdi/core';
+import { ExecptionFilter, MiddlewareLike, HeadersContext, AssetContext, TransportContext } from '@tsdi/core';
 import { Token, tokenId } from '@tsdi/ioc';
 import { AssetServerContext } from '../../asset.ctx';
 import { hdr } from '../../consts';
@@ -11,7 +11,7 @@ import { TcpServResponse } from './response';
 /**
  * TCP context.
  */
-export class TcpContext extends AssetServerContext<TcpServRequest, TcpServResponse> implements HeaderContext, AssetContext {
+export class TcpContext extends AssetServerContext<TcpServRequest, TcpServResponse> implements HeadersContext, AssetContext {
 
     isUpdate(): boolean {
         return this.request.method === 'PUT' || this.getHeader(hdr.OPERATION) === 'update';
