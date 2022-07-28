@@ -9,7 +9,7 @@ import { TransportResponse, ErrorResponse, TransportEvent } from '../../client/r
 import { defer, filter, mergeMap, Observable, Observer, throwError } from 'rxjs';
 import { JsonDecoder, JsonEncoder } from '../../coder';
 import { TcpStatus } from '../../tcp';
-import { AssetRedirector } from '../../client/redirector';
+import { AssetRedirector } from '../../impl/redirector';
 import { ev } from '../../consts';
 
 /**
