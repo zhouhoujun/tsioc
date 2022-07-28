@@ -1,9 +1,8 @@
 import { IncomingPacket, IncommingHeaders } from '@tsdi/core';
 import { EMPTY_OBJ } from '@tsdi/ioc';
 import { Readable, Writable } from 'stream';
-import { TransportProtocol } from '../protocol';
-import { TransportStream } from '../stream';
-
+import { Socket } from 'net';
+import { TLSSocket } from 'tls';
 
 /**
  * Server request.
@@ -17,8 +16,7 @@ export class ServerRequest extends Readable implements IncomingPacket<Writable> 
     body: any;
     private _bodyIdx = 0;
     constructor(
-        readonly stream: TransportStream,
-        private protocol: TransportProtocol,
+        readonly socket: Socket | TLSSocket,
         options: {
             id?: string,
             url?: string;
@@ -40,7 +38,7 @@ export class ServerRequest extends Readable implements IncomingPacket<Writable> 
     override _read(size: number): void {
         const end = this._bodyIdx + size
         const start = this._bodyIdx
-        const payload = this.stream.read(size);
+        const payload = this.socket.read(size);
         let buf: any = null
 
         if (payload != null && start < payload.length) {

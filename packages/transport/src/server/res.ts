@@ -1,9 +1,10 @@
 import { OutgoingHeader, OutgoingHeaders, OutgoingPacket, ResHeaders } from '@tsdi/core';
 import { isArray, isFunction, isString } from '@tsdi/ioc';
 import { Writable } from 'stream';
+import { Socket } from 'net';
+import { TLSSocket } from 'tls';
 import { hdr } from '../consts';
 import { TransportProtocol } from '../protocol';
-import { TransportStream } from '../stream';
 
 
 /**
@@ -14,12 +15,11 @@ export class ServerResponse extends Writable implements OutgoingPacket {
     private _sent = false;
     private _hdr: ResHeaders;
 
-    socket?: any;
 
     constructor(
-        readonly stream: TransportStream,
-        private protocol: TransportProtocol,
-        readonly headers: OutgoingHeaders) {
+        readonly socket: Socket | TLSSocket,
+        readonly headers: OutgoingHeaders,
+        private protocol: TransportProtocol) {
         super();
         this._hdr = new ResHeaders();
     }
@@ -79,6 +79,9 @@ export class ServerResponse extends Writable implements OutgoingPacket {
             cb = encoding
             encoding = undefined;
         }
+        if (!this.headersSent) {
+            this.writeHead(this.statusCode, this.statusMessage, this.headers)
+        }
         super.end(chunk, encoding, cb);
         return this;
     }
@@ -97,6 +100,10 @@ export class ServerResponse extends Writable implements OutgoingPacket {
                 //todo set header
             }) : this._hdr.setHeaders(headers);
         }
+        this.protocol.transform.write(this.socket, this.headers)
+            .then(() => {
+                this._sent = true;
+            });
         return this;
     }
 

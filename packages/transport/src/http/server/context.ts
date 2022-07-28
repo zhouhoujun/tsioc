@@ -11,8 +11,6 @@ import { HttpServer } from './server';
 import { AssetServerContext } from '../../asset.ctx';
 
 
-const AUTHORITY = http2.constants?.HTTP2_HEADER_AUTHORITY ?? ':authority';
-
 export type HttpServRequest = http.IncomingMessage | http2.Http2ServerRequest;
 
 export type HttpServResponse = http.ServerResponse | http2.Http2ServerResponse;
