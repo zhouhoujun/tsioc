@@ -1,4 +1,4 @@
-import { ExecptionTypedRespond, mths, TransportError } from '@tsdi/core';
+import { mths } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import { RespondAdapter } from '../../interceptors/respond';
 import { TcpServResponse } from './response';
@@ -45,24 +45,4 @@ export class TcpRespondAdapter extends RespondAdapter {
 
     }
 
-}
-
-
-@Injectable()
-export class TcpExecptionTypedRespond extends ExecptionTypedRespond {
-    respond<T>(ctx: TcpContext, response: 'body' | 'header' | 'response', value: T): void {
-        if (response === 'body') {
-            ctx.body = value
-        } else if (response === 'header') {
-            ctx.setHeader(value as Record<string, any>);
-        } else if (response === 'response') {
-            if (value instanceof TransportError) {
-                ctx.status = value.statusCode;
-                ctx.statusMessage = value.message
-            } else {
-                ctx.status = 500;
-                ctx.statusMessage = String(value)
-            }
-        }
-    }
 }

@@ -1,4 +1,4 @@
-import { BadRequestError, BytesPipe, EADDRINUSE, ECONNREFUSED, ExecptionTypedRespond, HandlerBinding, Protocol, Router, TransportServer, TransportStatus } from '@tsdi/core';
+import { BadRequestError, BytesPipe, EADDRINUSE, ECONNREFUSED, HandlerBinding, Protocol, Router, TransportServer, TransportStatus } from '@tsdi/core';
 import { Injectable, isBoolean, lang, Nullable, ProviderType } from '@tsdi/ioc';
 import { LISTEN_OPTS } from '@tsdi/platform-server';
 import { Server } from 'net';
@@ -9,7 +9,7 @@ import { BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMidd
 import { MimeDb } from '../../mime';
 import { TcpContext, TCP_EXECPTION_FILTERS, TCP_MIDDLEWARES } from './context';
 import { TcpServRequest } from './request';
-import { TcpExecptionTypedRespond, TcpRespondAdapter } from './respond';
+import { TcpRespondAdapter } from './respond';
 import { TcpServResponse } from './response';
 import { db } from '../../impl/mimedb';
 import { TcpArgumentErrorFilter, TcpFinalizeFilter } from './finalize-filter';
@@ -57,7 +57,6 @@ const defOpts = {
 export const TCP_SERV_PROVIDERS: ProviderType[] = [
     ...ASSET_SERVR_PROVIDERS,
     { provide: RespondAdapter, useClass: TcpRespondAdapter },
-    { provide: ExecptionTypedRespond, useClass: TcpExecptionTypedRespond },
     { provide: TransportStatus, useClass: TcpStatus },
     { provide: Protocol, useClass: TcpProtocol },
     { provide: HandlerBinding, useClass: TcpHandlerBinding }

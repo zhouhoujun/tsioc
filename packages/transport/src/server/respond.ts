@@ -43,8 +43,8 @@ export class ProtocolRespondAdapter extends RespondAdapter {
                 return res.end()
             }
 
-            body = ctx.statusMessage || String(code)
-            body = Buffer.from(body)
+            body = ctx.statusMessage || String(code);
+            body = Buffer.from(body);
             if (!res.headersSent) {
                 ctx.type = 'text';
                 ctx.length = Buffer.byteLength(body)
@@ -81,24 +81,4 @@ export class ProtocolRespondAdapter extends RespondAdapter {
 
     }
 
-}
-
-
-@Injectable()
-export class ProtocolExecptionTypedRespond extends ExecptionTypedRespond {
-    respond<T>(ctx: PrototcolContext, response: 'body' | 'header' | 'response', value: T): void {
-        if (response === 'body') {
-            ctx.body = value
-        } else if (response === 'header') {
-            ctx.setHeader(value as Record<string, any>);
-        } else if (response === 'response') {
-            if (value instanceof TransportError) {
-                ctx.status = value.statusCode;
-                ctx.statusMessage = value.message
-            } else {
-                ctx.status = 500;
-                ctx.statusMessage = String(value)
-            }
-        }
-    }
 }

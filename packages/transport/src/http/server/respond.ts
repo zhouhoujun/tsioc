@@ -1,4 +1,4 @@
-import { mths, ExecptionTypedRespond, TransportError } from '@tsdi/core';
+import { mths } from '@tsdi/core';
 import { Injectable, isString, lang } from '@tsdi/ioc';
 import { Readable } from 'stream';
 import { hdr, ev } from '../../consts';
@@ -41,11 +41,11 @@ export class HttpRespondAdapter implements RespondAdapter {
                 return res.end()
             }
             if (ctx.request.httpVersionMajor >= 2) {
-                body = String(code);
+                body = String(code)
             } else {
                 body = ctx.statusMessage || String(code)
             }
-            body = Buffer.from(body)
+            body = Buffer.from(body);
             if (!res.headersSent) {
                 ctx.type = 'text';
                 ctx.length = Buffer.byteLength(body)
@@ -81,24 +81,4 @@ export class HttpRespondAdapter implements RespondAdapter {
         return res
     }
 
-}
-
-
-@Injectable()
-export class HttpExecptionTypedRespond extends ExecptionTypedRespond {
-    respond<T>(ctx: HttpContext, response: 'body' | 'header' | 'response', value: T): void {
-        if (response === 'body') {
-            ctx.body = value
-        } else if (response === 'header') {
-            ctx.setHeader(value as Record<string, any>);
-        } else if (response === 'response') {
-            if (value instanceof TransportError) {
-                ctx.status = value.statusCode;
-                ctx.statusMessage = value.message
-            } else {
-                ctx.status = 500;
-                ctx.statusMessage = String(value)
-            }
-        }
-    }
 }
