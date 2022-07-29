@@ -302,11 +302,11 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
     accepts(...args: string[]): string | string[] | false {
         const negotiator = this.resolve(Negotiator);
         if (!args.length) {
-            return negotiator.mediaTypes()
+            return negotiator.mediaTypes(this)
         }
         const mimeAdapter = this.resolve(MimeAdapter);
         const medias = args.map(a => a.indexOf('/') === -1 ? mimeAdapter.lookup(a) : a).filter(a => isString(a)) as string[];
-        return lang.first(negotiator.mediaTypes(...medias)) ?? false
+        return lang.first(negotiator.mediaTypes(this, ...medias)) ?? false
     }
 
     /**
@@ -324,9 +324,9 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
     acceptsEncodings(...encodings: string[]): string | string[] | false {
         const negotiator = this.resolve(Negotiator);
         if (!encodings.length) {
-            return negotiator.encodings()
+            return negotiator.encodings(this)
         }
-        return lang.first(negotiator.encodings(...encodings)) ?? false
+        return lang.first(negotiator.encodings(this, ...encodings)) ?? false
     }
 
     /**
@@ -344,9 +344,9 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
     acceptsCharsets(...charsets: string[]): string | string[] | false {
         const negotiator = this.resolve(Negotiator);
         if (!charsets.length) {
-            return negotiator.charsets()
+            return negotiator.charsets(this)
         }
-        return lang.first(negotiator.charsets(...charsets)) ?? false
+        return lang.first(negotiator.charsets(this, ...charsets)) ?? false
     }
 
     /**
@@ -364,9 +364,9 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
     acceptsLanguages(...langs: string[]): string | string[] {
         const negotiator = this.resolve(Negotiator);
         if (!langs.length) {
-            return negotiator.languages()
+            return negotiator.languages(this)
         }
-        return lang.first(negotiator.languages(...langs)) ?? false
+        return lang.first(negotiator.languages(this, ...langs)) ?? false
     }
 
     /**

@@ -4,13 +4,13 @@ import { normalize, resolve, basename, extname, parse, sep, isAbsolute, join } f
 import { existsSync, Stats, stat, createReadStream } from 'fs';
 import { promisify } from 'util';
 import { ContentSendAdapter, SendOptions } from '../middlewares/send';
-import { ev, hdr } from '../consts';
+import { hdr } from '../consts';
 import { AssetServerContext } from '../asset.ctx';
 
 
 const statify = promisify(stat);
 
-@Injectable()
+@Injectable({ static: true })
 export class TransportSendAdapter extends ContentSendAdapter {
     async send(ctx: AssetServerContext, opts: SendOptions): Promise<string> {
         let path = ctx.pathname;

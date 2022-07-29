@@ -55,7 +55,6 @@ const defOpts = {
 } as TcpServerOpts;
 
 export const TCP_SERV_PROVIDERS: ProviderType[] = [
-    ...ASSET_SERVR_PROVIDERS,
     { provide: RespondAdapter, useClass: TcpRespondAdapter },
     { provide: TransportStatus, useClass: TcpStatus },
     { provide: Protocol, useClass: TcpProtocol },

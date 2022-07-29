@@ -1,7 +1,7 @@
 import { ExecptionTypedRespond, TransportError, AssetContext } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 
-@Injectable()
+@Injectable({ static: true })
 export class TranspotExecptionTypedRespond extends ExecptionTypedRespond {
     respond<T>(ctx: AssetContext, response: 'body' | 'header' | 'response', value: T): void {
         if (response === 'body') {

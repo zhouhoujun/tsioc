@@ -53,7 +53,7 @@ export class AssetRedirector extends Redirector {
                     // HTTP-redirect fetch step 6 (counter increment)
                     // Create a new Request object.
 
-                    let reqhdrs = req.headers instanceof HeaderSet? req.headers : new ReqHeaders(req.headers);
+                    let reqhdrs = req.headers instanceof HeaderSet ? req.headers : new ReqHeaders(req.headers);
                     let method = req.method as RequestMethod;
                     let body = req.body;
 

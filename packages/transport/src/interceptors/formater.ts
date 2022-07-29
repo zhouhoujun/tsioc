@@ -5,7 +5,7 @@ import { ResponseStatusFormater } from './log';
 
 
 
-@Injectable()
+@Injectable({ static: true })
 export class DefaultStatusFormater extends ResponseStatusFormater {
 
     format(ctx: TransportContext, hrtime: [number, number]): string[] {

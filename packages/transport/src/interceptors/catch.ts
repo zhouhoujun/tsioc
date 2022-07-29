@@ -5,7 +5,7 @@ import { from, Observable, catchError } from 'rxjs';
 
 
 
-@Injectable()
+@Injectable({ static: true })
 export class CatchInterceptor<TRequest = any, TResponse = any> implements Interceptor<TRequest, TResponse> {
 
     constructor() { }

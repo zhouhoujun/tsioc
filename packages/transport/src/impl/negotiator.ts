@@ -1,19 +1,16 @@
 /* eslint-disable no-useless-escape */
+import { AssetContext } from '@tsdi/core';
 import { Injectable, isArray, isString } from '@tsdi/ioc';
-import { AssetServerContext } from '../asset.ctx';
 import { hdr, identity } from '../consts';
 import { Negotiator } from '../negotiator';
 
 
 
-@Injectable()
+@Injectable({ static: true })
 export class TransportNegotiator extends Negotiator {
-  constructor(private ctx: AssetServerContext) {
-    super()
-  }
 
-  charsets(...accepts: string[]): string[] {
-    const accepted = this.parseCharset(this.ctx.getHeader(hdr.ACCEPT_CHARSET) ?? '*');
+  charsets(ctx: AssetContext, ...accepts: string[]): string[] {
+    const accepted = this.parseCharset(ctx.getHeader(hdr.ACCEPT_CHARSET) ?? '*');
     if (!accepts) {
       return this.getValues(accepted)
     }
@@ -22,8 +19,8 @@ export class TransportNegotiator extends Negotiator {
     return this.sortSpecify(pri).map(p => accepts[pri.indexOf(p)])
   }
 
-  encodings(...accepts: string[]): string[] {
-    const accepted = this.parseEncoding(this.ctx.getHeader(hdr.ACCEPT_ENCODING) ?? '');
+  encodings(ctx: AssetContext, ...accepts: string[]): string[] {
+    const accepted = this.parseEncoding(ctx.getHeader(hdr.ACCEPT_ENCODING) ?? '');
     if (!accepts.length) {
       return this.getValues(accepted)
     }
@@ -31,8 +28,8 @@ export class TransportNegotiator extends Negotiator {
     return this.sortSpecify(pri).map(p => accepts[pri.indexOf(p)])
   }
 
-  languages(...accepts: string[]): string[] {
-    const accepted = this.parseLanguage(this.ctx.getHeader(hdr.ACCEPT_LANGUAGE) ?? '*');
+  languages(ctx: AssetContext, ...accepts: string[]): string[] {
+    const accepted = this.parseLanguage(ctx.getHeader(hdr.ACCEPT_LANGUAGE) ?? '*');
     if (!accepts.length) {
       return this.getValues(accepted)
     }
@@ -40,8 +37,8 @@ export class TransportNegotiator extends Negotiator {
     return this.sortSpecify(pri).map(p => accepts[pri.indexOf(p)])
   }
 
-  mediaTypes(...accepts: string[]): string[] {
-    const accepted = this.parseMedia(this.ctx.getHeader(hdr.ACCEPT) ?? '*');
+  mediaTypes(ctx: AssetContext, ...accepts: string[]): string[] {
+    const accepted = this.parseMedia(ctx.getHeader(hdr.ACCEPT) ?? '*');
     if (!accepts.length) {
       return this.getValues(accepted)
     }

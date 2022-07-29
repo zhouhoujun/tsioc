@@ -1,5 +1,5 @@
 import { Middleware, TransportContext } from '@tsdi/core';
-import { Abstract, Injectable } from '@tsdi/ioc';
+import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
 
 
 /**
@@ -102,7 +102,7 @@ const defOpts = {
 export class SessionMiddleware implements Middleware {
 
     private options: SessionOptions;
-    constructor(options: SessionOptions) {
+    constructor(@Nullable() options: SessionOptions) {
         this.options = {
             ...defOpts,
             ...options

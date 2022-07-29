@@ -10,16 +10,16 @@ export abstract class RespondAdapter {
 
 
 
-@Injectable()
+@Injectable({ static: true })
 export class RespondInterceptor<TRequest = any, TResponse = any> implements Interceptor<TRequest, TResponse> {
 
-    constructor(private adapter: RespondAdapter) { }
+    constructor() { }
 
     intercept(req: TRequest, next: Endpoint<TRequest, TResponse>, ctx: TransportContext): Observable<TResponse> {
         return next.handle(req, ctx)
             .pipe(
                 mergeMap(res => {
-                    return this.adapter.respond(res, ctx)
+                    return ctx.get(RespondAdapter).respond(res, ctx)
                 })
             )
     }

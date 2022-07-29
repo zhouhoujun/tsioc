@@ -1,5 +1,77 @@
-import { MimeSource } from '../mime';
+import { Injectable } from '@tsdi/ioc';
+import { MimeDb, MimeSource } from '../mime';
 
+
+
+@Injectable({ static: true })
+export class BasicMimeDb extends MimeDb {
+
+    private extenType: Map<string, string>;
+    private map: Map<string, MimeSource>;
+    constructor() {
+        super();
+        this.map = new Map();
+        this.extenType = new Map();
+        this.from(db);
+    }
+
+
+    from(db: Record<string, MimeSource>): void {
+        this.map.clear();
+        this.extenType.clear();
+        Object.keys(db).forEach(type => {
+            this.set(type, db[type]);
+        });
+    }
+
+    protected getPreference(): (string | undefined)[] {
+        return preference
+    }
+
+    has(mime: string): boolean {
+        return this.map.has(mime)
+    }
+    get(mime: string): MimeSource | undefined {
+        return this.map.get(mime)
+    }
+
+    set(mime: string, source: MimeSource): void {
+        this.map.set(mime, source);
+        if (source.extensions) {
+            const exts = source.extensions;
+            // extension -> mime
+            const preference = this.getPreference();
+            for (let i = 0; i < exts.length; i++) {
+                const extension = exts[i]
+                const exist = this.extenType.get(extension);
+                if (exist) {
+                    const from = preference.indexOf(exist)
+                    const to = preference.indexOf(source.source);
+
+                    if (exist !== 'application/octet-stream' &&
+                        (from > to || (from === to && exist.substring(0, 12) === 'application/'))) {
+                        // skip the remapping
+                        continue
+                    }
+                }
+
+                // set the extension -> mime
+                this.extenType.set(extension, mime);
+            }
+        }
+    }
+    
+    remove(mime: string): void {
+        this.map.delete(mime)
+    }
+
+    extension(name: string): string | undefined {
+        return this.extenType.get(name)
+    }
+
+}
+
+const preference = ['nginx', 'apache', undefined, 'iana'];
 
 export const db: Record<string, MimeSource> = {
     "application/dns": {

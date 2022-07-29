@@ -273,8 +273,8 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
 }
 
 
-const httptl = /^https?:\/\//i;
-const urlsplit = /\s*,\s*/;
+// const httptl = /^https?:\/\//i;
+// const urlsplit = /\s*,\s*/;
 const no_cache = /(?:^|,)\s*?no-cache\s*?(?:,|$)/;
 const methods = [mths.GET, mths.HEAD, mths.PUT, mths.DELETE, mths.OPTIONS, mths.TRACE];
 

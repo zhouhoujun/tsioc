@@ -12,7 +12,6 @@ import { TcpBackend } from './backend';
 import { TcpProtocol } from '../protocol';
 import { NormlizePathInterceptor } from '../../client/path';
 import { TcpStatus } from '../status';
-import { ASSET_CLIENT_PROVIDERS } from '../../asset.pdr';
 
 
 
@@ -28,7 +27,6 @@ const defaults = {
 
 
 export const TCP_CLIENT_PROVIDERS = [
-    ...ASSET_CLIENT_PROVIDERS,
     { provide: TransportStatus, useClass: TcpStatus },
     { provide: Protocol, useClass: TcpProtocol },
 ]

@@ -1,5 +1,5 @@
 import { Middleware, mths, AssetContext, TransportError } from '@tsdi/core';
-import { Abstract, Injectable } from '@tsdi/ioc';
+import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
 import { ContentSendAdapter, SendOptions } from './send';
 
 /**
@@ -26,7 +26,7 @@ export abstract class ContentOptions implements SendOptions {
 export class ContentMiddleware implements Middleware {
 
     private options: ContentOptions
-    constructor(options: ContentOptions) {
+    constructor(@Nullable() options: ContentOptions) {
         this.options = { ...defOpts, ...options };
     }
 

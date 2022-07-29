@@ -1,9 +1,9 @@
 import { Module, RouterModule, TransformModule } from '@tsdi/core';
 import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
-import { BasicMimeDb, MimeDb } from '../mime';
 import { HttpServer } from './server/server';
 import { Http } from './client/clinet';
 import { HttpServerOpts, HTTP_SERVEROPTIONS } from './server/options';
+import { TransportModule } from '../transport';
 
 /**
  * http module.
@@ -11,10 +11,10 @@ import { HttpServerOpts, HTTP_SERVEROPTIONS } from './server/options';
 @Module({
     imports: [
         TransformModule,
-        RouterModule
+        RouterModule,
+        TransportModule
     ],
     providers: [
-        { provide: MimeDb, useClass: BasicMimeDb, asDefault: true },
         HttpServer,
         Http
     ]

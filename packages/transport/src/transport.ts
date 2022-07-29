@@ -1,9 +1,11 @@
 import { Module, RouterModule, TransformModule, TransportClient, TransportServer } from '@tsdi/core';
 import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
-import { BasicMimeDb, MimeDb } from './mime';
 import { ProtocolClient } from './client/client';
 import { ProtocolServerOpts } from './server/options';
 import { ProtocolServer } from './server/server';
+import { ASSET_SERVR_PROVIDERS } from './asset.pdr';
+import { CatchInterceptor, DefaultStatusFormater, LogInterceptor, RespondInterceptor } from './interceptors';
+import { BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware, EncodeJsonMiddleware, HelmetMiddleware, SessionMiddleware } from './middlewares';
 
 @Module({
     imports: [
@@ -11,7 +13,20 @@ import { ProtocolServer } from './server/server';
         RouterModule
     ],
     providers: [
-        { provide: MimeDb, useClass: BasicMimeDb, asDefault: true },
+        ...ASSET_SERVR_PROVIDERS,
+        CatchInterceptor,
+        DefaultStatusFormater,
+        LogInterceptor,
+        RespondInterceptor,
+
+        BodyparserMiddleware,
+        ContentMiddleware,
+        CorsMiddleware,
+        CsrfMiddleware,
+        HelmetMiddleware,
+        EncodeJsonMiddleware,
+        SessionMiddleware,
+
         ProtocolClient,
         ProtocolServer,
         { provide: TransportClient, useClass: ProtocolClient },

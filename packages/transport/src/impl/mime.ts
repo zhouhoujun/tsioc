@@ -4,7 +4,7 @@ import { Injectable, isString } from '@tsdi/ioc';
 import { extname } from 'path';
 import { MimeAdapter, MimeDb, SplitType } from '../mime';
 
-@Injectable()
+@Injectable({ static: true })
 export class TrasportMimeAdapter extends MimeAdapter {
     constructor(private db: MimeDb) {
         super();
