@@ -63,25 +63,6 @@ export abstract class TransportStatus {
      * @param status 
      */
     abstract isRetry(status: number): boolean;
-
-    /**
-     * is redirect status or not.
-     * @param status
-     */
-    abstract isRedirect(status: number): boolean;
-
-    /**
-     * redirect default request method.
-     */
-    abstract redirectDefaultMethod(): string;
-    
-    /**
-     * redirect can with body or not.
-     * @param status 
-     * @param method 
-     */
-    abstract redirectBodify(status: number, method?: string): boolean;
-
     /**
      * is request failed status or not.
      * @param status 
@@ -93,6 +74,23 @@ export abstract class TransportStatus {
      * @param status 
      */
     abstract isServerError(status: number): boolean;
+
+    /**
+     * is redirect status or not.
+     * @param status
+     */
+    abstract isRedirect(status: number): boolean;
+    /**
+     * redirect can with body or not.
+     * @param status 
+     * @param method 
+     */
+    abstract redirectBodify(status: number, method?: string): boolean;
+
+    /**
+     * redirect default request method.
+     */
+    abstract redirectDefaultMethod(): string;
 
     /**
      * get status default message.

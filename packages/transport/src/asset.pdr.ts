@@ -14,9 +14,13 @@ import { Negotiator } from './negotiator';
 
 
 export const MIME_PROVIDERS: ProviderType[] = [
-    { provide: Redirector, useClass: AssetRedirector },
     { provide: MimeAdapter, useClass: TrasportMimeAdapter }
-]
+];
+
+export const ASSET_CLIENT_PROVIDERS: ProviderType[] = [
+    ...MIME_PROVIDERS,
+    { provide: Redirector, useClass: AssetRedirector }
+];
 
 export const ASSET_SERVR_PROVIDERS: ProviderType[] = [
     ...MIME_PROVIDERS,
@@ -24,4 +28,4 @@ export const ASSET_SERVR_PROVIDERS: ProviderType[] = [
     { provide: ResponseStatusFormater, useClass: DefaultStatusFormater },
     { provide: ContentSendAdapter, useClass: TransportSendAdapter },
     { provide: ExecptionTypedRespond, useClass: TranspotExecptionTypedRespond },
-]
+];

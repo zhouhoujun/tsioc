@@ -1,4 +1,4 @@
-import { IncomingPacket, Redirector, TransportStatus } from '@tsdi/core';
+import { IncomingPacket, TransportStatus } from '@tsdi/core';
 import { EMPTY_OBJ, Inject, Injectable } from '@tsdi/ioc';
 import { ListenOpts, LISTEN_OPTS } from '@tsdi/platform-server';
 import { TransportProtocol } from '../protocol';
@@ -8,7 +8,7 @@ import { PacketTransform } from '../packet';
 export class TcpProtocol extends TransportProtocol {
 
     private _name = 'tcp';
-    constructor(@Inject(LISTEN_OPTS, { defaultValue: EMPTY_OBJ }) private listenOpts: ListenOpts, readonly status: TransportStatus, readonly redirector: Redirector) {
+    constructor(@Inject(LISTEN_OPTS, { defaultValue: EMPTY_OBJ }) private listenOpts: ListenOpts, readonly status: TransportStatus) {
         super();
 
     }

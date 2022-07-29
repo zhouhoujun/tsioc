@@ -1,4 +1,4 @@
-import { EndpointBackend, mths, RequestContext, ResponseJsonParseError, ResHeaders, OutgoingHeaders, BytesPipe } from '@tsdi/core';
+import { EndpointBackend, mths, RequestContext, ResponseJsonParseError, ResHeaders, OutgoingHeaders, BytesPipe, Redirector } from '@tsdi/core';
 import { Injectable, InvocationContext, type_undef } from '@tsdi/ioc';
 import { Socket } from 'net';
 import { filter, Observable, Observer, throwError } from 'rxjs';
@@ -98,7 +98,7 @@ export class TcpBackend implements EndpointBackend<TransportRequest, TransportEv
                             }
 
                             if (!bodyLen && ctx.protocol.status.isRedirect(status)) {
-                               return ctx.protocol.redirector.redirect(ctx, req, status, new ResHeaders(headers))
+                               return ctx.get(Redirector).redirect(ctx, req, status, new ResHeaders(headers))
                                     .subscribe(observer);
                             }
                             return;
@@ -156,7 +156,7 @@ export class TcpBackend implements EndpointBackend<TransportRequest, TransportEv
                         }
 
                         if (ctx.protocol.status.isRedirect(status)) {
-                            return ctx.protocol.redirector.redirect(ctx, req, status, new ResHeaders(headers))
+                            return ctx.get(Redirector).redirect(ctx, req, status, new ResHeaders(headers))
                                  .subscribe(observer);
                          }
 

@@ -1,6 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
 import { IncomingPacket } from './packet';
-import { Redirector } from './redirector';
 import { TransportStatus } from './status';
 
 /**
@@ -12,10 +11,14 @@ export abstract class Protocol {
      * protocol name
      */
     abstract get name(): string;
+    abstract get secure(): boolean;
+    /**
+     * status of transport.
+     */
+    abstract get status(): TransportStatus;
+
     abstract normlizeUrl(url: string): string;
     abstract isAbsoluteUrl(url: string): boolean;
-    abstract get secure(): boolean;
-
     /**
      * url parse.
      * @param url 
@@ -26,13 +29,4 @@ export abstract class Protocol {
      * @param protocol 
      */
     abstract match(protocol: string): boolean;
-
-    /**
-     * status of transport.
-     */
-    abstract get status(): TransportStatus;
-    /**
-     * redirector of protocol.
-     */
-    abstract get redirector(): Redirector;
 }

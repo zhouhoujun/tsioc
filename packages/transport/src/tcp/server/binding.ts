@@ -21,7 +21,7 @@ export class TcpHandlerBinding implements HandlerBinding<TcpContext> {
         });
         ctx.request.socket.on(ev.TIMEOUT, () => {
             cancel?.unsubscribe();
-        })
+        });
         ctx.request.socket.on(ev.CLOSE, () => {
             cancel?.unsubscribe();
         });
