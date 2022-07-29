@@ -11,7 +11,6 @@ import { TransportEvent } from './response';
 
 
 const defaults = {
-    delimiter: '\r\n',
     encoding: 'utf8',
     encoder: JsonEncoder,
     decoder: JsonDecoder,

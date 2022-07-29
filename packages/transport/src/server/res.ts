@@ -80,7 +80,7 @@ export class ServerResponse extends Writable implements OutgoingPacket {
             encoding = undefined;
         }
         if (!this.headersSent) {
-            this.writeHead(this.statusCode, this.statusMessage, this.headers)
+            this.writeHead(this.statusCode, this.statusMessage, this.headers);
         }
         super.end(chunk, encoding, cb);
         return this;

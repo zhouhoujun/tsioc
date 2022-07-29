@@ -8,7 +8,7 @@ import { PrototcolContext, PROTOTCOL_EXECPTION_FILTERS, PROTOTCOL_MIDDLEWARES } 
 import { BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMiddleware, SessionMiddleware } from '../middlewares';
 import { MimeDb } from '../mime';
 import { db } from '../impl/mimedb';
-import { TcpArgumentErrorFilter, ProtocolFinalizeFilter } from './finalize-filter';
+import { ProtocolExecptionFilter, ProtocolFinalizeFilter } from './finalize-filter';
 import { ProtocolServerOpts, PROTOTCOL_SERV_INTERCEPTORS } from './options';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';
@@ -36,7 +36,7 @@ const defOpts = {
     ],
     execptions: [
         ProtocolFinalizeFilter,
-        TcpArgumentErrorFilter
+        ProtocolExecptionFilter
     ],
     middlewares: [
         ContentMiddleware,

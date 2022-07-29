@@ -18,10 +18,6 @@ export abstract class ProtocolClientOpts extends ClientOpts<TransportRequest, Tr
      */
     abstract encoding?: BufferEncoding;
     /**
-     * packet delimiter code.
-     */
-    abstract delimiter?: string;
-    /**
      * socket options.
      */
     abstract socketOpts?: SocketConstructorOpts;

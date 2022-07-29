@@ -8,7 +8,7 @@ import { ASSET_SERVR_PROVIDERS } from './asset.pdr';
 import { CatchInterceptor, DefaultStatusFormater, LogInterceptor, RespondInterceptor } from './interceptors';
 import { BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware, EncodeJsonMiddleware, HelmetMiddleware, SessionMiddleware } from './middlewares';
 import { NormlizePathInterceptor } from './client/path';
-import { ProtocolFinalizeFilter } from './server/finalize-filter';
+import { ProtocolExecptionFilter, ProtocolFinalizeFilter } from './server/finalize-filter';
 
 
 @Module({
@@ -36,6 +36,7 @@ import { ProtocolFinalizeFilter } from './server/finalize-filter';
         SessionMiddleware,
 
         ProtocolFinalizeFilter,
+        ProtocolExecptionFilter,
 
         ProtocolClient,
         ProtocolServer,

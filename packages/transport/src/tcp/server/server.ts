@@ -11,12 +11,13 @@ import { TcpContext, TCP_EXECPTION_FILTERS, TCP_MIDDLEWARES } from './context';
 import { TcpServRequest } from './request';
 import { TcpRespondAdapter } from './respond';
 import { TcpServResponse } from './response';
-import { TcpArgumentErrorFilter, TcpFinalizeFilter } from './finalize-filter';
+import { TcpFinalizeFilter } from './finalize-filter';
 import { TcpServerOpts, TCP_SERV_INTERCEPTORS } from './options';
 import { PacketProtocol, PacketProtocolOpts } from '../packet';
 import { TcpProtocol } from '../protocol';
 import { TcpHandlerBinding } from './binding';
 import { TcpStatus } from '../status';
+import { ProtocolExecptionFilter } from '../../server/finalize-filter';
 
 
 const defOpts = {
@@ -38,7 +39,7 @@ const defOpts = {
     ],
     execptions: [
         TcpFinalizeFilter,
-        TcpArgumentErrorFilter
+        ProtocolExecptionFilter
     ],
     middlewares: [
         ContentMiddleware,

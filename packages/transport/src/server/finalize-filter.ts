@@ -76,7 +76,7 @@ export class ProtocolFinalizeFilter implements ExecptionFilter {
 
 
 @Injectable({ static: true })
-export class TcpArgumentErrorFilter implements ExecptionFilter {
+export class ProtocolExecptionFilter implements ExecptionFilter {
 
     constructor() {
 
