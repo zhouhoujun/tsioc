@@ -15,8 +15,7 @@ import {
 } from '../../middlewares';
 import { MimeDb } from '../../mime';
 import { CatchInterceptor, LogInterceptor, RespondInterceptor } from '../../interceptors';
-import { db } from '../../impl/mimedb';
-import { ArgumentErrorFilter, HttpFinalizeFilter } from './finalize-filter';
+import { HttpExecptionFilter, HttpFinalizeFilter } from './finalize-filter';
 import { Http2ServerOpts, HttpServerOpts, HTTP_EXECPTION_FILTERS, HTTP_SERVEROPTIONS, HTTP_SERV_INTERCEPTORS } from './options';
 import { HTTP_SERVR_PROVIDERS } from './providers';
 
@@ -29,7 +28,6 @@ const httpOpts = {
     majorVersion: 2,
     options: { allowHTTP1: true },
     listenOpts: { port: 3000, host: LOCALHOST } as ListenOptions,
-    mimeDb: db,
     closeDelay: 500,
     content: {
         root: 'public'
@@ -39,7 +37,7 @@ const httpOpts = {
     execptionsToken: HTTP_EXECPTION_FILTERS,
     execptions: [
         HttpFinalizeFilter,
-        ArgumentErrorFilter
+        HttpExecptionFilter
     ],
     detailError: true,
     interceptors: [

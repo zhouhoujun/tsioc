@@ -5,7 +5,7 @@ import * as NodeFormData from 'form-data';
 import { hdr } from '../consts';
 
 
-@Injectable()
+@Injectable({ static: true })
 export class DetectBodyInterceptor implements Interceptor<ClientRequsetPacket, ResponseEvent> {
 
     constructor() { }

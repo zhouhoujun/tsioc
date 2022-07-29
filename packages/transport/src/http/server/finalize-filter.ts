@@ -3,12 +3,12 @@ import {
     ForbiddenError, InternalServerError, NotFoundError, TransportArgumentError, TransportError,
     TransportMissingError, UnauthorizedError, UnsupportedMediaTypeError
 } from '@tsdi/core';
-import { Inject, Injectable, isFunction, isNumber } from '@tsdi/ioc';
+import { Injectable, isFunction, isNumber } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { MissingModelFieldError } from '@tsdi/repository';
 import { HttpBadRequestError, HttpError, HttpForbiddenError, HttpInternalServerError, HttpNotFoundError, HttpUnauthorizedError } from '../errors';
 import { HttpContext } from './context';
-import { HttpServerOpts, HTTP_SERVEROPTIONS } from './options';
+import { HTTP_SERVEROPTIONS } from './options';
 
 
 @Injectable({ static: true })
@@ -78,9 +78,9 @@ export class HttpFinalizeFilter implements ExecptionFilter {
 
 
 @Injectable({ static: true })
-export class ArgumentErrorFilter implements ExecptionFilter {
+export class HttpExecptionFilter implements ExecptionFilter {
 
-    constructor(@Inject(HTTP_SERVEROPTIONS) private option: HttpServerOpts) {
+    constructor() {
 
     }
 
@@ -127,17 +127,17 @@ export class ArgumentErrorFilter implements ExecptionFilter {
 
     @ExecptionHandler(TransportArgumentError)
     anguExecption(ctx: ExecptionContext, execption: TransportArgumentError) {
-        ctx.execption = new HttpBadRequestError(this.option.detailError ? execption.message : undefined)
+        ctx.execption = new HttpBadRequestError(ctx.get(HTTP_SERVEROPTIONS).detailError ? execption.message : undefined)
     }
 
     @ExecptionHandler(MissingModelFieldError)
     missFieldExecption(ctx: ExecptionContext, execption: MissingModelFieldError) {
-        ctx.execption = new HttpBadRequestError(this.option.detailError ? execption.message : undefined)
+        ctx.execption = new HttpBadRequestError(ctx.get(HTTP_SERVEROPTIONS).detailError ? execption.message : undefined)
     }
 
     @ExecptionHandler(TransportMissingError)
     missExecption(ctx: ExecptionContext, execption: TransportMissingError) {
-        ctx.execption = new HttpBadRequestError(this.option.detailError ? execption.message : undefined)
+        ctx.execption = new HttpBadRequestError(ctx.get(HTTP_SERVEROPTIONS).detailError ? execption.message : undefined)
     }
 
 }

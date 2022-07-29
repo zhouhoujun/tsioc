@@ -5,7 +5,7 @@ import { TransportRequest } from './request';
 import { TransportEvent } from './response';
 
 
-@Injectable()
+@Injectable({ static: true })
 export class NormlizePathInterceptor implements Interceptor<TransportRequest, TransportEvent> {
 
     constructor() { }

@@ -11,14 +11,12 @@ import { TcpContext, TCP_EXECPTION_FILTERS, TCP_MIDDLEWARES } from './context';
 import { TcpServRequest } from './request';
 import { TcpRespondAdapter } from './respond';
 import { TcpServResponse } from './response';
-import { db } from '../../impl/mimedb';
 import { TcpArgumentErrorFilter, TcpFinalizeFilter } from './finalize-filter';
 import { TcpServerOpts, TCP_SERV_INTERCEPTORS } from './options';
 import { PacketProtocol, PacketProtocolOpts } from '../packet';
 import { TcpProtocol } from '../protocol';
 import { TcpHandlerBinding } from './binding';
 import { TcpStatus } from '../status';
-import { ASSET_SERVR_PROVIDERS } from '../../asset.pdr';
 
 
 const defOpts = {
@@ -33,7 +31,6 @@ const defOpts = {
     content: {
         root: 'public'
     },
-    mimeDb: db,
     interceptors: [
         LogInterceptor,
         CatchInterceptor,
