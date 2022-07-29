@@ -2,7 +2,7 @@ import { EMPTY_OBJ, Injectable, isUndefined, lang, type_undef } from '@tsdi/ioc'
 import { EndpointBackend, EndpointContext, mths, global, isArrayBuffer, isBlob, isFormData, ResHeaders, Redirector } from '@tsdi/core';
 import {
     HttpRequest, HttpEvent, HttpResponse, HttpErrorResponse,
-    HttpHeaderResponse, HttpStatusCode, statusMessage, HttpJsonParseError
+    HttpHeaderResponse, HttpStatusCode, statusMessage, HttpJsonParseError, HttpBackend
 } from '@tsdi/common';
 import { finalize, Observable, Observer } from 'rxjs';
 import * as zlib from 'zlib';
@@ -28,7 +28,7 @@ if (typeof global.FormData === type_undef) {
  * http client backend.
  */
 @Injectable()
-export class HttpBackend extends EndpointBackend<HttpRequest, HttpEvent> {
+export class HttpBackend2 extends HttpBackend {
     constructor(private option: HttpClientOpts) {
         super();
     }
