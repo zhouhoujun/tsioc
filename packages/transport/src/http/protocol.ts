@@ -7,12 +7,13 @@ import { TLSSocket } from 'tls';
 import { TransportProtocol } from '../protocol';
 import { hdr } from '../consts';
 import { PacketTransform } from '../packet';
+import { HttpStatus } from './status';
 
 @Injectable()
 export class HttpProtocol extends TransportProtocol {
 
     private _name = 'http';
-    constructor(@Inject(LISTEN_OPTS, { defaultValue: EMPTY_OBJ }) private listenOpts: ListenOpts, readonly status: TransportStatus) {
+    constructor(@Inject(LISTEN_OPTS, { defaultValue: EMPTY_OBJ }) private listenOpts: ListenOpts, readonly status: HttpStatus) {
         super();
     }
 

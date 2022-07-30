@@ -1,14 +1,15 @@
-import { IncomingPacket, TransportStatus } from '@tsdi/core';
+import { IncomingPacket } from '@tsdi/core';
 import { EMPTY_OBJ, Inject, Injectable } from '@tsdi/ioc';
 import { ListenOpts, LISTEN_OPTS } from '@tsdi/platform-server';
 import { TransportProtocol } from '../protocol';
 import { PacketTransform } from '../packet';
+import { TcpStatus } from './status';
 
 @Injectable()
 export class TcpProtocol extends TransportProtocol {
 
     private _name = 'tcp';
-    constructor(@Inject(LISTEN_OPTS, { defaultValue: EMPTY_OBJ }) private listenOpts: ListenOpts, readonly status: TransportStatus) {
+    constructor(@Inject(LISTEN_OPTS, { defaultValue: EMPTY_OBJ }) private listenOpts: ListenOpts, readonly status: TcpStatus) {
         super();
 
     }

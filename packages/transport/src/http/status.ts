@@ -3,9 +3,9 @@ import { mths, TransportStatus } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 
 
-@Injectable()
+@Injectable({ static: true })
 export class HttpStatus extends TransportStatus {
-    
+
     get ok(): number {
         return HttpStatusCode.Ok;
     }
@@ -47,7 +47,7 @@ export class HttpStatus extends TransportStatus {
     isVaild(statusCode: number): boolean {
         return !!statusMessage[statusCode as HttpStatusCode];
     }
-    
+
     isNotFound(status: number): boolean {
         return status === HttpStatusCode.NotFound;
     }

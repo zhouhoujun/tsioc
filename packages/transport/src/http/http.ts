@@ -11,6 +11,7 @@ import { HttpExecptionFilter, HttpFinalizeFilter } from './server/finalize-filte
 import { HttpStatus } from './status';
 import { HttpRespondAdapter } from './server/respond';
 import { HttpHandlerBinding } from './server/binding';
+import { HttpProtocol } from './protocol';
 
 /**
  * http module.
@@ -28,6 +29,7 @@ import { HttpHandlerBinding } from './server/binding';
         HttpExecptionFilter,
         HttpStatus,
         HttpBackend2,
+        HttpProtocol,
         HttpRespondAdapter,
         HttpHandlerBinding,
 

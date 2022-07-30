@@ -27,7 +27,6 @@ const defaults = {
 
 
 export const TCP_CLIENT_PROVIDERS = [
-    { provide: TransportStatus, useClass: TcpStatus },
     { provide: Protocol, useClass: TcpProtocol },
 ]
 
@@ -58,7 +57,7 @@ export class TcpClient extends TransportClient<TransportRequest, TransportEvent,
     }
 
     protected getBackend(): EndpointBackend<TransportRequest, TransportEvent> {
-        return this.context.resolve(TcpBackend);
+        return this.context.get(TcpBackend);
     }
 
     protected async connect(): Promise<void> {

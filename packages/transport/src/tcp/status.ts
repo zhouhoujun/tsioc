@@ -2,7 +2,7 @@ import { mths } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import { HttpStatus } from '../http';
 
-@Injectable()
+@Injectable({ static: true })
 export class TcpStatus extends HttpStatus {
 
     redirectDefaultMethod(): string {
