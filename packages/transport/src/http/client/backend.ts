@@ -1,4 +1,4 @@
-import { EMPTY_OBJ, Injectable, isUndefined, lang, type_undef } from '@tsdi/ioc';
+import { EMPTY_OBJ, Injectable, isFunction, isUndefined, lang, type_undef } from '@tsdi/ioc';
 import { EndpointBackend, EndpointContext, mths, global, isArrayBuffer, isBlob, isFormData, ResHeaders, Redirector } from '@tsdi/core';
 import {
     HttpRequest, HttpEvent, HttpResponse, HttpErrorResponse,
@@ -11,7 +11,6 @@ import * as https from 'https';
 import * as http2 from 'http2';
 import { PassThrough, pipeline, Writable, PipelineSource } from 'stream';
 import { promisify } from 'util';
-import * as NodeFormData from 'form-data';
 import { ev, hdr } from '../../consts';
 import { HttpError } from '../errors';
 import { toBuffer, isBuffer, jsonTypes, textTypes, xmlTypes } from '../../utils';
@@ -20,9 +19,6 @@ import { MimeAdapter } from '../../mime';
 
 const pmPipeline = promisify(pipeline);
 
-if (typeof global.FormData === type_undef) {
-    global.FormData = NodeFormData;
-}
 
 /**
  * http client backend.
@@ -636,16 +632,13 @@ export async function sendbody(data: any, request: Writable, error: (err: any) =
             const arrbuff = await data.arrayBuffer();
             source = Buffer.from(arrbuff);
         } else if (isFormData(data)) {
-            let form: NodeFormData;
-            if (data instanceof NodeFormData) {
-                form = data;
-            } else {
-                form = new NodeFormData();
+            if (!isFunction((data as any).getBuffer)) {
+                const form = new global.FormData();
                 data.forEach((v, k, parent) => {
                     form.append(k, v);
                 });
             }
-            source = form.getBuffer();
+            source = (data as any).getBuffer();
         } else {
             source = String(data);
         }

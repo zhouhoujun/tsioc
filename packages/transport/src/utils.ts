@@ -1,8 +1,14 @@
-import { ArgumentError, isFunction, isString } from '@tsdi/ioc';
+import { ArgumentError, isFunction, isString, type_undef } from '@tsdi/ioc';
+import { OutgoingPacket, global } from '@tsdi/core';
+import { Buffer } from 'buffer';
+import * as NodeFormData from 'form-data';
 import { Stream, PassThrough } from 'stream';
 import { EventEmitter } from 'events';
 import { hdr } from './consts';
-import { OutgoingPacket } from '@tsdi/core';
+
+if (typeof global.FormData === type_undef) {
+  global.FormData = NodeFormData;
+}
 
 
 export function isBuffer(body: any): body is Buffer {

@@ -1,6 +1,6 @@
 import { IncomingPacket, IncommingHeaders } from '@tsdi/core';
 import { EMPTY_OBJ } from '@tsdi/ioc';
-import { Writable } from 'form-data';
+import { Writable } from 'readable-stream';
 
 export class UdpServRequest implements IncomingPacket<Writable> {
     public readonly url: string;

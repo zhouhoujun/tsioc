@@ -1,7 +1,7 @@
 import { ClientRequsetPacket, Endpoint, EndpointContext, Interceptor, isBlob, isFormData, ResponseEvent } from '@tsdi/core';
-import { Injectable } from '@tsdi/ioc';
+import { Injectable, isFunction } from '@tsdi/ioc';
+import { Buffer } from 'buffer';
 import { defer, mergeMap, Observable } from 'rxjs';
-import * as NodeFormData from 'form-data';
 import { hdr } from '../consts';
 
 
@@ -25,16 +25,13 @@ export class DetectBodyInterceptor implements Interceptor<ClientRequsetPacket, R
                     const arrbuff = await body.arrayBuffer();
                     body = Buffer.from(arrbuff);
                 } else if (isFormData(body)) {
-                    let form: NodeFormData;
-                    if (body instanceof NodeFormData) {
-                        form = body;
-                    } else {
-                        form = new NodeFormData();
+                    if (!isFunction((body as any).getBuffer)) {
+                        const form = new global.FormData();
                         body.forEach((v, k, parent) => {
                             form.append(k, v);
                         });
                     }
-                    body = form.getBuffer();
+                    body = (body as any).getBuffer();
                 }
                 req.body = body;
                 req.headers.set(hdr.CONTENT_LENGTH, Buffer.byteLength(body as Buffer).toString());
