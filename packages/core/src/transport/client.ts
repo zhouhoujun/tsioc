@@ -274,7 +274,7 @@ export abstract class TransportClient<TRequest = any, TResponse = any, Opts exte
         }
         let ctx: RequestContext;
         const connecting = this.connect();
-        return (isObservable(connecting) ? connecting : defer(() => this.connect()))
+        return (isObservable(connecting) ? connecting : defer(() => connecting))
             .pipe(
                 catchError((err, caught) => {
                     return throwError(() => this.onError(err))

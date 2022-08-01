@@ -2,6 +2,7 @@ import { EndpointBackend, mths, RequestContext, ResponseJsonParseError, ResHeade
 import { ev, hdr, identity, isBuffer, TransportRequest, ErrorResponse, TransportEvent, TransportResponse } from '@tsdi/transport';
 import { Injectable, InvocationContext, type_undef } from '@tsdi/ioc';
 import { Socket } from 'net';
+import { Buffer } from 'buffer';
 import { filter, Observable, Observer, throwError } from 'rxjs';
 import { PacketProtocol } from '../packet';
 import { TcpClientOpts } from './options';

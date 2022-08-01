@@ -1,6 +1,7 @@
 import { Decoder, Encoder, Packet } from '@tsdi/core';
 import { Abstract, ArgumentError, Defer, Injectable, lang } from '@tsdi/ioc';
 import { ev, isStream } from '@tsdi/transport';
+import { Buffer } from 'buffer';
 import { Observable, Observer, share } from 'rxjs';
 import { Socket } from 'net';
 import { Readable, Duplex } from 'stream';
