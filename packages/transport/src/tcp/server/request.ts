@@ -16,7 +16,7 @@ export class TcpServRequest implements IncomingPacket<Writable> {
 
     body: any;
 
-    constructor(private protocol: PacketProtocol, readonly socket: Socket, option: {
+    constructor(private protocol: PacketProtocol, readonly stream: Socket, option: {
         id?: string,
         url?: string;
         body?: any,
@@ -45,7 +45,7 @@ export class TcpServRequest implements IncomingPacket<Writable> {
         }
         let bytes = 0;
         const bodys: any[] = [];
-        const sub = this.protocol.read(this.socket)
+        const sub = this.protocol.read(this.stream)
             .pipe(
                 filter(p => p.id === this.id && !isNull(p.body))
             ).subscribe(pk => {

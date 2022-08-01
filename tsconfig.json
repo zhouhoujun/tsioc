@@ -35,6 +35,9 @@
       "@tsdi/transport": [
         "packages/transport/src"
       ],
+      "@tsdi/transport2": [
+        "packages/transport2/src"
+      ],
       "@tsdi/transport-amqp": [
         "packages/transport-amqp/src"
       ],

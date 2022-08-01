@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { IncomingPacket } from './packet';
+import { IncomingPacket, RequestPacket } from './packet';
 import { TransportStatus } from './status';
 
 /**
@@ -19,6 +19,8 @@ export abstract class Protocol {
 
     abstract normlizeUrl(url: string): string;
     abstract isAbsoluteUrl(url: string): boolean;
+
+    abstract isEvent(req: RequestPacket): boolean;
     /**
      * url parse.
      * @param url 

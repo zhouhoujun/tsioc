@@ -1,5 +1,5 @@
 import { Abstract, ArgumentError, EMPTY_OBJ, InvocationContext, isNil, isString, type_str } from '@tsdi/ioc';
-import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map } from 'rxjs';
+import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, isObservable } from 'rxjs';
 import { RequestMethod, ResponsePacket, ResponseEvent } from './packet';
 import { TransportOpts, TransportEndpoint } from './transport';
 import { RequestContext } from './context';
@@ -273,18 +273,20 @@ export abstract class TransportClient<TRequest = any, TResponse = any, Opts exte
             return throwError(() => new ArgumentError('Invalid message'))
         }
         let ctx: RequestContext;
-        return defer(() => this.connect()).pipe(
-            catchError((err, caught) => {
-                return throwError(() => this.onError(err))
-            }),
-            mergeMap(() => {
-                ctx = this.createContext(req, options);
-                return this.request(ctx, req, options)
-            }),
-            finalize(() => {
-                ctx?.destroy()
-            })
-        )
+        const connecting = this.connect();
+        return (isObservable(connecting) ? connecting : defer(() => this.connect()))
+            .pipe(
+                catchError((err, caught) => {
+                    return throwError(() => this.onError(err))
+                }),
+                mergeMap(() => {
+                    ctx = this.createContext(req, options);
+                    return this.request(ctx, req, options)
+                }),
+                finalize(() => {
+                    ctx?.destroy()
+                })
+            )
     }
 
     protected request(context: RequestContext, first: TRequest | string, options: TOption = EMPTY_OBJ as any): Observable<any> {
@@ -371,7 +373,7 @@ export abstract class TransportClient<TRequest = any, TResponse = any, Opts exte
 
     protected abstract buildRequest(context: RequestContext, url: TRequest | string, options?: TOption): TRequest;
 
-    protected abstract connect(): Promise<any>;
+    protected abstract connect(): Promise<void> | Observable<any>;
 
 }
 

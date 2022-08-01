@@ -1,5 +1,6 @@
 import { Decoder, Encoder, isArrayBuffer, Packet, TransportError } from '@tsdi/core';
 import { Injectable, isDefined, isString } from '@tsdi/ioc';
+import { Buffer } from 'buffer';
 import { isBuffer } from './utils';
 
 

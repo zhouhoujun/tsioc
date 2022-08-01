@@ -15,14 +15,14 @@ export class TcpHandlerBinding implements HandlerBinding<TcpContext> {
                 }
             });
         const opts = ctx.target.getOptions() as TcpServerOpts;
-        opts.timeout && req.socket.setTimeout(opts.timeout, () => {
-            req.socket.emit(ev.TIMEOUT);
+        opts.timeout && req.stream.setTimeout(opts.timeout, () => {
+            req.stream.emit(ev.TIMEOUT);
             cancel?.unsubscribe()
         });
-        ctx.request.socket.on(ev.TIMEOUT, () => {
+        ctx.request.stream.on(ev.TIMEOUT, () => {
             cancel?.unsubscribe();
         });
-        ctx.request.socket.on(ev.CLOSE, () => {
+        ctx.request.stream.on(ev.CLOSE, () => {
             cancel?.unsubscribe();
         });
     }

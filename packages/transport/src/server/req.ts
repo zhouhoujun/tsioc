@@ -16,7 +16,7 @@ export class ServerRequest extends Readable implements IncomingPacket<Writable> 
     body: any;
     private _bodyIdx = 0;
     constructor(
-        readonly socket: Socket | TLSSocket,
+        readonly stream: Socket | TLSSocket,
         options: {
             id?: string,
             url?: string;
@@ -38,7 +38,7 @@ export class ServerRequest extends Readable implements IncomingPacket<Writable> 
     override _read(size: number): void {
         const end = this._bodyIdx + size
         const start = this._bodyIdx
-        const payload = this.socket.read(size);
+        const payload = this.stream.read(size);
         let buf: any = null
 
         if (payload != null && start < payload.length) {

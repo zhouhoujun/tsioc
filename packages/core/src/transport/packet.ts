@@ -246,7 +246,7 @@ export interface IncomingPacket<T = any> extends Packet<any> {
      */
     readonly method?: string;
 
-    readonly socket?: any;
+    readonly stream?: any;
     /**
      * pipe
      * @param destination 
