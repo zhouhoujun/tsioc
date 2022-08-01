@@ -1,5 +1,5 @@
 import { ArgumentError, isFunction, isString } from '@tsdi/ioc';
-import { OutgoingPacket, isFormData as isBFromData } from '@tsdi/core';
+import { OutgoingPacket, isFormData } from '@tsdi/core';
 import { Buffer } from 'buffer';
 import { Stream, PassThrough, Readable } from 'stream';
 import * as FormData from 'form-data';
@@ -26,8 +26,8 @@ export function createFormData(options?: {
   return new FormData(options);
 }
 
-export function isFormData(body: any): boolean {
-  return isBFromData(body) || body instanceof FormData
+export function isFormDataLike(body: any): boolean {
+  return isFormData(body) || body instanceof FormData
 }
 
 export function isStream(body: any): body is Stream {

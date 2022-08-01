@@ -1,5 +1,5 @@
 import { EMPTY_OBJ, Injectable, isFunction, isUndefined, lang, type_undef } from '@tsdi/ioc';
-import { EndpointBackend, EndpointContext, mths, global, isArrayBuffer, isBlob, ResHeaders, Redirector } from '@tsdi/core';
+import { EndpointBackend, EndpointContext, mths, global, isArrayBuffer, isBlob, ResHeaders, Redirector, isFormData } from '@tsdi/core';
 import {
     HttpRequest, HttpEvent, HttpResponse, HttpErrorResponse,
     HttpHeaderResponse, HttpStatusCode, statusMessage, HttpJsonParseError, HttpBackend
@@ -11,7 +11,7 @@ import * as https from 'https';
 import * as http2 from 'http2';
 import { PassThrough, pipeline, Writable, PipelineSource } from 'stream';
 import { promisify } from 'util';
-import { ev, hdr, toBuffer, isBuffer, isFormData, jsonTypes, textTypes, xmlTypes, MimeAdapter, createFormData } from '@tsdi/transport';
+import { ev, hdr, toBuffer, isBuffer, isFormDataLike, jsonTypes, textTypes, xmlTypes, MimeAdapter, createFormData } from '@tsdi/transport';
 import { HttpError } from '../errors';
 import { CLIENT_HTTP2SESSION, HttpClientOpts } from './option';
 
@@ -629,15 +629,15 @@ export async function sendbody(data: any, request: Writable, error: (err: any) =
         } else if (isBlob(data)) {
             const arrbuff = await data.arrayBuffer();
             source = Buffer.from(arrbuff);
-        } else if (isFormData(data)) {
-            if (!isFunction((data as any).getBuffer)) {
+        } else if (isFormDataLike(data)) {
+            if (isFormData(data)) {
                 const form = createFormData();
-                (data as FormData).forEach((v, k, parent) => {
+                data.forEach((v, k, parent) => {
                     form.append(k, v);
                 });
                 data = form;
             }
-            source = (data as any).getBuffer();
+            source = data.getBuffer();
         } else {
             source = String(data);
         }

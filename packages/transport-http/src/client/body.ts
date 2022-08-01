@@ -1,7 +1,7 @@
 import { HttpEvent, HttpRequest } from '@tsdi/common';
-import { Endpoint, EndpointContext, Interceptor, isBlob } from '@tsdi/core';
+import { Endpoint, EndpointContext, Interceptor, isBlob, isFormData } from '@tsdi/core';
 import { Injectable, isFunction } from '@tsdi/ioc';
-import { createFormData, isFormData, hdr } from '@tsdi/transport';
+import { createFormData, isFormDataLike, hdr } from '@tsdi/transport';
 import { defer, mergeMap, Observable } from 'rxjs';
 
 
@@ -25,10 +25,10 @@ export class HttpBodyInterceptor implements Interceptor<HttpRequest, HttpEvent> 
                 if (isBlob(body)) {
                     const arrbuff = await body.arrayBuffer();
                     body = Buffer.from(arrbuff);
-                } else if (isFormData(body)) {
-                    if (!isFunction((body as any).getBuffer)) {
+                } else if (isFormDataLike(body)) {
+                    if (isFormData(body)) {
                         const form = createFormData();
-                        (body as FormData) .forEach((v, k, parent) => {
+                        body.forEach((v, k, parent) => {
                             form.append(k, v);
                         });
                         body = form as any;

@@ -1,7 +1,7 @@
 import { ClientRequsetPacket, IncommingHeaders, isArrayBuffer, isBlob, isUrlSearchParams, mths, Packet, ReqHeaders, ReqHeadersLike } from '@tsdi/core';
 import { isString, type_bool, type_num, type_obj } from '@tsdi/ioc';
 import { Stream } from 'stream';
-import { isBuffer, isStream, isFormData } from '../utils';
+import { isBuffer, isStream, isFormDataLike } from '../utils';
 
 /**
  * Client Request.
@@ -43,7 +43,7 @@ export class TransportRequest<T = any> implements ClientRequsetPacket<T> {
         }
         // Check whether the body is already in a serialized form. If so,
         // it can just be returned directly.
-        if (isArrayBuffer(this.body) || isBuffer(this.body) || isStream(this.body) || isBlob(this.body) || isFormData(this.body) ||
+        if (isArrayBuffer(this.body) || isBuffer(this.body) || isStream(this.body) || isBlob(this.body) || isFormDataLike(this.body) ||
             isUrlSearchParams(this.body) || isString(this.body)) {
             return this.body as any;
         }
@@ -73,7 +73,7 @@ export class TransportRequest<T = any> implements ClientRequsetPacket<T> {
             return null
         }
         // FormData bodies rely on the browser's content type assignment.
-        if (isFormData(this.body)) {
+        if (isFormDataLike(this.body)) {
             return null
         }
         // Blobs usually have their own content type. If it doesn't, then
