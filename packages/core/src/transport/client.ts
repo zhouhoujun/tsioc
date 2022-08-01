@@ -21,7 +21,7 @@ export abstract class ClientOpts<TRequest, TResponse> extends TransportOpts<TReq
  */
 @Abstract()
 export abstract class TransportClient<TRequest = any, TResponse = any, Opts extends ClientOpts<TRequest, TResponse> = any, TOption extends RequstOption = RequstOption> extends TransportEndpoint<TRequest, TResponse, Opts> {
-    
+
     /**
      * initialize interceptors with options.
      * @param options 
@@ -371,7 +371,7 @@ export abstract class TransportClient<TRequest = any, TResponse = any, Opts exte
 
     protected abstract buildRequest(context: RequestContext, url: TRequest | string, options?: TOption): TRequest;
 
-    protected abstract connect(): Promise<void>;
+    protected abstract connect(): Promise<any>;
 
 }
 

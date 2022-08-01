@@ -1,5 +1,4 @@
 import { type_undef } from '@tsdi/ioc'
-import { global } from '../global';
 
 /**
  * Safely assert whether the given value is an ArrayBuffer.
@@ -25,7 +24,7 @@ export function isBlob(value: any): value is Blob {
  * In some execution environments FormData is not defined.
  */
 export function isFormData(value: any): value is FormData {
-    return typeof global.FormData !== type_undef && value instanceof global.FormData
+    return typeof FormData !== type_undef && value instanceof FormData
 }
 
 /**

@@ -19,5 +19,3 @@ export * from './server';
 export * from './client';
 export * from './transport';
 
-export * from './http';
-export * from './tcp';
