@@ -1,7 +1,7 @@
-import { ClientRequsetPacket, IncommingHeaders, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, mths, Packet, ReqHeaders, ReqHeadersLike } from '@tsdi/core';
+import { ClientRequsetPacket, IncommingHeaders, isArrayBuffer, isBlob, isUrlSearchParams, mths, Packet, ReqHeaders, ReqHeadersLike } from '@tsdi/core';
 import { isString, type_bool, type_num, type_obj } from '@tsdi/ioc';
 import { Stream } from 'stream';
-import { isBuffer, isStream } from '../utils';
+import { isBuffer, isStream, isFormData } from '../utils';
 
 /**
  * Client Request.
@@ -45,7 +45,7 @@ export class TransportRequest<T = any> implements ClientRequsetPacket<T> {
         // it can just be returned directly.
         if (isArrayBuffer(this.body) || isBuffer(this.body) || isStream(this.body) || isBlob(this.body) || isFormData(this.body) ||
             isUrlSearchParams(this.body) || isString(this.body)) {
-            return this.body
+            return this.body as any;
         }
 
         // Check whether the body is an object or array, and serialize with JSON if so.

@@ -1,13 +1,33 @@
 import { ArgumentError, isFunction, isString } from '@tsdi/ioc';
-import { OutgoingPacket } from '@tsdi/core';
+import { OutgoingPacket, isFormData as isBFromData } from '@tsdi/core';
 import { Buffer } from 'buffer';
-import { Stream, PassThrough } from 'stream';
+import { Stream, PassThrough, Readable } from 'stream';
+import * as FormData from 'form-data';
 import { EventEmitter } from 'events';
 import { hdr } from './consts';
 
-
 export function isBuffer(body: any): body is Buffer {
   return Buffer.isBuffer(body)
+}
+
+export function createFormData(options?: {
+  writable?: boolean;
+  readable?: boolean;
+  dataSize?: number;
+  maxDataSize?: number;
+  pauseStreams?: boolean;
+  highWaterMark?: number;
+  encoding?: string;
+  objectMode?: boolean;
+  read?(this: Readable, size: number): void;
+  destroy?(this: Readable, error: Error | null, callback: (error: Error | null) => void): void;
+  autoDestroy?: boolean;
+}): FormData {
+  return new FormData(options);
+}
+
+export function isFormData(body: any): boolean {
+  return isBFromData(body) || body instanceof FormData
 }
 
 export function isStream(body: any): body is Stream {
