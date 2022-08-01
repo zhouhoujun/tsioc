@@ -1,6 +1,7 @@
-import { ApplicationContext, ComponentScan, ConfigureService, Repository, RequestParam, RouteMapping, Transactional } from '@tsdi/core';
+import { ApplicationContext, ComponentScan, ConfigureService, RequestParam, RouteMapping } from '@tsdi/core';
 import { lang } from '@tsdi/ioc';
 import { ILogger, Log, Logger } from '@tsdi/logs';
+import { Repository, Transactional } from '@tsdi/repository';
 import { User } from '../models/models';
 import { UserRepository } from '../repositories/UserRepository';
 
