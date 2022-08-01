@@ -1,6 +1,7 @@
 import { Injector, Injectable, lang, tokenId, isArray } from '@tsdi/ioc';
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { HttpModule, HttpServer, RedirectResult } from '@tsdi/transport';
+import { RedirectResult } from '@tsdi/transport';
+import { HttpModule, HttpServer } from '@tsdi/transport-http';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerHttpClientModule } from '@tsdi/platform-server-common';
 import expect = require('expect');

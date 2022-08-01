@@ -2,7 +2,6 @@ import { OutgoingHeader, OutgoingHeaders, OutgoingPacket, ResHeaders } from '@ts
 import { isArray, isFunction, isString } from '@tsdi/ioc';
 import { Writable } from 'stream';
 import { hdr } from '../consts';
-import { TransportProtocol } from '../protocol';
 import { TransportStream } from '../stream';
 
 
@@ -18,7 +17,6 @@ export class ServerResponse extends Writable implements OutgoingPacket {
     constructor(
         readonly stream: TransportStream,
         readonly headers: OutgoingHeaders,
-        private protocol: TransportProtocol,
         readonly socket?: any) {
         super();
         this._hdr = new ResHeaders();
@@ -100,10 +98,8 @@ export class ServerResponse extends Writable implements OutgoingPacket {
                 //todo set header
             }) : this._hdr.setHeaders(headers);
         }
-        this.protocol.transform.write(this.stream, this.headers)
-            .then(() => {
-                this._sent = true;
-            });
+
+        this.stream.write(this.headers);
         return this;
     }
 

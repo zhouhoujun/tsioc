@@ -1,6 +1,6 @@
 import { Module, LoggerModule } from '@tsdi/core';
 import { ServerModule } from '@tsdi/platform-server';
-import { HttpModule, HttpServer } from '@tsdi/transport';
+import { HttpModule, HttpServer } from '@tsdi/transport-http';
 import { HttpClientModule } from '@tsdi/common';
 import { ServerHttpClientModule } from '@tsdi/platform-server-common';
 import * as fs from 'fs';

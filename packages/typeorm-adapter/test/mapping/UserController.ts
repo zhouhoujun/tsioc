@@ -2,7 +2,7 @@ import { Controller, Delete, Get, Post, Put, RequestParam } from '@tsdi/core';
 import { lang } from '@tsdi/ioc';
 import { Log, Logger } from '@tsdi/logs';
 import { Repository, Transactional } from '@tsdi/repository';
-import { HttpInternalServerError } from '@tsdi/transport';
+import { HttpInternalServerError } from '@tsdi/transport-http';
 import { User } from '../models/models';
 import { UserRepository } from '../repositories/UserRepository';
 

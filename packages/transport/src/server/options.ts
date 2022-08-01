@@ -1,8 +1,7 @@
-import { Interceptor, ServerOpts } from '@tsdi/core';
+import { Interceptor, Protocol, ServerOpts } from '@tsdi/core';
 import { Abstract, tokenId, TypeOf } from '@tsdi/ioc';
 import { ContentOptions, SessionOptions } from '../middlewares';
 import { MimeSource } from '../mime';
-import { TransportProtocol } from '../protocol';
 import { ListenOpts } from '../stream';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';
@@ -13,7 +12,7 @@ export abstract class ProtocolServerOpts<T = any> extends ServerOpts<ServerReque
     /**
      * protocol
      */
-    abstract protocol?: TypeOf<TransportProtocol>;
+    abstract protocol?: TypeOf<Protocol>;
     /**
      * options of protocol.
      */

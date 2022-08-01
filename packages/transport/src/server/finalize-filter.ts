@@ -6,7 +6,6 @@ import {
 import { Injectable, isFunction, isNumber } from '@tsdi/ioc';
 import { MissingModelFieldError } from '@tsdi/repository';
 import { Buffer } from 'buffer';
-import { TransportProtocol } from '../protocol';
 import { PrototcolContext } from './context';
 
 
@@ -25,7 +24,7 @@ export class ProtocolFinalizeFilter implements ExecptionFilter {
         }
 
         //finllay defalt send error.
-        const protocol = ctx.get(TransportProtocol);
+        const protocol = ctx.get(Protocol);
         const hctx = ctx.get(PrototcolContext);
         let headerSent = false;
         if (hctx.sent || !hctx.writable) {

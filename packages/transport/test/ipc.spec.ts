@@ -5,7 +5,8 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import path = require('path');
 import del = require('del');
-import { RedirectResult, TcpClient, TcpClientOpts, TcpModule, TcpServer } from '../src';
+import { TcpClient, TcpClientOpts, TcpModule, TcpServer } from '@tsdi/transport-tcp';
+import { RedirectResult } from '../src';
 
 
 @RouteMapping('/device')

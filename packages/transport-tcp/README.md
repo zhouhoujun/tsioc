@@ -1,9 +1,9 @@
-# packaged @tsdi/transport-http
+# packaged @tsdi/transport-tcp
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
-`@tsdi/transport-http`： application bootstrap, via `@tsdi/core`.
+`@tsdi/transport-tcp`： application bootstrap, via `@tsdi/core`.
 
 old packages:
 [`@ts-ioc/core`](https://www.npmjs.com/package/@ts-ioc/core) 
@@ -12,7 +12,7 @@ old packages:
 
 ```shell
 
-npm install @tsdi/transport-http
+npm install @tsdi/transport-tcp
 
 // in browser
 npm install @tsdi/platform-browser

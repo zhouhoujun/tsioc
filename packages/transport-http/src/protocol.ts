@@ -1,22 +1,24 @@
-import { TransportStatus } from '@tsdi/core';
+import { Protocol } from '@tsdi/core';
 import { EMPTY_OBJ, Inject, Injectable, isNumber, isString } from '@tsdi/ioc';
 import { ListenOpts, LISTEN_OPTS } from '@tsdi/platform-server';
+import { HttpRequest } from '@tsdi/common';
+import { hdr } from '@tsdi/transport';
 import * as http from 'http';
 import * as http2 from 'http2';
 import { TLSSocket } from 'tls';
-import { TransportProtocol } from '../protocol';
-import { hdr } from '../consts';
-import { PacketTransform } from '../packet';
 import { HttpStatus } from './status';
 
 @Injectable()
-export class HttpProtocol extends TransportProtocol {
+export class HttpProtocol extends Protocol {
 
     private _name = 'http';
     constructor(@Inject(LISTEN_OPTS, { defaultValue: EMPTY_OBJ }) private listenOpts: ListenOpts, readonly status: HttpStatus) {
         super();
     }
 
+    isEvent(req: HttpRequest): boolean {
+        return req.method === 'events';
+    }
     /**
      * Short-hand for:
      *
@@ -28,11 +30,6 @@ export class HttpProtocol extends TransportProtocol {
     get secure(): boolean {
         return this.name === 'https'
     }
-
-    get transform(): PacketTransform {
-        throw new Error('Method not implemented.');
-    }
-
 
     get name(): string {
         return this._name;

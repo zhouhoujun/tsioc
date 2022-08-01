@@ -3,8 +3,8 @@ import { Injector, isArray, lang } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { TcpClient, TcpClientOpts, TcpModule, TcpServer } from '@tsdi/transport-tcp';
-import { RedirectResult } from '../src';
+import { RedirectResult } from '@tsdi/transport';
+import { TcpClient, TcpClientOpts, TcpModule, TcpServer } from '../src';
 
 
 

@@ -8,7 +8,7 @@ import * as path from 'path';
 
 import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
 
-import { Http, HttpClientOpts, HttpModule, HttpServer } from '../src';
+import { Http, HttpClientOpts, HttpModule, HttpServer } from '@tsdi/transport-http';
 
 
 const key = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-privkey.pem'));

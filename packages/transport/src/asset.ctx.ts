@@ -6,7 +6,6 @@ import { ctype, hdr } from './consts';
 import { CONTENT_DISPOSITION } from './content';
 import { MimeAdapter } from './mime';
 import { Negotiator } from './negotiator';
-import { TransportProtocol } from './protocol';
 import { encodeUrl, escapeHtml, isBuffer, isStream, xmlRegExp } from './utils';
 
 /**
@@ -18,8 +17,6 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
     private _URL?: URL;
     readonly originalUrl: string;
     private _url?: string;
-
-    readonly protocol!: TransportProtocol
 
     constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: TransportServer, options?: InvokeArguments) {
         super(injector, request, response, target, options);

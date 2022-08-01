@@ -1,11 +1,12 @@
 import { Application, ApplicationContext, BadRequestError, Handle, LoggerModule, Module, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
 import { Injector, isArray, lang } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
-import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { TcpClient, TcpClientOpts, TcpModule, TcpServer } from '@tsdi/transport-tcp';
-import { RedirectResult } from '../src';
-
+import expect = require('expect');
+import path = require('path');
+import del = require('del');
+import { RedirectResult } from '@tsdi/transport';
+import { TcpClient, TcpClientOpts, TcpModule, TcpServer } from '../src';
 
 
 @RouteMapping('/device')
@@ -83,6 +84,8 @@ export class DeviceController {
 
 }
 
+const ipcpath = path.join(__dirname, 'myipctmp')
+
 @Module({
     baseURL: __dirname,
     imports: [
@@ -91,7 +94,7 @@ export class DeviceController {
         TcpModule.withOptions({
             timeout: 1000,
             listenOpts: {
-                port: 2000
+                path: ipcpath
             }
         })
     ],
@@ -100,25 +103,26 @@ export class DeviceController {
     ],
     bootstrap: TcpServer
 })
-export class TcpTestModule {
+export class IPCTestModule {
 
 }
 
 
-describe('TCP Server & TCP Client', () => {
+describe('IPC Server & IPC Client', () => {
     let ctx: ApplicationContext;
     let injector: Injector;
 
     let client: TcpClient;
 
     before(async () => {
-        ctx = await Application.run(TcpTestModule);
+        await del(ipcpath);
+        ctx = await Application.run(IPCTestModule);
         injector = ctx.injector;
         client = injector.resolve(TcpClient, {
             provide: TcpClientOpts,
             useValue: {
                 connectOpts: {
-                    port: 2000
+                    path: ipcpath
                 }
             } as TcpClientOpts
         });
@@ -181,7 +185,13 @@ describe('TCP Server & TCP Client', () => {
     });
 
     it('route with request body pipe', async () => {
-        const a = await lastValueFrom(client.send<any>('/device/usage', { observe: 'response', method: 'POST', body: { id: 'test1', age: '50', createAt: '2021-10-01' } }));
+        const a = await lastValueFrom(client.send<any>('/device/usage', { observe: 'response', method: 'POST', body: { id: 'test1', age: '50', createAt: '2021-10-01' } })
+            .pipe(
+                catchError(err => {
+                    console.log(err);
+                    return of(err);
+                })
+            ));
         // a.error && console.log(a.error);
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
@@ -284,12 +294,20 @@ describe('TCP Server & TCP Client', () => {
 
     it('redirect', async () => {
         const result = 'reload';
-        const r = await lastValueFrom(client.send('/device/status', { observe: 'response', params: { redirect: 'reload' }, responseType: 'text' }));
+        const r = await lastValueFrom(client.send('/device/status', { observe: 'response', params: { redirect: 'reload' }, responseType: 'text' }).pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
         expect(r.status).toEqual(200);
         expect(r.body).toEqual(result);
     })
 
-    after(() => {
-        return ctx.destroy();
+
+
+    after(async () => {
+        await ctx.destroy();
+        await del(ipcpath);
     })
 });
+

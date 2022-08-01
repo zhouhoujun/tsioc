@@ -1,5 +1,5 @@
 import { Module, LoggerModule } from '@tsdi/core';
-import { HttpModule, HttpServer } from '@tsdi/transport';
+import { HttpModule, HttpServer } from '@tsdi/transport-http';
 import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
 import { Connection } from 'typeorm';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';

@@ -1,132 +1,89 @@
-import { Application, ApplicationContext, BadRequestError, Handle, LoggerModule, Module, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
-import { Injector, isArray, lang } from '@tsdi/ioc';
+import { Injector, isArray } from '@tsdi/ioc';
+import { catchError, lastValueFrom, of } from 'rxjs';
+import { Application, ApplicationContext, Module, LoggerModule } from '@tsdi/core';
 import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
-import { catchError, lastValueFrom, of } from 'rxjs';
-import { TcpClient, TcpClientOpts, TcpModule, TcpServer } from '@tsdi/transport-tcp';
-import { RedirectResult } from '../src';
+import * as fs from 'fs';
+import * as path from 'path';
+
+import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
+
+import { Http, HttpClientOpts, HttpModule, HttpServer } from '../src';
 
 
-
-@RouteMapping('/device')
-export class DeviceController {
-
-    @RouteMapping('/init', 'POST')
-    req(name: string) {
-        console.log('DeviceController init:', name);
-        return { name };
-    }
-
-    @RouteMapping('/usage', 'POST')
-    age(id: string, @RequestBody('age', { pipe: 'int' }) year: number, @RequestBody({ pipe: 'date' }) createAt: Date) {
-        console.log('usage:', id, year, createAt);
-        return { id, year, createAt };
-    }
-
-    @RouteMapping('/usege/find', 'MESSAGE')
-    agela(@RequestParam('age', { pipe: 'int' }) limit: number) {
-        console.log('limit:', limit);
-        return limit;
-    }
-
-    @RouteMapping('/:age/used', 'MESSAGE')
-    resfulquery(@RequestPath('age', { pipe: 'int' }) age1: number) {
-        console.log('age1:', age1);
-        if (age1 <= 0) {
-            throw new BadRequestError();
-        }
-        return age1;
-    }
-
-
-    @RouteMapping('/update', 'POST')
-    async update(version: string) {
-        // do smth.
-        console.log('update version:', version);
-        const defer = lang.defer();
-
-        setTimeout(() => {
-            defer.resolve(version);
-        }, 10);
-
-        return await defer.promise;
-    }
-
-    @RouteMapping('/status', 'MESSAGE')
-    getLastStatus(@RequestParam('redirect', { nullable: true }) redirect: string) {
-        if (redirect === 'reload') {
-            return new RedirectResult('/device/reload');
-        }
-        return of('working');
-    }
-
-    @RouteMapping('/reload', 'MESSAGE')
-    redirect() {
-        return 'reload';
-    }
-
-
-
-    @Handle({ cmd: 'xxx', protocol: 'tcp' })
-    async subMessage() {
-
-    }
-
-    @Handle(/dd./, 'tcp')
-    async subMessage1() {
-
-    }
-
-
-
-
-
-}
+const key = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-privkey.pem'));
+const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.pem'));
 
 @Module({
     baseURL: __dirname,
     imports: [
         ServerModule,
         LoggerModule,
-        TcpModule.withOptions({
-            timeout: 1000,
+        HttpModule.withOption({
+            majorVersion: 2,
+            options: {
+                allowHTTP1: true,
+                key,
+                cert
+            },
             listenOpts: {
-                port: 2000
+                port: 3200
             }
-        })
+        }),
+        DeviceManageModule,
+        DeviceAModule
+    ],
+    providers: [
+        // DeviceController,
+        DeviceStartupHandle
     ],
     declarations: [
         DeviceController
     ],
-    bootstrap: TcpServer
+    bootstrap: HttpServer
 })
-export class TcpTestModule {
+class MainApp {
 
 }
 
-
-describe('TCP Server & TCP Client', () => {
+describe('http2 server, Http', () => {
     let ctx: ApplicationContext;
     let injector: Injector;
 
-    let client: TcpClient;
+    let client: Http;
 
     before(async () => {
-        ctx = await Application.run(TcpTestModule);
+        ctx = await Application.run(MainApp);
         injector = ctx.injector;
-        client = injector.resolve(TcpClient, {
-            provide: TcpClientOpts,
+        client = injector.resolve(Http, {
+            provide: HttpClientOpts,
             useValue: {
-                connectOpts: {
-                    port: 2000
+                authority: 'https://localhost:3200',
+                options: {
+                    ca: cert
                 }
-            } as TcpClientOpts
+            } as HttpClientOpts
         });
+    });
+
+    it('make sure singleton', async () => {
+        // ctx.send('msg://decice/init', { body: {mac: 'xxx-xx-xx-xxxx'}, query: {name:'xxx'} })
+        // console.log(ctx.getMessager());
+        const a = injector.get(DeviceQueue);
+        const b = injector.get(DeviceQueue);
+        expect(a).toBeInstanceOf(DeviceQueue);
+        expect(a).toEqual(b);
+    });
+
+    it('has registered', async () => {
+        const a = injector.get(DEVICE_MIDDLEWARES);
+        expect(a[0]).toBeInstanceOf(DeviceStartupHandle);
+        expect(a[1]).toBeInstanceOf(DeviceAStartupHandle);
     });
 
 
     it('fetch json', async () => {
-        const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET' })
+        const res: any = await lastValueFrom(client.get('510100_full.json')
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -138,10 +95,23 @@ describe('TCP Server & TCP Client', () => {
     })
 
 
+    it('msg work', async () => {
+
+        const rep = await lastValueFrom(client.send<any>('/hdevice', { method: 'POST', observe: 'response', body: { type: 'startup' } }));
+
+        const device = rep.body['device'];
+        const aState = rep.body['deviceA_state'];
+        const bState = rep.body['deviceB_state'];
+
+        expect(device).toBe('device next');
+        expect(aState).toBe('startuped');
+        expect(bState).toBe('startuped');
+    });
+
     it('not found', async () => {
-        const a = await lastValueFrom(client.send('/device/init5', { method: 'GET', params: { name: 'test' } })
+        const a = await lastValueFrom(client.post<any>('/device/init5', null, { observe: 'response', params: { name: 'test' } })
             .pipe(
-                catchError(err => {
+                catchError(err=> {
                     console.log(err);
                     return of(err)
                 })
@@ -150,18 +120,18 @@ describe('TCP Server & TCP Client', () => {
     });
 
     it('bad request', async () => {
-        const a = await lastValueFrom(client.send('/device/-1/used', { observe: 'response', params: { age: '20' } })
-            .pipe(
-                catchError(err => {
-                    console.log(err);
-                    return of(err)
-                })
-            ));
+        const a = await lastValueFrom(client.get('/device/-1/used', { observe: 'response', params: { age: '20' } })
+        .pipe(
+            catchError(err=> {
+                console.log(err);
+                return of(err)
+            })
+        ));
         expect(a.status).toEqual(400);
     })
 
     it('post route response object', async () => {
-        const a = await lastValueFrom(client.send<any>('/device/init', { observe: 'response', method: 'POST', params: { name: 'test' } }));
+        const a = await lastValueFrom(client.post<any>('/device/init', null, { observe: 'response', params: { name: 'test' } }));
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toBeDefined();
@@ -169,7 +139,7 @@ describe('TCP Server & TCP Client', () => {
     });
 
     it('post route response string', async () => {
-        const b = await lastValueFrom(client.send('/device/update', { observe: 'response', responseType: 'text', method: 'POST', params: { version: '1.0.0' } })
+        const b = await lastValueFrom(client.post('/device/update', null, { observe: 'response', responseType: 'text', params: { version: '1.0.0' } })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -181,7 +151,7 @@ describe('TCP Server & TCP Client', () => {
     });
 
     it('route with request body pipe', async () => {
-        const a = await lastValueFrom(client.send<any>('/device/usage', { observe: 'response', method: 'POST', body: { id: 'test1', age: '50', createAt: '2021-10-01' } }));
+        const a = await lastValueFrom(client.post<any>('/device/usage', { id: 'test1', age: '50', createAt: '2021-10-01' }, { observe: 'response' }));
         // a.error && console.log(a.error);
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
@@ -191,7 +161,7 @@ describe('TCP Server & TCP Client', () => {
     })
 
     it('route with request body pipe throw missing argument err', async () => {
-        const r = await lastValueFrom(client.send('/device/usage', { observe: 'response', method: 'POST' })
+        const r = await lastValueFrom(client.post('/device/usage', {}, { observe: 'response' })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -202,7 +172,7 @@ describe('TCP Server & TCP Client', () => {
     })
 
     it('route with request body pipe throw argument err', async () => {
-        const r = await lastValueFrom(client.send('/device/usage', { observe: 'response', method: 'POST', body: { id: 'test1', age: 'test', createAt: '2021-10-01' } })
+        const r = await lastValueFrom(client.post('/device/usage', { id: 'test1', age: 'test', createAt: '2021-10-01' }, { observe: 'response' })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -213,14 +183,14 @@ describe('TCP Server & TCP Client', () => {
     })
 
     it('route with request param pipe', async () => {
-        const a = await lastValueFrom(client.send('/device/usege/find', { observe: 'response', params: { age: '20' } }));
+        const a = await lastValueFrom(client.get('/device/usege/find', { observe: 'response', params: { age: '20' } }));
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toStrictEqual(20);
     })
 
     it('route with request param pipe throw missing argument err', async () => {
-        const r = await lastValueFrom(client.send('/device/usege/find', { observe: 'response' })
+        const r = await lastValueFrom(client.get('/device/usege/find', { observe: 'response' })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -231,7 +201,7 @@ describe('TCP Server & TCP Client', () => {
     })
 
     it('route with request param pipe throw argument err', async () => {
-        const r = await lastValueFrom(client.send('/device/usege/find', { observe: 'response', params: { age: 'test' } })
+        const r = await lastValueFrom(client.get('/device/usege/find', { observe: 'response', params: { age: 'test' } })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -242,14 +212,14 @@ describe('TCP Server & TCP Client', () => {
     })
 
     it('route with request param pipe', async () => {
-        const a = await lastValueFrom(client.send('/device/30/used', { observe: 'response', params: { age: '20' } }));
+        const a = await lastValueFrom(client.get('/device/30/used', { observe: 'response', params: { age: '20' } }));
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toStrictEqual(30);
     })
 
     it('route with request restful param pipe throw missing argument err', async () => {
-        const r = await lastValueFrom(client.send('/device//used', { observe: 'response', params: { age: '20' } })
+        const r = await lastValueFrom(client.get('/device//used', { observe: 'response', params: { age: '20' } })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -260,7 +230,7 @@ describe('TCP Server & TCP Client', () => {
     })
 
     it('route with request restful param pipe throw argument err', async () => {
-        const r = await lastValueFrom(client.send('/device/age1/used', { observe: 'response', params: { age: '20' } })
+        const r = await lastValueFrom(client.get('/device/age1/used', { observe: 'response', params: { age: '20' } })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -272,7 +242,7 @@ describe('TCP Server & TCP Client', () => {
 
 
     it('response with Observable', async () => {
-        const r = await lastValueFrom(client.send('/device/status', { observe: 'response', responseType: 'text' })
+        const r = await lastValueFrom(client.get('/device/status', { observe: 'response', responseType: 'text' })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -284,7 +254,11 @@ describe('TCP Server & TCP Client', () => {
 
     it('redirect', async () => {
         const result = 'reload';
-        const r = await lastValueFrom(client.send('/device/status', { observe: 'response', params: { redirect: 'reload' }, responseType: 'text' }));
+        const r = await lastValueFrom(client.get('/device/status', { observe: 'response', params: { redirect: 'reload' }, responseType: 'text' }).pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
         expect(r.status).toEqual(200);
         expect(r.body).toEqual(result);
     })

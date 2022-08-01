@@ -4,7 +4,7 @@ import { Application, ApplicationContext, Module, LoggerModule } from '@tsdi/cor
 import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 
-import { Http, HttpModule, HttpServer } from '../src';
+import { Http, HttpModule, HttpServer } from '@tsdi/transport-http';
 import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
 
 

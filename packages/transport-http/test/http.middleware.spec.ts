@@ -5,7 +5,7 @@ import * as net from 'net';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Application, LoggerModule, Module } from '@tsdi/core';
-import { Http, HttpClientOpts, HttpModule, HttpServer } from '@tsdi/transport-http';
+import { Http, HttpClientOpts, HttpModule, HttpServer } from '../src';
 
 @Module({
     imports: [
