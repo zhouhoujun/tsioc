@@ -19,7 +19,7 @@ export abstract class ProtocolClientOpts extends ClientOpts<TransportRequest, Tr
     /**
      * connect options.
      */
-    abstract connectOpts: Record<string, any>;
+    abstract connectOpts?: Record<string, any>;
     /**
      * backend.
      */

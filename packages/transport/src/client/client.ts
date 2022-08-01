@@ -1,6 +1,8 @@
 import { EndpointBackend, RequestContext, RequstOption, TransportClient, UuidGenerator } from '@tsdi/core';
 import { EMPTY, Injectable, isString, Nullable } from '@tsdi/ioc';
+import { map, Observable, of } from 'rxjs';
 import { JsonDecoder, JsonEncoder } from '../coder';
+import { ClientStreamBuilder, TransportStream } from '../stream';
 import { ProtocolBackend } from './backend';
 import { DetectBodyInterceptor } from './body';
 import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, ProtocolClientOpts } from './options';
@@ -26,8 +28,13 @@ const defaults = {
 @Injectable()
 export class ProtocolClient extends TransportClient<TransportRequest, TransportEvent, ProtocolClientOpts> {
 
+    private _stream?: TransportStream;
     constructor(@Nullable() options: ProtocolClientOpts) {
         super(options);
+    }
+
+    get stream(): TransportStream {
+        return this._stream ?? null!;
     }
 
     protected override initOption(options?: ProtocolClientOpts): ProtocolClientOpts {
@@ -45,11 +52,21 @@ export class ProtocolClient extends TransportClient<TransportRequest, TransportE
 
 
     protected buildRequest(context: RequestContext, url: string | TransportRequest<any>, options?: RequstOption | undefined): TransportRequest<any> {
-        return isString(url) ? new TransportRequest(this.context.resolve(UuidGenerator).generate(), { ...options, url }) : url
+        context.setValue(TransportStream, this.stream);
+        return isString(url) ? new TransportRequest({ id: this.context.resolve(UuidGenerator).generate(), ...options, url }) : url
     }
 
-    protected connect(): Promise<void> {
-        throw new Error('Method not implemented.');
+    protected connect(): Observable<TransportStream> {
+        if (this._stream && !this._stream.destroyed) {
+            return of(this._stream);
+        }
+        return this.context.get(ClientStreamBuilder).build(this.getOptions().connectOpts)
+            .pipe(
+                map(stream => {
+                    this._stream = stream;
+                    return stream;
+                })
+            );
     }
 
     protected getBackend(): EndpointBackend<TransportRequest<any>, TransportEvent<any>> {

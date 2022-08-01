@@ -1,5 +1,6 @@
 import { isString } from '@tsdi/ioc';
 import { ApplicationContext, ResultValue } from '@tsdi/core';
+import { Buffer } from 'buffer';
 import { Stream } from 'stream';
 import { existsSync, createReadStream } from 'fs';
 import { join, isAbsolute } from 'path';

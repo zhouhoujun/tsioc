@@ -52,6 +52,7 @@ export class ProtocolRespondAdapter extends RespondAdapter {
             return res.end(body)
         }
 
+
         // responses
         if (isBuffer(body)) return res.end(body);
         if (isString(body)) return res.end(Buffer.from(body));

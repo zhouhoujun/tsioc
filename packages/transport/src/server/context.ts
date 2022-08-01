@@ -47,21 +47,6 @@ export class PrototcolContext extends AssetServerContext<ServerRequest, ServerRe
         return this.request.method === 'PUT' || this.getHeader(hdr.OPERATION) === 'update';
     }
 
-    // write(chunk: string | Uint8Array, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean;
-    // write(chunk: string | Uint8Array, encoding: BufferEncoding, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean;
-    // write(chunk: string | Uint8Array, encoding?: BufferEncoding | ((err?: Error | null | undefined) => void) | undefined, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean;
-    // write(chunk: string | Uint8Array, encoding?: any, cb?: any): boolean {
-    //     const protocol = this.get(PacketProtocol);
-    //     if (isFunction(encoding)) {
-    //         cb = encoding;
-    //         encoding = undefined;
-    //     }
-    //     protocol.write(this.response.socket, { id: this.response.id, body: chunk }, encoding)
-    //         .then(() => cb && cb())
-    //         .catch(err => cb && cb(err));
-    //     return true;
-    // }
-
     protected isSelf(token: Token) {
         return token === PrototcolContext || token === AssetServerContext || token === TransportContext;
     }

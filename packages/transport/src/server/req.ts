@@ -1,8 +1,8 @@
 import { IncomingPacket, IncommingHeaders } from '@tsdi/core';
 import { EMPTY_OBJ } from '@tsdi/ioc';
 import { Readable, Writable } from 'stream';
-import { Socket } from 'net';
-import { TLSSocket } from 'tls';
+import { TransportStream } from '../stream';
+
 
 /**
  * Server request.
@@ -16,7 +16,7 @@ export class ServerRequest extends Readable implements IncomingPacket<Writable> 
     body: any;
     private _bodyIdx = 0;
     constructor(
-        readonly stream: Socket | TLSSocket,
+        readonly stream: TransportStream,
         options: {
             id?: string,
             url?: string;

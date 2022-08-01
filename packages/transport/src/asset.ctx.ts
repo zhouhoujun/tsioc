@@ -1,6 +1,7 @@
 import { AssetContext, OutgoingHeader, ServerContext, IncommingHeader, OutgoingHeaders, IncomingPacket, OutgoingPacket, TransportServer } from '@tsdi/core';
 import { Abstract, Injector, InvokeArguments, isArray, isNil, isNumber, isString, lang } from '@tsdi/ioc';
 import { extname } from 'path';
+import { Buffer } from 'buffer';
 import { ctype, hdr } from './consts';
 import { CONTENT_DISPOSITION } from './content';
 import { MimeAdapter } from './mime';

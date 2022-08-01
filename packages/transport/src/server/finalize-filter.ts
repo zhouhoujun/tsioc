@@ -5,6 +5,7 @@ import {
 } from '@tsdi/core';
 import { Injectable, isFunction, isNumber } from '@tsdi/ioc';
 import { MissingModelFieldError } from '@tsdi/repository';
+import { Buffer } from 'buffer';
 import { TransportProtocol } from '../protocol';
 import { PrototcolContext } from './context';
 
