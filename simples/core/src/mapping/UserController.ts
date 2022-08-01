@@ -1,5 +1,5 @@
 import { ApplicationContext, ComponentScan, ConfigureService, Controller, Delete, Get, Post, Put, RequestParam, InternalServerError } from '@tsdi/core';
-import { lang } from '@tsdi/ioc';
+import { lang, Param } from '@tsdi/ioc';
 import { Log, Logger } from '@tsdi/logs';
 import { Repository, Transactional } from '@tsdi/repository';
 import { User } from '../models/models';
@@ -12,6 +12,10 @@ export class UserController {
 
     }
 
+    @Get('/')
+    search(@RequestParam() name: string) {
+        return this.usrRep.search(name);
+    }
 
     @Get('/:name')
     getUser(name: string) {

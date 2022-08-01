@@ -1,6 +1,6 @@
 import {
     isArray, isString, lang, Type, isRegExp, createDecorator, OperationArgumentResolver,
-    ClassMethodDecorator, createParamDecorator, ParameterMetadata, ActionTypes, ReflectiveResolver, isClass
+    ClassMethodDecorator, createParamDecorator, ParameterMetadata, ActionTypes, ReflectiveResolver, isClass, isBoolean
 } from '@tsdi/ioc';
 import { PipeTransform } from '../../pipes/pipe';
 import { InterceptorType, Middleware, MiddlewareFn } from '../../transport/endpoint';
@@ -325,7 +325,7 @@ export interface RequsetParameterDecorator {
      * @param {string} field field of request query params or body.
      * @param option option.
      */
-    (field: string, option?: {
+    (field?: string, option?: {
         /**
          * define provider to resolve value to the parameter or property.
          */
@@ -420,7 +420,10 @@ export const RequestPath: RequsetParameterDecorator = createParamDecorator('Requ
 export const RequestParam: RequsetParameterDecorator = createParamDecorator('RequestParam', {
     props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as RequsetParameterMetadata),
     appendProps: meta => {
-        meta.scope = 'query'
+        meta.scope = 'query';
+        if (!isBoolean(meta.nullable)) {
+            meta.nullable = true;
+        }
     }
 });
 

@@ -11,7 +11,7 @@ export class UserRepository extends Repository<User> {
     search(key: string, skip?: number, take?: number) {
         const keywords =  `%${key}%`;
         return this.createQueryBuilder('usr')
-            .where('usr.name = :keywords OR usr.id = :key', { keywords, key })
+            .where('usr.name = :keywords OR usr.id::text = :key', { keywords, key })
             .skip(skip)
             .take(take)
             .getManyAndCount();
