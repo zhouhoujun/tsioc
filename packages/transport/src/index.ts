@@ -15,5 +15,6 @@ export * from './middlewares';
 export * from './impl';
 export * from './server';
 export * from './client';
+export * from './results';
 export * from './transport';
 
