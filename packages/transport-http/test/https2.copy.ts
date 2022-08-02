@@ -14,6 +14,7 @@ import { Http, HttpClientOpts, HttpModule, HttpServer } from '../src';
 const key = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-privkey.pem'));
 const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.pem'));
 
+
 @Module({
     baseURL: __dirname,
     imports: [
@@ -21,7 +22,6 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
         LoggerModule,
         HttpModule.withOption({
             majorVersion: 2,
-            protocol: 'http',
             options: {
                 allowHTTP1: true,
                 key,
@@ -43,12 +43,11 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
     ],
     bootstrap: HttpServer
 })
-class MainApp {
+class SecureMainApp {
 
 }
 
-
-describe('http2 server, Http', () => {
+describe('http2 Secure server, Secure Http', () => {
     let ctx: ApplicationContext;
     let injector: Injector;
 
@@ -56,12 +55,12 @@ describe('http2 server, Http', () => {
 
     before(async () => {
 
-        ctx = await Application.run(MainApp);
+        ctx = await Application.run(SecureMainApp);
         injector = ctx.injector;
         client = injector.resolve(Http, {
             provide: HttpClientOpts,
             useValue: {
-                authority: 'http://localhost:3200',
+                authority: 'https://localhost:3200',
                 options: {
                     ca: cert
                 }
