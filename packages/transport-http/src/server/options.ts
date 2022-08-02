@@ -39,10 +39,12 @@ import { HttpServRequest, HttpServResponse } from './context';
 
 export interface Http1ServerOpts extends HttpOpts {
     majorVersion: 1,
+    protocol?: 'http' | 'https';
     options?: http.ServerOptions | https.ServerOptions;
 }
 export interface Http2ServerOpts extends HttpOpts {
     majorVersion: 2,
+    protocol?: 'http' | 'https';
     options?: http2.ServerOptions | http2.SecureServerOptions;
 }
 

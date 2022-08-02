@@ -191,9 +191,6 @@ class DeviceAModule {
 }
 
 
-const key = fs.readFileSync(path.join(__dirname, './localhost-privkey.pem'));
-const cert = fs.readFileSync(path.join(__dirname, './localhost-cert.pem'));
-
 @Module({
     baseURL: __dirname,
     imports: [

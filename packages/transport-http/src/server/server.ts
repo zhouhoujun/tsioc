@@ -130,20 +130,20 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
             this.context.setValue(CONTENT_DISPOSITION, func)
         }
 
-        let cert: any;
+
+        const option = opts.options ?? EMPTY_OBJ;
+        const isSecure = opts.protocol !== 'http' && !!option.cert;
         if (opts.majorVersion === 2) {
-            const option = opts.options ?? EMPTY_OBJ;
-            cert = option.cert;
-            const server = cert ? http2.createSecureServer(option, (req, res) => this.onRequestHandler(req, res)) : http2.createServer(option, (req, res) => this.onRequestHandler(req, res));
-            this._server = server;
+            const server = this._server = isSecure ? http2.createSecureServer(option, (req, res) => this.onRequestHandler(req, res))
+                : http2.createServer(option, (req, res) => this.onRequestHandler(req, res));
+
             server.on(ev.ERROR, (err) => {
                 this.logger.error(err)
             })
         } else {
-            const option = opts.options ?? EMPTY_OBJ;
-            cert = option.cert;
-            const server = cert ? https.createServer(option, (req, res) => this.onRequestHandler(req, res)) : http.createServer(option, (req, res) => this.onRequestHandler(req, res));
-            this._server = server;
+            const server = this._server = isSecure ? https.createServer(option, (req, res) => this.onRequestHandler(req, res))
+                : http.createServer(option, (req, res) => this.onRequestHandler(req, res));
+
             server.on(ev.ERROR, (err) => {
                 this.logger.error(err)
             })
@@ -163,8 +163,8 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         }
 
         const listenOptions = opts.listenOpts;
-        injector.get(ModuleRef).setValue(LISTEN_OPTS, { ...listenOptions, withCredentials: isDefined(cert), majorVersion: opts.majorVersion });
-        this.logger.info(lang.getClassName(this), 'listen:', listenOptions, '. access with url:', `http${cert ? 's' : ''}://${listenOptions?.host}:${listenOptions?.port}${listenOptions?.path ?? ''}`, '!')
+        injector.get(ModuleRef).setValue(LISTEN_OPTS, { ...listenOptions, withCredentials: isSecure, majorVersion: opts.majorVersion });
+        this.logger.info(lang.getClassName(this), 'listen:', listenOptions, '. access with url:', `http${isSecure ? 's' : ''}://${listenOptions?.host}:${listenOptions?.port}${listenOptions?.path ?? ''}`, '!')
         this._server.listen(listenOptions)
     }
 
