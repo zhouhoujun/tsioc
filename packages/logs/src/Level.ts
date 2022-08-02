@@ -24,8 +24,9 @@ export function isLevel(target: any): target is Level {
  * @param target 
  * @returns 
  */
-export function matchLevel(level: Level, target: Levels | Level) {
-    return (Levels as Record<Level, number>)[level] <= (isString(target) ? (Levels as Record<Level, number>)[target] : target);
+export function matchLevel(level: Level | { levelStr: string, level: number }, target: Levels | Level) {
+    const lvstr = isString(level) ? level : level.levelStr?.toLowerCase() as Level;
+    return (Levels as Record<Level, number>)[lvstr] <= (isString(target) ? (Levels as Record<Level, number>)[target] : target);
 }
 
 /**

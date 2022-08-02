@@ -74,11 +74,11 @@ export class LogInterceptor implements Interceptor {
         const start = hrtime();
         const method = chalk.cyan((ctx as TransportContext).method ?? req.method);
         const url = (ctx as TransportContext).url ?? req.url;
-        logger[level].call(logger, incoming, method, url);
+        logger[level]( incoming, method, url);
         return next.handle(req, ctx)
             .pipe(
                 map(res => {
-                    logger[level].call(logger, outgoing, method, url, ...this.formatter.format(ctx, hrtime(start)));
+                    logger[level](outgoing, method, url, ...this.formatter.format(ctx, hrtime(start)));
                     return res
                 })
             )

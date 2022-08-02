@@ -69,11 +69,11 @@ const logconfig = {
         categories: {
             default: {
                 appenders: ['core', 'console'],
-                level: 'info'
+                level: 'debug'
             },
             core: {
                 appenders: ['core', 'console'],
-                level: 'info'
+                level: 'debug'
             }
         },
         pm2: true
