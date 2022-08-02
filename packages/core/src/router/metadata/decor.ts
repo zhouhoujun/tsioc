@@ -421,9 +421,6 @@ export const RequestParam: RequsetParameterDecorator = createParamDecorator('Req
     props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as RequsetParameterMetadata),
     appendProps: meta => {
         meta.scope = 'query';
-        if (!isBoolean(meta.nullable)) {
-            meta.nullable = true;
-        }
     }
 });
 

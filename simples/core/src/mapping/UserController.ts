@@ -13,14 +13,14 @@ export class UserController {
     }
 
     @Get('/')
-    search(@RequestParam() name: string) {
+    search(@RequestParam({ nullable: true }) name: string) {
         return this.usrRep.search(name);
     }
 
     @Get('/:name')
     getUser(name: string) {
         this.logger.log('name:', name);
-        if(name == 'error') {
+        if (name == 'error') {
             throw new InternalServerError('error');
         }
         return this.usrRep.findByAccount(name);
@@ -32,7 +32,7 @@ export class UserController {
     async modify(user: User, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(lang.getClassName(this.usrRep), user);
         const val = await this.usrRep.save(user);
-        if(check) throw new InternalServerError('check');
+        if (check) throw new InternalServerError('check');
         this.logger.log(val);
         return val;
     }
@@ -43,7 +43,7 @@ export class UserController {
     async modify2(user: User, @Repository() userRepo: UserRepository, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(lang.getClassName(this.usrRep), user);
         const val = await userRepo.save(user);
-        if(check) throw new InternalServerError('check');
+        if (check) throw new InternalServerError('check');
         this.logger.log(val);
         return val;
     }
