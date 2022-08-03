@@ -45,7 +45,11 @@ export namespace hdr {
     export const STATUS_MESSAGE = 'status-message';
     export const OPERATION = 'operation';
 
-
+    export const STATUS2 = ':status';
+    export const METHOD = ':method';
+    export const PATH = ':path';
+    export const AUTHORITY = ':authority';
+    export const SCHEME = ':scheme';
 
     /**
      * header Accept
@@ -214,4 +218,8 @@ export namespace ctype {
      * text plain utf-8.
      */
     export const TEXT_PLAIN_UTF8 = 'text/plain; charset=utf-8';
+    /**
+     * request default accept.
+     */
+    export const REQUEST_ACCEPT = 'application/json, text/plain, */*';
 }

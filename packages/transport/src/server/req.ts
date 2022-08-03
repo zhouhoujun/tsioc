@@ -1,38 +1,23 @@
-import { IncomingPacket, IncommingHeaders } from '@tsdi/core';
-import { EMPTY_OBJ } from '@tsdi/ioc';
+import { IncomingPacket, IncomingHeaders } from '@tsdi/core';
 import { Readable, Writable } from 'stream';
-import { TransportStream } from '../stream';
+import { hdr } from '../consts';
+import { ServerStream } from '../stream';
 
 
 /**
  * Server request.
  */
 export class ServerRequest extends Readable implements IncomingPacket<Writable> {
-    readonly id: string;
     readonly url: string;
     readonly method: string;
-    readonly params: Record<string, any>;
-    readonly headers: IncommingHeaders;
+    readonly authority: string;
     body: any;
     private _bodyIdx = 0;
-    constructor(
-        readonly stream: TransportStream,
-        options: {
-            id?: string,
-            url?: string;
-            body?: any,
-            headers?: IncommingHeaders;
-            params?: Record<string, any>;
-            method?: string;
-            update?: boolean;
-        } = EMPTY_OBJ) {
+    constructor(readonly stream: ServerStream, readonly headers: IncomingHeaders) {
         super();
-        this.id = options.id ?? '';
-        this.url = options.url ?? '';
-        this.body = options.body;
-        this.method = options.method ?? '';
-        this.params = options.params ?? {};
-        this.headers = { ...options.headers };
+        this.url = headers[hdr.PATH] ?? '';
+        this.method = headers[hdr.METHOD] ?? '';
+        this.authority = headers[hdr.AUTHORITY] ?? '';
     }
 
     override _read(size: number): void {

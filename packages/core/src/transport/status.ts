@@ -2,6 +2,8 @@ import { Abstract } from '@tsdi/ioc';
 
 @Abstract()
 export abstract class TransportStatus {
+
+    abstract parse(status?: string | number): number;
     /**
      * ok status code.
      */

@@ -1,4 +1,4 @@
-import { Inject, Injectable, isBoolean, isDefined, isFunction, lang, EMPTY_OBJ } from '@tsdi/ioc';
+import { Inject, Injectable, isBoolean, isFunction, lang, EMPTY_OBJ } from '@tsdi/ioc';
 import { TransportServer, RunnableFactoryResolver, ModuleRef, Router } from '@tsdi/core';
 import { LISTEN_OPTS } from '@tsdi/platform-server';
 import { ListenOptions } from 'net';
@@ -17,6 +17,7 @@ import { HttpContext, HttpServRequest, HttpServResponse, HTTP_MIDDLEWARES } from
 import { HttpExecptionFilter, HttpFinalizeFilter } from './finalize-filter';
 import { Http2ServerOpts, HttpServerOpts, HTTP_EXECPTION_FILTERS, HTTP_SERVEROPTIONS, HTTP_SERV_INTERCEPTORS } from './options';
 import { HTTP_SERVR_PROVIDERS } from './providers';
+import { HttpHandlerBinding } from './binding';
 
 
 
@@ -184,8 +185,14 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
         this._server = null!
     }
 
-    protected override createContext(request: HttpServRequest, response: HttpServResponse): HttpContext {
-        return new HttpContext(this.context.injector, request, response, this as TransportServer)
+    /**
+     * request handler.
+     * @param request 
+     * @param response 
+     */
+    protected onRequestHandler(request: HttpServRequest, response: HttpServResponse) {
+        const ctx = new HttpContext(this.context.injector, request, response, this as TransportServer);
+        this.context.injector.get(HttpHandlerBinding).binding(ctx, this.endpoint());
     }
 
 }

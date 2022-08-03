@@ -1,219 +1,283 @@
-import { BytesPipe, EndpointBackend, OutgoingHeaders, Redirector, RequestContext, ResHeaders, ResponseJsonParseError } from '@tsdi/core';
-import { Injectable, InvocationContext, type_undef } from '@tsdi/ioc';
-import { filter, Observable, Observer, throwError } from 'rxjs';
-import { ev, hdr, identity } from '../consts';
-import { TransportStream } from '../stream';
-import { isBuffer } from '../utils';
+import { EndpointBackend, IncomingHeaders, IncomingStatusHeaders, isArrayBuffer, isBlob, isFormData, mths, Redirector, ReqHeaders, RequestContext, ResponseJsonParseError, TransportError } from '@tsdi/core';
+import { EMPTY_OBJ, Injectable, InvocationContext, isUndefined, lang, type_undef } from '@tsdi/ioc';
+import { Observable, Observer, throwError, finalize } from 'rxjs';
+import * as zlib from 'zlib';
+import { PassThrough, pipeline, Writable, PipelineSource } from 'stream';
+import { promisify } from 'util';
+import { ctype, ev, hdr } from '../consts';
+import { ClientSession } from '../stream';
+import { createFormData, isBuffer, isFormDataLike, jsonTypes, textTypes, toBuffer, xmlTypes } from '../utils';
 import { ProtocolClientOpts } from './options';
 import { TransportRequest } from './request';
-import { ErrorResponse, TransportEvent, TransportResponse } from './response';
+import { ErrorResponse, TransportResponse, TransportEvent, TransportHeaderResponse } from './response';
+import { MimeAdapter } from '../mime';
 
-
+const pmPipeline = promisify(pipeline);
 /**
  * transport protocol backend.
  */
 @Injectable()
 export class ProtocolBackend implements EndpointBackend<TransportRequest, TransportEvent> {
 
-    constructor() {
-
-    }
 
     handle(req: TransportRequest, ctx: RequestContext): Observable<TransportEvent> {
-        const stream = ctx.get(TransportStream);
-        const { id, url } = req;
-        if (!stream || stream.destroyed) return throwError(() => new ErrorResponse({
-            id,
+        const session = ctx.get(ClientSession);
+        const { headers, method, url } = req;
+        if (!session || session.destroyed) return throwError(() => new ErrorResponse({
             url,
             status: 0,
             statusMessage: 'has not connected.'
         }));
-        const adapter = ctx.protocol.status;
 
-        const opts = ctx.target.getOptions() as ProtocolClientOpts;
-        const ac = this.getAbortSignal(ctx);
         return new Observable((observer: Observer<any>) => {
+            const statAdpr = ctx.protocol.status;
+            const path = url.replace(session.authority, '');
 
-            let headers: OutgoingHeaders;
-            let body: any, error: any, ok = false;
-            let bodybuf: any[] = [];
-            let bodyBetys = 0;
-            let status: number;
-            let statusText: string;
-            let bodyLen = 0;
+            headers.set(hdr.METHOD, method);
+            headers.set(hdr.PATH, path);
+            !headers.has(hdr.CONTENT_TYPE) && headers.set(hdr.CONTENT_TYPE, req.detectContentTypeHeader()!)
+            !headers.has(hdr.ACCEPT) && headers.set(hdr.ACCEPT, ctype.REQUEST_ACCEPT);
 
-            if (ctx.protocol.isEvent(req)) {
-                stream.readPacket().pipe(
-                    filter(pk => pk.id === id)
-                ).subscribe({
-                    complete: () => observer.complete(),
-                    error: (err) => observer.error(new ErrorResponse({
-                        id,
+            const opts = ctx.target.getOptions() as ProtocolClientOpts;
+            const ac = this.getAbortSignal(ctx);
+            const request = session.request(headers.headers, { ...opts.requestOpts, signal: ac.signal });
+
+            let onData: (chunk: Buffer) => void;
+            let onEnd: () => void;
+            let status: number, statusText: string;
+            let completed = false;
+
+            let error: any;
+            let ok = false;
+
+            const onResponse = (hdrs: IncomingHeaders & IncomingStatusHeaders, flags: number) => {
+                let body: any;
+                const headers = new ReqHeaders(hdrs as Record<string, any>);
+                status = statAdpr.parse(hdrs[hdr.STATUS2] ?? hdrs[hdr.STATUS]);
+
+                ok = statAdpr.isOk(status);
+                statusText = statAdpr.message(status) ?? 'OK';
+
+                if (statAdpr.isEmpty(status)) {
+                    completed = true;
+                    observer.next(new TransportHeaderResponse({
                         url,
-                        status: err?.status ?? 0,
-                        statusMessage: err?.text,
-                        error: err
-                    })),
-                    next: (pk) => {
-                        if (pk.headers) {
-                            headers = pk.headers;
-                            const len = headers[hdr.CONTENT_LENGTH] as number ?? 0;
-                            const hdrcode = headers[hdr.CONTENT_ENCODING] as string || identity;
-                            if (len && hdrcode === identity) {
-                                bodyLen = ~~len
-                            }
-                            if (opts.sizeLimit && len > opts.sizeLimit) {
-                                const pipe = ctx.get(BytesPipe);
-                                const msg = `Packet size limit ${pipe.transform(opts.sizeLimit)}, this response packet size ${pipe.transform(len)}`;
-                                stream.emit(ev.ERROR, msg);
-                                observer.error(new ErrorResponse({
-                                    id,
-                                    url,
-                                    status: 0,
-                                    statusMessage: 'Packet size limit ' + opts.sizeLimit
-                                }))
-                            }
-                            status = headers[hdr.STATUS] as number ?? 0;
-                            statusText = headers[hdr.STATUS_MESSAGE] as string ?? adapter.message(status);
-                            ok = adapter.isOk(status);
-                            if (adapter.isEmpty(status)) {
-                                if (ok) {
-                                    observer.next(new TransportResponse({
-                                        id,
-                                        url,
-                                        headers,
-                                        status,
-                                        statusText
-                                    }));
-                                    observer.complete();
-                                } else {
-                                    observer.error(new ErrorResponse({
-                                        id,
-                                        url,
-                                        status,
-                                        statusText
-                                    }))
-                                }
-                                return;
-                            }
+                        headers,
+                        status,
+                        statusText
+                    }));
+                    observer.complete();
+                    return;
+                }
 
-                            if (!bodyLen && ctx.protocol.status.isRedirect(status)) {
-                                return ctx.get(Redirector).redirect(ctx, req, status, new ResHeaders(headers))
-                                    .subscribe(observer);
-                            }
-                            return;
-                        }
+                const rqstatus = ctx.getValueify(RequestStauts, () => new RequestStauts());
+                // fetch step 5
 
+                // fetch step 12.1.1.3
+                const codings = headers.get(hdr.CONTENT_ENCODING);
+                const data: any[] = [];
+                let bytes = 0;
+                // let strdata = '';
+                onData = (chunk: Buffer) => {
+                    // strdata += chunk;
+                    bytes += chunk.length;
+                    data.push(chunk);
+                };
+                onEnd = async () => {
+                    completed = true;
+                    // body = strdata;
+                    body = Buffer.concat(data, bytes);
+                    if (status === 0) {
+                        status = bytes ? statAdpr.ok : 0
+                    }
 
-                        body = isBuffer(pk.body) ? pk.body : Buffer.from(pk.body)
-                        bodybuf.push(body);
-                        bodyBetys += body.length;
+                    if (status && statAdpr.isRedirect(status)) {
+                        completed = true;
+                        // HTTP fetch step 5.2
+                        ctx.get(Redirector).redirect<TransportEvent<any>>(ctx, req, status, headers)
+                            .pipe(
+                                finalize(() => completed = true)
+                            ).subscribe(observer);
+                        return;
+                    }
 
-                        if (bodyLen > bodyBetys) {
-                            return;
-                        }
+                    if (rqstatus.compress && req.method !== mths.HEAD && codings) {
+                        // For Node v6+
+                        // Be less strict when decoding compressed responses, since sometimes
+                        // servers send slightly invalid responses that are still accepted
+                        // by common browsers.
+                        // Always using Z_SYNC_FLUSH is what cURL does.
+                        const zlibOptions = {
+                            flush: zlib.constants.Z_SYNC_FLUSH,
+                            finishFlush: zlib.constants.Z_SYNC_FLUSH
+                        };
 
-                        const buffer = Buffer.concat(bodybuf, bodyBetys);
-                        bodybuf = [];
-                        bodyBetys = 0;
-
-
-                        let originalBody: string;
-                        switch (ctx.responseType) {
-                            case 'arraybuffer':
-                                body = buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-                                ok = true;
-                                break;
-                            case 'blob':
-                                body = new Blob([buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)]);
-                                ok = true;
-                                break;
-                            case 'json':
-                                body = originalBody = new TextDecoder().decode(buffer);
-                                try {
-                                    body = body.replace(XSSI_PREFIX, '');
-                                    // Attempt the parse. If it fails, a parse error should be delivered to the user.
-                                    body = body !== '' ? JSON.parse(body) : null;
-                                } catch (err) {
-                                    // Since the JSON.parse failed, it's reasonable to assume this might not have been a
-                                    // JSON response. Restore the original body (including any XSSI prefix) to deliver
-                                    // a better error response.
-                                    body = originalBody;
-
-                                    // If this was an error request to begin with, leave it as a string, it probably
-                                    // just isn't JSON. Otherwise, deliver the parsing error to the user.
-                                    if (ok) {
-                                        // Even though the response status was 2xx, this is still an error.
-                                        ok = false;
-                                        // The parse error contains the text of the body that failed to parse.
-                                        error = { error: err, text: body } as ResponseJsonParseError
+                        try {
+                            if (codings === 'gzip' || codings === 'x-gzip') { // For gzip
+                                const unzip = zlib.createGunzip(zlibOptions);
+                                await pmPipeline(body, unzip);
+                                body = unzip;
+                            } else if (codings === 'deflate' || codings === 'x-deflate') { // For deflate
+                                // Handle the infamous raw deflate response from old servers
+                                // a hack for old IIS and Apache servers
+                                const raw = new PassThrough();
+                                await pmPipeline(body, raw);
+                                const defer = lang.defer();
+                                raw.once(ev.DATA, chunk => {
+                                    if ((chunk[0] & 0x0F) === 0x08) {
+                                        body = pipeline(body, zlib.createInflate(), err => {
+                                            if (err) {
+                                                defer.reject(err);
+                                            }
+                                        });
+                                    } else {
+                                        body = pipeline(body, zlib.createInflateRaw(), err => {
+                                            if (err) {
+                                                defer.reject(err);
+                                            }
+                                        });
                                     }
-                                }
-                                break;
-                            case 'text':
-                            default:
-                                body = new TextDecoder().decode(buffer);
-                        }
+                                });
 
-                        if (ctx.protocol.status.isRedirect(status)) {
-                            return ctx.get(Redirector).redirect(ctx, req, status, new ResHeaders(headers))
-                                .subscribe(observer);
-                        }
+                                raw.once('end', defer.resolve);
 
-                        if (ok) {
-                            observer.next(new TransportResponse({
-                                id,
-                                url,
-                                ok,
-                                headers,
-                                body,
-                                status,
-                                statusText
-                            }));
-                            observer.complete();
-                        } else {
-                            observer.error(new ErrorResponse({
-                                id,
-                                url,
-                                error,
-                                status,
-                                statusText
-                            }));
+                                await defer.promise;
+
+                            } else if (codings === 'br') { // For br
+                                const unBr = zlib.createBrotliDecompress();
+                                await pmPipeline(body, unBr);
+                                body = unBr;
+                            }
+                            if (body instanceof PassThrough) {
+                                body = await toBuffer(body);
+                            }
+                        } catch (err) {
+                            ok = false;
+                            error = err;
                         }
                     }
-                });
 
-                if (!req.headers.has(hdr.ACCEPT)) {
-                    req.headers.set(hdr.ACCEPT, 'application/json, text/plain, */*');
-                }
+                    let originalBody: any;
+                    let buffer: Buffer;
+                    const contentType = headers.get(hdr.CONTENT_TYPE) as string;
+                    let type = ctx.responseType;
+                    if (contentType) {
+                        const adapter = ctx.get(MimeAdapter);
+                        if (type === 'json' && !adapter.match(jsonTypes, contentType)) {
+                            if (adapter.match(xmlTypes, contentType) || adapter.match(textTypes, contentType)) {
+                                type = 'text';
+                            } else {
+                                type = 'blob';
+                            }
+                        }
+                    }
+                    switch (type) {
+                        case 'json':
+                            // Save the original body, before attempting XSSI prefix stripping.
+                            if (isBuffer(body)) {
+                                body = new TextDecoder().decode(body);
+                            }
+                            originalBody = body;
+                            try {
+                                body = body.replace(XSSI_PREFIX, '');
+                                // Attempt the parse. If it fails, a parse error should be delivered to the user.
+                                body = body !== '' ? JSON.parse(body) : null
+                            } catch (err) {
+                                // Since the JSON.parse failed, it's reasonable to assume this might not have been a
+                                // JSON response. Restore the original body (including any XSSI prefix) to deliver
+                                // a better error response.
+                                body = originalBody;
+
+                                // If this was an error request to begin with, leave it as a string, it probably
+                                // just isn't JSON. Otherwise, deliver the parsing error to the user.
+                                if (ok) {
+                                    // Even though the response status was 2xx, this is still an error.
+                                    ok = false;
+                                    // The parse error contains the text of the body that failed to parse.
+                                    error = { error: err, text: body } as ResponseJsonParseError
+                                }
+                            }
+                            break;
+
+                        case 'arraybuffer':
+                            buffer = body;
+                            body = buffer.subarray(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+                            break;
+                        case 'blob':
+                            buffer = body;
+                            body = new Blob([buffer.subarray(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)], {
+                                type: headers.get(hdr.CONTENT_TYPE) as string
+                            });
+                            break;
+                        case 'text':
+                        default:
+                            body = new TextDecoder().decode(body);
+                            break;
+                    }
+
+
+                    if (ok) {
+                        observer.next(new TransportResponse({
+                            url,
+                            body,
+                            headers,
+                            status,
+                            statusText
+                        }));
+                        observer.complete();
+                    } else {
+                        observer.error(new ErrorResponse({
+                            url,
+                            error: error ?? body,
+                            status,
+                            statusText
+                        }));
+                    }
+                };
+                request.on(ev.DATA, onData);
+                request.on(ev.END, onEnd);
+
             }
-            if (opts.sizeLimit && (parseInt(req.headers.get(hdr.CONTENT_LENGTH) as string ?? '0')) > opts.sizeLimit) {
-                observer.error(new ErrorResponse({
-                    id,
+
+            const onError = (error: Error) => {
+                const res = new ErrorResponse({
                     url,
-                    status: 0,
-                    statusMessage: 'Packet size limit ' + opts.sizeLimit
-                }))
+                    error,
+                    status: status || 0,
+                    statusText: statusText || 'Unknown Error',
+                });
+                observer.error(res)
+            };
+
+            request.on(ev.RESPONSE, onResponse);
+            request.on(ev.ERROR, onError);
+            request.on(ev.ABOUT, onError);
+            request.on(ev.TIMEOUT, onError);
+
+            //todo send body.
+            const data = req.serializeBody();
+            if (data === null) {
+                request.end();
+            } else {
+                sendbody(
+                    data,
+                    request,
+                    err => onError(err));
             }
-
-            stream.write(req);
-
-            if (ctx.protocol.isEvent(req)) {
-                observer.complete();
-            }
-
 
             return () => {
-                if (ac && !ctx.destroyed) {
-                    ac.abort()
+                if (isUndefined(status) || !completed) {
+                    ac?.abort();
                 }
+                request.off(ev.RESPONSE, onResponse);
+                request.off(ev.DATA, onData);
+                request.off(ev.END, onEnd);
+                request.off(ev.ERROR, onError);
+                request.off(ev.ABOUT, onError);
+                request.off(ev.TIMEOUT, onError);
                 if (!ctx.destroyed) {
-                    observer.error(new ErrorResponse({
-                        id,
-                        url,
-                        status: 0,
-                        statusMessage: 'The operation was aborted.'
-                    }));
+                    observer.error(new TransportError('The operation was aborted.'));
+                    request.emit(ev.CLOSE);
                 }
             }
         });
@@ -224,6 +288,60 @@ export class ProtocolBackend implements EndpointBackend<TransportRequest, Transp
     }
 }
 
-const XSSI_PREFIX = /^\)\]\}',?\n/;
+/**
+ * json xss.
+ */
+export const XSSI_PREFIX = /^\)\]\}',?\n/;
+
+export async function sendbody(data: any, request: Writable, error: (err: any) => void): Promise<void> {
+    let source: PipelineSource<any>;
+    try {
+        if (isArrayBuffer(data)) {
+            source = Buffer.from(data);
+        } else if (isBuffer(data)) {
+            source = data;
+        } else if (isBlob(data)) {
+            const arrbuff = await data.arrayBuffer();
+            source = Buffer.from(arrbuff);
+        } else if (isFormDataLike(data)) {
+            if (isFormData(data)) {
+                const form = createFormData();
+                data.forEach((v, k, parent) => {
+                    form.append(k, v);
+                });
+                data = form;
+            }
+            source = data.getBuffer();
+        } else {
+            source = String(data);
+        }
+        await pmPipeline(source, request)
+    } catch (err) {
+        error(err);
+    }
+}
+
+
+
+export class RequestStauts {
+    public highWaterMark: number;
+    public insecureParser: boolean;
+    public referrerPolicy: ReferrerPolicy;
+    readonly compress: boolean;
+    constructor(init: {
+        compress?: boolean;
+        follow?: number;
+        counter?: number;
+        highWaterMark?: number;
+        insecureParser?: boolean;
+        referrerPolicy?: ReferrerPolicy;
+        redirect?: 'manual' | 'error' | 'follow' | '';
+    } = EMPTY_OBJ) {
+        this.compress = init.compress ?? false;
+        this.highWaterMark = init.highWaterMark ?? 16384;
+        this.insecureParser = init.insecureParser ?? false;
+        this.referrerPolicy = init.referrerPolicy ?? '';
+    }
+}
 
 

@@ -2,7 +2,7 @@ import { EndpointBackend, RequestContext, RequstOption, TransportClient, UuidGen
 import { EMPTY, Injectable, isString, Nullable } from '@tsdi/ioc';
 import { map, Observable, of } from 'rxjs';
 import { JsonDecoder, JsonEncoder } from '../coder';
-import { ClientStreamBuilder, TransportStream } from '../stream';
+import { ClientSession, ClientSessionStreamBuilder } from '../stream';
 import { ProtocolBackend } from './backend';
 import { DetectBodyInterceptor } from './body';
 import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, ProtocolClientOpts } from './options';
@@ -28,12 +28,12 @@ const defaults = {
 @Injectable()
 export class ProtocolClient extends TransportClient<TransportRequest, TransportEvent, ProtocolClientOpts> {
 
-    private _stream?: TransportStream;
+    private _stream?: ClientSession;
     constructor(@Nullable() options: ProtocolClientOpts) {
         super(options);
     }
 
-    get stream(): TransportStream {
+    get stream(): ClientSession {
         return this._stream ?? null!;
     }
 
@@ -52,15 +52,15 @@ export class ProtocolClient extends TransportClient<TransportRequest, TransportE
 
 
     protected buildRequest(context: RequestContext, url: string | TransportRequest<any>, options?: RequstOption | undefined): TransportRequest<any> {
-        context.setValue(TransportStream, this.stream);
+        context.setValue(ClientSession, this.stream);
         return isString(url) ? new TransportRequest({ id: this.context.resolve(UuidGenerator).generate(), ...options, url }) : url
     }
 
-    protected connect(): Observable<TransportStream> {
+    protected connect(): Observable<ClientSession> {
         if (this._stream && !this._stream.destroyed) {
             return of(this._stream);
         }
-        return this.context.get(ClientStreamBuilder).build(this.getOptions().connectOpts)
+        return this.context.get(ClientSessionStreamBuilder).build(this.getOptions().connectOpts)
             .pipe(
                 map(stream => {
                     this._stream = stream;

@@ -4,7 +4,6 @@ import { OutgoingHeader, ResHeaders, ResHeadersLike, ResponsePacket } from '@tsd
  * client error response.
  */
 export class ErrorResponse {
-    readonly id: string;
     readonly error: any;
     readonly url: string;
     readonly status: number;
@@ -15,7 +14,6 @@ export class ErrorResponse {
     readonly headers: Record<string, OutgoingHeader>;
 
     constructor(options: {
-        id: string;
         url?: string,
         headers?: Record<string, OutgoingHeader>;
         status: number;
@@ -23,7 +21,6 @@ export class ErrorResponse {
         statusText?: string;
         statusMessage?: string;
     }) {
-        this.id = options.id;
         this.url = options.url ?? '';
         this.status = options.status;
         this.statusMessage = options.statusMessage ?? options.statusText ?? '';
@@ -35,9 +32,7 @@ export class ErrorResponse {
 /**
  * client receive Response.
  */
-export class TransportResponse<T = any> implements ResponsePacket<T> {
-    readonly id: string;
-    readonly body: T | null;
+export class TransportHeaderResponse {
     readonly url: string;
     readonly ok: boolean;
     readonly status: number;
@@ -49,7 +44,30 @@ export class TransportResponse<T = any> implements ResponsePacket<T> {
     readonly headers: ResHeaders;
 
     constructor(options: {
-        id: string;
+        url?: string,
+        ok?: boolean;
+        headers?: ResHeadersLike;
+        status: number;
+        statusText?: string;
+        statusMessage?: string;
+    }) {
+        this.url = options.url ?? '';
+        this.status = options.status;
+        this.ok = options.ok ?? false;
+        this.statusMessage = options.statusMessage ?? options.statusText ?? '';
+        this.headers = new ResHeaders(options.headers ?? {});
+    }
+
+}
+
+
+/**
+ * client receive Response.
+ */
+export class TransportResponse<T = any> extends TransportHeaderResponse implements ResponsePacket<T> {
+    readonly body: T | null;
+
+    constructor(options: {
         url?: string,
         ok?: boolean;
         headers?: ResHeadersLike;
@@ -58,19 +76,13 @@ export class TransportResponse<T = any> implements ResponsePacket<T> {
         statusMessage?: string;
         body?: T;
     }) {
-        this.id = options.id ?? '';
-        this.url = options.url ?? '';
-        this.status = options.status;
-        this.ok = options.ok ?? false;
-        this.statusMessage = options.statusMessage ?? options.statusText ?? '';
+        super(options);
         this.body = options.body ?? null;
-        this.headers = new ResHeaders(options.headers ?? {});
     }
-
 }
 
 /**
  * transport event.
  */
-export type TransportEvent<T = any> = ErrorResponse | TransportResponse<T>;
+export type TransportEvent<T = any> = ErrorResponse | TransportHeaderResponse | TransportResponse<T>;
 

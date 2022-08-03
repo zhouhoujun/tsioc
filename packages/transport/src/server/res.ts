@@ -2,7 +2,7 @@ import { OutgoingHeader, OutgoingHeaders, OutgoingPacket, ResHeaders } from '@ts
 import { isArray, isFunction, isString } from '@tsdi/ioc';
 import { Writable } from 'stream';
 import { hdr } from '../consts';
-import { TransportStream } from '../stream';
+import { ServerStream } from '../stream';
 
 
 /**
@@ -12,10 +12,15 @@ export class ServerResponse extends Writable implements OutgoingPacket {
 
     private _sent = false;
     private _hdr: ResHeaders;
-
+    // /**
+    //  * See `response.socket`.
+    //  * @since v8.4.0
+    //  * @deprecated Since v13.0.0 - Use `socket`.
+    //  */
+    // readonly connection: net.Socket | tls.TLSSocket;
 
     constructor(
-        readonly stream: TransportStream,
+        readonly stream: ServerStream,
         readonly headers: OutgoingHeaders,
         readonly socket?: any) {
         super();

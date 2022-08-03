@@ -1,4 +1,4 @@
-import { IncommingHeaders, OutgoingHeader, OutgoingHeaders, ReqHeaders, ResHeaders } from './headers';
+import { IncomingHeaders, OutgoingHeader, OutgoingHeaders, ReqHeaders, ResHeaders } from './headers';
 
 
 /**
@@ -232,7 +232,7 @@ export interface IncomingPacket<T = any> extends Packet<any> {
     /**
      * headers
      */
-    readonly headers: IncommingHeaders;
+    readonly headers: IncomingHeaders;
     /**
      * Outgoing URL
      */

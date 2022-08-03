@@ -169,9 +169,17 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
         await defer.promise;
     }
 
-    protected createContext(request: TcpServRequest, response: TcpServResponse): TcpContext {
-        return new TcpContext(this.context.injector, request, response, this as TransportServer, { parent: this.context });
+    /**
+     * request handler.
+     * @param request 
+     * @param response 
+     */
+     protected onRequestHandler(request: TcpServRequest, response: TcpServResponse) {
+        const ctx = new TcpContext(this.context.injector, request, response, this as TransportServer, { parent: this.context });
+        this.context.injector.get(TcpHandlerBinding).binding(ctx, this.endpoint());
     }
+
+
 
     async close(): Promise<void> {
         if (!this.server) return;

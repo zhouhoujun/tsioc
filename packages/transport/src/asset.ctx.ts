@@ -1,4 +1,4 @@
-import { AssetContext, OutgoingHeader, ServerContext, IncommingHeader, OutgoingHeaders, IncomingPacket, OutgoingPacket, TransportServer } from '@tsdi/core';
+import { AssetContext, OutgoingHeader, ServerContext, IncomingHeader, OutgoingHeaders, IncomingPacket, OutgoingPacket, TransportServer } from '@tsdi/core';
 import { Abstract, Injector, InvokeArguments, isArray, isNil, isNumber, isString, lang } from '@tsdi/ioc';
 import { extname } from 'path';
 import { Buffer } from 'buffer';
@@ -243,7 +243,7 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
      */
     getHeader(field: string): string {
         field = field.toLowerCase();
-        let h: IncommingHeader;
+        let h: IncomingHeader;
         switch (field = field.toLowerCase()) {
             case 'referer':
             case 'referrer':

@@ -97,21 +97,6 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
         return new MiddlewareBackend(this.context.injector.get(this._midlsToken, EMPTY))
     }
     
-    /**
-     * lazy create context.
-     */
-    protected abstract createContext(request: TRequest, response: TResponse): Tx;
-
-    /**
-     * request handler.
-     * @param request 
-     * @param response 
-     */
-    protected onRequestHandler(request: TRequest, response: TResponse) {
-        const ctx = this.createContext(request, response) as Tx;
-        this.context.injector.get(HandlerBinding).binding(ctx, this.endpoint());
-    }
-
 
     /**
      * close server.

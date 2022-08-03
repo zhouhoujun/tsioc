@@ -1,4 +1,4 @@
-import { IncomingPacket, IncommingHeaders } from '@tsdi/core';
+import { IncomingPacket, IncomingHeaders } from '@tsdi/core';
 import { EMPTY_OBJ, isNull } from '@tsdi/ioc';
 import { hdr, identity } from '@tsdi/transport';
 import { Socket } from 'net';
@@ -12,7 +12,7 @@ export class TcpServRequest implements IncomingPacket<Writable> {
     public readonly url: string;
     public readonly method: string;
     public readonly params: Record<string, any>;
-    public readonly headers: IncommingHeaders;
+    public readonly headers: IncomingHeaders;
 
     body: any;
 
@@ -20,7 +20,7 @@ export class TcpServRequest implements IncomingPacket<Writable> {
         id?: string,
         url?: string;
         body?: any,
-        headers?: IncommingHeaders;
+        headers?: IncomingHeaders;
         params?: Record<string, any>;
         method?: string;
         update?: boolean;

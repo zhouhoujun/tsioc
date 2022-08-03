@@ -1,17 +1,30 @@
 import { isArray, isNil, isString } from '@tsdi/ioc';
 
 
-export type IncommingHeader = string | readonly string[] | undefined;
-export type OutgoingHeader = IncommingHeader | number;
+export type IncomingHeader = string | readonly string[] | undefined;
+export type OutgoingHeader = IncomingHeader | number;
 
-export type IncommingHeaders = Record<string, IncommingHeader>;
-export type OutgoingHeaders = Record<string, OutgoingHeader>;
+export interface IncomingHeaders extends Record<string, IncomingHeader> {
+    ':method'?: string | undefined;
+    ':path'?: string | undefined;
+    ':authority'?: string | undefined;
+    ':scheme'?: string | undefined;
+}
+
+export interface IncomingStatusHeaders {
+    status?: number | string | undefined;
+    ':status'?: number | string | undefined;
+}
+
+export interface OutgoingHeaders extends Record<string, OutgoingHeader> {
+
+}
 
 
 /**
  * transport headers.
  */
-export class HeaderSet<T extends IncommingHeader | OutgoingHeader> {
+export class HeaderSet<T extends IncomingHeader | OutgoingHeader> {
 
     private _hdrs: Map<string, T>;
     private _rcd?: Record<string, T>;
@@ -40,15 +53,11 @@ export class HeaderSet<T extends IncommingHeader | OutgoingHeader> {
         }
     }
 
-    get headers() {
-        return this.getHeaders();
-    }
-
     getHeaderNames(): string[] {
         return Array.from(this._normal.keys())
     }
 
-    getHeaders(): Record<string, T> {
+    getHeaders(): Record<string, T>  {
         if (!this._rcd) {
             const rcd = this._rcd = {} as Record<string, T>;
             this.forEach((v, k) => {
@@ -132,17 +141,21 @@ export class HeaderSet<T extends IncommingHeader | OutgoingHeader> {
 /**
  * client request headers.
  */
-export class ReqHeaders extends HeaderSet<IncommingHeader> {
-
+export class ReqHeaders extends HeaderSet<IncomingHeader> {
+    get headers(): IncomingHeaders & IncomingStatusHeaders {
+        return this.getHeaders();
+    }
 }
 
 /**
  * client response headers.
  */
 export class ResHeaders extends HeaderSet<OutgoingHeader>  {
-
+    get headers(): OutgoingHeaders & IncomingStatusHeaders {
+        return this.getHeaders();
+    }
 }
 
-export type ReqHeadersLike = ReqHeaders | IncommingHeaders;
-export type ResHeadersLike = ReqHeaders | OutgoingHeaders;
+export type ReqHeadersLike = ReqHeaders | (IncomingHeaders & IncomingStatusHeaders);
+export type ResHeadersLike = ResHeaders | (OutgoingHeaders & IncomingStatusHeaders);
 

@@ -1,7 +1,6 @@
 import { Router, TransportServer } from '@tsdi/core';
-import { Injectable, isBoolean, Nullable } from '@tsdi/ioc';
+import { Abstract, Injectable, isBoolean, Nullable } from '@tsdi/ioc';
 import { LISTEN_OPTS } from '@tsdi/platform-server';
-import { lastValueFrom } from 'rxjs';
 import { JsonDecoder, JsonEncoder } from '../coder';
 import { CatchInterceptor, LogInterceptor, RespondInterceptor } from '../interceptors';
 import { PrototcolContext, PROTOTCOL_EXECPTION_FILTERS, PROTOTCOL_MIDDLEWARES } from './context';
@@ -13,7 +12,7 @@ import { ProtocolServerOpts, PROTOTCOL_SERV_INTERCEPTORS } from './options';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';
 import { PROTOCOL_SERVR_PROVIDERS } from './providers';
-import { ServerStreamBuilder, TransportStream } from '../stream';
+import { ServerSession } from '../stream';
 
 
 const defOpts = {
@@ -50,32 +49,42 @@ const defOpts = {
 } as ProtocolServerOpts;
 
 
+@Abstract()
+export abstract class ServerSessionStreamBuilder {
+    abstract build(listenOpts: ProtocolServerOpts): Promise<ServerSession>;
+}
+
+
 /**
  * Transport Protocol Server
  */
 @Injectable()
 export class ProtocolServer extends TransportServer<ServerRequest, ServerResponse, PrototcolContext, ProtocolServerOpts> {
 
-    private _stream?: TransportStream;
-
+    private _stream?: ServerSession | null;
     constructor(@Nullable() options: ProtocolServerOpts) {
         super(options)
-    }
-
-    get stream(): TransportStream {
-        return this._stream ?? null!;
     }
 
     get proxy(): boolean {
         return this.getOptions().proxy === true;
     }
 
+    get stream(): ServerSession {
+        return this._stream ?? null!;
+    }
+
     async start(): Promise<void> {
-        this._stream = await lastValueFrom(this.context.get(ServerStreamBuilder).build(this.getOptions().listenOpts));
+        try {
+            this._stream = await this.context.get(ServerSessionStreamBuilder).build(this.getOptions());
+            await this.stream.binding(this.endpoint());
+        } catch (err) {
+            this.logger.error(err);
+        }
     }
 
     async close(): Promise<void> {
-        this.stream.destroy();
+        await this.stream.close();
     }
 
     protected override initOption(options: ProtocolServerOpts): ProtocolServerOpts {
@@ -105,10 +114,6 @@ export class ProtocolServer extends TransportServer<ServerRequest, ServerRespons
             mimedb.from(options.mimeDb)
         }
         super.initContext(options)
-    }
-
-    protected createContext(request: ServerRequest, response: ServerResponse): PrototcolContext {
-        return new PrototcolContext(this.context.injector, request, response, this as TransportServer, { parent: this.context });
     }
 
 }

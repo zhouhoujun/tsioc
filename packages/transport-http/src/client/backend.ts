@@ -1,17 +1,17 @@
-import { EMPTY_OBJ, Injectable, isFunction, isUndefined, lang, type_undef } from '@tsdi/ioc';
-import { EndpointBackend, EndpointContext, mths, global, isArrayBuffer, isBlob, ResHeaders, Redirector, isFormData } from '@tsdi/core';
+import { Injectable, isUndefined, lang, type_undef } from '@tsdi/ioc';
+import { EndpointBackend, EndpointContext, mths, ResHeaders, Redirector, ReqHeaders } from '@tsdi/core';
 import {
     HttpRequest, HttpEvent, HttpResponse, HttpErrorResponse,
-    HttpHeaderResponse, HttpStatusCode, statusMessage, HttpJsonParseError, HttpBackend
+    HttpHeaderResponse, HttpStatusCode, HttpJsonParseError, HttpBackend
 } from '@tsdi/common';
 import { finalize, Observable, Observer } from 'rxjs';
 import * as zlib from 'zlib';
 import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
-import { PassThrough, pipeline, Writable, PipelineSource } from 'stream';
+import { PassThrough, pipeline } from 'stream';
 import { promisify } from 'util';
-import { ev, hdr, toBuffer, isBuffer, isFormDataLike, jsonTypes, textTypes, xmlTypes, MimeAdapter, createFormData } from '@tsdi/transport';
+import { ev, hdr, toBuffer, isBuffer, jsonTypes, textTypes, xmlTypes, MimeAdapter, ctype, RequestStauts, sendbody, XSSI_PREFIX } from '@tsdi/transport';
 import { HttpError } from '../errors';
 import { CLIENT_HTTP2SESSION, HttpClientOpts } from './option';
 
@@ -23,9 +23,6 @@ const pmPipeline = promisify(pipeline);
  */
 @Injectable()
 export class HttpBackend2 extends HttpBackend {
-    constructor(private option: HttpClientOpts) {
-        super();
-    }
 
     private _http1?: Http1Backend;
     get http1() {
@@ -38,13 +35,14 @@ export class HttpBackend2 extends HttpBackend {
     private _http2?: Http1Backend;
     get http2() {
         if (!this._http2) {
-            this._http2 = new Http2Backend(this.option);
+            this._http2 = new Http2Backend();
         }
         return this._http2;
     }
 
     handle(req: HttpRequest<any>, context: EndpointContext): Observable<HttpEvent<any>> {
-        if (this.option.authority && req.url.startsWith(this.option.authority)) {
+        const option = context.target.getOptions() as HttpClientOpts;
+        if (option.authority && req.url.startsWith(option.authority)) {
             return this.http2.handle(req, context);
         }
         return this.http1.handle(req, context);
@@ -56,6 +54,7 @@ export class HttpBackend2 extends HttpBackend {
  * http1 client backend.
  */
 export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
+
     handle(req: HttpRequest<any>, ctx: EndpointContext): Observable<HttpEvent<any>> {
         return new Observable((observer: Observer<HttpEvent<any>>) => {
             const headers: Record<string, any> = {};
@@ -72,20 +71,21 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
             const option = {
                 method: req.method,
                 headers: {
-                    'accept': 'application/json, text/plain, */*',
+                    'accept': ctype.REQUEST_ACCEPT,
                     ...headers,
                 },
                 abort: ac?.signal
             };
 
             const request = secureExp.test(url) ? https.request(url, option) : http.request(url, option);
-
+            
+            const statAdpr = ctx.protocol.status;
             let status: number, statusText: string | undefined;
             let error: any;
             let ok = false;
 
             const onResponse = async (res: http.IncomingMessage) => {
-                status = res.statusCode ?? 0;
+                status = statAdpr.parse(res.statusCode ?? 0);
                 statusText = res.statusMessage;
                 const headers = new ResHeaders(res.headers as Record<string, any>);
 
@@ -95,12 +95,12 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                     body = res.statusMessage;
                 }
                 if (status === 0) {
-                    status = body ? HttpStatusCode.Ok : 0
+                    status = body ? statAdpr.ok : 0
                 }
 
-                ok = ctx.protocol.status.isOk(status);
+                ok = statAdpr.isOk(status);
 
-                if (ctx.protocol.status.isEmpty(status)) {
+                if (statAdpr.isEmpty(status)) {
                     observer.next(new HttpHeaderResponse({
                         url,
                         headers,
@@ -114,7 +114,7 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 const rqstatus = ctx.getValueify(RequestStauts, () => new RequestStauts());
 
                 // HTTP fetch step 5
-                if (status && ctx.protocol.status.isRedirect(status)) {
+                if (status && statAdpr.isRedirect(status)) {
                     ctx.get(Redirector).redirect<HttpEvent<any>>(ctx, req, status, headers)
                         .subscribe(observer)
                     return;
@@ -241,10 +241,10 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                             break;
 
                         case 'arraybuffer':
-                            body = buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+                            body = buffer.subarray(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
                             break;
                         case 'blob':
-                            body = new Blob([buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)], {
+                            body = new Blob([buffer.subarray(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)], {
                                 type: res.headers[hdr.CONTENT_TYPE] as string
                             });
                             break;
@@ -344,34 +344,30 @@ const HTTP2_HEADER_STATUS = ':status';
 /**
  * http2 client backend.
  */
-export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
-    constructor(private option: HttpClientOpts) {
-        super();
-    }
+export class Http2Backend implements EndpointBackend<HttpRequest, HttpEvent> {
+
     handle(req: HttpRequest<any>, ctx: EndpointContext): Observable<HttpEvent<any>> {
         return new Observable((observer: Observer<HttpEvent<any>>) => {
             const url = req.urlWithParams.trim();
             let path = url;
-            if (this.option.authority) {
-                path = path.slice(this.option.authority.length);
+            const option = ctx.target.getOptions() as HttpClientOpts;
+            if (option.authority) {
+                path = path.replace(option.authority, '');
             }
             const reqHeaders: Record<string, any> = {};
             req.headers.forEach((name, values) => {
                 reqHeaders[name] = values
             });
 
-            if (!reqHeaders[hdr.CONTENT_TYPE]) {
-                reqHeaders[hdr.CONTENT_TYPE] = req.detectContentTypeHeader();
-            }
-            reqHeaders[HTTP2_HEADER_ACCEPT] = 'application/json, text/plain, */*';
+            if (!reqHeaders[hdr.CONTENT_TYPE]) reqHeaders[hdr.CONTENT_TYPE] = req.detectContentTypeHeader();
+            if(!reqHeaders[HTTP2_HEADER_ACCEPT]) reqHeaders[HTTP2_HEADER_ACCEPT] = ctype.REQUEST_ACCEPT;
             reqHeaders[HTTP2_HEADER_METHOD] = req.method;
             reqHeaders[HTTP2_HEADER_PATH] = path;
 
             const ac = this.getAbortSignal(ctx);
-            const request = ctx.get(CLIENT_HTTP2SESSION).request(reqHeaders, { ...this.option.requestOptions, signal: ac?.signal } as http2.ClientSessionRequestOptions);
-            // request.setEncoding('utf8');
+            const request = ctx.get(CLIENT_HTTP2SESSION).request(reqHeaders, { ...option.requestOptions, signal: ac?.signal } as http2.ClientSessionRequestOptions);
 
-
+            const statAdpr = ctx.protocol.status;
             let onData: (chunk: Buffer) => void;
             let onEnd: () => void;
             let status: number, statusText: string;
@@ -382,13 +378,13 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
 
             const onResponse = (hdrs: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader, flags: number) => {
                 let body: any;
-                const headers = new ResHeaders(hdrs as Record<string, any>);
-                status = hdrs[HTTP2_HEADER_STATUS] ?? 0;
+                const headers = new ReqHeaders(hdrs as Record<string, any>);
+                status = statAdpr.parse(hdrs[HTTP2_HEADER_STATUS]);
 
-                ok = ctx.protocol.status.isOk(status);
-                statusText = statusMessage[status as HttpStatusCode] ?? 'OK';
+                ok = statAdpr.isOk(status);
+                statusText = statAdpr.message(status) ?? 'OK';
 
-                if (ctx.protocol.status.isEmpty(status)) {
+                if (statAdpr.isEmpty(status)) {
                     completed = true;
                     observer.next(new HttpHeaderResponse({
                         url,
@@ -418,10 +414,10 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                     // body = strdata;
                     body = Buffer.concat(data, bytes);
                     if (status === 0) {
-                        status = bytes ? HttpStatusCode.Ok : 0
+                        status = bytes ? statAdpr.ok : 0
                     }
 
-                    if (status && ctx.protocol.status.isRedirect(status)) {
+                    if (status && statAdpr.isRedirect(status)) {
                         completed = true;
                         // HTTP fetch step 5.2
                         ctx.get(Redirector).redirect<HttpEvent<any>>(ctx, req, status, headers)
@@ -531,11 +527,11 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
 
                         case 'arraybuffer':
                             buffer = body;
-                            body = buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+                            body = buffer.subarray(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
                             break;
                         case 'blob':
                             buffer = body;
-                            body = new Blob([buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)], {
+                            body = new Blob([buffer.subarray(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)], {
                                 type: headers.get(hdr.CONTENT_TYPE) as string
                             });
                             break;
@@ -618,61 +614,4 @@ export class Http2Backend extends EndpointBackend<HttpRequest, HttpEvent> {
     }
 }
 
-
-export async function sendbody(data: any, request: Writable, error: (err: any) => void): Promise<void> {
-    let source: PipelineSource<any>;
-    try {
-        if (isArrayBuffer(data)) {
-            source = Buffer.from(data);
-        } else if (isBuffer(data)) {
-            source = data;
-        } else if (isBlob(data)) {
-            const arrbuff = await data.arrayBuffer();
-            source = Buffer.from(arrbuff);
-        } else if (isFormDataLike(data)) {
-            if (isFormData(data)) {
-                const form = createFormData();
-                data.forEach((v, k, parent) => {
-                    form.append(k, v);
-                });
-                data = form;
-            }
-            source = data.getBuffer();
-        } else {
-            source = String(data);
-        }
-        await pmPipeline(source, request)
-    } catch (err) {
-        error(err);
-    }
-}
-
-
-
 const secureExp = /^https:/;
-const XSSI_PREFIX = /^\)\]\}',?\n/;
-
-
-export class RequestStauts {
-    public highWaterMark: number;
-    public insecureHTTPParser: boolean;
-    public referrerPolicy: ReferrerPolicy;
-    // readonly agent: http.Agent | boolean;
-    readonly compress: boolean;
-    constructor(init: {
-        compress?: boolean;
-        follow?: number;
-        counter?: number;
-        highWaterMark?: number;
-        insecureHTTPParser?: boolean;
-        referrerPolicy?: ReferrerPolicy;
-        redirect?: 'manual' | 'error' | 'follow' | '';
-        agent?: http.Agent | boolean;
-    } = EMPTY_OBJ) {
-        this.compress = init.compress ?? false;
-        this.highWaterMark = init.highWaterMark ?? 16384;
-        this.insecureHTTPParser = init.insecureHTTPParser ?? false;
-        this.referrerPolicy = init.referrerPolicy ?? '';
-        // this.agent = init.agent ?? false;
-    }
-}

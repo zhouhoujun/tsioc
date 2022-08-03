@@ -19,15 +19,15 @@ export class JsonDecoder implements Decoder<string | Uint8Array | Buffer> {
         }
 
         try {
-            const type = source.slice(0, 1).toString(encoding);
+            const type = source.subarray(0, 1).toString(encoding);
             if (type === '1') {
-                source = source.slice(1);
+                source = source.subarray(1);
                 return {
-                    id: source.slice(0, 36).toString(encoding),
-                    body: source.slice(36)
+                    id: source.subarray(0, 36).toString(encoding),
+                    body: source.subarray(36)
                 }
             } else if (type === '0') {
-                source = source.slice(1);
+                source = source.subarray(1);
             }
 
             return (source.length ? JSON.parse(source.toString(encoding)) : null);

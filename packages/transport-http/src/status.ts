@@ -1,10 +1,14 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { mths, TransportStatus } from '@tsdi/core';
-import { Injectable } from '@tsdi/ioc';
+import { Injectable, isString } from '@tsdi/ioc';
 
 
 @Injectable({ static: true })
 export class HttpStatus extends TransportStatus {
+
+    parse(status?: string | number | undefined): number {
+        return isString(status) ? (status ? parseInt(status) : 0) : status ?? 0;
+    }
 
     get ok(): number {
         return HttpStatusCode.Ok;

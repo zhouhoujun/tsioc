@@ -1,4 +1,4 @@
-import { ClientRequsetPacket, IncommingHeaders, isArrayBuffer, isBlob, isUrlSearchParams, mths, Packet, ReqHeaders, ReqHeadersLike } from '@tsdi/core';
+import { ClientRequsetPacket, IncomingHeaders, isArrayBuffer, isBlob, isUrlSearchParams, mths, Packet, ReqHeaders, ReqHeadersLike } from '@tsdi/core';
 import { isString, type_bool, type_num, type_obj } from '@tsdi/ioc';
 import { Stream } from 'stream';
 import { isBuffer, isStream, isFormDataLike } from '../utils';
@@ -8,10 +8,9 @@ import { isBuffer, isStream, isFormDataLike } from '../utils';
  */
 export class TransportRequest<T = any> implements ClientRequsetPacket<T> {
 
-    public readonly id: string;
     public url: string;
     public method: string;
-    public params: IncommingHeaders;
+    public params: IncomingHeaders;
     public body: T | null;
     readonly headers: ReqHeaders;
 
@@ -19,12 +18,10 @@ export class TransportRequest<T = any> implements ClientRequsetPacket<T> {
         id: string;
         url: string;
         headers?: ReqHeadersLike;
-        params?: IncommingHeaders;
+        params?: IncomingHeaders;
         method?: string;
         body?: T;
     }) {
-
-        this.id = option.id;
         this.url = option.url;
         this.method = option.method ?? mths.MESSAGE;
         this.params = option.params ?? {};
@@ -55,10 +52,6 @@ export class TransportRequest<T = any> implements ClientRequsetPacket<T> {
         }
         // Fall back on toString() for everything else.
         return (this.body as any).toString()
-    }
-
-    serializePacket(): Packet {
-        return { id: this.id, url: this.url, method: this.method, params: this.params, headers: this.headers.getHeaders(), body: this.serializeBody() } as Packet;
     }
 
     /**
