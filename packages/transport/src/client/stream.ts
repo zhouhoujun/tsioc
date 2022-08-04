@@ -58,6 +58,6 @@ export abstract class ClientSession extends TransportSession {
 
 
 @Abstract()
-export abstract class ClientSessionStreamBuilder {
+export abstract class ClientSessionBuilder {
     abstract build(connectOpts?: Record<string, any>): Observable<ClientSession>;
 }

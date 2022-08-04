@@ -11,7 +11,7 @@ import { ProtocolServerOpts, PROTOTCOL_SERV_INTERCEPTORS } from './options';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';
 import { PROTOCOL_SERVR_PROVIDERS } from './providers';
-import { ServerSession, ServerSessionStreamBuilder } from './stream';
+import { ServerSession, ServerSessionBuilder } from './stream';
 
 
 const defOpts = {
@@ -67,7 +67,7 @@ export class ProtocolServer extends TransportServer<ServerRequest, ServerRespons
 
     async start(): Promise<void> {
         try {
-            this._session = await this.context.get(ServerSessionStreamBuilder).build(this.getOptions());
+            this._session = await this.context.get(ServerSessionBuilder).build(this.getOptions());
             await this.session.bind(this.endpoint());
         } catch (err) {
             this.logger.error(err);

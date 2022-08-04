@@ -1,14 +1,8 @@
 import { ExecptionFilter, Interceptor } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
 import { ProtocolClient, ProtocolClientOpts, TransportRequest,  } from '@tsdi/transport';
+import { SocketOptions } from 'dgram';
 
-/**
- * address.
- */
-export interface Address {
-    port: number;
-    address?: string
-}
 
 @Abstract()
 export abstract class CoapClientOpts extends ProtocolClientOpts {
@@ -18,7 +12,7 @@ export abstract class CoapClientOpts extends ProtocolClientOpts {
     abstract json?: boolean;
     abstract encoding?: BufferEncoding;
     abstract headerSplit?: string;
-    abstract address: Address;
+    abstract connectOpts?: SocketOptions;
 }
 
 /**

@@ -1,7 +1,7 @@
 import { EndpointBackend, OnDispose, RequestContext, RequstOption, TransportClient } from '@tsdi/core';
 import { EMPTY, Injectable, isString, Nullable } from '@tsdi/ioc';
 import { map, Observable, of } from 'rxjs';
-import { ClientSession, ClientSessionStreamBuilder } from './stream';
+import { ClientSession, ClientSessionBuilder } from './stream';
 import { ProtocolBackend } from './backend';
 import { DetectBodyInterceptor } from './body';
 import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, ProtocolClientOpts } from './options';
@@ -71,7 +71,7 @@ export class ProtocolClient extends TransportClient<TransportRequest, TransportE
         if (this._stream && !this._stream.destroyed) {
             return of(this._stream);
         }
-        return this.context.get(ClientSessionStreamBuilder).build(this.getOptions().connectOpts)
+        return this.context.get(ClientSessionBuilder).build(this.getOptions().connectOpts)
             .pipe(
                 map(stream => {
                     this._stream = stream;

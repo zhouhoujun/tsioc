@@ -109,7 +109,7 @@ export abstract class ServerSession<Socket = any> extends TransportSession {
 
 
 @Abstract()
-export abstract class ServerSessionStreamBuilder {
+export abstract class ServerSessionBuilder {
     abstract build(listenOpts: ProtocolServerOpts): Promise<ServerSession>;
 }
 
