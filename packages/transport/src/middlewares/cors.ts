@@ -5,7 +5,9 @@ import { hdr } from '../consts';
 import { append, vary } from '../utils';
 
 
-
+/**
+ * cors options.
+ */
 @Abstract()
 export abstract class CorsOptions {
     /**

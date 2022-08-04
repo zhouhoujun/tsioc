@@ -58,17 +58,17 @@ export class BodyparserMiddleware implements Middleware {
     private enableText: boolean;
     private enableXml: boolean;
 
-    constructor(private extendTypes: MimeTypes, @Nullable() options: PlayloadOptions) {
+    constructor(@Nullable() options: PlayloadOptions) {
         const json = { ...defaults.json, ...options?.json };
         const form = { ...defaults.form, ...options?.form };
         const text = { ...defaults.text, ...options?.text };
 
         this.options = { ...defaults, ...options, json, form, text };
 
-        this.enableForm = this.chkType('form');
-        this.enableJson = this.chkType('json');
-        this.enableText = this.chkType('text');
-        this.enableXml = this.chkType('xml');
+        this.enableForm = this.enableType('form');
+        this.enableJson = this.enableType('json');
+        this.enableText = this.enableType('text');
+        this.enableXml = this.enableType('xml');
     }
 
     async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
@@ -80,17 +80,17 @@ export class BodyparserMiddleware implements Middleware {
     }
 
     parseBody(ctx: AssetContext): Promise<{ raw?: any, body?: any }> {
-        const extendTypes = this.extendTypes;
-        if (this.enableJson && ctx.is(extendTypes.json)) {
+        const types = ctx.get(MimeTypes);
+        if (this.enableJson && ctx.is(types.json)) {
             return this.parseJson(ctx)
         }
-        if (this.enableForm && ctx.is(extendTypes.form)) {
+        if (this.enableForm && ctx.is(types.form)) {
             return this.parseForm(ctx)
         }
-        if (this.enableText && ctx.is(extendTypes.text)) {
+        if (this.enableText && ctx.is(types.text)) {
             return this.parseText(ctx)
         }
-        if (this.enableXml && ctx.is(extendTypes.xml)) {
+        if (this.enableXml && ctx.is(types.xml)) {
             return this.parseText(ctx)
         }
 
@@ -202,7 +202,7 @@ export class BodyparserMiddleware implements Middleware {
         }
     }
 
-    private chkType(type: string) {
+    private enableType(type: string): boolean {
         return this.options.enableTypes.includes(type) === true
     }
 }
