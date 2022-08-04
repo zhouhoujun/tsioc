@@ -5,8 +5,8 @@ import * as zlib from 'zlib';
 import { PassThrough, pipeline, Writable, PipelineSource } from 'stream';
 import { promisify } from 'util';
 import { ctype, ev, hdr } from '../consts';
-import { MimeAdapter } from '../mime';
-import { createFormData, isBuffer, isFormDataLike, jsonTypes, textTypes, toBuffer, xmlTypes } from '../utils';
+import { MimeAdapter, MimeTypes } from '../mime';
+import { createFormData, isBuffer, isFormDataLike, toBuffer } from '../utils';
 import { ClientSession } from './stream';
 import { ProtocolClientOpts } from './options';
 import { TransportRequest } from './request';
@@ -164,8 +164,9 @@ export class ProtocolBackend implements EndpointBackend<TransportRequest, Transp
                     let type = ctx.responseType;
                     if (contentType) {
                         const adapter = ctx.get(MimeAdapter);
-                        if (type === 'json' && !adapter.match(jsonTypes, contentType)) {
-                            if (adapter.match(xmlTypes, contentType) || adapter.match(textTypes, contentType)) {
+                        const mity = ctx.get(MimeTypes);
+                        if (type === 'json' && !adapter.match(mity.json, contentType)) {
+                            if (adapter.match(mity.xml, contentType) || adapter.match(mity.text, contentType)) {
                                 type = 'text';
                             } else {
                                 type = 'blob';

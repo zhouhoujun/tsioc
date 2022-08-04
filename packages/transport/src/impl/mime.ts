@@ -1,8 +1,8 @@
 /* eslint-disable no-useless-escape */
 /* eslint-disable no-control-regex */
-import { Injectable, isString } from '@tsdi/ioc';
+import { Injectable, isString, Static } from '@tsdi/ioc';
 import { extname } from 'path';
-import { MimeAdapter, MimeDb, SplitType } from '../mime';
+import { MimeAdapter, MimeDb, MimeTypes, SplitType } from '../mime';
 
 @Injectable({ static: true })
 export class TrasportMimeAdapter extends MimeAdapter {
@@ -382,3 +382,95 @@ const quoteRegExp = /([\\"])/g;
 const subtypeNameRegExp = /^[A-Za-z0-9][A-Za-z0-9!#$&^_.-]{0,126}$/
 const typeNameRegExp = /^[A-Za-z0-9][A-Za-z0-9!#$&^_-]{0,126}$/
 const typeRegExp = /^ *([A-Za-z0-9][A-Za-z0-9!#$&^_-]{0,126})\/([A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}) *$/;
+
+
+
+
+
+// default json types
+const jsonTypes = [
+    'application/json',
+    'application/json-patch+json',
+    'application/vnd.api+json',
+    'application/csp-report',
+];
+
+// default form types
+const formTypes = [
+    'application/x-www-form-urlencoded',
+];
+
+// default text types
+const textTypes = [
+    'text/plain',
+];
+
+// default xml types
+const xmlTypes = [
+    'text/xml',
+    'application/xml',
+];
+
+@Static()
+export class MimeTypesImpl implements MimeTypes {
+
+    private _json: string[];
+    private _form: string[];
+    private _text: string[];
+    private _xml: string[];
+    constructor() {
+        this._json = jsonTypes.slice(0);
+        this._form = formTypes.slice(0);
+        this._text = textTypes.slice(0);
+        this._xml = xmlTypes.slice(0);
+    }
+
+    get json(): string[] {
+        return this._json
+    }
+    get form(): string[] {
+        return this._form
+    }
+    get text(): string[] {
+        return this._text
+    }
+    get xml(): string[] {
+        return this._xml
+    }
+
+
+    append(type: 'json' | 'form' | 'text' | 'xml', mimes: string[]): this {
+        if (!mimes || !mimes.length) return this;
+        let types: string[] | undefined;
+        switch (type) {
+            case 'json':
+                types = this._json;
+                break;
+            case 'form':
+                types = this._form;
+                break;
+            case 'text':
+                types = this._text;
+                break;
+            case 'xml':
+                types = this._xml;
+                break;
+        }
+
+        if (types) {
+            this.appendTo(types, mimes);
+        }
+
+        return this;
+    }
+    private appendTo(types: string[], pvdr?: string[]) {
+        if (pvdr && pvdr.length) {
+            pvdr.forEach(p => {
+                if (types.indexOf(p) < 0) {
+                    types.push(p)
+                }
+            })
+        }
+        return types
+    }
+}

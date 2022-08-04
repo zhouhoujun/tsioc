@@ -6,7 +6,7 @@ import { Stream, Readable, PassThrough } from 'stream';
 import * as getRaw from 'raw-body';
 import * as qslib from 'qs';
 import { hdr, identity } from '../consts';
-import { formTypes, jsonTypes, textTypes, xmlTypes } from '../utils';
+import { MimeTypes } from '../mime';
 
 
 @Abstract()
@@ -28,7 +28,6 @@ export class PlayloadOptions {
     };
     encoding?: string;
     enableTypes?: string[];
-    extendTypes?: ParseExtendTypes;
 }
 
 @Injectable()
@@ -53,24 +52,18 @@ export class BodyparserMiddleware implements Middleware {
             limit: string;
         },
         enableTypes: string[];
-        extendTypes: ParseExtendTypes;
     };
     private enableForm: boolean;
     private enableJson: boolean;
     private enableText: boolean;
     private enableXml: boolean;
 
-    constructor(@Nullable() options: PlayloadOptions) {
+    constructor(private extendTypes: MimeTypes, @Nullable() options: PlayloadOptions) {
         const json = { ...defaults.json, ...options?.json };
         const form = { ...defaults.form, ...options?.form };
         const text = { ...defaults.text, ...options?.text };
-        const extendTypes = {
-            json: this.mergeType(jsonTypes, options?.extendTypes?.json),
-            form: this.mergeType(formTypes, options?.extendTypes?.form),
-            text: this.mergeType(textTypes, options?.extendTypes?.text),
-            xml: this.mergeType(xmlTypes, options?.extendTypes?.xml),
-        };
-        this.options = { ...defaults, ...options, json, form, text, extendTypes };
+
+        this.options = { ...defaults, ...options, json, form, text };
 
         this.enableForm = this.chkType('form');
         this.enableJson = this.chkType('json');
@@ -87,7 +80,7 @@ export class BodyparserMiddleware implements Middleware {
     }
 
     parseBody(ctx: AssetContext): Promise<{ raw?: any, body?: any }> {
-        const extendTypes = this.options.extendTypes;
+        const extendTypes = this.extendTypes;
         if (this.enableJson && ctx.is(extendTypes.json)) {
             return this.parseJson(ctx)
         }
@@ -212,19 +205,6 @@ export class BodyparserMiddleware implements Middleware {
     private chkType(type: string) {
         return this.options.enableTypes.includes(type) === true
     }
-
-    private mergeType(types: string[], pvdr?: string[]) {
-        const merged = [...types];
-        if (pvdr && pvdr.length) {
-            pvdr.forEach(p => {
-                if (merged.indexOf(p) < 0) {
-                    merged.push(p)
-                }
-            })
-        }
-        return merged
-    }
-
 }
 
 const strictJSONReg = /^[\x20\x09\x0a\x0d]*(\[|\{)/;

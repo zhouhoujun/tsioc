@@ -1,20 +1,21 @@
 
 import { ExecptionTypedRespond, Redirector } from '@tsdi/core';
 import { ProviderType } from '@tsdi/ioc';
-import { TrasportMimeAdapter } from './impl/mime';
+import { DefaultStatusFormater } from './interceptors/formater';
+import { ResponseStatusFormater } from './interceptors/log';
+import { ContentSendAdapter } from './middlewares/send';
+import { MimeAdapter, MimeDb, MimeTypes } from './mime';
+import { Negotiator } from './negotiator';
+import { BasicMimeDb } from './impl/mimedb';
+import { MimeTypesImpl, TrasportMimeAdapter } from './impl/mime';
 import { TransportNegotiator } from './impl/negotiator';
 import { TransportSendAdapter } from './impl/send';
 import { AssetRedirector } from './impl/redirector';
 import { TranspotExecptionTypedRespond } from './impl/typed.respond';
-import { DefaultStatusFormater } from './interceptors/formater';
-import { ResponseStatusFormater } from './interceptors/log';
-import { ContentSendAdapter } from './middlewares/send';
-import { MimeAdapter, MimeDb } from './mime';
-import { Negotiator } from './negotiator';
-import { BasicMimeDb } from './impl/mimedb';
 
 
 export const MIME_PROVIDERS: ProviderType[] = [
+    { provide: MimeTypes, useClass: MimeTypesImpl },
     { provide: MimeDb, useClass: BasicMimeDb },
     { provide: MimeAdapter, useClass: TrasportMimeAdapter }
 ];

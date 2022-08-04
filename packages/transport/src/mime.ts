@@ -75,4 +75,28 @@ export abstract class MimeDb {
     abstract extension(name: string): string | undefined;
 }
 
-
+@Abstract()
+export abstract class MimeTypes {
+    /**
+     * json alias mime names
+     */
+    abstract get json(): string[];
+    /**
+     * form alias mime names
+     */
+    abstract get form(): string[];
+    /**
+     * text alias mime names
+     */
+    abstract get text(): string[];
+    /**
+     * xml alias mime names
+     */
+    abstract get xml(): string[];
+    /**
+     * append mime type.
+     * @param type type of mime.
+     * @param mimes mime names.
+     */
+    abstract append(type: 'json' | 'form' | 'text' | 'xml', mimes: string[]): this;
+}

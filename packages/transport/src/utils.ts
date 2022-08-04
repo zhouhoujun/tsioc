@@ -278,28 +278,3 @@ export function append(header: string, field: string) {
   return val
 }
 
-
-
-// default json types
-export const jsonTypes = [
-  'application/json',
-  'application/json-patch+json',
-  'application/vnd.api+json',
-  'application/csp-report',
-];
-
-// default form types
-export const formTypes = [
-  'application/x-www-form-urlencoded',
-];
-
-// default text types
-export const textTypes = [
-  'text/plain',
-];
-
-// default xml types
-export const xmlTypes = [
-  'text/xml',
-  'application/xml',
-];

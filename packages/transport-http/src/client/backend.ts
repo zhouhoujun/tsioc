@@ -11,7 +11,7 @@ import * as https from 'https';
 import * as http2 from 'http2';
 import { PassThrough, pipeline } from 'stream';
 import { promisify } from 'util';
-import { ev, hdr, toBuffer, isBuffer, jsonTypes, textTypes, xmlTypes, MimeAdapter, ctype, RequestStauts, sendbody, XSSI_PREFIX } from '@tsdi/transport';
+import { ev, hdr, toBuffer, isBuffer, MimeAdapter, ctype, RequestStauts, sendbody, XSSI_PREFIX, MimeTypes } from '@tsdi/transport';
 import { HttpError } from '../errors';
 import { CLIENT_HTTP2SESSION, HttpClientOpts } from './option';
 
@@ -206,8 +206,9 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                     let type = req.responseType;
                     if (contentType) {
                         const adapter = ctx.get(MimeAdapter);
-                        if (type === 'json' && !adapter.match(jsonTypes, contentType)) {
-                            if (adapter.match(xmlTypes, contentType) || adapter.match(textTypes, contentType)) {
+                        const mity = ctx.get(MimeTypes);
+                        if (type === 'json' && !adapter.match(mity.json, contentType)) {
+                            if (adapter.match(mity.xml, contentType) || adapter.match(mity.text, contentType)) {
                                 type = 'text';
                             } else {
                                 type = 'blob';
@@ -489,8 +490,9 @@ export class Http2Backend implements EndpointBackend<HttpRequest, HttpEvent> {
                     let type = req.responseType;
                     if (contentType) {
                         const adapter = ctx.get(MimeAdapter);
-                        if (type === 'json' && !adapter.match(jsonTypes, contentType)) {
-                            if (adapter.match(xmlTypes, contentType) || adapter.match(textTypes, contentType)) {
+                        const mity = ctx.get(MimeTypes);
+                        if (type === 'json' && !adapter.match(mity.json, contentType)) {
+                            if (adapter.match(mity.xml, contentType) || adapter.match(mity.text, contentType)) {
                                 type = 'text';
                             } else {
                                 type = 'blob';
