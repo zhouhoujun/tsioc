@@ -118,6 +118,7 @@ describe('CoAP Server & CoAP Client', () => {
             provide: CoapClientOpts,
             useValue: {
                 connectOpts: {
+                    type: 'udp4',
                     port: 2000
                 }
             } as CoapClientOpts

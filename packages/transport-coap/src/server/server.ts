@@ -1,6 +1,6 @@
 
-import { Interceptor } from '@tsdi/core';
-import { Abstract, Injectable,  Nullable, tokenId } from '@tsdi/ioc';
+import { ExecptionFilter, Interceptor } from '@tsdi/core';
+import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
 import { SocketOptions } from 'dgram';
 import { CatchInterceptor, LogInterceptor, RespondInterceptor, ProtocolServer, ProtocolServerOpts, ServerRequest, ServerResponse, ListenOpts } from '@tsdi/transport';
 
@@ -22,15 +22,22 @@ export abstract class CoapServerOpts extends ProtocolServerOpts {
 }
 
 /**
- * COAP server interceptors.
+ * CoAP server interceptors.
  */
 export const COAP_SERV_INTERCEPTORS = tokenId<Interceptor<ServerRequest, ServerResponse>[]>('COAP_SERV_INTERCEPTORS');
+
+/**
+ * CoAP server execption filters.
+ */
+export const COAP_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('COAP_EXECPTION_FILTERS');
+
 
 const defOpts = {
     json: true,
     encoding: 'utf8',
     headerSplit: '#',
     interceptorsToken: COAP_SERV_INTERCEPTORS,
+    execptionsToken: COAP_EXECPTION_FILTERS,
     interceptors: [
         LogInterceptor,
         CatchInterceptor,

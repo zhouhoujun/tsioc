@@ -327,6 +327,26 @@
         {
             "type": "node",
             "request": "launch",
+            "name": "test transport-coap",
+            "args": [
+                "${workspaceRoot}/packages/transport-coap/unit.ts" 
+            ],
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register",
+                "-r",
+                "tsconfig-paths/register"
+            ],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
             "name": "test transport-amqp",
             "args": [
                 "${workspaceRoot}/packages/transport-amqp/unit.ts" 
