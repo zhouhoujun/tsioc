@@ -15,7 +15,6 @@ export class TransportRequest<T = any> implements ClientRequsetPacket<T> {
     readonly headers: ReqHeaders;
 
     constructor(option: {
-        id: string;
         url: string;
         headers?: ReqHeadersLike;
         params?: IncomingHeaders;

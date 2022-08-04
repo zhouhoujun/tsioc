@@ -1,4 +1,4 @@
-import { Protocol } from '@tsdi/core';
+import { IncomingPacket, Protocol } from '@tsdi/core';
 import { EMPTY_OBJ, Inject, Injectable, isNumber, isString } from '@tsdi/ioc';
 import { ListenOpts, LISTEN_OPTS } from '@tsdi/platform-server';
 import { HttpRequest } from '@tsdi/common';
@@ -10,7 +10,7 @@ import { HttpStatus } from './status';
 
 @Injectable()
 export class HttpProtocol extends Protocol {
-
+    
     private _name = 'http';
     constructor(@Inject(LISTEN_OPTS, { defaultValue: EMPTY_OBJ }) private listenOpts: ListenOpts, readonly status: HttpStatus) {
         super();
@@ -19,17 +19,11 @@ export class HttpProtocol extends Protocol {
     isEvent(req: HttpRequest): boolean {
         return req.method === 'events';
     }
-    /**
-     * Short-hand for:
-     *
-     *    this.protocol == 'https'
-     *
-     * @return {Boolean}
-     * @api public
-     */
-    get secure(): boolean {
-        return this.name === 'https'
+    
+    isSecure(req: http.IncomingMessage | http2.Http2ServerRequest): boolean {
+        return this.name === 'https' || (req?.socket as TLSSocket)?.encrypted === true
     }
+
 
     get name(): string {
         return this._name;

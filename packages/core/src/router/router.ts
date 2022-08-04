@@ -1,5 +1,5 @@
 import { Abstract, EMPTY, Inject, Injectable, InjectFlags, isClass, isFunction, isString, lang, Nullable, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
-import { ProtocolType, RequestMethod } from '../transport/packet';
+import { Protocols, RequestMethod } from '../transport/packet';
 import { CanActivate } from './guard';
 import { PipeTransform } from '../pipes/pipe';
 import { Route, RouteFactoryResolver, ROUTES, Routes } from './route';
@@ -278,7 +278,7 @@ export interface ProtocolRouteMappingMetadata extends RouteMappingMetadata {
     /**
      * protocol.
      */
-    protocol?: ProtocolType;
+    protocol?: Protocols;
     /**
      * version of api.
      */

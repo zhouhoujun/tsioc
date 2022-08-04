@@ -10,7 +10,7 @@ import { RouteRef, RouteFactory, RouteFactoryResolver, joinprefix } from './rout
 import { ProtocolRouteMappingMetadata, RouteMappingMetadata } from './router';
 import { TransportContext } from '../transport/context';
 import { promisify } from './promisify';
-import { ProtocolType } from '../transport/packet';
+import { Protocols } from '../transport/packet';
 import { ForbiddenError } from '../transport/error';
 
 
@@ -39,7 +39,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         this._endpoints = new Map()
     }
 
-    get protocol(): ProtocolType | undefined {
+    get protocol(): Protocols | undefined {
         return this.metadata.protocol;
     }
 

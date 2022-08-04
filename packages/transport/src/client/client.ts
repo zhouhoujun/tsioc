@@ -1,4 +1,4 @@
-import { EndpointBackend, RequestContext, RequstOption, TransportClient, UuidGenerator } from '@tsdi/core';
+import { EndpointBackend, OnDispose, RequestContext, RequstOption, TransportClient } from '@tsdi/core';
 import { EMPTY, Injectable, isString, Nullable } from '@tsdi/ioc';
 import { map, Observable, of } from 'rxjs';
 import { ClientSession, ClientSessionStreamBuilder } from './stream';
@@ -23,18 +23,32 @@ const defaults = {
  * Transport Protocol Client.
  */
 @Injectable()
-export class ProtocolClient extends TransportClient<TransportRequest, TransportEvent, ProtocolClientOpts> {
+export class ProtocolClient extends TransportClient<TransportRequest, TransportEvent, ProtocolClientOpts> implements OnDispose {
 
     private _stream?: ClientSession;
     constructor(@Nullable() options: ProtocolClientOpts) {
         super(options);
     }
 
+
     get stream(): ClientSession {
         return this._stream ?? null!;
     }
 
+    async close(): Promise<void> {
+        await this._stream?.close();
+    }
+
+    onDispose(): Promise<void> {
+        return this.close();
+    }
+
+    protected getDefaultOptions() {
+        return defaults;
+    }
+
     protected override initOption(options?: ProtocolClientOpts): ProtocolClientOpts {
+        const defaults = this.getDefaultOptions();
         const connectOpts = { ...defaults.connectOpts, ...options?.connectOpts };
         const interceptors = [...options?.interceptors ?? EMPTY, NormlizePathInterceptor, DetectBodyInterceptor];
         const providers = options && options.providers ? [...PROTOCOL_CLIENT_PROVIDERS, ...options.providers] : PROTOCOL_CLIENT_PROVIDERS;
@@ -50,7 +64,7 @@ export class ProtocolClient extends TransportClient<TransportRequest, TransportE
 
     protected buildRequest(context: RequestContext, url: string | TransportRequest<any>, options?: RequstOption | undefined): TransportRequest<any> {
         context.setValue(ClientSession, this.stream);
-        return isString(url) ? new TransportRequest({ id: this.context.resolve(UuidGenerator).generate(), ...options, url }) : url
+        return isString(url) ? new TransportRequest({ ...options, url }) : url
     }
 
     protected connect(): Observable<ClientSession> {

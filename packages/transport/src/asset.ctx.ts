@@ -85,7 +85,7 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
      * @api public
      */
     get secure(): boolean {
-        return this.protocol.secure
+        return this.protocol.isSecure(this.request);
     }
 
     get pathname(): string {

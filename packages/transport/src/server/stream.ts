@@ -81,10 +81,10 @@ export abstract class ServerStream extends TransportStream {
 @Abstract()
 export abstract class ServerSession<Socket = any> extends TransportSession {
     /**
-     * handle request with endpoint.
+     * bind request handle with endpoint.
      * @param endpoint 
      */
-    abstract handle(endpoint: Endpoint): Promise<void>;
+    abstract bind(endpoint: Endpoint): Promise<void>;
 
     abstract addListener(event: 'connect', listener: (session: ServerSession, socket: Socket) => void): this;
     abstract addListener(event: 'stream', listener: (stream: ServerStream, headers: IncomingHeaders, flags: number) => void): this;

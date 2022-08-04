@@ -1,5 +1,5 @@
 {
-  "name": "@tsdi/transport-udp",
+  "name": "@tsdi/transport-coap",
   "version": "6.0.31",
   "description": "Application transport. base on AOP, Ioc container, via @tsdi/core.",
   "scripts": {

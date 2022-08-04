@@ -68,7 +68,7 @@ export class ProtocolServer extends TransportServer<ServerRequest, ServerRespons
     async start(): Promise<void> {
         try {
             this._session = await this.context.get(ServerSessionStreamBuilder).build(this.getOptions());
-            await this.session.handle(this.endpoint());
+            await this.session.bind(this.endpoint());
         } catch (err) {
             this.logger.error(err);
         }
@@ -78,7 +78,12 @@ export class ProtocolServer extends TransportServer<ServerRequest, ServerRespons
         await this.session.close();
     }
 
+    protected getDefaultOptions() {
+        return defOpts;
+    }
+
     protected override initOption(options: ProtocolServerOpts): ProtocolServerOpts {
+        const defOpts = this.getDefaultOptions();
         const listenOpts = { ...defOpts.listenOpts, ...options?.listenOpts };
         const providers = options && options.providers ? [...PROTOCOL_SERVR_PROVIDERS, ...options.providers] : PROTOCOL_SERVR_PROVIDERS;
         const opts = { ...defOpts, ...options, listenOpts, providers };

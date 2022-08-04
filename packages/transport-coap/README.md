@@ -1,9 +1,9 @@
-# packaged @tsdi/transport-udp
+# packaged @tsdi/transport-coap
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
-`@tsdi/transport-udp`： application bootstrap, via `@tsdi/core`.
+`@tsdi/transport-coap`： application bootstrap, via `@tsdi/core`.
 
 old packages:
 [`@ts-ioc/core`](https://www.npmjs.com/package/@ts-ioc/core) 
@@ -12,7 +12,7 @@ old packages:
 
 ```shell
 
-npm install @tsdi/transport-udp
+npm install @tsdi/transport-coap
 
 // in browser
 npm install @tsdi/platform-browser

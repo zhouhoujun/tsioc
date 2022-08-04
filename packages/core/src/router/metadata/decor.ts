@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { PipeTransform } from '../../pipes/pipe';
 import { InterceptorType, Middleware, MiddlewareFn } from '../../transport/endpoint';
-import { mths, ProtocolType, RequestMethod } from '../../transport/packet';
+import { mths, Protocols, RequestMethod } from '../../transport/packet';
 import { CanActivate } from '../guard';
 import { joinprefix, normalize, RouteFactoryResolver } from '../route';
 import { MappingReflect, ProtocolRouteMappingMetadata, Router } from '../router';
@@ -58,22 +58,22 @@ export interface Handle {
      * @param {string} pattern message match pattern.
      * @param {cmd?: string, pattern?: string } option message match option.
      */
-    (pattern: string | RegExp, protocol?: ProtocolType, option?: Record<string, any>): MethodDecorator;
+    (pattern: string | RegExp, protocol?: Protocols, option?: Record<string, any>): MethodDecorator;
 
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
      * @param {string} pattern message match pattern.
-     * @param {Record<string, any> & { protocol?: ProtocolType }} option message match option.
+     * @param {Record<string, any> & { protocol?: Protocols }} option message match option.
      */
-    (pattern: string | RegExp, option?: Record<string, any> & { protocol?: ProtocolType }): MethodDecorator;
+    (pattern: string | RegExp, option?: Record<string, any> & { protocol?: Protocols }): MethodDecorator;
 
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
-     * @param {Record<string, any> & { protocol?: ProtocolType, pattern?: string | RegExp }} option message match option.
+     * @param {Record<string, any> & { protocol?: Protocols, pattern?: string | RegExp }} option message match option.
      */
-    (option: Record<string, any> & { protocol?: ProtocolType, pattern?: string | RegExp }): MethodDecorator;
+    (option: Record<string, any> & { protocol?: Protocols, pattern?: string | RegExp }): MethodDecorator;
 }
 
 /**
@@ -221,7 +221,7 @@ export interface RouteMapping {
         /**
          * protocol.
          */
-        protocol?: ProtocolType;
+        protocol?: Protocols;
         /**
          * request method.
          */

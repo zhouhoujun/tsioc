@@ -45,15 +45,15 @@ export namespace mths {
 /**
  * mqtt protocol.
  */
-export type MqttProtocolType = 'mqtt' | 'mqtts' | 'tls' | 'ws' | 'wss' | 'wxs' | 'alis';
+export type MqttProtocols = 'mqtt' | 'mqtts' | 'tls' | 'ws' | 'wss' | 'wxs' | 'alis';
 /**
  * http protocol.
  */
-export type HttpProtocolType = 'http' | 'https';
+export type HttpProtocols = 'http' | 'https';
 /**
  * transport protocol.
  */
-export type ProtocolType = 'tcp' | 'udp' | 'grpc' | 'rmq' | 'kafka' | 'redis' | 'amqp' | 'ssl' | 'msg' | HttpProtocolType | MqttProtocolType;
+export type Protocols = 'tcp' | 'udp' | 'grpc' | 'rmq' | 'modbus' | 'kafka' | 'redis' | 'amqp' | 'ssl' | 'msg' | HttpProtocols | MqttProtocols;
 
 
 /**

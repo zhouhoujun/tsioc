@@ -229,10 +229,3 @@ const defaults = {
     extendTypes: EMPTY_OBJ
 };
 
-export interface ParseExtendTypes {
-    json: string[];
-    form: string[];
-    text: string[];
-    xml: string[];
-}
-

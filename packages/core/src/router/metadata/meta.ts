@@ -1,6 +1,6 @@
 import { PatternMetadata, Type, TypeMetadata } from '@tsdi/ioc';
 import { InterceptorType } from '../../transport/endpoint';
-import { ProtocolType } from '../../transport/packet';
+import { Protocols } from '../../transport/packet';
 import { CanActivate } from '../guard';
 import { Router } from '../router';
 
@@ -55,5 +55,5 @@ export interface HandleMetadata extends TypeMetadata, PatternMetadata {
     /**
      * transport protocol
      */
-    protocol?: ProtocolType;
+    protocol?: Protocols;
 }
