@@ -39,6 +39,10 @@ export abstract class TransportOpts<TRequest, TResponse> {
      * decoder input.
      */
     abstract decoder?: Type<Decoder>;
+    /**
+     * endpoint timeout.
+     */
+    abstract timeout?: number;
 
 }
 
