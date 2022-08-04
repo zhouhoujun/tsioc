@@ -2,7 +2,7 @@ import { OutgoingHeader, OutgoingHeaders, OutgoingPacket, ResHeaders } from '@ts
 import { isArray, isFunction, isString } from '@tsdi/ioc';
 import { Writable } from 'stream';
 import { hdr } from '../consts';
-import { ServerStream } from '../stream';
+import { ServerStream } from './stream';
 
 
 /**

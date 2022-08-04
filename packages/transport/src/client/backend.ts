@@ -5,12 +5,13 @@ import * as zlib from 'zlib';
 import { PassThrough, pipeline, Writable, PipelineSource } from 'stream';
 import { promisify } from 'util';
 import { ctype, ev, hdr } from '../consts';
-import { ClientSession } from '../stream';
+import { MimeAdapter } from '../mime';
 import { createFormData, isBuffer, isFormDataLike, jsonTypes, textTypes, toBuffer, xmlTypes } from '../utils';
+import { ClientSession } from './stream';
 import { ProtocolClientOpts } from './options';
 import { TransportRequest } from './request';
 import { ErrorResponse, TransportResponse, TransportEvent, TransportHeaderResponse } from './response';
-import { MimeAdapter } from '../mime';
+
 
 const pmPipeline = promisify(pipeline);
 /**

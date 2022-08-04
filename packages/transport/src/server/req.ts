@@ -1,7 +1,7 @@
 import { IncomingPacket, IncomingHeaders } from '@tsdi/core';
 import { Readable, Writable } from 'stream';
 import { hdr } from '../consts';
-import { ServerStream } from '../stream';
+import { ServerStream } from './stream';
 
 
 /**

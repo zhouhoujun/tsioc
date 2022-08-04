@@ -1,5 +1,5 @@
 import { ClientRequsetPacket, Endpoint, EndpointContext, Interceptor, isBlob, isFormData, ResponseEvent } from '@tsdi/core';
-import { Injectable, isFunction } from '@tsdi/ioc';
+import { Injectable } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { defer, mergeMap, Observable } from 'rxjs';
 import { hdr } from '../consts';
