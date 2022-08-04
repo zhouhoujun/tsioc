@@ -1,6 +1,6 @@
 import { ExecptionFilter, Interceptor } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
-import { ProtocolClient, ProtocolClientOpts, TransportRequest,  } from '@tsdi/transport';
+import { ProtocolClient, ProtocolClientOpts, TransportEvent, TransportRequest,  } from '@tsdi/transport';
 import { SocketOptions } from 'dgram';
 
 
@@ -18,7 +18,7 @@ export abstract class CoapClientOpts extends ProtocolClientOpts {
 /**
  * Coap client interceptors.
  */
-export const COAP_INTERCEPTORS = tokenId<Interceptor<TransportRequest, TransitionEvent>[]>('COAP_INTERCEPTORS');
+export const COAP_INTERCEPTORS = tokenId<Interceptor<TransportRequest, TransportEvent>[]>('COAP_INTERCEPTORS');
 
 /**
  * Coap client interceptors.

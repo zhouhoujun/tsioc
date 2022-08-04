@@ -18,7 +18,7 @@ import { CoapServer, CoapServerOpts } from './server/server';
 export class CoapModule {
 
     /**
-     * Udp Server options.
+     * CoAP Server options.
      * @param options 
      * @returns 
      */
