@@ -26,6 +26,7 @@ export namespace ev {
     export const TIMEOUT = 'timeout';
     export const STREAM = 'stream';
     export const ABOUT = 'about';
+    export const ABORTED = 'aborted';
 
     export const SUBSCRIBE = 'subscribe';
     export const CANCELLED = 'cancelled';

@@ -1,6 +1,6 @@
 import { HttpEvent, HttpRequest } from '@tsdi/common';
 import { Endpoint, EndpointContext, Interceptor, isBlob, isFormData } from '@tsdi/core';
-import { Injectable, isFunction } from '@tsdi/ioc';
+import { Injectable } from '@tsdi/ioc';
 import { createFormData, isFormDataLike, hdr } from '@tsdi/transport';
 import { defer, mergeMap, Observable } from 'rxjs';
 

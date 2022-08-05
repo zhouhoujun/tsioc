@@ -8,6 +8,7 @@ import { ProtocolServerOpts } from './options';
 
 @Abstract()
 export abstract class ServerStream extends TransportStream {
+
     /**
      * Initiates a push stream. The callback is invoked with the new `TransportStream`instance created for the push stream passed as the second argument, or an`Error` passed as the first argument.
      *

@@ -287,6 +287,7 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
             request.on(ev.RESPONSE, onResponse);
             request.on(ev.ERROR, onError);
             request.on(ev.ABOUT, onError);
+            request.on(ev.ABORTED, onError);
             request.on(ev.TIMEOUT, onError);
 
             //todo send body.

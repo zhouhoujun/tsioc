@@ -31,7 +31,7 @@ export class ProtocolBackend implements EndpointBackend<TransportRequest, Transp
         }));
 
         return new Observable((observer: Observer<any>) => {
-            const statAdpr = ctx.protocol.status;
+            const statdpr = ctx.protocol.status;
             const path = url.replace(session.authority, '');
 
             headers.set(hdr.METHOD, method);
@@ -54,12 +54,12 @@ export class ProtocolBackend implements EndpointBackend<TransportRequest, Transp
             const onResponse = (hdrs: IncomingHeaders & IncomingStatusHeaders, flags: number) => {
                 let body: any;
                 const headers = new ReqHeaders(hdrs as Record<string, any>);
-                status = statAdpr.parse(hdrs[hdr.STATUS2] ?? hdrs[hdr.STATUS]);
+                status = statdpr.parse(hdrs[hdr.STATUS2] ?? hdrs[hdr.STATUS]);
 
-                ok = statAdpr.isOk(status);
-                statusText = statAdpr.message(status) ?? 'OK';
+                ok = statdpr.isOk(status);
+                statusText = statdpr.message(status) ?? 'OK';
 
-                if (statAdpr.isEmpty(status)) {
+                if (statdpr.isEmpty(status)) {
                     completed = true;
                     observer.next(new TransportHeaderResponse({
                         url,
@@ -89,10 +89,10 @@ export class ProtocolBackend implements EndpointBackend<TransportRequest, Transp
                     // body = strdata;
                     body = Buffer.concat(data, bytes);
                     if (status === 0) {
-                        status = bytes ? statAdpr.ok : 0
+                        status = bytes ? statdpr.ok : 0
                     }
 
-                    if (status && statAdpr.isRedirect(status)) {
+                    if (status && statdpr.isRedirect(status)) {
                         completed = true;
                         // HTTP fetch step 5.2
                         ctx.get(Redirector).redirect<TransportEvent<any>>(ctx, req, status, headers)
@@ -241,7 +241,7 @@ export class ProtocolBackend implements EndpointBackend<TransportRequest, Transp
 
             }
 
-            const onError = (error: Error) => {
+            const onError = (error?: Error) => {
                 const res = new ErrorResponse({
                     url,
                     error,
@@ -253,7 +253,7 @@ export class ProtocolBackend implements EndpointBackend<TransportRequest, Transp
 
             request.on(ev.RESPONSE, onResponse);
             request.on(ev.ERROR, onError);
-            request.on(ev.ABOUT, onError);
+            request.on(ev.ABORTED, onError);
             request.on(ev.TIMEOUT, onError);
 
             //todo send body.
