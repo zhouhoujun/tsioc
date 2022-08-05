@@ -68,7 +68,7 @@ export class ProtocolClient extends TransportClient<TransportRequest, TransportE
     }
 
     protected connect(): Observable<ClientSession> {
-        if (this._stream && !this._stream.destroyed) {
+        if (this._stream && !this._stream.destroyed && !this._stream.closed) {
             return of(this._stream);
         }
         return this.context.get(ClientSessionBuilder).build(this.getOptions().connectOpts)

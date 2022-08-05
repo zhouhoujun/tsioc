@@ -9,7 +9,6 @@ import { TransportSession, TransportStream } from '../stream';
 @Abstract()
 export abstract class ClientStream extends TransportStream {
 
-    
     addListener(event: 'aborted', listener: () => void): this;
     addListener(event: 'close', listener: () => void): this;
     addListener(event: 'data', listener: (chunk: Buffer | string) => void): this;
@@ -139,7 +138,7 @@ export abstract class ClientStream extends TransportStream {
         return this._prependListener(event, listener);
     }
 
-    
+
     prependOnceListener(event: 'aborted', listener: () => void): this;
     prependOnceListener(event: 'close', listener: () => void): this;
     prependOnceListener(event: 'data', listener: (chunk: Buffer | string) => void): this;
