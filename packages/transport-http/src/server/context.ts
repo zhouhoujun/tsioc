@@ -80,11 +80,6 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
     }
 
 
-    isUpdate(): boolean {
-        return this.method === mths.PUT
-    }
-
-
     /**
      * Check if the request is idempotent.
      *

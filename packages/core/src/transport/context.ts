@@ -114,7 +114,9 @@ export abstract class TransportContext<TRequest = any, TResponse = any> extends 
     /**
      * is update modle resquest.
      */
-    abstract isUpdate(): boolean;
+    isUpdate(): boolean {
+        return this.protocol.isUpdate(this.request as any);
+    }
 
     /**
      * Get response status code.

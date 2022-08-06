@@ -12,10 +12,6 @@ import { TcpServResponse } from './response';
  */
 export class TcpContext extends AssetServerContext<TcpServRequest, TcpServResponse> implements HeadersContext, AssetContext {
 
-    isUpdate(): boolean {
-        return this.request.method === 'PUT' || this.getHeader(hdr.OPERATION) === 'update';
-    }
-
     get writable(): boolean {
         return this.response.socket.writable
     }

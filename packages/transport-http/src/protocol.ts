@@ -1,4 +1,4 @@
-import { IncomingPacket, Protocol } from '@tsdi/core';
+import { IncomingPacket, mths, Protocol } from '@tsdi/core';
 import { EMPTY_OBJ, Inject, Injectable, isNumber, isString } from '@tsdi/ioc';
 import { ListenOpts, LISTEN_OPTS } from '@tsdi/platform-server';
 import { HttpRequest } from '@tsdi/common';
@@ -16,8 +16,13 @@ export class HttpProtocol extends Protocol {
         super();
     }
 
+
     isEvent(req: HttpRequest): boolean {
         return req.method === 'events';
+    }
+    
+    isUpdate(req: http.IncomingMessage | http2.Http2ServerRequest): boolean {
+        return req.method === mths.PUT
     }
     
     isSecure(req: http.IncomingMessage | http2.Http2ServerRequest): boolean {

@@ -23,6 +23,11 @@ export abstract class Protocol {
     abstract isEvent(req: RequestPacket): boolean;
 
     /**
+     * is update modle resquest.
+     */
+    abstract isUpdate(incoming: IncomingPacket): boolean;
+
+    /**
      * is secure or not.
      * @param incoming 
      */

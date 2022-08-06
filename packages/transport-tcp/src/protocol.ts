@@ -1,11 +1,11 @@
 import { IncomingPacket, Protocol, RequestPacket } from '@tsdi/core';
 import { EMPTY_OBJ, Inject, Injectable } from '@tsdi/ioc';
 import { ListenOpts, LISTEN_OPTS } from '@tsdi/platform-server';
+import { ServerStream } from '@tsdi/transport';
 import { TcpStatus } from './status';
 
 @Injectable()
 export class TcpProtocol extends Protocol {
-
 
     private _name = 'tcp';
     constructor(@Inject(LISTEN_OPTS, { defaultValue: EMPTY_OBJ }) private listenOpts: ListenOpts, readonly status: TcpStatus) {
@@ -17,16 +17,12 @@ export class TcpProtocol extends Protocol {
         return req.method === 'events';
     }
 
-    /**
-     * Short-hand for:
-     *
-     *    this.protocol == 'https'
-     *
-     * @return {Boolean}
-     * @api public
-     */
-    get secure(): boolean {
-        return this.name === 'tsl'
+    isUpdate(req: IncomingPacket): boolean {
+        return req.method === 'PUT';
+    }
+
+    isSecure(incoming: IncomingPacket<ServerStream>): boolean {
+        return incoming.stream
     }
 
     get name(): string {
