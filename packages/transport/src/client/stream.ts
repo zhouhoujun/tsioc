@@ -30,6 +30,7 @@ export abstract class ClientStream extends TransportStream {
     addListener(event: 'headers', listener: (headers: IncomingHeaders & IncomingStatusHeaders, flags: number) => void): this;
     addListener(event: 'push', listener: (headers: IncomingHeaders, flags: number) => void): this;
     addListener(event: 'response', listener: (headers: IncomingHeaders & IncomingStatusHeaders, flags: number) => void): this;
+    addListener(event: string | symbol, listener: (...args: any[]) => void): this;
     addListener(event: string | symbol, listener: (...args: any[]) => void): this {
         return this._addListener(event, listener);
     }
@@ -56,6 +57,7 @@ export abstract class ClientStream extends TransportStream {
     emit(event: 'headers', headers: IncomingHeaders & IncomingStatusHeaders, flags: number): boolean;
     emit(event: 'push', headers: IncomingHeaders, flags: number): boolean;
     emit(event: 'response', headers: IncomingHeaders & IncomingStatusHeaders, flags: number): boolean;
+    emit(event: string | symbol, ...args: any[]): boolean;
     emit(event: string | symbol, ...args: any[]): boolean {
         return this._emit(event, ...args);
     }
@@ -82,6 +84,7 @@ export abstract class ClientStream extends TransportStream {
     on(event: 'headers', listener: (headers: IncomingHeaders & IncomingStatusHeaders, flags: number) => void): this;
     on(event: 'push', listener: (headers: IncomingHeaders, flags: number) => void): this;
     on(event: 'response', listener: (headers: IncomingHeaders & IncomingStatusHeaders, flags: number) => void): this;
+    on(event: string | symbol, listener: (...args: any[]) => void): this;
     on(event: string | symbol, listener: (...args: any[]) => void): this {
         return this._on(event, listener);
     }
@@ -108,6 +111,7 @@ export abstract class ClientStream extends TransportStream {
     once(event: 'headers', listener: (headers: IncomingHeaders & IncomingStatusHeaders, flags: number) => void): this;
     once(event: 'push', listener: (headers: IncomingHeaders, flags: number) => void): this;
     once(event: 'response', listener: (headers: IncomingHeaders & IncomingStatusHeaders, flags: number) => void): this;
+    once(event: string | symbol, listener: (...args: any[]) => void): this;
     once(event: string | symbol, listener: (...args: any[]) => void): this {
         return this._once(event, listener);
     }
@@ -134,6 +138,7 @@ export abstract class ClientStream extends TransportStream {
     prependListener(event: 'headers', listener: (headers: IncomingHeaders & IncomingStatusHeaders, flags: number) => void): this;
     prependListener(event: 'push', listener: (headers: IncomingHeaders, flags: number) => void): this;
     prependListener(event: 'response', listener: (headers: IncomingHeaders & IncomingStatusHeaders, flags: number) => void): this;
+    prependListener(event: string | symbol, listener: (...args: any[]) => void): this;
     prependListener(event: string | symbol, listener: (...args: any[]) => void): this {
         return this._prependListener(event, listener);
     }
@@ -160,6 +165,7 @@ export abstract class ClientStream extends TransportStream {
     prependOnceListener(event: 'headers', listener: (headers: IncomingHeaders & IncomingStatusHeaders, flags: number) => void): this;
     prependOnceListener(event: 'push', listener: (headers: IncomingHeaders, flags: number) => void): this;
     prependOnceListener(event: 'response', listener: (headers: IncomingHeaders & IncomingStatusHeaders, flags: number) => void): this;
+    prependOnceListener(event: string | symbol, listener: (...args: any[]) => void): this;
     prependOnceListener(event: string | symbol, listener: (...args: any[]) => void): this {
         return this._prependOnceListener(event, listener);
     }

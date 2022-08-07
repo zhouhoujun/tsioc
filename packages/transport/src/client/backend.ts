@@ -253,6 +253,7 @@ export class ProtocolBackend implements EndpointBackend<TransportRequest, Transp
 
             request.on(ev.RESPONSE, onResponse);
             request.on(ev.ERROR, onError);
+            request.on(ev.ABOUT, onError);
             request.on(ev.ABORTED, onError);
             request.on(ev.TIMEOUT, onError);
 
@@ -276,6 +277,7 @@ export class ProtocolBackend implements EndpointBackend<TransportRequest, Transp
                 request.off(ev.END, onEnd);
                 request.off(ev.ERROR, onError);
                 request.off(ev.ABOUT, onError);
+                request.off(ev.ABORTED, onError);
                 request.off(ev.TIMEOUT, onError);
                 if (!ctx.destroyed) {
                     observer.error(new TransportError('The operation was aborted.'));

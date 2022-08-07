@@ -310,6 +310,7 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                 // request.off(ev.DATA, onData);
                 request.off(ev.ERROR, onError);
                 request.off(ev.ABOUT, onError);
+                request.off(ev.ABORTED, onError);
                 request.off(ev.TIMEOUT, onError);
                 if (!ctx.destroyed) {
                     observer.error(new HttpErrorResponse({
@@ -581,6 +582,7 @@ export class Http2Backend implements EndpointBackend<HttpRequest, HttpEvent> {
             request.on(ev.RESPONSE, onResponse);
             request.on(ev.ERROR, onError);
             request.on(ev.ABOUT, onError);
+            request.on(ev.ABORTED, onError);
             request.on(ev.TIMEOUT, onError);
 
             //todo send body.
@@ -603,6 +605,7 @@ export class Http2Backend implements EndpointBackend<HttpRequest, HttpEvent> {
                 request.off(ev.END, onEnd);
                 request.off(ev.ERROR, onError);
                 request.off(ev.ABOUT, onError);
+                request.off(ev.ABORTED, onError);
                 request.off(ev.TIMEOUT, onError);
                 if (!ctx.destroyed) {
                     observer.error(new HttpError(0, 'The operation was aborted.'));
