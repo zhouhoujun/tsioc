@@ -160,7 +160,7 @@ export class Http1Backend extends EndpointBackend<HttpRequest, HttpEvent> {
                             const raw = new PassThrough();
                             await pmPipeline(res, raw);
                             const defer = lang.defer();
-                            raw.once(ev.DATA, chunk => {
+                            raw.on(ev.DATA, chunk => {
                                 if ((chunk[0] & 0x0F) === 0x08) {
                                     body = pipeline(body, zlib.createInflate(), err => {
                                         if (err) {
@@ -452,7 +452,7 @@ export class Http2Backend implements EndpointBackend<HttpRequest, HttpEvent> {
                                 const raw = new PassThrough();
                                 await pmPipeline(body, raw);
                                 const defer = lang.defer();
-                                raw.once(ev.DATA, chunk => {
+                                raw.on(ev.DATA, chunk => {
                                     if ((chunk[0] & 0x0F) === 0x08) {
                                         body = pipeline(body, zlib.createInflate(), err => {
                                             if (err) {

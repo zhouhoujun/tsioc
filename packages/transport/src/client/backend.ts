@@ -78,9 +78,7 @@ export class ProtocolBackend implements EndpointBackend<TransportRequest, Transp
                 const codings = headers.get(hdr.CONTENT_ENCODING);
                 const data: any[] = [];
                 let bytes = 0;
-                // let strdata = '';
                 onData = (chunk: Buffer) => {
-                    // strdata += chunk;
                     bytes += chunk.length;
                     data.push(chunk);
                 };
@@ -124,7 +122,7 @@ export class ProtocolBackend implements EndpointBackend<TransportRequest, Transp
                                 const raw = new PassThrough();
                                 await pmPipeline(body, raw);
                                 const defer = lang.defer();
-                                raw.once(ev.DATA, chunk => {
+                                raw.on(ev.DATA, chunk => {
                                     if ((chunk[0] & 0x0F) === 0x08) {
                                         body = pipeline(body, zlib.createInflate(), err => {
                                             if (err) {
