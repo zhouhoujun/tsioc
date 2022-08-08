@@ -9,7 +9,7 @@ import * as zlib from 'zlib';
 import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
-import { PassThrough, pipeline } from 'stream';
+import { PassThrough, Readable, pipeline } from 'stream';
 import { promisify } from 'util';
 import { ev, hdr, toBuffer, isBuffer, MimeAdapter, ctype, RequestStauts, sendbody, XSSI_PREFIX, MimeTypes } from '@tsdi/transport';
 import { CLIENT_HTTP2SESSION, HttpClientOpts } from './option';
@@ -161,7 +161,7 @@ export class HttpBackend2 extends HttpBackend {
                 }
 
                 let originalBody: any;
-                body = body instanceof PassThrough ? await toBuffer(body) : body;
+                body = body instanceof Readable ? await toBuffer(body) : body;
                 const contentType = headers.get(hdr.CONTENT_TYPE) as string;
                 let type = req.responseType;
                 if (contentType) {

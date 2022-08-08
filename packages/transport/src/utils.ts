@@ -1,7 +1,7 @@
 import { ArgumentError, isFunction, isString } from '@tsdi/ioc';
 import { OutgoingPacket, isFormData } from '@tsdi/core';
 import { Buffer } from 'buffer';
-import { Stream, PassThrough, Readable } from 'stream';
+import { Stream, Duplex, Readable } from 'stream';
 import * as FormData from 'form-data';
 import { EventEmitter } from 'events';
 import { hdr } from './consts';
@@ -107,7 +107,7 @@ export function escapeHtml(content: string): string {
 }
 
 
-export async function toBuffer(body: PassThrough, limit = 0, url?: string) {
+export async function toBuffer(body: Readable, limit = 0, url?: string) {
   const data = [];
   let bytes = 0;
 
@@ -121,11 +121,7 @@ export async function toBuffer(body: PassThrough, limit = 0, url?: string) {
     data.push(chunk);
   }
 
-  // if (data.every(c => isString(c))) {
-  //   return Buffer.from(data.join(''));
-  // }
   return Buffer.concat(data, bytes);
-
 }
 
 

@@ -2,7 +2,7 @@ import { EndpointBackend, IncomingHeaders, IncomingStatusHeaders, isArrayBuffer,
 import { EMPTY_OBJ, Injectable, InvocationContext, isUndefined, lang, type_undef } from '@tsdi/ioc';
 import { Observable, Observer, throwError, finalize } from 'rxjs';
 import * as zlib from 'zlib';
-import { PassThrough, pipeline, Writable, PipelineSource } from 'stream';
+import { PassThrough, pipeline, Writable, Readable, PipelineSource } from 'stream';
 import { promisify } from 'util';
 import { ctype, ev, hdr } from '../consts';
 import { MimeAdapter, MimeTypes } from '../mime';
@@ -148,7 +148,7 @@ export class ProtocolBackend implements EndpointBackend<TransportRequest, Transp
                 }
 
                 let originalBody: any;
-                body = body instanceof PassThrough ? await toBuffer(body) : body;
+                body = body instanceof Readable ? await toBuffer(body) : body;
                 const contentType = headers.get(hdr.CONTENT_TYPE) as string;
                 let type = ctx.responseType;
                 if (contentType) {
