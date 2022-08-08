@@ -18,8 +18,7 @@ export abstract class TransportStream extends Duplex {
      * @param callback An optional function registered to listen for the `'close'` event.
      */
     abstract close(code?: number, callback?: () => void): void;
-    abstract readPacket(): Observable<any>;
-
+    
     addListener(event: 'aborted', listener: () => void): this;
     addListener(event: 'close', listener: () => void): this;
     addListener(event: 'data', listener: (chunk: Buffer | string) => void): this;
@@ -193,11 +192,6 @@ export abstract class TransportSession extends Duplex {
      * Will be `true` if this `TransportSession` instance has been closed, otherwise`false`.
      */
     abstract readonly closed: boolean;
-    /**
-     * Will be `true` if this `TransportSession` instance has been destroyed and must no
-     * longer be used, otherwise `false`.
-     */
-    abstract readonly destroyed: boolean;
     /**
      * Gracefully closes the `TransportSession`, allowing any existing streams to
      * complete on their own and preventing new `TransportSession` instances from being

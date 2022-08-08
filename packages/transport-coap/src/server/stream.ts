@@ -3,7 +3,7 @@ import { ProtocolServerOpts, ServerSession, ServerSessionBuilder } from '@tsdi/t
 
 @Injectable()
 export class CoapServerSessionBuilder  extends ServerSessionBuilder {
-    build(listenOpts: ProtocolServerOpts<any>): Promise<ServerSession<any>> {
+    build(listenOpts: ProtocolServerOpts<any>): Promise<ServerSession> {
         throw new Error('Method not implemented.');
     }
 

@@ -19,7 +19,7 @@ export class RespondInterceptor<TRequest = any, TResponse = any> implements Inte
         return next.handle(req, ctx)
             .pipe(
                 mergeMap(res => {
-                    const opts = ctx.target.getOptions() as ServerOpts<TRequest, TResponse>;
+                    const opts = ctx.target.getOptions() as ServerOpts;
                     if (opts.encoder) {
                         ctx.body = ctx.get(opts.encoder).encode(ctx.body);
                     }

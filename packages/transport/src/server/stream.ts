@@ -80,7 +80,7 @@ export abstract class ServerStream extends TransportStream {
 }
 
 @Abstract()
-export abstract class ServerSession<Socket = any> extends TransportSession {
+export abstract class ServerSession extends TransportSession {
     /**
      * bind request handle with endpoint.
      * @param endpoint 

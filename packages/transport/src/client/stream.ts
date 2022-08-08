@@ -185,6 +185,7 @@ export interface ClientRequsetOpts {
 @Abstract()
 export abstract class ClientSession extends TransportSession {
     abstract get authority(): string;
+    abstract get clientId(): string;
     abstract request(headers: OutgoingHeaders, options?: ClientRequsetOpts): ClientStream;
 }
 

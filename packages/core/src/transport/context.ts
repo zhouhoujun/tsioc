@@ -39,6 +39,11 @@ export abstract class RequestContext extends EndpointContext {
     abstract responseType: 'arraybuffer' | 'blob' | 'json' | 'text';
 }
 
+@Abstract()
+export abstract class PacketIdGenerator {
+    abstract generate(): string;
+}
+
 /**
  * transport context.
  */
