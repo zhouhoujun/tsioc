@@ -1,61 +1,44 @@
-import { Abstract, Inject, Injectable, InvocationContext, lang, Token } from '@tsdi/ioc';
-import { TransportClient, Protocol, ClientOpts, EndpointBackend, RequstOption, RequestContext } from '@tsdi/core';
-import { MqttClient as Client, connect, IClientOptions } from 'mqtt';
-import { ev } from '@tsdi/transport';
+import { Abstract, Injectable, tokenId } from '@tsdi/ioc';
+import { ExecptionFilter, Interceptor } from '@tsdi/core';
+import { IClientOptions } from 'mqtt';
+import { LogInterceptor, ProtocolClient, ProtocolClientOpts, TransportEvent, TransportRequest } from '@tsdi/transport';
+
 
 
 @Abstract()
-export abstract class MqttClientOptions extends ClientOpts<any, any> {
-    abstract url: string;
-    abstract options: IClientOptions
+export abstract class MqttClientOptions extends ProtocolClientOpts {
+    abstract url?: string;
+    abstract options?: IClientOptions
 }
 
+/**
+ * Mqtt client interceptors.
+ */
+export const MQTT_INTERCEPTORS = tokenId<Interceptor<TransportRequest, TransportEvent>[]>('MQTT_INTERCEPTORS');
+
+/**
+ * Mqtt client interceptors.
+ */
+export const MQTT_EXECPTIONFILTERS = tokenId<ExecptionFilter[]>('MQTT_EXECPTIONFILTERS');
+
+
+const defaults = {
+    encoding: 'utf8',
+    interceptorsToken: MQTT_INTERCEPTORS,
+    execptionsToken: MQTT_EXECPTIONFILTERS,
+    interceptors: [
+        LogInterceptor
+    ]
+} as MqttClientOptions;
+
 @Injectable()
-export class MqttClient extends TransportClient {
+export class MqttClient extends ProtocolClient {
 
-
-    protected mqttClient: Client | undefined;
-    protected connection: Promise<any> | undefined;
-    constructor(
-        @Inject() context: InvocationContext,
-        private options: MqttClientOptions) {
-        super(context, options)
+    constructor(options: MqttClientOptions) {
+        super(options)
     }
 
-    async connect(): Promise<void> {
-        if (!this.mqttClient) {
-            return;
-        }
-
-        const mqttClient = this.mqttClient = connect(this.options.url, this.options.options);
-        const defer = lang.defer<void>();
-        mqttClient.once('error', err => {
-            this.logger.error(err);
-            defer.reject(err);
-        });
-        
-        mqttClient.once(ev.CONNECT, (p)=> {
-            defer.resolve();
-        });
-
-        return await defer.promise;
-
+    protected override getDefaultOptions() {
+        return defaults;
     }
-
-    async close(): Promise<void> {
-        const defer = lang.defer();
-        this.mqttClient?.end(true, undefined, err => err ? defer.reject(err) : defer.resolve);
-        await defer.promise;
-        this.mqttClient = null!;
-        this.connection = null!;
-    }
-
-    protected override buildRequest(context: RequestContext, url: any, options?: RequstOption | undefined) {
-        throw new Error('Method not implemented.');
-    }
-
-    protected getBackend(): EndpointBackend<any, any> {
-        throw new Error('Method not implemented.');
-    }
-
 }

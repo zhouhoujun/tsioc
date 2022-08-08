@@ -1,6 +1,7 @@
 
 import { ExecptionFilter, Interceptor } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
+import { ServerOpts as TcpSocketOptions } from 'net';
 import { SocketOptions } from 'dgram';
 import { CatchInterceptor, LogInterceptor, RespondInterceptor, ProtocolServer, ProtocolServerOpts, ServerRequest, ServerResponse, ListenOpts } from '@tsdi/transport';
 
@@ -16,9 +17,9 @@ export abstract class CoapServerOpts extends ProtocolServerOpts {
      * is json or not.
      */
     abstract json?: boolean;
-    abstract headerSplit?: string;
+    abstract baseOn?: 'tcp' | 'udp';
     abstract encoding?: BufferEncoding;
-    abstract serverOpts?: SocketOptions;
+    abstract serverOpts?: SocketOptions | TcpSocketOptions;
 }
 
 /**

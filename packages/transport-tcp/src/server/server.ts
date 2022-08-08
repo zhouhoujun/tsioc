@@ -3,7 +3,7 @@ import { Injectable, isBoolean, lang, Nullable, ProviderType } from '@tsdi/ioc';
 import { LISTEN_OPTS } from '@tsdi/platform-server';
 import { Server } from 'net';
 import {
-    JsonDecoder, JsonEncoder, ev, hdr, identity, MimeDb, ProtocolExecptionFilter,
+    ev, hdr, identity, MimeDb, ProtocolExecptionFilter,
     CatchInterceptor, LogInterceptor, RespondAdapter, RespondInterceptor,
     BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMiddleware, SessionMiddleware
 } from '@tsdi/transport';
@@ -26,8 +26,6 @@ const defOpts = {
     interceptorsToken: TCP_SERV_INTERCEPTORS,
     execptionsToken: TCP_EXECPTION_FILTERS,
     middlewaresToken: TCP_MIDDLEWARES,
-    encoder: JsonEncoder,
-    decoder: JsonDecoder,
     content: {
         root: 'public'
     },

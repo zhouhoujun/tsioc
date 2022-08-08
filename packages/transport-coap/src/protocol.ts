@@ -15,7 +15,11 @@ export class CoapProtocol extends Protocol {
     isEvent(req: RequestPacket<any>): boolean {
         return req.method === 'events';
     }
-    
+
+    isUpdate(incoming: IncomingPacket<any>): boolean {
+        return incoming.method === 'put';
+    }
+
     isSecure(req: IncomingPacket<any>): boolean {
         throw new Error('Method not implemented.');
     }

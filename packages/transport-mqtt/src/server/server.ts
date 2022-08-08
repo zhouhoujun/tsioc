@@ -1,20 +1,50 @@
-import { TransportContext, TransportServer } from '@tsdi/core';
-import { Injectable } from '@tsdi/ioc';
-import { Subscription } from 'rxjs';
+import { ExecptionFilter, Interceptor } from '@tsdi/core';
+import { Abstract, Injectable, tokenId } from '@tsdi/ioc';
+import { IClientOptions } from 'mqtt';
+import { CatchInterceptor, LogInterceptor, ProtocolServer, ProtocolServerOpts, RespondInterceptor, TransportEvent, TransportRequest } from '@tsdi/transport';
+
+
+@Abstract()
+export abstract class MqttServerOpts extends ProtocolServerOpts {
+
+}
+
+/**
+ * Mqtt server interceptors.
+ */
+export const MQTT_SERV_INTERCEPTORS = tokenId<Interceptor<TransportRequest, TransportEvent>[]>('MQTT_SERV_INTERCEPTORS');
+
+/**
+ * Mqtt server interceptors.
+ */
+export const MQTT_SERV_EXECPTIONFILTERS = tokenId<ExecptionFilter[]>('MQTT_SERV_EXECPTIONFILTERS');
+
+const defaults = {
+    json: true,
+    encoding: 'utf8',
+    headerSplit: '#',
+    interceptorsToken: MQTT_SERV_INTERCEPTORS,
+    execptionsToken: MQTT_SERV_EXECPTIONFILTERS,
+    interceptors: [
+        LogInterceptor,
+        CatchInterceptor,
+        RespondInterceptor
+    ],
+    listenOpts: {
+        port: 1883,
+        host: 'localhost'
+    }
+} as MqttServerOpts;
+
 
 @Injectable()
-export class MqttServer extends TransportServer<any, any> {
-    start(): Promise<void> {
-        throw new Error('Method not implemented.');
+export class MqttServer extends ProtocolServer {
+
+    constructor(options: MqttServerOpts) {
+        super(options);
     }
-    protected createContext(request: any, response: any): TransportContext<any, any> {
-        throw new Error('Method not implemented.');
+
+    protected override getDefaultOptions() {
+        return defaults
     }
-    protected bindEvent(ctx: TransportContext<any, any>, cancel: Subscription): void {
-        throw new Error('Method not implemented.');
-    }
-    close(): Promise<void> {
-        throw new Error('Method not implemented.');
-    }
-    
 }
