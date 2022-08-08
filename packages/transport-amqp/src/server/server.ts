@@ -20,7 +20,7 @@ export const AMQP_SERV_INTERCEPTORS = tokenId<Interceptor<ServerRequest, ServerR
 /**
  * Amqp server execption filters.
  */
-export const AMQP_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('AMQP_EXECPTION_FILTERS');
+export const AMQP_SERV_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('AMQP_SERV_EXECPTION_FILTERS');
 
 
 
@@ -28,7 +28,7 @@ const defaultQueue = 'default';
 const defaults = {
     queue: defaultQueue,
     interceptorsToken: AMQP_SERV_INTERCEPTORS,
-    execptionsToken: AMQP_EXECPTION_FILTERS,
+    execptionsToken: AMQP_SERV_EXECPTION_FILTERS,
 } as AmqpServerOpts;
 
 @Injectable()

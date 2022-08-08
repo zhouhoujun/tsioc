@@ -1,4 +1,4 @@
-import { Endpoint, Interceptor, TransportContext } from '@tsdi/core';
+import { Endpoint, Interceptor, ServerOpts, TransportContext } from '@tsdi/core';
 import { Abstract, Injectable } from '@tsdi/ioc';
 import { Observable, mergeMap } from 'rxjs';
 
@@ -19,6 +19,10 @@ export class RespondInterceptor<TRequest = any, TResponse = any> implements Inte
         return next.handle(req, ctx)
             .pipe(
                 mergeMap(res => {
+                    const opts = ctx.target.getOptions() as ServerOpts<TRequest, TResponse>;
+                    if (opts.encoder) {
+                        ctx.body = ctx.get(opts.encoder).encode(ctx.body);
+                    }
                     return ctx.get(RespondAdapter).respond(res, ctx)
                 })
             )

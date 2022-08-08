@@ -1,5 +1,5 @@
 /* eslint-disable no-control-regex */
-import { AssetContext, Middleware, UnsupportedMediaTypeError } from '@tsdi/core';
+import { AssetContext, Middleware, ServerOpts, UnsupportedMediaTypeError } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable } from '@tsdi/ioc';
 import * as zlib from 'zlib';
 import { Stream, Readable, PassThrough } from 'stream';
@@ -125,6 +125,12 @@ export class BodyparserMiddleware implements Middleware {
     }
 
     private getStream(ctx: AssetContext, encoding: string): Readable {
+        const opts = ctx.target.getOptions() as ServerOpts;
+        const stream = this.unzipify(ctx, encoding);
+        return opts.decoder ? ctx.get(opts.decoder).decode(stream) : stream;
+    }
+
+    protected unzipify(ctx: AssetContext, encoding: string) {
         switch (encoding) {
             case 'gzip':
             case 'deflate':
@@ -137,7 +143,8 @@ export class BodyparserMiddleware implements Middleware {
             default:
                 throw new UnsupportedMediaTypeError('Unsupported Content-Encoding: ' + encoding);
         }
-        return (ctx.request as Readable).pipe(zlib.createUnzip())
+        const readable = ctx.request instanceof Readable ? ctx.request : (ctx.request as Stream).pipe(new PassThrough())
+        return readable.pipe(zlib.createUnzip());
     }
 
     private jsonify(str: string, strict?: boolean) {

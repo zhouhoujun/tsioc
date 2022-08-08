@@ -9,7 +9,7 @@ import { TransportContext } from './context';
  * server options.
  */
 @Abstract()
-export abstract class ServerOpts<TRequest, TResponse> extends TransportOpts<TRequest, TResponse> {
+export abstract class ServerOpts<TRequest = any, TResponse = any> extends TransportOpts<TRequest, TResponse> {
     /**
      * middlewares of server.
      */

@@ -1,4 +1,5 @@
-import { EndpointBackend, IncomingHeaders, IncomingStatusHeaders, isArrayBuffer, isBlob, isFormData, mths, Redirector, ReqHeaders, RequestContext, ResponseJsonParseError, TransportError } from '@tsdi/core';
+/* eslint-disable no-case-declarations */
+import { EndpointBackend, IncomingHeaders, IncomingStatusHeaders, isArrayBuffer, isBlob, isFormData, mths, Redirector, ReqHeaders, RequestContext, ResponseJsonParseError, TransportError, UnsupportedMediaTypeError } from '@tsdi/core';
 import { EMPTY_OBJ, Injectable, InvocationContext, isUndefined, lang, type_undef } from '@tsdi/ioc';
 import { Observable, Observer, throwError, finalize } from 'rxjs';
 import * as zlib from 'zlib';
@@ -23,7 +24,7 @@ export class ProtocolBackend implements EndpointBackend<TransportRequest, Transp
 
     handle(req: TransportRequest, ctx: RequestContext): Observable<TransportEvent> {
         const session = ctx.get(ClientSession);
-        const { headers, method, url } = req;
+        const { method, url } = req;
         if (!session || session.destroyed) return throwError(() => new ErrorResponse({
             url,
             status: 0,
@@ -34,14 +35,14 @@ export class ProtocolBackend implements EndpointBackend<TransportRequest, Transp
             const statdpr = ctx.protocol.status;
             const path = url.replace(session.authority, '');
 
-            headers.set(hdr.METHOD, method);
-            headers.set(hdr.PATH, path);
-            !headers.has(hdr.CONTENT_TYPE) && headers.set(hdr.CONTENT_TYPE, req.detectContentTypeHeader()!)
-            !headers.has(hdr.ACCEPT) && headers.set(hdr.ACCEPT, ctype.REQUEST_ACCEPT);
+            req.headers.set(hdr.METHOD, method);
+            req.headers.set(hdr.PATH, path);
+            !req.headers.has(hdr.CONTENT_TYPE) && req.headers.set(hdr.CONTENT_TYPE, req.detectContentTypeHeader()!)
+            !req.headers.has(hdr.ACCEPT) && req.headers.set(hdr.ACCEPT, ctype.REQUEST_ACCEPT);
 
             const opts = ctx.target.getOptions() as ProtocolClientOpts;
             const ac = this.getAbortSignal(ctx);
-            const request = session.request(headers.headers, { ...opts.requestOpts, signal: ac.signal });
+            const request = session.request(req.headers.headers, { ...opts.requestOpts, signal: ac.signal });
 
             let status: number, statusText: string;
             let completed = false;
@@ -72,9 +73,6 @@ export class ProtocolBackend implements EndpointBackend<TransportRequest, Transp
                 const rqstatus = ctx.getValueify(RequestStauts, () => new RequestStauts());
                 // fetch step 5
 
-                // fetch step 12.1.1.3
-                const codings = headers.get(hdr.CONTENT_ENCODING);
-
                 body = pipeline(request, new PassThrough(), (err) => {
                     error = err;
                     ok = !err;
@@ -90,6 +88,9 @@ export class ProtocolBackend implements EndpointBackend<TransportRequest, Transp
                 }
 
                 completed = true;
+
+                // codings.
+                const codings = headers.get(hdr.CONTENT_ENCODING);
 
                 if (rqstatus.compress && req.method !== mths.HEAD && codings) {
                     // For Node v6+
@@ -146,7 +147,9 @@ export class ProtocolBackend implements EndpointBackend<TransportRequest, Transp
                         error = err;
                     }
                 }
-
+                if (opts.decoder) {
+                    body = ctx.get(opts.decoder).decode(body);
+                }
                 let originalBody: any;
                 body = body instanceof Readable ? await toBuffer(body) : body;
                 const contentType = headers.get(hdr.CONTENT_TYPE) as string;
@@ -241,14 +244,18 @@ export class ProtocolBackend implements EndpointBackend<TransportRequest, Transp
             request.on(ev.TIMEOUT, onError);
 
             //todo send body.
-            const data = req.serializeBody();
+            let data = req.serializeBody();
             if (data === null) {
                 request.end();
             } else {
+                if (opts.encoder) {
+                    data = ctx.get(opts.encoder).encode(data);
+                }
                 sendbody(
                     data,
                     request,
-                    err => onError(err));
+                    err => onError(err),
+                    req.headers.get(hdr.CONTENT_ENCODING) as string);
             }
 
             return () => {
@@ -278,7 +285,7 @@ export class ProtocolBackend implements EndpointBackend<TransportRequest, Transp
  */
 export const XSSI_PREFIX = /^\)\]\}',?\n/;
 
-export async function sendbody(data: any, request: Writable, error: (err: any) => void): Promise<void> {
+export async function sendbody(data: any, request: Writable, error: (err: any) => void, encoding?: string): Promise<void> {
     let source: PipelineSource<any>;
     try {
         if (isArrayBuffer(data)) {
@@ -299,6 +306,19 @@ export async function sendbody(data: any, request: Writable, error: (err: any) =
             source = data.getBuffer();
         } else {
             source = String(data);
+        }
+        if (encoding) {
+            switch (encoding) {
+                case 'gzip':
+                case 'deflate':
+                    const readable = source instanceof Readable ? source : pipeline(source, new PassThrough());
+                    source = readable.pipe(zlib.createGzip());
+                    break;
+                case 'identity':
+                    break;
+                default:
+                    throw new UnsupportedMediaTypeError('Unsupported Content-Encoding: ' + encoding);
+            }
         }
         await pmPipeline(source, request)
     } catch (err) {

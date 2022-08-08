@@ -258,7 +258,8 @@ export class HttpBackend2 extends HttpBackend {
                 sendbody(
                     data,
                     request,
-                    err => onError(err));
+                    err => onError(err),
+                    req.headers.get(hdr.CONTENT_ENCODING) as string);
             }
 
             return () => {

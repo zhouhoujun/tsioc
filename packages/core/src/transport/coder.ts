@@ -1,5 +1,4 @@
 import { Abstract } from '@tsdi/ioc';
-import { Packet } from './packet';
 
 /**
  * Decoder
@@ -10,7 +9,7 @@ export abstract class Decoder<T = any> {
      * decode buffer to Packet.
      * @param buffer 
      */
-    abstract decode(buffer: T, encoding?: any): Packet;
+    abstract decode(buffer: T): T;
 }
 
 /**

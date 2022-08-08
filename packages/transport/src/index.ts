@@ -5,7 +5,6 @@ export * from './negotiator';
 
 export * from './stringify';
 export * from './utils';
-export * from './coder';
 
 export * from './asset.ctx';
 export * from './asset.pdr';
