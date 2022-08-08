@@ -1,9 +1,7 @@
 import { Injectable, isUndefined, lang, type_undef } from '@tsdi/ioc';
 import { EndpointContext, mths, ResHeaders, Redirector } from '@tsdi/core';
-import {
-    HttpRequest, HttpEvent, HttpResponse, HttpErrorResponse,
-    HttpHeaderResponse, HttpJsonParseError, HttpBackend
-} from '@tsdi/common';
+import { HttpRequest, HttpEvent, HttpResponse, HttpErrorResponse, HttpHeaderResponse, HttpJsonParseError, HttpBackend } from '@tsdi/common';
+import { ev, hdr, toBuffer, isBuffer, MimeAdapter, ctype, RequestStauts, sendbody, XSSI_PREFIX, MimeTypes } from '@tsdi/transport';
 import { finalize, Observable, Observer } from 'rxjs';
 import * as zlib from 'zlib';
 import * as http from 'http';
@@ -11,7 +9,6 @@ import * as https from 'https';
 import * as http2 from 'http2';
 import { PassThrough, Readable, pipeline } from 'stream';
 import { promisify } from 'util';
-import { ev, hdr, toBuffer, isBuffer, MimeAdapter, ctype, RequestStauts, sendbody, XSSI_PREFIX, MimeTypes } from '@tsdi/transport';
 import { CLIENT_HTTP2SESSION, HttpClientOpts } from './option';
 
 const pmPipeline = promisify(pipeline);
@@ -58,7 +55,7 @@ export class HttpBackend2 extends HttpBackend {
                     }
                 } else {
                     headers = new ResHeaders(incoming);
-                    status = statAdpr.parse(incoming[HTTP2_HEADER_STATUS] ?? 0);
+                    status = statAdpr.parse(incoming[hdr.STATUS2] ?? 0);
                     statusText = statAdpr.message(status) ?? 'OK'
                 }
 
@@ -79,12 +76,10 @@ export class HttpBackend2 extends HttpBackend {
                 const rqstatus = ctx.getValueify(RequestStauts, () => new RequestStauts());
                 // HTTP fetch step 5
 
-                const pipeError = (err: Error|null) => {
+                body = pipeline(incoming instanceof http.IncomingMessage ? incoming : request as http2.ClientHttp2Stream, new PassThrough(), (err) => {
                     error = err;
                     ok = !err;
-                };
-
-                body = incoming instanceof http.IncomingMessage ? this.parsehttp1Body(incoming, pipeError) : this.parsehttp2Body(request as http2.ClientHttp2Stream, pipeError);
+                });
 
                 if (status && statAdpr.isRedirect(status)) {
                     // HTTP fetch step 5.2
@@ -325,28 +320,16 @@ export class HttpBackend2 extends HttpBackend {
         return session.request(reqHeaders, { ...option.requestOptions, signal: ac?.signal } as http2.ClientSessionRequestOptions);
     }
 
-    parsehttp1Body(res: http.IncomingMessage, callback: (err:Error|null)=> void) {
-        return pipeline(res, new PassThrough(), callback);
-    }
-
-    parsehttp2Body(request: http2.ClientHttp2Stream, callback: (err:Error|null)=> void) {
-        return pipeline(request, new PassThrough(), callback);
-    }
-
     protected getAbortSignal(ctx: EndpointContext): AbortController {
         return typeof AbortController === type_undef ? null! : ctx.getValueify(AbortController, () => new AbortController());
     }
 
 }
 
-
 const {
     HTTP2_HEADER_PATH,
     HTTP2_HEADER_METHOD,
     HTTP2_HEADER_ACCEPT
 } = http2.constants;
-
-const HTTP2_HEADER_STATUS = ':status';
-
 
 const secureExp = /^https:/;
