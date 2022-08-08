@@ -1,5 +1,7 @@
-import { Interceptor, Protocol, ServerOpts } from '@tsdi/core';
-import { Abstract, tokenId, TypeOf } from '@tsdi/ioc';
+import { Decoder, Encoder, Interceptor, Protocol, ServerOpts } from '@tsdi/core';
+import { Abstract, tokenId, Type, TypeOf } from '@tsdi/ioc';
+import { Buffer } from 'buffer';
+import { Stream } from 'stream';
 import { ContentOptions, SessionOptions } from '../middlewares';
 import { MimeSource } from '../mime';
 import { ServerRequest } from './req';
@@ -59,6 +61,15 @@ export abstract class ProtocolServerOpts<T = any> extends ServerOpts<ServerReque
     abstract session?: boolean | SessionOptions;
     abstract serverOpts?: Record<string, any>;
     abstract listenOpts: ListenOpts;
+
+    /**
+     * encoder input.
+     */
+     abstract encoder?: Type<Encoder<string | Buffer | Stream>>;
+     /**
+      * decoder input.
+      */
+     abstract decoder?: Type<Decoder<string | Buffer | Stream>>;
 }
 
 
