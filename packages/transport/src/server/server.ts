@@ -6,11 +6,11 @@ import { TransportContext, SERVER_EXECPTION_FILTERS, SERVER_MIDDLEWARES } from '
 import { BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMiddleware, SessionMiddleware } from '../middlewares';
 import { MimeDb } from '../mime';
 import { db } from '../impl/mimedb';
-import { ProtocolExecptionFilter, TransportFinalizeFilter } from './finalize-filter';
+import { TransportExecptionFilter, TransportFinalizeFilter } from './finalize-filter';
 import { TransportServerOpts, SERVER_INTERCEPTORS } from './options';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';
-import { PROTOCOL_SERVR_PROVIDERS } from './providers';
+import { TRANSPORT_SERVR_PROVIDERS } from './providers';
 import { ServerSession, ServerSessionBuilder } from './stream';
 
 
@@ -32,7 +32,7 @@ const defOpts = {
     ],
     execptions: [
         TransportFinalizeFilter,
-        ProtocolExecptionFilter
+        TransportExecptionFilter
     ],
     middlewares: [
         ContentMiddleware,
@@ -85,7 +85,7 @@ export class TransportServer extends Server<ServerRequest, ServerResponse, Trans
     protected override initOption(options: TransportServerOpts): TransportServerOpts {
         const defOpts = this.getDefaultOptions();
         const listenOpts = { ...defOpts.listenOpts, ...options?.listenOpts };
-        const providers = options && options.providers ? [...PROTOCOL_SERVR_PROVIDERS, ...options.providers] : PROTOCOL_SERVR_PROVIDERS;
+        const providers = options && options.providers ? [...TRANSPORT_SERVR_PROVIDERS, ...options.providers] : TRANSPORT_SERVR_PROVIDERS;
         const opts = { ...defOpts, ...options, listenOpts, providers };
         if (opts.middlewares) {
             opts.middlewares = opts.middlewares.filter(m => {

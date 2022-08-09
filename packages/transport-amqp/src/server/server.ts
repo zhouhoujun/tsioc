@@ -1,12 +1,12 @@
 import { ExecptionFilter, Interceptor } from '@tsdi/core';
 import { Abstract, Injectable, tokenId } from '@tsdi/ioc';
-import { ProtocolServer, ProtocolServerOpts, ServerRequest, ServerResponse } from '@tsdi/transport';
+import {  ServerRequest, ServerResponse, TransportServer, TransportServerOpts } from '@tsdi/transport';
 import * as amqp from 'amqplib';
 
 export type amqpURL = string | amqp.Options.Connect;
 
 @Abstract()
-export abstract class AmqpServerOpts extends ProtocolServerOpts {
+export abstract class AmqpServerOpts extends TransportServerOpts {
     url?: amqpURL;
     queue?: string;
     queueOptions?: amqp.Options.AssertQueue;
@@ -32,7 +32,7 @@ const defaults = {
 } as AmqpServerOpts;
 
 @Injectable()
-export class AmqpServer extends ProtocolServer {
+export class AmqpServer extends TransportServer {
 
     constructor(options: AmqpServerOpts) {
         super(options);

@@ -76,7 +76,7 @@ export class TransportFinalizeFilter implements ExecptionFilter {
 
 
 @Injectable({ static: true })
-export class ProtocolExecptionFilter implements ExecptionFilter {
+export class TransportExecptionFilter implements ExecptionFilter {
 
     constructor() {
 

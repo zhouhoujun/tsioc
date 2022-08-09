@@ -1,5 +1,5 @@
 import { EndpointBackend, mths, RequestContext, ResponseJsonParseError, ResHeaders, OutgoingHeaders, BytesPipe, Redirector } from '@tsdi/core';
-import { ev, hdr, identity, isBuffer, TransportRequest, ErrorResponse, TransportEvent, TransportResponse } from '@tsdi/transport';
+import { ev, hdr, identity, isBuffer, TransportRequest, TransportErrorResponse, TransportEvent, TransportResponse } from '@tsdi/transport';
 import { Injectable, InvocationContext, type_undef } from '@tsdi/ioc';
 import { Socket } from 'net';
 import { Buffer } from 'buffer';
@@ -20,7 +20,7 @@ export class TcpBackend implements EndpointBackend<TransportRequest, TransportEv
     handle(req: TransportRequest, ctx: RequestContext): Observable<TransportEvent> {
         const socket = ctx.get(Socket);
         const { id, url } = req;
-        if (!socket) return throwError(() => new ErrorResponse({
+        if (!socket) return throwError(() => new TransportErrorResponse({
             id,
             url,
             status: 0,
@@ -45,7 +45,7 @@ export class TcpBackend implements EndpointBackend<TransportRequest, TransportEv
                     filter(pk => pk.id === id)
                 ).subscribe({
                     complete: () => observer.complete(),
-                    error: (err) => observer.error(new ErrorResponse({
+                    error: (err) => observer.error(new TransportErrorResponse({
                         id,
                         url,
                         status: err?.status ?? 0,
@@ -64,7 +64,7 @@ export class TcpBackend implements EndpointBackend<TransportRequest, TransportEv
                                 const pipe = ctx.get(BytesPipe);
                                 const msg = `Packet size limit ${pipe.transform(this.option.sizeLimit)}, this response packet size ${pipe.transform(len)}`;
                                 socket.emit(ev.ERROR, msg);
-                                observer.error(new ErrorResponse({
+                                observer.error(new TransportErrorResponse({
                                     id,
                                     url,
                                     status: 0,
@@ -85,7 +85,7 @@ export class TcpBackend implements EndpointBackend<TransportRequest, TransportEv
                                     }));
                                     observer.complete();
                                 } else {
-                                    observer.error(new ErrorResponse({
+                                    observer.error(new TransportErrorResponse({
                                         id,
                                         url,
                                         status,
@@ -170,7 +170,7 @@ export class TcpBackend implements EndpointBackend<TransportRequest, TransportEv
                             }));
                             observer.complete();
                         } else {
-                            observer.error(new ErrorResponse({
+                            observer.error(new TransportErrorResponse({
                                 id,
                                 url,
                                 error,
@@ -187,7 +187,7 @@ export class TcpBackend implements EndpointBackend<TransportRequest, TransportEv
             }
 
             if (this.option.sizeLimit && (parseInt(req.headers.get(hdr.CONTENT_LENGTH) as string ?? '0')) > this.option.sizeLimit) {
-                observer.error(new ErrorResponse({
+                observer.error(new TransportErrorResponse({
                     id,
                     url,
                     status: 0,
@@ -206,7 +206,7 @@ export class TcpBackend implements EndpointBackend<TransportRequest, TransportEv
                     ac.abort()
                 }
                 if (!ctx.destroyed) {
-                    observer.error(new ErrorResponse({
+                    observer.error(new TransportErrorResponse({
                         id,
                         url,
                         status: 0,

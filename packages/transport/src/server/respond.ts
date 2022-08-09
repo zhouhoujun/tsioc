@@ -9,7 +9,7 @@ import { isBuffer, isStream } from '../utils';
 
 
 @Injectable()
-export class ProtocolRespondAdapter extends RespondAdapter {
+export class TransportRespondAdapter extends RespondAdapter {
 
     async respond(res: ServerResponse, ctx: TransportContext): Promise<any> {
 

@@ -1,9 +1,10 @@
 import { OutgoingHeader, ResHeaders, ResHeadersLike, ResponsePacket } from '@tsdi/core';
 
 /**
- * client error response.
+ * Transport error response.
+ * response for `TransportClient`.
  */
-export class ErrorResponse {
+export class TransportErrorResponse {
     readonly error: any;
     readonly url: string;
     readonly status: number;
@@ -31,6 +32,7 @@ export class ErrorResponse {
 
 /**
  * client receive Response.
+ * response for `TransportClient`.
  */
 export class TransportHeaderResponse {
     readonly url: string;
@@ -63,6 +65,7 @@ export class TransportHeaderResponse {
 
 /**
  * client receive Response.
+ * response for `TransportClient`.
  */
 export class TransportResponse<T = any> extends TransportHeaderResponse implements ResponsePacket<T> {
     readonly body: T | null;
@@ -83,6 +86,7 @@ export class TransportResponse<T = any> extends TransportHeaderResponse implemen
 
 /**
  * transport event.
+ * response for `TransportClient`.
  */
-export type TransportEvent<T = any> = ErrorResponse | TransportHeaderResponse | TransportResponse<T>;
+export type TransportEvent<T = any> = TransportErrorResponse | TransportHeaderResponse | TransportResponse<T>;
 

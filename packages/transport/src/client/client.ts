@@ -6,7 +6,7 @@ import { TransportBackend } from './backend';
 import { DetectBodyInterceptor } from './body';
 import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } from './options';
 import { NormlizePathInterceptor } from './path';
-import { PROTOCOL_CLIENT_PROVIDERS } from './providers';
+import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
 import { TransportRequest } from './request';
 import { TransportEvent } from './response';
 
@@ -51,7 +51,7 @@ export class TransportClient extends Client<TransportRequest, TransportEvent, Tr
         const defaults = this.getDefaultOptions();
         const connectOpts = { ...defaults.connectOpts, ...options?.connectOpts };
         const interceptors = [...options?.interceptors ?? EMPTY, NormlizePathInterceptor, DetectBodyInterceptor];
-        const providers = options && options.providers ? [...PROTOCOL_CLIENT_PROVIDERS, ...options.providers] : PROTOCOL_CLIENT_PROVIDERS;
+        const providers = options && options.providers ? [...TRANSPORT_CLIENT_PROVIDERS, ...options.providers] : TRANSPORT_CLIENT_PROVIDERS;
         const opts = { ...defaults, ...options, connectOpts, interceptors, providers };
         return opts;
     }

@@ -1,11 +1,11 @@
 import { ExecptionFilter, Interceptor } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
-import { ProtocolClient, ProtocolClientOpts, TransportEvent, TransportRequest } from '@tsdi/transport';
+import { TransportClient, TransportClientOpts, TransportEvent, TransportRequest } from '@tsdi/transport';
 import * as amqp from 'amqplib';
 
 
 @Abstract()
-export abstract class AmqpClientOpts extends ProtocolClientOpts {
+export abstract class AmqpClientOpts extends TransportClientOpts {
     connectOpts?: amqp.Options.Connect;
 }
 
@@ -28,7 +28,7 @@ const defaults = {
 
 
 @Injectable()
-export class AmqpClient extends ProtocolClient {
+export class AmqpClient extends TransportClient {
     constructor(@Nullable() options: any) {
         super(options)
     }

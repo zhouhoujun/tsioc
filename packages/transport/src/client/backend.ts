@@ -11,7 +11,7 @@ import { createFormData, isBuffer, isFormDataLike, toBuffer } from '../utils';
 import { ClientSession } from './stream';
 import { TransportClientOpts } from './options';
 import { TransportRequest } from './request';
-import { ErrorResponse, TransportResponse, TransportEvent, TransportHeaderResponse } from './response';
+import { TransportErrorResponse, TransportResponse, TransportEvent, TransportHeaderResponse } from './response';
 
 
 const pmPipeline = promisify(pipeline);
@@ -25,7 +25,7 @@ export class TransportBackend implements EndpointBackend<TransportRequest, Trans
     handle(req: TransportRequest, ctx: RequestContext): Observable<TransportEvent> {
         const session = ctx.get(ClientSession);
         const { method, url } = req;
-        if (!session || session.destroyed) return throwError(() => new ErrorResponse({
+        if (!session || session.destroyed) return throwError(() => new TransportErrorResponse({
             url,
             status: 0,
             statusMessage: 'has not connected.'
@@ -218,7 +218,7 @@ export class TransportBackend implements EndpointBackend<TransportRequest, Trans
                     }));
                     observer.complete();
                 } else {
-                    observer.error(new ErrorResponse({
+                    observer.error(new TransportErrorResponse({
                         url,
                         error: error ?? body,
                         status,
@@ -228,7 +228,7 @@ export class TransportBackend implements EndpointBackend<TransportRequest, Trans
             };
 
             const onError = (error?: Error) => {
-                const res = new ErrorResponse({
+                const res = new TransportErrorResponse({
                     url,
                     error,
                     status: status || 0,
