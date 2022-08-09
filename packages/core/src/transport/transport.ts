@@ -1,4 +1,4 @@
-import { Abstract, ArgumentError, Autorun, AutoWired, EMPTY, InvocationContext, isClassType, lang, ProviderType, Token, Type, TypeOf } from '@tsdi/ioc';
+import { Abstract, ArgumentError, Autorun, AutoWired, ClassType, EMPTY, InvocationContext, isClassType, lang, ProviderType, Token, Type, TypeOf } from '@tsdi/ioc';
 import { Log, Logger } from '@tsdi/logs';
 import { ExecptionChain } from '../execptions/chain';
 import { ExecptionFilter } from '../execptions/filter';
@@ -34,11 +34,11 @@ export abstract class TransportOpts<TRequest, TResponse> {
     /**
      * encoder input.
      */
-    abstract encoder?: Type<Encoder>;
+    abstract encoder?: ClassType<Encoder>;
     /**
      * decoder input.
      */
-    abstract decoder?: Type<Decoder>;
+    abstract decoder?: ClassType<Decoder>;
     /**
      * endpoint timeout.
      */
@@ -175,13 +175,6 @@ export abstract class TransportEndpoint<TRequest = any, TResponse = any, Opts ex
         if (options.execptions && options.execptions.length) {
 
             this.multiReg(eToken, options.execptions);
-        }
-
-        if (options.encoder) {
-            injector.inject({ provide: Encoder, useClass: options.encoder });
-        }
-        if (options.decoder) {
-            injector.inject({ provide: Decoder, useClass: options.decoder });
         }
 
     }

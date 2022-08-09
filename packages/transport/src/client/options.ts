@@ -1,9 +1,10 @@
 import { ClientOpts, Decoder, Encoder, EndpointBackend, ExecptionFilter, Interceptor } from '@tsdi/core';
-import { Abstract, tokenId, Type } from '@tsdi/ioc';
+import { Abstract, ClassType, tokenId } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { Stream } from 'stream';
 import { TransportRequest } from './request';
 import { TransportEvent } from './response';
+import { ClientSessionBuilder } from './stream';
 
 export interface SessionRequestOpts extends Record<string, any> {
     endStream?: boolean | undefined;
@@ -35,19 +36,20 @@ export abstract class TransportClientOpts extends ClientOpts<TransportRequest, T
      * request opions.
      */
     abstract requestOpts?: SessionRequestOpts;
+
+    abstract builder?: ClassType<ClientSessionBuilder>; 
     /**
      * backend.
      */
-    abstract backend?: Type<EndpointBackend<TransportRequest, TransportEvent>>;
-
+    abstract backend?: ClassType<EndpointBackend<TransportRequest, TransportEvent>>;
     /**
      * encoder input.
      */
-    abstract encoder?: Type<Encoder<string | Buffer | Stream>>;
+    abstract encoder?: ClassType<Encoder<string | Buffer | Stream>>;
     /**
      * decoder input.
      */
-    abstract decoder?: Type<Decoder<string | Buffer | Stream>>;
+    abstract decoder?: ClassType<Decoder<string | Buffer | Stream>>;
 }
 
 /**

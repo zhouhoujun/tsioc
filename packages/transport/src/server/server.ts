@@ -67,7 +67,8 @@ export class TransportServer extends Server<ServerRequest, ServerResponse, Trans
 
     async start(): Promise<void> {
         try {
-            this._session = await this.context.get(ServerSessionBuilder).build(this.getOptions());
+            const opts = this.getOptions();
+            this._session = await this.context.get(opts.builder ?? ServerSessionBuilder).build(opts);
             await this.session.bind(this.endpoint());
         } catch (err) {
             this.logger.error(err);

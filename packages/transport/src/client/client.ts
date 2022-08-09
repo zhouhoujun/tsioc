@@ -71,7 +71,8 @@ export class TransportClient extends Client<TransportRequest, TransportEvent, Tr
         if (this._stream && !this._stream.destroyed && !this._stream.closed) {
             return of(this._stream);
         }
-        return this.context.get(ClientSessionBuilder).build(this.getOptions().connectOpts)
+        const opts = this.getOptions();
+        return this.context.get(opts.builder ?? ClientSessionBuilder).build(opts.connectOpts)
             .pipe(
                 map(stream => {
                     this._stream = stream;
