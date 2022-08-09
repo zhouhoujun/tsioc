@@ -6,11 +6,11 @@ import {
 import { Injectable, isFunction, isNumber } from '@tsdi/ioc';
 import { MissingModelFieldError } from '@tsdi/repository';
 import { Buffer } from 'buffer';
-import { PrototcolContext } from './context';
+import { TransportContext } from './context';
 
 
 @Injectable({ static: true })
-export class ProtocolFinalizeFilter implements ExecptionFilter {
+export class TransportFinalizeFilter implements ExecptionFilter {
 
     async handle(ctx: ExecptionContext, next: () => Promise<void>): Promise<any> {
         if (ctx.completed || !ctx.execption) return;
@@ -25,7 +25,7 @@ export class ProtocolFinalizeFilter implements ExecptionFilter {
 
         //finllay defalt send error.
         const protocol = ctx.get(Protocol);
-        const hctx = ctx.get(PrototcolContext);
+        const hctx = ctx.get(TransportContext);
         let headerSent = false;
         if (hctx.sent || !hctx.writable) {
             headerSent = err.headerSent = true

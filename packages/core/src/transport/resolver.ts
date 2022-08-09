@@ -1,6 +1,6 @@
 import { OperationArgumentResolver, Parameter, Type, OperationInvoker } from '@tsdi/ioc';
 import { PipeTransform } from '../pipes/pipe';
-import { TransportContext } from './context';
+import { ConnectionContext } from './context';
 
 /**
  * transport parameter argument of an {@link TransportArgumentResolver}.
@@ -33,11 +33,11 @@ export interface TransportArgumentResolver<T = any> extends OperationArgumentRes
      * @param parameter argument type
      * @param ctx InvocationContext
      */
-    canResolve(parameter: TransportParameter, ctx: TransportContext): boolean;
+    canResolve(parameter: TransportParameter, ctx: ConnectionContext): boolean;
     /**
      * Resolves an argument of the given {@code parameter}.
      * @param parameter argument type
      * @param ctx InvocationContext
      */
-    resolve<T>(parameter: TransportParameter<T>, ctx: TransportContext): T;
+    resolve<T>(parameter: TransportParameter<T>, ctx: ConnectionContext): T;
 }

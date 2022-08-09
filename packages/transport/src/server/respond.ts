@@ -3,7 +3,7 @@ import { Injectable, isString, lang } from '@tsdi/ioc';
 import { Readable } from 'stream';
 import { RespondAdapter } from '../interceptors/respond';
 import { ServerResponse } from './res';
-import { PrototcolContext } from './context';
+import { TransportContext } from './context';
 import { ev, hdr } from '../consts';
 import { isBuffer, isStream } from '../utils';
 
@@ -11,7 +11,7 @@ import { isBuffer, isStream } from '../utils';
 @Injectable()
 export class ProtocolRespondAdapter extends RespondAdapter {
 
-    async respond(res: ServerResponse, ctx: PrototcolContext): Promise<any> {
+    async respond(res: ServerResponse, ctx: TransportContext): Promise<any> {
 
 
         if (!ctx.writable) return;

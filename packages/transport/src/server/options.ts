@@ -74,6 +74,6 @@ export abstract class TransportServerOpts<T = any> extends ServerOpts<ServerRequ
 
 
 /**
- * Protocol server interceptors.
+ * Transport server interceptors.
  */
-export const PROTOTCOL_SERV_INTERCEPTORS = tokenId<Interceptor<ServerRequest, ServerResponse>[]>('PROTOTCOL_SERV_INTERCEPTORS');
+export const SERVER_INTERCEPTORS = tokenId<Interceptor<ServerRequest, ServerResponse>[]>('SERVER_INTERCEPTORS');

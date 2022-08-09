@@ -1,5 +1,5 @@
 import { Abstract, EMPTY, isArray, isDefined, Type, Parameter, OperationInvoker } from '@tsdi/ioc';
-import { ModelArgumentResolver, TransportContext } from '@tsdi/core';
+import { ModelArgumentResolver, ConnectionContext } from '@tsdi/core';
 import { composeFieldResolver, DBPropertyMetadata, MissingModelFieldError, missingPropError, ModelFieldResolver, MODEL_FIELD_RESOLVERS } from './field.resolver';
 
 
@@ -12,11 +12,11 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
 
     abstract get resolvers(): ModelFieldResolver[];
 
-    canResolve(parameter: Parameter, ctx: TransportContext): boolean {
+    canResolve(parameter: Parameter, ctx: ConnectionContext): boolean {
         return this.isModel(parameter.provider as Type ?? parameter.type) && this.hasFields(parameter, ctx)
     }
 
-    resolve<T>(parameter: Parameter<T>, ctx: TransportContext): T {
+    resolve<T>(parameter: Parameter<T>, ctx: ConnectionContext): T {
         const classType = (parameter.provider ?? parameter.type) as Type;
         const fields = this.getFields(parameter, ctx);
         if (!fields) {
@@ -28,7 +28,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
         return this.resolveModel(classType, ctx, fields)
     }
 
-    canResolveModel(modelType: Type, ctx: TransportContext, args: Record<string, any>, nullable?: boolean): boolean {
+    canResolveModel(modelType: Type, ctx: ConnectionContext, args: Record<string, any>, nullable?: boolean): boolean {
         return nullable || !this.getPropertyMeta(modelType).some(p => {
             if (this.isModel(p.provider ?? p.type)) {
                 return !this.canResolveModel(p.provider ?? p.type, ctx, args[p.name], p.nullable)
@@ -37,7 +37,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
         })
     }
 
-    resolveModel(modelType: Type, ctx: TransportContext, fields: Record<string, any>, nullable?: boolean): any {
+    resolveModel(modelType: Type, ctx: ConnectionContext, fields: Record<string, any>, nullable?: boolean): any {
         if (nullable && (!fields || Object.keys(fields).length < 1)) {
             return null
         }
@@ -78,7 +78,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
             this._resolver = composeFieldResolver(
                 (p, ctx, fields) => p.nullable === true
                     || (fields && isDefined(fields[p.name] ?? p.default))
-                    || ((ctx as TransportContext).isUpdate?.() === false && p.primary === true),
+                    || ((ctx as ConnectionContext).isUpdate?.() === false && p.primary === true),
                 ...this.resolvers ?? EMPTY,
                 ...MODEL_FIELD_RESOLVERS)
         }
@@ -98,11 +98,11 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
     /**
      * has model fields in context or not.
      */
-    protected abstract hasFields(parameter: Parameter, ctx: TransportContext): boolean;
+    protected abstract hasFields(parameter: Parameter, ctx: ConnectionContext): boolean;
     /**
      * get model fields in context.
      */
-    protected abstract getFields(parameter: Parameter, ctx: TransportContext): Record<string, any>;
+    protected abstract getFields(parameter: Parameter, ctx: ConnectionContext): Record<string, any>;
 }
 
 
@@ -130,11 +130,11 @@ class ModelResolver<C = any> extends AbstractModelArgumentResolver<C> {
         return this.option.getPropertyMeta(type)
     }
 
-    protected hasFields(parameter: Parameter<any>, ctx: TransportContext): boolean {
+    protected hasFields(parameter: Parameter<any>, ctx: ConnectionContext): boolean {
         return this.option.hasField ? this.option.hasField(parameter, ctx) : !!this.getFields(parameter, ctx)
     }
 
-    protected getFields(parameter: Parameter<any>, ctx: TransportContext): Record<string, any> {
+    protected getFields(parameter: Parameter<any>, ctx: ConnectionContext): Record<string, any> {
         return this.option.getFields(parameter, ctx)
     }
 }
@@ -160,11 +160,11 @@ export interface ModelResolveOption<C> {
     /**
      * has model fields in context or not.
      */
-    hasField?: (parameter: Parameter<any>, ctx: TransportContext) => boolean;
+    hasField?: (parameter: Parameter<any>, ctx: ConnectionContext) => boolean;
     /**
      * get model fields in context.
      */
-    getFields: (parameter: Parameter<any>, ctx: TransportContext) => Record<string, any>;
+    getFields: (parameter: Parameter<any>, ctx: ConnectionContext) => Record<string, any>;
     /**
      * custom field resolvers.
      */

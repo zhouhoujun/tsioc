@@ -1,7 +1,7 @@
 import { Injectable, lang, tokenId } from '@tsdi/ioc';
 import { of } from 'rxjs'; import {
     RouteMapping, Handle, RequestBody, RequestParam, RequestPath, Module,
-    TransportContext, Middleware, Chain, BadRequestError
+    ConnectionContext, Middleware, Chain, BadRequestError
 } from '@tsdi/core';
 import { RedirectResult } from '@tsdi/transport';
 
@@ -96,7 +96,7 @@ export class DeviceController {
 @Handle('/hdevice')
 export class DeviceQueue implements Middleware {
 
-    async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: ConnectionContext, next: () => Promise<void>): Promise<void> {
 
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
@@ -126,7 +126,7 @@ export class DeviceQueue implements Middleware {
 @Injectable()
 export class DeviceStartupHandle implements Middleware {
 
-    invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    invoke(ctx: ConnectionContext, next: () => Promise<void>): Promise<void> {
 
         console.log('DeviceStartupHandle.', 'resp:', ctx.playload.type, 'req:', ctx.playload.type)
         if (ctx.playload.type === 'startup') {
@@ -141,7 +141,7 @@ export class DeviceStartupHandle implements Middleware {
 @Injectable()
 export class DeviceAStartupHandle implements Middleware {
 
-    invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    invoke(ctx: ConnectionContext, next: () => Promise<void>): Promise<void> {
         console.log('DeviceAStartupHandle.', 'resp:', ctx.playload.type, 'req:', ctx.playload.type)
         if (ctx.playload.type === 'startup') {
             // todo sth.

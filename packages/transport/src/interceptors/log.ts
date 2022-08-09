@@ -1,4 +1,4 @@
-import { BytesPipe, Endpoint, EndpointContext, Interceptor, RequestPacket, TimesPipe, TransportContext } from '@tsdi/core';
+import { BytesPipe, Endpoint, EndpointContext, Interceptor, RequestPacket, TimesPipe, ConnectionContext } from '@tsdi/core';
 import { Abstract, Inject, Injectable, isNumber, Nullable } from '@tsdi/ioc';
 import { Level, Logger, matchLevel } from '@tsdi/logs';
 import * as chalk from 'chalk';
@@ -72,8 +72,8 @@ export class LogInterceptor implements Interceptor {
 
         //todo console log and other. need to refactor formater.
         const start = hrtime();
-        const method = chalk.cyan((ctx as TransportContext).method ?? req.method);
-        const url = (ctx as TransportContext).url ?? req.url;
+        const method = chalk.cyan((ctx as ConnectionContext).method ?? req.method);
+        const url = (ctx as ConnectionContext).url ?? req.url;
         logger[level]( incoming, method, url);
         return next.handle(req, ctx)
             .pipe(

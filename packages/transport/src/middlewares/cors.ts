@@ -1,4 +1,4 @@
-import { AssetContext, Middleware, RequestMethod, TransportContext, TransportError } from '@tsdi/core';
+import { AssetContext, Middleware, RequestMethod, ConnectionContext, TransportError } from '@tsdi/core';
 import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
 import { hdr } from '../consts';
@@ -198,7 +198,7 @@ interface Options {
     /**
      * origin `Access-Control-Allow-Origin`, default is request Origin header
      */
-    origin?: string | ((ctx: TransportContext) => any);
+    origin?: string | ((ctx: ConnectionContext) => any);
     /**
      * allowMethods `Access-Control-Allow-Methods`, default is 'GET,HEAD,PUT,POST,DELETE,PATCH'
      */

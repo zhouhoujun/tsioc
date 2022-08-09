@@ -2,12 +2,12 @@ import { Router, Server } from '@tsdi/core';
 import { Injectable, isBoolean, Nullable } from '@tsdi/ioc';
 import { LISTEN_OPTS } from '@tsdi/platform-server';
 import { CatchInterceptor, LogInterceptor, RespondInterceptor } from '../interceptors';
-import { PrototcolContext, PROTOTCOL_EXECPTION_FILTERS, PROTOTCOL_MIDDLEWARES } from './context';
+import { TransportContext, SERVER_EXECPTION_FILTERS, SERVER_MIDDLEWARES } from './context';
 import { BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMiddleware, SessionMiddleware } from '../middlewares';
 import { MimeDb } from '../mime';
 import { db } from '../impl/mimedb';
-import { ProtocolExecptionFilter, ProtocolFinalizeFilter } from './finalize-filter';
-import { TransportServerOpts, PROTOTCOL_SERV_INTERCEPTORS } from './options';
+import { ProtocolExecptionFilter, TransportFinalizeFilter } from './finalize-filter';
+import { TransportServerOpts, SERVER_INTERCEPTORS } from './options';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';
 import { PROTOCOL_SERVR_PROVIDERS } from './providers';
@@ -18,9 +18,9 @@ const defOpts = {
     encoding: 'utf8',
     delimiter: '\r\n',
     sizeLimit: 10 * 1024 * 1024,
-    interceptorsToken: PROTOTCOL_SERV_INTERCEPTORS,
-    execptionsToken: PROTOTCOL_EXECPTION_FILTERS,
-    middlewaresToken: PROTOTCOL_MIDDLEWARES,
+    interceptorsToken: SERVER_INTERCEPTORS,
+    execptionsToken: SERVER_EXECPTION_FILTERS,
+    middlewaresToken: SERVER_MIDDLEWARES,
     content: {
         root: 'public'
     },
@@ -31,7 +31,7 @@ const defOpts = {
         RespondInterceptor
     ],
     execptions: [
-        ProtocolFinalizeFilter,
+        TransportFinalizeFilter,
         ProtocolExecptionFilter
     ],
     middlewares: [
@@ -50,7 +50,7 @@ const defOpts = {
  * Transport Server
  */
 @Injectable()
-export class TransportServer extends Server<ServerRequest, ServerResponse, PrototcolContext, TransportServerOpts> {
+export class TransportServer extends Server<ServerRequest, ServerResponse, TransportContext, TransportServerOpts> {
 
     private _session?: ServerSession | null;
     constructor(@Nullable() options: TransportServerOpts) {

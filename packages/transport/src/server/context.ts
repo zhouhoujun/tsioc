@@ -1,4 +1,4 @@
-import { ExecptionFilter, MiddlewareLike, HeadersContext, AssetContext, TransportContext } from '@tsdi/core';
+import { ExecptionFilter, MiddlewareLike, HeadersContext, AssetContext, ConnectionContext } from '@tsdi/core';
 import { Token, tokenId } from '@tsdi/ioc';
 import { AssetServerContext } from '../asset.ctx';
 import { hdr } from '../consts';
@@ -7,9 +7,9 @@ import { ServerResponse } from './res';
 
 
 /**
- * Transport protocol context.
+ * Transport context for `TransportServer`.
  */
-export class PrototcolContext extends AssetServerContext<ServerRequest, ServerResponse> implements HeadersContext, AssetContext {
+export class TransportContext extends AssetServerContext<ServerRequest, ServerResponse> implements HeadersContext, AssetContext {
 
 
     get status(): number {
@@ -48,7 +48,7 @@ export class PrototcolContext extends AssetServerContext<ServerRequest, ServerRe
     }
 
     protected isSelf(token: Token) {
-        return token === PrototcolContext || token === AssetServerContext || token === TransportContext;
+        return token === TransportContext || token === AssetServerContext || token === ConnectionContext;
     }
 
     protected override onBodyChanged(newVal: any, oldVal: any): void {
@@ -59,10 +59,10 @@ export class PrototcolContext extends AssetServerContext<ServerRequest, ServerRe
 }
 
 /**
- * Prototcol Middlewares.
+ * Transport server Middlewares.
  */
-export const PROTOTCOL_MIDDLEWARES = tokenId<MiddlewareLike<PrototcolContext>[]>('TCP_MIDDLEWARES');
+export const SERVER_MIDDLEWARES = tokenId<MiddlewareLike<TransportContext>[]>('SERVER_MIDDLEWARES');
 /**
- * Prototcol execption filters.
+ * Transport server execption filters.
  */
-export const PROTOTCOL_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('HTTP_EXECPTION_FILTERS');
+export const SERVER_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('SERVER_EXECPTION_FILTERS');

@@ -3,7 +3,7 @@ import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
 import { Endpoint, EndpointBackend, MiddlewareBackend, MiddlewareLike, MiddlewareType } from './endpoint';
 import { TransportEndpoint, TransportOpts } from './transport';
-import { TransportContext } from './context';
+import { ConnectionContext } from './context';
 
 /**
  * server options.
@@ -24,7 +24,7 @@ export abstract class ServerOpts<TRequest = any, TResponse = any> extends Transp
  * binding request handler
  */
 @Abstract()
-export abstract class HandlerBinding<T extends TransportContext = TransportContext> {
+export abstract class HandlerBinding<T extends ConnectionContext = ConnectionContext> {
     /**
      * binding handler for tansport context.
      * @param ctx 
@@ -39,7 +39,7 @@ export abstract class HandlerBinding<T extends TransportContext = TransportConte
  */
 @Abstract()
 @Runner('start')
-export abstract class Server<TRequest = any, TResponse = any, Tx extends TransportContext = TransportContext, Opts extends ServerOpts<TRequest, TResponse> = any> extends TransportEndpoint<TRequest, TResponse, Opts> implements OnDispose {
+export abstract class Server<TRequest = any, TResponse = any, Tx extends ConnectionContext = ConnectionContext, Opts extends ServerOpts<TRequest, TResponse> = any> extends TransportEndpoint<TRequest, TResponse, Opts> implements OnDispose {
 
     private _midlsToken!: Token<MiddlewareLike[]>;
 

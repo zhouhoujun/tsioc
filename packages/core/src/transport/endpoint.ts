@@ -1,6 +1,6 @@
 import { Abstract, Handler, isFunction, Type, chain, lang } from '@tsdi/ioc';
 import { Observable, defer } from 'rxjs';
-import { EndpointContext, TransportContext } from './context';
+import { EndpointContext, ConnectionContext } from './context';
 
 
 /**
@@ -77,7 +77,7 @@ export type InterceptorType<TRequest = any, TResponse = any> = Type<Interceptor<
 /**
  * Middleware is a chainable behavior modifier for context.
  */
-export interface Middleware<T extends TransportContext = TransportContext> {
+export interface Middleware<T extends ConnectionContext = ConnectionContext> {
     /**
      * invoke the middleware.
      * @param ctx  context with request and response.
@@ -90,15 +90,15 @@ export interface Middleware<T extends TransportContext = TransportContext> {
 /**
  * middleware function
  */
-export type MiddlewareFn<T extends TransportContext = TransportContext> = Handler<T, Promise<void>>;
+export type MiddlewareFn<T extends ConnectionContext = ConnectionContext> = Handler<T, Promise<void>>;
 /**
  * middleware like.
  */
-export type MiddlewareLike<T extends TransportContext = TransportContext> = Middleware<T> | MiddlewareFn<T>;
+export type MiddlewareLike<T extends ConnectionContext = ConnectionContext> = Middleware<T> | MiddlewareFn<T>;
 /**
  * middleware type.
  */
-export type MiddlewareType<T extends TransportContext = TransportContext> = Type<Middleware<T>> | MiddlewareLike<T>;
+export type MiddlewareType<T extends ConnectionContext = ConnectionContext> = Type<Middleware<T>> | MiddlewareLike<T>;
 
 
 /**
@@ -177,7 +177,7 @@ export function interceptorify<TRequest, TResponse>(i: InterceptorLike<TRequest,
  * @param invoke 
  * @returns 
  */
-export function createMiddleware<T extends TransportContext>(invoke: MiddlewareFn<T>): Middleware<T> {
+export function createMiddleware<T extends ConnectionContext>(invoke: MiddlewareFn<T>): Middleware<T> {
     return { invoke };
 }
 
@@ -186,7 +186,7 @@ export function createMiddleware<T extends TransportContext>(invoke: MiddlewareF
  * @param m type of {@link MiddlewareLike}
  * @returns 
  */
-export function middlewareify<T extends TransportContext>(m: MiddlewareLike<T>): Middleware<T> {
+export function middlewareify<T extends ConnectionContext>(m: MiddlewareLike<T>): Middleware<T> {
     return isFunction(m) ? createMiddleware(m) : m;
 }
 
@@ -195,14 +195,14 @@ export function middlewareify<T extends TransportContext>(m: MiddlewareLike<T>):
  * @param m type of {@link MiddlewareLike}
  * @returns 
  */
-export function middlewareFnify<T extends TransportContext>(m: MiddlewareLike<T>): MiddlewareFn<T> {
+export function middlewareFnify<T extends ConnectionContext>(m: MiddlewareLike<T>): MiddlewareFn<T> {
     return isFunction(m) ? m : ((ctx, next) => m.invoke(ctx, next));
 }
 
 /**
  * middleware backend.
  */
-export class MiddlewareBackend<TRequest, TResponse, Tx extends TransportContext> implements EndpointBackend<TRequest, TResponse> {
+export class MiddlewareBackend<TRequest, TResponse, Tx extends ConnectionContext> implements EndpointBackend<TRequest, TResponse> {
 
     private _middleware?: MiddlewareFn<Tx>;
     constructor(private middlewares: MiddlewareLike<Tx>[]) {
@@ -228,7 +228,7 @@ export class MiddlewareBackend<TRequest, TResponse, Tx extends TransportContext>
  * compose middlewares
  * @param middlewares 
  */
-export function compose<T extends TransportContext>(middlewares: MiddlewareLike<T>[]): MiddlewareFn<T> {
+export function compose<T extends ConnectionContext>(middlewares: MiddlewareLike<T>[]): MiddlewareFn<T> {
     const middleFns = middlewares.filter(m => m).map(m => middlewareFnify<T>(m));
     return chain(middleFns)
 }
@@ -248,7 +248,7 @@ export class Chain implements Middleware {
 
     }
 
-    invoke<T extends TransportContext>(ctx: T, next?: () => Promise<void>): Promise<void> {
+    invoke<T extends ConnectionContext>(ctx: T, next?: () => Promise<void>): Promise<void> {
         if (!this._chainFn) {
             this._chainFn = compose(this.middlewares)
         }
@@ -270,13 +270,13 @@ export class InterceptorMiddleware<TRequest, TResponse> implements Middleware {
         this.interceptors = interceptors.map(i => interceptorify(i));
     }
 
-    invoke<T extends TransportContext>(ctx: T, next: () => Promise<void>): Promise<void> {
+    invoke<T extends ConnectionContext>(ctx: T, next: () => Promise<void>): Promise<void> {
         if (!this._chainFn) {
             const chain = new InterceptorChain<TRequest, TResponse>((req, ctx) => defer(async () => {
                 await this.middleware.invoke(ctx as T, next);
                 return (ctx as T).response;
             }), this.interceptors);
-            this._chainFn = (ctx: TransportContext) => {
+            this._chainFn = (ctx: ConnectionContext) => {
                 const defer = lang.defer<void>();
                 const cancel = chain.handle(ctx.request, ctx)
                     .subscribe({

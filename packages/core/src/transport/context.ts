@@ -45,10 +45,10 @@ export abstract class PacketIdGenerator {
 }
 
 /**
- * transport context.
+ * abstract server side connection context.
  */
 @Abstract()
-export abstract class TransportContext<TRequest = any, TResponse = any> extends EndpointContext {
+export abstract class ConnectionContext<TRequest = any, TResponse = any> extends EndpointContext {
     /**
      * transport request.
      */
@@ -187,7 +187,7 @@ export interface Throwable {
 /**
  * tansport context with headers.
  */
-export interface HeadersContext extends TransportContext {
+export interface HeadersContext extends ConnectionContext {
     /**
      * Return request header.
      *

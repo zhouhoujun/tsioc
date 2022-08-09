@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { MODEL_RESOLVERS } from './model';
 import { PipeTransform } from '../pipes/pipe';
-import { TransportContext } from './context';
+import { ConnectionContext } from './context';
 import { TransportArgumentError } from './error';
 import { TransportArgumentResolver, TransportParameter } from './resolver';
 import { Server } from './server';
@@ -15,10 +15,10 @@ export interface ServerContextOpts extends InvokeArguments {
 }
 
 /**
- * server context.
+ * server context with model reovlers.
  */
 @Abstract()
-export abstract class ServerContext<TRequest = any, TResponse = any> extends TransportContext {
+export abstract class ServerContext<TRequest = any, TResponse = any> extends ConnectionContext {
     /**
      * context protocol.
      */
@@ -41,7 +41,7 @@ export abstract class ServerContext<TRequest = any, TResponse = any> extends Tra
     }
 
     protected isSelf(token: Token) {
-        return token === TransportContext || token === ServerContext;
+        return token === ConnectionContext || token === ServerContext;
     }
 
     override missingError(missings: Parameter<any>[], type: ClassType<any>, method: string): MissingParameterError {
@@ -64,7 +64,7 @@ export function missingPipeError(parameter: Parameter, type?: ClassType, method?
 
 const primitiveResolvers: TransportArgumentResolver[] = [
     composeResolver<TransportArgumentResolver, TransportParameter>(
-        (parameter, ctx) => ctx instanceof TransportContext && isDefined(parameter.field ?? parameter.name),
+        (parameter, ctx) => ctx instanceof ConnectionContext && isDefined(parameter.field ?? parameter.name),
         composeResolver<TransportArgumentResolver>(
             (parameter, ctx) => isPrimitiveType(parameter.type),
             {

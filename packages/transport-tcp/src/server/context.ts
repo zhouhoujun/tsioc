@@ -1,4 +1,4 @@
-import { ExecptionFilter, MiddlewareLike, HeadersContext, AssetContext, TransportContext } from '@tsdi/core';
+import { ExecptionFilter, MiddlewareLike, HeadersContext, AssetContext, ConnectionContext } from '@tsdi/core';
 import { Token, tokenId } from '@tsdi/ioc';
 import { AssetServerContext, hdr } from '@tsdi/transport';
 import { TcpServRequest } from './request';
@@ -42,7 +42,7 @@ export class TcpContext extends AssetServerContext<TcpServRequest, TcpServRespon
     }
 
     protected isSelf(token: Token) {
-        return token === TcpContext || token === AssetServerContext || token === TransportContext;
+        return token === TcpContext || token === AssetServerContext || token === ConnectionContext;
     }
 
     protected override onBodyChanged(newVal: any, oldVal: any): void {

@@ -1,5 +1,5 @@
 import { createDecorator, Decors, isClass, isFunction, ReflectiveResolver, Type } from '@tsdi/ioc';
-import { TransportContext } from '../transport';
+import { ConnectionContext } from '../transport';
 import { ExecptionRespond, ExecptionTypedRespond } from './adapter';
 import { ExecptionHandlerMethodResolver } from './resolver';
 
@@ -18,7 +18,7 @@ export interface ExecptionHandlerMetadata {
     /**
      * handle expection as response type.
      */
-    response?: 'body' | 'header' | 'response' | Type<ExecptionRespond> | ((ctx: TransportContext, returnning: any) => void)
+    response?: 'body' | 'header' | 'response' | Type<ExecptionRespond> | ((ctx: ConnectionContext, returnning: any) => void)
 }
 
 
@@ -44,7 +44,7 @@ export interface ExecptionHandler {
         /**
          * handle expection as response type.
          */
-        response?: 'body' | 'header' | 'response' | Type<ExecptionRespond> | ((ctx: TransportContext, returnning: any) => void)
+        response?: 'body' | 'header' | 'response' | Type<ExecptionRespond> | ((ctx: ConnectionContext, returnning: any) => void)
     }): MethodDecorator;
 }
 
@@ -68,15 +68,15 @@ export const ExecptionHandler: ExecptionHandler = createDecorator('ExecptionHand
                 if (response) {
                     if (isClass(response)) {
                         invoker.onReturnning((ctx, value) => {
-                            ctx.resolve(response).respond(ctx.resolve(TransportContext), value);
+                            ctx.resolve(response).respond(ctx.resolve(ConnectionContext), value);
                         })
                     } else if (isFunction(response)) {
                         invoker.onReturnning((ctx, value) => {
-                            response(ctx.resolve(TransportContext), value);
+                            response(ctx.resolve(ConnectionContext), value);
                         })
                     } else {
                         invoker.onReturnning((ctx, value) => {
-                            ctx.resolve(ExecptionTypedRespond).respond(ctx.resolve(TransportContext), response, value);
+                            ctx.resolve(ExecptionTypedRespond).respond(ctx.resolve(ConnectionContext), response, value);
                         })
                     }
                 }

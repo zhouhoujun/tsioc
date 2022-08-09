@@ -5,7 +5,7 @@ import { PipeTransform } from '../pipes/pipe';
 import { Route, RouteFactoryResolver, ROUTES, Routes } from './route';
 import { ModuleRef } from '../module.ref';
 import { createMiddleware, InterceptorMiddleware, InterceptorType, Middleware, MiddlewareFn } from '../transport/endpoint';
-import { AssetContext, TransportContext } from '../transport/context';
+import { AssetContext, ConnectionContext } from '../transport/context';
 import { BadRequestError, ForbiddenError, NotFoundError } from '../transport/error';
 import { promisify } from './promisify';
 
@@ -28,11 +28,11 @@ export abstract class Router implements Middleware {
     /**
      * invoke middleware.
      *
-     * @param {TransportContext} ctx context.
+     * @param {ConnectionContext} ctx context.
      * @param {() => Promise<void>} next
      * @returns {Observable<T>}
      */
-    abstract invoke(ctx: TransportContext<any, any>, next: () => Promise<void>): Promise<void>;
+    abstract invoke(ctx: ConnectionContext<any, any>, next: () => Promise<void>): Promise<void>;
     /**
      * has route or not.
      * @param route route
@@ -70,7 +70,7 @@ export class MappingRoute implements Middleware {
         return this.route.path
     }
 
-    async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: ConnectionContext, next: () => Promise<void>): Promise<void> {
         if (this.route.protocol && !ctx.protocol.match(this.route.protocol)) return next();
         if (await this.canActive(ctx)) {
             if (!this._middleware) {
@@ -85,7 +85,7 @@ export class MappingRoute implements Middleware {
         }
     }
 
-    protected canActive(ctx: TransportContext) {
+    protected canActive(ctx: ConnectionContext) {
         if (!this._guards) {
             this._guards = this.route.guards?.map(g => isFunction(g) ? ctx.resolve(g) : g) ?? EMPTY
         }
@@ -93,7 +93,7 @@ export class MappingRoute implements Middleware {
         return lang.some(this._guards.map(guard => () => promisify(guard.canActivate(ctx))), vaild => vaild === false)
     }
 
-    protected async parse(route: Route & { router?: Router }, ctx: TransportContext): Promise<Middleware> {
+    protected async parse(route: Route & { router?: Router }, ctx: ConnectionContext): Promise<Middleware> {
         if (route.invoke) {
             return route as Middleware;
         } else if (route.middleware) {
@@ -127,7 +127,7 @@ export class MappingRoute implements Middleware {
     }
 
 
-    protected async redirect(ctx: TransportContext, url: string, alt?: string): Promise<void> {
+    protected async redirect(ctx: ConnectionContext, url: string, alt?: string): Promise<void> {
         const hctx = ctx as AssetContext;
         if (!isFunction(hctx.redirect)) {
             throw new BadRequestError();
@@ -187,7 +187,7 @@ export class MappingRouter extends Router implements OnDestroy {
         return this
     }
 
-    invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    invoke(ctx: ConnectionContext, next: () => Promise<void>): Promise<void> {
         const route = this.getRoute(ctx);
         if (route) {
             return route(ctx, next)
@@ -196,7 +196,7 @@ export class MappingRouter extends Router implements OnDestroy {
         }
     }
 
-    protected getRoute(ctx: TransportContext): MiddlewareFn | undefined {
+    protected getRoute(ctx: ConnectionContext): MiddlewareFn | undefined {
         if (ctx.status && !ctx.protocol.status.isNotFound(ctx.status)) return;
 
         let url: string;

@@ -1,4 +1,4 @@
-import { AssetContext, HeadersContext, MiddlewareLike, mths, Throwable, TransportContext } from '@tsdi/core';
+import { AssetContext, HeadersContext, MiddlewareLike, mths, Throwable, ConnectionContext } from '@tsdi/core';
 import { isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import * as assert from 'assert';
@@ -20,7 +20,7 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
 
 
     protected isSelf(token: Token) {
-        return token === HttpContext || token === AssetServerContext || token === TransportContext;
+        return token === HttpContext || token === AssetServerContext || token === ConnectionContext;
     }
 
     /**
