@@ -1,7 +1,7 @@
 import { Endpoint, OutgoingHeaders } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
 import { TransportSession, TransportStream } from '../stream';
-import { ProtocolServerOpts } from './options';
+import { TransportServerOpts } from './options';
 
 
 
@@ -175,6 +175,6 @@ export abstract class ServerSession extends TransportSession {
 
 @Abstract()
 export abstract class ServerSessionBuilder {
-    abstract build(listenOpts: ProtocolServerOpts): Promise<ServerSession>;
+    abstract build(listenOpts: TransportServerOpts): Promise<ServerSession>;
 }
 

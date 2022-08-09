@@ -35,11 +35,11 @@ export abstract class HandlerBinding<T extends TransportContext = TransportConte
 
 
 /**
- * abstract transport server.
+ * abstract server.
  */
 @Abstract()
 @Runner('start')
-export abstract class TransportServer<TRequest = any, TResponse = any, Tx extends TransportContext = TransportContext, Opts extends ServerOpts<TRequest, TResponse> = any> extends TransportEndpoint<TRequest, TResponse, Opts> implements OnDispose {
+export abstract class Server<TRequest = any, TResponse = any, Tx extends TransportContext = TransportContext, Opts extends ServerOpts<TRequest, TResponse> = any> extends TransportEndpoint<TRequest, TResponse, Opts> implements OnDispose {
 
     private _midlsToken!: Token<MiddlewareLike[]>;
 
@@ -77,7 +77,7 @@ export abstract class TransportServer<TRequest = any, TResponse = any, Tx extend
      */
     protected override initContext(options: Opts) {
         const injector = this.context.injector;
-        injector.setValue(TransportServer, this);
+        injector.setValue(Server, this);
         super.initContext(options);
 
         const mToken = this._midlsToken = options.middlewaresToken!;

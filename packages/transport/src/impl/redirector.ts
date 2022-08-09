@@ -1,5 +1,5 @@
 /* eslint-disable no-case-declarations */
-import { BadRequestError, EndpointContext, RequestPacket, TransportClient, RequestMethod, Redirector, ReqHeaders, ResHeaders, HeaderSet } from '@tsdi/core';
+import { BadRequestError, EndpointContext, RequestPacket, Client, RequestMethod, Redirector, ReqHeaders, ResHeaders, HeaderSet } from '@tsdi/core';
 import { EMPTY_OBJ, Injectable } from '@tsdi/ioc';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { Readable } from 'stream';
@@ -89,7 +89,7 @@ export class AssetRedirector extends Redirector {
                         reqhdrs = reqhdrs.set(hdr.REFERRER_POLICY, responseReferrerPolicy);
                     }
                     // HTTP-redirect fetch step 15
-                    sub = (ctx.target as TransportClient).send(locationURL, {
+                    sub = (ctx.target as Client).send(locationURL, {
                         method,
                         headers: reqhdrs,
                         body,

@@ -32,7 +32,7 @@ export abstract class ListenOpts {
 
 
 @Abstract()
-export abstract class ProtocolServerOpts<T = any> extends ServerOpts<ServerRequest, ServerResponse> {
+export abstract class TransportServerOpts<T = any> extends ServerOpts<ServerRequest, ServerResponse> {
     abstract proxy?: boolean;
     /**
      * protocol

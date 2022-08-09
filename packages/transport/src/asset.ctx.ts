@@ -1,4 +1,4 @@
-import { AssetContext, OutgoingHeader, ServerContext, IncomingHeader, OutgoingHeaders, IncomingPacket, OutgoingPacket, TransportServer } from '@tsdi/core';
+import { AssetContext, OutgoingHeader, ServerContext, IncomingHeader, OutgoingHeaders, IncomingPacket, OutgoingPacket, Server } from '@tsdi/core';
 import { Abstract, Injector, InvokeArguments, isArray, isNil, isNumber, isString, lang } from '@tsdi/ioc';
 import { extname } from 'path';
 import { Buffer } from 'buffer';
@@ -18,7 +18,7 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
     readonly originalUrl: string;
     private _url?: string;
 
-    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: TransportServer, options?: InvokeArguments) {
+    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, options?: InvokeArguments) {
         super(injector, request, response, target, options);
 
         this.response.statusCode = this.protocol.status.notFound;

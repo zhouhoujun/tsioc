@@ -1,11 +1,11 @@
 import { ExecptionFilter, Interceptor } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
-import { ProtocolClient, ProtocolClientOpts, TransportEvent, TransportRequest,  } from '@tsdi/transport';
+import { TransportClient, TransportClientOpts, TransportEvent, TransportRequest,  } from '@tsdi/transport';
 import { SocketOptions } from 'dgram';
 
 
 @Abstract()
-export abstract class CoapClientOpts extends ProtocolClientOpts {
+export abstract class CoapClientOpts extends TransportClientOpts {
     /**
      * is json or not.
      */
@@ -45,7 +45,7 @@ const defaults = {
  * COAP Client.
  */
 @Injectable()
-export class CoapClient extends ProtocolClient {
+export class CoapClient extends TransportClient {
 
     constructor(@Nullable() option: CoapClientOpts) {
         super(option);

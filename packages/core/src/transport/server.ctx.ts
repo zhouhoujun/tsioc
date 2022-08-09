@@ -7,7 +7,7 @@ import { PipeTransform } from '../pipes/pipe';
 import { TransportContext } from './context';
 import { TransportArgumentError } from './error';
 import { TransportArgumentResolver, TransportParameter } from './resolver';
-import { TransportServer } from './server';
+import { Server } from './server';
 import { Protocol } from './protocol';
 
 export interface ServerContextOpts extends InvokeArguments {
@@ -15,7 +15,7 @@ export interface ServerContextOpts extends InvokeArguments {
 }
 
 /**
- * server transport context.
+ * server context.
  */
 @Abstract()
 export abstract class ServerContext<TRequest = any, TResponse = any> extends TransportContext {
@@ -24,7 +24,7 @@ export abstract class ServerContext<TRequest = any, TResponse = any> extends Tra
      */
     readonly protocol: Protocol;
 
-    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: TransportServer, options?: ServerContextOpts) {
+    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, options?: ServerContextOpts) {
         super(injector, {
             ...options,
             resolvers: [

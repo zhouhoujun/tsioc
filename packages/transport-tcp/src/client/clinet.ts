@@ -1,4 +1,4 @@
-import { EndpointBackend, OnDispose, Protocol, RequestContext, TransportClient, UuidGenerator } from '@tsdi/core';
+import { EndpointBackend, OnDispose, Protocol, RequestContext, Client, UuidGenerator } from '@tsdi/core';
 import { EMPTY, Injectable, isString, lang, Nullable } from '@tsdi/ioc';
 import { Socket, IpcNetConnectOpts } from 'net';
 import { TcpClientOpts, TCP_EXECPTIONFILTERS, TCP_INTERCEPTORS } from './options';
@@ -31,7 +31,7 @@ export const TCP_CLIENT_PROVIDERS = [
  * TcpClient. client of  `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpClient extends TransportClient<TransportRequest, TransportEvent, TcpClientOpts> implements OnDispose {
+export class TcpClient extends Client<TransportRequest, TransportEvent, TcpClientOpts> implements OnDispose {
 
     private socket?: Socket;
     private connected: boolean;

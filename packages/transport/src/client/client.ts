@@ -1,10 +1,10 @@
-import { EndpointBackend, OnDispose, RequestContext, RequstOption, TransportClient } from '@tsdi/core';
+import { EndpointBackend, OnDispose, RequestContext, RequstOption, Client } from '@tsdi/core';
 import { EMPTY, Injectable, isString, Nullable } from '@tsdi/ioc';
 import { map, Observable, of } from 'rxjs';
 import { ClientSession, ClientSessionBuilder } from './stream';
-import { ProtocolBackend } from './backend';
+import { TransportBackend } from './backend';
 import { DetectBodyInterceptor } from './body';
-import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, ProtocolClientOpts } from './options';
+import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } from './options';
 import { NormlizePathInterceptor } from './path';
 import { PROTOCOL_CLIENT_PROVIDERS } from './providers';
 import { TransportRequest } from './request';
@@ -13,20 +13,20 @@ import { TransportEvent } from './response';
 
 const defaults = {
     encoding: 'utf8',
-    backend: ProtocolBackend,
+    backend: TransportBackend,
     interceptorsToken: CLIENT_INTERCEPTORS,
     execptionsToken: CLIENT_EXECPTIONFILTERS
-} as ProtocolClientOpts;
+} as TransportClientOpts;
 
 
 /**
- * Transport Protocol Client.
+ * Transport Client.
  */
 @Injectable()
-export class ProtocolClient extends TransportClient<TransportRequest, TransportEvent, ProtocolClientOpts> implements OnDispose {
+export class TransportClient extends Client<TransportRequest, TransportEvent, TransportClientOpts> implements OnDispose {
 
     private _stream?: ClientSession;
-    constructor(@Nullable() options: ProtocolClientOpts) {
+    constructor(@Nullable() options: TransportClientOpts) {
         super(options);
     }
 
@@ -47,7 +47,7 @@ export class ProtocolClient extends TransportClient<TransportRequest, TransportE
         return defaults;
     }
 
-    protected override initOption(options?: ProtocolClientOpts): ProtocolClientOpts {
+    protected override initOption(options?: TransportClientOpts): TransportClientOpts {
         const defaults = this.getDefaultOptions();
         const connectOpts = { ...defaults.connectOpts, ...options?.connectOpts };
         const interceptors = [...options?.interceptors ?? EMPTY, NormlizePathInterceptor, DetectBodyInterceptor];
@@ -56,8 +56,8 @@ export class ProtocolClient extends TransportClient<TransportRequest, TransportE
         return opts;
     }
 
-    protected override initContext(options: ProtocolClientOpts): void {
-        this.context.setValue(ProtocolClientOpts, options);
+    protected override initContext(options: TransportClientOpts): void {
+        this.context.setValue(TransportClientOpts, options);
         super.initContext(options);
     }
 

@@ -1,11 +1,11 @@
-import { Module, RouterModule, TransformModule, TransportClient, TransportServer } from '@tsdi/core';
+import { Module, RouterModule, TransformModule, Client, Server } from '@tsdi/core';
 import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
-import { ProtocolBackend } from './client/backend';
+import { TransportBackend } from './client/backend';
 import { NormlizePathInterceptor } from './client/path';
-import { ProtocolClient } from './client/client';
+import { TransportClient } from './client/client';
 import { DetectBodyInterceptor } from './client/body';
-import { ProtocolServerOpts } from './server/options';
-import { ProtocolServer } from './server/server';
+import { TransportServerOpts } from './server/options';
+import { TransportServer } from './server/server';
 import { ASSET_SERVR_PROVIDERS } from './asset.pdr';
 import { CatchInterceptor, DefaultStatusFormater, LogInterceptor, RespondInterceptor } from './interceptors';
 import { BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware, EncodeJsonMiddleware, HelmetMiddleware, SessionMiddleware } from './middlewares';
@@ -25,7 +25,7 @@ import { ProtocolExecptionFilter, ProtocolFinalizeFilter } from './server/finali
         LogInterceptor,
         RespondInterceptor,
         
-        ProtocolBackend,
+        TransportBackend,
         NormlizePathInterceptor,
         DetectBodyInterceptor,
 
@@ -41,10 +41,10 @@ import { ProtocolExecptionFilter, ProtocolFinalizeFilter } from './server/finali
         ProtocolFinalizeFilter,
         ProtocolExecptionFilter,
 
-        ProtocolClient,
-        ProtocolServer,
-        { provide: TransportClient, useClass: ProtocolClient },
-        { provide: TransportServer, useClass: ProtocolServer }
+        TransportClient,
+        TransportServer,
+        { provide: Client, useClass: TransportClient },
+        { provide: Server, useClass: TransportServer }
     ]
 })
 export class TransportModule {
@@ -54,8 +54,8 @@ export class TransportModule {
      * @param options 
      * @returns 
      */
-    static withOptions(options: ProtocolServerOpts): ModuleWithProviders<TransportModule> {
-        const providers: ProviderType[] = [{ provide: ProtocolServerOpts, useValue: options }];
+    static withOptions(options: TransportServerOpts): ModuleWithProviders<TransportModule> {
+        const providers: ProviderType[] = [{ provide: TransportServerOpts, useValue: options }];
         return {
             module: TransportModule,
             providers

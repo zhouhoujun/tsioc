@@ -1,5 +1,5 @@
 import { Injector, InvokeArguments, isFunction, TypeOf } from '@tsdi/ioc';
-import { TransportClient } from './client';
+import { Client } from './client';
 import { RequestContext } from './context';
 import { Protocol } from './protocol';
 
@@ -21,12 +21,12 @@ export class ClientContext extends RequestContext {
     /**
      * instance of TransportClient.
      */
-    readonly target: TransportClient;
+    readonly target: Client;
     readonly protocol: Protocol;
     readonly observe: 'body' | 'events' | 'response';
     responseType: 'arraybuffer' | 'blob' | 'json' | 'text';
 
-    constructor(injector: Injector, target: TransportClient, options?: ClientInvocationOptions) {
+    constructor(injector: Injector, target: Client, options?: ClientInvocationOptions) {
         super(injector, options);
         this.target = target;
         this.observe = options?.observe ?? 'body';

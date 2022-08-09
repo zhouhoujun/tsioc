@@ -1,12 +1,12 @@
 import { Abstract, Injectable, tokenId } from '@tsdi/ioc';
 import { ExecptionFilter, Interceptor } from '@tsdi/core';
 import { IClientOptions } from 'mqtt';
-import { LogInterceptor, ProtocolClient, ProtocolClientOpts, TransportEvent, TransportRequest } from '@tsdi/transport';
+import { LogInterceptor, TransportClient, TransportClientOpts, TransportEvent, TransportRequest } from '@tsdi/transport';
 
 
 
 @Abstract()
-export abstract class MqttClientOptions extends ProtocolClientOpts {
+export abstract class MqttClientOptions extends TransportClientOpts {
     abstract url?: string;
     abstract options?: IClientOptions
 }
@@ -32,7 +32,7 @@ const defaults = {
 } as MqttClientOptions;
 
 @Injectable()
-export class MqttClient extends ProtocolClient {
+export class MqttClient extends TransportClient {
 
     constructor(options: MqttClientOptions) {
         super(options)

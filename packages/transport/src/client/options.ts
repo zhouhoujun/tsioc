@@ -15,10 +15,10 @@ export interface SessionRequestOpts extends Record<string, any> {
 }
 
 /**
- * client options.
+ * Transport client options.
  */
 @Abstract()
-export abstract class ProtocolClientOpts extends ClientOpts<TransportRequest, TransportEvent> {
+export abstract class TransportClientOpts extends ClientOpts<TransportRequest, TransportEvent> {
     /**
      * packet size limit.
      */

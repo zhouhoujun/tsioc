@@ -9,17 +9,17 @@ import { ctype, ev, hdr } from '../consts';
 import { MimeAdapter, MimeTypes } from '../mime';
 import { createFormData, isBuffer, isFormDataLike, toBuffer } from '../utils';
 import { ClientSession } from './stream';
-import { ProtocolClientOpts } from './options';
+import { TransportClientOpts } from './options';
 import { TransportRequest } from './request';
 import { ErrorResponse, TransportResponse, TransportEvent, TransportHeaderResponse } from './response';
 
 
 const pmPipeline = promisify(pipeline);
 /**
- * transport protocol backend.
+ * transport backend.
  */
 @Injectable()
-export class ProtocolBackend implements EndpointBackend<TransportRequest, TransportEvent> {
+export class TransportBackend implements EndpointBackend<TransportRequest, TransportEvent> {
 
 
     handle(req: TransportRequest, ctx: RequestContext): Observable<TransportEvent> {
@@ -40,7 +40,7 @@ export class ProtocolBackend implements EndpointBackend<TransportRequest, Transp
             !req.headers.has(hdr.CONTENT_TYPE) && req.headers.set(hdr.CONTENT_TYPE, req.detectContentTypeHeader()!)
             !req.headers.has(hdr.ACCEPT) && req.headers.set(hdr.ACCEPT, ctype.REQUEST_ACCEPT);
 
-            const opts = ctx.target.getOptions() as ProtocolClientOpts;
+            const opts = ctx.target.getOptions() as TransportClientOpts;
             const ac = this.getAbortSignal(ctx);
             const request = session.request(req.headers.headers, { ...opts.requestOpts, signal: ac.signal });
 

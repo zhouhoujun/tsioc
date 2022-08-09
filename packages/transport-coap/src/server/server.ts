@@ -3,7 +3,7 @@ import { ExecptionFilter, Interceptor } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
 import { ServerOpts as TcpSocketOptions } from 'net';
 import { SocketOptions } from 'dgram';
-import { CatchInterceptor, LogInterceptor, RespondInterceptor, ProtocolServer, ProtocolServerOpts, ServerRequest, ServerResponse, ListenOpts } from '@tsdi/transport';
+import { CatchInterceptor, LogInterceptor, RespondInterceptor, TransportServer, TransportServerOpts, ServerRequest, ServerResponse, ListenOpts } from '@tsdi/transport';
 
 
 
@@ -12,7 +12,7 @@ import { CatchInterceptor, LogInterceptor, RespondInterceptor, ProtocolServer, P
  * Coap server options.
  */
 @Abstract()
-export abstract class CoapServerOpts extends ProtocolServerOpts {
+export abstract class CoapServerOpts extends TransportServerOpts {
     /**
      * is json or not.
      */
@@ -55,7 +55,7 @@ const defOpts = {
  * Coap server.
  */
 @Injectable()
-export class CoapServer extends ProtocolServer {
+export class CoapServer extends TransportServer {
 
 
     constructor(@Nullable() options: CoapServerOpts) {

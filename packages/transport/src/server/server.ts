@@ -1,4 +1,4 @@
-import { Router, TransportServer } from '@tsdi/core';
+import { Router, Server } from '@tsdi/core';
 import { Injectable, isBoolean, Nullable } from '@tsdi/ioc';
 import { LISTEN_OPTS } from '@tsdi/platform-server';
 import { CatchInterceptor, LogInterceptor, RespondInterceptor } from '../interceptors';
@@ -7,7 +7,7 @@ import { BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMidd
 import { MimeDb } from '../mime';
 import { db } from '../impl/mimedb';
 import { ProtocolExecptionFilter, ProtocolFinalizeFilter } from './finalize-filter';
-import { ProtocolServerOpts, PROTOTCOL_SERV_INTERCEPTORS } from './options';
+import { TransportServerOpts, PROTOTCOL_SERV_INTERCEPTORS } from './options';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';
 import { PROTOCOL_SERVR_PROVIDERS } from './providers';
@@ -43,17 +43,17 @@ const defOpts = {
     ],
     listenOpts: {
     }
-} as ProtocolServerOpts;
+} as TransportServerOpts;
 
 
 /**
- * Transport Protocol Server
+ * Transport Server
  */
 @Injectable()
-export class ProtocolServer extends TransportServer<ServerRequest, ServerResponse, PrototcolContext, ProtocolServerOpts> {
+export class TransportServer extends Server<ServerRequest, ServerResponse, PrototcolContext, TransportServerOpts> {
 
     private _session?: ServerSession | null;
-    constructor(@Nullable() options: ProtocolServerOpts) {
+    constructor(@Nullable() options: TransportServerOpts) {
         super(options)
     }
 
@@ -82,7 +82,7 @@ export class ProtocolServer extends TransportServer<ServerRequest, ServerRespons
         return defOpts;
     }
 
-    protected override initOption(options: ProtocolServerOpts): ProtocolServerOpts {
+    protected override initOption(options: TransportServerOpts): TransportServerOpts {
         const defOpts = this.getDefaultOptions();
         const listenOpts = { ...defOpts.listenOpts, ...options?.listenOpts };
         const providers = options && options.providers ? [...PROTOCOL_SERVR_PROVIDERS, ...options.providers] : PROTOCOL_SERVR_PROVIDERS;
@@ -97,8 +97,8 @@ export class ProtocolServer extends TransportServer<ServerRequest, ServerRespons
         return opts;
     }
 
-    protected override initContext(options: ProtocolServerOpts<any>): void {
-        this.context.setValue(ProtocolServerOpts, options);
+    protected override initContext(options: TransportServerOpts<any>): void {
+        this.context.setValue(TransportServerOpts, options);
         this.context.setValue(LISTEN_OPTS, options.listenOpts);
 
         if (options.content && !isBoolean(options.content)) {

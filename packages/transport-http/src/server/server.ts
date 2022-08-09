@@ -1,5 +1,5 @@
 import { Inject, Injectable, isBoolean, isFunction, lang, EMPTY_OBJ } from '@tsdi/ioc';
-import { TransportServer, RunnableFactoryResolver, ModuleRef, Router } from '@tsdi/core';
+import { Server, RunnableFactoryResolver, ModuleRef, Router } from '@tsdi/core';
 import { LISTEN_OPTS } from '@tsdi/platform-server';
 import { ListenOptions } from 'net';
 import * as http from 'http';
@@ -62,7 +62,7 @@ const httpOpts = {
  * http server.
  */
 @Injectable()
-export class HttpServer extends TransportServer<HttpServRequest, HttpServResponse, HttpContext, HttpServerOpts>  {
+export class HttpServer extends Server<HttpServRequest, HttpServResponse, HttpContext, HttpServerOpts>  {
 
     private _server?: http2.Http2Server | http.Server | https.Server;
 
@@ -191,7 +191,7 @@ export class HttpServer extends TransportServer<HttpServRequest, HttpServRespons
      * @param response 
      */
     protected onRequestHandler(request: HttpServRequest, response: HttpServResponse) {
-        const ctx = new HttpContext(this.context.injector, request, response, this as TransportServer);
+        const ctx = new HttpContext(this.context.injector, request, response, this as Server);
         this.context.injector.get(HttpHandlerBinding).binding(ctx, this.endpoint());
     }
 

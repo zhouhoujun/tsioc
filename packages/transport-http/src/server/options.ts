@@ -1,4 +1,4 @@
-import { ExecptionFilter, Interceptor, ServerOpts, TransportServer } from '@tsdi/core';
+import { ExecptionFilter, Interceptor, ServerOpts, Server } from '@tsdi/core';
 import { tokenId, Type } from '@tsdi/ioc';
 import * as http from 'http';
 import * as https from 'https';
@@ -34,7 +34,7 @@ import { HttpServRequest, HttpServResponse } from './context';
      * share with thie http server.
      * eg. ws, socket.io server.
      */
-    sharing?: Type<TransportServer<any, any>>[];
+    sharing?: Type<Server<any, any>>[];
 }
 
 export interface Http1ServerOpts extends HttpOpts {

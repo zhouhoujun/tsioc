@@ -17,10 +17,10 @@ export abstract class ClientOpts<TRequest, TResponse> extends TransportOpts<TReq
 
 
 /**
- * abstract transport client.
+ * abstract client.
  */
 @Abstract()
-export abstract class TransportClient<TRequest = any, TResponse = any, Opts extends ClientOpts<TRequest, TResponse> = any, TOption extends RequstOption = RequstOption> extends TransportEndpoint<TRequest, TResponse, Opts> {
+export abstract class Client<TRequest = any, TResponse = any, Opts extends ClientOpts<TRequest, TResponse> = any, TOption extends RequstOption = RequstOption> extends TransportEndpoint<TRequest, TResponse, Opts> {
 
     /**
      * initialize interceptors with options.

@@ -1,4 +1,4 @@
-import { BadRequestError, BytesPipe, EADDRINUSE, ECONNREFUSED, HandlerBinding, Protocol, Router, TransportServer, TransportStatus } from '@tsdi/core';
+import { BadRequestError, BytesPipe, EADDRINUSE, ECONNREFUSED, HandlerBinding, Protocol, Router, Server, TransportStatus } from '@tsdi/core';
 import { Injectable, isBoolean, lang, Nullable, ProviderType } from '@tsdi/ioc';
 import { LISTEN_OPTS } from '@tsdi/platform-server';
 import { Server } from 'net';
@@ -60,7 +60,7 @@ export const TCP_SERV_PROVIDERS: ProviderType[] = [
  * TCP server. server of `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, TcpContext, TcpServerOpts> {
+export class TcpServer extends Server<TcpServRequest, TcpServResponse, TcpContext, TcpServerOpts> {
 
     get proxy(): boolean {
         return this.getOptions().proxy === true;
@@ -173,7 +173,7 @@ export class TcpServer extends TransportServer<TcpServRequest, TcpServResponse, 
      * @param response 
      */
      protected onRequestHandler(request: TcpServRequest, response: TcpServResponse) {
-        const ctx = new TcpContext(this.context.injector, request, response, this as TransportServer, { parent: this.context });
+        const ctx = new TcpContext(this.context.injector, request, response, this as Server, { parent: this.context });
         this.context.injector.get(TcpHandlerBinding).binding(ctx, this.endpoint());
     }
 
