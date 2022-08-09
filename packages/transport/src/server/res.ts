@@ -109,7 +109,7 @@ export class ServerResponse extends Writable implements OutgoingPacket {
     }
 
     override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
-
+        this.stream._write(chunk, encoding, callback);
     }
 
 

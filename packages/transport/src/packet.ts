@@ -1,10 +1,10 @@
 import { Abstract } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { Readable, Duplex } from 'stream';
+import { Readable, Writable, Transform, Duplex } from 'stream';
 
 @Abstract()
 export abstract class ProtocolPacket<T = any> {
-    abstract parse(buffer: Buffer, opts?: any): Observable<T>;
-    abstract generate(packet: T): Observable<Buffer>;
+    abstract parse(opts?: any): Transform;
+    abstract generate(stream: Readable, opts?: any): Writable;
     abstract write(writable: Duplex, packet: T, encoding?: BufferEncoding): Promise<void>;
 }

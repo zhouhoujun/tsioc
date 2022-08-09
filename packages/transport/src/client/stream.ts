@@ -2,7 +2,8 @@ import { Abstract } from '@tsdi/ioc';
 import { IncomingHeaders, IncomingStatusHeaders, OutgoingHeaders } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { Readable } from 'stream';
-import { TransportSession, TransportStream } from '../stream';
+import { TransportStream } from '../stream';
+import { Connection } from '../connection';
 
 
 
@@ -183,7 +184,7 @@ export interface ClientRequsetOpts {
 
 
 @Abstract()
-export abstract class ClientSession extends TransportSession {
+export abstract class ClientSession extends Connection {
     abstract get authority(): string;
     abstract get clientId(): string;
     abstract request(headers: OutgoingHeaders, options?: ClientRequsetOpts): ClientStream;

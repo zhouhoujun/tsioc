@@ -2,6 +2,8 @@ export * from './consts';
 export * from './content';
 export * from './mime';
 export * from './negotiator';
+export * from './stream';
+export * from './connection';
 
 export * from './stringify';
 export * from './utils';

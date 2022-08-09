@@ -1,8 +1,9 @@
 import { Endpoint, OutgoingHeaders } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
 import { Writable, Transform, Duplex, DuplexOptions } from 'stream';
+import { Connection } from '../connection';
 import { ProtocolPacket } from '../packet';
-import { TransportSession, TransportStream } from '../stream';
+import { TransportStream } from '../stream';
 import { TransportServerOpts } from './options';
 
 
@@ -89,7 +90,7 @@ export abstract class ServerStream extends TransportStream {
 }
 
 @Abstract()
-export abstract class ServerSession extends TransportSession {
+export abstract class ServerSession extends Connection {
     /**
      * bind request handle with endpoint.
      * @param endpoint 
