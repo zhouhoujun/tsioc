@@ -1,5 +1,7 @@
 import { Endpoint, OutgoingHeaders } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
+import { Writable, Transform, Duplex, DuplexOptions } from 'stream';
+import { ProtocolPacket } from '../packet';
 import { TransportSession, TransportStream } from '../stream';
 import { TransportServerOpts } from './options';
 
@@ -9,6 +11,13 @@ import { TransportServerOpts } from './options';
 @Abstract()
 export abstract class ServerStream extends TransportStream {
 
+
+    constructor(private duplex: Duplex, private packet: ProtocolPacket, opts?: DuplexOptions) {
+        super(opts)
+        
+        // this._generator = packet.write(duplex, opts);
+        // this._parser = packet.
+    }
     /**
      * Initiates a push stream. The callback is invoked with the new `TransportStream`instance created for the push stream passed as the second argument, or an`Error` passed as the first argument.
      *

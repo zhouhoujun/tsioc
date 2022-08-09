@@ -3,7 +3,8 @@ import { Observable } from 'rxjs';
 import { Readable, Duplex } from 'stream';
 
 @Abstract()
-export abstract class PacketTransform<T = any> {
-    abstract read(readable: Readable): Observable<T>;
+export abstract class ProtocolPacket<T = any> {
+    abstract parse(buffer: Buffer, opts?: any): Observable<T>;
+    abstract generate(packet: T): Observable<Buffer>;
     abstract write(writable: Duplex, packet: T, encoding?: BufferEncoding): Promise<void>;
 }
