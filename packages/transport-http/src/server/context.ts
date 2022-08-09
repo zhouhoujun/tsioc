@@ -230,16 +230,6 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
         return socket.writable
     }
 
-    // write(chunk: string | Uint8Array, cb?: (err?: Error | null) => void): boolean;
-    // write(chunk: string | Uint8Array, encoding: BufferEncoding, cb?: (err?: Error | null) => void): boolean;
-    // write(chunk: string | Uint8Array, encoding?: BufferEncoding | ((err?: Error | null) => void), cb?: (err?: Error | null) => void): boolean {
-    //     if (this.sent) return false;
-    //     if (this.response instanceof http.ServerResponse) {
-    //         return isString(encoding) ? this.response.write(chunk, encoding, cb) : this.response.write(chunk, encoding)
-    //     } else {
-    //         return isString(encoding) ? this.response.write(chunk, encoding, cb) : this.response.write(chunk, encoding)
-    //     }
-    // }
 
     flushHeaders() {
         if (this.response instanceof http.ServerResponse) {
@@ -265,9 +255,6 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
 
 }
 
-
-// const httptl = /^https?:\/\//i;
-// const urlsplit = /\s*,\s*/;
 const no_cache = /(?:^|,)\s*?no-cache\s*?(?:,|$)/;
 const methods = [mths.GET, mths.HEAD, mths.PUT, mths.DELETE, mths.OPTIONS, mths.TRACE];
 

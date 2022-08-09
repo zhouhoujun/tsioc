@@ -479,11 +479,10 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
      * @param {String|Buffer|Object|Stream} val
      * @api public
      */
-
     set body(val) {
         const original = this._body;
         this._body = val;
-        if (original != val) {
+        if (original !== val) {
             this.onBodyChanged(val, original);
         }
 
@@ -539,6 +538,7 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
      * @param oldVal 
      */
     protected onBodyChanged(newVal: any, oldVal: any) { }
+
     /**
      * on body set null.
      */
@@ -566,7 +566,6 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
      * @return {Number}
      * @api public
      */
-
     get length(): number | undefined {
         if (this.hasHeader(hdr.CONTENT_LENGTH)) {
             return this.getRespHeader(hdr.CONTENT_LENGTH) as number || 0
@@ -580,12 +579,12 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
     }
 
     /**
-    * Set Content-Disposition header to "attachment" with optional `filename`.
-    *
-    * @param filname file name for download.
-    * @param options content disposition.
-    * @api public
-    */
+     * Set Content-Disposition header to "attachment" with optional `filename`.
+     *
+     * @param filname file name for download.
+     * @param options content disposition.
+     * @api public
+     */
     attachment(filename: string, options?: {
         contentType?: string;
         /**
@@ -622,7 +621,6 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
      * @param {String|Date} type
      * @api public
      */
-
     set lastModified(val: Date | null) {
         if (!val) {
             this.removeHeader(hdr.LAST_MODIFIED);
@@ -637,7 +635,6 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
      * @return {Date}
      * @api public
      */
-
     get lastModified(): Date | null {
         const date = this.response.getHeader(hdr.LAST_MODIFIED) as string;
         return date ? new Date(date) : null
@@ -654,7 +651,6 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
      * @param {String} etag
      * @api public
      */
-
     set etag(val: string) {
         if (!/^(W\/)?"/.test(val)) val = `"${val}"`;
         this.setHeader(hdr.ETAG, val)

@@ -2,6 +2,9 @@ import { AssetContext } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
 
 
+/**
+ * negotiator.
+ */
 @Abstract()
 export abstract class Negotiator {
 

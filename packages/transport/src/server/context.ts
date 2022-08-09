@@ -1,7 +1,6 @@
 import { ExecptionFilter, MiddlewareLike, HeadersContext, AssetContext, ConnectionContext } from '@tsdi/core';
 import { Token, tokenId } from '@tsdi/ioc';
 import { AssetServerContext } from '../asset.ctx';
-import { hdr } from '../consts';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';
 
@@ -43,18 +42,9 @@ export class TransportContext extends AssetServerContext<ServerRequest, ServerRe
         return this.response.writable;
     }
 
-    isUpdate(): boolean {
-        return this.request.method === 'PUT' || this.getHeader(hdr.OPERATION) === 'update';
-    }
-
     protected isSelf(token: Token) {
         return token === TransportContext || token === AssetServerContext || token === ConnectionContext;
     }
-
-    protected override onBodyChanged(newVal: any, oldVal: any): void {
-        // this.response.body = newVal;
-    }
-
 
 }
 

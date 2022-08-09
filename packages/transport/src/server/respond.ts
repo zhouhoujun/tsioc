@@ -13,7 +13,6 @@ export class TransportRespondAdapter extends RespondAdapter {
 
     async respond(res: ServerResponse, ctx: TransportContext): Promise<any> {
 
-
         if (!ctx.writable) return;
 
         let body = ctx.body;
@@ -79,7 +78,6 @@ export class TransportRespondAdapter extends RespondAdapter {
         }
         res.end(body);
         return res
-
     }
 
 }

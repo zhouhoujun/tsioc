@@ -1,8 +1,8 @@
 import { Injectable, Injector, lang } from '@tsdi/ioc';
-import { ClientRequsetOpts, ClientSession, ClientSessionBuilder, ClientStream, ev, hdr } from '@tsdi/transport';
+import { ClientRequsetOpts, ClientSession, ClientSessionBuilder, ClientStream, ev } from '@tsdi/transport';
 import { Observable, Observer } from 'rxjs';
 import { Socket, createSocket, SocketOptions } from 'dgram';
-import { OutgoingHeaders, PacketIdGenerator, UuidGenerator } from '@tsdi/core';
+import { OutgoingHeaders, PacketIdGenerator } from '@tsdi/core';
 
 
 @Injectable()
