@@ -4,7 +4,7 @@ import { Readable } from 'stream';
 import { hdr, ev, isBuffer, isStream, RespondAdapter } from '@tsdi/transport';
 import { HttpContext, HttpServResponse } from './context';
 
-@Injectable()
+@Injectable({ static: true })
 export class HttpRespondAdapter implements RespondAdapter {
 
     async respond(res: HttpServResponse, ctx: HttpContext): Promise<any> {

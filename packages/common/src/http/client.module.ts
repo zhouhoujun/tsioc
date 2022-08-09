@@ -1,10 +1,10 @@
 import { ModuleWithProviders, type_obj } from '@tsdi/ioc';
 import { Module } from '@tsdi/core';
 import { HttpBackend, HttpHandler } from './handler';
-import { HttpInterceptingHandler, HTTP_CLIENT_INTERCEPTORS, NoopInterceptor } from './interceptor';
 import { HttpClient } from './client';
-import { JsonpCallbackContext, JsonpClientBackend, JsonpInterceptor } from './jsonp';
 import { HttpXhrBackend } from './xhr';
+import { HttpInterceptingHandler, HTTP_CLIENT_INTERCEPTORS, NoopInterceptor } from './interceptor';
+import { JsonpCallbackContext, JsonpClientBackend, JsonpInterceptor } from './jsonp';
 import { HttpXsrfCookieExtractor, HttpXsrfInterceptor, HttpXsrfTokenExtractor, XSRF_COOKIE_NAME, XSRF_HEADER_NAME } from './xsrf';
 
 

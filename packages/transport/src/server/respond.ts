@@ -8,7 +8,7 @@ import { ev, hdr } from '../consts';
 import { isBuffer, isStream } from '../utils';
 
 
-@Injectable()
+@Injectable({ static: true })
 export class TransportRespondAdapter extends RespondAdapter {
 
     async respond(res: ServerResponse, ctx: TransportContext): Promise<any> {
