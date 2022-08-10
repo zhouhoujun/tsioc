@@ -6,7 +6,7 @@ import { ContentOptions, SessionOptions } from '../middlewares';
 import { MimeSource } from '../mime';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';
-import { ServerSessionBuilder } from './stream';
+import { ServerBuilder } from './stream';
 
 /**
  * Listen options.
@@ -63,7 +63,7 @@ export abstract class TransportServerOpts<T = any> extends ServerOpts<ServerRequ
     abstract serverOpts?: Record<string, any>;
     abstract listenOpts: ListenOpts;
 
-    abstract builder?: ClassType<ServerSessionBuilder>;
+    abstract builder?: ClassType<ServerBuilder>;
 
     /**
      * encoder input.

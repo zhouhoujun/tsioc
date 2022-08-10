@@ -1,10 +1,11 @@
-import { Endpoint, OutgoingHeaders } from '@tsdi/core';
+import { Endpoint, IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
-import { Writable, Transform, Duplex, DuplexOptions } from 'stream';
+import { Observable } from 'rxjs';
+import { Duplex, DuplexOptions } from 'stream';
 import { Connection } from '../connection';
-import { ProtocolPacket } from '../packet';
 import { TransportStream } from '../stream';
-import { TransportServerOpts } from './options';
+import { TransportContext } from './context';
+import { ListenOpts, TransportServerOpts } from './options';
 
 
 
@@ -12,13 +13,6 @@ import { TransportServerOpts } from './options';
 @Abstract()
 export abstract class ServerStream extends TransportStream {
 
-
-    constructor(private duplex: Duplex, private packet: ProtocolPacket, opts?: DuplexOptions) {
-        super(opts)
-        
-        // this._generator = packet.write(duplex, opts);
-        // this._parser = packet.
-    }
     /**
      * Initiates a push stream. The callback is invoked with the new `TransportStream`instance created for the push stream passed as the second argument, or an`Error` passed as the first argument.
      *
@@ -91,100 +85,78 @@ export abstract class ServerStream extends TransportStream {
 
 @Abstract()
 export abstract class ServerSession extends Connection {
-    /**
-     * bind request handle with endpoint.
-     * @param endpoint 
-     */
-    abstract bind(endpoint: Endpoint): Promise<void>;
+    readonly server: any;
 
-    // addListener(event: 'close', listener: () => void): this;
-    // addListener(event: 'error', listener: (err: Error) => void): this;
-    // addListener(event: 'frameError', listener: (frameType: number, errorCode: number, streamID: number) => void): this;
-    // addListener(event: 'goaway', listener: (errorCode: number, lastStreamID: number, opaqueData: Buffer) => void): this;
-    // addListener(event: 'localSettings', listener: (settings: SessionSettings) => void): this;
-    // addListener(event: 'ping', listener: () => void): this;
-    // addListener(event: 'remoteSettings', listener: (settings: SessionSettings) => void): this;
-    // addListener(event: 'timeout', listener: () => void): this;
-    // addListener(event: 'connect', listener: (session: ServerSession, socket: Socket) => void): this;
-    // addListener(event: 'stream', listener: (stream: ServerStream, headers: IncomingHeaders, flags: number) => void): this;
-    // addListener(event: string | symbol, listener: (...args: any[]) => void): this {
-    //     return this._addListener(event, listener);
-    // }
+    addListener(event: 'connect', listener: (session: ServerSession, socket: Duplex) => void): this;
+    addListener(event: 'stream', listener: (stream: ServerSession, headers: IncomingHeaders, flags: number) => void): this;
+    addListener(event: string | symbol, listener: (...args: any[]) => void): this;
+    addListener(event: string | symbol, listener: (...args: any[]) => void): this {
+        return this._addListener(event, listener);
+    }
 
-    // emit(event: 'close'): boolean;
-    // emit(event: 'error', err: Error): boolean;
-    // emit(event: 'frameError', frameType: number, errorCode: number, streamID: number): boolean;
-    // emit(event: 'goaway', errorCode: number, lastStreamID: number, opaqueData: Buffer): boolean;
-    // emit(event: 'localSettings', settings: SessionSettings): boolean;
-    // emit(event: 'ping'): boolean;
-    // emit(event: 'remoteSettings', settings: SessionSettings): boolean;
-    // emit(event: 'timeout'): boolean;
-    // emit(event: 'connect', session: ServerSession, socket: Socket): boolean;
-    // emit(event: 'stream', stream: ServerStream, headers: IncomingHeaders, flags: number): boolean;
-    // emit(event: string | symbol, ...args: any[]): boolean {
-    //     return this._emit(event, ...args);
-    // }
+    emit(event: 'connect', session: ServerSession, socket: Duplex): boolean;
+    emit(event: 'stream', stream: ServerSession, headers: IncomingHeaders, flags: number): boolean;
+    emit(event: string | symbol, ...args: any[]): boolean;
+    emit(event: string | symbol, ...args: any[]): boolean {
+        return this._emit(event, ...args);
+    }
 
-    // on(event: 'close', listener: () => void): this;
-    // on(event: 'error', listener: (err: Error) => void): this;
-    // on(event: 'frameError', listener: (frameType: number, errorCode: number, streamID: number) => void): this;
-    // on(event: 'goaway', listener: (errorCode: number, lastStreamID: number, opaqueData: Buffer) => void): this;
-    // on(event: 'localSettings', listener: (settings: SessionSettings) => void): this;
-    // on(event: 'ping', listener: () => void): this;
-    // on(event: 'remoteSettings', listener: (settings: SessionSettings) => void): this;
-    // on(event: 'timeout', listener: () => void): this;
-    // on(event: 'connect', listener: (session: ServerSession, socket: Socket) => void): this;
-    // on(event: 'stream', listener: (stream: ServerStream, headers: IncomingHeaders, flags: number) => void): this;
-    // on(event: string | symbol, listener: (...args: any[]) => void): this {
-    //     return this._on(event, listener);
-    // }
+    on(event: 'connect', listener: (session: ServerSession, socket: Duplex) => void): this;
+    on(event: 'stream', listener: (stream: ServerStream, headers: IncomingHeaders, flags: number) => void): this;
+    on(event: string | symbol, listener: (...args: any[]) => void): this;
+    on(event: string | symbol, listener: (...args: any[]) => void): this {
+        return this._on(event, listener);
+    }
 
-    // once(event: 'close', listener: () => void): this;
-    // once(event: 'error', listener: (err: Error) => void): this;
-    // once(event: 'frameError', listener: (frameType: number, errorCode: number, streamID: number) => void): this;
-    // once(event: 'goaway', listener: (errorCode: number, lastStreamID: number, opaqueData: Buffer) => void): this;
-    // once(event: 'localSettings', listener: (settings: SessionSettings) => void): this;
-    // once(event: 'ping', listener: () => void): this;
-    // once(event: 'remoteSettings', listener: (settings: SessionSettings) => void): this;
-    // once(event: 'timeout', listener: () => void): this;
-    // once(event: 'connect', listener: (session: ServerSession, socket: Socket) => void): this;
-    // once(event: 'stream', listener: (stream: ServerStream, headers: IncomingHeaders, flags: number) => void): this;
-    // once(event: string | symbol, listener: (...args: any[]) => void): this {
-    //     return this._once(event, listener);
-    // }
+    once(event: 'connect', listener: (session: ServerSession, socket: Duplex) => void): this;
+    once(event: 'stream', listener: (stream: ServerStream, headers: IncomingHeaders, flags: number) => void): this;
+    once(event: string | symbol, listener: (...args: any[]) => void): this;
+    once(event: string | symbol, listener: (...args: any[]) => void): this {
+        return this._once(event, listener);
+    }
 
-    // prependListener(event: 'close', listener: () => void): this;
-    // prependListener(event: 'error', listener: (err: Error) => void): this;
-    // prependListener(event: 'frameError', listener: (frameType: number, errorCode: number, streamID: number) => void): this;
-    // prependListener(event: 'goaway', listener: (errorCode: number, lastStreamID: number, opaqueData: Buffer) => void): this;
-    // prependListener(event: 'localSettings', listener: (settings: SessionSettings) => void): this;
-    // prependListener(event: 'ping', listener: () => void): this;
-    // prependListener(event: 'remoteSettings', listener: (settings: SessionSettings) => void): this;
-    // prependListener(event: 'timeout', listener: () => void): this;
-    // prependListener(event: 'connect', listener: (session: ServerSession, socket: Socket) => void): this;
-    // prependListener(event: 'stream', listener: (stream: ServerStream, headers: IncomingHeaders, flags: number) => void): this;
-    // prependListener(event: string | symbol, listener: (...args: any[]) => void): this {
-    //     return this._prependListener(event, listener);
-    // }
+    prependListener(event: 'connect', listener: (session: ServerSession, socket: Duplex) => void): this;
+    prependListener(event: 'stream', listener: (stream: ServerStream, headers: IncomingHeaders, flags: number) => void): this;
+    prependListener(event: string | symbol, listener: (...args: any[]) => void): this;
+    prependListener(event: string | symbol, listener: (...args: any[]) => void): this {
+        return this._prependListener(event, listener);
+    }
 
-    // prependOnceListener(event: 'close', listener: () => void): this;
-    // prependOnceListener(event: 'error', listener: (err: Error) => void): this;
-    // prependOnceListener(event: 'frameError', listener: (frameType: number, errorCode: number, streamID: number) => void): this;
-    // prependOnceListener(event: 'goaway', listener: (errorCode: number, lastStreamID: number, opaqueData: Buffer) => void): this;
-    // prependOnceListener(event: 'localSettings', listener: (settings: SessionSettings) => void): this;
-    // prependOnceListener(event: 'ping', listener: () => void): this;
-    // prependOnceListener(event: 'remoteSettings', listener: (settings: SessionSettings) => void): this;
-    // prependOnceListener(event: 'timeout', listener: () => void): this;
-    // prependOnceListener(event: 'connect', listener: (session: ServerSession, socket: Socket) => void): this;
-    // prependOnceListener(event: 'stream', listener: (stream: ServerStream, headers: IncomingHeaders, flags: number) => void): this;
-    // prependOnceListener(event: string | symbol, listener: (...args: any[]) => void): this {
-    //     return this._prependOnceListener(event, listener);
-    // }
+    prependOnceListener(event: 'connect', listener: (session: ServerSession, socket: Duplex) => void): this;
+    prependOnceListener(event: 'stream', listener: (stream: ServerStream, headers: IncomingHeaders, flags: number) => void): this;
+    prependOnceListener(event: string | symbol, listener: (...args: any[]) => void): this;
+    prependOnceListener(event: string | symbol, listener: (...args: any[]) => void): this {
+        return this._prependOnceListener(event, listener);
+    }
+    
 }
 
-
+export interface Closeable {
+    /**
+     * Stops the server from accepting new connections and keeps existing
+     * connections. This function is asynchronous, the server is finally closed
+     * when all connections are ended and the server emits a `'close'` event.
+     * The optional `callback` will be called once the `'close'` event occurs. Unlike
+     * that event, it will be called with an `Error` as its only argument if the server
+     * was not open when it was closed.
+     * @since v0.1.90
+     * @param callback Called when the server is closed.
+     */
+    close(callback?: (err?: Error) => void): this;
+}
 @Abstract()
-export abstract class ServerSessionBuilder {
-    abstract build(listenOpts: TransportServerOpts): Promise<ServerSession>;
+export abstract class ServerBuilder<T extends Closeable = Closeable> {
+
+    abstract buildServer(opts: TransportServerOpts): Promise<T>;
+
+    abstract connect(server: T): Observable<ServerSession>;
+
+    abstract listen(server: T, opts: ListenOpts): Promise<void>;
+
+    abstract buildContext(stream: ServerStream, headers: IncomingHeaders): TransportContext;
+
+    abstract bind(context: TransportContext, endpoint: Endpoint): void;
+
+
 }
 

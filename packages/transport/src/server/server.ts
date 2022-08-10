@@ -1,5 +1,5 @@
-import { Router, Server } from '@tsdi/core';
-import { Injectable, isBoolean, Nullable } from '@tsdi/ioc';
+import { IncomingHeaders, Router, Server } from '@tsdi/core';
+import { Injectable, isBoolean, isFunction, lang, Nullable } from '@tsdi/ioc';
 import { LISTEN_OPTS } from '@tsdi/platform-server';
 import { CatchInterceptor, LogInterceptor, RespondInterceptor } from '../interceptors';
 import { TransportContext, SERVER_EXECPTION_FILTERS, SERVER_MIDDLEWARES } from './context';
@@ -11,7 +11,8 @@ import { TransportServerOpts, SERVER_INTERCEPTORS } from './options';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';
 import { TRANSPORT_SERVR_PROVIDERS } from './providers';
-import { ServerSession, ServerSessionBuilder } from './stream';
+import { Closeable, ServerBuilder, ServerStream } from './stream';
+import { Subscription } from 'rxjs';
 
 
 const defOpts = {
@@ -52,7 +53,8 @@ const defOpts = {
 @Injectable()
 export class TransportServer extends Server<ServerRequest, ServerResponse, TransportContext, TransportServerOpts> {
 
-    private _session?: ServerSession | null;
+    private sub?: Subscription;
+    private _server: any;
     constructor(@Nullable() options: TransportServerOpts) {
         super(options)
     }
@@ -61,22 +63,53 @@ export class TransportServer extends Server<ServerRequest, ServerResponse, Trans
         return this.getOptions().proxy === true;
     }
 
-    get session(): ServerSession {
-        return this._session ?? null!;
+    get server(): any {
+        return this._server;
     }
 
     async start(): Promise<void> {
         try {
             const opts = this.getOptions();
-            this._session = await this.context.get(opts.builder ?? ServerSessionBuilder).build(opts);
-            await this.session.bind(this.endpoint());
+            const builder = this.context.get(opts.builder ?? ServerBuilder);
+            const server = this._server = await builder.buildServer(opts);
+            this.sub = builder.connect(server)
+                .subscribe({
+                    next: conn => {
+                        const onStream = (stream: ServerStream, headers: IncomingHeaders) => {
+                            const ctx = builder.buildContext(stream, headers);
+                            builder.bind(ctx, this.endpoint());
+                        }
+                        conn.on('stream', onStream);
+                    },
+                    error: (err) => {
+                        this.logger.error(err);
+                    },
+                    complete: () => {
+                        this.logger.error('server shutdown');
+                    }
+                });
+            await builder.listen(server, opts.listenOpts);
         } catch (err) {
             this.logger.error(err);
         }
     }
 
     async close(): Promise<void> {
-        await this.session.close();
+        this.sub?.unsubscribe();
+        if (isFunction((this.server as Closeable)?.close)) {
+            const defer = lang.defer();
+            (this.server as Closeable).close((err) => {
+                if (err) {
+                    this.logger.error(err);
+                    defer.reject(err)
+                } else {
+                    this.logger.info(lang.getClassName(this), this.getOptions().listenOpts, 'closed !');
+                    defer.resolve()
+                }
+            });
+            await defer.promise;
+            this._server = null;
+        }
     }
 
     protected getDefaultOptions() {

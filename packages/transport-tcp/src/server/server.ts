@@ -1,11 +1,11 @@
-import { BadRequestError, BytesPipe, EADDRINUSE, ECONNREFUSED, HandlerBinding, Protocol, Router, Server, TransportStatus } from '@tsdi/core';
+import { BadRequestError, BytesPipe, EADDRINUSE, ECONNREFUSED, HandlerBinding, Protocol, Router, TransportStatus } from '@tsdi/core';
 import { Injectable, isBoolean, lang, Nullable, ProviderType } from '@tsdi/ioc';
 import { LISTEN_OPTS } from '@tsdi/platform-server';
 import { Server } from 'net';
 import {
     ev, hdr, identity, MimeDb, TransportExecptionFilter,
     CatchInterceptor, LogInterceptor, RespondAdapter, RespondInterceptor,
-    BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMiddleware, SessionMiddleware
+    BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMiddleware, SessionMiddleware, TransportServer
 } from '@tsdi/transport';
 import { TcpContext, TCP_EXECPTION_FILTERS, TCP_MIDDLEWARES } from './context';
 import { TcpServRequest } from './request';
@@ -60,7 +60,7 @@ export const TCP_SERV_PROVIDERS: ProviderType[] = [
  * TCP server. server of `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpServer extends Server<TcpServRequest, TcpServResponse, TcpContext, TcpServerOpts> {
+export class TcpServer extends TransportServer {
 
     get proxy(): boolean {
         return this.getOptions().proxy === true;
@@ -107,6 +107,7 @@ export class TcpServer extends Server<TcpServRequest, TcpServResponse, TcpContex
     async start(): Promise<void> {
         const opts = this.getOptions();
         this.server = new Server(opts.serverOpts);
+        
         if (opts.maxConnections) {
             this.server.maxConnections = opts.maxConnections
         }

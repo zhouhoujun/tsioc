@@ -21,20 +21,6 @@ export abstract class ServerOpts<TRequest = any, TResponse = any> extends Transp
 }
 
 /**
- * binding request handler
- */
-@Abstract()
-export abstract class HandlerBinding<T extends ConnectionContext = ConnectionContext> {
-    /**
-     * binding handler for tansport context.
-     * @param ctx 
-     * @param endpoint 
-     */
-    abstract binding(ctx: T, handler: Endpoint): void;
-}
-
-
-/**
  * abstract server.
  */
 @Abstract()
