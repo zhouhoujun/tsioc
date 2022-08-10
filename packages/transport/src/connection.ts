@@ -35,10 +35,14 @@ export abstract class Connection extends Transform {
     }
 
     /**
-     * Gracefully closes the `TransportSession`, allowing any existing streams to
-     * complete on their own and preventing new `TransportSession` instances from being
-     * created. Once closed, `TransportSession.destroy()`_might_ be called if there
-     * are no open `TransportSession` instances.
+     * Will be `true` if this `Connection` instance has been closed, otherwise`false`.
+     */
+     abstract readonly closed: boolean;
+    /**
+     * Gracefully closes the `Connection`, allowing any existing streams to
+     * complete on their own and preventing new `Connection` instances from being
+     * created. Once closed, `Connection.destroy()`_might_ be called if there
+     * are no open `Connection` instances.
      *
      * If specified, the `callback` function is registered as a handler for the`'close'` event.
      */

@@ -25,18 +25,18 @@ const defaults = {
 @Injectable()
 export class TransportClient extends Client<TransportRequest, TransportEvent, TransportClientOpts> implements OnDispose {
 
-    private _stream?: ClientSession;
+    private _session?: ClientSession;
     constructor(@Nullable() options: TransportClientOpts) {
         super(options);
     }
 
 
-    get stream(): ClientSession {
-        return this._stream ?? null!;
+    get session(): ClientSession {
+        return this._session ?? null!;
     }
 
     async close(): Promise<void> {
-        await this._stream?.close();
+        await this._session?.close();
     }
 
     onDispose(): Promise<void> {
@@ -63,19 +63,19 @@ export class TransportClient extends Client<TransportRequest, TransportEvent, Tr
 
 
     protected buildRequest(context: RequestContext, url: string | TransportRequest<any>, options?: RequstOption | undefined): TransportRequest<any> {
-        context.setValue(ClientSession, this.stream);
+        context.setValue(ClientSession, this.session);
         return isString(url) ? new TransportRequest({ ...options, url }) : url
     }
 
     protected connect(): Observable<ClientSession> {
-        if (this._stream && !this._stream.destroyed && !this._stream.closed) {
-            return of(this._stream);
+        if (this._session && !this._session.destroyed && !this._session.closed) {
+            return of(this._session);
         }
         const opts = this.getOptions();
         return this.context.get(opts.builder ?? ClientSessionBuilder).build(opts.connectOpts)
             .pipe(
                 map(stream => {
-                    this._stream = stream;
+                    this._session = stream;
                     return stream;
                 })
             );
