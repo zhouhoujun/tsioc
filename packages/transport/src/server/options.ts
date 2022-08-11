@@ -2,6 +2,7 @@ import { Decoder, Encoder, Interceptor, Protocol, ServerOpts } from '@tsdi/core'
 import { Abstract, ClassType, tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { Stream } from 'stream';
+import { ConnectionOpts } from '../connection';
 import { ContentOptions, SessionOptions } from '../middlewares';
 import { MimeSource } from '../mime';
 import { ServerRequest } from './req';
@@ -62,6 +63,7 @@ export abstract class TransportServerOpts<T = any> extends ServerOpts<ServerRequ
     abstract session?: boolean | SessionOptions;
     abstract serverOpts?: Record<string, any>;
     abstract listenOpts: ListenOpts;
+    abstract connectionOpts?: ConnectionOpts;
 
     abstract builder?: ClassType<ServerBuilder>;
 

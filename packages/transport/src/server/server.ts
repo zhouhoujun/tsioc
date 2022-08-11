@@ -13,6 +13,7 @@ import { ServerResponse } from './res';
 import { TRANSPORT_SERVR_PROVIDERS } from './providers';
 import { Closeable, ServerBuilder, ServerStream } from './stream';
 import { Subscription } from 'rxjs';
+import { PacketParser } from '../packet';
 
 
 const defOpts = {
@@ -72,11 +73,12 @@ export class TransportServer extends Server<ServerRequest, ServerResponse, Trans
             const opts = this.getOptions();
             const builder = this.context.get(opts.builder ?? ServerBuilder);
             const server = this._server = await builder.buildServer(opts);
-            this.sub = builder.connect(server)
+            const parser = builder.getParser(this.context, opts);
+            this.sub = builder.connect(server, parser, opts.connectionOpts)
                 .subscribe({
                     next: (conn) => {
                         conn.on('stream', (stream: ServerStream, headers: IncomingHeaders) => {
-                            const ctx = builder.buildContext(stream, headers);
+                            const ctx = builder.buildContext(this, stream, headers);
                             builder.handle(ctx, this.endpoint());
                         });
                     },

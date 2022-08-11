@@ -1,8 +1,9 @@
-import { Endpoint, IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
-import { Abstract } from '@tsdi/ioc';
+import { Endpoint, IncomingHeaders, OutgoingHeaders, Server } from '@tsdi/core';
+import { Abstract, InvocationContext } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Duplex, DuplexOptions } from 'stream';
 import { Connection, ConnectionOpts } from '../connection';
+import { PacketParser } from '../packet';
 import { TransportStream } from '../stream';
 import { TransportContext } from './context';
 import { ListenOpts, TransportServerOpts } from './options';
@@ -83,13 +84,19 @@ export abstract class ServerStream extends TransportStream {
     }): void;
 }
 
-@Abstract()
-export abstract class ServerSession extends Connection {
-    readonly server: any;
 
+export class ServerSession extends Connection {
+
+
+    readonly server: any;
+    closed = false;
+
+    close(): Promise<void> {
+        throw new Error('Method not implemented.');
+    }
     protected override bindEvents(opts?: ConnectionOpts): void {
-        this._parser.on('data', (chunk)=> {
-            
+        this._parser.on('data', (chunk) => {
+
         })
     }
 
@@ -134,7 +141,7 @@ export abstract class ServerSession extends Connection {
     prependOnceListener(event: string | symbol, listener: (...args: any[]) => void): this {
         return this._prependOnceListener(event, listener);
     }
-    
+
 }
 
 export interface Closeable {
@@ -163,9 +170,11 @@ export abstract class ServerBuilder<T extends Closeable = Closeable> {
      */
     abstract listen(server: T, opts: ListenOpts): Promise<void>;
 
-    abstract buildContext(stream: ServerStream, headers: IncomingHeaders): TransportContext;
+    abstract getParser(context: InvocationContext, opts: TransportServerOpts): PacketParser;
 
-    abstract connect(server: T): Observable<ServerSession>;
+    abstract buildContext(server: Server, stream: ServerStream, headers: IncomingHeaders): TransportContext;
+
+    abstract connect(server: T, parser: PacketParser, opts?: any): Observable<ServerSession>;
     /**
      * handle request.
      * @param context 
