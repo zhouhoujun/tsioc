@@ -1,12 +1,36 @@
 import { Abstract } from '@tsdi/ioc';
 import { IncomingHeaders } from '@tsdi/core';
-import { Duplex, Readable } from 'stream';
+import { Duplex, DuplexOptions, Readable } from 'stream';
+import { Connection } from './connection';
 
 /**
  * transport stream
  */
 @Abstract()
 export abstract class TransportStream extends Duplex {
+
+    abstract get streamId(): string;
+
+    constructor(readonly connection: Connection, opts?: DuplexOptions) {
+        super(opts);
+    }
+
+    protected bindEvents(opts?: DuplexOptions) {
+        process.nextTick(() => {
+            this.connection.pipe(this);
+        });
+
+        this.connection.on('error', this.emit.bind(this, 'error'));
+        this.connection.on('close', this.emit.bind(this, 'close'));
+    }
+
+    override _read(size: number): void {
+
+    }
+
+    override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
+        this.connection.write(chunk, encoding, callback);
+    }
 
     /**
      * Closes the `TransportStream` instance by sending an `RST_STREAM` frame to the
@@ -16,7 +40,7 @@ export abstract class TransportStream extends Duplex {
      * @param callback An optional function registered to listen for the `'close'` event.
      */
     abstract close(code?: number, callback?: () => void): void;
-    
+
     addListener(event: 'aborted', listener: () => void): this;
     addListener(event: 'close', listener: () => void): this;
     addListener(event: 'data', listener: (chunk: Buffer | string) => void): this;

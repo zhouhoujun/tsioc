@@ -74,12 +74,11 @@ export class TransportServer extends Server<ServerRequest, ServerResponse, Trans
             const server = this._server = await builder.buildServer(opts);
             this.sub = builder.connect(server)
                 .subscribe({
-                    next: conn => {
-                        const onStream = (stream: ServerStream, headers: IncomingHeaders) => {
+                    next: (conn) => {
+                        conn.on('stream', (stream: ServerStream, headers: IncomingHeaders) => {
                             const ctx = builder.buildContext(stream, headers);
-                            builder.bind(ctx, this.endpoint());
-                        }
-                        conn.on('stream', onStream);
+                            builder.handle(ctx, this.endpoint());
+                        });
                     },
                     error: (err) => {
                         this.logger.error(err);

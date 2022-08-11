@@ -1,14 +1,9 @@
 import { Abstract } from '@tsdi/ioc';
-import { Buffer } from 'buffer';
-import { DuplexOptions } from 'stream';
+import { Writable, Duplex, DuplexOptions, Transform, TransformOptions } from 'stream';
 
 @Abstract()
 export abstract class PacketParser {
-    abstract parse(chunk: any, done: (packet: any) => void): void;
-    abstract generate(chunk: any, opts?: any): Buffer;
+    abstract parser(opts?: TransformOptions): Transform;
+    abstract generate(stream: Duplex, opts?: DuplexOptions): Writable;
 }
 
-@Abstract()
-export abstract class PacketBuilder {
-    abstract build(opts: DuplexOptions): PacketParser;
-}

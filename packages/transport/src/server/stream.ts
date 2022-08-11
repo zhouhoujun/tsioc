@@ -2,7 +2,7 @@ import { Endpoint, IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Duplex, DuplexOptions } from 'stream';
-import { Connection } from '../connection';
+import { Connection, ConnectionOpts } from '../connection';
 import { TransportStream } from '../stream';
 import { TransportContext } from './context';
 import { ListenOpts, TransportServerOpts } from './options';
@@ -87,8 +87,14 @@ export abstract class ServerStream extends TransportStream {
 export abstract class ServerSession extends Connection {
     readonly server: any;
 
+    protected override bindEvents(opts?: ConnectionOpts): void {
+        this._parser.on('data', (chunk)=> {
+            
+        })
+    }
+
     addListener(event: 'connect', listener: (session: ServerSession, socket: Duplex) => void): this;
-    addListener(event: 'stream', listener: (stream: ServerSession, headers: IncomingHeaders, flags: number) => void): this;
+    addListener(event: 'stream', listener: (stream: ServerStream, headers: IncomingHeaders, flags: number) => void): this;
     addListener(event: string | symbol, listener: (...args: any[]) => void): this;
     addListener(event: string | symbol, listener: (...args: any[]) => void): this {
         return this._addListener(event, listener);
@@ -144,19 +150,28 @@ export interface Closeable {
      */
     close(callback?: (err?: Error) => void): this;
 }
+
 @Abstract()
 export abstract class ServerBuilder<T extends Closeable = Closeable> {
 
     abstract buildServer(opts: TransportServerOpts): Promise<T>;
 
-    abstract connect(server: T): Observable<ServerSession>;
-
+    /**
+     * listen
+     * @param server 
+     * @param opts 
+     */
     abstract listen(server: T, opts: ListenOpts): Promise<void>;
 
     abstract buildContext(stream: ServerStream, headers: IncomingHeaders): TransportContext;
 
-    abstract bind(context: TransportContext, endpoint: Endpoint): void;
-
+    abstract connect(server: T): Observable<ServerSession>;
+    /**
+     * handle request.
+     * @param context 
+     * @param endpoint 
+     */
+    abstract handle(context: TransportContext, endpoint: Endpoint): void;
 
 }
 

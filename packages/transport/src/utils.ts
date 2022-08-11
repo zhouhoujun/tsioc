@@ -1,7 +1,7 @@
 import { ArgumentError, isFunction, isString } from '@tsdi/ioc';
 import { OutgoingPacket, isFormData } from '@tsdi/core';
 import { Buffer } from 'buffer';
-import { Stream, Duplex, Readable } from 'stream';
+import { Stream, Readable } from 'stream';
 import * as FormData from 'form-data';
 import { EventEmitter } from 'events';
 import { hdr } from './consts';

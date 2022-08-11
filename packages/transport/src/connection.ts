@@ -1,43 +1,48 @@
 import { Abstract, EMPTY_OBJ } from '@tsdi/ioc';
-import { Duplex, Transform, DuplexOptions, TransformCallback } from 'stream';
-import { PacketBuilder, PacketParser } from './packet';
+import * as Duplexify from 'duplexify';
+import { Writable, Duplex, DuplexOptions, Transform } from 'stream';
+import { PacketParser } from './packet';
+
+
+
+export interface ConnectionOpts extends DuplexOptions, Record<string, any> {
+
+}
+
 
 
 @Abstract()
-export abstract class Connection extends Transform {
+export abstract class Connection extends Duplexify {
 
-    protected parser: PacketParser;
-    constructor(private stream: Duplex, readonly builder: PacketBuilder, private opts: DuplexOptions = EMPTY_OBJ) {
-        super(opts);
-        this.parser = builder.build(opts);
+    protected _parser: Transform;
+    protected _generator: Writable;
+    constructor(private stream: Duplex, readonly packetParser: PacketParser, private opts: ConnectionOpts = EMPTY_OBJ) {
+        super(undefined, undefined, opts);
+
+        this._parser = packetParser.parser(opts);
+        this._generator = packetParser.generate(stream, opts);
+        this.setWritable(this._generator);
+        this.setReadable(this._parser);
+
         this.bindEvents(opts);
     }
 
-    protected bindEvents(opts?: DuplexOptions) {
+    protected bindEvents(opts?: ConnectionOpts) {
         process.nextTick(() => {
-            this.stream.pipe(this);
+            this.stream.pipe(this._parser);
         });
+
+        this._generator.on('error', this.emit.bind(this, 'error'))
+        this._parser.on('error', this.emit.bind(this, 'error'))
 
         this.stream.on('error', this.emit.bind(this, 'error'));
         this.stream.on('close', this.emit.bind(this, 'close'));
     }
 
-    override _transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
-        this.parser.parse(chunk, (packet) => {
-            this.push(packet, encoding);
-            callback();
-        });
-    }
-
-
-    override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
-        this.stream.write(this.parser.generate(chunk, this.opts), encoding, callback);
-    }
-
     /**
      * Will be `true` if this `Connection` instance has been closed, otherwise`false`.
      */
-     abstract readonly closed: boolean;
+    abstract readonly closed: boolean;
     /**
      * Gracefully closes the `Connection`, allowing any existing streams to
      * complete on their own and preventing new `Connection` instances from being
