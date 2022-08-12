@@ -39,8 +39,9 @@ export class TransportClient extends Client<TransportRequest, TransportEvent, Tr
         await this._session?.close();
     }
 
-    onDispose(): Promise<void> {
-        return this.close();
+    async onDispose(): Promise<void> {
+        await this.close();
+        await this.context.destroy();
     }
 
     protected getDefaultOptions() {

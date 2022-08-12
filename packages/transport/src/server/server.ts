@@ -1,4 +1,4 @@
-import { IncomingHeaders, Router, Server } from '@tsdi/core';
+import { Router, Server } from '@tsdi/core';
 import { Injectable, isBoolean, isFunction, lang, Nullable } from '@tsdi/ioc';
 import { LISTEN_OPTS } from '@tsdi/platform-server';
 import { CatchInterceptor, LogInterceptor, RespondInterceptor } from '../interceptors';
@@ -11,9 +11,7 @@ import { TransportServerOpts, SERVER_INTERCEPTORS } from './options';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';
 import { TRANSPORT_SERVR_PROVIDERS } from './providers';
-import { Closeable, ServerBuilder, ServerStream } from './stream';
-import { Subscription } from 'rxjs';
-import { PacketParser } from '../packet';
+import { ServerBuilder } from './builder';
 
 
 const defOpts = {
@@ -54,7 +52,6 @@ const defOpts = {
 @Injectable()
 export class TransportServer extends Server<ServerRequest, ServerResponse, TransportContext, TransportServerOpts> {
 
-    private sub?: Subscription;
     private _server: any;
     constructor(@Nullable() options: TransportServerOpts) {
         super(options)
@@ -72,31 +69,13 @@ export class TransportServer extends Server<ServerRequest, ServerResponse, Trans
         try {
             const opts = this.getOptions();
             const builder = this.context.get(opts.builder ?? ServerBuilder);
-            const server = this._server = await builder.buildServer(opts);
-            const parser = builder.getParser(this.context, opts);
-            this.sub = builder.connect(server, parser, opts.connectionOpts)
-                .subscribe({
-                    next: (conn) => {
-                        conn.on('stream', (stream: ServerStream, headers: IncomingHeaders) => {
-                            const ctx = builder.buildContext(this, stream, headers);
-                            builder.handle(ctx, this.endpoint());
-                        });
-                    },
-                    error: (err) => {
-                        this.logger.error(err);
-                    },
-                    complete: () => {
-                        this.logger.error('server shutdown');
-                    }
-                });
-            await builder.listen(server, opts.listenOpts);
+            this._server = await builder.startup(this, opts);
         } catch (err) {
             this.logger.error(err);
         }
     }
 
     async close(): Promise<void> {
-        this.sub?.unsubscribe();
         if (isFunction((this.server as Closeable)?.close)) {
             const defer = lang.defer();
             (this.server as Closeable).close((err) => {
@@ -147,4 +126,18 @@ export class TransportServer extends Server<ServerRequest, ServerResponse, Trans
         super.initContext(options)
     }
 
+}
+
+interface Closeable {
+    /**
+     * Stops the server from accepting new connections and keeps existing
+     * connections. This function is asynchronous, the server is finally closed
+     * when all connections are ended and the server emits a `'close'` event.
+     * The optional `callback` will be called once the `'close'` event occurs. Unlike
+     * that event, it will be called with an `Error` as its only argument if the server
+     * was not open when it was closed.
+     * @since v0.1.90
+     * @param callback Called when the server is closed.
+     */
+    close(callback?: (err?: Error) => void): this;
 }

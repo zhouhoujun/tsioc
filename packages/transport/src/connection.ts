@@ -1,6 +1,7 @@
 import { Abstract, EMPTY_OBJ } from '@tsdi/ioc';
 import * as Duplexify from 'duplexify';
 import { Writable, Duplex, DuplexOptions, Transform } from 'stream';
+import { ev } from './consts';
 import { PacketParser } from './packet';
 
 
@@ -32,17 +33,22 @@ export abstract class Connection extends Duplexify {
             this.stream.pipe(this._parser);
         });
 
-        this._generator.on('error', this.emit.bind(this, 'error'))
-        this._parser.on('error', this.emit.bind(this, 'error'))
+        this.once(ev.CLOSE, () => {
+            this.closed = true
+        })
 
-        this.stream.on('error', this.emit.bind(this, 'error'));
-        this.stream.on('close', this.emit.bind(this, 'close'));
+        this._generator.on(ev.ERROR, this.emit.bind(this, ev.ERROR))
+        this._parser.on(ev.ERROR, this.emit.bind(this, ev.ERROR))
+
+        this.stream.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
+        this.stream.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
     }
 
     /**
      * Will be `true` if this `Connection` instance has been closed, otherwise`false`.
      */
-    abstract readonly closed: boolean;
+    closed = false;
+
     /**
      * Gracefully closes the `Connection`, allowing any existing streams to
      * complete on their own and preventing new `Connection` instances from being

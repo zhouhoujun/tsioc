@@ -4,6 +4,7 @@ import { RequestMethod, ResponsePacket, ResponseEvent } from './packet';
 import { TransportOpts, TransportEndpoint } from './transport';
 import { RequestContext } from './context';
 import { ClientContext } from './client.ctx';
+import { OnDispose } from '../lifecycle';
 
 
 
@@ -20,7 +21,11 @@ export abstract class ClientOpts<TRequest, TResponse> extends TransportOpts<TReq
  * abstract client.
  */
 @Abstract()
-export abstract class Client<TRequest = any, TResponse = any, Opts extends ClientOpts<TRequest, TResponse> = any, TOption extends RequstOption = RequstOption> extends TransportEndpoint<TRequest, TResponse, Opts> {
+export abstract class Client<TRequest = any, TResponse = any, Opts extends ClientOpts<TRequest, TResponse> = any, TOption extends RequstOption = RequstOption> extends TransportEndpoint<TRequest, TResponse, Opts> implements OnDispose {
+
+    async onDispose(): Promise<void> {
+        await this.context.destroy();
+    }
 
     /**
      * initialize interceptors with options.

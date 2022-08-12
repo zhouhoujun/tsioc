@@ -1,12 +1,9 @@
-import { Endpoint, IncomingHeaders, OutgoingHeaders, Server } from '@tsdi/core';
-import { Abstract, InvocationContext } from '@tsdi/ioc';
-import { Observable } from 'rxjs';
-import { Duplex, DuplexOptions } from 'stream';
+import { IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
+import { Abstract } from '@tsdi/ioc';
+import { Duplex } from 'stream';
 import { Connection, ConnectionOpts } from '../connection';
-import { PacketParser } from '../packet';
+import { ev } from '../consts';
 import { TransportStream } from '../stream';
-import { TransportContext } from './context';
-import { ListenOpts, TransportServerOpts } from './options';
 
 
 
@@ -89,15 +86,16 @@ export class ServerSession extends Connection {
 
 
     readonly server: any;
-    closed = false;
 
-    close(): Promise<void> {
-        throw new Error('Method not implemented.');
-    }
     protected override bindEvents(opts?: ConnectionOpts): void {
+        super.bindEvents(opts);
         this._parser.on('data', (chunk) => {
 
         })
+    }    
+    
+    async close(): Promise<void> {
+        this.emit(ev.CLOSE);
     }
 
     addListener(event: 'connect', listener: (session: ServerSession, socket: Duplex) => void): this;
@@ -141,46 +139,6 @@ export class ServerSession extends Connection {
     prependOnceListener(event: string | symbol, listener: (...args: any[]) => void): this {
         return this._prependOnceListener(event, listener);
     }
-
-}
-
-export interface Closeable {
-    /**
-     * Stops the server from accepting new connections and keeps existing
-     * connections. This function is asynchronous, the server is finally closed
-     * when all connections are ended and the server emits a `'close'` event.
-     * The optional `callback` will be called once the `'close'` event occurs. Unlike
-     * that event, it will be called with an `Error` as its only argument if the server
-     * was not open when it was closed.
-     * @since v0.1.90
-     * @param callback Called when the server is closed.
-     */
-    close(callback?: (err?: Error) => void): this;
-}
-
-@Abstract()
-export abstract class ServerBuilder<T extends Closeable = Closeable> {
-
-    abstract buildServer(opts: TransportServerOpts): Promise<T>;
-
-    /**
-     * listen
-     * @param server 
-     * @param opts 
-     */
-    abstract listen(server: T, opts: ListenOpts): Promise<void>;
-
-    abstract getParser(context: InvocationContext, opts: TransportServerOpts): PacketParser;
-
-    abstract buildContext(server: Server, stream: ServerStream, headers: IncomingHeaders): TransportContext;
-
-    abstract connect(server: T, parser: PacketParser, opts?: any): Observable<ServerSession>;
-    /**
-     * handle request.
-     * @param context 
-     * @param endpoint 
-     */
-    abstract handle(context: TransportContext, endpoint: Endpoint): void;
 
 }
 

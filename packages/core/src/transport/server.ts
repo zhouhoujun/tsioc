@@ -1,7 +1,7 @@
 import { Abstract, ArgumentError, EMPTY, lang, Token } from '@tsdi/ioc';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
-import { Endpoint, EndpointBackend, MiddlewareBackend, MiddlewareLike, MiddlewareType } from './endpoint';
+import { EndpointBackend, MiddlewareBackend, MiddlewareLike, MiddlewareType } from './endpoint';
 import { TransportEndpoint, TransportOpts } from './transport';
 import { ConnectionContext } from './context';
 
@@ -93,6 +93,7 @@ export abstract class Server<TRequest = any, TResponse = any, Tx extends Connect
      */
     async onDispose(): Promise<void> {
         await this.close()
+        await this.context.destroy();
     }
 
 }

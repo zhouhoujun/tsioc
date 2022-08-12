@@ -7,7 +7,7 @@ import { ContentOptions, SessionOptions } from '../middlewares';
 import { MimeSource } from '../mime';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';
-import { ServerBuilder } from './stream';
+import { ServerBuilder } from './builder';
 
 /**
  * Listen options.
