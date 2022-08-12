@@ -1,6 +1,7 @@
 import { Injectable, Injector, lang } from '@tsdi/ioc';
 import { ClientRequsetOpts, ClientSession, ClientSessionBuilder, ClientStream, ev } from '@tsdi/transport';
 import { Observable, Observer } from 'rxjs';
+import { Duplex } from 'stream';
 import { Socket, createSocket, SocketOptions } from 'dgram';
 import { OutgoingHeaders, PacketIdGenerator } from '@tsdi/core';
 
@@ -44,17 +45,14 @@ export class CoapClientSessioBuilder implements ClientSessionBuilder {
 
 }
 
-export class UdpCoapClientStream extends ClientStream {
+// export class UdpCoapClientStream extends ClientStream {
 
-    constructor(readonly id: string) {
-        super();
-    }
 
-    close(code?: number | undefined, callback?: (() => void) | undefined): void {
-        this.emit(ev.CLOSE, code);
-        this.end(callback);
-    }
-}
+//     close(code?: number | undefined, callback?: (() => void) | undefined): void {
+//         this.emit(ev.CLOSE, code);
+//         this.end(callback);
+//     }
+// }
 
 export class CoapClientSession extends ClientSession {
 
@@ -62,7 +60,7 @@ export class CoapClientSession extends ClientSession {
     private _closed: boolean;
     private smaps: Map<string, ClientStream>;
 
-    constructor(readonly authority: string, readonly socket: Socket, readonly idGentor: PacketIdGenerator) {
+    constructor(readonly authority: string, readonly stream: Duplex, readonly idGentor: PacketIdGenerator) {
         this._closed = false;
         this._clientId = `coap_${idGentor.generate()}`
         this.smaps = new Map();

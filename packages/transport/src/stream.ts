@@ -9,9 +9,7 @@ import { Connection } from './connection';
 @Abstract()
 export abstract class TransportStream extends Duplex {
 
-    abstract get streamId(): string;
-
-    constructor(readonly connection: Connection, opts?: DuplexOptions) {
+    constructor(readonly connection: Connection, readonly streamId: string, opts?: DuplexOptions) {
         super(opts);
     }
 

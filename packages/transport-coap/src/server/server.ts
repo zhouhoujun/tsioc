@@ -4,6 +4,7 @@ import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
 import { ServerOpts } from 'net';
 import { SocketOptions } from 'dgram';
 import { CatchInterceptor, LogInterceptor, RespondInterceptor, TransportServer, TransportServerOpts, ServerRequest, ServerResponse, ListenOpts } from '@tsdi/transport';
+import { CoapServerBuilder } from './builder';
 
 
 /**
@@ -34,7 +35,7 @@ export const COAP_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('COAP_EXECPTION
 const defOpts = {
     json: true,
     encoding: 'utf8',
-    headerSplit: '#',
+    builder: CoapServerBuilder,
     interceptorsToken: COAP_SERV_INTERCEPTORS,
     execptionsToken: COAP_EXECPTION_FILTERS,
     interceptors: [

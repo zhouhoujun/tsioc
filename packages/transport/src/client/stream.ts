@@ -7,8 +7,11 @@ import { Connection } from '../connection';
 
 
 
-@Abstract()
-export abstract class ClientStream extends TransportStream {
+export class ClientStream extends TransportStream {
+
+    close(code?: number | undefined, callback?: (() => void) | undefined): void {
+        
+    }
 
     addListener(event: 'aborted', listener: () => void): this;
     addListener(event: 'close', listener: () => void): this;

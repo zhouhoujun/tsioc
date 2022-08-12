@@ -1,6 +1,6 @@
 import { ExecptionFilter, Interceptor } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
-import { TransportClient, TransportClientOpts, TransportEvent, TransportRequest,  } from '@tsdi/transport';
+import { TransportClient, TransportClientOpts, TransportEvent, TransportRequest  } from '@tsdi/transport';
 import { SocketOptions } from 'dgram';
 
 
