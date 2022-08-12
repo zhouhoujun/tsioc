@@ -4,7 +4,8 @@ import { Observable } from 'rxjs';
 import { PacketParser } from '../packet';
 import { TransportContext } from './context';
 import { ListenOpts, TransportServerOpts } from './options';
-import { ServerSession, ServerStream } from './stream';
+import { ServerSession } from './session';
+import { ServerStream } from './stream';
 
 @Abstract()
 export abstract class ServerBuilder<T = any> {

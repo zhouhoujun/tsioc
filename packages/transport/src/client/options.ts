@@ -4,7 +4,7 @@ import { Buffer } from 'buffer';
 import { Stream } from 'stream';
 import { TransportRequest } from './request';
 import { TransportEvent } from './response';
-import { ClientSessionBuilder } from './stream';
+import { ClientSessionBuilder } from './session';
 
 export interface SessionRequestOpts extends Record<string, any> {
     endStream?: boolean | undefined;

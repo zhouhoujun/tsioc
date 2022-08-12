@@ -60,7 +60,8 @@ export class CoapClientSession extends ClientSession {
     private _closed: boolean;
     private smaps: Map<string, ClientStream>;
 
-    constructor(readonly authority: string, readonly stream: Duplex, readonly idGentor: PacketIdGenerator) {
+    constructor(readonly authority: string, readonly stream: Duplex, ) {
+        super(stream, p)
         this._closed = false;
         this._clientId = `coap_${idGentor.generate()}`
         this.smaps = new Map();

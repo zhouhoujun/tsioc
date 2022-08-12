@@ -1,16 +1,13 @@
-import { Abstract } from '@tsdi/ioc';
-import { IncomingHeaders, IncomingStatusHeaders, OutgoingHeaders } from '@tsdi/core';
-import { Observable } from 'rxjs';
+import { IncomingHeaders, IncomingStatusHeaders } from '@tsdi/core';
 import { Readable } from 'stream';
 import { TransportStream } from '../stream';
-import { Connection } from '../connection';
 
 
 
 export class ClientStream extends TransportStream {
 
     close(code?: number | undefined, callback?: (() => void) | undefined): void {
-        
+
     }
 
     addListener(event: 'aborted', listener: () => void): this;
@@ -39,7 +36,7 @@ export class ClientStream extends TransportStream {
         return this._addListener(event, listener);
     }
 
-    
+
     emit(event: 'aborted'): boolean;
     emit(event: 'close'): boolean;
     emit(event: 'data', chunk: Buffer | string): boolean;
@@ -174,27 +171,4 @@ export class ClientStream extends TransportStream {
         return this._prependOnceListener(event, listener);
     }
 
-}
-
-export interface ClientRequsetOpts {
-    endStream?: boolean | undefined;
-    exclusive?: boolean | undefined;
-    parent?: number | undefined;
-    weight?: number | undefined;
-    waitForTrailers?: boolean | undefined;
-    signal?: AbortSignal | undefined;
-}
-
-
-@Abstract()
-export abstract class ClientSession extends Connection {
-    abstract get authority(): string;
-    abstract get clientId(): string;
-    abstract request(headers: OutgoingHeaders, options?: ClientRequsetOpts): ClientStream;
-}
-
-
-@Abstract()
-export abstract class ClientSessionBuilder {
-    abstract build(connectOpts?: Record<string, any>): Observable<ClientSession>;
 }

@@ -6,5 +6,6 @@ export * from './finalize-filter';
 export * from './providers';
 export * from './respond';
 export * from './stream';
+export * from './session';
 export * from './builder';
 export * from './server';

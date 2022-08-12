@@ -1,7 +1,7 @@
 import { EndpointBackend, OnDispose, RequestContext, RequstOption, Client } from '@tsdi/core';
 import { EMPTY, Injectable, isString, Nullable } from '@tsdi/ioc';
 import { map, Observable, of } from 'rxjs';
-import { ClientSession, ClientSessionBuilder } from './stream';
+import { ClientSession, ClientSessionBuilder } from './session';
 import { TransportBackend } from './backend';
 import { DetectBodyInterceptor } from './body';
 import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } from './options';

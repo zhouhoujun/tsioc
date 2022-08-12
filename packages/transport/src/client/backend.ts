@@ -8,7 +8,7 @@ import { promisify } from 'util';
 import { ctype, ev, hdr } from '../consts';
 import { MimeAdapter, MimeTypes } from '../mime';
 import { createFormData, isBuffer, isFormDataLike, toBuffer } from '../utils';
-import { ClientSession } from './stream';
+import { ClientSession } from './session';
 import { TransportClientOpts } from './options';
 import { TransportRequest } from './request';
 import { TransportErrorResponse, TransportResponse, TransportEvent, TransportHeaderResponse } from './response';
