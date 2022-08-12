@@ -17,11 +17,11 @@ export abstract class Connection extends Duplexify {
 
     protected _parser: Transform;
     protected _generator: Writable;
-    constructor(private stream: Duplex, readonly packetParser: PacketParser, private opts: ConnectionOpts = EMPTY_OBJ) {
+    constructor(private stream: Duplex, readonly packet: PacketParser, private opts: ConnectionOpts = EMPTY_OBJ) {
         super(undefined, undefined, opts);
 
-        this._parser = packetParser.parser(opts);
-        this._generator = packetParser.generate(stream, opts);
+        this._parser = packet.parser(opts);
+        this._generator = packet.generate(stream, opts);
         this.setWritable(this._generator);
         this.setReadable(this._parser);
 

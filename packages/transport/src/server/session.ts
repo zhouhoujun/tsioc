@@ -7,16 +7,13 @@ import { ServerStream } from './stream';
 
 export class ServerSession extends Connection {
 
-
-    readonly server: any;
-
     protected override bindEvents(opts?: ConnectionOpts): void {
         super.bindEvents(opts);
         this._parser.on('data', (chunk) => {
 
         })
-    }    
-    
+    }
+
     async close(): Promise<void> {
         this.emit(ev.CLOSE);
     }

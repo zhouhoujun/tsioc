@@ -2,6 +2,7 @@ export * from './consts';
 export * from './content';
 export * from './mime';
 export * from './negotiator';
+export * from './packet';
 export * from './stream';
 export * from './connection';
 

@@ -1,12 +1,12 @@
-import { ExecptionFilter, Interceptor } from '@tsdi/core';
-import { Abstract, Injectable, tokenId } from '@tsdi/ioc';
+import { ExecptionFilter, Interceptor, Protocol } from '@tsdi/core';
+import { Abstract, Injectable, tokenId, TypeOf } from '@tsdi/ioc';
 import { IClientOptions } from 'mqtt';
 import { CatchInterceptor, LogInterceptor, TransportServer, TransportServerOpts, RespondInterceptor, TransportEvent, TransportRequest } from '@tsdi/transport';
 
 
 @Abstract()
 export abstract class MqttServerOpts extends TransportServerOpts {
-
+  
 }
 
 /**
@@ -22,7 +22,7 @@ export const MQTT_SERV_EXECPTIONFILTERS = tokenId<ExecptionFilter[]>('MQTT_SERV_
 const defaults = {
     json: true,
     encoding: 'utf8',
-    headerSplit: '#',
+
     interceptorsToken: MQTT_SERV_INTERCEPTORS,
     execptionsToken: MQTT_SERV_EXECPTIONFILTERS,
     interceptors: [

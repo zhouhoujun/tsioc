@@ -1,5 +1,6 @@
 import { IncomingHeaders, IncomingStatusHeaders } from '@tsdi/core';
 import { Readable } from 'stream';
+import { ev } from '../consts';
 import { TransportStream } from '../stream';
 
 
@@ -7,7 +8,7 @@ import { TransportStream } from '../stream';
 export class ClientStream extends TransportStream {
 
     close(code?: number | undefined, callback?: (() => void) | undefined): void {
-
+        this.emit(ev.CLOSE);
     }
 
     addListener(event: 'aborted', listener: () => void): this;

@@ -1,9 +1,10 @@
 import { Injectable, Injector, lang } from '@tsdi/ioc';
-import { ClientRequsetOpts, ClientSession, ClientSessionBuilder, ClientStream, ev } from '@tsdi/transport';
+import { ClientRequsetOpts, ClientSession, ClientSessionBuilder, ClientSessionOpts, ClientStream, ev } from '@tsdi/transport';
 import { Observable, Observer } from 'rxjs';
 import { Duplex } from 'stream';
-import { Socket, createSocket, SocketOptions } from 'dgram';
-import { OutgoingHeaders, PacketIdGenerator } from '@tsdi/core';
+import { createSocket, SocketOptions } from 'dgram';
+import { OutgoingHeaders } from '@tsdi/core';
+import { PacketParser } from 'packages/transport/src/packet';
 
 
 @Injectable()
@@ -15,11 +16,10 @@ export class CoapClientSessioBuilder implements ClientSessionBuilder {
     }
 
     build(connectOpts: SocketOptions): Observable<ClientSession> {
-        const getor = this.injector.get(PacketIdGenerator);
+        const parser = this.injector.get(PacketParser);
         return new Observable((observer: Observer<ClientSession>) => {
             const socket = createSocket(connectOpts);
-            const authority = '';
-            const client = new CoapClientSession(authority, socket, getor);
+            const client = new ClientSession(socket, parser);
             const onError = (err: Error) => {
                 observer.error(err);
             }
@@ -56,40 +56,28 @@ export class CoapClientSessioBuilder implements ClientSessionBuilder {
 
 export class CoapClientSession extends ClientSession {
 
-    private _clientId: string;
-    private _closed: boolean;
     private smaps: Map<string, ClientStream>;
 
-    constructor(readonly authority: string, readonly stream: Duplex, ) {
-        super(stream, p)
-        this._closed = false;
-        this._clientId = `coap_${idGentor.generate()}`
+    constructor(stream: Duplex, packet: PacketParser, ops: ClientSessionOpts) {
+        super(stream, packet, ops)
         this.smaps = new Map();
     }
 
-
-
-    get clientId(): string {
-        return this._clientId;
-    }
-
-    get closed(): boolean {
-        return this._closed;
-    }
-
-
     request(headers: OutgoingHeaders, options?: ClientRequsetOpts | undefined): ClientStream {
-        const id = this.idGentor.generate();
-        const stream = new UdpCoapClientStream(id); 
+        const id = this.packet.generateId();
+        const stream = new ClientStream(this, id);
+        this.emit(ev.STREAM, headers);
         this.smaps.set(id, stream);
         return stream;
     }
 
     close(): Promise<void> {
         const defer = lang.defer<void>();
-        this.socket.close(defer.resolve);
-        return defer.promise.then(() => {
-            this._closed = true;
+        this.end(() => {
+            this.closed = true;
+            defer.resolve();
         });
+        return defer.promise
     }
+
 }
