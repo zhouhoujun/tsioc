@@ -1,7 +1,7 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { mths, TransportStatus } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
-
+  
 
 @Injectable({ static: true })
 export class CoapStatus extends TransportStatus {

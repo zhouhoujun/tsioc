@@ -1,5 +1,5 @@
 export * from './client/client';
-export * from './client/stream';
+export * from './client/builder';
 export * from './server/server';
 export * from './server/builder';
 export * from './status';
