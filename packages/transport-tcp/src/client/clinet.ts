@@ -48,7 +48,6 @@ export class TcpClient extends Client<TransportRequest, TransportEvent, TcpClien
     }
 
     protected override initContext(options: TcpClientOpts): void {
-        this.context.setValue(TcpClientOpts, options);
         this.context.setValue(PacketProtocolOpts, options);
         super.initContext(options);
     }

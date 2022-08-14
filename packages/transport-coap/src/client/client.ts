@@ -1,7 +1,8 @@
 import { ExecptionFilter, Interceptor } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
 import { TransportClient, TransportClientOpts, TransportEvent, TransportRequest  } from '@tsdi/transport';
-import { SocketOptions } from 'dgram';
+import * as dgram from 'dgram';
+import * as net from 'net'
 
 
 @Abstract()
@@ -11,8 +12,8 @@ export abstract class CoapClientOpts extends TransportClientOpts {
      */
     abstract json?: boolean;
     abstract encoding?: BufferEncoding;
-    abstract headerSplit?: string;
-    abstract connectOpts?: SocketOptions;
+    abstract baseOn?: 'tcp' | 'udp';
+    abstract connectOpts: dgram.SocketOptions| net.NetConnectOpts;
 }
 
 /**
@@ -36,6 +37,9 @@ const defaults = {
     address: {
         port: 3000,
         hostname: 'localhost'
+    },
+    connectOpts: {
+        type: 'udp4'
     }
 } as CoapClientOpts;
 

@@ -1,25 +1,22 @@
 import { Injectable, Injector, lang } from '@tsdi/ioc';
-import { ClientRequsetOpts, ClientSession, ClientSessionBuilder, ClientSessionOpts, ClientStream, ev } from '@tsdi/transport';
+import { ClientRequsetOpts, ClientSession, ClientBuilder, ClientSessionOpts, ClientStream, ev, TransportClient, TransportClientOpts, PacketParser } from '@tsdi/transport';
 import { Observable, Observer } from 'rxjs';
 import { Duplex } from 'stream';
-import { createSocket, SocketOptions } from 'dgram';
+import * as dgram from 'dgram';
+import * as net from 'net'
 import { OutgoingHeaders } from '@tsdi/core';
-import { PacketParser } from 'packages/transport/src/packet';
+import { CoapClientOpts } from './client';
+import { parseToDuplex } from '../udp';
 
 
 @Injectable()
-export class CoapClientSessioBuilder implements ClientSessionBuilder {
-
-
-    constructor(private injector: Injector) {
-
-    }
-
-    build(connectOpts: SocketOptions): Observable<ClientSession> {
-        const parser = this.injector.get(PacketParser);
+export class CoapClientSessioBuilder implements ClientBuilder<TransportClient> {
+    build(transport: TransportClient, opts: CoapClientOpts): Observable<ClientSession> {
+        const { context } = transport;
+        const parser = context.get(PacketParser);
         return new Observable((observer: Observer<ClientSession>) => {
-            const socket = createSocket(connectOpts);
-            const client = new ClientSession(socket, parser);
+            const socket = opts.baseOn === 'tcp'? net.connect(opts.connectOpts as net.NetConnectOpts) : parseToDuplex(dgram.createSocket(opts.connectOpts as dgram.SocketOptions));
+            const client = new CoapClientSession(socket, parser, opts.connectionOpts);
             const onError = (err: Error) => {
                 observer.error(err);
             }
@@ -45,6 +42,7 @@ export class CoapClientSessioBuilder implements ClientSessionBuilder {
 
 }
 
+
 // export class UdpCoapClientStream extends ClientStream {
 
 
@@ -58,7 +56,7 @@ export class CoapClientSession extends ClientSession {
 
     private smaps: Map<string, ClientStream>;
 
-    constructor(stream: Duplex, packet: PacketParser, ops: ClientSessionOpts) {
+    constructor(stream: Duplex, packet: PacketParser, ops?: ClientSessionOpts) {
         super(stream, packet, ops)
         this.smaps = new Map();
     }

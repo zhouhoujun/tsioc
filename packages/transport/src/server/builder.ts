@@ -8,14 +8,14 @@ import { ServerSession } from './session';
 import { ServerStream } from './stream';
 
 @Abstract()
-export abstract class ServerBuilder<T = any> {
+export abstract class ServerBuilder<T = any, TS extends Server = Server> {
     /**
      * startup server.
      * @param transport 
      * @param opts 
      * @returns 
      */
-    async startup(transport: Server, opts: TransportServerOpts): Promise<T> {
+    async startup(transport: TS, opts: TransportServerOpts): Promise<T> {
         const { context, logger } = transport;
         const server = await this.buildServer(opts);
         const parser = this.getParser(context, opts);
@@ -50,7 +50,7 @@ export abstract class ServerBuilder<T = any> {
 
     abstract getParser(context: InvocationContext, opts: TransportServerOpts): PacketParser;
 
-    abstract buildContext(server: Server, stream: ServerStream, headers: IncomingHeaders): TransportContext;
+    abstract buildContext(transport: TS, stream: ServerStream, headers: IncomingHeaders): TransportContext;
 
     abstract connect(server: T, parser: PacketParser, opts?: any): Observable<ServerSession>;
     /**

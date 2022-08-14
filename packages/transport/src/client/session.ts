@@ -1,5 +1,5 @@
 import { Abstract, EMPTY_OBJ } from '@tsdi/ioc';
-import { OutgoingHeaders } from '@tsdi/core';
+import { Client, OutgoingHeaders } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { Duplex } from 'stream';
 import { Connection, ConnectionOpts } from '../connection';
@@ -36,8 +36,3 @@ export abstract class ClientSession extends Connection {
     abstract request(headers: OutgoingHeaders, options?: ClientRequsetOpts): ClientStream;
 }
 
-
-@Abstract()
-export abstract class ClientSessionBuilder {
-    abstract build(connectOpts?: Record<string, any>): Observable<ClientSession>;
-}

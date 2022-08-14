@@ -7,7 +7,7 @@ import * as dgram from 'dgram';
 import { CoapServerOpts } from './server';
 
 @Injectable()
-export class CoapServerBuilder extends ServerBuilder<net.Server | dgram.Socket> {
+export class CoapServerBuilder extends ServerBuilder<net.Server | dgram.Socket, TransportServer> {
 
     async buildServer(opts: CoapServerOpts): Promise<net.Server | dgram.Socket> {
         return opts.baseOn == 'tcp' ? net.createServer(opts.serverOpts as net.ServerOpts) : dgram.createSocket(opts.serverOpts as dgram.SocketOptions)
@@ -23,11 +23,11 @@ export class CoapServerBuilder extends ServerBuilder<net.Server | dgram.Socket> 
         return defer.promise;
     }
 
-    buildContext(server: TransportServer, stream: ServerStream, headers: IncomingHeaders): TransportContext {
+    buildContext(transport: TransportServer, stream: ServerStream, headers: IncomingHeaders): TransportContext {
         const request = new ServerRequest(stream, headers);
         const response = new ServerResponse(stream, headers);
-        const parent = server.context;
-        return new TransportContext(parent.injector, request, response, server, { parent });
+        const parent = transport.context;
+        return new TransportContext(parent.injector, request, response, transport, { parent });
     }
 
     getParser(context: InvocationContext, opts: CoapServerOpts): PacketParser {

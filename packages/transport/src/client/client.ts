@@ -1,7 +1,7 @@
 import { EndpointBackend, OnDispose, RequestContext, RequstOption, Client } from '@tsdi/core';
 import { EMPTY, Injectable, isString, Nullable } from '@tsdi/ioc';
 import { map, Observable, of } from 'rxjs';
-import { ClientSession, ClientSessionBuilder } from './session';
+import { ClientSession } from './session';
 import { TransportBackend } from './backend';
 import { DetectBodyInterceptor } from './body';
 import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } from './options';
@@ -9,6 +9,7 @@ import { NormlizePathInterceptor } from './path';
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
 import { TransportRequest } from './request';
 import { TransportEvent } from './response';
+import { ClientBuilder } from './builder';
 
 
 const defaults = {
@@ -73,7 +74,7 @@ export class TransportClient extends Client<TransportRequest, TransportEvent, Tr
             return of(this._session);
         }
         const opts = this.getOptions();
-        return this.context.get(opts.builder ?? ClientSessionBuilder).build(opts.connectOpts)
+        return this.context.get(opts.builder ?? ClientBuilder).build(this, opts)
             .pipe(
                 map(stream => {
                     this._session = stream;
@@ -87,3 +88,4 @@ export class TransportClient extends Client<TransportRequest, TransportEvent, Tr
     }
 
 }
+

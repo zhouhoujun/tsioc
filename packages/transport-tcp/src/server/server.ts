@@ -1,4 +1,4 @@
-import { BadRequestError, BytesPipe, EADDRINUSE, ECONNREFUSED, HandlerBinding, Protocol, Router, TransportStatus } from '@tsdi/core';
+import { BadRequestError, BytesPipe, EADDRINUSE, ECONNREFUSED, Protocol, Router, TransportStatus } from '@tsdi/core';
 import { Injectable, isBoolean, lang, Nullable, ProviderType } from '@tsdi/ioc';
 import { LISTEN_OPTS } from '@tsdi/platform-server';
 import { Server } from 'net';
@@ -15,7 +15,6 @@ import { TcpFinalizeFilter } from './finalize-filter';
 import { TcpServerOpts, TCP_SERV_INTERCEPTORS } from './options';
 import { PacketProtocol, PacketProtocolOpts } from '../packet';
 import { TcpProtocol } from '../protocol';
-import { TcpHandlerBinding } from './binding';
 import { TcpStatus } from '../status';
 
 
