@@ -43,14 +43,6 @@ export class CoapClientSessioBuilder implements ClientBuilder<TransportClient> {
 }
 
 
-// export class UdpCoapClientStream extends ClientStream {
-
-
-//     close(code?: number | undefined, callback?: (() => void) | undefined): void {
-//         this.emit(ev.CLOSE, code);
-//         this.end(callback);
-//     }
-// }
 
 export class CoapClientSession extends ClientSession {
 
