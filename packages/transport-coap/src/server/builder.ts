@@ -2,23 +2,23 @@ import { IncomingHeaders, Endpoint } from '@tsdi/core';
 import { Injectable, InvocationContext, lang } from '@tsdi/ioc';
 import {
     ServerSession, ServerBuilder, ListenOpts, ServerStream, TransportContext, TransportServer,
-    ServerRequest, ServerResponse, ev, TransportServerOpts, PacketParser
+    ServerRequest, ServerResponse, ev, TransportServerOpts, PacketParser, Connection, parseToDuplex
 } from '@tsdi/transport';
 import { Observable } from 'rxjs';
 import * as net from 'net';
 import * as dgram from 'dgram';
 import { CoapServerOpts } from './server';
 import { TcpCoapPacketParser } from '../tcp';
-import { parseToDuplex, UdpCoapPacketParser } from '../udp';
+import { UdpCoapPacketParser } from '../udp';
 
 @Injectable()
 export class CoapServerBuilder extends ServerBuilder<net.Server | dgram.Socket, TransportServer> {
 
-    async buildServer(opts: CoapServerOpts): Promise<net.Server | dgram.Socket> {
+    protected async buildServer(opts: CoapServerOpts): Promise<net.Server | dgram.Socket> {
         return opts.baseOn == 'tcp' ? net.createServer(opts.serverOpts as net.ServerOpts) : dgram.createSocket(opts.serverOpts as dgram.SocketOptions)
     }
 
-    listen(server: net.Server | dgram.Socket, opts: ListenOpts): Promise<void> {
+    protected listen(server: net.Server | dgram.Socket, opts: ListenOpts): Promise<void> {
         const defer = lang.defer<void>();
         if (server instanceof net.Server) {
             server.listen(opts, defer.resolve);
@@ -28,18 +28,18 @@ export class CoapServerBuilder extends ServerBuilder<net.Server | dgram.Socket, 
         return defer.promise;
     }
 
-    buildContext(transport: TransportServer, stream: ServerStream, headers: IncomingHeaders): TransportContext {
+    protected buildContext(transport: TransportServer, connection: Connection, stream: ServerStream, headers: IncomingHeaders): TransportContext {
         const request = new ServerRequest(stream, headers);
-        const response = new ServerResponse(stream, headers);
+        const response = new ServerResponse(connection, stream, headers);
         const parent = transport.context;
         return new TransportContext(parent.injector, request, response, transport, { parent });
     }
 
-    getParser(context: InvocationContext, opts: CoapServerOpts): PacketParser {
+    protected getParser(context: InvocationContext, opts: CoapServerOpts): PacketParser {
         return opts.baseOn === 'tcp' ? context.get(TcpCoapPacketParser) : context.get(UdpCoapPacketParser);
     }
 
-    connect(server: net.Server | dgram.Socket, parser: PacketParser, opts?: any): Observable<ServerSession> {
+    protected connect(server: net.Server | dgram.Socket, parser: PacketParser, opts?: any): Observable<ServerSession> {
         if (server instanceof net.Server) {
             return this.tcpConnect(server, parser, opts);
         } else {
@@ -83,7 +83,7 @@ export class CoapServerBuilder extends ServerBuilder<net.Server | dgram.Socket, 
                 observer.complete();
             }
             server.on(ev.ERROR, onError);
-            server.on(ev.LISTENING, onListening);
+            server.on(ev.CONNECT, onListening);
             server.on(ev.CLOSE, onClose)
 
             return () => {
@@ -94,7 +94,7 @@ export class CoapServerBuilder extends ServerBuilder<net.Server | dgram.Socket, 
         })
     }
 
-    handle(ctx: TransportContext, endpoint: Endpoint<any, any>): void {
+    protected handle(ctx: TransportContext, endpoint: Endpoint<any, any>): void {
         const req = ctx.request;
         const cancel = endpoint.handle(req, ctx)
             .subscribe({

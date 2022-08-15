@@ -8,6 +8,7 @@ export * from './connection';
 
 export * from './stringify';
 export * from './utils';
+export * from './udpify';
 
 export * from './asset.ctx';
 export * from './asset.pdr';

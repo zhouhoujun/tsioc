@@ -1,12 +1,12 @@
 import { Injectable, lang } from '@tsdi/ioc';
-import { ClientRequsetOpts, ClientSession, ClientBuilder, ClientSessionOpts, ClientStream, ev, TransportClient, PacketParser } from '@tsdi/transport';
+import { ClientRequsetOpts, ClientSession, ClientBuilder, ClientSessionOpts, ClientStream, ev, TransportClient, PacketParser, parseToDuplex } from '@tsdi/transport';
 import { Observable, Observer } from 'rxjs';
 import { Duplex } from 'stream';
 import * as dgram from 'dgram';
 import * as net from 'net'
 import { OutgoingHeaders } from '@tsdi/core';
 import { CoapClientOpts } from './client';
-import { parseToDuplex, UdpCoapPacketParser } from '../udp';
+import { UdpCoapPacketParser } from '../udp';
 import { TcpCoapPacketParser } from '../tcp';
 
 

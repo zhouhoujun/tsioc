@@ -1,6 +1,6 @@
 import { Interceptor, ServerOpts } from '@tsdi/core';
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { SessionOptions, ContentOptions, MimeSource } from '@tsdi/transport';
+import { SessionOptions, ContentOptions, MimeSource, TransportServerOpts } from '@tsdi/transport';
 import { ListenOptions, ServerOpts as NetServerOpts } from 'net';
 import { PacketProtocolOpts } from '../packet';
 import { TcpServRequest } from './request';
@@ -11,7 +11,7 @@ import { TcpServResponse } from './response';
  * TCP server options.
  */
 @Abstract()
-export abstract class TcpServerOpts extends ServerOpts<TcpServRequest, TcpServResponse> implements PacketProtocolOpts  {
+export abstract class TcpServerOpts extends TransportServerOpts implements PacketProtocolOpts  {
     /**
      * packet size limit.
      */

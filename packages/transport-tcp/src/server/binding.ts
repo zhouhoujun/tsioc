@@ -1,11 +1,11 @@
-import { Endpoint, HandlerBinding } from '@tsdi/core';
+import { Endpoint } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import { ev } from '@tsdi/transport';
 import { TcpContext } from './context';
 import { TcpServerOpts } from './options';
 
 @Injectable()
-export class TcpHandlerBinding implements HandlerBinding<TcpContext> {
+export class TcpHandlerBinding {
     binding(ctx: TcpContext, handler: Endpoint): void {
         const req = ctx.request;
         const cancel = handler.handle(req, ctx)

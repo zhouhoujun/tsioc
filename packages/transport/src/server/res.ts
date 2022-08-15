@@ -1,8 +1,9 @@
 import { OutgoingHeader, OutgoingHeaders, OutgoingPacket, ResHeaders } from '@tsdi/core';
 import { isArray, isFunction, isString } from '@tsdi/ioc';
 import { Writable } from 'stream';
-import { hdr } from '../consts';
 import { ServerStream } from './stream';
+import { Connection } from '../connection';
+import { hdr } from '../consts';
 
 
 /**
@@ -12,14 +13,9 @@ export class ServerResponse extends Writable implements OutgoingPacket {
 
     private _sent = false;
     private _hdr: ResHeaders;
-    // /**
-    //  * See `response.socket`.
-    //  * @since v8.4.0
-    //  * @deprecated Since v13.0.0 - Use `socket`.
-    //  */
-    // readonly connection: net.Socket | tls.TLSSocket;
 
     constructor(
+        readonly connection: Connection,
         readonly stream: ServerStream,
         readonly headers: OutgoingHeaders,
         readonly socket?: any) {
@@ -109,7 +105,7 @@ export class ServerResponse extends Writable implements OutgoingPacket {
     }
 
     override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
-        this.stream._write(chunk, encoding, callback);
+        this.stream.write(chunk, encoding, callback);
     }
 
 

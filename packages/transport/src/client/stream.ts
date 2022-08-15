@@ -1,11 +1,18 @@
 import { IncomingHeaders, IncomingStatusHeaders } from '@tsdi/core';
-import { Readable } from 'stream';
+import { Readable, DuplexOptions } from 'stream';
+import { Connection } from '../connection';
 import { ev } from '../consts';
 import { TransportStream } from '../stream';
 
 
 
 export class ClientStream extends TransportStream {
+
+    constructor(readonly connection: Connection, id: string, opts?: DuplexOptions) {
+        super(connection, id, opts)
+        
+    }
+
 
     close(code?: number | undefined, callback?: (() => void) | undefined): void {
         this.emit(ev.CLOSE);

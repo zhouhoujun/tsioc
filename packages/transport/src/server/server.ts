@@ -16,7 +16,6 @@ import { ServerBuilder } from './builder';
 
 const defOpts = {
     encoding: 'utf8',
-    delimiter: '\r\n',
     sizeLimit: 10 * 1024 * 1024,
     interceptorsToken: SERVER_INTERCEPTORS,
     execptionsToken: SERVER_EXECPTION_FILTERS,

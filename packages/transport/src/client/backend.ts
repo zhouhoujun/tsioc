@@ -21,7 +21,6 @@ const pmPipeline = promisify(pipeline);
 @Injectable()
 export class TransportBackend implements EndpointBackend<TransportRequest, TransportEvent> {
 
-
     handle(req: TransportRequest, ctx: RequestContext): Observable<TransportEvent> {
         const session = ctx.get(ClientSession);
         const { method, url } = req;

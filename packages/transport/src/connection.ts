@@ -11,7 +11,6 @@ export interface ConnectionOpts extends DuplexOptions, Record<string, any> {
 }
 
 
-
 @Abstract()
 export abstract class Connection extends Duplexify {
 

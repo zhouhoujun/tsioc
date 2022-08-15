@@ -51,8 +51,7 @@ const defOpts = {
 export const TCP_SERV_PROVIDERS: ProviderType[] = [
     { provide: RespondAdapter, useClass: TcpRespondAdapter },
     { provide: TransportStatus, useClass: TcpStatus },
-    { provide: Protocol, useClass: TcpProtocol },
-    { provide: HandlerBinding, useClass: TcpHandlerBinding }
+    { provide: Protocol, useClass: TcpProtocol }
 ]
 
 /**

@@ -1,10 +1,11 @@
 import { Abstract, EMPTY_OBJ } from '@tsdi/ioc';
-import { Client, OutgoingHeaders } from '@tsdi/core';
+import { Client, InvalidHeaderToken, OutgoingHeaders, TransportError } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { Duplex } from 'stream';
 import { Connection, ConnectionOpts } from '../connection';
 import { PacketParser } from '../packet';
 import { ClientStream } from './stream';
+import { ev } from '../consts';
 
 
 export interface ClientRequsetOpts {
@@ -22,17 +23,55 @@ export interface ClientSessionOpts extends ConnectionOpts {
     clientId?: string;
 }
 
-@Abstract()
-export abstract class ClientSession extends Connection {
+
+export class ClientSession extends Connection {
 
     readonly authority: string;
     readonly clientId: string;
-    constructor(duplex: Duplex, parser: PacketParser, opts: ClientSessionOpts = EMPTY_OBJ) {
-        super(duplex, parser, opts)
+    constructor(duplex: Duplex, packet: PacketParser, opts: ClientSessionOpts = EMPTY_OBJ) {
+        super(duplex, packet, opts)
         this.authority = opts.authority ?? '';
         this.clientId = opts.clientId ?? '';
     }
 
-    abstract request(headers: OutgoingHeaders, options?: ClientRequsetOpts): ClientStream;
+    request(headers: OutgoingHeaders, options?: ClientRequsetOpts): ClientStream {
+        if (this.destroyed) {
+            throw new TransportError('connection destroyed!')
+        }
+        if (this.closed) {
+            throw new TransportError('connection closed!')
+        }
+        const keys = Object.keys(headers);
+        for (let i = 0; i < keys.length; i++) {
+            const header = keys[i];
+            if (header && !this.packet.valid(header)) {
+                this.destroy(new InvalidHeaderToken('Header name' + header));
+            }
+        }
+        const stream = new ClientStream(this, this.packet.generateId(), options);
+        const { signal, endStream, waitForTrailers } = options!;
+        if (endStream) {
+            stream.end();
+        }
+        if (signal) {
+            const aborter = () => {
+                stream.destroy(new TransportError(signal.reason)); //new  AboutError({ cause: signal.reason }))
+            }
+            if (signal.aborted) {
+                aborter();
+            } else {
+                signal.addEventListener(ev.ABOUT, aborter);
+                stream.once(ev.CLOSE, () => {
+                    signal.removeEventListener(ev.ABOUT, aborter);
+                });
+            }
+        }
+        return stream;
+
+    }
+
+    close(): Promise<void> {
+        throw new Error('Method not implemented.');
+    }
 }
 

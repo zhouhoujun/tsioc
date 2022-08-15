@@ -3,7 +3,7 @@ import { EMPTY, Injectable, isString, lang, Nullable } from '@tsdi/ioc';
 import { Socket, IpcNetConnectOpts } from 'net';
 import { TcpClientOpts, TCP_EXECPTIONFILTERS, TCP_INTERCEPTORS } from './options';
 import {
-    TransportRequest, TransportEvent, DetectBodyInterceptor, NormlizePathInterceptor, ev, JsonDecoder, JsonEncoder
+    TransportRequest, TransportEvent, DetectBodyInterceptor, NormlizePathInterceptor, ev
 } from '@tsdi/transport';
 
 import { PacketProtocolOpts } from '../packet';
@@ -16,8 +16,6 @@ import { TcpProtocol } from '../protocol';
 const defaults = {
     delimiter: '\r\n',
     encoding: 'utf8',
-    encoder: JsonEncoder,
-    decoder: JsonDecoder,
     interceptorsToken: TCP_INTERCEPTORS,
     execptionsToken: TCP_EXECPTIONFILTERS,
 } as TcpClientOpts;

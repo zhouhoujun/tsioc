@@ -1,20 +1,15 @@
-import { Duplex, DuplexOptions, Transform, TransformOptions, Writable } from 'stream';
+import { Readable, ReadableOptions, Writable, Duplex, DuplexOptions, Transform, TransformOptions } from 'stream';
+import { ev, PacketParser } from '@tsdi/transport';
 import { Socket } from 'dgram';
-import { generate, parse, NamedOption, Option, ParsedPacket } from 'coap-packet'
-import { PacketParser } from '@tsdi/transport';
+import { generate, parse, NamedOption, Option, ParsedPacket } from 'coap-packet';
 
-export function parseToDuplex(socket: Socket, opts?: DuplexOptions): Duplex {
-    const duplex = new Duplex(opts);
 
-    return duplex;
-}
-
-export class UdpCoapPacketParser  extends PacketParser {
+export class UdpCoapPacketParser extends PacketParser {
     generateId(): string {
         throw new Error('Method not implemented.');
     }
     parser(opts?: TransformOptions | undefined): Transform {
-        return  new Transform({...opts});
+        return new Transform({ ...opts });
     }
     generate(stream: Duplex, opts?: DuplexOptions | undefined): Writable {
 
