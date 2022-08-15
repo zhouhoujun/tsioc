@@ -1,10 +1,15 @@
 import { IncomingHeaders, Endpoint } from '@tsdi/core';
 import { Injectable, InvocationContext, lang } from '@tsdi/ioc';
-import { ServerSession, ServerBuilder, ListenOpts, ServerStream, TransportContext, TransportServer, ServerRequest, ServerResponse, ev, TransportServerOpts, PacketParser } from '@tsdi/transport';
+import {
+    ServerSession, ServerBuilder, ListenOpts, ServerStream, TransportContext, TransportServer,
+    ServerRequest, ServerResponse, ev, TransportServerOpts, PacketParser
+} from '@tsdi/transport';
 import { Observable } from 'rxjs';
 import * as net from 'net';
 import * as dgram from 'dgram';
 import { CoapServerOpts } from './server';
+import { TcpCoapPacketParser } from '../tcp';
+import { parseToDuplex, UdpCoapPacketParser } from '../udp';
 
 @Injectable()
 export class CoapServerBuilder extends ServerBuilder<net.Server | dgram.Socket, TransportServer> {
@@ -31,7 +36,7 @@ export class CoapServerBuilder extends ServerBuilder<net.Server | dgram.Socket, 
     }
 
     getParser(context: InvocationContext, opts: CoapServerOpts): PacketParser {
-        return context.get(PacketParser);
+        return opts.baseOn === 'tcp' ? context.get(TcpCoapPacketParser) : context.get(UdpCoapPacketParser);
     }
 
     connect(server: net.Server | dgram.Socket, parser: PacketParser, opts?: any): Observable<ServerSession> {
@@ -71,20 +76,20 @@ export class CoapServerBuilder extends ServerBuilder<net.Server | dgram.Socket, 
             const onError = (err: Error) => {
                 observer.error(err);
             };
-            const onConnection = (socket: net.Socket) => {
-                observer.next(new ServerSession(socket, parser, opts));
+            const onListening = () => {
+                observer.next(new ServerSession(parseToDuplex(server), parser, opts));
             }
             const onClose = () => {
                 observer.complete();
             }
             server.on(ev.ERROR, onError);
-            server.on(ev.CONNECTION, onConnection);
+            server.on(ev.LISTENING, onListening);
             server.on(ev.CLOSE, onClose)
 
             return () => {
                 server.off(ev.ERROR, onError);
                 server.off(ev.CLOSE, onClose);
-                server.off(ev.CONNECTION, onConnection);
+                server.off(ev.LISTENING, onListening);
             }
         })
     }

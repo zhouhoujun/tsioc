@@ -136,6 +136,7 @@ export namespace hdr {
 
     export const ORIGIN = 'origin';
     export const pragma = 'pragma';
+    export const PROXY_URL = 'proxy-uri';
     export const PROXY_AUTHENTICATE = 'proxy-authenticate';
     export const PROXY_AUTHORIZATION = 'proxy-authorization';
     export const PUBLIC_KEY_PINS = 'public-key-pins';

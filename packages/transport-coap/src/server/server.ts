@@ -1,9 +1,12 @@
 
-import { ExecptionFilter, Interceptor, MiddlewareLike, MiddlewareType } from '@tsdi/core';
+import { ExecptionFilter, Interceptor, MiddlewareType } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
+import {
+    CatchInterceptor, LogInterceptor, RespondInterceptor, TransportServer,
+    TransportServerOpts, ServerRequest, ServerResponse
+} from '@tsdi/transport';
 import { ServerOpts } from 'net';
 import { SocketOptions } from 'dgram';
-import { CatchInterceptor, LogInterceptor, RespondInterceptor, TransportServer, TransportServerOpts, ServerRequest, ServerResponse, ListenOpts } from '@tsdi/transport';
 import { CoapServerBuilder } from './builder';
 
 
@@ -30,7 +33,9 @@ export const COAP_SERV_INTERCEPTORS = tokenId<Interceptor<ServerRequest, ServerR
  * CoAP server execption filters.
  */
 export const COAP_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('COAP_EXECPTION_FILTERS');
-
+/**
+ * CoAP middlewares.
+ */
 export const COAP_MIDDLEWARES = tokenId<MiddlewareType[]>('COAP_MIDDLEWARES');
 
 const defOpts = {

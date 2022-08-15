@@ -1,21 +1,22 @@
-import { Injectable, Injector, lang } from '@tsdi/ioc';
-import { ClientRequsetOpts, ClientSession, ClientBuilder, ClientSessionOpts, ClientStream, ev, TransportClient, TransportClientOpts, PacketParser } from '@tsdi/transport';
+import { Injectable, lang } from '@tsdi/ioc';
+import { ClientRequsetOpts, ClientSession, ClientBuilder, ClientSessionOpts, ClientStream, ev, TransportClient, PacketParser } from '@tsdi/transport';
 import { Observable, Observer } from 'rxjs';
 import { Duplex } from 'stream';
 import * as dgram from 'dgram';
 import * as net from 'net'
 import { OutgoingHeaders } from '@tsdi/core';
 import { CoapClientOpts } from './client';
-import { parseToDuplex } from '../udp';
+import { parseToDuplex, UdpCoapPacketParser } from '../udp';
+import { TcpCoapPacketParser } from '../tcp';
 
 
 @Injectable()
-export class CoapClientSessioBuilder implements ClientBuilder<TransportClient> {
+export class CoapClientBuilder implements ClientBuilder<TransportClient> {
     build(transport: TransportClient, opts: CoapClientOpts): Observable<ClientSession> {
         const { context } = transport;
-        const parser = context.get(PacketParser);
+        const parser = opts.baseOn === 'tcp' ? context.get(TcpCoapPacketParser) : context.get(UdpCoapPacketParser);
         return new Observable((observer: Observer<ClientSession>) => {
-            const socket = opts.baseOn === 'tcp'? net.connect(opts.connectOpts as net.NetConnectOpts) : parseToDuplex(dgram.createSocket(opts.connectOpts as dgram.SocketOptions));
+            const socket = opts.baseOn === 'tcp' ? net.connect(opts.connectOpts as net.NetConnectOpts) : parseToDuplex(dgram.createSocket(opts.connectOpts as dgram.SocketOptions));
             const client = new CoapClientSession(socket, parser, opts.connectionOpts);
             const onError = (err: Error) => {
                 observer.error(err);

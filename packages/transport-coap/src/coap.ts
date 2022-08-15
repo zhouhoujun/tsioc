@@ -1,8 +1,12 @@
 import { Module, RouterModule, TransformModule } from '@tsdi/core';
 import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
 import { TransportModule } from '@tsdi/transport';
+import { CoapClientBuilder } from './client/builder';
 import { CoapClient } from './client/client';
+import { CoapServerBuilder } from './server/builder';
 import { CoapServer, CoapServerOpts } from './server/server';
+import { TcpCoapPacketParser } from './tcp';
+import { UdpCoapPacketParser } from './udp';
 
 @Module({
     imports: [
@@ -11,6 +15,10 @@ import { CoapServer, CoapServerOpts } from './server/server';
         TransportModule
     ],
     providers: [
+        TcpCoapPacketParser,
+        UdpCoapPacketParser,
+        CoapServerBuilder,
+        CoapClientBuilder,
         CoapClient,
         CoapServer
     ]

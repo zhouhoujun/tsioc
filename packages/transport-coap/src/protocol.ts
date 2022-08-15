@@ -12,6 +12,10 @@ export class CoapProtocol extends Protocol {
 
     }
 
+    get name(): string {
+        return this._name;
+    }
+
     isEvent(req: RequestPacket<any>): boolean {
         return req.method === 'events';
     }
@@ -21,24 +25,9 @@ export class CoapProtocol extends Protocol {
     }
 
     isSecure(req: IncomingPacket<any>): boolean {
-        throw new Error('Method not implemented.');
+        return req.stream?.encrypted === true
     }
 
-    /**
-     * Short-hand for:
-     *
-     *    this.protocol == 'https'
-     *
-     * @return {Boolean}
-     * @api public
-     */
-    get secure(): boolean {
-        return this.name === 'tsl'
-    }
-
-    get name(): string {
-        return this._name;
-    }
 
     parse(req: IncomingPacket, proxy?: boolean | undefined): URL {
         const url = req.url ?? '';
