@@ -59,7 +59,6 @@ export class HttpBackend2 extends HttpBackend {
                     statusText = statAdpr.message(status) ?? 'OK'
                 }
 
-                ok = statAdpr.isOk(status);
 
                 if (statAdpr.isEmpty(status)) {
                     completed = true;
@@ -73,9 +72,7 @@ export class HttpBackend2 extends HttpBackend {
                     return;
                 }
 
-                const rqstatus = ctx.getValueify(RequestStauts, () => new RequestStauts());
                 // HTTP fetch step 5
-
                 body = pipeline(incoming instanceof http.IncomingMessage ? incoming : request as http2.ClientHttp2Stream, new PassThrough(), (err) => {
                     error = err;
                     ok = !err;
@@ -91,7 +88,23 @@ export class HttpBackend2 extends HttpBackend {
                 }
 
                 completed = true;
+                ok = statAdpr.isOk(status);
+                
+                if (!ok) {
+                    if (!error) {
+                        body = await toBuffer(body);
+                        body = new TextDecoder().decode(body);
+                    }
+                    completed = true;
+                    return observer.error(new HttpErrorResponse({
+                        url,
+                        error: error ?? body,
+                        status,
+                        statusText
+                    }));
+                }
 
+                const rqstatus = ctx.getValueify(RequestStauts, () => new RequestStauts());
                 // HTTP-network fetch step 12.1.1.3
                 const codings = headers.get(hdr.CONTENT_ENCODING);
 

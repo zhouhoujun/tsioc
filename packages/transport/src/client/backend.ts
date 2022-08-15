@@ -54,7 +54,6 @@ export class TransportBackend implements EndpointBackend<TransportRequest, Trans
                 const headers = new ReqHeaders(hdrs as Record<string, any>);
                 status = statdpr.parse(hdrs[hdr.STATUS2] ?? hdrs[hdr.STATUS]);
 
-                ok = statdpr.isOk(status);
                 statusText = statdpr.message(status) ?? 'OK';
 
                 if (statdpr.isEmpty(status)) {
@@ -69,9 +68,7 @@ export class TransportBackend implements EndpointBackend<TransportRequest, Trans
                     return;
                 }
 
-                const rqstatus = ctx.getValueify(RequestStauts, () => new RequestStauts());
                 // fetch step 5
-
                 body = pipeline(request, new PassThrough(), (err) => {
                     error = err;
                     ok = !err;
@@ -87,7 +84,22 @@ export class TransportBackend implements EndpointBackend<TransportRequest, Trans
                 }
 
                 completed = true;
+                ok = statdpr.isOk(status);
 
+                if (!ok) {
+                    if (!error) {
+                        body = await toBuffer(body);
+                        body = new TextDecoder().decode(body);
+                    }
+                    return observer.error(new TransportErrorResponse({
+                        url,
+                        error: error ?? body,
+                        status,
+                        statusText
+                    }));
+                }
+
+                const rqstatus = ctx.getValueify(RequestStauts, () => new RequestStauts());
                 // codings.
                 const codings = headers.get(hdr.CONTENT_ENCODING);
 

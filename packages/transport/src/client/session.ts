@@ -1,6 +1,5 @@
-import { Abstract, EMPTY_OBJ } from '@tsdi/ioc';
-import { Client, InvalidHeaderToken, OutgoingHeaders, TransportError } from '@tsdi/core';
-import { Observable } from 'rxjs';
+import { EMPTY_OBJ } from '@tsdi/ioc';
+import { InvalidHeaderToken, OutgoingHeaders, TransportAboutError, TransportError } from '@tsdi/core';
 import { Duplex } from 'stream';
 import { Connection, ConnectionOpts } from '../connection';
 import { PacketParser } from '../packet';
@@ -55,7 +54,7 @@ export class ClientSession extends Connection {
         }
         if (signal) {
             const aborter = () => {
-                stream.destroy(new TransportError(signal.reason)); //new  AboutError({ cause: signal.reason }))
+                stream.destroy(new TransportAboutError((signal as any).reason));
             }
             if (signal.aborted) {
                 aborter();

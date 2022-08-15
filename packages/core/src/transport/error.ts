@@ -23,6 +23,12 @@ export class TransportError extends Execption {
     }
 }
 
+export class TransportAboutError extends TransportError {
+    constructor(message = 'Transport about') {
+        super(message)
+    }
+}
+
 export class InvalidHeaderToken extends TransportError {
     constructor(message = 'Invalid header token.') {
         super(message);
