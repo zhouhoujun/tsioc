@@ -1,21 +1,23 @@
-import { EndpointBackend, OnDispose, TransportProtocol, RequestContext, Client, UuidGenerator } from '@tsdi/core';
-import { EMPTY, Injectable, isString, lang, Nullable } from '@tsdi/ioc';
-import { Socket, IpcNetConnectOpts } from 'net';
+import { OnDispose } from '@tsdi/core';
+import { Injectable, Nullable } from '@tsdi/ioc';
 import { TcpClientOpts, TCP_EXECPTIONFILTERS, TCP_INTERCEPTORS } from './options';
-import {
-    TransportRequest, TransportEvent, DetectBodyInterceptor, NormlizePathInterceptor, ev, TransportClient, TransportClientOpts
-} from '@tsdi/transport';
+import { TransportClient } from '@tsdi/transport';
 import { TcpProtocol } from '../protocol';
 
 
 
-
-const defaults = {
-    delimiter: '\r\n',
-    encoding: 'utf8',
-
+/**
+ * tcp client default options.
+ */
+export const TCP_CLIENT_OPTS = {
+    transport: TcpProtocol,
     interceptorsToken: TCP_INTERCEPTORS,
     execptionsToken: TCP_EXECPTIONFILTERS,
+    connectionOpts: {
+        encoding: 'utf8',
+        delimiter: '\r\n',
+        maxSize: 10 * 1024 * 1024,
+    },
 } as TcpClientOpts;
 
 
@@ -30,7 +32,7 @@ export class TcpClient extends TransportClient implements OnDispose {
     }
 
     protected override getDefaultOptions() {
-        return defaults;
+        return TCP_CLIENT_OPTS;
     }
 
     // protected override initOption(options?: TcpClientOpts): TcpClientOpts {

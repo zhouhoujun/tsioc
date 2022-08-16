@@ -47,7 +47,7 @@ export abstract class Connection extends Duplexify {
 
         this.once(ev.CLOSE, () => {
             this.closed = true
-        })
+        });
 
         this._generator.on(ev.ERROR, this.emit.bind(this, ev.ERROR))
         this._parser.on(ev.ERROR, this.emit.bind(this, ev.ERROR))

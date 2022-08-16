@@ -1,7 +1,7 @@
-import { Endpoint } from '@tsdi/core';
+import { Endpoint, ListenOpts } from '@tsdi/core';
 import { Injectable, InvocationContext, lang } from '@tsdi/ioc';
 import {
-    ServerSession, ServerBuilder, ListenOpts, TransportContext, TransportServer,
+    ServerSession, ServerBuilder, TransportContext, TransportServer,
     ev, TransportServerOpts, PacketProtocol, parseToDuplex
 } from '@tsdi/transport';
 import { Observable } from 'rxjs';

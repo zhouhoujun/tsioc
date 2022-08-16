@@ -2,6 +2,7 @@ import { Abstract } from '@tsdi/ioc';
 import { IncomingHeaders } from '@tsdi/core';
 import { Duplex, DuplexOptions, Readable } from 'stream';
 import { Connection } from './connection';
+import { ev } from './consts';
 
 /**
  * transport stream
@@ -11,23 +12,22 @@ export abstract class TransportStream extends Duplex {
 
     constructor(readonly connection: Connection, readonly streamId: string, opts?: DuplexOptions) {
         super(opts);
+        this.bindEvents(opts);
     }
 
     protected bindEvents(opts?: DuplexOptions) {
-        process.nextTick(() => {
-            this.connection.pipe(this);
-        });
-
         this.connection.on('error', this.emit.bind(this, 'error'));
         this.connection.on('close', this.emit.bind(this, 'close'));
-    }
-
-    override _read(size: number): void {
-
+        const protocol = this.connection.packet;
+        this.connection.on(ev.DATA, (chuck: Buffer) => {
+            if (protocol.isBody(chuck, this.streamId)) {
+                this.push(protocol.parseBody(chuck, this.streamId));
+            }
+        })
     }
 
     override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
-        this.connection.write(chunk, encoding, callback);
+        this.connection.write(this.connection.packet.attachStreamId(chunk, this.streamId), encoding, callback);
     }
 
     /**

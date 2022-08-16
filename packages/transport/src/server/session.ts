@@ -9,8 +9,11 @@ export class ServerSession extends Connection {
 
     protected override bindEvents(opts?: ConnectionOpts): void {
         super.bindEvents(opts);
-        this._parser.on('data', (chunk) => {
-
+        this._parser.on(ev.DATA, (chunk) => {
+            if (this.packet.isHeader(chunk)) {
+                const packet = this.packet.parseHeader(chunk);
+                this.emit(ev.STREAM, new ServerStream(this, packet.id!), packet.headers)
+            }
         })
     }
 

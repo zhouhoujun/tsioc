@@ -11,7 +11,6 @@ export class TcpProtocol extends PacketProtocol {
     private _protocol = 'tcp';
     constructor(readonly status: TcpStatus) {
         super();
-
     }
 
     isEvent(req: RequestPacket<any>): boolean {
@@ -81,10 +80,11 @@ export class TcpProtocol extends PacketProtocol {
     }
 
     generateId(): string {
-        throw new Error('Method not implemented.');
+        return Math.max(1, Math.floor(Math.random() * 65535)).toString()
     }
+    
     valid(header: string): boolean {
-        throw new Error('Method not implemented.');
+        return true;
     }
     transform(opts?: ConnectionOpts | undefined): Transform {
         throw new Error('Method not implemented.');
@@ -92,7 +92,6 @@ export class TcpProtocol extends PacketProtocol {
     generate(stream: Duplex, opts?: ConnectionOpts | undefined): Writable {
         throw new Error('Method not implemented.');
     }
-
 
 }
 

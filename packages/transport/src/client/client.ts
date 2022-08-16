@@ -31,7 +31,6 @@ export class TransportClient extends Client<TransportRequest, TransportEvent, Tr
         super(options);
     }
 
-
     get session(): ClientSession {
         return this._session ?? null!;
     }
@@ -52,9 +51,10 @@ export class TransportClient extends Client<TransportRequest, TransportEvent, Tr
     protected override initOption(options?: TransportClientOpts): TransportClientOpts {
         const defaults = this.getDefaultOptions();
         const connectOpts = { ...defaults.connectOpts, ...options?.connectOpts };
+        const connectionOpts = { ...defaults.connectionOpts, ...options?.connectionOpts };
         const interceptors = [...options?.interceptors ?? EMPTY, NormlizePathInterceptor, DetectBodyInterceptor];
         const providers = options && options.providers ? [...TRANSPORT_CLIENT_PROVIDERS, ...options.providers] : TRANSPORT_CLIENT_PROVIDERS;
-        const opts = { ...defaults, ...options, connectOpts, interceptors, providers };
+        const opts = { ...defaults, ...options, connectOpts, connectionOpts, interceptors, providers };
         return opts;
     }
 

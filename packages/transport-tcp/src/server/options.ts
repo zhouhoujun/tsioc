@@ -1,17 +1,15 @@
 import { Interceptor, ServerOpts } from '@tsdi/core';
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { SessionOptions, ContentOptions, MimeSource, TransportServerOpts } from '@tsdi/transport';
+import { SessionOptions, ContentOptions, MimeSource, TransportServerOpts, ServerRequest, ServerResponse } from '@tsdi/transport';
 import { ListenOptions, ServerOpts as NetServerOpts } from 'net';
-import { PacketProtocolOpts } from '../packet';
-import { TcpServRequest } from './request';
-import { TcpServResponse } from './response';
+
 
 
 /**
  * TCP server options.
  */
 @Abstract()
-export abstract class TcpServerOpts extends TransportServerOpts implements PacketProtocolOpts  {
+export abstract class TcpServerOpts extends TransportServerOpts {
 
     abstract maxConnections?: number;
     abstract proxy?: boolean;
@@ -19,7 +17,6 @@ export abstract class TcpServerOpts extends TransportServerOpts implements Packe
      * socket timeout.
      */
     abstract timeout?: number;
-    abstract encoding?: BufferEncoding;
     abstract mimeDb?: Record<string, MimeSource>;
     abstract content?: boolean | ContentOptions;
     abstract session?: boolean | SessionOptions;
@@ -30,4 +27,4 @@ export abstract class TcpServerOpts extends TransportServerOpts implements Packe
 /**
  * Tcp server interceptors.
  */
-export const TCP_SERV_INTERCEPTORS = tokenId<Interceptor<TcpServRequest, TcpServResponse>[]>('TCP_SERV_INTERCEPTORS');
+export const TCP_SERV_INTERCEPTORS = tokenId<Interceptor<ServerRequest, ServerResponse>[]>('TCP_SERV_INTERCEPTORS');

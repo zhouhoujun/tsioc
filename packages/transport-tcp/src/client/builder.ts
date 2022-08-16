@@ -1,13 +1,14 @@
-import { Client, RequstOption } from '@tsdi/core';
-import { ClientBuilder, ClientSession, ev, PacketProtocol, TransportClient, TransportClientOpts } from '@tsdi/transport';
+import { ClientBuilder, ClientSession, ev, PacketProtocol, TransportClient } from '@tsdi/transport';
 import { Observable, Observer } from 'rxjs';
 import * as net from 'net';
+import { TcpClientOpts } from './options';
+import { TcpProtocol } from '../protocol';
 
 export class TcpClientBuilder extends ClientBuilder<TransportClient> {
 
-    build(transport: TransportClient, opts: TransportClientOpts): Observable<ClientSession> {
+    build(transport: TransportClient, opts: TcpClientOpts): Observable<ClientSession> {
         const { logger, context }  = transport;
-        const parser = context.get(PacketProtocol);
+        const parser = context.get(opts.transport ?? TcpProtocol);
         return new Observable((observer: Observer<ClientSession>) => {
             const socket = net.connect(opts.connectOpts as net.NetConnectOpts);
             const client = new ClientSession(socket, parser, opts.connectionOpts);

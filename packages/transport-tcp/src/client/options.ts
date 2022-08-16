@@ -1,14 +1,13 @@
-import { ClientOpts, ExecptionFilter, Interceptor } from '@tsdi/core';
+import { ExecptionFilter, Interceptor } from '@tsdi/core';
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { TransportRequest, TransportEvent } from '@tsdi/transport';
+import { TransportRequest, TransportEvent, TransportClientOpts } from '@tsdi/transport';
 import { SocketConstructorOpts, NetConnectOpts } from 'net';
-import { PacketProtocolOpts } from '../packet';
 
 /**
  * tcp client options.
  */
 @Abstract()
-export abstract class TcpClientOpts extends ClientOpts<TransportRequest, TransportEvent> implements PacketProtocolOpts {
+export abstract class TcpClientOpts extends TransportClientOpts {
     /**
      * packet size limit.
      */
@@ -28,7 +27,7 @@ export abstract class TcpClientOpts extends ClientOpts<TransportRequest, Transpo
     /**
      * connect options.
      */
-    abstract connectOpts: NetConnectOpts;
+    abstract connectOpts?: NetConnectOpts;
 }
 
 /**

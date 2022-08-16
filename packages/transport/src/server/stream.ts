@@ -3,8 +3,11 @@ import { Abstract } from '@tsdi/ioc';
 import { TransportStream } from '../stream';
 
 
-@Abstract()
-export abstract class ServerStream extends TransportStream {
+
+export class ServerStream extends TransportStream {
+    close(code?: number | undefined, callback?: (() => void) | undefined): void {
+        throw new Error('Method not implemented.');
+    }
 
     /**
      * Initiates a push stream. The callback is invoked with the new `TransportStream`instance created for the push stream passed as the second argument, or an`Error` passed as the first argument.
@@ -30,8 +33,8 @@ export abstract class ServerStream extends TransportStream {
      * @since v8.4.0
      * @param callback Callback that is called once the push stream has been initiated.
      */
-    abstract pushStream(headers: OutgoingHeaders, callback?: (err: Error | null, pushStream: ServerStream, headers: OutgoingHeaders) => void): void;
-    abstract pushStream(
+    pushStream(headers: OutgoingHeaders, callback?: (err: Error | null, pushStream: ServerStream, headers: OutgoingHeaders) => void): void;
+    pushStream(
         headers: OutgoingHeaders,
         options?: {
             exclusive?: boolean;
@@ -40,6 +43,9 @@ export abstract class ServerStream extends TransportStream {
             silent?: boolean;
         },
         callback?: (err: Error | null, pushStream: ServerStream, headers: OutgoingHeaders) => void): void;
+    pushStream(headers: OutgoingHeaders, arg?: any, callback?: (err: Error | null, pushStream: ServerStream, headers: OutgoingHeaders) => void): void {
+
+    }
 
     /**
      * ```js
@@ -70,8 +76,10 @@ export abstract class ServerStream extends TransportStream {
      * ```
      * @since v8.4.0
      */
-    abstract respond(headers?: OutgoingHeaders, options?: {
+    respond(headers?: OutgoingHeaders, options?: {
         endStream?: boolean;
         waitForTrailers?: boolean;
-    }): void;
+    }): void {
+
+    }
 }
