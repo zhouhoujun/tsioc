@@ -1,10 +1,4 @@
-import { Input } from '@tsdi/components';
-import { Task } from '../metadata/decor';
-import { ConditionActivity } from './ConditionActivity';
-import { ControlActivity } from '../core/ControlActivity';
-import { IActivityContext } from '../core/IActivityContext';
-import { ActivityType } from '../core/ActivityMetadata';
-
+import { Directive, Input } from '@tsdi/components';
 
 
 /**
@@ -14,10 +8,10 @@ import { ActivityType } from '../core/ActivityMetadata';
  * @class ConfirmActivity
  * @extends {ControlActivity}
  */
-@Task('confirm')
-export class ConfirmActivity extends ControlActivity {
+@Directive('confirm')
+export class ConfirmActivity {
 
-    @Input() condition: ConditionActivity;
+    @Input() confirm: ConditionActivity;
 
     @Input({ bindingType: 'dynamic' }) body: ActivityType<any>;
 

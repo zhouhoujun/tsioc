@@ -215,7 +215,7 @@ export interface View {
     /**
      * A reference to the first child node located in the view.
      */
-    firstChild?: VNode;
+    firstChild: VNode | null;
 
     /**
      * Full registry of directives and components that may be found in this view.

@@ -10,7 +10,7 @@ import { ApplicationContext } from '@tsdi/core';
  * viewRef implement.
  */
 export class ViewRef<T = any> extends EmbeddedViewRef<T> implements InternalViewRef {
-    private _appRef?: ViewRefTracker = null;
+    private _appRef: ViewRefTracker | null = null;
     private _attachedToViewContainer = false;
 
     get rootNodes(): any[] {

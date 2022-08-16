@@ -589,7 +589,7 @@ export interface VNode {
      *
      * If this VNode corresponds to an element, views will be null .
      */
-    views?: View | View[];
+    views?: View | View[] | null;
 
     /**
      * The next sibling node. Necessary so we can propagate through the root nodes of a view
