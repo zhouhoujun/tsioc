@@ -1,4 +1,4 @@
-import { IncomingPacket, mths, Protocol } from '@tsdi/core';
+import { mths, TransportProtocol } from '@tsdi/core';
 import { EMPTY_OBJ, Inject, Injectable, isNumber, isString } from '@tsdi/ioc';
 import { ListenOpts, LISTEN_OPTS } from '@tsdi/platform-server';
 import { HttpRequest } from '@tsdi/common';
@@ -9,13 +9,12 @@ import { TLSSocket } from 'tls';
 import { HttpStatus } from './status';
 
 @Injectable()
-export class HttpProtocol extends Protocol {
+export class HttpProtocol extends TransportProtocol {
     
-    private _name = 'http';
+    private _protocol = 'http';
     constructor(@Inject(LISTEN_OPTS, { defaultValue: EMPTY_OBJ }) private listenOpts: ListenOpts, readonly status: HttpStatus) {
         super();
     }
-
 
     isEvent(req: HttpRequest): boolean {
         return req.method === 'events';
@@ -26,12 +25,11 @@ export class HttpProtocol extends Protocol {
     }
     
     isSecure(req: http.IncomingMessage | http2.Http2ServerRequest): boolean {
-        return this.name === 'https' || (req?.socket as TLSSocket)?.encrypted === true
+        return this.protocol === 'https' || (req?.socket as TLSSocket)?.encrypted === true
     }
 
-
-    get name(): string {
-        return this._name;
+    get protocol(): string {
+        return this._protocol;
     }
 
     parse(req: http.IncomingMessage | http2.Http2ServerRequest, proxy?: boolean | undefined): URL {
@@ -40,12 +38,12 @@ export class HttpProtocol extends Protocol {
             return new URL(url);
         } else {
             if ((req.socket as TLSSocket).encrypted) {
-                this._name = 'https';
+                this._protocol = 'https';
             } else if (!proxy) {
-                this._name = 'http';
+                this._protocol = 'http';
             } else {
                 const proto = req.headers[hdr.X_FORWARDED_PROTO] as string;
-                this._name = (proto ? proto.split(urlsplit, 1)[0] : 'http');
+                this._protocol = (proto ? proto.split(urlsplit, 1)[0] : 'http');
             }
 
             let host = proxy && req.headers[hdr.X_FORWARDED_HOST];
@@ -58,7 +56,7 @@ export class HttpProtocol extends Protocol {
             } else {
                 host = isString(host) ? host.split(urlsplit, 1)[0] : host[0]
             }
-            return new URL(`${this.name}://${host}${url}`);
+            return new URL(`${this.protocol}://${host}${url}`);
         }
 
     }
@@ -67,14 +65,14 @@ export class HttpProtocol extends Protocol {
         if (!this.isAbsoluteUrl(url)) {
             const { host, port, path, withCredentials } = this.listenOpts;
             if (withCredentials) {
-                this._name = 'https';
+                this._protocol = 'https';
             }
-            const urlPrefix = `${this.name}://${host ?? 'localhost'}:${port ?? 3000}`;
+            const urlPrefix = `${this.protocol}://${host ?? 'localhost'}:${port ?? 3000}`;
             const baseUrl = new URL(urlPrefix, path);
             url = new URL(url, baseUrl).toString();
         } else {
             const uri = new URL(url);
-            this._name = uri.protocol.replace('://', '');
+            this._protocol = uri.protocol.replace('://', '');
             url = uri.toString();
         }
         return url;
@@ -85,7 +83,7 @@ export class HttpProtocol extends Protocol {
     }
 
     match(protocol: string): boolean {
-        return protocol === this.name;
+        return protocol === this.protocol;
     }
 }
 

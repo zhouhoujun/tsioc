@@ -18,6 +18,7 @@ import { HttpExecptionFilter, HttpFinalizeFilter } from './finalize-filter';
 import { Http2ServerOpts, HttpServerOpts, HTTP_EXECPTION_FILTERS, HTTP_SERVEROPTIONS, HTTP_SERV_INTERCEPTORS } from './options';
 import { HTTP_SERVR_PROVIDERS } from './providers';
 import { HttpHandlerBinding } from './binding';
+import { HttpProtocol } from '../protocol';
 
 
 
@@ -32,6 +33,7 @@ const httpOpts = {
     content: {
         root: 'public'
     },
+    transport: HttpProtocol,
     interceptorsToken: HTTP_SERV_INTERCEPTORS,
     middlewaresToken: HTTP_MIDDLEWARES,
     execptionsToken: HTTP_EXECPTION_FILTERS,
@@ -191,7 +193,7 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse, HttpCo
      * @param response 
      */
     protected onRequestHandler(request: HttpServRequest, response: HttpServResponse) {
-        const ctx = new HttpContext(this.context.injector, request, response, this as Server);
+        const ctx = new HttpContext(this.context.injector, request, response, this as Server, { transport: this.getOptions().transport });
         this.context.injector.get(HttpHandlerBinding).binding(ctx, this.endpoint());
     }
 

@@ -2,7 +2,7 @@ import { EMPTY_OBJ } from '@tsdi/ioc';
 import { InvalidHeaderToken, OutgoingHeaders, TransportAboutError, TransportError } from '@tsdi/core';
 import { Duplex } from 'stream';
 import { Connection, ConnectionOpts } from '../connection';
-import { PacketParser } from '../packet';
+import { PacketProtocol } from '../packet';
 import { ClientStream } from './stream';
 import { ev } from '../consts';
 
@@ -27,7 +27,7 @@ export class ClientSession extends Connection {
 
     readonly authority: string;
     readonly clientId: string;
-    constructor(duplex: Duplex, packet: PacketParser, opts: ClientSessionOpts = EMPTY_OBJ) {
+    constructor(duplex: Duplex, packet: PacketProtocol, opts: ClientSessionOpts = EMPTY_OBJ) {
         super(duplex, packet, opts)
         this.authority = opts.authority ?? '';
         this.clientId = opts.clientId ?? '';

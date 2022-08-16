@@ -33,7 +33,7 @@ export class HttpBackend2 extends HttpBackend {
                 request = this.request1(url, req, ac);
             }
 
-            const statAdpr = ctx.protocol.status;
+            const statAdpr = ctx.transport.status;
             let status: number, statusText: string;
             let completed = false;
             let headers: ResHeaders;

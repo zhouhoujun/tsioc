@@ -1,5 +1,5 @@
-import { AssetContext, OutgoingHeader, ServerContext, IncomingHeader, OutgoingHeaders, IncomingPacket, OutgoingPacket, Server } from '@tsdi/core';
-import { Abstract, Injector, InvokeArguments, isArray, isNil, isNumber, isString, lang } from '@tsdi/ioc';
+import { AssetContext, OutgoingHeader, ServerContext, IncomingHeader, OutgoingHeaders, IncomingPacket, OutgoingPacket, Server, ServerContextOpts, ConnectionContext } from '@tsdi/core';
+import { Abstract, Injector, isArray, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';
 import { extname } from 'path';
 import { Buffer } from 'buffer';
 import { ctype, hdr } from './consts';
@@ -18,14 +18,14 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
     readonly originalUrl: string;
     private _url?: string;
 
-    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, options?: InvokeArguments) {
+    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, options?: ServerContextOpts) {
         super(injector, request, response, target, options);
 
-        this.response.statusCode = this.protocol.status.notFound;
+        this.response.statusCode = this.transport.status.notFound;
         this.originalUrl = request.url?.toString() ?? '';
         this._url = request.url ?? '';
 
-        if (this.protocol.isAbsoluteUrl(this._url)) {
+        if (this.transport.isAbsoluteUrl(this._url)) {
             this._url = this.URL.pathname;
         } else {
             const sidx = this._url.indexOf('?');
@@ -72,7 +72,7 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
 
     protected createURL() {
         try {
-            return this.protocol.parse(this.request, this.target.proxy);
+            return this.transport.parse(this.request, this.target.proxy);
         } catch (err) {
             return Object.create(null);
         }
@@ -85,7 +85,7 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
      * @api public
      */
     get secure(): boolean {
-        return this.protocol.isSecure(this.request);
+        return this.transport.isSecure(this.request);
     }
 
     get pathname(): string {
@@ -450,14 +450,14 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
      * Whether the status code is ok
      */
     get ok(): boolean {
-        return this.protocol.status.isOk(this.status);
+        return this.transport.status.isOk(this.status);
     }
 
     /**
      * Whether the status code is ok
      */
     set ok(ok: boolean) {
-        this.status = ok ? this.protocol.status.ok : this.protocol.status.notFound
+        this.status = ok ? this.transport.status.ok : this.transport.status.notFound
     }
 
 
@@ -488,7 +488,7 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
 
         // no content
         if (null == val) {
-            if (!this.protocol.status.isEmpty(this.status)) this.status = this.protocol.status.noContent;
+            if (!this.transport.status.isEmpty(this.status)) this.status = this.transport.status.noContent;
             if (val === null) this.onNullBody();
             this.removeHeader(hdr.CONTENT_TYPE);
             this.removeHeader(hdr.CONTENT_LENGTH);
@@ -497,7 +497,7 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
         }
 
         // set the status
-        if (!this._explicitStatus) this.status = this.protocol.status.ok;
+        if (!this._explicitStatus) this.status = this.transport.status.ok;
 
         // set the content-type only if not yet set
         const setType = !this.hasHeader(hdr.CONTENT_TYPE);
@@ -688,7 +688,7 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
         if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
         this.setHeader(hdr.LOCATION, encodeUrl(url));
         // status
-        if (!this.protocol.status.isRedirect(this.status)) this.status = this.protocol.status.found;
+        if (!this.transport.status.isRedirect(this.status)) this.status = this.transport.status.found;
 
         // html
         if (this.accepts('html')) {
@@ -809,6 +809,10 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
         }
 
         return this.setHeader(field, val)
+    }
+
+    protected override isSelf(token: Token<any>): boolean {
+        return token === AssetServerContext || token === ConnectionContext || token === ServerContext;
     }
 
 }

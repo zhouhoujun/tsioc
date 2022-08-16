@@ -1,4 +1,4 @@
-import { BadRequestError, BytesPipe, EADDRINUSE, ECONNREFUSED, Protocol, Router, TransportStatus } from '@tsdi/core';
+import { BadRequestError, BytesPipe, EADDRINUSE, ECONNREFUSED, TransportProtocol, Router, TransportStatus } from '@tsdi/core';
 import { Injectable, isBoolean, lang, Nullable, ProviderType } from '@tsdi/ioc';
 import { LISTEN_OPTS } from '@tsdi/platform-server';
 import { Server } from 'net';
@@ -51,7 +51,7 @@ const defOpts = {
 export const TCP_SERV_PROVIDERS: ProviderType[] = [
     { provide: RespondAdapter, useClass: TcpRespondAdapter },
     { provide: TransportStatus, useClass: TcpStatus },
-    { provide: Protocol, useClass: TcpProtocol }
+    { provide: TransportProtocol, useClass: TcpProtocol }
 ]
 
 /**

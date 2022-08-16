@@ -4,7 +4,7 @@ import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import * as assert from 'assert';
 import * as http from 'http';
 import * as http2 from 'http2';
-import { hdr, append, parseTokenList, AssetServerContext } from '@tsdi/transport';
+import { hdr, append, parseTokenList, AssetServerContext, TransportContext } from '@tsdi/transport';
 import { HttpError, HttpInternalServerError } from './../errors';
 import { HttpServer } from './server';
 
@@ -180,12 +180,12 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
         assert(code >= 100 && code <= 999, `invalid status code: ${code}`);
         this._explicitStatus = true;
         this.response.statusCode = code;
-        if (this.request.httpVersionMajor < 2) this.response.statusMessage = this.protocol.status.message(code);
-        if (this.body && this.protocol.status.isEmpty(code)) this.body = null;
+        if (this.request.httpVersionMajor < 2) this.response.statusMessage = this.transport.status.message(code);
+        if (this.body && this.transport.status.isEmpty(code)) this.body = null;
     }
 
     get statusMessage() {
-        return this.response.statusMessage || this.protocol.status.message(this.status)
+        return this.response.statusMessage || this.transport.status.message(this.status)
     }
 
     set statusMessage(msg: string) {

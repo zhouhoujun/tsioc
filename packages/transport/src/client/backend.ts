@@ -31,7 +31,7 @@ export class TransportBackend implements EndpointBackend<TransportRequest, Trans
         }));
 
         return new Observable((observer: Observer<any>) => {
-            const statdpr = ctx.protocol.status;
+            const statdpr = ctx.transport.status;
             const path = url.replace(session.authority, '');
 
             req.headers.set(hdr.METHOD, method);

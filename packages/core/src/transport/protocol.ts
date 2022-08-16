@@ -1,16 +1,17 @@
 import { Abstract } from '@tsdi/ioc';
-import { IncomingPacket, RequestPacket } from './packet';
 import { TransportStatus } from './status';
+import { IncomingPacket, RequestPacket } from './packet';
+
 
 /**
- * protocol for transport.
+ * transport adapter.
  */
 @Abstract()
-export abstract class Protocol {
+export abstract class TransportProtocol {
     /**
      * protocol name
      */
-    abstract get name(): string;
+    abstract get protocol(): string;
     /**
      * status of transport.
      */
@@ -19,7 +20,7 @@ export abstract class Protocol {
     abstract isAbsoluteUrl(url: string): boolean;
 
     abstract normlizeUrl(url: string): string;
-    
+
     abstract isEvent(req: RequestPacket): boolean;
 
     /**

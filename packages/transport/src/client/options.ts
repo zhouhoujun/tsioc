@@ -1,7 +1,8 @@
-import { ClientOpts, Decoder, Encoder, EndpointBackend, ExecptionFilter, Interceptor } from '@tsdi/core';
+import { ClientOpts, Decoder, Encoder, EndpointBackend, ExecptionFilter, Interceptor, TransportProtocol } from '@tsdi/core';
 import { Abstract, ClassType, tokenId } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { Stream } from 'stream';
+import { PacketProtocol } from '../packet';
 import { ClientBuilder } from './builder';
 import { TransportRequest } from './request';
 import { TransportEvent } from './response';
@@ -38,6 +39,8 @@ export abstract class TransportClientOpts extends ClientOpts<TransportRequest, T
      * request opions.
      */
     abstract requestOpts?: SessionRequestOpts;
+
+    abstract transport?: ClassType<PacketProtocol>;
 
     abstract builder?: ClassType<ClientBuilder>; 
     /**

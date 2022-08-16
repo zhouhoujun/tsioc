@@ -71,7 +71,7 @@ export class MappingRoute implements Middleware {
     }
 
     async invoke(ctx: ConnectionContext, next: () => Promise<void>): Promise<void> {
-        if (this.route.protocol && !ctx.protocol.match(this.route.protocol)) return next();
+        if (this.route.protocol && !ctx.transport.match(this.route.protocol)) return next();
         if (await this.canActive(ctx)) {
             if (!this._middleware) {
                 this._middleware = await this.parse(this.route, ctx);
@@ -197,7 +197,7 @@ export class MappingRouter extends Router implements OnDestroy {
     }
 
     protected getRoute(ctx: ConnectionContext): MiddlewareFn | undefined {
-        if (ctx.status && !ctx.protocol.status.isNotFound(ctx.status)) return;
+        if (ctx.status && !ctx.transport.status.isNotFound(ctx.status)) return;
 
         let url: string;
         if (this.prefix) {

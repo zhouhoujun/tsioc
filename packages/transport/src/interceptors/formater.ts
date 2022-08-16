@@ -20,7 +20,7 @@ export class DefaultStatusFormater extends ResponseStatusFormater {
 
 
     private formatStatus(ctx: ConnectionContext): [string, string] {
-        const { status, protocol, statusMessage } = ctx;
+        const { status, transport: protocol, statusMessage } = ctx;
 
         if (protocol.status.isOk(status)) {
             return [chalk.green(status), statusMessage ? chalk.green(statusMessage) : '']

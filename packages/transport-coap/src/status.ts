@@ -1,7 +1,21 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { mths, TransportStatus } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
-  
+
+export enum CoapStatusCode {
+    ok = 0.001,
+
+}
+
+export const CoapMethods = {
+    GET: 0.01,
+    POST: 0.02,
+    PUT: 0.03,
+    DELETE: 0.04,
+    FETCH: 0.05,
+    PATCH: 0.06,
+    iPATCH: 0.07
+}
 
 @Injectable({ static: true })
 export class CoapStatus extends TransportStatus {

@@ -2,7 +2,7 @@ import { Abstract, EMPTY_OBJ } from '@tsdi/ioc';
 import * as Duplexify from 'duplexify';
 import { Writable, Duplex, DuplexOptions, Transform } from 'stream';
 import { ev } from './consts';
-import { PacketParser } from './packet';
+import { PacketProtocol } from './packet';
 
 
 
@@ -16,10 +16,10 @@ export abstract class Connection extends Duplexify {
 
     protected _parser: Transform;
     protected _generator: Writable;
-    constructor(private stream: Duplex, readonly packet: PacketParser, private opts: ConnectionOpts = EMPTY_OBJ) {
+    constructor(private stream: Duplex, readonly packet: PacketProtocol, private opts: ConnectionOpts = EMPTY_OBJ) {
         super(undefined, undefined, opts);
 
-        this._parser = packet.parser(opts);
+        this._parser = packet.transform(opts);
         this._generator = packet.generate(stream, opts);
         this.setWritable(this._generator);
         this.setReadable(this._parser);

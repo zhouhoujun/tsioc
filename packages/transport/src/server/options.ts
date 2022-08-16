@@ -1,4 +1,4 @@
-import { Decoder, Encoder, Interceptor, Protocol, ServerOpts } from '@tsdi/core';
+import { Decoder, Encoder, Interceptor, TransportProtocol, ServerOpts } from '@tsdi/core';
 import { Abstract, ClassType, tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { Stream } from 'stream';
@@ -8,6 +8,7 @@ import { MimeSource } from '../mime';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';
 import { ServerBuilder } from './builder';
+import { PacketProtocol } from '../packet';
 
 /**
  * Listen options.
@@ -37,10 +38,6 @@ export abstract class ListenOpts {
 export abstract class TransportServerOpts<T = any> extends ServerOpts<ServerRequest, ServerResponse> {
     abstract proxy?: boolean;
     /**
-     * protocol
-     */
-    abstract protocol?: TypeOf<Protocol>;
-    /**
      * options of protocol.
      */
     abstract protocolOpts?: T;
@@ -65,6 +62,7 @@ export abstract class TransportServerOpts<T = any> extends ServerOpts<ServerRequ
     abstract listenOpts: ListenOpts;
     abstract connectionOpts?: ConnectionOpts;
 
+    abstract transport?: ClassType<PacketProtocol>;
     abstract builder?: ClassType<ServerBuilder>;
 
     /**

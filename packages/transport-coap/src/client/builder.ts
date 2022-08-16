@@ -1,5 +1,5 @@
 import { Injectable, lang } from '@tsdi/ioc';
-import { ClientRequsetOpts, ClientSession, ClientBuilder, ClientSessionOpts, ClientStream, ev, TransportClient, PacketParser, parseToDuplex } from '@tsdi/transport';
+import { ClientRequsetOpts, ClientSession, ClientBuilder, ClientSessionOpts, ClientStream, ev, TransportClient, PacketProtocol, parseToDuplex } from '@tsdi/transport';
 import { Observable, Observer } from 'rxjs';
 import { Duplex } from 'stream';
 import * as dgram from 'dgram';
@@ -27,16 +27,17 @@ export class CoapClientBuilder implements ClientBuilder<TransportClient> {
             const onConnected = () => {
                 observer.next(client);
             }
-            client.on(ev.ERROR, onError);
+            
+            socket.on(ev.ERROR, onError);
             socket.on(ev.CLOSE, onClose);
             socket.on(ev.END, onClose);
-            client.on(ev.CONNECT, onConnected);
+            socket.on(ev.CONNECT, onConnected);
 
             return () => {
-                client.off(ev.ERROR, onError);
-                client.off(ev.CLOSE, onClose);
-                client.off(ev.END, onClose);
-                client.off(ev.CONNECT, onConnected);
+                socket.off(ev.ERROR, onError);
+                socket.off(ev.CLOSE, onClose);
+                socket.off(ev.END, onClose);
+                socket.off(ev.CONNECT, onConnected);
             }
         });
     }
@@ -49,7 +50,7 @@ export class CoapClientSession extends ClientSession {
 
     private smaps: Map<string, ClientStream>;
 
-    constructor(stream: Duplex, packet: PacketParser, ops?: ClientSessionOpts) {
+    constructor(stream: Duplex, packet: PacketProtocol, ops?: ClientSessionOpts) {
         super(stream, packet, ops)
         this.smaps = new Map();
     }

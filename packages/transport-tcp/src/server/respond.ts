@@ -14,7 +14,7 @@ export class TcpRespondAdapter extends RespondAdapter {
         const protocol = ctx.get(PacketProtocol);
         const body = ctx.body;
         const code = ctx.status;
-        if (ctx.protocol.status.isEmpty(code)) {
+        if (ctx.transport.status.isEmpty(code)) {
             ctx.body = null;
             return protocol.write(res.socket, res.serializePacket());
         }

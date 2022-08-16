@@ -3,9 +3,11 @@ import { Abstract, InvocationContext } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Connection } from '../connection';
 import { ev } from '../consts';
-import { PacketParser } from '../packet';
+import { PacketProtocol } from '../packet';
 import { TransportContext } from './context';
 import { ListenOpts, TransportServerOpts } from './options';
+import { ServerRequest } from './req';
+import { ServerResponse } from './res';
 import { ServerStream } from './stream';
 
 @Abstract()
@@ -49,12 +51,18 @@ export abstract class ServerBuilder<T = any, TS extends Server = Server> {
      */
     protected abstract listen(server: T, opts: ListenOpts): Promise<void>;
 
-    protected abstract getParser(context: InvocationContext, opts: TransportServerOpts): PacketParser;
+    protected abstract getParser(context: InvocationContext, opts: TransportServerOpts): PacketProtocol;
 
-    protected abstract buildContext(transport: TS, connection: Connection, stream: ServerStream, headers: IncomingHeaders): TransportContext;
+    protected buildContext(transport: TS, connection: Connection, stream: ServerStream, headers: IncomingHeaders): TransportContext {
+        const request = new ServerRequest(connection, stream, headers);
+        const response = new ServerResponse(connection, stream, headers);
+        const parent = transport.context;
+        return new TransportContext(parent.injector, request, response, transport, { parent });
+    }
 
-    protected abstract connect(server: T, parser: PacketParser, opts?: any): Observable<Connection>;
+    protected abstract connect(server: T, parser: PacketProtocol, opts?: any): Observable<Connection>;
     /**
+     * 
      * handle request.
      * @param context 
      * @param endpoint 

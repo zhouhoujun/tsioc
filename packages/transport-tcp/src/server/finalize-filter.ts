@@ -54,13 +54,13 @@ export class TcpFinalizeFilter implements ExecptionFilter {
             msg = err.message
         } else {
             // ENOENT support
-            if (ENOENT === err.code) statusCode = hctx.protocol.status.notFound;
+            if (ENOENT === err.code) statusCode = hctx.transport.status.notFound;
 
             // default to server error.
-            if (!isNumber(statusCode) || !hctx.protocol.status.message(statusCode)) statusCode = hctx.protocol.status.serverError;
+            if (!isNumber(statusCode) || !hctx.transport.status.message(statusCode)) statusCode = hctx.transport.status.serverError;
 
             // respond
-            msg = hctx.protocol.status.message(statusCode);
+            msg = hctx.transport.status.message(statusCode);
         }
         hctx.status = statusCode;
         hctx.statusMessage = msg;

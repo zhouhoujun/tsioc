@@ -12,7 +12,7 @@ export class NormlizePathInterceptor implements Interceptor<TransportRequest, Tr
 
     intercept(req: TransportRequest, next: Endpoint<TransportRequest, TransportEvent>, context: EndpointContext): Observable<TransportEvent> {
         const url = req.url.trim();
-        const protocol = context.protocol;
+        const protocol = context.transport;
         if (!protocol) throw new TransportArgumentError('no protocol provider.');
         if (!protocol.isAbsoluteUrl(url)) {
             req.url = protocol.normlizeUrl(req.url);

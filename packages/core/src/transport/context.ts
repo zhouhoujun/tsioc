@@ -1,6 +1,6 @@
 import { Abstract, DefaultInvocationContext } from '@tsdi/ioc';
 import { Packet } from './packet';
-import { Protocol } from './protocol';
+import { TransportProtocol } from './protocol';
 import { TransportEndpoint } from './transport';
 
 /**
@@ -13,9 +13,9 @@ export abstract class EndpointContext extends DefaultInvocationContext {
      */
     abstract get target(): TransportEndpoint;
     /**
-     * protocol
+     * transport protocol
      */
-    abstract get protocol(): Protocol;
+    abstract get transport(): TransportProtocol;
 
     protected override clear(): void {
         super.clear();
@@ -116,7 +116,7 @@ export abstract class ConnectionContext<TRequest = any, TResponse = any> extends
      * is update modle resquest.
      */
     isUpdate(): boolean {
-        return this.protocol.isUpdate(this.request as any);
+        return this.transport.isUpdate(this.request as any);
     }
 
     /**

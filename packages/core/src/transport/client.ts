@@ -373,7 +373,7 @@ export abstract class Client<TRequest = any, TResponse = any, Opts extends Clien
     protected createContext(req: TRequest | string, options?: TOption & ResponseAs): RequestContext {
         return (options as any)?.context ?? new ClientContext(
             this.context.injector, this as any,
-            { parent: this.context, responseType: options?.responseType, observe: isString(req) ? options?.observe : 'events' });
+            { transport: this.getOptions().transport, responseType: options?.responseType, observe: isString(req) ? options?.observe : 'events' });
     }
 
     protected abstract buildRequest(context: RequestContext, url: TRequest | string, options?: TOption): TRequest;

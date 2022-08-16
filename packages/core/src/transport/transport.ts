@@ -4,6 +4,7 @@ import { ExecptionChain } from '../execptions/chain';
 import { ExecptionFilter } from '../execptions/filter';
 import { Decoder, Encoder } from './coder';
 import { Endpoint, EndpointBackend, InterceptorChain, InterceptorLike, InterceptorType } from './endpoint';
+import { TransportProtocol } from './protocol';
 
 
 /**
@@ -32,6 +33,10 @@ export abstract class TransportOpts<TRequest, TResponse> {
      */
     abstract execptionsToken?: Token<ExecptionFilter[]>;
     /**
+     * transport protocol.
+     */
+    abstract transport?: ClassType<TransportProtocol>;
+    /**
      * encoder input.
      */
     abstract encoder?: ClassType<Encoder>;
@@ -51,7 +56,7 @@ export abstract class TransportOpts<TRequest, TResponse> {
  * abstract transport endpoint.
  */
 @Abstract()
-export abstract class TransportEndpoint<TRequest = any, TResponse = any, Opts extends TransportOpts<TRequest, TResponse> = any> {
+export abstract class TransportEndpoint<TRequest = any, TResponse = any, Opts extends TransportOpts<TRequest, TResponse> = TransportOpts<TRequest, TResponse>> {
 
     /**
      * logger of endpoint.

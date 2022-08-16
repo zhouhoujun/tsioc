@@ -24,13 +24,13 @@ export class TcpContext extends AssetServerContext<TcpServRequest, TcpServRespon
         if (this.sent) return;
         this._explicitStatus = true;
         this.response.statusCode = status;
-        if (this.body && this.protocol.status.isEmpty(status)) {
+        if (this.body && this.transport.status.isEmpty(status)) {
             this.body = null;
         }
     }
 
     get statusMessage(): string {
-        return this.response.statusMessage ?? this.protocol.status.message(this.status)
+        return this.response.statusMessage ?? this.transport.status.message(this.status)
     }
 
     set statusMessage(msg: string) {

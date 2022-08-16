@@ -84,16 +84,16 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     }
 
     async invoke(ctx: ConnectionContext, next: () => Promise<void>): Promise<void> {
-        if (ctx.sent || (this.protocol && !ctx.protocol.match(this.protocol))) return await next();
+        if (ctx.sent || (this.protocol && !ctx.transport.match(this.protocol))) return await next();
 
         const method = this.getRouteMetaData(ctx) as DecorDefine<ProtocolRouteMappingMetadata>;
         if (!method || !method.propertyKey) {
-            ctx.status = ctx.protocol.status.notFound;
+            ctx.status = ctx.transport.status.notFound;
             return await next();
         }
 
         const metadate = method.metadata;
-        if (metadate.protocol && !ctx.protocol.match(metadate.protocol)) return await next();
+        if (metadate.protocol && !ctx.transport.match(metadate.protocol)) return await next();
 
         if (metadate.guards?.length) {
             if (!(await lang.some(

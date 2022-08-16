@@ -1,7 +1,7 @@
 import {
-    BadRequestError,ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
-    ForbiddenError, InternalServerError, NotFoundError, Protocol, TransportArgumentError, TransportError,
-    ENOENT, TransportMissingError, UnauthorizedError, UnsupportedMediaTypeError
+    BadRequestError, ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
+    ForbiddenError, InternalServerError, NotFoundError, TransportArgumentError, TransportError,
+    ENOENT, TransportMissingError, UnauthorizedError, UnsupportedMediaTypeError, ConnectionContext
 } from '@tsdi/core';
 import { Injectable, isFunction, isNumber } from '@tsdi/ioc';
 import { MissingModelFieldError } from '@tsdi/repository';
@@ -24,7 +24,6 @@ export class TransportFinalizeFilter implements ExecptionFilter {
         }
 
         //finllay defalt send error.
-        const protocol = ctx.get(Protocol);
         const hctx = ctx.get(TransportContext);
         let headerSent = false;
         if (hctx.sent || !hctx.writable) {
@@ -39,6 +38,7 @@ export class TransportFinalizeFilter implements ExecptionFilter {
         }
 
         const res = hctx.response;
+        const protocol = hctx.transport;
 
         // first unset all headers
         if (isFunction(res.getHeaderNames)) {
@@ -95,53 +95,53 @@ export class TransportExecptionFilter implements ExecptionFilter {
 
     @ExecptionHandler(NotFoundError)
     notFoundExecption(ctx: ExecptionContext, execption: NotFoundError) {
-        execption.status = ctx.get(Protocol).status.notFound;
+        execption.status = ctx.get(ConnectionContext).transport.status.notFound;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(ForbiddenError)
     forbiddenExecption(ctx: ExecptionContext, execption: ForbiddenError) {
-        execption.status = ctx.get(Protocol).status.forbidden;
+        execption.status = ctx.get(ConnectionContext).transport.status.forbidden;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(BadRequestError)
     badReqExecption(ctx: ExecptionContext, execption: BadRequestError) {
-        execption.status = ctx.get(Protocol).status.badRequest;
+        execption.status = ctx.get(ConnectionContext).transport.status.badRequest;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(UnauthorizedError)
     unauthorized(ctx: ExecptionContext, execption: UnauthorizedError) {
-        execption.status = ctx.get(Protocol).status.unauthorized;
+        execption.status = ctx.get(ConnectionContext).transport.status.unauthorized;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(InternalServerError)
     internalServerError(ctx: ExecptionContext, execption: InternalServerError) {
-        execption.status = ctx.get(Protocol).status.serverError;
+        execption.status = ctx.get(ConnectionContext).transport.status.serverError;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(UnsupportedMediaTypeError)
     unsupported(ctx: ExecptionContext, execption: UnsupportedMediaTypeError) {
-        execption.status = ctx.get(Protocol).status.unsupportedMediaType;
+        execption.status = ctx.get(ConnectionContext).transport.status.unsupportedMediaType;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(TransportArgumentError)
     anguExecption(ctx: ExecptionContext, execption: TransportArgumentError) {
-        ctx.execption = new BadRequestError(execption.message, ctx.get(Protocol).status.badRequest)
+        ctx.execption = new BadRequestError(execption.message, ctx.get(ConnectionContext).transport.status.badRequest)
     }
 
     @ExecptionHandler(MissingModelFieldError)
     missFieldExecption(ctx: ExecptionContext, execption: MissingModelFieldError) {
-        ctx.execption = new BadRequestError(execption.message, ctx.get(Protocol).status.badRequest)
+        ctx.execption = new BadRequestError(execption.message, ctx.get(ConnectionContext).transport.status.badRequest)
     }
 
     @ExecptionHandler(TransportMissingError)
     missExecption(ctx: ExecptionContext, execption: TransportMissingError) {
-        ctx.execption = new BadRequestError(execption.message, ctx.get(Protocol).status.badRequest)
+        ctx.execption = new BadRequestError(execption.message, ctx.get(ConnectionContext).transport.status.badRequest)
     }
 
 }

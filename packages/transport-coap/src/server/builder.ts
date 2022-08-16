@@ -1,8 +1,8 @@
-import { IncomingHeaders, Endpoint } from '@tsdi/core';
+import { Endpoint } from '@tsdi/core';
 import { Injectable, InvocationContext, lang } from '@tsdi/ioc';
 import {
-    ServerSession, ServerBuilder, ListenOpts, ServerStream, TransportContext, TransportServer,
-    ServerRequest, ServerResponse, ev, TransportServerOpts, PacketParser, Connection, parseToDuplex
+    ServerSession, ServerBuilder, ListenOpts, TransportContext, TransportServer,
+    ev, TransportServerOpts, PacketProtocol, parseToDuplex
 } from '@tsdi/transport';
 import { Observable } from 'rxjs';
 import * as net from 'net';
@@ -28,18 +28,12 @@ export class CoapServerBuilder extends ServerBuilder<net.Server | dgram.Socket, 
         return defer.promise;
     }
 
-    protected buildContext(transport: TransportServer, connection: Connection, stream: ServerStream, headers: IncomingHeaders): TransportContext {
-        const request = new ServerRequest(stream, headers);
-        const response = new ServerResponse(connection, stream, headers);
-        const parent = transport.context;
-        return new TransportContext(parent.injector, request, response, transport, { parent });
-    }
 
-    protected getParser(context: InvocationContext, opts: CoapServerOpts): PacketParser {
+    protected getParser(context: InvocationContext, opts: CoapServerOpts): PacketProtocol {
         return opts.baseOn === 'tcp' ? context.get(TcpCoapPacketParser) : context.get(UdpCoapPacketParser);
     }
 
-    protected connect(server: net.Server | dgram.Socket, parser: PacketParser, opts?: any): Observable<ServerSession> {
+    protected connect(server: net.Server | dgram.Socket, parser: PacketProtocol, opts?: any): Observable<ServerSession> {
         if (server instanceof net.Server) {
             return this.tcpConnect(server, parser, opts);
         } else {
@@ -48,7 +42,7 @@ export class CoapServerBuilder extends ServerBuilder<net.Server | dgram.Socket, 
 
     }
 
-    protected tcpConnect(server: net.Server, parser: PacketParser, opts?: any): Observable<ServerSession> {
+    protected tcpConnect(server: net.Server, parser: PacketProtocol, opts?: any): Observable<ServerSession> {
         return new Observable((observer) => {
             const onError = (err: Error) => {
                 observer.error(err);
@@ -71,7 +65,7 @@ export class CoapServerBuilder extends ServerBuilder<net.Server | dgram.Socket, 
         })
     }
 
-    protected udpConnect(server: dgram.Socket, parser: PacketParser, opts?: any): Observable<ServerSession> {
+    protected udpConnect(server: dgram.Socket, parser: PacketProtocol, opts?: any): Observable<ServerSession> {
         return new Observable((observer) => {
             const onError = (err: Error) => {
                 observer.error(err);
