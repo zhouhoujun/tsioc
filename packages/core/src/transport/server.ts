@@ -4,7 +4,6 @@ import { OnDispose } from '../lifecycle';
 import { EndpointBackend, MiddlewareBackend, MiddlewareLike, MiddlewareType } from './endpoint';
 import { TransportEndpoint, TransportOpts } from './transport';
 import { ConnectionContext } from './context';
-
 /**
  * server options.
  */
@@ -18,6 +17,8 @@ export abstract class ServerOpts<TRequest = any, TResponse = any> extends Transp
      * the mutil token to register middlewares in the server context.
      */
     abstract middlewaresToken?: Token<MiddlewareLike[]>;
+
+    abstract listenOpts?: any;
 }
 
 /**
@@ -25,7 +26,13 @@ export abstract class ServerOpts<TRequest = any, TResponse = any> extends Transp
  */
 @Abstract()
 @Runner('start')
-export abstract class Server<TRequest = any, TResponse = any, Tx extends ConnectionContext = ConnectionContext, Opts extends ServerOpts<TRequest, TResponse> = any> extends TransportEndpoint<TRequest, TResponse, Opts> implements OnDispose {
+export abstract class Server<
+    TRequest = any,
+    TResponse = any,
+    Tx extends ConnectionContext = ConnectionContext,
+    Opts extends ServerOpts<TRequest, TResponse> = any>
+
+    extends TransportEndpoint<TRequest, TResponse, Opts> implements OnDispose {
 
     private _midlsToken!: Token<MiddlewareLike[]>;
 
@@ -82,7 +89,7 @@ export abstract class Server<TRequest = any, TResponse = any, Tx extends Connect
     protected override getBackend(): EndpointBackend<TRequest, TResponse> {
         return new MiddlewareBackend(this.context.injector.get(this._midlsToken, EMPTY))
     }
-    
+
 
     /**
      * close server.

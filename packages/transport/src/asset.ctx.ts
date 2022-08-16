@@ -72,7 +72,7 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
 
     protected createURL() {
         try {
-            return this.transport.parse(this.request, this.target.proxy);
+            return this.transport.parse(this.request, this.target.getOptions()?.listenOpts, this.target.proxy);
         } catch (err) {
             return Object.create(null);
         }

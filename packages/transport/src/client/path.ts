@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { Endpoint, EndpointContext, Interceptor, TransportArgumentError } from '@tsdi/core';
+import { Endpoint, EndpointContext, Interceptor, ListenOpts, TransportArgumentError } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { TransportRequest } from './request';
 import { TransportEvent } from './response';
@@ -15,7 +15,7 @@ export class NormlizePathInterceptor implements Interceptor<TransportRequest, Tr
         const protocol = context.transport;
         if (!protocol) throw new TransportArgumentError('no protocol provider.');
         if (!protocol.isAbsoluteUrl(url)) {
-            req.url = protocol.normlizeUrl(req.url);
+            req.url = protocol.normlizeUrl(req.url, context.get(ListenOpts));
         }
         return next.handle(req, context);
     }

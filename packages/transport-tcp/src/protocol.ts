@@ -1,14 +1,15 @@
-import { IncomingPacket, TransportProtocol, RequestPacket } from '@tsdi/core';
-import { EMPTY_OBJ, Inject, Injectable } from '@tsdi/ioc';
-import { ListenOpts, LISTEN_OPTS } from '@tsdi/platform-server';
-import { ServerStream } from '@tsdi/transport';
+import { IncomingPacket, RequestPacket } from '@tsdi/core';
+import { Injectable } from '@tsdi/ioc';
+import { ListenOpts } from '@tsdi/platform-server';
+import { ConnectionOpts, PacketProtocol, ServerStream } from '@tsdi/transport';
+import { Duplex, Transform, Writable } from 'stream';
 import { TcpStatus } from './status';
 
 @Injectable()
-export class TcpProtocol extends TransportProtocol {
+export class TcpProtocol extends PacketProtocol {
 
     private _protocol = 'tcp';
-    constructor(@Inject(LISTEN_OPTS, { defaultValue: EMPTY_OBJ }) private listenOpts: ListenOpts, readonly status: TcpStatus) {
+    constructor(readonly status: TcpStatus) {
         super();
 
     }
@@ -29,12 +30,12 @@ export class TcpProtocol extends TransportProtocol {
         return this._protocol;
     }
 
-    parse(req: IncomingPacket, proxy?: boolean | undefined): URL {
+    parse(req: IncomingPacket, opts: ListenOpts, proxy?: boolean): URL {
         const url = req.url ?? '';
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);
         } else {
-            const { host, port, path } = this.listenOpts;
+            const { host, port, path } = opts;
             const isIPC = !host && !port;
             if (isIPC) {
                 this._protocol = 'ipc'
@@ -49,9 +50,9 @@ export class TcpProtocol extends TransportProtocol {
 
     }
 
-    normlizeUrl(url: string): string {
+    normlizeUrl(url: string, opts: ListenOpts): string {
         if (!this.isAbsoluteUrl(url)) {
-            const { host, port, path } = this.listenOpts;
+            const { host, port, path } = opts;
             const isIPC = !host && !port;
             if (isIPC) {
                 this._protocol = 'ipc';
@@ -78,6 +79,21 @@ export class TcpProtocol extends TransportProtocol {
     match(protocol: string): boolean {
         return protocol === this.protocol;
     }
+
+    generateId(): string {
+        throw new Error('Method not implemented.');
+    }
+    valid(header: string): boolean {
+        throw new Error('Method not implemented.');
+    }
+    transform(opts?: ConnectionOpts | undefined): Transform {
+        throw new Error('Method not implemented.');
+    }
+    generate(stream: Duplex, opts?: ConnectionOpts | undefined): Writable {
+        throw new Error('Method not implemented.');
+    }
+
+
 }
 
 

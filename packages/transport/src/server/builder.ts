@@ -1,11 +1,11 @@
-import { Endpoint, IncomingHeaders, Server } from '@tsdi/core';
+import { Endpoint, IncomingHeaders, ListenOpts, Server } from '@tsdi/core';
 import { Abstract, InvocationContext } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Connection } from '../connection';
 import { ev } from '../consts';
 import { PacketProtocol } from '../packet';
 import { TransportContext } from './context';
-import { ListenOpts, TransportServerOpts } from './options';
+import { TransportServerOpts } from './options';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';
 import { ServerStream } from './stream';

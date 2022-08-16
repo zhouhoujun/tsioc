@@ -1,5 +1,5 @@
-import { Decoder, Encoder, Interceptor, TransportProtocol, ServerOpts } from '@tsdi/core';
-import { Abstract, ClassType, tokenId, Type, TypeOf } from '@tsdi/ioc';
+import { Decoder, Encoder, Interceptor, ServerOpts, ListenOpts } from '@tsdi/core';
+import { Abstract, ClassType, tokenId } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { Stream } from 'stream';
 import { ConnectionOpts } from '../connection';
@@ -10,29 +10,6 @@ import { ServerResponse } from './res';
 import { ServerBuilder } from './builder';
 import { PacketProtocol } from '../packet';
 
-/**
- * Listen options.
- */
-@Abstract()
-export abstract class ListenOpts {
-
-    /**
-    * When provided the corresponding `AbortController` can be used to cancel an asynchronous action.
-    */
-    signal?: AbortSignal | undefined;
-    port?: number | undefined;
-    host?: string | undefined;
-    backlog?: number | undefined;
-    path?: string | undefined;
-    exclusive?: boolean | undefined;
-    readableAll?: boolean | undefined;
-    writableAll?: boolean | undefined;
-    /**
-     * @default false
-     */
-    ipv6Only?: boolean | undefined;
-}
-
 
 @Abstract()
 export abstract class TransportServerOpts<T = any> extends ServerOpts<ServerRequest, ServerResponse> {
@@ -42,13 +19,8 @@ export abstract class TransportServerOpts<T = any> extends ServerOpts<ServerRequ
      */
     abstract protocolOpts?: T;
     /**
-     * packet size limit.
+     * max Connections.
      */
-    abstract sizeLimit?: number;
-    /**
-     * packet delimiter code.
-     */
-    abstract delimiter?: string;
     abstract maxConnections?: number;
     /**
      * socket timeout.

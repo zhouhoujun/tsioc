@@ -56,7 +56,10 @@ export abstract class TransportOpts<TRequest, TResponse> {
  * abstract transport endpoint.
  */
 @Abstract()
-export abstract class TransportEndpoint<TRequest = any, TResponse = any, Opts extends TransportOpts<TRequest, TResponse> = TransportOpts<TRequest, TResponse>> {
+export abstract class TransportEndpoint<
+    TRequest = any,
+    TResponse = any,
+    Opts extends TransportOpts<TRequest, TResponse> = TransportOpts<TRequest, TResponse>> {
 
     /**
      * logger of endpoint.

@@ -1,6 +1,6 @@
 import { mths, TransportProtocol } from '@tsdi/core';
-import { EMPTY_OBJ, Inject, Injectable, isNumber, isString } from '@tsdi/ioc';
-import { ListenOpts, LISTEN_OPTS } from '@tsdi/platform-server';
+import { Injectable, isNumber, isString } from '@tsdi/ioc';
+import { ListenOpts } from '@tsdi/platform-server';
 import { HttpRequest } from '@tsdi/common';
 import { hdr } from '@tsdi/transport';
 import * as http from 'http';
@@ -10,20 +10,20 @@ import { HttpStatus } from './status';
 
 @Injectable()
 export class HttpProtocol extends TransportProtocol {
-    
+
     private _protocol = 'http';
-    constructor(@Inject(LISTEN_OPTS, { defaultValue: EMPTY_OBJ }) private listenOpts: ListenOpts, readonly status: HttpStatus) {
+    constructor(readonly status: HttpStatus) {
         super();
     }
 
     isEvent(req: HttpRequest): boolean {
         return req.method === 'events';
     }
-    
+
     isUpdate(req: http.IncomingMessage | http2.Http2ServerRequest): boolean {
         return req.method === mths.PUT
     }
-    
+
     isSecure(req: http.IncomingMessage | http2.Http2ServerRequest): boolean {
         return this.protocol === 'https' || (req?.socket as TLSSocket)?.encrypted === true
     }
@@ -32,7 +32,7 @@ export class HttpProtocol extends TransportProtocol {
         return this._protocol;
     }
 
-    parse(req: http.IncomingMessage | http2.Http2ServerRequest, proxy?: boolean | undefined): URL {
+    parse(req: http.IncomingMessage | http2.Http2ServerRequest, opts: ListenOpts, proxy?: boolean): URL {
         const url = req.url ?? '';
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);
@@ -61,9 +61,9 @@ export class HttpProtocol extends TransportProtocol {
 
     }
 
-    normlizeUrl(url: string): string {
+    normlizeUrl(url: string, opts: ListenOpts): string {
         if (!this.isAbsoluteUrl(url)) {
-            const { host, port, path, withCredentials } = this.listenOpts;
+            const { host, port, path, withCredentials } = opts;
             if (withCredentials) {
                 this._protocol = 'https';
             }

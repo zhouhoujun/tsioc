@@ -1,4 +1,4 @@
-import { ClientOpts, Decoder, Encoder, EndpointBackend, ExecptionFilter, Interceptor, TransportProtocol } from '@tsdi/core';
+import { ClientOpts, Decoder, Encoder, EndpointBackend, ExecptionFilter, Interceptor } from '@tsdi/core';
 import { Abstract, ClassType, tokenId } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { Stream } from 'stream';
@@ -22,14 +22,6 @@ export interface SessionRequestOpts extends Record<string, any> {
  */
 @Abstract()
 export abstract class TransportClientOpts extends ClientOpts<TransportRequest, TransportEvent> {
-    /**
-     * packet size limit.
-     */
-    abstract sizeLimit?: number;
-    /**
-     * packet buffer encoding.
-     */
-    abstract encoding?: BufferEncoding;
     /**
      * connect options.
      */

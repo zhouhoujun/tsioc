@@ -12,14 +12,7 @@ import { TcpServResponse } from './response';
  */
 @Abstract()
 export abstract class TcpServerOpts extends TransportServerOpts implements PacketProtocolOpts  {
-    /**
-     * packet size limit.
-     */
-    abstract sizeLimit?: number;
-    /**
-     * packet delimiter code.
-     */
-    abstract delimiter?: string;
+
     abstract maxConnections?: number;
     abstract proxy?: boolean;
     /**

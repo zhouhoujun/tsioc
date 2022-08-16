@@ -5,9 +5,22 @@ import { ev } from './consts';
 import { PacketProtocol } from './packet';
 
 
-
+/**
+ * connection options.
+ */
 export interface ConnectionOpts extends DuplexOptions, Record<string, any> {
-
+    /**
+     * packet size limit.
+     */
+    maxSize?: number;
+    /**
+     * packet delimiter code.
+     */
+    delimiter?: string;
+    /**
+     * packet buffer encoding.
+     */
+    encoding?: BufferEncoding;
 }
 
 
