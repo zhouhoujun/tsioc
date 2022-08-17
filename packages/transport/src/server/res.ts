@@ -99,6 +99,7 @@ export class ServerResponse extends Writable implements OutgoingPacket {
                 //todo set header
             }) : this._hdr.setHeaders(headers);
         }
+        this.setHeader(hdr.STATUS2, statusCode);
 
         this.stream.write(this.headers);
         return this;

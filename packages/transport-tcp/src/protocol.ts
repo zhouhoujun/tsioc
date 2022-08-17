@@ -1,4 +1,4 @@
-import { IncomingPacket, RequestPacket } from '@tsdi/core';
+import { IncomingPacket, Packet, RequestPacket } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import { ListenOpts } from '@tsdi/platform-server';
 import { ConnectionOpts, PacketProtocol, ServerStream } from '@tsdi/transport';
@@ -90,6 +90,21 @@ export class TcpProtocol extends PacketProtocol {
         throw new Error('Method not implemented.');
     }
     generate(stream: Duplex, opts?: ConnectionOpts | undefined): Writable {
+        throw new Error('Method not implemented.');
+    }
+    isHeader(chunk: any): boolean {
+        throw new Error('Method not implemented.');
+    }
+    parseHeader(chunk: any): Packet<any> {
+        throw new Error('Method not implemented.');
+    }
+    isBody(chunk: any, streamId: string): boolean {
+        throw new Error('Method not implemented.');
+    }
+    parseBody(chunk: any, streamId: string) {
+        throw new Error('Method not implemented.');
+    }
+    attachStreamId(chunk: any, streamId: string) {
         throw new Error('Method not implemented.');
     }
 

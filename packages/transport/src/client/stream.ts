@@ -13,11 +13,6 @@ export class ClientStream extends TransportStream {
         
     }
 
-
-    close(code?: number | undefined, callback?: (() => void) | undefined): void {
-        this.emit(ev.CLOSE);
-    }
-
     addListener(event: 'aborted', listener: () => void): this;
     addListener(event: 'close', listener: () => void): this;
     addListener(event: 'data', listener: (chunk: Buffer | string) => void): this;

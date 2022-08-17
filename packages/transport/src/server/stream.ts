@@ -1,13 +1,9 @@
 import { OutgoingHeaders } from '@tsdi/core';
-import { Abstract } from '@tsdi/ioc';
 import { TransportStream } from '../stream';
 
 
 
 export class ServerStream extends TransportStream {
-    close(code?: number | undefined, callback?: (() => void) | undefined): void {
-        throw new Error('Method not implemented.');
-    }
 
     /**
      * Initiates a push stream. The callback is invoked with the new `TransportStream`instance created for the push stream passed as the second argument, or an`Error` passed as the first argument.

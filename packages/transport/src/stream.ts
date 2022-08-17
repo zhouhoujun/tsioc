@@ -37,7 +37,10 @@ export abstract class TransportStream extends Duplex {
      * @param [code] Unsigned 32-bit integer identifying the error code.
      * @param callback An optional function registered to listen for the `'close'` event.
      */
-    abstract close(code?: number, callback?: () => void): void;
+    close(code?: number, callback?: () => void): void {
+        this.emit(ev.CLOSE, code);
+        callback && setImmediate(callback);
+    }
 
     addListener(event: 'aborted', listener: () => void): this;
     addListener(event: 'close', listener: () => void): this;
