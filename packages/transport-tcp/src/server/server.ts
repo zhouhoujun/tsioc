@@ -7,6 +7,7 @@ import {
 } from '@tsdi/transport';
 import { TcpServerOpts, TCP_SERV_INTERCEPTORS } from './options';
 import { TcpProtocol } from '../protocol';
+import { TcpServerBuilder } from './builder';
 
 
 /**
@@ -22,6 +23,7 @@ export const TCP_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('HTTP_EXECPTION_
  * tcp server default options.
  */
 export const TCP_SERVER_OPTS = {
+    builder: TcpServerBuilder,
     transport: TcpProtocol,
     interceptorsToken: TCP_SERV_INTERCEPTORS,
     execptionsToken: TCP_EXECPTION_FILTERS,

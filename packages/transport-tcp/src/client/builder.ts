@@ -1,6 +1,7 @@
-import { ClientBuilder, ClientSession, ev, PacketProtocol, TransportClient } from '@tsdi/transport';
+import { ClientBuilder, ClientSession, ev, TransportClient } from '@tsdi/transport';
 import { Observable, Observer } from 'rxjs';
 import * as net from 'net';
+import * as tls from 'tls';
 import { TcpClientOpts } from './options';
 import { TcpProtocol } from '../protocol';
 
@@ -10,7 +11,7 @@ export class TcpClientBuilder extends ClientBuilder<TransportClient> {
         const { logger, context }  = transport;
         const parser = context.get(opts.transport ?? TcpProtocol);
         return new Observable((observer: Observer<ClientSession>) => {
-            const socket = net.connect(opts.connectOpts as net.NetConnectOpts);
+            const socket =  (opts.connectOpts as tls.ConnectionOptions).cert?  tls.connect(opts.connectOpts as tls.ConnectionOptions) : net.connect(opts.connectOpts as net.NetConnectOpts);
             const client = new ClientSession(socket, parser, opts.connectionOpts);
             const onError = (err: Error) => {
                 logger.error(err);

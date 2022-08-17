@@ -3,6 +3,7 @@ import { Injectable, Nullable } from '@tsdi/ioc';
 import { TcpClientOpts, TCP_EXECPTIONFILTERS, TCP_INTERCEPTORS } from './options';
 import { TransportClient } from '@tsdi/transport';
 import { TcpProtocol } from '../protocol';
+import { TcpClientBuilder } from './builder';
 
 
 
@@ -11,6 +12,7 @@ import { TcpProtocol } from '../protocol';
  */
 export const TCP_CLIENT_OPTS = {
     transport: TcpProtocol,
+    builder: TcpClientBuilder,
     interceptorsToken: TCP_INTERCEPTORS,
     execptionsToken: TCP_EXECPTIONFILTERS,
     connectionOpts: {

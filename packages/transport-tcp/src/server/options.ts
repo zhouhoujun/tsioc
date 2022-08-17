@@ -1,7 +1,8 @@
-import { Interceptor, ServerOpts } from '@tsdi/core';
+import { Interceptor } from '@tsdi/core';
 import { Abstract, tokenId } from '@tsdi/ioc';
 import { SessionOptions, ContentOptions, MimeSource, TransportServerOpts, ServerRequest, ServerResponse } from '@tsdi/transport';
-import { ListenOptions, ServerOpts as NetServerOpts } from 'net';
+import * as net from 'net';
+import * as tls from 'tls';
 
 
 
@@ -20,8 +21,8 @@ export abstract class TcpServerOpts extends TransportServerOpts {
     abstract mimeDb?: Record<string, MimeSource>;
     abstract content?: boolean | ContentOptions;
     abstract session?: boolean | SessionOptions;
-    abstract serverOpts?: NetServerOpts | undefined;
-    abstract listenOpts: ListenOptions;
+    abstract serverOpts?: net.ServerOpts | tls.TlsOptions;
+    abstract listenOpts: net.ListenOptions;
 }
 
 /**

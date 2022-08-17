@@ -1,8 +1,9 @@
 import { IncomingPacket, Packet, RequestPacket } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import { ListenOpts } from '@tsdi/platform-server';
-import { ConnectionOpts, PacketProtocol, ServerStream } from '@tsdi/transport';
+import { ConnectionOpts, PacketProtocol, ServerRequest } from '@tsdi/transport';
 import { Duplex, Transform, Writable } from 'stream';
+import * as tsl from 'tls';
 import { TcpStatus } from './status';
 
 @Injectable()
@@ -21,8 +22,8 @@ export class TcpProtocol extends PacketProtocol {
         return req.method === 'PUT';
     }
 
-    isSecure(incoming: IncomingPacket<ServerStream>): boolean {
-        return incoming.stream
+    isSecure(incoming: ServerRequest): boolean {
+        return incoming.stream.connection.duplex instanceof tsl.TLSSocket;
     }
 
     get protocol(): string {
@@ -82,7 +83,7 @@ export class TcpProtocol extends PacketProtocol {
     generateId(): string {
         return Math.max(1, Math.floor(Math.random() * 65535)).toString()
     }
-    
+
     valid(header: string): boolean {
         return true;
     }

@@ -2,7 +2,7 @@ import { ExecptionFilter, Interceptor } from '@tsdi/core';
 import { Abstract, tokenId } from '@tsdi/ioc';
 import { TransportRequest, TransportEvent, TransportClientOpts } from '@tsdi/transport';
 import { SocketConstructorOpts, NetConnectOpts } from 'net';
-
+import { ConnectionOptions } from 'tls';
 /**
  * tcp client options.
  */
@@ -27,7 +27,7 @@ export abstract class TcpClientOpts extends TransportClientOpts {
     /**
      * connect options.
      */
-    abstract connectOpts?: NetConnectOpts;
+    abstract connectOpts?: NetConnectOpts | ConnectionOptions;
 }
 
 /**

@@ -39,18 +39,26 @@ export abstract class TransportProtocol {
      * status of transport.
      */
     abstract get status(): TransportStatus;
-
+    /**
+     * the url is absolute url or not.
+     * @param url 
+     */
     abstract isAbsoluteUrl(url: string): boolean;
-
+    /**
+     * normlize url.
+     * @param url 
+     * @param opts 
+     */
     abstract normlizeUrl(url: string, opts: ListenOpts): string;
-
+    /**
+     * is event or not.
+     * @param req 
+     */
     abstract isEvent(req: RequestPacket): boolean;
-
     /**
      * is update modle resquest.
      */
     abstract isUpdate(incoming: IncomingPacket): boolean;
-
     /**
      * is secure or not.
      * @param incoming 

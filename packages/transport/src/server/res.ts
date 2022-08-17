@@ -109,6 +109,4 @@ export class ServerResponse extends Writable implements OutgoingPacket {
         this.stream.write(chunk, encoding, callback);
     }
 
-
-
 }

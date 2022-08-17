@@ -1,8 +1,9 @@
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, isFunction } from '@tsdi/ioc';
 import { IncomingHeaders } from '@tsdi/core';
 import { Duplex, DuplexOptions, Readable } from 'stream';
 import { Connection } from './connection';
 import { ev } from './consts';
+import { setTimeout } from 'timers';
 
 /**
  * transport stream
@@ -10,6 +11,7 @@ import { ev } from './consts';
 @Abstract()
 export abstract class TransportStream extends Duplex {
 
+    private _timeout?: any;
     constructor(readonly connection: Connection, readonly streamId: string, opts?: DuplexOptions) {
         super(opts);
         this.bindEvents(opts);
@@ -40,6 +42,40 @@ export abstract class TransportStream extends Duplex {
     close(code?: number, callback?: () => void): void {
         this.emit(ev.CLOSE, code);
         callback && setImmediate(callback);
+    }
+
+    setTimeout(msecs: number, callback?: () => void) {
+        if (this.destroyed)
+            return this;
+
+
+        // Attempt to clear an existing timer in both cases -
+        //  even if it will be rescheduled we don't want to leak an existing timer.
+        this._timeout && clearTimeout(this._timeout);
+
+        if (msecs === 0) {
+            if (callback !== undefined) {
+                this.removeListener('timeout', callback);
+            }
+        } else {
+            this._timeout = setTimeout(this._onTimeout.bind(this), msecs);
+            if (this.connection) this.connection._updateTimer();
+
+            if (callback !== undefined) {
+                this.once('timeout', callback);
+            }
+        }
+        return this;
+    }
+
+    protected _onTimeout() {
+        if (this.destroyed) return;
+        this.emit(ev.TIMEOUT);
+    }
+
+    _updateTimer() {
+        if (this.destroyed) return;
+        if (this._timeout && isFunction(this._timeout.refresh)) this._timeout.refresh()
     }
 
     addListener(event: 'aborted', listener: () => void): this;

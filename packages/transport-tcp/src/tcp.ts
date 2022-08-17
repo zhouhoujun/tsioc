@@ -1,13 +1,11 @@
 import { Module, RouterModule, TransformModule } from '@tsdi/core';
 import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
 import { TransportModule } from '@tsdi/transport';
-import { TcpBackend } from './client/backend';
+import { TcpClientBuilder } from './client/builder';
 import { TcpClient } from './client/clinet';
-import { DelimiterProtocol, PacketProtocol } from './packet';
 import { TcpProtocol } from './protocol';
-import { TcpHandlerBinding } from './server/binding';
+import { TcpServerBuilder } from './server/builder';
 import { TcpServerOpts } from './server/options';
-import { TcpRespondAdapter } from './server/respond';
 import { TcpServer } from './server/server';
 import { TcpStatus } from './status';
 
@@ -18,14 +16,10 @@ import { TcpStatus } from './status';
         TransportModule
     ],
     providers: [
-        { provide: PacketProtocol, useClass: DelimiterProtocol },
         TcpStatus,
         TcpProtocol,
-        TcpBackend,
-        
-        TcpRespondAdapter,
-        TcpHandlerBinding,
-        
+        TcpClientBuilder,
+        TcpServerBuilder,
         TcpClient,
         TcpServer
     ]

@@ -3,16 +3,17 @@ import { Injectable, InvocationContext, lang } from '@tsdi/ioc';
 import { Connection, ev, PacketProtocol, ServerBuilder, ServerSession, TransportContext, TransportServer, TransportServerOpts } from '@tsdi/transport';
 import { Observable } from 'rxjs';
 import * as net from 'net';
+import * as tls from 'tls';
 import { TcpServerOpts } from './options';
 import { TcpProtocol } from '../protocol';
 
 
 @Injectable()
-export class TcpServerBuilder extends ServerBuilder<net.Server, TransportServer> {
+export class TcpServerBuilder extends ServerBuilder<net.Server | tls.Server, TransportServer> {
     protected async buildServer(opts: TcpServerOpts): Promise<net.Server> {
-        return net.createServer(opts.serverOpts as net.ServerOpts)
+        return (opts.serverOpts as tls.TlsOptions).cert ? tls.createServer(opts.serverOpts as tls.TlsOptions) : net.createServer(opts.serverOpts as net.ServerOpts)
     }
-    protected listen(server: net.Server, opts: ListenOpts): Promise<void> {
+    protected listen(server: net.Server | tls.Server, opts: ListenOpts): Promise<void> {
         const defer = lang.defer<void>();
         server.listen(opts, defer.resolve);
         return defer.promise;
@@ -20,7 +21,7 @@ export class TcpServerBuilder extends ServerBuilder<net.Server, TransportServer>
     protected getParser(context: InvocationContext, opts: TransportServerOpts<any>): PacketProtocol {
         return context.get(opts.transport ?? TcpProtocol);
     }
-    protected connect(server: net.Server, parser: PacketProtocol, opts?: any): Observable<Connection> {
+    protected connect(server: net.Server | tls.Server, parser: PacketProtocol, opts?: any): Observable<Connection> {
         return new Observable((observer) => {
             const onError = (err: Error) => {
                 observer.error(err);
@@ -51,10 +52,10 @@ export class TcpServerBuilder extends ServerBuilder<net.Server, TransportServer>
                 }
             });
         const opts = ctx.target.getOptions() as TcpServerOpts;
-        // opts.timeout && req.stream.setTimeout(opts.timeout, () => {
-        //     req.stream.emit(ev.TIMEOUT);
-        //     cancel?.unsubscribe()
-        // });
+        opts.timeout && req.stream.setTimeout(opts.timeout, () => {
+            req.stream.emit(ev.TIMEOUT);
+            cancel?.unsubscribe()
+        });
         ctx.request.stream.on(ev.TIMEOUT, () => {
             cancel?.unsubscribe();
         });

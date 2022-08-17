@@ -22,6 +22,7 @@ export interface SessionRequestOpts extends Record<string, any> {
  */
 @Abstract()
 export abstract class TransportClientOpts extends ClientOpts<TransportRequest, TransportEvent> {
+    abstract keepalive?: number;
     /**
      * connect options.
      */
@@ -34,7 +35,7 @@ export abstract class TransportClientOpts extends ClientOpts<TransportRequest, T
 
     abstract transport?: ClassType<PacketProtocol>;
 
-    abstract builder?: ClassType<ClientBuilder>; 
+    abstract builder?: ClassType<ClientBuilder>;
     /**
      * backend.
      */
