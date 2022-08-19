@@ -2,7 +2,6 @@ import { OutgoingHeader, OutgoingHeaders, OutgoingPacket, ResHeaders } from '@ts
 import { isArray, isFunction, isString } from '@tsdi/ioc';
 import { Writable } from 'stream';
 import { ServerStream } from './stream';
-import { Connection } from '../connection';
 import { hdr } from '../consts';
 
 
@@ -11,16 +10,18 @@ import { hdr } from '../consts';
  */
 export class ServerResponse extends Writable implements OutgoingPacket {
 
-    private _sent = false;
     private _hdr: ResHeaders;
 
     constructor(
-        readonly connection: Connection,
         readonly stream: ServerStream,
         readonly headers: OutgoingHeaders,
         readonly socket?: any) {
         super();
         this._hdr = new ResHeaders();
+    }
+
+    get connection() {
+        return this.stream.connection;
     }
 
     get finished(): boolean {
@@ -48,7 +49,7 @@ export class ServerResponse extends Writable implements OutgoingPacket {
     }
 
     get headersSent() {
-        return this._sent;
+        return this.stream.headersSent;
     }
 
 

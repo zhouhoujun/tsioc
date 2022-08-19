@@ -26,7 +26,7 @@ export abstract class ServerBuilder<T = any, TS extends Server = Server> {
             .subscribe({
                 next: (conn) => {
                     conn.on(ev.STREAM, (stream: ServerStream, headers: IncomingHeaders) => {
-                        const ctx = this.buildContext(transport, conn, stream, headers);
+                        const ctx = this.buildContext(transport, stream, headers);
                         this.handle(ctx, transport.endpoint());
                     });
                 },
@@ -53,9 +53,9 @@ export abstract class ServerBuilder<T = any, TS extends Server = Server> {
 
     protected abstract getParser(context: InvocationContext, opts: TransportServerOpts): PacketProtocol;
 
-    protected buildContext(transport: TS, connection: Connection, stream: ServerStream, headers: IncomingHeaders): TransportContext {
-        const request = new ServerRequest(connection, stream, headers);
-        const response = new ServerResponse(connection, stream, headers);
+    protected buildContext(transport: TS, stream: ServerStream, headers: IncomingHeaders): TransportContext {
+        const request = new ServerRequest(stream, headers);
+        const response = new ServerResponse(stream, headers);
         const parent = transport.context;
         return new TransportContext(parent.injector, request, response, transport, { parent });
     }

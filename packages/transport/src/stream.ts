@@ -15,7 +15,7 @@ export abstract class TransportStream extends Duplex {
 
     private _timeout?: any;
     readonly streamId: Buffer;
-    headerSent = false;
+    headersSent = false;
     constructor(readonly connection: Connection, streamId: string, private headers: OutgoingHeaders, opts?: DuplexOptions) {
         super(opts);
         this.streamId = Buffer.from(streamId);
@@ -34,7 +34,7 @@ export abstract class TransportStream extends Duplex {
     }
 
     override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
-        if(this.headerSent) {
+        if(this.headersSent) {
             this.connection.stream.write(this.streamId);
             this.connection.write(chunk, encoding, callback);
             return;

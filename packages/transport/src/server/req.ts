@@ -1,6 +1,5 @@
 import { IncomingPacket, IncomingHeaders } from '@tsdi/core';
 import { Readable, Writable } from 'stream';
-import { Connection } from '../connection';
 import { hdr } from '../consts';
 import { ServerStream } from './stream';
 
@@ -15,13 +14,16 @@ export class ServerRequest extends Readable implements IncomingPacket<Writable> 
     body: any;
     private _bodyIdx = 0;
     constructor(
-        readonly connection: Connection,
         readonly stream: ServerStream,
         readonly headers: IncomingHeaders) {
         super();
         this.url = headers[hdr.PATH] ?? '';
         this.method = headers[hdr.METHOD] ?? '';
         this.authority = headers[hdr.AUTHORITY] ?? '';
+    }
+
+    get connection() {
+        return this.stream.connection;
     }
 
     override _read(size: number): void {
