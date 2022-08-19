@@ -23,7 +23,7 @@ export class TcpProtocol extends PacketProtocol {
     }
 
     isSecure(incoming: ServerRequest): boolean {
-        return incoming.stream.connection.duplex instanceof tsl.TLSSocket;
+        return incoming.stream.connection.stream instanceof tsl.TLSSocket;
     }
 
     get protocol(): string {
@@ -106,6 +106,9 @@ export class TcpProtocol extends PacketProtocol {
         return chunk.slice(streamId.length);
     }
 
+    attachStreamId(chunk: Buffer, streamId: Buffer) {
+        return Buffer.concat([streamId, chunk], )
+    }
 }
 
 

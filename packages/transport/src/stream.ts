@@ -15,17 +15,17 @@ export abstract class TransportStream extends Duplex {
 
     private _timeout?: any;
     readonly streamId: Buffer;
+    headerSent = false;
     constructor(readonly connection: Connection, streamId: string, private headers: OutgoingHeaders, opts?: DuplexOptions) {
         super(opts);
         this.streamId = Buffer.from(streamId);
         this.bindEvents(opts);
-
     }
 
     protected bindEvents(opts?: DuplexOptions) {
         this.connection.on('error', this.emit.bind(this, 'error'));
         this.connection.on('close', this.emit.bind(this, 'close'));
-        const steam = new SteamIdTransform(this.connection.packet, this.streamId);
+        const steam = new BodyTransform(this.connection.packet, this.streamId);
         process.nextTick(() => {
             this.connection
                 .pipe(steam)
@@ -34,7 +34,12 @@ export abstract class TransportStream extends Duplex {
     }
 
     override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
-        this.connection.write(chunk, encoding, callback);
+        if(this.headerSent) {
+            this.connection.stream.write(this.streamId);
+            this.connection.write(chunk, encoding, callback);
+            return;
+        }
+        this.connection.write(this.connection.packet.attachStreamId(chunk, this.streamId))
     }
 
     /**
@@ -240,7 +245,7 @@ export abstract class TransportStream extends Duplex {
 
 
 
-export class SteamIdTransform extends Transform {
+export class BodyTransform extends Transform {
 
     constructor(private packet: PacketProtocol, private streamId: Buffer) {
         super();

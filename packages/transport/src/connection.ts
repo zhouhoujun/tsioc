@@ -29,11 +29,11 @@ export abstract class Connection extends Duplexify {
     private _timeout?: any;
     protected _parser: Transform;
     protected _generator: Writable;
-    constructor(readonly duplex: Duplex, readonly packet: PacketProtocol, private opts: ConnectionOpts = EMPTY_OBJ) {
+    constructor(readonly stream: Duplex, readonly packet: PacketProtocol, private opts: ConnectionOpts = EMPTY_OBJ) {
         super(undefined, undefined, opts);
 
         this._parser = packet.transform(opts);
-        this._generator = packet.generate(duplex, opts);
+        this._generator = packet.generate(stream, opts);
         this.setWritable(this.writePipe(this._generator));
         this.setReadable(this.readPipe(this._parser));
 
@@ -54,7 +54,7 @@ export abstract class Connection extends Duplexify {
 
     protected bindEvents(opts: ConnectionOpts) {
         process.nextTick(() => {
-            this.duplex.pipe(this._parser);
+            this.stream.pipe(this._parser);
         });
 
         this.once(ev.CLOSE, () => {
@@ -64,8 +64,8 @@ export abstract class Connection extends Duplexify {
         this._generator.on(ev.ERROR, this.emit.bind(this, ev.ERROR))
         this._parser.on(ev.ERROR, this.emit.bind(this, ev.ERROR))
 
-        this.duplex.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
-        this.duplex.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
+        this.stream.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
+        this.stream.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
     }
 
     /**

@@ -11,6 +11,7 @@ export class ServerSession extends Connection {
 
     protected override bindEvents(opts: ConnectionOpts): void {
         super.bindEvents(opts);
+        this.stream.on(ev.CONNECT, ()=> this.emit(ev.CONNECT, this));
         this._parser.on(ev.DATA, (chunk) => {
             if (this.packet.isHeader(chunk)) {
                 const packet = this.packet.parseHeader(chunk);

@@ -47,7 +47,7 @@ export class ClientSession extends Connection {
                 this.destroy(new InvalidHeaderToken('Header name' + header));
             }
         }
-        const stream = new ClientStream(this, this.packet.generateId());
+        const stream = new ClientStream(this, this.packet.generateId(), headers);
         const { signal, endStream, waitForTrailers } = options!;
         if (endStream) {
             stream.end();

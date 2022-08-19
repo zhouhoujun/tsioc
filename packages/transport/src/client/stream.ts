@@ -1,4 +1,4 @@
-import { IncomingHeaders, IncomingStatusHeaders } from '@tsdi/core';
+import { IncomingHeaders, IncomingStatusHeaders, OutgoingHeaders } from '@tsdi/core';
 import { Readable, DuplexOptions } from 'stream';
 import { Connection } from '../connection';
 import { ev } from '../consts';
@@ -8,10 +8,10 @@ import { TransportStream } from '../stream';
 
 export class ClientStream extends TransportStream {
 
-    constructor(readonly connection: Connection, id: string, opts?: DuplexOptions) {
-        super(connection, id, opts)
+    // constructor(readonly connection: Connection, id: string, headers: OutgoingHeaders, opts?: DuplexOptions) {
+    //     super(connection, id, headers, opts)
         
-    }
+    // }
 
     addListener(event: 'aborted', listener: () => void): this;
     addListener(event: 'close', listener: () => void): this;
