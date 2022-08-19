@@ -1,9 +1,11 @@
 import { Abstract, isFunction } from '@tsdi/ioc';
-import { IncomingHeaders } from '@tsdi/core';
-import { Duplex, DuplexOptions, Readable } from 'stream';
+import { IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
+import { Duplex, DuplexOptions, Transform, Readable, TransformCallback } from 'stream';
 import { Connection } from './connection';
 import { ev } from './consts';
 import { setTimeout } from 'timers';
+import { PacketProtocol } from './packet';
+import { isBuffer } from './utils';
 
 /**
  * transport stream
@@ -12,24 +14,27 @@ import { setTimeout } from 'timers';
 export abstract class TransportStream extends Duplex {
 
     private _timeout?: any;
-    constructor(readonly connection: Connection, readonly streamId: string, opts?: DuplexOptions) {
+    readonly streamId: Buffer;
+    constructor(readonly connection: Connection, streamId: string, private headers: OutgoingHeaders, opts?: DuplexOptions) {
         super(opts);
+        this.streamId = Buffer.from(streamId);
         this.bindEvents(opts);
+
     }
 
     protected bindEvents(opts?: DuplexOptions) {
         this.connection.on('error', this.emit.bind(this, 'error'));
         this.connection.on('close', this.emit.bind(this, 'close'));
-        const protocol = this.connection.packet;
-        this.connection.on(ev.DATA, (chuck: Buffer) => {
-            if (protocol.isBody(chuck, this.streamId)) {
-                this.push(protocol.parseBody(chuck, this.streamId));
-            }
-        })
+        const steam = new SteamIdTransform(this.connection.packet, this.streamId);
+        process.nextTick(() => {
+            this.connection
+                .pipe(steam)
+                .pipe(this);
+        });
     }
 
     override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
-        this.connection.write(this.connection.packet.attachStreamId(chunk, this.streamId), encoding, callback);
+        this.connection.write(chunk, encoding, callback);
     }
 
     /**
@@ -230,5 +235,20 @@ export abstract class TransportStream extends Duplex {
     }
     protected _prependOnceListener(event: string | symbol, listener: (...args: any[]) => void): this {
         return super.prependOnceListener(event, listener);
+    }
+}
+
+
+
+export class SteamIdTransform extends Transform {
+
+    constructor(private packet: PacketProtocol, private streamId: Buffer) {
+        super();
+    }
+
+    override _transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
+        if (isBuffer(chunk) && this.packet.isBody(chunk, this.streamId)) {
+            callback(null, this.packet.parseBody(chunk, this.streamId));
+        }
     }
 }

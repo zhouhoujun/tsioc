@@ -1,5 +1,5 @@
-import { IncomingHeaders } from '@tsdi/core';
-import { Duplex } from 'stream';
+import { IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
+import { Readable, Duplex, Transform } from 'stream';
 import { Connection, ConnectionOpts } from '../connection';
 import { ev } from '../consts';
 import { ServerStream } from './stream';
@@ -7,12 +7,22 @@ import { ServerStream } from './stream';
 
 export class ServerSession extends Connection {
 
-    protected override bindEvents(opts?: ConnectionOpts): void {
+    private streams = new Map<string, ServerStream>();
+
+    protected override bindEvents(opts: ConnectionOpts): void {
         super.bindEvents(opts);
         this._parser.on(ev.DATA, (chunk) => {
             if (this.packet.isHeader(chunk)) {
                 const packet = this.packet.parseHeader(chunk);
-                this.emit(ev.STREAM, new ServerStream(this, packet.id!), packet.headers)
+                const id = packet.id;
+                if (id) {
+                    let stream = this.streams.get(id);
+                    if(!stream) {
+                        stream = new ServerStream(this, id, packet.headers as OutgoingHeaders);
+                        this.streams.set(id, stream);
+                    }
+                    this.emit(ev.STREAM, stream, packet.headers)
+                }
             }
         })
     }

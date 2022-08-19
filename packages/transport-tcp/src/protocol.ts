@@ -2,7 +2,7 @@ import { IncomingPacket, Packet, RequestPacket } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import { ListenOpts } from '@tsdi/platform-server';
 import { ConnectionOpts, PacketProtocol, ServerRequest } from '@tsdi/transport';
-import { Duplex, Transform, Writable } from 'stream';
+import { Duplex, Transform, TransformCallback, Writable } from 'stream';
 import * as tsl from 'tls';
 import { TcpStatus } from './status';
 
@@ -87,29 +87,56 @@ export class TcpProtocol extends PacketProtocol {
     valid(header: string): boolean {
         return true;
     }
-    transform(opts?: ConnectionOpts | undefined): Transform {
+    transform(opts: ConnectionOpts): Transform {
+        return new DelimiterTransform(opts);
+    }
+    generate(stream: Duplex, opts: ConnectionOpts): Writable {
         throw new Error('Method not implemented.');
     }
-    generate(stream: Duplex, opts?: ConnectionOpts | undefined): Writable {
+    isHeader(chunk: Buffer): boolean {
         throw new Error('Method not implemented.');
     }
-    isHeader(chunk: any): boolean {
+    parseHeader(chunk: Buffer): Packet<any> {
         throw new Error('Method not implemented.');
     }
-    parseHeader(chunk: any): Packet<any> {
-        throw new Error('Method not implemented.');
+    isBody(chunk: Buffer, streamId: Buffer): boolean {
+        return chunk.indexOf(streamId) === 0;
     }
-    isBody(chunk: any, streamId: string): boolean {
-        throw new Error('Method not implemented.');
-    }
-    parseBody(chunk: any, streamId: string) {
-        throw new Error('Method not implemented.');
-    }
-    attachStreamId(chunk: any, streamId: string) {
-        throw new Error('Method not implemented.');
+    parseBody(chunk: Buffer, streamId: Buffer): any {
+        return chunk.slice(streamId.length);
     }
 
 }
 
+
+export class DelimiterTransform extends Transform {
+    private delimiter: Buffer;
+    constructor(opts: ConnectionOpts) {
+        super(opts);
+        this.delimiter = Buffer.from(opts.delimiter!);
+    }
+    buffer?: Buffer | null;
+    bytes = 0;
+    override _transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
+        this.buffer = this.buffer ? Buffer.concat([this.buffer, chunk], this.bytes) : chunk;
+        if (!this.buffer) return;
+        const idx = this.buffer.indexOf(this.delimiter) ?? 0;
+        if (idx >= 0) {
+            if (idx === 0) {
+                this.buffer = null;
+                this.bytes = 0;
+                return;
+            }
+            const pkg = this.buffer.slice(0, idx);
+            if (pkg) {
+                callback(null, pkg);
+            }
+            if (idx < this.buffer.length - 1) {
+                this.buffer = this.buffer.slice(idx + this.delimiter.length);
+            }
+        }
+
+    }
+}
 
 const tcptl = /^(tcp|ipc):\/\//i;

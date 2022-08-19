@@ -1,6 +1,6 @@
 import { Abstract, EMPTY_OBJ, isFunction } from '@tsdi/ioc';
 import * as Duplexify from 'duplexify';
-import { Writable, Duplex, DuplexOptions, Transform } from 'stream';
+import { Readable, Writable, Duplex, DuplexOptions, Transform } from 'stream';
 import { ev } from './consts';
 import { PacketProtocol } from './packet';
 
@@ -34,13 +34,25 @@ export abstract class Connection extends Duplexify {
 
         this._parser = packet.transform(opts);
         this._generator = packet.generate(duplex, opts);
-        this.setWritable(this._generator);
-        this.setReadable(this._parser);
+        this.setWritable(this.writePipe(this._generator));
+        this.setReadable(this.readPipe(this._parser));
 
         this.bindEvents(opts);
     }
 
-    protected bindEvents(opts?: ConnectionOpts) {
+    get options() {
+        return this.opts;
+    }
+
+    protected readPipe(parser: Transform): Readable {
+        return parser;
+    }
+
+    protected writePipe(writable: Writable): Writable {
+        return writable;
+    }
+
+    protected bindEvents(opts: ConnectionOpts) {
         process.nextTick(() => {
             this.duplex.pipe(this._parser);
         });
