@@ -2,7 +2,7 @@ import { OutgoingHeader, OutgoingHeaders, OutgoingPacket, ResHeaders } from '@ts
 import { isArray, isFunction, isString } from '@tsdi/ioc';
 import { Writable } from 'stream';
 import { ServerStream } from './stream';
-import { hdr } from '../consts';
+import { ev, hdr } from '../consts';
 
 
 /**
@@ -10,6 +10,7 @@ import { hdr } from '../consts';
  */
 export class ServerResponse extends Writable implements OutgoingPacket {
 
+    private _close = false;
     private _hdr: ResHeaders;
 
     constructor(
@@ -18,6 +19,23 @@ export class ServerResponse extends Writable implements OutgoingPacket {
         readonly socket?: any) {
         super();
         this._hdr = new ResHeaders();
+        stream.on(ev.DRAIN, this.emit.bind(this, ev.DRAIN));
+        stream.on(ev.ABORTED, this.emit.bind(this, ev.ABORTED));
+        stream.on(ev.CLOSE, this.onStreamClose.bind(this));
+        // stream.on('wantTrailers', this.onStreamTrailersReady.bind(this));
+        stream.on(ev.TIMEOUT, this.emit.bind(this, ev.TIMEOUT));
+    }
+
+    protected onStreamClose() {
+        if (this.destroyed || this._close) return;
+        this._close = true;
+        // this.removeListener('wantTrailers', this.onStreamTrailersReady.bind(this));
+        this.emit(ev.FINISH);
+        this.emit(ev.CLOSE);
+    }
+
+    protected onStreamTrailersReady() {
+
     }
 
     get connection() {
@@ -100,6 +118,7 @@ export class ServerResponse extends Writable implements OutgoingPacket {
                 //todo set header
             }) : this._hdr.setHeaders(headers);
         }
+        this.setHeader(hdr.STATUS, statusCode);
         this.setHeader(hdr.STATUS2, statusCode);
 
         this.stream.write(this.headers);

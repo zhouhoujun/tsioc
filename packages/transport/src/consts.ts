@@ -20,9 +20,11 @@ export namespace ev {
     export const MESSAGE = 'message';
     export const RESPONSE = 'response';
     export const DATA = 'data';
+    export const DRAIN = 'drain';
     export const ERROR = 'error';
     export const CLOSE = 'close';
     export const END = 'end';
+    export const FINISH = 'finish';
     export const TIMEOUT = 'timeout';
     export const STREAM = 'stream';
     export const ABOUT = 'about';
