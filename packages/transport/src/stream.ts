@@ -16,13 +16,16 @@ export abstract class TransportStream extends Duplex {
     private _timeout?: any;
     private _closed = false;
     readonly streamId: Buffer;
-    headersSent = false;
-    constructor(readonly connection: Connection, streamId: string, private headers: OutgoingHeaders, opts?: DuplexOptions) {
+    protected _headersSent = false;
+    constructor(readonly connection: Connection, streamId: string, protected headers: OutgoingHeaders, opts?: DuplexOptions) {
         super(opts);
         this.streamId = Buffer.from(streamId);
         this.bindEvents(opts);
     }
 
+    get headersSent() {
+        return this._headersSent;
+    }
 
     get closed() {
         return this._closed;

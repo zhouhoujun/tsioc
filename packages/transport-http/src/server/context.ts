@@ -4,7 +4,7 @@ import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import * as assert from 'assert';
 import * as http from 'http';
 import * as http2 from 'http2';
-import { hdr, append, parseTokenList, AssetServerContext, TransportContext } from '@tsdi/transport';
+import { hdr, append, parseTokenList, AssetServerContext } from '@tsdi/transport';
 import { HttpError, HttpInternalServerError } from './../errors';
 import { HttpServer } from './server';
 

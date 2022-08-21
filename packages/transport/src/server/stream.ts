@@ -79,6 +79,9 @@ export class ServerStream extends TransportStream {
     }): void {
         if (this.destroyed || this.closed) throw new InvalidStreamExecption();
         if (this.headersSent) throw new HeandersSentExecption();
+        const opts = {...options};
+        
+        opts.endStream
         
     }
 }
