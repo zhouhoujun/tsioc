@@ -7,6 +7,7 @@ import { get } from '../metadata/refl';
 import { TypeReflect } from '../metadata/type';
 import { ProviderType, StaticProvider } from '../providers';
 import { Injector, InjectorScope, ModuleRef, Platform } from '../injector';
+import { Execption } from '../execption';
 
 
 /**
@@ -37,7 +38,7 @@ export class DefaultPlatform implements Platform {
      */
     registerSingleton<T>(injector: Injector, token: Token<T>, value: T): this {
         if (this._singls.has(token)) {
-            throw Error('has singleton instance with token:' + token.toString())
+            throw new Execption('has singleton instance with token:' + token.toString())
         }
         this._singls.set(token, value);
         injector.onDestroy(() => this._singls.delete(token));

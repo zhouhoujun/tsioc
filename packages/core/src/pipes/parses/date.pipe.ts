@@ -1,6 +1,6 @@
 import { isDate, isNumber, isString } from '@tsdi/ioc';
 import { Pipe } from '../../metadata/decor';
-import { PipeTransform, invalidPipeArgumentError } from '../pipe';
+import { PipeTransform, invalidPipeArgument } from '../pipe';
 
 /**
  * date format pipe.
@@ -14,7 +14,7 @@ export class DatePipe implements PipeTransform<Date> {
             try {
                 date = new Date(value)
             } catch {
-                throw invalidPipeArgumentError(this, value)
+                throw invalidPipeArgument(this, value)
             }
         } else if (isDate(value)) {
             date = value
@@ -23,7 +23,7 @@ export class DatePipe implements PipeTransform<Date> {
         if (isDate(date)) {
             return date as Date
         } else {
-            throw invalidPipeArgumentError(this, value)
+            throw invalidPipeArgument(this, value)
         }
     }
 }

@@ -255,8 +255,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         return result ?? this.parent?.resolveArgument(meta, target) ?? null
     }
 
-    missingError(missings: Parameter<any>[], type: ClassType<any>, method: string): Error {
-        return new MissingParameterError(missings, type, method)
+    missingExecption(missings: Parameter<any>[], type: ClassType<any>, method: string): Execption {
+        return new MissingParameterExecption(missings, type, method)
     }
 
     get destroyed() {
@@ -295,9 +295,9 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
 
 /**
- * Missing argument errror.
+ * Missing argument execption.
  */
-export class MissingParameterError extends Execption {
+export class MissingParameterExecption extends Execption {
     constructor(parameters: Parameter[], type: ClassType, method: string) {
         super(`ailed to invoke operation because the following required parameters were missing: [ ${parameters.map(p => object2string(p)).join(',\n')} ], method ${method} of class ${object2string(type)}`)
     }

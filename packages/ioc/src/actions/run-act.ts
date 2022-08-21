@@ -7,7 +7,7 @@ import { IocRegScope } from './reg';
 import { PropertyMetadata } from '../metadata/meta';
 import { ctorName, Decors } from '../metadata/type';
 import { Parameter } from '../resolver';
-import { ArgumentError } from '../execption';
+import { ArgumentExecption, Execption } from '../execption';
 import { createContext, InvocationContext } from '../context';
 
 
@@ -64,7 +64,7 @@ export const CreateInstanceAction = function (ctx: RuntimeContext, next: () => v
  */
 export const InjectPropAction = function (ctx: RuntimeContext, next: () => void) {
     const context = ctx.context;
-    if (!context) throw new Error('autowride property need InvocationContext');
+    if (!context) throw new Execption('autowride property need InvocationContext');
     let meta: PropertyMetadata, key: string, val;
     ctx.reflect.class.eachProperty((metas, propertyKey) => {
         key = `${propertyKey}_INJECTED`;
@@ -74,7 +74,7 @@ export const InjectPropAction = function (ctx: RuntimeContext, next: () => void)
         }
         if (meta && !(ctx as any)[key]) {
             if (!context.canResolve(meta as Parameter)) {
-                throw new ArgumentError(`can not autowride property ${propertyKey} of class ${ctx.type}`)
+                throw new ArgumentExecption(`can not autowride property ${propertyKey} of class ${ctx.type}`)
             }
             val = context.resolveArgument(meta as Parameter, ctx.type);
             if (isDefined(val)) {

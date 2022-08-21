@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { Log, Logger } from '@tsdi/logs';
 import { Type, isString, Injector, isFunction, EMPTY, isNil } from '@tsdi/ioc';
 import { ComponentScan, Startup, OnDispose, PipeTransform, ConnectionContext, TransportParameter, PROCESS_ROOT, MODEL_RESOLVERS } from '@tsdi/core';
-import { ConnectionOptions, createModelResolver, DBPropertyMetadata, missingPropPipeError, CONNECTIONS } from '@tsdi/repository';
+import { ConnectionOptions, createModelResolver, DBPropertyMetadata, missingPropPipe, CONNECTIONS } from '@tsdi/repository';
 import {
     getConnection, createConnection, ConnectionOptions as OrmConnOptions, Connection,
     getMetadataArgsStorage, getConnectionManager, getManager
@@ -101,7 +101,7 @@ export class TypeormServer implements Startup, OnDispose {
                         const value = fields[prop.name];
                         if (isNil(value)) return null;
                         const pipe = ctx.get<PipeTransform>('objectId');
-                        if (!pipe) throw missingPropPipeError(prop, target)
+                        if (!pipe) throw missingPropPipe(prop, target)
                         return pipe.transform(value, prop.enum)
                     }
                 }

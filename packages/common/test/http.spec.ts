@@ -9,7 +9,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {
     Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module,
-    ConnectionContext, LoggerModule, Middleware, Chain, BadRequestError
+    ConnectionContext, LoggerModule, Middleware, Chain, BadRequestExecption
 } from '@tsdi/core';
 import { HttpClient, HttpClientModule } from '../src';
 
@@ -39,7 +39,7 @@ class DeviceController {
     resfulquery(@RequestPath('age', { pipe: 'int' }) age1: number) {
         console.log('age1:', age1);
         if (age1 <= 0) {
-            throw new BadRequestError();
+            throw new BadRequestExecption();
         }
         return age1;
     }

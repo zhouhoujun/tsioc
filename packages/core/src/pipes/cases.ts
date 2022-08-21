@@ -1,6 +1,6 @@
 import { isString } from '@tsdi/ioc';
 import { Pipe } from '../metadata/decor';
-import { PipeTransform, invalidPipeArgumentError } from './pipe';
+import { PipeTransform, invalidPipeArgument } from './pipe';
 
 /**
  * lowercase pipe
@@ -13,7 +13,7 @@ export class LowerCasePipe implements PipeTransform {
   transform(value: string): string {
     if (!value) return value;
     if (!isString(value)) {
-      throw invalidPipeArgumentError(this, value)
+      throw invalidPipeArgument(this, value)
     }
     return value.toLowerCase()
   }
@@ -30,7 +30,7 @@ export class UpperCasePipe implements PipeTransform {
   transform(value: string): string {
     if (!value) return value;
     if (!isString(value)) {
-      throw invalidPipeArgumentError(this, value)
+      throw invalidPipeArgument(this, value)
     }
     return value.toLowerCase()
   }

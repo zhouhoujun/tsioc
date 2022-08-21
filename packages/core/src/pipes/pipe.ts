@@ -1,4 +1,4 @@
-import { ArgumentError, lang } from '@tsdi/ioc';
+import { ArgumentExecption, lang } from '@tsdi/ioc';
 
 /**
  * pipe transform insterface.
@@ -25,6 +25,6 @@ export interface PipeTransform<TReturn = any, T = any> {
  * @param message 
  * @returns 
  */
-export function invalidPipeArgumentError(type: any, value: any, message?: string) {
-    return new ArgumentError(`InvalidPipeArgument: '${value}' for pipe '${lang.getClassName(type)}'${message || ''}`)
+export function invalidPipeArgument(type: any, value: any, message?: string) {
+    return new ArgumentExecption(`InvalidPipeArgument: '${value}' for pipe '${lang.getClassName(type)}'${message || ''}`)
 }

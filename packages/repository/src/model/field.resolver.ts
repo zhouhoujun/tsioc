@@ -1,5 +1,5 @@
 import { InvocationContext, isDefined, isFunction, isNil, PropertyMetadata, Type, object2string } from '@tsdi/ioc';
-import { PipeTransform, TransportArgumentError } from '@tsdi/core';
+import { PipeTransform, TransportArgumentExecption } from '@tsdi/core';
 
 /**
  * db property metadata. model parameter of {@link ModelFieldResolver} 
@@ -81,9 +81,9 @@ export interface ModelFieldResolver<C = any> {
 }
 
 /**
- * Missing model field errror.
+ * Missing model field execption.
  */
-export class MissingModelFieldError extends TransportArgumentError {
+export class MissingModelFieldExecption extends TransportArgumentExecption {
     constructor(fields: DBPropertyMetadata[], type: Type) {
         super(`ailed to resolve model class ${object2string(type)} because the following required fields were missing: [ ${fields.map(p => object2string(p)).join(',\n')} ]`)
     }
@@ -132,10 +132,10 @@ const jsonExp = /^(\s|\w)*json(b)?$/;
  * missing pipe error.
  * @param prop property metadata.
  * @param type target type.
- * @returns instance of {@link TransportArgumentError}
+ * @returns instance of {@link TransportArgumentExecption}
  */
-export function missingPropPipeError(prop: DBPropertyMetadata, type?: Type) {
-    return new TransportArgumentError(`missing pipe to transform property ${prop.name} of class ${type}`)
+export function missingPropPipe(prop: DBPropertyMetadata, type?: Type) {
+    return new TransportArgumentExecption(`missing pipe to transform property ${prop.name} of class ${type}`)
 }
 
 
@@ -151,7 +151,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
                 const value = args[prop.name] ?? prop.default;
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>('enum');
-                if (!pipe) throw missingPropPipeError(prop, target)
+                if (!pipe) throw missingPropPipe(prop, target)
                 return pipe.transform(value, prop.enum)
             }
         },
@@ -161,7 +161,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
                 const value = args[prop.name];
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('boolean');
-                if (!pipe) throw missingPropPipeError(prop, target);
+                if (!pipe) throw missingPropPipe(prop, target);
                 return pipe.transform(value)
             }
         },
@@ -171,7 +171,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
                 const value = args[prop.name] ?? prop.default;
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('int');
-                if (!pipe) throw missingPropPipeError(prop, target);
+                if (!pipe) throw missingPropPipe(prop, target);
                 return pipe.transform(value)
             }
         },
@@ -181,7 +181,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
                 const value = args[prop.name] ?? prop.default;
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('float');
-                if (!pipe) throw missingPropPipeError(prop, target);
+                if (!pipe) throw missingPropPipe(prop, target);
                 return pipe.transform(value, prop.precision)
             }
         },
@@ -191,7 +191,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
                 const value = args[prop.name] ?? prop.default;
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('double');
-                if (!pipe) throw missingPropPipeError(prop, target);
+                if (!pipe) throw missingPropPipe(prop, target);
                 return pipe.transform(value, prop.precision)
             }
         },
@@ -201,7 +201,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
                 const value = args[prop.name] ?? prop.default;
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('number');
-                if (!pipe) throw missingPropPipeError(prop, target);
+                if (!pipe) throw missingPropPipe(prop, target);
                 return pipe.transform(value, prop.precision)
             }
         },
@@ -211,7 +211,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
                 const value = args[prop.name] ?? prop.default;
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('string');
-                if (!pipe) throw missingPropPipeError(prop, target);
+                if (!pipe) throw missingPropPipe(prop, target);
                 return pipe.transform(value, prop.length)
             }
         },
@@ -221,7 +221,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
                 const value = args[prop.name] ?? prop.default;
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('json');
-                if (!pipe) throw missingPropPipeError(prop, target);
+                if (!pipe) throw missingPropPipe(prop, target);
                 return pipe.transform(value)
             }
         },
@@ -243,7 +243,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
                 }
 
                 const pipe = ctx.get<PipeTransform>(dbtype) ?? ctx.get<PipeTransform>(pipeName);
-                if (!pipe) throw missingPropPipeError(prop, target);
+                if (!pipe) throw missingPropPipe(prop, target);
                 return pipe.transform(value)
             }
         },
@@ -253,7 +253,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
                 const value = args[prop.name] ?? prop.default;
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('date');
-                if (!pipe) throw missingPropPipeError(prop, target);
+                if (!pipe) throw missingPropPipe(prop, target);
                 return pipe.transform(value)
             }
         }
@@ -264,18 +264,18 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
             const value = args[prop.name] ?? prop.default;
             if (isNil(value)) return null;
             const pipe = ctx.get<PipeTransform>((prop.provider ?? prop.type)?.name.toLowerCase());
-            if (!pipe) throw missingPropPipeError(prop, target);
+            if (!pipe) throw missingPropPipe(prop, target);
             return pipe.transform(value)
         }
     }
 ];
 
 /**
- * missing property error. 
+ * missing property execption. 
  * @param type 
- * @returns argument error {@link TransportArgumentError}.
+ * @returns argument execption {@link TransportArgumentExecption}.
  */
-export function missingPropError(type?: Type) {
-    return new TransportArgumentError(`missing modle properties of class ${type}`)
+export function missingPropExecption(type?: Type) {
+    return new TransportArgumentExecption(`missing modle properties of class ${type}`)
 }
 

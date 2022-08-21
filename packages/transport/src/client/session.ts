@@ -1,5 +1,5 @@
 import { EMPTY_OBJ } from '@tsdi/ioc';
-import { InvalidHeaderToken, OutgoingHeaders, TransportAboutError, TransportError } from '@tsdi/core';
+import { InvalidHeaderTokenExecption, OutgoingHeaders, TransportAboutExecption, TransportExecption } from '@tsdi/core';
 import { Duplex } from 'stream';
 import { Connection, ConnectionOpts } from '../connection';
 import { PacketProtocol } from '../packet';
@@ -35,16 +35,16 @@ export class ClientSession extends Connection {
 
     request(headers: OutgoingHeaders, options?: ClientRequsetOpts): ClientStream {
         if (this.destroyed) {
-            throw new TransportError('connection destroyed!')
+            throw new TransportExecption('connection destroyed!')
         }
         if (this.closed) {
-            throw new TransportError('connection closed!')
+            throw new TransportExecption('connection closed!')
         }
         const keys = Object.keys(headers);
         for (let i = 0; i < keys.length; i++) {
             const header = keys[i];
             if (header && !this.packet.valid(header)) {
-                this.destroy(new InvalidHeaderToken('Header name' + header));
+                this.destroy(new InvalidHeaderTokenExecption('Header name' + header));
             }
         }
         const stream = new ClientStream(this, this.packet.generateId(), headers);
@@ -54,7 +54,7 @@ export class ClientSession extends Connection {
         }
         if (signal) {
             const aborter = () => {
-                stream.destroy(new TransportAboutError((signal as any).reason));
+                stream.destroy(new TransportAboutExecption((signal as any).reason));
             }
             if (signal.aborted) {
                 aborter();

@@ -1,6 +1,6 @@
 import { isNumber, isString } from '@tsdi/ioc';
 import { Pipe } from '../../metadata/decor';
-import { PipeTransform, invalidPipeArgumentError } from '../pipe';
+import { PipeTransform, invalidPipeArgument } from '../pipe';
 
 /**
  * parse number.
@@ -14,7 +14,7 @@ export class ParseNumberPipe implements PipeTransform<number> {
             try {
                 ret = Number(value)
             } catch {
-                throw invalidPipeArgumentError(this, value)
+                throw invalidPipeArgument(this, value)
             }
         } else if (isNumber(value)) {
             ret = value
@@ -22,7 +22,7 @@ export class ParseNumberPipe implements PipeTransform<number> {
             ret = NaN
         }
         if (isNaN(ret)) {
-            throw invalidPipeArgumentError(this, value)
+            throw invalidPipeArgument(this, value)
         }
         return ret
     }

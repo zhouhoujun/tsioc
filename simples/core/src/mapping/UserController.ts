@@ -1,4 +1,4 @@
-import { ApplicationContext, ComponentScan, ConfigureService, Controller, Delete, Get, Post, Put, RequestParam, InternalServerError } from '@tsdi/core';
+import { ApplicationContext, ComponentScan, ConfigureService, Controller, Delete, Get, Post, Put, RequestParam, InternalServerExecption } from '@tsdi/core';
 import { lang, Param } from '@tsdi/ioc';
 import { Log, Logger } from '@tsdi/logs';
 import { Repository, Transactional } from '@tsdi/repository';
@@ -21,7 +21,7 @@ export class UserController {
     getUser(name: string) {
         this.logger.log('name:', name);
         if (name == 'error') {
-            throw new InternalServerError('error');
+            throw new InternalServerExecption('error');
         }
         return this.usrRep.findByAccount(name);
     }
@@ -32,7 +32,7 @@ export class UserController {
     async modify(user: User, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(lang.getClassName(this.usrRep), user);
         const val = await this.usrRep.save(user);
-        if (check) throw new InternalServerError('check');
+        if (check) throw new InternalServerExecption('check');
         this.logger.log(val);
         return val;
     }
@@ -43,7 +43,7 @@ export class UserController {
     async modify2(user: User, @Repository() userRepo: UserRepository, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(lang.getClassName(this.usrRep), user);
         const val = await userRepo.save(user);
-        if (check) throw new InternalServerError('check');
+        if (check) throw new InternalServerExecption('check');
         this.logger.log(val);
         return val;
     }

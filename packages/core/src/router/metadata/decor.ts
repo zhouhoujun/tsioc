@@ -1,6 +1,6 @@
 import {
     isArray, isString, lang, Type, isRegExp, createDecorator, OperationArgumentResolver,
-    ClassMethodDecorator, createParamDecorator, ParameterMetadata, ActionTypes, ReflectiveResolver, isClass, isBoolean
+    ClassMethodDecorator, createParamDecorator, ParameterMetadata, ActionTypes, ReflectiveResolver, isClass, isBoolean, Execption
 } from '@tsdi/ioc';
 import { PipeTransform } from '../../pipes/pipe';
 import { InterceptorType, Middleware, MiddlewareFn } from '../../transport/endpoint';
@@ -107,7 +107,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
                 const path = joinprefix(prefix, version, route);
                 const router = parent ? injector.get(parent) : injector.get(Router);
                 if (!(router instanceof Router)) {
-                    throw new Error(lang.getClassName(router) + 'is not message router!');
+                    throw new Execption(lang.getClassName(router) + 'is not message router!');
                 }
                 const factory = injector.get(ReflectiveResolver).resolve(reflect, injector);
                 factory.onDestroy(() => router.unuse(path));
@@ -275,8 +275,8 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
                     router = injector.get(Router);
                 }
 
-                if (!router) throw new Error(lang.getClassName(parent) + 'has not registered!');
-                if (!(router instanceof Router)) throw new Error(lang.getClassName(router) + 'is not router!');
+                if (!router) throw new Execption(lang.getClassName(parent) + 'has not registered!');
+                if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
                 const routeRef = injector.get(RouteFactoryResolver).resolve(reflect).create(injector);
                 const path = routeRef.path;
                 routeRef.onDestroy(() => router.unuse(path));

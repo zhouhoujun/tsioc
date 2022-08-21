@@ -1,4 +1,4 @@
-import { AssetContext, ForbiddenError, Middleware, mths } from '@tsdi/core';
+import { AssetContext, ForbiddenExecption, Middleware, mths } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
 import * as Tokens from 'csrf';
 import { hdr } from '../consts';
@@ -73,11 +73,11 @@ export class CsrfMiddleware implements Middleware {
             || ctx.getHeader(hdr.X_XSRF_TOKEN);
 
         if (!token) {
-            throw new ForbiddenError(typeof this.options.invalidTokenMessage === 'function' ? this.options.invalidTokenMessage(ctx) : this.options.invalidTokenMessage)
+            throw new ForbiddenExecption(typeof this.options.invalidTokenMessage === 'function' ? this.options.invalidTokenMessage(ctx) : this.options.invalidTokenMessage)
         }
 
         if (!this.tokens.verify(session.secret, token)) {
-            throw new ForbiddenError(typeof this.options.invalidTokenMessage === 'function' ? this.options.invalidTokenMessage(ctx) : this.options.invalidTokenMessage)
+            throw new ForbiddenExecption(typeof this.options.invalidTokenMessage === 'function' ? this.options.invalidTokenMessage(ctx) : this.options.invalidTokenMessage)
         }
 
         return next()

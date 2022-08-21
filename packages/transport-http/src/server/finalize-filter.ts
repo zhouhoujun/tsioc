@@ -1,11 +1,11 @@
 import {
-    BadRequestError, ENOENT, ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
-    ForbiddenError, InternalServerError, NotFoundError, TransportArgumentError, TransportError,
-    TransportMissingError, UnauthorizedError, UnsupportedMediaTypeError
+    BadRequestExecption, ENOENT, ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
+    ForbiddenExecption, InternalServerExecption, NotFoundExecption, TransportArgumentExecption, TransportExecption,
+    TransportMissingExecption, UnauthorizedExecption, UnsupportedMediaTypeExecption
 } from '@tsdi/core';
 import { Injectable, isFunction, isNumber } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
-import { MissingModelFieldError } from '@tsdi/repository';
+import { MissingModelFieldExecption } from '@tsdi/repository';
 import { HttpBadRequestError, HttpError, HttpForbiddenError, HttpInternalServerError, HttpNotFoundError, HttpUnauthorizedError } from '../errors';
 import { HttpContext } from './context';
 import { HTTP_SERVEROPTIONS } from './options';
@@ -56,7 +56,7 @@ export class HttpFinalizeFilter implements ExecptionFilter {
         hctx.type = 'text';
         let statusCode = (err.status || err.statusCode) as HttpStatusCode;
         let msg;
-        if (err instanceof TransportError) {
+        if (err instanceof TransportExecption) {
             msg = err.message
         } else {
             // ENOENT support
@@ -95,48 +95,48 @@ export class HttpExecptionFilter implements ExecptionFilter {
         }
     }
 
-    @ExecptionHandler(NotFoundError)
-    notFoundExecption(ctx: ExecptionContext, execption: NotFoundError) {
+    @ExecptionHandler(NotFoundExecption)
+    notFoundExecption(ctx: ExecptionContext, execption: NotFoundExecption) {
         ctx.execption = new HttpNotFoundError(execption.message)
     }
 
-    @ExecptionHandler(ForbiddenError)
-    forbiddenExecption(ctx: ExecptionContext, execption: ForbiddenError) {
+    @ExecptionHandler(ForbiddenExecption)
+    forbiddenExecption(ctx: ExecptionContext, execption: ForbiddenExecption) {
         ctx.execption = new HttpForbiddenError(execption.message)
     }
 
-    @ExecptionHandler(BadRequestError)
-    badReqExecption(ctx: ExecptionContext, execption: BadRequestError) {
+    @ExecptionHandler(BadRequestExecption)
+    badReqExecption(ctx: ExecptionContext, execption: BadRequestExecption) {
         ctx.execption = new HttpBadRequestError(execption.message)
     }
 
-    @ExecptionHandler(UnauthorizedError)
-    unauthorized(ctx: ExecptionContext, execption: UnauthorizedError) {
+    @ExecptionHandler(UnauthorizedExecption)
+    unauthorized(ctx: ExecptionContext, execption: UnauthorizedExecption) {
         ctx.execption = new HttpUnauthorizedError(execption.message)
     }
 
-    @ExecptionHandler(InternalServerError)
-    internalServerError(ctx: ExecptionContext, execption: InternalServerError) {
+    @ExecptionHandler(InternalServerExecption)
+    internalServerError(ctx: ExecptionContext, execption: InternalServerExecption) {
         ctx.execption = new HttpInternalServerError(execption.message)
     }
 
-    @ExecptionHandler(UnsupportedMediaTypeError)
-    unsupported(ctx: ExecptionContext, execption: UnsupportedMediaTypeError) {
+    @ExecptionHandler(UnsupportedMediaTypeExecption)
+    unsupported(ctx: ExecptionContext, execption: UnsupportedMediaTypeExecption) {
         ctx.execption = new HttpError(415, execption.message)
     }
 
-    @ExecptionHandler(TransportArgumentError)
-    anguExecption(ctx: ExecptionContext, execption: TransportArgumentError) {
+    @ExecptionHandler(TransportArgumentExecption)
+    anguExecption(ctx: ExecptionContext, execption: TransportArgumentExecption) {
         ctx.execption = new HttpBadRequestError(ctx.get(HTTP_SERVEROPTIONS).detailError ? execption.message : undefined)
     }
 
-    @ExecptionHandler(MissingModelFieldError)
-    missFieldExecption(ctx: ExecptionContext, execption: MissingModelFieldError) {
+    @ExecptionHandler(MissingModelFieldExecption)
+    missFieldExecption(ctx: ExecptionContext, execption: MissingModelFieldExecption) {
         ctx.execption = new HttpBadRequestError(ctx.get(HTTP_SERVEROPTIONS).detailError ? execption.message : undefined)
     }
 
-    @ExecptionHandler(TransportMissingError)
-    missExecption(ctx: ExecptionContext, execption: TransportMissingError) {
+    @ExecptionHandler(TransportMissingExecption)
+    missExecption(ctx: ExecptionContext, execption: TransportMissingExecption) {
         ctx.execption = new HttpBadRequestError(ctx.get(HTTP_SERVEROPTIONS).detailError ? execption.message : undefined)
     }
 

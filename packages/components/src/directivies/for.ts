@@ -1,4 +1,4 @@
-import { lang } from '@tsdi/ioc';
+import { Execption, lang } from '@tsdi/ioc';
 import { IterableType, IterableDiffers, TrackByFunction, IterableDiffer, IterableChanges, IterableChangeRecord } from '../chage/iterable';
 import { Directive, Input } from '../metadata/decor';
 import { DoCheck } from '../lifecycle';
@@ -181,7 +181,7 @@ export class ForDirective<T, U extends IterableType<T> = IterableType<T>> implem
                 try {
                     this._differ = this._differs.find(value).create(this.forTrackBy);
                 } catch {
-                    throw new Error(`Cannot find a differ supporting object '${value}' of type '${getTypeName(value)}'. DirEach only supports binding to Iterables such as Arrays.`);
+                    throw new Execption(`Cannot find a differ supporting object '${value}' of type '${getTypeName(value)}'. DirEach only supports binding to Iterables such as Arrays.`);
                 }
             }
         }

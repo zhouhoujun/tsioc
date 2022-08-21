@@ -1,5 +1,5 @@
 import { ClassType, ctorName, Inject, lang, refl, Type } from '@tsdi/ioc';
-import { DBRepository, RepositoryMetadata, TransactionalMetadata, TransactionError, TransactionManager, TransactionStatus } from '@tsdi/repository';
+import { DBRepository, RepositoryMetadata, TransactionalMetadata, TransactionExecption, TransactionManager, TransactionStatus } from '@tsdi/repository';
 import { Joinpoint } from '@tsdi/aop';
 import { Log, Logger } from '@tsdi/logs';
 import { EntityManager, getManager, MongoRepository, Repository, TreeRepository } from 'typeorm';
@@ -90,7 +90,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
             switch (propagation) {
                 case 'MANDATORY':
                     if (!currTransaction) {
-                        throw new TransactionError(`No existing transaction found for transaction marked with propagation 'MANDATORY'`)
+                        throw new TransactionExecption(`No existing transaction found for transaction marked with propagation 'MANDATORY'`)
                     }
                     return runInTransaction(currTransaction)
 
@@ -99,7 +99,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
 
                 case 'NEVER':
                     if (currTransaction) {
-                        throw new TransactionError("Found an existing transaction, transaction marked with propagation 'NEVER'")
+                        throw new TransactionExecption("Found an existing transaction, transaction marked with propagation 'NEVER'")
                     }
                     return withOrigin()
 

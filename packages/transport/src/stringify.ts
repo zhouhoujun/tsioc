@@ -1,6 +1,6 @@
 /* eslint-disable no-control-regex */
 /* eslint-disable no-misleading-character-class */
-import { isPromise } from '@tsdi/ioc';
+import { Execption, isPromise } from '@tsdi/ioc';
 import { Readable } from 'stream';
 
 export class JsonStreamStringify extends Readable {
@@ -243,7 +243,7 @@ export class JsonStreamStringify extends Readable {
     }
 
     onError(msg: string, value?: any) {
-        const error = new Error(msg);
+        const error = new Execption(msg);
         if (value) {
             (error as any).value = value;
         }

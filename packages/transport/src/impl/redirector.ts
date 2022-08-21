@@ -1,6 +1,6 @@
 /* eslint-disable no-case-declarations */
-import { BadRequestError, EndpointContext, RequestPacket, Client, RequestMethod, Redirector, ReqHeaders, ResHeaders, HeaderSet } from '@tsdi/core';
-import { EMPTY_OBJ, Injectable } from '@tsdi/ioc';
+import { BadRequestExecption, EndpointContext, RequestPacket, Client, RequestMethod, Redirector, ReqHeaders, ResHeaders, HeaderSet } from '@tsdi/core';
+import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { Readable } from 'stream';
 import { hdr } from '../consts';
@@ -23,7 +23,7 @@ export class AssetRedirector extends Redirector {
                 // do not throw when options.redirect == manual
                 // let the user extract the errorneous redirect URL
                 if (rdstatus.redirect !== 'manual') {
-                    observer.error(new BadRequestError(`uri requested responds with an invalid redirect URL: ${location}`, ctx.transport.status.badRequest));
+                    observer.error(new BadRequestExecption(`uri requested responds with an invalid redirect URL: ${location}`, ctx.transport.status.badRequest));
                 }
             }
 
@@ -31,7 +31,7 @@ export class AssetRedirector extends Redirector {
             // HTTP fetch step 5.5
             switch (rdstatus.redirect) {
                 case 'error':
-                    observer.error(new BadRequestError(`uri requested responds with a redirect, redirect mode is set to error: ${req.url}`, ctx.transport.status.badRequest));
+                    observer.error(new BadRequestExecption(`uri requested responds with a redirect, redirect mode is set to error: ${req.url}`, ctx.transport.status.badRequest));
                     break;
                 case 'manual':
                     // Nothing to do
@@ -44,7 +44,7 @@ export class AssetRedirector extends Redirector {
 
                     // HTTP-redirect fetch step 5
                     if (rdstatus.counter >= rdstatus.follow) {
-                        observer.error(new BadRequestError(`maximum redirect reached at: ${req.url}`, ctx.transport.status.badRequest));
+                        observer.error(new BadRequestExecption(`maximum redirect reached at: ${req.url}`, ctx.transport.status.badRequest));
                         break;
                     }
 
@@ -72,7 +72,7 @@ export class AssetRedirector extends Redirector {
 
                     // HTTP-redirect fetch step 9
                     if (ctx.transport.status.redirectBodify(status) && req.body && req.body instanceof Readable) {
-                        observer.error(new BadRequestError('Cannot follow redirect with body being a readable stream', ctx.transport.status.badRequest));
+                        observer.error(new BadRequestExecption('Cannot follow redirect with body being a readable stream', ctx.transport.status.badRequest));
                         break;
                     }
 
@@ -100,7 +100,7 @@ export class AssetRedirector extends Redirector {
                     break;
 
                 default:
-                    observer.error(new TypeError(`Redirect option '${rdstatus.redirect}' is not a valid value of RequestRedirect`));
+                    observer.error(new TypeExecption(`Redirect option '${rdstatus.redirect}' is not a valid value of RequestRedirect`));
                     break;
             }
 

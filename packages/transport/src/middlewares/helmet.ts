@@ -1,5 +1,5 @@
 import { HeadersContext, Middleware } from '@tsdi/core';
-import { Abstract, ArgumentError, EMPTY_OBJ, Injectable, Nullable } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, EMPTY_OBJ, Injectable, Nullable } from '@tsdi/ioc';
 import { hdr } from '../consts';
 
 
@@ -65,7 +65,7 @@ export class HelmetMiddleware implements Middleware {
         let action = xFrame.action ?? 'SAMEORIGIN';
         if (action === 'ALLOW-FROM') {
             if (!xFrame.domain) {
-                throw new ArgumentError('ALLOW-FROM action requires a string domain parameter.');
+                throw new ArgumentExecption('ALLOW-FROM action requires a string domain parameter.');
             }
             action = action + ' ' + xFrame;
         }

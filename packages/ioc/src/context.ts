@@ -5,6 +5,7 @@ import { DestroyCallback, Destroyable, OnDestroy } from './destroy';
 import { Injector } from './injector';
 import { ArgumentResolver, Parameter } from './resolver';
 import { ProviderType } from './providers';
+import { Execption } from './execption';
 import { OperationInvoker } from './operation';
 
 
@@ -112,7 +113,7 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
      * @param type 
      * @param method 
      */
-    abstract missingError(missings: Parameter[], type: ClassType, method: string): Error;
+    abstract missingExecption(missings: Parameter[], type: ClassType, method: string): Error;
     /**
      * context destroyed or not.
      */
@@ -149,7 +150,7 @@ export const INVOCATION_CONTEXT_IMPL = {
      * @param options invocation options.
      */
     create(parent: Injector | InvocationContext, options?: InvocationOption): InvocationContext {
-        throw new Error('not implemented.')
+        throw new Execption('not implemented.')
     }
 };
 

@@ -1,6 +1,6 @@
 import { isNumber, isString } from '@tsdi/ioc';
 import { Pipe } from '../metadata/decor';
-import { invalidPipeArgumentError, PipeTransform } from './pipe';
+import { invalidPipeArgument, PipeTransform } from './pipe';
 
 /**
  * format times with unit us, ns, ms, s, min, h... 
@@ -14,13 +14,13 @@ export class TimesPipe implements PipeTransform<string> {
             try {
                 total = parseFloat(ms)
             } catch {
-                throw invalidPipeArgumentError(this, ms)
+                throw invalidPipeArgument(this, ms)
             }
         } else {
             total = ms;
         }
         if (!isNumber(ms)) {
-            throw invalidPipeArgumentError(this, ms)
+            throw invalidPipeArgument(this, ms)
         }
 
         if (Number.isNaN(total)) {

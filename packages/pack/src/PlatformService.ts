@@ -1,4 +1,4 @@
-import { Injectable, ObjectMap, isArray, isString, lang, isFunction } from '@tsdi/ioc';
+import { Injectable, ObjectMap, isArray, isString, lang, isFunction, ArgumentExecption } from '@tsdi/ioc';
 import { toAbsolutePath, syncRequire } from '@tsdi/platform-server';
 import { Src } from '@tsdi/activities';
 import { existsSync, readdirSync, lstatSync } from 'fs';
@@ -112,7 +112,7 @@ export class PlatformService {
     async getFiles(express: Src, options: GlobbyOptions, filter?: (fileName: string) => boolean, mapping?: (filename: string) => string): Promise<string[]>;
     async getFiles(express: Src, options: any, filter?: any, mapping?: (filename: string) => string): Promise<string[]> {
         if (!(isString(express) || isArray(express))) {
-            throw Error('input express param type error!');
+            throw new ArgumentExecption('input express param type error!');
         }
         if (isFunction(options)) {
             filter = options;

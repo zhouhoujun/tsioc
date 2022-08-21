@@ -208,7 +208,6 @@ describe('IPC Server & IPC Client', () => {
                     return of(err);
                 })));
         expect(r.status).toEqual(400);
-        // expect(r.error).toBeInstanceOf(MissingParameterError)
     })
 
     it('route with request body pipe throw argument err', async () => {
@@ -219,7 +218,6 @@ describe('IPC Server & IPC Client', () => {
                     return of(err);
                 })));
         expect(r.status).toEqual(500);
-        // expect(r.error).toBeInstanceOf(ArgumentError)
     })
 
     it('route with request param pipe', async () => {
@@ -237,7 +235,6 @@ describe('IPC Server & IPC Client', () => {
                     return of(err);
                 })));
         expect(r.status).toEqual(400);
-        // expect(r.error).toBeInstanceOf(MissingParameterError)
     })
 
     it('route with request param pipe throw argument err', async () => {
@@ -248,7 +245,6 @@ describe('IPC Server & IPC Client', () => {
                     return of(err);
                 })));
         expect(r.status).toEqual(500);
-        // expect(r.error).toBeInstanceOf(ArgumentError)
     })
 
     it('route with request param pipe', async () => {
@@ -266,7 +262,6 @@ describe('IPC Server & IPC Client', () => {
                     return of(err);
                 })));
         expect(r.status).toEqual(400);
-        // expect(r.error).toBeInstanceOf(MissingParameterError);
     })
 
     it('route with request restful param pipe throw argument err', async () => {
@@ -277,7 +272,6 @@ describe('IPC Server & IPC Client', () => {
                     return of(err);
                 })));
         expect(r.status).toEqual(500);
-        // expect(r.error).toBeInstanceOf(ArgumentError);
     })
 
 

@@ -1,7 +1,7 @@
 
 import { isNil } from '@tsdi/ioc';
 import { Pipe } from '../../metadata/decor';
-import { PipeTransform, invalidPipeArgumentError } from '../pipe';
+import { PipeTransform, invalidPipeArgument } from '../pipe';
 
 
 /**
@@ -11,11 +11,11 @@ import { PipeTransform, invalidPipeArgumentError } from '../pipe';
 export class ParseStringPipe implements PipeTransform<string> {
 
     transform(value: any, length?: number): string {
-        if (isNil(value)) throw invalidPipeArgumentError(this, value);
+        if (isNil(value)) throw invalidPipeArgument(this, value);
 
         const str = String(value);
         if (length && str.length > length) {
-            throw invalidPipeArgumentError(this, value, 'more than max lenght:' + length)
+            throw invalidPipeArgument(this, value, 'more than max lenght:' + length)
         }
         return str
     }

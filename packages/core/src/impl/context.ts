@@ -1,6 +1,6 @@
 import {
     Type, isFunction, ModuleMetadata, getClass, Injector, ProviderType,
-    DefaultInvocationContext, InvokeArguments, ArgumentError, EMPTY_OBJ
+    DefaultInvocationContext, InvokeArguments, ArgumentExecption, EMPTY_OBJ
 } from '@tsdi/ioc';
 import { Logger, LoggerManager } from '@tsdi/logs';
 import { PROCESS_ROOT } from '../metadata/tk';
@@ -80,7 +80,7 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
     publishEvent(event: ApplicationEvent): void;
     publishEvent(event: Object): void;
     publishEvent(obj: ApplicationEvent | Object): void {
-        if (!obj) throw new ArgumentError('Event must not be null');
+        if (!obj) throw new ArgumentExecption('Event must not be null');
 
         // Decorate event as an ApplicationEvent if necessary
         let event: ApplicationEvent;

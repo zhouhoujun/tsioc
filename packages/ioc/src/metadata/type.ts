@@ -13,6 +13,7 @@ import { getClassAnnotation } from '../utils/util';
 import { isFunction, isPromise, isString } from '../utils/chk';
 import { forIn } from '../utils/lang';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
+import { Execption } from '../execption';
 
 /**
  * auto run define.
@@ -295,7 +296,7 @@ export class Reflective<T = any> {
         const type = this.type;
         const inst: any = instance ?? context.resolve(type);
         if (!inst || !isFunction(inst[method])) {
-            throw new Error(`type: ${type} has no method ${method}.`)
+            throw new Execption(`type: ${type} has no method ${method}.`)
         }
         const hasPointcut = inst[method]['_proxy'] == true;
         const args = this.resolveArguments(method, context);
@@ -340,7 +341,7 @@ export class Reflective<T = any> {
     protected validate(method: string, context: InvocationContext, parameters: Parameter[]) {
         const missings = parameters.filter(p => this.isisMissing(context, p));
         if (missings.length) {
-            throw context.missingError(missings, this.type, method)
+            throw context.missingExecption(missings, this.type, method)
         }
     }
 

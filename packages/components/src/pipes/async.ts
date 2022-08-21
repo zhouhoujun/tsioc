@@ -1,5 +1,5 @@
 import { isPromise, isObservable } from '@tsdi/ioc';
-import { PipeTransform, Pipe, invalidPipeArgumentError } from '@tsdi/core';
+import { PipeTransform, Pipe, invalidPipeArgument } from '@tsdi/core';
 import { Observable, SubscriptionLike } from 'rxjs';
 import { EventEmitter } from '../EventEmitter';
 import { OnDestroy } from '../lifecycle';
@@ -60,7 +60,7 @@ export class AsyncPipe implements OnDestroy, PipeTransform {
       return _observableStrategy;
     }
 
-    throw invalidPipeArgumentError(AsyncPipe, obj);
+    throw invalidPipeArgument(AsyncPipe, obj);
   }
 
   private _dispose(): void {

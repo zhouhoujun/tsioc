@@ -11,7 +11,7 @@ import { ProtocolRouteMappingMetadata, RouteMappingMetadata } from './router';
 import { ConnectionContext } from '../transport/context';
 import { promisify } from './promisify';
 import { Protocols } from '../transport/packet';
-import { ForbiddenError } from '../transport/error';
+import { ForbiddenExecption } from '../transport/execptions';
 
 
 const isRest = /\/:/;
@@ -99,7 +99,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
             if (!(await lang.some(
                 metadate.guards.map(token => () => promisify(this.factory.resolve(token)?.canActivate(ctx))),
                 vaild => vaild === false))) {
-                throw new ForbiddenError();
+                throw new ForbiddenExecption();
             }
         }
 

@@ -1,5 +1,5 @@
 /* eslint-disable no-case-declarations */
-import { EndpointBackend, IncomingHeaders, IncomingStatusHeaders, isArrayBuffer, isBlob, isFormData, mths, Redirector, ReqHeaders, RequestContext, ResponseJsonParseError, TransportError, UnsupportedMediaTypeError } from '@tsdi/core';
+import { EndpointBackend, IncomingHeaders, IncomingStatusHeaders, isArrayBuffer, isBlob, isFormData, mths, Redirector, ReqHeaders, RequestContext, ResponseJsonParseError, TransportExecption, UnsupportedMediaTypeExecption } from '@tsdi/core';
 import { EMPTY_OBJ, Injectable, InvocationContext, isUndefined, lang, type_undef } from '@tsdi/ioc';
 import { Observable, Observer, throwError, finalize } from 'rxjs';
 import * as zlib from 'zlib';
@@ -279,7 +279,7 @@ export class TransportBackend implements EndpointBackend<TransportRequest, Trans
                 request.off(ev.ABORTED, onError);
                 request.off(ev.TIMEOUT, onError);
                 if (!ctx.destroyed) {
-                    observer.error(new TransportError('The operation was aborted.'));
+                    observer.error(new TransportExecption('The operation was aborted.'));
                     request.emit(ev.CLOSE);
                 }
             }
@@ -328,7 +328,7 @@ export async function sendbody(data: any, request: Writable, error: (err: any) =
                 case 'identity':
                     break;
                 default:
-                    throw new UnsupportedMediaTypeError('Unsupported Content-Encoding: ' + encoding);
+                    throw new UnsupportedMediaTypeExecption('Unsupported Content-Encoding: ' + encoding);
             }
         }
         await pmPipeline(source, request)

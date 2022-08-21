@@ -7,6 +7,7 @@ import * as refl from './refl';
 import { Decors, ActionTypes } from './type';
 import { Type } from '../types';
 import { isMetadataObject } from '../utils/obj';
+import { Execption } from '../execption';
 
 /**
  * create dectorator for class params props methods.
@@ -87,7 +88,7 @@ function storeMetadata<T>(name: string, decor: string, args: any[], metadata: an
             }
             break;
         default:
-            throw new Error(`Invalid @${name} Decorator declaration.`)
+            throw new Execption(`Invalid @${name} Decorator declaration.`)
     }
 }
 

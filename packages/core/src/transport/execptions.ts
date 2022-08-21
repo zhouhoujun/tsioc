@@ -1,14 +1,14 @@
-import { ArgumentError, Execption, isArray } from '@tsdi/ioc';
+import { ArgumentExecption, Execption, isArray } from '@tsdi/ioc';
 
 
 /**
- * Transport error
+ * Transport Execption
  *
  * @export
- * @class TransportError
+ * @class TransportExecption
  * @extends {Execption}
  */
-export class TransportError extends Execption {
+export class TransportExecption extends Execption {
 
     constructor(message?: string | string[], public status?: number) {
         super(isArray(message) ? message.join('\n') : message || '')
@@ -19,101 +19,117 @@ export class TransportError extends Execption {
     }
 
     toString() {
-        return `Transport Error: ${this.statusCode}, ${this.message}`
+        return `Transport Execption: ${this.statusCode}, ${this.message}`
     }
 }
 
-export class TransportAboutError extends TransportError {
+export class TransportAboutExecption extends TransportExecption {
     constructor(message = 'Transport about') {
         super(message)
     }
 }
 
-export class InvalidHeaderToken extends TransportError {
+export class InvalidHeaderTokenExecption extends TransportExecption {
     constructor(message = 'Invalid header token.') {
         super(message);
     }
 }
 
+const statmsg = 'INVALID_STATE_ERR';
+
+export class InvalidStateExecption  extends TransportExecption {
+    constructor(message?: string) {
+        super(message ? `${statmsg}: ${message}` : statmsg)
+    }
+}
+
+const sectmsg = 'SecurityExecption';
+export class SecurityExecption extends TransportExecption {
+    constructor(message?: string) {
+        super(message ? `${sectmsg}: ${message}` : sectmsg)
+    }
+}
+
+
 
 /**
- * transport arguments error.
+ * transport arguments execption.
  */
-export class TransportArgumentError extends ArgumentError {
+export class TransportArgumentExecption extends ArgumentExecption {
     constructor(message?: string | string[]) {
         super(message)
     }
 }
 
 /**
- * not found error.
+ * not found execption.
  *
  * @export
- * @class NotFoundError
- * @extends {TransportError}
+ * @class NotFoundExecption
+ * @extends {TransportExecption}
  */
-export class NotFoundError extends TransportError {
+export class NotFoundExecption extends TransportExecption {
     constructor(message = 'Not Found', status?: number) {
         super(message, status)
     }
 }
 
 /**
- * forbidden error.
+ * forbidden execption.
  *
  * @export
- * @class ForbiddenError
- * @extends {TransportError}
+ * @class ForbiddenExecption
+ * @extends {TransportExecption}
  */
-export class ForbiddenError extends TransportError {
+export class ForbiddenExecption extends TransportExecption {
     constructor(message = 'Forbidden', status?: number) {
         super(message, status)
     }
 }
 
 /**
- * bad request error.
+ * bad request execption.
  *
  * @export
- * @class BadRequestError
- * @extends {TransportError}
+ * @class BadRequestExecption
+ * @extends {TransportExecption}
  */
-export class BadRequestError extends TransportError {
+export class BadRequestExecption extends TransportExecption {
     constructor(message = 'Bad Request', status?: number) {
         super(message, status)
     }
 }
 
 /**
- * unauthorized error.
+ * unauthorized execption.
  *
  * @export
- * @class UnauthorizedError
- * @extends {TransportError}
+ * @class UnauthorizedExecption
+ * @extends {TransportExecption}
  */
-export class UnauthorizedError extends TransportError {
+export class UnauthorizedExecption extends TransportExecption {
     constructor(message = 'Unauthorized', status?: number) {
         super(message, status)
     }
 }
 
 /**
- * internal server error.
+ * internal server execption.
  *
  * @export
- * @class InternalServerError
- * @extends {HttpError}
+ * @class InternalServerExecption
+ * @extends {TransportExecption}
  */
-export class InternalServerError extends TransportError {
+export class InternalServerExecption extends TransportExecption {
     constructor(message = 'Internal Server Error', status?: number) {
         super(message, status)
     }
 }
 
 /**
- * unsupported media type.
+ * unsupported media type execption.
  */
-export class UnsupportedMediaTypeError extends TransportError {
+export class UnsupportedMediaTypeExecption extends TransportExecption {
     constructor(message = 'Unsupported Media Type', status?: number) {
         super(message, status)
     }

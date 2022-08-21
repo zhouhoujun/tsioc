@@ -11,6 +11,7 @@ import { Action } from './action';
 import { InvocationContext, InvokeOption } from './context';
 import { ModuleLoader } from './module.loader';
 import { LifecycleHooks } from './lifecycle';
+import { Execption } from './execption';
 
 
 /**
@@ -499,7 +500,7 @@ export const INJECT_IMPL = {
      * @param scope 
      */
     create(providers: ProviderType[], parent?: Injector, scope?: InjectorScope): Injector {
-        throw new Error('not implemented.')
+        throw new Execption('not implemented.')
     }
 };
 

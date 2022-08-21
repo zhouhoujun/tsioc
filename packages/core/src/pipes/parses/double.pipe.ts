@@ -1,5 +1,5 @@
 import { isNumber, isString } from '@tsdi/ioc';
-import { invalidPipeArgumentError } from '@tsdi/core';
+import { invalidPipeArgument } from '@tsdi/core';
 import { Pipe } from '../../metadata/decor';
 import { PipeTransform } from '../pipe';
 
@@ -20,7 +20,7 @@ export class ParseDoublePipe implements PipeTransform<number> {
             ret = NaN
         }
         if (isNaN(ret)) {
-            throw invalidPipeArgumentError(this, value)
+            throw invalidPipeArgument(this, value)
         }
 
         return ret

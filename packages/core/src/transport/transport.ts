@@ -1,4 +1,4 @@
-import { Abstract, ArgumentError, Autorun, AutoWired, ClassType, EMPTY, InvocationContext, isClassType, lang, ProviderType, Token, Type, TypeOf } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, Autorun, AutoWired, ClassType, EMPTY, InvocationContext, isClassType, lang, ProviderType, Token, Type, TypeOf } from '@tsdi/ioc';
 import { Log, Logger } from '@tsdi/logs';
 import { ExecptionChain } from '../execptions/chain';
 import { ExecptionFilter } from '../execptions/filter';
@@ -113,7 +113,7 @@ export abstract class TransportEndpoint<
      */
     useFilter(filter: TypeOf<ExecptionFilter>, order?: number): this {
         if (!this._filterToken) {
-            throw new ArgumentError(lang.getClassName(this) + ' options execptionsToken is missing.');
+            throw new ArgumentExecption(lang.getClassName(this) + ' options execptionsToken is missing.');
         }
         this.multiOrder(this._filterToken, filter, order);
         this._filter = null!;
@@ -170,7 +170,7 @@ export abstract class TransportEndpoint<
         }
         const iToken = this._iptToken = options.interceptorsToken!;
         if (!iToken) {
-            throw new ArgumentError(lang.getClassName(this) + ' options interceptorsToken is missing.');
+            throw new ArgumentExecption(lang.getClassName(this) + ' options interceptorsToken is missing.');
         }
         if (options.interceptors && options.interceptors.length) {
             this.multiReg(iToken, options.interceptors);
@@ -178,7 +178,7 @@ export abstract class TransportEndpoint<
 
         const eToken = this._filterToken = options.execptionsToken!;
         if (!eToken) {
-            throw new ArgumentError(lang.getClassName(this) + ' options execptionsToken is missing.');
+            throw new ArgumentExecption(lang.getClassName(this) + ' options execptionsToken is missing.');
         }
         if (options.execptions && options.execptions.length) {
 

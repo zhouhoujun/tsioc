@@ -1,4 +1,4 @@
-import { Singleton, Injectable } from '@tsdi/ioc';
+import { Singleton, Injectable, Execption } from '@tsdi/ioc';
 import { iocAnnotations } from '@tsdi/annotations';
 import {
     CompilerOptions, sys, createSourceFile, ScriptTarget, createProgram, Diagnostic, DiagnosticCategory, formatDiagnostics,
@@ -76,7 +76,7 @@ export class TsComplie {
             transformed.diagnostics.filter(diagnostic => diagnostic.code !== 1204) : [];
 
         if (!this.validateDiagnostics(diagnostics, true)) {
-            throw new Error(`There were TypeScript errors transpiling`);
+            throw new Execption(`There were TypeScript errors transpiling`);
         }
 
         return {

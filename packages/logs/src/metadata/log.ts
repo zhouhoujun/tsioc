@@ -1,6 +1,6 @@
 import {
     TypeMetadata, createDecorator, EMPTY_OBJ, OperationArgumentResolver, Type, isString,
-    lang, PropParamDecorator, ArgumentError, Decors, ActionTypes, getToken, ClassType, isDefined
+    lang, PropParamDecorator, ArgumentExecption, Decors, ActionTypes, getToken, ClassType, isDefined
 } from '@tsdi/ioc';
 import { Level } from '../Level';
 import { LogConfigure } from '../LogConfigure';
@@ -141,7 +141,7 @@ const loggerResolver = {
             } else {
                 local = ' '
             }
-            throw new ArgumentError(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on LogModule in package '@tsdi/logs',  please register LogModule first. `)
+            throw new ArgumentExecption(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on LogModule in package '@tsdi/logs',  please register LogModule first. `)
         } else if (ctx.has(LogConfigure)) {
             const adapter = ctx.get(LogConfigure)?.adapter ?? 'console';
             const token = isString(adapter) ? getToken(LoggerManager, adapter) : adapter;
@@ -154,7 +154,7 @@ const loggerResolver = {
                 } else {
                     local = ' '
                 }
-                throw new ArgumentError(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on '${token.toString()}',  please register this LoggerManager first. `)
+                throw new ArgumentExecption(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on '${token.toString()}',  please register this LoggerManager first. `)
             }
         }
         return isDefined(pr.logname || pr.target)

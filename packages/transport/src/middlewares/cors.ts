@@ -1,4 +1,4 @@
-import { AssetContext, Middleware, RequestMethod, ConnectionContext, TransportError } from '@tsdi/core';
+import { AssetContext, Middleware, RequestMethod, ConnectionContext, TransportExecption } from '@tsdi/core';
 import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
 import { hdr } from '../consts';
@@ -151,7 +151,7 @@ export class CorsMiddleware implements Middleware {
                     ...{ vary: varyWithOrigin },
                 };
 
-                ctx.status = err instanceof TransportError ? err.status || ctx.transport.status.serverError : ctx.transport.status.serverError;
+                ctx.status = err instanceof TransportExecption ? err.status || ctx.transport.status.serverError : ctx.transport.status.serverError;
                 ctx.statusMessage = err.message || err.toString() || '';
                 ctx.get(Logger)?.error(err)
             }

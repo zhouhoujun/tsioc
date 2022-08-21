@@ -1,4 +1,4 @@
-import { ExecptionTypedRespond, TransportError, AssetContext } from '@tsdi/core';
+import { ExecptionTypedRespond, TransportExecption, AssetContext } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 
 @Injectable({ static: true })
@@ -9,7 +9,7 @@ export class TranspotExecptionTypedRespond extends ExecptionTypedRespond {
         } else if (response === 'header') {
             ctx.setHeader(value as Record<string, any>);
         } else if (response === 'response') {
-            if (value instanceof TransportError) {
+            if (value instanceof TransportExecption) {
                 ctx.status = value.statusCode;
                 ctx.statusMessage = value.message
             } else {

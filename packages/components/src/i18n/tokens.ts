@@ -1,4 +1,4 @@
-import { Abstract, Token, tokenId } from '@tsdi/ioc';
+import { Abstract, Execption, Token, tokenId } from '@tsdi/ioc';
 
 /**
  * locale id.
@@ -37,5 +37,5 @@ export function getPluralCategory(value: number, cases: string[], localization: 
         return 'other';
     }
 
-    throw new Error(`No plural message found for value "${value}"`);
+    throw new Execption(`No plural message found for value "${value}"`);
 }

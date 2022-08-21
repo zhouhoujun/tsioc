@@ -1,4 +1,4 @@
-import { Abstract, ArgumentError, EMPTY, lang, Token } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, EMPTY, lang, Token } from '@tsdi/ioc';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
 import { EndpointBackend, MiddlewareBackend, MiddlewareLike, MiddlewareType } from './endpoint';
@@ -75,7 +75,7 @@ export abstract class Server<
 
         const mToken = this._midlsToken = options.middlewaresToken!;
         if (!mToken) {
-            throw new ArgumentError(lang.getClassName(this) + ' options middlewaresToken is missing.');
+            throw new ArgumentExecption(lang.getClassName(this) + ' options middlewaresToken is missing.');
         }
 
         if (options.middlewares && options.middlewares.length) {

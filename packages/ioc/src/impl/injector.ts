@@ -459,7 +459,7 @@ export class DefaultInjector extends Injector {
                 instance = this.resolve(target as Token, providers!);
                 targetClass = getClass(instance);
                 if (!targetClass) {
-                    throw new Error((target as Token).toString() + ' is not implements by any class.')
+                    throw new Execption((target as Token).toString() + ' is not implements by any class.')
                 }
             }
         }
@@ -493,7 +493,7 @@ export class DefaultInjector extends Injector {
 
     protected assertNotDestroyed(): void {
         if (this.destroyed) {
-            throw new Error('Injector has already been destroyed.')
+            throw new Execption('Injector has already been destroyed.')
         }
     }
 
@@ -744,9 +744,9 @@ function computeDeps(provider: StaticProviders): DependencyRecord[] {
 
 const cirMsg = 'Circular dependency';
 /**
- * circular dependency error.
+ * circular dependency execption.
  */
-export class CircularDependencyError extends Execption {
+export class CircularDependencyExecption extends Execption {
     constructor(message?: string) {
         super(message ? cirMsg + message : cirMsg)
     }
@@ -755,9 +755,9 @@ export class CircularDependencyError extends Execption {
 /**
  * Null injector execption.
  */
-export class NullInjectorError extends Execption {
+export class NullInjectorExecption extends Execption {
     constructor(token: Token) {
-        super(`NullInjectorError: No provider for ${token?.toString()}!`)
+        super(`NullInjectorExecption: No provider for ${token?.toString()}!`)
     }
 }
 
@@ -806,7 +806,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
     if (rd && !(flags & InjectFlags.SkipSelf)) {
         let value = rd.value;
         if (value === CIRCULAR) {
-            throw new CircularDependencyError()
+            throw new CircularDependencyExecption()
         }
         if (isDefined(rd.value) && value !== EMPTY) return rd.value;
         const deps = [];
@@ -860,12 +860,12 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
         return parent.get(token, context, InjectFlags.Default, notFoundValue)
     } else if (!(flags & InjectFlags.Optional)) {
         if (notFoundValue === THROW_FLAGE) {
-            throw new NullInjectorError(token)
+            throw new NullInjectorExecption(token)
         }
         return notFoundValue ?? null
     } else {
         if (notFoundValue === THROW_FLAGE) {
-            throw new NullInjectorError(token)
+            throw new NullInjectorExecption(token)
         }
         return notFoundValue ?? null
     }

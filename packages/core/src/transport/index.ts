@@ -11,7 +11,7 @@ export * from './redirector';
 
 export * from './resolver';
 export * from './model';
-export * from './error';
+export * from './execptions';
 
 export * from './transport';
 

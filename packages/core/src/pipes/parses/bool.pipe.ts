@@ -1,5 +1,5 @@
 import { Pipe } from '../../metadata/decor';
-import { PipeTransform, invalidPipeArgumentError } from '../pipe';
+import { PipeTransform, invalidPipeArgument } from '../pipe';
 
 
 /**
@@ -15,6 +15,6 @@ export class ParseBoolPipe implements PipeTransform<boolean> {
         if (value === false || value === 'false') {
             return false
         }
-        throw invalidPipeArgumentError(this, value)
+        throw invalidPipeArgument(this, value)
     }
 }

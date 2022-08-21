@@ -1,5 +1,5 @@
-import { BadRequestError, ENAMETOOLONG, ENOENT, ENOTDIR, ForbiddenError, InternalServerError, NotFoundError, PROCESS_ROOT } from '@tsdi/core';
-import { Injectable, isArray } from '@tsdi/ioc';
+import { BadRequestExecption, ENAMETOOLONG, ENOENT, ENOTDIR, ForbiddenExecption, InternalServerExecption, NotFoundExecption, PROCESS_ROOT } from '@tsdi/core';
+import { Injectable, isArray, TypeExecption } from '@tsdi/ioc';
 import { normalize, resolve, basename, extname, parse, sep, isAbsolute, join } from 'path';
 import { existsSync, Stats, stat, createReadStream } from 'fs';
 import { promisify } from 'util';
@@ -20,16 +20,16 @@ export class TransportSendAdapter extends ContentSendAdapter {
         try {
             path = decodeURIComponent(path)
         } catch {
-            throw new BadRequestError('failed to decode url');
+            throw new BadRequestExecption('failed to decode url');
         }
         const index = opts.index;
         if (index && endSlash) path += index;
         const baseUrl = ctx.get(PROCESS_ROOT);
         if (isAbsolute(path) || winAbsPath.test(path)) {
-            throw new BadRequestError('Malicious Path');
+            throw new BadRequestExecption('Malicious Path');
         }
         if (UP_REGEXP.test(normalize('.' + sep + path))) {
-            throw new ForbiddenError();
+            throw new ForbiddenExecption();
         }
         let filename = '', encodingExt = '';
         roots.some(root => {
@@ -53,7 +53,7 @@ export class TransportSendAdapter extends ContentSendAdapter {
                 for (let i = 0; i < list.length; i++) {
                     let ext = list[i]
                     if (typeof ext !== 'string') {
-                        throw new TypeError('option extensions must be array of strings or false')
+                        throw new TypeExecption('option extensions must be array of strings or false')
                     }
                     if (!/^\./.exec(ext)) ext = `.${ext}`;
                     if (existsSync(`${rpath}${ext}`)) {
@@ -82,9 +82,9 @@ export class TransportSendAdapter extends ContentSendAdapter {
             }
         } catch (err) {
             if (notfound.includes((err as any).code)) {
-                throw new NotFoundError((err as Error).message)
+                throw new NotFoundExecption((err as Error).message)
             }
-            throw new InternalServerError()
+            throw new InternalServerExecption()
         }
 
         if (opts.setHeaders) opts.setHeaders(ctx, filename, stats);

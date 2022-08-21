@@ -1,9 +1,9 @@
 import { Execption, isString } from '@tsdi/ioc';
 
 /**
- * transaction error.
+ * transaction execption.
  */
-export class TransactionError extends Execption {
+export class TransactionExecption extends Execption {
     constructor(message: string | Error) {
         super(isString(message) ? message : message.stack || message.message)
     }

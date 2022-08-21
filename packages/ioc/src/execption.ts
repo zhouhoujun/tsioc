@@ -28,10 +28,17 @@ export class Execption extends Error {
 
 
 /**
- * argument errror.
+ * argument execption.
  */
-export class ArgumentError extends Execption {
+export class ArgumentExecption extends Execption {
     constructor(message?: string | string[]) {
         super(isArray(message) ? message.join('\n') : message || '')
+    }
+}
+
+const tymgs = 'TypeExecption';
+export class TypeExecption extends Execption {
+    constructor(message?: string) {
+        super(message ? `${tymgs}: ${message}` : tymgs)
     }
 }

@@ -1,5 +1,5 @@
 import {
-    ArgumentError, EMPTY_OBJ, getToken, Inject, Injectable,
+    ArgumentExecption, EMPTY_OBJ, getToken, Inject, Injectable,
     Injector, isFunction, isString, Nullable, Token, Type
 } from '@tsdi/ioc';
 import { HeaderFormater, Logger } from './logger';
@@ -64,7 +64,7 @@ export class ConfigureLoggerManager implements LoggerManager {
             }
             this._logManger = this.injector.get<LoggerManager>(token);
             if (!this._logManger) {
-                throw new ArgumentError(`has no provider for LoggerManager ${token.toString()}.`)
+                throw new ArgumentExecption(`has no provider for LoggerManager ${token.toString()}.`)
             }
             if (cfg.config) {
                 this._logManger.configure(cfg.config)

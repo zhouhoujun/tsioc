@@ -1,4 +1,5 @@
 import { OutgoingHeaders } from '@tsdi/core';
+import { HeandersSentExecption, InvalidStreamExecption } from '../execptions';
 import { TransportStream } from '../stream';
 
 
@@ -76,6 +77,9 @@ export class ServerStream extends TransportStream {
         endStream?: boolean;
         waitForTrailers?: boolean;
     }): void {
-
+        if (this.destroyed || this.closed) throw new InvalidStreamExecption();
+        if (this.headersSent) throw new HeandersSentExecption();
+        
     }
 }
+

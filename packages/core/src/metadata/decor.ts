@@ -1,7 +1,7 @@
 import {
     isUndefined, EMPTY_OBJ, isArray, lang, Type, createDecorator, ProviderType, InjectableMetadata,
     PropertyMetadata, ModuleMetadata, DesignContext, ModuleReflect, DecoratorOption, ActionTypes,
-    ReflectiveResolver, MethodPropDecorator, Token, ArgumentError, object2string, InvokeArguments, isString, Parameter
+    ReflectiveResolver, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments, isString, Parameter
 } from '@tsdi/ioc';
 import { ConfigureService } from '../service';
 import { PipeMetadata, ComponentScanMetadata, ScanReflect, BeanMetadata } from './meta';
@@ -282,7 +282,7 @@ export const Bean: Bean = createDecorator<BeanMetadata>('Bean', {
             if (metadata.type !== Object) {
                 metadata.provide = metadata.type as any
             } else {
-                throw new ArgumentError(`the property has no design Type, named ${ctx.propertyKey} with @Bean decorator in type ${object2string(ctx.reflect.type)}`)
+                throw new ArgumentExecption(`the property has no design Type, named ${ctx.propertyKey} with @Bean decorator in type ${object2string(ctx.reflect.type)}`)
             }
         }
     }

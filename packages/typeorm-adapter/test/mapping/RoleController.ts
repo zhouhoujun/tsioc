@@ -1,4 +1,4 @@
-import { RouteMapping, RequestParam, Controller, Post, Put, Get, Delete, InternalServerError } from '@tsdi/core';
+import { RouteMapping, RequestParam, Controller, Post, Put, Get, Delete, InternalServerExecption } from '@tsdi/core';
 import { Log, Logger } from '@tsdi/logs';
 import { DBRepository, Transactional } from '@tsdi/repository';
 import { Repository } from 'typeorm';
@@ -18,7 +18,7 @@ export class RoleController {
         this.logger.log(role);
         console.log('save isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
         const value = await this.repo.save(role);
-        if (check) throw new InternalServerError('check');
+        if (check) throw new InternalServerExecption('check');
         this.logger.info(value);
         return value;
     }
@@ -30,7 +30,7 @@ export class RoleController {
         this.logger.log(role);
         console.log('save2 isTransactionActive:', roleRepo.queryRunner?.isTransactionActive);
         const value = await roleRepo.save(role);
-        if (check) throw new InternalServerError('check');
+        if (check) throw new InternalServerExecption('check');
         this.logger.info(value);
         return value;
     }

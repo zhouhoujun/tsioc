@@ -1,10 +1,10 @@
 import {
-    BadRequestError, ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
-    ForbiddenError, InternalServerError, NotFoundError, TransportArgumentError, TransportError,
-    ENOENT, TransportMissingError, UnauthorizedError, UnsupportedMediaTypeError, ConnectionContext
+    BadRequestExecption, ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
+    ForbiddenExecption, InternalServerExecption, NotFoundExecption, TransportArgumentExecption, TransportExecption,
+    ENOENT, TransportMissingExecption, UnauthorizedExecption, UnsupportedMediaTypeExecption, ConnectionContext
 } from '@tsdi/core';
 import { Injectable, isFunction, isNumber } from '@tsdi/ioc';
-import { MissingModelFieldError } from '@tsdi/repository';
+import { MissingModelFieldExecption } from '@tsdi/repository';
 import { Buffer } from 'buffer';
 import { TransportContext } from './context';
 
@@ -18,9 +18,9 @@ export class TransportFinalizeFilter implements ExecptionFilter {
         try {
             await next();
             if (ctx.completed) return;
-            err = ctx.execption as TransportError
+            err = ctx.execption as TransportExecption
         } catch (er) {
-            err = new InternalServerError((er as Error).message)
+            err = new InternalServerExecption((er as Error).message)
         }
 
         //finllay defalt send error.
@@ -54,7 +54,7 @@ export class TransportFinalizeFilter implements ExecptionFilter {
         hctx.type = 'text';
         let statusCode = (err.status || err.statusCode) as number;
         let msg;
-        if (err instanceof TransportError) {
+        if (err instanceof TransportExecption) {
             msg = err.message
         } else {
             // ENOENT support
@@ -93,55 +93,55 @@ export class TransportExecptionFilter implements ExecptionFilter {
         }
     }
 
-    @ExecptionHandler(NotFoundError)
-    notFoundExecption(ctx: ExecptionContext, execption: NotFoundError) {
+    @ExecptionHandler(NotFoundExecption)
+    notFoundExecption(ctx: ExecptionContext, execption: NotFoundExecption) {
         execption.status = ctx.get(ConnectionContext).transport.status.notFound;
         ctx.execption = execption;
     }
 
-    @ExecptionHandler(ForbiddenError)
-    forbiddenExecption(ctx: ExecptionContext, execption: ForbiddenError) {
+    @ExecptionHandler(ForbiddenExecption)
+    forbiddenExecption(ctx: ExecptionContext, execption: ForbiddenExecption) {
         execption.status = ctx.get(ConnectionContext).transport.status.forbidden;
         ctx.execption = execption;
     }
 
-    @ExecptionHandler(BadRequestError)
-    badReqExecption(ctx: ExecptionContext, execption: BadRequestError) {
+    @ExecptionHandler(BadRequestExecption)
+    badReqExecption(ctx: ExecptionContext, execption: BadRequestExecption) {
         execption.status = ctx.get(ConnectionContext).transport.status.badRequest;
         ctx.execption = execption;
     }
 
-    @ExecptionHandler(UnauthorizedError)
-    unauthorized(ctx: ExecptionContext, execption: UnauthorizedError) {
+    @ExecptionHandler(UnauthorizedExecption)
+    unauthorized(ctx: ExecptionContext, execption: UnauthorizedExecption) {
         execption.status = ctx.get(ConnectionContext).transport.status.unauthorized;
         ctx.execption = execption;
     }
 
-    @ExecptionHandler(InternalServerError)
-    internalServerError(ctx: ExecptionContext, execption: InternalServerError) {
+    @ExecptionHandler(InternalServerExecption)
+    internalServerError(ctx: ExecptionContext, execption: InternalServerExecption) {
         execption.status = ctx.get(ConnectionContext).transport.status.serverError;
         ctx.execption = execption;
     }
 
-    @ExecptionHandler(UnsupportedMediaTypeError)
-    unsupported(ctx: ExecptionContext, execption: UnsupportedMediaTypeError) {
+    @ExecptionHandler(UnsupportedMediaTypeExecption)
+    unsupported(ctx: ExecptionContext, execption: UnsupportedMediaTypeExecption) {
         execption.status = ctx.get(ConnectionContext).transport.status.unsupportedMediaType;
         ctx.execption = execption;
     }
 
-    @ExecptionHandler(TransportArgumentError)
-    anguExecption(ctx: ExecptionContext, execption: TransportArgumentError) {
-        ctx.execption = new BadRequestError(execption.message, ctx.get(ConnectionContext).transport.status.badRequest)
+    @ExecptionHandler(TransportArgumentExecption)
+    anguExecption(ctx: ExecptionContext, execption: TransportArgumentExecption) {
+        ctx.execption = new BadRequestExecption(execption.message, ctx.get(ConnectionContext).transport.status.badRequest)
     }
 
-    @ExecptionHandler(MissingModelFieldError)
-    missFieldExecption(ctx: ExecptionContext, execption: MissingModelFieldError) {
-        ctx.execption = new BadRequestError(execption.message, ctx.get(ConnectionContext).transport.status.badRequest)
+    @ExecptionHandler(MissingModelFieldExecption)
+    missFieldExecption(ctx: ExecptionContext, execption: MissingModelFieldExecption) {
+        ctx.execption = new BadRequestExecption(execption.message, ctx.get(ConnectionContext).transport.status.badRequest)
     }
 
-    @ExecptionHandler(TransportMissingError)
-    missExecption(ctx: ExecptionContext, execption: TransportMissingError) {
-        ctx.execption = new BadRequestError(execption.message, ctx.get(ConnectionContext).transport.status.badRequest)
+    @ExecptionHandler(TransportMissingExecption)
+    missExecption(ctx: ExecptionContext, execption: TransportMissingExecption) {
+        ctx.execption = new BadRequestExecption(execption.message, ctx.get(ConnectionContext).transport.status.badRequest)
     }
 
 }

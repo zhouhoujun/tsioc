@@ -1,6 +1,6 @@
 import { IncomingPacket, IncomingHeaders } from '@tsdi/core';
 import { Readable, Writable } from 'stream';
-import { hdr } from '../consts';
+import { ev, hdr } from '../consts';
 import { ServerStream } from './stream';
 
 
@@ -13,6 +13,8 @@ export class ServerRequest extends Readable implements IncomingPacket<Writable> 
     readonly authority: string;
     body: any;
     private _bodyIdx = 0;
+    private _closed = false;
+    private _aborted = false;
     constructor(
         readonly stream: ServerStream,
         readonly headers: IncomingHeaders) {
@@ -20,10 +22,69 @@ export class ServerRequest extends Readable implements IncomingPacket<Writable> 
         this.url = headers[hdr.PATH] ?? '';
         this.method = headers[hdr.METHOD] ?? '';
         this.authority = headers[hdr.AUTHORITY] ?? '';
+
+        // stream.on('trailers', onStreamTrailers);
+        stream.on('end', this.onStreamEnd.bind(this));
+        stream.on('error', this.onStreamError.bind(this));
+        stream.on('aborted', this.onStreamAbortedRequest.bind(this));
+        stream.on('close', this.onStreamCloseRequest.bind(this));
+        stream.on('timeout', this.onStreamTimeout.bind(this));
+        this.on('pause', this.onRequestPause.bind(this));
+        this.on('resume', this.onRequestResume.bind(this));
     }
 
     get connection() {
         return this.stream.connection;
+    }
+
+    get aborted() {
+        return this._aborted;
+    }
+
+    get closed() {
+        return this._closed;
+    }
+
+    get complete() {
+        return this._aborted ||
+            this.readableEnded ||
+            this._closed ||
+            this.destroyed ||
+            this.stream.destroyed;
+    }
+
+
+    protected onStreamEnd() {
+        this.push(null);
+    }
+
+    protected onStreamError() {
+
+    }
+
+    protected onStreamTimeout() {
+        this.emit(ev.TIMEOUT);
+    }
+
+    protected onStreamCloseRequest() {
+        if (this.destroyed || this._closed) return;
+        this._closed = true;
+
+        this.emit(ev.CLOSE);
+    }
+
+    protected onStreamAbortedRequest() {
+        if (this.destroyed || this._closed) return;
+        this._aborted = true;
+        this.emit('aborted');
+    }
+
+    protected onRequestPause() {
+        this.stream?.pause();
+    }
+
+    protected onRequestResume() {
+        this.stream?.resume();
     }
 
     override _read(size: number): void {

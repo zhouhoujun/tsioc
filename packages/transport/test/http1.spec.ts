@@ -151,7 +151,6 @@ describe('http1.1 server, Http', () => {
                     return of(err);
                 })));
         expect(r.status).toEqual(400);
-        // expect(r.error).toBeInstanceOf(MissingParameterError)
     })
 
     it('route with request body pipe throw argument err', async () => {
@@ -162,7 +161,6 @@ describe('http1.1 server, Http', () => {
                     return of(err);
                 })));
         expect(r.status).toEqual(500);
-        // expect(r.error).toBeInstanceOf(ArgumentError)
     })
 
     it('route with request param pipe', async () => {
@@ -180,7 +178,6 @@ describe('http1.1 server, Http', () => {
                     return of(err);
                 })));
         expect(r.status).toEqual(400);
-        // expect(r.error).toBeInstanceOf(MissingParameterError)
     })
 
     it('route with request param pipe throw argument err', async () => {
@@ -191,7 +188,6 @@ describe('http1.1 server, Http', () => {
                     return of(err);
                 })));
         expect(r.status).toEqual(500);
-        // expect(r.error).toBeInstanceOf(ArgumentError)
     })
 
     it('route with request param pipe', async () => {
@@ -209,7 +205,6 @@ describe('http1.1 server, Http', () => {
                     return of(err);
                 })));
         expect(r.status).toEqual(400);
-        // expect(r.error).toBeInstanceOf(MissingParameterError);
     })
 
     it('route with request restful param pipe throw argument err', async () => {
@@ -220,7 +215,6 @@ describe('http1.1 server, Http', () => {
                     return of(err);
                 })));
         expect(r.status).toEqual(500);
-        // expect(r.error).toBeInstanceOf(ArgumentError);
     })
 
 

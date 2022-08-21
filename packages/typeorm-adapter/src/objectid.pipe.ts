@@ -1,5 +1,5 @@
 import { Inject, isString, Token, tokenId, Type } from '@tsdi/ioc';
-import { invalidPipeArgumentError, Pipe, PipeTransform } from '@tsdi/core';
+import { invalidPipeArgument, Pipe, PipeTransform } from '@tsdi/core';
 
 export const DEFAULT_CONNECTION = tokenId<string>('DEFAULT_CONNECTION');
 
@@ -15,14 +15,14 @@ export class ParseObjectIdPipe implements PipeTransform {
 
     transform(value: any) {
         if(!this.type) {
-            throw invalidPipeArgumentError(this, value, 'can not found module type ObjectID.')
+            throw invalidPipeArgument(this, value, 'can not found module type ObjectID.')
         }
         if (isString(value)) {
             return new this.type(value)
         } else if (value instanceof this.type) {
             return value
         }
-        throw invalidPipeArgumentError(this, value)
+        throw invalidPipeArgument(this, value)
     }
 
 }

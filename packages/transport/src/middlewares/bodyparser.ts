@@ -1,6 +1,6 @@
 /* eslint-disable no-control-regex */
-import { AssetContext, Middleware, ServerOpts, UnsupportedMediaTypeError } from '@tsdi/core';
-import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable } from '@tsdi/ioc';
+import { AssetContext, Middleware, ServerOpts, UnsupportedMediaTypeExecption } from '@tsdi/core';
+import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable, TypeExecption } from '@tsdi/ioc';
 import * as zlib from 'zlib';
 import { Stream, Readable, PassThrough } from 'stream';
 import * as getRaw from 'raw-body';
@@ -141,7 +141,7 @@ export class BodyparserMiddleware implements Middleware {
                 }
                 return (ctx.request as Stream).pipe(new PassThrough());
             default:
-                throw new UnsupportedMediaTypeError('Unsupported Content-Encoding: ' + encoding);
+                throw new UnsupportedMediaTypeExecption('Unsupported Content-Encoding: ' + encoding);
         }
         const readable = ctx.request instanceof Readable ? ctx.request : (ctx.request as Stream).pipe(new PassThrough())
         return readable.pipe(zlib.createUnzip());
@@ -153,7 +153,7 @@ export class BodyparserMiddleware implements Middleware {
         if (!str) return {};
         // strict JSON test
         if (!strictJSONReg.test(str)) {
-            throw new SyntaxError('invalid JSON, only supports object and array')
+            throw new TypeExecption('invalid JSON, only supports object and array')
         }
         return JSON.parse(str)
     }

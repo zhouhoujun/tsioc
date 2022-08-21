@@ -1,6 +1,6 @@
 import { isString, isArray } from '@tsdi/ioc';
 import { Pipe } from '../metadata/decor';
-import { PipeTransform, invalidPipeArgumentError } from './pipe';
+import { PipeTransform, invalidPipeArgument } from './pipe';
 
 
 /**
@@ -12,7 +12,7 @@ export class SlicePipe implements PipeTransform {
         if (value == null) return value;
 
         if (!this.supports(value)) {
-            throw invalidPipeArgumentError(this, value)
+            throw invalidPipeArgument(this, value)
         }
 
         return (value as string).slice(start, end)

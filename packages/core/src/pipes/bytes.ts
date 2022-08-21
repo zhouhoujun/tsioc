@@ -1,6 +1,6 @@
 import { isNumber, isString } from '@tsdi/ioc';
 import { Pipe } from '../metadata/decor';
-import { invalidPipeArgumentError, PipeTransform } from './pipe';
+import { invalidPipeArgument, PipeTransform } from './pipe';
 
 /**
  * format bytes with unit b kb mb gb tb... 
@@ -14,13 +14,13 @@ export class BytesPipe implements PipeTransform<string> {
             try {
                 size = parseInt(value)
             } catch {
-                throw invalidPipeArgumentError(this, value)
+                throw invalidPipeArgument(this, value)
             }
         } else {
             size = value;
         }
         if (!isNumber(value)) {
-            throw invalidPipeArgumentError(this, value)
+            throw invalidPipeArgument(this, value)
         }
 
         if (Number.isNaN(size)) {

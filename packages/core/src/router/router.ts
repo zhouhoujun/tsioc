@@ -6,7 +6,7 @@ import { Route, RouteFactoryResolver, ROUTES, Routes } from './route';
 import { ModuleRef } from '../module.ref';
 import { createMiddleware, InterceptorMiddleware, InterceptorType, Middleware, MiddlewareFn } from '../transport/endpoint';
 import { AssetContext, ConnectionContext } from '../transport/context';
-import { BadRequestError, ForbiddenError, NotFoundError } from '../transport/error';
+import { BadRequestExecption, ForbiddenExecption, NotFoundExecption } from '../transport/execptions';
 import { promisify } from './promisify';
 
 
@@ -81,7 +81,7 @@ export class MappingRoute implements Middleware {
             }
             return this._middleware.invoke(ctx, next);
         } else {
-            throw new ForbiddenError();
+            throw new ForbiddenExecption();
         }
     }
 
@@ -104,7 +104,7 @@ export class MappingRoute implements Middleware {
             const to = route.redirectTo
             return createMiddleware((c, n) => this.redirect(c, to))
         } else if (route.controller) {
-            return ctx.resolve(RouteFactoryResolver).resolve(route.controller).last() ?? createMiddleware((c, n) => { throw new NotFoundError() })
+            return ctx.resolve(RouteFactoryResolver).resolve(route.controller).last() ?? createMiddleware((c, n) => { throw new NotFoundExecption() })
         } else if (route.children) {
             const router = new MappingRouter(route.path);
             route.children.forEach(route => router.use(route));
@@ -120,9 +120,9 @@ export class MappingRoute implements Middleware {
                 router.prefix = route.path ?? '';
                 return router
             }
-            return createMiddleware((c, n) => { throw new NotFoundError() })
+            return createMiddleware((c, n) => { throw new NotFoundExecption() })
         } else {
-            return createMiddleware((c, n) => { throw new NotFoundError() })
+            return createMiddleware((c, n) => { throw new NotFoundExecption() })
         }
     }
 
@@ -130,7 +130,7 @@ export class MappingRoute implements Middleware {
     protected async redirect(ctx: ConnectionContext, url: string, alt?: string): Promise<void> {
         const hctx = ctx as AssetContext;
         if (!isFunction(hctx.redirect)) {
-            throw new BadRequestError();
+            throw new BadRequestExecption();
         }
         hctx.redirect(url, alt)
     }

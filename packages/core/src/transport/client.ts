@@ -1,4 +1,4 @@
-import { Abstract, ArgumentError, EMPTY_OBJ, InvocationContext, isNil, isString, type_str } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, InvocationContext, isNil, isString, type_str } from '@tsdi/ioc';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, isObservable } from 'rxjs';
 import { RequestMethod, ResponsePacket, ResponseEvent } from './packet';
 import { TransportOpts, TransportEndpoint } from './transport';
@@ -275,7 +275,7 @@ export abstract class Client<TRequest = any, TResponse = any, Opts extends Clien
      */
     send(req: TRequest | string, options?: any): Observable<any> {
         if (isNil(req)) {
-            return throwError(() => new ArgumentError('Invalid message'))
+            return throwError(() => new ArgumentExecption('Invalid message'))
         }
         let ctx: RequestContext;
         const connecting = this.connect();
@@ -331,7 +331,7 @@ export abstract class Client<TRequest = any, TResponse = any, Opts extends Clien
                         return res$.pipe(map((res: ResponsePacket) => {
                             // Validate that the body is an ArrayBuffer.
                             if (res.body !== null && !(res.body instanceof ArrayBuffer)) {
-                                throw new Error('Response is not an ArrayBuffer.')
+                                throw new Execption('Response is not an ArrayBuffer.')
                             }
                             return res.body
                         }));
@@ -339,7 +339,7 @@ export abstract class Client<TRequest = any, TResponse = any, Opts extends Clien
                         return res$.pipe(map((res: ResponsePacket) => {
                             // Validate that the body is a Blob.
                             if (res.body !== null && !(res.body instanceof Blob)) {
-                                throw new Error('Response is not a Blob.')
+                                throw new Execption('Response is not a Blob.')
                             }
                             return res.body
                         }));
@@ -347,7 +347,7 @@ export abstract class Client<TRequest = any, TResponse = any, Opts extends Clien
                         return res$.pipe(map((res: ResponsePacket) => {
                             // Validate that the body is a string.
                             if (res.body !== null && typeof res.body !== type_str) {
-                                throw new Error('Response is not a string.')
+                                throw new Execption('Response is not a string.')
                             }
                             return res.body
                         }));
@@ -361,7 +361,7 @@ export abstract class Client<TRequest = any, TResponse = any, Opts extends Clien
                 return res$
             default:
                 // Guard against new future observe types being added.
-                throw new Error(`Unreachable: unhandled observe type ${context.observe}}`)
+                throw new Execption(`Unreachable: unhandled observe type ${context.observe}}`)
         }
     }
 

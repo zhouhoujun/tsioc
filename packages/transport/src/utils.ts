@@ -1,4 +1,4 @@
-import { ArgumentError, isFunction, isString } from '@tsdi/ioc';
+import { ArgumentExecption, isFunction, isString, TypeExecption } from '@tsdi/ioc';
 import { OutgoingPacket, isFormData } from '@tsdi/core';
 import { Buffer } from 'buffer';
 import { Stream, Readable } from 'stream';
@@ -113,7 +113,7 @@ export async function toBuffer(body: Readable, limit = 0, url?: string) {
 
   for await (const chunk of body) {
     if (limit > 0 && bytes + chunk.length > limit) {
-      const error = new TypeError(`content size at ${url} over limit: ${limit}`);
+      const error = new TypeExecption(`content size at ${url} over limit: ${limit}`);
       body.destroy(error);
       throw error;
     }
@@ -226,11 +226,11 @@ export function vary(res: OutgoingPacket, field: string) {
 
 export function append(header: string, field: string) {
   if (typeof header !== 'string') {
-    throw new ArgumentError('header argument is required');
+    throw new ArgumentExecption('header argument is required');
   }
 
   if (!field) {
-    throw new ArgumentError('field argument is required')
+    throw new ArgumentExecption('field argument is required')
   }
 
   // get fields array
@@ -241,7 +241,7 @@ export function append(header: string, field: string) {
   // assert on invalid field names
   for (let j = 0; j < fields.length; j++) {
     if (!field_name.test(fields[j])) {
-      throw new ArgumentError('field argument contains an invalid header name');
+      throw new ArgumentExecption('field argument contains an invalid header name');
     }
   }
 

@@ -1,3 +1,4 @@
+import { Execption } from "./execption";
 
 
 /**
@@ -42,7 +43,7 @@ export function runChain<T, TR = void>(handlers: Handler<T, TR>[], ctx: T, next?
     let index = -1;
     function dispatch(idx: number): TR {
         if (idx <= index) {
-            throw new Error('next called mutiple times.');
+            throw new Execption('next called mutiple times.');
         }
         index = idx;
         let handle: Handler<T, TR> | undefined;
