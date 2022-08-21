@@ -2,7 +2,7 @@ import { ArgumentExecption, lang } from '@tsdi/ioc';
 import { Aspect, Joinpoint, Before, AfterReturning, AfterThrowing } from '@tsdi/aop';
 import { TransactionalMetadata } from './metadata';
 import { TransactionManager } from './manager';
-import { TransactionExecption } from './error';
+import { TransactionExecption } from './execption';
 import { TransactionStatus } from './status';
 
 
