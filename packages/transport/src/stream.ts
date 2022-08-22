@@ -14,9 +14,9 @@ import { isBuffer } from './utils';
 export abstract class TransportStream extends Duplex {
 
     private _timeout?: any;
-    private _closed = false;
     readonly streamId: Buffer;
     protected _headersSent = false;
+    closed = false;
     constructor(readonly connection: Connection, streamId: string, protected headers: OutgoingHeaders, opts?: DuplexOptions) {
         super(opts);
         this.streamId = Buffer.from(streamId);
@@ -27,9 +27,9 @@ export abstract class TransportStream extends Duplex {
         return this._headersSent;
     }
 
-    get closed() {
-        return this._closed;
-    }
+    // get closed() {
+    //     return this._closed;
+    // }
 
     protected bindEvents(opts?: DuplexOptions) {
         this.connection.on('error', this.emit.bind(this, 'error'));
@@ -61,7 +61,7 @@ export abstract class TransportStream extends Duplex {
     close(code?: number, callback?: () => void): void {
         if (this.closed) return;
         this.emit(ev.CLOSE, code);
-        this._closed = true;
+        this.closed = true;
         callback && setImmediate(callback);
     }
 

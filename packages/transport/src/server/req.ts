@@ -13,7 +13,7 @@ export class ServerRequest extends Readable implements IncomingPacket<Writable> 
     readonly authority: string;
     body: any;
     private _bodyIdx = 0;
-    private _closed = false;
+    closed = false;
     private _aborted = false;
     constructor(
         readonly stream: ServerStream,
@@ -41,14 +41,10 @@ export class ServerRequest extends Readable implements IncomingPacket<Writable> 
         return this._aborted;
     }
 
-    get closed() {
-        return this._closed;
-    }
-
     get complete() {
         return this._aborted ||
             this.readableEnded ||
-            this._closed ||
+            this.closed ||
             this.destroyed ||
             this.stream.destroyed;
     }
@@ -67,14 +63,14 @@ export class ServerRequest extends Readable implements IncomingPacket<Writable> 
     }
 
     protected onStreamCloseRequest() {
-        if (this.destroyed || this._closed) return;
-        this._closed = true;
+        if (this.destroyed || this.closed) return;
+        this.closed = true;
 
         this.emit(ev.CLOSE);
     }
 
     protected onStreamAbortedRequest() {
-        if (this.destroyed || this._closed) return;
+        if (this.destroyed || this.closed) return;
         this._aborted = true;
         this.emit('aborted');
     }
