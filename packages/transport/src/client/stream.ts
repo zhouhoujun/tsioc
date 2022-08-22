@@ -1,17 +1,30 @@
-import { IncomingHeaders, IncomingStatusHeaders, OutgoingHeaders } from '@tsdi/core';
+import { IncomingHeaders, IncomingStatusHeaders } from '@tsdi/core';
 import { Readable, DuplexOptions } from 'stream';
 import { Connection } from '../connection';
-import { ev } from '../consts';
-import { TransportStream } from '../stream';
+import { ev, hdr } from '../consts';
+import { SteamOptions, StreamStateFlags, TransportStream } from '../stream';
 
 
 
 export class ClientStream extends TransportStream {
 
-    // constructor(readonly connection: Connection, id: string, headers: OutgoingHeaders, opts?: DuplexOptions) {
-    //     super(connection, id, headers, opts)
-        
-    // }
+    constructor(readonly connection: Connection, handle: any, id: number | undefined, protected opts: SteamOptions) {
+        super(connection, opts);
+        this.state.flags |= StreamStateFlags.headersSent;
+        if (id !== undefined) {
+            this.init(id, handle);
+        }
+        const stat = connection.packet.status;
+        this.on(ev.HEADERS, (headers) => {
+            if (stat.isContinue(stat.parse(headers[hdr.STATUS2] ?? headers[hdr.STATUS])))
+                this.emit(ev.CONTINUE);
+        })
+    }
+
+    protected proceed(): void {
+        throw new Error('Method not implemented.');
+    }
+
 
     addListener(event: 'aborted', listener: () => void): this;
     addListener(event: 'close', listener: () => void): this;

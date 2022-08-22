@@ -60,6 +60,8 @@ export abstract class TransportStatus {
      * @param status 
      */
     abstract isOk(status: number): boolean;
+
+    abstract isContinue(status: number): boolean;
     /**
      * is retry status or not.
      * @param status 

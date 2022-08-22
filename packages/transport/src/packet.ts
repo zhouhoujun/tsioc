@@ -6,6 +6,7 @@ import { ConnectionOpts } from './connection';
 @Abstract()
 export abstract class PacketProtocol extends TransportProtocol {
     abstract generateId(): string;
+    abstract getNextStreamId(): number;
     abstract valid(header: string): boolean;
     abstract isHeader(chunk: Buffer): boolean;
     abstract parseHeader(chunk: Buffer): Packet;
@@ -16,3 +17,8 @@ export abstract class PacketProtocol extends TransportProtocol {
     abstract generate(stream: Duplex, opts: ConnectionOpts): Writable;
 }
 
+
+export interface Closeable {
+    readonly closed?: boolean;
+    close(...args: any[]): void;
+}

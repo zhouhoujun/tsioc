@@ -5,7 +5,7 @@ import { isArray } from './utils/chk';
  * for custom extends.
  */
 export class Execption extends Error {
-    constructor(message: string) {
+    constructor(message: string, readonly code?: any) {
         super(message);
         let target: Function;
         try {

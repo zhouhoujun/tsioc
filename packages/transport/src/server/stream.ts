@@ -1,11 +1,39 @@
 import { OutgoingHeaders } from '@tsdi/core';
-import { HeandersSentExecption, InvalidStreamExecption } from '../execptions';
-import { TransportStream } from '../stream';
+import { isFunction } from '@tsdi/ioc';
+import { Connection } from '../connection';
+import { hdr } from '../consts';
+import { HeandersSentExecption, InvalidStreamExecption, NestedPushExecption, PushDisabledExecption } from '../execptions';
+import { SteamOptions, TransportStream } from '../stream';
 
 
 
 export class ServerStream extends TransportStream {
 
+    readonly authority: string;
+    constructor(connection: Connection, streamId: number, opts: SteamOptions, protected headers: OutgoingHeaders) {
+        super(connection, opts)
+        this.id = streamId;
+        this.authority = this.getAuthority(headers);
+    }
+
+    getAuthority(headers: OutgoingHeaders): string {
+        return headers[hdr.AUTHORITY] ?? headers[hdr.HOST] as string ?? '';
+    }
+
+    /**
+     * True if the remote peer accepts push streams
+     */
+    get pushAllowed() {
+        return !this.destroyed &&
+            !this.closed &&
+            !this.connection.closed &&
+            !this.connection.destroyed
+        // && this.connection.remoteSettings.enablePush;
+    }
+
+    protected proceed(): void {
+        throw new Error('Method not implemented.');
+    }
     /**
      * Initiates a push stream. The callback is invoked with the new `TransportStream`instance created for the push stream passed as the second argument, or an`Error` passed as the first argument.
      *
@@ -41,7 +69,27 @@ export class ServerStream extends TransportStream {
         },
         callback?: (err: Error | null, pushStream: ServerStream, headers: OutgoingHeaders) => void): void;
     pushStream(headers: OutgoingHeaders, arg?: any, callback?: (err: Error | null, pushStream: ServerStream, headers: OutgoingHeaders) => void): void {
+        if (this.pushAllowed) {
+            throw new PushDisabledExecption();
+        }
+        if (this.streamId! % 2 === 0) {
+            throw new NestedPushExecption();
+        }
 
+        this._updateTimer();
+        let options: {
+            exclusive?: boolean;
+            parent?: number;
+            weight?: number;
+            silent?: boolean;
+        } | undefined;
+        if (isFunction(arg)) {
+            callback = arg;
+            options = undefined;
+        } else {
+            options = arg;
+        }
+        
     }
 
     /**
@@ -79,10 +127,10 @@ export class ServerStream extends TransportStream {
     }): void {
         if (this.destroyed || this.closed) throw new InvalidStreamExecption();
         if (this.headersSent) throw new HeandersSentExecption();
-        const opts = {...options};
-        
+        const opts = { ...options };
+
         opts.endStream
-        
+
     }
 }
 

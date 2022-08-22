@@ -3,6 +3,8 @@ export const LOCALHOST = 'localhost';
 
 export const identity = 'identity';
 
+export const streamId = 'streamId';
+
 /**
  * events key.
  */
@@ -17,7 +19,11 @@ export namespace ev {
 
     export const SOCKET = 'socket';
 
+    export const HEADERS = 'headers';
+    export const CONTINUE = 'continue';
+
     export const MESSAGE = 'message';
+    export const PAUSE = 'pause';
     export const RESPONSE = 'response';
     export const DATA = 'data';
     export const DRAIN = 'drain';
@@ -25,6 +31,9 @@ export namespace ev {
     export const CLOSE = 'close';
     export const END = 'end';
     export const FINISH = 'finish';
+
+    export const READY = 'ready';
+
     export const TIMEOUT = 'timeout';
     export const STREAM = 'stream';
     export const ABOUT = 'about';
@@ -85,7 +94,9 @@ export namespace hdr {
      * cache control.
      */
     export const CACHE_CONTROL = 'cache-control';
-
+    /**
+     * connection.
+     */
     export const CONNECTION = 'connection';
     /**
      * content disposition.

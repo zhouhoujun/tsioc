@@ -1,31 +1,35 @@
 import { IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
+import { EMPTY_OBJ } from '@tsdi/ioc';
 import { Readable, Duplex, Transform } from 'stream';
 import { Connection, ConnectionOpts } from '../connection';
 import { ev } from '../consts';
+import { PacketProtocol } from '../packet';
 import { ServerStream } from './stream';
 
 
 export class ServerSession extends Connection {
+    constructor(stream: Duplex, packet: PacketProtocol, opts: ConnectionOpts = EMPTY_OBJ) {
+        super(stream, packet, opts);
 
-    private streams = new Map<string, ServerStream>();
-
-    protected override bindEvents(opts: ConnectionOpts): void {
-        super.bindEvents(opts);
-        this.stream.on(ev.CONNECT, ()=> this.emit(ev.CONNECT, this));
+        this.stream.on(ev.CONNECT, () => this.emit(ev.CONNECT, this));
         this._parser.on(ev.DATA, (chunk) => {
             if (this.packet.isHeader(chunk)) {
                 const packet = this.packet.parseHeader(chunk);
-                const id = packet.id;
+                const id = this.getNextId();
                 if (id) {
-                    let stream = this.streams.get(id);
-                    if(!stream) {
-                        stream = new ServerStream(this, id, packet.headers as OutgoingHeaders);
-                        this.streams.set(id, stream);
+                    let stream = this.state.streams.get(id);
+                    if (!stream) {
+                        stream = new ServerStream(this, id, {}, packet.headers as OutgoingHeaders);
+                        this.state.streams.set(id, stream);
                     }
                     this.emit(ev.STREAM, stream, packet.headers)
                 }
             }
         })
+    }
+
+    getNextId(): number {
+        return this.packet.getNextStreamId()
     }
 
     async close(): Promise<void> {

@@ -17,7 +17,9 @@ export interface IncomingStatusHeaders {
 }
 
 export interface OutgoingHeaders extends Record<string, OutgoingHeader> {
-
+    ':authority'?: string;
+    ':path'?: string;
+    ':method'?: string;
 }
 
 
@@ -57,7 +59,7 @@ export class HeaderSet<T extends IncomingHeader | OutgoingHeader> {
         return Array.from(this._normal.keys())
     }
 
-    getHeaders(): Record<string, T>  {
+    getHeaders(): Record<string, T> {
         if (!this._rcd) {
             const rcd = this._rcd = {} as Record<string, T>;
             this.forEach((v, k) => {
