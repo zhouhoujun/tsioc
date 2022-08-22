@@ -60,11 +60,11 @@ export class ClientSession extends Connection {
             }
         }
         const stream = new ClientStream(this, undefined, undefined, {});
-        const { signal, endStream, waitForTrailers } = options!;
-        if (endStream) {
+        if (options?.endStream) {
             stream.end();
         }
-        if (signal) {
+        if (options?.signal) {
+            const signal = options.signal;
             const aborter = () => {
                 stream.destroy(new TransportAboutExecption((signal as any).reason));
             }

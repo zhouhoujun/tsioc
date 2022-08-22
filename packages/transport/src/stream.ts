@@ -315,10 +315,10 @@ export abstract class TransportStream extends Duplex implements Closeable {
     override _destroy(error: Error | null, callback: (error: Error | null) => void): void {
         const cstate = this.connection.state;
         const ccode = cstate.goawayCode ?? cstate.destroyCode ?? 0;
-        const code = error != null ? ccode ?? 0 : (this.closed ? this.rstCode : ccode);
+        const code = error != null ? ccode ?? 0 : (this.isClosed ? this.rstCode : ccode);
         const handle = this.handle;
         const hasHandle = !!handle;
-        if (!this.closed) {
+        if (!this.isClosed) {
             this.closeStream(code, hasHandle ? StreamRstStatus.force : StreamRstStatus.none);
         }
         this.push(null);

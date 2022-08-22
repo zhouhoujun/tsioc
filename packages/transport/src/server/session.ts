@@ -32,10 +32,6 @@ export class ServerSession extends Connection {
         return this.packet.getNextStreamId()
     }
 
-    async close(): Promise<void> {
-        this.emit(ev.CLOSE);
-    }
-
     addListener(event: 'connect', listener: (session: ServerSession, socket: Duplex) => void): this;
     addListener(event: 'stream', listener: (stream: ServerStream, headers: IncomingHeaders, flags: number) => void): this;
     addListener(event: string | symbol, listener: (...args: any[]) => void): this;

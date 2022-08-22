@@ -25,8 +25,8 @@ export class ServerStream extends TransportStream {
      */
     get pushAllowed() {
         return !this.destroyed &&
-            !this.closed &&
-            !this.connection.closed &&
+            !this.isClosed &&
+            !this.connection.isClosed &&
             !this.connection.destroyed
         // && this.connection.remoteSettings.enablePush;
     }
@@ -125,7 +125,7 @@ export class ServerStream extends TransportStream {
         endStream?: boolean;
         waitForTrailers?: boolean;
     }): void {
-        if (this.destroyed || this.closed) throw new InvalidStreamExecption();
+        if (this.destroyed || this.isClosed) throw new InvalidStreamExecption();
         if (this.headersSent) throw new HeandersSentExecption();
         const opts = { ...options };
 
