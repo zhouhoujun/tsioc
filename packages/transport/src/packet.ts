@@ -25,7 +25,6 @@ export abstract class PacketProtocol extends TransportProtocol {
     abstract parseHeader(chunk: Buffer): Packet;
     abstract isBody(chunk: Buffer, streamId: Buffer): boolean;
     abstract parseBody(chunk: Buffer, streamId: Buffer): any;
-    abstract attachStreamId(chunk: Buffer, streamId: Buffer): any;
     abstract transform(opts: ConnectionOpts): Transform;
     abstract generate(stream: Duplex, opts: ConnectionOpts): Writable;
 }
