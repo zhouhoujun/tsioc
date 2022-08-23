@@ -1,18 +1,18 @@
 import { OutgoingHeaders } from '@tsdi/core';
-import { isFunction } from '@tsdi/ioc';
+import { ArgumentExecption, isFunction } from '@tsdi/ioc';
 import { Connection } from '../connection';
 import { hdr } from '../consts';
 import { HeandersSentExecption, InvalidStreamExecption, NestedPushExecption, PushDisabledExecption } from '../execptions';
-import { SteamOptions, TransportStream } from '../stream';
+import { SteamOptions, StreamStateFlags, TransportStream } from '../stream';
 
 
 
 export class ServerStream extends TransportStream {
 
     readonly authority: string;
-    constructor(connection: Connection, streamId: number, opts: SteamOptions, protected headers: OutgoingHeaders) {
+    constructor(connection: Connection, id: number, opts: SteamOptions, protected headers: OutgoingHeaders) {
         super(connection, opts)
-        this.id = streamId;
+        this.id = id;
         this.authority = this.getAuthority(headers);
     }
 
@@ -58,16 +58,17 @@ export class ServerStream extends TransportStream {
      * @since v8.4.0
      * @param callback Callback that is called once the push stream has been initiated.
      */
-    pushStream(headers: OutgoingHeaders, callback?: (err: Error | null, pushStream: ServerStream, headers: OutgoingHeaders) => void): void;
+    pushStream(headers: OutgoingHeaders, callback: (err: Error | null, pushStream: ServerStream, headers: OutgoingHeaders) => void): void;
     pushStream(
         headers: OutgoingHeaders,
-        options?: {
+        options: {
+            endStream?: boolean;
             exclusive?: boolean;
             parent?: number;
             weight?: number;
             silent?: boolean;
         },
-        callback?: (err: Error | null, pushStream: ServerStream, headers: OutgoingHeaders) => void): void;
+        callback: (err: Error | null, pushStream: ServerStream, headers: OutgoingHeaders) => void): void;
     pushStream(headers: OutgoingHeaders, arg?: any, callback?: (err: Error | null, pushStream: ServerStream, headers: OutgoingHeaders) => void): void {
         if (this.pushAllowed) {
             throw new PushDisabledExecption();
@@ -77,21 +78,47 @@ export class ServerStream extends TransportStream {
         }
 
         this._updateTimer();
-        let options: {
-            exclusive?: boolean;
-            parent?: number;
-            weight?: number;
-            silent?: boolean;
-        } | undefined;
+        let options: SteamOptions;
         if (isFunction(arg)) {
             callback = arg;
-            options = undefined;
+            options = {};
         } else {
             options = arg;
         }
 
-        const streamOptions =  options
-        
+        if (!isFunction(callback)) {
+            throw new ArgumentExecption('callback is not function.')
+        }
+
+        const connection = this.connection;
+
+        let headRequest = false;
+        if (connection.packet.hasPlayload(headers)) {
+            headRequest = options.endStream = true;
+        }
+
+        this.connection.packet.connect(headers, options)
+            .subscribe({
+                next: (ret) => {
+                    const id = ret.id;
+                    const stream = new ServerStream(connection, id, options, headers);
+
+                    stream.push(null);
+
+                    if (options.endStream)
+                        stream.end();
+
+                    if (headRequest)
+                        stream.state.flags |= StreamStateFlags.headRequest;
+
+                    process.nextTick(callback!, null, stream, headers, 0);
+                },
+                error: (err) => {
+                    process.nextTick(callback!, err);
+                }
+            })
+
+
     }
 
     /**
@@ -123,16 +150,28 @@ export class ServerStream extends TransportStream {
      * ```
      * @since v8.4.0
      */
-    respond(headers?: OutgoingHeaders, options?: {
+    respond(headers: OutgoingHeaders, options?: {
         endStream?: boolean;
         waitForTrailers?: boolean;
     }): void {
         if (this.destroyed || this.isClosed) throw new InvalidStreamExecption();
         if (this.headersSent) throw new HeandersSentExecption();
-        const opts = { ...options };
+        const opts = { ...options } as SteamOptions;
 
-        opts.endStream
+        const conn = this.connection;
+        this._sentHeaders = headers;
+        this.state.flags |= StreamStateFlags.headersSent;
+        if (opts.endStream == true || conn.packet.hasPlayload(headers)) {
+            opts.endStream = true;
+            this.end();
+        }
+
+        if(!this.connection.write(conn.packet.respond(headers, opts))){
+            this.destroy()
+        }
 
     }
+
+
 }
 

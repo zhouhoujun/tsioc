@@ -1,11 +1,12 @@
 import { EMPTY_OBJ, isDefined } from '@tsdi/ioc';
-import { IncomingHeaders, InvalidHeaderTokenExecption, OutgoingHeaders, TransportAboutExecption, TransportExecption } from '@tsdi/core';
+import { IncomingHeaders, InvalidHeaderTokenExecption, TransportAboutExecption } from '@tsdi/core';
 import { Duplex } from 'stream';
 import { Connection, ConnectionOpts } from '../connection';
 import { PacketProtocol } from '../packet';
 import { ClientStream } from './stream';
 import { ev, streamId } from '../consts';
 import { GoawayExecption, InvalidSessionExecption } from '../execptions';
+import { TransportStreamFlags } from '../stream';
 
 
 export interface ClientRequsetOpts {
@@ -17,11 +18,6 @@ export interface ClientRequsetOpts {
     signal?: AbortSignal | undefined;
 }
 
-export enum RequsetStreamFlags {
-    none = 0x0,
-    emptyPayload = 0x2,
-    trailers = 0x4
-}
 
 
 export interface ClientSessionOpts extends ConnectionOpts {
@@ -59,7 +55,7 @@ export class ClientSession extends Connection {
                 }
             }
         }
-        const stream = new ClientStream(this, undefined, undefined, {});
+        const stream = new ClientStream(this, undefined, {});
         if (options?.endStream) {
             stream.end();
         }
@@ -104,19 +100,19 @@ export class ClientSession extends Connection {
             return;
         }
 
-        let strmOpt = RequsetStreamFlags.none;
+        let strmOpt = TransportStreamFlags.none;
         if (options?.endStream) {
-            strmOpt |= RequsetStreamFlags.emptyPayload;
+            strmOpt |= TransportStreamFlags.emptyPayload;
         }
         if (options?.waitForTrailers) {
-            strmOpt |= RequsetStreamFlags.trailers;
+            strmOpt |= TransportStreamFlags.trailers;
         }
 
         this.requestStreamId(headers, strmOpt);
 
     }
 
-    protected requestStreamId(headers: IncomingHeaders, streamOptions: RequsetStreamFlags) {
+    protected requestStreamId(headers: IncomingHeaders, streamOptions: TransportStreamFlags) {
         this.write({ cmd: streamId, headers, streamOptions });
     }
 

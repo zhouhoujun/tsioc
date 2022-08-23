@@ -70,7 +70,6 @@ export class ServerResponse extends Writable implements OutgoingPacket {
         return this.stream.headersSent;
     }
 
-
     getHeaders(): Record<string, OutgoingHeader> {
         return this._hdr.getHeaders();
     }

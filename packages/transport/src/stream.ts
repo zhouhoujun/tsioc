@@ -49,6 +49,12 @@ export enum StreamStateFlags {
     trailers = 0x20
 }
 
+export enum TransportStreamFlags {
+    none = 0x0,
+    emptyPayload = 0x2,
+    trailers = 0x4
+}
+
 export interface StreamState {
     didRead: boolean;
     flags: StreamStateFlags;
@@ -180,7 +186,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
         return this.state.rstCode;
     }
 
-    protected init(id: number, handle: any) {
+    protected init(id: number, handle?: any) {
         const { state, connection } = this;
         state.flags |= StreamStateFlags.ready;
 
@@ -596,7 +602,6 @@ export abstract class TransportStream extends Duplex implements Closeable {
         return super.prependOnceListener(event, listener);
     }
 }
-
 
 
 export class BodyTransform extends Transform {

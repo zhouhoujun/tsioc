@@ -8,11 +8,11 @@ import { SteamOptions, StreamStateFlags, TransportStream } from '../stream';
 
 export class ClientStream extends TransportStream {
 
-    constructor(readonly connection: Connection, handle: any, id: number | undefined, protected opts: SteamOptions) {
+    constructor(readonly connection: Connection, id: number | undefined, protected opts: SteamOptions) {
         super(connection, opts);
         this.state.flags |= StreamStateFlags.headersSent;
         if (id !== undefined) {
-            this.init(id, handle);
+            this.init(id);
         }
         const stat = connection.packet.status;
         this.on(ev.HEADERS, (headers) => {

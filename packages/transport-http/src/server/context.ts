@@ -1,10 +1,10 @@
 import { AssetContext, HeadersContext, MiddlewareLike, mths, Throwable, ConnectionContext } from '@tsdi/core';
 import { isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
+import { hdr, append, parseTokenList, AssetServerContext } from '@tsdi/transport';
 import * as assert from 'assert';
 import * as http from 'http';
 import * as http2 from 'http2';
-import { hdr, append, parseTokenList, AssetServerContext } from '@tsdi/transport';
 import { HttpError, HttpInternalServerError } from './../errors';
 import { HttpServer } from './server';
 
@@ -49,7 +49,7 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
     get ips() {
         const proxy = (this.target as HttpServer)?.proxy;
         const val = this.getHeader((this.target as any)?.proxyIpHeader) as string;
-        let ips = proxy && val
+        let ips = (proxy && val)
             ? val.split(/\s*,\s*/)
             : [];
         if ((this.target as HttpServer)?.maxIpsCount > 0) {
@@ -59,6 +59,7 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
     }
 
     private _ip?: string;
+    
     /**
      * Return request's remote address
      * When `app.proxy` is `true`, parse
@@ -67,7 +68,6 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
      * @return {String}
      * @api public
      */
-
     get ip() {
         if (!this._ip) {
             this._ip = this.ips[0] || this.socket.remoteAddress || ''

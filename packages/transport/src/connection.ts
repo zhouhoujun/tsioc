@@ -26,16 +26,22 @@ export interface ConnectionOpts extends DuplexOptions, Record<string, any> {
     encoding?: BufferEncoding;
 }
 
-export enum SessionStateFlags {
+/**
+ * Connection state flags.
+ */
+export enum ConnectionStateFlags {
     pending = 0x0,
     ready = 0x1,
     closed = 0x2,
     destroyed = 0x4
 }
 
-export interface SessionState extends Record<string, any> {
+/**
+ * Connection state.
+ */
+export interface ConnectionState extends Record<string, any> {
     destroyCode: number | null;
-    flags: SessionStateFlags;
+    flags: ConnectionStateFlags;
     goawayCode: number | null
     goawayLastStreamID: number | null
     streams: Map<number, TransportStream>;
@@ -54,12 +60,12 @@ export abstract class Connection extends Duplexify implements Closeable {
     protected _parser: Transform;
     protected _generator: Writable;
 
-    readonly state: SessionState;
+    readonly state: ConnectionState;
     constructor(readonly stream: Duplex, readonly packet: PacketProtocol, private opts: ConnectionOpts = EMPTY_OBJ) {
         super(undefined, undefined, opts);
         this.state = {
             destroyCode: opts.noError ?? NO_ERROR,
-            flags: SessionStateFlags.pending,
+            flags: ConnectionStateFlags.pending,
             goawayCode: null,
             goawayLastStreamID: null,
             streams: new Map(),
@@ -87,7 +93,8 @@ export abstract class Connection extends Duplexify implements Closeable {
         this.stream.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
 
         this.stream.on(ev.CONNECT, () => {
-            this.state.flags |= SessionStateFlags.ready;
+            this.state.flags |= ConnectionStateFlags.ready;
+            this.emit(ev.READY);
         })
     }
 
@@ -107,11 +114,11 @@ export abstract class Connection extends Duplexify implements Closeable {
      * Will be `true` if this `Connection` instance has been closed, otherwise`false`.
      */
     get isClosed(): boolean {
-        return (this as Closeable).closed === true || !!(this.state.flags & SessionStateFlags.closed);
+        return (this as Closeable).closed === true || !!(this.state.flags & ConnectionStateFlags.closed);
     }
 
     get connecting() {
-        return (this.state.flags & SessionStateFlags.ready) === 0;
+        return (this.state.flags & ConnectionStateFlags.ready) === 0;
     }
 
     /**
@@ -124,13 +131,13 @@ export abstract class Connection extends Duplexify implements Closeable {
      */
     close(callback?: () => void): void {
         if (this.isClosed || this.destroyed) {
-            if (!(this.state.flags & SessionStateFlags.closed)) {
-                this.state.flags |= SessionStateFlags.closed;
+            if (!(this.state.flags & ConnectionStateFlags.closed)) {
+                this.state.flags |= ConnectionStateFlags.closed;
             }
             return;
         }
 
-        this.state.flags |= SessionStateFlags.closed;
+        this.state.flags |= ConnectionStateFlags.closed;
         if (callback) {
             this.once(ev.CLOSE, callback);
         }
@@ -149,12 +156,12 @@ export abstract class Connection extends Duplexify implements Closeable {
 
         if (msecs === 0) {
             if (callback !== undefined) {
-                this.removeListener('timeout', callback);
+                this.removeListener(ev.TIMEOUT, callback);
             }
         } else {
             this._timeout = setTimeout(this._onTimeout.bind(this), msecs);
             if (callback !== undefined) {
-                this.once('timeout', callback);
+                this.once(ev.TIMEOUT, callback);
             }
         }
         return this;
