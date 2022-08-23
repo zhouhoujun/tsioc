@@ -105,20 +105,20 @@ export abstract class TransportStream extends Duplex implements Closeable {
             endAfterHeaders: false
         };
 
-        this.on(ev.PAUSE, () => {
-            if (!this.destroyed && !this.pending) {
-                this.connection.pause();
-            }
-        });
-
-        // this.connection.on('error', this.emit.bind(this, 'error'));
-        // this.connection.on('close', this.emit.bind(this, 'close'));
-        // const steam = new BodyTransform(this.connection.packet, this.streamId);
-        // process.nextTick(() => {
-        //     this.connection
-        //         .pipe(steam)
-        //         .pipe(this);
+        // this.on(ev.PAUSE, () => {
+        //     if (!this.destroyed && !this.pending) {
+        //         this.connection.pause();
+        //     }
         // });
+
+        this.connection.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
+        this.connection.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
+        const steam = new BodyTransform(this.connection.packet, this.streamId!);
+        process.nextTick(() => {
+            this.connection
+                .pipe(steam)
+                .pipe(this);
+        });
     }
 
     get streamId() {
@@ -202,7 +202,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
     }
 
     override _writev(chunk: any, callback: (error?: Error | null | undefined) => void) {
-        this.processWrite(true, chunk, '', callback)
+        this.processWrite(true, chunk, undefined, callback)
     }
 
     override _final(callback: (error?: Error | null | undefined) => void): void {
@@ -230,7 +230,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
         }
     }
 
-    protected processWrite(writev: boolean, chunk: any, encoding: BufferEncoding | '', callback: (error?: Error | null | undefined) => void) {
+    protected processWrite(writev: boolean, chunk: any, encoding: BufferEncoding | undefined, callback: (error?: Error | null | undefined) => void) {
         if (this.pending) {
             this.once(ev.READY, () => {
                 this.processWrite(writev, chunk, encoding, callback);
@@ -242,11 +242,10 @@ export abstract class TransportStream extends Duplex implements Closeable {
             this.proceed()
         }
 
-        let req;
         let waitingForWriteCallback = true;
         let waitingForEndCheck = true;
-        let writeCallbackErr: Error | undefined;
-        let endCheckCallbackErr: Error | undefined;
+        let writeCallbackErr: Error | null | undefined;
+        let endCheckCallbackErr: Error | null | undefined;
         const done = () => {
             if (waitingForEndCheck || waitingForWriteCallback) return;
 
@@ -260,7 +259,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
             callback();
 
         };
-        const writeCallback = (err?: Error) => {
+        const writeCallback = (err?: Error | null) => {
             waitingForWriteCallback = false;
             writeCallbackErr = err;
             done();
@@ -282,14 +281,17 @@ export abstract class TransportStream extends Duplex implements Closeable {
             this.shutdownWritable(endCheckCallback);
         });
 
+        let req: any;
         if (writev)
-            req = super._writev(data, writeCallback);
+            req = this.connection.write(chunk, writeCallback);
         else
-            req = super._write(data, encoding, writeCallback);
+            req = this.connection.write(chunk, encoding, writeCallback);
 
-        trackWriteState(this, req.bytes);
+        this.trackWriteState(req.bytes);
         // this.connection.write(this.connection.packet.attachStreamId(chunk, this.streamId))
     }
+
+
 
     protected abstract proceed(): void;
 
@@ -409,18 +411,25 @@ export abstract class TransportStream extends Duplex implements Closeable {
         }
         state.shutdownWritableCalled = true;
 
-        const req = new ShutdownWrap();
-        req.oncomplete = afterShutdown;
-        req.callback = callback;
-        req.handle = handle;
-        const err = handle.shutdown(req);
-        if (err === 1)  // synchronous finish
-            return ReflectApply(afterShutdown, req, [0]);
+        // const req = new ShutdownWrap();
+        // req.oncomplete = afterShutdown;
+        // req.callback = callback;
+        // req.handle = handle;
+        // const err = handle.shutdown(req);
+        // if (err === 1)  // synchronous finish
+        //     return ReflectApply(afterShutdown, req, [0]);
     }
 
     protected streamOnResume() {
         if (!this.destroyed)
             this.resume();
+    }
+
+    protected trackWriteState(bytes: number) {
+        const cstate = this.connection.state;
+        this.state.writeQueueSize += bytes;
+        cstate.writeQueueSize += bytes;
+
     }
 
     protected _onTimeout() {
@@ -592,8 +601,10 @@ export abstract class TransportStream extends Duplex implements Closeable {
 
 export class BodyTransform extends Transform {
 
-    constructor(private packet: PacketProtocol, private streamId: Buffer) {
+    private streamId: Buffer;
+    constructor(private packet: PacketProtocol, id: number) {
         super();
+        this.streamId = Buffer.from(id.toString());
     }
 
     override _transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {

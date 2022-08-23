@@ -1,4 +1,4 @@
-import { Endpoint, IncomingHeaders, ListenOpts, Server } from '@tsdi/core';
+import { Endpoint, IncomingHeaders, ListenOpts } from '@tsdi/core';
 import { Abstract, InvocationContext } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Connection } from '../connection';
@@ -8,10 +8,11 @@ import { TransportContext } from './context';
 import { TransportServerOpts } from './options';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';
+import { TransportServer } from './server';
 import { ServerStream } from './stream';
 
 @Abstract()
-export abstract class ServerBuilder<T = any, TS extends Server = Server> {
+export abstract class ServerBuilder<T = any, TS extends TransportServer = TransportServer> {
     /**
      * startup server.
      * @param transport 

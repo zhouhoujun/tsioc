@@ -85,6 +85,10 @@ export abstract class Connection extends Duplexify implements Closeable {
 
         this.stream.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
         this.stream.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
+
+        this.stream.on(ev.CONNECT, () => {
+            this.state.flags |= SessionStateFlags.ready;
+        })
     }
 
     get options() {
@@ -166,13 +170,13 @@ export abstract class Connection extends Duplexify implements Closeable {
         if (this._timeout && isFunction(this._timeout.refresh)) this._timeout.refresh()
     }
 
-    protected goaway(code = 0, lastStreamID = 0, opaqueData?: any) {
+    protected goaway(code = 0, lastStreamID = 0, opaqueData?: Buffer) {
         if (this.destroyed) throw new InvalidSessionExecption()
 
         const goawayFn = () => {
             if (this.destroyed) return;
             this._updateTimer();
-
+            this.emit(ev.GOAWAY, code, lastStreamID, opaqueData);
         };
         if (this.connecting) {
             this.once(ev.CONNECT, goawayFn);

@@ -89,6 +89,8 @@ export class ServerStream extends TransportStream {
         } else {
             options = arg;
         }
+
+        const streamOptions =  options
         
     }
 

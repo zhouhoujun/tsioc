@@ -72,6 +72,10 @@ export class TcpStatus extends TransportStatus {
         return redirectStatus[status]
     }
 
+    isContinue(status: number): boolean {
+        return status === HttpStatusCode.Continue;
+    }
+
     isRequestFailed(status: number): boolean {
         return status >= 400 && status < 500
     }

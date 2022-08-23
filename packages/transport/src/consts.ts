@@ -17,6 +17,8 @@ export namespace ev {
     export const DISCONNECT = 'disconnect';
     export const CONNECTION = 'connection';
 
+    export const GOAWAY = 'goaway';
+
     export const SOCKET = 'socket';
 
     export const HEADERS = 'headers';

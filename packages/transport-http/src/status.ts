@@ -68,6 +68,10 @@ export class HttpStatus extends TransportStatus {
         return retryStatus[status];
     }
 
+    isContinue(status: number): boolean {
+        return status === HttpStatusCode.Continue;
+    }
+
     isRedirect(status: number): boolean {
         return redirectStatus[status]
     }
