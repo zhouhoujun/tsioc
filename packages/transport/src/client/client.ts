@@ -12,8 +12,9 @@ import { TransportEvent } from './response';
 import { ClientBuilder } from './builder';
 
 
-const defaults = {
+const tsptDeftOpts = {
     encoding: 'utf8',
+    backend: TransportBackend,
     interceptorsToken: CLIENT_INTERCEPTORS,
     execptionsToken: CLIENT_EXECPTIONFILTERS
 } as TransportClientOpts;
@@ -44,7 +45,7 @@ export class TransportClient extends Client<TransportRequest, TransportEvent, Tr
     }
 
     protected getDefaultOptions() {
-        return defaults;
+        return tsptDeftOpts;
     }
 
     protected override initOption(options?: TransportClientOpts): TransportClientOpts {
@@ -53,7 +54,7 @@ export class TransportClient extends Client<TransportRequest, TransportEvent, Tr
         const connectionOpts = { ...defaults.connectionOpts, ...options?.connectionOpts };
         const interceptors = [...options?.interceptors ?? EMPTY, NormlizePathInterceptor, DetectBodyInterceptor];
         const providers = options && options.providers ? [...TRANSPORT_CLIENT_PROVIDERS, ...options.providers] : TRANSPORT_CLIENT_PROVIDERS;
-        const opts = { backend: TransportBackend, ...defaults, ...options, connectOpts, connectionOpts, interceptors, providers };
+        const opts = { ...tsptDeftOpts, ...defaults, ...options, connectOpts, connectionOpts, interceptors, providers };
         return opts;
     }
 

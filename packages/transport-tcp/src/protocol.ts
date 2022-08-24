@@ -57,8 +57,8 @@ export class TcpProtocol extends PacketProtocol {
                 this._protocol = 'ipc';
             }
             let baseUrl = isIPC ? new URL(`tcp://${host ?? 'localhost'}`) : `tcp://${host ?? 'localhost'}:${port ?? 3000}`;
-            if(path && !isIPC) {
-               baseUrl = new URL(path, baseUrl);
+            if (path && !isIPC) {
+                baseUrl = new URL(path, baseUrl);
             }
             const uri = new URL(url, baseUrl);
             if (isIPC) {
