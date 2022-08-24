@@ -19,6 +19,10 @@ export class ServerResponse extends Writable implements OutgoingPacket {
         readonly socket?: any) {
         super();
         this._hdr = new ResHeaders();
+
+        process.nextTick(() => {
+            stream.pipe(this);
+        });
         stream.on(ev.DRAIN, this.emit.bind(this, ev.DRAIN));
         stream.on(ev.ABORTED, this.emit.bind(this, ev.ABORTED));
         stream.on(ev.CLOSE, this.onStreamClose.bind(this));

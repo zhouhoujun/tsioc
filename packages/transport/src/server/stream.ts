@@ -32,7 +32,7 @@ export class ServerStream extends TransportStream {
     }
 
     protected proceed(): void {
-        throw new Error('Method not implemented.');
+        this.respond(this.headers);
     }
     /**
      * Initiates a push stream. The callback is invoked with the new `TransportStream`instance created for the push stream passed as the second argument, or an`Error` passed as the first argument.
@@ -97,26 +97,26 @@ export class ServerStream extends TransportStream {
             headRequest = options.endStream = true;
         }
 
-        this.connection.packet.connect(headers, options)
-            .subscribe({
-                next: (ret) => {
-                    const id = ret.id;
-                    const stream = new ServerStream(connection, id, options, headers);
+        // this.connection.packet.connect(headers, options)
+        //     .subscribe({
+        //         next: (ret) => {
+        //             const id = ret.id;
+        //             const stream = new ServerStream(connection, id, options, headers);
 
-                    stream.push(null);
+        //             stream.push(null);
 
-                    if (options.endStream)
-                        stream.end();
+        //             if (options.endStream)
+        //                 stream.end();
 
-                    if (headRequest)
-                        stream.state.flags |= StreamStateFlags.headRequest;
+        //             if (headRequest)
+        //                 stream.state.flags |= StreamStateFlags.headRequest;
 
-                    process.nextTick(callback!, null, stream, headers, 0);
-                },
-                error: (err) => {
-                    process.nextTick(callback!, err);
-                }
-            })
+        //             process.nextTick(callback!, null, stream, headers, 0);
+        //         },
+        //         error: (err) => {
+        //             process.nextTick(callback!, err);
+        //         }
+        //     })
 
 
     }
@@ -166,9 +166,9 @@ export class ServerStream extends TransportStream {
             this.end();
         }
 
-        if(!this.connection.write(conn.packet.respond(headers, opts))){
-            this.destroy()
-        }
+        // if(!this.connection.write(conn.packet.respond(headers, opts))){
+        //     this.destroy()
+        // }
 
     }
 

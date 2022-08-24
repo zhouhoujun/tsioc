@@ -15,7 +15,7 @@ export class ServerSession extends Connection {
         this._parser.on(ev.DATA, (chunk) => {
             if (this.packet.isHeader(chunk)) {
                 const packet = this.packet.parseHeader(chunk);
-                const id = this.getNextId();
+                const id =  packet.id ?? this.getNextId();
                 if (id) {
                     let stream = this.state.streams.get(id);
                     if (!stream) {

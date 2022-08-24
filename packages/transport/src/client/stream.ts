@@ -1,14 +1,14 @@
 import { IncomingHeaders, IncomingStatusHeaders } from '@tsdi/core';
 import { Readable, DuplexOptions } from 'stream';
-import { Connection } from '../connection';
 import { ev, hdr } from '../consts';
 import { SteamOptions, StreamStateFlags, TransportStream } from '../stream';
+import { ClientSession } from './session';
 
 
 
 export class ClientStream extends TransportStream {
 
-    constructor(readonly connection: Connection, id: number | undefined, protected opts: SteamOptions) {
+    constructor(readonly connection: ClientSession, id: number | undefined, private headers: IncomingHeaders, protected opts: SteamOptions) {
         super(connection, opts);
         this.state.flags |= StreamStateFlags.headersSent;
         if (id !== undefined) {
@@ -22,7 +22,7 @@ export class ClientStream extends TransportStream {
     }
 
     protected proceed(): void {
-        throw new Error('Method not implemented.');
+        this.connection.request(this.headers);
     }
 
 

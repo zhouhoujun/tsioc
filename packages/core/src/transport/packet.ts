@@ -63,7 +63,7 @@ export interface Packet<T = any> {
     /**
      * packet id.
      */
-    readonly id?: string;
+    readonly id?: number;
     /**
      * headers
      */
@@ -98,7 +98,7 @@ export interface RequestPacket<T = any> extends Packet<T> {
     /**
      * packet id.
      */
-    readonly id?: string;
+    readonly id?: number;
     /**
      * headers
      */
@@ -225,10 +225,6 @@ export type ResponseEvent<T = any> = ResponsePacket<T> | ResponseHeader;
  * server side incoming packet.
  */
 export interface IncomingPacket<T = any> extends Packet<any> {
-    /**
-     * packet id.
-     */
-    readonly id?: string;
     /**
      * headers
      */
