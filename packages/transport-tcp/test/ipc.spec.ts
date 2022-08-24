@@ -1,4 +1,4 @@
-import { Application, ApplicationContext, BadRequestError, Handle, LoggerModule, Module, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
+import { Application, ApplicationContext, BadRequestExecption, Handle, LoggerModule, Module, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
 import { Injector, isArray, lang } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -34,7 +34,7 @@ export class DeviceController {
     resfulquery(@RequestPath('age', { pipe: 'int' }) age1: number) {
         console.log('age1:', age1);
         if (age1 <= 0) {
-            throw new BadRequestError();
+            throw new BadRequestExecption();
         }
         return age1;
     }

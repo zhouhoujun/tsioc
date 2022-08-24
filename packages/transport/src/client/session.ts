@@ -1,13 +1,16 @@
 import { EMPTY_OBJ, isDefined } from '@tsdi/ioc';
 import { IncomingHeaders, InvalidHeaderTokenExecption } from '@tsdi/core';
 import { Duplex } from 'stream';
-import { Connection, ConnectionOpts } from '../connection';
 import { PacketProtocol } from '../packet';
-import { ClientStream } from './stream';
+import { Connection, ConnectionOpts } from '../connection';
 import { GoawayExecption, InvalidSessionExecption } from '../execptions';
+import { ClientStream } from './stream';
 import { ClientBuilder } from './builder';
 
 
+/**
+ * Client Request options.
+ */
 export interface ClientRequsetOpts {
     endStream?: boolean | undefined;
     exclusive?: boolean | undefined;
@@ -18,13 +21,17 @@ export interface ClientRequsetOpts {
 }
 
 
-
+/**
+ * Client Session options.
+ */
 export interface ClientSessionOpts extends ConnectionOpts {
     authority?: string;
     clientId?: string;
 }
 
-
+/**
+ * Client Session.
+ */
 export class ClientSession extends Connection {
 
     readonly authority: string;

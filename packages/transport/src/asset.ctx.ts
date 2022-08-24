@@ -568,7 +568,7 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
      */
     get length(): number | undefined {
         if (this.hasHeader(hdr.CONTENT_LENGTH)) {
-            return this.getRespHeader(hdr.CONTENT_LENGTH) as number || 0
+            return ~~(this.getRespHeader(hdr.CONTENT_LENGTH) || 0)
         }
 
         const { body } = this;

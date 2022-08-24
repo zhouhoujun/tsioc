@@ -1,19 +1,23 @@
 import { OutgoingHeaders } from '@tsdi/core';
 import { ArgumentExecption, isFunction } from '@tsdi/ioc';
 import { Connection } from '../connection';
-import { hdr } from '../consts';
+import { ev, hdr } from '../consts';
 import { HeandersSentExecption, InvalidStreamExecption, NestedPushExecption, PushDisabledExecption } from '../execptions';
 import { SteamOptions, StreamStateFlags, TransportStream } from '../stream';
 
 
-
+/**
+ * Server stream
+ */
 export class ServerStream extends TransportStream {
 
     readonly authority: string;
-    constructor(connection: Connection, id: number, opts: SteamOptions, protected headers: OutgoingHeaders) {
+    constructor(connection: Connection, id: number | undefined, opts: SteamOptions, protected headers: OutgoingHeaders) {
         super(connection, opts)
-        this.id = id;
         this.authority = this.getAuthority(headers);
+        if (id != undefined) {
+            this.emit(ev.READY, id);
+        }
     }
 
     getAuthority(headers: OutgoingHeaders): string {

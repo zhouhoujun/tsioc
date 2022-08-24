@@ -5,6 +5,12 @@ export type IncomingHeader = string | readonly string[] | undefined;
 export type OutgoingHeader = IncomingHeader | number;
 
 export interface IncomingHeaders extends Record<string, IncomingHeader> {
+    'content-type'?: string;
+    'Content-Type'?: string;
+    'content-length'?: string;
+    'Content-Length'?: string;
+    'content-encoding'?: string;
+    'Content-Encoding'?: string;
     ':method'?: string | undefined;
     ':path'?: string | undefined;
     ':authority'?: string | undefined;
@@ -17,6 +23,12 @@ export interface IncomingStatusHeaders {
 }
 
 export interface OutgoingHeaders extends Record<string, OutgoingHeader> {
+    'content-type'?: string;
+    'Content-Type'?: string;
+    'content-length'?: string;
+    'Content-Length'?: string;
+    'content-encoding'?: string;
+    'Content-Encoding'?: string;
     ':authority'?: string;
     ':path'?: string;
     ':method'?: string;

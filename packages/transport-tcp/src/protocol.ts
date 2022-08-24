@@ -1,8 +1,7 @@
 import { IncomingHeaders, IncomingPacket, OutgoingHeaders, Packet, RequestPacket } from '@tsdi/core';
-import { Injectable } from '@tsdi/ioc';
+import { Injectable, isString } from '@tsdi/ioc';
 import { ListenOpts } from '@tsdi/platform-server';
-import { ConnectionOpts, ConnectPacket, PacketProtocol, ServerRequest, SteamOptions } from '@tsdi/transport';
-import { Observable } from 'rxjs';
+import { ConnectionOpts, ConnectPacket, hdr, isBuffer, PacketProtocol, ServerRequest, SteamOptions } from '@tsdi/transport';
 import { Duplex, Transform, TransformCallback, Writable } from 'stream';
 import * as tsl from 'tls';
 import { TcpStatus } from './status';
@@ -24,7 +23,7 @@ export class TcpProtocol extends PacketProtocol {
     }
 
     isSecure(incoming: ServerRequest): boolean {
-        return incoming.stream.connection.stream instanceof tsl.TLSSocket;
+        return incoming.connection.stream instanceof tsl.TLSSocket;
     }
 
     get protocol(): string {
@@ -81,11 +80,6 @@ export class TcpProtocol extends PacketProtocol {
         return protocol === this.protocol;
     }
 
-    generateId(): string {
-        return Math.max(1, Math.floor(Math.random() * 65535)).toString()
-    }
-
-    
     getNextStreamId(): number {
         return Math.max(1, Math.floor(Math.random() * 65535))
     }
@@ -97,7 +91,7 @@ export class TcpProtocol extends PacketProtocol {
         return new DelimiterTransform(opts);
     }
     generate(stream: Duplex, opts: ConnectionOpts): Writable {
-        throw new Error('Method not implemented.');
+        return new TcpGeneratorStream(opts);
     }
     isHeader(chunk: Buffer): boolean {
         throw new Error('Method not implemented.');
@@ -111,16 +105,12 @@ export class TcpProtocol extends PacketProtocol {
     parseBody(chunk: Buffer, streamId: Buffer): any {
         return chunk.slice(streamId.length);
     }
-    
+
     hasPlayload(headers: IncomingHeaders | OutgoingHeaders): boolean {
-        throw new Error('Method not implemented.');
+        const len = headers[hdr.CONTENT_LENGTH];
+        return len ? (~~len) > 0 : false;
     }
-    connect(headers: IncomingHeaders | OutgoingHeaders, options: SteamOptions): Observable<ConnectPacket> {
-        throw new Error('Method not implemented.');
-    }
-    respond(headers: IncomingHeaders | OutgoingHeaders, options: SteamOptions): Packet<any> {
-        throw new Error('Method not implemented.');
-    }
+
 }
 
 
@@ -151,6 +141,31 @@ export class DelimiterTransform extends Transform {
             }
         }
 
+    }
+}
+
+export class TcpGeneratorStream extends Transform {
+
+    constructor(private opts: ConnectionOpts) {
+        super(opts);
+    }
+
+    override _transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
+        if (isBuffer(chunk)) {
+            callback(null, chunk);
+            return;
+        }
+        if (isString(chunk)) {
+            callback(null, Buffer.from(chunk, encoding));
+            return;
+        }
+
+        try {
+            const str = JSON.stringify(chunk);
+            callback(null, Buffer.from(str, encoding));
+        } catch (err) {
+            callback(err as Error, chunk);
+        }
     }
 }
 

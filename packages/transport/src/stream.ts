@@ -111,15 +111,11 @@ export abstract class TransportStream extends Duplex implements Closeable {
             endAfterHeaders: false
         };
 
-        // this.on(ev.PAUSE, () => {
-        //     if (!this.destroyed && !this.pending) {
-        //         this.connection.pause();
-        //     }
-        // });
 
         this.connection.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
         this.connection.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
-        this.once(ev.READY, () => {
+        this.once(ev.READY, (id) => {
+            this.init(id);
             const steam = new BodyTransform(this.connection.packet, this.streamId!);
             process.nextTick(() => {
                 this.connection
@@ -197,7 +193,6 @@ export abstract class TransportStream extends Duplex implements Closeable {
 
         this.id = id;
         this.uncork();
-        this.emit(ev.READY);
     }
 
 
@@ -445,6 +440,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
         if (this._timeout && isFunction(this._timeout.refresh)) this._timeout.refresh()
     }
 
+    addListener(event: 'ready', listener: (streamId: number) => void): this;
     addListener(event: 'aborted', listener: () => void): this;
     addListener(event: 'close', listener: () => void): this;
     addListener(event: 'data', listener: (chunk: Buffer | string) => void): this;
@@ -470,6 +466,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
         return super.addListener(event, listener);
     }
 
+    emit(event: 'ready',  streamId: number): boolean;
     emit(event: 'aborted'): boolean;
     emit(event: 'close'): boolean;
     emit(event: 'data', chunk: Buffer | string): boolean;
@@ -495,7 +492,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
         return super.emit(event, ...args);
     }
 
-
+    on(event: 'ready', listener: (streamId: number) => void): this;
     on(event: 'aborted', listener: () => void): this;
     on(event: 'close', listener: () => void): this;
     on(event: 'data', listener: (chunk: Buffer) => void): this;
@@ -522,6 +519,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
     }
 
 
+    once(event: 'ready', listener: (streamId: number) => void): this;
     once(event: 'aborted', listener: () => void): this;
     once(event: 'close', listener: () => void): this;
     once(event: 'data', listener: (chunk: Buffer | string) => void): this;
@@ -547,7 +545,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
         return super.once(event, listener);
     }
 
-
+    prependListener(event: 'ready', listener: (streamId: number) => void): this;
     prependListener(event: 'aborted', listener: () => void): this;
     prependListener(event: 'close', listener: () => void): this;
     prependListener(event: 'data', listener: (chunk: Buffer | string) => void): this;
@@ -573,7 +571,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
         return super.prependListener(event, listener);
     }
 
-
+    prependOnceListener(event: 'ready', listener: (streamId: number) => void): this;
     prependOnceListener(event: 'aborted', listener: () => void): this;
     prependOnceListener(event: 'close', listener: () => void): this;
     prependOnceListener(event: 'data', listener: (chunk: Buffer | string) => void): this;

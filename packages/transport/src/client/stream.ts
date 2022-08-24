@@ -5,20 +5,22 @@ import { SteamOptions, StreamStateFlags, TransportStream } from '../stream';
 import { ClientSession } from './session';
 
 
-
+/**
+ * ClientStream
+ */
 export class ClientStream extends TransportStream {
 
     constructor(readonly connection: ClientSession, id: number | undefined, private headers: IncomingHeaders, protected opts: SteamOptions) {
         super(connection, opts);
         this.state.flags |= StreamStateFlags.headersSent;
-        if (id !== undefined) {
-            this.init(id);
-        }
         const stat = connection.packet.status;
         this.on(ev.HEADERS, (headers) => {
             if (stat.isContinue(stat.parse(headers[hdr.STATUS2] ?? headers[hdr.STATUS])))
                 this.emit(ev.CONTINUE);
         })
+        if (id !== undefined) {
+            this.emit(ev.READY, id);
+        }
     }
 
     protected proceed(): void {
