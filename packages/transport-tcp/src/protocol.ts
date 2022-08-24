@@ -1,6 +1,5 @@
-import { IncomingHeaders, IncomingPacket, OutgoingHeaders, Packet, RequestPacket } from '@tsdi/core';
+import { IncomingHeaders, IncomingPacket, ListenOpts, OutgoingHeaders, Packet, RequestPacket } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
-import { ListenOpts } from '@tsdi/platform-server';
 import { ConnectionOpts, ConnectPacket, hdr, isBuffer, PacketProtocol, ServerRequest, SteamOptions } from '@tsdi/transport';
 import { Duplex, Transform, TransformCallback, Writable } from 'stream';
 import * as tsl from 'tls';
@@ -57,8 +56,10 @@ export class TcpProtocol extends PacketProtocol {
             if (isIPC) {
                 this._protocol = 'ipc';
             }
-            const urlPrefix = isIPC ? new URL(`tcp://${host ?? 'localhost'}`) : `tcp://${host ?? 'localhost'}:${port ?? 3000}`;
-            const baseUrl = new URL(urlPrefix, path);
+            let baseUrl = isIPC ? new URL(`tcp://${host ?? 'localhost'}`) : `tcp://${host ?? 'localhost'}:${port ?? 3000}`;
+            if(path && !isIPC) {
+               baseUrl = new URL(path, baseUrl);
+            }
             const uri = new URL(url, baseUrl);
             if (isIPC) {
                 uri.protocol = 'ipc';

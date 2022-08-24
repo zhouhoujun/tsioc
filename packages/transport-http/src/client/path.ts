@@ -1,7 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
-import { Endpoint, EndpointContext, Interceptor } from '@tsdi/core';
+import { Endpoint, EndpointContext, Interceptor, ListenOpts } from '@tsdi/core';
 import { HttpEvent, HttpRequest } from '@tsdi/common';
-import { LISTEN_OPTS } from '@tsdi/platform-server';
 import { Observable } from 'rxjs';
 import { HttpClientOpts } from './option';
 
@@ -19,7 +18,7 @@ export class HttpPathInterceptor implements Interceptor<HttpRequest, HttpEvent> 
             if (option.authority) {
                 url = new URL(url, option.authority).toString();
             } else {
-                const { host, port, path, withCredentials } = context.get(LISTEN_OPTS);
+                const { host, port, path, withCredentials } = context.get(ListenOpts);
                 const protocol = (req.withCredentials || withCredentials) ? 'https' : 'http';
                 const urlPrefix = `${protocol}://${host ?? 'localhost'}:${port ?? 3000}${path ?? ''}`;
                 const baseUrl = new URL(urlPrefix);

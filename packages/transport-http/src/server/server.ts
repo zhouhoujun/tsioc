@@ -1,6 +1,5 @@
 import { Inject, Injectable, isBoolean, isFunction, lang, EMPTY_OBJ } from '@tsdi/ioc';
-import { Server, RunnableFactoryResolver, ModuleRef, Router } from '@tsdi/core';
-import { LISTEN_OPTS } from '@tsdi/platform-server';
+import { Server, RunnableFactoryResolver, ModuleRef, Router, ListenOpts } from '@tsdi/core';
 import { ListenOptions } from 'net';
 import * as http from 'http';
 import * as https from 'https';
@@ -166,7 +165,7 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse, HttpCo
         }
 
         const listenOptions = opts.listenOpts;
-        injector.get(ModuleRef).setValue(LISTEN_OPTS, { ...listenOptions, withCredentials: isSecure, majorVersion: opts.majorVersion });
+        injector.get(ModuleRef).setValue(ListenOpts, { ...listenOptions, withCredentials: isSecure, majorVersion: opts.majorVersion });
         this.logger.info(lang.getClassName(this), 'listen:', listenOptions, '. access with url:', `http${isSecure ? 's' : ''}://${listenOptions?.host}:${listenOptions?.port}${listenOptions?.path ?? ''}`, '!')
         this._server.listen(listenOptions)
     }

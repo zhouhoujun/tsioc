@@ -7,6 +7,8 @@ import { IncomingPacket, RequestPacket } from './packet';
  */
  @Abstract()
  export abstract class ListenOpts {
+    
+    [x: string]: any;
  
      /**
      * When provided the corresponding `AbortController` can be used to cancel an asynchronous action.
@@ -23,6 +25,7 @@ import { IncomingPacket, RequestPacket } from './packet';
       * @default false
       */
      ipv6Only?: boolean | undefined;
+     withCredentials?: boolean;
  }
  
 

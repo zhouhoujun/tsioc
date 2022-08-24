@@ -41,6 +41,10 @@ export const TCP_SERVER_OPTS = {
         CatchInterceptor,
         RespondInterceptor
     ],
+    serverOpts: {
+        host: 'localhost',
+        port: 3000,
+    },
     execptions: [
         TransportFinalizeFilter,
         TransportExecptionFilter

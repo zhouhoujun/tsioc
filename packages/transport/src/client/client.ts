@@ -14,7 +14,6 @@ import { ClientBuilder } from './builder';
 
 const defaults = {
     encoding: 'utf8',
-    backend: TransportBackend,
     interceptorsToken: CLIENT_INTERCEPTORS,
     execptionsToken: CLIENT_EXECPTIONFILTERS
 } as TransportClientOpts;
@@ -54,7 +53,7 @@ export class TransportClient extends Client<TransportRequest, TransportEvent, Tr
         const connectionOpts = { ...defaults.connectionOpts, ...options?.connectionOpts };
         const interceptors = [...options?.interceptors ?? EMPTY, NormlizePathInterceptor, DetectBodyInterceptor];
         const providers = options && options.providers ? [...TRANSPORT_CLIENT_PROVIDERS, ...options.providers] : TRANSPORT_CLIENT_PROVIDERS;
-        const opts = { ...defaults, ...options, connectOpts, connectionOpts, interceptors, providers };
+        const opts = { backend: TransportBackend, ...defaults, ...options, connectOpts, connectionOpts, interceptors, providers };
         return opts;
     }
 
@@ -70,7 +69,7 @@ export class TransportClient extends Client<TransportRequest, TransportEvent, Tr
     }
 
     protected connect(): Observable<ClientSession> {
-        if (this._session && !this._session.destroyed && !this._session.closed) {
+        if (this._session && !this._session.destroyed && !this._session.isClosed) {
             return of(this._session);
         }
         const opts = this.getOptions();

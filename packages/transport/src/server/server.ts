@@ -1,6 +1,5 @@
-import { Router, Server } from '@tsdi/core';
+import { ListenOpts, ModuleRef, Router, Server } from '@tsdi/core';
 import { Injectable, isBoolean, isFunction, lang, Nullable } from '@tsdi/ioc';
-import { LISTEN_OPTS } from '@tsdi/platform-server';
 import { CatchInterceptor, LogInterceptor, RespondInterceptor } from '../interceptors';
 import { TransportContext, SERVER_EXECPTION_FILTERS, SERVER_MIDDLEWARES } from './context';
 import { BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMiddleware, SessionMiddleware } from '../middlewares';
@@ -113,7 +112,7 @@ export class TransportServer extends Server<ServerRequest, ServerResponse, Trans
 
     protected override initContext(options: TransportServerOpts<any>): void {
         this.context.setValue(TransportServerOpts, options);
-        this.context.setValue(LISTEN_OPTS, options.listenOpts);
+        this.context.get(ModuleRef).setValue(ListenOpts, options.listenOpts);
 
         if (options.content && !isBoolean(options.content)) {
             this.context.setValue(ContentOptions, options.content)
