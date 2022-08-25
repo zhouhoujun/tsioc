@@ -280,7 +280,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
         });
 
         let req: any;
-        this.connection.write(this.streamId)
+        this.connection.write(Buffer.from([this.streamId!]))
         if (writev)
             req = this.connection.write(chunk, writeCallback);
         else

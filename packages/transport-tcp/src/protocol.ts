@@ -141,15 +141,21 @@ export class DelimiterTransform extends Transform {
     }
 }
 
+const maxSize = 10 * 1024 * 1024;
+
 export class TcpGeneratorStream extends Transform {
 
+    private delimiter: Buffer;
+    private maxSize: number;
     constructor(private opts: ConnectionOpts) {
         super(opts);
+        this.delimiter = Buffer.from(opts.delimiter!);
+        this.maxSize = opts.maxSize || maxSize;
     }
 
     override _transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
         if (isBuffer(chunk)) {
-            callback(null, chunk);
+            callback(null,  chunk);
             return;
         }
         if (isString(chunk)) {
