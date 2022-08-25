@@ -81,7 +81,7 @@ export const STRESM_NO_ERROR = 0;
 export abstract class TransportStream extends Duplex implements Closeable {
 
     private _timeout?: any;
-    protected id?: number;
+    protected _id?: number;
     protected ending?: boolean;
     readonly state: StreamState;
     protected _sentHeaders?: OutgoingHeaders;
@@ -90,6 +90,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
     protected _readableState!: ReadableState;
     protected _writableState!: WritableState;
     protected isClient?: boolean;
+    private _streamId?: Buffer;
     constructor(readonly connection: Connection, protected opts: SteamOptions) {
         super(opts);
 
@@ -124,7 +125,14 @@ export abstract class TransportStream extends Duplex implements Closeable {
         });
     }
 
+    get id() {
+        return this._id;
+    }
+
     get streamId() {
+        if (!this._streamId && this._id !== undefined) {
+            this._streamId = Buffer.from([this._id], 4)
+        }
         return this.id;
     }
 
@@ -190,7 +198,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
         connection.state.pendingStreams.delete(this);
         connection.state.streams.set(id, this);
 
-        this.id = id;
+        this._id = id;
         this.uncork();
     }
 
