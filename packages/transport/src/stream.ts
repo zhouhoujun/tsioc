@@ -92,8 +92,8 @@ export abstract class TransportStream extends Duplex implements Closeable {
     protected isClient?: boolean;
     private _streamId?: Buffer;
     constructor(readonly connection: Connection, protected opts: SteamOptions) {
-        super(opts);
-
+        super({objectMode: true, ...opts});
+        this.opts = opts;
         this.cork();
 
         // Allow our logic for determining whether any reads have happened to
@@ -131,7 +131,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
 
     get streamId() {
         if (!this._streamId && this._id !== undefined) {
-            this._streamId = Buffer.from([this._id], 4)
+            this._streamId = Buffer.from(this._id.toString())
         }
         return this.id;
     }
@@ -287,15 +287,14 @@ export abstract class TransportStream extends Duplex implements Closeable {
             this.shutdownWritable(endCheckCallback);
         });
 
-        let req: any;
-        this.connection.write(Buffer.from([this.streamId!]))
+        // let req: any;
+        // this.connection.write(this.streamId)
         if (writev)
-            req = this.connection.write(chunk, writeCallback);
+            this.connection.write(chunk, writeCallback);
         else
-            req = this.connection.write(chunk, encoding, writeCallback);
+            this.connection.write(chunk, encoding, writeCallback);
 
-        this.trackWriteState(req.bytes);
-        // this.connection.write(this.connection.packet.attachStreamId(chunk, this.streamId))
+        // this.trackWriteState(req.bytes);
     }
 
 

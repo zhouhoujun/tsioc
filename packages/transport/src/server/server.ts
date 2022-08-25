@@ -97,7 +97,7 @@ export class TransportServer extends Server<ServerRequest, ServerResponse, Trans
     protected override initOption(options: TransportServerOpts): TransportServerOpts {
         const defOpts = this.getDefaultOptions();
         const listenOpts = { ...defOpts.listenOpts, ...options?.listenOpts };
-        const connectionOpts = { ...defOpts.connectionOpts, ...options?.connectionOpts };
+        const connectionOpts = { objectMode: true, ...defOpts.connectionOpts, ...options?.connectionOpts };
         const providers = options && options.providers ? [...TRANSPORT_SERVR_PROVIDERS, ...options.providers] : TRANSPORT_SERVR_PROVIDERS;
         const opts = { ...defOpts, ...options, listenOpts, connectionOpts, providers };
         if (opts.middlewares) {

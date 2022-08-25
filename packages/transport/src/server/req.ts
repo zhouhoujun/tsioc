@@ -18,7 +18,7 @@ export class ServerRequest extends Readable implements IncomingPacket<Writable> 
     constructor(
         readonly stream: ServerStream,
         readonly headers: IncomingHeaders) {
-        super();
+        super({ objectMode: true });
         this.url = headers[hdr.PATH] ?? '';
         this.method = headers[hdr.METHOD] ?? '';
         this.authority = headers[hdr.AUTHORITY] ?? '';

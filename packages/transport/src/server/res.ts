@@ -17,7 +17,7 @@ export class ServerResponse extends Writable implements OutgoingPacket {
         readonly stream: ServerStream,
         readonly headers: OutgoingHeaders,
         readonly socket?: any) {
-        super();
+        super({ objectMode: true });
         this._hdr = new ResHeaders();
 
         process.nextTick(() => {
