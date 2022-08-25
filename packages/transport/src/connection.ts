@@ -122,6 +122,11 @@ export abstract class Connection extends Duplexify implements Closeable {
     }
 
     /**
+     * get packet next id.
+     */
+    abstract getNextStreamId(id?: number): number;
+
+    /**
      * Gracefully closes the `Connection`, allowing any existing streams to
      * complete on their own and preventing new `Connection` instances from being
      * created. Once closed, `Connection.destroy()`_might_ be called if there

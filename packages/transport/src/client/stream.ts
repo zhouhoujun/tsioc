@@ -12,6 +12,7 @@ export class ClientStream extends TransportStream {
 
     constructor(readonly connection: ClientSession, id: number | undefined, private headers: IncomingHeaders, protected opts: SteamOptions) {
         super(connection, opts);
+        this.isClient = true;
         this.state.flags |= StreamStateFlags.headersSent;
         const stat = connection.packet.status;
         this.on(ev.HEADERS, (headers) => {

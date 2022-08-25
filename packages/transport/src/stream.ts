@@ -88,9 +88,8 @@ export abstract class TransportStream extends Duplex implements Closeable {
     protected _sentTrailers?: any;
     protected _infoHeaders?: any;
     protected _readableState!: ReadableState;
-
-    handle?: any;
     protected _writableState!: WritableState;
+    protected isClient?: boolean;
     constructor(readonly connection: Connection, protected opts: SteamOptions) {
         super(opts);
 
@@ -116,7 +115,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
         this.connection.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
         this.once(ev.READY, (id) => {
             this.init(id);
-            const steam = new BodyTransform(this.connection.packet, this.streamId!);
+            const steam = new BodyTransform(this.connection.packet, this.isClient ? id + 1 : id - 1);
             process.nextTick(() => {
                 this.connection
                     .pipe(steam)
@@ -281,6 +280,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
         });
 
         let req: any;
+        this.connection.write(this.streamId)
         if (writev)
             req = this.connection.write(chunk, writeCallback);
         else
@@ -316,23 +316,18 @@ export abstract class TransportStream extends Duplex implements Closeable {
         const cstate = this.connection.state;
         const ccode = cstate.goawayCode ?? cstate.destroyCode ?? 0;
         const code = error != null ? ccode ?? 0 : (this.isClosed ? this.rstCode : ccode);
-        const handle = this.handle;
-        const hasHandle = !!handle;
         if (!this.isClosed) {
-            this.closeStream(code, hasHandle ? StreamRstStatus.force : StreamRstStatus.none);
+            this.closeStream(code, StreamRstStatus.force);
         }
         this.push(null);
-        if (hasHandle) {
-            handle.destroy();
-            cstate.streams.delete(this.streamId!);
-        } else {
-            cstate.pendingStreams.delete(this);
-        }
+
+        cstate.streams.delete(this.streamId!);
+        cstate.pendingStreams.delete(this);
+
 
         // Adjust the write queue size for accounting
         cstate.writeQueueSize -= this.state.writeQueueSize;
         this.state.writeQueueSize = 0;
-        this.handle = undefined;
         this.connection.mayBeDestroy();
         callback(error);
     }
@@ -401,21 +396,11 @@ export abstract class TransportStream extends Duplex implements Closeable {
     }
 
     protected shutdownWritable(callback: (error?: Error) => void) {
-        const handle = this.handle;
-        if (!handle) return callback();
         const state = this.state;
         if (state.shutdownWritableCalled) {
             return callback();
         }
         state.shutdownWritableCalled = true;
-
-        // const req = new ShutdownWrap();
-        // req.oncomplete = afterShutdown;
-        // req.callback = callback;
-        // req.handle = handle;
-        // const err = handle.shutdown(req);
-        // if (err === 1)  // synchronous finish
-        //     return ReflectApply(afterShutdown, req, [0]);
     }
 
     protected streamOnResume() {
@@ -466,7 +451,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
         return super.addListener(event, listener);
     }
 
-    emit(event: 'ready',  streamId: number): boolean;
+    emit(event: 'ready', streamId: number): boolean;
     emit(event: 'aborted'): boolean;
     emit(event: 'close'): boolean;
     emit(event: 'data', chunk: Buffer | string): boolean;

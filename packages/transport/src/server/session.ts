@@ -8,28 +8,33 @@ import { ServerStream } from './stream';
 
 
 export class ServerSession extends Connection {
+    private sid = 0;
     constructor(stream: Duplex, packet: PacketProtocol, opts: ConnectionOpts = EMPTY_OBJ) {
         super(stream, packet, opts);
 
         this.stream.on(ev.CONNECT, () => this.emit(ev.CONNECT, this));
-        this._parser.on(ev.DATA, (chunk) => {
-            if (this.packet.isHeader(chunk)) {
-                const packet = this.packet.parseHeader(chunk);
-                const id =  packet.id ?? this.getNextId();
-                if (id) {
-                    let stream = this.state.streams.get(id);
-                    if (!stream) {
-                        stream = new ServerStream(this, id, {}, packet.headers as OutgoingHeaders);
-                        this.state.streams.set(id, stream);
-                    }
-                    this.emit(ev.STREAM, stream, packet.headers)
-                }
-            }
-        })
+        // this._parser.on(ev.DATA, (chunk) => {
+        //     if (this.packet.isHeader(chunk)) {
+        //         const packet = this.packet.parseHeader(chunk);
+        //         const id =  packet.id
+        //         if (id) {
+        //             let stream = this.state.streams.get(id);
+        //             if (!stream) {
+        //                 stream = new ServerStream(this, id, {}, packet.headers as OutgoingHeaders);
+        //                 this.state.streams.set(id, stream);
+        //             }
+        //             this.emit(ev.STREAM, stream, packet.headers)
+        //         }
+        //     }
+        // })
     }
 
-    getNextId(): number {
-        return this.packet.getNextStreamId()
+    getNextStreamId(id?: number) {
+        if (id) {
+            this.sid = id + 1;
+            return this.sid;
+        }
+        return this.sid += 2;
     }
 
     addListener(event: 'connect', listener: (session: ServerSession, socket: Duplex) => void): this;

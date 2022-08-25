@@ -81,10 +81,6 @@ export class TcpProtocol extends PacketProtocol {
         return protocol === this.protocol;
     }
 
-    getNextStreamId(): number {
-        return Math.max(1, Math.floor(Math.random() * 65535))
-    }
-
     valid(header: string): boolean {
         return true;
     }

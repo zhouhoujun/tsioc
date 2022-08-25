@@ -34,6 +34,7 @@ export interface ClientSessionOpts extends ConnectionOpts {
  */
 export class ClientSession extends Connection {
 
+    private sid = 1;
     readonly authority: string;
     readonly clientId: string;
     constructor(duplex: Duplex, packet: PacketProtocol, opts: ClientSessionOpts = EMPTY_OBJ, private builder: ClientBuilder) {
@@ -41,6 +42,15 @@ export class ClientSession extends Connection {
         this.authority = opts.authority ?? '';
         this.clientId = opts.clientId ?? '';
     }
+
+    getNextStreamId(id?: number) {
+        if (id) {
+            this.sid = id + 1;
+            return this.sid;
+        }
+        return this.sid += 2;
+    }
+
 
     request(headers: IncomingHeaders, options?: ClientRequsetOpts): ClientStream {
         if (this.destroyed) {

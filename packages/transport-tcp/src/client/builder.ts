@@ -8,11 +8,15 @@ import { IncomingHeaders } from '@tsdi/core';
 
 export class TcpClientBuilder extends ClientBuilder<TransportClient> {
     build(transport: TransportClient, opts: TcpClientOpts): Observable<ClientSession> {
-        const { logger, context }  = transport;
+        const { logger, context } = transport;
         const parser = context.get(opts.transport ?? TcpProtocol);
         return new Observable((observer: Observer<ClientSession>) => {
-            const socket =  (opts.connectOpts as tls.ConnectionOptions).cert?  tls.connect(opts.connectOpts as tls.ConnectionOptions) : net.connect(opts.connectOpts as net.NetConnectOpts);
+            const socket = (opts.connectOpts as tls.ConnectionOptions).cert ? tls.connect(opts.connectOpts as tls.ConnectionOptions) : net.connect(opts.connectOpts as net.NetConnectOpts);
             const client = new ClientSession(socket, parser, opts.connectionOpts, this);
+            if (opts.keepalive) {
+                socket.setKeepAlive(true, opts.keepalive);
+            }
+
             const onError = (err: Error) => {
                 logger.error(err);
                 observer.error(err);
@@ -37,11 +41,12 @@ export class TcpClientBuilder extends ClientBuilder<TransportClient> {
         });
     }
 
-    
+
     request(connection: ClientSession, headers: IncomingHeaders, options: any): ClientStream {
         const stream = new ClientStream(connection, undefined, headers, options);
-        
-        connection.write(headers);
+        const id = connection.getNextStreamId();
+        stream.emit(ev.READY, id);
+        stream.write({ headers });
         return stream;
     }
 

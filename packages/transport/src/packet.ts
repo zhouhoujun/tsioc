@@ -12,7 +12,6 @@ export interface ConnectPacket {
 
 @Abstract()
 export abstract class PacketProtocol extends TransportProtocol {
-    abstract getNextStreamId(): number;
     abstract hasPlayload(headers: IncomingHeaders | OutgoingHeaders): boolean;
     abstract valid(header: string): boolean;
     abstract isHeader(chunk: Buffer): boolean;
