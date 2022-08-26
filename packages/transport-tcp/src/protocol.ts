@@ -84,6 +84,7 @@ export class TcpProtocol extends PacketProtocol {
     valid(header: string): boolean {
         return true;
     }
+
     transform(opts: ConnectionOpts): Transform {
         return new DelimiterTransform(opts);
     }
@@ -142,15 +143,18 @@ export class DelimiterTransform extends Transform {
 }
 
 const maxSize = 10 * 1024 * 1024;
+const empty = Buffer.allocUnsafe(0);
 
 export class TcpGeneratorStream extends Transform {
 
     private delimiter: Buffer;
     private maxSize: number;
+    private packet: Buffer;
     constructor(private opts: ConnectionOpts) {
         super(opts);
         this.delimiter = Buffer.from(opts.delimiter!);
         this.maxSize = opts.maxSize || maxSize;
+        this.packet = empty;
     }
 
     override _transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {

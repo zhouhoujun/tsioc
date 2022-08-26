@@ -1,4 +1,4 @@
-import { Abstract, Execption, isFunction } from '@tsdi/ioc';
+import { Abstract, Execption, isFunction, isString } from '@tsdi/ioc';
 import { IncomingHeaders, OutgoingHeaders, TransportExecption } from '@tsdi/core';
 import { Buffer } from 'buffer';
 import { Duplex, DuplexOptions, Transform, Readable, TransformCallback } from 'stream';
@@ -92,7 +92,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
     protected isClient?: boolean;
     private _streamId?: Buffer;
     constructor(readonly connection: Connection, protected opts: SteamOptions) {
-        super({objectMode: true, ...opts});
+        super({ objectMode: true, ...opts });
         this.opts = opts;
         this.cork();
 
@@ -133,7 +133,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
         if (!this._streamId && this._id !== undefined) {
             this._streamId = Buffer.from(this._id.toString())
         }
-        return this.id;
+        return this._streamId;
     }
 
 
@@ -287,14 +287,28 @@ export abstract class TransportStream extends Duplex implements Closeable {
             this.shutdownWritable(endCheckCallback);
         });
 
+        chunk = this.attachStreamId(chunk, encoding);
         // let req: any;
-        // this.connection.write(this.streamId)
         if (writev)
             this.connection.write(chunk, writeCallback);
         else
             this.connection.write(chunk, encoding, writeCallback);
 
         // this.trackWriteState(req.bytes);
+    }
+
+    attachStreamId(chunk: any, encoding?: BufferEncoding) {
+        const streamId = this.streamId!;
+        if (isString(chunk)) {
+            const buffer = Buffer.from(chunk, encoding);
+            return Buffer.concat([streamId, buffer], streamId.length + buffer.length);
+        }
+        if (isBuffer(chunk)) {
+            return Buffer.concat([streamId, chunk], streamId.length + chunk.length);
+        }
+
+        chunk.streamId = streamId;
+        return chunk;
     }
 
 
@@ -328,7 +342,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
         }
         this.push(null);
 
-        cstate.streams.delete(this.streamId!);
+        this.id && cstate.streams.delete(this.id);
         cstate.pendingStreams.delete(this);
 
 
@@ -415,12 +429,11 @@ export abstract class TransportStream extends Duplex implements Closeable {
             this.resume();
     }
 
-    protected trackWriteState(bytes: number) {
-        const cstate = this.connection.state;
-        this.state.writeQueueSize += bytes;
-        cstate.writeQueueSize += bytes;
-
-    }
+    // protected trackWriteState(bytes: number) {
+    //     const cstate = this.connection.state;
+    //     this.state.writeQueueSize += bytes;
+    //     cstate.writeQueueSize += bytes;
+    // }
 
     protected _onTimeout() {
         if (this.destroyed) return;

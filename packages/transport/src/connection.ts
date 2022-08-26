@@ -102,14 +102,6 @@ export abstract class Connection extends Duplexify implements Closeable {
         return this.opts;
     }
 
-    protected readPipe(parser: Transform): Readable {
-        return parser;
-    }
-
-    protected writePipe(writable: Writable): Writable {
-        return writable;
-    }
-
     /**
      * Will be `true` if this `Connection` instance has been closed, otherwise`false`.
      */
@@ -172,14 +164,40 @@ export abstract class Connection extends Duplexify implements Closeable {
         return this;
     }
 
-    protected _onTimeout() {
-        if (this.destroyed) return;
-        this.emit(ev.TIMEOUT);
-    }
-
     _updateTimer() {
         if (this.destroyed) return;
         if (this._timeout && isFunction(this._timeout.refresh)) this._timeout.refresh()
+    }
+
+    mayBeDestroy(err?: Error) {
+        if (!err) {
+            if (this.isClosed || this.state.streams.size > 0 || this.state.pendingStreams.size > 0) return;
+        }
+        this.destroy(err);
+    }
+
+    override destroy(error?: Error | undefined): this {
+        if (this.stream.destroy) {
+            this.stream.destroy(error)
+        } else {
+            this.stream.end();
+        }
+        return super.destroy(error);
+    }
+
+
+    protected readPipe(parser: Transform): Readable {
+        return parser;
+    }
+
+    protected writePipe(writable: Writable): Writable {
+        return writable;
+    }
+
+
+    protected _onTimeout() {
+        if (this.destroyed) return;
+        this.emit(ev.TIMEOUT);
     }
 
     protected goaway(code = 0, lastStreamID = 0, opaqueData?: Buffer) {
@@ -197,12 +215,6 @@ export abstract class Connection extends Duplexify implements Closeable {
         goawayFn();
     }
 
-    mayBeDestroy(err?: Error) {
-        if (!err) {
-            if (this.isClosed || this.state.streams.size > 0 || this.state.pendingStreams.size > 0) return;
-        }
-        this.destroy(err);
-    }
 
     protected _addListener(event: string | symbol, listener: (...args: any[]) => void): this {
         return super.addListener(event, listener);

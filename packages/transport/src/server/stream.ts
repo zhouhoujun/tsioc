@@ -77,7 +77,7 @@ export class ServerStream extends TransportStream {
         if (this.pushAllowed) {
             throw new PushDisabledExecption();
         }
-        if (this.streamId! % 2 === 0) {
+        if (this.id! % 2 === 0) {
             throw new NestedPushExecption();
         }
 
