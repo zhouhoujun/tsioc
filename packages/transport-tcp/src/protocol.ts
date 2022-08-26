@@ -159,7 +159,7 @@ export class TcpGeneratorStream extends Transform {
 
     override _transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
         if (isBuffer(chunk)) {
-            callback(null,  chunk);
+            callback(null, chunk);
             return;
         }
         if (isString(chunk)) {
@@ -168,8 +168,44 @@ export class TcpGeneratorStream extends Transform {
         }
 
         try {
-            const str = JSON.stringify(chunk);
-            callback(null, Buffer.from(str, encoding));
+            const list = [];
+            let bytes = 0;
+            const { streamId, headers, payload } = chunk;
+            if (streamId) {
+                list.push(streamId);
+                bytes += Buffer.byteLength(streamId);
+            }
+            if (headers) {
+                const str = JSON.stringify(headers);
+                const buffer = Buffer.from(str, encoding);
+                list.push(buffer);
+                bytes += Buffer.byteLength(buffer);
+
+                list.push(this.delimiter);
+                bytes += this.delimiter.length;
+
+                callback(null, Buffer.concat(list, bytes));
+            } else if (payload) {
+                if (isString(payload)) {
+                    const buffer = Buffer.from(payload, encoding);
+                    list.push(buffer);
+                    bytes += Buffer.byteLength(buffer);
+                } else if (isBuffer(payload)) {
+                    list.push(payload);
+                    bytes += Buffer.byteLength(payload);
+                } else {
+                    const str = JSON.stringify(headers);
+                    const buffer = Buffer.from(str, encoding);
+                    list.push(buffer);
+                    bytes += Buffer.byteLength(buffer);
+
+                    list.push(this.delimiter);
+                    bytes += this.delimiter.length;
+                }
+
+                callback(null, Buffer.concat(list, bytes));
+            }
+
         } catch (err) {
             callback(err as Error, chunk);
         }
