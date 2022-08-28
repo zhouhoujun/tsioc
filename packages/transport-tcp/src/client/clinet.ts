@@ -16,7 +16,6 @@ export const TCP_CLIENT_OPTS = {
     interceptorsToken: TCP_INTERCEPTORS,
     execptionsToken: TCP_EXECPTIONFILTERS,
     connectionOpts: {
-        encoding: 'utf8',
         delimiter: '\r\n',
         maxSize: 10 * 1024 * 1024,
     },

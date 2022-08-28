@@ -13,7 +13,6 @@ import { ClientBuilder } from './builder';
 
 
 const tsptDeftOpts = {
-    encoding: 'utf8',
     backend: TransportBackend,
     interceptorsToken: CLIENT_INTERCEPTORS,
     execptionsToken: CLIENT_EXECPTIONFILTERS

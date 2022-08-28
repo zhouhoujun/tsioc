@@ -44,22 +44,13 @@ export class TcpServerBuilder extends ServerBuilder<net.Server | tls.Server, Tra
         })
     }
 
-    private id = 0;
-    getNextId(id?: number): number {
-        if (id) {
-            this.id = id + 1;
-            return this.id;
-        }
-        return this.id += 2;
-    }
-
     protected raiseStream(connection: Connection): void {
         const parser = connection.packet;
         connection.on(ev.DATA, (chunk) => {
 
             if (parser.isHeader(chunk)) {
                 const packet = parser.parseHeader(chunk);
-                const id = this.getNextId(packet.id);
+                const id = connection.getNextStreamId(packet.streamId);
                 let stream = connection.state.streams.get(id);
                 if (!stream) {
                     stream = new ServerStream(connection, id, {}, packet.headers as OutgoingHeaders);

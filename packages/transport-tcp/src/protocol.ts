@@ -89,12 +89,12 @@ export class TcpProtocol extends PacketProtocol {
         return new DelimiterTransform(opts);
     }
     generate(stream: Duplex, opts: ConnectionOpts): Writable {
-        return new TcpGeneratorStream(opts);
+        return new TcpGeneratorStream(stream, opts);
     }
-    isHeader(chunk: Buffer): boolean {
+    isHeader(chunk: any): boolean {
         throw new Error('Method not implemented.');
     }
-    parseHeader(chunk: Buffer): Packet<any> {
+    parseHeader(chunk: any): Packet<any> {
         throw new Error('Method not implemented.');
     }
 
@@ -102,10 +102,10 @@ export class TcpProtocol extends PacketProtocol {
         const len = headers[hdr.CONTENT_LENGTH];
         return len ? (~~len) > 0 : false;
     }
-    isPlayload(chunk: Buffer, streamId: Buffer): boolean {
+    isPlayload(chunk: any, streamId: Buffer): boolean {
         return chunk.indexOf(streamId) === 0;
     }
-    parsePlayload(chunk: Buffer, streamId: Buffer): any {
+    parsePlayload(chunk: any, streamId: Buffer): any {
         return chunk.slice(streamId.length);
     }
 
@@ -150,11 +150,14 @@ export class TcpGeneratorStream extends Transform {
     private delimiter: Buffer;
     private maxSize: number;
     private packet: Buffer;
-    constructor(private opts: ConnectionOpts) {
+    constructor(private output: Writable, private opts: ConnectionOpts) {
         super(opts);
         this.delimiter = Buffer.from(opts.delimiter!);
         this.maxSize = opts.maxSize || maxSize;
         this.packet = empty;
+        process.nextTick(()=> {
+            this.pipe(output);
+        })
     }
 
     override _transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {

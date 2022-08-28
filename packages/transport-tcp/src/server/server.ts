@@ -32,7 +32,6 @@ export const TCP_SERVER_OPTS = {
         root: 'public'
     },
     connectionOpts: {
-        encoding: 'utf8',
         delimiter: '\r\n',
         maxSize: 10 * 1024 * 1024,
     },

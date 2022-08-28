@@ -155,7 +155,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
     }
 
     get pending(): boolean {
-        return this.streamId === undefined;
+        return this.id === undefined;
     }
 
     /**
@@ -183,7 +183,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
     }
 
     init(id: number) {
-        if(this.id !== undefined) return;
+        if (this.id !== undefined) return;
         const { state, connection } = this;
         state.flags |= StreamStateFlags.ready;
 
@@ -229,9 +229,9 @@ export abstract class TransportStream extends Duplex implements Closeable {
         }
 
         if (!this.pending) {
-            this.streamOnResume();
+            this.streamOnResume(size);
         } else {
-            this.once(ev.READY, () => this.streamOnResume())
+            this.once(ev.READY, () => this.streamOnResume(size))
         }
     }
 
@@ -423,9 +423,10 @@ export abstract class TransportStream extends Duplex implements Closeable {
         state.shutdownWritableCalled = true;
     }
 
-    protected streamOnResume() {
-        if (!this.destroyed)
+    protected streamOnResume(size?: number) {
+        if (!this.destroyed) {
             this.resume();
+        }
     }
 
     // protected trackWriteState(bytes: number) {
