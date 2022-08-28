@@ -26,17 +26,17 @@ const tsptDeftOpts = {
 @Injectable()
 export class TransportClient extends Client<TransportRequest, TransportEvent, TransportClientOpts> implements OnDispose {
 
-    private _session?: ClientSession;
+    private _connection?: ClientSession;
     constructor(@Nullable() options: TransportClientOpts) {
         super(options);
     }
 
-    get session(): ClientSession {
-        return this._session ?? null!;
+    get connection(): ClientSession {
+        return this._connection ?? null!;
     }
 
     async close(): Promise<void> {
-        await this._session?.close();
+        await this._connection?.close();
     }
 
     async onDispose(): Promise<void> {
@@ -65,19 +65,19 @@ export class TransportClient extends Client<TransportRequest, TransportEvent, Tr
 
 
     protected buildRequest(context: RequestContext, url: string | TransportRequest<any>, options?: RequstOption | undefined): TransportRequest<any> {
-        context.setValue(ClientSession, this.session);
+        context.setValue(ClientSession, this.connection);
         return isString(url) ? new TransportRequest({ ...options, url }) : url
     }
 
     protected connect(): Observable<ClientSession> {
-        if (this._session && !this._session.destroyed && !this._session.isClosed) {
-            return of(this._session);
+        if (this._connection && !this._connection.destroyed && !this._connection.isClosed) {
+            return of(this._connection);
         }
         const opts = this.getOptions();
         return this.context.get(opts.builder ?? ClientBuilder).build(this, opts)
             .pipe(
                 map(stream => {
-                    this._session = stream;
+                    this._connection = stream;
                     return stream;
                 })
             );

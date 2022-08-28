@@ -116,12 +116,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
         this.connection.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
         this.once(ev.READY, (id) => {
             this.init(id);
-            const steam = new BodyTransform(this.connection.packet, this.isClient ? id + 1 : id - 1);
-            process.nextTick(() => {
-                this.connection
-                    .pipe(steam)
-                    .pipe(this);
-            });
+
         });
     }
 
@@ -199,6 +194,12 @@ export abstract class TransportStream extends Duplex implements Closeable {
         connection.state.streams.set(id, this);
 
         this._id = id;
+        const steam = new BodyTransform(this.connection.packet, this.isClient ? id + 1 : id - 1);
+        process.nextTick(() => {
+            this.connection
+                .pipe(steam)
+                .pipe(this);
+        });
         this.uncork();
     }
 
