@@ -20,7 +20,7 @@ export class ClientStream extends TransportStream {
                 this.emit(ev.CONTINUE);
         })
         if (id !== undefined) {
-            this.emit(ev.READY, id);
+            this.init(id);
         }
     }
 

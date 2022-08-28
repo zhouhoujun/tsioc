@@ -97,16 +97,16 @@ export class TcpProtocol extends PacketProtocol {
     parseHeader(chunk: Buffer): Packet<any> {
         throw new Error('Method not implemented.');
     }
-    isBody(chunk: Buffer, streamId: Buffer): boolean {
-        return chunk.indexOf(streamId) === 0;
-    }
-    parseBody(chunk: Buffer, streamId: Buffer): any {
-        return chunk.slice(streamId.length);
-    }
 
     hasPlayload(headers: IncomingHeaders | OutgoingHeaders): boolean {
         const len = headers[hdr.CONTENT_LENGTH];
         return len ? (~~len) > 0 : false;
+    }
+    isPlayload(chunk: Buffer, streamId: Buffer): boolean {
+        return chunk.indexOf(streamId) === 0;
+    }
+    parsePlayload(chunk: Buffer, streamId: Buffer): any {
+        return chunk.slice(streamId.length);
     }
 
 }

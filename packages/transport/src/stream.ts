@@ -114,10 +114,6 @@ export abstract class TransportStream extends Duplex implements Closeable {
 
         this.connection.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
         this.connection.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
-        this.once(ev.READY, (id) => {
-            this.init(id);
-
-        });
     }
 
     get id() {
@@ -186,21 +182,23 @@ export abstract class TransportStream extends Duplex implements Closeable {
         return this.state.rstCode;
     }
 
-    protected init(id: number) {
+    init(id: number) {
+        if(this.id !== undefined) return;
         const { state, connection } = this;
         state.flags |= StreamStateFlags.ready;
 
         connection.state.pendingStreams.delete(this);
         connection.state.streams.set(id, this);
-
         this._id = id;
+
+        this.uncork();
         const steam = new BodyTransform(this.connection.packet, this.isClient ? id + 1 : id - 1);
         process.nextTick(() => {
             this.connection
                 .pipe(steam)
                 .pipe(this);
         });
-        this.uncork();
+        this.emit(ev.READY)
     }
 
 
@@ -446,7 +444,6 @@ export abstract class TransportStream extends Duplex implements Closeable {
         if (this._timeout && isFunction(this._timeout.refresh)) this._timeout.refresh()
     }
 
-    addListener(event: 'ready', listener: (streamId: number) => void): this;
     addListener(event: 'aborted', listener: () => void): this;
     addListener(event: 'close', listener: () => void): this;
     addListener(event: 'data', listener: (chunk: Buffer | string) => void): this;
@@ -472,7 +469,6 @@ export abstract class TransportStream extends Duplex implements Closeable {
         return super.addListener(event, listener);
     }
 
-    emit(event: 'ready', streamId: number): boolean;
     emit(event: 'aborted'): boolean;
     emit(event: 'close'): boolean;
     emit(event: 'data', chunk: Buffer | string): boolean;
@@ -498,7 +494,6 @@ export abstract class TransportStream extends Duplex implements Closeable {
         return super.emit(event, ...args);
     }
 
-    on(event: 'ready', listener: (streamId: number) => void): this;
     on(event: 'aborted', listener: () => void): this;
     on(event: 'close', listener: () => void): this;
     on(event: 'data', listener: (chunk: Buffer) => void): this;
@@ -524,8 +519,6 @@ export abstract class TransportStream extends Duplex implements Closeable {
         return super.on(event, listener);
     }
 
-
-    once(event: 'ready', listener: (streamId: number) => void): this;
     once(event: 'aborted', listener: () => void): this;
     once(event: 'close', listener: () => void): this;
     once(event: 'data', listener: (chunk: Buffer | string) => void): this;
@@ -551,7 +544,6 @@ export abstract class TransportStream extends Duplex implements Closeable {
         return super.once(event, listener);
     }
 
-    prependListener(event: 'ready', listener: (streamId: number) => void): this;
     prependListener(event: 'aborted', listener: () => void): this;
     prependListener(event: 'close', listener: () => void): this;
     prependListener(event: 'data', listener: (chunk: Buffer | string) => void): this;
@@ -577,7 +569,6 @@ export abstract class TransportStream extends Duplex implements Closeable {
         return super.prependListener(event, listener);
     }
 
-    prependOnceListener(event: 'ready', listener: (streamId: number) => void): this;
     prependOnceListener(event: 'aborted', listener: () => void): this;
     prependOnceListener(event: 'close', listener: () => void): this;
     prependOnceListener(event: 'data', listener: (chunk: Buffer | string) => void): this;
@@ -609,13 +600,13 @@ export class BodyTransform extends Transform {
 
     private streamId: Buffer;
     constructor(private packet: PacketProtocol, id: number) {
-        super();
+        super({ objectMode: true });
         this.streamId = Buffer.from(id.toString());
     }
 
     override _transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
-        if (isBuffer(chunk) && this.packet.isBody(chunk, this.streamId)) {
-            callback(null, this.packet.parseBody(chunk, this.streamId));
+        if (isBuffer(chunk) && this.packet.isPlayload(chunk, this.streamId)) {
+            callback(null, this.packet.parsePlayload(chunk, this.streamId));
         }
     }
 }

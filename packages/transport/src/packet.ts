@@ -12,12 +12,12 @@ export interface ConnectPacket {
 
 @Abstract()
 export abstract class PacketProtocol extends TransportProtocol {
-    abstract hasPlayload(headers: IncomingHeaders | OutgoingHeaders): boolean;
     abstract valid(header: string): boolean;
     abstract isHeader(chunk: Buffer): boolean;
     abstract parseHeader(chunk: Buffer): Packet;
-    abstract isBody(chunk: Buffer, streamId: Buffer): boolean;
-    abstract parseBody(chunk: Buffer, streamId: Buffer): any;
+    abstract hasPlayload(headers: IncomingHeaders | OutgoingHeaders): boolean;
+    abstract isPlayload(chunk: Buffer, streamId: Buffer): boolean;
+    abstract parsePlayload(chunk: Buffer, streamId: Buffer): any;
     abstract transform(opts: ConnectionOpts): Transform;
     abstract generate(stream: Duplex, opts: ConnectionOpts): Writable;
 }

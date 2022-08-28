@@ -16,7 +16,7 @@ export class ServerStream extends TransportStream {
         super(connection, opts)
         this.authority = this.getAuthority(headers);
         if (id != undefined) {
-            this.emit(ev.READY, id);
+            this.init(id);
         }
     }
 

@@ -43,9 +43,8 @@ export class TcpClientBuilder extends ClientBuilder<TransportClient> {
 
 
     request(connection: ClientSession, headers: IncomingHeaders, options: any): ClientStream {
-        const stream = new ClientStream(connection, undefined, headers, options);
         const id = connection.getNextStreamId();
-        stream.emit(ev.READY, id);
+        const stream = new ClientStream(connection, id, headers, options);
         stream.write({ headers });
         return stream;
     }
