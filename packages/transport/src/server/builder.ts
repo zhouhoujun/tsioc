@@ -26,7 +26,6 @@ export abstract class ServerBuilder<T = any, TS extends TransportServer = Transp
         const sub = this.connect(server, parser, opts.connectionOpts)
             .subscribe({
                 next: (conn) => {
-                    this.raiseStream(conn);
                     conn.on(ev.STREAM, (stream: ServerStream, headers: IncomingHeaders) => {
                         const ctx = this.buildContext(transport, stream, headers);
                         this.handle(ctx, transport.endpoint());
@@ -63,8 +62,6 @@ export abstract class ServerBuilder<T = any, TS extends TransportServer = Transp
     }
 
     protected abstract connect(server: T, parser: PacketProtocol, opts?: any): Observable<Connection>;
-
-    protected abstract raiseStream(connection: Connection): void;
     /**
      * 
      * handle request.

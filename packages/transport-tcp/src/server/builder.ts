@@ -44,23 +44,6 @@ export class TcpServerBuilder extends ServerBuilder<net.Server | tls.Server, Tra
         })
     }
 
-    protected raiseStream(connection: Connection): void {
-        const parser = connection.packet;
-        connection.on(ev.DATA, (chunk) => {
-
-            if (parser.isHeader(chunk)) {
-                const packet = parser.parseHeader(chunk);
-                const id = connection.getNextStreamId(packet.streamId);
-                let stream = connection.state.streams.get(id);
-                if (!stream) {
-                    stream = new ServerStream(connection, id, {}, packet.headers as OutgoingHeaders);
-                    connection.state.streams.set(id, stream);
-                    connection.emit(ev.STREAM, stream, packet.headers)
-                }
-            }
-        })
-    }
-
     protected handle(ctx: TransportContext, endpoint: Endpoint<any, any>): void {
         const req = ctx.request;
         const cancel = endpoint.handle(req, ctx)

@@ -91,11 +91,15 @@ export class TcpProtocol extends PacketProtocol {
     generate(stream: Duplex, opts: ConnectionOpts): Writable {
         return new TcpGeneratorStream(stream, opts);
     }
-    isHeader(chunk: any): boolean {
-        throw new Error('Method not implemented.');
+    isHeader(chunk: string | Buffer): boolean {
+        if(isString(chunk)) {
+            return (parseInt(chunk[0]) & 1) === 0
+        }
+        return (chunk[0] & 1) == 0;
     }
-    parseHeader(chunk: any): Packet<any> {
-        throw new Error('Method not implemented.');
+    parseHeader(chunk: string | Buffer): Packet<any> {
+        const hstr = isString(chunk)? chunk.slice(1) :chunk.slice(1).toString();
+        return JSON.parse(hstr);
     }
 
     hasPlayload(headers: IncomingHeaders | OutgoingHeaders): boolean {
@@ -130,8 +134,11 @@ export class DelimiterTransform extends Transform {
                 this.bytes = 0;
                 return;
             }
-            const pkg = this.buffer.slice(0, idx);
-            if (pkg) {
+            const pkgbuff = this.buffer.slice(0, idx);
+            if (pkgbuff) {
+                const pkg ={
+                    id: pkgbuff.readUInt16BE(2),
+                };
                 callback(null, pkg);
             }
             if (idx < this.buffer.length - 1) {
@@ -155,7 +162,7 @@ export class TcpGeneratorStream extends Transform {
         this.delimiter = Buffer.from(opts.delimiter!);
         this.maxSize = opts.maxSize || maxSize;
         this.packet = empty;
-        process.nextTick(()=> {
+        process.nextTick(() => {
             this.pipe(output);
         })
     }

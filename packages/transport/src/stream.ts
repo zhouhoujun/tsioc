@@ -122,7 +122,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
 
     get streamId() {
         if (!this._streamId && this._id !== undefined) {
-            this._streamId = Buffer.from(this._id.toString())
+            this._streamId = Buffer.of(this._id)
         }
         return this._streamId;
     }
@@ -306,7 +306,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
             return Buffer.concat([streamId, chunk], streamId.length + chunk.length);
         }
 
-        chunk.streamId = streamId;
+        chunk.id = this.id;
         return chunk;
     }
 

@@ -64,7 +64,6 @@ export interface Packet<T = any> {
      * packet id.
      */
     readonly id?: number;
-    readonly streamId?: number;
     /**
      * headers
      */

@@ -13,20 +13,20 @@ export class ServerSession extends Connection {
         super(stream, packet, opts);
 
         this.stream.on(ev.CONNECT, () => this.emit(ev.CONNECT, this));
-        // this._parser.on(ev.DATA, (chunk) => {
-        //     if (this.packet.isHeader(chunk)) {
-        //         const packet = this.packet.parseHeader(chunk);
-        //         const id =  packet.id
-        //         if (id) {
-        //             let stream = this.state.streams.get(id);
-        //             if (!stream) {
-        //                 stream = new ServerStream(this, id, {}, packet.headers as OutgoingHeaders);
-        //                 this.state.streams.set(id, stream);
-        //             }
-        //             this.emit(ev.STREAM, stream, packet.headers)
-        //         }
-        //     }
-        // })
+        this._parser.on(ev.DATA, (chunk) => {
+            if (this.packet.isHeader(chunk)) {
+                const packet = this.packet.parseHeader(chunk);
+                const id = this.getNextStreamId(packet.id);
+                if (id) {
+                    let rstm = this.state.streams.get(id);
+                    if (!rstm) {
+                        rstm = new ServerStream(this, id, {}, packet.headers as OutgoingHeaders);
+                        this.state.streams.set(id, rstm);
+                        this.emit(ev.STREAM, rstm, packet.headers)
+                    }
+                }
+            }
+        })
     }
 
     getNextStreamId(id?: number) {

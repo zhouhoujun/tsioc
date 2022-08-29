@@ -23,7 +23,7 @@ const tsptDeftOpts = {
  * Transport Client.
  */
 @Injectable()
-export class TransportClient extends Client<TransportRequest, TransportEvent, TransportClientOpts> implements OnDispose {
+export class TransportClient<ReqOpts = any> extends Client<TransportRequest, TransportEvent, TransportClientOpts, ReqOpts> implements OnDispose {
 
     private _connection?: ClientSession;
     constructor(@Nullable() options: TransportClientOpts) {
@@ -63,7 +63,7 @@ export class TransportClient extends Client<TransportRequest, TransportEvent, Tr
     }
 
 
-    protected buildRequest(context: RequestContext, url: string | TransportRequest<any>, options?: RequstOption | undefined): TransportRequest<any> {
+    protected buildRequest(context: RequestContext, url: string | TransportRequest<any>, options?: ReqOpts | undefined): TransportRequest<any> {
         context.setValue(ClientSession, this.connection);
         return isString(url) ? new TransportRequest({ ...options, url }) : url
     }
