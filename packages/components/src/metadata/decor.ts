@@ -550,7 +550,7 @@ export abstract class Query { }
 
 function isDirOrComponent(target: any) {
     const anTy = refl.get<AnnotationReflect>(getClass(target))?.annoType;
-    return anTy === 'component' || anTy === 'decorator';
+    return anTy === 'component' || anTy === 'directive';
 }
 
 /**

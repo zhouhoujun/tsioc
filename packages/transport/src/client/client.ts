@@ -23,7 +23,7 @@ const tsptDeftOpts = {
  * Transport Client.
  */
 @Injectable()
-export class TransportClient<ReqOpts = any> extends Client<TransportRequest, TransportEvent, TransportClientOpts, ReqOpts> implements OnDispose {
+export class TransportClient<ReqOpts = RequstOption> extends Client<TransportRequest, TransportEvent, TransportClientOpts, ReqOpts> implements OnDispose {
 
     private _connection?: ClientSession;
     constructor(@Nullable() options: TransportClientOpts) {

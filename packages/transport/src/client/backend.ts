@@ -141,7 +141,7 @@ export class TransportBackend implements EndpointBackend<TransportRequest, Trans
                                 }
                             });
 
-                            raw.once('end', defer.resolve);
+                            raw.once(ev.END, defer.resolve);
 
                             await defer.promise;
 

@@ -60,7 +60,7 @@ export interface AfterContentInit {
  * completed checking all content of a directive.
  *
  * @see `AfterViewChecked`
- * @see [Lifecycle hooks guide](guide/lifecycle-hooks)
+ * @see Lifecycle hooks guide](guide/lifecycle-hooks)
  *
  * @usageNotes
  * The following snippet shows how a component can implement this interface to

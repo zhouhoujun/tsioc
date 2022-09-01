@@ -1,4 +1,4 @@
-import { ClientRequsetPacket, IncomingHeaders, isArrayBuffer, isBlob, isUrlSearchParams, mths, ReqHeaders, ReqHeadersLike } from '@tsdi/core';
+import { ClientRequsetPacket, IncomingHeaders, isArrayBuffer, isBlob, isUrlSearchParams, ReqHeaders, ReqHeadersLike } from '@tsdi/core';
 import { isString, type_bool, type_num, type_obj } from '@tsdi/ioc';
 import { Stream } from 'stream';
 import { isBuffer, isStream, isFormDataLike } from '../utils';
@@ -9,23 +9,34 @@ import { isBuffer, isStream, isFormDataLike } from '../utils';
 export class TransportRequest<T = any> implements ClientRequsetPacket<T> {
 
     public url: string;
-    public method: string;
+    public method: string | undefined;
+    public cmd: string | undefined;
     public params: IncomingHeaders;
     public body: T | null;
     readonly headers: ReqHeaders;
 
     constructor(option: {
         url: string;
-        headers?: ReqHeadersLike;
-        params?: IncomingHeaders;
+        cmd?: string;
         method?: string;
+        headers?: ReqHeadersLike;
+        /**
+         * alise name of headers
+         */
+        options?: ReqHeadersLike;
+        params?: IncomingHeaders;
         body?: T;
+        /**
+         * alise name of body.
+         */
+        playload?: T;
     }) {
         this.url = option.url;
-        this.method = option.method ?? mths.MESSAGE;
+        this.cmd = option.cmd;
+        this.method = option.method;
         this.params = option.params ?? {};
-        this.body = option.body ?? null;
-        this.headers = new ReqHeaders(option.headers);
+        this.body = option.body ?? option.playload ?? null;
+        this.headers = new ReqHeaders(option.headers ?? option.options);
     }
 
     /**

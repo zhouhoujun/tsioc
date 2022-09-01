@@ -25,7 +25,7 @@ export abstract class Client<
     TRequest = any,
     TResponse = any,
     Opts extends ClientOpts<TRequest, TResponse> = any,
-    ReqOpts = any>
+    ReqOpts = RequstOption>
     extends TransportEndpoint<TRequest, TResponse, Opts> implements OnDispose {
 
     async onDispose(): Promise<void> {
@@ -394,7 +394,9 @@ export abstract class Client<
 export interface RequstOption {
     method?: RequestMethod;
     body?: any;
+    playload?: any;
     headers?: Record<string, any>;
+    options?: Record<string, any>;
     context?: InvocationContext;
     params?: Record<string, any>;
 }

@@ -7,7 +7,7 @@ import { ComponentDef, DirectiveDef } from './type';
 /**
  * annotation type.
  */
- export type AnnotationTypes = 'module' | 'component' | 'decorator' | 'directive' | 'pipe' | 'boot' | 'suite' | 'activity' | 'workflow';
+ export type AnnotationTypes = 'component' | 'directive';
 
  /**
   * AnnotationReflect

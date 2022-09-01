@@ -1,8 +1,8 @@
-import { ListenOpts, PacketParser, ServerBuilder, ServerSession, ServerStream, TransportContext, TransportServer, TransportServerOpts } from '@tsdi/transport';
+import { Server, ConnectionContext, IncomingHeaders, Endpoint, ListenOpts } from '@tsdi/core';
+import { InvocationContext } from '@tsdi/ioc';
+import { Connection, PacketProtocol, ServerBuilder, ServerSession, ServerStream, TransportContext, TransportServer, TransportServerOpts } from '@tsdi/transport';
 import { Duplex, DuplexOptions } from 'stream';
 import { writeToStream } from 'mqtt-packet';
-import { Server, ConnectionContext, IncomingHeaders, Endpoint } from '@tsdi/core';
-import { InvocationContext } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { MqttServerOpts } from './server';
 
@@ -19,24 +19,20 @@ import { MqttServerOpts } from './server';
 
 
 export class MqttServeBuilder extends ServerBuilder<TransportServer> {
-    buildServer(opts: MqttServerOpts): Promise<any> {
+    protected buildServer(opts: TransportServerOpts<any>): Promise<TransportServer> {
         throw new Error('Method not implemented.');
     }
-    listen(server: any, opts: ListenOpts): Promise<void> {
+    protected listen(server: TransportServer, opts: ListenOpts): Promise<void> {
         throw new Error('Method not implemented.');
     }
-    getParser(context: InvocationContext<any>, opts: MqttServerOpts): PacketParser {
+    protected getParser(context: InvocationContext<any>, opts: TransportServerOpts<any>): PacketProtocol {
         throw new Error('Method not implemented.');
     }
-    buildContext(server: TransportServer, stream: ServerStream, headers: IncomingHeaders): TransportContext {
+    protected connect(server: TransportServer, parser: PacketProtocol, opts?: any): Observable<Connection> {
         throw new Error('Method not implemented.');
     }
-    connect(server: any, parser: PacketParser, opts?: any): Observable<ServerSession> {
+    protected handle(context: TransportContext, endpoint: Endpoint<any, any>): void {
         throw new Error('Method not implemented.');
     }
-    handle(context: TransportContext, endpoint: Endpoint<any, any>): void {
-        throw new Error('Method not implemented.');
-    }
-
 
 }
