@@ -7,8 +7,6 @@ import { CoapProtocol } from './protocol';
 import { CoapServerBuilder } from './server/builder';
 import { CoapServer, CoapServerOpts } from './server/server';
 import { CoapStatus } from './status';
-import { TcpCoapPacketParser } from './tcp';
-import { UdpCoapPacketParser } from './udp';
 
 @Module({
     imports: [
@@ -17,8 +15,7 @@ import { UdpCoapPacketParser } from './udp';
         TransportModule
     ],
     providers: [
-        TcpCoapPacketParser,
-        UdpCoapPacketParser,
+        CoapProtocol,
         CoapServerBuilder,
         CoapClientBuilder,
         CoapStatus,

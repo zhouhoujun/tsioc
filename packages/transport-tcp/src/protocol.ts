@@ -92,13 +92,13 @@ export class TcpProtocol extends PacketProtocol {
         return new TcpGeneratorStream(stream, opts);
     }
     isHeader(chunk: string | Buffer): boolean {
-        if(isString(chunk)) {
+        if (isString(chunk)) {
             return (parseInt(chunk[0]) & 1) === 0
         }
         return (chunk[0] & 1) == 0;
     }
     parseHeader(chunk: string | Buffer): Packet<any> {
-        const hstr = isString(chunk)? chunk.slice(1) :chunk.slice(1).toString();
+        const hstr = isString(chunk) ? chunk.slice(1) : chunk.slice(1).toString();
         return JSON.parse(hstr);
     }
 
@@ -136,7 +136,7 @@ export class DelimiterTransform extends Transform {
             }
             const pkgbuff = this.buffer.slice(0, idx);
             if (pkgbuff) {
-                const pkg ={
+                const pkg = {
                     id: pkgbuff.readUInt16BE(2),
                 };
                 callback(null, pkg);
@@ -180,12 +180,14 @@ export class TcpGeneratorStream extends Transform {
         try {
             const list = [];
             let bytes = 0;
+            let flag = 0;
             const { streamId, headers, payload } = chunk;
             if (streamId) {
                 list.push(streamId);
                 bytes += Buffer.byteLength(streamId);
             }
             if (headers) {
+                flag = 1;
                 const str = JSON.stringify(headers);
                 const buffer = Buffer.from(str, encoding);
                 list.push(buffer);
@@ -194,8 +196,10 @@ export class TcpGeneratorStream extends Transform {
                 list.push(this.delimiter);
                 bytes += this.delimiter.length;
 
-                callback(null, Buffer.concat(list, bytes));
-            } else if (payload) {
+            }
+
+            if (payload) {
+                flag &= 2;
                 if (isString(payload)) {
                     const buffer = Buffer.from(payload, encoding);
                     list.push(buffer);
@@ -215,6 +219,8 @@ export class TcpGeneratorStream extends Transform {
 
                 callback(null, Buffer.concat(list, bytes));
             }
+            list.unshift(flag);
+            callback(null, Buffer.concat(list, bytes));
 
         } catch (err) {
             callback(err as Error, chunk);

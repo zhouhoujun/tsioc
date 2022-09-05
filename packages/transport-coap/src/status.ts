@@ -19,6 +19,10 @@ export const CoapMethods = {
 
 @Injectable({ static: true })
 export class CoapStatus extends TransportStatus {
+    
+    isContinue(status: number): boolean {
+        throw new Error('Method not implemented.');
+    }
 
     parse(status?: string | number | undefined): number {
         return isString(status) ? (status ? parseFloat(status) : 0) : status ?? 0;

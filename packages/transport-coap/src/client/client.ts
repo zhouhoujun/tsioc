@@ -1,6 +1,7 @@
-import { ExecptionFilter, Interceptor } from '@tsdi/core';
+import { ExecptionFilter, Interceptor, RequestOption } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
 import { TransportClient, TransportClientOpts, TransportEvent, TransportRequest } from '@tsdi/transport';
+import { Packet } from 'coap-packet';
 import * as dgram from 'dgram';
 import * as net from 'net'
 
@@ -27,9 +28,6 @@ export const COAP_INTERCEPTORS = tokenId<Interceptor<TransportRequest, Transport
 export const COAP_EXECPTIONFILTERS = tokenId<ExecptionFilter[]>('COAP_EXECPTIONFILTERS');
 
 const defaults = {
-    json: true,
-    headerSplit: '#',
-    encoding: 'utf8',
     interceptorsToken: COAP_INTERCEPTORS,
     execptionsToken: COAP_EXECPTIONFILTERS,
     interceptors: [
@@ -49,7 +47,7 @@ const defaults = {
  * COAP Client.
  */
 @Injectable()
-export class CoapClient extends TransportClient {
+export class CoapClient extends TransportClient<Packet> {
 
     constructor(@Nullable() option: CoapClientOpts) {
         super(option);

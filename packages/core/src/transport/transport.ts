@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, Autorun, AutoWired, ClassType, EMPTY, InvocationContext, isClassType, lang, ProviderType, Token, Type, TypeOf } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, Autorun, AutoWired, ClassType, EMPTY, InvocationContext, isClass, isClassType, lang, ProviderType, Token, Type, TypeOf } from '@tsdi/ioc';
 import { Log, Logger } from '@tsdi/logs';
 import { ExecptionChain } from '../execptions/chain';
 import { ExecptionFilter } from '../execptions/filter';
@@ -190,7 +190,7 @@ export abstract class TransportEndpoint<
     protected multiReg<T>(provide: Token, types: (Type<T> | T)[]): void {
         const providers = types.map(m => {
             if (isClassType(m)) {
-                return { provide, useClass: m, multi: true }
+                return isClass(m) ? { provide, useClass: m, multi: true } : { provide, useExisting: m, multi: true };
             } else {
                 return { provide, useValue: m, multi: true }
             }
@@ -200,7 +200,8 @@ export abstract class TransportEndpoint<
 
     protected multiOrder<T>(provide: Token, target: Type<T> | T, multiOrder?: number) {
         if (isClassType(target)) {
-            this.context.injector.inject({ provide, useClass: target, multi: true, multiOrder })
+            const pdr = isClass(target) ? { provide, useClass: target, multi: true, multiOrder } : { provide, useExisting: target, multi: true, multiOrder }
+            this.context.injector.inject(pdr)
         } else {
             this.context.injector.inject({ provide, useValue: target, multi: true, multiOrder })
         }

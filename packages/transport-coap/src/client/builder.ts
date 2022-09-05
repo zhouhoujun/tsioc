@@ -4,20 +4,20 @@ import { Observable, Observer } from 'rxjs';
 import { Duplex } from 'stream';
 import * as dgram from 'dgram';
 import * as net from 'net'
-import { OutgoingHeaders } from '@tsdi/core';
+import { IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
 import { CoapClientOpts } from './client';
-import { UdpCoapPacketParser } from '../udp';
-import { TcpCoapPacketParser } from '../tcp';
+import { CoapProtocol } from '../protocol';
 
 
 @Injectable()
 export class CoapClientBuilder implements ClientBuilder<TransportClient> {
+
     build(transport: TransportClient, opts: CoapClientOpts): Observable<ClientSession> {
         const { context } = transport;
-        const parser = opts.baseOn === 'tcp' ? context.get(TcpCoapPacketParser) : context.get(UdpCoapPacketParser);
+        const parser = context.get(CoapProtocol);
         return new Observable((observer: Observer<ClientSession>) => {
             const socket = opts.baseOn === 'tcp' ? net.connect(opts.connectOpts as net.NetConnectOpts) : parseToDuplex(dgram.createSocket(opts.connectOpts as dgram.SocketOptions));
-            const client = new CoapClientSession(socket, parser, opts.connectionOpts);
+            const client = new ClientSession(socket, parser, opts.connectionOpts, this);
             const onError = (err: Error) => {
                 observer.error(err);
             }
@@ -42,34 +42,14 @@ export class CoapClientBuilder implements ClientBuilder<TransportClient> {
         });
     }
 
-}
-
-
-
-export class CoapClientSession extends ClientSession {
-
-    private smaps: Map<string, ClientStream>;
-
-    constructor(stream: Duplex, packet: PacketProtocol, ops?: ClientSessionOpts) {
-        super(stream, packet, ops)
-        this.smaps = new Map();
-    }
-
-    request(headers: OutgoingHeaders, options?: ClientRequsetOpts | undefined): ClientStream {
-        const id = this.packet.generateId();
-        const stream = new ClientStream(this, id);
-        this.emit(ev.STREAM, headers);
-        this.smaps.set(id, stream);
+        
+    request(connection: ClientSession, headers: IncomingHeaders, options: any): ClientStream {
+        const id = connection.getNextStreamId();
+        const stream = new ClientStream(connection, id, headers, options);
+        stream.write({ headers });
         return stream;
     }
 
-    close(): Promise<void> {
-        const defer = lang.defer<void>();
-        this.end(() => {
-            this.closed = true;
-            defer.resolve();
-        });
-        return defer.promise
-    }
 
 }
+

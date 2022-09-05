@@ -8,8 +8,7 @@ import { Observable } from 'rxjs';
 import * as net from 'net';
 import * as dgram from 'dgram';
 import { CoapServerOpts } from './server';
-import { TcpCoapPacketParser } from '../tcp';
-import { UdpCoapPacketParser } from '../udp';
+import { CoapProtocol } from '../protocol';
 
 @Injectable()
 export class CoapServerBuilder extends ServerBuilder<net.Server | dgram.Socket, TransportServer> {
@@ -30,7 +29,7 @@ export class CoapServerBuilder extends ServerBuilder<net.Server | dgram.Socket, 
 
 
     protected getParser(context: InvocationContext, opts: CoapServerOpts): PacketProtocol {
-        return opts.baseOn === 'tcp' ? context.get(TcpCoapPacketParser) : context.get(UdpCoapPacketParser);
+        return context.get(CoapProtocol)
     }
 
     protected connect(server: net.Server | dgram.Socket, parser: PacketProtocol, opts?: any): Observable<ServerSession> {
