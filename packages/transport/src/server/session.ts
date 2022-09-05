@@ -1,6 +1,7 @@
-import { IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
+import { CommandOption, IncomingHeaders, OutgoingHeaders, RestfulPacket } from '@tsdi/core';
 import { EMPTY_OBJ } from '@tsdi/ioc';
 import { Readable, Duplex, Transform } from 'stream';
+import { CommandOptions } from 'typeorm';
 import { Connection, ConnectionOpts } from '../connection';
 import { ev } from '../consts';
 import { PacketProtocol } from '../packet';
@@ -20,9 +21,10 @@ export class ServerSession extends Connection {
                 if (id) {
                     let rstm = this.state.streams.get(id);
                     if (!rstm) {
-                        rstm = new ServerStream(this, id, {}, packet.headers as OutgoingHeaders);
+                        const headers = packet.headers;
+                        rstm = new ServerStream(this, id, {}, headers);
                         this.state.streams.set(id, rstm);
-                        this.emit(ev.STREAM, rstm, packet.headers)
+                        this.emit(ev.STREAM, rstm, headers)
                     }
                 }
             }

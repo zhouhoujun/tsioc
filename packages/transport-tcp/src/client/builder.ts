@@ -1,12 +1,17 @@
-import { ClientBuilder, ClientSession, ClientStream, ev, TransportClient } from '@tsdi/transport';
+import { ClientBuilder, ClientSession, ClientStream, ev, TransportClient, TransportRequest } from '@tsdi/transport';
 import { Observable, Observer } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
 import { TcpClientOpts } from './options';
 import { TcpProtocol } from '../protocol';
-import { IncomingHeaders } from '@tsdi/core';
+import { IncomingHeaders, RequestOptions } from '@tsdi/core';
 
 export class TcpClientBuilder extends ClientBuilder<TransportClient> {
+
+    buildRequest(url: string, options?: RequestOptions | undefined) {
+        return new TransportRequest({ ...options, url });
+    }
+
     build(transport: TransportClient, opts: TcpClientOpts): Observable<ClientSession> {
         const { logger, context } = transport;
         const parser = context.get(opts.transport ?? TcpProtocol);

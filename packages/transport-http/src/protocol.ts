@@ -15,10 +15,6 @@ export class HttpProtocol extends TransportProtocol {
         super();
     }
 
-    isEvent(req: HttpRequest): boolean {
-        return req.method === 'events';
-    }
-
     isUpdate(req: http.IncomingMessage | http2.Http2ServerRequest): boolean {
         return req.method === mths.PUT
     }
@@ -32,8 +28,8 @@ export class HttpProtocol extends TransportProtocol {
     }
 
     parse(req: http.IncomingMessage | http2.Http2ServerRequest, opts: ListenOpts, proxy?: boolean): URL {
-        const url = req.url ?? '';
-        if (this.isAbsoluteUrl(url)) {
+        const url = req.url?.trim() ?? '';
+        if (httptl.test(url)) {
             return new URL(url);
         } else {
             if ((req.socket as TLSSocket).encrypted) {
@@ -60,22 +56,22 @@ export class HttpProtocol extends TransportProtocol {
 
     }
 
-    normlizeUrl(url: string, opts: ListenOpts): string {
-        if (!this.isAbsoluteUrl(url)) {
-            const { host, port, path, withCredentials } = opts;
-            if (withCredentials) {
-                this._protocol = 'https';
-            }
-            const urlPrefix = `${this.protocol}://${host ?? 'localhost'}:${port ?? 3000}`;
-            const baseUrl = new URL(urlPrefix, path);
-            url = new URL(url, baseUrl).toString();
-        } else {
-            const uri = new URL(url);
-            this._protocol = uri.protocol.replace('://', '');
-            url = uri.toString();
-        }
-        return url;
-    }
+    // normlizeUrl(url: string, opts: ListenOpts): string {
+    //     if (!this.isAbsoluteUrl(url)) {
+    //         const { host, port, path, withCredentials } = opts;
+    //         if (withCredentials) {
+    //             this._protocol = 'https';
+    //         }
+    //         const urlPrefix = `${this.protocol}://${host ?? 'localhost'}:${port ?? 3000}`;
+    //         const baseUrl = new URL(urlPrefix, path);
+    //         url = new URL(url, baseUrl).toString();
+    //     } else {
+    //         const uri = new URL(url);
+    //         this._protocol = uri.protocol.replace('://', '');
+    //         url = uri.toString();
+    //     }
+    //     return url;
+    // }
 
     isAbsoluteUrl(url: string): boolean {
         return httptl.test(url.trim())

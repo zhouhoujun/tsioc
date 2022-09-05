@@ -1,6 +1,6 @@
-import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, InvocationContext, isNil, isString, type_str } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, isNil, isString, type_str } from '@tsdi/ioc';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, isObservable } from 'rxjs';
-import { RequestMethod, ResponsePacket, ResponseEvent } from './packet';
+import { Packet, ResponsePacket, ResponseEvent, RequestOptions } from './packet';
 import { TransportOpts, TransportEndpoint } from './transport';
 import { RequestContext } from './context';
 import { ClientContext } from './client.ctx';
@@ -22,10 +22,10 @@ export abstract class ClientOpts<TRequest, TResponse> extends TransportOpts<TReq
  */
 @Abstract()
 export abstract class Client<
-    TRequest = any,
+    TRequest extends Packet = Packet,
     TResponse = any,
     Opts extends ClientOpts<TRequest, TResponse> = any,
-    ReqOpts = RequestOption>
+    ReqOpts = RequestOptions>
     extends TransportEndpoint<TRequest, TResponse, Opts> implements OnDispose {
 
     async onDispose(): Promise<void> {
@@ -387,26 +387,6 @@ export abstract class Client<
 
 }
 
-
-/**
- * request option.
- */
-export interface RequestOption {
-    method?: RequestMethod;
-    body?: any;
-    headers?: Record<string, any>;
-    context?: InvocationContext;
-    params?: Record<string, any>;
-}
-
-/**
- * command request options.
- */
-export interface CommandOption {
-    cmd?: string;
-    options?: Record<string, any>;
-    playload?: any;
-}
 
 /**
  * response option for request.

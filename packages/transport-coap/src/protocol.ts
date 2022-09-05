@@ -1,4 +1,4 @@
-import { IncomingPacket, TransportProtocol, RequestPacket, ListenOpts, IncomingHeaders, OutgoingHeaders, Packet } from '@tsdi/core';
+import { IncomingPacket, ListenOpts, IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
 import { EMPTY_OBJ, Inject, Injectable, isString } from '@tsdi/ioc';
 import { ConnectionOpts, isBuffer, PacketProtocol } from '@tsdi/transport';
 import { Transform, Duplex, Writable, TransformCallback } from 'stream';
@@ -17,21 +17,17 @@ export class CoapProtocol extends PacketProtocol {
         return this._protocol;
     }
 
-    isEvent(req: RequestPacket<any>): boolean {
-        return req.method === 'events';
-    }
-
-    isUpdate(incoming: IncomingPacket<any>): boolean {
+    isUpdate(incoming: IncomingPacket): boolean {
         return incoming.method === 'put';
     }
 
-    isSecure(req: IncomingPacket<any>): boolean {
+    isSecure(req: IncomingPacket): boolean {
         return req.connection?.encrypted === true
     }
 
     parse(req: IncomingPacket, opts: ListenOpts, proxy?: boolean | undefined): URL {
-        const url = req.url ?? '';
-        if (this.isAbsoluteUrl(url)) {
+        const url = req.url?.trim() ?? '';
+        if (coapPfx.test(url)) {
             return new URL(url);
         } else {
             const { host, port, path } = opts;
@@ -42,20 +38,20 @@ export class CoapProtocol extends PacketProtocol {
 
     }
 
-    normlizeUrl(url: string, opts: ListenOpts): string {
-        if (!this.isAbsoluteUrl(url)) {
-            const { host, port, path } = opts;
-            const urlPrefix = `${this.protocol}://${host ?? 'localhost'}:${port ?? 3000}`;
-            const baseUrl = new URL(urlPrefix, path);
-            const uri = new URL(url, baseUrl);
-            url = uri.toString();
-        } else {
-            const uri = new URL(url);
-            this._protocol = uri.protocol.replace('://', '');
-            url = uri.toString();
-        }
-        return url;
-    }
+    // normlizeUrl(url: string, opts: ListenOpts): string {
+    //     if (!this.isAbsoluteUrl(url)) {
+    //         const { host, port, path } = opts;
+    //         const urlPrefix = `${this.protocol}://${host ?? 'localhost'}:${port ?? 3000}`;
+    //         const baseUrl = new URL(urlPrefix, path);
+    //         const uri = new URL(url, baseUrl);
+    //         url = uri.toString();
+    //     } else {
+    //         const uri = new URL(url);
+    //         this._protocol = uri.protocol.replace('://', '');
+    //         url = uri.toString();
+    //     }
+    //     return url;
+    // }
 
     isAbsoluteUrl(url: string): boolean {
         return coapPfx.test(url.trim())
@@ -71,7 +67,7 @@ export class CoapProtocol extends PacketProtocol {
     isHeader(chunk: any): boolean {
         throw new Error('Method not implemented.');
     }
-    parseHeader(chunk: any): Packet<any> {
+    parseHeader(chunk: any): IncomingPacket {
         throw new Error('Method not implemented.');
     }
     hasPlayload(headers: IncomingHeaders | OutgoingHeaders): boolean {
@@ -150,7 +146,7 @@ export class CoapGeneratorStream extends Transform {
             callback(null, chunk);
             return;
         }
-    
+
         if (isString(chunk)) {
             callback(null, Buffer.from(chunk, encoding));
             return;

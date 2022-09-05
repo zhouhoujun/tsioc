@@ -1,16 +1,19 @@
-import { Injectable, lang } from '@tsdi/ioc';
-import { ClientRequsetOpts, ClientSession, ClientBuilder, ClientSessionOpts, ClientStream, ev, TransportClient, PacketProtocol, parseToDuplex } from '@tsdi/transport';
+import { Injectable } from '@tsdi/ioc';
+import { ClientSession, ClientBuilder, ClientStream, ev, TransportClient, PacketProtocol, parseToDuplex, TransportRequest } from '@tsdi/transport';
 import { Observable, Observer } from 'rxjs';
-import { Duplex } from 'stream';
 import * as dgram from 'dgram';
 import * as net from 'net'
-import { IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
+import { IncomingHeaders, OutgoingHeaders, RequestOptions } from '@tsdi/core';
 import { CoapClientOpts } from './client';
 import { CoapProtocol } from '../protocol';
 
 
 @Injectable()
 export class CoapClientBuilder implements ClientBuilder<TransportClient> {
+
+    buildRequest(url: string, options?: RequestOptions | undefined) {
+        return new TransportRequest({ ...options, url });
+    }
 
     build(transport: TransportClient, opts: CoapClientOpts): Observable<ClientSession> {
         const { context } = transport;
@@ -27,7 +30,7 @@ export class CoapClientBuilder implements ClientBuilder<TransportClient> {
             const onConnected = () => {
                 observer.next(client);
             }
-            
+
             socket.on(ev.ERROR, onError);
             socket.on(ev.CLOSE, onClose);
             socket.on(ev.END, onClose);
@@ -42,7 +45,7 @@ export class CoapClientBuilder implements ClientBuilder<TransportClient> {
         });
     }
 
-        
+
     request(connection: ClientSession, headers: IncomingHeaders, options: any): ClientStream {
         const id = connection.getNextStreamId();
         const stream = new ClientStream(connection, id, headers, options);

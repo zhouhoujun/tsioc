@@ -1,5 +1,5 @@
 import { Abstract, DefaultInvocationContext } from '@tsdi/ioc';
-import { Packet } from './packet';
+import { IncomingPacket } from './packet';
 import { TransportProtocol } from './protocol';
 import { TransportEndpoint } from './transport';
 
@@ -84,7 +84,7 @@ export abstract class ConnectionContext<TRequest = any, TResponse = any> extends
      * request body, playload.
      */
     get playload(): any {
-        return (this.request as Packet).body
+        return (this.request as any as IncomingPacket).body;
     }
     /**
      * The outgoing request method.

@@ -1,5 +1,5 @@
 /* eslint-disable no-case-declarations */
-import { BadRequestExecption, EndpointContext, RequestPacket, Client, RequestMethod, Redirector, ReqHeaders, ResHeaders, HeaderSet } from '@tsdi/core';
+import { BadRequestExecption, EndpointContext, Client, RequestMethod, Redirector, ReqHeaders, ResHeaders, HeaderSet, RestfulPacket } from '@tsdi/core';
 import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { Readable } from 'stream';
@@ -8,7 +8,7 @@ import { hdr } from '../consts';
 @Injectable()
 export class AssetRedirector extends Redirector {
 
-    redirect<T>(ctx: EndpointContext, req: RequestPacket, status: number, headers: ResHeaders): Observable<T> {
+    redirect<T>(ctx: EndpointContext, req: RestfulPacket, status: number, headers: ResHeaders): Observable<T> {
         return new Observable((observer: Observer<T>) => {
             const rdstatus = ctx.getValueify(RedirectStauts, () => new RedirectStauts());
             // HTTP fetch step 5.2

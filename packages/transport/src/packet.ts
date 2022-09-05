@@ -1,4 +1,4 @@
-import { IncomingHeaders, OutgoingHeaders, Packet, TransportProtocol } from '@tsdi/core';
+import { IncomingHeaders, IncomingPacket, OutgoingHeaders, Packet, TransportProtocol } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
 import { Writable, Duplex, Transform } from 'stream';
 import { ConnectionOpts } from './connection';
@@ -14,7 +14,7 @@ export interface ConnectPacket {
 export abstract class PacketProtocol extends TransportProtocol {
     abstract valid(header: string): boolean;
     abstract isHeader(chunk: any): boolean;
-    abstract parseHeader(chunk: any): Packet;
+    abstract parseHeader(chunk: any): IncomingPacket;
     abstract hasPlayload(headers: IncomingHeaders | OutgoingHeaders): boolean;
     abstract isPlayload(chunk: any, streamId: Buffer): boolean;
     abstract parsePlayload(chunk: any, streamId: Buffer): any;

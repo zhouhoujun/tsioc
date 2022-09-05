@@ -1,6 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { TransportStatus } from './status';
-import { IncomingPacket, RequestPacket } from './packet';
+import { IncomingPacket, Packet } from './packet';
 
 /**
  * Listen options.
@@ -47,17 +47,6 @@ export abstract class TransportProtocol {
      * @param url 
      */
     abstract isAbsoluteUrl(url: string): boolean;
-    /**
-     * normlize url.
-     * @param url 
-     * @param opts 
-     */
-    abstract normlizeUrl(url: string, opts: ListenOpts): string;
-    /**
-     * is event or not.
-     * @param req 
-     */
-    abstract isEvent(req: RequestPacket): boolean;
     /**
      * is update modle resquest.
      */

@@ -1,13 +1,12 @@
-import { EndpointBackend, OnDispose, RequestContext, Client } from '@tsdi/core';
+import { EndpointBackend, OnDispose, RequestContext, Client, RequestOptions, Packet } from '@tsdi/core';
 import { EMPTY, Injectable, isString, Nullable } from '@tsdi/ioc';
 import { map, Observable, of } from 'rxjs';
 import { ClientSession } from './session';
 import { TransportBackend } from './backend';
-import { DetectBodyInterceptor } from './body';
 import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } from './options';
-import { NormlizePathInterceptor } from './path';
+// import { DetectBodyInterceptor } from './body';
+// import { NormlizePathInterceptor } from './path';
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
-import { TransportRequest } from './request';
 import { TransportEvent } from './response';
 import { ClientBuilder } from './builder';
 
@@ -22,8 +21,9 @@ const tsptDeftOpts = {
 /**
  * Transport Client.
  */
+
 @Injectable()
-export class TransportClient<ReqOpts = any> extends Client<TransportRequest, TransportEvent, TransportClientOpts, ReqOpts> implements OnDispose {
+export class TransportClient<ReqOpts extends RequestOptions = RequestOptions> extends Client<Packet, TransportEvent, TransportClientOpts, ReqOpts> implements OnDispose {
 
     private _connection?: ClientSession;
     constructor(@Nullable() options: TransportClientOpts) {
@@ -51,9 +51,12 @@ export class TransportClient<ReqOpts = any> extends Client<TransportRequest, Tra
         const defaults = this.getDefaultOptions();
         const connectOpts = { ...defaults.connectOpts, ...options?.connectOpts };
         const connectionOpts = { objectMode: true, ...defaults.connectionOpts, ...options?.connectionOpts };
-        const interceptors = [...options?.interceptors ?? EMPTY, NormlizePathInterceptor, DetectBodyInterceptor];
+        const interceptors = [...options?.interceptors ?? EMPTY];
         const providers = options && options.providers ? [...TRANSPORT_CLIENT_PROVIDERS, ...options.providers] : TRANSPORT_CLIENT_PROVIDERS;
         const opts = { ...tsptDeftOpts, ...defaults, ...options, connectOpts, connectionOpts, interceptors, providers };
+        if (!opts.builder) {
+            opts.builder = ClientBuilder;
+        }
         return opts;
     }
 
@@ -62,10 +65,11 @@ export class TransportClient<ReqOpts = any> extends Client<TransportRequest, Tra
         super.initContext(options);
     }
 
-
-    protected buildRequest(context: RequestContext, url: string | TransportRequest<any>, options?: ReqOpts | undefined): TransportRequest<any> {
+    protected buildRequest(context: RequestContext, url: string | Packet, options?: ReqOpts | undefined): Packet {
         context.setValue(ClientSession, this.connection);
-        return isString(url) ? new TransportRequest({ ...options, url }) : url
+        const opts = this.getOptions();
+        const builder = this.context.get(opts.builder!);
+        return isString(url) ? builder.buildRequest(url, options) : url;
     }
 
     protected connect(): Observable<ClientSession> {
@@ -73,7 +77,7 @@ export class TransportClient<ReqOpts = any> extends Client<TransportRequest, Tra
             return of(this._connection);
         }
         const opts = this.getOptions();
-        return this.context.get(opts.builder ?? ClientBuilder).build(this, opts)
+        return this.context.get(opts.builder!).build(this, opts)
             .pipe(
                 map(stream => {
                     this._connection = stream;
@@ -82,7 +86,7 @@ export class TransportClient<ReqOpts = any> extends Client<TransportRequest, Tra
             );
     }
 
-    protected getBackend(): EndpointBackend<TransportRequest<any>, TransportEvent<any>> {
+    protected getBackend(): EndpointBackend<any, TransportEvent> {
         return this.context.get(this.getOptions().backend!);
     }
 

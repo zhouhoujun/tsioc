@@ -1,4 +1,4 @@
-import { ClientRequsetPacket, IncomingHeaders, isArrayBuffer, isBlob, isUrlSearchParams, ReqHeaders, ReqHeadersLike } from '@tsdi/core';
+import { IncomingHeaders, isArrayBuffer, isBlob, isUrlSearchParams, ReqHeaders, ReqHeadersLike, RestfulPacket } from '@tsdi/core';
 import { isString, type_bool, type_num, type_obj } from '@tsdi/ioc';
 import { Stream } from 'stream';
 import { isBuffer, isStream, isFormDataLike } from '../utils';
@@ -6,7 +6,7 @@ import { isBuffer, isStream, isFormDataLike } from '../utils';
 /**
  * Client Request.
  */
-export class TransportRequest<T = any> implements ClientRequsetPacket<T> {
+export class TransportRequest<T = any> implements RestfulPacket<T> {
 
     public url: string;
     public method: string | undefined;

@@ -7,7 +7,7 @@ import { ServerStream } from './stream';
 /**
  * Server request.
  */
-export class ServerRequest extends Readable implements IncomingPacket<Writable> {
+export class ServerRequest extends Readable implements IncomingPacket {
     readonly url: string;
     readonly method: string;
     readonly authority: string;

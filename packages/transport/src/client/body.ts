@@ -1,4 +1,4 @@
-import { ClientRequsetPacket, Endpoint, EndpointContext, Interceptor, isBlob, isFormData, ResponseEvent } from '@tsdi/core';
+import { Endpoint, EndpointContext, Interceptor, isBlob, isFormData, ResponseEvent, RestfulPacket } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { defer, mergeMap, Observable } from 'rxjs';
@@ -7,11 +7,11 @@ import { createFormData, isFormDataLike } from '../utils';
 
 
 @Injectable({ static: true })
-export class DetectBodyInterceptor implements Interceptor<ClientRequsetPacket, ResponseEvent> {
+export class DetectBodyInterceptor implements Interceptor<RestfulPacket, ResponseEvent> {
 
     constructor() { }
 
-    intercept(req: ClientRequsetPacket, next: Endpoint<ClientRequsetPacket, ResponseEvent>, context: EndpointContext): Observable<ResponseEvent> {
+    intercept(req: RestfulPacket, next: Endpoint<RestfulPacket, ResponseEvent>, context: EndpointContext): Observable<ResponseEvent> {
         let body = req.serializeBody();
         if (body == null) {
             return next.handle(req, context);

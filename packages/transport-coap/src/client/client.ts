@@ -1,4 +1,4 @@
-import { ExecptionFilter, Interceptor, RequestOption } from '@tsdi/core';
+import { ExecptionFilter, Interceptor, RestfulOption } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
 import { TransportClient, TransportClientOpts, TransportEvent, TransportRequest } from '@tsdi/transport';
 import { Packet } from 'coap-packet';

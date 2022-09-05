@@ -1,10 +1,9 @@
-import { ClientOpts, Decoder, Encoder, EndpointBackend, ExecptionFilter, Interceptor } from '@tsdi/core';
+import { ClientOpts, Decoder, Encoder, EndpointBackend, ExecptionFilter, Interceptor, Packet, RequestOptions } from '@tsdi/core';
 import { Abstract, ClassType, tokenId } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { Stream } from 'stream';
 import { PacketProtocol } from '../packet';
 import { ClientBuilder } from './builder';
-import { TransportRequest } from './request';
 import { TransportEvent } from './response';
 import { ClientSessionOpts } from './session';
 
@@ -21,7 +20,7 @@ export interface SessionRequestOpts extends Record<string, any> {
  * Transport client options.
  */
 @Abstract()
-export abstract class TransportClientOpts extends ClientOpts<TransportRequest, TransportEvent> {
+export abstract class TransportClientOpts extends ClientOpts<Packet, TransportEvent> {
     abstract keepalive?: number;
     /**
      * connect options.
@@ -39,7 +38,7 @@ export abstract class TransportClientOpts extends ClientOpts<TransportRequest, T
     /**
      * backend.
      */
-    abstract backend?: ClassType<EndpointBackend<TransportRequest, TransportEvent>>;
+    abstract backend?: ClassType<EndpointBackend<Packet, TransportEvent>>;
     /**
      * encoder input.
      */
@@ -53,7 +52,7 @@ export abstract class TransportClientOpts extends ClientOpts<TransportRequest, T
 /**
  * client interceptors.
  */
-export const CLIENT_INTERCEPTORS = tokenId<Interceptor<TransportRequest, TransportEvent>[]>('CLIENT_INTERCEPTORS');
+export const CLIENT_INTERCEPTORS = tokenId<Interceptor<any, TransportEvent>[]>('CLIENT_INTERCEPTORS');
 /**
  * client execption filters.
  */

@@ -1,4 +1,4 @@
-import { AssetContext, HeadersContext, MiddlewareLike, mths, Throwable, ConnectionContext } from '@tsdi/core';
+import { AssetContext, HeadersContext, MiddlewareLike, mths, Throwable, ConnectionContext, IncomingPacket } from '@tsdi/core';
 import { isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { hdr, append, parseTokenList, AssetServerContext } from '@tsdi/transport';
@@ -17,7 +17,6 @@ export type HttpServResponse = http.ServerResponse | http2.Http2ServerResponse;
  * http context for `HttpServer`.
  */
 export class HttpContext extends AssetServerContext<HttpServRequest, HttpServResponse> implements HeadersContext, AssetContext, Throwable {
-
 
     protected isSelf(token: Token) {
         return token === HttpContext || token === AssetServerContext || token === ConnectionContext;
@@ -59,7 +58,7 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
     }
 
     private _ip?: string;
-    
+
     /**
      * Return request's remote address
      * When `app.proxy` is `true`, parse

@@ -1,5 +1,5 @@
 /* eslint-disable no-case-declarations */
-import { EndpointBackend, EndpointContext, IncomingHeaders, IncomingStatusHeaders, isArrayBuffer, isBlob, isFormData, mths, Redirector, ReqHeaders, RequestContext, ResponseJsonParseError, TransportExecption, UnsupportedMediaTypeExecption } from '@tsdi/core';
+import { EndpointBackend, EndpointContext, IncomingHeaders, IncomingStatusHeaders, isArrayBuffer, isBlob, isFormData, mths, Redirector, ReqHeaders, RequestContext, ResHeaders, ResponseJsonParseError, TransportExecption, UnsupportedMediaTypeExecption } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, Injectable, InvocationContext, isUndefined, lang, tokenId, type_undef } from '@tsdi/ioc';
 import { Observable, Observer, throwError, finalize } from 'rxjs';
 import * as zlib from 'zlib';
@@ -51,7 +51,7 @@ export class TransportBackend implements EndpointBackend<TransportRequest, Trans
 
             const onResponse = async (hdrs: IncomingHeaders & IncomingStatusHeaders, flags: number) => {
                 let body: any;
-                const headers = new ReqHeaders(hdrs as Record<string, any>);
+                const headers = new ResHeaders(hdrs as Record<string, any>);
                 status = statdpr.parse(hdrs[hdr.STATUS2] ?? hdrs[hdr.STATUS]);
 
                 statusText = statdpr.message(status) ?? 'OK';

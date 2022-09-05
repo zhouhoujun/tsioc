@@ -1,3 +1,4 @@
+import { InvocationContext } from '@tsdi/ioc';
 import { IncomingHeaders, OutgoingHeader, OutgoingHeaders, ReqHeaders, ResHeaders } from './headers';
 
 
@@ -57,78 +58,48 @@ export type Protocols = 'tcp' | 'udp' | 'grpc' | 'rmq' | 'modbus' | 'kafka' | 'r
 
 
 /**
- * packet.
+ * restful request option.
  */
-export interface Packet<T = any> {
+export interface RestfulOption {
+    method?: RequestMethod;
+    body?: any;
+    headers?: Record<string, any>;
+    context?: InvocationContext;
+    params?: Record<string, any>;
+}
+
+
+/**
+ * command request options.
+ */
+export interface CommandOption {
+    cmd?: string;
+    topic?: string;
+    options?: Record<string, any>;
+    context?: InvocationContext;
+    playload?: any;
+}
+
+export type RequestOptions = RestfulOption | CommandOption;
+
+
+export interface RestfulPacket<T = any> {
     /**
      * packet id.
      */
     readonly id?: number;
     /**
-     * headers
-     */
-    readonly headers?: Record<string, any>;
-    /**
-     * The request body, or `null` if one isn't set.
-     *
-     * Bodies are not enforced to be immutable, as they can include a reference to any
-     * user-defined data type. However, middlewares should take care to preserve
-     * idempotence by treating them as such.
-     */
-    readonly body?: T | null;
-}
-
-
-/**
- * package clonable.
- */
-export interface PacketClonable<T = any> {
-    /**
-     * clone packet.
-     * @param data 
-     */
-    clone?(data: { body?: T }): this;
-}
-
-
-/**
- * client request packet.
- */
-export interface RequestPacket<T = any> extends Packet<T> {
-    /**
-     * packet id.
-     */
-    readonly id?: number;
-    /**
-     * headers
-     */
+        * headers
+        */
     readonly headers: ReqHeaders;
     /**
      * Outgoing URL
      */
     get url(): string;
     /**
-     * Outgoing URL parameters.
-     */
-    get params(): Record<string, string | string[] | number | any>;
-    /**
      * The outgoing request method.
      */
     get method(): string | undefined;
-    /**
-     * The request body, or `null` if one isn't set.
-     *
-     * Bodies are not enforced to be immutable, as they can include a reference to any
-     * user-defined data type. However, middlewares should take care to preserve
-     * idempotence by treating them as such.
-     */
-    get body(): T | null;
-}
-
-/**
- * client request packet
- */
-export interface ClientRequsetPacket<T = any> extends RequestPacket<T> {
     /**
      * The request body, or `null` if one isn't set.
      *
@@ -159,11 +130,41 @@ export interface ClientRequsetPacket<T = any> extends RequestPacket<T> {
     detectContentTypeHeader(): string | null
 }
 
+/**
+ * command packet.
+ */
+export interface CommandPacket {
+    /**
+     * packet id.
+     */
+    readonly id?: number;
+    readonly cmd: string | null;
+    readonly topic: string | null;
+    readonly options: Record<string, any>;
+    readonly playload?: any;
+}
+
+
+export type Packet = RestfulPacket | CommandPacket;
+
+
+/**
+ * package clonable.
+ */
+export interface PacketClonable<T = any> {
+    /**
+     * clone packet.
+     * @param data 
+     */
+    clone?(data: { body?: T }): this;
+}
+
+
 
 /**
  * client response packet.
  */
-export interface ResponseHeader<T = any> extends Packet<T> {
+export interface ResponseHeader {
     /**
      * request url.
      */
@@ -188,10 +189,14 @@ export interface ResponseHeader<T = any> extends Packet<T> {
     get statusMessage(): string;
 }
 
+export interface ErrorResponse extends ResponseHeader {
+    readonly error: any;
+}
+
 /**
  * client response packet.
  */
-export interface ResponsePacket<T = any> extends ResponseHeader<T> {
+export interface ResponsePacket<T = any> extends ResponseHeader {
     /**
      * Get response body.
      *
@@ -216,7 +221,7 @@ export interface ResponseJsonParseError {
 /**
  * client response event.
  */
-export type ResponseEvent<T = any> = ResponsePacket<T> | ResponseHeader;
+export type ResponseEvent<T = any> = ResponsePacket<T> | ResponseHeader | ErrorResponse;
 
 
 
@@ -224,7 +229,11 @@ export type ResponseEvent<T = any> = ResponsePacket<T> | ResponseHeader;
 /**
  * server side incoming packet.
  */
-export interface IncomingPacket<T = any> extends Packet<any> {
+export interface IncomingPacket {
+    /**
+     * packet id.
+     */
+    readonly id?: number;
     /**
      * headers
      */
@@ -245,12 +254,14 @@ export interface IncomingPacket<T = any> extends Packet<any> {
     readonly connection?: any;
 
     readonly stream?: any;
+
+    body?: any;
     /**
      * pipe
      * @param destination 
      * @param options 
      */
-    pipe(destination: T, options?: { end?: boolean | undefined; }): T;
+    pipe(destination: any, options?: { end?: boolean | undefined; }): any;
 }
 
 /**

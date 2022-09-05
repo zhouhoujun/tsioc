@@ -1,4 +1,4 @@
-import { OnDispose, RequestOption } from '@tsdi/core';
+import { OnDispose, RestfulOption } from '@tsdi/core';
 import { Injectable, Nullable } from '@tsdi/ioc';
 import { TcpClientOpts, TCP_EXECPTIONFILTERS, TCP_INTERCEPTORS } from './options';
 import { TransportClient } from '@tsdi/transport';
@@ -26,7 +26,7 @@ export const TCP_CLIENT_OPTS = {
  * TcpClient. client of  `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpClient extends TransportClient<RequestOption> implements OnDispose {
+export class TcpClient extends TransportClient<RestfulOption> implements OnDispose {
 
     constructor(@Nullable() options: TcpClientOpts) {
         super(options);
