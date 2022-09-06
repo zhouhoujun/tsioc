@@ -22,7 +22,7 @@ export abstract class ClientOpts<TRequest, TResponse> extends TransportOpts<TReq
  */
 @Abstract()
 export abstract class Client<
-    TRequest extends Packet = Packet,
+    TRequest = Packet,
     TResponse = any,
     Opts extends ClientOpts<TRequest, TResponse> = any,
     ReqOpts = RequestOptions>

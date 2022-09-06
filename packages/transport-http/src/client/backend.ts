@@ -1,5 +1,5 @@
 import { Injectable, isUndefined, lang, type_undef } from '@tsdi/ioc';
-import { EndpointContext, mths, ResHeaders, Redirector } from '@tsdi/core';
+import { EndpointContext, mths, ResHeaders, Redirector, RestfulStatus } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpResponse, HttpErrorResponse, HttpHeaderResponse, HttpJsonParseError, HttpBackend } from '@tsdi/common';
 import { ev, hdr, toBuffer, isBuffer, MimeAdapter, ctype, RequestStauts, sendbody, XSSI_PREFIX, MimeTypes } from '@tsdi/transport';
 import { finalize, Observable, Observer } from 'rxjs';
@@ -33,7 +33,7 @@ export class HttpBackend2 extends HttpBackend {
                 request = this.request1(url, req, ac);
             }
 
-            const statAdpr = ctx.transport.status;
+            const statAdpr = ctx.transport.status as RestfulStatus;
             let status: number, statusText: string;
             let completed = false;
             let headers: ResHeaders;

@@ -139,8 +139,8 @@ export interface CommandPacket {
      */
     readonly id?: number;
     readonly cmd: string | null;
-    readonly topic: string | null;
-    readonly options: Record<string, any>;
+    readonly topic?: string | null;
+    readonly options?: Record<string, any>;
     readonly playload?: any;
 }
 

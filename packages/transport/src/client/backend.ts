@@ -1,6 +1,6 @@
 /* eslint-disable no-case-declarations */
-import { EndpointBackend, EndpointContext, IncomingHeaders, IncomingStatusHeaders, isArrayBuffer, isBlob, isFormData, mths, Redirector, ReqHeaders, RequestContext, ResHeaders, ResponseJsonParseError, TransportExecption, UnsupportedMediaTypeExecption } from '@tsdi/core';
-import { Abstract, EMPTY_OBJ, Injectable, InvocationContext, isUndefined, lang, tokenId, type_undef } from '@tsdi/ioc';
+import { EndpointBackend, IncomingHeaders, IncomingStatusHeaders, isArrayBuffer, isBlob, isFormData, mths, Redirector, RequestContext, ResHeaders, ResponseJsonParseError, RestfulPacket, RestfulStatus, TransportExecption, UnsupportedMediaTypeExecption } from '@tsdi/core';
+import { Abstract, EMPTY_OBJ, Injectable, InvocationContext, isUndefined, lang, type_undef } from '@tsdi/ioc';
 import { Observable, Observer, throwError, finalize } from 'rxjs';
 import * as zlib from 'zlib';
 import { PassThrough, pipeline, Writable, Readable, PipelineSource } from 'stream';
@@ -10,18 +10,17 @@ import { MimeAdapter, MimeTypes } from '../mime';
 import { createFormData, isBuffer, isFormDataLike, toBuffer } from '../utils';
 import { ClientSession } from './session';
 import { TransportClientOpts } from './options';
-import { TransportRequest } from './request';
 import { TransportErrorResponse, TransportResponse, TransportEvent, TransportHeaderResponse } from './response';
 
 
 const pmPipeline = promisify(pipeline);
 /**
- * transport backend.
+ * transport restful endpoint backend.
  */
 @Injectable()
-export class TransportBackend implements EndpointBackend<TransportRequest, TransportEvent> {
+export class RestfulEndpointBackend implements EndpointBackend<RestfulPacket, TransportEvent> {
 
-    handle(req: TransportRequest, ctx: RequestContext): Observable<TransportEvent> {
+    handle(req: RestfulPacket, ctx: RequestContext): Observable<TransportEvent> {
         const session = ctx.get(ClientSession);
         const { method, url } = req;
         if (!session || session.destroyed) return throwError(() => new TransportErrorResponse({
@@ -74,7 +73,7 @@ export class TransportBackend implements EndpointBackend<TransportRequest, Trans
                     ok = !err;
                 });
 
-                if (status && statdpr.isRedirect(status)) {
+                if (status && statdpr instanceof RestfulStatus && statdpr.isRedirect(status)) {
                     // HTTP fetch step 5.2
                     ctx.get(Redirector).redirect<TransportEvent<any>>(ctx, req, status, headers)
                         .pipe(

@@ -1,4 +1,4 @@
-import { AssetContext, OutgoingHeader, ServerContext, IncomingHeader, OutgoingHeaders, IncomingPacket, OutgoingPacket, Server, ServerContextOpts, ConnectionContext } from '@tsdi/core';
+import { AssetContext, OutgoingHeader, ServerContext, IncomingHeader, OutgoingHeaders, IncomingPacket, OutgoingPacket, Server, ServerContextOpts, ConnectionContext, RestfulStatus, TransportExecption } from '@tsdi/core';
 import { Abstract, Injector, isArray, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';
 import { extname } from 'path';
 import { Buffer } from 'buffer';
@@ -685,6 +685,9 @@ export abstract class AssetServerContext<TRequest extends IncomingPacket = Incom
      * @api public
      */
     redirect(url: string, alt?: string): void {
+        if(!(this.transport.status instanceof RestfulStatus)) {
+            throw new TransportExecption('the status not extends RestfulStatus');
+        }
         if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
         this.setHeader(hdr.LOCATION, encodeUrl(url));
         // status

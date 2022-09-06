@@ -1,6 +1,6 @@
 import { Module, RouterModule, TransformModule, Client, Server } from '@tsdi/core';
 import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
-import { TransportBackend } from './client/backend';
+import { RestfulEndpointBackend } from './client/backend';
 import { NormlizePathInterceptor } from './client/path';
 import { TransportClient } from './client/client';
 import { DetectBodyInterceptor } from './client/body';
@@ -25,7 +25,7 @@ import { TransportRespondAdapter } from './server/respond';
         LogInterceptor,
         RespondInterceptor,
         
-        TransportBackend,
+        RestfulEndpointBackend,
         NormlizePathInterceptor,
         DetectBodyInterceptor,
 

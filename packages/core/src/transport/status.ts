@@ -80,6 +80,17 @@ export abstract class TransportStatus {
     abstract isServerError(status: number): boolean;
 
     /**
+     * get status default message.
+     * @param status 
+     */
+    abstract message(status: number): string;
+
+}
+
+@Abstract()
+export abstract class RestfulStatus extends TransportStatus {
+
+    /**
      * is redirect status or not.
      * @param status
      */
@@ -95,11 +106,4 @@ export abstract class TransportStatus {
      * redirect default request method.
      */
     abstract redirectDefaultMethod(): string;
-
-    /**
-     * get status default message.
-     * @param status 
-     */
-    abstract message(status: number): string;
-
 }

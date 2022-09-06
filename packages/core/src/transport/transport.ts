@@ -135,9 +135,13 @@ export abstract class TransportEndpoint<
      */
     endpoint(): Endpoint<TRequest, TResponse> {
         if (!this._chain) {
-            this._chain = new InterceptorChain(this.getBackend(), this.context.injector.get(this._iptToken, EMPTY));
+            this._chain = this.buildEndpoint();
         }
         return this._chain
+    }
+
+    protected buildEndpoint(): Endpoint<TRequest, TResponse> {
+        return new InterceptorChain(this.getBackend(), this.context.injector.get(this._iptToken, EMPTY));
     }
 
     /**
@@ -151,7 +155,6 @@ export abstract class TransportEndpoint<
      *  get backend endpoint. 
      */
     protected abstract getBackend(): EndpointBackend<TRequest, TResponse>;
-
     /**
      * initialize options.
      * @param options 

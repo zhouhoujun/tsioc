@@ -2,7 +2,7 @@ import { EndpointBackend, OnDispose, RequestContext, Client, RequestOptions, Pac
 import { EMPTY, Injectable, isString, Nullable } from '@tsdi/ioc';
 import { map, Observable, of } from 'rxjs';
 import { ClientSession } from './session';
-import { TransportBackend } from './backend';
+import { RestfulEndpointBackend } from './backend';
 import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } from './options';
 // import { DetectBodyInterceptor } from './body';
 // import { NormlizePathInterceptor } from './path';
@@ -12,7 +12,7 @@ import { ClientBuilder } from './builder';
 
 
 const tsptDeftOpts = {
-    backend: TransportBackend,
+    backend: RestfulEndpointBackend,
     interceptorsToken: CLIENT_INTERCEPTORS,
     execptionsToken: CLIENT_EXECPTIONFILTERS
 } as TransportClientOpts;
@@ -86,7 +86,7 @@ export class TransportClient<ReqOpts extends RequestOptions = RequestOptions> ex
             );
     }
 
-    protected getBackend(): EndpointBackend<any, TransportEvent> {
+    protected getBackend(): EndpointBackend<Packet, TransportEvent> {
         return this.context.get(this.getOptions().backend!);
     }
 
