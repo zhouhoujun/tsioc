@@ -7,7 +7,7 @@ import * as http2 from 'http2';
 import * as assert from 'assert';
 import {
     CONTENT_DISPOSITION, ev, LOCALHOST,
-    CatchInterceptor, LogInterceptor, RespondInterceptor,
+    CatchInterceptor, RestfulLogInterceptor, RespondInterceptor,
     CorsMiddleware, EncodeJsonMiddleware, HelmetMiddleware, BodyparserMiddleware,
     ContentMiddleware, ContentOptions, SessionMiddleware, CsrfMiddleware, MimeDb
 } from '@tsdi/transport';
@@ -42,7 +42,7 @@ const httpOpts = {
     ],
     detailError: true,
     interceptors: [
-        LogInterceptor,
+        RestfulLogInterceptor,
         CatchInterceptor,
         RespondInterceptor
     ],

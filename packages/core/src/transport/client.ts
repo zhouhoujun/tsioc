@@ -1,10 +1,12 @@
-import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, isNil, isString, type_str } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, isNil, isTypeObject, type_str } from '@tsdi/ioc';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, isObservable } from 'rxjs';
-import { Packet, ResponsePacket, ResponseEvent, RequestOptions } from './packet';
+import { RequestOptions } from './packet';
 import { TransportOpts, TransportEndpoint } from './transport';
 import { RequestContext } from './context';
 import { ClientContext } from './client.ctx';
 import { OnDispose } from '../lifecycle';
+import { TransportEvent, TransportResponse } from './response';
+import { TransportRequest } from './request';
 
 
 
@@ -12,7 +14,7 @@ import { OnDispose } from '../lifecycle';
  * client options.
  */
 @Abstract()
-export abstract class ClientOpts<TRequest, TResponse> extends TransportOpts<TRequest, TResponse> {
+export abstract class ClientOpts<TRequest = TransportRequest, TResponse = TransportEvent> extends TransportOpts<TRequest, TResponse> {
 
 }
 
@@ -22,10 +24,11 @@ export abstract class ClientOpts<TRequest, TResponse> extends TransportOpts<TReq
  */
 @Abstract()
 export abstract class Client<
-    TRequest = Packet,
-    TResponse = any,
+    TPattern = string,
+    ReqOpts = RequestOptions,
     Opts extends ClientOpts<TRequest, TResponse> = any,
-    ReqOpts = RequestOptions>
+    TRequest = TransportRequest,
+    TResponse = TransportEvent>
     extends TransportEndpoint<TRequest, TResponse, Opts> implements OnDispose {
 
     async onDispose(): Promise<void> {
@@ -57,7 +60,7 @@ export abstract class Client<
      *
      * @return An `Observable` of the response, with the response body as an `ArrayBuffer`.
      */
-    send(url: string, options: ReqOpts & {
+    send(url: TPattern, options: ReqOpts & {
         observe?: 'body';
         responseType: 'arraybuffer';
     }): Observable<ArrayBuffer>;
@@ -71,7 +74,7 @@ export abstract class Client<
      *
      * @return An `Observable` of the response, with the response body of type `Blob`.
      */
-    send(url: string, options: ReqOpts & {
+    send(url: TPattern, options: ReqOpts & {
         observe?: 'body';
         responseType: 'blob';
     }): Observable<Blob>;
@@ -85,7 +88,7 @@ export abstract class Client<
      *
      * @return An `Observable` of the response, with the response body of type string.
      */
-    send(url: string, options: ReqOpts & {
+    send(url: TPattern, options: ReqOpts & {
         observe?: 'body';
         responseType: 'text';
     }): Observable<string>;
@@ -101,10 +104,10 @@ export abstract class Client<
      * @return An `Observable` of the response, with the response body as an array of `HttpEvent`s for
      * the request.
      */
-    send(url: string, options: ReqOpts & {
+    send(url: TPattern, options: ReqOpts & {
         observe: 'events',
         responseType: 'arraybuffer',
-    }): Observable<ResponseEvent<ArrayBuffer>>;
+    }): Observable<TransportEvent<ArrayBuffer>>;
 
     /**
      * Constructs a request that interprets the body as a `Blob` and returns
@@ -116,10 +119,10 @@ export abstract class Client<
      * @return An `Observable` of all `HttpEvent`s for the request,
      * with the response body of type `Blob`.
      */
-    send(url: string, options: ReqOpts & {
+    send(url: TPattern, options: ReqOpts & {
         observe: 'events',
         responseType: 'blob',
-    }): Observable<ResponseEvent<Blob>>;
+    }): Observable<TransportEvent<Blob>>;
 
     /**
      * Constructs a request which interprets the body as a text string and returns the full event
@@ -131,10 +134,10 @@ export abstract class Client<
      * @return An `Observable` of all `HttpEvent`s for the request,
      * with the response body of type string.
      */
-    send(url: string, options: ReqOpts & {
+    send(url: TPattern, options: ReqOpts & {
         observe: 'events',
         responseType?: 'text',
-    }): Observable<ResponseEvent<string>>;
+    }): Observable<TransportEvent<string>>;
 
     /**
      * Constructs a request which interprets the body as a JSON object and returns the full event
@@ -146,10 +149,10 @@ export abstract class Client<
      * @return An `Observable` of all `HttpEvent`s for the request,
      * with the response body of type `Object`.
      */
-    send(url: string, options: ReqOpts & {
+    send(url: TPattern, options: ReqOpts & {
         observe: 'events',
         responseType?: 'json',
-    }): Observable<ResponseEvent<any>>;
+    }): Observable<TransportEvent<any>>;
 
     /**
      * Constructs a request which interprets the body as a JSON object and returns the full event
@@ -161,10 +164,10 @@ export abstract class Client<
      * @return An `Observable` of all `HttpEvent`s for the request,
      * with the response body of type `R`.
      */
-    send<R>(url: string, options: ReqOpts & {
+    send<R>(url: TPattern, options: ReqOpts & {
         observe: 'events',
         responseType?: 'json',
-    }): Observable<ResponseEvent<R>>;
+    }): Observable<TransportEvent<R>>;
 
     /**
      * Constructs a request which interprets the body as an `ArrayBuffer`
@@ -175,10 +178,10 @@ export abstract class Client<
      *
      * @return An `Observable` of the `HttpResponse`, with the response body as an `ArrayBuffer`.
      */
-    send(url: string, options: ReqOpts & {
+    send(url: TPattern, options: ReqOpts & {
         observe: 'response';
         responseType: 'arraybuffer';
-    }): Observable<ResponsePacket<ArrayBuffer>>;
+    }): Observable<TransportResponse<ArrayBuffer>>;
 
     /**
      * Constructs a request which interprets the body as a `Blob` and returns the full `HttpResponse`.
@@ -188,10 +191,10 @@ export abstract class Client<
      *
      * @return An `Observable` of the `HttpResponse`, with the response body of type `Blob`.
      */
-    send(url: string, options: ReqOpts & {
+    send(url: TPattern, options: ReqOpts & {
         observe: 'response';
         responseType: 'blob';
-    }): Observable<ResponsePacket<Blob>>;
+    }): Observable<TransportResponse<Blob>>;
 
     /**
      * Constructs a request which interprets the body as a text stream and returns the full
@@ -202,10 +205,10 @@ export abstract class Client<
      *
      * @return An `Observable` of the send response, with the response body of type string.
      */
-    send(url: string, options: ReqOpts & {
+    send(url: TPattern, options: ReqOpts & {
         observe: 'response';
         responseType: 'text';
-    }): Observable<ResponsePacket<string>>;
+    }): Observable<TransportResponse<string>>;
 
     /**
      * Constructs a request which interprets the body as a JSON object and returns the full
@@ -217,10 +220,10 @@ export abstract class Client<
      * @return An `Observable` of the full `HttpResponse`,
      * with the response body of type `Object`.
      */
-    send(url: string, options: ReqOpts & {
+    send(url: TPattern, options: ReqOpts & {
         observe: 'response';
         responseType?: 'json';
-    }): Observable<ResponsePacket<object>>;
+    }): Observable<TransportResponse<object>>;
 
     /**
      * Constructs a request which interprets the body as a JSON object and returns
@@ -231,10 +234,10 @@ export abstract class Client<
      *
      * @return  An `Observable` of the full `HttpResponse`, with the response body of type `R`.
      */
-    send<R>(url: string, options: ReqOpts & {
+    send<R>(url: TPattern, options: ReqOpts & {
         observe: 'response';
         responseType?: 'json';
-    }): Observable<ResponsePacket<R>>;
+    }): Observable<TransportResponse<R>>;
 
     /**
      * Constructs a request which interprets the body as a JSON object and returns the full
@@ -245,7 +248,7 @@ export abstract class Client<
      *
      * @return An `Observable` of the `HttpResponse`, with the response body of type `Object`.
      */
-    send(url: string, options?: ReqOpts & {
+    send(url: TPattern, options?: ReqOpts & {
         observe?: 'body';
         responseType?: 'json';
     }): Observable<object>;
@@ -259,7 +262,7 @@ export abstract class Client<
      *
      * @return An `Observable` of the `HttpResponse`, with the response body of type `R`.
      */
-    send<R>(url: string, options?: ReqOpts & {
+    send<R>(url: TPattern, options?: ReqOpts & {
         observe?: 'body';
         responseType?: 'json';
     }): Observable<R>;
@@ -269,7 +272,7 @@ export abstract class Client<
      *
      * @return An `Observable` of the response, with the response body as a stream of `TResponse`s.
      */
-    send(url: string, options: ReqOpts & ResponseAs): Observable<TResponse>;
+    send(url: TPattern, options: ReqOpts & ResponseAs): Observable<TransportEvent>;
     /**
      * Constructs a request where response type and requested observable are not known statically.
      *
@@ -278,7 +281,7 @@ export abstract class Client<
      *
      * @return An `Observable` of the requested response, with body of type `any`.
      */
-    send(req: TRequest | string, options?: any): Observable<any> {
+    send(req: TRequest | TPattern, options?: any): Observable<any> {
         if (isNil(req)) {
             return throwError(() => new ArgumentExecption('Invalid message'))
         }
@@ -299,7 +302,7 @@ export abstract class Client<
             )
     }
 
-    protected request(context: RequestContext, first: TRequest | string, options: ReqOpts = EMPTY_OBJ as any): Observable<any> {
+    protected request(context: RequestContext, first: TRequest | TPattern, options: ReqOpts = EMPTY_OBJ as any): Observable<any> {
         const req = this.buildRequest(context, first, options);
 
         // Start with an Observable.of() the initial request, and run the handler (which
@@ -333,7 +336,7 @@ export abstract class Client<
                 // requested type.
                 switch (context.responseType) {
                     case 'arraybuffer':
-                        return res$.pipe(map((res: ResponsePacket) => {
+                        return res$.pipe(map((res: TransportResponse) => {
                             // Validate that the body is an ArrayBuffer.
                             if (res.body !== null && !(res.body instanceof ArrayBuffer)) {
                                 throw new Execption('Response is not an ArrayBuffer.')
@@ -341,7 +344,7 @@ export abstract class Client<
                             return res.body
                         }));
                     case 'blob':
-                        return res$.pipe(map((res: ResponsePacket) => {
+                        return res$.pipe(map((res: TransportResponse) => {
                             // Validate that the body is a Blob.
                             if (res.body !== null && !(res.body instanceof Blob)) {
                                 throw new Execption('Response is not a Blob.')
@@ -349,7 +352,7 @@ export abstract class Client<
                             return res.body
                         }));
                     case 'text':
-                        return res$.pipe(map((res: ResponsePacket) => {
+                        return res$.pipe(map((res: TransportResponse) => {
                             // Validate that the body is a string.
                             if (res.body !== null && typeof res.body !== type_str) {
                                 throw new Execption('Response is not a string.')
@@ -359,7 +362,7 @@ export abstract class Client<
                     case 'json':
                     default:
                         // No validation needed for JSON responses, as they can be of any type.
-                        return res$.pipe(map((res: ResponsePacket) => res.body))
+                        return res$.pipe(map((res: TransportResponse) => res.body))
                 }
             case 'response':
                 // The response stream was requested directly, so return it.
@@ -375,13 +378,13 @@ export abstract class Client<
         return err;
     }
 
-    protected createContext(req: TRequest | string, options?: ReqOpts & ResponseAs): RequestContext {
+    protected createContext(req: TRequest | TPattern, options?: ReqOpts & ResponseAs): RequestContext {
         return (options as any)?.context ?? new ClientContext(
             this.context.injector, this as any,
-            { transport: this.getOptions().transport, responseType: options?.responseType, observe: isString(req) ? options?.observe : 'events' });
+            { transport: this.getOptions().transport, responseType: options?.responseType, observe: isTypeObject(req) ? 'events' : options?.observe });
     }
 
-    protected abstract buildRequest(context: RequestContext, url: TRequest | string, options?: ReqOpts): TRequest;
+    protected abstract buildRequest(context: RequestContext, url: TRequest | TPattern, options?: ReqOpts): TRequest;
 
     protected abstract connect(): Promise<void> | Observable<any>;
 

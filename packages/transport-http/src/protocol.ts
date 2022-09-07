@@ -1,6 +1,5 @@
 import { ListenOpts, mths, TransportProtocol } from '@tsdi/core';
 import { Injectable, isNumber, isString } from '@tsdi/ioc';
-import { HttpRequest } from '@tsdi/common';
 import { hdr } from '@tsdi/transport';
 import * as http from 'http';
 import * as http2 from 'http2';

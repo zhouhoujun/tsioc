@@ -1,13 +1,12 @@
 import { Module, RouterModule, TransformModule, Client, Server } from '@tsdi/core';
 import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
 import { RestfulEndpointBackend } from './client/backend';
-import { NormlizePathInterceptor } from './client/path';
 import { TransportClient } from './client/client';
-import { DetectBodyInterceptor } from './client/body';
+import { RestfulBodyInterceptor } from './client/body';
 import { TransportServerOpts } from './server/options';
 import { TransportServer } from './server/server';
 import { ASSET_SERVR_PROVIDERS } from './asset.pdr';
-import { CatchInterceptor, DefaultStatusFormater, LogInterceptor, RespondInterceptor } from './interceptors';
+import { CatchInterceptor, DefaultStatusFormater, RestfulLogInterceptor, RespondInterceptor } from './interceptors';
 import { BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware, EncodeJsonMiddleware, HelmetMiddleware, SessionMiddleware } from './middlewares';
 import { TransportExecptionFilter, TransportFinalizeFilter } from './server/finalize-filter';
 import { TransportRespondAdapter } from './server/respond';
@@ -22,12 +21,11 @@ import { TransportRespondAdapter } from './server/respond';
         ...ASSET_SERVR_PROVIDERS,
         CatchInterceptor,
         DefaultStatusFormater,
-        LogInterceptor,
+        RestfulLogInterceptor,
         RespondInterceptor,
         
         RestfulEndpointBackend,
-        NormlizePathInterceptor,
-        DetectBodyInterceptor,
+        RestfulBodyInterceptor,
 
 
         BodyparserMiddleware,

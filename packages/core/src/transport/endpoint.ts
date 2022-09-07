@@ -1,5 +1,5 @@
 import { Abstract, Handler, isFunction, Type, chain, lang } from '@tsdi/ioc';
-import { Observable, defer, mergeMap, of } from 'rxjs';
+import { Observable, defer } from 'rxjs';
 import { EndpointContext, ConnectionContext } from './context';
 
 
@@ -134,20 +134,6 @@ export class InterceptorChain<TRequest, TResponse> implements Endpoint<TRequest,
         }
         return this.chain.handle(req, context)
     }
-}
-
-export class ProcesssEndpoint<TRequest, TResponse> implements Endpoint<any, TResponse> {
-    constructor(private process: Endpoint<TRequest, any>, private before?: Endpoint<any, TRequest>, private after?: Endpoint<any, TResponse>) {
-
-    }
-    handle(req: any, context: EndpointContext): Observable<TResponse> {
-        return (this.before ? this.before.handle(req, context) : of(req))
-            .pipe(
-                mergeMap(r => this.process.handle(r, context)),
-                mergeMap(res => this.after ? this.after.handle(res, context) : of(res))
-            )
-    }
-
 }
 
 /**

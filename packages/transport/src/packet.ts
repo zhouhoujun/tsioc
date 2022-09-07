@@ -1,4 +1,4 @@
-import { IncomingHeaders, IncomingPacket, OutgoingHeaders, Packet, TransportProtocol } from '@tsdi/core';
+import { IncomingHeaders, IncomingPacket, ListenOpts, OutgoingHeaders, Packet, TransportProtocol } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
 import { Writable, Duplex, Transform } from 'stream';
 import { ConnectionOpts } from './connection';

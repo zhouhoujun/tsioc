@@ -1,5 +1,5 @@
 import { IncomingPacket, ListenOpts, IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
-import { EMPTY_OBJ, Inject, Injectable, isString } from '@tsdi/ioc';
+import { EMPTY_OBJ, Inject, Injectable, isPlainObject, isString } from '@tsdi/ioc';
 import { ConnectionOpts, isBuffer, PacketProtocol } from '@tsdi/transport';
 import { Transform, Duplex, Writable, TransformCallback } from 'stream';
 import { parse, generate } from 'coap-packet';

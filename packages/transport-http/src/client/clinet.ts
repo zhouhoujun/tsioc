@@ -39,7 +39,7 @@ export type RequestOptions = HttpRequestOpts & HttpNodeOpts;
  * http client for nodejs
  */
 @Injectable()
-export class Http extends Client<HttpRequest, HttpEvent, HttpClientOpts, RequestOptions> implements OnDispose {
+export class Http extends Client<string, RequestOptions, HttpClientOpts, HttpRequest, HttpEvent> implements OnDispose {
 
     private _backend?: EndpointBackend<HttpRequest, HttpEvent>;
     private _client?: http2.ClientHttp2Session;

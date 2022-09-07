@@ -1,15 +1,15 @@
 import { Injectable } from '@tsdi/ioc';
-import { ClientSession, ClientBuilder, ClientStream, ev, TransportClient, PacketProtocol, parseToDuplex, TransportRequest } from '@tsdi/transport';
+import { ClientSession, ClientBuilder, ClientStream, ev, TransportClient, PacketProtocol, parseToDuplex } from '@tsdi/transport';
 import { Observable, Observer } from 'rxjs';
 import * as dgram from 'dgram';
 import * as net from 'net'
-import { IncomingHeaders, OutgoingHeaders, RequestOptions } from '@tsdi/core';
+import { IncomingHeaders, RequestOptions, TransportRequest } from '@tsdi/core';
 import { CoapClientOpts } from './client';
 import { CoapProtocol } from '../protocol';
 
 
 @Injectable()
-export class CoapClientBuilder implements ClientBuilder<TransportClient> {
+export class CoapClientBuilder implements ClientBuilder {
 
     buildRequest(url: string, options?: RequestOptions | undefined) {
         return new TransportRequest({ ...options, url });

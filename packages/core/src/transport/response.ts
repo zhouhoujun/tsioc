@@ -1,4 +1,4 @@
-import { OutgoingHeader, ResHeaders, ResHeadersLike, ResponsePacket } from '@tsdi/core';
+import { OutgoingHeader, ResHeaders, ResHeadersLike } from './headers';
 
 /**
  * Transport error response.
@@ -67,7 +67,7 @@ export class TransportHeaderResponse {
  * client receive Response.
  * response for `TransportClient`.
  */
-export class TransportResponse<T = any> extends TransportHeaderResponse implements ResponsePacket<T> {
+export class TransportResponse<T = any> extends TransportHeaderResponse {
     readonly body: T | null;
 
     constructor(options: {
@@ -90,3 +90,14 @@ export class TransportResponse<T = any> extends TransportHeaderResponse implemen
  */
 export type TransportEvent<T = any> = TransportErrorResponse | TransportHeaderResponse | TransportResponse<T>;
 
+/**
+ * An error that represents a failed attempt to JSON.parse text coming back
+ * from the server.
+ *
+ * It bundles the Error object with the actual response body that failed to parse.
+ *
+ */
+export interface ResponseJsonParseError {
+    error: Error;
+    text: string;
+}

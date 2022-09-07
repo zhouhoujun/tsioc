@@ -1,6 +1,6 @@
-import { ExecptionFilter, Interceptor } from '@tsdi/core';
+import { ExecptionFilter, Interceptor, TransportEvent, TransportRequest } from '@tsdi/core';
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { TransportRequest, TransportEvent, TransportClientOpts } from '@tsdi/transport';
+import { TransportClientOpts } from '@tsdi/transport';
 import { SocketConstructorOpts, NetConnectOpts } from 'net';
 import { ConnectionOptions } from 'tls';
 

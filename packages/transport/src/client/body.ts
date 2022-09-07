@@ -1,23 +1,24 @@
-import { Endpoint, EndpointContext, Interceptor, isBlob, isFormData, ResponseEvent, RestfulPacket } from '@tsdi/core';
-import { Injectable } from '@tsdi/ioc';
+import { Endpoint, EndpointContext, Interceptor, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, RestfulPacket, TransportEvent } from '@tsdi/core';
+import { Injectable, isString, type_bool, type_num, type_obj } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
+import { Stream } from 'stream';
 import { defer, mergeMap, Observable } from 'rxjs';
 import { hdr } from '../consts';
-import { createFormData, isFormDataLike } from '../utils';
+import { createFormData, isBuffer, isFormDataLike, isStream } from '../utils';
 
 
 @Injectable({ static: true })
-export class DetectBodyInterceptor implements Interceptor<RestfulPacket, ResponseEvent> {
+export class RestfulBodyInterceptor implements Interceptor<RestfulPacket, TransportEvent> {
 
     constructor() { }
 
-    intercept(req: RestfulPacket, next: Endpoint<RestfulPacket, ResponseEvent>, context: EndpointContext): Observable<ResponseEvent> {
-        let body = req.serializeBody();
+    intercept(req: RestfulPacket, next: Endpoint<RestfulPacket, TransportEvent>, context: EndpointContext): Observable<TransportEvent> {
+        let body = req.serializeBody ? req.serializeBody() : this.serializeBody(req.body);
         if (body == null) {
             return next.handle(req, context);
         }
         return defer(async () => {
-            const contentType = req.detectContentTypeHeader();
+            const contentType = req.detectContentTypeHeader ? req.detectContentTypeHeader() : this.detectContentTypeHeader(body);
             if (!req.headers.get(hdr.CONTENT_TYPE) && contentType) {
                 req.headers.set(hdr.CONTENT_TYPE, contentType);
             }
@@ -44,6 +45,73 @@ export class DetectBodyInterceptor implements Interceptor<RestfulPacket, Respons
         }).pipe(
             mergeMap(req => next.handle(req, context))
         );
+    }
+
+    /**
+     * Transform the free-form body into a serialized format suitable for
+     * transmission to the server.
+     */
+    serializeBody(body: any): ArrayBuffer | Stream | Buffer | Blob | FormData | string | null {
+        // If no body is present, no need to serialize it.
+        if (body === null) {
+            return null
+        }
+        // Check whether the body is already in a serialized form. If so,
+        // it can just be returned directly.
+        if (isArrayBuffer(body) || isBuffer(body) || isStream(body) || isBlob(body) || isFormDataLike(body) ||
+            isUrlSearchParams(body) || isString(body)) {
+            return body as any;
+        }
+
+        // Check whether the body is an object or array, and serialize with JSON if so.
+        if (typeof body === type_obj || typeof body === type_bool ||
+            Array.isArray(body)) {
+            return JSON.stringify(body)
+        }
+        // Fall back on toString() for everything else.
+        return (body as any).toString()
+    }
+    /**
+     * Examine the body and attempt to infer an appropriate MIME type
+     * for it.
+     *
+     * If no such type can be inferred, this method will return `null`.
+     */
+    detectContentTypeHeader(body: any): string | null {
+        // An empty body has no content type.
+        if (body === null) {
+            return null
+        }
+        // FormData bodies rely on the browser's content type assignment.
+        if (isFormDataLike(body)) {
+            return null
+        }
+        // Blobs usually have their own content type. If it doesn't, then
+        // no type can be inferred.
+        if (isBlob(body)) {
+            return body.type || null
+        }
+        // Array buffers have unknown contents and thus no type can be inferred.
+        if (isArrayBuffer(body)) {
+            return null
+        }
+        // Technically, strings could be a form of JSON data, but it's safe enough
+        // to assume they're plain strings.
+        if (isString(body)) {
+            return 'text/plain'
+        }
+        // `HttpUrlEncodedParams` has its own content-type.
+        if (body instanceof URLSearchParams) {
+            return 'application/x-www-form-urlencoded;charset=UTF-8'
+        }
+        // Arrays, objects, boolean and numbers will be encoded as JSON.
+        const type = typeof body;
+        if (type === type_obj || type === type_num ||
+            type === type_bool) {
+            return 'application/json'
+        }
+        // No type could be inferred.
+        return null
     }
 }
 

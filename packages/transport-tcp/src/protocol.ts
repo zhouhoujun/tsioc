@@ -1,5 +1,5 @@
 import { IncomingHeaders, IncomingPacket, ListenOpts, OutgoingHeaders, Packet } from '@tsdi/core';
-import { Injectable, isString } from '@tsdi/ioc';
+import { Injectable, isPlainObject, isString } from '@tsdi/ioc';
 import { ConnectionOpts, ConnectPacket, hdr, isBuffer, PacketProtocol, ServerRequest, SteamOptions } from '@tsdi/transport';
 import { Duplex, Transform, TransformCallback, Writable } from 'stream';
 import * as tsl from 'tls';
@@ -7,7 +7,6 @@ import { TcpStatus } from './status';
 
 @Injectable()
 export class TcpProtocol extends PacketProtocol {
-
     private _protocol = 'tcp';
     constructor(readonly status: TcpStatus) {
         super();

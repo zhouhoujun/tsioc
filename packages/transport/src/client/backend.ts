@@ -1,6 +1,6 @@
 /* eslint-disable no-case-declarations */
-import { EndpointBackend, IncomingHeaders, IncomingStatusHeaders, isArrayBuffer, isBlob, isFormData, mths, Redirector, RequestContext, ResHeaders, ResponseJsonParseError, RestfulPacket, RestfulStatus, TransportExecption, UnsupportedMediaTypeExecption } from '@tsdi/core';
-import { Abstract, EMPTY_OBJ, Injectable, InvocationContext, isUndefined, lang, type_undef } from '@tsdi/ioc';
+import { EndpointBackend, IncomingHeaders, IncomingStatusHeaders, isArrayBuffer, isBlob, isFormData, mths, Redirector, RequestContext, ResHeaders, ResponseJsonParseError, RestfulPacket, RestfulStatus, TransportErrorResponse, TransportEvent, TransportExecption, TransportHeaderResponse, TransportResponse, UnsupportedMediaTypeExecption } from '@tsdi/core';
+import { EMPTY_OBJ, Injectable, InvocationContext, isUndefined, lang, type_undef } from '@tsdi/ioc';
 import { Observable, Observer, throwError, finalize } from 'rxjs';
 import * as zlib from 'zlib';
 import { PassThrough, pipeline, Writable, Readable, PipelineSource } from 'stream';
@@ -10,7 +10,7 @@ import { MimeAdapter, MimeTypes } from '../mime';
 import { createFormData, isBuffer, isFormDataLike, toBuffer } from '../utils';
 import { ClientSession } from './session';
 import { TransportClientOpts } from './options';
-import { TransportErrorResponse, TransportResponse, TransportEvent, TransportHeaderResponse } from './response';
+
 
 
 const pmPipeline = promisify(pipeline);
@@ -35,7 +35,7 @@ export class RestfulEndpointBackend implements EndpointBackend<RestfulPacket, Tr
 
             req.headers.set(hdr.METHOD, method);
             req.headers.set(hdr.PATH, path);
-            !req.headers.has(hdr.CONTENT_TYPE) && req.headers.set(hdr.CONTENT_TYPE, req.detectContentTypeHeader()!)
+            !req.headers.has(hdr.CONTENT_TYPE) && req.headers.set(hdr.CONTENT_TYPE, req.detectContentTypeHeader?.() ?? ctype.APPL_JSON)
             !req.headers.has(hdr.ACCEPT) && req.headers.set(hdr.ACCEPT, ctype.REQUEST_ACCEPT);
 
             const opts = ctx.target.getOptions() as TransportClientOpts;
@@ -254,7 +254,7 @@ export class RestfulEndpointBackend implements EndpointBackend<RestfulPacket, Tr
             request.on(ev.TIMEOUT, onError);
 
             //todo send body.
-            let data = req.serializeBody();
+            let data = req.serializeBody?.() ?? req.body;
             if (data === null) {
                 request.end();
             } else {

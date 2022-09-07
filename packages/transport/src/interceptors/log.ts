@@ -1,4 +1,4 @@
-import { BytesPipe, Endpoint, EndpointContext, Interceptor, TimesPipe, ConnectionContext, IncomingPacket } from '@tsdi/core';
+import { BytesPipe, Endpoint, EndpointContext, Interceptor, TimesPipe, ConnectionContext, IncomingPacket, Packet, RestfulPacket } from '@tsdi/core';
 import { Abstract, Inject, Injectable, isNumber, Nullable } from '@tsdi/ioc';
 import { Level, Logger, matchLevel } from '@tsdi/logs';
 import * as chalk from 'chalk';
@@ -55,14 +55,14 @@ const defopts = {
  * Log interceptor.
  */
 @Injectable()
-export class LogInterceptor implements Interceptor {
+export class RestfulLogInterceptor implements Interceptor {
 
     private options: LogInterceptorOptions;
     constructor(@Nullable() options: LogInterceptorOptions, private formatter: ResponseStatusFormater) {
         this.options = { ...defopts, ...options } as LogInterceptorOptions;
     }
 
-    intercept(req: IncomingPacket, next: Endpoint, ctx: EndpointContext): Observable<any> {
+    intercept(req: RestfulPacket, next: Endpoint, ctx: EndpointContext): Observable<any> {
         const logger: Logger = ctx.target.logger ?? ctx.get(Logger);
 
         const level = this.options.level;
@@ -72,9 +72,9 @@ export class LogInterceptor implements Interceptor {
 
         //todo console log and other. need to refactor formater.
         const start = hrtime();
-        const method = chalk.cyan((ctx as ConnectionContext).method ?? req.method);
-        const url = (ctx as ConnectionContext).url ?? req.url;
-        logger[level]( incoming, method, url);
+        const method = chalk.cyan(req.method);
+        const url = req.url;
+        logger[level](incoming, method, url);
         return next.handle(req, ctx)
             .pipe(
                 map(res => {

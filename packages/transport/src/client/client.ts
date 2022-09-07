@@ -1,13 +1,10 @@
-import { EndpointBackend, OnDispose, RequestContext, Client, RequestOptions, Packet } from '@tsdi/core';
+import { EndpointBackend, OnDispose, RequestContext, Client, RequestOptions, Packet, TransportEvent, TransportRequest } from '@tsdi/core';
 import { EMPTY, Injectable, isString, Nullable } from '@tsdi/ioc';
 import { map, Observable, of } from 'rxjs';
 import { ClientSession } from './session';
 import { RestfulEndpointBackend } from './backend';
-import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } from './options';
-// import { DetectBodyInterceptor } from './body';
-// import { NormlizePathInterceptor } from './path';
+import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, Pattern, TransportClientOpts } from './options';
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
-import { TransportEvent } from './response';
 import { ClientBuilder } from './builder';
 
 
@@ -23,7 +20,7 @@ const tsptDeftOpts = {
  */
 
 @Injectable()
-export class TransportClient<ReqOpts extends RequestOptions = RequestOptions> extends Client<Packet, TransportEvent, TransportClientOpts, ReqOpts> implements OnDispose {
+export class TransportClient<ReqOpts extends RequestOptions = RequestOptions> extends Client<Pattern, ReqOpts, TransportClientOpts> implements OnDispose {
 
     private _connection?: ClientSession;
     constructor(@Nullable() options: TransportClientOpts) {
@@ -65,11 +62,11 @@ export class TransportClient<ReqOpts extends RequestOptions = RequestOptions> ex
         super.initContext(options);
     }
 
-    protected buildRequest(context: RequestContext, url: string | Packet, options?: ReqOpts | undefined): Packet {
+    protected buildRequest(context: RequestContext, url: Pattern | TransportRequest, options?: ReqOpts | undefined): TransportRequest {
         context.setValue(ClientSession, this.connection);
         const opts = this.getOptions();
         const builder = this.context.get(opts.builder!);
-        return isString(url) ? builder.buildRequest(url, options) : url;
+        return url instanceof TransportRequest ? url : builder.buildRequest(url as Pattern, options);
     }
 
     protected connect(): Observable<ClientSession> {

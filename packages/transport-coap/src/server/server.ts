@@ -2,7 +2,7 @@
 import { ExecptionFilter, Interceptor, MiddlewareType } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
 import {
-    CatchInterceptor, LogInterceptor, RespondInterceptor, TransportServer,
+    CatchInterceptor, RestfulLogInterceptor, RespondInterceptor, TransportServer,
     TransportServerOpts, ServerRequest, ServerResponse
 } from '@tsdi/transport';
 import { ServerOpts } from 'net';
@@ -46,7 +46,7 @@ const defOpts = {
     execptionsToken: COAP_EXECPTION_FILTERS,
     middlewaresToken: COAP_MIDDLEWARES,
     interceptors: [
-        LogInterceptor,
+        RestfulLogInterceptor,
         CatchInterceptor,
         RespondInterceptor
     ],

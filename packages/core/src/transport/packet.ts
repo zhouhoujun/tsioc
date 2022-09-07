@@ -119,7 +119,7 @@ export interface RestfulPacket<T = any> {
      * 
      * @returns type of  ArrayBuffer | Stream | Buffer | Blob | FormData | string | null
      */
-    serializeBody(): any;
+    serializeBody?(): any;
 
     /**
      * Examine the body and attempt to infer an appropriate MIME type
@@ -127,7 +127,7 @@ export interface RestfulPacket<T = any> {
      *
      * If no such type can be inferred, this method will return `null`.
      */
-    detectContentTypeHeader(): string | null
+    detectContentTypeHeader?(): string | null
 }
 
 /**
@@ -158,71 +158,6 @@ export interface PacketClonable<T = any> {
      */
     clone?(data: { body?: T }): this;
 }
-
-
-
-/**
- * client response packet.
- */
-export interface ResponseHeader {
-    /**
-     * request url.
-     */
-    readonly url?: string;
-    /**
-     * headers
-     */
-    readonly headers: ResHeaders;
-    /**
-     * is response status ok or not.
-     */
-    readonly ok?: boolean;
-    /**
-     * Get response status code.
-     */
-    get status(): number;
-    /**
-     * Textual description of response status code, defaults to OK.
-     *
-     * Do not depend on this.
-     */
-    get statusMessage(): string;
-}
-
-export interface ErrorResponse extends ResponseHeader {
-    readonly error: any;
-}
-
-/**
- * client response packet.
- */
-export interface ResponsePacket<T = any> extends ResponseHeader {
-    /**
-     * Get response body.
-     *
-     * @return {T}
-     * @api public
-     */
-    get body(): T | null;
-}
-
-/**
- * An error that represents a failed attempt to JSON.parse text coming back
- * from the server.
- *
- * It bundles the Error object with the actual response body that failed to parse.
- *
- */
-export interface ResponseJsonParseError {
-    error: Error;
-    text: string;
-}
-
-/**
- * client response event.
- */
-export type ResponseEvent<T = any> = ResponsePacket<T> | ResponseHeader | ErrorResponse;
-
 
 
 
