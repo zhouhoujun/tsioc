@@ -1,4 +1,5 @@
 import { OutgoingHeader, ResHeaders, ResHeadersLike } from './headers';
+import { Packet } from './packet';
 
 /**
  * Transport error response.
@@ -34,7 +35,7 @@ export class TransportErrorResponse {
  * client receive Response.
  * response for `TransportClient`.
  */
-export class TransportHeaderResponse {
+export class TransportHeaderResponse implements Packet<ResHeaders> {
     readonly url: string;
     readonly ok: boolean;
     readonly status: number;
@@ -85,10 +86,17 @@ export class TransportResponse<T = any> extends TransportHeaderResponse {
 }
 
 /**
+ * event response.
+ */
+export interface ResponseEvent {
+    type: number;
+}
+
+/**
  * transport event.
  * response for `TransportClient`.
  */
-export type TransportEvent<T = any> = TransportErrorResponse | TransportHeaderResponse | TransportResponse<T>;
+export type TransportEvent<T = any> = TransportErrorResponse | TransportHeaderResponse | TransportResponse<T> | ResponseEvent;
 
 /**
  * An error that represents a failed attempt to JSON.parse text coming back

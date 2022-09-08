@@ -2,7 +2,7 @@ import { HttpRequestMethod, mths, ReqHeaders, ReqHeadersLike } from '@tsdi/core'
 import { Injectable, InvocationContext, type_str } from '@tsdi/ioc';
 import { concatMap, filter, map, Observable, of } from 'rxjs';
 import { HttpHandler } from './handler';
-import { HttpParams, HttpParamsOptions } from './params';
+import { HttpParams } from './params';
 import { HttpRequest } from './request';
 import { HttpEvent, HttpResponse } from './response';
 
@@ -427,7 +427,7 @@ export class HttpClient {
                 if (options.params instanceof HttpParams) {
                     params = options.params
                 } else {
-                    params = new HttpParams({ fromObject: options.params } as HttpParamsOptions)
+                    params = new HttpParams({ params: options.params })
                 }
             }
 

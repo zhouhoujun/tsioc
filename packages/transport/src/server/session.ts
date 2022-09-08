@@ -1,4 +1,4 @@
-import { CommandOption, IncomingHeaders, OutgoingHeaders, RestfulPacket } from '@tsdi/core';
+import { CommandOption, IncomingHeaders, OutgoingHeaders, Packet } from '@tsdi/core';
 import { EMPTY_OBJ } from '@tsdi/ioc';
 import { Readable, Duplex, Transform } from 'stream';
 import { CommandOptions } from 'typeorm';

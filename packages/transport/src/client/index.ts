@@ -1,4 +1,3 @@
-// export * from './request';
 export * from './options';
 export * from './providers';
 export * from './body';

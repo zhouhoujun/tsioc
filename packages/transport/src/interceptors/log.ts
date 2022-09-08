@@ -1,4 +1,4 @@
-import { BytesPipe, Endpoint, EndpointContext, Interceptor, TimesPipe, ConnectionContext, IncomingPacket, Packet, RestfulPacket } from '@tsdi/core';
+import { BytesPipe, Endpoint, EndpointContext, Interceptor, TimesPipe, Packet } from '@tsdi/core';
 import { Abstract, Inject, Injectable, isNumber, Nullable } from '@tsdi/ioc';
 import { Level, Logger, matchLevel } from '@tsdi/logs';
 import * as chalk from 'chalk';
@@ -55,14 +55,14 @@ const defopts = {
  * Log interceptor.
  */
 @Injectable()
-export class RestfulLogInterceptor implements Interceptor {
+export class LogInterceptor implements Interceptor {
 
     private options: LogInterceptorOptions;
     constructor(@Nullable() options: LogInterceptorOptions, private formatter: ResponseStatusFormater) {
         this.options = { ...defopts, ...options } as LogInterceptorOptions;
     }
 
-    intercept(req: RestfulPacket, next: Endpoint, ctx: EndpointContext): Observable<any> {
+    intercept(req: Packet, next: Endpoint, ctx: EndpointContext): Observable<any> {
         const logger: Logger = ctx.target.logger ?? ctx.get(Logger);
 
         const level = this.options.level;

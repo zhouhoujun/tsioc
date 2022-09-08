@@ -1,15 +1,17 @@
 import { EndpointBackend, OnDispose, RequestContext, Client, RequestOptions, Packet, TransportEvent, TransportRequest } from '@tsdi/core';
-import { EMPTY, Injectable, isString, Nullable } from '@tsdi/ioc';
+import { EMPTY, Injectable, Nullable } from '@tsdi/ioc';
 import { map, Observable, of } from 'rxjs';
 import { ClientSession } from './session';
-import { RestfulEndpointBackend } from './backend';
+import { TransportBackend } from './backend';
 import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, Pattern, TransportClientOpts } from './options';
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
 import { ClientBuilder } from './builder';
+import { BodyContentInterceptor } from './body';
 
 
 const tsptDeftOpts = {
-    backend: RestfulEndpointBackend,
+    backend: TransportBackend,
+    interceptors: [BodyContentInterceptor],
     interceptorsToken: CLIENT_INTERCEPTORS,
     execptionsToken: CLIENT_EXECPTIONFILTERS
 } as TransportClientOpts;
@@ -48,7 +50,7 @@ export class TransportClient<ReqOpts extends RequestOptions = RequestOptions> ex
         const defaults = this.getDefaultOptions();
         const connectOpts = { ...defaults.connectOpts, ...options?.connectOpts };
         const connectionOpts = { objectMode: true, ...defaults.connectionOpts, ...options?.connectionOpts };
-        const interceptors = [...options?.interceptors ?? EMPTY];
+        const interceptors = options?.interceptors ?? EMPTY;
         const providers = options && options.providers ? [...TRANSPORT_CLIENT_PROVIDERS, ...options.providers] : TRANSPORT_CLIENT_PROVIDERS;
         const opts = { ...tsptDeftOpts, ...defaults, ...options, connectOpts, connectionOpts, interceptors, providers };
         if (!opts.builder) {

@@ -1,6 +1,6 @@
 import { ListenOpts, ModuleRef, Router, Server } from '@tsdi/core';
 import { Injectable, isBoolean, isFunction, lang, Nullable } from '@tsdi/ioc';
-import { CatchInterceptor, RestfulLogInterceptor, RespondInterceptor } from '../interceptors';
+import { CatchInterceptor, LogInterceptor, RespondInterceptor } from '../interceptors';
 import { TransportContext, SERVER_EXECPTION_FILTERS, SERVER_MIDDLEWARES } from './context';
 import { BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMiddleware, SessionMiddleware } from '../middlewares';
 import { MimeDb } from '../mime';
@@ -23,7 +23,7 @@ const defOpts = {
     },
     mimeDb: db,
     interceptors: [
-        RestfulLogInterceptor,
+        LogInterceptor,
         CatchInterceptor,
         RespondInterceptor
     ],

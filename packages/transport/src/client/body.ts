@@ -1,4 +1,4 @@
-import { Endpoint, EndpointContext, Interceptor, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, RestfulPacket, TransportEvent } from '@tsdi/core';
+import { Endpoint, EndpointContext, Interceptor, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, Packet, TransportEvent, TransportRequest } from '@tsdi/core';
 import { Injectable, isString, type_bool, type_num, type_obj } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { Stream } from 'stream';
@@ -8,17 +8,17 @@ import { createFormData, isBuffer, isFormDataLike, isStream } from '../utils';
 
 
 @Injectable({ static: true })
-export class RestfulBodyInterceptor implements Interceptor<RestfulPacket, TransportEvent> {
+export class BodyContentInterceptor implements Interceptor<TransportRequest, TransportEvent> {
 
     constructor() { }
 
-    intercept(req: RestfulPacket, next: Endpoint<RestfulPacket, TransportEvent>, context: EndpointContext): Observable<TransportEvent> {
-        let body = req.serializeBody ? req.serializeBody() : this.serializeBody(req.body);
+    intercept(req: TransportRequest, next: Endpoint<Packet, TransportEvent>, context: EndpointContext): Observable<TransportEvent> {
+        let body = this.serializeBody(req.body);
         if (body == null) {
             return next.handle(req, context);
         }
         return defer(async () => {
-            const contentType = req.detectContentTypeHeader ? req.detectContentTypeHeader() : this.detectContentTypeHeader(body);
+            const contentType = this.detectContentTypeHeader(body);
             if (!req.headers.get(hdr.CONTENT_TYPE) && contentType) {
                 req.headers.set(hdr.CONTENT_TYPE, contentType);
             }
@@ -34,7 +34,7 @@ export class RestfulBodyInterceptor implements Interceptor<RestfulPacket, Transp
                         });
                         body = form;
                     }
-                    body = body.getBuffer();
+                    body = (body as any).getBuffer();
                 }
                 req.body = body;
                 req.headers.set(hdr.CONTENT_LENGTH, Buffer.byteLength(body as Buffer).toString());

@@ -1,4 +1,4 @@
-import { IncomingPacket, IncomingHeaders } from '@tsdi/core';
+import { IncomingPacket, IncomingHeaders, Packet } from '@tsdi/core';
 import { Readable, Writable } from 'stream';
 import { ev, hdr } from '../consts';
 import { ServerStream } from './stream';
@@ -7,7 +7,7 @@ import { ServerStream } from './stream';
 /**
  * Server request.
  */
-export class ServerRequest extends Readable implements IncomingPacket {
+export class ServerRequest extends Readable implements IncomingPacket, Packet {
     readonly url: string;
     readonly method: string;
     readonly authority: string;

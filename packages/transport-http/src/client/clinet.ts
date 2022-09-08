@@ -1,6 +1,6 @@
 import { EMPTY, Injectable, InvocationContext, lang, Nullable, Token } from '@tsdi/ioc';
 import { RequestMethod, Client, EndpointBackend, OnDispose, InterceptorLike, RestfulOption, ResponseAs, RequestContext, mths, ReqHeaders, ReqHeadersLike, TransportProtocol, TransportOpts } from '@tsdi/core';
-import { HttpRequest, HttpEvent, HttpParams, HttpParamsOptions, HttpResponse, HttpBackend } from '@tsdi/common';
+import { HttpRequest, HttpEvent, HttpParams, HttpResponse, HttpBackend } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import * as http from 'http';
 import * as https from 'https';
@@ -123,7 +123,7 @@ export class Http extends Client<string, RequestOptions, HttpClientOpts, HttpReq
                 if (options.params instanceof HttpParams) {
                     params = options.params
                 } else {
-                    params = new HttpParams({ fromObject: options.params } as HttpParamsOptions)
+                    params = new HttpParams({ params: options.params })
                 }
             }
 

@@ -1,5 +1,4 @@
-import { InvocationContext } from '@tsdi/ioc';
-import { IncomingHeaders, OutgoingHeader, OutgoingHeaders, ReqHeaders, ResHeaders } from './headers';
+import { IncomingHeaders, OutgoingHeader, OutgoingHeaders, ReqHeadersLike, ResHeadersLike } from './headers';
 
 
 /**
@@ -57,33 +56,10 @@ export type HttpProtocols = 'http' | 'https';
 export type Protocols = 'tcp' | 'udp' | 'grpc' | 'rmq' | 'modbus' | 'kafka' | 'redis' | 'amqp' | 'ssl' | 'msg' | HttpProtocols | MqttProtocols;
 
 
-/**
- * restful request option.
- */
-export interface RestfulOption {
-    method?: RequestMethod;
-    body?: any;
-    headers?: Record<string, any>;
-    context?: InvocationContext;
-    params?: Record<string, any>;
-}
 
 
-/**
- * command request options.
- */
-export interface CommandOption {
-    cmd?: string;
-    topic?: string;
-    options?: Record<string, any>;
-    context?: InvocationContext;
-    playload?: any;
-}
 
-export type RequestOptions = RestfulOption | CommandOption;
-
-
-export interface RestfulPacket<T = any> {
+export interface Packet<THeaders = ReqHeadersLike, T = any> {
     /**
      * packet id.
      */
@@ -91,7 +67,7 @@ export interface RestfulPacket<T = any> {
     /**
         * headers
         */
-    readonly headers: ReqHeaders;
+    readonly headers: THeaders;
     /**
      * Outgoing URL
      */
@@ -99,7 +75,7 @@ export interface RestfulPacket<T = any> {
     /**
      * The outgoing request method.
      */
-    get method(): string | undefined;
+    readonly method?: string;
     /**
      * The request body, or `null` if one isn't set.
      *
@@ -107,45 +83,9 @@ export interface RestfulPacket<T = any> {
      * user-defined data type. However, middlewares should take care to preserve
      * idempotence by treating them as such.
      */
-    get body(): T | null;
-    /**
-     * set body.
-     */
-    set body(val: T | null);
-
-    /**
-     * Transform the free-form body into a serialized format suitable for
-     * transmission to the server.
-     * 
-     * @returns type of  ArrayBuffer | Stream | Buffer | Blob | FormData | string | null
-     */
-    serializeBody?(): any;
-
-    /**
-     * Examine the body and attempt to infer an appropriate MIME type
-     * for it.
-     *
-     * If no such type can be inferred, this method will return `null`.
-     */
-    detectContentTypeHeader?(): string | null
+    body?: T | null;
 }
 
-/**
- * command packet.
- */
-export interface CommandPacket {
-    /**
-     * packet id.
-     */
-    readonly id?: number;
-    readonly cmd: string | null;
-    readonly topic?: string | null;
-    readonly options?: Record<string, any>;
-    readonly playload?: any;
-}
-
-
-export type Packet = RestfulPacket | CommandPacket;
 
 
 /**

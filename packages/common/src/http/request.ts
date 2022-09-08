@@ -1,5 +1,5 @@
 
-import { isArrayBuffer, isBlob, isFormData, isUrlSearchParams, mths, ReqHeaders } from '@tsdi/core';
+import { isArrayBuffer, isBlob, isFormData, isUrlSearchParams, mths, ReqHeaders, TransportRequest } from '@tsdi/core';
 import { isString, type_bool, type_num, type_obj, InvocationContext } from '@tsdi/ioc';
 import { HttpParams } from './params';
 
@@ -44,7 +44,7 @@ function mightHaveBody(method: string): boolean {
  *
  * @publicApi
  */
-export class HttpRequest<T = any> {
+export class HttpRequest<T = any> implements TransportRequest {
     /**
      * The request body, or `null` if one isn't set.
      *

@@ -1,5 +1,5 @@
 /* eslint-disable no-case-declarations */
-import { EndpointBackend, IncomingHeaders, IncomingStatusHeaders, isArrayBuffer, isBlob, isFormData, mths, Redirector, RequestContext, ResHeaders, ResponseJsonParseError, RestfulPacket, RestfulStatus, TransportErrorResponse, TransportEvent, TransportExecption, TransportHeaderResponse, TransportResponse, UnsupportedMediaTypeExecption } from '@tsdi/core';
+import { EndpointBackend, IncomingHeaders, IncomingStatusHeaders, isArrayBuffer, isBlob, isFormData, mths, Redirector, RequestContext, ResHeaders, ResponseJsonParseError, Packet, RestfulStatus, TransportErrorResponse, TransportEvent, TransportExecption, TransportHeaderResponse, TransportResponse, UnsupportedMediaTypeExecption, TransportRequest } from '@tsdi/core';
 import { EMPTY_OBJ, Injectable, InvocationContext, isUndefined, lang, type_undef } from '@tsdi/ioc';
 import { Observable, Observer, throwError, finalize } from 'rxjs';
 import * as zlib from 'zlib';
@@ -18,9 +18,9 @@ const pmPipeline = promisify(pipeline);
  * transport restful endpoint backend.
  */
 @Injectable()
-export class RestfulEndpointBackend implements EndpointBackend<RestfulPacket, TransportEvent> {
+export class TransportBackend implements EndpointBackend<TransportRequest, TransportEvent> {
 
-    handle(req: RestfulPacket, ctx: RequestContext): Observable<TransportEvent> {
+    handle(req: TransportRequest, ctx: RequestContext): Observable<TransportEvent> {
         const session = ctx.get(ClientSession);
         const { method, url } = req;
         if (!session || session.destroyed) return throwError(() => new TransportErrorResponse({
@@ -35,7 +35,7 @@ export class RestfulEndpointBackend implements EndpointBackend<RestfulPacket, Tr
 
             req.headers.set(hdr.METHOD, method);
             req.headers.set(hdr.PATH, path);
-            !req.headers.has(hdr.CONTENT_TYPE) && req.headers.set(hdr.CONTENT_TYPE, req.detectContentTypeHeader?.() ?? ctype.APPL_JSON)
+            !req.headers.has(hdr.CONTENT_TYPE) && req.headers.set(hdr.CONTENT_TYPE, ctype.APPL_JSON)
             !req.headers.has(hdr.ACCEPT) && req.headers.set(hdr.ACCEPT, ctype.REQUEST_ACCEPT);
 
             const opts = ctx.target.getOptions() as TransportClientOpts;
@@ -254,7 +254,7 @@ export class RestfulEndpointBackend implements EndpointBackend<RestfulPacket, Tr
             request.on(ev.TIMEOUT, onError);
 
             //todo send body.
-            let data = req.serializeBody?.() ?? req.body;
+            let data = req.body;
             if (data === null) {
                 request.end();
             } else {

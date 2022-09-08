@@ -1,5 +1,5 @@
 import { HttpStatusCode } from './status';
-import { ResHeaders } from '@tsdi/core';
+import { ResHeaders, TransportHeaderResponse, TransportResponse } from '@tsdi/core';
 
 /**
  * Type enumeration for the different kinds of `HttpEvent`.
@@ -137,7 +137,7 @@ export type HttpEvent<T = any> =
  *
  * @publicApi
  */
-export abstract class HttpResponseBase {
+export abstract class HttpResponseBase implements TransportHeaderResponse {
     /**
      * All response headers.
      */
@@ -165,7 +165,7 @@ export abstract class HttpResponseBase {
     /**
      * URL of the resource retrieved, or null if not available.
      */
-    url: string | null;
+    url: string;
 
     readonly error?: any;
 
@@ -200,7 +200,7 @@ export abstract class HttpResponseBase {
         this.headers = init.headers || new ResHeaders();
         this.status = init.status !== undefined ? init.status : defaultStatus;
         this._message = init.statusText || defaultStatusText;
-        this.url = init.url || null
+        this.url = init.url || null!
     }
 
 }
@@ -214,7 +214,7 @@ export abstract class HttpResponseBase {
  *
  * @publicApi
  */
-export class HttpHeaderResponse extends HttpResponseBase {
+export class HttpHeaderResponse extends HttpResponseBase implements TransportHeaderResponse {
 
     /**
      * Create a new `HttpHeaderResponse` with the given parameters.
@@ -256,7 +256,7 @@ export class HttpHeaderResponse extends HttpResponseBase {
  *
  * @publicApi
  */
-export class HttpResponse<T = any> extends HttpResponseBase {
+export class HttpResponse<T = any> extends HttpResponseBase implements TransportResponse {
     /**
      * The response body, or `null` if one was not returned.
      */

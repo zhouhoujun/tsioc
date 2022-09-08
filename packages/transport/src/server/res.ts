@@ -1,4 +1,4 @@
-import { OutgoingHeader, OutgoingHeaders, OutgoingPacket, ResHeaders } from '@tsdi/core';
+import { OutgoingHeader, OutgoingHeaders, OutgoingPacket, Packet, ResHeaders } from '@tsdi/core';
 import { isArray, isFunction, isString } from '@tsdi/ioc';
 import { Writable } from 'stream';
 import { ServerStream } from './stream';

@@ -1,7 +1,7 @@
 import { Router, ExecptionFilter, MiddlewareLike } from '@tsdi/core';
 import { Injectable, Nullable, tokenId } from '@tsdi/ioc';
 import {
-    TransportExecptionFilter, CatchInterceptor, RestfulLogInterceptor, RespondInterceptor,
+    TransportExecptionFilter, CatchInterceptor, LogInterceptor, RespondInterceptor,
     BodyparserMiddleware, ContentMiddleware, EncodeJsonMiddleware, SessionMiddleware,
     TransportServer, TransportContext, TransportFinalizeFilter
 } from '@tsdi/transport';
@@ -36,7 +36,7 @@ export const TCP_SERVER_OPTS = {
         maxSize: 10 * 1024 * 1024,
     },
     interceptors: [
-        RestfulLogInterceptor,
+        LogInterceptor,
         CatchInterceptor,
         RespondInterceptor
     ],
