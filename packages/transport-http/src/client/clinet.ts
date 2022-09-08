@@ -1,5 +1,5 @@
 import { EMPTY, Injectable, InvocationContext, lang, Nullable, Token } from '@tsdi/ioc';
-import { RequestMethod, Client, EndpointBackend, OnDispose, InterceptorLike, RestfulOption, ResponseAs, RequestContext, mths, ReqHeaders, ReqHeadersLike, TransportProtocol, TransportOpts } from '@tsdi/core';
+import { RequestMethod, Client, EndpointBackend, OnDispose, InterceptorLike, RequestOptions, ResponseAs, RequestContext, mths, ReqHeaders, ReqHeadersLike, TransportProtocol, TransportOpts } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpParams, HttpResponse, HttpBackend } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import * as http from 'http';
@@ -22,24 +22,26 @@ const defOpts = {
 } as HttpClientOpts;
 
 
-export interface HttpRequestOpts extends RestfulOption {
+export interface HttpRequestOpts extends RequestOptions {
     body?: any;
     method?: RequestMethod | undefined;
     headers?: ReqHeadersLike;
-    params?: any;
+    params?: HttpParams | string
+    | ReadonlyArray<[string, string | number | boolean]>
+    | Record<string, string | number | boolean | ReadonlyArray<string | number | boolean>>;
     majorVersion?: number;
     reportProgress?: boolean | undefined;
 }
 
 export type HttpNodeOpts = http.RequestOptions & https.RequestOptions;
 
-export type RequestOptions = HttpRequestOpts & HttpNodeOpts;
+export type HttpReqOptions = HttpRequestOpts & HttpNodeOpts;
 
 /**
  * http client for nodejs
  */
 @Injectable()
-export class Http extends Client<string, RequestOptions, HttpClientOpts, HttpRequest, HttpEvent> implements OnDispose {
+export class Http extends Client<string, HttpReqOptions, HttpClientOpts, HttpRequest, HttpEvent> implements OnDispose {
 
     private _backend?: EndpointBackend<HttpRequest, HttpEvent>;
     private _client?: http2.ClientHttp2Session;
@@ -89,7 +91,7 @@ export class Http extends Client<string, RequestOptions, HttpClientOpts, HttpReq
         }
     }
 
-    protected override createContext(req: HttpRequest | string, options?: RequestOptions & ResponseAs): RequestContext {
+    protected override createContext(req: HttpRequest | string, options?: HttpReqOptions & ResponseAs): RequestContext {
         const ctx = super.createContext(req, options);
         if (this.client) {
             ctx.setValue(CLIENT_HTTP2SESSION, this.client);
@@ -97,7 +99,7 @@ export class Http extends Client<string, RequestOptions, HttpClientOpts, HttpReq
         return ctx;
     }
 
-    protected override buildRequest(context: RequestContext, first: string | HttpRequest<any>, options: RequestOptions & ResponseAs): HttpRequest<any> {
+    protected override buildRequest(context: RequestContext, first: string | HttpRequest<any>, options: HttpReqOptions & ResponseAs): HttpRequest<any> {
         // First, check whether the primary argument is an instance of `HttpRequest`.
         if (first instanceof HttpRequest) {
             // It is. The other arguments must be undefined (per the signatures) and can be
@@ -114,7 +116,7 @@ export class Http extends Client<string, RequestOptions, HttpClientOpts, HttpReq
             if (options.headers instanceof ReqHeaders) {
                 headers = options.headers
             } else {
-                headers = new ReqHeaders(options.headers as Record<string, any>)
+                headers = new ReqHeaders(options.headers)
             }
 
             // Sort out parameters.

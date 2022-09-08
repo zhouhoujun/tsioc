@@ -1,7 +1,6 @@
-import { CommandOption, IncomingHeaders, OutgoingHeaders, Packet } from '@tsdi/core';
+import { IncomingHeaders } from '@tsdi/core';
 import { EMPTY_OBJ } from '@tsdi/ioc';
 import { Readable, Duplex, Transform } from 'stream';
-import { CommandOptions } from 'typeorm';
 import { Connection, ConnectionOpts } from '../connection';
 import { ev } from '../consts';
 import { PacketProtocol } from '../packet';

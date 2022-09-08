@@ -1,4 +1,4 @@
-import { ExecptionFilter, Interceptor, RequestOptions, RestfulOption, TransportEvent, TransportRequest } from '@tsdi/core';
+import { ExecptionFilter, Interceptor, RequestOptions, TransportEvent, TransportRequest } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
 import { TransportClient, TransportClientOpts } from '@tsdi/transport';
 import { Packet } from 'coap-packet';
@@ -47,7 +47,7 @@ const defaults = {
  * COAP Client.
  */
 @Injectable()
-export class CoapClient extends TransportClient<RestfulOption> {
+export class CoapClient extends TransportClient<RequestOptions> {
 
     constructor(@Nullable() option: CoapClientOpts) {
         super(option);

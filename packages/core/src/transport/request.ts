@@ -1,5 +1,5 @@
 import { InvocationContext, isArray, isNil, isPlainObject, isString } from '@tsdi/ioc';
-import { ReqHeaders, ReqHeadersLike } from './headers';
+import { IncomingHeaders, ReqHeaders, ReqHeadersLike } from './headers';
 import { Packet, RequestMethod } from './packet';
 
 
@@ -238,24 +238,36 @@ export class TransportRequest<T = any> implements Packet<ReqHeaders, T> {
 /**
  * restful request option.
  */
-export interface RestfulOption {
+export interface RequestOptions {
+    /**
+     * request method.
+     */
     method?: RequestMethod;
+    /**
+     * request body.
+     */
     body?: any;
-    headers?: Record<string, any>;
-    context?: InvocationContext;
-    params?: Record<string, any>;
-}
-
-
-/**
- * command request options.
- */
-export interface CommandOption {
-    cmd?: string;
-    topic?: string;
-    options?: Record<string, any>;
-    context?: InvocationContext;
+    /**
+     * alias name of body
+     */
     playload?: any;
+    /**
+     * alias name of headers
+     */
+    options?: IncomingHeaders | ReqHeaders;
+    /**
+     * headers of request.
+     */
+    headers?: IncomingHeaders | ReqHeaders;
+    /**
+     * request context.
+     */
+    context?: InvocationContext;
+    /**
+     * request params.
+     */
+    params?: TransportParams | string
+    | ReadonlyArray<[string, string | number | boolean]>
+    | Record<string, string | number | boolean | ReadonlyArray<string | number | boolean>>;
 }
 
-export type RequestOptions = RestfulOption | CommandOption;
