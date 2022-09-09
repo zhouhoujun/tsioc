@@ -3,7 +3,7 @@ import * as Duplexify from 'duplexify';
 import { Readable, Writable, Duplex, DuplexOptions, Transform } from 'stream';
 import { ev } from './consts';
 import { InvalidSessionExecption } from './execptions';
-import { Closeable, PacketProtocol } from './packet';
+import { Closeable, TransportProtocol } from './packet';
 import { TransportStream } from './stream';
 
 
@@ -61,7 +61,7 @@ export abstract class Connection extends Duplexify implements Closeable {
     protected _generator: Writable;
 
     readonly state: ConnectionState;
-    constructor(readonly stream: Duplex, readonly packet: PacketProtocol, private opts: ConnectionOpts = EMPTY_OBJ) {
+    constructor(readonly stream: Duplex, readonly transport: TransportProtocol, private opts: ConnectionOpts = EMPTY_OBJ) {
         super(undefined, undefined, opts);
         this.state = {
             destroyCode: opts.noError ?? NO_ERROR,
@@ -75,8 +75,8 @@ export abstract class Connection extends Duplexify implements Closeable {
             writeQueueSize: 0
         };
 
-        this._parser = packet.transform(opts);
-        this._generator = packet.generate(stream, opts);
+        this._parser = transport.transform(opts);
+        this._generator = transport.generate(stream, opts);
         this.setWritable(this.writePipe(this._generator));
         this.setReadable(this.readPipe(this._parser));
 
@@ -113,6 +113,29 @@ export abstract class Connection extends Duplexify implements Closeable {
         return (this.state.flags & ConnectionStateFlags.ready) === 0;
     }
 
+    /**
+     * Enable/disable keep-alive functionality, and optionally set the initial
+     * delay before the first keepalive probe is sent on an idle socket.
+     *
+     * Set `initialDelay` (in milliseconds) to set the delay between the last
+     * data packet received and the first keepalive probe. Setting `0` for`initialDelay` will leave the value unchanged from the default
+     * (or previous) setting.
+     *
+     * Enabling the keep-alive functionality will set the following socket options:
+     *
+     * * `SO_KEEPALIVE=1`
+     * * `TCP_KEEPIDLE=initialDelay`
+     * * `TCP_KEEPCNT=10`
+     * * `TCP_KEEPINTVL=1`
+     * @since v0.1.92
+     * @param [enable=false]
+     * @param [initialDelay=0]
+     * @return The socket itself.
+     */
+    setKeepAlive(enable?: boolean, initialDelay?: number): this {
+        (this.stream as any).setKeepAlive?.(enable, initialDelay);
+        return this;
+    }
     /**
      * get packet next id.
      */

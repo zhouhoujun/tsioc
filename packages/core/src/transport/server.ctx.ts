@@ -7,11 +7,11 @@ import { PipeTransform } from '../pipes/pipe';
 import { ConnectionContext } from './context';
 import { TransportArgumentExecption } from './execptions';
 import { TransportArgumentResolver, TransportParameter } from './resolver';
-import { TransportProtocol } from './protocol';
+import { ProtocolStrategy } from './protocol';
 import { Server } from './server';
 
 export interface ServerContextOpts extends InvokeArguments {
-    transport?: TypeOf<TransportProtocol>
+    transport?: TypeOf<ProtocolStrategy>
 }
 
 /**
@@ -22,7 +22,7 @@ export abstract class ServerContext<TRequest = any, TResponse = any> extends Con
     /**
      * context protocol.
      */
-    readonly transport: TransportProtocol;
+    readonly transport: ProtocolStrategy;
 
     constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, options?: ServerContextOpts) {
         super(injector, {
@@ -36,7 +36,7 @@ export abstract class ServerContext<TRequest = any, TResponse = any> extends Con
         if (options?.transport) {
             this.transport = isFunction(options.transport) ? injector.get(options.transport) : options.transport;
         } else {
-            this.transport = injector.get(TransportProtocol);
+            this.transport = injector.get(ProtocolStrategy);
         }
     }
 

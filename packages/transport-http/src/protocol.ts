@@ -1,4 +1,4 @@
-import { ListenOpts, mths, TransportProtocol } from '@tsdi/core';
+import { ListenOpts, mths, ProtocolStrategy } from '@tsdi/core';
 import { Injectable, isNumber, isString } from '@tsdi/ioc';
 import { hdr } from '@tsdi/transport';
 import * as http from 'http';
@@ -7,7 +7,7 @@ import { TLSSocket } from 'tls';
 import { HttpStatus } from './status';
 
 @Injectable()
-export class HttpProtocol extends TransportProtocol {
+export class HttpProtocol extends ProtocolStrategy {
 
     private _protocol = 'http';
     constructor(readonly status: HttpStatus) {

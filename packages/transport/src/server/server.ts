@@ -1,5 +1,6 @@
-import { ListenOpts, ModuleRef, Router, Server } from '@tsdi/core';
-import { Injectable, isBoolean, isFunction, lang, Nullable } from '@tsdi/ioc';
+import { Endpoint, IncomingHeaders, ListenOpts, ModuleRef, Router, Server } from '@tsdi/core';
+import { Abstract, Destroyable, Injectable, isBoolean, isFunction, lang, Nullable } from '@tsdi/ioc';
+import { Duplex } from 'stream';
 import { CatchInterceptor, LogInterceptor, RespondInterceptor } from '../interceptors';
 import { TransportContext, SERVER_EXECPTION_FILTERS, SERVER_MIDDLEWARES } from './context';
 import { BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMiddleware, SessionMiddleware } from '../middlewares';
@@ -10,7 +11,11 @@ import { TransportServerOpts, SERVER_INTERCEPTORS } from './options';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';
 import { TRANSPORT_SERVR_PROVIDERS } from './providers';
-import { ServerBuilder } from './builder';
+import { ServerStream } from './stream';
+import { TransportProtocol } from '../packet';
+import { Connection, ConnectionOpts } from '../connection';
+import { Observable } from 'rxjs';
+import { ev } from '../consts';
 
 
 const defOpts = {
@@ -46,11 +51,11 @@ const defOpts = {
 /**
  * Transport Server
  */
-@Injectable()
-export class TransportServer extends Server<ServerRequest, ServerResponse, TransportContext, TransportServerOpts> {
+@Abstract()
+export abstract class TransportServer<T = any, TOpts extends TransportServerOpts = TransportServerOpts> extends Server<ServerRequest, ServerResponse, TransportContext, TOpts> {
 
-    private _server: any;
-    constructor(@Nullable() options: TransportServerOpts) {
+    private _server: T | null = null;
+    constructor(options: TOpts) {
         super(options)
     }
 
@@ -58,24 +63,93 @@ export class TransportServer extends Server<ServerRequest, ServerResponse, Trans
         return this.getOptions().proxy === true;
     }
 
-    get server(): any {
+    get server(): T | null {
         return this._server;
     }
 
     async start(): Promise<void> {
         try {
             const opts = this.getOptions();
-            const builder = this.context.get(opts.builder ?? ServerBuilder);
-            this._server = await builder.startup(this, opts);
+            const server = this._server = this.buildServer(opts);
+            const transport = this.getTransportProtocol(opts);
+            const logger = this.logger;
+            const sub = this.connect(server, transport, opts.connectionOpts)
+                .subscribe({
+                    next: (conn) => this.onRequest(conn),
+                    error: (err) => {
+                        logger.error(err);
+                    },
+                    complete: () => {
+                        logger.error('server shutdown');
+                    }
+                });
+            this.context.onDestroy(() => sub?.unsubscribe())
+            await this.listen(server, opts.listenOpts);
         } catch (err) {
             this.logger.error(err);
         }
     }
 
+    protected onRequest(conn: Connection) {
+        conn.on(ev.STREAM, (stream: ServerStream, headers: IncomingHeaders) => {
+            const ctx = this.buildContext(stream, headers);
+            this.handle(ctx, this.endpoint());
+        });
+    }
+
+    protected abstract buildServer(opts: TOpts): T;
+    protected abstract connect(server: T, parser: TransportProtocol, opts?: ConnectionOpts): Observable<Connection>;
+    /**
+     * listen
+     * @param server 
+     * @param opts 
+     */
+    protected abstract listen(server: T, opts: ListenOpts): Promise<void>;
+    /**
+     * 
+     * handle request.
+     * @param context 
+     * @param endpoint 
+     */
+    protected handle(ctx: TransportContext, endpoint: Endpoint): void {
+        const req = ctx.request;
+        const cancel = endpoint.handle(req, ctx)
+            .subscribe({
+                complete: () => {
+                    ctx.destroy()
+                }
+            });
+        const opts = ctx.target.getOptions() as TransportServerOpts;
+        opts.timeout && req.setTimeout(opts.timeout, () => {
+            req.emit(ev.TIMEOUT);
+            cancel?.unsubscribe()
+        });
+        req.once(ev.CLOSE, async () => {
+            await lang.delay(500);
+            cancel?.unsubscribe();
+            if (!ctx.sent) {
+                ctx.response.end()
+            }
+        })
+    }
+
+    protected getTransportProtocol(opts: TransportServerOpts) {
+        return this.context.get(opts.transport!);
+    }
+
+    protected buildContext(stream: ServerStream, headers: IncomingHeaders): TransportContext {
+        const request = new ServerRequest(stream, headers);
+        const response = new ServerResponse(stream, headers);
+        const parent = this.context;
+        return new TransportContext(parent.injector, request, response, this, { parent });
+    }
+
+
     async close(): Promise<void> {
-        if (isFunction((this.server as Closeable)?.close)) {
+        const server = this.server as any as Closeable & Destroyable
+        if (isFunction(server?.close)) {
             const defer = lang.defer();
-            (this.server as Closeable).close((err) => {
+            server.close((err) => {
                 if (err) {
                     this.logger.error(err);
                     defer.reject(err)
@@ -86,6 +160,8 @@ export class TransportServer extends Server<ServerRequest, ServerResponse, Trans
             });
             await defer.promise;
             this._server = null;
+        } else if (isFunction(server.destroy)) {
+            server.destroy();
         }
     }
 
@@ -93,7 +169,7 @@ export class TransportServer extends Server<ServerRequest, ServerResponse, Trans
         return defOpts;
     }
 
-    protected override initOption(options: TransportServerOpts): TransportServerOpts {
+    protected override initOption(options: TOpts): TOpts {
         const defOpts = this.getDefaultOptions();
         const listenOpts = { ...defOpts.listenOpts, ...options?.listenOpts };
         const connectionOpts = { objectMode: true, ...defOpts.connectionOpts, ...options?.connectionOpts };
@@ -109,8 +185,7 @@ export class TransportServer extends Server<ServerRequest, ServerResponse, Trans
         return opts;
     }
 
-    protected override initContext(options: TransportServerOpts<any>): void {
-        this.context.setValue(TransportServerOpts, options);
+    protected override initContext(options: TOpts): void {
         this.context.get(ModuleRef).setValue(ListenOpts, options.listenOpts);
 
         if (options.content && !isBoolean(options.content)) {

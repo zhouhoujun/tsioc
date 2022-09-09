@@ -14,7 +14,7 @@ export class ClientStream extends TransportStream {
         super(connection, opts);
         this.isClient = true;
         this.state.flags |= StreamStateFlags.headersSent;
-        const stat = connection.packet.status;
+        const stat = connection.transport.status;
         this.on(ev.HEADERS, (headers) => {
             if (stat.isContinue(stat.parse(headers[hdr.STATUS2] ?? headers[hdr.STATUS])))
                 this.emit(ev.CONTINUE);

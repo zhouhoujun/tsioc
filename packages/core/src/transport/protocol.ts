@@ -30,10 +30,10 @@ export abstract class ListenOpts {
 
 
 /**
- * transport adapter.
+ * protocol strategy.
  */
 @Abstract()
-export abstract class TransportProtocol {
+export abstract class ProtocolStrategy {
     /**
      * protocol name
      */

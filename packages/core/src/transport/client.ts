@@ -4,7 +4,7 @@ import { TransportOpts, TransportEndpoint } from './transport';
 import { RequestContext } from './context';
 import { ClientContext } from './client.ctx';
 import { OnDispose } from '../lifecycle';
-import { TransportRequest, RequestOptions } from './request';
+import { TransportRequest, RequestOptions, Pattern } from './request';
 import { TransportEvent, TransportResponse } from './response';
 
 
@@ -23,7 +23,7 @@ export abstract class ClientOpts<TRequest = TransportRequest, TResponse = Transp
  */
 @Abstract()
 export abstract class Client<
-    TPattern = string,
+    TPattern = Pattern,
     TReqOpts = RequestOptions,
     TOpts extends ClientOpts<TRequest, TResponse> = any,
     TRequest extends TransportRequest = TransportRequest,

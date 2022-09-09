@@ -1,9 +1,10 @@
 import { ExecptionFilter, Interceptor, RequestOptions, TransportEvent, TransportRequest } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
-import { TransportClient, TransportClientOpts } from '@tsdi/transport';
+import { ClientSession, parseToDuplex, RequestStrategy, TransportClient, TransportClientOpts } from '@tsdi/transport';
 import { Packet } from 'coap-packet';
 import * as dgram from 'dgram';
 import * as net from 'net'
+import { CoapProtocol } from '../protocol';
 
 
 @Abstract()
@@ -47,7 +48,7 @@ const defaults = {
  * COAP Client.
  */
 @Injectable()
-export class CoapClient extends TransportClient<RequestOptions> {
+export class CoapClient extends TransportClient<RequestOptions, CoapClientOpts> {
 
     constructor(@Nullable() option: CoapClientOpts) {
         super(option);
@@ -55,5 +56,13 @@ export class CoapClient extends TransportClient<RequestOptions> {
 
     protected override getDefaultOptions() {
         return defaults;
+    }
+
+    protected createConnection(opts: CoapClientOpts): ClientSession {
+        const socket = opts.baseOn === 'tcp' ? net.connect(opts.connectOpts as net.NetConnectOpts) : parseToDuplex(dgram.createSocket(opts.connectOpts as dgram.SocketOptions));
+        const transport = this.context.get(opts.transport ?? CoapProtocol);
+        const strategy = this.context.get(opts.request ?? RequestStrategy);
+        const client = new ClientSession(socket, transport, opts.connectionOpts, strategy);
+        return client;
     }
 }

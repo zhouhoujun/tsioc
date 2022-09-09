@@ -1,17 +1,17 @@
-import { EMPTY_OBJ, isDefined } from '@tsdi/ioc';
+import { Abstract, EMPTY_OBJ, Injectable, isDefined } from '@tsdi/ioc';
 import { IncomingHeaders, InvalidHeaderTokenExecption } from '@tsdi/core';
 import { Duplex } from 'stream';
-import { PacketProtocol } from '../packet';
+import { TransportProtocol } from '../packet';
 import { Connection, ConnectionOpts } from '../connection';
 import { GoawayExecption, InvalidSessionExecption } from '../execptions';
 import { ClientStream } from './stream';
-import { ClientBuilder } from './builder';
+import { SteamOptions } from '../stream';
 
 
 /**
  * Client Request options.
  */
-export interface ClientRequsetOpts {
+export interface ClientRequsetOpts extends SteamOptions {
     endStream?: boolean | undefined;
     exclusive?: boolean | undefined;
     parent?: number | undefined;
@@ -21,6 +21,12 @@ export interface ClientRequsetOpts {
 }
 
 
+
+@Abstract()
+export abstract class RequestStrategy {
+    abstract request(connection: ClientSession, headers: IncomingHeaders, options: ClientRequsetOpts): ClientStream;
+}
+
 /**
  * Client Session options.
  */
@@ -28,6 +34,8 @@ export interface ClientSessionOpts extends ConnectionOpts {
     authority?: string;
     clientId?: string;
 }
+
+
 
 /**
  * Client Session.
@@ -37,7 +45,7 @@ export class ClientSession extends Connection {
     private sid = 1;
     readonly authority: string;
     readonly clientId: string;
-    constructor(duplex: Duplex, packet: PacketProtocol, opts: ClientSessionOpts = EMPTY_OBJ, private builder: ClientBuilder) {
+    constructor(duplex: Duplex, packet: TransportProtocol, opts: ClientSessionOpts = EMPTY_OBJ, private strategy: RequestStrategy) {
         super(duplex, packet, opts)
         this.authority = opts.authority ?? '';
         this.clientId = opts.clientId ?? '';
@@ -65,14 +73,24 @@ export class ClientSession extends Connection {
             const keys = Object.keys(headers);
             for (let i = 0; i < keys.length; i++) {
                 const header = keys[i];
-                if (header && !this.packet.valid(header)) {
+                if (header && !this.transport.valid(header)) {
                     this.destroy(new InvalidHeaderTokenExecption('Header name' + header));
                 }
             }
         }
 
-        return this.builder.request(this, headers, options);
+        return this.strategy.request(this, headers, options ?? {});
 
     }
 }
 
+@Injectable()
+export class DefaultRequestStrategy extends RequestStrategy {
+    request(connection: ClientSession, headers: IncomingHeaders, options: ClientRequsetOpts): ClientStream {
+        const id = connection.getNextStreamId();
+        const stream = new ClientStream(connection, id, headers, options);
+        stream.write({ headers });
+        return stream;
+    }
+
+}

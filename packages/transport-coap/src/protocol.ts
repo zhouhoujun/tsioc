@@ -1,12 +1,12 @@
 import { IncomingPacket, ListenOpts, IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
 import { EMPTY_OBJ, Inject, Injectable, isPlainObject, isString } from '@tsdi/ioc';
-import { ConnectionOpts, isBuffer, PacketProtocol } from '@tsdi/transport';
+import { ConnectionOpts, isBuffer, TransportProtocol } from '@tsdi/transport';
 import { Transform, Duplex, Writable, TransformCallback } from 'stream';
 import { parse, generate } from 'coap-packet';
 import { CoapStatus } from './status';
 
 @Injectable()
-export class CoapProtocol extends PacketProtocol {
+export class CoapProtocol extends TransportProtocol {
     private _protocol = 'coap';
     constructor(readonly status: CoapStatus) {
         super();
@@ -37,21 +37,6 @@ export class CoapProtocol extends PacketProtocol {
         }
 
     }
-
-    // normlizeUrl(url: string, opts: ListenOpts): string {
-    //     if (!this.isAbsoluteUrl(url)) {
-    //         const { host, port, path } = opts;
-    //         const urlPrefix = `${this.protocol}://${host ?? 'localhost'}:${port ?? 3000}`;
-    //         const baseUrl = new URL(urlPrefix, path);
-    //         const uri = new URL(url, baseUrl);
-    //         url = uri.toString();
-    //     } else {
-    //         const uri = new URL(url);
-    //         this._protocol = uri.protocol.replace('://', '');
-    //         url = uri.toString();
-    //     }
-    //     return url;
-    // }
 
     isAbsoluteUrl(url: string): boolean {
         return coapPfx.test(url.trim())

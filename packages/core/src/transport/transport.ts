@@ -4,7 +4,7 @@ import { ExecptionChain } from '../execptions/chain';
 import { ExecptionFilter } from '../execptions/filter';
 import { Decoder, Encoder } from './coder';
 import { Endpoint, EndpointBackend, InterceptorChain, InterceptorLike, InterceptorType } from './endpoint';
-import { TransportProtocol } from './protocol';
+import { ProtocolStrategy } from './protocol';
 
 
 /**
@@ -35,7 +35,7 @@ export abstract class TransportOpts<TRequest, TResponse> {
     /**
      * transport protocol.
      */
-    abstract transport?: ClassType<TransportProtocol>;
+    abstract transport?: ClassType<ProtocolStrategy>;
     /**
      * encoder input.
      */

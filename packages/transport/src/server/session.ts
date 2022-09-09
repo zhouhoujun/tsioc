@@ -1,33 +1,38 @@
 import { IncomingHeaders } from '@tsdi/core';
-import { EMPTY_OBJ } from '@tsdi/ioc';
+import { Abstract, EMPTY_OBJ } from '@tsdi/ioc';
 import { Readable, Duplex, Transform } from 'stream';
 import { Connection, ConnectionOpts } from '../connection';
 import { ev } from '../consts';
-import { PacketProtocol } from '../packet';
+import { TransportProtocol } from '../packet';
 import { ServerStream } from './stream';
 
+@Abstract()
+export abstract class EventStrategy {
+    abstract bind(connection: ServerSession, opts: ConnectionOpts): void;
+}
 
 export class ServerSession extends Connection {
     private sid = 0;
-    constructor(stream: Duplex, packet: PacketProtocol, opts: ConnectionOpts = EMPTY_OBJ) {
+    constructor(stream: Duplex, packet: TransportProtocol, opts: ConnectionOpts = EMPTY_OBJ, private strategy: EventStrategy) {
         super(stream, packet, opts);
 
-        this.stream.on(ev.CONNECT, () => this.emit(ev.CONNECT, this));
-        this._parser.on(ev.DATA, (chunk) => {
-            if (this.packet.isHeader(chunk)) {
-                const packet = this.packet.parseHeader(chunk);
-                const id = this.getNextStreamId(packet.id);
-                if (id) {
-                    let rstm = this.state.streams.get(id);
-                    if (!rstm) {
-                        const headers = packet.headers;
-                        rstm = new ServerStream(this, id, {}, headers);
-                        this.state.streams.set(id, rstm);
-                        this.emit(ev.STREAM, rstm, headers)
-                    }
-                }
-            }
-        })
+        this.strategy.bind(this, opts);
+        // this.stream.on(ev.CONNECT, () => this.emit(ev.CONNECT, this));
+        // this._parser.on(ev.DATA, (chunk) => {
+        //     if (this.transport.isHeader(chunk)) {
+        //         const packet = this.transport.parseHeader(chunk);
+        //         const id = this.getNextStreamId(packet.id);
+        //         if (id) {
+        //             let rstm = this.state.streams.get(id);
+        //             if (!rstm) {
+        //                 const headers = packet.headers;
+        //                 rstm = new ServerStream(this, id, {}, headers);
+        //                 this.state.streams.set(id, rstm);
+        //                 this.emit(ev.STREAM, rstm, headers)
+        //             }
+        //         }
+        //     }
+        // })
     }
 
     getNextStreamId(id?: number) {

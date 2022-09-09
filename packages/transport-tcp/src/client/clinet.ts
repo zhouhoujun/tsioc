@@ -1,9 +1,10 @@
 import { OnDispose, RequestOptions } from '@tsdi/core';
 import { Injectable, Nullable } from '@tsdi/ioc';
 import { TcpClientOpts, TCP_EXECPTIONFILTERS, TCP_INTERCEPTORS } from './options';
-import { TransportClient } from '@tsdi/transport';
+import { ClientSession, ev, RequestStrategy, TransportClient } from '@tsdi/transport';
 import { TcpProtocol } from '../protocol';
-import { TcpClientBuilder } from './builder';
+import * as net from 'net';
+import * as tls from 'tls';
 
 
 
@@ -12,7 +13,6 @@ import { TcpClientBuilder } from './builder';
  */
 export const TCP_CLIENT_OPTS = {
     transport: TcpProtocol,
-    builder: TcpClientBuilder,
     interceptorsToken: TCP_INTERCEPTORS,
     execptionsToken: TCP_EXECPTIONFILTERS,
     connectionOpts: {
@@ -35,6 +35,15 @@ export class TcpClient extends TransportClient<RequestOptions> implements OnDisp
     protected override getDefaultOptions() {
         return TCP_CLIENT_OPTS;
     }
+
+    protected createConnection(opts: TcpClientOpts): ClientSession {
+        const socket = (opts.connectOpts as tls.ConnectionOptions).cert ? tls.connect(opts.connectOpts as tls.ConnectionOptions) : net.connect(opts.connectOpts as net.NetConnectOpts);
+        const transport = this.context.get(opts.transport ?? TcpProtocol);
+        const strategy = this.context.get(opts.request ?? RequestStrategy);
+        const client = new ClientSession(socket, transport, opts.connectionOpts, strategy);
+        return client;
+    }
+
 
     // protected override initOption(options?: TcpClientOpts): TcpClientOpts {
     //     const connectOpts = { ...defaults.connectOpts, ...options?.connectOpts };

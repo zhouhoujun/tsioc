@@ -25,7 +25,7 @@ import { DeviceController } from './controller';
     ],
     bootstrap: CoapServer
 })
-export class TcpTestModule {
+export class CoapTestModule {
 
 }
 
@@ -37,7 +37,7 @@ describe('CoAP Server & CoAP Client', () => {
     let client: CoapClient;
 
     before(async () => {
-        ctx = await Application.run(TcpTestModule);
+        ctx = await Application.run(CoapTestModule);
         injector = ctx.injector;
         client = injector.resolve(CoapClient, {
             provide: CoapClientOpts,

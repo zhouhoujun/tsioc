@@ -6,7 +6,7 @@ import { ReadableState, WritableState } from 'readable-stream';
 import { Connection } from './connection';
 import { ev } from './consts';
 import { setTimeout } from 'timers';
-import { Closeable, PacketProtocol } from './packet';
+import { Closeable, TransportProtocol } from './packet';
 import { isBuffer } from './utils';
 
 /**
@@ -192,7 +192,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
         this._id = id;
 
         this.uncork();
-        const steam = new BodyTransform(this.connection.packet, this.isClient ? id + 1 : id - 1);
+        const steam = this.connection.transport.streamFilter(this.isClient ? id + 1 : id - 1);
         process.nextTick(() => {
             this.connection
                 .pipe(steam)
@@ -593,21 +593,5 @@ export abstract class TransportStream extends Duplex implements Closeable {
     }
     protected _prependOnceListener(event: string | symbol, listener: (...args: any[]) => void): this {
         return super.prependOnceListener(event, listener);
-    }
-}
-
-
-export class BodyTransform extends Transform {
-
-    private streamId: Buffer;
-    constructor(private packet: PacketProtocol, id: number) {
-        super({ objectMode: true });
-        this.streamId = Buffer.from(id.toString());
-    }
-
-    override _transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
-        if (isBuffer(chunk) && this.packet.isPlayload(chunk, this.streamId)) {
-            callback(null, this.packet.parsePlayload(chunk, this.streamId));
-        }
     }
 }

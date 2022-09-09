@@ -97,7 +97,9 @@ export class ServerStream extends TransportStream {
         const connection = this.connection;
 
         let headRequest = false;
-        if (connection.packet.hasPlayload(headers)) {
+        const len = headers[hdr.CONTENT_LENGTH];
+        const hasPlayload = len ? true : false;
+        if (hasPlayload) {
             headRequest = options.endStream = true;
         }
 
@@ -165,7 +167,9 @@ export class ServerStream extends TransportStream {
         const conn = this.connection;
         this._sentHeaders = headers;
         this.state.flags |= StreamStateFlags.headersSent;
-        if (opts.endStream == true || conn.packet.hasPlayload(headers)) {
+        const len = headers[hdr.CONTENT_LENGTH];
+        const hasPlayload = len ? true : false;
+        if (opts.endStream == true || !hasPlayload) {
             opts.endStream = true;
             this.end();
         }

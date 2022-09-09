@@ -1,12 +1,12 @@
 import { IncomingHeaders, IncomingPacket, ListenOpts, OutgoingHeaders, Packet } from '@tsdi/core';
 import { Injectable, isPlainObject, isString } from '@tsdi/ioc';
-import { ConnectionOpts, ConnectPacket, hdr, isBuffer, PacketProtocol, ServerRequest, SteamOptions } from '@tsdi/transport';
+import { ConnectionOpts, ConnectPacket, hdr, isBuffer, TransportProtocol, ServerRequest, SteamOptions } from '@tsdi/transport';
 import { Duplex, Transform, TransformCallback, Writable } from 'stream';
 import * as tsl from 'tls';
 import { TcpStatus } from './status';
 
 @Injectable()
-export class TcpProtocol extends PacketProtocol {
+export class TcpProtocol extends TransportProtocol {
     private _protocol = 'tcp';
     constructor(readonly status: TcpStatus) {
         super();
@@ -43,30 +43,6 @@ export class TcpProtocol extends PacketProtocol {
         }
 
     }
-
-    // normlizeUrl(url: string, opts: ListenOpts): string {
-    //     if (!this.isAbsoluteUrl(url)) {
-    //         const { host, port, path } = opts;
-    //         const isIPC = !host && !port;
-    //         if (isIPC) {
-    //             this._protocol = 'ipc';
-    //         }
-    //         let baseUrl = isIPC ? new URL(`tcp://${host ?? 'localhost'}`) : `tcp://${host ?? 'localhost'}:${port ?? 3000}`;
-    //         if (path && !isIPC) {
-    //             baseUrl = new URL(path, baseUrl);
-    //         }
-    //         const uri = new URL(url, baseUrl);
-    //         if (isIPC) {
-    //             uri.protocol = 'ipc';
-    //         }
-    //         url = uri.toString();
-    //     } else {
-    //         const uri = new URL(url);
-    //         this._protocol = uri.protocol.replace('://', '');
-    //         url = uri.toString();
-    //     }
-    //     return url;
-    // }
 
     isAbsoluteUrl(url: string): boolean {
         return tcptl.test(url.trim())

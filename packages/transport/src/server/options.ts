@@ -7,8 +7,8 @@ import { ContentOptions, SessionOptions } from '../middlewares';
 import { MimeSource } from '../mime';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';
-import { ServerBuilder } from './builder';
-import { PacketProtocol } from '../packet';
+import { TransportProtocol } from '../packet';
+import { EventStrategy } from './session';
 
 
 @Abstract()
@@ -34,8 +34,9 @@ export abstract class TransportServerOpts<T = any> extends ServerOpts<ServerRequ
     abstract listenOpts: ListenOpts;
     abstract connectionOpts?: ConnectionOpts;
 
-    abstract transport?: ClassType<PacketProtocol>;
-    abstract builder?: ClassType<ServerBuilder>;
+    abstract transport?: ClassType<TransportProtocol>;
+
+    abstract event?: ClassType<EventStrategy>;
 
     /**
      * encoder input.

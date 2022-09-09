@@ -1,12 +1,12 @@
-import { EndpointBackend, OnDispose, RequestContext, Client, RequestOptions, Packet, TransportEvent, TransportRequest } from '@tsdi/core';
-import { EMPTY, Injectable, Nullable } from '@tsdi/ioc';
-import { map, Observable, of } from 'rxjs';
-import { ClientSession } from './session';
+import { EndpointBackend, OnDispose, RequestContext, Client, RequestOptions, Packet, TransportEvent, TransportRequest, Pattern } from '@tsdi/core';
+import { Abstract, EMPTY, Nullable } from '@tsdi/ioc';
+import { map, Observable, Observer, of } from 'rxjs';
+import { ClientSession, ClientSessionOpts } from './session';
 import { TransportBackend } from './backend';
-import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, Pattern, TransportClientOpts } from './options';
+import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } from './options';
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
-import { ClientBuilder } from './builder';
 import { BodyContentInterceptor } from './body';
+import { ev } from '../consts';
 
 
 const tsptDeftOpts = {
@@ -21,11 +21,11 @@ const tsptDeftOpts = {
  * Transport Client.
  */
 
-@Injectable()
-export class TransportClient<ReqOpts extends RequestOptions = RequestOptions> extends Client<Pattern, ReqOpts, TransportClientOpts> implements OnDispose {
+@Abstract()
+export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOptions, TOpts extends TransportClientOpts = TransportClientOpts> extends Client<Pattern, ReqOpts, TOpts> implements OnDispose {
 
     private _connection?: ClientSession;
-    constructor(@Nullable() options: TransportClientOpts) {
+    constructor(options: TOpts) {
         super(options);
     }
 
@@ -46,29 +46,23 @@ export class TransportClient<ReqOpts extends RequestOptions = RequestOptions> ex
         return tsptDeftOpts;
     }
 
-    protected override initOption(options?: TransportClientOpts): TransportClientOpts {
+    protected override initOption(options?: TOpts): TOpts {
         const defaults = this.getDefaultOptions();
         const connectOpts = { ...defaults.connectOpts, ...options?.connectOpts };
         const connectionOpts = { objectMode: true, ...defaults.connectionOpts, ...options?.connectionOpts };
         const interceptors = options?.interceptors ?? EMPTY;
         const providers = options && options.providers ? [...TRANSPORT_CLIENT_PROVIDERS, ...options.providers] : TRANSPORT_CLIENT_PROVIDERS;
         const opts = { ...tsptDeftOpts, ...defaults, ...options, connectOpts, connectionOpts, interceptors, providers };
-        if (!opts.builder) {
-            opts.builder = ClientBuilder;
-        }
-        return opts;
-    }
-
-    protected override initContext(options: TransportClientOpts): void {
-        this.context.setValue(TransportClientOpts, options);
-        super.initContext(options);
+        return opts as TOpts;
     }
 
     protected buildRequest(context: RequestContext, url: Pattern | TransportRequest, options?: ReqOpts | undefined): TransportRequest {
         context.setValue(ClientSession, this.connection);
-        const opts = this.getOptions();
-        const builder = this.context.get(opts.builder!);
-        return url instanceof TransportRequest ? url : builder.buildRequest(url as Pattern, options);
+        return url instanceof TransportRequest ? url : this.createRequest(url, options);
+    }
+
+    protected createRequest(pattern: Pattern, options?: ReqOpts) {
+        return new TransportRequest(pattern, options);
     }
 
     protected connect(): Observable<ClientSession> {
@@ -76,13 +70,47 @@ export class TransportClient<ReqOpts extends RequestOptions = RequestOptions> ex
             return of(this._connection);
         }
         const opts = this.getOptions();
-        return this.context.get(opts.builder!).build(this, opts)
+        return this.buildConnection(opts)
             .pipe(
                 map(stream => {
                     this._connection = stream;
                     return stream;
                 })
             );
+    }
+
+    protected abstract createConnection(opts: TOpts): ClientSession;
+
+    protected buildConnection(opts: TOpts): Observable<ClientSession> {
+        const logger = this.logger;
+        return new Observable((observer: Observer<ClientSession>) => {
+            const client = this.createConnection(opts);
+            if (opts.keepalive) {
+                client.setKeepAlive(true, opts.keepalive);
+            }
+
+            const onError = (err: Error) => {
+                logger.error(err);
+                observer.error(err);
+            }
+            const onClose = () => {
+                client.end();
+            };
+            const onConnected = () => {
+                observer.next(client);
+            }
+            client.on(ev.ERROR, onError);
+            client.on(ev.CLOSE, onClose);
+            client.on(ev.END, onClose);
+            client.on(ev.CONNECT, onConnected);
+
+            return () => {
+                client.off(ev.ERROR, onError);
+                client.off(ev.CLOSE, onClose);
+                client.off(ev.END, onClose);
+                client.off(ev.CONNECT, onConnected);
+            }
+        });
     }
 
     protected getBackend(): EndpointBackend<Packet, TransportEvent> {

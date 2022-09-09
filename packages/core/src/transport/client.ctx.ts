@@ -1,14 +1,14 @@
 import { Injector, InvokeArguments, isFunction, TypeOf } from '@tsdi/ioc';
 import { Client } from './client';
 import { RequestContext } from './context';
-import { TransportProtocol } from './protocol';
+import { ProtocolStrategy } from './protocol';
 
 
 /**
  * response option for request.
  */
 export interface ClientInvocationOptions extends InvokeArguments {
-    transport?: TypeOf<TransportProtocol>;
+    transport?: TypeOf<ProtocolStrategy>;
     observe?: 'body' | 'events' | 'response';
     responseType?: 'arraybuffer' | 'blob' | 'json' | 'text';
 }
@@ -22,7 +22,7 @@ export class ClientContext extends RequestContext {
      * instance of TransportClient.
      */
     readonly target: Client;
-    readonly transport: TransportProtocol;
+    readonly transport: ProtocolStrategy;
     readonly observe: 'body' | 'events' | 'response';
     responseType: 'arraybuffer' | 'blob' | 'json' | 'text';
 
@@ -35,7 +35,7 @@ export class ClientContext extends RequestContext {
         if (options?.transport) {
             this.transport = isFunction(options.transport) ? this.get(options.transport) : options.transport;
         } else {
-            this.transport = this.get(TransportProtocol);
+            this.transport = this.get(ProtocolStrategy);
         }
     }
 

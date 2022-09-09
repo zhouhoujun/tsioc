@@ -10,6 +10,7 @@ import { CatchInterceptor, DefaultStatusFormater, LogInterceptor, RespondInterce
 import { BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware, EncodeJsonMiddleware, HelmetMiddleware, SessionMiddleware } from './middlewares';
 import { TransportExecptionFilter, TransportFinalizeFilter } from './server/finalize-filter';
 import { TransportRespondAdapter } from './server/respond';
+import { DefaultRequestStrategy, RequestStrategy } from './client';
 
 
 @Module({
@@ -23,7 +24,7 @@ import { TransportRespondAdapter } from './server/respond';
         DefaultStatusFormater,
         LogInterceptor,
         RespondInterceptor,
-        
+
         TransportBackend,
         BodyContentInterceptor,
 
@@ -40,10 +41,11 @@ import { TransportRespondAdapter } from './server/respond';
         TransportFinalizeFilter,
         TransportExecptionFilter,
 
-        TransportClient,
-        TransportServer,
-        { provide: Client, useClass: TransportClient },
-        { provide: Server, useClass: TransportServer }
+        // TransportClient,
+        // TransportServer,
+        { provide: RequestStrategy, useClass: DefaultRequestStrategy, asDefault: true },
+        { provide: Client, useExisting: TransportClient },
+        { provide: Server, useExisting: TransportServer }
     ]
 })
 export class TransportModule {

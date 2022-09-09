@@ -1,5 +1,5 @@
-import { InvocationContext, isArray, isNil, isPlainObject, isString } from '@tsdi/ioc';
-import { IncomingHeaders, ReqHeaders, ReqHeadersLike } from './headers';
+import { EMPTY_OBJ, InvocationContext, isArray, isNil, isNumber, isPlainObject, isString } from '@tsdi/ioc';
+import { IncomingHeaders, ReqHeaders } from './headers';
 import { Packet, RequestMethod } from './packet';
 
 
@@ -26,19 +26,25 @@ export const EMPTY_CODER = {
         return value
     }
 } as ParameterCodec
-
 export class TransportParams {
     private map: Map<string, string[]>;
     private encoder: ParameterCodec;
     constructor(options: {
-        params?: string
+        params?: TransportParams | string
         | ReadonlyArray<[string, string | number | boolean]>
         | Record<string, string | number | boolean | ReadonlyArray<string | number | boolean>>;
         encoder?: ParameterCodec;
     } = {}) {
         this.encoder = options.encoder ?? EMPTY_CODER;
         this.map = new Map<string, string[]>();
-        if (isString(options.params)) {
+        if (options.params instanceof TransportParams) {
+            if (!options.encoder) {
+                this.encoder = options.params.encoder;
+            }
+            options.params.map.forEach((v, k) => {
+                this.map.set(k, v.slice(0));
+            });
+        } else if (isString(options.params)) {
             this.parse(options.params)
         } else if (isArray(options.params)) {
             options.params.forEach(pair => {
@@ -49,7 +55,7 @@ export class TransportParams {
             Object.keys(options.params).forEach(key => {
                 const value = (options.params as any)[key];
                 this.map!.set(key, isArray(value) ? value.map(v => parseString(v)) : [parseString(value)])
-            });
+            })
         }
     }
 
@@ -197,6 +203,17 @@ function parseString(value: string | number | boolean): string {
     return `${value}`
 }
 
+export interface CommandPattern {
+    [key: string]: string | number;
+    cmd: string;
+}
+
+export interface ObjectPattern {
+    [key: string]: string | number | ObjectPattern;
+}
+
+export type Pattern = string | number | CommandPattern | ObjectPattern;
+
 /**
  * Client Request.
  */
@@ -204,35 +221,55 @@ export class TransportRequest<T = any> implements Packet<ReqHeaders, T> {
 
     readonly url: string;
     readonly method: string | undefined;
-    readonly cmd?: string;
+    readonly pattern?: Pattern;
     readonly params: TransportParams;
     public body: T | null;
     readonly headers: ReqHeaders;
 
-    constructor(option: {
-        url: string;
-        cmd?: string;
-        method?: string;
-        headers?: ReqHeadersLike;
-        /**
-         * alise name of headers
-         */
-        options?: ReqHeadersLike;
-        params?: TransportParams;
-        body?: T;
-        /**
-         * alise name of body.
-         */
-        playload?: T;
-    }) {
-        this.url = option.url;
-        this.cmd = option.cmd;
+    constructor(pattern: Pattern, option: RequestOptions = EMPTY_OBJ) {
+        this.url = patternToPath(pattern);
+        this.pattern = pattern;
         this.method = option.method;
-        this.params = option.params ?? new TransportParams();
+        this.params = new TransportParams(option);
         this.body = option.body ?? option.playload ?? null;
         this.headers = new ReqHeaders(option.headers ?? option.options);
     }
 
+}
+
+/**
+ * Transforms the Pattern to Route.
+ * 1. If Pattern is a `string`, it will be returned as it is.
+ * 2. If Pattern is a `number`, it will be converted to `string`.
+ * 3. If Pattern is a `JSON` object, it will be transformed to Route. For that end,
+ * the function will sort properties of `JSON` Object and creates `route` string
+ * according to the following template:
+ * <key1>:<value1>/<key2>:<value2>/.../<keyN>:<valueN>
+ *
+ * @param  {Pattern} pattern - client pattern
+ * @returns string
+ */
+export function patternToPath(pattern: Pattern): string {
+    if (isString(pattern) || isNumber(pattern)) {
+        return `${pattern}`;
+    }
+    if (!isPlainObject(pattern)) {
+        return pattern;
+    }
+
+    const sortedKeys = Object.keys(pattern).sort((a, b) => a.localeCompare(b));
+
+    // Creates the array of Pattern params from sorted keys and their corresponding values
+    const sortedPatternParams = sortedKeys.map(key => {
+        let partialRoute = `"${key}":`;
+        partialRoute += isString(pattern[key])
+            ? `"${patternToPath(pattern[key])}"`
+            : patternToPath(pattern[key]);
+        return partialRoute;
+    });
+
+    const route = sortedPatternParams.join(',');
+    return `{${route}}`;
 }
 
 /**
@@ -269,5 +306,7 @@ export interface RequestOptions {
     params?: TransportParams | string
     | ReadonlyArray<[string, string | number | boolean]>
     | Record<string, string | number | boolean | ReadonlyArray<string | number | boolean>>;
+
+    encoder?: ParameterCodec;
 }
 

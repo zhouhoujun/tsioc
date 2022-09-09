@@ -49,6 +49,9 @@ export class ServerRequest extends Readable implements IncomingPacket, Packet {
             this.stream.destroyed;
     }
 
+    setTimeout(msecs: number, callback: () => void): void {
+        this.stream.setTimeout(msecs, callback);
+    }
 
     protected onStreamEnd() {
         this.push(null);
