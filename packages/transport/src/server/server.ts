@@ -1,5 +1,6 @@
 import { Endpoint, IncomingHeaders, ListenOpts, ModuleRef, Router, Server } from '@tsdi/core';
 import { Abstract, Destroyable, Injectable, isBoolean, isFunction, lang, Nullable } from '@tsdi/ioc';
+import { EventEmitter } from 'events';
 import { Duplex } from 'stream';
 import { CatchInterceptor, LogInterceptor, RespondInterceptor } from '../interceptors';
 import { TransportContext, SERVER_EXECPTION_FILTERS, SERVER_MIDDLEWARES } from './context';
@@ -16,6 +17,7 @@ import { TransportProtocol } from '../packet';
 import { Connection, ConnectionOpts } from '../connection';
 import { Observable } from 'rxjs';
 import { ev } from '../consts';
+import { EventStrategy, ServerSession } from './session';
 
 
 const defOpts = {
@@ -52,7 +54,7 @@ const defOpts = {
  * Transport Server
  */
 @Abstract()
-export abstract class TransportServer<T = any, TOpts extends TransportServerOpts = TransportServerOpts> extends Server<ServerRequest, ServerResponse, TransportContext, TOpts> {
+export abstract class TransportServer<T extends EventEmitter = any, TOpts extends TransportServerOpts = TransportServerOpts> extends Server<ServerRequest, ServerResponse, TransportContext, TOpts> {
 
     private _server: T | null = null;
     constructor(options: TOpts) {
@@ -90,7 +92,7 @@ export abstract class TransportServer<T = any, TOpts extends TransportServerOpts
         }
     }
 
-    protected onRequest(conn: Connection) {
+    protected onRequest(conn: ServerSession) {
         conn.on(ev.STREAM, (stream: ServerStream, headers: IncomingHeaders) => {
             const ctx = this.buildContext(stream, headers);
             this.handle(ctx, this.endpoint());
@@ -98,7 +100,30 @@ export abstract class TransportServer<T = any, TOpts extends TransportServerOpts
     }
 
     protected abstract buildServer(opts: TOpts): T;
-    protected abstract connect(server: T, parser: TransportProtocol, opts?: ConnectionOpts): Observable<Connection>;
+    
+    protected connect(server: T, transport: TransportProtocol, opts?: ConnectionOpts): Observable<ServerSession> {
+        return new Observable((observer) => {
+            const onError = (err: Error) => {
+                observer.error(err);
+            };
+            const onConnection = (stream: Duplex) => {
+                const strategy = this.context.get(this.getOptions().event ?? EventStrategy);
+                observer.next(new ServerSession(stream, transport, opts, strategy));
+            }
+            const onClose = () => {
+                observer.complete();
+            }
+            server.on(ev.ERROR, onError);
+            server.on(ev.CONNECTION, onConnection);
+            server.on(ev.CLOSE, onClose)
+
+            return () => {
+                server.off(ev.ERROR, onError);
+                server.off(ev.CLOSE, onClose);
+                server.off(ev.CONNECTION, onConnection);
+            }
+        })
+    }
     /**
      * listen
      * @param server 

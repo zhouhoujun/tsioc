@@ -74,7 +74,8 @@ export class CoapServer extends TransportServer<net.Server | dgram.Socket, CoapS
     protected buildServer(opts: CoapServerOpts): dgram.Socket | net.Server {
         return opts.baseOn == 'tcp' ? net.createServer(opts.serverOpts as net.ServerOpts) : dgram.createSocket(opts.serverOpts as dgram.SocketOptions)
     }
-    protected connect(server: dgram.Socket | net.Server, parser: TransportProtocol, opts?: ConnectionOpts | undefined): Observable<Connection> {
+
+    protected override connect(server: dgram.Socket | net.Server, parser: TransportProtocol, opts?: ConnectionOpts | undefined): Observable<ServerSession> {
         if (server instanceof net.Server) {
             return this.tcpConnect(server, parser, opts);
         } else {
@@ -120,10 +121,10 @@ export class CoapServer extends TransportServer<net.Server | dgram.Socket, CoapS
                 observer.complete();
             }
             server.on(ev.ERROR, onError);
-            server.on(ev.CONNECT, onListening);
+            server.on(ev.LISTENING, onListening);
             server.on(ev.CLOSE, onClose)
 
-            return () => {
+            return () => { 
                 server.off(ev.ERROR, onError);
                 server.off(ev.CLOSE, onClose);
                 server.off(ev.LISTENING, onListening);

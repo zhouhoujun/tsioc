@@ -84,29 +84,7 @@ export class TcpServer extends TransportServer<net.Server | tls.Server, TcpServe
     protected buildServer(opts: TcpServerOpts): net.Server | tls.Server {
         return (opts.serverOpts as tls.TlsOptions).cert ? tls.createServer(opts.serverOpts as tls.TlsOptions) : net.createServer(opts.serverOpts as net.ServerOpts)
     }
-    protected connect(server: net.Server | tls.Server, parser: TransportProtocol, opts?: ConnectionOpts | undefined): Observable<Connection> {
-        return new Observable((observer) => {
-            const onError = (err: Error) => {
-                observer.error(err);
-            };
-            const onConnection = (socket: net.Socket) => {
-                const strategy = this.context.get(this.getOptions().event ?? EventStrategy);
-                observer.next(new ServerSession(socket, parser, opts, strategy));
-            }
-            const onClose = () => {
-                observer.complete();
-            }
-            server.on(ev.ERROR, onError);
-            server.on(ev.CONNECTION, onConnection);
-            server.on(ev.CLOSE, onClose)
-
-            return () => {
-                server.off(ev.ERROR, onError);
-                server.off(ev.CLOSE, onClose);
-                server.off(ev.CONNECTION, onConnection);
-            }
-        })
-    }
+    
     protected listen(server: net.Server | tls.Server, opts: ListenOpts): Promise<void> {
         const defer = lang.defer<void>();
         server.listen(opts, defer.resolve);
