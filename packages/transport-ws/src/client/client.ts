@@ -1,6 +1,9 @@
+import { RequestOptions } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, Token, tokenId } from '@tsdi/ioc';
-import { TransportClient, TransportClientOpts } from '@tsdi/transport';
-import { ClientOptions as WsOptions } from 'ws';
+import { ClientConnection, RequestStrategy, TransportClient, TransportClientOpts } from '@tsdi/transport';
+import { Duplex } from 'form-data';
+import * as ws from 'ws';
+import { WsProtocol } from '../protocol';
 
 
 @Abstract()
@@ -10,15 +13,30 @@ export abstract class WSClitentOptions extends TransportClientOpts {
      * etg.` wss://webscocket.com/`
      */
     abstract url: string;
-    abstract options?: WsOptions;
+    abstract connectOpts?: ws.ClientOptions;
 }
+
+const defs = {
+    transport: WsProtocol
+} as WSClitentOptions;
 
 
 @Injectable()
-export class WsClient extends TransportClient {
+export class WsClient extends TransportClient<RequestOptions, WSClitentOptions> {
 
+    private socket?: ws.WebSocket;
     constructor(@Nullable() options: WSClitentOptions) {
         super(options);
     }
 
+    protected override getDefaultOptions(): TransportClientOpts {
+        return defs
+    }
+
+    protected override createDuplex(opts: WSClitentOptions): Duplex {
+        const socket = this.socket = new ws.WebSocket(opts.url, opts.connectOpts!)
+        const stream = ws.createWebSocketStream(socket, { objectMode: true });
+        return stream
+
+    }
 }

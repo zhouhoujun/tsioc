@@ -1,6 +1,6 @@
 import { IncomingHeaders, IncomingPacket, ListenOpts, OutgoingHeaders, Packet } from '@tsdi/core';
 import { Injectable, isPlainObject, isString } from '@tsdi/ioc';
-import { ConnectionOpts, ConnectPacket, hdr, isBuffer, TransportProtocol, ServerRequest, SteamOptions } from '@tsdi/transport';
+import { ConnectionOpts, ConnectPacket, hdr, isBuffer, TransportProtocol, ServerRequest, SteamOptions, PacketParser, PacketGenerator } from '@tsdi/transport';
 import { Duplex, Transform, TransformCallback, Writable } from 'stream';
 import * as tsl from 'tls';
 import { TcpStatus } from './status';
@@ -56,11 +56,11 @@ export class TcpProtocol extends TransportProtocol {
         return true;
     }
 
-    transform(opts: ConnectionOpts): Transform {
-        return new DelimiterTransform(opts);
+    transform(opts: ConnectionOpts): PacketParser {
+        return new DelimiterParser(opts);
     }
-    generate(stream: Duplex, opts: ConnectionOpts): Writable {
-        return new TcpGeneratorStream(stream, opts);
+    generate(stream: Duplex, opts: ConnectionOpts): PacketGenerator {
+        return new DelimiterGenerator(stream, opts);
     }
     isHeader(chunk: string | Buffer): boolean {
         if (isString(chunk)) {
@@ -87,7 +87,7 @@ export class TcpProtocol extends TransportProtocol {
 }
 
 
-export class DelimiterTransform extends Transform {
+export class DelimiterParser extends PacketParser {
     private delimiter: Buffer;
     constructor(opts: ConnectionOpts) {
         super(opts);
@@ -118,12 +118,20 @@ export class DelimiterTransform extends Transform {
         }
 
     }
+
+
+    setOptions(opts: ConnectionOpts): void {
+        throw new Error('Method not implemented.');
+    }
 }
 
 const maxSize = 10 * 1024 * 1024;
 const empty = Buffer.allocUnsafe(0);
 
-export class TcpGeneratorStream extends Transform {
+export class DelimiterGenerator extends PacketGenerator {
+    setOptions(opts: ConnectionOpts): void {
+        throw new Error('Method not implemented.');
+    }
 
     private delimiter: Buffer;
     private maxSize: number;

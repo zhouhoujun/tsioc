@@ -3,7 +3,7 @@ import { ExecptionFilter, Interceptor, ListenOpts, MiddlewareType } from '@tsdi/
 import { Abstract, Injectable, lang, Nullable, tokenId } from '@tsdi/ioc';
 import {
     CatchInterceptor, LogInterceptor, RespondInterceptor, TransportServer, TransportServerOpts, ServerRequest,
-    ServerResponse, Connection, ConnectionOpts, TransportProtocol, ServerSession, ev, parseToDuplex, EventStrategy
+    ServerResponse, Connection, ConnectionOpts, TransportProtocol, ServerConnection, ev, parseToDuplex, EventStrategy
 } from '@tsdi/transport';
 import * as net from 'net';
 import * as dgram from 'dgram';
@@ -75,7 +75,7 @@ export class CoapServer extends TransportServer<net.Server | dgram.Socket, CoapS
         return opts.baseOn == 'tcp' ? net.createServer(opts.serverOpts as net.ServerOpts) : dgram.createSocket(opts.serverOpts as dgram.SocketOptions)
     }
 
-    protected override connect(server: dgram.Socket | net.Server, parser: TransportProtocol, opts?: ConnectionOpts | undefined): Observable<ServerSession> {
+    protected override connect(server: dgram.Socket | net.Server, parser: TransportProtocol, opts?: ConnectionOpts | undefined): Observable<ServerConnection> {
         if (server instanceof net.Server) {
             return this.tcpConnect(server, parser, opts);
         } else {
@@ -84,14 +84,14 @@ export class CoapServer extends TransportServer<net.Server | dgram.Socket, CoapS
 
     }
 
-    protected tcpConnect(server: net.Server, parser: TransportProtocol, opts?: any): Observable<ServerSession> {
+    protected tcpConnect(server: net.Server, parser: TransportProtocol, opts?: any): Observable<ServerConnection> {
         return new Observable((observer) => {
             const onError = (err: Error) => {
                 observer.error(err);
             };
             const onConnection = (socket: net.Socket) => {
-                const strategy = this.context.get(this.getOptions().event ?? EventStrategy);
-                observer.next(new ServerSession(socket, parser, opts, strategy));
+                // const strategy = this.context.get(this.getOptions().event ?? EventStrategy);
+                observer.next(new ServerConnection(socket, parser, opts));
             }
             const onClose = () => {
                 observer.complete();
@@ -108,26 +108,26 @@ export class CoapServer extends TransportServer<net.Server | dgram.Socket, CoapS
         })
     }
 
-    protected udpConnect(server: dgram.Socket, parser: TransportProtocol, opts?: any): Observable<ServerSession> {
+    protected udpConnect(server: dgram.Socket, parser: TransportProtocol, opts?: any): Observable<ServerConnection> {
         return new Observable((observer) => {
             const onError = (err: Error) => {
                 observer.error(err);
             };
-            const onListening = () => {
-                const strategy = this.context.get(this.getOptions().event ?? EventStrategy);
-                observer.next(new ServerSession(parseToDuplex(server), parser, opts, strategy));
+            const onListening = (msg: Buffer, rinfo: dgram.RemoteInfo) => {
+                // const strategy = this.context.get(this.getOptions().event ?? EventStrategy);
+                observer.next(new ServerConnection(parseToDuplex(server), parser, opts));
             }
             const onClose = () => {
                 observer.complete();
             }
             server.on(ev.ERROR, onError);
-            server.on(ev.LISTENING, onListening);
+            server.on(ev.MESSAGE, onListening);
             server.on(ev.CLOSE, onClose)
 
             return () => { 
                 server.off(ev.ERROR, onError);
                 server.off(ev.CLOSE, onClose);
-                server.off(ev.LISTENING, onListening);
+                server.off(ev.MESSAGE, onListening);
             }
         })
     }

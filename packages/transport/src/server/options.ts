@@ -7,8 +7,8 @@ import { ContentOptions, SessionOptions } from '../middlewares';
 import { MimeSource } from '../mime';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';
-import { TransportProtocol } from '../packet';
-import { EventStrategy } from './session';
+import { TransportProtocol } from '../protocol';
+import { EventStrategy } from './connection';
 
 
 @Abstract()

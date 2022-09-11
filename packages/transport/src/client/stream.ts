@@ -2,7 +2,7 @@ import { IncomingHeaders, IncomingStatusHeaders } from '@tsdi/core';
 import { Readable, DuplexOptions } from 'stream';
 import { ev, hdr } from '../consts';
 import { SteamOptions, StreamStateFlags, TransportStream } from '../stream';
-import { ClientSession } from './session';
+import { ClientConnection } from './connection';
 
 
 /**
@@ -10,7 +10,7 @@ import { ClientSession } from './session';
  */
 export class ClientStream extends TransportStream {
 
-    constructor(readonly connection: ClientSession, id: number | undefined, private headers: IncomingHeaders, protected opts: SteamOptions) {
+    constructor(readonly connection: ClientConnection, id: number | undefined, private headers: IncomingHeaders, protected opts: SteamOptions) {
         super(connection, opts);
         this.isClient = true;
         this.state.flags |= StreamStateFlags.headersSent;

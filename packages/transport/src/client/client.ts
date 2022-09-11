@@ -1,12 +1,15 @@
 import { EndpointBackend, OnDispose, RequestContext, Client, RequestOptions, Packet, TransportEvent, TransportRequest, Pattern } from '@tsdi/core';
 import { Abstract, EMPTY, Nullable } from '@tsdi/ioc';
 import { map, Observable, Observer, of } from 'rxjs';
-import { ClientSession, ClientSessionOpts } from './session';
+import { Duplex } from 'stream';
+import { ClientConnection, RequestStrategy } from './connection';
 import { TransportBackend } from './backend';
 import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } from './options';
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
 import { BodyContentInterceptor } from './body';
 import { ev } from '../consts';
+import { TransportProtocol } from '../protocol';
+import { ConnectionOpts } from '../connection';
 
 
 const tsptDeftOpts = {
@@ -24,12 +27,12 @@ const tsptDeftOpts = {
 @Abstract()
 export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOptions, TOpts extends TransportClientOpts = TransportClientOpts> extends Client<Pattern, ReqOpts, TOpts> implements OnDispose {
 
-    private _connection?: ClientSession;
+    private _connection?: ClientConnection;
     constructor(options: TOpts) {
         super(options);
     }
 
-    get connection(): ClientSession {
+    get connection(): ClientConnection {
         return this._connection ?? null!;
     }
 
@@ -57,7 +60,7 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
     }
 
     protected buildRequest(context: RequestContext, url: Pattern | TransportRequest, options?: ReqOpts | undefined): TransportRequest {
-        context.setValue(ClientSession, this.connection);
+        context.setValue(ClientConnection, this.connection);
         return url instanceof TransportRequest ? url : this.createRequest(url, options);
     }
 
@@ -65,7 +68,7 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
         return new TransportRequest(pattern, options);
     }
 
-    protected connect(): Observable<ClientSession> {
+    protected connect(): Observable<ClientConnection> {
         if (this._connection && !this._connection.destroyed && !this._connection.isClosed) {
             return of(this._connection);
         }
@@ -79,12 +82,19 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
             );
     }
 
-    protected abstract createConnection(opts: TOpts): ClientSession;
+    protected abstract createDuplex(opts: TOpts): Duplex;
 
-    protected buildConnection(opts: TOpts): Observable<ClientSession> {
+    protected createConnection(duplex: Duplex, transport: TransportProtocol, strategy: RequestStrategy, opts?: ConnectionOpts): ClientConnection {
+        return new ClientConnection(duplex, transport, opts, strategy);
+    }
+
+    protected buildConnection(opts: TOpts): Observable<ClientConnection> {
         const logger = this.logger;
-        return new Observable((observer: Observer<ClientSession>) => {
-            const client = this.createConnection(opts);
+        return new Observable((observer: Observer<ClientConnection>) => {
+            const transport = this.context.get(opts.transport ?? TransportProtocol);
+            const strategy = this.context.get(opts.request ?? RequestStrategy);
+            const duplex = this.createDuplex(opts);
+            const client = this.createConnection(duplex, transport, strategy, opts.connectionOpts);
             if (opts.keepalive) {
                 client.setKeepAlive(true, opts.keepalive);
             }

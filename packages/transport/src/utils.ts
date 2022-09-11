@@ -1,7 +1,8 @@
 import { ArgumentExecption, isFunction, isString, TypeExecption } from '@tsdi/ioc';
 import { OutgoingPacket, isFormData } from '@tsdi/core';
 import { Buffer } from 'buffer';
-import { Stream, Readable } from 'stream';
+import { Stream, Readable, Duplex } from 'stream';
+import * as Duplexify from 'duplexify';
 import * as FormData from 'form-data';
 import { EventEmitter } from 'events';
 import { hdr } from './consts';
@@ -32,6 +33,11 @@ export function isFormDataLike(body: any): boolean {
 
 export function isStream(body: any): body is Stream {
   return body instanceof Stream || (body instanceof EventEmitter && isFunction((body as Stream).pipe))
+}
+
+
+export function isDuplex(target: any): target is Duplex {
+  return target instanceof Duplex || target instanceof Duplexify;
 }
 
 export function isJson(body: any) {

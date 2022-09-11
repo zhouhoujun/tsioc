@@ -2,8 +2,8 @@ import { ClientOpts, Decoder, Encoder, EndpointBackend, ExecptionFilter, Interce
 import { Abstract, ClassType, tokenId } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { Stream } from 'stream';
-import { TransportProtocol } from '../packet';
-import { ClientSessionOpts, RequestStrategy } from './session';
+import { TransportProtocol } from '../protocol';
+import { ClientConnectionOpts, RequestStrategy } from './connection';
 
 export interface SessionRequestOpts extends Record<string, any> {
     endStream?: boolean | undefined;
@@ -25,7 +25,7 @@ export abstract class TransportClientOpts extends ClientOpts {
      * connect options.
      */
     abstract connectOpts?: Record<string, any>;
-    abstract connectionOpts?: ClientSessionOpts;
+    abstract connectionOpts?: ClientConnectionOpts;
     /**
      * request opions.
      */

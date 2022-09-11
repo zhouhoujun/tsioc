@@ -1,10 +1,11 @@
 import { OnDispose, RequestOptions } from '@tsdi/core';
 import { Injectable, Nullable } from '@tsdi/ioc';
 import { TcpClientOpts, TCP_EXECPTIONFILTERS, TCP_INTERCEPTORS } from './options';
-import { ClientSession, ev, RequestStrategy, TransportClient } from '@tsdi/transport';
+import { ClientConnection, ev, RequestStrategy, TransportClient, TransportClientOpts } from '@tsdi/transport';
 import { TcpProtocol } from '../protocol';
 import * as net from 'net';
 import * as tls from 'tls';
+import { Duplex } from 'form-data';
 
 
 
@@ -36,12 +37,9 @@ export class TcpClient extends TransportClient<RequestOptions> implements OnDisp
         return TCP_CLIENT_OPTS;
     }
 
-    protected createConnection(opts: TcpClientOpts): ClientSession {
+    protected override createDuplex(opts: TransportClientOpts): Duplex {
         const socket = (opts.connectOpts as tls.ConnectionOptions).cert ? tls.connect(opts.connectOpts as tls.ConnectionOptions) : net.connect(opts.connectOpts as net.NetConnectOpts);
-        const transport = this.context.get(opts.transport ?? TcpProtocol);
-        const strategy = this.context.get(opts.request ?? RequestStrategy);
-        const client = new ClientSession(socket, transport, opts.connectionOpts, strategy);
-        return client;
+        return socket;
     }
 
 

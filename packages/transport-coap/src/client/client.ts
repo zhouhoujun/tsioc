@@ -1,9 +1,10 @@
 import { ExecptionFilter, Interceptor, RequestOptions, TransportEvent, TransportRequest } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
-import { ClientSession, parseToDuplex, RequestStrategy, TransportClient, TransportClientOpts } from '@tsdi/transport';
+import { ClientConnection, parseToDuplex, RequestStrategy, TransportClient, TransportClientOpts } from '@tsdi/transport';
 import { Packet } from 'coap-packet';
 import * as dgram from 'dgram';
 import * as net from 'net'
+import { Duplex } from 'stream';
 import { CoapProtocol } from '../protocol';
 
 
@@ -31,6 +32,7 @@ export const COAP_EXECPTIONFILTERS = tokenId<ExecptionFilter[]>('COAP_EXECPTIONF
 const defaults = {
     interceptorsToken: COAP_INTERCEPTORS,
     execptionsToken: COAP_EXECPTIONFILTERS,
+    transport: CoapProtocol,
     interceptors: [
     ],
     address: {
@@ -58,11 +60,8 @@ export class CoapClient extends TransportClient<RequestOptions, CoapClientOpts> 
         return defaults;
     }
 
-    protected createConnection(opts: CoapClientOpts): ClientSession {
+    protected override createDuplex(opts: CoapClientOpts): Duplex {
         const socket = opts.baseOn === 'tcp' ? net.connect(opts.connectOpts as net.NetConnectOpts) : parseToDuplex(dgram.createSocket(opts.connectOpts as dgram.SocketOptions));
-        const transport = this.context.get(opts.transport ?? CoapProtocol);
-        const strategy = this.context.get(opts.request ?? RequestStrategy);
-        const client = new ClientSession(socket, transport, opts.connectionOpts, strategy);
-        return client;
+        return socket;
     }
 }

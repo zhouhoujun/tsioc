@@ -16,18 +16,22 @@ export interface ConnectPacket {
 export abstract class TransportProtocol extends ProtocolStrategy {
     abstract valid(header: string): boolean;
 
-
-    // abstract isHeader(chunk: any): boolean;
-    // abstract parseHeader(chunk: any): IncomingPacket;
-    // abstract hasPlayload(headers: IncomingHeaders | OutgoingHeaders): boolean;
-    // abstract isPlayload(chunk: any, streamId: Buffer): boolean;
-    // abstract parsePlayload(chunk: any, streamId: Buffer): any;
-    abstract transform(opts: ConnectionOpts): Transform;
-    abstract generate(stream: Duplex, opts: ConnectionOpts): Writable;
+    abstract transform(opts: ConnectionOpts): PacketParser;
+    abstract generate(stream: Duplex, opts: ConnectionOpts): PacketGenerator;
 
     streamFilter(streamId: number): Transform {
         return new FilterTransform(streamId);
     }
+}
+
+@Abstract()
+export abstract class PacketParser extends Transform {
+    abstract setOptions(opts: ConnectionOpts): void;
+}
+
+@Abstract()
+export abstract class PacketGenerator extends Transform {
+    abstract setOptions(opts: ConnectionOpts): void;
 }
 
 

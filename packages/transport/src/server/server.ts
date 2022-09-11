@@ -1,7 +1,7 @@
 import { Endpoint, IncomingHeaders, ListenOpts, ModuleRef, Router, Server } from '@tsdi/core';
-import { Abstract, Destroyable, Injectable, isBoolean, isFunction, lang, Nullable } from '@tsdi/ioc';
+import { Abstract, Destroyable, Execption, Injectable, isBoolean, isFunction, lang, Nullable } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
-import { Duplex } from 'stream';
+import { Readable, Writable, Duplex } from 'stream';
 import { CatchInterceptor, LogInterceptor, RespondInterceptor } from '../interceptors';
 import { TransportContext, SERVER_EXECPTION_FILTERS, SERVER_MIDDLEWARES } from './context';
 import { BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMiddleware, SessionMiddleware } from '../middlewares';
@@ -13,11 +13,12 @@ import { ServerRequest } from './req';
 import { ServerResponse } from './res';
 import { TRANSPORT_SERVR_PROVIDERS } from './providers';
 import { ServerStream } from './stream';
-import { TransportProtocol } from '../packet';
+import { TransportProtocol } from '../protocol';
 import { Connection, ConnectionOpts } from '../connection';
 import { Observable } from 'rxjs';
 import { ev } from '../consts';
-import { EventStrategy, ServerSession } from './session';
+import { EventStrategy, ServerConnection } from './connection';
+import { isDuplex } from '../utils';
 
 
 const defOpts = {
@@ -92,7 +93,7 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
         }
     }
 
-    protected onRequest(conn: ServerSession) {
+    protected onRequest(conn: ServerConnection) {
         conn.on(ev.STREAM, (stream: ServerStream, headers: IncomingHeaders) => {
             const ctx = this.buildContext(stream, headers);
             this.handle(ctx, this.endpoint());
@@ -100,15 +101,15 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
     }
 
     protected abstract buildServer(opts: TOpts): T;
-    
-    protected connect(server: T, transport: TransportProtocol, opts?: ConnectionOpts): Observable<ServerSession> {
+
+    protected connect(server: T, transport: TransportProtocol, opts?: ConnectionOpts): Observable<ServerConnection> {
         return new Observable((observer) => {
             const onError = (err: Error) => {
                 observer.error(err);
             };
-            const onConnection = (stream: Duplex) => {
-                const strategy = this.context.get(this.getOptions().event ?? EventStrategy);
-                observer.next(new ServerSession(stream, transport, opts, strategy));
+            const onConnection = (conn: any, ...args: any[]) => {
+                const duplex = isDuplex(conn) ? conn : this.parseToDuplex(conn, ...args);
+                observer.next(this.createConnection(duplex, transport, opts));
             }
             const onClose = () => {
                 observer.complete();
@@ -124,6 +125,15 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
             }
         })
     }
+
+    protected parseToDuplex(conn: any, ...args: any[]): Duplex {
+        throw new Execption('parse connection client to Duplex not implemented.')
+    }
+
+    protected createConnection(duplex: Duplex, transport: TransportProtocol, opts?: ConnectionOpts) {
+        return new ServerConnection(duplex, transport, opts);
+    }
+
     /**
      * listen
      * @param server 

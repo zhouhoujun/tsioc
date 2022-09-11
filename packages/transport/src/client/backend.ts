@@ -8,7 +8,7 @@ import { promisify } from 'util';
 import { ctype, ev, hdr } from '../consts';
 import { MimeAdapter, MimeTypes } from '../mime';
 import { createFormData, isBuffer, isFormDataLike, toBuffer } from '../utils';
-import { ClientSession } from './session';
+import { ClientConnection } from './connection';
 import { TransportClientOpts } from './options';
 
 
@@ -21,7 +21,7 @@ const pmPipeline = promisify(pipeline);
 export class TransportBackend implements EndpointBackend<TransportRequest, TransportEvent> {
 
     handle(req: TransportRequest, ctx: RequestContext): Observable<TransportEvent> {
-        const session = ctx.get(ClientSession);
+        const session = ctx.get(ClientConnection);
         const { method, url } = req;
         if (!session || session.destroyed) return throwError(() => new TransportErrorResponse({
             url,

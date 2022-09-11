@@ -1,6 +1,6 @@
 import { IncomingPacket, ListenOpts, IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
 import { EMPTY_OBJ, Inject, Injectable, isPlainObject, isString } from '@tsdi/ioc';
-import { ConnectionOpts, isBuffer, TransportProtocol } from '@tsdi/transport';
+import { ConnectionOpts, isBuffer, PacketGenerator, PacketParser, TransportProtocol } from '@tsdi/transport';
 import { Transform, Duplex, Writable, TransformCallback } from 'stream';
 import { parse, generate } from 'coap-packet';
 import { CoapStatus } from './status';
@@ -64,11 +64,11 @@ export class CoapProtocol extends TransportProtocol {
     parsePlayload(chunk: any, streamId: Buffer) {
         throw new Error('Method not implemented.');
     }
-    transform(opts: ConnectionOpts): Transform {
-        return new CoapParserStream(opts);
+    transform(opts: ConnectionOpts): PacketParser {
+        return new CoapPacketParser(opts);
     }
-    generate(stream: Duplex, opts: ConnectionOpts): Writable {
-        return new CoapGeneratorStream(stream, opts);
+    generate(stream: Duplex, opts: ConnectionOpts): PacketGenerator {
+        return new CoapPacketGenerator(stream, opts);
     }
 
 }
@@ -76,7 +76,10 @@ export class CoapProtocol extends TransportProtocol {
 
 const coapPfx = /^coap:\/\//i;
 
-export class CoapParserStream extends Transform {
+export class CoapPacketParser extends PacketParser {
+    setOptions(opts: ConnectionOpts): void {
+        throw new Error('Method not implemented.');
+    }
 
     private delimiter: Buffer;
     constructor(opts: ConnectionOpts) {
@@ -111,7 +114,10 @@ export class CoapParserStream extends Transform {
 const empty = Buffer.allocUnsafe(0);
 const maxSize = 32768 * 1024;
 
-export class CoapGeneratorStream extends Transform {
+export class CoapPacketGenerator extends PacketGenerator {
+    setOptions(opts: ConnectionOpts): void {
+        throw new Error('Method not implemented.');
+    }
 
     private delimiter: Buffer;
     private maxSize: number;

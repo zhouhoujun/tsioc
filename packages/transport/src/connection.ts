@@ -3,7 +3,7 @@ import * as Duplexify from 'duplexify';
 import { Readable, Writable, Duplex, DuplexOptions, Transform } from 'stream';
 import { ev } from './consts';
 import { InvalidSessionExecption } from './execptions';
-import { Closeable, TransportProtocol } from './packet';
+import { Closeable, PacketGenerator, PacketParser, TransportProtocol } from './protocol';
 import { TransportStream } from './stream';
 
 
@@ -57,8 +57,8 @@ const NO_ERROR = 0;
 @Abstract()
 export abstract class Connection extends Duplexify implements Closeable {
     private _timeout?: any;
-    protected _parser: Transform;
-    protected _generator: Writable;
+    protected _parser: PacketParser;
+    protected _generator: PacketGenerator;
 
     readonly state: ConnectionState;
     constructor(readonly stream: Duplex, readonly transport: TransportProtocol, private opts: ConnectionOpts = EMPTY_OBJ) {
@@ -140,6 +140,12 @@ export abstract class Connection extends Duplexify implements Closeable {
      * get packet next id.
      */
     abstract getNextStreamId(id?: number): number;
+
+    setOptions(packet: any, opts: ConnectionOpts) {
+        const copts = { ...packet, opts };
+        this._parser.setOptions(copts);
+        this._generator.setOptions(copts);
+    }
 
     /**
      * Gracefully closes the `Connection`, allowing any existing streams to

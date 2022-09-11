@@ -1,6 +1,7 @@
 import { ExecptionFilter, Interceptor, ListenOpts, MqttProtocols, TransportEvent, TransportRequest } from '@tsdi/core';
 import { Abstract, Execption, Injectable, lang, tokenId, TypeOf } from '@tsdi/ioc';
-import { CatchInterceptor, LogInterceptor, TransportServer, TransportServerOpts, RespondInterceptor, Connection, ConnectionOpts, TransportProtocol } from '@tsdi/transport';
+import { CatchInterceptor, LogInterceptor, TransportServer, TransportServerOpts, RespondInterceptor, Connection, ConnectionOpts, TransportProtocol, ev } from '@tsdi/transport';
+import { Duplex } from 'form-data';
 import * as net from 'net';
 import * as tls from 'tls';
 import * as ws from 'ws';
@@ -99,6 +100,9 @@ export class MqttServer extends TransportServer<net.Server | tls.Server | ws.Ser
         }
     }
 
+    protected override parseToDuplex(conn: ws.WebSocket, ...args: any[]): Duplex {
+        return ws.createWebSocketStream(conn, { objectMode: true });
+    }
 
     protected listen(server: net.Server | tls.Server | ws.Server<ws.WebSocket>, opts: ListenOpts): Promise<void> {
         const defer = lang.defer<void>();
@@ -106,6 +110,7 @@ export class MqttServer extends TransportServer<net.Server | tls.Server | ws.Ser
             const sropts = this.getOptions().serverOpts as ws.ServerOptions;
             if (sropts.server) {
                 if (!sropts.server.listening) {
+                    // sropts.server.once(ev.LISTENING, defer.resolve);
                     sropts.server.listen(opts, defer.resolve);
                 } else {
                     defer.resolve();

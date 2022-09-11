@@ -6,7 +6,7 @@ import { ReadableState, WritableState } from 'readable-stream';
 import { Connection } from './connection';
 import { ev } from './consts';
 import { setTimeout } from 'timers';
-import { Closeable, TransportProtocol } from './packet';
+import { Closeable, TransportProtocol } from './protocol';
 import { isBuffer } from './utils';
 
 /**

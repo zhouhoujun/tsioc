@@ -1,7 +1,7 @@
 import { Abstract, EMPTY_OBJ, Injectable, isDefined } from '@tsdi/ioc';
 import { IncomingHeaders, InvalidHeaderTokenExecption } from '@tsdi/core';
 import { Duplex } from 'stream';
-import { TransportProtocol } from '../packet';
+import { TransportProtocol } from '../protocol';
 import { Connection, ConnectionOpts } from '../connection';
 import { GoawayExecption, InvalidSessionExecption } from '../execptions';
 import { ClientStream } from './stream';
@@ -24,13 +24,13 @@ export interface ClientRequsetOpts extends SteamOptions {
 
 @Abstract()
 export abstract class RequestStrategy {
-    abstract request(connection: ClientSession, headers: IncomingHeaders, options: ClientRequsetOpts): ClientStream;
+    abstract request(connection: ClientConnection, headers: IncomingHeaders, options: ClientRequsetOpts): ClientStream;
 }
 
 /**
  * Client Session options.
  */
-export interface ClientSessionOpts extends ConnectionOpts {
+export interface ClientConnectionOpts extends ConnectionOpts {
     authority?: string;
     clientId?: string;
 }
@@ -38,15 +38,15 @@ export interface ClientSessionOpts extends ConnectionOpts {
 
 
 /**
- * Client Session.
+ * Client Connection.
  */
-export class ClientSession extends Connection {
+export class ClientConnection extends Connection {
 
     private sid = 1;
     readonly authority: string;
     readonly clientId: string;
-    constructor(duplex: Duplex, packet: TransportProtocol, opts: ClientSessionOpts = EMPTY_OBJ, private strategy: RequestStrategy) {
-        super(duplex, packet, opts)
+    constructor(duplex: Duplex, transport: TransportProtocol, opts: ClientConnectionOpts = EMPTY_OBJ, private strategy: RequestStrategy) {
+        super(duplex, transport, opts)
         this.authority = opts.authority ?? '';
         this.clientId = opts.clientId ?? '';
     }
@@ -86,7 +86,7 @@ export class ClientSession extends Connection {
 
 @Injectable()
 export class DefaultRequestStrategy extends RequestStrategy {
-    request(connection: ClientSession, headers: IncomingHeaders, options: ClientRequsetOpts): ClientStream {
+    request(connection: ClientConnection, headers: IncomingHeaders, options: ClientRequsetOpts): ClientStream {
         const id = connection.getNextStreamId();
         const stream = new ClientStream(connection, id, headers, options);
         stream.write({ headers });
