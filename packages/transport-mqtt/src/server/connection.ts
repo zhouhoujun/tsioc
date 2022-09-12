@@ -1,6 +1,11 @@
 import { EMPTY_OBJ } from '@tsdi/ioc';
 import { ConnectionOpts, ev, ServerConnection } from '@tsdi/transport';
 import { Duplex } from 'stream';
+import {
+    IConnectPacket, IConnackPacket, IPublishPacket, IPubackPacket, IPubrecPacket,
+    IPubrelPacket, IPubcompPacket, ISubscribePacket, ISubackPacket, IUnsubscribePacket,
+    IUnsubackPacket, IPingreqPacket, IPingrespPacket, IDisconnectPacket, IAuthPacket
+} from 'mqtt-packet';
 import { MqttProtocol } from '../protocol';
 
 
@@ -17,54 +22,54 @@ export class MqttConnection extends ServerConnection {
         }
     }
 
-    connect(opts: any, cb?: () => void) {
+    connect(opts: IConnectPacket, cb?: () => void) {
         this.writeCmd('connect', opts, cb)
     }
 
-    connack(opts: any, cb?: () => void) {
+    connack(opts: IConnackPacket, cb?: () => void) {
         this.writeCmd('connack', opts, cb)
     }
 
-    publish(opts: any, cb?: () => void) {
+    publish(opts: IPublishPacket, cb?: () => void) {
         this.writeCmd('publish', opts, cb)
     }
 
-    puback(opts: any, cb?: () => void) {
+    puback(opts: IPubackPacket, cb?: () => void) {
         this.writeCmd('puback', opts, cb)
     }
 
-    pubrec(opts: any, cb?: () => void) {
+    pubrec(opts: IPubrecPacket, cb?: () => void) {
         this.writeCmd('pubrec', opts, cb)
     }
 
-    pubrel(opts: any, cb?: () => void) {
+    pubrel(opts: IPubrelPacket, cb?: () => void) {
         this.writeCmd('pubrel', opts, cb)
     }
-    pubcomp(opts: any, cb?: () => void) {
+    pubcomp(opts: IPubcompPacket, cb?: () => void) {
         this.writeCmd('pubcomp', opts, cb)
     }
-    subscribe(opts: any, cb?: () => void) {
+    subscribe(opts: ISubscribePacket, cb?: () => void) {
         this.writeCmd('subscribe', opts, cb)
     }
-    suback(opts: any, cb?: () => void) {
+    suback(opts: ISubackPacket, cb?: () => void) {
         this.writeCmd('suback', opts, cb)
     }
-    unsubscribe(opts: any, cb?: () => void) {
+    unsubscribe(opts: IUnsubscribePacket, cb?: () => void) {
         this.writeCmd('unsubscribe', opts, cb)
     }
-    unsuback(opts: any, cb?: () => void) {
+    unsuback(opts: IUnsubackPacket, cb?: () => void) {
         this.writeCmd('unsuback', opts, cb)
     }
-    pingreq(opts: any, cb?: () => void) {
+    pingreq(opts: IPingreqPacket, cb?: () => void) {
         this.writeCmd('pingreq', opts, cb)
     }
-    pingresp(opts: any, cb?: () => void) {
+    pingresp(opts: IPingrespPacket, cb?: () => void) {
         this.writeCmd('pingresp', opts, cb)
     }
-    disconnect(opts: any, cb?: () => void) {
+    disconnect(opts: IDisconnectPacket, cb?: () => void) {
         this.writeCmd('disconnect', opts, cb)
     }
-    auth(opts: any, cb?: () => void) {
+    auth(opts: IAuthPacket, cb?: () => void) {
         this.writeCmd('auth', opts, cb)
     }
 
