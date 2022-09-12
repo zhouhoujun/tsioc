@@ -65,7 +65,7 @@ export abstract class Connection extends Duplexify implements Closeable {
         super(undefined, undefined, opts);
         this.state = {
             destroyCode: opts.noError ?? NO_ERROR,
-            flags: ConnectionStateFlags.pending,
+            flags: ConnectionStateFlags.ready,
             goawayCode: null,
             goawayLastStreamID: null,
             streams: new Map(),
@@ -77,8 +77,8 @@ export abstract class Connection extends Duplexify implements Closeable {
 
         this._parser = transport.transform(opts);
         this._generator = transport.generate(stream, opts);
-        this.setWritable(this.writePipe(this._generator));
-        this.setReadable(this.readPipe(this._parser));
+        this.setReadable(this._parser);
+        this.setWritable(this._generator);
 
         process.nextTick(() => {
             this.stream.pipe(this._parser);
@@ -91,11 +91,6 @@ export abstract class Connection extends Duplexify implements Closeable {
 
         this.stream.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
         this.stream.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
-
-        this.stream.on(ev.CONNECT, () => {
-            this.state.flags |= ConnectionStateFlags.ready;
-            this.emit(ev.READY);
-        })
     }
 
     get options() {
@@ -213,16 +208,6 @@ export abstract class Connection extends Duplexify implements Closeable {
         }
         return super.destroy(error);
     }
-
-
-    protected readPipe(parser: Transform): Readable {
-        return parser;
-    }
-
-    protected writePipe(writable: Writable): Writable {
-        return writable;
-    }
-
 
     protected _onTimeout() {
         if (this.destroyed) return;

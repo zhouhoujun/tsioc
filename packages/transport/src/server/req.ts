@@ -23,7 +23,6 @@ export class ServerRequest extends Readable implements IncomingPacket, Packet {
         this.method = headers[hdr.METHOD] ?? '';
         this.authority = headers[hdr.AUTHORITY] ?? '';
 
-        // stream.on('trailers', onStreamTrailers);
         stream.on('end', this.onStreamEnd.bind(this));
         stream.on('error', this.onStreamError.bind(this));
         stream.on('aborted', this.onStreamAbortedRequest.bind(this));
@@ -79,11 +78,11 @@ export class ServerRequest extends Readable implements IncomingPacket, Packet {
     }
 
     protected onRequestPause() {
-        this.stream?.pause();
+        this.stream.pause();
     }
 
     protected onRequestResume() {
-        this.stream?.resume();
+        this.stream.resume();
     }
 
     override _read(size: number): void {
