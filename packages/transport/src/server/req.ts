@@ -1,5 +1,5 @@
 import { IncomingMsg, IncomingHeaders, Message } from '@tsdi/core';
-import { Readable, Writable } from 'stream';
+import { Readable } from 'stream';
 import { ev, hdr } from '../consts';
 import { ServerStream } from './stream';
 
@@ -23,13 +23,13 @@ export class ServerRequest extends Readable implements IncomingMsg, Message {
         this.method = headers[hdr.METHOD] ?? '';
         this.authority = headers[hdr.AUTHORITY] ?? '';
 
-        stream.on('end', this.onStreamEnd.bind(this));
-        stream.on('error', this.onStreamError.bind(this));
-        stream.on('aborted', this.onStreamAbortedRequest.bind(this));
-        stream.on('close', this.onStreamCloseRequest.bind(this));
-        stream.on('timeout', this.onStreamTimeout.bind(this));
-        this.on('pause', this.onRequestPause.bind(this));
-        this.on('resume', this.onRequestResume.bind(this));
+        stream.on(ev.END, this.onStreamEnd.bind(this));
+        stream.on(ev.ERROR, this.onStreamError.bind(this));
+        stream.on(ev.ABORTED, this.onStreamAbortedRequest.bind(this));
+        stream.on(ev.CLOSE, this.onStreamCloseRequest.bind(this));
+        stream.on(ev.TIMEOUT, this.onStreamTimeout.bind(this));
+        this.on(ev.PAUSE, this.onRequestPause.bind(this));
+        this.on(ev.RESUME, this.onRequestResume.bind(this));
     }
 
     get connection() {

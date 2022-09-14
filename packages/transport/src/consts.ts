@@ -28,6 +28,7 @@ export namespace ev {
 
     export const MESSAGE = 'message';
     export const PAUSE = 'pause';
+    export const RESUME = 'resume';
     export const RESPONSE = 'response';
     export const DATA = 'data';
     export const DRAIN = 'drain';

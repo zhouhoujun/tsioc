@@ -111,7 +111,10 @@ export abstract class TransportStream extends Duplex implements Closeable {
             endAfterHeaders: false
         };
 
-
+        this.connection.on(ev.DATA, this.emit.bind(this, ev.DATA));
+        this.connection.on(ev.DRAIN, this.emit.bind(this, ev.DRAIN));
+        this.connection.on(ev.ABORTED, this.emit.bind(this, ev.ABORTED));
+        this.connection.on(ev.TIMEOUT, this.emit.bind(this, ev.TIMEOUT));
         this.connection.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
         this.connection.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
     }
@@ -201,6 +204,10 @@ export abstract class TransportStream extends Duplex implements Closeable {
         this.emit(ev.READY)
     }
 
+    override push(chunk: any, encoding?: BufferEncoding | undefined): boolean {
+        this.emit(ev.DATA, chunk);
+        return super.push(chunk, encoding);
+    }
 
     override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
         this.processWrite(false, chunk, encoding, callback)
@@ -428,12 +435,6 @@ export abstract class TransportStream extends Duplex implements Closeable {
             this.resume();
         }
     }
-
-    // protected trackWriteState(bytes: number) {
-    //     const cstate = this.connection.state;
-    //     this.state.writeQueueSize += bytes;
-    //     cstate.writeQueueSize += bytes;
-    // }
 
     protected _onTimeout() {
         if (this.destroyed) return;

@@ -1,4 +1,4 @@
-import { Abstract, EMPTY_OBJ, Injectable, isDefined } from '@tsdi/ioc';
+import { Abstract, EMPTY_OBJ, Injectable, isDefined, isString } from '@tsdi/ioc';
 import { IncomingHeaders, InvalidHeaderTokenExecption } from '@tsdi/core';
 import { Duplex } from 'stream';
 import { TransportProtocol } from '../protocol';
@@ -6,7 +6,6 @@ import { Connection, ConnectionOpts } from '../connection';
 import { GoawayExecption, InvalidSessionExecption } from '../execptions';
 import { ClientStream } from './stream';
 import { SteamOptions } from '../stream';
-import { ev } from '../consts';
 
 
 /**

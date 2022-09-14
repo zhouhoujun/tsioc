@@ -3,9 +3,9 @@ import { Injectable, Nullable } from '@tsdi/ioc';
 import { TcpClientOpts, TCP_EXECPTIONFILTERS, TCP_INTERCEPTORS } from './options';
 import { TransportClient, TransportClientOpts } from '@tsdi/transport';
 import { TcpProtocol } from '../protocol';
+import { Duplex } from 'stream';
 import * as net from 'net';
 import * as tls from 'tls';
-import { Duplex } from 'form-data';
 
 
 
@@ -41,75 +41,6 @@ export class TcpClient extends TransportClient<RequestOptions> implements OnDisp
         const socket = (opts.connectOpts as tls.ConnectionOptions).cert ? tls.connect(opts.connectOpts as tls.ConnectionOptions) : net.connect(opts.connectOpts as net.NetConnectOpts);
         return socket;
     }
-
-
-    // protected override initOption(options?: TcpClientOpts): TcpClientOpts {
-    //     const connectOpts = { ...defaults.connectOpts, ...options?.connectOpts };
-    //     const interceptors = [...options?.interceptors ?? EMPTY, NormlizePathInterceptor, DetectBodyInterceptor];
-    //     const providers = options && options.providers ? [...TCP_CLIENT_PROVIDERS, ...options.providers] : TCP_CLIENT_PROVIDERS;
-    //     return { ...defaults, ...options, connectOpts, interceptors, providers };
-    // }
-
-    // protected override initContext(options: TcpClientOpts): void {
-    //     this.context.setValue(PacketProtocolOpts, options);
-    //     super.initContext(options);
-    // }
-
-    // protected getBackend(): EndpointBackend<TransportRequest, TransportEvent> {
-    //     return this.context.get(TcpBackend);
-    // }
-
-    // protected async connect(): Promise<void> {
-    //     if (this.connected) return;
-    //     const opts = this.getOptions();
-    //     const socket = this.socket ?? new Socket(opts.socketOpts);
-    //     if (!this.socket) {
-    //         this.socket = socket;
-    //         const closed = () => {
-    //             this.connected = false;
-    //             if (isIPC) {
-    //                 this.logger.info('Disconnected ipc server');
-    //             } else {
-    //                 this.logger.info('Disconnected tcp server', socket.remoteFamily, socket.remoteAddress, socket.remotePort);
-    //             }
-    //         };
-    //         socket.on(ev.CLOSE, closed);
-    //         socket.on(ev.END, closed);
-    //     }
-    //     const defer = lang.defer();
-    //     const isIPC = !!(opts.connectOpts as IpcNetConnectOpts).path;
-
-    //     socket.once(ev.ERROR, defer.reject);
-    //     socket.once(ev.CONNECT, () => {
-    //         this.connected = true;
-    //         defer.resolve(true);
-    //         if (isIPC) {
-    //             this.logger.info('Connected ipc server');
-    //         } else {
-    //             this.logger.info('Connected tcp server', socket.remoteFamily, socket.remoteAddress, socket.remotePort);
-    //         }
-    //     });
-
-    //     this.socket.connect(opts.connectOpts);
-    //     await defer.promise;
-    // }
-
-    // protected override buildRequest(context: RequestContext, req: string | TransportRequest, options?: any): TransportRequest {
-    //     context.setValue(Socket, this.socket);
-    //     return isString(req) ? new TransportRequest({ id: this.context.resolve(UuidGenerator).generate(), ...options, url: req }) : req
-    // }
-
-    // async close(): Promise<void> {
-    //     this.connected = false;
-    //     this.socket?.end()
-    // }
-
-    // /**
-    //  * on dispose.
-    //  */
-    // onDispose(): Promise<void> {
-    //     return this.close()
-    // }
 
 }
 

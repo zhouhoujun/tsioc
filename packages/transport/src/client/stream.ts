@@ -1,7 +1,9 @@
 import { IncomingHeaders, IncomingStatusHeaders } from '@tsdi/core';
+import { isString } from '@tsdi/ioc';
 import { Readable, DuplexOptions } from 'stream';
 import { ev, hdr } from '../consts';
 import { SteamOptions, StreamStateFlags, TransportStream } from '../stream';
+import { isBuffer } from '../utils';
 import { ClientConnection } from './connection';
 
 
@@ -14,14 +16,28 @@ export class ClientStream extends TransportStream {
         super(connection, opts);
         this.isClient = true;
         this.state.flags |= StreamStateFlags.headersSent;
-        const stat = connection.transport.status;
-        this.on(ev.HEADERS, (headers) => {
-            if (stat.isContinue(stat.parse(headers[hdr.STATUS2] ?? headers[hdr.STATUS])))
-                this.emit(ev.CONTINUE);
-        })
+        this.bindEvents();
         if (id !== undefined) {
             this.init(id);
         }
+    }
+
+    protected bindEvents() {
+        const transport = this.connection.transport;
+        const stat = transport.status;
+        this.on(ev.HEADERS, (headers) => {
+            if (stat.isContinue(stat.parse(headers[hdr.STATUS2] ?? headers[hdr.STATUS])))
+                this.emit(ev.CONTINUE);
+        });
+        this.on(ev.DATA, (packet) => {
+            if (isBuffer(packet) || isString(packet)) {
+                return;
+            }
+            const pkg = transport.parsePacket(packet);
+            if (pkg.headers) {
+                this.emit(ev.RESPONSE, pkg.headers);
+            }
+        })
     }
 
     protected proceed(): void {
