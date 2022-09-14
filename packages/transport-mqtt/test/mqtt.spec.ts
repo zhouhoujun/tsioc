@@ -3,7 +3,7 @@ import { Injector, isArray } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { CoapClient, CoapClientOpts, CoapModule, CoapServer } from '../src';
+import { MqttClient, MqttClientOpts, MqttModule, MqttServer } from '../src';
 import { DeviceController } from './controller';
 
 
@@ -13,12 +13,15 @@ import { DeviceController } from './controller';
     imports: [
         ServerModule,
         LoggerModule,
-        CoapModule.withOptions({
-            timeout: 1000,
+        MqttModule.withOptions({
             serverOpts: {
-                type: 'udp4'
+                protocol: 'mqtt',
+                options: {
+                    
+                }
             },
             listenOpts: {
+                host: 'localhost',
                 port: 2000
             }
         })
@@ -26,30 +29,32 @@ import { DeviceController } from './controller';
     declarations: [
         DeviceController
     ],
-    bootstrap: CoapServer
+    bootstrap: MqttServer
 })
-export class CoapTestModule {
+export class MqttTestModule {
 
 }
 
 
-describe('CoAP Server & CoAP Client', () => {
+describe('Mqtt Server & Mqtt Client', () => {
     let ctx: ApplicationContext;
     let injector: Injector;
 
-    let client: CoapClient;
+    let client: MqttClient;
 
     before(async () => {
-        ctx = await Application.run(CoapTestModule);
+        ctx = await Application.run(MqttTestModule);
         injector = ctx.injector;
-        client = injector.resolve(CoapClient, {
-            provide: CoapClientOpts,
+        client = injector.resolve(MqttClient, {
+            provide: MqttClientOpts,
             useValue: {
                 connectOpts: {
-                    type: 'udp4',
-                    port: 2000
+                    protocol: 'mqtt',
+                    options: { 
+                        host: 'localhost'
+                    }
                 }
-            } as CoapClientOpts
+            } as MqttClientOpts
         });
     });
 

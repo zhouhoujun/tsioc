@@ -1,4 +1,4 @@
-import { IncomingPacket, IncomingHeaders, Packet } from '@tsdi/core';
+import { IncomingMsg, IncomingHeaders, Message } from '@tsdi/core';
 import { Readable, Writable } from 'stream';
 import { ev, hdr } from '../consts';
 import { ServerStream } from './stream';
@@ -7,13 +7,13 @@ import { ServerStream } from './stream';
 /**
  * Server request.
  */
-export class ServerRequest extends Readable implements IncomingPacket, Packet {
+export class ServerRequest extends Readable implements IncomingMsg, Message {
     readonly url: string;
     readonly method: string;
     readonly authority: string;
     body: any;
     private _bodyIdx = 0;
-    closed = false;
+    _closed = false;
     private _aborted = false;
     constructor(
         readonly stream: ServerStream,
@@ -40,10 +40,14 @@ export class ServerRequest extends Readable implements IncomingPacket, Packet {
         return this._aborted;
     }
 
+    get isClosed() {
+        return this._closed ?? (this as any).closed;
+    }
+
     get complete() {
         return this._aborted ||
             this.readableEnded ||
-            this.closed ||
+            this.isClosed ||
             this.destroyed ||
             this.stream.destroyed;
     }
@@ -65,14 +69,14 @@ export class ServerRequest extends Readable implements IncomingPacket, Packet {
     }
 
     protected onStreamCloseRequest() {
-        if (this.destroyed || this.closed) return;
-        this.closed = true;
+        if (this.destroyed || this.isClosed) return;
+        this._closed = true;
 
         this.emit(ev.CLOSE);
     }
 
     protected onStreamAbortedRequest() {
-        if (this.destroyed || this.closed) return;
+        if (this.destroyed || this.isClosed) return;
         this._aborted = true;
         this.emit('aborted');
     }

@@ -1,20 +1,21 @@
 import { ExecptionFilter, Interceptor, ListenOpts, MqttProtocols, TransportEvent, TransportRequest } from '@tsdi/core';
 import { Abstract, Execption, Injectable, lang, tokenId, TypeOf } from '@tsdi/ioc';
-import { CatchInterceptor, LogInterceptor, TransportServer, TransportServerOpts, RespondInterceptor, Connection, ConnectionOpts, TransportProtocol, ev } from '@tsdi/transport';
-import { Duplex } from 'form-data';
+import { CatchInterceptor, LogInterceptor, TransportServer, TransportServerOpts, RespondInterceptor, Connection, ConnectionOpts, TransportProtocol, ev, ServerConnection } from '@tsdi/transport';
+import { Duplex } from 'stream';
 import * as net from 'net';
 import * as tls from 'tls';
 import * as ws from 'ws';
+import { MqttConnection } from './connection';
 
 
 
 export interface MqttTcpServerOpts {
     protocol: 'tcp' | 'mqtt';
-    options: net.ServerOpts
+    options: net.ServerOpts;
 }
 
 export interface MqttTlsServerOpts {
-    protocol: 'tls' | 'mqtts';
+    protocol: 'mqtts' | 'ssl' | 'tls';
     options: tls.TlsOptions;
 }
 
@@ -102,6 +103,10 @@ export class MqttServer extends TransportServer<net.Server | tls.Server | ws.Ser
 
     protected override parseToDuplex(conn: ws.WebSocket, ...args: any[]): Duplex {
         return ws.createWebSocketStream(conn, { objectMode: true });
+    }
+
+    protected override createConnection(duplex: Duplex, transport: TransportProtocol, opts?: ConnectionOpts | undefined): ServerConnection {
+        return new MqttConnection(duplex, transport, opts);
     }
 
     protected listen(server: net.Server | tls.Server | ws.Server<ws.WebSocket>, opts: ListenOpts): Promise<void> {

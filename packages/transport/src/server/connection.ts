@@ -1,6 +1,6 @@
 import { IncomingHeaders } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ } from '@tsdi/ioc';
-import { Readable, Duplex, Transform } from 'stream';
+import { Duplex } from 'stream';
 import { Connection, ConnectionOpts } from '../connection';
 import { ev } from '../consts';
 import { TransportProtocol } from '../protocol';
@@ -15,6 +15,7 @@ export class ServerConnection extends Connection {
     private sid = 0;
     constructor(stream: Duplex, transport: TransportProtocol, opts: ConnectionOpts = EMPTY_OBJ) {
         super(stream, transport, opts);
+        this.stream.on(ev.CONNECTION, this.emit.bind(this, ev.CONNECTION));
     }
 
     getNextStreamId(id?: number) {

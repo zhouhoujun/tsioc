@@ -1,5 +1,5 @@
 import { ArgumentExecption, isFunction, isString, TypeExecption } from '@tsdi/ioc';
-import { OutgoingPacket, isFormData } from '@tsdi/core';
+import { OutgoingMsg, isFormData } from '@tsdi/core';
 import { Buffer } from 'buffer';
 import { Stream, Readable, Duplex } from 'stream';
 import * as Duplexify from 'duplexify';
@@ -208,7 +208,7 @@ const field_name = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
 * @public
 */
 
-export function vary(res: OutgoingPacket, field: string) {
+export function vary(res: OutgoingMsg, field: string) {
   // get existing header
   let val = res.getHeader(hdr.VARY) || '';
   const header = Array.isArray(val)

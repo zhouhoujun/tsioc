@@ -1,6 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { TransportStatus } from './status';
-import { IncomingPacket, Packet } from './packet';
+import { IncomingMsg } from './packet';
 
 /**
  * Listen options.
@@ -50,17 +50,17 @@ export abstract class ProtocolStrategy {
     /**
      * is update modle resquest.
      */
-    abstract isUpdate(incoming: IncomingPacket): boolean;
+    abstract isUpdate(incoming: IncomingMsg): boolean;
     /**
      * is secure or not.
      * @param incoming 
      */
-    abstract isSecure(incoming: IncomingPacket): boolean;
+    abstract isSecure(incoming: IncomingMsg): boolean;
     /**
      * url parse.
      * @param url 
      */
-    abstract parse(incoming: IncomingPacket, opts: ListenOpts, proxy?: boolean): URL;
+    abstract parse(incoming: IncomingMsg, opts: ListenOpts, proxy?: boolean): URL;
     /**
      * match protocol or not.
      * @param protocol 

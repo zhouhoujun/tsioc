@@ -1,4 +1,4 @@
-import { BadRequestExecption, Get, Handle, Post, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
+import { BadRequestExecption, Handle, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
 import { lang } from '@tsdi/ioc';
 import { RedirectResult } from '@tsdi/transport';
 import {  of } from 'rxjs';
@@ -8,7 +8,7 @@ import {  of } from 'rxjs';
 @RouteMapping('/device')
 export class DeviceController {
 
-    @Post('/init')
+    @RouteMapping('/init', 'POST')
     req(name: string) {
         console.log('DeviceController init:', name);
         return { name };
@@ -20,13 +20,13 @@ export class DeviceController {
         return { id, year, createAt };
     }
 
-    @Get('/usege/find')
+    @RouteMapping('/usege/find', 'MESSAGE')
     agela(@RequestParam('age', { pipe: 'int' }) limit: number) {
         console.log('limit:', limit);
         return limit;
     }
 
-    @Get('/:age/used')
+    @RouteMapping('/:age/used', 'MESSAGE')
     resfulquery(@RequestPath('age', { pipe: 'int' }) age1: number) {
         console.log('age1:', age1);
         if (age1 <= 0) {
@@ -49,7 +49,7 @@ export class DeviceController {
         return await defer.promise;
     }
 
-    @Get('/status')
+    @RouteMapping('/status', 'MESSAGE')
     getLastStatus(@RequestParam('redirect', { nullable: true }) redirect: string) {
         if (redirect === 'reload') {
             return new RedirectResult('/device/reload');
@@ -57,7 +57,7 @@ export class DeviceController {
         return of('working');
     }
 
-    @Get('/reload')
+    @RouteMapping('/reload', 'MESSAGE')
     redirect() {
         return 'reload';
     }

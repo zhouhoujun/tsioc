@@ -1,6 +1,6 @@
 
 import { Duplex, DuplexOptions } from 'stream';
-import { Socket } from 'dgram';
+import { Socket, RemoteInfo } from 'dgram';
 import { ev } from './consts';
 
 export interface UdpStreamOption extends DuplexOptions {
@@ -16,13 +16,13 @@ export interface UdpStreamOption extends DuplexOptions {
  * @param opts 
  * @returns 
  */
-export function parseToDuplex(socket: Socket, opts?: DuplexOptions): Duplex {
-    return new UdpDuplex(socket, { delimiter:'\r\n', ...opts});
+export function parseToDuplex(socket: Socket, rinfo?: RemoteInfo, opts?: DuplexOptions): Duplex {
+    return new UdpDuplex(socket, rinfo, { delimiter: '\r\n', ...opts });
 }
 
 export class UdpDuplex extends Duplex {
     private delimiter: Buffer;
-    constructor(readonly socket: Socket, opts: UdpStreamOption) {
+    constructor(readonly socket: Socket, readonly rinfo: RemoteInfo | undefined, opts: UdpStreamOption) {
         super(opts);
         this.delimiter = Buffer.from(opts.delimiter);
         socket.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
@@ -34,9 +34,9 @@ export class UdpDuplex extends Duplex {
             this.push(this.delimiter)
         })
     }
-    
+
     override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
-        const address = this.socket.remoteAddress();
+        const address = this.rinfo ?? this.socket.remoteAddress();
         this.socket.send(chunk, address.port, address.address, callback)
     }
 }

@@ -1,7 +1,7 @@
 import { OnDispose, RequestOptions } from '@tsdi/core';
 import { Injectable, Nullable } from '@tsdi/ioc';
 import { TcpClientOpts, TCP_EXECPTIONFILTERS, TCP_INTERCEPTORS } from './options';
-import { ClientConnection, ev, RequestStrategy, TransportClient, TransportClientOpts } from '@tsdi/transport';
+import { TransportClient, TransportClientOpts } from '@tsdi/transport';
 import { TcpProtocol } from '../protocol';
 import * as net from 'net';
 import * as tls from 'tls';

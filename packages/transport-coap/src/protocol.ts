@@ -1,4 +1,4 @@
-import { IncomingPacket, ListenOpts, IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
+import { IncomingMsg, ListenOpts, IncomingHeaders, OutgoingHeaders, Packet } from '@tsdi/core';
 import { EMPTY_OBJ, Inject, Injectable, isPlainObject, isString } from '@tsdi/ioc';
 import { ConnectionOpts, isBuffer, PacketGenerator, PacketParser, TransportProtocol } from '@tsdi/transport';
 import { Transform, Duplex, Writable, TransformCallback } from 'stream';
@@ -17,15 +17,15 @@ export class CoapProtocol extends TransportProtocol {
         return this._protocol;
     }
 
-    isUpdate(incoming: IncomingPacket): boolean {
+    isUpdate(incoming: IncomingMsg): boolean {
         return incoming.method === 'put';
     }
 
-    isSecure(req: IncomingPacket): boolean {
+    isSecure(req: IncomingMsg): boolean {
         return req.connection?.encrypted === true
     }
 
-    parse(req: IncomingPacket, opts: ListenOpts, proxy?: boolean | undefined): URL {
+    parse(req: IncomingMsg, opts: ListenOpts, proxy?: boolean | undefined): URL {
         const url = req.url?.trim() ?? '';
         if (coapPfx.test(url)) {
             return new URL(url);
@@ -49,21 +49,7 @@ export class CoapProtocol extends TransportProtocol {
     valid(header: string): boolean {
         return true;
     }
-    isHeader(chunk: any): boolean {
-        throw new Error('Method not implemented.');
-    }
-    parseHeader(chunk: any): IncomingPacket {
-        throw new Error('Method not implemented.');
-    }
-    hasPlayload(headers: IncomingHeaders | OutgoingHeaders): boolean {
-        throw new Error('Method not implemented.');
-    }
-    isPlayload(chunk: any, streamId: Buffer): boolean {
-        throw new Error('Method not implemented.');
-    }
-    parsePlayload(chunk: any, streamId: Buffer) {
-        throw new Error('Method not implemented.');
-    }
+
     transform(opts: ConnectionOpts): PacketParser {
         return new CoapPacketParser(opts);
     }
@@ -71,43 +57,57 @@ export class CoapProtocol extends TransportProtocol {
         return new CoapPacketGenerator(stream, opts);
     }
 
+    parsePacket(packet: any): Packet<IncomingHeaders> {
+        throw new Error('Method not implemented.');
+    }
 }
 
 
 const coapPfx = /^coap:\/\//i;
 
 export class CoapPacketParser extends PacketParser {
-    setOptions(opts: ConnectionOpts): void {
-        throw new Error('Method not implemented.');
-    }
 
-    private delimiter: Buffer;
+    private delimiter!: Buffer;
+    bytes = 0;
+    buffers: Buffer[];
+
     constructor(opts: ConnectionOpts) {
         super(opts);
-        this.delimiter = Buffer.from(opts.delimiter!);
+        this.buffers = [];
+        this.setOptions(opts);
     }
-    buffer?: Buffer | null;
-    bytes = 0;
     override _transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
-        this.buffer = this.buffer ? Buffer.concat([this.buffer, chunk], this.bytes) : chunk;
-        if (!this.buffer) return;
-        const idx = this.buffer.indexOf(this.delimiter) ?? 0;
+
+        if (!isBuffer(chunk) || !chunk.length) return;
+        const idx = chunk.indexOf(this.delimiter) ?? 0;
         if (idx >= 0) {
-            if (idx === 0) {
-                this.buffer = null;
-                this.bytes = 0;
-                return;
+            if (idx > 0) {
+                const lastbuff = chunk.slice(0, idx);
+                this.buffers.push(lastbuff);
+                this.bytes += lastbuff.length;
             }
-            const pkgbuff = this.buffer.slice(0, idx);
-            if (pkgbuff) {
-                const pkg = parse(pkgbuff);
+
+            if (this.buffers.length) {
+                const buff = Buffer.concat(this.buffers, this.bytes);
+                const pkg = parse(buff);
+                this.buffers = [];
+                this.bytes = 0;
                 callback(null, pkg);
             }
-            if (idx < this.buffer.length - 1) {
-                this.buffer = this.buffer.slice(idx + this.delimiter.length);
+            if (idx < chunk.length - 1) {
+                const newbuff = chunk.slice(idx + this.delimiter.length);
+                this.buffers.push(newbuff);
+                this.bytes += newbuff.length;
             }
+        } else {
+            this.buffers.push(chunk);
+            this.bytes += chunk.length;
         }
 
+    }
+
+    setOptions(opts: ConnectionOpts): void {
+        this.delimiter = Buffer.from(opts.delimiter!);
     }
 }
 
@@ -115,10 +115,6 @@ const empty = Buffer.allocUnsafe(0);
 const maxSize = 32768 * 1024;
 
 export class CoapPacketGenerator extends PacketGenerator {
-    setOptions(opts: ConnectionOpts): void {
-        throw new Error('Method not implemented.');
-    }
-
     private delimiter: Buffer;
     private maxSize: number;
     private packet: Buffer;
@@ -127,29 +123,22 @@ export class CoapPacketGenerator extends PacketGenerator {
         this.delimiter = Buffer.from(opts.delimiter!);
         this.maxSize = opts.maxSize || maxSize;
         this.packet = empty;
-        process.nextTick(() => {
-            this.pipe(output);
-        })
     }
 
-    override _transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
-        if (isBuffer(chunk)) {
-            callback(null, chunk);
-            return;
-        }
-
-        if (isString(chunk)) {
-            callback(null, Buffer.from(chunk, encoding));
-            return;
-        }
-
+    override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
         try {
-
-            const buffer = generate(chunk)
-            callback(null, buffer);
+            const buffer = generate(chunk, this.maxSize);
+            this.output.write(buffer);
+            this.output.write(this.delimiter);
 
         } catch (err) {
-            callback(err as Error, chunk);
+            callback(err as Error);
         }
     }
+
+    setOptions(opts: ConnectionOpts): void {
+        this.delimiter = Buffer.from(opts.delimiter!);
+        this.maxSize = opts.maxSize || maxSize;
+    }
+
 }

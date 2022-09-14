@@ -1,6 +1,6 @@
-import { EndpointBackend, RequestContext, RequstOption, TransportClient } from '@tsdi/core';
+import { EndpointBackend, RequestContext } from '@tsdi/core';
 import { Injectable, InvocationContext, Nullable, Token } from '@tsdi/ioc';
-import { ev } from '@tsdi/transport';
+import { ev, TransportClient } from '@tsdi/transport';
 import { createClient, RedisClientType } from 'redis';
 import { RedisClientOpts } from './options';
 

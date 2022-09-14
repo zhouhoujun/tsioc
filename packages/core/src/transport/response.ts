@@ -1,5 +1,5 @@
 import { OutgoingHeader, ResHeaders, ResHeadersLike } from './headers';
-import { Packet } from './packet';
+import { Message } from './packet';
 
 /**
  * Transport error response.
@@ -35,7 +35,7 @@ export class TransportErrorResponse {
  * client receive Response.
  * response for `TransportClient`.
  */
-export class TransportHeaderResponse implements Packet<ResHeaders> {
+export class TransportHeaderResponse implements Message<ResHeaders> {
     readonly url: string;
     readonly ok: boolean;
     readonly status: number;

@@ -3,7 +3,7 @@ import { ExecptionFilter, Interceptor, ListenOpts, MiddlewareType } from '@tsdi/
 import { Abstract, Injectable, lang, Nullable, tokenId } from '@tsdi/ioc';
 import {
     CatchInterceptor, LogInterceptor, RespondInterceptor, TransportServer, TransportServerOpts, ServerRequest,
-    ServerResponse, Connection, ConnectionOpts, TransportProtocol, ServerConnection, ev, parseToDuplex, EventStrategy
+    ServerResponse, ConnectionOpts, TransportProtocol, ServerConnection, ev, parseToDuplex
 } from '@tsdi/transport';
 import * as net from 'net';
 import * as dgram from 'dgram';
@@ -22,7 +22,7 @@ export abstract class CoapServerOpts extends TransportServerOpts {
     abstract json?: boolean;
     abstract baseOn?: 'tcp' | 'udp';
     abstract encoding?: BufferEncoding;
-    abstract serverOpts?: dgram.SocketOptions | net.ServerOpts;
+    abstract serverOpts: dgram.SocketOptions | net.ServerOpts;
 }
 
 /**
@@ -51,6 +51,9 @@ const defOpts = {
         CatchInterceptor,
         RespondInterceptor
     ],
+    serverOpts:{
+        type: 'udp4'
+    },
     listenOpts: {
         port: 4000,
         host: 'localhost'
@@ -90,7 +93,6 @@ export class CoapServer extends TransportServer<net.Server | dgram.Socket, CoapS
                 observer.error(err);
             };
             const onConnection = (socket: net.Socket) => {
-                // const strategy = this.context.get(this.getOptions().event ?? EventStrategy);
                 observer.next(new ServerConnection(socket, parser, opts));
             }
             const onClose = () => {
@@ -110,12 +112,20 @@ export class CoapServer extends TransportServer<net.Server | dgram.Socket, CoapS
 
     protected udpConnect(server: dgram.Socket, parser: TransportProtocol, opts?: any): Observable<ServerConnection> {
         return new Observable((observer) => {
+            const connections = new Map<string, ServerConnection>()
             const onError = (err: Error) => {
                 observer.error(err);
             };
             const onListening = (msg: Buffer, rinfo: dgram.RemoteInfo) => {
-                // const strategy = this.context.get(this.getOptions().event ?? EventStrategy);
-                observer.next(new ServerConnection(parseToDuplex(server), parser, opts));
+                const addr = `${rinfo.family}_${rinfo.address}:${rinfo.port}`;
+                let conn = connections.get(addr);
+                if (!conn) {
+                    conn = new ServerConnection(parseToDuplex(server, rinfo), parser, opts);
+                    conn.once(ev.DISCONNECT, () => connections.delete(addr));
+                    conn.once(ev.END, () => connections.delete(addr));
+                    connections.set(addr, conn);
+                }
+                observer.next(conn);
             }
             const onClose = () => {
                 observer.complete();
@@ -124,7 +134,11 @@ export class CoapServer extends TransportServer<net.Server | dgram.Socket, CoapS
             server.on(ev.MESSAGE, onListening);
             server.on(ev.CLOSE, onClose)
 
-            return () => { 
+            return () => {
+                connections.forEach(c => {
+                    c.destroy();
+                })
+                connections.clear();
                 server.off(ev.ERROR, onError);
                 server.off(ev.CLOSE, onClose);
                 server.off(ev.MESSAGE, onListening);

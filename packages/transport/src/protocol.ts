@@ -1,15 +1,10 @@
-import { IncomingHeaders, IncomingPacket, ListenOpts, OutgoingHeaders, Packet, ProtocolStrategy } from '@tsdi/core';
-import { Abstract, isObject, isString } from '@tsdi/ioc';
+import { Packet, ProtocolStrategy } from '@tsdi/core';
+import { Abstract, isString } from '@tsdi/ioc';
 import { Writable, Duplex, Transform, TransformCallback } from 'stream';
 import { ConnectionOpts } from './connection';
 import { isBuffer } from './utils';
 
 
-
-export interface ConnectPacket {
-    id: number;
-    error?: Error;
-}
 
 
 @Abstract()
@@ -18,6 +13,8 @@ export abstract class TransportProtocol extends ProtocolStrategy {
 
     abstract transform(opts: ConnectionOpts): PacketParser;
     abstract generate(stream: Duplex, opts: ConnectionOpts): PacketGenerator;
+
+    abstract parsePacket(packet: any): Packet;
 
     streamFilter(streamId: number): Transform {
         return new FilterTransform(streamId);
@@ -30,7 +27,7 @@ export abstract class PacketParser extends Transform {
 }
 
 @Abstract()
-export abstract class PacketGenerator extends Transform {
+export abstract class PacketGenerator extends Writable {
     abstract setOptions(opts: ConnectionOpts): void;
 }
 

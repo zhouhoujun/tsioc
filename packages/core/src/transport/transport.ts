@@ -167,6 +167,9 @@ export abstract class TransportEndpoint<
      */
     protected initContext(options: Opts): void {
         const injector = this.context.injector;
+        if (options.transport) {
+            injector.inject({ provide: ProtocolStrategy, useExisting: options.transport });
+        }
         injector.inject({ provide: Logger, useFactory: () => this.logger });
         if (options.providers && options.providers.length) {
             injector.inject(options.providers);

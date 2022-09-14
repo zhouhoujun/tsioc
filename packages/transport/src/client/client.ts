@@ -1,4 +1,4 @@
-import { EndpointBackend, OnDispose, RequestContext, Client, RequestOptions, Packet, TransportEvent, TransportRequest, Pattern } from '@tsdi/core';
+import { EndpointBackend, OnDispose, RequestContext, Client, RequestOptions, Message, TransportEvent, TransportRequest, Pattern } from '@tsdi/core';
 import { Abstract, EMPTY, Nullable } from '@tsdi/ioc';
 import { map, Observable, Observer, of } from 'rxjs';
 import { Duplex } from 'stream';
@@ -123,7 +123,7 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
         });
     }
 
-    protected getBackend(): EndpointBackend<Packet, TransportEvent> {
+    protected getBackend(): EndpointBackend<Message, TransportEvent> {
         return this.context.get(this.getOptions().backend!);
     }
 

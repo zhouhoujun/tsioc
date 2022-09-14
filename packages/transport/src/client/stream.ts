@@ -136,7 +136,6 @@ export class ClientStream extends TransportStream {
         return this._once(event, listener);
     }
 
-
     prependListener(event: 'aborted', listener: () => void): this;
     prependListener(event: 'close', listener: () => void): this;
     prependListener(event: 'data', listener: (chunk: Buffer | string) => void): this;
@@ -162,7 +161,6 @@ export class ClientStream extends TransportStream {
     prependListener(event: string | symbol, listener: (...args: any[]) => void): this {
         return this._prependListener(event, listener);
     }
-
 
     prependOnceListener(event: 'aborted', listener: () => void): this;
     prependOnceListener(event: 'close', listener: () => void): this;

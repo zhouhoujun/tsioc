@@ -11,6 +11,7 @@ import { TransportStream } from './stream';
  * connection options.
  */
 export interface ConnectionOpts extends DuplexOptions, Record<string, any> {
+    noData?: boolean;
     noError?: number;
     /**
      * packet size limit.
@@ -61,7 +62,7 @@ export abstract class Connection extends Duplexify implements Closeable {
     protected _generator: PacketGenerator;
 
     readonly state: ConnectionState;
-    constructor(readonly stream: Duplex, readonly transport: TransportProtocol, private opts: ConnectionOpts = EMPTY_OBJ) {
+    constructor(readonly stream: Duplex, readonly transport: TransportProtocol, protected opts: ConnectionOpts = EMPTY_OBJ) {
         super(undefined, undefined, opts);
         this.state = {
             destroyCode: opts.noError ?? NO_ERROR,
@@ -86,15 +87,13 @@ export abstract class Connection extends Duplexify implements Closeable {
 
         this.once(ev.CLOSE, () => this.close());
 
-        this._generator.on(ev.ERROR, this.emit.bind(this, ev.ERROR))
-        this._parser.on(ev.ERROR, this.emit.bind(this, ev.ERROR))
+        this.stream.on(ev.CONNECT, this.emit.bind(this, ev.CONNECT));
+
+        this._generator.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
+        this._parser.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
 
         this.stream.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
         this.stream.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
-    }
-
-    get options() {
-        return this.opts;
     }
 
     /**
@@ -137,7 +136,7 @@ export abstract class Connection extends Duplexify implements Closeable {
     abstract getNextStreamId(id?: number): number;
 
     setOptions(packet: any, opts: ConnectionOpts) {
-        const copts = { ...packet, opts };
+        const copts = this.opts = { ...packet, opts };
         this._parser.setOptions(copts);
         this._generator.setOptions(copts);
     }

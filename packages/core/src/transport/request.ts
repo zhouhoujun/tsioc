@@ -1,6 +1,6 @@
 import { EMPTY_OBJ, InvocationContext, isArray, isNil, isNumber, isPlainObject, isString } from '@tsdi/ioc';
 import { IncomingHeaders, ReqHeaders } from './headers';
-import { Packet, RequestMethod } from './packet';
+import { Message, RequestMethod } from './packet';
 
 
 export interface ParameterCodec {
@@ -217,7 +217,7 @@ export type Pattern = string | number | CommandPattern | ObjectPattern;
 /**
  * Client Request.
  */
-export class TransportRequest<T = any> implements Packet<ReqHeaders, T> {
+export class TransportRequest<T = any> implements Message<ReqHeaders, T> {
 
     readonly url: string;
     readonly method: string | undefined;

@@ -6,6 +6,7 @@ import { Connection, ConnectionOpts } from '../connection';
 import { GoawayExecption, InvalidSessionExecption } from '../execptions';
 import { ClientStream } from './stream';
 import { SteamOptions } from '../stream';
+import { ev } from '../consts';
 
 
 /**

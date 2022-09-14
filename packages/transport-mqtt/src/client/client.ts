@@ -1,16 +1,94 @@
-import { Abstract, Injectable, tokenId } from '@tsdi/ioc';
+import { Abstract, Execption, Injectable, tokenId } from '@tsdi/ioc';
 import { ExecptionFilter, Interceptor, RequestOptions, TransportEvent, TransportRequest } from '@tsdi/core';
 import { ClientConnection, LogInterceptor, RequestStrategy, TransportClient, TransportClientOpts } from '@tsdi/transport';
-import * as mqtt from 'mqtt';
-import { MqttProtocol } from '../protocol';
-import { Duplex } from 'form-data';
+import { IConnectPacket } from 'mqtt-packet';
+import { Duplex } from 'stream';
+import * as net from 'net';
+import * as tls from 'tls';
+import * as ws from 'ws';
+import { MqttProtocol, PacketOptions } from '../protocol';
 
 
+
+export interface MqttConnectionOpts extends IConnectPacket {
+    /**
+     * 'mqttjs_' + Math.random().toString(16).substr(2, 8)
+     */
+    clientId: string;
+    /**
+     * 'MQTT'
+     */
+    protocolId?: 'MQTT' | 'MQIsdp';
+    /**
+     * 4
+     */
+    protocolVersion?: 4 | 5 | 3
+    /**
+     * true, set to false to receive QoS 1 and 2 messages while offline
+     */
+    clean?: boolean;
+    /**
+     *  10 seconds, set to 0 to disable
+     */
+    keepalive?: number;
+    /**
+     * the username required by your broker, if any
+     */
+    username?: string;
+    /**
+     * the password required by your broker, if any
+     */
+    password?: Buffer;
+
+    /**
+     * 1000 milliseconds, interval between two reconnections
+     */
+    reconnectPeriod?: number
+    /**
+     * 30 * 1000 milliseconds, time to wait before a CONNACK is received
+     */
+    connectTimeout?: number
+    // /**
+    //  * a Store for the incoming packets
+    //  */
+    // incomingStore?: Store
+    // /**
+    //  * a Store for the outgoing packets
+    //  */
+    // outgoingStore?: Store
+    queueQoSZero?: boolean
+    reschedulePings?: boolean
+    servers?: Array<{
+        host: string
+        port: number
+        protocol?: 'wss' | 'ws' | 'mqtt' | 'mqtts' | 'tcp' | 'ssl' | 'wx' | 'wxs'
+    }>
+    /**
+     * true, set to false to disable re-subscribe functionality
+     */
+    resubscribe?: boolean;
+}
+
+export interface MqttTcpConnectOpts {
+    protocol: 'tcp' | 'mqtt';
+    options: net.TcpNetConnectOpts;
+}
+
+export interface MqttTlsConnectOpts {
+    protocol: 'mqtts' | 'ssl' | 'tls';
+    options: tls.ConnectionOptions;
+}
+
+
+export interface MqttWsConnectOpts {
+    protocol: 'ws' | 'wss';
+    url: string;
+    options?: ws.ClientOptions;
+}
 
 @Abstract()
-export abstract class MqttClientOptions extends TransportClientOpts {
-    abstract url?: string;
-    abstract connectOpts?: mqtt.IClientOptions;
+export abstract class MqttClientOpts extends TransportClientOpts {
+    abstract connectOpts: MqttTcpConnectOpts | MqttTlsConnectOpts | MqttWsConnectOpts;
 }
 
 /**
@@ -23,14 +101,7 @@ export const MQTT_INTERCEPTORS = tokenId<Interceptor<TransportRequest, Transport
  */
 export const MQTT_EXECPTIONFILTERS = tokenId<ExecptionFilter[]>('MQTT_EXECPTIONFILTERS');
 
-export interface MqttPacket extends RequestOptions {
-    // cmd: string;
-    retain?: boolean;
-    dup?: boolean;
-    length?: number;
-    topic?: string;
-    payload?: any;
-}
+export type MqttReqOptions = PacketOptions & RequestOptions;
 
 const defaults = {
     encoding: 'utf8',
@@ -39,15 +110,22 @@ const defaults = {
     execptionsToken: MQTT_EXECPTIONFILTERS,
     interceptors: [
         LogInterceptor
-    ]
-} as MqttClientOptions;
+    ],
+    connectOpts: {
+        protocol: 'mqtt',
+        options: {
+            host: 'localhost',
+            port: 1883
+        }
+    },
+} as MqttClientOpts;
 
 /**
  * mqtt client.
  */
 @Injectable()
-export class MqttClient extends TransportClient<MqttPacket> {
-    constructor(options: MqttClientOptions) {
+export class MqttClient extends TransportClient<MqttReqOptions, MqttClientOpts> {
+    constructor(options: MqttClientOpts) {
         super(options)
     }
 
@@ -55,8 +133,30 @@ export class MqttClient extends TransportClient<MqttPacket> {
         return defaults;
     }
 
-    protected override createDuplex(opts: TransportClientOpts): Duplex {
-        throw new Error('Method not implemented.');
+    protected override createDuplex(opts: MqttClientOpts): Duplex {
+        const connOpts = opts.connectOpts;
+        switch (connOpts.protocol) {
+            case 'mqtt':
+            case 'tcp':
+                if (!connOpts.options.port) {
+                    connOpts.options.port = 1883;
+                }
+                return net.connect(connOpts.options);
+            case 'mqtts':
+            case 'tls':
+                if (!connOpts.options.key || !connOpts.options.cert) {
+                    throw new Execption('Missing secure protocol key')
+                }
+                if (!connOpts.options.port) {
+                    connOpts.options.port = 8883;
+                }
+                return tls.connect(connOpts.options);
+            case 'ws':
+            case 'wss':
+                return ws.createWebSocketStream(new ws.WebSocket(connOpts.url, connOpts.options));
+            default:
+                throw new Execption('Unknown protocol for secure connection: "' + (connOpts as any).protocol + '"!')
+        }
     }
 
 }

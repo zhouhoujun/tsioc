@@ -1,4 +1,4 @@
-import { OutgoingHeader, OutgoingHeaders, OutgoingPacket, Packet, ResHeaders } from '@tsdi/core';
+import { OutgoingHeader, OutgoingHeaders, OutgoingMsg, Message, ResHeaders } from '@tsdi/core';
 import { isArray, isFunction, isString } from '@tsdi/ioc';
 import { Writable } from 'stream';
 import { ServerStream } from './stream';
@@ -8,7 +8,7 @@ import { ev, hdr } from '../consts';
 /**
  * server response.
  */
-export class ServerResponse extends Writable implements OutgoingPacket {
+export class ServerResponse extends Writable implements OutgoingMsg {
 
     private _close = false;
     private _hdr: ResHeaders;

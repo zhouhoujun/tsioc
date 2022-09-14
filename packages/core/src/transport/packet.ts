@@ -1,4 +1,4 @@
-import { IncomingHeaders, OutgoingHeader, OutgoingHeaders, ReqHeadersLike, ResHeadersLike } from './headers';
+import { IncomingHeaders, OutgoingHeader, OutgoingHeaders, ReqHeadersLike } from './headers';
 
 
 /**
@@ -56,10 +56,21 @@ export type HttpProtocols = 'http' | 'https';
 export type Protocols = 'tcp' | 'udp' | 'grpc' | 'rmq' | 'modbus' | 'kafka' | 'redis' | 'amqp' | 'ssl' | 'msg' | HttpProtocols | MqttProtocols;
 
 
+/**
+ * packet data.
+ */
+export interface Packet<Theaders extends IncomingHeaders | OutgoingHeaders = IncomingHeaders> {
+    id: number;
+    type?: number;
+    headers: Theaders;
+
+    body?: any;
+    error?: Error;
+}
 
 
 
-export interface Packet<THeaders = ReqHeadersLike, T = any> {
+export interface Message<THeaders = ReqHeadersLike, T = any> {
     /**
      * packet id.
      */
@@ -102,9 +113,9 @@ export interface PacketClonable<T = any> {
 
 
 /**
- * server side incoming packet.
+ * server side incoming message.
  */
-export interface IncomingPacket {
+export interface IncomingMsg {
     /**
      * packet id.
      */
@@ -140,9 +151,9 @@ export interface IncomingPacket {
 }
 
 /**
- * server outgoing packet
+ * server outgoing message.
  */
-export interface OutgoingPacket {
+export interface OutgoingMsg {
     /**
      * Get response status code.
      */

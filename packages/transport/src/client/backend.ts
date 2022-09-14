@@ -1,5 +1,5 @@
 /* eslint-disable no-case-declarations */
-import { EndpointBackend, IncomingHeaders, IncomingStatusHeaders, isArrayBuffer, isBlob, isFormData, mths, Redirector, RequestContext, ResHeaders, ResponseJsonParseError, Packet, RestfulStatus, TransportErrorResponse, TransportEvent, TransportExecption, TransportHeaderResponse, TransportResponse, UnsupportedMediaTypeExecption, TransportRequest } from '@tsdi/core';
+import { EndpointBackend, IncomingHeaders, IncomingStatusHeaders, isArrayBuffer, isBlob, isFormData, mths, Redirector, RequestContext, ResHeaders, ResponseJsonParseError, Message, RestfulStatus, TransportErrorResponse, TransportEvent, TransportExecption, TransportHeaderResponse, TransportResponse, UnsupportedMediaTypeExecption, TransportRequest } from '@tsdi/core';
 import { EMPTY_OBJ, Injectable, InvocationContext, isUndefined, lang, type_undef } from '@tsdi/ioc';
 import { Observable, Observer, throwError, finalize } from 'rxjs';
 import * as zlib from 'zlib';

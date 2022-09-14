@@ -1,7 +1,7 @@
-import { IncomingHeaders, IncomingPacket, ListenOpts, OutgoingHeaders, Packet } from '@tsdi/core';
-import { Injectable, isPlainObject, isString } from '@tsdi/ioc';
-import { ConnectionOpts, ConnectPacket, hdr, isBuffer, TransportProtocol, ServerRequest, SteamOptions, PacketParser, PacketGenerator } from '@tsdi/transport';
-import { Duplex, Transform, TransformCallback, Writable } from 'stream';
+import { IncomingHeaders, IncomingMsg, ListenOpts, OutgoingHeaders, Packet } from '@tsdi/core';
+import { Injectable, isString } from '@tsdi/ioc';
+import { ConnectionOpts, hdr, isBuffer, TransportProtocol, ServerRequest, PacketParser, PacketGenerator } from '@tsdi/transport';
+import { Duplex, TransformCallback, Writable } from 'stream';
 import * as tsl from 'tls';
 import { TcpStatus } from './status';
 
@@ -12,7 +12,7 @@ export class TcpProtocol extends TransportProtocol {
         super();
     }
 
-    isUpdate(req: IncomingPacket): boolean {
+    isUpdate(req: IncomingMsg): boolean {
         return req.method === 'PUT';
     }
 
@@ -24,7 +24,7 @@ export class TcpProtocol extends TransportProtocol {
         return this._protocol;
     }
 
-    parse(req: IncomingPacket, opts: ListenOpts, proxy?: boolean): URL {
+    parse(req: IncomingMsg, opts: ListenOpts, proxy?: boolean): URL {
         const url = req.url ?? '';
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);
@@ -68,9 +68,13 @@ export class TcpProtocol extends TransportProtocol {
         }
         return (chunk[0] & 1) == 0;
     }
-    parseHeader(chunk: string | Buffer): IncomingPacket {
+    parseHeader(chunk: string | Buffer): IncomingMsg {
         const hstr = isString(chunk) ? chunk.slice(1) : chunk.slice(1).toString();
         return JSON.parse(hstr);
+    }
+
+    parsePacket(packet: any): Packet {
+        return packet;
     }
 
     hasPlayload(headers: IncomingHeaders | OutgoingHeaders): boolean {
@@ -88,51 +92,71 @@ export class TcpProtocol extends TransportProtocol {
 
 
 export class DelimiterParser extends PacketParser {
-    private delimiter: Buffer;
+    private delimiter!: Buffer;
+    bytes = 0;
+    buffers: Buffer[];
+
     constructor(opts: ConnectionOpts) {
         super(opts);
-        this.delimiter = Buffer.from(opts.delimiter!);
+        this.buffers = [];
+        this.setOptions(opts);
     }
-    buffer?: Buffer | null;
-    bytes = 0;
     override _transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
-        this.buffer = this.buffer ? Buffer.concat([this.buffer, chunk], this.bytes) : chunk;
-        if (!this.buffer) return;
-        const idx = this.buffer.indexOf(this.delimiter) ?? 0;
+
+        if (!isBuffer(chunk) || !chunk.length) return;
+        const idx = chunk.indexOf(this.delimiter) ?? 0;
         if (idx >= 0) {
-            if (idx === 0) {
-                this.buffer = null;
+            if (idx > 0) {
+                const lastbuff = chunk.slice(0, idx);
+                this.buffers.push(lastbuff);
+                this.bytes += lastbuff.length;
+            }
+
+            if (this.buffers.length) {
+                const buff = Buffer.concat(this.buffers, this.bytes);
+                const flag = buff.readUInt8(0);
+
+                let pkg;
+                if (flag == 0) {
+                    const headers = JSON.parse(buff.slice(3).toString(encoding));
+                    const streamId = buff.readUInt16BE(1);
+                    pkg = {
+                        streamId,
+                        headers
+                    };
+                } else {
+                    pkg = buff.slice(1);
+                }
+
+                this.buffers = [];
                 this.bytes = 0;
-                return;
-            }
-            const pkgbuff = this.buffer.slice(0, idx);
-            if (pkgbuff) {
-                const pkg = {
-                    id: pkgbuff.readUInt16BE(2),
-                };
                 callback(null, pkg);
+
+                if (idx < chunk.length - 1) {
+                    const newbuff = chunk.slice(idx + this.delimiter.length);
+                    this.buffers.push(newbuff);
+                    this.bytes += newbuff.length;
+                }
             }
-            if (idx < this.buffer.length - 1) {
-                this.buffer = this.buffer.slice(idx + this.delimiter.length);
-            }
+
+        } else {
+            this.buffers.push(chunk);
+            this.bytes += chunk.length;
         }
 
     }
 
-
     setOptions(opts: ConnectionOpts): void {
-        throw new Error('Method not implemented.');
+        this.delimiter = Buffer.from(opts.delimiter!);
     }
 }
 
 const maxSize = 10 * 1024 * 1024;
 const empty = Buffer.allocUnsafe(0);
+const headFlag = Buffer.from([0]);
+const bodyFlag = Buffer.from([1]);
 
 export class DelimiterGenerator extends PacketGenerator {
-    setOptions(opts: ConnectionOpts): void {
-        throw new Error('Method not implemented.');
-    }
-
     private delimiter: Buffer;
     private maxSize: number;
     private packet: Buffer;
@@ -141,32 +165,55 @@ export class DelimiterGenerator extends PacketGenerator {
         this.delimiter = Buffer.from(opts.delimiter!);
         this.maxSize = opts.maxSize || maxSize;
         this.packet = empty;
-        process.nextTick(() => {
-            this.pipe(output);
-        })
     }
 
-    override _transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
-        if (isBuffer(chunk)) {
-            callback(null, chunk);
-            return;
-        }
-        if (isString(chunk)) {
-            callback(null, Buffer.from(chunk, encoding));
+    override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
+
+        if (isBuffer(chunk) || isString(chunk)) {
+            this.output.write(chunk, callback);
             return;
         }
 
-        try {
-            const list = [];
-            let bytes = 0;
-            let flag = 0;
-            const { streamId, headers, payload } = chunk;
-            if (streamId) {
-                list.push(streamId);
-                bytes += Buffer.byteLength(streamId);
+        const list = [];
+        let bytes = 0;
+        const { id, headers, body } = chunk;
+
+        if (headers) {
+            list.push(headFlag);
+            bytes += headFlag.length;
+            if (id) {
+                const idbuff = Buffer.alloc(2);
+                idbuff.writeInt16BE(id)
+                list.push(idbuff);
+                bytes += idbuff.length;
             }
-            if (headers) {
-                flag = 1;
+            const str = JSON.stringify(headers);
+            const buffer = Buffer.from(str, encoding);
+            list.push(buffer);
+            bytes += Buffer.byteLength(buffer);
+
+            list.push(this.delimiter);
+            bytes += this.delimiter.length;
+
+        }
+
+        if (body) {
+            list.push(bodyFlag);
+            bytes += bodyFlag.length;
+            if (id) {
+                const idbuff = Buffer.alloc(2);
+                idbuff.writeInt16BE(id)
+                list.push(idbuff);
+                bytes += idbuff.length;
+            }
+            if (isString(body)) {
+                const buffer = Buffer.from(body, encoding);
+                list.push(buffer);
+                bytes += Buffer.byteLength(buffer);
+            } else if (isBuffer(body)) {
+                list.push(body);
+                bytes += Buffer.byteLength(body);
+            } else {
                 const str = JSON.stringify(headers);
                 const buffer = Buffer.from(str, encoding);
                 list.push(buffer);
@@ -174,36 +221,14 @@ export class DelimiterGenerator extends PacketGenerator {
 
                 list.push(this.delimiter);
                 bytes += this.delimiter.length;
-
             }
-
-            if (payload) {
-                flag &= 2;
-                if (isString(payload)) {
-                    const buffer = Buffer.from(payload, encoding);
-                    list.push(buffer);
-                    bytes += Buffer.byteLength(buffer);
-                } else if (isBuffer(payload)) {
-                    list.push(payload);
-                    bytes += Buffer.byteLength(payload);
-                } else {
-                    const str = JSON.stringify(headers);
-                    const buffer = Buffer.from(str, encoding);
-                    list.push(buffer);
-                    bytes += Buffer.byteLength(buffer);
-
-                    list.push(this.delimiter);
-                    bytes += this.delimiter.length;
-                }
-
-                callback(null, Buffer.concat(list, bytes));
-            }
-            list.unshift(flag);
-            callback(null, Buffer.concat(list, bytes));
-
-        } catch (err) {
-            callback(err as Error, chunk);
         }
+        this.output.write(Buffer.concat(list, bytes), callback);
+    }
+
+    setOptions(opts: ConnectionOpts): void {
+        this.delimiter = Buffer.from(opts.delimiter!);
+        this.maxSize = opts.maxSize || maxSize;
     }
 }
 

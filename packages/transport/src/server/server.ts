@@ -1,5 +1,5 @@
-import { Endpoint, IncomingHeaders, ListenOpts, ModuleRef, Router, Server } from '@tsdi/core';
-import { Abstract, Destroyable, Execption, Injectable, isBoolean, isFunction, lang, Nullable } from '@tsdi/ioc';
+import { Endpoint, IncomingHeaders, ListenOpts, ModuleRef, Router, Server, TransportEvent } from '@tsdi/core';
+import { Abstract, Destroyable, EMPTY_OBJ, Execption, Injectable, isBoolean, isFunction, isObject, isString, lang, Nullable } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { Readable, Writable, Duplex } from 'stream';
 import { CatchInterceptor, LogInterceptor, RespondInterceptor } from '../interceptors';
@@ -15,10 +15,10 @@ import { TRANSPORT_SERVR_PROVIDERS } from './providers';
 import { ServerStream } from './stream';
 import { TransportProtocol } from '../protocol';
 import { Connection, ConnectionOpts } from '../connection';
-import { Observable } from 'rxjs';
+import { finalize, mergeMap, Observable, Subscriber, Subscription } from 'rxjs';
 import { ev } from '../consts';
 import { EventStrategy, ServerConnection } from './connection';
-import { isDuplex } from '../utils';
+import { isBuffer, isDuplex } from '../utils';
 
 
 const defOpts = {
@@ -76,9 +76,9 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
             const server = this._server = this.buildServer(opts);
             const transport = this.getTransportProtocol(opts);
             const logger = this.logger;
-            const sub = this.connect(server, transport, opts.connectionOpts)
+            const sub = this.onConnection(server, transport, opts.connectionOpts)
+                .pipe(mergeMap(conn => this.onRequest(conn)))
                 .subscribe({
-                    next: (conn) => this.onRequest(conn),
                     error: (err) => {
                         logger.error(err);
                     },
@@ -93,23 +93,16 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
         }
     }
 
-    protected onRequest(conn: ServerConnection) {
-        conn.on(ev.STREAM, (stream: ServerStream, headers: IncomingHeaders) => {
-            const ctx = this.buildContext(stream, headers);
-            this.handle(ctx, this.endpoint());
-        });
-    }
 
-    protected abstract buildServer(opts: TOpts): T;
-
-    protected connect(server: T, transport: TransportProtocol, opts?: ConnectionOpts): Observable<ServerConnection> {
+    protected onConnection(server: T, transport: TransportProtocol, opts?: ConnectionOpts): Observable<ServerConnection> {
         return new Observable((observer) => {
             const onError = (err: Error) => {
                 observer.error(err);
             };
             const onConnection = (conn: any, ...args: any[]) => {
                 const duplex = isDuplex(conn) ? conn : this.parseToDuplex(conn, ...args);
-                observer.next(this.createConnection(duplex, transport, opts));
+                const connection = this.createConnection(duplex, transport, opts);
+                observer.next(connection);
             }
             const onClose = () => {
                 observer.complete();
@@ -125,6 +118,43 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
             }
         })
     }
+
+    protected onRequest(conn: ServerConnection): Observable<TransportEvent> {
+        return new Observable((observer) => {
+            const subs: Set<Subscription> = new Set();
+            const onData = (chunk: any) => {
+                if (!isString(chunk) && !isBuffer(chunk) && isObject(chunk)) {
+                    const { id, headers, body } = conn.transport.parsePacket(chunk);
+                    const stream = this.createStream(conn, id, headers);
+                    if (body) {
+                        stream.push(body);
+                    }
+                    conn.emit(ev.STREAM, stream, headers);
+                }
+            };
+            const onStream = (stream: ServerStream, headers: IncomingHeaders) => {
+                const ctx = this.buildContext(stream, headers);
+                subs.add(this.handle(ctx, this.endpoint(), observer));
+            };
+
+            conn.on(ev.DATA, onData);
+            conn.on(ev.STREAM, onStream);
+            return () => {
+                subs.forEach(s => {
+                    s && s.unsubscribe();
+                });
+                subs.clear();
+                conn.off(ev.DATA, onData);
+                conn.off(ev.STREAM, onStream);
+            }
+        });
+    }
+
+    protected createStream(conn: ServerConnection, id: number, headers: IncomingHeaders) {
+        return new ServerStream(conn, id, this.getOptions().connectionOpts ?? EMPTY_OBJ, headers);
+    }
+
+    protected abstract buildServer(opts: TOpts): T;
 
     protected parseToDuplex(conn: any, ...args: any[]): Duplex {
         throw new Execption('parse connection client to Duplex not implemented.')
@@ -146,14 +176,11 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
      * @param context 
      * @param endpoint 
      */
-    protected handle(ctx: TransportContext, endpoint: Endpoint): void {
+    protected handle(ctx: TransportContext, endpoint: Endpoint, subscriber: Subscriber<TransportEvent>): Subscription {
         const req = ctx.request;
         const cancel = endpoint.handle(req, ctx)
-            .subscribe({
-                complete: () => {
-                    ctx.destroy()
-                }
-            });
+            .pipe(finalize(() => ctx.destroy))
+            .subscribe(subscriber);
         const opts = ctx.target.getOptions() as TransportServerOpts;
         opts.timeout && req.setTimeout(opts.timeout, () => {
             req.emit(ev.TIMEOUT);
@@ -165,7 +192,8 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
             if (!ctx.sent) {
                 ctx.response.end()
             }
-        })
+        });
+        return cancel;
     }
 
     protected getTransportProtocol(opts: TransportServerOpts) {
@@ -195,7 +223,7 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
             });
             await defer.promise;
             this._server = null;
-        } else if (isFunction(server.destroy)) {
+        } else if (isFunction(server?.destroy)) {
             server.destroy();
         }
     }

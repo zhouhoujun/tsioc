@@ -1,4 +1,4 @@
-import { AssetContext, HeadersContext, MiddlewareLike, mths, Throwable, ConnectionContext, IncomingPacket } from '@tsdi/core';
+import { AssetContext, HeadersContext, MiddlewareLike, mths, Throwable, ConnectionContext, IncomingMsg } from '@tsdi/core';
 import { isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { hdr, append, parseTokenList, AssetServerContext } from '@tsdi/transport';
