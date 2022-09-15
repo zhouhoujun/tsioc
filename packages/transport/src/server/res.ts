@@ -143,6 +143,9 @@ export class ServerResponse extends Writable implements OutgoingMsg {
     }
 
     override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
+        if (!this.headersSent) {
+            this.writeHead(this.statusCode, this.statusMessage);
+        }
         this.stream.write(chunk, encoding, callback);
     }
 

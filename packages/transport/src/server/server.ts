@@ -14,10 +14,10 @@ import { ServerResponse } from './res';
 import { TRANSPORT_SERVR_PROVIDERS } from './providers';
 import { ServerStream } from './stream';
 import { TransportProtocol } from '../protocol';
-import { Connection, ConnectionOpts } from '../connection';
+import { ConnectionOpts } from '../connection';
 import { finalize, mergeMap, Observable, Subscriber, Subscription } from 'rxjs';
 import { ev, hdr } from '../consts';
-import { EventStrategy, ServerConnection } from './connection';
+import { ServerConnection } from './connection';
 import { isBuffer, isDuplex } from '../utils';
 
 
@@ -125,7 +125,8 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
             const onData = (chunk: any) => {
                 if (!isString(chunk) && !isBuffer(chunk) && isObject(chunk)) {
                     const { id, headers, body } = conn.transport.parsePacket(chunk);
-                    const stream = this.createStream(conn, id, headers);
+                    const sid = conn.getNextStreamId(id);
+                    const stream = this.createStream(conn, sid, headers);
                     if (body) {
                         stream.push(body);
                     }

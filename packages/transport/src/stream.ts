@@ -92,16 +92,11 @@ export abstract class TransportStream extends Duplex implements Closeable {
     protected isClient?: boolean;
     private _streamId?: Buffer;
     private _evts: Map<string, any>;
-    constructor(readonly connection: Connection, protected opts: SteamOptions) {
-        super({ objectMode: true, ...opts });
+    protected opts: SteamOptions;
+    constructor(readonly connection: Connection, opts: SteamOptions) {
+        super(opts = { objectMode: true, allowHalfOpen: true, ...opts });
+        // { objectMode: true, allowHalfOpen: true, decodeStrings: false, autoDestroy: false, ...opts };
         this.opts = opts;
-        this.cork();
-
-        // Allow our logic for determining whether any reads have happened to
-        // work in all situations. This is similar to what we do in _http_incoming.
-        this._readableState.readingMore = true;
-
-        this.connection.state.pendingStreams.add(this);
 
         this.state = {
             didRead: false,
@@ -111,17 +106,25 @@ export abstract class TransportStream extends Duplex implements Closeable {
             trailersReady: false,
             endAfterHeaders: false
         };
+        
+        this.cork();
+        // Allow our logic for determining whether any reads have happened to
+        // work in all situations. This is similar to what we do in _http_incoming.
+        this._readableState.readingMore = true;
+
+        this.connection.state.pendingStreams.add(this);
+
         this._evts = new Map([ev.DRAIN, ev.ABORTED, ev.TIMEOUT, ev.ERROR, ev.CLOSE].map(evt => [evt, this.emit.bind(this, evt)]));
         this._evts.forEach((evt, n) => {
             this.connection.on(n, evt);
         });
-        this.once(ev.END, () => (!this.destroyed && this._writableState.finished) && this.destroy());
-        this.once(ev.ERROR, (err) => {
-            this.destroy();
-            if (this.listenerCount(ev.ERROR) === 0) {
-                this.emit(ev.ERROR, err);
-            }
-        })
+        // this.once(ev.END, () => (!this.destroyed && this._writableState.finished) && this.destroy());
+        // this.once(ev.ERROR, (err) => {
+        //     this.destroy();
+        //     if (this.listenerCount(ev.ERROR) === 0) {
+        //         this.emit(ev.ERROR, err);
+        //     }
+        // })
     }
 
     get id() {

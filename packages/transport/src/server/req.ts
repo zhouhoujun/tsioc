@@ -12,7 +12,6 @@ export class ServerRequest extends Readable implements IncomingMsg, Message {
     readonly method: string;
     readonly authority: string;
     body: any;
-    private _bodyIdx = 0;
     _didRead = false;
     _closed = false;
     private _aborted = false;

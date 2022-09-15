@@ -119,11 +119,11 @@ export class DelimiterParser extends PacketParser {
                 let pkg;
                 if (flag == 0) {
                     const headers = JSON.parse(buff.slice(3).toString(encoding));
-                    const streamId = buff.readUInt16BE(1);
+                    const id = buff.readUInt16BE(1);
                     pkg = {
-                        streamId,
+                        id,
                         headers
-                    };
+                    } as Packet;
                 } else {
                     pkg = buff.slice(1);
                 }

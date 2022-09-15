@@ -13,7 +13,7 @@ import { ClientConnection } from './connection';
  */
 export class ClientStream extends TransportStream {
 
-    constructor(readonly connection: ClientConnection, id: number | undefined, private headers: IncomingHeaders, protected opts: SteamOptions) {
+    constructor(connection: ClientConnection, id: number | undefined, private headers: IncomingHeaders, opts: SteamOptions) {
         super(connection, opts);
         this.isClient = true;
         this.bindEvents();

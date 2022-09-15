@@ -166,7 +166,7 @@ export class ServerStream extends TransportStream {
 
         this._sentHeaders = headers;
         this.state.flags |= StreamStateFlags.headersSent;
-        if (!this.connection.write({ id: this, headers })) {
+        if (!this.connection.write({ id: this.id, headers })) {
             this.destroy();
             return;
         }

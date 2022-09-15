@@ -35,9 +35,9 @@ export abstract class PacketGenerator extends Writable {
 export class FilterTransform extends Transform {
 
     private streamId: Buffer;
-    constructor(private id: number | string) {
+    constructor(private id: number) {
         super({ objectMode: true });
-        this.streamId = Buffer.from(id.toString());
+        this.streamId = Buffer.from([id]);
     }
 
     override _transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
@@ -47,7 +47,7 @@ export class FilterTransform extends Transform {
             const id = this.id.toString();
             if (chunk.startsWith(id)) callback(null, chunk.slice(id.length));
         } else if (chunk) {
-            if (chunk.streamId == this.id) callback(null, chunk);
+            if (chunk.id == this.id) callback(null, chunk);
         }
     }
 }

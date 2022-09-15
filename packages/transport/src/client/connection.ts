@@ -89,7 +89,6 @@ export class DefaultRequestStrategy extends RequestStrategy {
     request(connection: ClientConnection, headers: IncomingHeaders, options: ClientRequsetOpts): ClientStream {
         const id = connection.getNextStreamId();
         const stream = new ClientStream(connection, id, headers, options);
-        // stream.write({ headers });
         return stream;
     }
 
