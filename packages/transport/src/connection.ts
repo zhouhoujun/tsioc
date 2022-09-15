@@ -76,8 +76,8 @@ export abstract class Connection extends Duplexify implements Closeable {
             writeQueueSize: 0
         };
 
-        this._parser = transport.transform(opts);
-        this._generator = transport.generate(stream, opts);
+        this._parser = transport.parser(opts);
+        this._generator = transport.generator(stream, opts);
         this.setReadable(this._parser);
         this.setWritable(this._generator);
 

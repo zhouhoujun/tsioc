@@ -56,10 +56,10 @@ export class TcpProtocol extends TransportProtocol {
         return true;
     }
 
-    transform(opts: ConnectionOpts): PacketParser {
+    parser(opts: ConnectionOpts): PacketParser {
         return new DelimiterParser(opts);
     }
-    generate(stream: Duplex, opts: ConnectionOpts): PacketGenerator {
+    generator(stream: Duplex, opts: ConnectionOpts): PacketGenerator {
         return new DelimiterGenerator(stream, opts);
     }
     isHeader(chunk: string | Buffer): boolean {

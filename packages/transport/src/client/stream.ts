@@ -16,30 +16,30 @@ export class ClientStream extends TransportStream {
     constructor(connection: ClientConnection, id: number | undefined, private headers: IncomingHeaders, opts: SteamOptions) {
         super(connection, opts);
         this.isClient = true;
-        this.bindEvents();
+        // this.bindEvents();
         if (id !== undefined) {
             this.init(id);
         }
     }
 
-    protected bindEvents() {
-        const transport = this.connection.transport;
-        const stat = transport.status;
-        this.on(ev.HEADERS, (headers) => {
-            if (stat.isContinue(stat.parse(headers[hdr.STATUS2] ?? headers[hdr.STATUS])))
-                this.emit(ev.CONTINUE);
-        });
-        this.on(ev.DATA, (packet) => {
-            if (isBuffer(packet) || isString(packet)) {
-                return;
-            }
-            const pkg = transport.parsePacket(packet);
-            if (pkg.headers) {
-                this.emit(ev.HEADERS, pkg.headers);
-                this.emit(ev.RESPONSE, pkg.headers);
-            }
-        })
-    }
+    // protected bindEvents() {
+    //     const transport = this.connection.transport;
+    //     const stat = transport.status;
+    //     this.on(ev.HEADERS, (headers) => {
+    //         if (stat.isContinue(stat.parse(headers[hdr.STATUS2] ?? headers[hdr.STATUS])))
+    //             this.emit(ev.CONTINUE);
+    //     });
+    //     this.on(ev.DATA, (packet) => {
+    //         if (isBuffer(packet) || isString(packet)) {
+    //             return;
+    //         }
+    //         const pkg = transport.parsePacket(packet);
+    //         if (pkg.headers) {
+    //             this.emit(ev.HEADERS, pkg.headers);
+    //             this.emit(ev.RESPONSE, pkg.headers);
+    //         }
+    //     })
+    // }
 
     protected proceed(): void {
         this.request(this.headers);
@@ -55,7 +55,7 @@ export class ClientStream extends TransportStream {
 
         this._sentHeaders = headers;
         this.state.flags |= StreamStateFlags.headersSent;
-        if (!this.connection.write({ id: this.id, headers })) {
+        if (this.connection.write({ id: this.id, headers }) === false) {
             this.destroy();
             return;
         }

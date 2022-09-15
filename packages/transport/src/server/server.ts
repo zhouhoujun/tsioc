@@ -139,6 +139,7 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
             };
 
             conn.on(ev.DATA, onData);
+            // conn.on(ev.HEADERS, onHeaders);
             conn.on(ev.STREAM, onStream);
             return () => {
                 subs.forEach(s => {

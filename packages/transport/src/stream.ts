@@ -3,6 +3,7 @@ import { IncomingHeaders, OutgoingHeaders, TransportExecption } from '@tsdi/core
 import { Buffer } from 'buffer';
 import { Duplex, DuplexOptions, Transform, Readable, TransformCallback } from 'stream';
 import { ReadableState, WritableState } from 'readable-stream';
+import * as Duplexify from 'duplexify';
 import { Connection } from './connection';
 import { ev } from './consts';
 import { setTimeout } from 'timers';
@@ -78,7 +79,7 @@ export const STRESM_NO_ERROR = 0;
  * transport stream
  */
 @Abstract()
-export abstract class TransportStream extends Duplex implements Closeable {
+export abstract class TransportStream extends Duplexify implements Closeable {
 
     private _timeout?: any;
     protected _id?: number;
@@ -91,10 +92,10 @@ export abstract class TransportStream extends Duplex implements Closeable {
     protected _writableState!: WritableState;
     protected isClient?: boolean;
     private _streamId?: Buffer;
-    private _evts: Map<string, any>;
+    private _evts?: Map<string, any>;
     protected opts: SteamOptions;
     constructor(readonly connection: Connection, opts: SteamOptions) {
-        super(opts = { objectMode: true, allowHalfOpen: true, ...opts });
+        super(undefined, undefined, opts = { objectMode: true, allowHalfOpen: true, ...opts });
         // { objectMode: true, allowHalfOpen: true, decodeStrings: false, autoDestroy: false, ...opts };
         this.opts = opts;
 
@@ -106,7 +107,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
             trailersReady: false,
             endAfterHeaders: false
         };
-        
+
         this.cork();
         // Allow our logic for determining whether any reads have happened to
         // work in all situations. This is similar to what we do in _http_incoming.
@@ -114,29 +115,18 @@ export abstract class TransportStream extends Duplex implements Closeable {
 
         this.connection.state.pendingStreams.add(this);
 
-        this._evts = new Map([ev.DRAIN, ev.ABORTED, ev.TIMEOUT, ev.ERROR, ev.CLOSE].map(evt => [evt, this.emit.bind(this, evt)]));
-        this._evts.forEach((evt, n) => {
-            this.connection.on(n, evt);
-        });
-        // this.once(ev.END, () => (!this.destroyed && this._writableState.finished) && this.destroy());
-        // this.once(ev.ERROR, (err) => {
-        //     this.destroy();
-        //     if (this.listenerCount(ev.ERROR) === 0) {
-        //         this.emit(ev.ERROR, err);
-        //     }
-        // })
     }
 
     get id() {
         return this._id;
     }
 
-    get streamId() {
-        if (!this._streamId && this._id !== undefined) {
-            this._streamId = Buffer.of(this._id)
-        }
-        return this._streamId;
-    }
+    // get streamId() {
+    //     if (!this._streamId && this._id !== undefined) {
+    //         this._streamId = Buffer.of(this._id)
+    //     }
+    //     return this._streamId;
+    // }
 
 
     get isClosed() {
@@ -203,30 +193,51 @@ export abstract class TransportStream extends Duplex implements Closeable {
         this._id = id;
 
         this.uncork();
-        const steam = connection.transport.streamFilter(this.isClient ? id + 1 : id - 1);
+        const tsp = connection.transport;
+        const parser = tsp.streamParser(id, this.isClient);
+        const generator = tsp.streamGenerator(connection, id);
+        this.setReadable(parser);
+        this.setWritable(generator);
         process.nextTick(() => {
-            connection
-                .pipe(steam)
-                .pipe(this);
+            connection.pipe(parser);
         });
+
+        this._evts = new Map([ev.ABORTED, ev.TIMEOUT, ev.ERROR, ev.CLOSE].map(evt => [evt, this.emit.bind(this, evt)]));
+        this._evts.forEach((evt, n) => {
+            this.connection.on(n, evt);
+            if (n === ev.ERROR) {
+                parser.on(n, evt);
+                generator.on(n, evt);
+            }
+        });
+        if (this.isClient) {
+            parser.on(ev.RESPONSE, this.emit.bind(this, ev.RESPONSE));
+        }
         this.emit(ev.READY)
     }
 
     override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
-        this.processWrite(false, chunk, encoding, callback)
-    }
-
-    override _writev(chunk: any, callback: (error?: Error | null | undefined) => void) {
-        this.processWrite(true, chunk, undefined, callback)
-    }
-
-    override _final(callback: (error?: Error | null | undefined) => void): void {
-        if (this.pending) {
-            this.once(ev.READY, () => this._final(callback))
+        if (!this.destroyed && !this.headersSent) {
+            this.proceed()
         }
-
-        this.shutdownWritable(callback);
+        super._write(chunk, encoding, callback);
     }
+
+    // override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
+    //     this.processWrite(false, chunk, encoding, callback)
+    // }
+
+    // override _writev(chunk: any, callback: (error?: Error | null | undefined) => void) {
+    //     this.processWrite(true, chunk, undefined, callback)
+    // }
+
+    // override _final(callback: (error?: Error | null | undefined) => void): void {
+    //     if (this.pending) {
+    //         this.once(ev.READY, () => this._final(callback))
+    //     }
+
+    //     this.shutdownWritable(callback);
+    // }
 
     override _read(size: number): void {
         if (this.destroyed) {
@@ -245,80 +256,80 @@ export abstract class TransportStream extends Duplex implements Closeable {
         }
     }
 
-    protected processWrite(writev: boolean, chunk: any, encoding: BufferEncoding | undefined, callback: (error?: Error | null | undefined) => void) {
-        if (this.pending) {
-            this.once(ev.READY, () => {
-                this.processWrite(writev, chunk, encoding, callback);
-            })
-            return;
-        }
-        if (this.destroyed) return;
-        if (!this.headersSent) {
-            this.proceed()
-        }
+    // protected processWrite(writev: boolean, chunk: any, encoding: BufferEncoding | undefined, callback: (error?: Error | null | undefined) => void) {
+    //     if (this.pending) {
+    //         this.once(ev.READY, () => {
+    //             this.processWrite(writev, chunk, encoding, callback);
+    //         })
+    //         return;
+    //     }
+    //     if (this.destroyed) return;
+    //     if (!this.headersSent) {
+    //         this.proceed()
+    //     }
 
-        let waitingForWriteCallback = true;
-        let waitingForEndCheck = true;
-        let writeCallbackErr: Error | null | undefined;
-        let endCheckCallbackErr: Error | null | undefined;
-        const done = () => {
-            if (waitingForEndCheck || waitingForWriteCallback) return;
+    //     let waitingForWriteCallback = true;
+    //     let waitingForEndCheck = true;
+    //     let writeCallbackErr: Error | null | undefined;
+    //     let endCheckCallbackErr: Error | null | undefined;
+    //     const done = () => {
+    //         if (waitingForEndCheck || waitingForWriteCallback) return;
 
-            if (endCheckCallbackErr && writeCallbackErr && endCheckCallbackErr !== writeCallbackErr) {
-                const err = new TransportExecption(
-                    writeCallbackErr?.message ?? endCheckCallbackErr?.message,
-                    (writeCallbackErr as Execption)?.code
-                );
-                this.destroy(err);
-            }
-            callback();
+    //         if (endCheckCallbackErr && writeCallbackErr && endCheckCallbackErr !== writeCallbackErr) {
+    //             const err = new TransportExecption(
+    //                 writeCallbackErr?.message ?? endCheckCallbackErr?.message,
+    //                 (writeCallbackErr as Execption)?.code
+    //             );
+    //             this.destroy(err);
+    //         }
+    //         callback();
 
-        };
-        const writeCallback = (err?: Error | null) => {
-            waitingForWriteCallback = false;
-            writeCallbackErr = err;
-            done();
-        };
-        const endCheckCallback = (err?: Error) => {
-            waitingForEndCheck = false;
-            endCheckCallbackErr = err;
-            done();
-        };
+    //     };
+    //     const writeCallback = (err?: Error | null) => {
+    //         waitingForWriteCallback = false;
+    //         writeCallbackErr = err;
+    //         done();
+    //     };
+    //     const endCheckCallback = (err?: Error) => {
+    //         waitingForEndCheck = false;
+    //         endCheckCallbackErr = err;
+    //         done();
+    //     };
 
-        // Shutdown write stream right after last chunk is sent
-        // so final DATA frame can include END_STREAM flag
-        process.nextTick(() => {
-            if (writeCallbackErr ||
-                !this._writableState.ending ||
-                (this._writableState.buffer?.length || (this._writableState as any)['buffered']?.length) ||
-                (this.state.flags & StreamStateFlags.trailers))
-                return endCheckCallback();
-            this.shutdownWritable(endCheckCallback);
-        });
+    //     // Shutdown write stream right after last chunk is sent
+    //     // so final DATA frame can include END_STREAM flag
+    //     process.nextTick(() => {
+    //         if (writeCallbackErr ||
+    //             !this._writableState.ending ||
+    //             (this._writableState.buffer?.length || (this._writableState as any)['buffered']?.length) ||
+    //             (this.state.flags & StreamStateFlags.trailers))
+    //             return endCheckCallback();
+    //         this.shutdownWritable(endCheckCallback);
+    //     });
 
-        chunk = this.attachStreamId(chunk, encoding);
-        // let req: any;
-        if (writev)
-            this.connection.write(chunk, writeCallback);
-        else
-            this.connection.write(chunk, encoding, writeCallback);
+    //     chunk = this.attachStreamId(chunk, encoding);
+    //     // let req: any;
+    //     if (writev)
+    //         this.connection.write(chunk, writeCallback);
+    //     else
+    //         this.connection.write(chunk, encoding, writeCallback);
 
-        // this.trackWriteState(req.bytes);
-    }
+    //     // this.trackWriteState(req.bytes);
+    // }
 
-    attachStreamId(chunk: any, encoding?: BufferEncoding) {
-        const streamId = this.streamId!;
-        if (isString(chunk)) {
-            const buffer = Buffer.from(chunk, encoding);
-            return Buffer.concat([streamId, buffer], streamId.length + buffer.length);
-        }
-        if (isBuffer(chunk)) {
-            return Buffer.concat([streamId, chunk], streamId.length + chunk.length);
-        }
+    // attachStreamId(chunk: any, encoding?: BufferEncoding) {
+    //     const streamId = this.streamId!;
+    //     if (isString(chunk)) {
+    //         const buffer = Buffer.from(chunk, encoding);
+    //         return Buffer.concat([streamId, buffer], streamId.length + buffer.length);
+    //     }
+    //     if (isBuffer(chunk)) {
+    //         return Buffer.concat([streamId, chunk], streamId.length + chunk.length);
+    //     }
 
-        chunk.id = this.id;
-        return chunk;
-    }
+    //     chunk.id = this.id;
+    //     return chunk;
+    // }
 
 
     protected abstract proceed(): void;
@@ -368,10 +379,12 @@ export abstract class TransportStream extends Duplex implements Closeable {
 
         this.id && cstate.streams.delete(this.id);
         cstate.pendingStreams.delete(this);
-        this._evts.forEach((e, n) => {
-            this.connection.off(n, e);
-        });
-        this._evts.clear();
+        if (this._evts) {
+            this._evts.forEach((e, n) => {
+                this.connection.off(n, e);
+            });
+            this._evts.clear();
+        }
 
 
         // Adjust the write queue size for accounting
@@ -444,17 +457,18 @@ export abstract class TransportStream extends Duplex implements Closeable {
 
     }
 
-    protected shutdownWritable(callback: (error?: Error) => void) {
-        const state = this.state;
-        if (state.shutdownWritableCalled) {
-            return callback();
-        }
-        state.shutdownWritableCalled = true;
-    }
+    // protected shutdownWritable(callback: (error?: Error) => void) {
+    //     const state = this.state;
+    //     if (state.shutdownWritableCalled) {
+    //         return callback();
+    //     }
+    //     state.shutdownWritableCalled = true;
+    // }
 
     protected streamOnResume(size?: number) {
         if (!this.destroyed) {
             this.resume();
+            super._read(size!);
         }
     }
 
