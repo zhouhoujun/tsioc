@@ -1,5 +1,5 @@
 import { OutgoingHeader, OutgoingHeaders, OutgoingMsg, Message, ResHeaders } from '@tsdi/core';
-import { isArray, isFunction, isString } from '@tsdi/ioc';
+import { ArgumentExecption, Execption, isArray, isFunction, isString } from '@tsdi/ioc';
 import { Writable } from 'stream';
 import { ServerStream } from './stream';
 import { ev, hdr } from '../consts';
@@ -113,9 +113,9 @@ export class ServerResponse extends Writable implements OutgoingMsg {
         return this;
     }
 
-    writeHead(statusCode: number, headers?: OutgoingHeaders | [string, OutgoingHeader][]): this;
-    writeHead(statusCode: number, statusMessage: string, headers?: OutgoingHeaders | [string, OutgoingHeader][]): this;
-    writeHead(statusCode: number, statusMessage?: string | OutgoingHeaders | [string, OutgoingHeader][], headers?: OutgoingHeaders | [string, OutgoingHeader][]): this {
+    writeHead(statusCode: number, headers?: OutgoingHeaders | OutgoingHeader[]): this;
+    writeHead(statusCode: number, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[]): this;
+    writeHead(statusCode: number, statusMessage?: string | OutgoingHeaders | OutgoingHeader[], headers?: OutgoingHeaders | OutgoingHeader[]): this {
         let msg: string;
         if (isString(statusMessage)) {
             msg = statusMessage
@@ -123,9 +123,17 @@ export class ServerResponse extends Writable implements OutgoingMsg {
             headers = statusMessage;
         }
         if (headers) {
-            isArray(headers) ? headers.forEach(i => {
-                this.setHeader(i[0], i[1]);
-            }) : this._hdr.setHeaders(headers);
+            if (isArray(headers)) {
+                if (headers.length % 2 === 0) {
+                    for (let i = 0; i < headers.length - 1; i += 2) {
+                        this._hdr.set(`${headers[i]}`, headers[i + 1]);
+                    }
+                } else {
+                    throw new ArgumentExecption('headers');
+                }
+            } else {
+                this._hdr.setHeaders(headers);
+            }
         }
         this.setHeader(hdr.STATUS, statusCode);
         this.setHeader(hdr.STATUS2, statusCode);
