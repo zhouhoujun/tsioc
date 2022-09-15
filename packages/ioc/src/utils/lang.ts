@@ -26,6 +26,17 @@ export function omit(target: any, ...fields: string[]): any {
     }
 }
 
+export function pick(target: any,  ...fields: string[]): any {
+    const obj: any = {};
+    for(const fd  in fields) {
+        const val = target[fd];
+        if(!isNil(val)) {
+            obj[fd] = val;
+        }
+    }
+    return obj;
+}
+
 /**
  * assign key values to target.
  * @param target target object
@@ -85,7 +96,7 @@ export function deepForEach<T>(
     input.forEach(value => {
         if (isArray(value)) {
             deepForEach(value, fn, isRecord, getRecord)
-        } else if (isRecord && isRecord(value)) {
+        } else if (value && isRecord && isRecord(value)) {
             deepForEach(getRecord ? getRecord(value) : Object.values(value), fn, isRecord, getRecord)
         } else {
             fn(value as T)

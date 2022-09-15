@@ -2,6 +2,7 @@ import { IncomingHeaders, IncomingStatusHeaders } from '@tsdi/core';
 import { isString } from '@tsdi/ioc';
 import { Readable, DuplexOptions } from 'stream';
 import { ev, hdr } from '../consts';
+import { HeandersSentExecption, InvalidStreamExecption } from '../execptions';
 import { SteamOptions, StreamStateFlags, TransportStream } from '../stream';
 import { isBuffer } from '../utils';
 import { ClientConnection } from './connection';
@@ -15,7 +16,6 @@ export class ClientStream extends TransportStream {
     constructor(readonly connection: ClientConnection, id: number | undefined, private headers: IncomingHeaders, protected opts: SteamOptions) {
         super(connection, opts);
         this.isClient = true;
-        this.state.flags |= StreamStateFlags.headersSent;
         this.bindEvents();
         if (id !== undefined) {
             this.init(id);
@@ -35,15 +35,38 @@ export class ClientStream extends TransportStream {
             }
             const pkg = transport.parsePacket(packet);
             if (pkg.headers) {
+                this.emit(ev.HEADERS, pkg.headers);
                 this.emit(ev.RESPONSE, pkg.headers);
             }
         })
     }
 
     protected proceed(): void {
-        this.connection.request(this.headers);
+        this.request(this.headers);
     }
 
+    request(headers: IncomingHeaders, options?: {
+        endStream?: boolean;
+        waitForTrailers?: boolean;
+    }): void {
+        if (this.destroyed || this.isClosed) throw new InvalidStreamExecption();
+        if (this.headersSent) throw new HeandersSentExecption();
+        const opts = { ...options } as SteamOptions;
+
+        this._sentHeaders = headers;
+        this.state.flags |= StreamStateFlags.headersSent;
+        if (!this.connection.write({ id: this.id, headers })) {
+            this.destroy();
+            return;
+        }
+        const len = headers[hdr.CONTENT_LENGTH];
+        const hasPlayload = len ? true : false;
+        if (opts.endStream == true || !hasPlayload) {
+            opts.endStream = true;
+            this.end();
+        }
+
+    }
 
     addListener(event: 'aborted', listener: () => void): this;
     addListener(event: 'close', listener: () => void): this;

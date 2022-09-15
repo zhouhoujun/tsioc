@@ -91,6 +91,7 @@ export abstract class TransportStream extends Duplex implements Closeable {
     protected _writableState!: WritableState;
     protected isClient?: boolean;
     private _streamId?: Buffer;
+    private _evts: Map<string, any>;
     constructor(readonly connection: Connection, protected opts: SteamOptions) {
         super({ objectMode: true, ...opts });
         this.opts = opts;
@@ -110,13 +111,17 @@ export abstract class TransportStream extends Duplex implements Closeable {
             trailersReady: false,
             endAfterHeaders: false
         };
-
-        this.connection.on(ev.DATA, this.emit.bind(this, ev.DATA));
-        this.connection.on(ev.DRAIN, this.emit.bind(this, ev.DRAIN));
-        this.connection.on(ev.ABORTED, this.emit.bind(this, ev.ABORTED));
-        this.connection.on(ev.TIMEOUT, this.emit.bind(this, ev.TIMEOUT));
-        this.connection.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
-        this.connection.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
+        this._evts = new Map([ev.DRAIN, ev.ABORTED, ev.TIMEOUT, ev.ERROR, ev.CLOSE].map(evt => [evt, this.emit.bind(this, evt)]));
+        this._evts.forEach((evt, n) => {
+            this.connection.on(n, evt);
+        });
+        this.once(ev.END, () => (!this.destroyed && this._writableState.finished) && this.destroy());
+        this.once(ev.ERROR, (err) => {
+            this.destroy();
+            if (this.listenerCount(ev.ERROR) === 0) {
+                this.emit(ev.ERROR, err);
+            }
+        })
     }
 
     get id() {
@@ -195,18 +200,13 @@ export abstract class TransportStream extends Duplex implements Closeable {
         this._id = id;
 
         this.uncork();
-        const steam = this.connection.transport.streamFilter(this.isClient ? id + 1 : id - 1);
+        const steam = connection.transport.streamFilter(this.isClient ? id + 1 : id - 1);
         process.nextTick(() => {
-            this.connection
+            connection
                 .pipe(steam)
                 .pipe(this);
         });
         this.emit(ev.READY)
-    }
-
-    override push(chunk: any, encoding?: BufferEncoding | undefined): boolean {
-        this.emit(ev.DATA, chunk);
-        return super.push(chunk, encoding);
     }
 
     override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
@@ -320,6 +320,21 @@ export abstract class TransportStream extends Duplex implements Closeable {
 
     protected abstract proceed(): void;
 
+    override end(cb?: (() => void) | undefined): this;
+    override end(chunk: any, cb?: (() => void) | undefined): this;
+    override end(chunk: any, encoding: BufferEncoding, cb?: (() => void) | undefined): this;
+    override end(chunk?: unknown, encoding?: any, cb?: (() => void) | undefined): this {
+        if (isFunction(encoding)) {
+            cb = encoding
+            encoding = undefined;
+        }
+        if (!this.headersSent) {
+            this.proceed();
+        }
+        super.end(chunk, encoding, cb);
+        return this;
+    }
+
     /**
      * Closes the `TransportStream` instance by sending an `RST_STREAM` frame to the
      * connected transport peer.
@@ -350,6 +365,10 @@ export abstract class TransportStream extends Duplex implements Closeable {
 
         this.id && cstate.streams.delete(this.id);
         cstate.pendingStreams.delete(this);
+        this._evts.forEach((e, n) => {
+            this.connection.off(n, e);
+        });
+        this._evts.clear();
 
 
         // Adjust the write queue size for accounting

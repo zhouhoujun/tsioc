@@ -16,7 +16,7 @@ import { ServerStream } from './stream';
 import { TransportProtocol } from '../protocol';
 import { Connection, ConnectionOpts } from '../connection';
 import { finalize, mergeMap, Observable, Subscriber, Subscription } from 'rxjs';
-import { ev } from '../consts';
+import { ev, hdr } from '../consts';
 import { EventStrategy, ServerConnection } from './connection';
 import { isBuffer, isDuplex } from '../utils';
 
@@ -151,7 +151,7 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
     }
 
     protected createStream(conn: ServerConnection, id: number, headers: IncomingHeaders) {
-        return new ServerStream(conn, id, this.getOptions().connectionOpts ?? EMPTY_OBJ, headers);
+        return new ServerStream(conn, id, this.getOptions().connectionOpts ?? EMPTY_OBJ, lang.pick(headers, hdr.HOST, hdr.AUTHORITY));
     }
 
     protected abstract buildServer(opts: TOpts): T;

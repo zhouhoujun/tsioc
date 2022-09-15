@@ -13,6 +13,7 @@ export class ServerRequest extends Readable implements IncomingMsg, Message {
     readonly authority: string;
     body: any;
     private _bodyIdx = 0;
+    _didRead = false;
     _closed = false;
     private _aborted = false;
     constructor(
@@ -52,8 +53,9 @@ export class ServerRequest extends Readable implements IncomingMsg, Message {
             this.stream.destroyed;
     }
 
-    setTimeout(msecs: number, callback: () => void): void {
-        this.stream.setTimeout(msecs, callback);
+    setTimeout(msecs: number, callback: () => void): this {
+        if (!this.isClosed) this.stream.setTimeout(msecs, callback);
+        return this;
     }
 
     protected onStreamEnd() {
@@ -90,16 +92,15 @@ export class ServerRequest extends Readable implements IncomingMsg, Message {
     }
 
     override _read(size: number): void {
-        const end = this._bodyIdx + size
-        const start = this._bodyIdx
-        const payload = this.stream.read(size);
-        let buf: any = null
-
-        if (payload != null && start < payload.length) {
-            buf = payload.slice(start, end)
+        if (!this._didRead) {
+            this._didRead = true;
+            this.stream.on(ev.DATA, (chunk) => {
+                if (!this.push(chunk)) {
+                    this.pause();
+                }
+            })
+        } else {
+            process.nextTick(() => this.resume())
         }
-
-        this._bodyIdx = end;
-        this.push(buf)
     }
 }

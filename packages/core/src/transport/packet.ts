@@ -254,13 +254,13 @@ export interface OutgoingMsg {
      * @param statusCode 
      * @param headers 
      */
-    writeHead(statusCode: number, headers?: OutgoingHeaders | OutgoingHeader[]): this;
+    writeHead(statusCode: number, headers?: OutgoingHeaders | [string, OutgoingHeader][]): this;
     /**
      * write head
      * @param statusCode 
      * @param statusMessage 
      * @param headers 
      */
-    writeHead(statusCode: number, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[]): this;
+    writeHead(statusCode: number, statusMessage: string, headers?: OutgoingHeaders | [string, OutgoingHeader][]): this;
 }
 

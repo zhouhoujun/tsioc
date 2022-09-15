@@ -92,6 +92,12 @@ export class ServerResponse extends Writable implements OutgoingMsg {
         this._hdr.delete(field);
     }
 
+    flushHeaders() {
+        if (!this._close && !this.stream.headersSent) {
+            this.writeHead(this.statusCode)
+        }
+    }
+
     override end(cb?: (() => void) | undefined): this;
     override end(chunk: any, cb?: (() => void) | undefined): this;
     override end(chunk: any, encoding: BufferEncoding, cb?: (() => void) | undefined): this;
@@ -107,9 +113,9 @@ export class ServerResponse extends Writable implements OutgoingMsg {
         return this;
     }
 
-    writeHead(statusCode: number, headers?: OutgoingHeaders | OutgoingHeader[]): this;
-    writeHead(statusCode: number, statusMessage: string, headers?: OutgoingHeaders): this;
-    writeHead(statusCode: number, statusMessage?: string | OutgoingHeaders | OutgoingHeader[], headers?: OutgoingHeaders | OutgoingHeader[]): this {
+    writeHead(statusCode: number, headers?: OutgoingHeaders | [string, OutgoingHeader][]): this;
+    writeHead(statusCode: number, statusMessage: string, headers?: OutgoingHeaders | [string, OutgoingHeader][]): this;
+    writeHead(statusCode: number, statusMessage?: string | OutgoingHeaders | [string, OutgoingHeader][], headers?: OutgoingHeaders | [string, OutgoingHeader][]): this {
         let msg: string;
         if (isString(statusMessage)) {
             msg = statusMessage
@@ -118,13 +124,13 @@ export class ServerResponse extends Writable implements OutgoingMsg {
         }
         if (headers) {
             isArray(headers) ? headers.forEach(i => {
-                //todo set header
+                this.setHeader(i[0], i[1]);
             }) : this._hdr.setHeaders(headers);
         }
         this.setHeader(hdr.STATUS, statusCode);
         this.setHeader(hdr.STATUS2, statusCode);
 
-        this.stream.write(this.headers);
+        this.stream.respond(this.getHeaders());
         return this;
     }
 

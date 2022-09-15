@@ -12,7 +12,7 @@ import { SteamOptions, StreamStateFlags, TransportStream } from '../stream';
 export class ServerStream extends TransportStream {
 
     readonly authority: string;
-    constructor(connection: Connection, id: number | undefined, opts: SteamOptions, protected headers: OutgoingHeaders) {
+    constructor(connection: Connection, id: number | undefined, opts: SteamOptions, protected headers: OutgoingHeaders = {}) {
         super(connection, opts)
         this.authority = this.getAuthority(headers);
         if (id != undefined) {
@@ -164,19 +164,18 @@ export class ServerStream extends TransportStream {
         if (this.headersSent) throw new HeandersSentExecption();
         const opts = { ...options } as SteamOptions;
 
-        const conn = this.connection;
         this._sentHeaders = headers;
         this.state.flags |= StreamStateFlags.headersSent;
+        if (!this.connection.write({ id: this, headers })) {
+            this.destroy();
+            return;
+        }
         const len = headers[hdr.CONTENT_LENGTH];
         const hasPlayload = len ? true : false;
         if (opts.endStream == true || !hasPlayload) {
             opts.endStream = true;
             this.end();
         }
-
-        // if(!this.connection.write(conn.packet.respond(headers, opts))){
-        //     this.destroy()
-        // }
 
     }
 
