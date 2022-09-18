@@ -1,6 +1,7 @@
 import { IncomingHeaders, IncomingMsg, ListenOpts, OutgoingHeaders, Packet } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
-import { ConnectionOpts, hdr, isBuffer, TransportProtocol, ServerRequest, PacketParser, PacketGenerator } from '@tsdi/transport';
+import { ConnectionOpts, hdr, isBuffer, TransportProtocol, ServerRequest, PacketParser, PacketGenerator, ev } from '@tsdi/transport';
+import { Buffer } from 'buffer';
 import { Duplex, TransformCallback, Writable } from 'stream';
 import * as tsl from 'tls';
 import { TcpStatus } from './status';
@@ -90,21 +91,21 @@ export class TcpProtocol extends TransportProtocol {
 
 }
 
-
 export class DelimiterParser extends PacketParser {
     private delimiter!: Buffer;
-    bytes = 0;
-    buffers: Buffer[];
 
+    buffers: Buffer[];
+    bytes: number;
     constructor(opts: ConnectionOpts) {
         super(opts);
         this.buffers = [];
+        this.bytes = 0;
         this.setOptions(opts);
     }
-    override _transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
 
-        if (!isBuffer(chunk) || !chunk.length) return;
-        const idx = chunk.indexOf(this.delimiter) ?? 0;
+    override _transform(chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback): void {
+
+        const idx = chunk.indexOf(this.delimiter);
         if (idx >= 0) {
             if (idx > 0) {
                 const lastbuff = chunk.slice(0, idx);
@@ -114,28 +115,29 @@ export class DelimiterParser extends PacketParser {
 
             if (this.buffers.length) {
                 const buff = Buffer.concat(this.buffers, this.bytes);
-                const flag = buff.readUInt8(0);
 
-                let pkg;
-                if (flag == 0) {
+                const type = buff.readUInt8(0);
+                const id = buff.readUInt16BE(1);
+
+                const [bufs, size, rmains] = this.packets(chunk.slice(idx + this.delimiter.length));
+
+                let pkg: any;
+                if (type == 1) {
                     const headers = JSON.parse(buff.slice(3).toString(encoding));
-                    const id = buff.readUInt16BE(1);
                     pkg = {
                         id,
                         headers
                     } as Packet;
                 } else {
-                    pkg = buff.slice(1);
+                    pkg = size > 0 ? Buffer.concat([buff.slice(1), ...bufs], buff.length - 1 + size) : buff.slice(1);
                 }
-
                 this.buffers = [];
                 this.bytes = 0;
                 callback(null, pkg);
 
-                if (idx < chunk.length - 1) {
-                    const newbuff = chunk.slice(idx + this.delimiter.length);
-                    this.buffers.push(newbuff);
-                    this.bytes += newbuff.length;
+                if (rmains && rmains.length) {
+                    this.buffers.push(rmains);
+                    this.bytes += rmains.length;
                 }
             }
 
@@ -143,7 +145,38 @@ export class DelimiterParser extends PacketParser {
             this.buffers.push(chunk);
             this.bytes += chunk.length;
         }
+        return;
 
+    }
+
+    packets(chunk: Buffer): [Buffer[], number, Buffer] {
+        const buffers: Buffer[] = [];
+        let bytes = 0;
+        const detmLen = this.delimiter.length;
+        if (this.buffers.length)
+            while (chunk.length && chunk.indexOf(this.delimiter) > 0) {
+                let idx = chunk.indexOf(this.delimiter);
+                if (chunk.indexOf(this.delimiter, idx + detmLen) == 0) {
+                    idx = idx + detmLen;
+                }
+                let detm = chunk.slice(0, idx);
+                chunk = chunk.slice(idx + detmLen);
+                // if(rem.indexOf(this.delimiter) == 0) {
+                //     chunk = rem.slice(detmLen);
+                //     detm = chunk.slice(0, idx + detmLen);
+                // }
+                const type = detm.readUInt8(0);
+                if (buffers.length || this.buffers.length) {
+                    if (type == 2) {
+                        detm = detm.slice(3);
+                    }
+                }
+                if (type !== 1) {
+                    buffers.push(detm);
+                    bytes += detm.length;
+                }
+            }
+        return [buffers, bytes, chunk];
     }
 
     setOptions(opts: ConnectionOpts): void {
@@ -153,8 +186,10 @@ export class DelimiterParser extends PacketParser {
 
 const maxSize = 10 * 1024 * 1024;
 const empty = Buffer.allocUnsafe(0);
-const headFlag = Buffer.from([0]);
-const bodyFlag = Buffer.from([1]);
+
+const eof = Buffer.from([0]);
+const headFlag = Buffer.from([1]);
+const playloadFlag = Buffer.from([2]);
 
 export class DelimiterGenerator extends PacketGenerator {
     private delimiter: Buffer;
@@ -167,10 +202,23 @@ export class DelimiterGenerator extends PacketGenerator {
         this.packet = empty;
     }
 
-    override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
 
+    override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
+        if (this.output.cork) {
+            this.output.cork()
+            process.nextTick(() => this.output.uncork())
+        }
         if (isBuffer(chunk) || isString(chunk)) {
-            this.output.write(chunk, callback);
+            let buff = isString(chunk) ? Buffer.from(chunk, encoding) : chunk;
+            buff = Buffer.concat([playloadFlag, buff, this.delimiter], playloadFlag.length + buff.length + this.delimiter.length);
+            if (this.output.write(buff, encoding)) {
+                callback();
+            } else {
+                this.output.once(ev.DRAIN, ()=> {
+                    this.output.write(buff, encoding);
+                    callback();
+                });
+            }
             return;
         }
 
@@ -194,12 +242,11 @@ export class DelimiterGenerator extends PacketGenerator {
 
             list.push(this.delimiter);
             bytes += this.delimiter.length;
-
         }
 
         if (body) {
-            list.push(bodyFlag);
-            bytes += bodyFlag.length;
+            list.push(playloadFlag);
+            bytes += playloadFlag.length;
             if (id) {
                 const idbuff = Buffer.alloc(2);
                 idbuff.writeInt16BE(id)
@@ -219,11 +266,19 @@ export class DelimiterGenerator extends PacketGenerator {
                 list.push(buffer);
                 bytes += Buffer.byteLength(buffer);
 
-                list.push(this.delimiter);
-                bytes += this.delimiter.length;
+                list.push(eof);
+                bytes += eof.length;
             }
         }
-        this.output.write(Buffer.concat(list, bytes), callback);
+
+        const buffs = Buffer.concat(list, bytes);
+        if (this.output.write(buffs, encoding)) {
+            callback()
+        } else {
+            this.output.once(ev.DRAIN, () => {
+                this.output.write(buffs, encoding); callback()
+            })
+        }
     }
 
     setOptions(opts: ConnectionOpts): void {

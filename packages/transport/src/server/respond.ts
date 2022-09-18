@@ -65,8 +65,7 @@ export class TransportRespondAdapter extends RespondAdapter {
             });
             body.pipe(res);
             return await defer.promise
-                .then(() => {
-                    res.end();
+                .finally(() => {
                     body instanceof Readable && body.destroy();
                 })
         }

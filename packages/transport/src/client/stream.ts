@@ -1,10 +1,8 @@
 import { IncomingHeaders, IncomingStatusHeaders } from '@tsdi/core';
-import { isString } from '@tsdi/ioc';
 import { Readable, DuplexOptions } from 'stream';
 import { ev, hdr } from '../consts';
 import { HeandersSentExecption, InvalidStreamExecption } from '../execptions';
 import { SteamOptions, StreamStateFlags, TransportStream } from '../stream';
-import { isBuffer } from '../utils';
 import { ClientConnection } from './connection';
 
 
@@ -16,30 +14,10 @@ export class ClientStream extends TransportStream {
     constructor(connection: ClientConnection, id: number | undefined, private headers: IncomingHeaders, opts: SteamOptions) {
         super(connection, opts);
         this.isClient = true;
-        // this.bindEvents();
         if (id !== undefined) {
             this.init(id);
         }
     }
-
-    // protected bindEvents() {
-    //     const transport = this.connection.transport;
-    //     const stat = transport.status;
-    //     this.on(ev.HEADERS, (headers) => {
-    //         if (stat.isContinue(stat.parse(headers[hdr.STATUS2] ?? headers[hdr.STATUS])))
-    //             this.emit(ev.CONTINUE);
-    //     });
-    //     this.on(ev.DATA, (packet) => {
-    //         if (isBuffer(packet) || isString(packet)) {
-    //             return;
-    //         }
-    //         const pkg = transport.parsePacket(packet);
-    //         if (pkg.headers) {
-    //             this.emit(ev.HEADERS, pkg.headers);
-    //             this.emit(ev.RESPONSE, pkg.headers);
-    //         }
-    //     })
-    // }
 
     protected proceed(): void {
         this.request(this.headers);
@@ -55,15 +33,18 @@ export class ClientStream extends TransportStream {
 
         this._sentHeaders = headers;
         this.state.flags |= StreamStateFlags.headersSent;
-        if (this.connection.write({ id: this.id, headers }) === false) {
-            this.destroy();
-            return;
+        const ending = () => {
+            const len = headers[hdr.CONTENT_LENGTH];
+            const hasPlayload = len ? true : false;
+            if (opts.endStream == true || !hasPlayload) {
+                opts.endStream = true;
+                this.end();
+            }
         }
-        const len = headers[hdr.CONTENT_LENGTH];
-        const hasPlayload = len ? true : false;
-        if (opts.endStream == true || !hasPlayload) {
-            opts.endStream = true;
-            this.end();
+        if (this.write({ id: this.id, headers })) {
+            ending();
+        } else {
+            this.once(ev.DRAIN, ending)
         }
 
     }

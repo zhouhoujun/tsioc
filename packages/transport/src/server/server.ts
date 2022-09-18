@@ -122,6 +122,14 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
     protected onRequest(conn: ServerConnection): Observable<TransportEvent> {
         return new Observable((observer) => {
             const subs: Set<Subscription> = new Set();
+
+            const stream = this.createStream(conn, -1);
+
+            const onHeaders = (headers: IncomingHeaders, id: number) => {
+                const sid = conn.getNextStreamId(id);
+                stream.init(sid);
+            };
+
             const onData = (chunk: any) => {
                 if (!isString(chunk) && !isBuffer(chunk) && isObject(chunk)) {
                     const { id, headers, body } = conn.transport.parsePacket(chunk);
@@ -133,13 +141,14 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
                     conn.emit(ev.STREAM, stream, headers);
                 }
             };
+
             const onStream = (stream: ServerStream, headers: IncomingHeaders) => {
                 const ctx = this.buildContext(stream, headers);
                 subs.add(this.handle(ctx, this.endpoint(), observer));
             };
 
             conn.on(ev.DATA, onData);
-            // conn.on(ev.HEADERS, onHeaders);
+            conn.on(ev.HEADERS, onHeaders);
             conn.on(ev.STREAM, onStream);
             return () => {
                 subs.forEach(s => {
@@ -152,8 +161,8 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
         });
     }
 
-    protected createStream(conn: ServerConnection, id: number, headers: IncomingHeaders) {
-        return new ServerStream(conn, id, this.getOptions().connectionOpts ?? EMPTY_OBJ, lang.pick(headers, hdr.HOST, hdr.AUTHORITY));
+    protected createStream(conn: ServerConnection, id?: number, headers?: IncomingHeaders) {
+        return new ServerStream(conn, id, this.getOptions().connectionOpts ?? EMPTY_OBJ, lang.pick(headers?? EMPTY_OBJ, hdr.HOST, hdr.AUTHORITY));
     }
 
     protected abstract buildServer(opts: TOpts): T;

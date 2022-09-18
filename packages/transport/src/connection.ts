@@ -60,7 +60,7 @@ export abstract class Connection extends Duplexify implements Closeable {
     private _timeout?: any;
     protected _parser: PacketParser;
     protected _generator: PacketGenerator;
-
+    protected _regedEvents: Map<string, any>;
     readonly state: ConnectionState;
     constructor(readonly stream: Duplex, readonly transport: TransportProtocol, protected opts: ConnectionOpts = EMPTY_OBJ) {
         super(undefined, undefined, opts);
@@ -85,15 +85,24 @@ export abstract class Connection extends Duplexify implements Closeable {
             this.stream.pipe(this._parser);
         });
 
+        this._regedEvents = new Map([ev.CLOSE, ev.CONNECT, ev.ERROR].map(evt => [evt, this.emit.bind(this, evt)]));
+        this._regedEvents.forEach((evt, n) => {
+            this.stream.on(n, evt);
+            if (n === ev.ERROR) {
+                this._generator.on(n, evt);
+                this._parser.on(n, evt);
+            }
+        });
+
         this.once(ev.CLOSE, () => this.close());
 
-        this.stream.on(ev.CONNECT, this.emit.bind(this, ev.CONNECT));
+        // this.stream.on(ev.CONNECT, this.emit.bind(this, ev.CONNECT));
 
-        this._generator.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
-        this._parser.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
+        // this._generator.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
+        // this._parser.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
 
-        this.stream.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
-        this.stream.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
+        // this.stream.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
+        // this.stream.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
     }
 
     /**
@@ -199,12 +208,21 @@ export abstract class Connection extends Duplexify implements Closeable {
         this.destroy(err);
     }
 
-    override destroy(error?: Error | undefined): this {
+    override destroy(error?: Error): this {
+        if (this._regedEvents) {
+            this._regedEvents.forEach((e, n) => {
+                this.stream.off(n, e);
+                this._parser.off(n, e);
+                this._generator.off(n, e);
+            });
+            this._regedEvents.clear();
+        }
         if (this.stream.destroy) {
-            this.stream.destroy(error)
+            this.stream.destroy(error!)
         } else {
             this.stream.end();
         }
+
         return super.destroy(error);
     }
 

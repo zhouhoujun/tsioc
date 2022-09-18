@@ -82,6 +82,7 @@ export class ClientConnection extends Connection {
         return this.strategy.request(this, headers, options ?? {});
 
     }
+
 }
 
 @Injectable()

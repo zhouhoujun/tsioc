@@ -1,14 +1,13 @@
-import { Abstract, Execption, isFunction, isString } from '@tsdi/ioc';
-import { IncomingHeaders, OutgoingHeaders, TransportExecption } from '@tsdi/core';
+import { Abstract, isFunction } from '@tsdi/ioc';
+import { IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
 import { Buffer } from 'buffer';
-import { Duplex, DuplexOptions, Transform, Readable, TransformCallback } from 'stream';
+import { DuplexOptions, Readable, Writable } from 'stream';
 import { ReadableState, WritableState } from 'readable-stream';
 import * as Duplexify from 'duplexify';
 import { Connection } from './connection';
 import { ev } from './consts';
 import { setTimeout } from 'timers';
-import { Closeable, TransportProtocol } from './protocol';
-import { isBuffer } from './utils';
+import { Closeable } from './protocol';
 
 /**
 * connection options.
@@ -75,6 +74,9 @@ export enum StreamRstStatus {
 
 export const STRESM_NO_ERROR = 0;
 
+const SIGNAL_FLUSH = (Buffer.from && Buffer.from !== Uint8Array.from)
+    ? Buffer.from('0\r\n')
+    : new Buffer('0\r\n')
 /**
  * transport stream
  */
@@ -91,11 +93,10 @@ export abstract class TransportStream extends Duplexify implements Closeable {
     protected _readableState!: ReadableState;
     protected _writableState!: WritableState;
     protected isClient?: boolean;
-    private _streamId?: Buffer;
-    private _evts?: Map<string, any>;
+    private _regedEvents?: Map<string, any>;
     protected opts: SteamOptions;
     constructor(readonly connection: Connection, opts: SteamOptions) {
-        super(undefined, undefined, opts = { objectMode: true, allowHalfOpen: true, ...opts });
+        super(undefined, undefined, opts = { objectMode: true, allowHalfOpen: true, decodeStrings: false, ...opts });
         // { objectMode: true, allowHalfOpen: true, decodeStrings: false, autoDestroy: false, ...opts };
         this.opts = opts;
 
@@ -194,16 +195,16 @@ export abstract class TransportStream extends Duplexify implements Closeable {
 
         this.uncork();
         const tsp = connection.transport;
-        const parser = tsp.streamParser(id, this.isClient);
-        const generator = tsp.streamGenerator(connection, id);
+        const parser = tsp.streamParser(id, this.isClient, this.opts);
+        const generator = tsp.streamGenerator(connection, id, this.opts);
         this.setReadable(parser);
         this.setWritable(generator);
         process.nextTick(() => {
             connection.pipe(parser);
         });
 
-        this._evts = new Map([ev.ABORTED, ev.TIMEOUT, ev.ERROR, ev.CLOSE].map(evt => [evt, this.emit.bind(this, evt)]));
-        this._evts.forEach((evt, n) => {
+        this._regedEvents = new Map([ev.ABORTED, ev.TIMEOUT, ev.ERROR, ev.CLOSE].map(evt => [evt, this.emit.bind(this, evt)]));
+        this._regedEvents.forEach((evt, n) => {
             this.connection.on(n, evt);
             if (n === ev.ERROR) {
                 parser.on(n, evt);
@@ -337,15 +338,23 @@ export abstract class TransportStream extends Duplexify implements Closeable {
     override end(cb?: (() => void) | undefined): this;
     override end(chunk: any, cb?: (() => void) | undefined): this;
     override end(chunk: any, encoding: BufferEncoding, cb?: (() => void) | undefined): this;
-    override end(chunk?: unknown, encoding?: any, cb?: (() => void) | undefined): this {
-        if (isFunction(encoding)) {
+    override end(chunk?: any, encoding?: any, cb?: (() => void) | undefined): this {
+        if (isFunction(chunk)) {
+            cb = chunk;
+            chunk = null;
+        } else if (isFunction(encoding)) {
             cb = encoding
-            encoding = undefined;
+            encoding = 'utf8';
         }
         if (!this.headersSent) {
             this.proceed();
         }
-        super.end(chunk, encoding, cb);
+        if (chunk) this.write(chunk);
+        if (!this._writableState.ending && !this._writableState.destroyed) {
+            this.write(SIGNAL_FLUSH)
+        }
+        Writable.prototype.end.call(this, null, encoding, cb);
+        // super.end(chunk, encoding, cb);
         return this;
     }
 
@@ -379,11 +388,11 @@ export abstract class TransportStream extends Duplexify implements Closeable {
 
         this.id && cstate.streams.delete(this.id);
         cstate.pendingStreams.delete(this);
-        if (this._evts) {
-            this._evts.forEach((e, n) => {
+        if (this._regedEvents) {
+            this._regedEvents.forEach((e, n) => {
                 this.connection.off(n, e);
             });
-            this._evts.clear();
+            this._regedEvents.clear();
         }
 
 
@@ -391,7 +400,7 @@ export abstract class TransportStream extends Duplexify implements Closeable {
         cstate.writeQueueSize -= this.state.writeQueueSize;
         this.state.writeQueueSize = 0;
         this.connection.mayBeDestroy();
-        callback(error);
+        return super._destroy(error ?? null, callback);
     }
 
     setTimeout(msecs: number, callback?: () => void) {

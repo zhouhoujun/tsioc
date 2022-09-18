@@ -159,6 +159,7 @@ export class ServerStream extends TransportStream {
     respond(headers: OutgoingHeaders, options?: {
         endStream?: boolean;
         waitForTrailers?: boolean;
+        sendDate?: boolean;
     }): void {
         if (this.destroyed || this.isClosed) throw new InvalidStreamExecption();
         if (this.headersSent) throw new HeandersSentExecption();
@@ -166,16 +167,20 @@ export class ServerStream extends TransportStream {
 
         this._sentHeaders = headers;
         this.state.flags |= StreamStateFlags.headersSent;
-        if (!this.connection.write({ id: this.id, headers })) {
-            this.destroy();
-            return;
+        const ending = () => {
+            const len = headers[hdr.CONTENT_LENGTH];
+            const hasPlayload = len ? true : false;
+            if (opts.endStream == true || !hasPlayload) {
+                opts.endStream = true;
+                this.end();
+            }
         }
-        const len = headers[hdr.CONTENT_LENGTH];
-        const hasPlayload = len ? true : false;
-        if (opts.endStream == true || !hasPlayload) {
-            opts.endStream = true;
-            this.end();
+        if (this.write({ id: this.id, headers })) {
+            ending();
+        } else {
+            this.once(ev.DRAIN, ending);
         }
+
 
     }
 

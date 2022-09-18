@@ -25,11 +25,12 @@ export abstract class TransportProtocol extends ProtocolStrategy {
 
     abstract parsePacket(packet: any): Packet;
 
-    streamParser(packetId: number, isClient?: boolean, opts?: TransformOptions): Transform {
+    
+    streamParser(packetId: number, isClient?: boolean, opts?: ConnectionOpts): Transform {
         return new TransportStreamParser(packetId, isClient, opts);
     }
 
-    streamGenerator(output: Writable, packetId: number, opts?: WritableOptions): Writable {
+    streamGenerator(output: Writable, packetId: number, opts?: ConnectionOpts): Writable {
         return new TransportStreamGenerator(output, packetId, opts);
     }
 }
@@ -49,7 +50,7 @@ export class TransportStreamParser extends Transform {
 
     private id: number;
     private streamId: Buffer;
-    constructor(id: number, private isClient?: boolean, opts?: TransformOptions) {
+    constructor(id: number, private isClient?: boolean, opts?: ConnectionOpts) {
         super({ objectMode: true, ...opts });
         id = this.id = isClient ? id + 1 : id - 1;
         this.streamId = Buffer.alloc(2);
@@ -63,7 +64,11 @@ export class TransportStreamParser extends Transform {
             const id = this.id.toString();
             if (chunk.startsWith(id)) callback(null, chunk.slice(id.length));
         } else if (chunk) {
-            if (chunk.id == this.id) {
+            if(!this.isClient) {
+                if(this.id < 0 || chunk.id == this.id) {
+                    this.emit(ev.HEADERS, chunk.headers, chunk.id);
+                }
+            } else if (chunk.id == this.id) {
                 if (chunk.headers && this.isClient) {
                     this.emit(ev.RESPONSE, chunk.headers);
                     if (chunk.body) {
@@ -79,7 +84,7 @@ export class TransportStreamParser extends Transform {
 
 export class TransportStreamGenerator extends Writable {
     private streamId: Buffer;
-    constructor(private output: Writable, private id: number, opts?: WritableOptions) {
+    constructor(private output: Writable, private id: number, opts?: ConnectionOpts) {
         super({ objectMode: true, ...opts });
         this.streamId = Buffer.alloc(2);
         this.streamId.writeInt16BE(id);
@@ -94,7 +99,11 @@ export class TransportStreamGenerator extends Writable {
         } else {
             chunk.id = this.id;
         }
-        this.output.write(chunk, encoding, callback);
+        if (this.output.write(chunk, encoding)) {
+            callback();
+        } else {
+            this.output.once(ev.DRAIN, callback);
+        }
     }
 }
 

@@ -1,6 +1,6 @@
-import { OutgoingHeader, OutgoingHeaders, OutgoingMsg, Message, ResHeaders } from '@tsdi/core';
-import { ArgumentExecption, Execption, isArray, isFunction, isString } from '@tsdi/ioc';
-import { Writable } from 'stream';
+import { OutgoingHeader, OutgoingHeaders, OutgoingMsg, ResHeaders, TransportExecption } from '@tsdi/core';
+import { ArgumentExecption, Execption, isArray, isFunction, isNil, isString } from '@tsdi/ioc';
+import { Stream, Writable } from 'stream';
 import { ServerStream } from './stream';
 import { ev, hdr } from '../consts';
 
@@ -8,11 +8,15 @@ import { ev, hdr } from '../consts';
 /**
  * server response.
  */
-export class ServerResponse extends Writable implements OutgoingMsg {
+export class ServerResponse extends Stream implements OutgoingMsg {
 
-    private _close = false;
+    closed = false;
+    ending = false;
     private _hdr: ResHeaders;
+    destroyed = false;
+    sendDate = true;
 
+    writable = true;
     constructor(
         readonly stream: ServerStream,
         readonly headers: OutgoingHeaders,
@@ -20,9 +24,6 @@ export class ServerResponse extends Writable implements OutgoingMsg {
         super({ objectMode: true });
         this._hdr = new ResHeaders();
 
-        process.nextTick(() => {
-            stream.pipe(this);
-        });
         stream.on(ev.DRAIN, this.emit.bind(this, ev.DRAIN));
         stream.on(ev.ABORTED, this.emit.bind(this, ev.ABORTED));
         stream.on(ev.CLOSE, this.onStreamClose.bind(this));
@@ -31,8 +32,8 @@ export class ServerResponse extends Writable implements OutgoingMsg {
     }
 
     protected onStreamClose() {
-        if (this.destroyed || this._close) return;
-        this._close = true;
+        if (this.destroyed || this.closed) return;
+        this.closed = true;
         // this.removeListener('wantTrailers', this.onStreamTrailersReady.bind(this));
         this.emit(ev.FINISH);
         this.emit(ev.CLOSE);
@@ -46,8 +47,27 @@ export class ServerResponse extends Writable implements OutgoingMsg {
         return this.stream.connection;
     }
 
+    get writableEnded() {
+        return this.ending;
+    }
     get finished(): boolean {
-        return false;
+        return this.ending;
+    }
+
+    get writableCorked() {
+        return this.stream.writableCorked;
+    }
+
+    get writableHighWaterMark() {
+        return this.stream.writableHighWaterMark;
+    }
+
+    get writableFinished() {
+        return this.stream.writableFinished;
+    }
+
+    get writableLength() {
+        return this.stream.writableLength;
     }
 
     getHeaderNames(): string[] {
@@ -93,23 +113,61 @@ export class ServerResponse extends Writable implements OutgoingMsg {
     }
 
     flushHeaders() {
-        if (!this._close && !this.stream.headersSent) {
+        if (!this.closed && !this.stream.headersSent) {
             this.writeHead(this.statusCode)
         }
     }
 
-    override end(cb?: (() => void) | undefined): this;
-    override end(chunk: any, cb?: (() => void) | undefined): this;
-    override end(chunk: any, encoding: BufferEncoding, cb?: (() => void) | undefined): this;
-    override end(chunk?: unknown, encoding?: any, cb?: (() => void) | undefined): this {
-        if (isFunction(encoding)) {
+    cork() {
+        this.stream.cork();
+    }
+
+    uncork() {
+        this.stream.uncork();
+    }
+
+
+    end(cb?: (() => void) | undefined): this;
+    end(chunk: any, cb?: (() => void) | undefined): this;
+    end(chunk: any, encoding: BufferEncoding, cb?: (() => void) | undefined): this;
+    end(chunk?: any, encoding?: any, cb?: (() => void) | undefined): this {
+        if (isFunction(chunk)) {
+            cb = chunk;
+            chunk = null;
+        } else if (isFunction(encoding)) {
             cb = encoding
-            encoding = undefined;
+            encoding = 'utf8';
         }
         if (!this.headersSent) {
             this.writeHead(this.statusCode, this.statusMessage, this.headers);
         }
-        super.end(chunk, encoding, cb);
+        if ((this.closed || this.ending)) {
+            if (isFunction(cb)) {
+                process.nextTick(cb);
+            }
+            return this;
+        }
+
+        if (!isNil(chunk))
+            this.write(chunk, encoding);
+
+        this.ending = true;
+
+        if (isFunction(cb)) {
+            if (this.stream.writableEnded)
+                this.once(ev.FINISH, cb);
+            else
+                this.stream.once(ev.FINISH, cb);
+        }
+
+        if (!this.stream.headersSent)
+            this.writeHead(this.statusCode);
+
+        if (this.closed || this.stream.destroyed) {
+            this.onStreamClose()
+        } else {
+            this.stream.end();
+        }
         return this;
     }
 
@@ -138,15 +196,51 @@ export class ServerResponse extends Writable implements OutgoingMsg {
         this.setHeader(hdr.STATUS, statusCode);
         this.setHeader(hdr.STATUS2, statusCode);
 
-        this.stream.respond(this.getHeaders());
+        this.stream.respond(this.getHeaders(), { endStream: this.ending, waitForTrailers: true, sendDate: this.sendDate });
         return this;
     }
 
-    override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
+    write(chunk: any, cb?: (error?: Error | null | undefined) => void): boolean;
+    write(chunk: any, encoding?: BufferEncoding, cb?: (error?: Error | null | undefined) => void): boolean;
+    write(chunk: any, encoding?: any, cb?: (error?: Error | null | undefined) => void): boolean {
+        if (isFunction(encoding)) {
+            cb = encoding;
+            encoding = 'utf8';
+        }
+        let err: Execption | undefined;
+        if (this.ending) {
+            err = new TransportExecption('write after end');
+        } else if (this.closed) {
+            err = new TransportExecption('The stream has been destroyed');
+        } else if (this.destroyed) {
+            return false;
+        }
+        if (err) {
+            if (isFunction(cb)) {
+                process.nextTick(cb, err);
+            }
+            this.destroy(err);
+            return false;
+        }
         if (!this.headersSent) {
             this.writeHead(this.statusCode, this.statusMessage);
         }
-        this.stream.write(chunk, encoding, callback);
+        return this.stream.write(chunk, encoding, cb);
+    }
+
+    setTimeout(msecs: number, callback?: () => void): this {
+        if (this.closed)
+            return this;
+        this.stream.setTimeout(msecs, callback);
+        return this;
+    }
+
+    destroy(err?: Error) {
+        if (this.destroyed)
+            return;
+
+        this.destroyed = true;
+        this.stream.destroy(err);
     }
 
 }
