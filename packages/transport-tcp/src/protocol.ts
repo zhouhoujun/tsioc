@@ -212,16 +212,8 @@ export class DelimiterGenerator extends PacketGenerator {
             process.nextTick(() => this.output.uncork())
         }
         if (isBuffer(chunk) || isString(chunk)) {
-            let buff = isString(chunk) ? Buffer.from(chunk, encoding) : chunk;
-            buff = Buffer.concat([playloadFlag, buff, this.delimiter], playloadFlag.length + buff.length + this.delimiter.length);
-            if (this.output.write(buff, encoding)) {
-                callback();
-            } else {
-                this.output.once(ev.DRAIN, () => {
-                    this.output.write(buff, encoding);
-                    callback();
-                });
-            }
+            const buff = isString(chunk) ? Buffer.from(chunk, encoding) : chunk;
+            this.output.write(buff, encoding, callback)
             return;
         }
 
@@ -275,13 +267,7 @@ export class DelimiterGenerator extends PacketGenerator {
         }
 
         const buffs = Buffer.concat(list, bytes);
-        if (this.output.write(buffs, encoding)) {
-            callback()
-        } else {
-            this.output.once(ev.DRAIN, () => {
-                this.output.write(buffs, encoding); callback()
-            })
-        }
+        this.output.write(buffs, encoding, callback);
     }
 
     setOptions(opts: ConnectionOpts): void {
