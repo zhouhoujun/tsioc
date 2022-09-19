@@ -1,8 +1,7 @@
 import { Packet, ProtocolStrategy } from '@tsdi/core';
 import { Abstract, isString } from '@tsdi/ioc';
-import { Writable, WritableOptions, Duplex, Transform, TransformOptions, TransformCallback } from 'stream';
+import { Writable, pipeline, Duplex, Transform, PassThrough, TransformCallback } from 'stream';
 import { ConnectionOpts } from './connection';
-import { ev } from './consts';
 import { SteamOptions } from './stream';
 import { isBuffer } from './utils';
 
@@ -26,7 +25,7 @@ export abstract class TransportProtocol extends ProtocolStrategy {
 
     abstract parsePacket(packet: any): Packet;
 
-    
+
     streamParser(packetId: number, isClient?: boolean, opts?: SteamOptions): Transform {
         return new TransportStreamParser(packetId, isClient, opts);
     }
@@ -51,42 +50,27 @@ export class TransportStreamParser extends Transform {
 
     private id: number;
     private streamId: Buffer;
-    constructor(id: number, private isClient?: boolean, opts?: ConnectionOpts) {
-        super({ objectMode: true, ...opts });
+    constructor(id: number, private isClient?: boolean, opts?: SteamOptions) {
+        super(opts);
         id = this.id = isClient ? id + 1 : id - 1;
         this.streamId = Buffer.alloc(2);
         this.streamId.writeInt16BE(id);
     }
 
-    override _transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
-        if (isBuffer(chunk)) {
-            if (chunk.indexOf(this.streamId) === 0) callback(null, chunk.slice(this.streamId.length));
-        } else if (isString(chunk)) {
+    override _transform(chunk: string | Buffer, encoding: BufferEncoding, callback: TransformCallback): void {
+        if (isString(chunk)) {
             const id = this.id.toString();
             if (chunk.startsWith(id)) callback(null, chunk.slice(id.length));
-        } else if (chunk) {
-            if(!this.isClient) {
-                if(this.id < 0 || chunk.id == this.id) {
-                    this.emit(ev.HEADERS, chunk.headers, chunk.id);
-                }
-            } else if (chunk.id == this.id) {
-                if (chunk.headers && this.isClient) {
-                    this.emit(ev.RESPONSE, chunk.headers);
-                    if (chunk.body) {
-                        callback(null, chunk.body);
-                    }
-                } else {
-                    callback(null, chunk);
-                }
-            }
+        } else {
+            if (chunk.indexOf(this.streamId) === 0) callback(null, chunk.slice(this.streamId.length));
         }
     }
 }
 
 export class TransportStreamGenerator extends Writable {
     private streamId: Buffer;
-    constructor(private output: Writable, private id: number, opts?: ConnectionOpts) {
-        super({ objectMode: true, ...opts });
+    constructor(private output: Writable, private id: number, opts?: SteamOptions) {
+        super(opts);
         this.streamId = Buffer.alloc(2);
         this.streamId.writeInt16BE(id);
     }
@@ -97,14 +81,10 @@ export class TransportStreamGenerator extends Writable {
             chunk = Buffer.concat([this.streamId, buffer], this.streamId.length + buffer.length);
         } else if (isBuffer(chunk)) {
             chunk = Buffer.concat([this.streamId, chunk], this.streamId.length + chunk.length);
-        } else {
-            chunk.id = this.id;
         }
-        if (this.output.write(chunk, encoding)) {
-            callback();
-        } else {
-            this.output.once(ev.DRAIN, callback);
-        }
+
+        pipeline(chunk, this.output, callback);
+
     }
 }
 

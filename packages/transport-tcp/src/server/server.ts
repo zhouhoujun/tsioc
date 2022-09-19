@@ -34,8 +34,7 @@ export const TCP_SERVER_OPTS = {
     },
     connectionOpts: {
         delimiter: '\r\n',
-        maxSize: 10 * 1024 * 1024,
-        highWaterMark: 16 * 1024
+        maxSize: 10 * 1024 * 1024
     },
     interceptors: [
         LogInterceptor,

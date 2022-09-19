@@ -8,7 +8,6 @@ import { ev } from './consts';
 import { setTimeout } from 'timers';
 import { Closeable } from './protocol';
 import { Duplexify } from './duplexify';
-import { timestamp } from 'rxjs';
 
 
 

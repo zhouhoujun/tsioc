@@ -1,6 +1,7 @@
-import { isFunction } from '@tsdi/ioc';
-import { Duplex, Readable, Writable, DuplexOptions, finished } from 'stream';
+import { isArray, isFunction, isString } from '@tsdi/ioc';
+import { Duplex, Readable, Writable, DuplexOptions, finished, pipeline } from 'stream';
 import { ev } from './consts';
+import { isBuffer } from './utils';
 
 export interface DuplexifyOptions extends DuplexOptions {
     forwardDestroy?: boolean;
@@ -147,12 +148,22 @@ export class Duplexify extends Duplex {
 
     override _write(chunk: any, encoding: BufferEncoding, cb: (error?: Error | null | undefined) => void): void {
         if (this.destroyed) return
-        if (this._corked) return this.onuncork(this._write.bind(this, chunk, encoding, cb))
+        if (this._corked) return this.onuncork(()=> this.pipeTo(chunk, encoding, cb))
         if (chunk === SIGNAL_FLUSH) return this._finish(cb)
-        if (!this._writable) return cb()
+        // if (!this._writable) return cb()
 
-        if (this._writable.write(chunk) === false) this._ondrain = cb
-        else if (!this.destroyed) cb()
+        this.pipeTo(chunk, encoding, cb);
+
+    }
+
+    protected pipeTo(chunk: any, encoding: BufferEncoding, cb: (error?: Error | null | undefined) => void) {
+        if (!this._writable) return cb();
+        if (isString(chunk) || isBuffer(chunk)) {
+            pipeline(chunk, this._writable, cb);
+        } else {
+            if (this._writable.write(chunk, encoding) === false) this._ondrain = cb;
+            else if (!this.destroyed) cb()
+        }
     }
 
     override end(cb?: (() => void) | undefined): this;
@@ -184,7 +195,7 @@ export class Duplexify extends Duplex {
             end(this._forwardEnd && this._writable, () => {
                 // haxx to not emit prefinish twice
                 if ((this as any)._writableState.prefinished === false) {
-                    (this as any)._writableState.prefinished = true
+                    (this as any)._writableState.prefinished = true;
                     this.emit(ev.PREFINISH);
                 }
                 this.onuncork(cb);
@@ -218,8 +229,7 @@ export class Duplexify extends Duplex {
             if (this._readable && this._readable.destroy) this._readable.destroy();
             if (this._writable && this._writable.destroy) this._writable.destroy();
         }
-
-        super._destroy(err, cb);
+        this.emit(ev.CLOSE);
     }
 
     protected onEnding(err: Error | null | undefined, end?: boolean) {
@@ -240,7 +250,7 @@ export class Duplexify extends Duplex {
 }
 
 const noop = () => { };
-const SIGNAL_FLUSH = Buffer.from([0]);
+const SIGNAL_FLUSH = Buffer.from('0\r\n');
 
 const end = (ws: any, fn: Function) => {
     if (!ws) return fn()

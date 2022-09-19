@@ -19,7 +19,6 @@ export const TCP_CLIENT_OPTS = {
     connectionOpts: {
         delimiter: '\r\n',
         maxSize: 10 * 1024 * 1024,
-        highWaterMark: 16 * 1024
     },
 } as TcpClientOpts;
 
