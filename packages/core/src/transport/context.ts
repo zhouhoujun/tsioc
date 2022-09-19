@@ -36,7 +36,7 @@ export abstract class RequestContext extends EndpointContext {
     /**
      * response data type.
      */
-    abstract responseType: 'arraybuffer' | 'blob' | 'json' | 'text';
+    abstract responseType: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
 }
 
 
