@@ -3,11 +3,14 @@ import { IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
 import { Buffer } from 'buffer';
 import { DuplexOptions, Readable, Writable } from 'stream';
 import { ReadableState, WritableState } from 'readable-stream';
-import * as Duplexify from 'duplexify';
 import { Connection } from './connection';
 import { ev } from './consts';
 import { setTimeout } from 'timers';
 import { Closeable } from './protocol';
+import { Duplexify } from './duplexify';
+import { timestamp } from 'rxjs';
+
+
 
 /**
 * connection options.
@@ -74,9 +77,6 @@ export enum StreamRstStatus {
 
 export const STRESM_NO_ERROR = 0;
 
-const SIGNAL_FLUSH = (Buffer.from && Buffer.from !== Uint8Array.from)
-    ? Buffer.from('0\r\n')
-    : new Buffer('0\r\n')
 /**
  * transport stream
  */
@@ -86,7 +86,8 @@ export abstract class TransportStream extends Duplexify implements Closeable {
     private _timeout?: any;
     protected _id?: number;
     protected ending?: boolean;
-    readonly state: StreamState;
+    protected stats = StreamStateFlags.pending;
+    protected _rstCode?: number;
     protected _sentHeaders?: OutgoingHeaders;
     protected _sentTrailers?: any;
     protected _infoHeaders?: any;
@@ -96,18 +97,8 @@ export abstract class TransportStream extends Duplexify implements Closeable {
     private _regedEvents?: Map<string, any>;
     protected opts: SteamOptions;
     constructor(readonly connection: Connection, opts: SteamOptions) {
-        super(undefined, undefined, opts = { objectMode: true, allowHalfOpen: true, decodeStrings: false, ...opts });
-        // { objectMode: true, allowHalfOpen: true, decodeStrings: false, autoDestroy: false, ...opts };
+        super(null, null, opts = { allowHalfOpen: true, decodeStrings: false, ...opts });
         this.opts = opts;
-
-        this.state = {
-            didRead: false,
-            flags: StreamStateFlags.pending,
-            rstCode: opts.noError ?? STRESM_NO_ERROR,
-            writeQueueSize: 0,
-            trailersReady: false,
-            endAfterHeaders: false
-        };
 
         this.cork();
         // Allow our logic for determining whether any reads have happened to
@@ -122,26 +113,8 @@ export abstract class TransportStream extends Duplexify implements Closeable {
         return this._id;
     }
 
-    // get streamId() {
-    //     if (!this._streamId && this._id !== undefined) {
-    //         this._streamId = Buffer.of(this._id)
-    //     }
-    //     return this._streamId;
-    // }
-
-
     get isClosed() {
-        return (this as Closeable).closed === true || !!(this.state.flags & StreamStateFlags.closed);
-    }
-
-    get bufferSize() {
-        // `bufferSize` properties of `net.Socket` are `undefined` when
-        // their `_handle` are falsy. Here we avoid the behavior.
-        return this.state.writeQueueSize + this.writableLength;
-    }
-
-    get endAfterHeaders() {
-        return this.state.endAfterHeaders;
+        return (this as Closeable).closed === true || !!(this.stats & StreamStateFlags.closed);
     }
 
     get sentHeaders() {
@@ -164,30 +137,30 @@ export abstract class TransportStream extends Duplexify implements Closeable {
      * True if the HEADERS frame has been sent
      */
     get headersSent() {
-        return !!(this.state.flags & StreamStateFlags.headersSent);
+        return !!(this.stats & StreamStateFlags.headersSent);
     }
 
     /**
      *  True if the Stream was aborted abnormally.
      */
     get aborted() {
-        return !!(this.state.flags & StreamStateFlags.aborted);
+        return !!(this.stats & StreamStateFlags.aborted);
     }
 
     // True if dealing with a HEAD request
     get headRequest() {
-        return !!(this.state.flags & StreamStateFlags.headRequest);
+        return !!(this.stats & StreamStateFlags.headRequest);
     }
 
     // The error code reported when this Http2Stream was closed.
     get rstCode() {
-        return this.state.rstCode;
+        return this._rstCode;
     }
 
     init(id: number) {
         if (this.id !== undefined) return;
-        const { state, connection } = this;
-        state.flags |= StreamStateFlags.ready;
+        const connection = this.connection;
+        this.stats |= StreamStateFlags.ready;
 
         connection.state.pendingStreams.delete(this);
         connection.state.streams.set(id, this);
@@ -196,24 +169,32 @@ export abstract class TransportStream extends Duplexify implements Closeable {
         this.uncork();
         const tsp = connection.transport;
         const parser = tsp.streamParser(id, this.isClient, this.opts);
-        const generator = tsp.streamGenerator(connection, id, this.opts);
+        const generator = tsp.streamGenerator(connection.stream, id, this.opts);
         this.setReadable(parser);
         this.setWritable(generator);
         process.nextTick(() => {
-            connection.pipe(parser);
+            connection.stream.pipe(parser);
         });
 
         this._regedEvents = new Map([ev.ABORTED, ev.TIMEOUT, ev.ERROR, ev.CLOSE].map(evt => [evt, this.emit.bind(this, evt)]));
         this._regedEvents.forEach((evt, n) => {
-            this.connection.on(n, evt);
+            connection.on(n, evt);
             if (n === ev.ERROR) {
                 parser.on(n, evt);
                 generator.on(n, evt);
             }
         });
-        if (this.isClient) {
-            parser.on(ev.RESPONSE, this.emit.bind(this, ev.RESPONSE));
-        }
+
+        const pairId = this.isClient ? id + 1 : id - 1;
+        const onHeaders = (headers: any, id: number) => {
+            if (id === pairId) {
+                this.emit(ev.HEADERS, headers, id);
+                this.emit(this.isClient ? ev.RESPONSE : ev.REQUEST, headers, id);
+            }
+        };
+        this._regedEvents.set(ev.HEADERS, onHeaders)
+        connection.on(ev.HEADERS, onHeaders);
+
         this.emit(ev.READY)
     }
 
@@ -224,138 +205,22 @@ export abstract class TransportStream extends Duplexify implements Closeable {
         super._write(chunk, encoding, callback);
     }
 
-    // override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
-    //     this.processWrite(false, chunk, encoding, callback)
-    // }
-
-    // override _writev(chunk: any, callback: (error?: Error | null | undefined) => void) {
-    //     this.processWrite(true, chunk, undefined, callback)
-    // }
-
-    // override _final(callback: (error?: Error | null | undefined) => void): void {
-    //     if (this.pending) {
-    //         this.once(ev.READY, () => this._final(callback))
-    //     }
-
-    //     this.shutdownWritable(callback);
-    // }
-
     override _read(size: number): void {
         if (this.destroyed) {
             this.push(null);
             return;
         }
-        if (!this.state.didRead) {
-            this._readableState.readingMore = false;
-            this.state.didRead = true;
-        }
-
-        if (!this.pending) {
-            this.streamOnResume(size);
-        } else {
-            this.once(ev.READY, () => this.streamOnResume(size))
-        }
+        super._read(size);
     }
-
-    // protected processWrite(writev: boolean, chunk: any, encoding: BufferEncoding | undefined, callback: (error?: Error | null | undefined) => void) {
-    //     if (this.pending) {
-    //         this.once(ev.READY, () => {
-    //             this.processWrite(writev, chunk, encoding, callback);
-    //         })
-    //         return;
-    //     }
-    //     if (this.destroyed) return;
-    //     if (!this.headersSent) {
-    //         this.proceed()
-    //     }
-
-    //     let waitingForWriteCallback = true;
-    //     let waitingForEndCheck = true;
-    //     let writeCallbackErr: Error | null | undefined;
-    //     let endCheckCallbackErr: Error | null | undefined;
-    //     const done = () => {
-    //         if (waitingForEndCheck || waitingForWriteCallback) return;
-
-    //         if (endCheckCallbackErr && writeCallbackErr && endCheckCallbackErr !== writeCallbackErr) {
-    //             const err = new TransportExecption(
-    //                 writeCallbackErr?.message ?? endCheckCallbackErr?.message,
-    //                 (writeCallbackErr as Execption)?.code
-    //             );
-    //             this.destroy(err);
-    //         }
-    //         callback();
-
-    //     };
-    //     const writeCallback = (err?: Error | null) => {
-    //         waitingForWriteCallback = false;
-    //         writeCallbackErr = err;
-    //         done();
-    //     };
-    //     const endCheckCallback = (err?: Error) => {
-    //         waitingForEndCheck = false;
-    //         endCheckCallbackErr = err;
-    //         done();
-    //     };
-
-    //     // Shutdown write stream right after last chunk is sent
-    //     // so final DATA frame can include END_STREAM flag
-    //     process.nextTick(() => {
-    //         if (writeCallbackErr ||
-    //             !this._writableState.ending ||
-    //             (this._writableState.buffer?.length || (this._writableState as any)['buffered']?.length) ||
-    //             (this.state.flags & StreamStateFlags.trailers))
-    //             return endCheckCallback();
-    //         this.shutdownWritable(endCheckCallback);
-    //     });
-
-    //     chunk = this.attachStreamId(chunk, encoding);
-    //     // let req: any;
-    //     if (writev)
-    //         this.connection.write(chunk, writeCallback);
-    //     else
-    //         this.connection.write(chunk, encoding, writeCallback);
-
-    //     // this.trackWriteState(req.bytes);
-    // }
-
-    // attachStreamId(chunk: any, encoding?: BufferEncoding) {
-    //     const streamId = this.streamId!;
-    //     if (isString(chunk)) {
-    //         const buffer = Buffer.from(chunk, encoding);
-    //         return Buffer.concat([streamId, buffer], streamId.length + buffer.length);
-    //     }
-    //     if (isBuffer(chunk)) {
-    //         return Buffer.concat([streamId, chunk], streamId.length + chunk.length);
-    //     }
-
-    //     chunk.id = this.id;
-    //     return chunk;
-    // }
-
 
     protected abstract proceed(): void;
 
-    override end(cb?: (() => void) | undefined): this;
-    override end(chunk: any, cb?: (() => void) | undefined): this;
-    override end(chunk: any, encoding: BufferEncoding, cb?: (() => void) | undefined): this;
-    override end(chunk?: any, encoding?: any, cb?: (() => void) | undefined): this {
-        if (isFunction(chunk)) {
-            cb = chunk;
-            chunk = null;
-        } else if (isFunction(encoding)) {
-            cb = encoding
-            encoding = 'utf8';
-        }
+
+    override _ending(chunk?: any, encoding?: BufferEncoding | undefined, cb?: (() => void) | undefined): Writable {
         if (!this.headersSent) {
             this.proceed();
         }
-        if (chunk) this.write(chunk);
-        if (!this._writableState.ending && !this._writableState.destroyed) {
-            this.write(SIGNAL_FLUSH)
-        }
-        Writable.prototype.end.call(this, null, encoding, cb);
-        // super.end(chunk, encoding, cb);
-        return this;
+        return super._ending(chunk, encoding, cb);
     }
 
     /**
@@ -367,8 +232,8 @@ export abstract class TransportStream extends Duplexify implements Closeable {
      */
     close(code?: number, callback?: () => void): void {
         if (this.isClosed) {
-            if (!(this.state.flags & StreamStateFlags.closed)) {
-                this.state.flags |= StreamStateFlags.closed;
+            if (!(this.stats & StreamStateFlags.closed)) {
+                this.stats |= StreamStateFlags.closed;
             }
             return;
         }
@@ -395,10 +260,6 @@ export abstract class TransportStream extends Duplexify implements Closeable {
             this._regedEvents.clear();
         }
 
-
-        // Adjust the write queue size for accounting
-        cstate.writeQueueSize -= this.state.writeQueueSize;
-        this.state.writeQueueSize = 0;
         this.connection.mayBeDestroy();
         return super._destroy(error ?? null, callback);
     }
@@ -428,14 +289,14 @@ export abstract class TransportStream extends Duplexify implements Closeable {
     }
 
     protected closeStream(code?: number, status: StreamRstStatus = StreamRstStatus.submit) {
-        this.state.flags |= StreamStateFlags.closed;
-        this.state.rstCode = code!;
+        this.stats |= StreamStateFlags.closed;
+        this._rstCode = code!;
         this.setTimeout(0);
         this.removeAllListeners(ev.TIMEOUT);
 
         if (this.ending) {
             if (this.aborted) {
-                this.state.flags |= StreamStateFlags.aborted;
+                this.stats |= StreamStateFlags.aborted;
                 this.emit(ev.ABORTED);
             }
 
@@ -465,14 +326,6 @@ export abstract class TransportStream extends Duplexify implements Closeable {
     protected submitRstStream(code?: number) {
 
     }
-
-    // protected shutdownWritable(callback: (error?: Error) => void) {
-    //     const state = this.state;
-    //     if (state.shutdownWritableCalled) {
-    //         return callback();
-    //     }
-    //     state.shutdownWritableCalled = true;
-    // }
 
     protected streamOnResume(size?: number) {
         if (!this.destroyed) {

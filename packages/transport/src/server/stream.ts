@@ -166,7 +166,7 @@ export class ServerStream extends TransportStream {
         const opts = { ...options } as SteamOptions;
 
         this._sentHeaders = headers;
-        this.state.flags |= StreamStateFlags.headersSent;
+        this.stats |= StreamStateFlags.headersSent;
         const ending = () => {
             const len = headers[hdr.CONTENT_LENGTH];
             const hasPlayload = len ? true : false;
@@ -175,7 +175,7 @@ export class ServerStream extends TransportStream {
                 this.end();
             }
         }
-        if (this.write({ id: this.id, headers })) {
+        if (this.connection.write({ id: this.id, headers })) {
             ending();
         } else {
             this.once(ev.DRAIN, ending);

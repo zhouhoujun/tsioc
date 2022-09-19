@@ -3,6 +3,7 @@ import { Abstract, isString } from '@tsdi/ioc';
 import { Writable, WritableOptions, Duplex, Transform, TransformOptions, TransformCallback } from 'stream';
 import { ConnectionOpts } from './connection';
 import { ev } from './consts';
+import { SteamOptions } from './stream';
 import { isBuffer } from './utils';
 
 
@@ -26,11 +27,11 @@ export abstract class TransportProtocol extends ProtocolStrategy {
     abstract parsePacket(packet: any): Packet;
 
     
-    streamParser(packetId: number, isClient?: boolean, opts?: ConnectionOpts): Transform {
+    streamParser(packetId: number, isClient?: boolean, opts?: SteamOptions): Transform {
         return new TransportStreamParser(packetId, isClient, opts);
     }
 
-    streamGenerator(output: Writable, packetId: number, opts?: ConnectionOpts): Writable {
+    streamGenerator(output: Writable, packetId: number, opts?: SteamOptions): Writable {
         return new TransportStreamGenerator(output, packetId, opts);
     }
 }

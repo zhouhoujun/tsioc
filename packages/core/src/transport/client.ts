@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, isNil, isTypeObject, type_str } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, isNil, isTypeObject, _tystr } from '@tsdi/ioc';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, isObservable } from 'rxjs';
 import { TransportOpts, TransportEndpoint } from './transport';
 import { RequestContext } from './context';
@@ -353,7 +353,7 @@ export abstract class Client<
                     case 'text':
                         return res$.pipe(map((res: TransportResponse) => {
                             // Validate that the body is a string.
-                            if (res.body !== null && typeof res.body !== type_str) {
+                            if (res.body !== null && typeof res.body !== _tystr) {
                                 throw new Execption('Response is not a string.')
                             }
                             return res.body

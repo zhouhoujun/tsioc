@@ -1,5 +1,5 @@
 import { Endpoint, EndpointContext, Interceptor, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, Message, TransportEvent, TransportRequest } from '@tsdi/core';
-import { Injectable, isString, type_bool, type_num, type_obj } from '@tsdi/ioc';
+import { Injectable, isString, _tybool, _tynum, _tyobj } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { Stream } from 'stream';
 import { defer, mergeMap, Observable } from 'rxjs';
@@ -64,7 +64,7 @@ export class BodyContentInterceptor implements Interceptor<TransportRequest, Tra
         }
 
         // Check whether the body is an object or array, and serialize with JSON if so.
-        if (typeof body === type_obj || typeof body === type_bool ||
+        if (typeof body === _tyobj || typeof body === _tybool ||
             Array.isArray(body)) {
             return JSON.stringify(body)
         }
@@ -106,8 +106,8 @@ export class BodyContentInterceptor implements Interceptor<TransportRequest, Tra
         }
         // Arrays, objects, boolean and numbers will be encoded as JSON.
         const type = typeof body;
-        if (type === type_obj || type === type_num ||
-            type === type_bool) {
+        if (type === _tyobj || type === _tynum ||
+            type === _tybool) {
             return 'application/json'
         }
         // No type could be inferred.

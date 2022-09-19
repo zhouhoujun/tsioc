@@ -128,6 +128,9 @@ export class DelimiterParser extends PacketParser {
                         id,
                         headers
                     } as Packet;
+                    if (headers) {
+                        process.nextTick(() => { this.emit(ev.HEADERS, headers, id) });
+                    }
                 } else {
                     pkg = size > 0 ? Buffer.concat([buff.slice(1), ...bufs], buff.length - 1 + size) : buff.slice(1);
                 }
@@ -214,7 +217,7 @@ export class DelimiterGenerator extends PacketGenerator {
             if (this.output.write(buff, encoding)) {
                 callback();
             } else {
-                this.output.once(ev.DRAIN, ()=> {
+                this.output.once(ev.DRAIN, () => {
                     this.output.write(buff, encoding);
                     callback();
                 });

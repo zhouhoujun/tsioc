@@ -2,16 +2,16 @@
 // CommonJS / Node have global context exposed as "global" variable.
 // We don't want to include the whole node.d.ts this this compilation unit so we'll just fake
 
-import { type_undef } from '@tsdi/ioc';
+import { _tyundef } from '@tsdi/ioc';
 
 // the global "global" var for now.
 declare const global: any;
 declare const WorkerGlobalScope: any;
 
-const __window = typeof window !== type_undef && window;
-const __self = typeof self !== type_undef && typeof WorkerGlobalScope !== type_undef &&
+const __window = typeof window !== _tyundef && window;
+const __self = typeof self !== _tyundef && typeof WorkerGlobalScope !== _tyundef &&
     self instanceof WorkerGlobalScope && self;
-const __global = typeof global !== type_undef && global;
+const __global = typeof global !== _tyundef && global;
 
 // Check __global first, because in Node tests both __global and __window may be defined and _global
 // should be __global in that case.

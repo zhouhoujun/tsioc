@@ -1,6 +1,6 @@
 /* eslint-disable no-case-declarations */
 import { EndpointBackend, IncomingHeaders, IncomingStatusHeaders, isArrayBuffer, isBlob, isFormData, mths, Redirector, RequestContext, ResHeaders, ResponseJsonParseError, Message, RestfulStatus, TransportErrorResponse, TransportEvent, TransportExecption, TransportHeaderResponse, TransportResponse, UnsupportedMediaTypeExecption, TransportRequest } from '@tsdi/core';
-import { EMPTY_OBJ, Injectable, InvocationContext, isUndefined, lang, type_undef } from '@tsdi/ioc';
+import { EMPTY_OBJ, Injectable, InvocationContext, isUndefined, lang, _tyundef } from '@tsdi/ioc';
 import { Observable, Observer, throwError, finalize } from 'rxjs';
 import * as zlib from 'zlib';
 import { PassThrough, pipeline, Writable, Readable, PipelineSource } from 'stream';
@@ -286,7 +286,7 @@ export class TransportBackend implements EndpointBackend<TransportRequest, Trans
     }
 
     protected getAbortSignal(ctx: InvocationContext) {
-        return typeof AbortController === type_undef ? null! : ctx.getValueify(AbortController, () => new AbortController());
+        return typeof AbortController === _tyundef ? null! : ctx.getValueify(AbortController, () => new AbortController());
     }
 }
 

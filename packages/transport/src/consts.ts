@@ -30,6 +30,7 @@ export namespace ev {
     export const PAUSE = 'pause';
     export const RESUME = 'resume';
     export const RESPONSE = 'response';
+    export const REQUEST = 'request';
     export const DATA = 'data';
     export const DRAIN = 'drain';
     export const ERROR = 'error';
@@ -48,6 +49,12 @@ export namespace ev {
     export const CANCELLED = 'cancelled';
 
     export const LISTENING = 'listening';
+
+    export const CORK = 'cork';
+    export const UNCORK = 'uncork';
+    export const READABLE = 'readable';
+    export const PREFINISH = 'prefinish';
+    export const PREEND = 'preend';
 }
 
 /**

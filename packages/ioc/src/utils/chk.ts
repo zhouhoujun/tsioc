@@ -7,14 +7,14 @@ import { getClassAnnotation } from './util';
 declare let process: any;
 
 export const toString = Object.prototype.toString;
-export const type_func = 'function';
-export const type_undef = 'undefined';
-export const type_str = 'string';
-export const type_bool = 'boolean';
-export const type_num = 'number';
-export const type_symbol = 'symbol';
-export const type_bigint = 'bigint';
-export const type_obj = 'object';
+export const _tyfunc = 'function';
+export const _tyundef = 'undefined';
+export const _tystr = 'string';
+export const _tybool = 'boolean';
+export const _tynum = 'number';
+export const _tysymbol = 'symbol';
+export const _tybigint = 'bigint';
+export const _tyobj = 'object';
 
 /**
  * check target is function or not.
@@ -24,7 +24,7 @@ export const type_obj = 'object';
  * @returns
  */
 export function isFunction(target: any): target is Function {
-    return typeof target === type_func
+    return typeof target === _tyfunc
 }
 
 
@@ -36,7 +36,7 @@ export function isFunction(target: any): target is Function {
  * @returns {boolean}
  */
 export function isNodejsEnv(): boolean {
-    return (typeof process !== type_undef) && (typeof process.versions.node !== type_undef)
+    return (typeof process !== _tyundef) && (typeof process.versions.node !== _tyundef)
 }
 
 const promiseTag = '[object Promise]';
@@ -48,7 +48,7 @@ const promiseTag = '[object Promise]';
  * @returns {target is Promise<any>}
  */
 export function isPromise(target: any): target is Promise<any> {
-    return toString.call(target) === promiseTag || target instanceof Promise || (target && typeof target.then === type_func && typeof target.catch === type_func)
+    return toString.call(target) === promiseTag || target instanceof Promise || (target && typeof target.then === _tyfunc && typeof target.catch === _tyfunc)
 }
 
 const obsTag = '[object Observable]';
@@ -60,7 +60,7 @@ const obsTag = '[object Observable]';
  * @returns {boolean}
  */
 export function isObservable(target: any): boolean {
-    return toString.call(target) === obsTag || (target && typeof target.subscribe === type_func && target.lift === type_func)
+    return toString.call(target) === obsTag || (target && typeof target.subscribe === _tyfunc && target.lift === _tyfunc)
 }
 
 
@@ -72,7 +72,7 @@ export function isObservable(target: any): boolean {
  * @returns {target is string}
  */
 export function isString(target: any): target is string {
-    return typeof target === type_str
+    return typeof target === _tystr
 }
 
 
@@ -84,7 +84,7 @@ export function isString(target: any): target is string {
  * @returns {target is boolean}
  */
 export function isBoolean(target: any): target is boolean {
-    return typeof target === type_bool
+    return typeof target === _tybool
 }
 
 /**
@@ -96,7 +96,7 @@ export function isBoolean(target: any): target is boolean {
  */
 export function isNumber(target: any): target is number {
     const type = typeof target;
-    return type === type_num || type === type_bigint
+    return type === _tynum || type === _tybigint
 }
 
 /**
@@ -107,7 +107,7 @@ export function isNumber(target: any): target is number {
  * @returns {target is undefined}
  */
 export function isUndefined(target: any): target is undefined {
-    return typeof target === type_undef
+    return typeof target === _tyundef
 }
 
 
@@ -170,7 +170,7 @@ export function isArray(target: any): target is Array<any> {
 export function isObject(target: any): target is object {
     if (isNull(target)) return false;
     const type = typeof target;
-    return (type === type_obj || type === type_func)
+    return (type === _tyobj || type === _tyfunc)
 }
 
 
@@ -201,7 +201,7 @@ const symbolTag = '[object Symbol]';
  * @returns {target is symbol}
  */
 export function isSymbol(target: any): target is symbol {
-    return typeof target === type_symbol || toString.call(target) === symbolTag
+    return typeof target === _tysymbol || toString.call(target) === symbolTag
 }
 
 const regTag = '[object RegExp]';

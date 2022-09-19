@@ -1,7 +1,7 @@
 import { Abstract, EMPTY_OBJ, isFunction } from '@tsdi/ioc';
-import * as Duplexify from 'duplexify';
-import { Readable, Writable, Duplex, DuplexOptions, Transform } from 'stream';
+import { Duplex, Transform } from 'stream';
 import { ev } from './consts';
+import { Duplexify, DuplexifyOptions } from './duplexify';
 import { InvalidSessionExecption } from './execptions';
 import { Closeable, PacketGenerator, PacketParser, TransportProtocol } from './protocol';
 import { TransportStream } from './stream';
@@ -10,7 +10,7 @@ import { TransportStream } from './stream';
 /**
  * connection options.
  */
-export interface ConnectionOpts extends DuplexOptions, Record<string, any> {
+export interface ConnectionOpts extends DuplexifyOptions, Record<string, any> {
     noData?: boolean;
     noError?: number;
     /**
@@ -63,7 +63,7 @@ export abstract class Connection extends Duplexify implements Closeable {
     protected _regedEvents: Map<string, any>;
     readonly state: ConnectionState;
     constructor(readonly stream: Duplex, readonly transport: TransportProtocol, protected opts: ConnectionOpts = EMPTY_OBJ) {
-        super(undefined, undefined, opts);
+        super(null, null, opts);
         this.state = {
             destroyCode: opts.noError ?? NO_ERROR,
             flags: ConnectionStateFlags.ready,
@@ -94,15 +94,8 @@ export abstract class Connection extends Duplexify implements Closeable {
             }
         });
 
+        this._parser.on(ev.HEADERS, this.emit.bind(this, ev.HEADERS));
         this.once(ev.CLOSE, () => this.close());
-
-        // this.stream.on(ev.CONNECT, this.emit.bind(this, ev.CONNECT));
-
-        // this._generator.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
-        // this._parser.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
-
-        // this.stream.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
-        // this.stream.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
     }
 
     /**

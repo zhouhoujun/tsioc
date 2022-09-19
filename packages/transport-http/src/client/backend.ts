@@ -1,4 +1,4 @@
-import { Injectable, isUndefined, lang, type_undef } from '@tsdi/ioc';
+import { Injectable, isUndefined, lang, _tyundef } from '@tsdi/ioc';
 import { EndpointContext, mths, ResHeaders, Redirector, RestfulStatus } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpResponse, HttpErrorResponse, HttpHeaderResponse, HttpJsonParseError, HttpBackend } from '@tsdi/common';
 import { ev, hdr, toBuffer, isBuffer, MimeAdapter, ctype, RequestStauts, sendbody, XSSI_PREFIX, MimeTypes } from '@tsdi/transport';
@@ -335,7 +335,7 @@ export class HttpBackend2 extends HttpBackend {
     }
 
     protected getAbortSignal(ctx: EndpointContext): AbortController {
-        return typeof AbortController === type_undef ? null! : ctx.getValueify(AbortController, () => new AbortController());
+        return typeof AbortController === _tyundef ? null! : ctx.getValueify(AbortController, () => new AbortController());
     }
 
 }

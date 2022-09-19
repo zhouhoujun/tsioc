@@ -32,19 +32,14 @@ export class ClientStream extends TransportStream {
         const opts = { ...options } as SteamOptions;
 
         this._sentHeaders = headers;
-        this.state.flags |= StreamStateFlags.headersSent;
-        const ending = () => {
-            const len = headers[hdr.CONTENT_LENGTH];
-            const hasPlayload = len ? true : false;
-            if (opts.endStream == true || !hasPlayload) {
-                opts.endStream = true;
-                this.end();
-            }
-        }
-        if (this.write({ id: this.id, headers })) {
-            ending();
-        } else {
-            this.once(ev.DRAIN, ending)
+        this.stats |= StreamStateFlags.headersSent;
+
+        this.connection.write({ id: this.id, headers })
+        const len = headers[hdr.CONTENT_LENGTH];
+        const hasPlayload = len ? true : false;
+        if (opts.endStream == true || !hasPlayload) {
+            opts.endStream = true;
+            this.end();
         }
 
     }

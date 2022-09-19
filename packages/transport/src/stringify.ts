@@ -1,7 +1,8 @@
 /* eslint-disable no-control-regex */
 /* eslint-disable no-misleading-character-class */
-import { Execption, isPromise } from '@tsdi/ioc';
+import { Execption, isNumber, isPromise, isString, _tybigint, _tybool, _tyfunc, _tynum, _tyobj, _tystr, _tysymbol } from '@tsdi/ioc';
 import { Readable } from 'stream';
+import { ev } from './consts';
 
 export class JsonStreamStringify extends Readable {
     private visited!: VisitedWeakMap | VisitedWeakSet;
@@ -19,7 +20,7 @@ export class JsonStreamStringify extends Readable {
     constructor(value: any, replacer?: Function | any[], spaces?: number | string, private cycle: boolean = false) {
         super({ encoding: 'utf8' });
         const spaceType = typeof spaces;
-        if (spaceType === 'string' || spaceType === 'number') {
+        if (spaceType === _tystr || spaceType === _tynum) {
             this.gap = Number.isFinite(spaces as number) ? ' '.repeat(spaces as number) : spaces as string;
         }
         Object.assign(this, {
@@ -55,7 +56,7 @@ export class JsonStreamStringify extends Readable {
         if (realValue && realValue.toJSON instanceof Function) {
             realValue = realValue.toJSON();
         }
-        if (realValue instanceof Function || typeof value === 'symbol') {
+        if (realValue instanceof Function || typeof value === _tysymbol) {
             realValue = undefined;
         }
         if (key !== undefined && this.replacerArray) {
@@ -120,19 +121,19 @@ export class JsonStreamStringify extends Readable {
         } else if (type === Types.ReadableString || type === Types.ReadableObject) {
             this.depth += 1;
             if (realValue.readableEnded || realValue._readableState?.endEmitted) {
-                this.emit('error', new Error('Readable Stream has ended before it was serialized. All stream data have been lost'), realValue, key || index);
+                this.emit(ev.ERROR, new Error('Readable Stream has ended before it was serialized. All stream data have been lost'), realValue, key || index);
             } else if (realValue.readableFlowing || realValue._readableState?.flowing) {
                 realValue.pause();
-                this.emit('error', new Error('Readable Stream is in flowing mode, data may have been lost. Trying to pause stream.'), realValue, key || index);
+                this.emit(ev.ERROR, new Error('Readable Stream is in flowing mode, data may have been lost. Trying to pause stream.'), realValue, key || index);
             }
             obj.readCount = 0;
-            realValue.once('end', () => {
+            realValue.once(ev.END, () => {
                 obj.end = true;
                 this.__read();
             });
-            realValue.once('error', (err: any) => {
+            realValue.once(ev.ERROR, (err: any) => {
                 this.error = true;
-                this.emit('error', err);
+                this.emit(ev.ERROR, err);
             });
         }
         this.stack.unshift(obj);
@@ -213,19 +214,19 @@ export class JsonStreamStringify extends Readable {
             const type = typeof current.value;
             let value;
             switch (type) {
-                case 'string':
+                case _tystr:
                     value = quoteString(current.value);
                     break;
-                case 'number':
+                case _tynum:
                     value = Number.isFinite(current.value) ? String(current.value) : 'null';
                     break;
-                case 'bigint':
+                case _tybigint:
                     value = String(current.value);
                     break;
-                case 'boolean':
+                case _tybool:
                     value = String(current.value);
                     break;
-                case 'object':
+                case _tyobj:
                     if (!current.value) {
                         value = 'null';
                     }
@@ -310,7 +311,7 @@ export class JsonStreamStringify extends Readable {
             })
             .catch((err) => {
                 this.error = true;
-                this.emit('error', err);
+                this.emit(ev.ERROR, err);
             });
     }
 
@@ -344,12 +345,12 @@ const meta: any = {
 };
 
 function isReadableStream(value: any): boolean {
-    return typeof value.read === 'function'
-        && typeof value.pause === 'function'
-        && typeof value.resume === 'function'
-        && typeof value.pipe === 'function'
-        && typeof value.once === 'function'
-        && typeof value.removeListener === 'function';
+    return typeof value.read === _tyfunc
+        && typeof value.pause === _tyfunc
+        && typeof value.resume === _tyfunc
+        && typeof value.pipe === _tyfunc
+        && typeof value.once === _tyfunc
+        && typeof value.removeListener === _tyfunc;
 }
 
 function getType(value: any): Types {
@@ -357,7 +358,7 @@ function getType(value: any): Types {
     if (isPromise(value)) return Types.Promise;
     if (isReadableStream(value)) return value._readableState.objectMode ? Types.ReadableObject : Types.ReadableString;
     if (Array.isArray(value)) return Types.Array;
-    if (typeof value === 'object' || value instanceof Object) return Types.Object;
+    if (typeof value === _tyobj || value instanceof Object) return Types.Object;
     return Types.Primitive
 }
 
@@ -385,7 +386,7 @@ stackItemEnd[Types.ReadableObject] = ']';
 const processFunctionLookupTable: string[] = [];
 
 for (const [key, val] of Object.entries(Types)) {
-    if (typeof val === 'number') processFunctionLookupTable[val] = `process${key}`;
+    if (isNumber(val)) processFunctionLookupTable[val] = `process${key}`;
 }
 
 function escapeString(str: string) {
@@ -399,7 +400,7 @@ function escapeString(str: string) {
 
     return str.replace(rxEscapable, (a) => {
         const c = meta[a];
-        return typeof c === 'string' ? c : `\\u${a.charCodeAt(0).toString(16).padStart(4, '0')}`;
+        return isString(c) ? c : `\\u${a.charCodeAt(0).toString(16).padStart(4, '0')}`;
     })
 }
 
@@ -412,11 +413,11 @@ function readAsPromised(stream: Readable, size: number) {
     if (value === null) {
         return new Promise((resolve, reject) => {
             const endListener = () => resolve(null);
-            stream.once('end', endListener);
-            stream.once('error', reject);
-            stream.once('readable', () => {
-                stream.removeListener('end', endListener);
-                stream.removeListener('error', reject);
+            stream.once(ev.END, endListener);
+            stream.once(ev.ERROR, reject);
+            stream.once(ev.READABLE, () => {
+                stream.removeListener(ev.END, endListener);
+                stream.removeListener(ev.ERROR, reject);
                 resolve(stream.read());
             })
         })
