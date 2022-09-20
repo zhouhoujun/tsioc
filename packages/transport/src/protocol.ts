@@ -1,6 +1,6 @@
 import { Packet, ProtocolStrategy } from '@tsdi/core';
 import { Abstract, isString } from '@tsdi/ioc';
-import { Writable, PassThrough, Duplex, Transform, TransformCallback } from 'stream';
+import { Writable, Duplex, Transform, TransformCallback } from 'stream';
 import { ConnectionOpts } from './connection';
 import { ev } from './consts';
 import { SteamOptions } from './stream';
@@ -72,15 +72,10 @@ export class TransportStreamParser extends Transform {
 
 export class TransportStreamGenerator extends Writable {
     private streamId: Buffer;
-    private pipes: PassThrough;
     constructor(private output: Writable, private id: number, opts?: SteamOptions) {
         super({ ...opts, objectMode: true });
         this.streamId = Buffer.alloc(2);
         this.streamId.writeInt16BE(id);
-        this.pipes = new PassThrough({ objectMode: true });
-        process.nextTick(() => {
-            this.pipes.pipe(this.output);
-        })
     }
 
     override _write(chunk: string | Buffer | Packet, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
@@ -93,17 +88,7 @@ export class TransportStreamGenerator extends Writable {
             chunk.id = this.id;
         }
 
-        this._writing(chunk, encoding, callback);
-    }
-
-    protected _writing(chunk: Buffer | Packet, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void) {
-        if (this.pipes.write(chunk, encoding)) {
-            callback()
-        } else {
-            this.pipes.once(ev.DRAIN, () => {
-                this.pipes.write(chunk, encoding, callback)
-            })
-        }
+        this.output.write(chunk, encoding, callback);
     }
 }
 

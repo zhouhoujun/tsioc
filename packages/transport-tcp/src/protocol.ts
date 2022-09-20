@@ -2,7 +2,7 @@ import { IncomingHeaders, IncomingMsg, ListenOpts, OutgoingHeaders, Packet } fro
 import { Injectable, isString } from '@tsdi/ioc';
 import { ConnectionOpts, hdr, isBuffer, TransportProtocol, ServerRequest, PacketParser, PacketGenerator, ev } from '@tsdi/transport';
 import { Buffer } from 'buffer';
-import { Duplex, TransformCallback, Writable, PassThrough } from 'stream';
+import { Duplex, TransformCallback, Writable } from 'stream';
 import * as tsl from 'tls';
 import { TcpStatus } from './status';
 
@@ -198,16 +198,10 @@ export class DelimiterGenerator extends PacketGenerator {
     private delimiter: Buffer;
     private maxSize: number;
 
-    private pipes: PassThrough;
     constructor(private output: Writable, private opts: ConnectionOpts) {
         super(opts);
         this.delimiter = Buffer.from(opts.delimiter!);
         this.maxSize = opts.maxSize || maxSize;
-
-        this.pipes = new PassThrough({ objectMode: true });
-        process.nextTick(() => {
-            this.pipes.pipe(this.output);
-        })
     }
 
 
@@ -215,7 +209,7 @@ export class DelimiterGenerator extends PacketGenerator {
 
         if (isBuffer(chunk) || isString(chunk)) {
             const buff = isString(chunk) ? Buffer.from(chunk, encoding) : chunk;
-            this._writing(buff, encoding, callback)
+            this.output.write(buff, encoding, callback);
             return;
         }
 
@@ -268,17 +262,7 @@ export class DelimiterGenerator extends PacketGenerator {
             }
         }
 
-        this._writing(Buffer.concat(list, bytes), encoding, callback)
-    }
-
-    _writing(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void) {
-        if (this.pipes.write(chunk, encoding)) {
-            callback()
-        } else {
-            this.pipes.once(ev.DRAIN, () => {
-                this.pipes.write(chunk, encoding, callback)
-            })
-        }
+        this.output.write(Buffer.concat(list, bytes), encoding, callback)
     }
 
     setOptions(opts: ConnectionOpts): void {
