@@ -216,7 +216,7 @@ export abstract class Connection extends Duplexify implements Closeable {
         state.destroyCode = code;
         // Clear timeout and remove timeout listeners.
         this.setTimeout(0);
-        this.removeAllListeners('timeout');
+        this.removeAllListeners(ev.TIMEOUT);
 
         if (this._regedEvents) {
             this._regedEvents.forEach((e, n) => {

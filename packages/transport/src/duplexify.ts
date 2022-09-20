@@ -248,7 +248,7 @@ export class Duplexify extends Duplex {
 }
 
 const noop = () => { };
-const SIGNAL_FLUSH = Buffer.from([0]);
+export const SIGNAL_FLUSH = Buffer.from([0]);
 
 const end = (ws: any, fn: Function) => {
     if (!ws) return fn()
