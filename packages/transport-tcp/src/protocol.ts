@@ -2,7 +2,7 @@ import { IncomingHeaders, IncomingMsg, ListenOpts, OutgoingHeaders, Packet } fro
 import { Injectable, isString } from '@tsdi/ioc';
 import { ConnectionOpts, hdr, isBuffer, TransportProtocol, ServerRequest, PacketParser, PacketGenerator, ev } from '@tsdi/transport';
 import { Buffer } from 'buffer';
-import { Duplex, TransformCallback, Writable } from 'stream';
+import { Duplex, TransformCallback, Writable, PassThrough } from 'stream';
 import * as tsl from 'tls';
 import { TcpStatus } from './status';
 
@@ -197,23 +197,25 @@ const playloadFlag = Buffer.from([2]);
 export class DelimiterGenerator extends PacketGenerator {
     private delimiter: Buffer;
     private maxSize: number;
-    private packet: Buffer;
+
+    private pipes: PassThrough;
     constructor(private output: Writable, private opts: ConnectionOpts) {
         super(opts);
         this.delimiter = Buffer.from(opts.delimiter!);
         this.maxSize = opts.maxSize || maxSize;
-        this.packet = empty;
+
+        this.pipes = new PassThrough({ objectMode: true });
+        process.nextTick(() => {
+            this.pipes.pipe(this.output);
+        })
     }
 
 
     override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
-        if (this.output.cork) {
-            this.output.cork()
-            process.nextTick(() => this.output.uncork())
-        }
+
         if (isBuffer(chunk) || isString(chunk)) {
             const buff = isString(chunk) ? Buffer.from(chunk, encoding) : chunk;
-            this.output.write(buff, encoding, callback)
+            this._writing(buff, encoding, callback)
             return;
         }
 
@@ -266,8 +268,17 @@ export class DelimiterGenerator extends PacketGenerator {
             }
         }
 
-        const buffs = Buffer.concat(list, bytes);
-        this.output.write(buffs, encoding, callback);
+        this._writing(Buffer.concat(list, bytes), encoding, callback)
+    }
+
+    _writing(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void) {
+        if (this.pipes.write(chunk, encoding)) {
+            callback()
+        } else {
+            this.pipes.once(ev.DRAIN, () => {
+                this.pipes.write(chunk, encoding, callback)
+            })
+        }
     }
 
     setOptions(opts: ConnectionOpts): void {

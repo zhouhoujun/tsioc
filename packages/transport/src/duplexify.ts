@@ -1,7 +1,8 @@
-import { isArray, isFunction, isString } from '@tsdi/ioc';
+import { isFunction, isString } from '@tsdi/ioc';
 import { Duplex, Readable, Writable, DuplexOptions, finished, pipeline } from 'stream';
 import { ev } from './consts';
 import { isBuffer } from './utils';
+import { ReadableState, WritableState } from 'readable-stream';
 
 export interface DuplexifyOptions extends DuplexOptions {
     forwardDestroy?: boolean;
@@ -21,6 +22,8 @@ export class Duplexify extends Duplex {
     protected _unread: Function | null = null;
     protected _ended = false;
 
+    protected _readableState!: ReadableState;
+    protected _writableState!: WritableState;
     protected _readable2: Readable | null;
     protected _readable: Readable | null;
     protected _writable: Writable | null;
@@ -148,9 +151,8 @@ export class Duplexify extends Duplex {
 
     override _write(chunk: any, encoding: BufferEncoding, cb: (error?: Error | null | undefined) => void): void {
         if (this.destroyed) return
-        if (this._corked) return this.onuncork(()=> this.pipeTo(chunk, encoding, cb))
+        if (this._corked) return this.onuncork(() => this.pipeTo(chunk, encoding, cb))
         if (chunk === SIGNAL_FLUSH) return this._finish(cb)
-        // if (!this._writable) return cb()
 
         this.pipeTo(chunk, encoding, cb);
 
@@ -158,12 +160,8 @@ export class Duplexify extends Duplex {
 
     protected pipeTo(chunk: any, encoding: BufferEncoding, cb: (error?: Error | null | undefined) => void) {
         if (!this._writable) return cb();
-        if (isString(chunk) || isBuffer(chunk)) {
-            pipeline(chunk, this._writable, cb);
-        } else {
-            if (this._writable.write(chunk, encoding) === false) this._ondrain = cb;
-            else if (!this.destroyed) cb()
-        }
+        if (this._writable.write(chunk) === false) this._ondrain = cb;
+        else if (!this.destroyed) cb()
     }
 
     override end(cb?: (() => void) | undefined): this;
@@ -182,11 +180,11 @@ export class Duplexify extends Duplex {
 
     }
 
-    _ending(chunk?: any, encoding?: BufferEncoding, cb?: (() => void) | undefined) {
+    _ending(chunk?: any, encoding?: BufferEncoding, cb?: (() => void) | undefined): void {
         this._ended = true;
         if (chunk) this.write(chunk);
         if (!this.writableEnded && this._writable?.destroyed !== true) this.write(SIGNAL_FLUSH);
-        return Writable.prototype.end.call(this, null, encoding!, cb)
+        super.end(null, encoding, cb)
     }
 
     _finish(cb: (error?: Error | null | undefined) => void) {
@@ -250,28 +248,28 @@ export class Duplexify extends Duplex {
 }
 
 const noop = () => { };
-const SIGNAL_FLUSH = Buffer.from('0\r\n');
+const SIGNAL_FLUSH = Buffer.from([0]);
 
 const end = (ws: any, fn: Function) => {
     if (!ws) return fn()
     if (ws._writableState && ws._writableState.finished) return fn()
     if (ws._writableState) return ws.end(fn)
-    ws.end()
-    fn()
+    ws.end();
+    fn();
 }
 
 export function shiftStream(stream: Readable) {
-    const rs = (stream as any)._readableState;
+    const rs = (stream as any)._readableState as ReadableState;
     if (!rs) return null;
     return (stream.readableObjectMode || typeof (stream as any)._duplexState === 'number') ? stream.read() : stream.read(getStateLength(rs))
 }
 
-function getStateLength(state: any) {
+function getStateLength(state: ReadableState) {
     if (state.buffer.length) {
         if (state.buffer.head) {
             return state.buffer.head.data.length
         }
-        return state.buffer[0].length
+        return (state as any).buffer[0].length
     }
 
     return state.length

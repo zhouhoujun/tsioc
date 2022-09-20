@@ -331,7 +331,8 @@ export class HttpBackend2 extends HttpBackend {
         reqHeaders[HTTP2_HEADER_METHOD] = req.method;
         reqHeaders[HTTP2_HEADER_PATH] = path;
 
-        return session.request(reqHeaders, { ...option.requestOptions, signal: ac?.signal } as http2.ClientSessionRequestOptions);
+        const stream = session.request(reqHeaders, { ...option.requestOptions, signal: ac?.signal } as http2.ClientSessionRequestOptions);
+        return stream;
     }
 
     protected getAbortSignal(ctx: EndpointContext): AbortController {

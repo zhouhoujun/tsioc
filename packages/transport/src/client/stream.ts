@@ -34,14 +34,14 @@ export class ClientStream extends TransportStream {
         this._sentHeaders = headers;
         this.stats |= StreamStateFlags.headersSent;
 
-        this.connection.write({ id: this.id, headers })
-        const len = headers[hdr.CONTENT_LENGTH];
-        const hasPlayload = len ? true : false;
-        if (opts.endStream == true || !hasPlayload) {
-            opts.endStream = true;
-            this.end();
-        }
-
+        this.write({ id: this.id, headers }, () => {
+            const len = headers[hdr.CONTENT_LENGTH];
+            const hasPlayload = len ? true : false;
+            if (opts.endStream == true || !hasPlayload) {
+                opts.endStream = true;
+                this.end();
+            }
+        });
     }
 
     addListener(event: 'aborted', listener: () => void): this;

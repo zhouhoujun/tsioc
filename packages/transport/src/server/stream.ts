@@ -167,21 +167,15 @@ export class ServerStream extends TransportStream {
 
         this._sentHeaders = headers;
         this.stats |= StreamStateFlags.headersSent;
-        const ending = () => {
+
+        this.write({ id: this.id, headers }, () => {
             const len = headers[hdr.CONTENT_LENGTH];
             const hasPlayload = len ? true : false;
             if (opts.endStream == true || !hasPlayload) {
                 opts.endStream = true;
                 this.end();
             }
-        }
-        if (this.connection.write({ id: this.id, headers })) {
-            ending();
-        } else {
-            this.once(ev.DRAIN, ending);
-        }
-
-
+        });
     }
 
 

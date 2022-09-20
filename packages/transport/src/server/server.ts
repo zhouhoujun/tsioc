@@ -123,31 +123,18 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
         return new Observable((observer) => {
             const subs: Set<Subscription> = new Set();
 
-            const stream = this.createStream(conn, -1);
-
             const onHeaders = (headers: IncomingHeaders, id: number) => {
                 const sid = conn.getNextStreamId(id);
-                stream.init(sid);
+                const stream = this.createStream(conn, sid, headers);
+                conn.emit(ev.STREAM, stream, headers);
             };
 
-            const onData = (chunk: any) => {
-                if (!isString(chunk) && !isBuffer(chunk) && isObject(chunk)) {
-                    const { id, headers, body } = conn.transport.parsePacket(chunk);
-                    const sid = conn.getNextStreamId(id);
-                    const stream = this.createStream(conn, sid, headers);
-                    if (body) {
-                        stream.push(body);
-                    }
-                    conn.emit(ev.STREAM, stream, headers);
-                }
-            };
 
             const onStream = (stream: ServerStream, headers: IncomingHeaders) => {
                 const ctx = this.buildContext(stream, headers);
                 subs.add(this.handle(ctx, this.endpoint(), observer));
             };
 
-            conn.on(ev.DATA, onData);
             conn.on(ev.HEADERS, onHeaders);
             conn.on(ev.STREAM, onStream);
             return () => {
@@ -155,14 +142,14 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
                     s && s.unsubscribe();
                 });
                 subs.clear();
-                conn.off(ev.DATA, onData);
+                conn.off(ev.HEADERS, onHeaders);
                 conn.off(ev.STREAM, onStream);
             }
         });
     }
 
     protected createStream(conn: ServerConnection, id?: number, headers?: IncomingHeaders) {
-        return new ServerStream(conn, id, this.getOptions().connectionOpts ?? EMPTY_OBJ, lang.pick(headers?? EMPTY_OBJ, hdr.HOST, hdr.AUTHORITY));
+        return new ServerStream(conn, id, this.getOptions().connectionOpts ?? EMPTY_OBJ, lang.pick(headers ?? EMPTY_OBJ, hdr.HOST, hdr.AUTHORITY));
     }
 
     protected abstract buildServer(opts: TOpts): T;

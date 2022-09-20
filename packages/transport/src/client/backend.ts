@@ -68,7 +68,7 @@ export class TransportBackend implements EndpointBackend<TransportRequest, Trans
                 }
 
                 // fetch step 5
-                body = pipeline(request, new PassThrough(), (err) => {
+                body = pipeline(request, new PassThrough({ objectMode: true}), (err) => {
                     error = err;
                     ok = !err;
                 });

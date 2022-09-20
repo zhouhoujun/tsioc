@@ -1,5 +1,6 @@
+import { TransportExecption } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, isFunction } from '@tsdi/ioc';
-import { Duplex, Transform } from 'stream';
+import { Stream, Duplex, Transform } from 'stream';
 import { ev } from './consts';
 import { Duplexify, DuplexifyOptions } from './duplexify';
 import { InvalidSessionExecption } from './execptions';
@@ -62,8 +63,10 @@ export abstract class Connection extends Duplexify implements Closeable {
     protected _generator: PacketGenerator;
     protected _regedEvents: Map<string, any>;
     readonly state: ConnectionState;
-    constructor(readonly stream: Duplex, readonly transport: TransportProtocol, protected opts: ConnectionOpts = EMPTY_OBJ) {
-        super(null, null, opts);
+    protected opts: ConnectionOpts;
+    constructor(readonly stream: Duplex, readonly transport: TransportProtocol, opts: ConnectionOpts = EMPTY_OBJ) {
+        super(null, null, opts = { ...opts, objectMode: true });
+        this.opts = opts;
         this.state = {
             destroyCode: opts.noError ?? NO_ERROR,
             flags: ConnectionStateFlags.ready,
@@ -160,7 +163,7 @@ export abstract class Connection extends Duplexify implements Closeable {
         }
 
         this.state.flags |= ConnectionStateFlags.closed;
-        if (callback) {
+        if (isFunction(callback)) {
             this.once(ev.CLOSE, callback);
         }
         this.goaway();
@@ -170,7 +173,6 @@ export abstract class Connection extends Duplexify implements Closeable {
     setTimeout(msecs: number, callback?: () => void) {
         if (this.destroyed)
             return this;
-
 
         // Attempt to clear an existing timer in both cases -
         //  even if it will be rescheduled we don't want to leak an existing timer.
@@ -201,7 +203,21 @@ export abstract class Connection extends Duplexify implements Closeable {
         this.destroy(err);
     }
 
-    override destroy(error?: Error): this {
+    override destroy(error?: Error): this;
+    override destroy(error?: Error, code?: number): this {
+        if (this.destroyed) return this;
+        this.closeSession(code, error);
+        return this;
+    }
+
+    protected closeSession(code = 0, error?: Error) {
+        const state = this.state;
+        state.flags |= ConnectionStateFlags.destroyed;
+        state.destroyCode = code;
+        // Clear timeout and remove timeout listeners.
+        this.setTimeout(0);
+        this.removeAllListeners('timeout');
+
         if (this._regedEvents) {
             this._regedEvents.forEach((e, n) => {
                 this.stream.off(n, e);
@@ -210,14 +226,24 @@ export abstract class Connection extends Duplexify implements Closeable {
             });
             this._regedEvents.clear();
         }
-        if (this.stream.destroy) {
-            this.stream.destroy(error!)
-        } else {
-            this.stream.end();
+        // Destroy any pending and open streams
+        if (state.pendingStreams.size > 0 || state.streams.size > 0) {
+            const cancel = new TransportStreamCancel(error);
+            state.pendingStreams.forEach((stream) => stream.destroy(cancel));
+            state.streams.forEach((stream) => stream.destroy(error));
         }
 
-        return super.destroy(error);
+        if (!this.stream.destroyed) {
+            this.stream.end(() => {
+                this.stream.destroy(error);
+                super.destroy(error);
+            })
+        } else {
+            process.nextTick(() => super.destroy(error));
+        }
+
     }
+
 
     protected _onTimeout() {
         if (this.destroyed) return;
@@ -265,3 +291,11 @@ export abstract class Connection extends Duplexify implements Closeable {
     }
 
 }
+
+
+export class TransportStreamCancel extends TransportExecption {
+    constructor(message?: string | Error) {
+        super(message instanceof Error ? message.message : message)
+    }
+}
+
