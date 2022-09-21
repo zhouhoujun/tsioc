@@ -1,11 +1,12 @@
 import { mths } from '@tsdi/core';
-import { Injectable, isString, lang } from '@tsdi/ioc';
+import { Injectable, isFunction, isString, lang } from '@tsdi/ioc';
 import { Readable } from 'stream';
 import { RespondAdapter } from '../interceptors/respond';
 import { ServerResponse } from './res';
 import { TransportContext } from './context';
 import { ev, hdr } from '../consts';
-import { isBuffer, isStream } from '../utils';
+import { isBuffer, isStream, pipeStream, pmPipeline } from '../utils';
+
 
 
 @Injectable({ static: true })
@@ -56,18 +57,7 @@ export class TransportRespondAdapter extends RespondAdapter {
         if (isBuffer(body)) return res.end(body);
         if (isString(body)) return res.end(Buffer.from(body));
         if (isStream(body)) {
-            const defer = lang.defer();
-            body.once(ev.ERROR, (err) => {
-                defer.reject(err)
-            });
-            body.once(ev.END, () => {
-                defer.resolve()
-            });
-            body.pipe(res);
-            return await defer.promise
-                .finally(() => {
-                    body instanceof Readable && body.destroy();
-                })
+            await pipeStream(body, res);
         }
 
         // body: json

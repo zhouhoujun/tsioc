@@ -8,9 +8,9 @@ import { ev, hdr } from '../consts';
 /**
  * server response.
  */
-export class ServerResponse extends Stream implements OutgoingMsg {
+export class ServerResponse extends Writable implements OutgoingMsg {
 
-    closed = false;
+    _closed = false;
     ending = false;
     private _hdr: ResHeaders;
     destroyed = false;
@@ -32,11 +32,15 @@ export class ServerResponse extends Stream implements OutgoingMsg {
     }
 
     protected onStreamClose() {
-        if (this.destroyed || this.closed) return;
-        this.closed = true;
+        if (this.destroyed || this.isClosed) return;
+        this._closed = true;
         // this.removeListener('wantTrailers', this.onStreamTrailersReady.bind(this));
         this.emit(ev.FINISH);
         this.emit(ev.CLOSE);
+    }
+
+    get isClosed() {
+        return this._closed || (this as any).closed === true;
     }
 
     protected onStreamTrailersReady() {
@@ -47,28 +51,28 @@ export class ServerResponse extends Stream implements OutgoingMsg {
         return this.stream.connection;
     }
 
-    get writableEnded() {
-        return this.ending;
-    }
+    // get writableEnded() {
+    //     return this.ending;
+    // }
     get finished(): boolean {
         return this.ending;
     }
 
-    get writableCorked() {
-        return this.stream.writableCorked;
-    }
+    // get writableCorked() {
+    //     return this.stream.writableCorked;
+    // }
 
-    get writableHighWaterMark() {
-        return this.stream.writableHighWaterMark;
-    }
+    // get writableHighWaterMark() {
+    //     return this.stream.writableHighWaterMark;
+    // }
 
-    get writableFinished() {
-        return this.stream.writableFinished;
-    }
+    // get writableFinished() {
+    //     return this.stream.writableFinished;
+    // }
 
-    get writableLength() {
-        return this.stream.writableLength;
-    }
+    // get writableLength() {
+    //     return this.stream.writableLength;
+    // }
 
     getHeaderNames(): string[] {
         return this._hdr.getHeaderNames();
@@ -113,18 +117,20 @@ export class ServerResponse extends Stream implements OutgoingMsg {
     }
 
     flushHeaders() {
-        if (!this.closed && !this.stream.headersSent) {
+        if (!this._closed && !this.stream.headersSent) {
             this.writeHead(this.statusCode)
         }
     }
 
-    cork() {
-        this.stream.cork();
-    }
+    // cork() {
+    //     this.stream.cork();
+    //     super.cork();
+    // }
 
-    uncork() {
-        this.stream.uncork();
-    }
+    // uncork() {
+    //     this.stream.uncork();
+    //     super.uncork();
+    // }
 
 
     end(cb?: (() => void) | undefined): this;
@@ -141,7 +147,7 @@ export class ServerResponse extends Stream implements OutgoingMsg {
         if (!this.headersSent) {
             this.writeHead(this.statusCode, this.statusMessage, this.headers);
         }
-        if ((this.closed || this.ending)) {
+        if ((this._closed || this.ending)) {
             if (isFunction(cb)) {
                 process.nextTick(cb);
             }
@@ -163,7 +169,7 @@ export class ServerResponse extends Stream implements OutgoingMsg {
         if (!this.stream.headersSent)
             this.writeHead(this.statusCode);
 
-        if (this.closed || this.stream.destroyed) {
+        if (this._closed || this.stream.destroyed) {
             this.onStreamClose()
         } else {
             this.stream.end();
@@ -200,47 +206,78 @@ export class ServerResponse extends Stream implements OutgoingMsg {
         return this;
     }
 
-    write(chunk: any, cb?: (error?: Error | null | undefined) => void): boolean;
-    write(chunk: any, encoding?: BufferEncoding, cb?: (error?: Error | null | undefined) => void): boolean;
-    write(chunk: any, encoding?: any, cb?: (error?: Error | null | undefined) => void): boolean {
-        if (isFunction(encoding)) {
-            cb = encoding;
-            encoding = 'utf8';
-        }
+    // write(chunk: any, cb?: (error?: Error | null | undefined) => void): boolean;
+    // write(chunk: any, encoding?: BufferEncoding, cb?: (error?: Error | null | undefined) => void): boolean;
+    // write(chunk: any, encoding?: any, cb?: (error?: Error | null | undefined) => void): boolean {
+    //     if (isFunction(encoding)) {
+    //         cb = encoding;
+    //         encoding = 'utf8';
+    //     }
+    //     let err: Execption | undefined;
+    //     if (this.ending) {
+    //         err = new TransportExecption('write after end');
+    //     } else if (this._closed) {
+    //         err = new TransportExecption('The stream has been destroyed');
+    //     } else if (this.destroyed) {
+    //         return false;
+    //     }
+    //     if (err) {
+    //         if (isFunction(cb)) {
+    //             process.nextTick(cb, err);
+    //         }
+    //         this.destroy(err);
+    //         return false;
+    //     }
+    //     if (!this.headersSent) {
+    //         this.writeHead(this.statusCode, this.statusMessage);
+    //     }
+    //     return this.stream.write(chunk, encoding, cb);
+    // }
+
+    override _write(chunk: any, encoding: BufferEncoding, cb: (error?: Error | null | undefined) => void): void {
+
         let err: Execption | undefined;
         if (this.ending) {
             err = new TransportExecption('write after end');
-        } else if (this.closed) {
+        } else if (this._closed) {
             err = new TransportExecption('The stream has been destroyed');
         } else if (this.destroyed) {
-            return false;
+            return;
         }
         if (err) {
             if (isFunction(cb)) {
                 process.nextTick(cb, err);
             }
             this.destroy(err);
-            return false;
+            return;
         }
         if (!this.headersSent) {
             this.writeHead(this.statusCode, this.statusMessage);
         }
-        return this.stream.write(chunk, encoding, cb);
+
+        this.stream.write(chunk, encoding, cb);
     }
 
     setTimeout(msecs: number, callback?: () => void): this {
-        if (this.closed)
+        if (this._closed)
             return this;
         this.stream.setTimeout(msecs, callback);
         return this;
     }
 
-    destroy(err?: Error) {
-        if (this.destroyed)
-            return;
 
-        this.destroyed = true;
-        this.stream.destroy(err);
+    // destroy(err?: Error | undefined): this {
+    //     if (this.destroyed) return this;
+
+    //     this.destroyed = true;
+    //     this.stream.destroy(err);
+    //     super.destroy(err);
+    //     return this;
+    // }
+
+    override _destroy(error: Error | null, callback: (error?: Error | null | undefined) => void): void {
+        this.stream.destroy(error, callback);
     }
+
 
 }

@@ -4,16 +4,13 @@ import { EMPTY_OBJ, Injectable, InvocationContext, isUndefined, lang, _tyundef }
 import { Observable, Observer, throwError, finalize } from 'rxjs';
 import * as zlib from 'zlib';
 import { PassThrough, pipeline, Writable, Readable, PipelineSource } from 'stream';
-import { promisify } from 'util';
 import { ctype, ev, hdr } from '../consts';
 import { MimeAdapter, MimeTypes } from '../mime';
-import { createFormData, isBuffer, isFormDataLike, toBuffer } from '../utils';
+import { createFormData, isBuffer, isFormDataLike, pmPipeline, toBuffer } from '../utils';
 import { ClientConnection } from './connection';
 import { TransportClientOpts } from './options';
 
 
-
-const pmPipeline = promisify(pipeline);
 /**
  * transport restful endpoint backend.
  */

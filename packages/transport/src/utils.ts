@@ -1,14 +1,36 @@
-import { ArgumentExecption, isFunction, isString, TypeExecption } from '@tsdi/ioc';
+import { ArgumentExecption, isFunction, isString, lang, TypeExecption } from '@tsdi/ioc';
 import { OutgoingMsg, isFormData } from '@tsdi/core';
 import { Buffer } from 'buffer';
-import { Stream, Readable, Duplex } from 'stream';
-import * as Duplexify from 'duplexify';
+import { Stream, Writable, Readable, Duplex, pipeline } from 'stream';
+import { promisify } from 'util';
 import * as FormData from 'form-data';
 import { EventEmitter } from 'events';
-import { hdr } from './consts';
+import { ev, hdr } from './consts';
 
 export function isBuffer(body: any): body is Buffer {
   return Buffer.isBuffer(body)
+}
+
+export const pmPipeline = promisify(pipeline);
+
+export async function pipeStream(src: Stream, dest: Writable): Promise<void> {
+  if (src instanceof Readable) {
+    await pmPipeline(src, dest);
+    src.destroy();
+  } else {
+    const defer = lang.defer();
+    src.once(ev.ERROR, (err) => {
+      defer.reject(err)
+    });
+    src.once(ev.END, () => {
+      defer.resolve()
+    });
+    src.pipe(dest);
+    return await defer.promise
+      .finally(() => {
+        isFunction((src as any).destroy) && (src as any).destroy();
+      })
+  }
 }
 
 export function createFormData(options?: {
@@ -37,7 +59,7 @@ export function isStream(body: any): body is Stream {
 
 
 export function isDuplex(target: any): target is Duplex {
-  return target instanceof Duplex || target instanceof Duplexify;
+  return target instanceof Duplex;
 }
 
 export function isJson(body: any) {

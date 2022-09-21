@@ -1,7 +1,6 @@
 import { mths } from '@tsdi/core';
-import { Injectable, isString, lang } from '@tsdi/ioc';
-import { Readable } from 'stream';
-import { hdr, ev, isBuffer, isStream, RespondAdapter } from '@tsdi/transport';
+import { Injectable, isString } from '@tsdi/ioc';
+import { hdr, isBuffer, isStream, RespondAdapter, pipeStream } from '@tsdi/transport';
 import { HttpContext, HttpServResponse } from './context';
 
 @Injectable({ static: true })
@@ -55,18 +54,7 @@ export class HttpRespondAdapter implements RespondAdapter {
         if (isBuffer(body)) return res.end(body);
         if (isString(body)) return res.end(Buffer.from(body));
         if (isStream(body)) {
-            const defer = lang.defer();
-            body.once(ev.ERROR, (err) => {
-                defer.reject(err)
-            });
-            body.once(ev.END, () => {
-                defer.resolve()
-            });
-            body.pipe(res);
-            return await defer.promise
-                .finally(() => {
-                    body instanceof Readable && body.destroy();
-                })
+            await pipeStream(body, res);
         }
 
         // body: json
