@@ -1,4 +1,4 @@
-import { Abstract, isFunction } from '@tsdi/ioc';
+import { Abstract, isFunction, isNil } from '@tsdi/ioc';
 import { IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
 import { Buffer } from 'buffer';
 import { Readable, Writable, Transform } from 'stream';
@@ -105,9 +105,6 @@ export abstract class TransportStream extends Duplexify implements Closeable {
         this._readableState.readingMore = true;
 
         this.connection.state.pendingStreams.add(this);
-
-
-        this.once(ev.PREEND, () => this.close());
 
     }
 
@@ -315,29 +312,38 @@ export abstract class TransportStream extends Duplexify implements Closeable {
             this.end();
         }
 
-        if (status !== StreamRstStatus.none) {
-            const finishFn = () => {
-                if (this.pending) {
-                    this.push(null);
-                    this.once(ev.READY, () => this.submitRstStream(code))
-                    return;
-                }
-                this.submitRstStream(code)
-            }
+        // if (status !== StreamRstStatus.none) {
+        //     const finishFn = () => {
+        //         if (this.pending) {
+        //             this.push(null);
+        //             this.once(ev.READY, () => this.submitRstStream(code))
+        //             return;
+        //         }
+        //         this.submitRstStream(code)
+        //     }
 
-            if (!this.ending || this.writableFinished || code !== STRESM_NO_ERROR ||
-                status === StreamRstStatus.force) {
-                finishFn();
-            } else {
-                this.once(ev.PREFINISH, finishFn);
-            }
-        }
+        //     if (!this.ending || this.writableFinished || code !== STRESM_NO_ERROR ||
+        //         status === StreamRstStatus.force) {
+        //         finishFn();
+        //     } else {
+        //         this.once(ev.PREFINISH, finishFn);
+        //     }
+        // }
 
     }
 
+    override _finish(cb: (error?: Error | null | undefined) => void): void {
+        this.submitRstStream();
+        super._finish(cb);
+    }
+
     protected submitRstStream(code?: number) {
-        const rscode = code ?? this.connection.state.goawayCode ?? this.connection.state.destroyCode ?? 0;
-        this._generator?.write(rscode);
+        const rscode = code ?? this.connection.state.goawayCode ?? this.connection.state.destroyCode;
+        if (isNil(rscode)) return;
+        if (this.ending || !this._generator || this._generator.writableEnded) return;
+        const buff = Buffer.alloc(1);
+        buff.writeUInt8(rscode);
+        this._generator.write(buff);
     }
 
     protected streamOnResume(size?: number) {

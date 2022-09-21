@@ -26,6 +26,8 @@ export interface ConnectionOpts extends DuplexifyOptions, Record<string, any> {
      * packet buffer encoding.
      */
     encoding?: BufferEncoding;
+    destroyCode?: number | null;
+    goawayCode?: number | null
 }
 
 /**
@@ -70,7 +72,7 @@ export abstract class Connection extends Duplexify implements Closeable {
         this.state = {
             destroyCode: opts.noError ?? NO_ERROR,
             flags: ConnectionStateFlags.ready,
-            goawayCode: null,
+            goawayCode: opts.goawayCode ?? null,
             goawayLastStreamID: null,
             streams: new Map(),
             pendingStreams: new Set(),

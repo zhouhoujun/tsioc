@@ -180,7 +180,7 @@ export class Duplexify extends Duplex {
 
     }
 
-    _ending(chunk?: any, encoding?: BufferEncoding, cb?: (() => void) | undefined): void {
+    protected _ending(chunk?: any, encoding?: BufferEncoding, cb?: (() => void) | undefined): void {
         this._ended = true;
         if (chunk) this.write(chunk);
         if (!this.writableEnded && this._writable?.destroyed !== true) this.write(SIGNAL_FLUSH);
