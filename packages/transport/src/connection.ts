@@ -61,7 +61,7 @@ export abstract class Connection extends Duplexify implements Closeable {
     private _timeout?: any;
     protected _parser: PacketParser;
     protected _generator: PacketGenerator;
-    protected _regedEvents: Map<string, any>;
+    protected _regevs: Map<string, any>;
     readonly state: ConnectionState;
     protected opts: ConnectionOpts;
     constructor(readonly stream: Duplex, readonly transport: TransportProtocol, opts: ConnectionOpts = EMPTY_OBJ) {
@@ -88,17 +88,18 @@ export abstract class Connection extends Duplexify implements Closeable {
             this.stream.pipe(this._parser);
         });
 
-        this._regedEvents = new Map([ev.CLOSE, ev.CONNECT, ev.ERROR].map(evt => [evt, this.emit.bind(this, evt)]));
-        this._regedEvents.forEach((evt, n) => {
+        this._regevs = new Map([ev.CLOSE, ev.CONNECT, ev.ERROR, ev.HEADERS].map(evt => [evt, this.emit.bind(this, evt)]));
+        this._regevs.forEach((evt, n) => {
+            if (n === ev.HEADERS) {
+                this._parser.on(n, evt);
+                return;
+            }
             this.stream.on(n, evt);
             if (n === ev.ERROR) {
                 this._generator.on(n, evt);
                 this._parser.on(n, evt);
             }
         });
-
-        this._parser.on(ev.HEADERS, this.emit.bind(this, ev.HEADERS));
-        this.once(ev.CLOSE, () => this.close());
     }
 
     /**
@@ -218,13 +219,13 @@ export abstract class Connection extends Duplexify implements Closeable {
         this.setTimeout(0);
         this.removeAllListeners(ev.TIMEOUT);
 
-        if (this._regedEvents) {
-            this._regedEvents.forEach((e, n) => {
+        if (this._regevs) {
+            this._regevs.forEach((e, n) => {
                 this.stream.off(n, e);
                 this._parser.off(n, e);
                 this._generator.off(n, e);
             });
-            this._regedEvents.clear();
+            this._regevs.clear();
         }
         // Destroy any pending and open streams
         if (state.pendingStreams.size > 0 || state.streams.size > 0) {

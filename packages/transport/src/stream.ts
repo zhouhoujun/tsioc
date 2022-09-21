@@ -91,7 +91,7 @@ export abstract class TransportStream extends Duplexify implements Closeable {
     protected _sentTrailers?: any;
     protected _infoHeaders?: any;
     protected isClient?: boolean;
-    private _regedEvents?: Map<string, any>;
+    private _regevs?: Map<string, any>;
     protected opts: SteamOptions;
     private _parser?: Transform;
     private _generator?: Writable;
@@ -105,6 +105,9 @@ export abstract class TransportStream extends Duplexify implements Closeable {
         this._readableState.readingMore = true;
 
         this.connection.state.pendingStreams.add(this);
+
+
+        this.once(ev.PREEND, () => this.close());
 
     }
 
@@ -175,14 +178,16 @@ export abstract class TransportStream extends Duplexify implements Closeable {
             connection.pipe(parser);
         });
 
-        this._regedEvents = new Map([ev.ABORTED, ev.TIMEOUT, ev.ERROR, ev.CLOSE, ev.PACKET].map(evt => [evt, this.emit.bind(this, evt)]));
-        this._regedEvents.forEach((evt, n) => {
+        this._regevs = new Map([ev.ABORTED, ev.TIMEOUT, ev.ERROR, ev.CLOSE, ev.PACKET].map(evt => [evt, this.emit.bind(this, evt)]));
+        this._regevs.forEach((evt, n) => {
+            if (n === ev.PACKET) {
+                parser.on(n, evt);
+                return;
+            }
             connection.on(n, evt);
             if (n === ev.ERROR) {
                 parser.on(n, evt);
                 generator.on(n, evt);
-            } else if (n === ev.PACKET) {
-                parser.on(n, evt);
             }
         });
 
@@ -193,7 +198,7 @@ export abstract class TransportStream extends Duplexify implements Closeable {
                 this.emit(this.isClient ? ev.RESPONSE : ev.REQUEST, headers, id);
             }
         };
-        this._regedEvents.set(ev.HEADERS, onHeaders);
+        this._regevs.set(ev.HEADERS, onHeaders);
         connection.on(ev.HEADERS, onHeaders);
 
         this.emit(ev.READY)
@@ -258,13 +263,13 @@ export abstract class TransportStream extends Duplexify implements Closeable {
 
         this.id && cstate.streams.delete(this.id);
         cstate.pendingStreams.delete(this);
-        if (this._regedEvents) {
-            this._regedEvents.forEach((e, n) => {
+        if (this._regevs) {
+            this._regevs.forEach((e, n) => {
                 this.connection.off(n, e);
                 this._parser?.off(n, e);
                 this._generator?.off(n, e);
             });
-            this._regedEvents.clear();
+            this._regevs.clear();
         }
 
         this.connection.mayBeDestroy();
@@ -324,14 +329,15 @@ export abstract class TransportStream extends Duplexify implements Closeable {
                 status === StreamRstStatus.force) {
                 finishFn();
             } else {
-                this.once(ev.FINISH, finishFn);
+                this.once(ev.PREFINISH, finishFn);
             }
         }
 
     }
 
-    protected submitRstStream(code: number) {
-        this.write(`${code}`);
+    protected submitRstStream(code?: number) {
+        const rscode = code ?? this.connection.state.goawayCode ?? this.connection.state.destroyCode ?? 0;
+        this._generator?.write(rscode);
     }
 
     protected streamOnResume(size?: number) {

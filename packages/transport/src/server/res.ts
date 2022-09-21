@@ -1,6 +1,6 @@
 import { OutgoingHeader, OutgoingHeaders, OutgoingMsg, ResHeaders, TransportExecption } from '@tsdi/core';
 import { ArgumentExecption, Execption, isArray, isFunction, isNil, isString } from '@tsdi/ioc';
-import { Stream, Writable } from 'stream';
+import { Writable } from 'stream';
 import { ServerStream } from './stream';
 import { ev, hdr } from '../consts';
 
@@ -147,7 +147,7 @@ export class ServerResponse extends Writable implements OutgoingMsg {
         if (!this.headersSent) {
             this.writeHead(this.statusCode, this.statusMessage, this.headers);
         }
-        if ((this._closed || this.ending)) {
+        if ((this.isClosed || this.ending)) {
             if (isFunction(cb)) {
                 process.nextTick(cb);
             }
@@ -169,7 +169,7 @@ export class ServerResponse extends Writable implements OutgoingMsg {
         if (!this.stream.headersSent)
             this.writeHead(this.statusCode);
 
-        if (this._closed || this.stream.destroyed) {
+        if (this.isClosed || this.stream.destroyed) {
             this.onStreamClose()
         } else {
             this.stream.end();

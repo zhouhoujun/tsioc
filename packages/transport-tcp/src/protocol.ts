@@ -105,21 +105,31 @@ export class DelimiterParser extends PacketParser {
 
     override _transform(chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback): void {
 
-        const idx = chunk.indexOf(this.delimiter);
-        if (idx >= 0) {
-            if (idx > 0) {
-                const lastbuff = chunk.slice(0, idx);
-                this.buffers.push(lastbuff);
-                this.bytes += lastbuff.length;
+        const packets: Buffer[] = [];
+        let rem: Buffer | undefined;
+        this.redbuff(chunk, (r, pkg) => {
+            if (r) {
+                rem = r;
+            }
+            if (pkg) {
+                packets.push(pkg);
+            }
+        });
+
+        if (packets.length) {
+            if (this.buffers.length) {
+                let first = packets.shift()!;
+                this.buffers.push(first);
+                this.bytes += first.length;
+                first = Buffer.concat(this.buffers, this.bytes);
+                this.buffers = [];
+                this.bytes = 0;
+                packets.unshift(first);
             }
 
-            if (this.buffers.length) {
-                const buff = Buffer.concat(this.buffers, this.bytes);
-
+            packets.forEach(buff => {
                 const type = buff.readUInt8(0);
                 const id = buff.readUInt16BE(1);
-
-                const [bufs, size, rmains] = this.packets(chunk.slice(idx + this.delimiter.length));
 
                 let pkg: any;
                 if (type == 1) {
@@ -131,55 +141,36 @@ export class DelimiterParser extends PacketParser {
                     if (headers) {
                         process.nextTick(() => { this.emit(ev.HEADERS, headers, id) });
                     }
+                    callback(null, pkg);
                 } else {
-                    pkg = size > 0 ? Buffer.concat([buff.slice(1), ...bufs], buff.length - 1 + size) : buff.slice(1);
+                    callback(null, buff.slice(1));
                 }
-                this.buffers = [];
-                this.bytes = 0;
-                callback(null, pkg);
+            })
 
-                if (rmains && rmains.length) {
-                    this.buffers.push(rmains);
-                    this.bytes += rmains.length;
-                }
-            }
-
-        } else {
-            this.buffers.push(chunk);
-            this.bytes += chunk.length;
         }
-        return;
+
+        if (rem) {
+            this.buffers.push(rem);
+            this.bytes += rem.length;
+        }
 
     }
 
-    packets(chunk: Buffer): [Buffer[], number, Buffer] {
-        const buffers: Buffer[] = [];
-        let bytes = 0;
-        const detmLen = this.delimiter.length;
-        if (this.buffers.length)
-            while (chunk.length && chunk.indexOf(this.delimiter) > 0) {
-                let idx = chunk.indexOf(this.delimiter);
-                if (chunk.indexOf(this.delimiter, idx + detmLen) == 0) {
-                    idx = idx + detmLen;
-                }
-                let detm = chunk.slice(0, idx);
-                chunk = chunk.slice(idx + detmLen);
-                // if(rem.indexOf(this.delimiter) == 0) {
-                //     chunk = rem.slice(detmLen);
-                //     detm = chunk.slice(0, idx + detmLen);
-                // }
-                const type = detm.readUInt8(0);
-                if (buffers.length || this.buffers.length) {
-                    if (type == 2) {
-                        detm = detm.slice(3);
-                    }
-                }
-                if (type !== 1) {
-                    buffers.push(detm);
-                    bytes += detm.length;
-                }
-            }
-        return [buffers, bytes, chunk];
+    redbuff(chunk: Buffer, cb: (rem: Buffer | null, packed?: Buffer) => void): void {
+        const idx = chunk.indexOf(this.delimiter);
+        if (idx < 0) {
+            return cb(chunk);
+        }
+        if (idx == 0) {
+            return this.redbuff(chunk.slice(this.delimiter.length), cb);
+        }
+        cb(null, chunk.slice(0, idx));
+        const rem = (idx + this.delimiter.length) < chunk.length ? chunk.slice(idx + this.delimiter.length) : null;
+        if (rem && rem.indexOf(this.delimiter) > 0) {
+            this.redbuff(rem, cb)
+        } else {
+            cb(rem);
+        }
     }
 
     setOptions(opts: ConnectionOpts): void {
@@ -188,7 +179,6 @@ export class DelimiterParser extends PacketParser {
 }
 
 const maxSize = 10 * 1024 * 1024;
-const empty = Buffer.allocUnsafe(0);
 
 const eof = Buffer.from([0]);
 const headFlag = Buffer.from([1]);
@@ -209,7 +199,7 @@ export class DelimiterGenerator extends PacketGenerator {
 
         if (isBuffer(chunk) || isString(chunk)) {
             const buff = isString(chunk) ? Buffer.from(chunk, encoding) : chunk;
-            this.output.write(buff, encoding, callback);
+            this.output.write(Buffer.concat([playloadFlag, buff, this.delimiter], playloadFlag.length + buff.length + this.delimiter.length), encoding, callback);
             return;
         }
 

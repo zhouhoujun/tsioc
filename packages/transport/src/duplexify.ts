@@ -227,7 +227,7 @@ export class Duplexify extends Duplex {
             if (this._readable && this._readable.destroy) this._readable.destroy();
             if (this._writable && this._writable.destroy) this._writable.destroy();
         }
-        this.emit(ev.CLOSE);
+        super._destroy(err, cb);
     }
 
     protected onEnding(err: Error | null | undefined, end?: boolean) {

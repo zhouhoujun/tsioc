@@ -68,6 +68,7 @@ export class TransportStreamParser extends Transform {
             if (chunk.id === this.id) this.emit(ev.PACKET, chunk);
         }
     }
+
 }
 
 export class TransportStreamGenerator extends Writable {
