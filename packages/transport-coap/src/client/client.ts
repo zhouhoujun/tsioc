@@ -33,8 +33,6 @@ const defaults = {
     interceptorsToken: COAP_INTERCEPTORS,
     execptionsToken: COAP_EXECPTIONFILTERS,
     transport: CoapProtocol,
-    interceptors: [
-    ],
     address: {
         port: 3000,
         hostname: 'localhost'

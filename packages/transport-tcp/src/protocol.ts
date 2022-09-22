@@ -126,8 +126,8 @@ export class DelimiterParser extends PacketParser {
                         headers
                     } as Packet;
                     if (headers) {
-                        this.connection.emit(ev.HEADERS, headers, id)
-                        // process.nextTick(() => { this.connection.emit(ev.HEADERS, headers, id) });
+                        // this.connection.emit(ev.HEADERS, headers, id)
+                        process.nextTick(() => { this.connection.emit(ev.HEADERS, headers, id) });
                     }
                     // if (idx) {
                     //     process.nextTick(() => this.write(pkg))
@@ -291,7 +291,7 @@ export class TcpStreamParser extends StreamParser {
                     this.bytes += chunk.length;
 
                     if (this.bytes >= this.contentLen) {
-                        // process.nextTick(() => this.emit('end'));
+                        process.nextTick(() => this.emit('end'));
                     }
                 }
             }
@@ -303,7 +303,7 @@ export class TcpStreamParser extends StreamParser {
                     this.bytes += buff.length;
 
                     if (this.bytes >= this.contentLen) {
-                        // process.nextTick(() => this.emit('end'));
+                        process.nextTick(() => this.emit('end'));
                     }
                 }
             }
