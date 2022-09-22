@@ -1,4 +1,4 @@
-import { Abstract, isFunction, isNil } from '@tsdi/ioc';
+import { Abstract, isFunction } from '@tsdi/ioc';
 import { IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
 import { Buffer } from 'buffer';
 import { Readable, Writable, Transform } from 'stream';
@@ -35,6 +35,14 @@ export interface SteamOptions extends DuplexifyOptions, Record<string, any> {
      * auto destroy or not.
      */
     autoDestroy?: boolean;
+    /**
+     * rst stream
+     */
+    rstStream?: (code: number) => void;
+    /**
+     * is client or not.
+     */
+    client?: boolean;
 }
 
 /**
@@ -75,6 +83,8 @@ export enum StreamRstStatus {
 
 export const STRESM_NO_ERROR = 0;
 
+const evts = [ev.ABORTED, ev.TIMEOUT, ev.ERROR, ev.CLOSE];
+
 /**
  * transport stream
  */
@@ -90,7 +100,6 @@ export abstract class TransportStream extends Duplexify implements Closeable {
     protected _sentHeaders?: OutgoingHeaders;
     protected _sentTrailers?: any;
     protected _infoHeaders?: any;
-    protected isClient?: boolean;
     private _regevs?: Map<string, any>;
     protected opts: SteamOptions;
     private _parser?: Transform;
@@ -167,7 +176,7 @@ export abstract class TransportStream extends Duplexify implements Closeable {
 
         this.uncork();
         const tsp = connection.transport;
-        const parser = this._parser = tsp.streamParser(id, this.isClient, this.opts);
+        const parser = this._parser = tsp.streamParser(this, this.opts);
         const generator = this._generator = tsp.streamGenerator(connection, id, this.opts);
         this.setReadable(parser);
         this.setWritable(generator);
@@ -175,28 +184,14 @@ export abstract class TransportStream extends Duplexify implements Closeable {
             connection.pipe(parser);
         });
 
-        this._regevs = new Map([ev.ABORTED, ev.TIMEOUT, ev.ERROR, ev.CLOSE, ev.PACKET].map(evt => [evt, this.emit.bind(this, evt)]));
+        this._regevs = new Map(evts.map(evt => [evt, this.emit.bind(this, evt)]));
         this._regevs.forEach((evt, n) => {
-            if (n === ev.PACKET) {
-                parser.on(n, evt);
-                return;
-            }
-            connection.on(n, evt);
+            this.connection.on(n, evt);
             if (n === ev.ERROR) {
-                parser.on(n, evt);
                 generator.on(n, evt);
+                parser.on(n, evt);
             }
         });
-
-        const pairId = this.isClient ? id + 1 : id - 1;
-        const onHeaders = (headers: any, id: number) => {
-            if (id === pairId) {
-                this.emit(ev.HEADERS, headers, id);
-                this.emit(this.isClient ? ev.RESPONSE : ev.REQUEST, headers, id);
-            }
-        };
-        this._regevs.set(ev.HEADERS, onHeaders);
-        connection.on(ev.HEADERS, onHeaders);
 
         this.emit(ev.READY)
     }
@@ -297,13 +292,13 @@ export abstract class TransportStream extends Duplexify implements Closeable {
         return this;
     }
 
-    protected closeStream(code = 0, status: StreamRstStatus = StreamRstStatus.submit) {
+    protected closeStream(code = STRESM_NO_ERROR, status: StreamRstStatus = StreamRstStatus.submit) {
         this.stats |= StreamStateFlags.closed;
         this._rstCode = code!;
         this.setTimeout(0);
         this.removeAllListeners(ev.TIMEOUT);
 
-        if (this.ending) {
+        if (!this.ending) {
             if (this.aborted) {
                 this.stats |= StreamStateFlags.aborted;
                 this.emit(ev.ABORTED);
@@ -312,38 +307,28 @@ export abstract class TransportStream extends Duplexify implements Closeable {
             this.end();
         }
 
-        // if (status !== StreamRstStatus.none) {
-        //     const finishFn = () => {
-        //         if (this.pending) {
-        //             this.push(null);
-        //             this.once(ev.READY, () => this.submitRstStream(code))
-        //             return;
-        //         }
-        //         this.submitRstStream(code)
-        //     }
+        if (status !== StreamRstStatus.none) {
+            const finishFn = () => {
+                if (this.pending) {
+                    this.push(null);
+                    this.once(ev.READY, () => this.submitRstStream(code))
+                    return;
+                }
+                this.submitRstStream(code)
+            }
 
-        //     if (!this.ending || this.writableFinished || code !== STRESM_NO_ERROR ||
-        //         status === StreamRstStatus.force) {
-        //         finishFn();
-        //     } else {
-        //         this.once(ev.PREFINISH, finishFn);
-        //     }
-        // }
+            if (!this.ending || this.writableFinished || code !== STRESM_NO_ERROR ||
+                status === StreamRstStatus.force) {
+                finishFn();
+            } else {
+                this.once(ev.FINISH, finishFn);
+            }
+        }
 
     }
 
-    override _finish(cb: (error?: Error | null | undefined) => void): void {
-        this.submitRstStream();
-        super._finish(cb);
-    }
-
-    protected submitRstStream(code?: number) {
-        const rscode = code ?? this.connection.state.goawayCode ?? this.connection.state.destroyCode;
-        if (isNil(rscode)) return;
-        if (this.ending || !this._generator || this._generator.writableEnded) return;
-        const buff = Buffer.alloc(1);
-        buff.writeUInt8(rscode);
-        this._generator.write(buff);
+    protected submitRstStream(code: number) {
+        this.opts.rstStream?.(code);
     }
 
     protected streamOnResume(size?: number) {

@@ -1,8 +1,8 @@
-import { IncomingMsg, ListenOpts, IncomingHeaders, OutgoingHeaders, Packet } from '@tsdi/core';
-import { EMPTY_OBJ, Inject, Injectable, isPlainObject, isString } from '@tsdi/ioc';
-import { ConnectionOpts, isBuffer, PacketGenerator, PacketParser, TransportProtocol } from '@tsdi/transport';
-import { Transform, Duplex, Writable, TransformCallback } from 'stream';
-import { parse, generate } from 'coap-packet';
+import { IncomingMsg, ListenOpts } from '@tsdi/core';
+import { Injectable } from '@tsdi/ioc';
+import { ConnectionOpts, isBuffer, PacketGenerator, PacketParser, SteamOptions, StreamGenerator, StreamParser, TransportProtocol } from '@tsdi/transport';
+import { Duplex, Writable, TransformCallback } from 'stream';
+import { parse, generate, ParsedPacket } from 'coap-packet';
 import { CoapStatus } from './status';
 
 @Injectable()
@@ -50,16 +50,20 @@ export class CoapProtocol extends TransportProtocol {
         return true;
     }
 
-    transform(opts: ConnectionOpts): PacketParser {
+    parser(opts: ConnectionOpts): PacketParser {
         return new CoapPacketParser(opts);
     }
-    generate(stream: Duplex, opts: ConnectionOpts): PacketGenerator {
+    generator(stream: Duplex, opts: ConnectionOpts): PacketGenerator {
         return new CoapPacketGenerator(stream, opts);
     }
 
-    parsePacket(packet: any): Packet<IncomingHeaders> {
+    streamParser(stream: TransformStream, opts?: SteamOptions): StreamParser {
         throw new Error('Method not implemented.');
     }
+    streamGenerator(output: Writable, packetId: number, opts?: SteamOptions): StreamGenerator {
+        throw new Error('Method not implemented.');
+    }
+
 }
 
 
@@ -139,6 +143,25 @@ export class CoapPacketGenerator extends PacketGenerator {
     setOptions(opts: ConnectionOpts): void {
         this.delimiter = Buffer.from(opts.delimiter!);
         this.maxSize = opts.maxSize || maxSize;
+    }
+
+}
+
+
+export class CoapStreamParser extends StreamParser {
+
+    constructor(private id: number, opts?: SteamOptions) {
+        super(opts)
+    }
+
+    setOptions(opts: SteamOptions): void {
+
+    }
+
+    override _transform(chunk: ParsedPacket, encoding: BufferEncoding, callback: TransformCallback): void {
+        if (chunk.messageId == this.id) {
+            chunk.code
+        }
     }
 
 }

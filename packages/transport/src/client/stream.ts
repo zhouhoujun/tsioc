@@ -12,8 +12,7 @@ import { ClientConnection } from './connection';
 export class ClientStream extends TransportStream {
 
     constructor(connection: ClientConnection, id: number | undefined, private headers: IncomingHeaders, opts: SteamOptions) {
-        super(connection, opts);
-        this.isClient = true;
+        super(connection, { ...opts, client: true });
         if (id !== undefined) {
             this.init(id);
         }

@@ -1,6 +1,6 @@
 import { TransportExecption } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, isFunction } from '@tsdi/ioc';
-import { Stream, Duplex, Transform } from 'stream';
+import { Duplex } from 'stream';
 import { ev } from './consts';
 import { Duplexify, DuplexifyOptions } from './duplexify';
 import { InvalidSessionExecption } from './execptions';
@@ -81,7 +81,7 @@ export abstract class Connection extends Duplexify implements Closeable {
             writeQueueSize: 0
         };
 
-        this._parser = transport.parser(opts);
+        this._parser = transport.parser(this, opts);
         this._generator = transport.generator(stream, opts);
         this.setReadable(this._parser);
         this.setWritable(this._generator);
@@ -90,12 +90,8 @@ export abstract class Connection extends Duplexify implements Closeable {
             this.stream.pipe(this._parser);
         });
 
-        this._regevs = new Map([ev.CLOSE, ev.CONNECT, ev.ERROR, ev.HEADERS].map(evt => [evt, this.emit.bind(this, evt)]));
+        this._regevs = new Map([ev.CLOSE, ev.CONNECT, ev.ERROR].map(evt => [evt, this.emit.bind(this, evt)]));
         this._regevs.forEach((evt, n) => {
-            if (n === ev.HEADERS) {
-                this._parser.on(n, evt);
-                return;
-            }
             this.stream.on(n, evt);
             if (n === ev.ERROR) {
                 this._generator.on(n, evt);

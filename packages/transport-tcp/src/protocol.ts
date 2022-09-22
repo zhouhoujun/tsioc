@@ -1,6 +1,6 @@
-import { IncomingHeaders, IncomingMsg, ListenOpts, OutgoingHeaders, Packet } from '@tsdi/core';
+import { IncomingMsg, ListenOpts, Packet } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
-import { ConnectionOpts, hdr, isBuffer, TransportProtocol, ServerRequest, PacketParser, PacketGenerator, ev } from '@tsdi/transport';
+import { ConnectionOpts, hdr, isBuffer, TransportProtocol, ServerRequest, PacketParser, PacketGenerator, ev, SteamOptions, StreamParser, StreamGenerator, TransportStream, Connection } from '@tsdi/transport';
 import { Buffer } from 'buffer';
 import { Duplex, TransformCallback, Writable } from 'stream';
 import * as tsl from 'tls';
@@ -57,37 +57,20 @@ export class TcpProtocol extends TransportProtocol {
         return true;
     }
 
-    parser(opts: ConnectionOpts): PacketParser {
-        return new DelimiterParser(opts);
+    parser(connection: Connection, opts: ConnectionOpts): PacketParser {
+        return new DelimiterParser(connection, opts);
     }
     generator(stream: Duplex, opts: ConnectionOpts): PacketGenerator {
         return new DelimiterGenerator(stream, opts);
     }
-    isHeader(chunk: string | Buffer): boolean {
-        if (isString(chunk)) {
-            return (parseInt(chunk[0]) & 1) === 0
-        }
-        return (chunk[0] & 1) == 0;
+
+    streamParser(stream: TransportStream, opts: SteamOptions): StreamParser {
+        return new TcpStreamParser(stream, opts);
     }
-    parseHeader(chunk: string | Buffer): IncomingMsg {
-        const hstr = isString(chunk) ? chunk.slice(1) : chunk.slice(1).toString();
-        return JSON.parse(hstr);
+    streamGenerator(output: Writable, packetId: number, opts: SteamOptions): StreamGenerator {
+        return new TcptreamGenerator(output, packetId, opts);
     }
 
-    parsePacket(packet: any): Packet {
-        return packet;
-    }
-
-    hasPlayload(headers: IncomingHeaders | OutgoingHeaders): boolean {
-        const len = headers[hdr.CONTENT_LENGTH];
-        return len ? (~~len) > 0 : false;
-    }
-    isPlayload(chunk: any, streamId: Buffer): boolean {
-        return chunk.indexOf(streamId) === 0;
-    }
-    parsePlayload(chunk: any, streamId: Buffer): any {
-        return chunk.slice(streamId.length);
-    }
 
 }
 
@@ -96,7 +79,7 @@ export class DelimiterParser extends PacketParser {
 
     buffers: Buffer[];
     bytes: number;
-    constructor(opts: ConnectionOpts) {
+    constructor(private connection: Connection, opts: ConnectionOpts) {
         super(opts);
         this.buffers = [];
         this.bytes = 0;
@@ -104,6 +87,10 @@ export class DelimiterParser extends PacketParser {
     }
 
     override _transform(chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback): void {
+
+        if (!isBuffer(chunk)) {
+            callback(null, chunk);
+        }
 
         const packets: Buffer[] = [];
         let rem: Buffer | undefined;
@@ -127,7 +114,7 @@ export class DelimiterParser extends PacketParser {
                 packets.unshift(first);
             }
 
-            packets.forEach(buff => {
+            packets.forEach((buff, idx) => {
                 const type = buff.readUInt8(0);
                 const id = buff.readUInt16BE(1);
 
@@ -139,11 +126,20 @@ export class DelimiterParser extends PacketParser {
                         headers
                     } as Packet;
                     if (headers) {
-                        process.nextTick(() => { this.emit(ev.HEADERS, headers, id) });
+                        this.connection.emit(ev.HEADERS, headers, id)
+                        // process.nextTick(() => { this.connection.emit(ev.HEADERS, headers, id) });
                     }
-                    callback(null, pkg);
+                    // if (idx) {
+                    //     process.nextTick(() => this.write(pkg))
+                    // } else {
+                        callback(null, pkg);
+                    // }
                 } else {
-                    callback(null, buff.slice(1));
+                    // if (idx) {
+                    //     process.nextTick(() => this.write(buff), this.write(this.delimiter));
+                    // } else {
+                        callback(null, buff.slice(1));
+                    // }
                 }
             })
 
@@ -251,8 +247,11 @@ export class DelimiterGenerator extends PacketGenerator {
                 bytes += eof.length;
             }
         }
-
-        this.output.write(Buffer.concat(list, bytes), encoding, callback)
+        if (list.length) {
+            this.output.write(Buffer.concat(list, bytes), encoding, callback)
+        } else {
+            this.output.write(chunk, callback);
+        }
     }
 
     setOptions(opts: ConnectionOpts): void {
@@ -262,3 +261,89 @@ export class DelimiterGenerator extends PacketGenerator {
 }
 
 const tcptl = /^(tcp|ipc):\/\//i;
+
+
+export class TcpStreamParser extends StreamParser {
+    setOptions(opts: SteamOptions): void {
+        throw new Error('Method not implemented.');
+    }
+
+    private id: number;
+    private streamId: Buffer;
+    private opts: SteamOptions;
+    private contentLen = 0;
+    private bytes = 0;
+    constructor(private stream: TransportStream, opts: SteamOptions) {
+        super(opts = { goawayCode: 0, ...opts, objectMode: true });
+        this.opts = opts;
+        let id = stream.id!;
+        id = this.id = opts.client ? id + 1 : id - 1;
+        this.streamId = Buffer.alloc(2);
+        this.streamId.writeInt16BE(id);
+    }
+
+    override _transform(chunk: string | Buffer | Packet, encoding: BufferEncoding, callback: TransformCallback): void {
+        if (isString(chunk)) {
+            const id = this.id.toString();
+            if (chunk.startsWith(id)) {
+                callback(null, chunk.slice(id.length));
+                if (this.contentLen) {
+                    this.bytes += chunk.length;
+
+                    if (this.bytes >= this.contentLen) {
+                        // process.nextTick(() => this.emit('end'));
+                    }
+                }
+            }
+        } else if (isBuffer(chunk)) {
+            if (chunk.indexOf(this.streamId) === 0) {
+                const buff = chunk.slice(this.streamId.length);
+                callback(null, buff);
+                if (this.contentLen) {
+                    this.bytes += buff.length;
+
+                    if (this.bytes >= this.contentLen) {
+                        // process.nextTick(() => this.emit('end'));
+                    }
+                }
+            }
+        } else if (chunk) {
+            if (chunk.id === this.id) {
+                if (chunk.headers) {
+                    this.stream.emit(this.opts.client ? ev.RESPONSE : ev.HEADERS, chunk.headers, chunk.id);
+                    this.contentLen = ~~(chunk.headers[hdr.CONTENT_LENGTH] ?? '0');
+                    this.bytes = 0;
+                    // if (this.opts.client && this.contentLen <= 0) {
+                    //     this.emit('end');
+                    // }
+                }
+            }
+        }
+    }
+
+}
+
+export class TcptreamGenerator extends StreamGenerator {
+    setOptions(opts: SteamOptions): void {
+        throw new Error('Method not implemented.');
+    }
+    private streamId: Buffer;
+    constructor(private output: Writable, private id: number, opts?: SteamOptions) {
+        super({ ...opts, objectMode: true });
+        this.streamId = Buffer.alloc(2);
+        this.streamId.writeInt16BE(id);
+    }
+
+    override _write(chunk: string | Buffer | Packet, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
+        if (isString(chunk)) {
+            const buffer = Buffer.from(chunk, encoding);
+            chunk = Buffer.concat([this.streamId, buffer], this.streamId.length + buffer.length);
+        } else if (isBuffer(chunk)) {
+            chunk = Buffer.concat([this.streamId, chunk], this.streamId.length + chunk.length);
+        } else if (chunk) {
+            chunk.id = this.id;
+        }
+
+        this.output.write(chunk, encoding, callback);
+    }
+}
