@@ -1,8 +1,6 @@
-import { isFunction, isString } from '@tsdi/ioc';
-import { Duplex, Readable, Writable, DuplexOptions, finished, pipeline } from 'stream';
+import { isFunction } from '@tsdi/ioc';
+import { Duplex, Readable, Writable, DuplexOptions, finished } from 'stream';
 import { ev } from './consts';
-import { isBuffer } from './utils';
-import { ReadableState, WritableState } from 'readable-stream';
 
 export interface DuplexifyOptions extends DuplexOptions {
     forwardDestroy?: boolean;
@@ -269,8 +267,62 @@ function getStateLength(state: ReadableState) {
         if (state.buffer.head) {
             return state.buffer.head.data.length
         }
-        return (state as any).buffer[0].length
+        return state.buffer[0].length
     }
 
     return state.length
+}
+
+
+export interface WritableState {
+    buffer: any;
+    objectMode: boolean;
+    highWaterMark: number;
+    finalCalled: boolean;
+    needDrain: boolean;
+    ending: boolean;
+    ended: boolean;
+    finished: boolean;
+    destroyed: boolean;
+    decodeStrings: boolean;
+    defaultEncoding: BufferEncoding;
+    length: number;
+    writing: boolean;
+    corked: number;
+    sync: boolean;
+    bufferProcessing: boolean;
+    writelen: number;
+    pendingcb: number;
+    prefinished: boolean;
+    errorEmitted: boolean;
+    bufferedRequestCount: number;
+    writecb: ((err?: Error | null) => void) | null;
+    onwrite: (er?: Error | null) => any;
+    bufferedRequest: any | null;
+    lastBufferedRequest: any | null;
+    getBuffer(): any[];
+}
+
+export interface ReadableState {
+    objectMode: boolean;
+    highWaterMark: number;
+    buffer: any;
+    length: number;
+    pipes: any;
+    pipesCount: number;
+    flowing: any;
+    ended: boolean;
+    endEmitted: boolean;
+    reading: boolean;
+    sync: boolean;
+    needReadable: boolean;
+    emittedReadable: boolean;
+    readableListening: boolean;
+    resumeScheduled: boolean;
+    destroyed: boolean;
+    awaitDrain: number;
+    defaultEncoding: BufferEncoding;
+    readingMore: boolean;
+    decoder: any;
+    encoding: BufferEncoding | null;
 }
