@@ -1,7 +1,7 @@
 /* eslint-disable no-case-declarations */
 import {
     EndpointBackend, IncomingHeaders, IncomingStatusHeaders, isArrayBuffer, isBlob, isFormData,
-    mths, Redirector, RequestContext, ResHeaders, ResponseJsonParseError,  RestfulStatus,
+    mths, Redirector, RequestContext, ResHeaders, ResponseJsonParseError,  RestfulStrategy,
     TransportErrorResponse, TransportEvent, TransportExecption, TransportHeaderResponse, TransportResponse,
     UnsupportedMediaTypeExecption, TransportRequest
 } from '@tsdi/core';
@@ -75,7 +75,7 @@ export class TransportBackend implements EndpointBackend<TransportRequest, Trans
                     ok = !err;
                 });
 
-                if (status && statdpr instanceof RestfulStatus && statdpr.isRedirect(status)) {
+                if (status && statdpr instanceof RestfulStrategy && statdpr.isRedirect(status)) {
                     // HTTP fetch step 5.2
                     ctx.get(Redirector).redirect<TransportEvent<any>>(ctx, req, status, headers)
                         .pipe(

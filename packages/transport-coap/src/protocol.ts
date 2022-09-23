@@ -1,12 +1,12 @@
 import { IncomingMsg, ListenOpts } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
-import { Connection, ConnectionOpts, isBuffer, PacketGenerator, PacketParser, SteamOptions, StreamGenerator, StreamParser, TransportProtocol, TransportStream } from '@tsdi/transport';
+import { Connection, ConnectionOpts, isBuffer, PacketGenerator, PacketParser, SteamOptions, StreamGenerator, StreamParser, StreamTransportStrategy, TransportStream } from '@tsdi/transport';
 import { Duplex, Writable, TransformCallback } from 'stream';
 import { parse, generate, ParsedPacket } from 'coap-packet';
 import { CoapStatus } from './status';
 
 @Injectable()
-export class CoapProtocol extends TransportProtocol {
+export class CoapProtocol extends StreamTransportStrategy {
     private _protocol = 'coap';
     constructor(readonly status: CoapStatus) {
         super();

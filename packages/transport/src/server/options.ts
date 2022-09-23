@@ -5,7 +5,7 @@ import { ContentOptions, SessionOptions } from '../middlewares';
 import { MimeSource } from '../mime';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';
-import { TransportProtocol } from '../protocol';
+import { StreamTransportStrategy } from '../protocol';
 import { EventStrategy } from './connection';
 
 
@@ -32,7 +32,7 @@ export abstract class TransportServerOpts<T = any> extends ServerOpts<ServerRequ
     abstract listenOpts: ListenOpts;
     abstract connectionOpts?: ConnectionOpts;
 
-    abstract transport?: ClassType<TransportProtocol>;
+    abstract transport?: ClassType<StreamTransportStrategy>;
 
     abstract event?: ClassType<EventStrategy>;
 }

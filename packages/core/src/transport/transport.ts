@@ -3,7 +3,7 @@ import { Log, Logger } from '@tsdi/logs';
 import { ExecptionChain } from '../execptions/chain';
 import { ExecptionFilter } from '../execptions/filter';
 import { Endpoint, EndpointBackend, InterceptorChain, InterceptorLike, InterceptorType } from './endpoint';
-import { ProtocolStrategy } from './protocol';
+import { TransportStrategy } from './status';
 
 
 /**
@@ -34,7 +34,7 @@ export abstract class TransportOpts<TRequest, TResponse> {
     /**
      * transport protocol.
      */
-    abstract transport?: ClassType<ProtocolStrategy>;
+    abstract transport?: ClassType<TransportStrategy>;
     /**
      * endpoint timeout.
      */
@@ -159,7 +159,7 @@ export abstract class TransportEndpoint<
     protected initContext(options: Opts): void {
         const injector = this.context.injector;
         if (options.transport) {
-            injector.inject({ provide: ProtocolStrategy, useExisting: options.transport });
+            injector.inject({ provide: TransportStrategy, useExisting: options.transport });
         }
         injector.inject({ provide: Logger, useFactory: () => this.logger });
         if (options.providers && options.providers.length) {

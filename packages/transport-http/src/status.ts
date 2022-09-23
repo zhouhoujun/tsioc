@@ -1,12 +1,12 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
-import { mths, RestfulStatus } from '@tsdi/core';
+import { mths, RestfulStrategy } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
 
 
 @Injectable({ static: true })
-export class HttpStatus extends RestfulStatus {
+export class HttpStatus extends RestfulStrategy {
 
-    parse(status?: string | number | undefined): number {
+    parseStatus(status?: string | number | undefined): number {
         return isString(status) ? (status ? parseInt(status) : 0) : status ?? 0;
     }
 

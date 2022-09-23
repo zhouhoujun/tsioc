@@ -1,6 +1,6 @@
 import { ClientOpts, EndpointBackend, ExecptionFilter, Interceptor, TransportEvent, TransportRequest } from '@tsdi/core';
 import { Abstract, ClassType, tokenId } from '@tsdi/ioc';
-import { TransportProtocol } from '../protocol';
+import { StreamTransportStrategy } from '../protocol';
 import { ClientConnectionOpts, ClientRequsetOpts, RequestStrategy } from './connection';
 
 
@@ -21,7 +21,7 @@ export abstract class TransportClientOpts extends ClientOpts {
      */
     abstract requestOpts?: ClientRequsetOpts;
 
-    abstract transport?: ClassType<TransportProtocol>;
+    abstract transport?: ClassType<StreamTransportStrategy>;
 
     abstract request?: ClassType<RequestStrategy>;
     /**

@@ -1,10 +1,11 @@
-export * from './protocol';
+// export * from './protocol';
 export * from './context';
 export * from './headers';
 export * from './packet';
 export * from './request';
 export * from './response';
 export * from './endpoint';
+export * from './middleware';
 
 export * from './utils';
 export * from './status';

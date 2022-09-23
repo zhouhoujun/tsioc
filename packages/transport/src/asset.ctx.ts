@@ -1,4 +1,4 @@
-import { AssetContext, OutgoingHeader, ServerContext, IncomingHeader, OutgoingHeaders, IncomingMsg, OutgoingMsg, Server, ServerContextOpts, ConnectionContext, RestfulStatus, TransportExecption } from '@tsdi/core';
+import { AssetContext, OutgoingHeader, ServerContext, IncomingHeader, OutgoingHeaders, IncomingMsg, OutgoingMsg, Server, ServerContextOpts, ConnectionContext, RestfulStrategy, TransportExecption } from '@tsdi/core';
 import { Abstract, Injector, isArray, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';
 import { extname } from 'path';
 import { Buffer } from 'buffer';
@@ -12,7 +12,7 @@ import { encodeUrl, escapeHtml, isBuffer, isStream, xmlRegExp } from './utils';
  * asset server context.
  */
 @Abstract()
-export abstract class AssetServerContext<TRequest extends IncomingMsg = IncomingMsg, TResponse extends OutgoingMsg = OutgoingMsg> extends ServerContext<TRequest, TResponse> implements AssetContext {
+export abstract class AssetServerContext<TRequest extends IncomingMsg = IncomingMsg, TResponse extends OutgoingMsg = OutgoingMsg> extends ServerContext<TRequest, TResponse> implements AssetContext<TRequest, TResponse> {
     public _explicitNullBody?: boolean;
     private _URL?: URL;
     readonly originalUrl: string;
@@ -21,7 +21,7 @@ export abstract class AssetServerContext<TRequest extends IncomingMsg = Incoming
     constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, options?: ServerContextOpts) {
         super(injector, request, response, target, options);
 
-        this.response.statusCode = this.transport.status.notFound;
+        this.response.statusCode = this.transport.notFound;
         this.originalUrl = request.url?.toString() ?? '';
         this._url = request.url ?? '';
 
@@ -72,7 +72,7 @@ export abstract class AssetServerContext<TRequest extends IncomingMsg = Incoming
 
     protected createURL() {
         try {
-            return this.transport.parse(this.request, this.target.getOptions()?.listenOpts, this.target.proxy);
+            return this.transport.parseURL(this.request, this.target.getOptions()?.listenOpts, this.target.proxy);
         } catch (err) {
             return Object.create(null);
         }
@@ -450,14 +450,14 @@ export abstract class AssetServerContext<TRequest extends IncomingMsg = Incoming
      * Whether the status code is ok
      */
     get ok(): boolean {
-        return this.transport.status.isOk(this.status);
+        return this.transport.isOk(this.status);
     }
 
     /**
      * Whether the status code is ok
      */
     set ok(ok: boolean) {
-        this.status = ok ? this.transport.status.ok : this.transport.status.notFound
+        this.status = ok ? this.transport.ok : this.transport.notFound
     }
 
 
@@ -488,7 +488,7 @@ export abstract class AssetServerContext<TRequest extends IncomingMsg = Incoming
 
         // no content
         if (null == val) {
-            if (!this.transport.status.isEmpty(this.status)) this.status = this.transport.status.noContent;
+            if (!this.transport.isEmpty(this.status)) this.status = this.transport.noContent;
             if (val === null) this.onNullBody();
             this.removeHeader(hdr.CONTENT_TYPE);
             this.removeHeader(hdr.CONTENT_LENGTH);
@@ -497,7 +497,7 @@ export abstract class AssetServerContext<TRequest extends IncomingMsg = Incoming
         }
 
         // set the status
-        if (!this._explicitStatus) this.status = this.transport.status.ok;
+        if (!this._explicitStatus) this.status = this.transport.ok;
 
         // set the content-type only if not yet set
         const setType = !this.hasHeader(hdr.CONTENT_TYPE);
@@ -685,13 +685,13 @@ export abstract class AssetServerContext<TRequest extends IncomingMsg = Incoming
      * @api public
      */
     redirect(url: string, alt?: string): void {
-        if(!(this.transport.status instanceof RestfulStatus)) {
+        if (!(this.transport instanceof RestfulStrategy)) {
             throw new TransportExecption('the status not extends RestfulStatus');
         }
         if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
         this.setHeader(hdr.LOCATION, encodeUrl(url));
         // status
-        if (!this.transport.status.isRedirect(this.status)) this.status = this.transport.status.found;
+        if (!this.transport.isRedirect(this.status)) this.status = this.transport.found;
 
         // html
         if (this.accepts('html')) {

@@ -1,13 +1,13 @@
 import { IncomingMsg, ListenOpts, Packet } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
-import { ConnectionOpts, hdr, isBuffer, TransportProtocol, ServerRequest, PacketParser, PacketGenerator, ev, SteamOptions, StreamParser, StreamGenerator, TransportStream, Connection } from '@tsdi/transport';
+import { ConnectionOpts, hdr, isBuffer, StreamTransportStrategy, ServerRequest, PacketParser, PacketGenerator, ev, SteamOptions, StreamParser, StreamGenerator, TransportStream, Connection } from '@tsdi/transport';
 import { Buffer } from 'buffer';
 import { Duplex, TransformCallback, Writable } from 'stream';
 import * as tsl from 'tls';
 import { TcpStatus } from './status';
 
 @Injectable()
-export class TcpProtocol extends TransportProtocol {
+export class TcpProtocol extends StreamTransportStrategy {
     private _protocol = 'tcp';
     constructor(readonly status: TcpStatus) {
         super();

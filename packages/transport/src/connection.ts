@@ -4,7 +4,7 @@ import { Duplex } from 'stream';
 import { ev } from './consts';
 import { Duplexify, DuplexifyOptions } from './duplexify';
 import { InvalidSessionExecption } from './execptions';
-import { Closeable, PacketGenerator, PacketParser, TransportProtocol } from './protocol';
+import { Closeable, PacketGenerator, PacketParser, StreamTransportStrategy } from './protocol';
 import { TransportStream } from './stream';
 
 
@@ -66,7 +66,7 @@ export abstract class Connection extends Duplexify implements Closeable {
     protected _regevs: Map<string, any>;
     readonly state: ConnectionState;
     protected opts: ConnectionOpts;
-    constructor(readonly stream: Duplex, readonly transport: TransportProtocol, opts: ConnectionOpts = EMPTY_OBJ) {
+    constructor(readonly stream: Duplex, readonly transport: StreamTransportStrategy, opts: ConnectionOpts = EMPTY_OBJ) {
         super(null, null, opts = { ...opts, objectMode: true });
         this.opts = opts;
         this.state = {

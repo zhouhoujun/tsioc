@@ -1,4 +1,4 @@
-import { ConnectionContext, RestfulStatus } from '@tsdi/core';
+import { ConnectionContext, RestfulStrategy } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import * as chalk from 'chalk';
 import { ResponseStatusFormater } from './log';
@@ -26,7 +26,7 @@ export class DefaultStatusFormater extends ResponseStatusFormater {
             return [chalk.green(status), statusMessage ? chalk.green(statusMessage) : '']
         }
 
-        if (transport.status instanceof RestfulStatus && transport.status.isRedirect(status)) {
+        if (transport.status instanceof RestfulStrategy && transport.status.isRedirect(status)) {
             return [chalk.yellow(status), statusMessage ? chalk.yellow(statusMessage) : '']
         }
 

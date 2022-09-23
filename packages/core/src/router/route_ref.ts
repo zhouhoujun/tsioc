@@ -5,7 +5,8 @@ import {
 import { isObservable, lastValueFrom } from 'rxjs';
 import { CanActivate } from './guard';
 import { ResultValue } from './result';
-import { InterceptorLike, InterceptorMiddleware, InterceptorType, Middleware, MiddlewareFn } from '../transport/endpoint';
+import { InterceptorLike, InterceptorType } from '../transport/endpoint';
+import { Middleware, MiddlewareFn, InterceptorMiddleware } from '../transport/middleware';
 import { RouteRef, RouteFactory, RouteFactoryResolver, joinprefix } from './route';
 import { ProtocolRouteMappingMetadata, RouteMappingMetadata } from './router';
 import { ConnectionContext } from '../transport/context';
@@ -84,16 +85,16 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     }
 
     async invoke(ctx: ConnectionContext, next: () => Promise<void>): Promise<void> {
-        if (ctx.sent || (this.protocol && !ctx.transport.match(this.protocol))) return await next();
+        if (ctx.sent || (this.protocol && !ctx.match(this.protocol))) return await next();
 
         const method = this.getRouteMetaData(ctx) as DecorDefine<ProtocolRouteMappingMetadata>;
         if (!method || !method.propertyKey) {
-            ctx.status = ctx.transport.status.notFound;
+            ctx.status = ctx.transport.notFound;
             return await next();
         }
 
         const metadate = method.metadata;
-        if (metadate.protocol && !ctx.transport.match(metadate.protocol)) return await next();
+        if (metadate.protocol && !ctx.match(metadate.protocol)) return await next();
 
         if (metadate.guards?.length) {
             if (!(await lang.some(

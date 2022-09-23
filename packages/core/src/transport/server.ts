@@ -1,14 +1,16 @@
 import { Abstract, ArgumentExecption, EMPTY, lang, Token } from '@tsdi/ioc';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
-import { EndpointBackend, MiddlewareBackend, MiddlewareLike, MiddlewareType } from './endpoint';
+import { EndpointBackend } from './endpoint';
 import { TransportEndpoint, TransportOpts } from './transport';
 import { ConnectionContext } from './context';
+import { MiddlewareBackend, MiddlewareLike, MiddlewareType } from './middleware';
+import { IncomingMsg, OutgoingMsg } from './packet';
 /**
  * server options.
  */
 @Abstract()
-export abstract class ServerOpts<TRequest = any, TResponse = any> extends TransportOpts<TRequest, TResponse> {
+export abstract class ServerOpts<TRequest extends IncomingMsg = any, TResponse extends OutgoingMsg = any> extends TransportOpts<TRequest, TResponse> {
     /**
      * middlewares of server.
      */
@@ -27,8 +29,8 @@ export abstract class ServerOpts<TRequest = any, TResponse = any> extends Transp
 @Abstract()
 @Runner('start')
 export abstract class Server<
-    TRequest = any,
-    TResponse = any,
+    TRequest extends IncomingMsg = any,
+    TResponse extends OutgoingMsg = any,
     Tx extends ConnectionContext = ConnectionContext,
     Opts extends ServerOpts<TRequest, TResponse> = any>
 
@@ -69,8 +71,6 @@ export abstract class Server<
      * @param options 
      */
     protected override initContext(options: Opts) {
-        const injector = this.context.injector;
-        injector.setValue(Server, this);
         super.initContext(options);
 
         const mToken = this._midlsToken = options.middlewaresToken!;

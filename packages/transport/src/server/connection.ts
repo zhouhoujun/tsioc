@@ -3,7 +3,7 @@ import { Abstract, EMPTY_OBJ } from '@tsdi/ioc';
 import { Duplex } from 'stream';
 import { Connection, ConnectionOpts } from '../connection';
 import { ev } from '../consts';
-import { TransportProtocol } from '../protocol';
+import { StreamTransportStrategy } from '../protocol';
 import { ServerStream } from './stream';
 
 @Abstract()
@@ -13,7 +13,7 @@ export abstract class EventStrategy {
 
 export class ServerConnection extends Connection {
     private sid = 0;
-    constructor(stream: Duplex, transport: TransportProtocol, opts: ConnectionOpts = EMPTY_OBJ) {
+    constructor(stream: Duplex, transport: StreamTransportStrategy, opts: ConnectionOpts = EMPTY_OBJ) {
         super(stream, transport, opts);
         this.stream.on(ev.CONNECTION, this.emit.bind(this, ev.CONNECTION));
     }

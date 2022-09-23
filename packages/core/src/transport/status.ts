@@ -1,9 +1,14 @@
 import { Abstract } from '@tsdi/ioc';
+import { IncomingMsg } from './packet';
 
 @Abstract()
-export abstract class TransportStatus {
+export abstract class TransportStrategy {
+    /**
+     * protocol name
+     */
+    abstract get protocol(): string;
 
-    abstract parse(status?: string | number): number;
+    abstract parseStatus(status?: string | number): number;
     /**
      * ok status code.
      */
@@ -85,10 +90,37 @@ export abstract class TransportStatus {
      */
     abstract message(status: number): string;
 
+
+    /**
+     * the url is absolute url or not.
+     * @param url 
+     */
+    abstract isAbsoluteUrl(url: string): boolean;
+    /**
+     * is update modle resquest.
+     */
+    abstract isUpdate(incoming: IncomingMsg): boolean;
+    /**
+     * is secure or not.
+     * @param incoming 
+     */
+    abstract isSecure(incoming: IncomingMsg): boolean;
+    /**
+     * url parse.
+     * @param url 
+     */
+    abstract parseURL(incoming: IncomingMsg, opts: ListenOpts, proxy?: boolean): URL;
+    /**
+     * match protocol or not.
+     * @param protocol 
+     */
+    abstract match(protocol: string): boolean;
 }
 
+
+
 @Abstract()
-export abstract class RestfulStatus extends TransportStatus {
+export abstract class RestfulStrategy extends TransportStrategy {
 
     /**
      * is redirect status or not.
@@ -107,3 +139,30 @@ export abstract class RestfulStatus extends TransportStatus {
      */
     abstract redirectDefaultMethod(): string;
 }
+
+/**
+ * Listen options.
+ */
+ @Abstract()
+ export abstract class ListenOpts {
+ 
+     [x: string]: any;
+ 
+     /**
+     * When provided the corresponding `AbortController` can be used to cancel an asynchronous action.
+     */
+     signal?: AbortSignal | undefined;
+     port?: number | undefined;
+     host?: string | undefined;
+     backlog?: number | undefined;
+     path?: string | undefined;
+     exclusive?: boolean | undefined;
+     readableAll?: boolean | undefined;
+     writableAll?: boolean | undefined;
+     /**
+      * @default false
+      */
+     ipv6Only?: boolean | undefined;
+     withCredentials?: boolean;
+ }
+ 

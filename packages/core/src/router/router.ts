@@ -4,7 +4,8 @@ import { CanActivate } from './guard';
 import { PipeTransform } from '../pipes/pipe';
 import { Route, RouteFactoryResolver, ROUTES, Routes } from './route';
 import { ModuleRef } from '../module.ref';
-import { createMiddleware, InterceptorMiddleware, InterceptorType, Middleware, MiddlewareFn } from '../transport/endpoint';
+import { InterceptorType } from '../transport/endpoint';
+import { Middleware, MiddlewareFn, createMiddleware,  InterceptorMiddleware} from '../transport/middleware';
 import { AssetContext, ConnectionContext } from '../transport/context';
 import { BadRequestExecption, ForbiddenExecption, NotFoundExecption } from '../transport/execptions';
 import { promisify } from './promisify';
@@ -71,7 +72,7 @@ export class MappingRoute implements Middleware {
     }
 
     async invoke(ctx: ConnectionContext, next: () => Promise<void>): Promise<void> {
-        if (this.route.protocol && !ctx.transport.match(this.route.protocol)) return next();
+        if (this.route.protocol && !ctx.match(this.route.protocol)) return next();
         if (await this.canActive(ctx)) {
             if (!this._middleware) {
                 this._middleware = await this.parse(this.route, ctx);
@@ -197,7 +198,7 @@ export class MappingRouter extends Router implements OnDestroy {
     }
 
     protected getRoute(ctx: ConnectionContext): MiddlewareFn | undefined {
-        if (ctx.status && !ctx.transport.status.isNotFound(ctx.status)) return;
+        if (ctx.status && !ctx.notFound) return;
 
         let url: string;
         if (this.prefix) {

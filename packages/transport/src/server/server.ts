@@ -13,7 +13,7 @@ import { ServerRequest } from './req';
 import { ServerResponse } from './res';
 import { TRANSPORT_SERVR_PROVIDERS } from './providers';
 import { ServerStream } from './stream';
-import { TransportProtocol } from '../protocol';
+import { StreamTransportStrategy } from '../protocol';
 import { ConnectionOpts } from '../connection';
 import { finalize, mergeMap, Observable, Subscriber, Subscription } from 'rxjs';
 import { ev, hdr } from '../consts';
@@ -94,7 +94,7 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
     }
 
 
-    protected onConnection(server: T, transport: TransportProtocol, opts?: ConnectionOpts): Observable<ServerConnection> {
+    protected onConnection(server: T, transport: StreamTransportStrategy, opts?: ConnectionOpts): Observable<ServerConnection> {
         return new Observable((observer) => {
             const onError = (err: Error) => {
                 observer.error(err);
@@ -158,7 +158,7 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
         throw new Execption('parse connection client to Duplex not implemented.')
     }
 
-    protected createConnection(duplex: Duplex, transport: TransportProtocol, opts?: ConnectionOpts) {
+    protected createConnection(duplex: Duplex, transport: StreamTransportStrategy, opts?: ConnectionOpts) {
         return new ServerConnection(duplex, transport, opts);
     }
 

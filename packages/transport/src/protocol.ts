@@ -1,4 +1,4 @@
-import { ProtocolStrategy } from '@tsdi/core';
+import { TransportStrategy } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
 import { Writable, Transform } from 'stream';
 import { Connection, ConnectionOpts } from './connection';
@@ -8,7 +8,7 @@ import { SteamOptions, TransportStream } from './stream';
 
 
 @Abstract()
-export abstract class TransportProtocol extends ProtocolStrategy {
+export abstract class StreamTransportStrategy extends TransportStrategy {
     abstract valid(header: string): boolean;
     /**
      * packet parser

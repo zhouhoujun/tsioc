@@ -1,5 +1,5 @@
 import { Injectable, isUndefined, lang, _tyundef } from '@tsdi/ioc';
-import { EndpointContext, mths, ResHeaders, Redirector, RestfulStatus } from '@tsdi/core';
+import { EndpointContext, mths, ResHeaders, Redirector, RestfulStrategy } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpResponse, HttpErrorResponse, HttpHeaderResponse, HttpJsonParseError, HttpBackend } from '@tsdi/common';
 import { ev, hdr, toBuffer, isBuffer, MimeAdapter, ctype, RequestStauts, sendbody, XSSI_PREFIX, MimeTypes } from '@tsdi/transport';
 import { finalize, Observable, Observer } from 'rxjs';
@@ -33,7 +33,7 @@ export class HttpBackend2 extends HttpBackend {
                 request = this.request1(url, req, ac);
             }
 
-            const statAdpr = ctx.transport.status as RestfulStatus;
+            const statAdpr = ctx.transport.status as RestfulStrategy;
             let status: number, statusText: string;
             let completed = false;
             let headers: ResHeaders;
@@ -45,7 +45,7 @@ export class HttpBackend2 extends HttpBackend {
                 let body: any;
                 if (incoming instanceof http.IncomingMessage) {
                     headers = new ResHeaders(incoming.headers);
-                    status = statAdpr.parse(incoming.statusCode ?? 0);
+                    status = statAdpr.parseStatus(incoming.statusCode ?? 0);
                     statusText = incoming.statusMessage ?? 'OK';
                     if (status !== statAdpr.noContent) {
                         body = statusText;
@@ -55,7 +55,7 @@ export class HttpBackend2 extends HttpBackend {
                     }
                 } else {
                     headers = new ResHeaders(incoming);
-                    status = statAdpr.parse(incoming[hdr.STATUS2] ?? 0);
+                    status = statAdpr.parseStatus(incoming[hdr.STATUS2] ?? 0);
                     statusText = statAdpr.message(status) ?? 'OK'
                 }
 

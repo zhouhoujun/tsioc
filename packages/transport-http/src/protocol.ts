@@ -1,4 +1,4 @@
-import { ListenOpts, mths, ProtocolStrategy } from '@tsdi/core';
+import { ListenOpts, mths, RestfulStrategy } from '@tsdi/core';
 import { Injectable, isNumber, isString } from '@tsdi/ioc';
 import { hdr } from '@tsdi/transport';
 import * as http from 'http';
@@ -7,7 +7,7 @@ import { TLSSocket } from 'tls';
 import { HttpStatus } from './status';
 
 @Injectable()
-export class HttpProtocol extends ProtocolStrategy {
+export class HttpProtocol extends RestfulStrategy {
 
     private _protocol = 'http';
     constructor(readonly status: HttpStatus) {
@@ -26,7 +26,7 @@ export class HttpProtocol extends ProtocolStrategy {
         return this._protocol;
     }
 
-    parse(req: http.IncomingMessage | http2.Http2ServerRequest, opts: ListenOpts, proxy?: boolean): URL {
+    parseURL(req: http.IncomingMessage | http2.Http2ServerRequest, opts: ListenOpts, proxy?: boolean): URL {
         const url = req.url?.trim() ?? '';
         if (httptl.test(url)) {
             return new URL(url);

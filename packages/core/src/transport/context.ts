@@ -1,6 +1,6 @@
 import { Abstract, DefaultInvocationContext } from '@tsdi/ioc';
-import { IncomingMsg } from './packet';
-import { ProtocolStrategy } from './protocol';
+import { IncomingMsg, OutgoingMsg } from './packet';
+import { TransportStrategy } from './status';
 import { TransportEndpoint } from './transport';
 
 /**
@@ -15,7 +15,7 @@ export abstract class EndpointContext extends DefaultInvocationContext {
     /**
      * transport protocol
      */
-    abstract get transport(): ProtocolStrategy;
+    abstract get transport(): TransportStrategy;
 
     protected override clear(): void {
         super.clear();
@@ -44,7 +44,7 @@ export abstract class RequestContext extends EndpointContext {
  * abstract server side connection context.
  */
 @Abstract()
-export abstract class ConnectionContext<TRequest = any, TResponse = any> extends EndpointContext {
+export abstract class ConnectionContext<TRequest extends IncomingMsg = IncomingMsg, TResponse extends OutgoingMsg = OutgoingMsg> extends EndpointContext {
     /**
      * transport request.
      */
@@ -80,7 +80,7 @@ export abstract class ConnectionContext<TRequest = any, TResponse = any> extends
      * request body, playload.
      */
     get playload(): any {
-        return (this.request as any as IncomingMsg).body;
+        return this.request.body;
     }
     /**
      * The outgoing request method.
@@ -107,13 +107,6 @@ export abstract class ConnectionContext<TRequest = any, TResponse = any> extends
      * response body length.
      */
     abstract get length(): number | undefined;
-
-    /**
-     * is update modle resquest.
-     */
-    isUpdate(): boolean {
-        return this.transport.isUpdate(this.request as any);
-    }
 
     /**
      * Get response status code.
@@ -148,6 +141,29 @@ export abstract class ConnectionContext<TRequest = any, TResponse = any> extends
      */
     abstract get sent(): boolean;
 
+    /**
+     * request status is not found or not.
+     */
+    get notFound(): boolean {
+        return this.status === this.transport.notFound;
+    }
+
+    /**
+     * match protocol.
+     * @param protocol 
+     * @returns 
+     */
+    match(protocol: string): boolean {
+        return this.transport.match(protocol);
+    }
+
+    /**
+     * is update request or not.
+     */
+    get update(): boolean {
+        return this.transport.isUpdate(this.request);
+    }
+
 }
 
 /**
@@ -179,7 +195,7 @@ export interface Throwable {
 /**
  * tansport context with headers.
  */
-export interface HeadersContext extends ConnectionContext {
+export interface HeadersContext<TRequest extends IncomingMsg = IncomingMsg, TResponse extends OutgoingMsg = OutgoingMsg> extends ConnectionContext<TRequest, TResponse> {
     /**
      * Return request header.
      *
@@ -249,7 +265,7 @@ export interface HeadersContext extends ConnectionContext {
 /**
  * asset context.
  */
-export interface AssetContext extends HeadersContext {
+export interface AssetContext<TRequest extends IncomingMsg = IncomingMsg, TResponse extends OutgoingMsg = OutgoingMsg> extends HeadersContext<TRequest, TResponse> {
     /**
      * Check if the incoming request contains the "Content-Type"
      * header field and if it contains any of the given mime `type`s.

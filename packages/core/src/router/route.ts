@@ -3,7 +3,8 @@ import {
     InvokeOption, OnDestroy, tokenId, Type, TypeReflect
 } from '@tsdi/ioc';
 import { ConnectionContext } from '../transport/context';
-import { InterceptorLike, Middleware, MiddlewareFn } from '../transport/endpoint';
+import { InterceptorLike } from '../transport/endpoint';
+import { Middleware, MiddlewareFn } from '../transport/middleware';
 import { Protocols } from '../transport/packet';
 import { CanActivate } from './guard';
 

@@ -8,7 +8,7 @@ import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } fro
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
 import { BodyContentInterceptor } from './body';
 import { ev } from '../consts';
-import { TransportProtocol } from '../protocol';
+import { StreamTransportStrategy } from '../protocol';
 import { ConnectionOpts } from '../connection';
 
 
@@ -84,14 +84,14 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
 
     protected abstract createDuplex(opts: TOpts): Duplex;
 
-    protected createConnection(duplex: Duplex, transport: TransportProtocol, strategy: RequestStrategy, opts?: ConnectionOpts): ClientConnection {
+    protected createConnection(duplex: Duplex, transport: StreamTransportStrategy, strategy: RequestStrategy, opts?: ConnectionOpts): ClientConnection {
         return new ClientConnection(duplex, transport, opts, strategy);
     }
 
     protected buildConnection(opts: TOpts): Observable<ClientConnection> {
         const logger = this.logger;
         return new Observable((observer: Observer<ClientConnection>) => {
-            const transport = this.context.get(opts.transport ?? TransportProtocol);
+            const transport = this.context.get(opts.transport ?? StreamTransportStrategy);
             const strategy = this.context.get(opts.request ?? RequestStrategy);
             const duplex = this.createDuplex(opts);
             const client = this.createConnection(duplex, transport, strategy, opts.connectionOpts);

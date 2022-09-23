@@ -1,7 +1,7 @@
 import { Abstract, EMPTY_OBJ, Injectable, isDefined } from '@tsdi/ioc';
 import { IncomingHeaders, InvalidHeaderTokenExecption } from '@tsdi/core';
 import { Duplex } from 'stream';
-import { TransportProtocol } from '../protocol';
+import { StreamTransportStrategy } from '../protocol';
 import { Connection, ConnectionOpts } from '../connection';
 import { GoawayExecption, InvalidSessionExecption } from '../execptions';
 import { ClientStream } from './stream';
@@ -45,7 +45,7 @@ export class ClientConnection extends Connection {
     private sid = 1;
     readonly authority: string;
     readonly clientId: string;
-    constructor(duplex: Duplex, transport: TransportProtocol, opts: ClientConnectionOpts = EMPTY_OBJ, private strategy: RequestStrategy) {
+    constructor(duplex: Duplex, transport: StreamTransportStrategy, opts: ClientConnectionOpts = EMPTY_OBJ, private strategy: RequestStrategy) {
         super(duplex, transport, opts)
         this.authority = opts.authority ?? '';
         this.clientId = opts.clientId ?? '';

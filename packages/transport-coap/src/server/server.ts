@@ -3,7 +3,7 @@ import { ExecptionFilter, Interceptor, ListenOpts, MiddlewareType } from '@tsdi/
 import { Abstract, Injectable, lang, Nullable, tokenId } from '@tsdi/ioc';
 import {
     CatchInterceptor, LogInterceptor, RespondInterceptor, TransportServer, TransportServerOpts, ServerRequest,
-    ServerResponse, ConnectionOpts, TransportProtocol, ServerConnection, ev, parseToDuplex
+    ServerResponse, ConnectionOpts, StreamTransportStrategy, ServerConnection, ev, parseToDuplex
 } from '@tsdi/transport';
 import * as net from 'net';
 import * as dgram from 'dgram';
@@ -78,7 +78,7 @@ export class CoapServer extends TransportServer<net.Server | dgram.Socket, CoapS
         return opts.baseOn == 'tcp' ? net.createServer(opts.serverOpts as net.ServerOpts) : dgram.createSocket(opts.serverOpts as dgram.SocketOptions)
     }
 
-    protected override onConnection(server: net.Server | dgram.Socket, transport: TransportProtocol, opts?: ConnectionOpts | undefined): Observable<ServerConnection> {
+    protected override onConnection(server: net.Server | dgram.Socket, transport: StreamTransportStrategy, opts?: ConnectionOpts | undefined): Observable<ServerConnection> {
         if (server instanceof net.Server) {
             return this.tcpConnect(server, transport, opts);
         } else {
@@ -87,7 +87,7 @@ export class CoapServer extends TransportServer<net.Server | dgram.Socket, CoapS
 
     }
 
-    protected tcpConnect(server: net.Server, transport: TransportProtocol, opts?: any): Observable<ServerConnection> {
+    protected tcpConnect(server: net.Server, transport: StreamTransportStrategy, opts?: any): Observable<ServerConnection> {
         return new Observable((observer) => {
             const onError = (err: Error) => {
                 observer.error(err);
@@ -110,7 +110,7 @@ export class CoapServer extends TransportServer<net.Server | dgram.Socket, CoapS
         })
     }
 
-    protected udpConnect(server: dgram.Socket, parser: TransportProtocol, opts?: any): Observable<ServerConnection> {
+    protected udpConnect(server: dgram.Socket, parser: StreamTransportStrategy, opts?: any): Observable<ServerConnection> {
         return new Observable((observer) => {
             const connections = new Map<string, ServerConnection>()
             const onError = (err: Error) => {

@@ -1,4 +1,4 @@
-import { ExecptionTypedRespond, TransportExecption, AssetContext } from '@tsdi/core';
+import { ExecptionTypedRespond, TransportExecption, AssetContext, TransportStrategy } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 
 @Injectable({ static: true })
@@ -13,7 +13,7 @@ export class TranspotExecptionTypedRespond extends ExecptionTypedRespond {
                 ctx.status = value.statusCode;
                 ctx.statusMessage = value.message
             } else {
-                ctx.status = ctx.transport.status.serverError;
+                ctx.status = ctx.transport.serverError;
                 ctx.statusMessage = String(value)
             }
         }

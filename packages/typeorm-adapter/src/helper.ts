@@ -1,5 +1,5 @@
-import { Singleton, Type, Inject, Static } from '@tsdi/ioc';
-import { Repository, MongoRepository, Connection, getConnection } from 'typeorm';
+import { Type, Inject, Static } from '@tsdi/ioc';
+import { Repository, MongoRepository, Connection, getConnection, ObjectLiteral } from 'typeorm';
 import { DEFAULT_CONNECTION } from './objectid.pipe';
 
 
@@ -15,7 +15,7 @@ export class TypeOrmHelper {
         return getConnection(connectName || this.conn)
     }
 
-    getRepository<T>(type: Type<T>, connectName?: string): Repository<T> {
+    getRepository<T extends ObjectLiteral>(type: Type<T>, connectName?: string): Repository<T> {
         return this.getConnection(connectName).getRepository<T>(type)
     }
 
@@ -23,7 +23,7 @@ export class TypeOrmHelper {
         return this.getConnection(connectName).getCustomRepository(type)
     }
 
-    getMongoRepository<T>(type: Type<T>, connectName?: string): MongoRepository<T> {
+    getMongoRepository<T extends ObjectLiteral>(type: Type<T>, connectName?: string): MongoRepository<T> {
         return this.getConnection(connectName).getMongoRepository<T>(type)
     }
 

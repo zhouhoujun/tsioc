@@ -1,5 +1,5 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
-import { mths, TransportStatus } from '@tsdi/core';
+import { mths, TransportStrategy } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
 
 export enum CoapStatusCode {
@@ -18,13 +18,13 @@ export const CoapMethods = {
 }
 
 @Injectable({ static: true })
-export class CoapStatus extends TransportStatus {
+export class CoapStatus extends TransportStrategy {
     
     isContinue(status: number): boolean {
         throw new Error('Method not implemented.');
     }
 
-    parse(status?: string | number | undefined): number {
+    parseStatus(status?: string | number | undefined): number {
         return isString(status) ? (status ? parseFloat(status) : 0) : status ?? 0;
     }
 

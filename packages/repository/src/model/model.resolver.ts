@@ -78,7 +78,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
             this._resolver = composeFieldResolver(
                 (p, ctx, fields) => p.nullable === true
                     || (fields && isDefined(fields[p.name] ?? p.default))
-                    || ((ctx as ConnectionContext).isUpdate?.() === false && p.primary === true),
+                    || ((ctx as ConnectionContext).update === false && p.primary === true),
                 ...this.resolvers ?? EMPTY,
                 ...MODEL_FIELD_RESOLVERS)
         }
