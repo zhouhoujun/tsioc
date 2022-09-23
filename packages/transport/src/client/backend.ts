@@ -154,9 +154,6 @@ export class TransportBackend implements EndpointBackend<TransportRequest, Trans
                         error = err;
                     }
                 }
-                if (opts.decoder) {
-                    body = ctx.get(opts.decoder).decode(body);
-                }
 
                 let type = ctx.responseType;
                 if (type === 'stream' && body instanceof Readable) {
@@ -256,13 +253,10 @@ export class TransportBackend implements EndpointBackend<TransportRequest, Trans
             request.on(ev.TIMEOUT, onError);
 
             //todo send body.
-            let data = req.body;
+            const data = req.body;
             if (data === null) {
                 request.end();
             } else {
-                if (opts.encoder) {
-                    data = ctx.get(opts.encoder).encode(data);
-                }
                 sendbody(
                     data,
                     request,

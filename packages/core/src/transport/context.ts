@@ -50,10 +50,6 @@ export abstract class ConnectionContext<TRequest = any, TResponse = any> extends
      */
     abstract get request(): TRequest;
     /**
-     * transport request.
-     */
-    abstract set request(req: TRequest);
-    /**
      * transport response.
      */
     abstract get response(): TResponse;

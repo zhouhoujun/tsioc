@@ -7,7 +7,6 @@ export * from './response';
 export * from './endpoint';
 
 export * from './utils';
-export * from './coder';
 export * from './status';
 export * from './redirector';
 

@@ -1,7 +1,5 @@
-import { Decoder, Encoder, Interceptor, ServerOpts, ListenOpts } from '@tsdi/core';
+import { Interceptor, ServerOpts, ListenOpts } from '@tsdi/core';
 import { Abstract, ClassType, tokenId } from '@tsdi/ioc';
-import { Buffer } from 'buffer';
-import { Stream } from 'stream';
 import { ConnectionOpts } from '../connection';
 import { ContentOptions, SessionOptions } from '../middlewares';
 import { MimeSource } from '../mime';
@@ -37,15 +35,6 @@ export abstract class TransportServerOpts<T = any> extends ServerOpts<ServerRequ
     abstract transport?: ClassType<TransportProtocol>;
 
     abstract event?: ClassType<EventStrategy>;
-
-    /**
-     * encoder input.
-     */
-     abstract encoder?: ClassType<Encoder<string | Buffer | Stream>>;
-     /**
-      * decoder input.
-      */
-     abstract decoder?: ClassType<Decoder<string | Buffer | Stream>>;
 }
 
 

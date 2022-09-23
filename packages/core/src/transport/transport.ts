@@ -2,7 +2,6 @@ import { Abstract, ArgumentExecption, Autorun, AutoWired, ClassType, EMPTY, Invo
 import { Log, Logger } from '@tsdi/logs';
 import { ExecptionChain } from '../execptions/chain';
 import { ExecptionFilter } from '../execptions/filter';
-import { Decoder, Encoder } from './coder';
 import { Endpoint, EndpointBackend, InterceptorChain, InterceptorLike, InterceptorType } from './endpoint';
 import { ProtocolStrategy } from './protocol';
 
@@ -36,14 +35,6 @@ export abstract class TransportOpts<TRequest, TResponse> {
      * transport protocol.
      */
     abstract transport?: ClassType<ProtocolStrategy>;
-    /**
-     * encoder input.
-     */
-    abstract encoder?: ClassType<Encoder>;
-    /**
-     * decoder input.
-     */
-    abstract decoder?: ClassType<Decoder>;
     /**
      * endpoint timeout.
      */

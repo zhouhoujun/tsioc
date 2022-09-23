@@ -125,9 +125,7 @@ export class BodyparserMiddleware implements Middleware {
     }
 
     private getStream(ctx: AssetContext, encoding: string): Readable {
-        const opts = ctx.target.getOptions() as ServerOpts;
-        const stream = this.unzipify(ctx, encoding);
-        return opts.decoder ? ctx.get(opts.decoder).decode(stream) : stream;
+        return this.unzipify(ctx, encoding);
     }
 
     protected unzipify(ctx: AssetContext, encoding: string) {

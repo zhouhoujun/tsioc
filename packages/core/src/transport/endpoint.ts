@@ -211,9 +211,6 @@ export class MiddlewareBackend<TRequest, TResponse, Tx extends ConnectionContext
 
     handle(req: TRequest, context: Tx): Observable<TResponse> {
         return defer(async () => {
-            if (context.request != req) {
-                context.request = req;
-            }
             if (!this._middleware) {
                 this._middleware = compose(this.middlewares)
             }
