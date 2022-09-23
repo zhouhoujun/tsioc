@@ -1,16 +1,8 @@
 import { ClientOpts, EndpointBackend, ExecptionFilter, Interceptor, TransportEvent, TransportRequest } from '@tsdi/core';
 import { Abstract, ClassType, tokenId } from '@tsdi/ioc';
 import { TransportProtocol } from '../protocol';
-import { ClientConnectionOpts, RequestStrategy } from './connection';
+import { ClientConnectionOpts, ClientRequsetOpts, RequestStrategy } from './connection';
 
-export interface SessionRequestOpts extends Record<string, any> {
-    endStream?: boolean | undefined;
-    exclusive?: boolean | undefined;
-    parent?: number | undefined;
-    weight?: number | undefined;
-    waitForTrailers?: boolean | undefined;
-    signal?: AbortSignal | undefined;
-}
 
 
 /**
@@ -27,7 +19,7 @@ export abstract class TransportClientOpts extends ClientOpts {
     /**
      * request opions.
      */
-    abstract requestOpts?: SessionRequestOpts;
+    abstract requestOpts?: ClientRequsetOpts;
 
     abstract transport?: ClassType<TransportProtocol>;
 

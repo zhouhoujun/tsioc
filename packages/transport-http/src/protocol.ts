@@ -55,23 +55,6 @@ export class HttpProtocol extends ProtocolStrategy {
 
     }
 
-    // normlizeUrl(url: string, opts: ListenOpts): string {
-    //     if (!this.isAbsoluteUrl(url)) {
-    //         const { host, port, path, withCredentials } = opts;
-    //         if (withCredentials) {
-    //             this._protocol = 'https';
-    //         }
-    //         const urlPrefix = `${this.protocol}://${host ?? 'localhost'}:${port ?? 3000}`;
-    //         const baseUrl = new URL(urlPrefix, path);
-    //         url = new URL(url, baseUrl).toString();
-    //     } else {
-    //         const uri = new URL(url);
-    //         this._protocol = uri.protocol.replace('://', '');
-    //         url = uri.toString();
-    //     }
-    //     return url;
-    // }
-
     isAbsoluteUrl(url: string): boolean {
         return httptl.test(url.trim())
     }
