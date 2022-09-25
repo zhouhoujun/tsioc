@@ -2,10 +2,9 @@ import { Module, RouterModule, TransformModule } from '@tsdi/core';
 import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
 import { TransportModule } from '@tsdi/transport';
 import { TcpClient } from './client/clinet';
-import { TcpProtocol } from './protocol';
+import { DelimiterTransportStrategy } from './transport';
 import { TcpServerOpts } from './server/options';
 import { TcpServer } from './server/server';
-import { TcpStatus } from './status';
 
 @Module({
     imports: [
@@ -14,8 +13,7 @@ import { TcpStatus } from './status';
         TransportModule
     ],
     providers: [
-        TcpStatus,
-        TcpProtocol,
+        DelimiterTransportStrategy,
         TcpClient,
         TcpServer
     ]

@@ -15,7 +15,7 @@ export class HttpRespondAdapter implements RespondAdapter {
         const code = ctx.status;
 
         // ignore body
-        if (ctx.transport.status.isEmpty(code)) {
+        if (ctx.transport.isEmpty(code)) {
             // strip headers
             ctx.body = null;
             return res.end()

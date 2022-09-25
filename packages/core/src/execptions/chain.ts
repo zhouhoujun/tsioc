@@ -1,5 +1,5 @@
 import { Handler, chain } from '@tsdi/ioc';
-import { NEXT } from '../transport/endpoint';
+import { NEXT } from '../transport/middleware';
 import { ExecptionContext } from './context';
 import { ExecptionFilter } from './filter';
 

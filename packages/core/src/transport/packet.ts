@@ -142,6 +142,8 @@ export interface IncomingMsg {
     readonly stream?: any;
 
     body?: any;
+
+    rawBody?: any;
     /**
      * pipe
      * @param destination 

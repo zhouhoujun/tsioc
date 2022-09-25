@@ -8,7 +8,7 @@ import {
 import * as net from 'net';
 import * as dgram from 'dgram';
 import { Observable } from 'rxjs';
-import { CoapProtocol } from '../protocol';
+import { CoapTransportStrategy } from '../transport';
 
 
 /**
@@ -42,7 +42,7 @@ export const COAP_MIDDLEWARES = tokenId<MiddlewareType[]>('COAP_MIDDLEWARES');
 const defOpts = {
     json: true,
     encoding: 'utf8',
-    transport: CoapProtocol,
+    transport: CoapTransportStrategy,
     interceptorsToken: COAP_SERV_INTERCEPTORS,
     execptionsToken: COAP_EXECPTION_FILTERS,
     middlewaresToken: COAP_MIDDLEWARES,

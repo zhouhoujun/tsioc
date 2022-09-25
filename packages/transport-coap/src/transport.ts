@@ -1,20 +1,98 @@
-import { IncomingMsg, ListenOpts } from '@tsdi/core';
-import { Injectable } from '@tsdi/ioc';
+import { IncomingMsg, ListenOpts, mths } from '@tsdi/core';
+import { Injectable, isString } from '@tsdi/ioc';
 import { Connection, ConnectionOpts, isBuffer, PacketGenerator, PacketParser, SteamOptions, StreamGenerator, StreamParser, StreamTransportStrategy, TransportStream } from '@tsdi/transport';
 import { Duplex, Writable, TransformCallback } from 'stream';
 import { parse, generate, ParsedPacket } from 'coap-packet';
-import { CoapStatus } from './status';
 
 @Injectable()
-export class CoapProtocol extends StreamTransportStrategy {
+export class CoapTransportStrategy extends StreamTransportStrategy {
     private _protocol = 'coap';
-    constructor(readonly status: CoapStatus) {
-        super();
 
-    }
 
     get protocol(): string {
         return this._protocol;
+    }
+
+    isContinue(status: number): boolean {
+        throw new Error('Method not implemented.');
+    }
+
+    parseStatus(status?: string | number | undefined): number {
+        return isString(status) ? (status ? parseFloat(status) : 0) : status ?? 0;
+    }
+
+    get ok(): number {
+        return HttpStatusCode.Ok;
+    }
+    get badRequest(): number {
+        return HttpStatusCode.BadRequest;
+    }
+    get notFound(): number {
+        return HttpStatusCode.NotFound;
+    }
+    get found(): number {
+        return HttpStatusCode.Found
+    }
+    get unauthorized(): number {
+        return HttpStatusCode.Unauthorized;
+    }
+    get forbidden(): number {
+        return HttpStatusCode.Forbidden;
+    }
+    get noContent(): number {
+        return HttpStatusCode.NoContent;
+    }
+    get serverError(): number {
+        return HttpStatusCode.InternalServerError;
+    }
+
+    get unsupportedMediaType(): number {
+        return HttpStatusCode.UnsupportedMediaType;
+    }
+
+    redirectDefaultMethod(): string {
+        return mths.MESSAGE;
+    }
+
+    redirectBodify(status: number, method?: string | undefined): boolean {
+        if (status === 303) return false;
+        return method ? (status === 301 || status === 302) && method !== mths.POST : true;
+    }
+
+    isVaild(statusCode: number): boolean {
+        return !!statusMessage[statusCode as HttpStatusCode];
+    }
+
+    isNotFound(status: number): boolean {
+        return status === HttpStatusCode.NotFound;
+    }
+
+    isEmpty(status: number): boolean {
+        return emptyStatus[status];
+    }
+
+    isOk(status: number): boolean {
+        return status >= 200 && status < 300;
+    }
+
+    isRetry(status: number): boolean {
+        return retryStatus[status];
+    }
+
+    isRedirect(status: number): boolean {
+        return redirectStatus[status]
+    }
+
+    isRequestFailed(status: number): boolean {
+        return status >= 400 && status < 500
+    }
+    
+    isServerError(status: number): boolean {
+        return status >= 500
+    }
+
+    message(status: number): string {
+        return statusMessage[status as HttpStatusCode];
     }
 
     isUpdate(incoming: IncomingMsg): boolean {
@@ -25,7 +103,8 @@ export class CoapProtocol extends StreamTransportStrategy {
         return req.connection?.encrypted === true
     }
 
-    parse(req: IncomingMsg, opts: ListenOpts, proxy?: boolean | undefined): URL {
+    
+    parseURL(req: IncomingMsg, opts: ListenOpts, proxy?: boolean | undefined): URL {
         const url = req.url?.trim() ?? '';
         if (coapPfx.test(url)) {
             return new URL(url);
@@ -50,7 +129,7 @@ export class CoapProtocol extends StreamTransportStrategy {
         return true;
     }
 
-    
+
     parser(connection: Connection, opts: ConnectionOpts): PacketParser {
         return new CoapPacketParser(connection, opts);
     }
@@ -70,7 +149,20 @@ export class CoapProtocol extends StreamTransportStrategy {
 
 }
 
+export enum CoapStatusCode {
+    ok = 0.001,
 
+}
+
+export const CoapMethods = {
+    GET: 0.01,
+    POST: 0.02,
+    PUT: 0.03,
+    DELETE: 0.04,
+    FETCH: 0.05,
+    PATCH: 0.06,
+    iPATCH: 0.07
+}
 const coapPfx = /^coap:\/\//i;
 
 export class CoapPacketParser extends PacketParser {
@@ -100,9 +192,9 @@ export class CoapPacketParser extends PacketParser {
                 const pkg = parse(buff);
                 this.buffers = [];
                 this.bytes = 0;
-                if(pkg.ack)
-                callback(null, pkg);
-                
+                if (pkg.ack)
+                    callback(null, pkg);
+
             }
             if (idx < chunk.length - 1) {
                 const newbuff = chunk.slice(idx + this.delimiter.length);

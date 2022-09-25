@@ -38,7 +38,7 @@ export class TransportFinalizeFilter implements ExecptionFilter {
         }
 
         const res = hctx.response;
-        const protocol = hctx.transport;
+        const stgy = hctx.transport;
 
         // first unset all headers
         if (isFunction(res.getHeaderNames)) {
@@ -58,13 +58,13 @@ export class TransportFinalizeFilter implements ExecptionFilter {
             msg = err.message
         } else {
             // ENOENT support
-            if (ENOENT === err.code) statusCode = protocol.status.notFound;
+            if (ENOENT === err.code) statusCode = stgy.notFound;
 
             // default to server error.
-            if (!isNumber(statusCode) || !protocol.status.isVaild(statusCode)) statusCode = protocol.status.serverError;
+            if (!isNumber(statusCode) || !stgy.isVaild(statusCode)) statusCode = stgy.serverError;
 
             // respond
-            msg = protocol.status.message(statusCode)
+            msg = stgy.message(statusCode)
         }
         hctx.status = statusCode;
         msg = Buffer.from(msg);
@@ -95,53 +95,53 @@ export class TransportExecptionFilter implements ExecptionFilter {
 
     @ExecptionHandler(NotFoundExecption)
     notFoundExecption(ctx: ExecptionContext, execption: NotFoundExecption) {
-        execption.status = ctx.get(ConnectionContext).transport.status.notFound;
+        execption.status = ctx.get(ConnectionContext).transport.notFound;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(ForbiddenExecption)
     forbiddenExecption(ctx: ExecptionContext, execption: ForbiddenExecption) {
-        execption.status = ctx.get(ConnectionContext).transport.status.forbidden;
+        execption.status = ctx.get(ConnectionContext).transport.forbidden;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(BadRequestExecption)
     badReqExecption(ctx: ExecptionContext, execption: BadRequestExecption) {
-        execption.status = ctx.get(ConnectionContext).transport.status.badRequest;
+        execption.status = ctx.get(ConnectionContext).transport.badRequest;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(UnauthorizedExecption)
     unauthorized(ctx: ExecptionContext, execption: UnauthorizedExecption) {
-        execption.status = ctx.get(ConnectionContext).transport.status.unauthorized;
+        execption.status = ctx.get(ConnectionContext).transport.unauthorized;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(InternalServerExecption)
     internalServerError(ctx: ExecptionContext, execption: InternalServerExecption) {
-        execption.status = ctx.get(ConnectionContext).transport.status.serverError;
+        execption.status = ctx.get(ConnectionContext).transport.serverError;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(UnsupportedMediaTypeExecption)
     unsupported(ctx: ExecptionContext, execption: UnsupportedMediaTypeExecption) {
-        execption.status = ctx.get(ConnectionContext).transport.status.unsupportedMediaType;
+        execption.status = ctx.get(ConnectionContext).transport.unsupportedMediaType;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(TransportArgumentExecption)
     anguExecption(ctx: ExecptionContext, execption: TransportArgumentExecption) {
-        ctx.execption = new BadRequestExecption(execption.message, ctx.get(ConnectionContext).transport.status.badRequest)
+        ctx.execption = new BadRequestExecption(execption.message, ctx.get(ConnectionContext).transport.badRequest)
     }
 
     @ExecptionHandler(MissingModelFieldExecption)
     missFieldExecption(ctx: ExecptionContext, execption: MissingModelFieldExecption) {
-        ctx.execption = new BadRequestExecption(execption.message, ctx.get(ConnectionContext).transport.status.badRequest)
+        ctx.execption = new BadRequestExecption(execption.message, ctx.get(ConnectionContext).transport.badRequest)
     }
 
     @ExecptionHandler(TransportMissingExecption)
     missExecption(ctx: ExecptionContext, execption: TransportMissingExecption) {
-        ctx.execption = new BadRequestExecption(execption.message, ctx.get(ConnectionContext).transport.status.badRequest)
+        ctx.execption = new BadRequestExecption(execption.message, ctx.get(ConnectionContext).transport.badRequest)
     }
 
 }

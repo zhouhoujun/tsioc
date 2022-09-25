@@ -5,7 +5,7 @@ import { Packet } from 'coap-packet';
 import * as dgram from 'dgram';
 import * as net from 'net'
 import { Duplex } from 'stream';
-import { CoapProtocol } from '../protocol';
+import { CoapTransportStrategy } from '../transport';
 
 
 @Abstract()
@@ -32,7 +32,7 @@ export const COAP_EXECPTIONFILTERS = tokenId<ExecptionFilter[]>('COAP_EXECPTIONF
 const defaults = {
     interceptorsToken: COAP_INTERCEPTORS,
     execptionsToken: COAP_EXECPTIONFILTERS,
-    transport: CoapProtocol,
+    transport: CoapTransportStrategy,
     address: {
         port: 3000,
         hostname: 'localhost'

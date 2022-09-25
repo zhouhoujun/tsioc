@@ -136,13 +136,17 @@ export class BodyparserMiddleware implements Middleware {
             case 'identity':
                 if (ctx.request instanceof Readable) {
                     return ctx.request
+                } else if (ctx.request instanceof Stream) {
+                    return (ctx.request as Stream).pipe(new PassThrough());
                 }
-                return (ctx.request as Stream).pipe(new PassThrough());
+                throw new UnsupportedMediaTypeExecption('incoming message not support streamable');
             default:
                 throw new UnsupportedMediaTypeExecption('Unsupported Content-Encoding: ' + encoding);
         }
-        const readable = ctx.request instanceof Readable ? ctx.request : (ctx.request as Stream).pipe(new PassThrough())
-        return readable.pipe(zlib.createUnzip());
+        if (ctx.request instanceof Stream) {
+            return ctx.request.pipe(zlib.createUnzip());
+        }
+        throw new UnsupportedMediaTypeExecption('incoming message not support streamable');
     }
 
     private jsonify(str: string, strict?: boolean) {

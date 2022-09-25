@@ -1,11 +1,15 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
-import { mths, TransportStrategy } from '@tsdi/core';
-import { Injectable, isString } from '@tsdi/ioc';
-
+import { ListenOpts, mths, RestfulTransportStrategy } from '@tsdi/core';
+import { Injectable, isNumber, isString } from '@tsdi/ioc';
+import { hdr } from '@tsdi/transport';
+import * as http from 'http';
+import * as http2 from 'http2';
+import { TLSSocket } from 'tls';
 
 @Injectable({ static: true })
-export class TcpStatus extends TransportStrategy {
+export class HttpTransportStrategy extends RestfulTransportStrategy {
 
+    private _protocol = 'http';
     parseStatus(status?: string | number | undefined): number {
         return isString(status) ? (status ? parseInt(status) : 0) : status ?? 0;
     }
@@ -40,7 +44,7 @@ export class TcpStatus extends TransportStrategy {
     }
 
     redirectDefaultMethod(): string {
-        return mths.MESSAGE;
+        return mths.GET;
     }
 
     redirectBodify(status: number, method?: string | undefined): boolean {
@@ -68,12 +72,12 @@ export class TcpStatus extends TransportStrategy {
         return retryStatus[status];
     }
 
-    isRedirect(status: number): boolean {
-        return redirectStatus[status]
-    }
-
     isContinue(status: number): boolean {
         return status === HttpStatusCode.Continue;
+    }
+
+    isRedirect(status: number): boolean {
+        return redirectStatus[status]
     }
 
     isRequestFailed(status: number): boolean {
@@ -87,8 +91,61 @@ export class TcpStatus extends TransportStrategy {
         return statusMessage[status as HttpStatusCode];
     }
 
+    isUpdate(req: http.IncomingMessage | http2.Http2ServerRequest): boolean {
+        return req.method === mths.PUT
+    }
+
+    isSecure(req: http.IncomingMessage | http2.Http2ServerRequest): boolean {
+        return this.protocol === 'https' || (req?.socket as TLSSocket)?.encrypted === true
+    }
+
+    get protocol(): string {
+        return this._protocol;
+    }
+
+    parseURL(req: http.IncomingMessage | http2.Http2ServerRequest, opts: ListenOpts, proxy?: boolean): URL {
+        const url = req.url?.trim() ?? '';
+        if (httptl.test(url)) {
+            return new URL(url);
+        } else {
+            if ((req.socket as TLSSocket).encrypted) {
+                this._protocol = 'https';
+            } else if (!proxy) {
+                this._protocol = 'http';
+            } else {
+                const proto = req.headers[hdr.X_FORWARDED_PROTO] as string;
+                this._protocol = (proto ? proto.split(urlsplit, 1)[0] : 'http');
+            }
+
+            let host = proxy && req.headers[hdr.X_FORWARDED_HOST];
+            if (!host) {
+                if (req.httpVersionMajor >= 2) host = req.headers[AUTHORITY];
+                if (!host) host = req.headers[hdr.HOST];
+            }
+            if (!host || isNumber(host)) {
+                host = '';
+            } else {
+                host = isString(host) ? host.split(urlsplit, 1)[0] : host[0]
+            }
+            return new URL(`${this.protocol}://${host}${url}`);
+        }
+
+    }
+
+    isAbsoluteUrl(url: string): boolean {
+        return httptl.test(url.trim())
+    }
+
+    match(protocol: string): boolean {
+        return protocol === this.protocol;
+    }
+
 }
 
+const AUTHORITY = http2.constants?.HTTP2_HEADER_AUTHORITY ?? ':authority';
+
+const httptl = /^https?:\/\//i;
+const urlsplit = /\s*,\s*/;
 
 /**
  * status codes for redirects
@@ -120,4 +177,3 @@ const retryStatus: Record<number, boolean> = {
     503: true,
     504: true
 }
-

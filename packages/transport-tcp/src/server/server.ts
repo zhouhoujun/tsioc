@@ -6,7 +6,7 @@ import {
     TransportServer, TransportContext, TransportFinalizeFilter
 } from '@tsdi/transport';
 import { TcpServerOpts, TCP_SERV_INTERCEPTORS } from './options';
-import { TcpProtocol } from '../protocol';
+import { DelimiterTransportStrategy } from '../transport';
 import * as net from 'net';
 import * as tls from 'tls';
 
@@ -24,7 +24,7 @@ export const TCP_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('HTTP_EXECPTION_
  * tcp server default options.
  */
 export const TCP_SERVER_OPTS = {
-    transport: TcpProtocol,
+    transport: DelimiterTransportStrategy,
     interceptorsToken: TCP_SERV_INTERCEPTORS,
     execptionsToken: TCP_EXECPTION_FILTERS,
     middlewaresToken: TCP_MIDDLEWARES,

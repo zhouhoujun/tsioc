@@ -1,5 +1,5 @@
 import { EMPTY, Injectable, InvocationContext, lang, Nullable, Token } from '@tsdi/ioc';
-import { RequestMethod, Client, EndpointBackend, OnDispose, InterceptorLike, RequestOptions, ResponseAs, RequestContext, mths, ReqHeaders, ReqHeadersLike, ProtocolStrategy, TransportOpts } from '@tsdi/core';
+import { RequestMethod, Client, EndpointBackend, OnDispose, InterceptorLike, RequestOptions, ResponseAs, RequestContext, mths, ReqHeaders, ReqHeadersLike } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpParams, HttpResponse, HttpBackend } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import * as http from 'http';
@@ -10,13 +10,13 @@ import { HttpPathInterceptor } from './path';
 import { HttpBodyInterceptor } from './body';
 import { HttpClientOpts, HTTP_INTERCEPTORS, CLIENT_HTTP2SESSION, HTTP_EXECPTIONFILTERS } from './option';
 import { HTTP_CLIENT_PROVIDERS } from './providers';
-import { HttpProtocol } from '../protocol';
+import { HttpTransportStrategy } from '../transport';
 
 
 
 
 const defOpts = {
-    protocol: HttpProtocol,
+    protocol: HttpTransportStrategy,
     interceptorsToken: HTTP_INTERCEPTORS,
     execptionsToken: HTTP_EXECPTIONFILTERS,
 } as HttpClientOpts;

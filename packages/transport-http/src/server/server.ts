@@ -17,7 +17,7 @@ import { HttpExecptionFilter, HttpFinalizeFilter } from './finalize-filter';
 import { Http2ServerOpts, HttpServerOpts, HTTP_EXECPTION_FILTERS, HTTP_SERVEROPTIONS, HTTP_SERV_INTERCEPTORS } from './options';
 import { HTTP_SERVR_PROVIDERS } from './providers';
 import { HttpHandlerBinding } from './binding';
-import { HttpProtocol } from '../protocol';
+import { HttpTransportStrategy } from '../transport';
 
 
 
@@ -32,7 +32,7 @@ const httpOpts = {
     content: {
         root: 'public'
     },
-    transport: HttpProtocol,
+    transport: HttpTransportStrategy,
     interceptorsToken: HTTP_SERV_INTERCEPTORS,
     middlewaresToken: HTTP_MIDDLEWARES,
     execptionsToken: HTTP_EXECPTION_FILTERS,

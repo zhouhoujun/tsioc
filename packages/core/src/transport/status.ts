@@ -120,7 +120,7 @@ export abstract class TransportStrategy {
 
 
 @Abstract()
-export abstract class RestfulStrategy extends TransportStrategy {
+export abstract class RestfulTransportStrategy extends TransportStrategy {
 
     /**
      * is redirect status or not.

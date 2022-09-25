@@ -1,5 +1,5 @@
 export * from './errors';
-export * from './status';
+export * from './transport';
 export * from './client/endpoint';
 export * from './client/backend';
 export * from './client/providers';

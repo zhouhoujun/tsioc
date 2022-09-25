@@ -1,7 +1,7 @@
 /* eslint-disable no-case-declarations */
 import {
     EndpointBackend, IncomingHeaders, IncomingStatusHeaders, isArrayBuffer, isBlob, isFormData,
-    mths, Redirector, RequestContext, ResHeaders, ResponseJsonParseError,  RestfulStrategy,
+    mths, Redirector, RequestContext, ResHeaders, ResponseJsonParseError,  RestfulTransportStrategy,
     TransportErrorResponse, TransportEvent, TransportExecption, TransportHeaderResponse, TransportResponse,
     UnsupportedMediaTypeExecption, TransportRequest
 } from '@tsdi/core';
@@ -32,7 +32,7 @@ export class TransportBackend implements EndpointBackend<TransportRequest, Trans
         }));
 
         return new Observable((observer: Observer<any>) => {
-            const statdpr = ctx.transport.status;
+            const stgy = ctx.transport;
             const path = url.replace(session.authority, '');
 
             req.headers.set(hdr.METHOD, method);
@@ -53,11 +53,11 @@ export class TransportBackend implements EndpointBackend<TransportRequest, Trans
             const onResponse = async (hdrs: IncomingHeaders & IncomingStatusHeaders, flags: number) => {
                 let body: any;
                 const headers = new ResHeaders(hdrs as Record<string, any>);
-                status = statdpr.parse(hdrs[hdr.STATUS2] ?? hdrs[hdr.STATUS]);
+                status = stgy.parseStatus(hdrs[hdr.STATUS2] ?? hdrs[hdr.STATUS]);
 
-                statusText = statdpr.message(status) ?? 'OK';
+                statusText = stgy.message(status) ?? 'OK';
 
-                if (statdpr.isEmpty(status)) {
+                if (stgy.isEmpty(status)) {
                     completed = true;
                     observer.next(new TransportHeaderResponse({
                         url,
@@ -75,7 +75,7 @@ export class TransportBackend implements EndpointBackend<TransportRequest, Trans
                     ok = !err;
                 });
 
-                if (status && statdpr instanceof RestfulStrategy && statdpr.isRedirect(status)) {
+                if (status && stgy instanceof RestfulTransportStrategy && stgy.isRedirect(status)) {
                     // HTTP fetch step 5.2
                     ctx.get(Redirector).redirect<TransportEvent<any>>(ctx, req, status, headers)
                         .pipe(
@@ -85,7 +85,7 @@ export class TransportBackend implements EndpointBackend<TransportRequest, Trans
                 }
 
                 completed = true;
-                ok = statdpr.isOk(status);
+                ok = stgy.isOk(status);
 
                 if (!ok) {
                     if (!error) {
