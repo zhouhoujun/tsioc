@@ -13,7 +13,7 @@ import { ServerRequest } from './req';
 import { ServerResponse } from './res';
 import { TRANSPORT_SERVR_PROVIDERS } from './providers';
 import { ServerStream } from './stream';
-import { StreamTransportStrategy } from '../protocol';
+import { StreamTransportStrategy } from '../strategy';
 import { ConnectionOpts } from '../connection';
 import { finalize, mergeMap, Observable, Subscriber, Subscription } from 'rxjs';
 import { ev, hdr } from '../consts';

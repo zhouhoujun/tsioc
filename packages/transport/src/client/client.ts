@@ -8,7 +8,7 @@ import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } fro
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
 import { BodyContentInterceptor } from './body';
 import { ev } from '../consts';
-import { StreamTransportStrategy } from '../protocol';
+import { StreamTransportStrategy } from '../strategy';
 import { ConnectionOpts } from '../connection';
 
 

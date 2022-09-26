@@ -1,7 +1,10 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { IncomingMsg, ListenOpts, mths, Packet } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
-import { ConnectionOpts, hdr, isBuffer, StreamTransportStrategy, ServerRequest, PacketParser, PacketGenerator, ev, SteamOptions, StreamParser, StreamGenerator, TransportStream, Connection } from '@tsdi/transport';
+import {
+    ConnectionOpts, hdr, isBuffer, StreamTransportStrategy, ServerRequest, PacketParser,
+    PacketGenerator, ev, SteamOptions, StreamParser, StreamGenerator, TransportStream, Connection
+} from '@tsdi/transport';
 import { Buffer } from 'buffer';
 import { Duplex, TransformCallback, Writable } from 'stream';
 import * as tsl from 'tls';
@@ -210,13 +213,13 @@ export class DelimiterParser extends PacketParser {
                     // if (idx) {
                     //     process.nextTick(() => this.write(pkg))
                     // } else {
-                        callback(null, pkg);
+                    callback(null, pkg);
                     // }
                 } else {
                     // if (idx) {
                     //     process.nextTick(() => this.write(buff), this.write(this.delimiter));
                     // } else {
-                        callback(null, buff.slice(1));
+                    callback(null, buff.slice(1));
                     // }
                 }
             })
@@ -430,7 +433,7 @@ export class TcptreamGenerator extends StreamGenerator {
 /**
  * status codes for redirects
  */
- const redirectStatus: Record<number, boolean> = {
+const redirectStatus: Record<number, boolean> = {
     300: true,
     301: true,
     302: true,

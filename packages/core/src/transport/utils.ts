@@ -1,4 +1,4 @@
-import { _tyundef } from '@tsdi/ioc'
+import { _tyundef } from '@tsdi/ioc';
 
 /**
  * Safely assert whether the given value is an ArrayBuffer.

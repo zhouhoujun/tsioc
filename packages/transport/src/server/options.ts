@@ -5,7 +5,7 @@ import { ContentOptions, SessionOptions } from '../middlewares';
 import { MimeSource } from '../mime';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';
-import { StreamTransportStrategy } from '../protocol';
+import { StreamTransportStrategy } from '../strategy';
 import { EventStrategy } from './connection';
 
 

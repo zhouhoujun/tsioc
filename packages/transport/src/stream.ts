@@ -5,7 +5,7 @@ import { Readable, Writable, Transform } from 'stream';
 import { Connection } from './connection';
 import { ev } from './consts';
 import { setTimeout } from 'timers';
-import { Closeable } from './protocol';
+import { Closeable } from './strategy';
 import { Duplexify, DuplexifyOptions } from './duplexify';
 
 

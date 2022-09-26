@@ -3,7 +3,7 @@ import { Abstract, EMPTY_OBJ } from '@tsdi/ioc';
 import { Duplex } from 'stream';
 import { Connection, ConnectionOpts } from '../connection';
 import { ev } from '../consts';
-import { StreamTransportStrategy } from '../protocol';
+import { StreamTransportStrategy } from '../strategy';
 import { ServerStream } from './stream';
 
 @Abstract()

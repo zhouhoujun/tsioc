@@ -1,6 +1,6 @@
 import { ClientOpts, EndpointBackend, ExecptionFilter, Interceptor, TransportEvent, TransportRequest } from '@tsdi/core';
 import { Abstract, ClassType, tokenId } from '@tsdi/ioc';
-import { StreamTransportStrategy } from '../protocol';
+import { StreamTransportStrategy } from '../strategy';
 import { ClientConnectionOpts, ClientRequsetOpts, RequestStrategy } from './connection';
 
 

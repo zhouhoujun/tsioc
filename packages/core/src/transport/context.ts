@@ -1,6 +1,6 @@
 import { Abstract, DefaultInvocationContext } from '@tsdi/ioc';
 import { IncomingMsg, OutgoingMsg } from './packet';
-import { TransportStrategy } from './status';
+import { TransportStrategy } from './strategy';
 import { TransportEndpoint } from './transport';
 
 /**

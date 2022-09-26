@@ -3,7 +3,7 @@ export * from './content';
 export * from './execptions';
 export * from './mime';
 export * from './negotiator';
-export * from './protocol';
+export * from './strategy';
 export * from './duplexify';
 export * from './stream';
 export * from './connection';

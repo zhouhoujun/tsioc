@@ -1,7 +1,7 @@
 import { Injector, InvokeArguments, isFunction, TypeOf } from '@tsdi/ioc';
 import { Client } from './client';
 import { RequestContext } from './context';
-import { TransportStrategy } from './status';
+import { TransportStrategy } from './strategy';
 
 
 /**

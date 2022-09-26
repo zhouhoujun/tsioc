@@ -8,7 +8,7 @@ import { ConnectionContext } from './context';
 import { TransportArgumentExecption } from './execptions';
 import { TransportArgumentResolver, TransportParameter } from './resolver';
 import { Server } from './server';
-import { TransportStrategy } from './status';
+import { TransportStrategy } from './strategy';
 import { IncomingMsg, OutgoingMsg } from './packet';
 
 export interface ServerContextOpts extends InvokeArguments {

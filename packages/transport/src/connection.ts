@@ -4,7 +4,7 @@ import { Duplex } from 'stream';
 import { ev } from './consts';
 import { Duplexify, DuplexifyOptions } from './duplexify';
 import { InvalidSessionExecption } from './execptions';
-import { Closeable, PacketGenerator, PacketParser, StreamTransportStrategy } from './protocol';
+import { Closeable, PacketGenerator, PacketParser, StreamTransportStrategy } from './strategy';
 import { TransportStream } from './stream';
 
 

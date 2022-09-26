@@ -1,6 +1,9 @@
 import { IncomingMsg, ListenOpts, mths } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
-import { Connection, ConnectionOpts, isBuffer, PacketGenerator, PacketParser, SteamOptions, StreamGenerator, StreamParser, StreamTransportStrategy, TransportStream } from '@tsdi/transport';
+import {
+    Connection, ConnectionOpts, isBuffer, PacketGenerator, PacketParser, SteamOptions,
+    StreamGenerator, StreamParser, StreamTransportStrategy, TransportStream
+} from '@tsdi/transport';
 import { Duplex, Writable, TransformCallback } from 'stream';
 import { parse, generate, ParsedPacket } from 'coap-packet';
 
@@ -86,7 +89,7 @@ export class CoapTransportStrategy extends StreamTransportStrategy {
     isRequestFailed(status: number): boolean {
         return status >= 400 && status < 500
     }
-    
+
     isServerError(status: number): boolean {
         return status >= 500
     }
@@ -103,7 +106,7 @@ export class CoapTransportStrategy extends StreamTransportStrategy {
         return req.connection?.encrypted === true
     }
 
-    
+
     parseURL(req: IncomingMsg, opts: ListenOpts, proxy?: boolean | undefined): URL {
         const url = req.url?.trim() ?? '';
         if (coapPfx.test(url)) {

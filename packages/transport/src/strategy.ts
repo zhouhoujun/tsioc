@@ -6,9 +6,15 @@ import { SteamOptions, TransportStream } from './stream';
 
 
 
-
+/**
+ * stream transport strategy.
+ */
 @Abstract()
 export abstract class StreamTransportStrategy extends TransportStrategy {
+    /**
+     * valid headers.
+     * @param header 
+     */
     abstract valid(header: string): boolean;
     /**
      * packet parser
