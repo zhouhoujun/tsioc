@@ -22,7 +22,6 @@ export class ClientContext extends RequestContext {
      * instance of TransportClient.
      */
     readonly target: Client;
-    readonly transport: TransportStrategy;
     readonly observe: 'body' | 'events' | 'response';
     responseType: 'arraybuffer' | 'blob' | 'json' | 'text';
 
@@ -33,9 +32,7 @@ export class ClientContext extends RequestContext {
         this.responseType = options?.responseType ?? 'json';
 
         if (options?.transport) {
-            this.transport = isFunction(options.transport) ? this.get(options.transport) : options.transport;
-        } else {
-            this.transport = this.get(TransportStrategy);
+            this._transport = isFunction(options.transport) ? this.get(options.transport) : options.transport;
         }
     }
 

@@ -1,7 +1,7 @@
-import { Endpoint, IncomingHeaders, ListenOpts, ModuleRef, Router, Server, TransportEvent } from '@tsdi/core';
-import { Abstract, Destroyable, EMPTY_OBJ, Execption, Injectable, isBoolean, isFunction, isObject, isString, lang, Nullable } from '@tsdi/ioc';
+import { Endpoint, IncomingHeaders, ListenOpts, ModuleRef, Router, Server, TransportEvent, TransportStrategy } from '@tsdi/core';
+import { Abstract, Destroyable, EMPTY_OBJ, Execption, isBoolean, isFunction, lang } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
-import { Readable, Writable, Duplex } from 'stream';
+import { Duplex } from 'stream';
 import { CatchInterceptor, LogInterceptor, RespondInterceptor } from '../interceptors';
 import { TransportContext, SERVER_EXECPTION_FILTERS, SERVER_MIDDLEWARES } from './context';
 import { BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMiddleware, SessionMiddleware } from '../middlewares';
@@ -13,12 +13,12 @@ import { ServerRequest } from './req';
 import { ServerResponse } from './res';
 import { TRANSPORT_SERVR_PROVIDERS } from './providers';
 import { ServerStream } from './stream';
-import { StreamTransportStrategy } from '../strategy';
 import { ConnectionOpts } from '../connection';
 import { finalize, mergeMap, Observable, Subscriber, Subscription } from 'rxjs';
 import { ev, hdr } from '../consts';
 import { ServerConnection } from './connection';
-import { isBuffer, isDuplex } from '../utils';
+import { isDuplex } from '../utils';
+import { StreamTransportStrategy } from '../strategy';
 
 
 const defOpts = {
@@ -74,9 +74,8 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
         try {
             const opts = this.getOptions();
             const server = this._server = this.buildServer(opts);
-            const transport = this.getTransportProtocol(opts);
             const logger = this.logger;
-            const sub = this.onConnection(server, transport, opts.connectionOpts)
+            const sub = this.onConnection(server, opts.connectionOpts)
                 .pipe(mergeMap(conn => this.onRequest(conn)))
                 .subscribe({
                     error: (err) => {
@@ -94,14 +93,14 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
     }
 
 
-    protected onConnection(server: T, transport: StreamTransportStrategy, opts?: ConnectionOpts): Observable<ServerConnection> {
+    protected onConnection(server: T, opts?: ConnectionOpts): Observable<ServerConnection> {
         return new Observable((observer) => {
             const onError = (err: Error) => {
                 observer.error(err);
             };
             const onConnection = (conn: any, ...args: any[]) => {
                 const duplex = isDuplex(conn) ? conn : this.parseToDuplex(conn, ...args);
-                const connection = this.createConnection(duplex, transport, opts);
+                const connection = this.createConnection(duplex, opts);
                 observer.next(connection);
             }
             const onClose = () => {
@@ -158,8 +157,8 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
         throw new Execption('parse connection client to Duplex not implemented.')
     }
 
-    protected createConnection(duplex: Duplex, transport: StreamTransportStrategy, opts?: ConnectionOpts) {
-        return new ServerConnection(duplex, transport, opts);
+    protected createConnection(duplex: Duplex, opts?: ConnectionOpts) {
+        return new ServerConnection(duplex, this.context.get(StreamTransportStrategy), opts);
     }
 
     /**
@@ -192,10 +191,6 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
             }
         });
         return cancel;
-    }
-
-    protected getTransportProtocol(opts: TransportServerOpts) {
-        return this.context.get(opts.transport!);
     }
 
     protected buildContext(stream: ServerStream, headers: IncomingHeaders): TransportContext {

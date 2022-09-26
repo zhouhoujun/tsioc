@@ -4,8 +4,6 @@ import { Writable, Transform } from 'stream';
 import { Connection, ConnectionOpts } from './connection';
 import { SteamOptions, TransportStream } from './stream';
 
-
-
 /**
  * stream transport strategy.
  */
@@ -60,7 +58,7 @@ export abstract class StreamParser extends Transform {
 }
 
 @Abstract()
-export abstract  class StreamGenerator  extends Writable {
+export abstract class StreamGenerator extends Writable {
     abstract setOptions(opts: SteamOptions): void;
 }
 

@@ -1,11 +1,23 @@
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, Token, TypeOf } from '@tsdi/ioc';
+import { Observable } from 'rxjs';
+import { InterceptorLike, InterceptorType } from './endpoint';
 import { IncomingMsg } from './packet';
+
+
+export interface TransportStrategyOpts<TInput = any, TOutput = any> {
+    strategy: TypeOf<TransportStrategy>;
+    interceptors?: InterceptorType<TInput, TOutput>[];
+    interceptorsToken?: Token<InterceptorLike<TInput, TOutput>>;
+}
+
 
 /**
  * transport strategy.
  */
 @Abstract()
 export abstract class TransportStrategy {
+
+    // abstract transfom(input: any): Observable<any>;
     /**
      * protocol name
      */

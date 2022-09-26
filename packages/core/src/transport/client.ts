@@ -380,7 +380,7 @@ export abstract class Client<
     protected createContext(req: TRequest | TPattern, options?: TReqOpts & ResponseAs): RequestContext {
         return (options as any)?.context ?? new ClientContext(
             this.context.injector, this as any,
-            { transport: this.getOptions().transport, responseType: options?.responseType, observe: isTypeObject(req) ? 'events' : options?.observe });
+            { transport: this.getOptions().transport?.strategy, responseType: options?.responseType, observe: isTypeObject(req) ? 'events' : options?.observe });
     }
 
     protected abstract buildRequest(context: RequestContext, url: TRequest | TPattern, options?: TReqOpts): TRequest;

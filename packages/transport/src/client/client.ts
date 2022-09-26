@@ -14,9 +14,11 @@ import { ConnectionOpts } from '../connection';
 
 const tsptDeftOpts = {
     backend: TransportBackend,
-    interceptors: [BodyContentInterceptor],
+    interceptors: [
+        BodyContentInterceptor
+    ],
     interceptorsToken: CLIENT_INTERCEPTORS,
-    execptionsToken: CLIENT_EXECPTIONFILTERS
+    execptionsToken: CLIENT_EXECPTIONFILTERS,
 } as TransportClientOpts;
 
 
@@ -55,7 +57,8 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
         const connectionOpts = { objectMode: true, ...defaults.connectionOpts, ...options?.connectionOpts };
         const interceptors = options?.interceptors ?? EMPTY;
         const providers = options && options.providers ? [...TRANSPORT_CLIENT_PROVIDERS, ...options.providers] : TRANSPORT_CLIENT_PROVIDERS;
-        const opts = { ...tsptDeftOpts, ...defaults, ...options, connectOpts, connectionOpts, interceptors, providers };
+        const transport = { ...defaults.transport, ...options?.transport };
+        const opts = { ...tsptDeftOpts, ...defaults, ...options, transport, connectOpts, connectionOpts, interceptors, providers };
         return opts as TOpts;
     }
 
@@ -91,7 +94,7 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
     protected buildConnection(opts: TOpts): Observable<ClientConnection> {
         const logger = this.logger;
         return new Observable((observer: Observer<ClientConnection>) => {
-            const transport = this.context.get(opts.transport ?? StreamTransportStrategy);
+            const transport = this.context.get(StreamTransportStrategy);
             const strategy = this.context.get(opts.request ?? RequestStrategy);
             const duplex = this.createDuplex(opts);
             const client = this.createConnection(duplex, transport, strategy, opts.connectionOpts);

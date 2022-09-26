@@ -1,6 +1,6 @@
 import {
-    Abstract, ClassType, composeResolver, isArray, isDefined, isPrimitiveType, isString,
-    Injector, InvokeArguments, MissingParameterExecption, Parameter, Token, Type, EMPTY, TypeOf, isFunction
+    Abstract, Token, Type, ClassType, TypeOf, composeResolver, isArray, isDefined, isPrimitiveType,
+    isString, Injector, InvokeArguments, MissingParameterExecption, Parameter, EMPTY, isFunction
 } from '@tsdi/ioc';
 import { MODEL_RESOLVERS } from './model';
 import { PipeTransform } from '../pipes/pipe';
@@ -11,6 +11,10 @@ import { Server } from './server';
 import { TransportStrategy } from './strategy';
 import { IncomingMsg, OutgoingMsg } from './packet';
 
+
+/**
+ * server context options.
+ */
 export interface ServerContextOpts extends InvokeArguments {
     transport?: TypeOf<TransportStrategy>
 }
@@ -20,10 +24,7 @@ export interface ServerContextOpts extends InvokeArguments {
  */
 @Abstract()
 export abstract class ServerContext<TRequest extends IncomingMsg = IncomingMsg, TResponse extends OutgoingMsg = OutgoingMsg> extends ConnectionContext<TRequest, TResponse> {
-    /**
-     * context protocol.
-     */
-    readonly transport: TransportStrategy;
+
 
     constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, options?: ServerContextOpts) {
         super(injector, {
@@ -34,10 +35,9 @@ export abstract class ServerContext<TRequest extends IncomingMsg = IncomingMsg, 
                 ...injector.get(MODEL_RESOLVERS, EMPTY)
             ]
         });
+
         if (options?.transport) {
-            this.transport = isFunction(options.transport) ? injector.get(options.transport) : options.transport;
-        } else {
-            this.transport = injector.get(TransportStrategy);
+            this._transport = isFunction(options.transport) ? injector.get(options.transport) : options.transport;
         }
     }
 

@@ -40,9 +40,7 @@ import { DefaultRequestStrategy, RequestStrategy } from './client';
         TransportRespondAdapter,
         TransportFinalizeFilter,
         TransportExecptionFilter,
-
-        // TransportClient,
-        // TransportServer,
+        
         { provide: RequestStrategy, useClass: DefaultRequestStrategy, asDefault: true },
         { provide: Client, useExisting: TransportClient },
         { provide: Server, useExisting: TransportServer }

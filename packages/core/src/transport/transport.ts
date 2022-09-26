@@ -1,12 +1,12 @@
 import {
-    Abstract, ArgumentExecption, Autorun, AutoWired, ClassType, EMPTY, InvocationContext,
-    isClass, isClassType, lang, ProviderType, Token, Type, TypeOf
+    Abstract, ArgumentExecption, Autorun, AutoWired, EMPTY, InvocationContext,
+    isClass, isClassType, isFunction, lang, ProviderType, Token, Type, TypeOf
 } from '@tsdi/ioc';
 import { Log, Logger } from '@tsdi/logs';
 import { ExecptionChain } from '../execptions/chain';
 import { ExecptionFilter } from '../execptions/filter';
 import { Endpoint, EndpointBackend, InterceptorChain, InterceptorLike, InterceptorType } from './endpoint';
-import { TransportStrategy } from './strategy';
+import { TransportStrategyOpts, TransportStrategy } from './strategy';
 
 
 /**
@@ -37,7 +37,7 @@ export abstract class TransportOpts<TRequest, TResponse> {
     /**
      * transport protocol.
      */
-    abstract transport?: ClassType<TransportStrategy>;
+    abstract transport?: TransportStrategyOpts;
     /**
      * endpoint timeout.
      */
@@ -162,8 +162,16 @@ export abstract class TransportEndpoint<
     protected initContext(options: Opts): void {
         const injector = this.context.injector;
         if (options.transport) {
-            injector.inject({ provide: TransportStrategy, useExisting: options.transport });
+            const { strategy, interceptors, interceptorsToken } = options.transport;
+            if (!strategy) {
+                throw new ArgumentExecption(lang.getClassName(this) + ' transport options strategy is missing.');
+            }
+            if (interceptorsToken && interceptors) {
+                this.multiReg(interceptorsToken, interceptors ?? []);
+                injector.inject(isFunction(strategy) ? { provide: TransportStrategy, useExisting: strategy } : { provide: TransportStrategy, useValue: strategy });
+            }
         }
+
         injector.inject({ provide: Logger, useFactory: () => this.logger });
         if (options.providers && options.providers.length) {
             injector.inject(options.providers);

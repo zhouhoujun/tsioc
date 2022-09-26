@@ -1,10 +1,10 @@
 import { IncomingMsg, ListenOpts } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import {
-    Connection, ConnectionOpts, ev, PacketGenerator, PacketParser, SteamOptions, StreamGenerator,
-    StreamParser, StreamTransportStrategy, TransportStream
+    Connection, ConnectionOpts, ev, PacketGenerator, SteamOptions, StreamGenerator,
+    PacketParser, StreamParser, StreamTransportStrategy, TransportStream
 } from '@tsdi/transport';
-import { Duplex, TransformCallback, Writable } from 'stream';
+import { TransformCallback, Writable } from 'stream';
 import {
     Parser, parser, writeToStream,
     IConnectPacket, IConnackPacket, IPublishPacket, IPubackPacket, IPubrecPacket,

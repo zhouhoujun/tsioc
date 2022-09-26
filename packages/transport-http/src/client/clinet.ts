@@ -16,7 +16,9 @@ import { HttpTransportStrategy } from '../transport';
 
 
 const defOpts = {
-    protocol: HttpTransportStrategy,
+    transport: {
+        strategy: HttpTransportStrategy
+    },
     interceptorsToken: HTTP_INTERCEPTORS,
     execptionsToken: HTTP_EXECPTIONFILTERS,
 } as HttpClientOpts;

@@ -1,4 +1,4 @@
-import { Endpoint, Interceptor, ServerOpts, ConnectionContext } from '@tsdi/core';
+import { Endpoint, Interceptor, ConnectionContext } from '@tsdi/core';
 import { Abstract, Injectable } from '@tsdi/ioc';
 import { Observable, mergeMap } from 'rxjs';
 

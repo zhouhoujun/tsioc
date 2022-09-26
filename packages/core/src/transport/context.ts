@@ -12,10 +12,20 @@ export abstract class EndpointContext extends DefaultInvocationContext {
      * host transport endpoint. instance of {@link TransportEndpoint}.
      */
     abstract get target(): TransportEndpoint;
+
+
+    protected _transport?: TransportStrategy;
     /**
      * transport protocol
      */
-    abstract get transport(): TransportStrategy;
+    get transport(): TransportStrategy {
+        if (!this._transport) {
+            this._transport = this.get(TransportStrategy);
+        }
+        return this._transport;
+    }
+
+
 
     protected override clear(): void {
         super.clear();

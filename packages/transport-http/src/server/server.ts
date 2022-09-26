@@ -32,7 +32,9 @@ const httpOpts = {
     content: {
         root: 'public'
     },
-    transport: HttpTransportStrategy,
+    transport: {
+        strategy: HttpTransportStrategy
+    },
     interceptorsToken: HTTP_SERV_INTERCEPTORS,
     middlewaresToken: HTTP_MIDDLEWARES,
     execptionsToken: HTTP_EXECPTION_FILTERS,
@@ -192,7 +194,7 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse, HttpCo
      * @param response 
      */
     protected onRequestHandler(request: HttpServRequest, response: HttpServResponse) {
-        const ctx = new HttpContext(this.context.injector, request, response, this as Server, { transport: this.getOptions().transport });
+        const ctx = new HttpContext(this.context.injector, request, response, this as Server, { transport: this.getOptions().transport?.strategy });
         this.context.injector.get(HttpHandlerBinding).binding(ctx, this.endpoint());
     }
 

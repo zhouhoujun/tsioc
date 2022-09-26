@@ -1,11 +1,12 @@
 import { ExecptionFilter, Interceptor, ListenOpts, MiddlewareLike, TransportEvent, TransportRequest } from '@tsdi/core';
-import { Abstract, Execption, Injectable, lang, tokenId, TypeOf } from '@tsdi/ioc';
+import { Abstract, Execption, Injectable, lang, tokenId } from '@tsdi/ioc';
 import { CatchInterceptor, LogInterceptor, TransportServer, TransportServerOpts, RespondInterceptor, ConnectionOpts, ServerConnection, StreamTransportStrategy } from '@tsdi/transport';
 import { Duplex } from 'stream';
 import * as net from 'net';
 import * as tls from 'tls';
 import * as ws from 'ws';
 import { MqttConnection } from './connection';
+import { MqttTransportStrategy } from '../transport';
 
 
 
@@ -44,7 +45,7 @@ export const MQTT_SERV_EXECPTIONFILTERS = tokenId<ExecptionFilter[]>('MQTT_SERV_
 /**
  * Mqtt server middlewares.
  */
- export const MQTT_MIDDLEWARES = tokenId<MiddlewareLike[]>('MQTT_MIDDLEWARES');
+export const MQTT_MIDDLEWARES = tokenId<MiddlewareLike[]>('MQTT_MIDDLEWARES');
 
 
 const defaults = {
@@ -57,6 +58,7 @@ const defaults = {
     interceptorsToken: MQTT_SERV_INTERCEPTORS,
     execptionsToken: MQTT_SERV_EXECPTIONFILTERS,
     middlewaresToken: MQTT_MIDDLEWARES,
+    transport: MqttTransportStrategy,
     interceptors: [
         LogInterceptor,
         CatchInterceptor,
