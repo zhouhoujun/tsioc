@@ -3,7 +3,7 @@ import { Abstract, Injectable, Nullable, Token, tokenId } from '@tsdi/ioc';
 import { ClientConnection, RequestStrategy, TransportClient, TransportClientOpts } from '@tsdi/transport';
 import { Duplex } from 'form-data';
 import * as ws from 'ws';
-import { WsProtocol } from '../protocol';
+import { WsTransportStrategy } from '../transport';
 
 
 @Abstract()
@@ -17,7 +17,7 @@ export abstract class WSClitentOptions extends TransportClientOpts {
 }
 
 const defs = {
-    transport: WsProtocol
+    transport: WsTransportStrategy
 } as WSClitentOptions;
 
 

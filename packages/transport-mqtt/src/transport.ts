@@ -1,7 +1,10 @@
-import { TransportStatus, IncomingMsg, ListenOpts, IncomingHeaders, Packet } from '@tsdi/core';
+import { IncomingMsg, ListenOpts } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
-import { ConnectionOpts, ev, PacketGenerator, PacketParser, TransportProtocol } from '@tsdi/transport';
-import { Duplex, TransformCallback } from 'stream';
+import {
+    Connection, ConnectionOpts, ev, PacketGenerator, PacketParser, SteamOptions, StreamGenerator,
+    StreamParser, StreamTransportStrategy, TransportStream
+} from '@tsdi/transport';
+import { Duplex, TransformCallback, Writable } from 'stream';
 import {
     Parser, parser, writeToStream,
     IConnectPacket, IConnackPacket, IPublishPacket, IPubackPacket, IPubrecPacket,
@@ -93,23 +96,69 @@ export declare type PacketOptions = ConnectOptions |
 
 
 @Injectable()
-export class MqttProtocol extends TransportProtocol {
-    constructor() {
-        super()
-    }
+export class MqttTransportStrategy extends StreamTransportStrategy {
     valid(header: string): boolean {
         throw new Error('Method not implemented.');
     }
-    transform(opts: ConnectionOpts): PacketParser {
-        return new MqttPacketParser(opts);
-    }
-    generate(stream: Duplex, opts: ConnectionOpts): PacketGenerator {
-        return new MqttPacketGenerator(stream, opts);
-    }
+
     get protocol(): string {
         throw new Error('Method not implemented.');
     }
-    get status(): TransportStatus {
+    parseStatus(status?: string | number | undefined): number {
+        throw new Error('Method not implemented.');
+    }
+    get ok(): number {
+        throw new Error('Method not implemented.');
+    }
+    get badRequest(): number {
+        throw new Error('Method not implemented.');
+    }
+    get notFound(): number {
+        throw new Error('Method not implemented.');
+    }
+    get found(): number {
+        throw new Error('Method not implemented.');
+    }
+    get unauthorized(): number {
+        throw new Error('Method not implemented.');
+    }
+    get forbidden(): number {
+        throw new Error('Method not implemented.');
+    }
+    get noContent(): number {
+        throw new Error('Method not implemented.');
+    }
+    get serverError(): number {
+        throw new Error('Method not implemented.');
+    }
+    get unsupportedMediaType(): number {
+        throw new Error('Method not implemented.');
+    }
+    isVaild(statusCode: number): boolean {
+        throw new Error('Method not implemented.');
+    }
+    isNotFound(status: number): boolean {
+        throw new Error('Method not implemented.');
+    }
+    isEmpty(status: number): boolean {
+        throw new Error('Method not implemented.');
+    }
+    isOk(status: number): boolean {
+        throw new Error('Method not implemented.');
+    }
+    isContinue(status: number): boolean {
+        throw new Error('Method not implemented.');
+    }
+    isRetry(status: number): boolean {
+        throw new Error('Method not implemented.');
+    }
+    isRequestFailed(status: number): boolean {
+        throw new Error('Method not implemented.');
+    }
+    isServerError(status: number): boolean {
+        throw new Error('Method not implemented.');
+    }
+    message(status: number): string {
         throw new Error('Method not implemented.');
     }
     isAbsoluteUrl(url: string): boolean {
@@ -121,22 +170,36 @@ export class MqttProtocol extends TransportProtocol {
     isSecure(incoming: IncomingMsg): boolean {
         throw new Error('Method not implemented.');
     }
-    parse(incoming: IncomingMsg, opts: ListenOpts, proxy?: boolean | undefined): URL {
+    parseURL(incoming: IncomingMsg, opts: ListenOpts, proxy?: boolean | undefined): URL {
         throw new Error('Method not implemented.');
     }
     match(protocol: string): boolean {
         throw new Error('Method not implemented.');
     }
-    parsePacket(packet: any): Packet<IncomingHeaders> {
+
+
+    generator(output: Writable, opts: ConnectionOpts): PacketGenerator {
+        return new MqttPacketGenerator(output, opts);
+    }
+
+    parser(connection: Connection, opts: ConnectionOpts): PacketParser {
+        return new MqttPacketParser(connection, opts);
+    }
+
+    streamParser(stream: TransportStream, opts: SteamOptions): StreamParser {
         throw new Error('Method not implemented.');
     }
+    streamGenerator(output: Writable, packetId: number, opts: SteamOptions): StreamGenerator {
+        throw new Error('Method not implemented.');
+    }
+
 
 }
 
 export class MqttPacketParser extends PacketParser {
 
     private parser!: Parser;
-    constructor(opts: ConnectionOpts) {
+    constructor(private connection: Connection, opts: ConnectionOpts) {
         super(opts);
         this.setOptions(opts);
     }
@@ -157,7 +220,7 @@ export class MqttPacketParser extends PacketParser {
 }
 
 export class MqttPacketGenerator extends PacketGenerator {
-    constructor(private output: Duplex, private opts: ConnectionOpts) {
+    constructor(private output: Writable, private opts: ConnectionOpts) {
         super(opts);
         this.setOptions(opts);
     }

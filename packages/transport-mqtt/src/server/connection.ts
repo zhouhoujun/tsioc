@@ -1,13 +1,17 @@
 import { EMPTY_OBJ } from '@tsdi/ioc';
 import { ConnectionOpts, ev, ServerConnection } from '@tsdi/transport';
 import { Duplex } from 'stream';
-import { IPacket, IConnectPacket } from 'mqtt-packet';
-import { AuthOptions, ConnackOptions, ConnectOptions, DisconnectOptions, MqttProtocol, PingreqOptions, PingrespOptions, PubackOptions, PubcompOptions, PublishOptions, PubrecOptions, PubrelOptions, SubackOptions, SubscribeOptions, UnsubackOptions, UnsubscribeOptions } from '../protocol';
+import { IPacket } from 'mqtt-packet';
+import {
+    AuthOptions, ConnackOptions, ConnectOptions, DisconnectOptions, MqttTransportStrategy,
+    PingreqOptions, PingrespOptions, PubackOptions, PubcompOptions, PublishOptions, PubrecOptions,
+    PubrelOptions, SubackOptions, SubscribeOptions, UnsubackOptions, UnsubscribeOptions
+} from '../transport';
 
 
 export class MqttConnection extends ServerConnection {
 
-    constructor(stream: Duplex, transport: MqttProtocol, opts: ConnectionOpts = EMPTY_OBJ) {
+    constructor(stream: Duplex, transport: MqttTransportStrategy, opts: ConnectionOpts = EMPTY_OBJ) {
         super(stream, transport, opts);
         if (opts.noData !== true) {
             this.once(ev.DATA, (connPacket) => {

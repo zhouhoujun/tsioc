@@ -1,24 +1,10 @@
-import { EndpointBackend, ExecptionFilter, TransportContext, TransportServer } from '@tsdi/core';
 import { Injectable, Token } from '@tsdi/ioc';
+import { TransportServer } from '@tsdi/transport';
+import { ServerTCP } from 'modbus-serial'
 import { Subscription } from 'rxjs';
 
 
 @Injectable()
 export class ModbusServer extends TransportServer {
-
-    start(): Promise<void> {
-        throw new Error('Method not implemented.');
-    }
- 
-    close(): Promise<void> {
-        throw new Error('Method not implemented.');
-    }
-
-    protected createContext(request: any, response: any): TransportContext<any, any> {
-        throw new Error('Method not implemented.');
-    }
     
-    protected bindEvent(ctx: TransportContext<any, any>, cancel: Subscription): void {
-        throw new Error('Method not implemented.');
-    }
 }

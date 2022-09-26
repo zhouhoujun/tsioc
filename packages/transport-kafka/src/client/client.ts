@@ -1,14 +1,20 @@
 import { Inject, Injectable, InvocationContext, isUndefined, ModuleLoader } from '@tsdi/ioc';
-import { TransportClient, Protocol, ClientOptions, EndpointBackend, RequstOption, RequestPacket, ResponsePacket } from '@tsdi/core';
+import { EndpointBackend } from '@tsdi/core';
+import { TransportClientOpts } from '@tsdi/transport';
 import { Level } from '@tsdi/logs';
-import { BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerGroupJoinEvent, ConsumerRunConfig, ConsumerSubscribeTopic, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, Kafka, KafkaConfig, LogEntry, logLevel, MemberMetadata, PartitionAssigner, Producer, ProducerConfig, ProducerRecord } from 'kafkajs';
+import {
+    BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerGroupJoinEvent,
+    ConsumerRunConfig, ConsumerSubscribeTopic, EachMessagePayload, GroupMember, GroupMemberAssignment,
+    GroupState, Kafka, KafkaConfig, LogEntry, logLevel, MemberMetadata, PartitionAssigner, Producer,
+    ProducerConfig, ProducerRecord
+} from 'kafkajs';
 import { DEFAULT_BROKERS, KafkaHeaders } from '../const';
-import { scan } from 'rxjs';
+
 
 let kafkajs: any;
 let uuid: any;
 
-export interface KafkaClientOption extends KafkaConfig, ClientOptions<any, any> {
+export interface KafkaClientOption extends KafkaConfig, TransportClientOpts {
     postfixId?: string;
     client?: KafkaConfig;
     consumer?: ConsumerConfig;

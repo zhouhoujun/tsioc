@@ -1,6 +1,6 @@
-import { ExecptionFilter, Interceptor, ListenOpts, MqttProtocols, TransportEvent, TransportRequest } from '@tsdi/core';
+import { ExecptionFilter, Interceptor, ListenOpts, MiddlewareLike, TransportEvent, TransportRequest } from '@tsdi/core';
 import { Abstract, Execption, Injectable, lang, tokenId, TypeOf } from '@tsdi/ioc';
-import { CatchInterceptor, LogInterceptor, TransportServer, TransportServerOpts, RespondInterceptor, Connection, ConnectionOpts, TransportProtocol, ev, ServerConnection } from '@tsdi/transport';
+import { CatchInterceptor, LogInterceptor, TransportServer, TransportServerOpts, RespondInterceptor, ConnectionOpts, ServerConnection, StreamTransportStrategy } from '@tsdi/transport';
 import { Duplex } from 'stream';
 import * as net from 'net';
 import * as tls from 'tls';
@@ -40,6 +40,13 @@ export const MQTT_SERV_INTERCEPTORS = tokenId<Interceptor<TransportRequest, Tran
  */
 export const MQTT_SERV_EXECPTIONFILTERS = tokenId<ExecptionFilter[]>('MQTT_SERV_EXECPTIONFILTERS');
 
+
+/**
+ * Mqtt server middlewares.
+ */
+ export const MQTT_MIDDLEWARES = tokenId<MiddlewareLike[]>('MQTT_MIDDLEWARES');
+
+
 const defaults = {
     json: true,
     encoding: 'utf8',
@@ -49,6 +56,7 @@ const defaults = {
     },
     interceptorsToken: MQTT_SERV_INTERCEPTORS,
     execptionsToken: MQTT_SERV_EXECPTIONFILTERS,
+    middlewaresToken: MQTT_MIDDLEWARES,
     interceptors: [
         LogInterceptor,
         CatchInterceptor,
@@ -105,7 +113,7 @@ export class MqttServer extends TransportServer<net.Server | tls.Server | ws.Ser
         return ws.createWebSocketStream(conn, { objectMode: true });
     }
 
-    protected override createConnection(duplex: Duplex, transport: TransportProtocol, opts?: ConnectionOpts | undefined): ServerConnection {
+    protected override createConnection(duplex: Duplex, transport: StreamTransportStrategy, opts?: ConnectionOpts | undefined): ServerConnection {
         return new MqttConnection(duplex, transport, opts);
     }
 

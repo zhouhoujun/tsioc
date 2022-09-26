@@ -6,5 +6,5 @@ import { HttpBackend2 } from './backend';
 
 export const HTTP_CLIENT_PROVIDERS = [
     { provide: TransportStrategy, useClass: HttpTransportStrategy  },
-    { provide: HttpBackend, useClass: HttpBackend2 },
+    { provide: HttpBackend, useClass: HttpBackend2 }
 ]

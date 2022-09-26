@@ -1,13 +1,19 @@
 import { Abstract } from '@tsdi/ioc';
 import { IncomingMsg } from './packet';
 
+/**
+ * transport strategy.
+ */
 @Abstract()
 export abstract class TransportStrategy {
     /**
      * protocol name
      */
     abstract get protocol(): string;
-
+    /**
+     * parse response status.
+     * @param status 
+     */
     abstract parseStatus(status?: string | number): number;
     /**
      * ok status code.
@@ -65,7 +71,10 @@ export abstract class TransportStrategy {
      * @param status 
      */
     abstract isOk(status: number): boolean;
-
+    /**
+     * 
+     * @param status 
+     */
     abstract isContinue(status: number): boolean;
     /**
      * is retry status or not.
@@ -118,7 +127,9 @@ export abstract class TransportStrategy {
 }
 
 
-
+/**
+ * transport strategy.
+ */
 @Abstract()
 export abstract class RestfulTransportStrategy extends TransportStrategy {
 
@@ -143,26 +154,25 @@ export abstract class RestfulTransportStrategy extends TransportStrategy {
 /**
  * Listen options.
  */
- @Abstract()
- export abstract class ListenOpts {
- 
-     [x: string]: any;
- 
-     /**
-     * When provided the corresponding `AbortController` can be used to cancel an asynchronous action.
+@Abstract()
+export abstract class ListenOpts {
+
+    [x: string]: any;
+
+    /**
+    * When provided the corresponding `AbortController` can be used to cancel an asynchronous action.
+    */
+    signal?: AbortSignal | undefined;
+    port?: number | undefined;
+    host?: string | undefined;
+    backlog?: number | undefined;
+    path?: string | undefined;
+    exclusive?: boolean | undefined;
+    readableAll?: boolean | undefined;
+    writableAll?: boolean | undefined;
+    /**
+     * @default false
      */
-     signal?: AbortSignal | undefined;
-     port?: number | undefined;
-     host?: string | undefined;
-     backlog?: number | undefined;
-     path?: string | undefined;
-     exclusive?: boolean | undefined;
-     readableAll?: boolean | undefined;
-     writableAll?: boolean | undefined;
-     /**
-      * @default false
-      */
-     ipv6Only?: boolean | undefined;
-     withCredentials?: boolean;
- }
- 
+    ipv6Only?: boolean | undefined;
+    withCredentials?: boolean;
+}

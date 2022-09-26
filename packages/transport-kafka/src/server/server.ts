@@ -1,14 +1,14 @@
 import { Inject, Injectable, isNil, Injector, getClass, InvocationContext } from '@tsdi/ioc';
-import { ServerOptions, TransportServer } from '@tsdi/core';
+import { TransportServerOpts, TransportServer } from '@tsdi/transport';
 import { Level } from '@tsdi/logs';
-import { BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerGroupJoinEvent, ConsumerRunConfig, ConsumerSubscribeTopic, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, Kafka, KafkaConfig, LogEntry, logLevel, MemberMetadata, PartitionAssigner, Producer, ProducerConfig, ProducerRecord } from 'kafkajs';
+import { BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerRunConfig, ConsumerSubscribeTopic, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, Kafka, KafkaConfig, LogEntry, logLevel, MemberMetadata, PartitionAssigner, Producer, ProducerConfig, ProducerRecord } from 'kafkajs';
 import { DEFAULT_BROKERS } from '../const';
 import { KafkaParser } from '../parser';
 
 
 
 
-export interface KafkaOptions extends KafkaConfig, ServerOptions<any, any> {
+export interface KafkaOptions extends KafkaConfig, TransportServerOpts {
     postfixId?: string;
     client?: KafkaConfig;
     consumer?: ConsumerConfig;
@@ -31,8 +31,8 @@ export class KafkaServer extends TransportServer {
     protected clientId: string;
     protected groupId: string;
 
-    constructor(@Inject() context: InvocationContext, private options: KafkaOptions) {
-        super(context, options);
+    constructor(private options: KafkaOptions) {
+        super(options);
         this.brokers = options.client?.brokers ?? DEFAULT_BROKERS;
         const postfixId = this.options.postfixId ?? '-server';
         this.clientId = (options.client?.clientId ?? 'boot-consumer') + postfixId;

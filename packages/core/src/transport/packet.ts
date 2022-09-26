@@ -76,8 +76,8 @@ export interface Message<THeaders = ReqHeadersLike, T = any> {
      */
     readonly id?: number;
     /**
-        * headers
-        */
+     * headers
+     */
     readonly headers: THeaders;
     /**
      * Outgoing URL

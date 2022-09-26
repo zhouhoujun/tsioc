@@ -1,12 +1,12 @@
 import { Abstract, Execption, Injectable, tokenId } from '@tsdi/ioc';
 import { ExecptionFilter, Interceptor, RequestOptions, TransportEvent, TransportRequest } from '@tsdi/core';
-import { ClientConnection, LogInterceptor, RequestStrategy, TransportClient, TransportClientOpts } from '@tsdi/transport';
+import { LogInterceptor, TransportClient, TransportClientOpts } from '@tsdi/transport';
 import { IConnectPacket } from 'mqtt-packet';
 import { Duplex } from 'stream';
 import * as net from 'net';
 import * as tls from 'tls';
 import * as ws from 'ws';
-import { MqttProtocol, PacketOptions } from '../protocol';
+import { MqttTransportStrategy, PacketOptions } from '../transport';
 
 
 
@@ -105,7 +105,7 @@ export type MqttReqOptions = PacketOptions & RequestOptions;
 
 const defaults = {
     encoding: 'utf8',
-    transport: MqttProtocol,
+    transport: MqttTransportStrategy,
     interceptorsToken: MQTT_INTERCEPTORS,
     execptionsToken: MQTT_EXECPTIONFILTERS,
     interceptors: [

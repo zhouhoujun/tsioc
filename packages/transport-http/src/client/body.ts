@@ -4,7 +4,9 @@ import { Injectable } from '@tsdi/ioc';
 import { createFormData, isFormDataLike, hdr } from '@tsdi/transport';
 import { defer, mergeMap, Observable } from 'rxjs';
 
-
+/**
+ * http body interceptor.
+ */
 @Injectable({ static: true })
 export class HttpBodyInterceptor implements Interceptor<HttpRequest, HttpEvent> {
 

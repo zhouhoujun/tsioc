@@ -25,7 +25,11 @@ export const EMPTY_CODER = {
     decodeValue(value: string): string {
         return value
     }
-} as ParameterCodec
+} as ParameterCodec;
+
+/**
+ * transport parameters.
+ */
 export class TransportParams {
     private map: Map<string, string[]>;
     private encoder: ParameterCodec;

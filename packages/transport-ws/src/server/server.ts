@@ -32,7 +32,6 @@ export class WsServer extends TransportServer<ws.Server, WsServerOpts> {
         const sropts = this.getOptions().serverOpts as ws.ServerOptions;
         if (sropts.server) {
             if (!sropts.server.listening) {
-                // sropts.server.once(ev.LISTENING, defer.resolve);
                 sropts.server.listen(opts, defer.resolve);
             } else {
                 defer.resolve();
