@@ -1,6 +1,6 @@
 import { Inject, Injectable, InvocationContext, isUndefined, ModuleLoader } from '@tsdi/ioc';
 import { EndpointBackend } from '@tsdi/core';
-import { TransportClientOpts } from '@tsdi/transport';
+import { TransportClient, TransportClientOpts } from '@tsdi/transport';
 import { Level } from '@tsdi/logs';
 import {
     BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerGroupJoinEvent,

@@ -30,9 +30,11 @@ export const COAP_INTERCEPTORS = tokenId<Interceptor<TransportRequest, Transport
 export const COAP_EXECPTIONFILTERS = tokenId<ExecptionFilter[]>('COAP_EXECPTIONFILTERS');
 
 const defaults = {
+    transport: {
+        strategy: CoapTransportStrategy
+    },
     interceptorsToken: COAP_INTERCEPTORS,
     execptionsToken: COAP_EXECPTIONFILTERS,
-    transport: CoapTransportStrategy,
     address: {
         port: 3000,
         hostname: 'localhost'

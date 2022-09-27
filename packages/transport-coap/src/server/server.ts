@@ -42,7 +42,9 @@ export const COAP_MIDDLEWARES = tokenId<MiddlewareType[]>('COAP_MIDDLEWARES');
 const defOpts = {
     json: true,
     encoding: 'utf8',
-    transport: CoapTransportStrategy,
+    transport: {
+        strategy: CoapTransportStrategy
+    },
     interceptorsToken: COAP_SERV_INTERCEPTORS,
     execptionsToken: COAP_EXECPTION_FILTERS,
     middlewaresToken: COAP_MIDDLEWARES,
