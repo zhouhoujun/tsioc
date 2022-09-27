@@ -105,7 +105,9 @@ export type MqttReqOptions = PacketOptions & RequestOptions;
 
 const defaults = {
     encoding: 'utf8',
-    transport: MqttTransportStrategy,
+    transport: {
+        strategy: MqttTransportStrategy,
+    },
     interceptorsToken: MQTT_INTERCEPTORS,
     execptionsToken: MQTT_EXECPTIONFILTERS,
     interceptors: [

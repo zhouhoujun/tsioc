@@ -58,7 +58,9 @@ const defaults = {
     interceptorsToken: MQTT_SERV_INTERCEPTORS,
     execptionsToken: MQTT_SERV_EXECPTIONFILTERS,
     middlewaresToken: MQTT_MIDDLEWARES,
-    transport: MqttTransportStrategy,
+    transport: {
+        strategy: MqttTransportStrategy
+    },
     interceptors: [
         LogInterceptor,
         CatchInterceptor,

@@ -13,7 +13,9 @@ import * as tls from 'tls';
  * tcp client default options.
  */
 export const TCP_CLIENT_OPTS = {
-    transport: DelimiterTransportStrategy,
+    transport: {
+        strategy: DelimiterTransportStrategy
+    },
     interceptorsToken: TCP_INTERCEPTORS,
     execptionsToken: TCP_EXECPTIONFILTERS,
     connectionOpts: {

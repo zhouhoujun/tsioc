@@ -168,14 +168,15 @@ export abstract class TransportEndpoint<
             }
             if (interceptorsToken && interceptors) {
                 this.multiReg(interceptorsToken, interceptors ?? []);
-                injector.inject(isFunction(strategy) ? { provide: TransportStrategy, useExisting: strategy } : { provide: TransportStrategy, useValue: strategy });
             }
+            this.registerStrategy(strategy);
         }
 
         injector.inject({ provide: Logger, useFactory: () => this.logger });
         if (options.providers && options.providers.length) {
             injector.inject(options.providers);
         }
+
         const iToken = this._iptToken = options.interceptorsToken!;
         if (!iToken) {
             throw new ArgumentExecption(lang.getClassName(this) + ' options interceptorsToken is missing.');
@@ -189,10 +190,13 @@ export abstract class TransportEndpoint<
             throw new ArgumentExecption(lang.getClassName(this) + ' options execptionsToken is missing.');
         }
         if (options.execptions && options.execptions.length) {
-
             this.multiReg(eToken, options.execptions);
         }
 
+    }
+
+    protected registerStrategy(strategy: TypeOf<TransportStrategy>) {
+        this.context.injector.inject(isFunction(strategy) ? { provide: TransportStrategy, useExisting: strategy } : { provide: TransportStrategy, useValue: strategy });
     }
 
     protected multiReg<T>(provide: Token, types: (Type<T> | T)[]): void {

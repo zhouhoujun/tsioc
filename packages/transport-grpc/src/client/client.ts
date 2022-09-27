@@ -1,12 +1,13 @@
 import { Abstract, EMPTY_OBJ, Inject, Injectable, InvocationContext, Token, tokenId } from '@tsdi/ioc';
-import { ClientOptions,  EndpointBackend,  RequstOption,  TransportClient } from '@tsdi/core';
-import { HttpRequest, HttpResponse } from '@tsdi/common';
+import { EndpointBackend, RequestOptions, TransportRequest } from '@tsdi/core';
+import { TransportClient, TransportClientOpts } from '@tsdi/transport';
 import { loadPackageDefinition, load, ServiceDefinition, ProtobufTypeDefinition } from '@grpc/grpc-js';
+import { Duplex } from 'stream';
 import * as gload from '@grpc/proto-loader';
 
 
 @Abstract()
-export abstract class GrpcClientOptions extends ClientOptions<HttpRequest, HttpResponse> {
+export abstract class GrpcClientOptions extends TransportClientOpts {
     abstract packageDef: Record<string, ServiceDefinition | ProtobufTypeDefinition>;
 }
 
@@ -14,21 +15,13 @@ export abstract class GrpcClientOptions extends ClientOptions<HttpRequest, HttpR
  * grpc client.
  */
 @Injectable()
-export class GrpcClient extends TransportClient<HttpRequest, HttpResponse> {
-    constructor(
-        @Inject() context: InvocationContext,
-        @Inject() private options: GrpcClientOptions) {
-        super(context, options)
+export class GrpcClient extends TransportClient<RequestOptions, GrpcClientOptions> {
+    constructor(@Inject() private options: GrpcClientOptions) {
+        super(options)
     }
 
-    protected buildRequest(url: string | HttpRequest<any>, options?: RequstOption | undefined): HttpRequest<any> {
-        throw new Error('Method not implemented.');
-    }
-    protected connect(): Promise<void> {
-        throw new Error('Method not implemented.');
-    }
-    protected getBackend(): EndpointBackend<HttpRequest<any>, HttpResponse<any>> {
-        throw new Error('Method not implemented.');
-    }
 
+    protected createDuplex(opts: GrpcClientOptions): Duplex {
+        throw new Error('Method not implemented.');
+    }
 }

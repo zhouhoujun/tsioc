@@ -1,5 +1,5 @@
-import { EndpointBackend, OnDispose, RequestContext, Client, RequestOptions, Message, TransportEvent, TransportRequest, Pattern } from '@tsdi/core';
-import { Abstract, EMPTY } from '@tsdi/ioc';
+import { EndpointBackend, OnDispose, RequestContext, Client, RequestOptions, Message, TransportEvent, TransportRequest, Pattern, TransportStrategy } from '@tsdi/core';
+import { Abstract, EMPTY, isFunction, ProviderType, TypeOf } from '@tsdi/ioc';
 import { map, Observable, Observer, of } from 'rxjs';
 import { Duplex } from 'stream';
 import { ClientConnection, RequestStrategy } from './connection';
@@ -7,13 +7,16 @@ import { TransportBackend } from './backend';
 import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } from './options';
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
 import { BodyContentInterceptor } from './body';
-import { ev } from '../consts';
 import { StreamTransportStrategy } from '../strategy';
 import { ConnectionOpts } from '../connection';
+import { ev } from '../consts';
 
 
 const tsptDeftOpts = {
     backend: TransportBackend,
+    transport: {
+        strategy: StreamTransportStrategy
+    },
     interceptors: [
         BodyContentInterceptor
     ],
@@ -128,6 +131,18 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
 
     protected getBackend(): EndpointBackend<Message, TransportEvent> {
         return this.context.get(this.getOptions().backend!);
+    }
+
+    protected override registerStrategy(strategy: TypeOf<StreamTransportStrategy>): void {
+        const pdrs: ProviderType[] = [];
+        if (isFunction(strategy)) {
+            pdrs.push({ provide: TransportStrategy, useExisting: strategy });
+            pdrs.push({ provide: StreamTransportStrategy, useExisting: strategy });
+        } else {
+            pdrs.push({ provide: TransportStrategy, useValue: strategy });
+            pdrs.push({ provide: StreamTransportStrategy, useValue: strategy });
+        }
+        this.context.injector.inject(pdrs);
     }
 
 }

@@ -1,5 +1,5 @@
 import { Endpoint, IncomingHeaders, ListenOpts, ModuleRef, Router, Server, TransportEvent, TransportStrategy } from '@tsdi/core';
-import { Abstract, Destroyable, EMPTY_OBJ, Execption, isBoolean, isFunction, lang } from '@tsdi/ioc';
+import { Abstract, Destroyable, EMPTY_OBJ, Execption, isBoolean, isFunction, lang, ProviderType, TypeOf } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { Duplex } from 'stream';
 import { CatchInterceptor, LogInterceptor, RespondInterceptor } from '../interceptors';
@@ -26,6 +26,9 @@ const defOpts = {
     interceptorsToken: SERVER_INTERCEPTORS,
     execptionsToken: SERVER_EXECPTION_FILTERS,
     middlewaresToken: SERVER_MIDDLEWARES,
+    transport: {
+        strategy: StreamTransportStrategy
+    },
     content: {
         root: 'public'
     },
@@ -253,6 +256,18 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
             mimedb.from(options.mimeDb)
         }
         super.initContext(options)
+    }
+
+    protected override registerStrategy(strategy: TypeOf<StreamTransportStrategy>): void {
+        const pdrs: ProviderType[] = [];
+        if (isFunction(strategy)) {
+            pdrs.push({ provide: TransportStrategy, useExisting: strategy });
+            pdrs.push({ provide: StreamTransportStrategy, useExisting: strategy });
+        } else {
+            pdrs.push({ provide: TransportStrategy, useValue: strategy });
+            pdrs.push({ provide: StreamTransportStrategy, useValue: strategy });
+        }
+        this.context.injector.inject(pdrs);
     }
 
 }

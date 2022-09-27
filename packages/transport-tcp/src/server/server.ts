@@ -24,7 +24,9 @@ export const TCP_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('HTTP_EXECPTION_
  * tcp server default options.
  */
 export const TCP_SERVER_OPTS = {
-    transport: DelimiterTransportStrategy,
+    transport: {
+        strategy: DelimiterTransportStrategy
+    },
     interceptorsToken: TCP_SERV_INTERCEPTORS,
     execptionsToken: TCP_EXECPTION_FILTERS,
     middlewaresToken: TCP_MIDDLEWARES,
@@ -76,7 +78,7 @@ export class TcpServer extends TransportServer<net.Server | tls.Server, TcpServe
     protected buildServer(opts: TcpServerOpts): net.Server | tls.Server {
         return (opts.serverOpts as tls.TlsOptions).cert ? tls.createServer(opts.serverOpts as tls.TlsOptions) : net.createServer(opts.serverOpts as net.ServerOpts)
     }
-    
+
     protected listen(server: net.Server | tls.Server, opts: ListenOpts): Promise<void> {
         const defer = lang.defer<void>();
         server.listen(opts, defer.resolve);

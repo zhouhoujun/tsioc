@@ -1,8 +1,13 @@
-import { TransportStrategy } from '@tsdi/core';
-import { Abstract } from '@tsdi/ioc';
+import { TransportStrategy, TransportStrategyOpts } from '@tsdi/core';
+import { Abstract, TypeOf } from '@tsdi/ioc';
 import { Writable, Transform } from 'stream';
 import { Connection, ConnectionOpts } from './connection';
 import { SteamOptions, TransportStream } from './stream';
+
+export interface StreamTransportStrategyOpts extends TransportStrategyOpts {
+    strategy: TypeOf<StreamTransportStrategy>;
+}
+
 
 /**
  * stream transport strategy.
