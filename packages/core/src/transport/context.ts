@@ -25,8 +25,6 @@ export abstract class EndpointContext extends DefaultInvocationContext {
         return this._transport;
     }
 
-
-
     protected override clear(): void {
         super.clear();
         (this as any).target = null;

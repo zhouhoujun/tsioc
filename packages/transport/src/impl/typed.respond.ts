@@ -1,4 +1,4 @@
-import { ExecptionTypedRespond, TransportExecption, AssetContext, TransportStrategy } from '@tsdi/core';
+import { ExecptionTypedRespond, TransportExecption, AssetContext } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 
 @Injectable({ static: true })
