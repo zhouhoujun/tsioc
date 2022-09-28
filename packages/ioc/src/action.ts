@@ -31,7 +31,6 @@ export abstract class Action<T = any> {
      * action handle.
      */
     abstract getHandler(): Handler<T, void>;
-
 }
 
 /**

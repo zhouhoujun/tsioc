@@ -1,5 +1,6 @@
 import { Modules, Type } from './types';
 import { Token } from './tokens';
+import { Injector } from './injector';
 
 /**
  * provider for {@link Injector }.

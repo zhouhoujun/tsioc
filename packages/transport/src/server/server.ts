@@ -8,7 +8,7 @@ import { BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMidd
 import { MimeDb } from '../mime';
 import { db } from '../impl/mimedb';
 import { TransportExecptionFilter, TransportFinalizeFilter } from './finalize-filter';
-import { TransportServerOpts, SERVER_INTERCEPTORS } from './options';
+import { TransportServerOpts, SERVER_INTERCEPTORS, SERVER_TRANSPORT_INTERCEPTORS } from './options';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';
 import { TRANSPORT_SERVR_PROVIDERS } from './providers';
@@ -27,6 +27,7 @@ const defOpts = {
     execptionsToken: SERVER_EXECPTION_FILTERS,
     middlewaresToken: SERVER_MIDDLEWARES,
     transport: {
+        interceptorsToken: SERVER_TRANSPORT_INTERCEPTORS,
         strategy: StreamTransportStrategy
     },
     content: {

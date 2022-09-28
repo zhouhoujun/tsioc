@@ -1,13 +1,17 @@
-import { Interceptor, ServerOpts, ListenOpts } from '@tsdi/core';
-import { Abstract, ClassType, tokenId } from '@tsdi/ioc';
+import { Interceptor, ServerOpts, ListenOpts, TransportStrategyOpts } from '@tsdi/core';
+import { Abstract, ClassType, tokenId, TypeOf } from '@tsdi/ioc';
 import { ConnectionOpts } from '../connection';
 import { ContentOptions, SessionOptions } from '../middlewares';
+import { Readable, Writable } from 'stream';
 import { MimeSource } from '../mime';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';
 import { EventStrategy } from './connection';
+import { StreamTransportStrategy } from '../strategy';
 
-
+/**
+ * transport server options.
+ */
 @Abstract()
 export abstract class TransportServerOpts<T = any> extends ServerOpts<ServerRequest, ServerResponse> {
     abstract proxy?: boolean;
@@ -31,8 +35,22 @@ export abstract class TransportServerOpts<T = any> extends ServerOpts<ServerRequ
     abstract listenOpts: ListenOpts;
     abstract connectionOpts?: ConnectionOpts;
 
+    abstract transport?: ServerTransportStrategyOpts;
+
     abstract event?: ClassType<EventStrategy>;
 }
+
+/**
+ * server transport strategy options.
+ */
+export interface ServerTransportStrategyOpts extends TransportStrategyOpts<Readable, Writable> {
+    strategy: TypeOf<StreamTransportStrategy>;
+}
+
+/**
+ * server transport interceptors.
+ */
+export const SERVER_TRANSPORT_INTERCEPTORS = tokenId<Interceptor<Readable, Writable>[]>('SERVER_TRANSPORT_INTERCEPTORS');
 
 
 /**

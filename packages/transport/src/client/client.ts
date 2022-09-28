@@ -4,7 +4,7 @@ import { map, Observable, Observer, of } from 'rxjs';
 import { Duplex } from 'stream';
 import { ClientConnection, RequestStrategy } from './connection';
 import { TransportBackend } from './backend';
-import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } from './options';
+import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, CLIENT_TRANSPORT_INTERCEPTORS, TransportClientOpts } from './options';
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
 import { BodyContentInterceptor } from './body';
 import { StreamTransportStrategy } from '../strategy';
@@ -15,6 +15,7 @@ import { ev } from '../consts';
 const tsptDeftOpts = {
     backend: TransportBackend,
     transport: {
+        interceptorsToken: CLIENT_TRANSPORT_INTERCEPTORS,
         strategy: StreamTransportStrategy
     },
     interceptors: [
