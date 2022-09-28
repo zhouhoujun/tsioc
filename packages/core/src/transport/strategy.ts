@@ -10,23 +10,13 @@ export interface TransportStrategyOpts<TInput = any, TOutput = any> {
     interceptorsToken?: Token<InterceptorLike<TInput, TOutput>>;
 }
 
-
-/**
- * transport strategy.
- */
 @Abstract()
-export abstract class TransportStrategy {
-
-    // abstract transfom(input: any): Observable<any>;
-    /**
-     * protocol name
-     */
-    abstract get protocol(): string;
+export abstract class TransportStatus {
     /**
      * parse response status.
      * @param status 
      */
-    abstract parseStatus(status?: string | number): number;
+    abstract parse(status?: string | number | null): number;
     /**
      * ok status code.
      */
@@ -111,7 +101,19 @@ export abstract class TransportStrategy {
      */
     abstract message(status: number): string;
 
+}
 
+/**
+ * transport strategy.
+ */
+@Abstract()
+export abstract class TransportStrategy {
+    /**
+     * protocol name
+     */
+    abstract get protocol(): string;
+
+    abstract get status(): TransportStatus;
     /**
      * the url is absolute url or not.
      * @param url 
@@ -136,6 +138,7 @@ export abstract class TransportStrategy {
      * @param protocol 
      */
     abstract match(protocol: string): boolean;
+
 }
 
 

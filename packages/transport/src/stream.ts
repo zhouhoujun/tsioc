@@ -85,6 +85,17 @@ export const STRESM_NO_ERROR = 0;
 
 const evts = [ev.ABORTED, ev.TIMEOUT, ev.ERROR, ev.CLOSE];
 
+
+@Abstract()
+export abstract class StreamParser extends Transform {
+    abstract setOptions(opts: SteamOptions): void;
+}
+
+@Abstract()
+export abstract class StreamGenerator extends Writable {
+    abstract setOptions(opts: SteamOptions): void;
+}
+
 /**
  * transport stream
  */
@@ -175,7 +186,7 @@ export abstract class TransportStream extends Duplexify implements Closeable {
         this._id = id;
 
         this.uncork();
-        const tsp = connection.transport;
+        const tsp = connection.packetor;
         const parser = this._parser = tsp.streamParser(this, this.opts);
         const generator = this._generator = tsp.streamGenerator(connection, id, this.opts);
         this.setReadable(parser);

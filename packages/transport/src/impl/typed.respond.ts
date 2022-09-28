@@ -13,7 +13,7 @@ export class TranspotExecptionTypedRespond extends ExecptionTypedRespond {
                 ctx.status = value.statusCode;
                 ctx.statusMessage = value.message
             } else {
-                ctx.status = ctx.transport.serverError;
+                ctx.status = ctx.transport.status.serverError;
                 ctx.statusMessage = String(value)
             }
         }

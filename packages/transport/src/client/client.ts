@@ -8,7 +8,7 @@ import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, CLIENT_TRANSPORT_INTERCEP
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
 import { BodyContentInterceptor } from './body';
 import { StreamTransportStrategy } from '../strategy';
-import { ConnectionOpts } from '../connection';
+import { ConnectionOpts, Packetor } from '../connection';
 import { ev } from '../consts';
 
 
@@ -91,17 +91,17 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
 
     protected abstract createDuplex(opts: TOpts): Duplex;
 
-    protected createConnection(duplex: Duplex, transport: StreamTransportStrategy, strategy: RequestStrategy, opts?: ConnectionOpts): ClientConnection {
-        return new ClientConnection(duplex, transport, opts, strategy);
+    protected createConnection(duplex: Duplex, packetor: Packetor, strategy: RequestStrategy, opts?: ConnectionOpts): ClientConnection {
+        return new ClientConnection(duplex, packetor, opts, strategy);
     }
 
     protected buildConnection(opts: TOpts): Observable<ClientConnection> {
         const logger = this.logger;
         return new Observable((observer: Observer<ClientConnection>) => {
-            const transport = this.context.get(StreamTransportStrategy);
+            const packetor = this.context.get(Packetor);
             const strategy = this.context.get(opts.request ?? RequestStrategy);
             const duplex = this.createDuplex(opts);
-            const client = this.createConnection(duplex, transport, strategy, opts.connectionOpts);
+            const client = this.createConnection(duplex, packetor, strategy, opts.connectionOpts);
             if (opts.keepalive) {
                 client.setKeepAlive(true, opts.keepalive);
             }

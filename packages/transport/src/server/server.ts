@@ -13,7 +13,7 @@ import { ServerRequest } from './req';
 import { ServerResponse } from './res';
 import { TRANSPORT_SERVR_PROVIDERS } from './providers';
 import { ServerStream } from './stream';
-import { ConnectionOpts } from '../connection';
+import { ConnectionOpts, Packetor } from '../connection';
 import { finalize, mergeMap, Observable, Subscriber, Subscription } from 'rxjs';
 import { ev, hdr } from '../consts';
 import { ServerConnection } from './connection';
@@ -162,7 +162,7 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
     }
 
     protected createConnection(duplex: Duplex, opts?: ConnectionOpts) {
-        return new ServerConnection(duplex, this.context.get(StreamTransportStrategy), opts);
+        return new ServerConnection(duplex, this.context.get(Packetor), opts);
     }
 
     /**

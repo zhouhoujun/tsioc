@@ -153,7 +153,7 @@ export abstract class ConnectionContext<TRequest extends IncomingMsg = IncomingM
      * request status is not found or not.
      */
     get notFound(): boolean {
-        return this.status === this.transport.notFound;
+        return this.status === this.transport.status.notFound;
     }
 
     /**

@@ -19,13 +19,13 @@ export class TransportContext extends AssetServerContext<ServerRequest, ServerRe
         if (this.sent) return;
         this._explicitStatus = true;
         this.response.statusCode = status;
-        if (this.body && this.transport.isEmpty(status)) {
+        if (this.body && this.transport.status.isEmpty(status)) {
             this.body = null;
         }
     }
 
     get statusMessage(): string {
-        return this.response.statusMessage ?? this.transport.message(this.status)
+        return this.response.statusMessage ?? this.transport.status.message(this.status)
     }
 
     set statusMessage(msg: string) {

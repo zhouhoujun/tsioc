@@ -1,9 +1,8 @@
 import { IncomingHeaders } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ } from '@tsdi/ioc';
 import { Duplex } from 'stream';
-import { Connection, ConnectionOpts } from '../connection';
+import { Connection, ConnectionOpts, Packetor } from '../connection';
 import { ev } from '../consts';
-import { StreamTransportStrategy } from '../strategy';
 import { ServerStream } from './stream';
 
 @Abstract()
@@ -13,8 +12,8 @@ export abstract class EventStrategy {
 
 export class ServerConnection extends Connection {
     private sid = 0;
-    constructor(stream: Duplex, transport: StreamTransportStrategy, opts: ConnectionOpts = EMPTY_OBJ) {
-        super(stream, transport, opts);
+    constructor(stream: Duplex, packetor: Packetor, opts: ConnectionOpts = EMPTY_OBJ) {
+        super(stream, packetor, opts);
         this.stream.on(ev.CONNECTION, this.emit.bind(this, ev.CONNECTION));
     }
 

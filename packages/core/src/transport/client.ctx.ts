@@ -10,7 +10,7 @@ import { TransportStrategy } from './strategy';
 export interface ClientInvocationOptions extends InvokeArguments {
     transport?: TypeOf<TransportStrategy>;
     observe?: 'body' | 'events' | 'response';
-    responseType?: 'arraybuffer' | 'blob' | 'json' | 'text';
+    responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
 }
 
 
@@ -23,7 +23,7 @@ export class ClientContext extends RequestContext {
      */
     readonly target: Client;
     readonly observe: 'body' | 'events' | 'response';
-    responseType: 'arraybuffer' | 'blob' | 'json' | 'text';
+    responseType: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
 
     constructor(injector: Injector, target: Client, options?: ClientInvocationOptions) {
         super(injector, options);

@@ -89,7 +89,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
 
         const method = this.getRouteMetaData(ctx) as DecorDefine<ProtocolRouteMappingMetadata>;
         if (!method || !method.propertyKey) {
-            ctx.status = ctx.transport.notFound;
+            ctx.status = ctx.transport.status.notFound;
             return await next();
         }
 

@@ -1,8 +1,7 @@
 import { Abstract, EMPTY_OBJ, Injectable, isDefined } from '@tsdi/ioc';
 import { IncomingHeaders, InvalidHeaderTokenExecption } from '@tsdi/core';
 import { Duplex } from 'stream';
-import { StreamTransportStrategy } from '../strategy';
-import { Connection, ConnectionOpts } from '../connection';
+import { Connection, ConnectionOpts, Packetor } from '../connection';
 import { GoawayExecption, InvalidSessionExecption } from '../execptions';
 import { ClientStream } from './stream';
 import { SteamOptions } from '../stream';
@@ -45,8 +44,8 @@ export class ClientConnection extends Connection {
     private sid = 1;
     readonly authority: string;
     readonly clientId: string;
-    constructor(duplex: Duplex, transport: StreamTransportStrategy, opts: ClientConnectionOpts = EMPTY_OBJ, private strategy: RequestStrategy) {
-        super(duplex, transport, opts)
+    constructor(duplex: Duplex, packetor: Packetor, opts: ClientConnectionOpts = EMPTY_OBJ, private strategy: RequestStrategy) {
+        super(duplex, packetor, opts)
         this.authority = opts.authority ?? '';
         this.clientId = opts.clientId ?? '';
     }
@@ -69,15 +68,15 @@ export class ClientConnection extends Connection {
         }
         this._updateTimer();
 
-        if (isDefined(headers)) {
-            const keys = Object.keys(headers);
-            for (let i = 0; i < keys.length; i++) {
-                const header = keys[i];
-                if (header && !this.transport.valid(header)) {
-                    this.destroy(new InvalidHeaderTokenExecption('Header name' + header));
-                }
-            }
-        }
+        // if (isDefined(headers)) {
+        //     const keys = Object.keys(headers);
+        //     for (let i = 0; i < keys.length; i++) {
+        //         const header = keys[i];
+        //         if (header && !this.packetor.valid(header)) {
+        //             this.destroy(new InvalidHeaderTokenExecption('Header name' + header));
+        //         }
+        //     }
+        // }
 
         return this.strategy.request(this, headers, options ?? {});
 

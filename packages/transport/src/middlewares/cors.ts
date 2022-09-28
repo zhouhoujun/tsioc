@@ -151,7 +151,7 @@ export class CorsMiddleware implements Middleware {
                     ...{ vary: varyWithOrigin },
                 };
 
-                ctx.status = err instanceof TransportExecption ? err.status || ctx.transport.serverError : ctx.transport.serverError;
+                ctx.status = err instanceof TransportExecption ? err.status || ctx.transport.status.serverError : ctx.transport.status.serverError;
                 ctx.statusMessage = err.message || err.toString() || '';
                 ctx.get(Logger)?.error(err)
             }
@@ -184,7 +184,7 @@ export class CorsMiddleware implements Middleware {
             if (allowHeaders) {
                 ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_HEADERS, allowHeaders)
             }
-            ctx.status = ctx.transport.noContent
+            ctx.status = ctx.transport.status.noContent
         }
     }
 }

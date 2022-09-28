@@ -1,10 +1,9 @@
 import { TransportExecption } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, isFunction } from '@tsdi/ioc';
-import { Duplex } from 'stream';
+import { Writable, Duplex, Transform } from 'stream';
 import { ev } from './consts';
 import { Duplexify, DuplexifyOptions } from './duplexify';
 import { InvalidSessionExecption } from './execptions';
-import { Closeable, PacketGenerator, PacketParser, StreamTransportStrategy } from './strategy';
 import { TransportStream } from './stream';
 
 
@@ -58,6 +57,40 @@ export interface ConnectionState extends Record<string, any> {
 
 const NO_ERROR = 0;
 
+
+@Abstract()
+export abstract class PacketParser extends Transform {
+    abstract setOptions(opts: ConnectionOpts): void;
+}
+
+@Abstract()
+export abstract class PacketGenerator extends Writable {
+    abstract setOptions(opts: ConnectionOpts): void;
+}
+
+
+
+export interface Closeable {
+    readonly closed?: boolean;
+    close(...args: any[]): void;
+}
+
+
+@Abstract()
+export abstract class Packetor {
+    /**
+     * packet parser
+     * @param opts options of type {@link ConnectionOpts}.
+     */
+    abstract parser(opts: ConnectionOpts): PacketParser;
+    /**
+     * packet generator
+     * @param output the connection wirte output.
+     * @param opts options of type {@link ConnectionOpts}.
+     */
+    abstract generator(output: Writable, opts: ConnectionOpts): PacketGenerator;
+}
+
 @Abstract()
 export abstract class Connection extends Duplexify implements Closeable {
     private _timeout?: any;
@@ -66,7 +99,7 @@ export abstract class Connection extends Duplexify implements Closeable {
     protected _regevs: Map<string, any>;
     readonly state: ConnectionState;
     protected opts: ConnectionOpts;
-    constructor(readonly stream: Duplex, readonly transport: StreamTransportStrategy, opts: ConnectionOpts = EMPTY_OBJ) {
+    constructor(readonly stream: Duplex, readonly packetor: Packetor, opts: ConnectionOpts = EMPTY_OBJ) {
         super(null, null, opts = { ...opts, objectMode: true });
         this.opts = opts;
         this.state = {
@@ -81,8 +114,8 @@ export abstract class Connection extends Duplexify implements Closeable {
             writeQueueSize: 0
         };
 
-        this._parser = transport.parser(this, opts);
-        this._generator = transport.generator(stream, opts);
+        this._parser = packetor.parser(opts);
+        this._generator = packetor.generator(stream, opts);
         this.setReadable(this._parser);
         this.setWritable(this._generator);
 

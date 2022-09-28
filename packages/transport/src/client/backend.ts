@@ -1,19 +1,21 @@
 /* eslint-disable no-case-declarations */
 import {
     EndpointBackend, IncomingHeaders, IncomingStatusHeaders, isArrayBuffer, isBlob, isFormData,
-    mths, Redirector, RequestContext, ResHeaders, ResponseJsonParseError,  RestfulTransportStrategy,
+    mths, Redirector, RequestContext, ResHeaders, ResponseJsonParseError, RestfulTransportStrategy,
     TransportErrorResponse, TransportEvent, TransportExecption, TransportHeaderResponse, TransportResponse,
-    UnsupportedMediaTypeExecption, TransportRequest
+    UnsupportedMediaTypeExecption, TransportRequest, EndpointContext, ClientContext
 } from '@tsdi/core';
 import { EMPTY_OBJ, Injectable, InvocationContext, isUndefined, lang, _tyundef } from '@tsdi/ioc';
 import { PassThrough, pipeline, Writable, Readable, PipelineSource } from 'stream';
-import { Observable, Observer, throwError, finalize } from 'rxjs';
+import { Observable, Observer, throwError, finalize, catchError, mergeMap, of } from 'rxjs';
 import * as zlib from 'zlib';
 import { ctype, ev, hdr } from '../consts';
 import { MimeAdapter, MimeTypes } from '../mime';
 import { createFormData, isBuffer, isFormDataLike, pmPipeline, toBuffer } from '../utils';
 import { ClientConnection } from './connection';
 import { TransportClientOpts } from './options';
+import { Connection } from '../connection';
+import { ClientTransportStrategy } from './strategy';
 
 
 /**
@@ -53,11 +55,11 @@ export class TransportBackend implements EndpointBackend<TransportRequest, Trans
             const onResponse = async (hdrs: IncomingHeaders & IncomingStatusHeaders, flags: number) => {
                 let body: any;
                 const headers = new ResHeaders(hdrs as Record<string, any>);
-                status = stgy.parseStatus(hdrs[hdr.STATUS2] ?? hdrs[hdr.STATUS]);
+                status = stgy.status.parse(hdrs[hdr.STATUS2] ?? hdrs[hdr.STATUS]);
 
-                statusText = stgy.message(status) ?? 'OK';
+                statusText = stgy.status.message(status) ?? 'OK';
 
-                if (stgy.isEmpty(status)) {
+                if (stgy.status.isEmpty(status)) {
                     completed = true;
                     observer.next(new TransportHeaderResponse({
                         url,
@@ -85,7 +87,7 @@ export class TransportBackend implements EndpointBackend<TransportRequest, Trans
                 }
 
                 completed = true;
-                ok = stgy.isOk(status);
+                ok = stgy.status.isOk(status);
 
                 if (!ok) {
                     if (!error) {
@@ -291,6 +293,121 @@ export class TransportBackend implements EndpointBackend<TransportRequest, Trans
     }
 }
 
+/**
+ * transport restful endpoint backend.
+ */
+@Injectable()
+export class TransportBackend1 implements EndpointBackend<TransportRequest, TransportEvent> {
+
+    handle(req: TransportRequest, ctx: ClientContext): Observable<TransportEvent> {
+        const url = req.url;
+        if (!(ctx.transport instanceof ClientTransportStrategy)) return throwError(() => new TransportErrorResponse({
+            url,
+            status: 0,
+            statusMessage: 'has not connected.'
+        }));
+        return ctx.transport.send(req, ctx)
+            .pipe(
+                mergeMap(async body => {
+                    let type = ctx.responseType;
+                    const headers = ctx.get(ResHeaders);
+                    const status = ctx.transport.status.parse(headers.get(hdr.STATUS) ?? headers.get(hdr.STATUS2));
+                    let ok: boolean;
+                    let error: any;
+                    let statusText: string | undefined;
+                    if (type === 'stream' && body instanceof Readable) {
+                        ok = true;
+                    } else {
+                        ok = true;
+                        let originalBody: any;
+                        const contentType = headers.get(hdr.CONTENT_TYPE) as string;
+                        body = body instanceof Readable ? await toBuffer(body) : body;
+                        if (contentType) {
+                            const adapter = ctx.get(MimeAdapter);
+                            const mity = ctx.get(MimeTypes);
+                            if (type === 'json' && !adapter.match(mity.json, contentType)) {
+                                if (adapter.match(mity.xml, contentType) || adapter.match(mity.text, contentType)) {
+                                    type = 'text';
+                                } else {
+                                    type = 'blob';
+                                }
+                            }
+                        }
+                        switch (type) {
+                            case 'json':
+                                // Save the original body, before attempting XSSI prefix stripping.
+                                if (isBuffer(body)) {
+                                    body = new TextDecoder().decode(body);
+                                }
+                                originalBody = body;
+                                try {
+                                    body = body.replace(XSSI_PREFIX, '');
+                                    // Attempt the parse. If it fails, a parse error should be delivered to the user.
+                                    body = body !== '' ? JSON.parse(body) : null
+                                } catch (err) {
+                                    // Since the JSON.parse failed, it's reasonable to assume this might not have been a
+                                    // JSON response. Restore the original body (including any XSSI prefix) to deliver
+                                    // a better error response.
+                                    body = originalBody;
+
+                                    // If this was an error request to begin with, leave it as a string, it probably
+                                    // just isn't JSON. Otherwise, deliver the parsing error to the user.
+                                    if (ok) {
+                                        // Even though the response status was 2xx, this is still an error.
+                                        ok = false;
+                                        // The parse error contains the text of the body that failed to parse.
+                                        error = { error: err, text: body } as ResponseJsonParseError
+                                    }
+                                }
+                                break;
+
+                            case 'arraybuffer':
+                                body = body.subarray(body.byteOffset, body.byteOffset + body.byteLength);
+                                break;
+                            case 'blob':
+                                body = new Blob([body.subarray(body.byteOffset, body.byteOffset + body.byteLength)], {
+                                    type: headers.get(hdr.CONTENT_TYPE) as string
+                                });
+                                break;
+                            case 'text':
+                            default:
+                                body = new TextDecoder().decode(body);
+                                break;
+                        }
+
+                    }
+
+                    if (ok) {
+                        return new TransportResponse({
+                            url,
+                            body,
+                            headers,
+                            status,
+                            statusText
+                        });
+                    } else {
+                        throw new TransportErrorResponse({
+                            url,
+                            error: error ?? body,
+                            status,
+                            statusText
+                        });
+                    }
+                })
+            );
+    }
+}
+
+
+// export class TransportStreamBackend implements EndpointBackend<Writable, Readable> {
+//     handle(req: Writable, context: EndpointContext): Observable<Readable> {
+
+//         const conn = context.get(Connection);
+//         req.pipe(conn);
+
+//     }
+
+// }
 
 /**
  * json xss.
