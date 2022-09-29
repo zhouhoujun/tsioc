@@ -146,7 +146,7 @@ export abstract class TransportStrategy {
  * transport strategy.
  */
 @Abstract()
-export abstract class RestfulTransportStrategy extends TransportStrategy {
+export abstract class RedirectTransportStatus extends TransportStatus {
 
     /**
      * is redirect status or not.

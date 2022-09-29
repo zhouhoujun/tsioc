@@ -2,11 +2,10 @@ import { Abstract, isFunction } from '@tsdi/ioc';
 import { IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
 import { Buffer } from 'buffer';
 import { Readable, Writable, Transform } from 'stream';
-import { Connection } from './connection';
-import { ev } from './consts';
+import { Closeable, Connection } from '../connection';
+import { ev } from '../consts';
 import { setTimeout } from 'timers';
-import { Closeable } from './strategy';
-import { Duplexify, DuplexifyOptions } from './duplexify';
+import { Duplexify, DuplexifyOptions } from '../duplexify';
 
 
 
@@ -96,6 +95,24 @@ export abstract class StreamGenerator extends Writable {
     abstract setOptions(opts: SteamOptions): void;
 }
 
+
+@Abstract()
+export abstract class StreamTransformor {
+    /**
+     * create parse packet as stream for the own stream.
+     * @param stream create parser for the own stream. type of {@link TransportStream}.
+     * @param opts options of type {@link SteamOptions}.
+     */
+    abstract parser(stream: TransportStream, opts: SteamOptions): StreamParser;
+    /**
+     * create packet generator for the own stream.
+     * @param output 
+     * @param packetId 
+     * @param opts options of type {@link SteamOptions}.
+     */
+    abstract generator(output: Writable, packetId: number, opts: SteamOptions): StreamGenerator;
+}
+
 /**
  * transport stream
  */
@@ -115,7 +132,7 @@ export abstract class TransportStream extends Duplexify implements Closeable {
     protected opts: SteamOptions;
     private _parser?: Transform;
     private _generator?: Writable;
-    constructor(readonly connection: Connection, opts: SteamOptions) {
+    constructor(readonly connection: Connection, private transformor: StreamTransformor, opts: SteamOptions) {
         super(null, null, opts = { ...opts, objectMode: true, allowHalfOpen: true, autoDestroy: false, decodeStrings: false });
         this.opts = opts;
 
@@ -186,9 +203,8 @@ export abstract class TransportStream extends Duplexify implements Closeable {
         this._id = id;
 
         this.uncork();
-        const tsp = connection.packetor;
-        const parser = this._parser = tsp.streamParser(this, this.opts);
-        const generator = this._generator = tsp.streamGenerator(connection, id, this.opts);
+        const parser = this._parser = this.transformor.parser(this, this.opts);
+        const generator = this._generator = this.transformor.generator(connection, id, this.opts);
         this.setReadable(parser);
         this.setWritable(generator);
         process.nextTick(() => {

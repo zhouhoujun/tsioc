@@ -6,5 +6,6 @@ export * from './finalize-filter';
 export * from './providers';
 export * from './respond';
 export * from './stream';
-export * from './connection';
+export * from '../stream/client/connection';
+export * from './strategy';
 export * from './server';

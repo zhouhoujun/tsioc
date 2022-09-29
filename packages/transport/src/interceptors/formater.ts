@@ -1,4 +1,4 @@
-import { ConnectionContext, RestfulTransportStrategy } from '@tsdi/core';
+import { ConnectionContext, RedirectTransportStatus } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import * as chalk from 'chalk';
 import { ResponseStatusFormater } from './log';
@@ -21,20 +21,20 @@ export class DefaultStatusFormater extends ResponseStatusFormater {
 
     private formatStatus(ctx: ConnectionContext): [string, string] {
         const { status, transport, statusMessage } = ctx;
-
-        if (transport.isOk(status)) {
+        const stat = transport.status;
+        if (stat.isOk(status)) {
             return [chalk.green(status), statusMessage ? chalk.green(statusMessage) : '']
         }
 
-        if (transport instanceof RestfulTransportStrategy && transport.isRedirect(status)) {
+        if (stat instanceof RedirectTransportStatus && stat.isRedirect(status)) {
             return [chalk.yellow(status), statusMessage ? chalk.yellow(statusMessage) : '']
         }
 
-        if (transport.isRequestFailed(status)) {
+        if (stat.isRequestFailed(status)) {
             return [chalk.magentaBright(status), statusMessage ? chalk.magentaBright(statusMessage) : '']
         }
 
-        if (transport.isServerError(status)) {
+        if (stat.isServerError(status)) {
             return [chalk.red(status), statusMessage ? chalk.red(statusMessage) : '']
         }
 

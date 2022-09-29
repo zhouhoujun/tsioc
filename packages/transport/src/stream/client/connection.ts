@@ -1,23 +1,10 @@
 import { Abstract, EMPTY_OBJ, Injectable, isDefined } from '@tsdi/ioc';
 import { IncomingHeaders, InvalidHeaderTokenExecption } from '@tsdi/core';
 import { Duplex } from 'stream';
-import { Connection, ConnectionOpts, Packetor } from '../connection';
-import { GoawayExecption, InvalidSessionExecption } from '../execptions';
+import { Connection, ConnectionOpts, Packetor } from '../../connection';
 import { ClientStream } from './stream';
-import { SteamOptions } from '../stream';
+import { SteamOptions } from '../stream/stream';
 
-
-/**
- * Client Request options.
- */
-export interface ClientRequsetOpts extends SteamOptions {
-    endStream?: boolean | undefined;
-    exclusive?: boolean | undefined;
-    parent?: number | undefined;
-    weight?: number | undefined;
-    waitForTrailers?: boolean | undefined;
-    signal?: AbortSignal | undefined;
-}
 
 
 

@@ -75,7 +75,7 @@ export class TcpServer extends TransportServer<net.Server | tls.Server, TcpServe
         return TCP_SERVER_OPTS;
     }
 
-    protected buildServer(opts: TcpServerOpts): net.Server | tls.Server {
+    protected createServer(opts: TcpServerOpts): net.Server | tls.Server {
         return (opts.serverOpts as tls.TlsOptions).cert ? tls.createServer(opts.serverOpts as tls.TlsOptions) : net.createServer(opts.serverOpts as net.ServerOpts)
     }
 

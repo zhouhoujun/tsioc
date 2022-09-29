@@ -179,12 +179,12 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
         assert(code >= 100 && code <= 999, `invalid status code: ${code}`);
         this._explicitStatus = true;
         this.response.statusCode = code;
-        if (this.request.httpVersionMajor < 2) this.response.statusMessage = this.transport.message(code);
-        if (this.body && this.transport.isEmpty(code)) this.body = null;
+        if (this.request.httpVersionMajor < 2) this.response.statusMessage = this.transport.status.message(code);
+        if (this.body && this.transport.status.isEmpty(code)) this.body = null;
     }
 
     get statusMessage() {
-        return this.response.statusMessage || this.transport.message(this.status)
+        return this.response.statusMessage || this.transport.status.message(this.status)
     }
 
     set statusMessage(msg: string) {

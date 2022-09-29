@@ -13,12 +13,12 @@ import { ServerRequest } from './req';
 import { ServerResponse } from './res';
 import { TRANSPORT_SERVR_PROVIDERS } from './providers';
 import { ServerStream } from './stream';
-import { ConnectionOpts, Packetor } from '../connection';
+import { Connection, ConnectionOpts, Packetor } from '../connection';
 import { finalize, mergeMap, Observable, Subscriber, Subscription } from 'rxjs';
 import { ev, hdr } from '../consts';
-import { ServerConnection } from './connection';
+import { ServerConnection } from '../stream/client/connection';
 import { isDuplex } from '../utils';
-import { StreamTransportStrategy } from '../strategy';
+import { ServerTransportStrategy } from './strategy';
 
 
 const defOpts = {
@@ -28,7 +28,7 @@ const defOpts = {
     middlewaresToken: SERVER_MIDDLEWARES,
     transport: {
         interceptorsToken: SERVER_TRANSPORT_INTERCEPTORS,
-        strategy: StreamTransportStrategy
+        strategy: ServerTransportStrategy
     },
     content: {
         root: 'public'
@@ -77,10 +77,11 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
     async start(): Promise<void> {
         try {
             const opts = this.getOptions();
-            const server = this._server = this.buildServer(opts);
+            const server = this._server = this.createServer(opts);
             const logger = this.logger;
-            const sub = this.onConnection(server, opts.connectionOpts)
-                .pipe(mergeMap(conn => this.onRequest(conn)))
+            const strategy = this.context.get(ServerTransportStrategy);
+            const sub = this.onConnection(server, strategy, opts.connectionOpts)
+                .pipe(mergeMap(conn => this.onRequest(conn, strategy)))
                 .subscribe({
                     error: (err) => {
                         logger.error(err);
@@ -97,14 +98,14 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
     }
 
 
-    protected onConnection(server: T, opts?: ConnectionOpts): Observable<ServerConnection> {
+    protected onConnection(server: T, strategy: ServerTransportStrategy, opts?: ConnectionOpts): Observable<Connection> {
         return new Observable((observer) => {
             const onError = (err: Error) => {
                 observer.error(err);
             };
             const onConnection = (conn: any, ...args: any[]) => {
-                const duplex = isDuplex(conn) ? conn : this.parseToDuplex(conn, ...args);
-                const connection = this.createConnection(duplex, opts);
+                const duplex = isDuplex(conn) ? conn : strategy.parseToDuplex(conn, ...args);
+                const connection = strategy.createConnection(duplex, opts);
                 observer.next(connection);
             }
             const onClose = () => {
@@ -122,48 +123,40 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
         })
     }
 
-    protected onRequest(conn: ServerConnection): Observable<TransportEvent> {
-        return new Observable((observer) => {
-            const subs: Set<Subscription> = new Set();
+    protected onRequest(conn: Connection, strategy: ServerTransportStrategy): Observable<any> {
+        return strategy.request(conn, this.endpoint());
+        // return new Observable((observer) => {
+        //     const subs: Set<Subscription> = new Set();
 
-            const onHeaders = (headers: IncomingHeaders, id: number) => {
-                const sid = conn.getNextStreamId(id);
-                const stream = this.createStream(conn, sid, headers);
-                conn.emit(ev.STREAM, stream, headers);
-            };
+        //     const onHeaders = (headers: IncomingHeaders, id: number) => {
+        //         const sid = conn.getNextStreamId(id);
+        //         const stream = this.createStream(conn, sid, headers);
+        //         conn.emit(ev.STREAM, stream, headers);
+        //     };
 
 
-            const onStream = (stream: ServerStream, headers: IncomingHeaders) => {
-                const ctx = this.buildContext(stream, headers);
-                subs.add(this.handle(ctx, this.endpoint(), observer));
-            };
+        //     const onStream = (stream: ServerStream, headers: IncomingHeaders) => {
+        //         const ctx = this.buildContext(stream, headers);
+        //         subs.add(this.handle(ctx, this.endpoint(), observer));
+        //     };
 
-            conn.on(ev.HEADERS, onHeaders);
-            conn.on(ev.STREAM, onStream);
-            return () => {
-                subs.forEach(s => {
-                    s && s.unsubscribe();
-                });
-                subs.clear();
-                conn.off(ev.HEADERS, onHeaders);
-                conn.off(ev.STREAM, onStream);
-            }
-        });
+        //     conn.on(ev.HEADERS, onHeaders);
+        //     conn.on(ev.STREAM, onStream);
+        //     return () => {
+        //         subs.forEach(s => {
+        //             s && s.unsubscribe();
+        //         });
+        //         subs.clear();
+        //         conn.off(ev.HEADERS, onHeaders);
+        //         conn.off(ev.STREAM, onStream);
+        //     }
+        // });
     }
 
-    protected createStream(conn: ServerConnection, id?: number, headers?: IncomingHeaders) {
-        return new ServerStream(conn, id, this.getOptions().connectionOpts ?? EMPTY_OBJ, lang.pick(headers ?? EMPTY_OBJ, hdr.HOST, hdr.AUTHORITY));
-    }
 
-    protected abstract buildServer(opts: TOpts): T;
+    protected abstract createServer(opts: TOpts): T;
 
-    protected parseToDuplex(conn: any, ...args: any[]): Duplex {
-        throw new Execption('parse connection client to Duplex not implemented.')
-    }
 
-    protected createConnection(duplex: Duplex, opts?: ConnectionOpts) {
-        return new ServerConnection(duplex, this.context.get(Packetor), opts);
-    }
 
     /**
      * listen
@@ -259,14 +252,14 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
         super.initContext(options)
     }
 
-    protected override registerStrategy(strategy: TypeOf<StreamTransportStrategy>): void {
+    protected override registerStrategy(strategy: TypeOf<ServerTransportStrategy>): void {
         const pdrs: ProviderType[] = [];
         if (isFunction(strategy)) {
             pdrs.push({ provide: TransportStrategy, useExisting: strategy });
-            pdrs.push({ provide: StreamTransportStrategy, useExisting: strategy });
+            pdrs.push({ provide: ServerTransportStrategy, useExisting: strategy });
         } else {
             pdrs.push({ provide: TransportStrategy, useValue: strategy });
-            pdrs.push({ provide: StreamTransportStrategy, useValue: strategy });
+            pdrs.push({ provide: ServerTransportStrategy, useValue: strategy });
         }
         this.context.injector.inject(pdrs);
     }

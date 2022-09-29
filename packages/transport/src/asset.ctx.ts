@@ -1,6 +1,6 @@
 import {
     AssetContext, OutgoingHeader, ServerContext, IncomingHeader, OutgoingHeaders, IncomingMsg,
-    OutgoingMsg, Server, ServerContextOpts, ConnectionContext, RestfulTransportStrategy, TransportExecption
+    OutgoingMsg, Server, ServerContextOpts, ConnectionContext, TransportExecption, RedirectTransportStatus
 } from '@tsdi/core';
 import { Abstract, Injector, isArray, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';
 import { extname } from 'path';
@@ -24,7 +24,7 @@ export abstract class AssetServerContext<TRequest extends IncomingMsg = Incoming
     constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, options?: ServerContextOpts) {
         super(injector, request, response, target, options);
 
-        this.response.statusCode = this.transport.notFound;
+        this.response.statusCode = this.transport.status.notFound;
         this.originalUrl = request.url?.toString() ?? '';
         this._url = request.url ?? '';
 
@@ -453,14 +453,14 @@ export abstract class AssetServerContext<TRequest extends IncomingMsg = Incoming
      * Whether the status code is ok
      */
     get ok(): boolean {
-        return this.transport.isOk(this.status);
+        return this.transport.status.isOk(this.status);
     }
 
     /**
      * Whether the status code is ok
      */
     set ok(ok: boolean) {
-        this.status = ok ? this.transport.ok : this.transport.notFound
+        this.status = ok ? this.transport.status.ok : this.transport.status.notFound
     }
 
 
@@ -491,7 +491,7 @@ export abstract class AssetServerContext<TRequest extends IncomingMsg = Incoming
 
         // no content
         if (null == val) {
-            if (!this.transport.isEmpty(this.status)) this.status = this.transport.noContent;
+            if (!this.transport.status.isEmpty(this.status)) this.status = this.transport.status.noContent;
             if (val === null) this.onNullBody();
             this.removeHeader(hdr.CONTENT_TYPE);
             this.removeHeader(hdr.CONTENT_LENGTH);
@@ -500,7 +500,7 @@ export abstract class AssetServerContext<TRequest extends IncomingMsg = Incoming
         }
 
         // set the status
-        if (!this._explicitStatus) this.status = this.transport.ok;
+        if (!this._explicitStatus) this.status = this.transport.status.ok;
 
         // set the content-type only if not yet set
         const setType = !this.hasHeader(hdr.CONTENT_TYPE);
@@ -688,13 +688,14 @@ export abstract class AssetServerContext<TRequest extends IncomingMsg = Incoming
      * @api public
      */
     redirect(url: string, alt?: string): void {
-        if (!(this.transport instanceof RestfulTransportStrategy)) {
+        const stat = this.transport.status;
+        if (!(stat instanceof RedirectTransportStatus)) {
             throw new TransportExecption('the status not extends RestfulStatus');
         }
         if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
         this.setHeader(hdr.LOCATION, encodeUrl(url));
         // status
-        if (!this.transport.isRedirect(this.status)) this.status = this.transport.found;
+        if (!stat.isRedirect(this.status)) this.status = stat.found;
 
         // html
         if (this.accepts('html')) {

@@ -6,8 +6,8 @@ import { Readable, Writable } from 'stream';
 import { MimeSource } from '../mime';
 import { ServerRequest } from './req';
 import { ServerResponse } from './res';
-import { EventStrategy } from './connection';
-import { StreamTransportStrategy } from '../strategy';
+import { EventStrategy } from '../stream/client/connection';
+import { ServerTransportStrategy } from './strategy';
 
 /**
  * transport server options.
@@ -44,7 +44,7 @@ export abstract class TransportServerOpts<T = any> extends ServerOpts<ServerRequ
  * server transport strategy options.
  */
 export interface ServerTransportStrategyOpts extends TransportStrategyOpts<Readable, Writable> {
-    strategy: TypeOf<StreamTransportStrategy>;
+    strategy: TypeOf<ServerTransportStrategy>;
 }
 
 /**

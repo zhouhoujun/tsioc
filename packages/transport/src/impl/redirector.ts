@@ -1,5 +1,5 @@
 /* eslint-disable no-case-declarations */
-import { BadRequestExecption, EndpointContext, Client, RequestMethod, Redirector, ReqHeaders, ResHeaders, HeaderSet, Message, RestfulTransportStrategy } from '@tsdi/core';
+import { BadRequestExecption, EndpointContext, Client, RequestMethod, Redirector, ReqHeaders, ResHeaders, HeaderSet, Message, RedirectTransportStatus } from '@tsdi/core';
 import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { Readable } from 'stream';
@@ -10,7 +10,8 @@ export class AssetRedirector extends Redirector {
 
     redirect<T>(ctx: EndpointContext, req: Message, status: number, headers: ResHeaders): Observable<T> {
         return new Observable((observer: Observer<T>) => {
-            if (!(ctx.transport instanceof RestfulTransportStrategy)) return observer.error(new BadRequestExecption('not extends RestfulStatus.'))
+            const tst = ctx.transport.status;
+            if (!(tst instanceof RedirectTransportStatus)) return observer.error(new BadRequestExecption('not extends RestfulStatus.'))
             const rdstatus = ctx.getValueify(RedirectStauts, () => new RedirectStauts());
             // HTTP fetch step 5.2
             const location = headers.get(hdr.LOCATION) as string;
@@ -24,7 +25,7 @@ export class AssetRedirector extends Redirector {
                 // do not throw when options.redirect == manual
                 // let the user extract the errorneous redirect URL
                 if (rdstatus.redirect !== 'manual') {
-                    observer.error(new BadRequestExecption(`uri requested responds with an invalid redirect URL: ${location}`, ctx.transport.status.badRequest));
+                    observer.error(new BadRequestExecption(`uri requested responds with an invalid redirect URL: ${location}`, tst.badRequest));
                 }
             }
 
@@ -32,7 +33,7 @@ export class AssetRedirector extends Redirector {
             // HTTP fetch step 5.5
             switch (rdstatus.redirect) {
                 case 'error':
-                    observer.error(new BadRequestExecption(`uri requested responds with a redirect, redirect mode is set to error: ${req.url}`, ctx.transport.status.badRequest));
+                    observer.error(new BadRequestExecption(`uri requested responds with a redirect, redirect mode is set to error: ${req.url}`, tst.badRequest));
                     break;
                 case 'manual':
                     // Nothing to do
@@ -45,7 +46,7 @@ export class AssetRedirector extends Redirector {
 
                     // HTTP-redirect fetch step 5
                     if (rdstatus.counter >= rdstatus.follow) {
-                        observer.error(new BadRequestExecption(`maximum redirect reached at: ${req.url}`, ctx.transport.status.badRequest));
+                        observer.error(new BadRequestExecption(`maximum redirect reached at: ${req.url}`, tst.badRequest));
                         break;
                     }
 
@@ -72,14 +73,14 @@ export class AssetRedirector extends Redirector {
                     }
 
                     // HTTP-redirect fetch step 9
-                    if (ctx.transport.redirectBodify(status) && req.body && req.body instanceof Readable) {
-                        observer.error(new BadRequestExecption('Cannot follow redirect with body being a readable stream', ctx.transport.status.badRequest));
+                    if (tst.redirectBodify(status) && req.body && req.body instanceof Readable) {
+                        observer.error(new BadRequestExecption('Cannot follow redirect with body being a readable stream', tst.badRequest));
                         break;
                     }
 
                     // HTTP-redirect fetch step 11
-                    if (!ctx.transport.redirectBodify(status, req.method)) {
-                        method = ctx.transport.redirectDefaultMethod() as RequestMethod;
+                    if (!tst.redirectBodify(status, req.method)) {
+                        method = tst.redirectDefaultMethod() as RequestMethod;
                         body = undefined;
                         reqhdrs = reqhdrs.delete(hdr.CONTENT_LENGTH);
                     }

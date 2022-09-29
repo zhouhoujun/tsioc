@@ -2,21 +2,20 @@ import { EndpointBackend, OnDispose, RequestContext, Client, RequestOptions, Mes
 import { Abstract, EMPTY, isFunction, ProviderType, TypeOf } from '@tsdi/ioc';
 import { map, Observable, Observer, of } from 'rxjs';
 import { Duplex } from 'stream';
-import { ClientConnection, RequestStrategy } from './connection';
 import { TransportBackend } from './backend';
 import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, CLIENT_TRANSPORT_INTERCEPTORS, TransportClientOpts } from './options';
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
 import { BodyContentInterceptor } from './body';
-import { StreamTransportStrategy } from '../strategy';
-import { ConnectionOpts, Packetor } from '../connection';
+import { Connection, ConnectionOpts, Packetor } from '../connection';
 import { ev } from '../consts';
+import { ClientTransportStrategy } from './strategy';
 
 
 const tsptDeftOpts = {
     backend: TransportBackend,
     transport: {
         interceptorsToken: CLIENT_TRANSPORT_INTERCEPTORS,
-        strategy: StreamTransportStrategy
+        strategy: ClientTransportStrategy
     },
     interceptors: [
         BodyContentInterceptor
@@ -33,12 +32,12 @@ const tsptDeftOpts = {
 @Abstract()
 export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOptions, TOpts extends TransportClientOpts = TransportClientOpts> extends Client<Pattern, ReqOpts, TOpts> implements OnDispose {
 
-    private _connection?: ClientConnection;
+    private _connection?: Connection;
     constructor(options: TOpts) {
         super(options);
     }
 
-    get connection(): ClientConnection {
+    get connection(): Connection {
         return this._connection ?? null!;
     }
 
@@ -67,7 +66,7 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
     }
 
     protected buildRequest(context: RequestContext, url: Pattern | TransportRequest, options?: ReqOpts | undefined): TransportRequest {
-        context.setValue(ClientConnection, this.connection);
+        context.setValue(Connection, this.connection);
         return url instanceof TransportRequest ? url : this.createRequest(url, options);
     }
 
@@ -75,33 +74,25 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
         return new TransportRequest(pattern, options);
     }
 
-    protected connect(): Observable<ClientConnection> {
+    protected connect(): Observable<Connection> {
         if (this._connection && !this._connection.destroyed && !this._connection.isClosed) {
             return of(this._connection);
         }
         const opts = this.getOptions();
         return this.buildConnection(opts)
             .pipe(
-                map(stream => {
-                    this._connection = stream;
-                    return stream;
+                map(conn => {
+                    this._connection = conn;
+                    return conn;
                 })
             );
     }
 
-    protected abstract createDuplex(opts: TOpts): Duplex;
-
-    protected createConnection(duplex: Duplex, packetor: Packetor, strategy: RequestStrategy, opts?: ConnectionOpts): ClientConnection {
-        return new ClientConnection(duplex, packetor, opts, strategy);
-    }
-
-    protected buildConnection(opts: TOpts): Observable<ClientConnection> {
+    protected buildConnection(opts: TOpts): Observable<Connection> {
         const logger = this.logger;
-        return new Observable((observer: Observer<ClientConnection>) => {
-            const packetor = this.context.get(Packetor);
-            const strategy = this.context.get(opts.request ?? RequestStrategy);
-            const duplex = this.createDuplex(opts);
-            const client = this.createConnection(duplex, packetor, strategy, opts.connectionOpts);
+        const strategy = this.context.get(ClientTransportStrategy);
+        return new Observable((observer: Observer<Connection>) => {
+            const client = strategy.createConnection(opts);
             if (opts.keepalive) {
                 client.setKeepAlive(true, opts.keepalive);
             }
@@ -134,14 +125,14 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
         return this.context.get(this.getOptions().backend!);
     }
 
-    protected override registerStrategy(strategy: TypeOf<StreamTransportStrategy>): void {
+    protected override registerStrategy(strategy: TypeOf<ClientTransportStrategy>): void {
         const pdrs: ProviderType[] = [];
         if (isFunction(strategy)) {
             pdrs.push({ provide: TransportStrategy, useExisting: strategy });
-            pdrs.push({ provide: StreamTransportStrategy, useExisting: strategy });
+            pdrs.push({ provide: ClientTransportStrategy, useExisting: strategy });
         } else {
             pdrs.push({ provide: TransportStrategy, useValue: strategy });
-            pdrs.push({ provide: StreamTransportStrategy, useValue: strategy });
+            pdrs.push({ provide: ClientTransportStrategy, useValue: strategy });
         }
         this.context.injector.inject(pdrs);
     }

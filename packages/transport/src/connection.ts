@@ -4,7 +4,7 @@ import { Writable, Duplex, Transform } from 'stream';
 import { ev } from './consts';
 import { Duplexify, DuplexifyOptions } from './duplexify';
 import { InvalidSessionExecption } from './execptions';
-import { TransportStream } from './stream';
+import { TransportStream } from './stream/stream';
 
 
 /**

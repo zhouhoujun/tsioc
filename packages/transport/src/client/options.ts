@@ -1,8 +1,8 @@
 import { ClientOpts, EndpointBackend, ExecptionFilter, Interceptor, TransportEvent, TransportRequest, TransportStrategyOpts } from '@tsdi/core';
 import { Abstract, ClassType, tokenId, TypeOf } from '@tsdi/ioc';
 import { Readable, Writable } from 'stream';
-import { ClientConnectionOpts, ClientRequsetOpts, RequestStrategy } from './connection';
-import { StreamTransportStrategy } from '../strategy';
+import { ConnectionOpts } from '../connection';
+import { ClientTransportStrategy } from './strategy';
 
 /**
  * Transport client options.
@@ -14,13 +14,12 @@ export abstract class TransportClientOpts extends ClientOpts {
      * connect options.
      */
     abstract connectOpts?: Record<string, any>;
-    abstract connectionOpts?: ClientConnectionOpts;
+    abstract connectionOpts?: ConnectionOpts;
     /**
      * request opions.
      */
-    abstract requestOpts?: ClientRequsetOpts;
+    abstract requestOpts?: Record<string, any>;
 
-    abstract request?: ClassType<RequestStrategy>;
 
     abstract transport?: ClientTransportStrategyOpts;
     /**
@@ -29,11 +28,14 @@ export abstract class TransportClientOpts extends ClientOpts {
     abstract backend?: ClassType<EndpointBackend<TransportRequest, TransportEvent>>;
 }
 
+
+
+
 /**
  * client transport strategy options.
  */
 export interface ClientTransportStrategyOpts extends TransportStrategyOpts<Writable, Readable> {
-    strategy: TypeOf<StreamTransportStrategy>;
+    strategy: TypeOf<ClientTransportStrategy>;
 }
 
 /**

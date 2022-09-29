@@ -1,5 +1,5 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
-import { ListenOpts, mths, RestfulTransportStrategy } from '@tsdi/core';
+import { ListenOpts, mths, TransportStatus, TransportStrategy } from '@tsdi/core';
 import { Injectable, isNumber, isString } from '@tsdi/ioc';
 import { hdr } from '@tsdi/transport';
 import * as http from 'http';
@@ -7,10 +7,70 @@ import * as http2 from 'http2';
 import { TLSSocket } from 'tls';
 
 @Injectable({ static: true })
-export class HttpTransportStrategy extends RestfulTransportStrategy {
+export class HttpTransportStrategy extends TransportStrategy {
 
-    private _protocol = 'http';
-    parseStatus(status?: string | number | undefined): number {
+    private _protocol = 'http';   
+
+    constructor(readonly status: HttpTransportStatus) {
+        super();
+    }
+    
+    get protocol(): string {
+        return this._protocol;
+    }
+
+    isUpdate(req: http.IncomingMessage | http2.Http2ServerRequest): boolean {
+        return req.method === mths.PUT
+    }
+
+    isSecure(req: http.IncomingMessage | http2.Http2ServerRequest): boolean {
+        return this.protocol === 'https' || (req?.socket as TLSSocket)?.encrypted === true
+    }
+
+
+    parseURL(req: http.IncomingMessage | http2.Http2ServerRequest, opts: ListenOpts, proxy?: boolean): URL {
+        const url = req.url?.trim() ?? '';
+        if (httptl.test(url)) {
+            return new URL(url);
+        } else {
+            if ((req.socket as TLSSocket).encrypted) {
+                this._protocol = 'https';
+            } else if (!proxy) {
+                this._protocol = 'http';
+            } else {
+                const proto = req.headers[hdr.X_FORWARDED_PROTO] as string;
+                this._protocol = (proto ? proto.split(urlsplit, 1)[0] : 'http');
+            }
+
+            let host = proxy && req.headers[hdr.X_FORWARDED_HOST];
+            if (!host) {
+                if (req.httpVersionMajor >= 2) host = req.headers[AUTHORITY];
+                if (!host) host = req.headers[hdr.HOST];
+            }
+            if (!host || isNumber(host)) {
+                host = '';
+            } else {
+                host = isString(host) ? host.split(urlsplit, 1)[0] : host[0]
+            }
+            return new URL(`${this.protocol}://${host}${url}`);
+        }
+
+    }
+
+    isAbsoluteUrl(url: string): boolean {
+        return httptl.test(url.trim())
+    }
+
+    match(protocol: string): boolean {
+        return protocol === this.protocol;
+    }
+
+}
+
+@Injectable()
+export class HttpTransportStatus extends TransportStatus {
+
+    parse(status?: string | number | undefined): number {
         return isString(status) ? (status ? parseInt(status) : 0) : status ?? 0;
     }
 
@@ -89,55 +149,6 @@ export class HttpTransportStrategy extends RestfulTransportStrategy {
 
     message(status: number): string {
         return statusMessage[status as HttpStatusCode];
-    }
-
-    isUpdate(req: http.IncomingMessage | http2.Http2ServerRequest): boolean {
-        return req.method === mths.PUT
-    }
-
-    isSecure(req: http.IncomingMessage | http2.Http2ServerRequest): boolean {
-        return this.protocol === 'https' || (req?.socket as TLSSocket)?.encrypted === true
-    }
-
-    get protocol(): string {
-        return this._protocol;
-    }
-
-    parseURL(req: http.IncomingMessage | http2.Http2ServerRequest, opts: ListenOpts, proxy?: boolean): URL {
-        const url = req.url?.trim() ?? '';
-        if (httptl.test(url)) {
-            return new URL(url);
-        } else {
-            if ((req.socket as TLSSocket).encrypted) {
-                this._protocol = 'https';
-            } else if (!proxy) {
-                this._protocol = 'http';
-            } else {
-                const proto = req.headers[hdr.X_FORWARDED_PROTO] as string;
-                this._protocol = (proto ? proto.split(urlsplit, 1)[0] : 'http');
-            }
-
-            let host = proxy && req.headers[hdr.X_FORWARDED_HOST];
-            if (!host) {
-                if (req.httpVersionMajor >= 2) host = req.headers[AUTHORITY];
-                if (!host) host = req.headers[hdr.HOST];
-            }
-            if (!host || isNumber(host)) {
-                host = '';
-            } else {
-                host = isString(host) ? host.split(urlsplit, 1)[0] : host[0]
-            }
-            return new URL(`${this.protocol}://${host}${url}`);
-        }
-
-    }
-
-    isAbsoluteUrl(url: string): boolean {
-        return httptl.test(url.trim())
-    }
-
-    match(protocol: string): boolean {
-        return protocol === this.protocol;
     }
 
 }
