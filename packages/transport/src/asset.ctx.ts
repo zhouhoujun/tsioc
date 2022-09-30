@@ -1,6 +1,6 @@
 import {
     AssetContext, OutgoingHeader, ServerContext, IncomingHeader, OutgoingHeaders, Incoming,
-    Outgoing, Server, ServerContextOpts, ServerEndpointContext, TransportExecption, RedirectTransportStatus
+    Outgoing, Server, ServerContextOpts, ServerEndpointContext, TransportExecption, RedirectTransportStatus, TransportStrategy
 } from '@tsdi/core';
 import { Abstract, Injector, isArray, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';
 import { extname } from 'path';
@@ -21,8 +21,8 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
     readonly originalUrl: string;
     private _url?: string;
 
-    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, options?: ServerContextOpts) {
-        super(injector, request, response, target, options);
+    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, transport: TransportStrategy, options?: ServerContextOpts) {
+        super(injector, request, response, target, transport, options);
 
         this.response.statusCode = this.transport.status.notFound;
         this.originalUrl = request.url?.toString() ?? '';
@@ -690,7 +690,7 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
     redirect(url: string, alt?: string): void {
         const stat = this.transport.status;
         if (!(stat instanceof RedirectTransportStatus)) {
-            throw new TransportExecption('the status not extends RestfulStatus');
+            throw new TransportExecption('the status not extends RedirectTransportStatus');
         }
         if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
         this.setHeader(hdr.LOCATION, encodeUrl(url));

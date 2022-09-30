@@ -383,8 +383,10 @@ export abstract class Client<
 
     protected createContext(req: TRequest | TPattern, options?: TReqOpts & ResponseAs): ClientEndpointContext {
         return (options as any)?.context ?? new ClientContext(
-            this.context.injector, this as any,
-            { transport: this.getOptions().transport?.strategy, responseType: options?.responseType, observe: isTypeObject(req) ? 'events' : options?.observe });
+            this.context.injector,
+            this as any,
+            this.context.get(TransportStrategy),
+            { responseType: options?.responseType, observe: isTypeObject(req) ? 'events' : options?.observe });
     }
 
     protected override initContext(options: TOpts): void {

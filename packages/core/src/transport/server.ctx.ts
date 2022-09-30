@@ -26,7 +26,7 @@ export interface ServerContextOpts extends InvokeArguments {
 export abstract class ServerContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends ServerEndpointContext<TRequest, TResponse> {
 
 
-    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, options?: ServerContextOpts) {
+    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, readonly transport: TransportStrategy, options?: ServerContextOpts) {
         super(injector, {
             ...options,
             resolvers: [
@@ -36,9 +36,6 @@ export abstract class ServerContext<TRequest extends Incoming = Incoming, TRespo
             ]
         });
 
-        if (options?.transport) {
-            this._transport = isFunction(options.transport) ? injector.get(options.transport) : options.transport;
-        }
     }
 
     protected isSelf(token: Token) {

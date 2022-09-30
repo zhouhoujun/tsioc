@@ -1,12 +1,11 @@
 import { EndpointBackend, OnDispose, ClientEndpointContext, Client, RequestOptions, Message, TransportEvent, TransportRequest, Pattern, TransportStrategy } from '@tsdi/core';
 import { Abstract, EMPTY, isFunction, ProviderType, TypeOf } from '@tsdi/ioc';
 import { map, Observable, Observer, of } from 'rxjs';
-import { Duplex } from 'stream';
 import { TransportBackend } from './backend';
 import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, CLIENT_TRANSPORT_INTERCEPTORS, TransportClientOpts } from './options';
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
 import { BodyContentInterceptor } from './body';
-import { Connection, ConnectionOpts, Packetor } from '../connection';
+import { Connection } from '../connection';
 import { ev } from '../consts';
 import { ClientTransportStrategy } from './strategy';
 

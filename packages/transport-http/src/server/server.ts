@@ -1,5 +1,5 @@
 import { Inject, Injectable, isBoolean, isFunction, lang, EMPTY_OBJ } from '@tsdi/ioc';
-import { Server, RunnableFactoryResolver, ModuleRef, Router, ListenOpts } from '@tsdi/core';
+import { Server, RunnableFactoryResolver, ModuleRef, Router, ListenOpts, TransportStrategy } from '@tsdi/core';
 import { ListenOptions } from 'net';
 import * as http from 'http';
 import * as https from 'https';
@@ -194,7 +194,7 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse, HttpCo
      * @param response 
      */
     protected onRequestHandler(request: HttpServRequest, response: HttpServResponse) {
-        const ctx = new HttpContext(this.context.injector, request, response, this as Server, { transport: this.getOptions().transport?.strategy });
+        const ctx = new HttpContext(this.context.injector, request, response, this as Server, this.context.get(TransportStrategy));
         this.context.injector.get(HttpHandlerBinding).binding(ctx, this.endpoint());
     }
 

@@ -1,7 +1,7 @@
 import { Abstract, DefaultInvocationContext } from '@tsdi/ioc';
 import { Incoming, Outgoing } from './packet';
-import { TransportStrategy } from './strategy';
 import { TransportEndpoint } from './transport';
+import { TransportStrategy } from './strategy';
 
 /**
  * endpoint context.
@@ -13,17 +13,11 @@ export abstract class EndpointContext extends DefaultInvocationContext {
      */
     abstract get target(): TransportEndpoint;
 
-
-    protected _transport?: TransportStrategy;
     /**
      * transport protocol
      */
-    get transport(): TransportStrategy {
-        if (!this._transport) {
-            this._transport = this.get(TransportStrategy);
-        }
-        return this._transport;
-    }
+    abstract get transport(): TransportStrategy;
+
 
     protected override clear(): void {
         super.clear();

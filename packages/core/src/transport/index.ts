@@ -8,6 +8,7 @@ export * from './endpoint';
 export * from './middleware';
 
 export * from './utils';
+export * from './status';
 export * from './strategy';
 export * from './redirector';
 

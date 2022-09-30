@@ -22,12 +22,12 @@ import { HttpHandlerBinding } from './server/binding';
         TransportModule
     ],
     providers: [
+        HttpTransportStatus,
+        HttpTransportStrategy,
         HttpBodyInterceptor,
         HttpPathInterceptor,
         HttpFinalizeFilter,
         HttpExecptionFilter,
-        HttpTransportStatus,
-        HttpTransportStrategy,
         HttpBackend2,
         HttpRespondAdapter,
         HttpHandlerBinding,
