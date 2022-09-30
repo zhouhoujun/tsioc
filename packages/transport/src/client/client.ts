@@ -91,7 +91,7 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
         const logger = this.logger;
         const strategy = this.context.get(ClientTransportStrategy);
         return new Observable((observer: Observer<Connection>) => {
-            const client = strategy.createConnection(opts);
+            const client = strategy.transformor.createConnection(opts);
             if (opts.keepalive) {
                 client.setKeepAlive(true, opts.keepalive);
             }

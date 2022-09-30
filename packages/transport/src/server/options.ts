@@ -1,5 +1,5 @@
 import { Interceptor, ServerOpts, ListenOpts, TransportStrategyOpts, Incoming, Outgoing } from '@tsdi/core';
-import { Abstract, ClassType, tokenId, TypeOf } from '@tsdi/ioc';
+import { Abstract, tokenId, TypeOf } from '@tsdi/ioc';
 import { ConnectionOpts } from '../connection';
 import { ContentOptions, SessionOptions } from '../middlewares';
 import { Readable, Writable } from 'stream';

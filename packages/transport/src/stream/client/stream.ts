@@ -1,24 +1,18 @@
-import { ClientContext, IncomingHeaders, Incoming, IncomingStatusHeaders, InterceptorType, ListenOpts, TransportRequest, TransportStatus } from '@tsdi/core';
+import { ClientContext, IncomingHeaders, Incoming, IncomingStatusHeaders, InterceptorType, ListenOpts, TransportRequest, TransportStatus, Transformor } from '@tsdi/core';
 import { Readable, DuplexOptions, Writable } from 'stream';
 import { ev, hdr } from '../../consts';
 import { HeandersSentExecption, InvalidStreamExecption } from '../../execptions';
 import { SteamOptions, StreamStateFlags, StreamTransformor, TransportStream } from '../stream';
 import { Connection } from '../../connection';
-import { ClientTransportStrategy, TransportClientOpts } from '../../client';
+import { ClientTransformor, ClientTransportStrategy, TransportClientOpts } from '../../client';
 import { Observable } from 'rxjs';
 
 
 export class ClientStreamStrategy extends ClientTransportStrategy {
-    use(interceptor: InterceptorType<Writable, Readable>, order?: number | undefined): this {
+    get transformor(): ClientTransformor {
         throw new Error('Method not implemented.');
     }
-    createConnection(opts: TransportClientOpts): Connection {
-        throw new Error('Method not implemented.');
-    }
-    send(req: TransportRequest<any>, context: ClientContext): Observable<any> {
-        const conn = context.get(Connection);
-        conn.write(req);
-    }
+
     get protocol(): string {
         throw new Error('Method not implemented.');
     }

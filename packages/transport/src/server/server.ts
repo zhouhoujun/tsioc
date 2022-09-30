@@ -99,8 +99,8 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
                 observer.error(err);
             };
             const onConnection = (conn: any, ...args: any[]) => {
-                const duplex = isDuplex(conn) ? conn : strategy.parseToDuplex(conn, ...args);
-                const connection = strategy.createConnection(duplex, opts);
+                const duplex = isDuplex(conn) ? conn : strategy.transformor.parseToDuplex(conn, ...args);
+                const connection = strategy.transformor.createConnection(duplex, opts);
                 observer.next(connection);
             }
             const onClose = () => {
@@ -119,7 +119,8 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
     }
 
     protected onRequest(conn: Connection, strategy: ServerTransportStrategy): Observable<any> {
-        return strategy.request(conn, this.endpoint());
+
+        return strategy.transformor.request(conn, this.endpoint());
         // return new Observable((observer) => {
         //     const subs: Set<Subscription> = new Set();
 

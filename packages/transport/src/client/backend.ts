@@ -29,7 +29,7 @@ export class TransportBackend implements EndpointBackend<TransportRequest, Trans
             status: 0,
             statusMessage: 'has not connected.'
         }));
-        return ctx.transport.send(req, ctx)
+        return ctx.transport.transformor.send(req, ctx)
             .pipe(
                 mergeMap(async body => {
                     let type = ctx.responseType;
