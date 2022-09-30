@@ -1,18 +1,23 @@
-import { Abstract, ArgumentExecption, EMPTY, lang, Token } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, EMPTY, isFunction, lang, Token, TypeOf } from '@tsdi/ioc';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
 import { EndpointBackend } from './endpoint';
 import { TransportEndpoint, TransportOpts } from './transport';
 import { ServerEndpointContext } from './context';
 import { MiddlewareBackend, MiddlewareLike, MiddlewareType } from './middleware';
-import { IncomingMsg, OutgoingMsg } from './packet';
+import { Incoming, Outgoing } from './packet';
+import { TransportStrategy, TransportStrategyOpts } from './strategy';
 
 
 /**
  * server options.
  */
 @Abstract()
-export abstract class ServerOpts<TRequest extends IncomingMsg = any, TResponse extends OutgoingMsg = any> extends TransportOpts<TRequest, TResponse> {
+export abstract class ServerOpts<TRequest extends Incoming = any, TResponse extends Outgoing = any> extends TransportOpts<TRequest, TResponse> {
+    /**
+     * transport options.
+     */
+    abstract transport?: TransportStrategyOpts;
     /**
      * middlewares of server.
      */
@@ -31,8 +36,8 @@ export abstract class ServerOpts<TRequest extends IncomingMsg = any, TResponse e
 @Abstract()
 @Runner('start')
 export abstract class Server<
-    TRequest extends IncomingMsg = any,
-    TResponse extends OutgoingMsg = any,
+    TRequest extends Incoming = any,
+    TResponse extends Outgoing = any,
     Tx extends ServerEndpointContext = ServerEndpointContext,
     Opts extends ServerOpts<TRequest, TResponse> = any>
 
@@ -74,6 +79,16 @@ export abstract class Server<
      */
     protected override initContext(options: Opts) {
         super.initContext(options);
+        if (options.transport) {
+            const { strategy, interceptors, interceptorsToken } = options.transport;
+            if (!strategy) {
+                throw new ArgumentExecption(lang.getClassName(this) + ' transport options strategy is missing.');
+            }
+            if (interceptorsToken && interceptors) {
+                this.multiReg(interceptorsToken, interceptors ?? []);
+            }
+            this.registerStrategy(strategy);
+        }
 
         const mToken = this._midlsToken = options.middlewaresToken!;
         if (!mToken) {
@@ -92,6 +107,9 @@ export abstract class Server<
         return new MiddlewareBackend(this.context.injector.get(this._midlsToken, EMPTY))
     }
 
+    protected registerStrategy(strategy: TypeOf<TransportStrategy>) {
+        this.context.injector.inject(isFunction(strategy) ? { provide: TransportStrategy, useExisting: strategy } : { provide: TransportStrategy, useValue: strategy });
+    }
 
     /**
      * close server.

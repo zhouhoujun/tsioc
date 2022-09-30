@@ -1,7 +1,7 @@
-import { mths } from '@tsdi/core';
+import { mths, Outgoing, TransportExecption } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
+import { Writable } from 'stream';
 import { RespondAdapter } from '../interceptors/respond';
-import { ServerResponse } from './res';
 import { TransportContext } from './context';
 import { hdr } from '../consts';
 import { isBuffer, isStream, pipeStream } from '../utils';
@@ -11,7 +11,7 @@ import { isBuffer, isStream, pipeStream } from '../utils';
 @Injectable({ static: true })
 export class TransportRespondAdapter extends RespondAdapter {
 
-    async respond(res: ServerResponse, ctx: TransportContext): Promise<any> {
+    async respond(res: Outgoing, ctx: TransportContext): Promise<any> {
 
         if (!ctx.writable) return;
 
@@ -56,6 +56,7 @@ export class TransportRespondAdapter extends RespondAdapter {
         if (isBuffer(body)) return res.end(body);
         if (isString(body)) return res.end(Buffer.from(body));
         if (isStream(body)) {
+            if(!(res instanceof Writable)) throw new TransportExecption('response is not writable, no support strem.');
             await pipeStream(body, res);
         }
 

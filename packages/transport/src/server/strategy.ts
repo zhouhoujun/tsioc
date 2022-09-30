@@ -7,13 +7,6 @@ import { Connection, ConnectionOpts } from '../connection';
 
 @Abstract()
 export abstract class ServerTransportStrategy extends TransportStrategy {
-    /**
-     * use interceptors.
-     * @param interceptor 
-     * @param order 
-     * @returns 
-     */
-    abstract use(interceptor: InterceptorType<Writable, Readable>, order?: number): this;
 
 
     parseToDuplex(target: any, ...args: any[]): Duplex {

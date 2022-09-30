@@ -1,5 +1,5 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
-import { IncomingMsg, ListenOpts, mths, Packet } from '@tsdi/core';
+import { Incoming, ListenOpts, mths, Packet } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
 import {
     ConnectionOpts, hdr, isBuffer, StreamTransportStrategy, ServerRequest, PacketParser,
@@ -94,7 +94,7 @@ export class DelimiterTransportStrategy extends StreamTransportStrategy {
         return statusMessage[status as HttpStatusCode];
     }
 
-    isUpdate(req: IncomingMsg): boolean {
+    isUpdate(req: Incoming): boolean {
         return req.method === 'PUT';
     }
 
@@ -106,7 +106,7 @@ export class DelimiterTransportStrategy extends StreamTransportStrategy {
         return this._protocol;
     }
 
-    parseURL(req: IncomingMsg, opts: ListenOpts, proxy?: boolean): URL {
+    parseURL(req: Incoming, opts: ListenOpts, proxy?: boolean): URL {
         const url = req.url ?? '';
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);

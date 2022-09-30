@@ -1,5 +1,5 @@
 import { Abstract, DefaultInvocationContext } from '@tsdi/ioc';
-import { IncomingMsg, OutgoingMsg } from './packet';
+import { Incoming, Outgoing } from './packet';
 import { TransportStrategy } from './strategy';
 import { TransportEndpoint } from './transport';
 
@@ -52,7 +52,7 @@ export abstract class ClientEndpointContext extends EndpointContext {
  * abstract server side endpoint context.
  */
 @Abstract()
-export abstract class ServerEndpointContext<TRequest extends IncomingMsg = IncomingMsg, TResponse extends OutgoingMsg = OutgoingMsg> extends EndpointContext {
+export abstract class ServerEndpointContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends EndpointContext {
     /**
      * transport request.
      */
@@ -203,7 +203,7 @@ export interface Throwable {
 /**
  * tansport context with headers.
  */
-export interface HeadersContext<TRequest extends IncomingMsg = IncomingMsg, TResponse extends OutgoingMsg = OutgoingMsg> extends ServerEndpointContext<TRequest, TResponse> {
+export interface HeadersContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends ServerEndpointContext<TRequest, TResponse> {
     /**
      * Return request header.
      *
@@ -273,7 +273,7 @@ export interface HeadersContext<TRequest extends IncomingMsg = IncomingMsg, TRes
 /**
  * asset context.
  */
-export interface AssetContext<TRequest extends IncomingMsg = IncomingMsg, TResponse extends OutgoingMsg = OutgoingMsg> extends HeadersContext<TRequest, TResponse> {
+export interface AssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends HeadersContext<TRequest, TResponse> {
     /**
      * Check if the incoming request contains the "Content-Type"
      * header field and if it contains any of the given mime `type`s.

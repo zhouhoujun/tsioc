@@ -1,19 +1,19 @@
 import {
     Abstract, ArgumentExecption, Autorun, AutoWired, EMPTY, InvocationContext,
-    isClass, isClassType, isFunction, lang, ProviderType, Token, Type, TypeOf
+    isClass, isClassType, lang, ProviderType, Token, Type, TypeOf
 } from '@tsdi/ioc';
 import { Log, Logger } from '@tsdi/logs';
 import { ExecptionChain } from '../execptions/chain';
 import { ExecptionFilter } from '../execptions/filter';
 import { Endpoint, EndpointBackend, InterceptorChain, InterceptorLike, InterceptorType } from './endpoint';
-import { TransportStrategyOpts, TransportStrategy } from './strategy';
+
 
 
 /**
  * transport endpoint options.
  */
 @Abstract()
-export abstract class TransportOpts<TRequest, TResponse> {
+export abstract class TransportOpts<TInput, TOutput> {
     /**
      * providers for transport.
      */
@@ -21,11 +21,11 @@ export abstract class TransportOpts<TRequest, TResponse> {
     /**
      * interceptors of endpoint.
      */
-    abstract interceptors?: InterceptorType<TRequest, TResponse>[];
+    abstract interceptors?: InterceptorType<TInput, TOutput>[];
     /**
      * the mutil token to register intereptors in the endpoint context.
      */
-    abstract interceptorsToken?: Token<InterceptorLike<TRequest, TResponse>[]>;
+    abstract interceptorsToken?: Token<InterceptorLike<TInput, TOutput>[]>;
     /**
      * execption filters of server.
      */
@@ -34,10 +34,6 @@ export abstract class TransportOpts<TRequest, TResponse> {
      * the mutil token to register execption filters in the server context.
      */
     abstract execptionsToken?: Token<ExecptionFilter[]>;
-    /**
-     * transport protocol.
-     */
-    abstract transport?: TransportStrategyOpts;
     /**
      * endpoint timeout.
      */
@@ -51,9 +47,9 @@ export abstract class TransportOpts<TRequest, TResponse> {
  */
 @Abstract()
 export abstract class TransportEndpoint<
-    TRequest = any,
-    TResponse = any,
-    Opts extends TransportOpts<TRequest, TResponse> = TransportOpts<TRequest, TResponse>> {
+    TInput = any,
+    TOutput = any,
+    Opts extends TransportOpts<TInput, TOutput> = TransportOpts<TInput, TOutput>> {
 
     /**
      * logger of endpoint.
@@ -66,8 +62,8 @@ export abstract class TransportEndpoint<
     @AutoWired()
     readonly context!: InvocationContext;
 
-    private _chain?: Endpoint<TRequest, TResponse>;
-    private _iptToken!: Token<InterceptorLike<TRequest, TResponse>[]>;
+    private _chain?: Endpoint<TInput, TOutput>;
+    private _iptToken!: Token<InterceptorLike<TInput, TOutput>[]>;
     private _filterToken!: Token<ExecptionFilter[]>;
     private _filter?: ExecptionFilter;
     private _opts: Opts;
@@ -95,7 +91,7 @@ export abstract class TransportEndpoint<
      * @param order 
      * @returns 
      */
-    intercept(interceptor: InterceptorType<TRequest, TResponse>, order?: number): this {
+    intercept(interceptor: InterceptorType<TInput, TOutput>, order?: number): this {
         this.multiOrder(this._iptToken, interceptor, order);
         this.resetEndpoint();
         return this
@@ -127,14 +123,14 @@ export abstract class TransportEndpoint<
     /**
      * transport endpoint chain.
      */
-    endpoint(): Endpoint<TRequest, TResponse> {
+    endpoint(): Endpoint<TInput, TOutput> {
         if (!this._chain) {
             this._chain = this.buildEndpoint();
         }
         return this._chain
     }
 
-    protected buildEndpoint(): Endpoint<TRequest, TResponse> {
+    protected buildEndpoint(): Endpoint<TInput, TOutput> {
         return new InterceptorChain(this.getBackend(), this.context.injector.get(this._iptToken, EMPTY));
     }
 
@@ -148,7 +144,7 @@ export abstract class TransportEndpoint<
     /**
      *  get backend endpoint. 
      */
-    protected abstract getBackend(): EndpointBackend<TRequest, TResponse>;
+    protected abstract getBackend(): EndpointBackend<TInput, TOutput>;
     /**
      * initialize options.
      * @param options 
@@ -161,16 +157,6 @@ export abstract class TransportEndpoint<
      */
     protected initContext(options: Opts): void {
         const injector = this.context.injector;
-        if (options.transport) {
-            const { strategy, interceptors, interceptorsToken } = options.transport;
-            if (!strategy) {
-                throw new ArgumentExecption(lang.getClassName(this) + ' transport options strategy is missing.');
-            }
-            if (interceptorsToken && interceptors) {
-                this.multiReg(interceptorsToken, interceptors ?? []);
-            }
-            this.registerStrategy(strategy);
-        }
 
         injector.inject({ provide: Logger, useFactory: () => this.logger });
         if (options.providers && options.providers.length) {
@@ -193,10 +179,6 @@ export abstract class TransportEndpoint<
             this.multiReg(eToken, options.execptions);
         }
 
-    }
-
-    protected registerStrategy(strategy: TypeOf<TransportStrategy>) {
-        this.context.injector.inject(isFunction(strategy) ? { provide: TransportStrategy, useExisting: strategy } : { provide: TransportStrategy, useValue: strategy });
     }
 
     protected multiReg<T>(provide: Token, types: (Type<T> | T)[]): void {

@@ -1,7 +1,7 @@
 import {
     BadRequestExecption, ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
     ForbiddenExecption, InternalServerExecption, NotFoundExecption, TransportArgumentExecption, TransportExecption,
-    ENOENT, TransportMissingExecption, UnauthorizedExecption, UnsupportedMediaTypeExecption, ServerEndpointContext
+    ENOENT, TransportMissingExecption, UnauthorizedExecption, UnsupportedMediaTypeExecption, ServerEndpointContext, Outgoing
 } from '@tsdi/core';
 import { Injectable, isFunction, isNumber } from '@tsdi/ioc';
 import { MissingModelFieldExecption } from '@tsdi/repository';
@@ -37,7 +37,7 @@ export class TransportFinalizeFilter implements ExecptionFilter {
             return
         }
 
-        const res = hctx.response;
+        const res = hctx.response as Outgoing;
         const stgy = hctx.transport;
 
         // first unset all headers

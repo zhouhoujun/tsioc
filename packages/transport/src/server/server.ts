@@ -1,7 +1,6 @@
-import { Endpoint, IncomingHeaders, ListenOpts, ModuleRef, Router, Server, TransportEvent, TransportStrategy } from '@tsdi/core';
-import { Abstract, Destroyable, EMPTY_OBJ, Execption, isBoolean, isFunction, lang, ProviderType, TypeOf } from '@tsdi/ioc';
+import { Incoming, ListenOpts, ModuleRef, Outgoing, Router, Server, TransportStrategy } from '@tsdi/core';
+import { Abstract, Destroyable, isBoolean, isFunction, lang, ProviderType, TypeOf } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
-import { Duplex } from 'stream';
 import { CatchInterceptor, LogInterceptor, RespondInterceptor } from '../interceptors';
 import { TransportContext, SERVER_EXECPTION_FILTERS, SERVER_MIDDLEWARES } from './context';
 import { BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMiddleware, SessionMiddleware } from '../middlewares';
@@ -9,14 +8,10 @@ import { MimeDb } from '../mime';
 import { db } from '../impl/mimedb';
 import { TransportExecptionFilter, TransportFinalizeFilter } from './finalize-filter';
 import { TransportServerOpts, SERVER_INTERCEPTORS, SERVER_TRANSPORT_INTERCEPTORS } from './options';
-import { ServerRequest } from './req';
-import { ServerResponse } from './res';
 import { TRANSPORT_SERVR_PROVIDERS } from './providers';
-import { ServerStream } from './stream';
-import { Connection, ConnectionOpts, Packetor } from '../connection';
-import { finalize, mergeMap, Observable, Subscriber, Subscription } from 'rxjs';
-import { ev, hdr } from '../consts';
-import { ServerConnection } from '../stream/client/connection';
+import { Connection, ConnectionOpts } from '../connection';
+import { mergeMap, Observable } from 'rxjs';
+import { ev } from '../consts';
 import { isDuplex } from '../utils';
 import { ServerTransportStrategy } from './strategy';
 
@@ -59,7 +54,7 @@ const defOpts = {
  * Transport Server
  */
 @Abstract()
-export abstract class TransportServer<T extends EventEmitter = any, TOpts extends TransportServerOpts = TransportServerOpts> extends Server<ServerRequest, ServerResponse, TransportContext, TOpts> {
+export abstract class TransportServer<T extends EventEmitter = any, TOpts extends TransportServerOpts = TransportServerOpts> extends Server<Incoming, Outgoing, TransportContext, TOpts> {
 
     private _server: T | null = null;
     constructor(options: TOpts) {
@@ -153,10 +148,7 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
         // });
     }
 
-
     protected abstract createServer(opts: TOpts): T;
-
-
 
     /**
      * listen
@@ -164,38 +156,39 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
      * @param opts 
      */
     protected abstract listen(server: T, opts: ListenOpts): Promise<void>;
-    /**
-     * 
-     * handle request.
-     * @param context 
-     * @param endpoint 
-     */
-    protected handle(ctx: TransportContext, endpoint: Endpoint, subscriber: Subscriber<TransportEvent>): Subscription {
-        const req = ctx.request;
-        const cancel = endpoint.handle(req, ctx)
-            .pipe(finalize(() => ctx.destroy))
-            .subscribe(subscriber);
-        const opts = ctx.target.getOptions() as TransportServerOpts;
-        opts.timeout && req.setTimeout(opts.timeout, () => {
-            req.emit(ev.TIMEOUT);
-            cancel?.unsubscribe()
-        });
-        req.once(ev.CLOSE, async () => {
-            await lang.delay(500);
-            cancel?.unsubscribe();
-            if (!ctx.sent) {
-                ctx.response.end()
-            }
-        });
-        return cancel;
-    }
 
-    protected buildContext(stream: ServerStream, headers: IncomingHeaders): TransportContext {
-        const request = new ServerRequest(stream, headers);
-        const response = new ServerResponse(stream, headers);
-        const parent = this.context;
-        return new TransportContext(parent.injector, request, response, this, { parent });
-    }
+    // /**
+    //  * 
+    //  * handle request.
+    //  * @param context 
+    //  * @param endpoint 
+    //  */
+    // protected handle(ctx: TransportContext, endpoint: Endpoint, subscriber: Subscriber<TransportEvent>): Subscription {
+    //     const req = ctx.request;
+    //     const cancel = endpoint.handle(req, ctx)
+    //         .pipe(finalize(() => ctx.destroy))
+    //         .subscribe(subscriber);
+    //     const opts = ctx.target.getOptions() as TransportServerOpts;
+    //     opts.timeout && req.setTimeout(opts.timeout, () => {
+    //         req.emit(ev.TIMEOUT);
+    //         cancel?.unsubscribe()
+    //     });
+    //     req.once(ev.CLOSE, async () => {
+    //         await lang.delay(500);
+    //         cancel?.unsubscribe();
+    //         if (!ctx.sent) {
+    //             ctx.response.end()
+    //         }
+    //     });
+    //     return cancel;
+    // }
+
+    // protected buildContext(stream: ServerStream, headers: IncomingHeaders): TransportContext {
+    //     const request = new ServerRequest(stream, headers);
+    //     const response = new ServerResponse(stream, headers);
+    //     const parent = this.context;
+    //     return new TransportContext(parent.injector, request, response, this, { parent });
+    // }
 
 
     async close(): Promise<void> {

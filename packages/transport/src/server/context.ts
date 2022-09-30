@@ -1,15 +1,12 @@
-import { ExecptionFilter, MiddlewareLike, HeadersContext, AssetContext, ServerEndpointContext, ServerContext } from '@tsdi/core';
+import { ExecptionFilter, MiddlewareLike, HeadersContext, AssetContext, ServerEndpointContext, ServerContext, Incoming, Outgoing } from '@tsdi/core';
 import { Token, tokenId } from '@tsdi/ioc';
 import { AssetServerContext } from '../asset.ctx';
-import { ServerRequest } from './req';
-import { ServerResponse } from './res';
-
 
 /**
  * Transport context for `TransportServer`.
  */
-export class TransportContext extends AssetServerContext<ServerRequest, ServerResponse> implements HeadersContext, AssetContext {
-
+export class TransportContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing>
+    extends AssetServerContext<TRequest, TResponse> implements HeadersContext, AssetContext {
 
     get status(): number {
         return this.response.statusCode
@@ -38,8 +35,7 @@ export class TransportContext extends AssetServerContext<ServerRequest, ServerRe
 
     get writable(): boolean {
         if (this.response.writableEnded || this.response.finished) return false;
-        if (!this.response.socket) return true;
-        return this.response.writable;
+        return this.response.writable === true;
     }
 
     protected isSelf(token: Token) {

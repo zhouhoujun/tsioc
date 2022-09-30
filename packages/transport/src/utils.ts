@@ -1,5 +1,5 @@
 import { ArgumentExecption, isFunction, isString, lang, TypeExecption } from '@tsdi/ioc';
-import { OutgoingMsg, isFormData } from '@tsdi/core';
+import { Outgoing, isFormData } from '@tsdi/core';
 import { Buffer } from 'buffer';
 import { Stream, Writable, Readable, Duplex, pipeline } from 'stream';
 import { promisify } from 'util';
@@ -230,7 +230,7 @@ const field_name = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
 * @public
 */
 
-export function vary(res: OutgoingMsg, field: string) {
+export function vary(res: Outgoing, field: string) {
   // get existing header
   let val = res.getHeader(hdr.VARY) || '';
   const header = Array.isArray(val)

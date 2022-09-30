@@ -2,7 +2,7 @@ import { chain, Handler, isFunction, lang, Type } from '@tsdi/ioc';
 import { defer, Observable } from 'rxjs';
 import { ServerEndpointContext } from './context';
 import { EndpointBackend, Interceptor, InterceptorChain, interceptorify, InterceptorLike } from './endpoint';
-import { IncomingMsg, OutgoingMsg } from './packet';
+import { Incoming, Outgoing } from './packet';
 
 
 
@@ -99,7 +99,7 @@ export class Chain implements Middleware {
 /**
  * middleware backend.
  */
-export class MiddlewareBackend<TRequest extends IncomingMsg, TResponse extends OutgoingMsg, Tx extends ServerEndpointContext> implements EndpointBackend<TRequest, TResponse> {
+export class MiddlewareBackend<TRequest extends Incoming, TResponse extends Outgoing, Tx extends ServerEndpointContext> implements EndpointBackend<TRequest, TResponse> {
 
     private _middleware?: MiddlewareFn<Tx>;
     constructor(private middlewares: MiddlewareLike<Tx>[]) {
@@ -121,7 +121,7 @@ export class MiddlewareBackend<TRequest extends IncomingMsg, TResponse extends O
 /**
  * interceptor middleware.
  */
-export class InterceptorMiddleware<TRequest extends IncomingMsg, TResponse extends OutgoingMsg> implements Middleware {
+export class InterceptorMiddleware<TRequest extends Incoming, TResponse extends Outgoing> implements Middleware {
 
     private _chainFn?: MiddlewareFn;
     private interceptors: Interceptor<TRequest, TResponse>[];

@@ -10,7 +10,6 @@ import { CatchInterceptor, DefaultStatusFormater, LogInterceptor, RespondInterce
 import { BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware, EncodeJsonMiddleware, HelmetMiddleware, SessionMiddleware } from './middlewares';
 import { TransportExecptionFilter, TransportFinalizeFilter } from './server/finalize-filter';
 import { TransportRespondAdapter } from './server/respond';
-import { DefaultRequestStrategy, RequestStrategy } from './client';
 
 
 @Module({
@@ -41,7 +40,6 @@ import { DefaultRequestStrategy, RequestStrategy } from './client';
         TransportFinalizeFilter,
         TransportExecptionFilter,
         
-        { provide: RequestStrategy, useClass: DefaultRequestStrategy, asDefault: true },
         { provide: Client, useExisting: TransportClient },
         { provide: Server, useExisting: TransportServer }
     ]

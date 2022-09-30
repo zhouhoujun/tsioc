@@ -1,9 +1,47 @@
-import { IncomingHeaders, IncomingStatusHeaders } from '@tsdi/core';
-import { Readable, DuplexOptions } from 'stream';
+import { ClientContext, IncomingHeaders, Incoming, IncomingStatusHeaders, InterceptorType, ListenOpts, TransportRequest, TransportStatus } from '@tsdi/core';
+import { Readable, DuplexOptions, Writable } from 'stream';
 import { ev, hdr } from '../../consts';
 import { HeandersSentExecption, InvalidStreamExecption } from '../../execptions';
 import { SteamOptions, StreamStateFlags, StreamTransformor, TransportStream } from '../stream';
 import { Connection } from '../../connection';
+import { ClientTransportStrategy, TransportClientOpts } from '../../client';
+import { Observable } from 'rxjs';
+
+
+export class ClientStreamStrategy extends ClientTransportStrategy {
+    use(interceptor: InterceptorType<Writable, Readable>, order?: number | undefined): this {
+        throw new Error('Method not implemented.');
+    }
+    createConnection(opts: TransportClientOpts): Connection {
+        throw new Error('Method not implemented.');
+    }
+    send(req: TransportRequest<any>, context: ClientContext): Observable<any> {
+        const conn = context.get(Connection);
+        conn.write(req);
+    }
+    get protocol(): string {
+        throw new Error('Method not implemented.');
+    }
+    get status(): TransportStatus {
+        throw new Error('Method not implemented.');
+    }
+    isAbsoluteUrl(url: string): boolean {
+        throw new Error('Method not implemented.');
+    }
+    isUpdate(incoming: Incoming): boolean {
+        throw new Error('Method not implemented.');
+    }
+    isSecure(incoming: Incoming): boolean {
+        throw new Error('Method not implemented.');
+    }
+    parseURL(incoming: Incoming, opts: ListenOpts, proxy?: boolean | undefined): URL {
+        throw new Error('Method not implemented.');
+    }
+    match(protocol: string): boolean {
+        throw new Error('Method not implemented.');
+    }
+
+}
 
 
 /**

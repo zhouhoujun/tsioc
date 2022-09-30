@@ -1,5 +1,5 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
-import { ListenOpts, mths, TransportStatus, TransportStrategy } from '@tsdi/core';
+import { ListenOpts, mths, Transformor, TransportStatus, TransportStrategy } from '@tsdi/core';
 import { Injectable, isNumber, isString } from '@tsdi/ioc';
 import { hdr } from '@tsdi/transport';
 import * as http from 'http';
@@ -8,6 +8,9 @@ import { TLSSocket } from 'tls';
 
 @Injectable({ static: true })
 export class HttpTransportStrategy extends TransportStrategy {
+    get transformor(): Transformor<any, any> {
+        throw new Error('Method not implemented.');
+    }
 
     private _protocol = 'http';   
 

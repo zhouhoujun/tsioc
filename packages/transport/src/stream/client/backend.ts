@@ -11,7 +11,7 @@ import * as zlib from 'zlib';
 import { ctype, ev, hdr } from '../../consts';
 import { MimeAdapter, MimeTypes } from '../../mime';
 import { isBuffer, pmPipeline, toBuffer } from '../../utils';
-import { TransportClientOpts } from '../../client/options';
+import { RequestStauts, TransportClientOpts } from '../../client/options';
 import { Connection } from '../../connection';
 
 
@@ -287,29 +287,5 @@ export class TransportBackend2 implements EndpointBackend<TransportRequest, Tran
 
     protected getAbortSignal(ctx: InvocationContext) {
         return typeof AbortController === _tyundef ? null! : ctx.getValueify(AbortController, () => new AbortController());
-    }
-}
-
-
-
-
-export class RequestStauts {
-    public highWaterMark: number;
-    public insecureParser: boolean;
-    public referrerPolicy: ReferrerPolicy;
-    readonly compress: boolean;
-    constructor(init: {
-        compress?: boolean;
-        follow?: number;
-        counter?: number;
-        highWaterMark?: number;
-        insecureParser?: boolean;
-        referrerPolicy?: ReferrerPolicy;
-        redirect?: 'manual' | 'error' | 'follow' | '';
-    } = EMPTY_OBJ) {
-        this.compress = init.compress ?? false;
-        this.highWaterMark = init.highWaterMark ?? 16384;
-        this.insecureParser = init.insecureParser ?? false;
-        this.referrerPolicy = init.referrerPolicy ?? '';
     }
 }

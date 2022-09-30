@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, isNil, isTypeObject, _tystr } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, isFunction, isNil, isTypeObject, lang, TypeOf, _tystr } from '@tsdi/ioc';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, isObservable } from 'rxjs';
 import { TransportOpts, TransportEndpoint } from './transport';
 import { ClientEndpointContext } from './context';
@@ -6,6 +6,7 @@ import { ClientContext } from './client.ctx';
 import { OnDispose } from '../lifecycle';
 import { TransportRequest, RequestOptions, Pattern } from './request';
 import { TransportEvent, TransportResponse } from './response';
+import { TransportStrategy, TransportStrategyOpts } from './strategy';
 
 
 
@@ -14,7 +15,10 @@ import { TransportEvent, TransportResponse } from './response';
  */
 @Abstract()
 export abstract class ClientOpts<TRequest = TransportRequest, TResponse = TransportEvent> extends TransportOpts<TRequest, TResponse> {
-
+    /**
+     * transport options.
+     */
+    abstract transport?: TransportStrategyOpts;
 }
 
 
@@ -381,6 +385,24 @@ export abstract class Client<
         return (options as any)?.context ?? new ClientContext(
             this.context.injector, this as any,
             { transport: this.getOptions().transport?.strategy, responseType: options?.responseType, observe: isTypeObject(req) ? 'events' : options?.observe });
+    }
+
+    protected override initContext(options: TOpts): void {
+        super.initContext(options);
+        if (options.transport) {
+            const { strategy, interceptors, interceptorsToken } = options.transport;
+            if (!strategy) {
+                throw new ArgumentExecption(lang.getClassName(this) + ' transport options strategy is missing.');
+            }
+            if (interceptorsToken && interceptors) {
+                this.multiReg(interceptorsToken, interceptors ?? []);
+            }
+            this.registerStrategy(strategy);
+        }
+    }
+
+    protected registerStrategy(strategy: TypeOf<TransportStrategy>) {
+        this.context.injector.inject(isFunction(strategy) ? { provide: TransportStrategy, useExisting: strategy } : { provide: TransportStrategy, useValue: strategy });
     }
 
     protected abstract buildRequest(context: ClientEndpointContext, url: TRequest | TPattern, options?: TReqOpts): TRequest;

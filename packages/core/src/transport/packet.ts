@@ -115,7 +115,7 @@ export interface PacketClonable<T = any> {
 /**
  * server side incoming message.
  */
-export interface IncomingMsg {
+export interface Incoming {
     /**
      * packet id.
      */
@@ -150,12 +150,13 @@ export interface IncomingMsg {
      * @param options 
      */
     pipe(destination: any, options?: { end?: boolean | undefined; }): any;
+
 }
 
 /**
  * server outgoing message.
  */
-export interface OutgoingMsg {
+export interface Outgoing {
     /**
      * Get response status code.
      */
@@ -249,7 +250,7 @@ export interface OutgoingMsg {
     /**
      * get header names
      */
-    getHeaderNames(): string[];
+    getHeaderNames?(): string[];
 
     /**
      * write head
@@ -264,5 +265,13 @@ export interface OutgoingMsg {
      * @param headers 
      */
     writeHead(statusCode: number, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[]): this;
+
+    end(cb?: (() => void) | undefined): this;
+    end(chunk: any, cb?: (() => void) | undefined): this;
+    
+    writable?: boolean;
+    writableEnded?: boolean;
+
+    finished?: boolean;
 }
 
