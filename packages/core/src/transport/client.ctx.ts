@@ -1,6 +1,6 @@
 import { Injector, InvokeArguments, isFunction, TypeOf } from '@tsdi/ioc';
 import { Client } from './client';
-import { RequestContext } from './context';
+import { ClientEndpointContext } from './context';
 import { TransportStrategy } from './strategy';
 
 
@@ -17,7 +17,7 @@ export interface ClientInvocationOptions extends InvokeArguments {
 /**
  * clinet context.
  */
-export class ClientContext extends RequestContext {
+export class ClientContext extends ClientEndpointContext {
     /**
      * instance of TransportClient.
      */

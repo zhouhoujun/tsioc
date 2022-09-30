@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { ConnectionContext } from '../transport/context';
+import { ServerEndpointContext } from '../transport/context';
 
 /**
  * Execption respond.
@@ -8,10 +8,10 @@ import { ConnectionContext } from '../transport/context';
 export abstract class ExecptionRespond {
     /**
      * respond with execption handled data.
-     * @param ctx transport context. instance of {@link ConnectionContext}.
+     * @param ctx transport context. instance of {@link ServerEndpointContext}.
      * @param value execption handled returnning value
      */
-    abstract respond<T>(ctx: ConnectionContext, value: T): void;
+    abstract respond<T>(ctx: ServerEndpointContext, value: T): void;
 }
 
 /**
@@ -21,9 +21,9 @@ export abstract class ExecptionRespond {
 export abstract class ExecptionTypedRespond {
     /**
      * respond with execption handled data.
-     * @param ctx transport context. instance of {@link ConnectionContext}.
+     * @param ctx transport context. instance of {@link ServerEndpointContext}.
      * @param responseType response type
      * @param value execption handled returnning value
      */
-    abstract respond<T>(ctx: ConnectionContext, responseType: 'body' | 'header' | 'response', value: T): void;
+    abstract respond<T>(ctx: ServerEndpointContext, responseType: 'body' | 'header' | 'response', value: T): void;
 }

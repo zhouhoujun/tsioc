@@ -1,5 +1,5 @@
 import { EMPTY, Injectable, InvocationContext, lang, Nullable, Token } from '@tsdi/ioc';
-import { RequestMethod, Client, EndpointBackend, OnDispose, InterceptorLike, RequestOptions, ResponseAs, RequestContext, mths, ReqHeaders, ReqHeadersLike } from '@tsdi/core';
+import { RequestMethod, Client, EndpointBackend, OnDispose, InterceptorLike, RequestOptions, ResponseAs, ClientEndpointContext, mths, ReqHeaders, ReqHeadersLike } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpParams, HttpResponse, HttpBackend } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import * as http from 'http';
@@ -93,7 +93,7 @@ export class Http extends Client<string, HttpReqOptions, HttpClientOpts, HttpReq
         }
     }
 
-    protected override createContext(req: HttpRequest | string, options?: HttpReqOptions & ResponseAs): RequestContext {
+    protected override createContext(req: HttpRequest | string, options?: HttpReqOptions & ResponseAs): ClientEndpointContext {
         const ctx = super.createContext(req, options);
         if (this.client) {
             ctx.setValue(CLIENT_HTTP2SESSION, this.client);
@@ -101,7 +101,7 @@ export class Http extends Client<string, HttpReqOptions, HttpClientOpts, HttpReq
         return ctx;
     }
 
-    protected override buildRequest(context: RequestContext, first: string | HttpRequest<any>, options: HttpReqOptions & ResponseAs): HttpRequest<any> {
+    protected override buildRequest(context: ClientEndpointContext, first: string | HttpRequest<any>, options: HttpReqOptions & ResponseAs): HttpRequest<any> {
         // First, check whether the primary argument is an instance of `HttpRequest`.
         if (first instanceof HttpRequest) {
             // It is. The other arguments must be undefined (per the signatures) and can be

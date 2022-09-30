@@ -9,7 +9,7 @@ import * as path from 'path';
 import { HttpClient, HttpClientModule } from '@tsdi/common';
 import {
     Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module,
-    ConnectionContext, LoggerModule, Middleware, Chain
+    ServerEndpointContext, LoggerModule, Middleware, Chain
 } from '../src';
 
 
@@ -92,7 +92,7 @@ class DeviceController {
 @Handle('/hdevice')
 class DeviceQueue implements Middleware {
 
-    async invoke(ctx: ConnectionContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void> {
 
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
@@ -122,7 +122,7 @@ class DeviceQueue implements Middleware {
 @Injectable()
 class DeviceStartupHandle implements Middleware {
 
-    invoke(ctx: ConnectionContext, next: () => Promise<void>): Promise<void> {
+    invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void> {
 
         console.log('DeviceStartupHandle.', 'resp:', ctx.playload.type, 'req:', ctx.playload.type)
         if (ctx.playload.type === 'startup') {
@@ -137,7 +137,7 @@ class DeviceStartupHandle implements Middleware {
 @Injectable()
 class DeviceAStartupHandle implements Middleware {
 
-    invoke(ctx: ConnectionContext, next: () => Promise<void>): Promise<void> {
+    invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void> {
         console.log('DeviceAStartupHandle.', 'resp:', ctx.playload.type, 'req:', ctx.playload.type)
         if (ctx.playload.type === 'startup') {
             // todo sth.

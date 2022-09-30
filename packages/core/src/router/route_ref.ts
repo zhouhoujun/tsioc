@@ -9,7 +9,7 @@ import { InterceptorLike, InterceptorType } from '../transport/endpoint';
 import { Middleware, MiddlewareFn, InterceptorMiddleware } from '../transport/middleware';
 import { RouteRef, RouteFactory, RouteFactoryResolver, joinprefix } from './route';
 import { ProtocolRouteMappingMetadata, RouteMappingMetadata } from './router';
-import { ConnectionContext } from '../transport/context';
+import { ServerEndpointContext } from '../transport/context';
 import { promisify } from './promisify';
 import { Protocols } from '../transport/packet';
 import { ForbiddenExecption } from '../transport/execptions';
@@ -84,7 +84,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         return this._intptors;
     }
 
-    async invoke(ctx: ConnectionContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void> {
         if (ctx.sent || (this.protocol && !ctx.match(this.protocol))) return await next();
 
         const method = this.getRouteMetaData(ctx) as DecorDefine<ProtocolRouteMappingMetadata>;
@@ -120,7 +120,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         return (ctx, next) => middleware.invoke(ctx, next)
     }
 
-    async response(ctx: ConnectionContext, meta: DecorDefine): Promise<void> {
+    async response(ctx: ServerEndpointContext, meta: DecorDefine): Promise<void> {
 
         const route: string = meta.metadata.route;
         if (route && isRest.test(route)) {
@@ -172,14 +172,14 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         }
     }
 
-    protected getRouteInterceptors(ctx: ConnectionContext, meta: DecorDefine<ProtocolRouteMappingMetadata>): InterceptorType[] {
+    protected getRouteInterceptors(ctx: ServerEndpointContext, meta: DecorDefine<ProtocolRouteMappingMetadata>): InterceptorType[] {
         if (meta.metadata.interceptors?.length) {
             return [...meta.metadata.interceptors || EMPTY]
         }
         return EMPTY
     }
 
-    protected getRouteMetaData(ctx: ConnectionContext) {
+    protected getRouteMetaData(ctx: ServerEndpointContext) {
         const subRoute = ctx.url.replace(this.path, '') || '/';
         if (!this.sortRoutes) {
             this.sortRoutes = this.reflect.class.methodDecors

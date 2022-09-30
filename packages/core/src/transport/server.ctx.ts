@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { MODEL_RESOLVERS } from './model';
 import { PipeTransform } from '../pipes/pipe';
-import { ConnectionContext } from './context';
+import { ServerEndpointContext } from './context';
 import { TransportArgumentExecption } from './execptions';
 import { TransportArgumentResolver, TransportParameter } from './resolver';
 import { Server } from './server';
@@ -23,7 +23,7 @@ export interface ServerContextOpts extends InvokeArguments {
  * server context with model reovlers.
  */
 @Abstract()
-export abstract class ServerContext<TRequest extends IncomingMsg = IncomingMsg, TResponse extends OutgoingMsg = OutgoingMsg> extends ConnectionContext<TRequest, TResponse> {
+export abstract class ServerContext<TRequest extends IncomingMsg = IncomingMsg, TResponse extends OutgoingMsg = OutgoingMsg> extends ServerEndpointContext<TRequest, TResponse> {
 
 
     constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, options?: ServerContextOpts) {
@@ -42,7 +42,7 @@ export abstract class ServerContext<TRequest extends IncomingMsg = IncomingMsg, 
     }
 
     protected isSelf(token: Token) {
-        return token === ConnectionContext || token === ServerContext;
+        return token === ServerEndpointContext || token === ServerContext;
     }
 
     override missingExecption(missings: Parameter<any>[], type: ClassType<any>, method: string): MissingParameterExecption {
@@ -65,7 +65,7 @@ export function missingPipeExecption(parameter: Parameter, type?: ClassType, met
 
 const primitiveResolvers: TransportArgumentResolver[] = [
     composeResolver<TransportArgumentResolver, TransportParameter>(
-        (parameter, ctx) => ctx instanceof ConnectionContext && isDefined(parameter.field ?? parameter.name),
+        (parameter, ctx) => ctx instanceof ServerEndpointContext && isDefined(parameter.field ?? parameter.name),
         composeResolver<TransportArgumentResolver>(
             (parameter, ctx) => isPrimitiveType(parameter.type),
             {

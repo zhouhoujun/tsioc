@@ -1,6 +1,6 @@
 import { Abstract, Handler, isFunction, Type, chain, lang } from '@tsdi/ioc';
 import { Observable, defer } from 'rxjs';
-import { EndpointContext, ConnectionContext } from './context';
+import { EndpointContext, ServerEndpointContext } from './context';
 
 
 /**

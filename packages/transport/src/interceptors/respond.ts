@@ -1,11 +1,11 @@
-import { Endpoint, Interceptor, ConnectionContext } from '@tsdi/core';
+import { Endpoint, Interceptor, ServerEndpointContext } from '@tsdi/core';
 import { Abstract, Injectable } from '@tsdi/ioc';
 import { Observable, mergeMap } from 'rxjs';
 
 
 @Abstract()
 export abstract class RespondAdapter {
-    abstract respond(res: any, ctx: ConnectionContext): Promise<any>;
+    abstract respond(res: any, ctx: ServerEndpointContext): Promise<any>;
 }
 
 
@@ -15,7 +15,7 @@ export class RespondInterceptor<TRequest = any, TResponse = any> implements Inte
 
     constructor() { }
 
-    intercept(req: TRequest, next: Endpoint<TRequest, TResponse>, ctx: ConnectionContext): Observable<TResponse> {
+    intercept(req: TRequest, next: Endpoint<TRequest, TResponse>, ctx: ServerEndpointContext): Observable<TResponse> {
         return next.handle(req, ctx)
             .pipe(
                 mergeMap(res => {

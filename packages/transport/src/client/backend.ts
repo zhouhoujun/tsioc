@@ -1,18 +1,16 @@
 /* eslint-disable no-case-declarations */
 import {
-    EndpointBackend, IncomingHeaders, IncomingStatusHeaders, isArrayBuffer, isBlob, isFormData,
-    mths, Redirector, RequestContext, ResHeaders, ResponseJsonParseError,
-    TransportErrorResponse, TransportEvent, TransportExecption, TransportHeaderResponse, TransportResponse,
-    UnsupportedMediaTypeExecption, TransportRequest, ClientContext, RedirectTransportStatus
+    EndpointBackend, isArrayBuffer, isBlob, isFormData, ResHeaders, ResponseJsonParseError,
+    TransportErrorResponse, TransportEvent, TransportResponse, ClientContext,
+    UnsupportedMediaTypeExecption, TransportRequest
 } from '@tsdi/core';
-import { EMPTY_OBJ, Injectable, InvocationContext, isUndefined, lang, _tyundef } from '@tsdi/ioc';
+import { Injectable, _tyundef } from '@tsdi/ioc';
 import { PassThrough, pipeline, Writable, Readable, PipelineSource } from 'stream';
-import { Observable, Observer, throwError, finalize, mergeMap } from 'rxjs';
+import { Observable, throwError, mergeMap } from 'rxjs';
 import * as zlib from 'zlib';
-import { ctype, ev, hdr } from '../consts';
+import { hdr } from '../consts';
 import { MimeAdapter, MimeTypes } from '../mime';
 import { createFormData, isBuffer, isFormDataLike, pmPipeline, toBuffer } from '../utils';
-import { TransportClientOpts } from './options';
 import { ClientTransportStrategy } from './strategy';
 
 
@@ -170,26 +168,5 @@ export async function sendbody(data: any, request: Writable, error: (err: any) =
 }
 
 
-
-export class RequestStauts {
-    public highWaterMark: number;
-    public insecureParser: boolean;
-    public referrerPolicy: ReferrerPolicy;
-    readonly compress: boolean;
-    constructor(init: {
-        compress?: boolean;
-        follow?: number;
-        counter?: number;
-        highWaterMark?: number;
-        insecureParser?: boolean;
-        referrerPolicy?: ReferrerPolicy;
-        redirect?: 'manual' | 'error' | 'follow' | '';
-    } = EMPTY_OBJ) {
-        this.compress = init.compress ?? false;
-        this.highWaterMark = init.highWaterMark ?? 16384;
-        this.insecureParser = init.insecureParser ?? false;
-        this.referrerPolicy = init.referrerPolicy ?? '';
-    }
-}
 
 

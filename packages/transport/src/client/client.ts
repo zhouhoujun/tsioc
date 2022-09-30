@@ -1,4 +1,4 @@
-import { EndpointBackend, OnDispose, RequestContext, Client, RequestOptions, Message, TransportEvent, TransportRequest, Pattern, TransportStrategy } from '@tsdi/core';
+import { EndpointBackend, OnDispose, ClientEndpointContext, Client, RequestOptions, Message, TransportEvent, TransportRequest, Pattern, TransportStrategy } from '@tsdi/core';
 import { Abstract, EMPTY, isFunction, ProviderType, TypeOf } from '@tsdi/ioc';
 import { map, Observable, Observer, of } from 'rxjs';
 import { Duplex } from 'stream';
@@ -65,7 +65,7 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
         return opts as TOpts;
     }
 
-    protected buildRequest(context: RequestContext, url: Pattern | TransportRequest, options?: ReqOpts | undefined): TransportRequest {
+    protected buildRequest(context: ClientEndpointContext, url: Pattern | TransportRequest, options?: ReqOpts | undefined): TransportRequest {
         context.setValue(Connection, this.connection);
         return url instanceof TransportRequest ? url : this.createRequest(url, options);
     }

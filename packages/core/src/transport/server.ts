@@ -3,7 +3,7 @@ import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
 import { EndpointBackend } from './endpoint';
 import { TransportEndpoint, TransportOpts } from './transport';
-import { ConnectionContext } from './context';
+import { ServerEndpointContext } from './context';
 import { MiddlewareBackend, MiddlewareLike, MiddlewareType } from './middleware';
 import { IncomingMsg, OutgoingMsg } from './packet';
 
@@ -33,7 +33,7 @@ export abstract class ServerOpts<TRequest extends IncomingMsg = any, TResponse e
 export abstract class Server<
     TRequest extends IncomingMsg = any,
     TResponse extends OutgoingMsg = any,
-    Tx extends ConnectionContext = ConnectionContext,
+    Tx extends ServerEndpointContext = ServerEndpointContext,
     Opts extends ServerOpts<TRequest, TResponse> = any>
 
     extends TransportEndpoint<TRequest, TResponse, Opts> implements OnDispose {

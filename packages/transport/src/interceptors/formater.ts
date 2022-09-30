@@ -1,4 +1,4 @@
-import { ConnectionContext, RedirectTransportStatus } from '@tsdi/core';
+import { ServerEndpointContext, RedirectTransportStatus } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import * as chalk from 'chalk';
 import { ResponseStatusFormater } from './log';
@@ -8,7 +8,7 @@ import { ResponseStatusFormater } from './log';
 @Injectable({ static: true })
 export class DefaultStatusFormater extends ResponseStatusFormater {
 
-    format(ctx: ConnectionContext, hrtime: [number, number]): string[] {
+    format(ctx: ServerEndpointContext, hrtime: [number, number]): string[] {
         const [status, message] = this.formatStatus(ctx);
         return [
             status,
@@ -19,7 +19,7 @@ export class DefaultStatusFormater extends ResponseStatusFormater {
     }
 
 
-    private formatStatus(ctx: ConnectionContext): [string, string] {
+    private formatStatus(ctx: ServerEndpointContext): [string, string] {
         const { status, transport, statusMessage } = ctx;
         const stat = transport.status;
         if (stat.isOk(status)) {

@@ -2,7 +2,7 @@ import {
     Abstract, Destroyable, DestroyCallback, Injector, InvokeArguments,
     InvokeOption, OnDestroy, tokenId, Type, TypeReflect
 } from '@tsdi/ioc';
-import { ConnectionContext } from '../transport/context';
+import { ServerEndpointContext } from '../transport/context';
 import { InterceptorLike } from '../transport/endpoint';
 import { Middleware, MiddlewareFn } from '../transport/middleware';
 import { Protocols } from '../transport/packet';
@@ -125,11 +125,11 @@ export abstract class RouteRef<T = any> implements Middleware, Destroyable, OnDe
      * route handle.
      *
      * @abstract
-     * @param {ConnectionContext} ctx
+     * @param {ServerEndpointContext} ctx
      * @param {() => Promise<void>} next
      * @returns {Promise<void>}
      */
-    abstract invoke(ctx: ConnectionContext, next: () => Promise<void>): Promise<void>;
+    abstract invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void>;
     /**
      * is destroyed or not.
      */

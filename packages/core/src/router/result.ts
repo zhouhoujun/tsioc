@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { ConnectionContext } from '../transport/context';
+import { ServerEndpointContext } from '../transport/context';
 
 /**
  * route mapping return result. 
@@ -17,9 +17,9 @@ export abstract class ResultValue {
      * send value.
      *
      * @abstract
-     * @param {ConnectionContext} context
+     * @param {ServerEndpointContext} context
      * @returns {Promise<any>}
      * @memberof ResultValue
      */
-    abstract sendValue(ctx: ConnectionContext): Promise<any>;
+    abstract sendValue(ctx: ServerEndpointContext): Promise<any>;
 }

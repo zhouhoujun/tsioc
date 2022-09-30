@@ -1,9 +1,9 @@
 import { IncomingHeaders, IncomingStatusHeaders } from '@tsdi/core';
 import { Readable, DuplexOptions } from 'stream';
-import { ev, hdr } from '../consts';
-import { HeandersSentExecption, InvalidStreamExecption } from '../execptions';
-import { SteamOptions, StreamStateFlags, StreamTransformor, TransportStream } from '../stream/stream';
-import { ClientConnection } from './connection';
+import { ev, hdr } from '../../consts';
+import { HeandersSentExecption, InvalidStreamExecption } from '../../execptions';
+import { SteamOptions, StreamStateFlags, StreamTransformor, TransportStream } from '../stream';
+import { Connection } from '../../connection';
 
 
 /**
@@ -11,7 +11,7 @@ import { ClientConnection } from './connection';
  */
 export class ClientStream extends TransportStream {
 
-    constructor(connection: ClientConnection, id: number | undefined, transformor: StreamTransformor, private headers: IncomingHeaders, opts: SteamOptions) {
+    constructor(connection: Connection, id: number | undefined, transformor: StreamTransformor, private headers: IncomingHeaders, opts: SteamOptions) {
         super(connection, transformor, { ...opts, client: true });
         if (id !== undefined) {
             this.init(id);

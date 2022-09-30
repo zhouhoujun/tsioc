@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { Log, Logger } from '@tsdi/logs';
 import { Type, isString, Injector, isFunction, EMPTY, isNil } from '@tsdi/ioc';
-import { ComponentScan, Startup, OnDispose, PipeTransform, ConnectionContext, TransportParameter, PROCESS_ROOT, MODEL_RESOLVERS } from '@tsdi/core';
+import { ComponentScan, Startup, OnDispose, PipeTransform, ServerEndpointContext, TransportParameter, PROCESS_ROOT, MODEL_RESOLVERS } from '@tsdi/core';
 import { ConnectionOptions, createModelResolver, DBPropertyMetadata, missingPropPipe, CONNECTIONS } from '@tsdi/repository';
 import {
     getConnection, createConnection, ConnectionOptions as OrmConnOptions, Connection,
@@ -93,7 +93,7 @@ export class TypeormServer implements Startup, OnDispose {
             isModel: (type) => entities.indexOf(type) >= 0,
             getPropertyMeta: (type) => this.getModelPropertyMetadata(type),
             hasField: (parameter, ctx) => ctx.playload,
-            getFields: (parameter: TransportParameter, ctx: ConnectionContext) => parameter.field ? ctx.playload[parameter.field] : ctx.playload,
+            getFields: (parameter: TransportParameter, ctx: ServerEndpointContext) => parameter.field ? ctx.playload[parameter.field] : ctx.playload,
             fieldResolvers: [
                 {
                     canResolve: (prop, ctx, fields) => prop.dbtype === 'objectId',

@@ -1,7 +1,7 @@
 import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, isNil, isTypeObject, _tystr } from '@tsdi/ioc';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, isObservable } from 'rxjs';
 import { TransportOpts, TransportEndpoint } from './transport';
-import { RequestContext } from './context';
+import { ClientEndpointContext } from './context';
 import { ClientContext } from './client.ctx';
 import { OnDispose } from '../lifecycle';
 import { TransportRequest, RequestOptions, Pattern } from './request';
@@ -284,7 +284,7 @@ export abstract class Client<
         if (isNil(req)) {
             return throwError(() => new ArgumentExecption('Invalid message'))
         }
-        let ctx: RequestContext;
+        let ctx: ClientEndpointContext;
         const connecting = this.connect();
         return (isObservable(connecting) ? connecting : defer(() => connecting))
             .pipe(
@@ -301,7 +301,7 @@ export abstract class Client<
             )
     }
 
-    protected request(context: RequestContext, first: TRequest | TPattern, options: TReqOpts = EMPTY_OBJ as any): Observable<any> {
+    protected request(context: ClientEndpointContext, first: TRequest | TPattern, options: TReqOpts = EMPTY_OBJ as any): Observable<any> {
         const req = this.buildRequest(context, first, options);
 
         // Start with an Observable.of() the initial request, and run the handler (which
@@ -377,13 +377,13 @@ export abstract class Client<
         return err;
     }
 
-    protected createContext(req: TRequest | TPattern, options?: TReqOpts & ResponseAs): RequestContext {
+    protected createContext(req: TRequest | TPattern, options?: TReqOpts & ResponseAs): ClientEndpointContext {
         return (options as any)?.context ?? new ClientContext(
             this.context.injector, this as any,
             { transport: this.getOptions().transport?.strategy, responseType: options?.responseType, observe: isTypeObject(req) ? 'events' : options?.observe });
     }
 
-    protected abstract buildRequest(context: RequestContext, url: TRequest | TPattern, options?: TReqOpts): TRequest;
+    protected abstract buildRequest(context: ClientEndpointContext, url: TRequest | TPattern, options?: TReqOpts): TRequest;
 
     protected abstract connect(): Promise<void> | Observable<any>;
 

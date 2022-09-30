@@ -33,10 +33,10 @@ export abstract class EndpointContext extends DefaultInvocationContext {
 }
 
 /**
- * request context.
+ * client endpoint context.
  */
 @Abstract()
-export abstract class RequestContext extends EndpointContext {
+export abstract class ClientEndpointContext extends EndpointContext {
     /**
      * response observe type
      */
@@ -49,10 +49,10 @@ export abstract class RequestContext extends EndpointContext {
 
 
 /**
- * abstract server side connection context.
+ * abstract server side endpoint context.
  */
 @Abstract()
-export abstract class ConnectionContext<TRequest extends IncomingMsg = IncomingMsg, TResponse extends OutgoingMsg = OutgoingMsg> extends EndpointContext {
+export abstract class ServerEndpointContext<TRequest extends IncomingMsg = IncomingMsg, TResponse extends OutgoingMsg = OutgoingMsg> extends EndpointContext {
     /**
      * transport request.
      */
@@ -203,7 +203,7 @@ export interface Throwable {
 /**
  * tansport context with headers.
  */
-export interface HeadersContext<TRequest extends IncomingMsg = IncomingMsg, TResponse extends OutgoingMsg = OutgoingMsg> extends ConnectionContext<TRequest, TResponse> {
+export interface HeadersContext<TRequest extends IncomingMsg = IncomingMsg, TResponse extends OutgoingMsg = OutgoingMsg> extends ServerEndpointContext<TRequest, TResponse> {
     /**
      * Return request header.
      *

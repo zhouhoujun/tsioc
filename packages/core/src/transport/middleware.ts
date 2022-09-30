@@ -1,6 +1,6 @@
 import { chain, Handler, isFunction, lang, Type } from '@tsdi/ioc';
 import { defer, Observable } from 'rxjs';
-import { ConnectionContext } from './context';
+import { ServerEndpointContext } from './context';
 import { EndpointBackend, Interceptor, InterceptorChain, interceptorify, InterceptorLike } from './endpoint';
 import { IncomingMsg, OutgoingMsg } from './packet';
 
@@ -9,7 +9,7 @@ import { IncomingMsg, OutgoingMsg } from './packet';
 /**
  * Middleware is a chainable behavior modifier for context.
  */
-export interface Middleware<T extends ConnectionContext = ConnectionContext> {
+export interface Middleware<T extends ServerEndpointContext = ServerEndpointContext> {
     /**
      * invoke the middleware.
      * @param ctx  context with request and response.
@@ -22,15 +22,15 @@ export interface Middleware<T extends ConnectionContext = ConnectionContext> {
 /**
  * middleware function
  */
-export type MiddlewareFn<T extends ConnectionContext = ConnectionContext> = Handler<T, Promise<void>>;
+export type MiddlewareFn<T extends ServerEndpointContext = ServerEndpointContext> = Handler<T, Promise<void>>;
 /**
  * middleware like.
  */
-export type MiddlewareLike<T extends ConnectionContext = ConnectionContext> = Middleware<T> | MiddlewareFn<T>;
+export type MiddlewareLike<T extends ServerEndpointContext = ServerEndpointContext> = Middleware<T> | MiddlewareFn<T>;
 /**
  * middleware type.
  */
-export type MiddlewareType<T extends ConnectionContext = ConnectionContext> = Type<Middleware<T>> | MiddlewareLike<T>;
+export type MiddlewareType<T extends ServerEndpointContext = ServerEndpointContext> = Type<Middleware<T>> | MiddlewareLike<T>;
 
 
 
@@ -39,7 +39,7 @@ export type MiddlewareType<T extends ConnectionContext = ConnectionContext> = Ty
  * @param invoke 
  * @returns 
  */
-export function createMiddleware<T extends ConnectionContext>(invoke: MiddlewareFn<T>): Middleware<T> {
+export function createMiddleware<T extends ServerEndpointContext>(invoke: MiddlewareFn<T>): Middleware<T> {
     return { invoke };
 }
 
@@ -48,7 +48,7 @@ export function createMiddleware<T extends ConnectionContext>(invoke: Middleware
  * @param m type of {@link MiddlewareLike}
  * @returns 
  */
-export function middlewareify<T extends ConnectionContext>(m: MiddlewareLike<T>): Middleware<T> {
+export function middlewareify<T extends ServerEndpointContext>(m: MiddlewareLike<T>): Middleware<T> {
     return isFunction(m) ? createMiddleware(m) : m;
 }
 
@@ -57,7 +57,7 @@ export function middlewareify<T extends ConnectionContext>(m: MiddlewareLike<T>)
  * @param m type of {@link MiddlewareLike}
  * @returns 
  */
-export function middlewareFnify<T extends ConnectionContext>(m: MiddlewareLike<T>): MiddlewareFn<T> {
+export function middlewareFnify<T extends ServerEndpointContext>(m: MiddlewareLike<T>): MiddlewareFn<T> {
     return isFunction(m) ? m : ((ctx, next) => m.invoke(ctx, next));
 }
 
@@ -66,7 +66,7 @@ export function middlewareFnify<T extends ConnectionContext>(m: MiddlewareLike<T
  * compose middlewares
  * @param middlewares 
  */
-export function compose<T extends ConnectionContext>(middlewares: MiddlewareLike<T>[]): MiddlewareFn<T> {
+export function compose<T extends ServerEndpointContext>(middlewares: MiddlewareLike<T>[]): MiddlewareFn<T> {
     const middleFns = middlewares.filter(m => m).map(m => middlewareFnify<T>(m));
     return chain(middleFns)
 }
@@ -86,7 +86,7 @@ export class Chain implements Middleware {
 
     }
 
-    invoke<T extends ConnectionContext>(ctx: T, next?: () => Promise<void>): Promise<void> {
+    invoke<T extends ServerEndpointContext>(ctx: T, next?: () => Promise<void>): Promise<void> {
         if (!this._chainFn) {
             this._chainFn = compose(this.middlewares)
         }
@@ -99,7 +99,7 @@ export class Chain implements Middleware {
 /**
  * middleware backend.
  */
-export class MiddlewareBackend<TRequest extends IncomingMsg, TResponse extends OutgoingMsg, Tx extends ConnectionContext> implements EndpointBackend<TRequest, TResponse> {
+export class MiddlewareBackend<TRequest extends IncomingMsg, TResponse extends OutgoingMsg, Tx extends ServerEndpointContext> implements EndpointBackend<TRequest, TResponse> {
 
     private _middleware?: MiddlewareFn<Tx>;
     constructor(private middlewares: MiddlewareLike<Tx>[]) {
@@ -131,13 +131,13 @@ export class InterceptorMiddleware<TRequest extends IncomingMsg, TResponse exten
         this.interceptors = interceptors.map(i => interceptorify(i));
     }
 
-    invoke<T extends ConnectionContext>(ctx: T, next: () => Promise<void>): Promise<void> {
+    invoke<T extends ServerEndpointContext>(ctx: T, next: () => Promise<void>): Promise<void> {
         if (!this._chainFn) {
             const chain = new InterceptorChain<TRequest, TResponse>((req, ctx) => defer(async () => {
                 await this.middleware.invoke(ctx as T, next);
                 return (ctx as T).response as TResponse;
             }), this.interceptors);
-            this._chainFn = (ctx: ConnectionContext) => {
+            this._chainFn = (ctx: ServerEndpointContext) => {
                 const defer = lang.defer<void>();
                 const cancel = chain.handle(ctx.request as TRequest, ctx)
                     .subscribe({

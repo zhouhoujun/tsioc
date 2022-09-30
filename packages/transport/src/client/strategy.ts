@@ -1,8 +1,8 @@
 import { ClientContext, InterceptorType, TransportRequest, TransportStrategy } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
-import { Writable, Readable, Duplex } from 'stream';
+import { Writable, Readable } from 'stream';
 import { Observable } from 'rxjs';
-import { Connection, ConnectionOpts } from '../connection';
+import { Connection } from '../connection';
 import { TransportClientOpts } from './options';
 
 

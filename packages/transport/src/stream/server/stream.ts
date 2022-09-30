@@ -1,9 +1,9 @@
 import { OutgoingHeaders } from '@tsdi/core';
 import { ArgumentExecption, isFunction } from '@tsdi/ioc';
-import { Connection } from '../connection';
-import { ev, hdr } from '../consts';
-import { HeandersSentExecption, InvalidStreamExecption, NestedPushExecption, PushDisabledExecption } from '../execptions';
-import { SteamOptions, StreamStateFlags, StreamTransformor, TransportStream } from '../stream/stream';
+import { Connection } from '../../connection';
+import { ev, hdr } from '../../consts';
+import { HeandersSentExecption, InvalidStreamExecption, NestedPushExecption, PushDisabledExecption } from '../../execptions';
+import { SteamOptions, StreamStateFlags, StreamTransformor, TransportStream } from '../stream';
 
 
 /**

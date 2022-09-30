@@ -1,4 +1,4 @@
-import { ExecptionFilter, MiddlewareLike, HeadersContext, AssetContext, ConnectionContext, ServerContext } from '@tsdi/core';
+import { ExecptionFilter, MiddlewareLike, HeadersContext, AssetContext, ServerEndpointContext, ServerContext } from '@tsdi/core';
 import { Token, tokenId } from '@tsdi/ioc';
 import { AssetServerContext } from '../asset.ctx';
 import { ServerRequest } from './req';
@@ -43,7 +43,7 @@ export class TransportContext extends AssetServerContext<ServerRequest, ServerRe
     }
 
     protected isSelf(token: Token) {
-        return token === TransportContext || token === AssetServerContext || token === ConnectionContext || token === ServerContext;
+        return token === TransportContext || token === AssetServerContext || token === ServerEndpointContext || token === ServerContext;
     }
 
 }
