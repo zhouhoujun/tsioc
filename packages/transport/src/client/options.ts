@@ -2,7 +2,6 @@ import { ClientOpts, EndpointBackend, ExecptionFilter, Interceptor, TransportEve
 import { Abstract, ClassType, EMPTY_OBJ, tokenId, TypeOf } from '@tsdi/ioc';
 import { Readable, Writable } from 'stream';
 import { ConnectionOpts } from '../connection';
-import { ClientTransportStrategy } from './strategy';
 
 /**
  * Transport client options.
@@ -19,9 +18,6 @@ export abstract class TransportClientOpts extends ClientOpts {
      * request opions.
      */
     abstract requestOpts?: Record<string, any>;
-
-
-    abstract transport?: ClientTransportStrategyOpts;
     /**
      * backend.
      */
@@ -50,12 +46,6 @@ export class RequestStauts {
     }
 }
 
-/**
- * client transport strategy options.
- */
-export interface ClientTransportStrategyOpts extends TransportStrategyOpts<Writable, Readable> {
-    strategy: TypeOf<ClientTransportStrategy>;
-}
 
 /**
  * client transport interceptors.

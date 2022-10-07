@@ -21,7 +21,7 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
     readonly originalUrl: string;
     private _url?: string;
 
-    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, transport: TransportStrategy, options?: ServerContextOpts) {
+    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, readonly transport: TransportStrategy, options?: ServerContextOpts) {
         super(injector, request, response, target, transport, options);
 
         this.response.statusCode = this.transport.status.notFound;

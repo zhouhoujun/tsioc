@@ -1,4 +1,4 @@
-import { Endpoint, Transformor, TransportStrategy } from '@tsdi/core';
+import { Endpoint, Transformer, TransportStrategy } from '@tsdi/core';
 import { Abstract, Execption } from '@tsdi/ioc';
 import { Duplex } from 'stream';
 import { Observable } from 'rxjs';
@@ -6,7 +6,7 @@ import { Connection, ConnectionOpts } from '../connection';
 
 
 @Abstract()
-export abstract class ServerTransformor extends Transformor {
+export abstract class ServerTransformor extends Transformer {
 
     parseToDuplex(target: any, ...args: any[]): Duplex {
         throw new Execption('parse connection client to Duplex not implemented.')
@@ -21,5 +21,5 @@ export abstract class ServerTransformor extends Transformor {
 @Abstract()
 export abstract class ServerTransportStrategy extends TransportStrategy {
 
-    abstract get transformor(): ServerTransformor;
+    abstract get transformer(): ServerTransformor;
 }

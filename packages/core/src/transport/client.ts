@@ -392,6 +392,7 @@ export abstract class Client<
     protected override initContext(options: TOpts): void {
         super.initContext(options);
         if (options.transport) {
+            this.context.setValue(TransportStrategyOpts, options.transport);
             const { strategy, interceptors, interceptorsToken } = options.transport;
             if (!strategy) {
                 throw new ArgumentExecption(lang.getClassName(this) + ' transport options strategy is missing.');

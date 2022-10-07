@@ -8,16 +8,25 @@ import { TransportEndpoint, TransportOpts } from './transport';
 
 
 @Abstract()
-export abstract class Transformor<TInput = any, TOutput = any> extends TransportEndpoint<TInput, TOutput> {
+export abstract class Transformer<TInput = any, TOutput = any> extends TransportEndpoint<TInput, TOutput> {
+    /**
+     * transform, send data to remoting.
+     * @param input 
+     * @param context 
+     * @returns 
+     */
     transform(input: TInput, context: EndpointContext): Observable<TOutput> {
         return this.endpoint().handle(input, context);
     }
 }
 
 
-export interface TransportStrategyOpts<TInput = any, TOutput = any> extends TransportOpts<TInput, TOutput> {
-    strategy: TypeOf<TransportStrategy>;
+@Abstract()
+export abstract class TransportStrategyOpts<TInput = any, TOutput = any> extends TransportOpts<TInput, TOutput> {
+    [K: string]: any;
+    abstract get strategy(): TypeOf<TransportStrategy>;
 }
+
 
 
 /**
@@ -36,32 +45,32 @@ export abstract class TransportStrategy {
     /**
      * transformor.
      */
-    abstract get transformor(): Transformor;
+    abstract get transformer(): Transformer;
 
     /**
      * the url is absolute url or not.
      * @param url 
      */
-     abstract isAbsoluteUrl(url: string): boolean;
-     /**
-      * is update modle resquest.
-      */
-     abstract isUpdate(incoming: Incoming): boolean;
-     /**
-      * is secure or not.
-      * @param incoming 
-      */
-     abstract isSecure(incoming: Incoming): boolean;
-     /**
-      * url parse.
-      * @param url 
-      */
-     abstract parseURL(incoming: Incoming, opts: ListenOpts, proxy?: boolean): URL;
-     /**
-      * match protocol or not.
-      * @param protocol 
-      */
-     abstract match(protocol: string): boolean;
+    abstract isAbsoluteUrl(url: string): boolean;
+    /**
+     * is update modle resquest.
+     */
+    abstract isUpdate(incoming: Incoming): boolean;
+    /**
+     * is secure or not.
+     * @param incoming 
+     */
+    abstract isSecure(incoming: Incoming): boolean;
+    /**
+     * url parse.
+     * @param url 
+     */
+    abstract parseURL(incoming: Incoming, opts: ListenOpts, proxy?: boolean): URL;
+    /**
+     * match protocol or not.
+     * @param protocol 
+     */
+    abstract match(protocol: string): boolean;
 
 }
 

@@ -1,10 +1,9 @@
-import { Interceptor, ServerOpts, ListenOpts, TransportStrategyOpts, Incoming, Outgoing } from '@tsdi/core';
-import { Abstract, tokenId, TypeOf } from '@tsdi/ioc';
+import { Interceptor, ServerOpts, ListenOpts, Incoming, Outgoing } from '@tsdi/core';
+import { Abstract, tokenId } from '@tsdi/ioc';
 import { ConnectionOpts } from '../connection';
 import { ContentOptions, SessionOptions } from '../middlewares';
 import { Readable, Writable } from 'stream';
 import { MimeSource } from '../mime';
-import { ServerTransportStrategy } from './strategy';
 
 
 /**
@@ -32,16 +31,8 @@ export abstract class TransportServerOpts extends ServerOpts<Incoming, Outgoing>
     abstract serverOpts?: Record<string, any>;
     abstract listenOpts: ListenOpts;
     abstract connectionOpts?: ConnectionOpts;
-
-    abstract transport?: ServerTransportStrategyOpts;
 }
 
-/**
- * server transport strategy options.
- */
-export interface ServerTransportStrategyOpts extends TransportStrategyOpts<Readable, Writable> {
-    strategy: TypeOf<ServerTransportStrategy>;
-}
 
 /**
  * server transport interceptors.

@@ -1,49 +1,16 @@
-import { ClientContext, IncomingHeaders, Incoming, IncomingStatusHeaders, InterceptorType, ListenOpts, TransportRequest, TransportStatus, Transformor } from '@tsdi/core';
-import { Readable, DuplexOptions, Writable } from 'stream';
+import { IncomingHeaders, IncomingStatusHeaders } from '@tsdi/core';
+import { Readable } from 'stream';
 import { ev, hdr } from '../../consts';
 import { HeandersSentExecption, InvalidStreamExecption } from '../../execptions';
-import { SteamOptions, StreamStateFlags, StreamTransformor, TransportStream } from '../stream';
+import { SteamOptions, StreamStateFlags, PacketEncoding, TransportStream } from '../stream';
 import { Connection } from '../../connection';
-import { ClientTransformor, ClientTransportStrategy, TransportClientOpts } from '../../client';
-import { Observable } from 'rxjs';
-
-
-export class ClientStreamStrategy extends ClientTransportStrategy {
-    get transformor(): ClientTransformor {
-        throw new Error('Method not implemented.');
-    }
-
-    get protocol(): string {
-        throw new Error('Method not implemented.');
-    }
-    get status(): TransportStatus {
-        throw new Error('Method not implemented.');
-    }
-    isAbsoluteUrl(url: string): boolean {
-        throw new Error('Method not implemented.');
-    }
-    isUpdate(incoming: Incoming): boolean {
-        throw new Error('Method not implemented.');
-    }
-    isSecure(incoming: Incoming): boolean {
-        throw new Error('Method not implemented.');
-    }
-    parseURL(incoming: Incoming, opts: ListenOpts, proxy?: boolean | undefined): URL {
-        throw new Error('Method not implemented.');
-    }
-    match(protocol: string): boolean {
-        throw new Error('Method not implemented.');
-    }
-
-}
-
 
 /**
  * ClientStream
  */
 export class ClientStream extends TransportStream {
 
-    constructor(connection: Connection, id: number | undefined, transformor: StreamTransformor, private headers: IncomingHeaders, opts: SteamOptions) {
+    constructor(connection: Connection, id: number | undefined, transformor: PacketEncoding, private headers: IncomingHeaders, opts: SteamOptions) {
         super(connection, transformor, { ...opts, client: true });
         if (id !== undefined) {
             this.init(id);

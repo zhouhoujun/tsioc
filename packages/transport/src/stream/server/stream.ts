@@ -3,7 +3,7 @@ import { ArgumentExecption, isFunction } from '@tsdi/ioc';
 import { Connection } from '../../connection';
 import { ev, hdr } from '../../consts';
 import { HeandersSentExecption, InvalidStreamExecption, NestedPushExecption, PushDisabledExecption } from '../../execptions';
-import { SteamOptions, StreamStateFlags, StreamTransformor, TransportStream } from '../stream';
+import { SteamOptions, StreamStateFlags, PacketEncoding, TransportStream } from '../stream';
 
 
 /**
@@ -12,7 +12,7 @@ import { SteamOptions, StreamStateFlags, StreamTransformor, TransportStream } fr
 export class ServerStream extends TransportStream {
 
     readonly authority: string;
-    constructor(connection: Connection, id: number | undefined, transformor: StreamTransformor, opts: SteamOptions, protected headers: OutgoingHeaders = {}) {
+    constructor(connection: Connection, id: number | undefined, transformor: PacketEncoding, opts: SteamOptions, protected headers: OutgoingHeaders = {}) {
         super(connection, transformor, opts)
         this.authority = this.getAuthority(headers);
         if (id != undefined) {

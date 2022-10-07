@@ -80,6 +80,7 @@ export abstract class Server<
     protected override initContext(options: Opts) {
         super.initContext(options);
         if (options.transport) {
+            this.context.setValue(TransportStrategyOpts, options.transport);
             const { strategy, interceptors, interceptorsToken } = options.transport;
             if (!strategy) {
                 throw new ArgumentExecption(lang.getClassName(this) + ' transport options strategy is missing.');

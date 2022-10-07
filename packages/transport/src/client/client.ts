@@ -1,20 +1,24 @@
-import { EndpointBackend, OnDispose, ClientEndpointContext, Client, RequestOptions, Message, TransportEvent, TransportRequest, Pattern, TransportStrategy } from '@tsdi/core';
-import { Abstract, EMPTY, isFunction, ProviderType, TypeOf } from '@tsdi/ioc';
+import { EndpointBackend, OnDispose, ClientEndpointContext, Client, RequestOptions, Message, TransportEvent, TransportRequest, Pattern, TransportStrategy, Transformer } from '@tsdi/core';
+import { Abstract, EMPTY } from '@tsdi/ioc';
 import { map, Observable, Observer, of } from 'rxjs';
 import { TransportBackend } from './backend';
 import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, CLIENT_TRANSPORT_INTERCEPTORS, TransportClientOpts } from './options';
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
 import { BodyContentInterceptor } from './body';
 import { Connection } from '../connection';
-import { ev } from '../consts';
-import { ClientTransportStrategy } from './strategy';
+
+@Abstract()
+export abstract class ClientTransformer extends Transformer {
+    abstract onConnection(opts: TransportClientOpts): Observable<Connection>;
+}
+
 
 
 const tsptDeftOpts = {
     backend: TransportBackend,
     transport: {
         interceptorsToken: CLIENT_TRANSPORT_INTERCEPTORS,
-        strategy: ClientTransportStrategy
+        strategy: TransportStrategy
     },
     interceptors: [
         BodyContentInterceptor
@@ -78,7 +82,7 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
             return of(this._connection);
         }
         const opts = this.getOptions();
-        return this.buildConnection(opts)
+        return this.context.get(ClientTransformer).onConnection(opts) //this.buildConnection(opts)
             .pipe(
                 map(conn => {
                     this._connection = conn;
@@ -87,53 +91,42 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
             );
     }
 
-    protected buildConnection(opts: TOpts): Observable<Connection> {
-        const logger = this.logger;
-        const strategy = this.context.get(ClientTransportStrategy);
-        return new Observable((observer: Observer<Connection>) => {
-            const client = strategy.transformor.createConnection(opts);
-            if (opts.keepalive) {
-                client.setKeepAlive(true, opts.keepalive);
-            }
+    // protected buildConnection(opts: TOpts): Observable<Connection> {
+    //     const logger = this.logger;
+    //     return new Observable((observer: Observer<Connection>) => {
+    //         const client = this.createConnection(opts);
+    //         if (opts.keepalive) {
+    //             client.setKeepAlive(true, opts.keepalive);
+    //         }
 
-            const onError = (err: Error) => {
-                logger.error(err);
-                observer.error(err);
-            }
-            const onClose = () => {
-                client.end();
-            };
-            const onConnected = () => {
-                observer.next(client);
-            }
-            client.on(ev.ERROR, onError);
-            client.on(ev.CLOSE, onClose);
-            client.on(ev.END, onClose);
-            client.on(ev.CONNECT, onConnected);
+    //         const onError = (err: Error) => {
+    //             logger.error(err);
+    //             observer.error(err);
+    //         }
+    //         const onClose = () => {
+    //             client.end();
+    //         };
+    //         const onConnected = () => {
+    //             observer.next(client);
+    //         }
+    //         client.on(ev.ERROR, onError);
+    //         client.on(ev.CLOSE, onClose);
+    //         client.on(ev.END, onClose);
+    //         client.on(ev.CONNECT, onConnected);
 
-            return () => {
-                client.off(ev.ERROR, onError);
-                client.off(ev.CLOSE, onClose);
-                client.off(ev.END, onClose);
-                client.off(ev.CONNECT, onConnected);
-            }
-        });
-    }
+    //         return () => {
+    //             client.off(ev.ERROR, onError);
+    //             client.off(ev.CLOSE, onClose);
+    //             client.off(ev.END, onClose);
+    //             client.off(ev.CONNECT, onConnected);
+    //         }
+    //     });
+    // }
+
+    // abstract createConnection(opts: TOpts): Connection;
 
     protected getBackend(): EndpointBackend<Message, TransportEvent> {
         return this.context.get(this.getOptions().backend!);
-    }
-
-    protected override registerStrategy(strategy: TypeOf<ClientTransportStrategy>): void {
-        const pdrs: ProviderType[] = [];
-        if (isFunction(strategy)) {
-            pdrs.push({ provide: TransportStrategy, useExisting: strategy });
-            pdrs.push({ provide: ClientTransportStrategy, useExisting: strategy });
-        } else {
-            pdrs.push({ provide: TransportStrategy, useValue: strategy });
-            pdrs.push({ provide: ClientTransportStrategy, useValue: strategy });
-        }
-        this.context.injector.inject(pdrs);
     }
 
 }

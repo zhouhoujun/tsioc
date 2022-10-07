@@ -1,6 +1,8 @@
-import { Incoming, ListenOpts, ModuleRef, Outgoing, Router, Server, TransportStrategy } from '@tsdi/core';
-import { Abstract, Destroyable, isBoolean, isFunction, lang, ProviderType, TypeOf } from '@tsdi/ioc';
+import { Endpoint, Incoming, ListenOpts, ModuleRef, Outgoing, Router, Server, TransportStrategy, Transformer } from '@tsdi/core';
+import { Abstract, Destroyable, Execption, isBoolean, isFunction, lang } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
+import { mergeMap, Observable } from 'rxjs';
+import { Duplex } from 'stream';
 import { CatchInterceptor, LogInterceptor, RespondInterceptor } from '../interceptors';
 import { TransportContext, SERVER_EXECPTION_FILTERS, SERVER_MIDDLEWARES } from './context';
 import { BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMiddleware, SessionMiddleware } from '../middlewares';
@@ -10,10 +12,15 @@ import { TransportExecptionFilter, TransportFinalizeFilter } from './finalize-fi
 import { TransportServerOpts, SERVER_INTERCEPTORS, SERVER_TRANSPORT_INTERCEPTORS } from './options';
 import { TRANSPORT_SERVR_PROVIDERS } from './providers';
 import { Connection, ConnectionOpts } from '../connection';
-import { mergeMap, Observable } from 'rxjs';
-import { ev } from '../consts';
-import { isDuplex } from '../utils';
-import { ServerTransportStrategy } from './strategy';
+
+
+
+@Abstract()
+export abstract class ServerTransformer extends Transformer {
+    abstract onConnection(server: any, opts?: ConnectionOpts): Observable<Connection>;
+    abstract onRequest(conn: Connection, endpoint: Endpoint): Observable<any>
+}
+
 
 
 const defOpts = {
@@ -23,7 +30,7 @@ const defOpts = {
     middlewaresToken: SERVER_MIDDLEWARES,
     transport: {
         interceptorsToken: SERVER_TRANSPORT_INTERCEPTORS,
-        strategy: ServerTransportStrategy
+        strategy: TransportStrategy
     },
     content: {
         root: 'public'
@@ -74,9 +81,9 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
             const opts = this.getOptions();
             const server = this._server = this.createServer(opts);
             const logger = this.logger;
-            const strategy = this.context.get(ServerTransportStrategy);
-            const sub = this.onConnection(server, strategy, opts.connectionOpts)
-                .pipe(mergeMap(conn => this.onRequest(conn, strategy)))
+            const transformer = this.context.get(ServerTransformer);
+            const sub = transformer.onConnection(server, opts.connectionOpts)
+                .pipe(mergeMap(conn => transformer.onRequest(conn, this.endpoint())))
                 .subscribe({
                     error: (err) => {
                         logger.error(err);
@@ -93,70 +100,76 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
     }
 
 
-    protected onConnection(server: T, strategy: ServerTransportStrategy, opts?: ConnectionOpts): Observable<Connection> {
-        return new Observable((observer) => {
-            const onError = (err: Error) => {
-                observer.error(err);
-            };
-            const onConnection = (conn: any, ...args: any[]) => {
-                const duplex = isDuplex(conn) ? conn : strategy.transformor.parseToDuplex(conn, ...args);
-                const connection = strategy.transformor.createConnection(duplex, opts);
-                observer.next(connection);
-            }
-            const onClose = () => {
-                observer.complete();
-            }
-            server.on(ev.ERROR, onError);
-            server.on(ev.CONNECTION, onConnection);
-            server.on(ev.CLOSE, onClose)
-
-            return () => {
-                server.off(ev.ERROR, onError);
-                server.off(ev.CLOSE, onClose);
-                server.off(ev.CONNECTION, onConnection);
-            }
-        })
-    }
-
-    protected onRequest(conn: Connection, strategy: ServerTransportStrategy): Observable<any> {
-
-        return strategy.transformor.request(conn, this.endpoint());
-        // return new Observable((observer) => {
-        //     const subs: Set<Subscription> = new Set();
-
-        //     const onHeaders = (headers: IncomingHeaders, id: number) => {
-        //         const sid = conn.getNextStreamId(id);
-        //         const stream = this.createStream(conn, sid, headers);
-        //         conn.emit(ev.STREAM, stream, headers);
-        //     };
-
-
-        //     const onStream = (stream: ServerStream, headers: IncomingHeaders) => {
-        //         const ctx = this.buildContext(stream, headers);
-        //         subs.add(this.handle(ctx, this.endpoint(), observer));
-        //     };
-
-        //     conn.on(ev.HEADERS, onHeaders);
-        //     conn.on(ev.STREAM, onStream);
-        //     return () => {
-        //         subs.forEach(s => {
-        //             s && s.unsubscribe();
-        //         });
-        //         subs.clear();
-        //         conn.off(ev.HEADERS, onHeaders);
-        //         conn.off(ev.STREAM, onStream);
-        //     }
-        // });
-    }
 
     protected abstract createServer(opts: TOpts): T;
-
     /**
      * listen
      * @param server 
      * @param opts 
      */
     protected abstract listen(server: T, opts: ListenOpts): Promise<void>;
+
+    // protected onConnection(server: T, opts?: ConnectionOpts): Observable<Connection> {
+    //     return new Observable((observer) => {
+    //         const onError = (err: Error) => {
+    //             observer.error(err);
+    //         };
+    //         const onConnection = (conn: any, ...args: any[]) => {
+    //             const duplex = isDuplex(conn) ? conn : this.parseToDuplex(conn, ...args);
+    //             const connection = this.createConnection(duplex, opts);
+    //             observer.next(connection);
+    //         }
+    //         const onClose = () => {
+    //             observer.complete();
+    //         }
+    //         server.on(ev.ERROR, onError);
+    //         server.on(ev.CONNECTION, onConnection);
+    //         server.on(ev.CLOSE, onClose)
+
+    //         return () => {
+    //             server.off(ev.ERROR, onError);
+    //             server.off(ev.CLOSE, onClose);
+    //             server.off(ev.CONNECTION, onConnection);
+    //         }
+    //     })
+    // }
+
+    // protected parseToDuplex(target: any, ...args: any[]): Duplex {
+    //     throw new Execption('parse connection client to Duplex not implemented.')
+    // }
+
+    // protected abstract createConnection(duplex: Duplex, opts?: ConnectionOpts): Connection;
+
+
+    // protected onRequest(conn: Connection): Observable<any> {
+
+    //     return new Observable((observer) => {
+    //         const subs: Set<Subscription> = new Set();
+
+    //         const onHeaders = (headers: IncomingHeaders, id: number) => {
+    //             const sid = conn.getNextStreamId(id);
+    //             const stream = this.createStream(conn, sid, headers);
+    //             conn.emit(ev.STREAM, stream, headers);
+    //         };
+
+
+    //         const onStream = (stream: ServerStream, headers: IncomingHeaders) => {
+    //             const ctx = this.buildContext(stream, headers);
+    //             subs.add(this.handle(ctx, this.endpoint(), observer));
+    //         };
+
+    //         conn.on(ev.HEADERS, onHeaders);
+    //         conn.on(ev.STREAM, onStream);
+    //         return () => {
+    //             subs.forEach(s => {
+    //                 s && s.unsubscribe();
+    //             });
+    //             subs.clear();
+    //             conn.off(ev.HEADERS, onHeaders);
+    //             conn.off(ev.STREAM, onStream);
+    //         }
+    //     });
+    // }
 
     // /**
     //  * 
@@ -244,18 +257,6 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
             mimedb.from(options.mimeDb)
         }
         super.initContext(options)
-    }
-
-    protected override registerStrategy(strategy: TypeOf<ServerTransportStrategy>): void {
-        const pdrs: ProviderType[] = [];
-        if (isFunction(strategy)) {
-            pdrs.push({ provide: TransportStrategy, useExisting: strategy });
-            pdrs.push({ provide: ServerTransportStrategy, useExisting: strategy });
-        } else {
-            pdrs.push({ provide: TransportStrategy, useValue: strategy });
-            pdrs.push({ provide: ServerTransportStrategy, useValue: strategy });
-        }
-        this.context.injector.inject(pdrs);
     }
 
 }

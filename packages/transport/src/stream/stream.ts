@@ -97,7 +97,7 @@ export abstract class StreamGenerator extends Writable {
 
 
 @Abstract()
-export abstract class StreamTransformor {
+export abstract class PacketEncoding {
     /**
      * create parse packet as stream for the own stream.
      * @param stream create parser for the own stream. type of {@link TransportStream}.
@@ -132,7 +132,7 @@ export abstract class TransportStream extends Duplexify implements Closeable {
     protected opts: SteamOptions;
     private _parser?: Transform;
     private _generator?: Writable;
-    constructor(readonly connection: Connection, private transformor: StreamTransformor, opts: SteamOptions) {
+    constructor(readonly connection: Connection, private transformor: PacketEncoding, opts: SteamOptions) {
         super(null, null, opts = { ...opts, objectMode: true, allowHalfOpen: true, autoDestroy: false, decodeStrings: false });
         this.opts = opts;
 
