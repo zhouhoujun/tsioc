@@ -15,9 +15,11 @@ export abstract class Transformer<TInput = any, TOutput = any> extends Transport
      * @param context 
      * @returns 
      */
-    transform(input: TInput, context: EndpointContext): Observable<TOutput> {
-        return this.endpoint().handle(input, context);
+    send(input: TInput, context: EndpointContext): Observable<TOutput> {
+        return this.endpoint.handle(input, context);
     }
+
+    abstract receive(): Observable<TOutput>;
 }
 
 

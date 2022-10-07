@@ -195,7 +195,7 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse, HttpCo
      */
     protected onRequestHandler(request: HttpServRequest, response: HttpServResponse) {
         const ctx = new HttpContext(this.context.injector, request, response, this as Server, this.context.get(TransportStrategy));
-        this.context.injector.get(HttpHandlerBinding).binding(ctx, this.endpoint());
+        this.context.injector.get(HttpHandlerBinding).binding(ctx, this.endpoint);
     }
 
 }

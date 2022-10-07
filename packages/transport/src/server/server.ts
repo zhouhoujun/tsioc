@@ -83,7 +83,7 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
             const logger = this.logger;
             const transformer = this.context.get(ServerTransformer);
             const sub = transformer.onConnection(server, opts.connectionOpts)
-                .pipe(mergeMap(conn => transformer.onRequest(conn, this.endpoint())))
+                .pipe(mergeMap(conn => transformer.onRequest(conn, this.endpoint)))
                 .subscribe({
                     error: (err) => {
                         logger.error(err);

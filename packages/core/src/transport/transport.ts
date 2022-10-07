@@ -123,7 +123,7 @@ export abstract class TransportEndpoint<
     /**
      * transport endpoint chain.
      */
-    endpoint(): Endpoint<TInput, TOutput> {
+    get endpoint(): Endpoint<TInput, TOutput> {
         if (!this._chain) {
             this._chain = this.buildEndpoint();
         }

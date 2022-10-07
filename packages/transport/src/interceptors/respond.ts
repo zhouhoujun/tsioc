@@ -19,6 +19,7 @@ export class RespondInterceptor<TRequest = any, TResponse = any> implements Inte
         return next.handle(req, ctx)
             .pipe(
                 mergeMap(res => {
+                    // return ctx.transport.transformer.transform(res, ctx);
                     return ctx.get(RespondAdapter).respond(res, ctx)
                 })
             )

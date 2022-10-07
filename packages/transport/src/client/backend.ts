@@ -22,7 +22,7 @@ export class TransportBackend implements EndpointBackend<TransportRequest, Trans
 
     handle(req: TransportRequest, ctx: ClientContext): Observable<TransportEvent> {
         const url = req.url;
-        return ctx.transport.transformer.transform(req, ctx)
+        return ctx.transport.transformer.send(req, ctx)
             .pipe(
                 mergeMap(async body => {
                     let type = ctx.responseType;
